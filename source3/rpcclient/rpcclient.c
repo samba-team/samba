@@ -669,7 +669,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		wresult = cmd_entry->wfn(cmd_entry->rpc_pipe, mem_ctx, argc, (const char **) argv);
 		/* print out the DOS error */
 		if (!W_ERROR_IS_OK(wresult)) {
-			printf( "result was %s\n", dos_errstr(wresult));
+			printf( "result was %s\n", win_errstr(wresult));
 		}
 		ntresult = W_ERROR_IS_OK(wresult)?NT_STATUS_OK:NT_STATUS_UNSUCCESSFUL;
 	}

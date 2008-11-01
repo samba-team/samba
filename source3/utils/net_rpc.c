@@ -3133,7 +3133,7 @@ static NTSTATUS rpc_share_migrate_shares_internals(struct net_context *c,
 		}
 
 		if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result)) {
-			printf("cannot add share: %s\n", dos_errstr(result));
+			printf("cannot add share: %s\n", win_errstr(result));
 			goto done;
 		}
 
@@ -3580,7 +3580,7 @@ static NTSTATUS rpc_share_migrate_security_internals(struct net_context *c,
 							  &parm_error,
 							  &result);
 		if (!NT_STATUS_IS_OK(nt_status) || !W_ERROR_IS_OK(result)) {
-			printf("cannot set share-acl: %s\n", dos_errstr(result));
+			printf("cannot set share-acl: %s\n", win_errstr(result));
 			goto done;
 		}
 
@@ -5075,7 +5075,7 @@ NTSTATUS rpc_reg_shutdown_internals(struct net_context *c,
 		if ( W_ERROR_EQUAL(werr, WERR_MACHINE_LOCKED) )
 			d_fprintf(stderr, "\nMachine locked, use -f switch to force\n");
 		else
-			d_fprintf(stderr, "\nresult was: %s\n", dos_errstr(werr));
+			d_fprintf(stderr, "\nresult was: %s\n", win_errstr(werr));
 	}
 
 	return result;

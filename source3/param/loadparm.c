@@ -6569,7 +6569,7 @@ static struct smbconf_ctx *lp_smbconf_ctx(void)
 		werr = smbconf_init(NULL, &conf_ctx, "registry:");
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(1, ("error initializing registry configuration: "
-				  "%s\n", dos_errstr(werr)));
+				  "%s\n", win_errstr(werr)));
 			conf_ctx = NULL;
 		}
 	}

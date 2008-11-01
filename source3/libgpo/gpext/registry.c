@@ -502,7 +502,7 @@ static WERROR reg_apply_registry(TALLOC_CTX *mem_ctx,
 						token, flags);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("failed to apply registry: %s\n",
-				dos_errstr(werr)));
+				win_errstr(werr)));
 			goto done;
 		}
 	}
@@ -554,7 +554,7 @@ static NTSTATUS registry_process_group_policy(ADS_STRUCT *ads,
 				  entries, num_entries);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("failed to apply registry: %s\n",
-			dos_errstr(werr)));
+			win_errstr(werr)));
 		return werror_to_ntstatus(werr);
 	}
 

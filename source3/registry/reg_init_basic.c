@@ -29,14 +29,14 @@ WERROR registry_init_common(void)
 	werr = regdb_init();
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("Failed to initialize the registry: %s\n",
-			  dos_errstr(werr)));
+			  win_errstr(werr)));
 		goto done;
 	}
 
 	werr = reghook_cache_init();
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("Failed to initialize the reghook cache: %s\n",
-			  dos_errstr(werr)));
+			  win_errstr(werr)));
 	}
 
 done:

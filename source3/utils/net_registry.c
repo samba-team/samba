@@ -91,14 +91,14 @@ static WERROR open_key(TALLOC_CTX *ctx, const char *path,
 
 	werr = open_hive(tmp_ctx, path, desired_access, &hive, &subkey_name);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_openkey(ctx, hive, subkey_name, desired_access, key);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_openkey failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -137,7 +137,7 @@ static int net_registry_enumerate(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -193,7 +193,7 @@ static int net_registry_createkey(struct net_context *c, int argc,
 
 	werr = open_hive(ctx, argv[0], REG_KEY_WRITE, &hivekey, &subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -201,7 +201,7 @@ static int net_registry_createkey(struct net_context *c, int argc,
 			     &subkey, &action);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_createkey failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 	switch (action) {
@@ -245,14 +245,14 @@ static int net_registry_deletekey(struct net_context *c, int argc,
 
 	werr = open_hive(ctx, argv[0], REG_KEY_WRITE, &hivekey, &subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_hive failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_hive failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_deletekey(hivekey, subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_deletekey failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -280,14 +280,14 @@ static int net_registry_getvalue_internal(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_queryvalue(ctx, key, argv[1], &value);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_queryvalue failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -346,14 +346,14 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_setvalue(key, argv[1], &value);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_setvalue failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -380,14 +380,14 @@ static int net_registry_deletevalue(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_deletevalue(key, argv[1]);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_deletekey failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -429,14 +429,14 @@ static int net_registry_getsd(struct net_context *c, int argc,
 
 	werr = open_key(ctx, argv[0], access_mask, &key);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "open_key failed: %s\n", dos_errstr(werr));
+		d_fprintf(stderr, "open_key failed: %s\n", win_errstr(werr));
 		goto done;
 	}
 
 	werr = reg_getkeysecurity(ctx, key, &secdesc);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "reg_getkeysecurity failed: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 

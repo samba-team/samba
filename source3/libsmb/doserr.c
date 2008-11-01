@@ -1,18 +1,18 @@
-/*
+/* 
  *  Unix SMB/CIFS implementation.
  *  DOS error routines
  *  Copyright (C) Tim Potter 2002.
- *
+ *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *
+ *  
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *
+ *  
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,17 +21,17 @@
 
 #include "includes.h"
 
-typedef const struct {
+struct werror_code_struct {
 	const char *dos_errstr;
 	WERROR werror;
-} werror_code_struct;
+};
 
-typedef const struct {
+struct werror_str_struct {
 	WERROR werror;
 	const char *friendly_errstr;
-} werror_str_struct;
+};
 
-werror_code_struct dos_errs[] =
+const struct werror_code_struct dos_errs[] =
 {
 	{ "WERR_OK", WERR_OK },
 	{ "WERR_GENERAL_FAILURE", WERR_GENERAL_FAILURE },
@@ -126,7 +126,7 @@ werror_code_struct dos_errs[] =
 	{ NULL, W_ERROR(0) }
 };
 
-werror_str_struct dos_err_strs[] = {
+const struct werror_str_struct dos_err_strs[] = {
 	{ WERR_OK, "Success" },
 	{ WERR_ACCESS_DENIED, "Access is denied" },
 	{ WERR_INVALID_PARAM, "Invalid parameter" },
@@ -159,7 +159,7 @@ werror_str_struct dos_err_strs[] = {
  Returns a DOS error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
 
-const char *dos_errstr(WERROR werror)
+const char *win_errstr(WERROR werror)
 {
 	char *result;
         int idx = 0;
@@ -192,11 +192,5 @@ const char *get_friendly_werror_msg(WERROR werror)
 		}
 	}
 
-	return dos_errstr(werror);
-}
-
-/* compat function for samba4 */
-const char *win_errstr(WERROR werror)
-{
-	return dos_errstr(werror);
+	return win_errstr(werror);
 }

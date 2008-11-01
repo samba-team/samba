@@ -112,7 +112,7 @@ static WERROR smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error opening registry path '%s': %s\n",
-			  path, dos_errstr(werr)));
+			  path, win_errstr(werr)));
 	}
 
 done:
@@ -212,7 +212,7 @@ static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error creating key %s: %s\n",
-			 subkeyname, dos_errstr(werr)));
+			 subkeyname, win_errstr(werr)));
 	}
 
 done:
@@ -283,7 +283,7 @@ static WERROR smbconf_reg_set_value(struct registry_key *key,
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error adding value '%s' to "
 			  "key '%s': %s\n",
-			  canon_valname, key->key->name, dos_errstr(werr)));
+			  canon_valname, key->key->name, win_errstr(werr)));
 	}
 
 done:
@@ -327,7 +327,7 @@ static WERROR smbconf_reg_set_multi_sz_value(struct registry_key *key,
 	werr = reg_setvalue(key, valname, value);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error adding value '%s' to key '%s': %s\n",
-			  valname, key->key->name, dos_errstr(werr)));
+			  valname, key->key->name, win_errstr(werr)));
 	}
 
 done:
@@ -585,7 +585,7 @@ static WERROR smbconf_reg_delete_values(struct registry_key *key)
 		DEBUG(1, ("smbconf_reg_delete_values: "
 			  "Error enumerating values of %s: %s\n",
 			  key->key->name,
-			  dos_errstr(werr)));
+			  win_errstr(werr)));
 		goto done;
 	}
 

@@ -456,14 +456,14 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	if ( !W_ERROR_IS_OK( wresult ) ) {
 		DEBUG( 4,
 		       ( "sync_eventlog_params: Failed to open key [%s] (%s)\n",
-			 path, dos_errstr( wresult ) ) );
+			 path, win_errstr( wresult ) ) );
 		return false;
 	}
 
 	wresult = reg_queryvalue(key, key, "Retention", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
-			  dos_errstr(wresult)));
+			  win_errstr(wresult)));
 		ret = false;
 		goto done;
 	}
@@ -472,7 +472,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	wresult = reg_queryvalue(key, key, "MaxSize", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"MaxSize\": %s\n",
-			  dos_errstr(wresult)));
+			  win_errstr(wresult)));
 		ret = false;
 		goto done;
 	}

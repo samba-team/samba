@@ -171,7 +171,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
-			dos_errstr(result)));
+			win_errstr(result)));
 
 	/* if it's the last connection, deconnect the IPC$ share */
 	if (smb_connections==1) {
@@ -541,7 +541,7 @@ static bool set_printer_hnd_name(Printer_entry *Printer, char *handlename)
 		result = get_a_printer_search( NULL, &printer, 2, sname );
 		if ( !W_ERROR_IS_OK(result) ) {
 			DEBUG(0,("set_printer_hnd_name: failed to lookup printer [%s] -- result [%s]\n",
-				sname, dos_errstr(result)));
+				sname, win_errstr(result)));
 			continue;
 		}
 
@@ -1284,7 +1284,7 @@ void do_drv_upgrade_printer(struct messaging_context *msg,
 				result = mod_a_printer(printer, 2);
 				if (!W_ERROR_IS_OK(result)) {
 					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%s]\n",
-						dos_errstr(result)));
+						win_errstr(result)));
 				}
 			}
 
@@ -2677,7 +2677,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	if (!W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
-			dos_errstr(result)));
+			win_errstr(result)));
 
 	return (W_ERROR_IS_OK(result));
 }
@@ -5376,12 +5376,12 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, con
 	ZERO_STRUCT(driver);
 
 	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
+	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
 	status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
-	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
+	DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
 
 #if 0	/* JERRY */
 
@@ -5401,7 +5401,7 @@ static WERROR construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum, con
 			/* Yes - try again with a WinNT driver. */
 			version = 2;
 			status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
-			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", dos_errstr(status)));
+			DEBUG(8,("construct_printer_driver_info_3: status: %s\n", win_errstr(status)));
 		}
 #endif
 
@@ -5519,14 +5519,14 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum,
 
 	status=get_a_printer(NULL, &printer, 2, lp_const_servicename(snum) );
 
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
+	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
 
 	if (!W_ERROR_IS_OK(status))
 		return WERR_INVALID_PRINTER_NAME;
 
 	status = get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
 
-	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
+	DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
 
 	if (!W_ERROR_IS_OK(status))
 	{
@@ -5542,7 +5542,7 @@ static WERROR construct_printer_driver_info_6(DRIVER_INFO_6 *info, int snum,
 		/* Yes - try again with a WinNT driver. */
 		version = 2;
 		status=get_a_printer_driver(&driver, 3, printer->info_2->drivername, architecture, version);
-		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", dos_errstr(status)));
+		DEBUG(8,("construct_printer_driver_info_6: status: %s\n", win_errstr(status)));
 		if (!W_ERROR_IS_OK(status)) {
 			free_a_printer(&printer,2);
 			return WERR_UNKNOWN_PRINTER_DRIVER;
@@ -7544,7 +7544,7 @@ static WERROR enumports_level_1(RPC_BUFFER *buffer, uint32 offered, uint32 *need
 	if(numlines) {
 		if((ports=SMB_MALLOC_ARRAY( PORT_INFO_1, numlines )) == NULL) {
 			DEBUG(10,("Returning WERR_NOMEM [%s]\n",
-				  dos_errstr(WERR_NOMEM)));
+				  win_errstr(WERR_NOMEM)));
 			TALLOC_FREE(qlines);
 			return WERR_NOMEM;
 		}

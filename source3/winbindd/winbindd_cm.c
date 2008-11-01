@@ -672,7 +672,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
-			   dos_errstr(werr)));
+			   win_errstr(werr)));
 		talloc_destroy(mem_ctx);
 		return false;
 	}

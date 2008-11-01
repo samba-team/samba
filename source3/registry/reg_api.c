@@ -1117,7 +1117,7 @@ static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		DEBUG(1, ("reg_deletekey_recursive_internal: "
 			  "Error enumerating subkeys: %s\n",
-			  dos_errstr(werr)));
+			  win_errstr(werr)));
 		goto done;
 	}
 

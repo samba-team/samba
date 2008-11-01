@@ -358,7 +358,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n",
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		SAFE_FREE(path);
 		return;
 	}
@@ -400,7 +400,7 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, REGSUBKEY_CTR *subkeys,
 					get_root_nt_token(), REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("add_new_svc_name: key lookup failed! [%s] (%s)\n",
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		TALLOC_FREE( key_secdesc );
 		SAFE_FREE(path);
 		return;
@@ -455,7 +455,7 @@ void svcctl_init_keys( void )
 
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_init_keys: key lookup failed! (%s)\n",
-			dos_errstr(wresult)));
+			win_errstr(wresult)));
 		return;
 	}
 
@@ -519,7 +519,7 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		goto done;
 	}
 
@@ -579,7 +579,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 					REG_KEY_ALL );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_get_secdesc: key lookup failed! [%s] (%s)\n",
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		SAFE_FREE(path);
 		return False;
 	}
@@ -634,7 +634,7 @@ const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TO
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		SAFE_FREE(path);
 		goto fail;
 	}
@@ -684,7 +684,7 @@ const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_lookup_description: key lookup failed! [%s] (%s)\n", 
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		SAFE_FREE(path);
 		return NULL;
 	}
@@ -728,7 +728,7 @@ REGVAL_CTR *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token )
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
 		DEBUG(0,("svcctl_fetch_regvalues: key lookup failed! [%s] (%s)\n",
-			path, dos_errstr(wresult)));
+			path, win_errstr(wresult)));
 		SAFE_FREE(path);
 		return NULL;
 	}

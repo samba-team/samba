@@ -711,7 +711,7 @@ static bool net_spoolss_enum_printers(struct rpc_pipe_client *pipe_hnd,
 		level, num_printers, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("cannot enum printers: %s\n", dos_errstr(result));
+		printf("cannot enum printers: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -752,7 +752,7 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		d_fprintf(stderr, "cannot open printer %s on server %s: %s\n",
-			printername2, servername, dos_errstr(result));
+			printername2, servername, win_errstr(result));
 		return false;
 	}
 
@@ -774,7 +774,7 @@ static bool net_spoolss_getprinter(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_getprinter(pipe_hnd, mem_ctx, hnd, level, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("cannot get printer-info: %s\n", dos_errstr(result));
+		printf("cannot get printer-info: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -793,7 +793,7 @@ static bool net_spoolss_setprinter(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_setprinter(pipe_hnd, mem_ctx, hnd, level, ctr, 0);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("cannot set printer-info: %s\n", dos_errstr(result));
+		printf("cannot set printer-info: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -812,7 +812,7 @@ static bool net_spoolss_setprinterdata(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_setprinterdata(pipe_hnd, mem_ctx, hnd, value);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf ("unable to set printerdata: %s\n", dos_errstr(result));
+		printf ("unable to set printerdata: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -832,7 +832,7 @@ static bool net_spoolss_enumprinterkey(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_enumprinterkey(pipe_hnd, mem_ctx, hnd, keyname, keylist, NULL);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("enumprinterkey failed: %s\n", dos_errstr(result));
+		printf("enumprinterkey failed: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -852,7 +852,7 @@ static bool net_spoolss_enumprinterdataex(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_enumprinterdataex(pipe_hnd, mem_ctx, hnd, keyname, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("enumprinterdataex failed: %s\n", dos_errstr(result));
+		printf("enumprinterdataex failed: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -873,7 +873,7 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					      keyname, value);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("could not set printerdataex: %s\n", dos_errstr(result));
+		printf("could not set printerdataex: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -893,7 +893,7 @@ static bool net_spoolss_enumforms(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_spoolss_enumforms(pipe_hnd, mem_ctx, hnd, level, num_forms, forms);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("could not enum forms: %s\n", dos_errstr(result));
+		printf("could not enum forms: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -914,7 +914,7 @@ static bool net_spoolss_enumprinterdrivers (struct rpc_pipe_client *pipe_hnd,
 			env, num_drivers, ctr);
 
 	if (!W_ERROR_IS_OK(result)) {
-		printf("cannot enum drivers: %s\n", dos_errstr(result));
+		printf("cannot enum drivers: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -936,10 +936,10 @@ static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(1,("cannot get driver (for architecture: %s): %s\n",
-			env, dos_errstr(result)));
+			env, win_errstr(result)));
 		if (W_ERROR_V(result) != W_ERROR_V(WERR_UNKNOWN_PRINTER_DRIVER) &&
 		    W_ERROR_V(result) != W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
-			printf("cannot get driver: %s\n", dos_errstr(result));
+			printf("cannot get driver: %s\n", win_errstr(result));
 		}
 		return false;
 	}
@@ -963,7 +963,7 @@ static bool net_spoolss_addprinterdriver(struct rpc_pipe_client *pipe_hnd,
 		return false;
 	}
 	if (!W_ERROR_IS_OK(result)) {
-		printf("cannot add driver: %s\n", dos_errstr(result));
+		printf("cannot add driver: %s\n", win_errstr(result));
 		return false;
 	}
 
@@ -1231,7 +1231,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 		result = rpccli_spoolss_setprinter(pipe_hnd, mem_ctx, &hnd, level, &ctr_pub, 0);
 		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) != W_ERROR_V(WERR_IO_PENDING))) {
-			printf("cannot set printer-info: %s\n", dos_errstr(result));
+			printf("cannot set printer-info: %s\n", win_errstr(result));
 			goto done;
 		}
 

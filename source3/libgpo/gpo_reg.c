@@ -466,13 +466,13 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 	werr = gp_secure_key(mem_ctx, flags, reg_ctx->curr_key,
 			     &token->user_sids[0]);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("failed to secure key: %s\n", dos_errstr(werr)));
+		DEBUG(0,("failed to secure key: %s\n", win_errstr(werr)));
 		goto done;
 	}
 
 	werr = gp_reg_store_groupmembership(mem_ctx, reg_ctx, token, flags);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("failed to store group membership: %s\n", dos_errstr(werr)));
+		DEBUG(0,("failed to store group membership: %s\n", win_errstr(werr)));
 		goto done;
 	}
 
@@ -484,7 +484,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 
 	werr = gp_del_reg_state(mem_ctx, reg_ctx->curr_key, subkeyname);
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("failed to delete old state: %s\n", dos_errstr(werr)));
+		DEBUG(0,("failed to delete old state: %s\n", win_errstr(werr)));
 		/* goto done; */
 	}
 
@@ -534,7 +534,7 @@ WERROR gp_reg_state_store(TALLOC_CTX *mem_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("gp_reg_state_store: "
 				"gpo_store_reg_gpovals failed for %s: %s\n",
-				gpo->display_name, dos_errstr(werr)));
+				gpo->display_name, win_errstr(werr)));
 			goto done;
 		}
 	}
@@ -663,7 +663,7 @@ WERROR gp_reg_state_read(TALLOC_CTX *mem_ctx,
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("gp_reg_state_read: "
 				"gp_read_reg_subkey gave: %s\n",
-				dos_errstr(werr)));
+				win_errstr(werr)));
 			goto done;
 		}
 
@@ -941,7 +941,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 				   root_key, &key);
 				   /* reg_ctx->curr_key, &key); */
 	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0,("gp_store_reg_subkey failed: %s\n", dos_errstr(werr)));
+		DEBUG(0,("gp_store_reg_subkey failed: %s\n", win_errstr(werr)));
 		return werr;
 	}
 
@@ -957,7 +957,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
 					"gp_secure_key failed: %s\n",
-					dos_errstr(werr)));
+					win_errstr(werr)));
 				return werr;
 			}
 			break;
@@ -966,7 +966,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
 					"reg_setvalue failed: %s\n",
-					dos_errstr(werr)));
+					win_errstr(werr)));
 				dump_reg_entry(flags, "STORE", entry);
 				return werr;
 			}
@@ -976,7 +976,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
 					"reg_deletevalue failed: %s\n",
-					dos_errstr(werr)));
+					win_errstr(werr)));
 				dump_reg_entry(flags, "STORE", entry);
 				return werr;
 			}
@@ -986,7 +986,7 @@ WERROR reg_apply_registry_entry(TALLOC_CTX *mem_ctx,
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(0,("reg_apply_registry_entry: "
 					"reg_deleteallvalues failed: %s\n",
-					dos_errstr(werr)));
+					win_errstr(werr)));
 				dump_reg_entry(flags, "STORE", entry);
 				return werr;
 			}

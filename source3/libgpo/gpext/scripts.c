@@ -311,7 +311,7 @@ static WERROR scripts_apply(TALLOC_CTX *mem_ctx,
 						token, flags);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("failed to apply registry: %s\n",
-				dos_errstr(werr)));
+				win_errstr(werr)));
 			goto done;
 		}
 	}

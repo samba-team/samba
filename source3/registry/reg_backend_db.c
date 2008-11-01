@@ -963,7 +963,7 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 		werr = regsubkey_ctr_addkey(ctr, subkeyname);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
-				  "failed: %s\n", dos_errstr(werr)));
+				  "failed: %s\n", win_errstr(werr)));
 			goto done;
 		}
 	}

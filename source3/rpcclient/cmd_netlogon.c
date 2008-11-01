@@ -221,7 +221,7 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	}
 
 	printf("rpccli_netlogon_dsr_getdcname returned %s\n",
-	       dos_errstr(werr));
+	       win_errstr(werr));
 
 	return werr;
 }

@@ -249,7 +249,7 @@ static int net_conf_list(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	werr = smbconf_get_config(conf_ctx, mem_ctx, &num_shares, &shares);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -322,7 +322,7 @@ static int net_conf_import(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	werr = smbconf_init(mem_ctx, &txt_ctx, conf_source);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error loading file '%s': %s\n", filename,
-			 dos_errstr(werr));
+			 win_errstr(werr));
 		goto done;
 	}
 
@@ -425,7 +425,7 @@ static int net_conf_drop(struct net_context *c, struct smbconf_ctx *conf_ctx,
 	werr = smbconf_drop(conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting configuration: %s\n",
-			  dos_errstr(werr));
+			  win_errstr(werr));
 		goto done;
 	}
 
@@ -462,7 +462,7 @@ static int net_conf_showshare(struct net_context *c,
 	werr = smbconf_get_share(conf_ctx, mem_ctx, sharename, &service);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
-			 dos_errstr(werr));
+			 win_errstr(werr));
 		goto done;
 	}
 
@@ -626,7 +626,7 @@ static int net_conf_addshare(struct net_context *c,
 	werr = smbconf_create_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error creating share %s: %s\n",
-			  sharename, dos_errstr(werr));
+			  sharename, win_errstr(werr));
 		goto done;
 	}
 
@@ -637,7 +637,7 @@ static int net_conf_addshare(struct net_context *c,
 	werr = smbconf_set_parameter(conf_ctx, sharename, "path", path);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
-			  "path", dos_errstr(werr));
+			  "path", win_errstr(werr));
 		goto done;
 	}
 
@@ -646,7 +646,7 @@ static int net_conf_addshare(struct net_context *c,
 					     comment);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error setting parameter %s: %s\n",
-				  "comment", dos_errstr(werr));
+				  "comment", win_errstr(werr));
 			goto done;
 		}
 	}
@@ -654,7 +654,7 @@ static int net_conf_addshare(struct net_context *c,
 	werr = smbconf_set_parameter(conf_ctx, sharename, "guest ok", guest_ok);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
-			  "'guest ok'", dos_errstr(werr));
+			  "'guest ok'", win_errstr(werr));
 		goto done;
 	}
 
@@ -662,7 +662,7 @@ static int net_conf_addshare(struct net_context *c,
 				     writeable);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
-			  "writeable", dos_errstr(werr));
+			  "writeable", win_errstr(werr));
 		goto done;
 	}
 
@@ -695,7 +695,7 @@ static int net_conf_delshare(struct net_context *c,
 	werr = smbconf_delete_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting share %s: %s\n",
-			  sharename, dos_errstr(werr));
+			  sharename, win_errstr(werr));
 		goto done;
 	}
 
@@ -735,7 +735,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		werr = smbconf_create_share(conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error creating share '%s': %s\n",
-				  service, dos_errstr(werr));
+				  service, win_errstr(werr));
 			goto done;
 		}
 	}
@@ -744,7 +744,7 @@ static int net_conf_setparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
-			  param, dos_errstr(werr));
+			  param, win_errstr(werr));
 		goto done;
 	}
 
@@ -796,7 +796,7 @@ static int net_conf_getparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	} else if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting value '%s': %s.\n",
-			  param, dos_errstr(werr));
+			  param, win_errstr(werr));
 		goto done;
 	}
 
@@ -846,7 +846,7 @@ static int net_conf_delparm(struct net_context *c, struct smbconf_ctx *conf_ctx,
 		goto done;
 	} else if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting value '%s': %s.\n",
-			  param, dos_errstr(werr));
+			  param, win_errstr(werr));
 		goto done;
 	}
 
@@ -883,7 +883,7 @@ static int net_conf_getincludes(struct net_context *c,
 	werr = smbconf_get_includes(conf_ctx, mem_ctx, service,
 				    &num_includes, &includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("error getting includes: %s\n", dos_errstr(werr));
+		d_printf("error getting includes: %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -929,7 +929,7 @@ static int net_conf_setincludes(struct net_context *c,
 
 	werr = smbconf_set_includes(conf_ctx, service, num_includes, includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("error setting includes: %s\n", dos_errstr(werr));
+		d_printf("error setting includes: %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -962,7 +962,7 @@ static int net_conf_delincludes(struct net_context *c,
 
 	werr = smbconf_delete_includes(conf_ctx, service);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("error deleting includes: %s\n", dos_errstr(werr));
+		d_printf("error deleting includes: %s\n", win_errstr(werr));
 		goto done;
 	}
 
