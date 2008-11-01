@@ -220,6 +220,11 @@ int rep_setegid(gid_t);
 int rep_chown(const char *path, uid_t uid, gid_t gid);
 #endif
 
+#ifndef HAVE_CHROOT
+#define chroot rep_chroot
+int rep_chroot(const char *dirname);
+#endif
+
 #ifndef HAVE_LINK
 #define link rep_link
 int rep_link(const char *oldpath, const char *newpath);

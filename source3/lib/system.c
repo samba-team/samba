@@ -565,24 +565,6 @@ char *sys_getwd(char *s)
 	return wd;
 }
 
-/*******************************************************************
-os/2 also doesn't have chroot
-********************************************************************/
-int sys_chroot(const char *dname)
-{
-#ifndef HAVE_CHROOT
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chroot!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chroot(dname));
-#endif
-}
-
 #if defined(HAVE_POSIX_CAPABILITIES)
 
 /**************************************************************************

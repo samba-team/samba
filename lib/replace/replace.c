@@ -667,5 +667,3 @@ char *rep_realpath(const char *path, char *resolved_path)
 	return NULL;
 }
 #endif
-
-
