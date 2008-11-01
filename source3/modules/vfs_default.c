@@ -596,7 +596,7 @@ static int vfswrap_chown(vfs_handle_struct *handle, const char *path, uid_t uid,
 	int result;
 
 	START_PROFILE(syscall_chown);
-	result = sys_chown(path, uid, gid);
+	result = chown(path, uid, gid);
 	END_PROFILE(syscall_chown);
 	return result;
 }
