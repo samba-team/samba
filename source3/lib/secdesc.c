@@ -529,7 +529,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 			/* First add the regular ACE entry. */
 			init_sec_ace(new_ace, ptrustee, ace->type,
-			     	ace->access_mask, SEC_ACE_FLAG_INHERITED_ACE);
+			     	ace->access_mask, 0);
 
 			DEBUG(5,("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x"
 				" inherited as %s:%d/0x%02x/0x%08x\n",
@@ -549,7 +549,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 		}
 
 		init_sec_ace(new_ace, ptrustee, ace->type,
-			     ace->access_mask, new_flags | SEC_ACE_FLAG_INHERITED_ACE);
+			     ace->access_mask, new_flags);
 
 		DEBUG(5, ("se_create_child_secdesc(): %s:%d/0x%02x/0x%08x "
 			  " inherited as %s:%d/0x%02x/0x%08x\n",
@@ -565,7 +565,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	/* Create child security descriptor to return */
 
 	new_dacl = make_sec_acl(ctx,
-				ACL_REVISION,
+				NT4_ACL_REVISION,
 				new_ace_list_ndx,
 				new_ace_list);
 

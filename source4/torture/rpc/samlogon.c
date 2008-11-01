@@ -1567,7 +1567,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 
 	old_user_password = user_password;
 
-	test_ChangePasswordUser3(torture_join_samr_pipe(user_ctx), mem_ctx,
+	test_ChangePasswordUser3(torture_join_samr_pipe(user_ctx), torture,
 				 TEST_USER_NAME, 16 /* > 14 */, &user_password, 
 				 NULL, 0, false);
 
