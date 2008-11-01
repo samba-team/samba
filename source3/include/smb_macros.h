@@ -34,19 +34,6 @@
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
-#ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
-
-/**
- * Free memory if the pointer and zero the pointer.
- *
- * @note You are explicitly allowed to pass NULL pointers -- they will
- * always be ignored.
- **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
-#endif
-
-
-
 #define SMB_WARN(condition, message) \
     ((condition) ? (void)0 : \
      DEBUG(0, ("WARNING: %s: %s\n", #condition, message)))
@@ -104,17 +91,6 @@
 #define VALID_STAT(st) ((st).st_nlink != 0)  
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
 #define SET_STAT_INVALID(st) ((st).st_nlink = 0)
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)>0?(a):(-(a)))
-#endif
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
    structures. We cannot define these as actual structures

@@ -67,6 +67,10 @@ size_t valgrind_strlen(const char *s);
 #endif
 #endif
 
+#ifndef ABS
+#define ABS(a) ((a)>0?(a):(-(a)))
+#endif
+
 #include "../lib/util/memory.h"
 
 /**
