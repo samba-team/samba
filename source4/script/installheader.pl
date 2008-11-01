@@ -64,6 +64,8 @@ sub install_header($$)
 
 		if (/^#include \"(.*)\"/) {
 			print OUT "#include <" . rewrite_include("$src:$lineno", $1) . ">\n";
+		} else if (/^#if _SAMBA_BUILD_ == 4/) {
+			print OUT "#if 1\n";
 		} else {
 			print OUT $_;
 		}
