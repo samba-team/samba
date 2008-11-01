@@ -327,14 +327,6 @@ do { \
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
 
-#ifndef ISDOT
-#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
-#endif /* ISDOT */
-
-#ifndef ISDOTDOT
-#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
-#endif /* ISDOTDOT */
-
 #ifndef toupper_ascii_fast
 /* Warning - this must only be called with 0 <= c < 128. IT WILL
  * GIVE GARBAGE if c > 128 or c < 0. JRA.
