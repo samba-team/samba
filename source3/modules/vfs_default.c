@@ -869,7 +869,7 @@ static int vfswrap_symlink(vfs_handle_struct *handle,  const char *oldpath, cons
 	int result;
 
 	START_PROFILE(syscall_symlink);
-	result = sys_symlink(oldpath, newpath);
+	result = symlink(oldpath, newpath);
 	END_PROFILE(syscall_symlink);
 	return result;
 }
@@ -879,7 +879,7 @@ static int vfswrap_readlink(vfs_handle_struct *handle,  const char *path, char *
 	int result;
 
 	START_PROFILE(syscall_readlink);
-	result = sys_readlink(path, buf, bufsiz);
+	result = readlink(path, buf, bufsiz);
 	END_PROFILE(syscall_readlink);
 	return result;
 }

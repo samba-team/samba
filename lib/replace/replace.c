@@ -642,3 +642,11 @@ int rep_readlink(const char *path, char *buf, size_t bufsiz)
 	return -1;
 }
 #endif
+
+#ifndef HAVE_SYMLINK
+int rep_symlink(const char *oldpath, const char *newpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif

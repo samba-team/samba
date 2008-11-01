@@ -581,20 +581,6 @@ char *sys_getwd(char *s)
 }
 
 /*******************************************************************
-system wrapper for symlink
-********************************************************************/
-
-int sys_symlink(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_SYMLINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return symlink(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
  Wrapper for lchown.
 ********************************************************************/
 

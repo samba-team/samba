@@ -230,6 +230,12 @@ int rep_link(const char *oldpath, const char *newpath);
 int rep_readlink(const char *path, char *buf, size_t bufsize);
 #endif
 
+#ifndef HAVE_SYMLINK
+#define symlink rep_symlink
+int rep_symlink(const char *oldpath, const char *newpath);
+#endif
+
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);
