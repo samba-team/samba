@@ -258,6 +258,7 @@ typedef uint32_t WERROR;
  *****************************************************************************/
 const char *win_errstr(WERROR werror);
 
+const char *get_friendly_werror_msg(WERROR werror);
 
 
 #endif

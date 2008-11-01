@@ -404,7 +404,7 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
 
 NTERR_OBJ = libsmb/nterr.o
-DOSERR_OBJ = libsmb/doserr.o
+DOSERR_OBJ = ../libcli/util/doserr.o
 ERRORMAP_OBJ = libsmb/errormap.o
 DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 

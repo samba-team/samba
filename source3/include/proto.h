@@ -2933,12 +2933,6 @@ void netlogon_creds_client_step(struct dcinfo *dc,
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 
-/* The following definitions come from libsmb/doserr.c  */
-
-const char *dos_errstr(WERROR werror);
-const char *get_friendly_werror_msg(WERROR werror);
-const char *win_errstr(WERROR werror);
-
 /* The following definitions come from libsmb/dsgetdcname.c  */
 
 void debug_dsdcinfo_flags(int lvl, uint32_t flags);
