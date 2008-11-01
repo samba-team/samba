@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _SAMBA_DEBUG_H_
+#define _SAMBA_DEBUG_H_
+
 /**
  * @file
  * @brief Debugging macros
@@ -131,3 +134,5 @@ _PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
 _PUBLIC_ void dbgtext(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 
 extern XFILE *dbf;
+
+#endif
