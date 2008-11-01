@@ -24,7 +24,7 @@ struct param_opt {
 	struct param_opt *prev, *next;
 	char *key;
 	char *value;
-	int flags;
+	int priority;
 };
 
 struct param_context {
@@ -196,6 +196,7 @@ int lp_server_signing(struct loadparm_context *);
 int lp_client_signing(struct loadparm_context *);
 const char *lp_ntp_signd_socket_directory(struct loadparm_context *);
 
+
 const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
 			      const char *type, const char *option);
@@ -327,6 +328,8 @@ void lp_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);
 void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
 				 struct smbcli_session_options *options);
+struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+
 
 /* The following definitions come from param/generic.c  */
 

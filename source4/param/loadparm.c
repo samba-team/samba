@@ -64,6 +64,7 @@
 #include "param/param.h"
 #include "param/loadparm.h"
 #include "libcli/raw/libcliraw.h"
+#include "rpc_server/common/common.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -1569,14 +1570,14 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		/* If we already have the option set, override it unless
 		   it was a command line option and the new one isn't */
 		if (strcmp(paramo->key, name) == 0) {
-			if ((paramo->flags & FLAG_CMDLINE) &&
+			if ((paramo->priority & FLAG_CMDLINE) &&
 			    !(flags & FLAG_CMDLINE)) {
 				return true;
 			}
 
 			talloc_free(paramo->value);
 			paramo->value = talloc_strdup(paramo, pszParmValue);
-			paramo->flags = flags;
+			paramo->priority = flags;
 			free(name);
 			return true;
 		}
@@ -1587,7 +1588,7 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 		smb_panic("OOM");
 	paramo->key = talloc_strdup(paramo, name);
 	paramo->value = talloc_strdup(paramo, pszParmValue);
-	paramo->flags = flags;
+	paramo->priority = flags;
 	if (service == NULL) {
 		DLIST_ADD(lp_ctx->globals->param_opt, paramo);
 	} else {
@@ -2219,7 +2220,7 @@ static int lp_destructor(struct loadparm_context *lp_ctx)
 		struct param_opt *next;
 		for (data = lp_ctx->globals->param_opt; data; data=next) {
 			next = data->next;
-			if (data->flags & FLAG_CMDLINE) continue;
+			if (data->priority & FLAG_CMDLINE) continue;
 			DLIST_REMOVE(lp_ctx->globals->param_opt, data);
 			talloc_free(data);
 		}
@@ -2659,3 +2660,14 @@ _PUBLIC_ char *lp_tls_dhpfile(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_c
 	return private_path(mem_ctx, lp_ctx, lp_ctx->globals->tls_dhpfile);
 }
 
+_PUBLIC_ struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	struct dcerpc_server_info *ret = talloc_zero(mem_ctx, struct dcerpc_server_info);
+
+	ret->domain_name = talloc_reference(mem_ctx, lp_workgroup(lp_ctx));
+	ret->version_major = lp_parm_int(lp_ctx, NULL, "server_info", "version_major", 5);
+	ret->version_minor = lp_parm_int(lp_ctx, NULL, "server_info", "version_minor", 2);
+	ret->version_build = lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
+
+	return ret;
+}
