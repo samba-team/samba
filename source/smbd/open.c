@@ -1369,16 +1369,53 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	/* This is a nasty hack - must fix... JRA. */
-	if (access_mask == MAXIMUM_ALLOWED_ACCESS) {
-		open_access_mask = access_mask = FILE_GENERIC_ALL;
-	}
-
 	/*
 	 * Convert GENERIC bits to specific bits.
 	 */
 
 	se_map_generic(&access_mask, &file_generic_mapping);
+
+	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
+	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
+		if (file_existed) {
+			struct security_descriptor *sd;
+			uint32_t access_granted = 0;
+
+			status = SMB_VFS_GET_NT_ACL(conn, fname,
+					(OWNER_SECURITY_INFORMATION |
+					GROUP_SECURITY_INFORMATION |
+					DACL_SECURITY_INFORMATION),&sd);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("open_file_ntcreate: Could not get acl "
+					"on file %s: %s\n",
+					fname,
+					nt_errstr(status)));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			status = se_access_check(sd, conn->server_info->ptok,
+					access_mask, &access_granted);
+
+			TALLOC_FREE(sd);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("open_file_ntcreate: Access denied on "
+					"file %s: when calculating maximum access\n",
+					fname));
+				return NT_STATUS_ACCESS_DENIED;
+			}
+
+			access_mask = access_granted;
+			/*
+			 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
+			 */
+			access_mask |= FILE_READ_ATTRIBUTES;
+		} else {
+			access_mask = FILE_GENERIC_ALL;
+		}
+	}
+
 	open_access_mask = access_mask;
 
 	if ((flags2 & O_TRUNC) || (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
