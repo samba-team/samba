@@ -375,6 +375,7 @@ void init_smb_request(struct smb_request *req,
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
+	req->buflen = smb_buflen(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(req->tid);
@@ -388,10 +389,10 @@ void init_smb_request(struct smb_request *req,
 		exit_server_cleanly("Invalid SMB request");
 	}
 	/* Ensure bcc is correct. */
-	if (((uint8 *)smb_buf(inbuf)) + smb_buflen(inbuf) > inbuf + req_size) {
+	if (((uint8 *)smb_buf(inbuf)) + req->buflen > inbuf + req_size) {
 		DEBUG(0,("init_smb_request: invalid bcc number %u "
 			"(wct = %u, size %u)\n",
-			(unsigned int)smb_buflen(inbuf),
+			(unsigned int)req->buflen,
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
 		exit_server_cleanly("Invalid SMB request");

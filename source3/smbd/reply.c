@@ -523,7 +523,7 @@ void reply_tcon(struct smb_request *req)
 
 	START_PROFILE(SMBtcon);
 
-	if (smb_buflen(req->inbuf) < 4) {
+	if (req->buflen < 4) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBtcon);
 		return;
@@ -614,7 +614,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		conn = NULL;
 	}
 
-	if ((passlen > MAX_PASS_LEN) || (passlen >= smb_buflen(req->inbuf))) {
+	if ((passlen > MAX_PASS_LEN) || (passlen >= req->buflen)) {
 		reply_doserror(req, ERRDOS, ERRbuftoosmall);
 		END_PROFILE(SMBtconX);
 		return;
@@ -4562,7 +4562,6 @@ void reply_echo(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	int smb_reverb;
 	int seq_num;
-	unsigned int data_len = smb_buflen(req->inbuf);
 
 	START_PROFILE(SMBecho);
 
@@ -4572,20 +4571,13 @@ void reply_echo(struct smb_request *req)
 		return;
 	}
 
-	if (data_len > BUFFER_SIZE) {
-		DEBUG(0,("reply_echo: data_len too large.\n"));
-		reply_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
-		END_PROFILE(SMBecho);
-		return;
-	}
-
 	smb_reverb = SVAL(req->inbuf,smb_vwv0);
 
-	reply_outbuf(req, 1, data_len);
+	reply_outbuf(req, 1, req->buflen);
 
 	/* copy any incoming data back out */
-	if (data_len > 0) {
-		memcpy(smb_buf(req->outbuf),smb_buf(req->inbuf),data_len);
+	if (req->buflen > 0) {
+		memcpy(smb_buf(req->outbuf), smb_buf(req->inbuf), req->buflen);
 	}
 
 	if (smb_reverb > 100) {
@@ -4835,7 +4827,7 @@ void reply_printwrite(struct smb_request *req)
 
 	numtowrite = SVAL(smb_buf(req->inbuf),1);
 
-	if (smb_buflen(req->inbuf) < numtowrite + 3) {
+	if (req->buflen < numtowrite + 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBsplwr);
 		return;
@@ -6746,7 +6738,7 @@ void reply_lockingX(struct smb_request *req)
 
 	release_level_2_oplocks_on_change(fsp);
 
-	if (smb_buflen(req->inbuf) <
+	if (req->buflen <
 	    (num_ulocks + num_locks) * (large_file_format ? 20 : 10)) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBlockingX);

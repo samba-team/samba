@@ -1446,8 +1446,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		 * don't get client caps. */
 		remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
 
-		if ((passlen1 > MAX_PASS_LEN)
-		    || (passlen1 > smb_buflen(req->inbuf))) {
+		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > req->buflen)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
 			END_PROFILE(SMBsesssetupX);
