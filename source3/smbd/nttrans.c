@@ -308,7 +308,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	TALLOC_CTX *ctx = talloc_tos();
 
 	srvstr_pull_buf_talloc(ctx, (char *)req->inbuf, req->flags2, &fname,
-			smb_buf(req->inbuf), STR_TERMINATE);
+			       req->buf, STR_TERMINATE);
 
 	if (!fname) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
@@ -425,7 +425,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 #endif
 
 	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			smb_buf(req->inbuf), 0, STR_TERMINATE, &status);
+			(const char *)req->buf, 0, STR_TERMINATE, &status);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -1228,7 +1228,7 @@ void reply_ntrename(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	char *oldname = NULL;
 	char *newname = NULL;
-	char *p;
+	const char *p;
 	NTSTATUS status;
 	bool src_has_wcard = False;
 	bool dest_has_wcard = False;
@@ -1247,7 +1247,7 @@ void reply_ntrename(struct smb_request *req)
 	attrs = SVAL(req->inbuf,smb_vwv0);
 	rename_type = SVAL(req->inbuf,smb_vwv1);
 
-	p = smb_buf(req->inbuf) + 1;
+	p = (const char *)req->buf + 1;
 	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &oldname, p,
 				   0, STR_TERMINATE, &status,
 				   &src_has_wcard);

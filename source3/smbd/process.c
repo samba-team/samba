@@ -376,6 +376,7 @@ void init_smb_request(struct smb_request *req,
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
 	req->buflen = smb_buflen(inbuf);
+	req->buf    = (const uint8_t *)smb_buf(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(req->tid);

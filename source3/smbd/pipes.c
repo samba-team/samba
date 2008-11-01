@@ -49,7 +49,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 	/* XXXX we need to handle passed times, sattr and flags */
 	srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &pipe_name,
-			smb_buf(req->inbuf), STR_TERMINATE);
+			       req->buf, STR_TERMINATE);
 	if (!pipe_name) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
 				ERRDOS, ERRbadpipe);
@@ -122,7 +122,7 @@ void reply_pipe_write(struct smb_request *req)
 	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
 	size_t numtowrite = SVAL(req->inbuf,smb_vwv1);
 	ssize_t nwritten;
-	uint8_t *data;
+	const uint8_t *data;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -134,7 +134,7 @@ void reply_pipe_write(struct smb_request *req)
 		return;
 	}
 
-	data = (uint8_t *)smb_buf(req->inbuf) + 3;
+	data = req->buf + 3;
 
 	if (numtowrite == 0) {
 		nwritten = 0;

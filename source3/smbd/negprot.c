@@ -510,8 +510,7 @@ void reply_negprot(struct smb_request *req)
 	size_t size = smb_len(req->inbuf) + 4;
 	int choice= -1;
 	int protocol;
-	char *p;
-	int bcc = SVAL(smb_buf(req->inbuf),-2);
+	const char *p;
 	int arch = ARCH_ALL;
 	int num_cliprotos;
 	char **cliprotos;
@@ -535,12 +534,12 @@ void reply_negprot(struct smb_request *req)
 		return;
 	}
 
-	p = smb_buf(req->inbuf) + 1;
+	p = (const char *)req->buf + 1;
 
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (p < (smb_buf(req->inbuf) + bcc)) {
+	while (smb_bufrem(req->inbuf, p) > 0) {
 
 		char **tmp;
 

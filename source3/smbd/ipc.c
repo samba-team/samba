@@ -544,7 +544,7 @@ void reply_trans(struct smb_request *req)
 	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
 
 	srvstr_pull_buf_talloc(state, req->inbuf, req->flags2, &state->name,
-			smb_buf(req->inbuf), STR_TERMINATE);
+			       req->buf, STR_TERMINATE);
 
 	if ((dscnt > state->total_data) || (pscnt > state->total_param) ||
 			!state->name)

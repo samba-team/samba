@@ -1161,7 +1161,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
 
 static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 {
-	uint8 *p;
+	const uint8 *p;
 	DATA_BLOB blob1;
 	size_t bufrem;
 	fstring native_os, native_lanman, primary_domain;
@@ -1185,7 +1185,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	}
 
-	p = (uint8 *)smb_buf(req->inbuf);
+	p = req->buf;
 
 	if (data_blob_len == 0) {
 		/* an invalid request */
@@ -1454,16 +1454,15 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		if (doencrypt) {
-			lm_resp = data_blob(smb_buf(req->inbuf), passlen1);
+			lm_resp = data_blob(req->buf, passlen1);
 		} else {
-			plaintext_password = data_blob(smb_buf(req->inbuf),
-						       passlen1+1);
+			plaintext_password = data_blob(req->buf, passlen1+1);
 			/* Ensure null termination */
 			plaintext_password.data[passlen1] = 0;
 		}
 
 		srvstr_pull_buf(req->inbuf, req->flags2, user,
-				smb_buf(req->inbuf)+passlen1, sizeof(user),
+				req->buf + passlen1, sizeof(user),
 				STR_TERMINATE);
 		*domain = 0;
 
@@ -1471,8 +1470,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		uint16 passlen1 = SVAL(req->inbuf,smb_vwv7);
 		uint16 passlen2 = SVAL(req->inbuf,smb_vwv8);
 		enum remote_arch_types ra_type = get_remote_arch();
-		char *p = smb_buf(req->inbuf);
-		char *save_p = smb_buf(req->inbuf);
+		const uint8_t *p = req->buf;
+		const uint8_t *save_p = req->buf;
 		uint16 byte_count;
 
 
@@ -1557,7 +1556,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							req->inbuf,
 							req->flags2,
 							&pass,
-							smb_buf(req->inbuf),
+							req->buf,
 							passlen1,
 							STR_TERMINATE|STR_ASCII);
 			} else {
@@ -1565,7 +1564,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 							req->inbuf,
 							req->flags2,
 							&pass,
-							smb_buf(req->inbuf),
+							req->buf,
 							unic ? passlen2 : passlen1,
 							STR_TERMINATE);
 			}

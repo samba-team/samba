@@ -632,6 +632,7 @@ struct smb_request {
 	uint16 tid;
 	uint8  wct;
 	uint16_t buflen;
+	const uint8_t *buf;
 	const uint8 *inbuf;
 	uint8 *outbuf;
 	size_t unread_bytes;
