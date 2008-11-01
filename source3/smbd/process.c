@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern int smb_echo_count;
-
 /*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
