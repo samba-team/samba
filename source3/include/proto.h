@@ -6978,7 +6978,7 @@ void init_rpc_pipe_hnd(void);
 bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 		 const char *name, struct files_struct **pfsp);
-NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		  ssize_t *nwritten);
 NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding);

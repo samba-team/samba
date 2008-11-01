@@ -1046,7 +1046,7 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		  ssize_t *nwritten)
 {
 	if (!fsp_is_np(fsp)) {
