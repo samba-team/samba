@@ -40,19 +40,19 @@ static bool smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
 		/* No password set - always false ! */
-		return False;
+		return false;
 	}
 	
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
-		return False;
+		return false;
 	}
 	
 	if (nt_response->length != 24) {
 		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%lu)\n", 
 			  (unsigned long)nt_response->length));
-		return False;
+		return false;
 	}
 
 	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
@@ -97,13 +97,13 @@ static bool smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
 		/* No password set - always False */
-		return False;
+		return false;
 	}
 
 	if (sec_blob->length != 8) {
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect challenge size (%lu)\n", 
 			  (unsigned long)sec_blob->length));
-		return False;
+		return false;
 	}
 	
 	if (ntv2_response->length < 24) {
@@ -112,7 +112,7 @@ static bool smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
 		   for LMv2, let alone NTLMv2. */
 		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%lu)\n", 
 			  (unsigned long)ntv2_response->length));
-		return False;
+		return false;
 	}
 
 	client_key_data = data_blob(ntv2_response->data+16, ntv2_response->length-16);
@@ -178,7 +178,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			     const char *username, 
 			     const char *client_username, 
 			     const char *client_domain,
-			     const uint8 *lm_pw, const uint8 *nt_pw, 
+			     const uint8_t *lm_pw, const uint8_t *nt_pw, 
 			     DATA_BLOB *user_sess_key, 
 			     DATA_BLOB *lm_sess_key)
 {
@@ -302,7 +302,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 						  nt_pw, challenge, 
 						  client_username, 
 						  client_domain,
-						  True,
+						  true,
 						  user_sess_key)) {
 				return NT_STATUS_OK;
 			}
@@ -333,7 +333,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				   so use it only if we otherwise allow LM authentication */
 
 				if (lp_lanman_auth() && lm_pw) {
-					uint8 first_8_lm_hash[16];
+					uint8_t first_8_lm_hash[16];
 					memcpy(first_8_lm_hash, lm_pw, 8);
 					memset(first_8_lm_hash + 8, '\0', 8);
 					if (lm_sess_key) {
@@ -376,7 +376,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		if (smb_pwd_check_ntlmv1(lm_response, 
 					 lm_pw, challenge,
 					 NULL)) {
-			uint8 first_8_lm_hash[16];
+			uint8_t first_8_lm_hash[16];
 			memcpy(first_8_lm_hash, lm_pw, 8);
 			memset(first_8_lm_hash + 8, '\0', 8);
 			if (user_sess_key) {
@@ -413,7 +413,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				  nt_pw, challenge, 
 				  client_username,
 				  client_domain,
-				  True,
+				  true,
 				  NULL)) {
 		return NT_STATUS_OK;
 	}
@@ -423,7 +423,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				  nt_pw, challenge, 
 				  client_username,
 				  "",
-				  False,
+				  false,
 				  NULL)) {
 		return NT_STATUS_OK;
 	}
@@ -441,7 +441,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   allow LM authentication */
 
 			if (lp_lanman_auth() && lm_pw) {
-				uint8 first_8_lm_hash[16];
+				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, lm_pw, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
 				if (user_sess_key) {
