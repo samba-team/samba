@@ -52,6 +52,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "param/param.h"
 #include "librpc/rpc/dcerpc.h"
+#include "libcli/raw/raw_proto.h"
 
 /* the default pager to use for the client "more" command. Users can
  *    override this with the PAGER environment variable */

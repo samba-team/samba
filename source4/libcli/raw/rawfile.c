@@ -33,7 +33,7 @@
 /**
  Return a string representing a CIFS attribute for a file.
 **/
-_PUBLIC_ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
+char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 {
 	int i, len;
 	const struct {

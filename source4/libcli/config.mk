@@ -177,6 +177,6 @@ LIBCLI_RAW_OBJ_FILES = $(addprefix $(libclisrcdir)/raw/, rawfile.o smb_signing.o
 					  rawioctl.o rawacl.o rawdate.o rawlpq.o rawshadow.o)
 
 
-$(eval $(call proto_header_template,$(libclisrcdir)/raw/raw_proto.h,$(LIBCLI_RAW_OBJ_FILES:.o=.c)))
+$(eval $(call proto_header_template,$(libclisrcdir)/raw/raw_proto.h,$(LIBCLI_RAW_OBJ_FILES)))
 
 mkinclude smb2/config.mk
