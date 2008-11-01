@@ -61,8 +61,9 @@ extern const char *panic_action;
 #endif
 
 #if _SAMBA_BUILD_ == 4
-#if defined(VALGRIND)
+#ifdef VALGRIND
 #define strlen(x) valgrind_strlen(x)
+size_t valgrind_strlen(const char *s);
 #endif
 #endif
 
@@ -269,7 +270,6 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
  Unescape a URL encoded string, in place.
 **/
 _PUBLIC_ void rfc1738_unescape(char *buf);
-size_t valgrind_strlen(const char *s);
 
 /**
   format a string into length-prefixed dotted domain format, as used in NBT
