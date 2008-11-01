@@ -671,19 +671,20 @@ _PUBLIC_ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
   this triggers on a debug level of >= 10
 */
-_PUBLIC_ void dcerpc_log_packet(const struct ndr_interface_table *ndr,
+_PUBLIC_ void dcerpc_log_packet(const char *lockdir,
+								const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags, 
 		       DATA_BLOB *pkt)
 {
 	const int num_examples = 20;
 	int i;
 
-	if (DEBUGLEVEL < 10) return;
+	if (lockdir == NULL) return;
 
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
 		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
-			 lp_lockdir(global_loadparm), ndr->name, opnum, i,
+			 lockdir, ndr->name, opnum, i,
 			 (flags&NDR_IN)?"in":"out");
 		if (name == NULL) {
 			return;

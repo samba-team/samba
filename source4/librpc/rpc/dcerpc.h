@@ -61,6 +61,9 @@ struct dcerpc_connection {
 	struct event_context *event_ctx;
 	struct smb_iconv_convenience *iconv_convenience;
 
+	/** Directory in which to save ndrdump-parseable files */
+	const char *packet_log_dir;
+
 	bool dead;
 	bool free_skipped;
 
@@ -109,10 +112,10 @@ struct dcerpc_pipe {
 	struct dcerpc_connection *conn;
 	struct dcerpc_binding *binding;
 
-	/* the last fault code from a DCERPC fault */
+	/** the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
 
-	/* timeout for individual rpc requests, in seconds */
+	/** timeout for individual rpc requests, in seconds */
 	uint32_t request_timeout;
 };
 
@@ -345,9 +348,10 @@ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c,
 
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   struct dcerpc_binding *b);
-void dcerpc_log_packet(const struct ndr_interface_table *ndr,
-		       uint32_t opnum, uint32_t flags, 
-		       DATA_BLOB *pkt);
+void dcerpc_log_packet(const char *lockdir, 
+					   const struct ndr_interface_table *ndr,
+					   uint32_t opnum, uint32_t flags, 
+					   DATA_BLOB *pkt);
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
 
 NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);

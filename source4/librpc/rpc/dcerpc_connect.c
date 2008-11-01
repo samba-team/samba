@@ -744,6 +744,9 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	s->pipe = dcerpc_pipe_init(c, ev, lp_iconv_convenience(lp_ctx));
 	if (composite_nomem(s->pipe, c)) return c;
 
+	if (DEBUGLEVEL >= 10)
+		s->pipe->conn->packet_log_dir = lp_lockdir(lp_ctx);
+
 	/* store parameters in state structure */
 	s->binding      = binding;
 	s->table        = table;

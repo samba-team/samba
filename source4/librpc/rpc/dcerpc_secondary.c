@@ -75,6 +75,9 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx, s->pipe->conn->iconv_convenience);
 	if (composite_nomem(s->pipe2, c)) return c;
 
+	if (DEBUGLEVEL >= 10)
+		s->pipe2->conn->packet_log_dir = s->pipe->conn->packet_log_dir;
+
 	/* open second dcerpc pipe using the same transport as for primary pipe */
 	switch (s->pipe->conn->transport.transport) {
 	case NCACN_NP:
