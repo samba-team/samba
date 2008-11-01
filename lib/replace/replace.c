@@ -627,3 +627,11 @@ int rep_chown(const char *fname, uid_t uid, gid_t gid)
 }
 #endif
 
+#ifndef HAVE_LINK
+int rep_link(const char *oldpath, const char *newpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+

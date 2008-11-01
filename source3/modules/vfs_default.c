@@ -889,7 +889,7 @@ static int vfswrap_link(vfs_handle_struct *handle,  const char *oldpath, const c
 	int result;
 
 	START_PROFILE(syscall_link);
-	result = sys_link(oldpath, newpath);
+	result = link(oldpath, newpath);
 	END_PROFILE(syscall_link);
 	return result;
 }

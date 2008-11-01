@@ -609,20 +609,6 @@ int sys_readlink(const char *path, char *buf, size_t bufsiz)
 }
 
 /*******************************************************************
-system wrapper for link
-********************************************************************/
-
-int sys_link(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_LINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return link(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
  Wrapper for lchown.
 ********************************************************************/
 

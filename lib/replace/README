@@ -65,6 +65,7 @@ getifaddrs
 freeifaddrs
 utime
 utimes
+link
 
 Types:
 bool
