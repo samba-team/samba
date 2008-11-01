@@ -572,6 +572,7 @@ extern void *cmdline_lp_ctx;
 struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 
 /* Lists, trees, caching, database... */
+#include "../lib/util/util.h"
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"
 #include "../lib/util/attr.h"
@@ -619,6 +620,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "msdfs.h"
 #include "rap.h"
 #include "../lib/crypto/md5.h"
+#include "../lib/crypto/md4.h"
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/crc32.h"
 #include "../lib/crypto/hmacmd5.h"

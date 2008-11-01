@@ -40,8 +40,10 @@
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 #endif
-#include "../lib/util/util.h"
+#include "../lib/util/xfile.h"
+#include "../lib/util/attr.h"
 #include "../lib/util/debug.h"
+#include "../lib/util/util.h"
 
 #include "libcli/util/error.h"
 

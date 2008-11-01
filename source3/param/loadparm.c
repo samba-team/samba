@@ -5418,7 +5418,6 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 
 static int map_parameter(const char *pszParmName);
 static int map_parameter_canonical(const char *pszParmName, bool *inverse);
-static bool set_boolean(bool *pb, const char *pszParmValue);
 static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    struct service *pserviceDest);
@@ -5532,7 +5531,7 @@ static bool lp_bool(const char *s)
 		return False;
 	}
 	
-	if (!set_boolean(&ret,s)) {
+	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
 		return False;
 	}
@@ -6315,48 +6314,12 @@ void show_parameter_list(void)
 }
 
 /***************************************************************************
- Set a boolean variable from the text value stored in the passed string.
- Returns True in success, False if the passed string does not correctly 
- represent a boolean.
-***************************************************************************/
-
-static bool set_boolean(bool *pb, const char *pszParmValue)
-{
-	bool bRetval;
-	bool value;
-
-	bRetval = True;
-	value = False;
-	if (strwicmp(pszParmValue, "yes") == 0 ||
-	    strwicmp(pszParmValue, "true") == 0 ||
-	    strwicmp(pszParmValue, "1") == 0)
-		value = True;
-	else if (strwicmp(pszParmValue, "no") == 0 ||
-		    strwicmp(pszParmValue, "False") == 0 ||
-		    strwicmp(pszParmValue, "0") == 0)
-		value = False;
-	else {
-		DEBUG(2,
-		      ("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
-		       pszParmValue));
-		bRetval = False;
-	}
-
-	if ((pb != NULL) && (bRetval != False)) {
-		*pb = value;
-	}
-
-	return (bRetval);
-}
-
-
-/***************************************************************************
  Check if a given string correctly represents a boolean value.
 ***************************************************************************/
 
 bool lp_string_is_valid_boolean(const char *parm_value)
 {
-	return set_boolean(NULL, parm_value);
+	return set_boolean(parm_value, NULL);
 }
 
 /***************************************************************************
@@ -6381,7 +6344,7 @@ bool lp_invert_boolean(const char *str, const char **inverse_str)
 {
 	bool val;
 
-	if (!set_boolean(&val, str)) {
+	if (!set_boolean(str, &val)) {
 		return False;
 	}
 
@@ -6399,7 +6362,7 @@ bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 {
 	bool val;
 
-	if (!set_boolean(&val, str)) {
+	if (!set_boolean(str, &val)) {
 		return False;
 	}
 
