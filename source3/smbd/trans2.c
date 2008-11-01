@@ -3846,7 +3846,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	files_struct *fsp = NULL;
 	struct file_id fileid;
 	struct ea_list *ea_list = NULL;
-	uint32 access_mask = 0x12019F; /* Default - GENERIC_EXECUTE mapping from Windows */
 	char *lock_data = NULL;
 	bool ms_dfs_link = false;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -3939,7 +3938,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			pos = fsp->fh->position_information;
 			fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 			get_file_infos(fileid, &delete_pending, &write_time_ts);
-			access_mask = fsp->access_mask;
 		}
 
 	} else {
@@ -4403,7 +4401,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 		case SMB_FILE_ACCESS_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_ACCESS_INFORMATION\n"));
-			SIVAL(pdata,0,access_mask);
+			if (fsp) {
+				SIVAL(pdata,0,fsp->access_mask);
+			} else {
+				/* GENERIC_EXECUTE mapping from Windows */
+				SIVAL(pdata,0,0x12019F);
+			}
 			data_size = 4;
 			break;
 
