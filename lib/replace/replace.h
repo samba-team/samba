@@ -232,7 +232,7 @@ int rep_link(const char *oldpath, const char *newpath);
 
 #ifndef HAVE_READLINK
 #define readlink rep_readlink
-int rep_readlink(const char *path, char *buf, size_t bufsize);
+ssize_t rep_readlink(const char *path, char *buf, size_t bufsize);
 #endif
 
 #ifndef HAVE_SYMLINK
