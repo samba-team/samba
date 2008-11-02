@@ -13,7 +13,6 @@ kcm_SOURCES =		\
 	client.c	\
 	config.c	\
 	connect.c	\
-	cursor.c	\
 	events.c	\
 	glue.c		\
 	headers.h	\
