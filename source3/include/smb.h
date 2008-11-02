@@ -625,6 +625,7 @@ struct current_user {
 };
 
 struct smb_request {
+	uint8_t cmd;
 	uint16 flags2;
 	uint16 smbpid;
 	uint16 mid;

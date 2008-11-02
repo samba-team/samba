@@ -2183,7 +2183,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask, directory, dirtype, numentries ) );
 
 	/*
@@ -2481,7 +2481,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask, directory, dirtype, numentries ) );
 
 	/* Check if we can close the dirptr */
@@ -3118,7 +3118,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n",
-		    smb_fn_name(CVAL(req->inbuf,smb_com)), info_level) );
+		    smb_fn_name(req->cmd), info_level) );
 
 	return;
 }

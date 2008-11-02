@@ -190,7 +190,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		return False;
 	}
 
-	blr->com_type = CVAL(req->inbuf,smb_com);
+	blr->com_type = req->cmd;
 	blr->fsp = fsp;
 	if (lock_timeout == -1) {
 		blr->expire_time.tv_sec = 0;

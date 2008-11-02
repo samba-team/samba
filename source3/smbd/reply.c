@@ -1227,13 +1227,13 @@ void reply_search(struct smb_request *req)
 	}
 
 	if (lp_posix_pathnames()) {
-		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
+		reply_unknown_new(req, req->cmd);
 		END_PROFILE(SMBsearch);
 		return;
 	}
 
 	/* If we were called as SMBffirst then we must expect close. */
-	if(CVAL(req->inbuf,smb_com) == SMBffirst) {
+	if(req->cmd == SMBffirst) {
 		expect_close = True;
 	}
 
@@ -1443,7 +1443,7 @@ void reply_search(struct smb_request *req)
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
-	if(dptr_num >= 0 && CVAL(req->inbuf,smb_com) == SMBfunique) {
+	if(dptr_num >= 0 && req->cmd == SMBfunique) {
 		dptr_close(&dptr_num);
 	}
 
@@ -1476,7 +1476,7 @@ void reply_search(struct smb_request *req)
 	}
 
 	DEBUG(4,("%s mask=%s path=%s dtype=%d nument=%u of %u\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask,
 		directory ? directory : "./",
 		dirtype,
@@ -1505,7 +1505,7 @@ void reply_fclose(struct smb_request *req)
 	START_PROFILE(SMBfclose);
 
 	if (lp_posix_pathnames()) {
-		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
+		reply_unknown_new(req, req->cmd);
 		END_PROFILE(SMBfclose);
 		return;
 	}
@@ -1891,7 +1891,6 @@ void reply_mknew(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	char *fname = NULL;
-	int com;
 	uint32 fattr = 0;
 	struct timespec ts[2];
 	files_struct *fsp;
@@ -1914,7 +1913,6 @@ void reply_mknew(struct smb_request *req)
 
 	fattr = SVAL(req->vwv+0, 0);
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
-	com = SVAL(req->inbuf,smb_com);
 
 	ts[1] = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+1));
 			/* mtime. */
@@ -1932,7 +1930,7 @@ void reply_mknew(struct smb_request *req)
 			"please report this\n", fname));
 	}
 
-	if(com == SMBmknew) {
+	if(req->cmd == SMBmknew) {
 		/* We should fail if file exists. */
 		create_disposition = FILE_CREATE;
 	} else {

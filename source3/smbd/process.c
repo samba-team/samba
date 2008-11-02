@@ -369,6 +369,7 @@ void init_smb_request(struct smb_request *req,
 			(unsigned int)req_size ));
 		exit_server_cleanly("Invalid SMB request");
 	}
+	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
 	req->mid    = SVAL(inbuf, smb_mid);
@@ -1451,8 +1452,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			/* encrypted required from now on. */
 			conn->encrypt_level = Required;
 		} else if (ENCRYPTION_REQUIRED(conn)) {
-			uint8 com = CVAL(req->inbuf,smb_com);
-			if (com != SMBtrans2 && com != SMBtranss2) {
+			if (req->cmd != SMBtrans2 && req->cmd != SMBtranss2) {
 				exit_server_cleanly("encryption required "
 					"on connection");
 				return conn;
@@ -1487,7 +1487,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool encrypted)
 {
-	uint8 type = CVAL(inbuf,smb_com);
 	connection_struct *conn;
 	struct smb_request *req;
 
@@ -1498,7 +1497,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	}
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
 
-	conn = switch_message(type, req, size);
+	conn = switch_message(req->cmd, req, size);
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
