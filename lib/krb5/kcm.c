@@ -51,9 +51,16 @@ typedef struct krb5_kcmcache {
     char *door_path;
 } krb5_kcmcache;
 
+typedef struct krb5_kcm_cursor {
+    unsigned long offset;
+    unsigned long length;
+    uuid_t *uuids;
+} *krb5_kcm_cursor;
+
+
 #define KCMCACHE(X)	((krb5_kcmcache *)(X)->data.data)
 #define CACHENAME(X)	(KCMCACHE(X)->name)
-#define KCMCURSOR(C)	(*(uint32_t *)(C))
+#define KCMCURSOR(C)	((krb5_kcm_cursor)(C))
 
 static krb5_error_code
 try_door(krb5_context context,
@@ -610,10 +617,10 @@ kcm_get_first (krb5_context context,
 	       krb5_cc_cursor *cursor)
 {
     krb5_error_code ret;
+    krb5_kcm_cursor c;
     krb5_kcmcache *k = KCMCACHE(id);
     krb5_storage *request, *response;
     krb5_data response_data;
-    int32_t tmp;
 
     ret = kcm_storage_request(context, KCM_OP_GET_FIRST, &request);
     if (ret)
@@ -626,27 +633,50 @@ kcm_get_first (krb5_context context,
     }
 
     ret = kcm_call(context, k, request, &response, &response_data);
-    if (ret) {
-	krb5_storage_free(request);
+    krb5_storage_free(request);
+    if (ret)
+	return ret;
+
+    c = calloc(1, sizeof(*c));
+    if (c == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, 
+			       N_("malloc: out of memory", ""));
 	return ret;
     }
 
-    ret = krb5_ret_int32(response, &tmp);
-    if (ret || tmp < 0)
-	ret = KRB5_CC_IO;
+    do {
+	ssize_t sret;
+	uuid_t uuid;
+	void *ptr;
 
-    krb5_storage_free(request);
+	sret = krb5_storage_read(response, &uuid, sizeof(uuid));
+	if (sret != sizeof(uuid)) {
+	    ret = EINVAL;
+	    break;
+	}
+
+	ptr = realloc(c->uuids, sizeof(c->uuids[0]) * (c->length + 1));
+	if (ptr == NULL) {
+	    free(c->uuids);
+	    free(c);
+	    krb5_clear_error_message(context);
+	    return ENOMEM;
+	}
+	c->uuids = ptr;
+
+	memcpy(&c->uuids[c->length], &uuid, sizeof(uuid));
+	c->length += 1;
+
+    } while (ret == 0);
+
     krb5_storage_free(response);
     krb5_data_free(&response_data);
 
     if (ret)
 	return ret;
 
-    *cursor = malloc(sizeof(tmp));
-    if (*cursor == NULL)
-	return KRB5_CC_NOMEM;
-
-    KCMCURSOR(*cursor) = tmp;
+    *cursor = c;
 
     return 0;
 }
@@ -667,8 +697,14 @@ kcm_get_next (krb5_context context,
 {
     krb5_error_code ret;
     krb5_kcmcache *k = KCMCACHE(id);
+    krb5_kcm_cursor c = KCMCURSOR(*cursor);
     krb5_storage *request, *response;
     krb5_data response_data;
+
+ again:
+
+    if (c->offset >= c->length)
+	return KRB5_CC_END;
 
     ret = kcm_storage_request(context, KCM_OP_GET_NEXT, &request);
     if (ret)
@@ -680,23 +716,25 @@ kcm_get_next (krb5_context context,
 	return ret;
     }
 
-    ret = krb5_store_int32(request, KCMCURSOR(*cursor));
+    ret = krb5_storage_write(request, 
+			     &c->uuids[c->offset],
+			     sizeof(c->uuids[c->offset]));
+    c->offset++;
     if (ret) {
 	krb5_storage_free(request);
 	return ret;
     }
 
     ret = kcm_call(context, k, request, &response, &response_data);
-    if (ret) {
-	krb5_storage_free(request);
-	return ret;
+    krb5_storage_free(request);
+    if (ret == KRB5_CC_END) {
+	goto again;
     }
 
     ret = krb5_ret_creds(response, creds);
     if (ret)
 	ret = KRB5_CC_IO;
 
-    krb5_storage_free(request);
     krb5_storage_free(response);
     krb5_data_free(&response_data);
 
@@ -718,6 +756,7 @@ kcm_end_get (krb5_context context,
 {
     krb5_error_code ret;
     krb5_kcmcache *k = KCMCACHE(id);
+    krb5_kcm_cursor c = KCMCURSOR(*cursor);
     krb5_storage *request;
 
     ret = kcm_storage_request(context, KCM_OP_END_GET, &request);
@@ -730,22 +769,14 @@ kcm_end_get (krb5_context context,
 	return ret;
     }
 
-    ret = krb5_store_int32(request, KCMCURSOR(*cursor));
-    if (ret) {
-	krb5_storage_free(request);
-	return ret;
-    }
-
     ret = kcm_call(context, k, request, NULL, NULL);
-    if (ret) {
-	krb5_storage_free(request);
-	return ret;
-    }
-
     krb5_storage_free(request);
+    if (ret)
+	return ret;
 
-    KCMCURSOR(*cursor) = 0;
-    free(*cursor);
+    free(c->uuids);
+    free(c);
+
     *cursor = NULL;
 
     return ret;
