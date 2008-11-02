@@ -164,3 +164,82 @@ pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
+
+SELFTEST4 = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
+    --builddir=$(builddir) --srcdir=$(samba4srcdir) \
+    --expected-failures=$(samba4srcdir)/selftest/knownfail \
+	--format=$(SELFTEST_FORMAT) \
+    --exclude=$(samba4srcdir)/selftest/skip --testlist="$(samba4srcdir)/selftest/tests.sh|" \
+    $(TEST4_OPTIONS) 
+
+SELFTEST4_NOSLOW_OPTS = --exclude=$(samba4srcdir)/selftest/slow
+SELFTEST4_QUICK_OPTS = $(SELFTEST4_NOSLOW_OPTS) --quick --include=$(samba4srcdir)/selftest/quick
+
+slowtest4:: everything
+	$(SELFTEST4) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
+
+test4:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) --immediate \
+		$(TESTS)
+
+testone4:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) $(DEFAULT_TEST_OPTIONS) --one $(TESTS)
+
+test4-swrap:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --immediate $(TESTS)
+
+test4-swrap-pcap:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper-pcap --immediate $(TESTS)
+
+test4-swrap-keep-pcap:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper-keep-pcap --immediate $(TESTS)
+
+test4-noswrap:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --immediate $(TESTS)
+
+quicktest4:: all
+	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --socket-wrapper --immediate $(TESTS)
+
+quicktestone4:: all
+	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --socket-wrapper --one $(TESTS)
+
+testenv4:: everything
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
+
+testenv4-%:: everything
+	SELFTEST_TESTENV=$* $(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
+
+test4-%:: 
+	$(MAKE) test TESTS=$*
+
+valgrindtest4:: valgrindtest-all
+
+valgrindtest4-quick:: all
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --immediate --socket-wrapper $(TESTS)
+
+valgrindtest4-all:: everything
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --immediate --socket-wrapper $(TESTS)
+
+valgrindtest4-env:: everything
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
+	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
+
+gdbtest4:: gdbtest4-all
+
+gdbtest4-quick:: all
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	$(SELFTEST4) $(SELFTEST4_QUICK_OPTS) --immediate --socket-wrapper $(TESTS)
+
+gdbtest4-all:: everything
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --immediate --socket-wrapper $(TESTS)
+
+gdbtest4-env:: everything
+	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
+	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
+
