@@ -524,14 +524,6 @@ struct timespec {
 };
 #endif
 
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
 #ifdef HAVE_BROKEN_GETGROUPS
 #define GID_T int
 #else
@@ -720,7 +712,7 @@ enum flush_reason_enum {
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-/***** automatically generated prototypes *****/
+/***** prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
@@ -892,11 +884,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 int asprintf_strupper_m(char **strp, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-
-/* we used to use these fns, but now we have good replacements
-   for snprintf and vsnprintf */
-#define slprintf snprintf
-#define vslprintf vsnprintf
 
 /*
  * Veritas File System.  Often in addition to native.
