@@ -146,6 +146,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 
 	state->connect->in.dest_host    = io->in.dest_host;
 	state->connect->in.dest_ports   = io->in.dest_ports;
+	state->connect->in.socket_options = io->in.socket_options;
 	state->connect->in.called_name  = io->in.called_name;
 	state->connect->in.service      = io->in.service;
 	state->connect->in.service_type = io->in.service_type;

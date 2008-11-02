@@ -188,6 +188,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 
 	io->in.dest_host    = state->dest_host;
 	io->in.dest_ports   = state->dest_ports;
+	io->in.socket_options = lp_socket_options(state->tctx->lp_ctx);
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
@@ -340,6 +341,7 @@ bool torture_bench_lock(struct torture_context *torture)
 		}
 		talloc_steal(mem_ctx, state);
 		state[i].tree = cli->tree;
+		state[i].socket_options = lp_socket_options(torture->lp_ctx);
 		state[i].dest_host = talloc_strdup(state[i].mem_ctx, 
 						   cli->tree->session->transport->socket->hostname);
 		state[i].dest_ports = talloc_array(state[i].mem_ctx, 

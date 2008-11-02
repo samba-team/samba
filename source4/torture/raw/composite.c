@@ -347,6 +347,7 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 
 	io1.in.dest_host = torture_setting_string(tctx, "host", NULL);
 	io1.in.dest_ports = lp_smb_ports(tctx->lp_ctx);
+	io1.in.socket_options = lp_socket_options(tctx->lp_ctx);
 	io1.in.called_name = torture_setting_string(tctx, "host", NULL);
 	io1.in.service = torture_setting_string(tctx, "share", NULL);
 	io1.in.service_type = "A:";

@@ -377,7 +377,7 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 					       io->in.dest_ports,
 					       io->in.dest_host, 
 					       NULL, c->event_ctx, 
-						   lp_socket_options(global_loadparm));
+						  io->in.socket_options);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;

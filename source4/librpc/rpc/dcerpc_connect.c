@@ -116,6 +116,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
 	else
 		conn->in.called_name            = s->io.binding->target_hostname;
+	conn->in.socket_options         = lp_socket_options(lp_ctx);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
 	conn->in.workgroup		= lp_workgroup(lp_ctx);

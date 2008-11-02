@@ -53,6 +53,7 @@ struct smb_composite_fetchfile {
 		const char *called_name;
 		const char *service;
 		const char *service_type;
+		const char *socket_options;
 		struct cli_credentials *credentials;
 		const char *workgroup;
 		const char *filename;
@@ -93,6 +94,7 @@ struct smb_composite_connect {
 	struct {
 		const char *dest_host;
 		const char **dest_ports;
+		const char *socket_options;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
@@ -133,6 +135,7 @@ struct smb_composite_fsinfo {
 	struct {
 		const char *dest_host;
 		const char **dest_ports;
+		const char *socket_options;
 		const char *called_name;
 		const char *service;
 		const char *service_type;

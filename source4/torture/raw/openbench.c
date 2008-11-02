@@ -130,6 +130,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 
 	io->in.dest_host    = state->dest_host;
 	io->in.dest_ports   = state->dest_ports;
+	io->in.socket_options = lp_socket_options(state->tctx->lp_ctx);
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
@@ -400,6 +401,7 @@ bool torture_bench_open(struct torture_context *torture)
 		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports, 
 							 "%u", state[i].cli->tree->session->transport->socket->port);
 		state[i].dest_ports[1] = NULL;
+		state[i].socket_options = lp_socket_options(torture->lp_ctx);
 		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
 						      state[i].cli->tree->session->transport->called.name);
 		state[i].service_type = talloc_strdup(state[i].mem_ctx,
