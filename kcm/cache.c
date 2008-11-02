@@ -498,6 +498,22 @@ kcm_ccache_store_cred(krb5_context context,
     return ret;
 }
 
+struct kcm_creds *
+kcm_ccache_find_cred_uuid(krb5_context context,
+			  kcm_ccache ccache,
+			  uuid_t uuid)
+{
+    struct kcm_creds *c;
+
+    for (c = ccache->creds; c != NULL; c = c->next)
+	if (uuid_compare(c->uuid, uuid) == 0)
+	    return c;
+
+    return NULL;
+}
+
+
+
 krb5_error_code
 kcm_ccache_store_cred_internal(krb5_context context,
 			       kcm_ccache ccache,
@@ -515,6 +531,8 @@ kcm_ccache_store_cred_internal(krb5_context context,
     if (*c == NULL) {
 	return KRB5_CC_NOMEM;
     }
+
+    uuid_generate((*c)->uuid);
 
     *credp = &(*c)->cred;
 
@@ -549,7 +567,6 @@ kcm_ccache_remove_cred_internal(krb5_context context,
 	if (krb5_compare_creds(context, whichfields, mcreds, &(*c)->cred)) {
 	    struct kcm_creds *cred = *c;
 
-	    kcm_cursor_update(context, ccache, cred);
 	    *c = cred->next;
 	    krb5_free_cred_contents(context, &cred->cred);
 	    free(cred);
