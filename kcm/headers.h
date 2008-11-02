@@ -77,9 +77,6 @@
 #include <door.h>
 #include <alloca.h>
 #endif
-
-#include <uuid/uuid.h>
-
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
