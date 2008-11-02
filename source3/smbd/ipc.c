@@ -81,7 +81,8 @@ static void copy_trans_params_and_data(char *outbuf, int align,
  Send a trans reply.
  ****************************************************************************/
 
-void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
+void send_trans_reply(connection_struct *conn,
+		      struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large)
@@ -103,7 +104,7 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 
 	align = ((this_lparam)%4);
 
-	if (!create_outbuf(talloc_tos(), (char *)inbuf, &outbuf,
+	if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
 			   10, 1+align+this_ldata+this_lparam)) {
 		smb_panic("could not allocate outbuf");
 	}
@@ -154,7 +155,7 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 
 		align = (this_lparam%4);
 
-		if (!create_outbuf(talloc_tos(), (char *)inbuf, &outbuf,
+		if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
 				   10, 1+align+this_ldata+this_lparam)) {
 			smb_panic("could not allocate outbuf");
 		}
@@ -218,7 +219,7 @@ static void api_rpc_trans_reply(connection_struct *conn,
 		return;
 	}
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, (char *)rdata, data_len,
+	send_trans_reply(conn, req, NULL, 0, (char *)rdata, data_len,
 			 is_data_outstanding);
 	SAFE_FREE(rdata);
 	return;
@@ -239,7 +240,7 @@ static void api_WNPHS(connection_struct *conn, struct smb_request *req,
 	DEBUG(4,("WaitNamedPipeHandleState priority %x\n",
 		 (int)SVAL(param,0)));
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
+	send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 }
 
 
@@ -257,7 +258,7 @@ static void api_SNPHS(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(4,("SetNamedPipeHandleState to code %x\n", (int)SVAL(param,0)));
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
+	send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 }
 
 
@@ -276,7 +277,7 @@ static void api_no_reply(connection_struct *conn, struct smb_request *req)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(conn, req->inbuf, rparam, 4, NULL, 0, False);
+	send_trans_reply(conn, req, rparam, 4, NULL, 0, False);
 
 	return;
 }
@@ -320,8 +321,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0,
-					 False);
+			send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 			return;
 		}
 
