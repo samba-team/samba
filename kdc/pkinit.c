@@ -188,7 +188,8 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 
     if (!DH_generate_key(client_params->dh)) {
 	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_message(context, ret, "Can't generate Diffie-Hellman keys");
+	krb5_set_error_message(context, ret, 
+			       "Can't generate Diffie-Hellman keys");
 	goto out;
     }
     if (client_params->dh_public_key == NULL) {
@@ -215,7 +216,8 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 				   client_params->dh);
     if (dh_gen_keylen == -1) {
 	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_message(context, ret, "Can't compute Diffie-Hellman key");
+	krb5_set_error_message(context, ret,
+			       "Can't compute Diffie-Hellman key");
 	goto out;
     }
 
@@ -261,7 +263,8 @@ get_dh_param(krb5_context context,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm, oid_id_dhpublicnumber())) {
+    if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm,
+			 oid_id_dhpublicnumber())) {
 	krb5_set_error_message(context, KRB5_BADMSGTYPE,
 			       "PKINIT invalid oid in clientPublicValue");
 	return KRB5_BADMSGTYPE;
@@ -420,7 +423,8 @@ _kdc_pk_rd_padata(krb5_context context,
 				  &r,
 				  NULL);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "Can't decode PK-AS-REQ: %d", ret);
+	    krb5_set_error_message(context, ret,
+				   "Can't decode PK-AS-REQ: %d", ret);
 	    goto out;
 	}
 	
@@ -434,7 +438,9 @@ _kdc_pk_rd_padata(krb5_context context,
 				   0, NULL,
 				   &client_params->client_anchors);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "Can't allocate client anchors: %d", ret);
+		krb5_set_error_message(context, ret,
+				       "Can't allocate client anchors: %d", 
+				       ret);
 		goto out;
 
 	    }
@@ -556,7 +562,8 @@ _kdc_pk_rd_padata(krb5_context context,
 				    &ap,
 				    NULL);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "can't decode AuthPack: %d", ret);
+	    krb5_set_error_message(context, ret,
+				   "Can't decode AuthPack: %d", ret);
 	    goto out;
 	}
 
@@ -573,7 +580,8 @@ _kdc_pk_rd_padata(krb5_context context,
 
 	if (ap.clientPublicValue) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret, "DH not supported for windows");
+	    krb5_set_error_message(context, ret,
+				   "DH not supported for windows");
 	    goto out;
 	}
 	free_AuthPack_Win2k(&ap);
@@ -586,7 +594,8 @@ _kdc_pk_rd_padata(krb5_context context,
 			      &ap,
 			      NULL);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "can't decode AuthPack: %d", ret);
+	    krb5_set_error_message(context, ret,
+				   "Can't decode AuthPack: %d", ret);
 	    free_AuthPack(&ap);
 	    goto out;
 	}
@@ -1059,7 +1068,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 			       ret);
 	    free_ContentInfo(&info);
 	    if (ret) {
-		krb5_set_error_message(context, ret, "encoding of Key ContentInfo "
+		krb5_set_error_message(context, ret,
+				       "encoding of Key ContentInfo "
 				       "failed %d", ret);
 		free_PA_PK_AS_REP(&rep);
 		goto out;
@@ -1076,8 +1086,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
 	free_PA_PK_AS_REP(&rep);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "encode PA-PK-AS-REP failed %d",
-				   ret);
+	    krb5_set_error_message(context, ret,
+				   "encode PA-PK-AS-REP failed %d", ret);
 	    goto out;
 	}
 	if (len != size)
@@ -1091,7 +1101,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	if (client_params->dh) {
 	    ret = KRB5KRB_ERR_GENERIC;
-	    krb5_set_error_message(context, ret, "Windows PK-INIT doesn't support DH");
+	    krb5_set_error_message(context, ret,
+				   "Windows PK-INIT doesn't support DH");
 	    goto out;
 	}
 
@@ -1146,7 +1157,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
     ret = krb5_padata_add(context, md, pa_type, buf, len);
     if (ret) {
-	krb5_set_error_message(context, ret, "failed adding PA-PK-AS-REP %d", ret);
+	krb5_set_error_message(context, ret,
+			       "Failed adding PA-PK-AS-REP %d", ret);
 	free(buf);
 	goto out;
     }
