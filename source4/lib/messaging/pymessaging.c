@@ -34,6 +34,9 @@
 PyAPI_DATA(PyTypeObject) messaging_Type;
 PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;
 
+/* FIXME: This prototype should be in param/pyparam.h */
+struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
+
 static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 {
 	if (!PyTuple_Check(object)) {
@@ -80,7 +83,8 @@ PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwa
 	ev = s4_event_context_init(ret->mem_ctx);
 
 	if (messaging_path == NULL) {
-		messaging_path = lp_messaging_path(ret->mem_ctx, global_loadparm);
+		messaging_path = lp_messaging_path(ret->mem_ctx, 
+								   py_default_loadparm_context(ret->mem_ctx));
 	} else {
 		messaging_path = talloc_strdup(ret->mem_ctx, messaging_path);
 	}
@@ -334,7 +338,8 @@ PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 	ev = s4_event_context_init(ret->mem_ctx);
 
 	if (messaging_path == NULL) {
-		messaging_path = lp_messaging_path(ret->mem_ctx, global_loadparm);
+		messaging_path = lp_messaging_path(ret->mem_ctx, 
+								   py_default_loadparm_context(ret->mem_ctx));
 	} else {
 		messaging_path = talloc_strdup(ret->mem_ctx, messaging_path);
 	}
