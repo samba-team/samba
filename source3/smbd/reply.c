@@ -208,7 +208,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 ****************************************************************************/
 
 size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
-			const char *inbuf,
+			const char *base_ptr,
 			uint16 smb_flags2,
 			char **pp_dest,
 			const char *src,
@@ -221,22 +221,8 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 
 	*pp_dest = NULL;
 
-	if (src_len == 0) {
-		ret = srvstr_pull_buf_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				flags);
-	} else {
-		ret = srvstr_pull_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				src_len,
-				flags);
-	}
+	ret = srvstr_pull_talloc(ctx, base_ptr, smb_flags2, pp_dest, src,
+				 src_len, flags);
 
 	if (!*pp_dest) {
 		*err = NT_STATUS_INVALID_PARAMETER;
@@ -268,7 +254,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 size_t srvstr_get_path(TALLOC_CTX *ctx,
-			const char *inbuf,
+			const char *base_ptr,
 			uint16 smb_flags2,
 			char **pp_dest,
 			const char *src,
@@ -276,48 +262,27 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			int flags,
 			NTSTATUS *err)
 {
-	size_t ret;
+	bool ignore;
+	return srvstr_get_path_wcard(ctx, base_ptr, smb_flags2, pp_dest, src,
+				     src_len, flags, err, &ignore);
+}
 
-	*pp_dest = NULL;
+size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
+				 char **pp_dest, const char *src, int flags,
+				 NTSTATUS *err, bool *contains_wcard)
+{
+	return srvstr_get_path_wcard(mem_ctx, (char *)req->inbuf, req->flags2,
+				     pp_dest, src, smbreq_bufrem(req, src),
+				     flags, err, contains_wcard);
+}
 
-	if (src_len == 0) {
-		ret = srvstr_pull_buf_talloc(ctx,
-					inbuf,
-					smb_flags2,
-					pp_dest,
-					src,
-					flags);
-	} else {
-		ret = srvstr_pull_talloc(ctx,
-				inbuf,
-				smb_flags2,
-				pp_dest,
-				src,
-				src_len,
-				flags);
-	}
-
-	if (!*pp_dest) {
-		*err = NT_STATUS_INVALID_PARAMETER;
-		return ret;
-	}
-
-	if (smb_flags2 & FLAGS2_DFS_PATHNAMES) {
-		/*
-		 * For a DFS path the function parse_dfs_path()
-		 * will do the path processing, just make a copy.
-		 */
-		*err = NT_STATUS_OK;
-		return ret;
-	}
-
-	if (lp_posix_pathnames()) {
-		*err = check_path_syntax_posix(*pp_dest);
-	} else {
-		*err = check_path_syntax(*pp_dest);
-	}
-
-	return ret;
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			   char **pp_dest, const char *src, int flags,
+			   NTSTATUS *err)
+{
+	bool ignore;
+	return srvstr_get_path_req_wcard(mem_ctx, req, pp_dest, src,
+					 flags, err, &ignore);
 }
 
 /****************************************************************************
@@ -530,13 +495,12 @@ void reply_tcon(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				    &service_buf, p, STR_TERMINATE) + 1;
-	pwlen = srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				       &password, p, STR_TERMINATE) + 1;
-	p += pwlen;
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				    &dev, p, STR_TERMINATE) + 1;
+	p += srvstr_pull_req_talloc(ctx, req, &service_buf, p, STR_TERMINATE);
+	p += 1;
+	pwlen = srvstr_pull_req_talloc(ctx, req, &password, p, STR_TERMINATE);
+	p += pwlen+1;
+	p += srvstr_pull_req_talloc(ctx, req, &dev, p, STR_TERMINATE);
+	p += 1;
 
 	if (service_buf == NULL || password == NULL || dev == NULL) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -604,8 +568,8 @@ void reply_tcon_and_X(struct smb_request *req)
 		return;
 	}
 
-	passlen = SVAL(req->inbuf,smb_vwv3);
-	tcon_flags = SVAL(req->inbuf,smb_vwv2);
+	passlen = SVAL(req->vwv+3, 0);
+	tcon_flags = SVAL(req->vwv+2, 0);
 
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
@@ -638,8 +602,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		p = (const char *)req->buf + passlen + 1;
 	}
 
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &path, p,
-			     STR_TERMINATE);
+	p += srvstr_pull_req_talloc(ctx, req, &path, p, STR_TERMINATE);
 
 	if (path == NULL) {
 		data_blob_clear_free(&password);
@@ -667,7 +630,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	p += srvstr_pull_talloc(ctx, req->inbuf, req->flags2,
 				&client_devicetype, p,
-				MIN(6,smb_bufrem(req->inbuf, p)), STR_ASCII);
+				MIN(6, smbreq_bufrem(req, p)), STR_ASCII);
 
 	if (client_devicetype == NULL) {
 		data_blob_clear_free(&password);
@@ -801,8 +764,8 @@ void reply_ioctl(struct smb_request *req)
 		return;
 	}
 
-	device     = SVAL(req->inbuf,smb_vwv1);
-	function   = SVAL(req->inbuf,smb_vwv2);
+	device     = SVAL(req->vwv+1, 0);
+	function   = SVAL(req->vwv+2, 0);
 	ioctl_code = (device << 16) + function;
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
@@ -829,7 +792,7 @@ void reply_ioctl(struct smb_request *req)
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
 			files_struct *fsp = file_fsp(
-				req, SVAL(req->inbuf, smb_vwv0));
+				req, SVAL(req->vwv+0, 0));
 			if (!fsp) {
 				reply_doserror(req, ERRDOS, ERRbadfid);
 				END_PROFILE(SMBioctl);
@@ -858,10 +821,10 @@ void reply_ioctl(struct smb_request *req)
  Strange checkpath NTSTATUS mapping.
 ****************************************************************************/
 
-static NTSTATUS map_checkpath_error(const char *inbuf, NTSTATUS status)
+static NTSTATUS map_checkpath_error(uint16_t flags2, NTSTATUS status)
 {
 	/* Strange DOS error code semantics only for checkpath... */
-	if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+	if (!(flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
 		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
 			/* We need to map to ERRbadpath */
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -884,10 +847,11 @@ void reply_checkpath(struct smb_request *req)
 
 	START_PROFILE(SMBcheckpath);
 
-	srvstr_get_path(ctx,(char *)req->inbuf, req->flags2, &name,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &name, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
+
 	if (!NT_STATUS_IS_OK(status)) {
-		status = map_checkpath_error((char *)req->inbuf, status);
+		status = map_checkpath_error(req->flags2, status);
 		reply_nterror(req, status);
 		END_PROFILE(SMBcheckpath);
 		return;
@@ -907,7 +871,7 @@ void reply_checkpath(struct smb_request *req)
 		goto path_err;
 	}
 
-	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->inbuf,smb_vwv0)));
+	DEBUG(3,("reply_checkpath %s mode=%d\n", name, (int)SVAL(req->vwv+0, 0)));
 
 	status = unix_convert(ctx, conn, name, False, &name, NULL, &sbuf);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -947,7 +911,7 @@ void reply_checkpath(struct smb_request *req)
 		one at a time - if a component fails it expects
 		ERRbadpath, not ERRbadfile.
 	*/
-	status = map_checkpath_error((char *)req->inbuf, status);
+	status = map_checkpath_error(req->flags2, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * Windows returns different error codes if
@@ -983,8 +947,7 @@ void reply_getatr(struct smb_request *req)
 	START_PROFILE(SMBgetatr);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname, p,
-			     0, STR_TERMINATE, &status);
+	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBgetatr);
@@ -1092,8 +1055,7 @@ void reply_setatr(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname, p,
-				0, STR_TERMINATE, &status);
+	p += srvstr_get_path_req(ctx, req, &fname, p, STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBsetatr);
@@ -1140,8 +1102,8 @@ void reply_setatr(struct smb_request *req)
 		return;
 	}
 
-	mode = SVAL(req->inbuf,smb_vwv0);
-	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
+	mode = SVAL(req->vwv+0, 0);
+	mtime = srv_make_unix_date3(req->vwv+1);
 
 	ts[1] = convert_time_t_to_timespec(mtime);
 	status = smb_set_file_time(conn, NULL, fname,
@@ -1265,29 +1227,22 @@ void reply_search(struct smb_request *req)
 	}
 
 	if (lp_posix_pathnames()) {
-		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
+		reply_unknown_new(req, req->cmd);
 		END_PROFILE(SMBsearch);
 		return;
 	}
 
 	/* If we were called as SMBffirst then we must expect close. */
-	if(CVAL(req->inbuf,smb_com) == SMBffirst) {
+	if(req->cmd == SMBffirst) {
 		expect_close = True;
 	}
 
 	reply_outbuf(req, 1, 3);
-	maxentries = SVAL(req->inbuf,smb_vwv0);
-	dirtype = SVAL(req->inbuf,smb_vwv1);
+	maxentries = SVAL(req->vwv+0, 0);
+	dirtype = SVAL(req->vwv+1, 0);
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx,
-				(char *)req->inbuf,
-				req->flags2,
-				&path,
-				p,
-				0,
-				STR_TERMINATE,
-				&nt_status,
-				&mask_contains_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
+				       &nt_status, &mask_contains_wcard);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		reply_nterror(req, nt_status);
 		END_PROFILE(SMBsearch);
@@ -1488,7 +1443,7 @@ void reply_search(struct smb_request *req)
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
-	if(dptr_num >= 0 && CVAL(req->inbuf,smb_com) == SMBfunique) {
+	if(dptr_num >= 0 && req->cmd == SMBfunique) {
 		dptr_close(&dptr_num);
 	}
 
@@ -1521,7 +1476,7 @@ void reply_search(struct smb_request *req)
 	}
 
 	DEBUG(4,("%s mask=%s path=%s dtype=%d nument=%u of %u\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask,
 		directory ? directory : "./",
 		dirtype,
@@ -1550,21 +1505,14 @@ void reply_fclose(struct smb_request *req)
 	START_PROFILE(SMBfclose);
 
 	if (lp_posix_pathnames()) {
-		reply_unknown_new(req, CVAL(req->inbuf, smb_com));
+		reply_unknown_new(req, req->cmd);
 		END_PROFILE(SMBfclose);
 		return;
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx,
-				(char *)req->inbuf,
-				req->flags2,
-				&path,
-				p,
-				0,
-				STR_TERMINATE,
-				&err,
-				&path_contains_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &path, p, STR_TERMINATE,
+				       &err, &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(err)) {
 		reply_nterror(req, err);
 		END_PROFILE(SMBfclose);
@@ -1629,11 +1577,11 @@ void reply_open(struct smb_request *req)
 	}
 
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
-	deny_mode = SVAL(req->inbuf,smb_vwv0);
-	dos_attr = SVAL(req->inbuf,smb_vwv1);
+	deny_mode = SVAL(req->vwv+0, 0);
+	dos_attr = SVAL(req->vwv+1, 0);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf+1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf+1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopen);
@@ -1729,8 +1677,8 @@ void reply_open_and_X(struct smb_request *req)
 	int core_oplock_request;
 	int oplock_request;
 #if 0
-	int smb_sattr = SVAL(req->inbuf,smb_vwv4);
-	uint32 smb_time = make_unix_date3(req->inbuf+smb_vwv6);
+	int smb_sattr = SVAL(req->vwv+4, 0);
+	uint32 smb_time = make_unix_date3(req->vwv+6);
 #endif
 	int smb_ofun;
 	uint32 fattr=0;
@@ -1755,14 +1703,14 @@ void reply_open_and_X(struct smb_request *req)
 		return;
 	}
 
-	open_flags = SVAL(req->inbuf,smb_vwv2);
-	deny_mode = SVAL(req->inbuf,smb_vwv3);
-	smb_attr = SVAL(req->inbuf,smb_vwv5);
+	open_flags = SVAL(req->vwv+2, 0);
+	deny_mode = SVAL(req->vwv+3, 0);
+	smb_attr = SVAL(req->vwv+5, 0);
 	ex_oplock_request = EXTENDED_OPLOCK_REQUEST(req->inbuf);
 	core_oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
 	oplock_request = ex_oplock_request | core_oplock_request;
-	smb_ofun = SVAL(req->inbuf,smb_vwv8);
-	allocation_size = (uint64_t)IVAL(req->inbuf,smb_vwv9);
+	smb_ofun = SVAL(req->vwv+8, 0);
+	allocation_size = (uint64_t)IVAL(req->vwv+9, 0);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
@@ -1776,8 +1724,8 @@ void reply_open_and_X(struct smb_request *req)
 	}
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf,
+			STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBopenX);
@@ -1943,7 +1891,6 @@ void reply_mknew(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	char *fname = NULL;
-	int com;
 	uint32 fattr = 0;
 	struct timespec ts[2];
 	files_struct *fsp;
@@ -1964,16 +1911,14 @@ void reply_mknew(struct smb_request *req)
 		return;
 	}
 
-	fattr = SVAL(req->inbuf,smb_vwv0);
+	fattr = SVAL(req->vwv+0, 0);
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
-	com = SVAL(req->inbuf,smb_com);
 
-	ts[1] =convert_time_t_to_timespec(
-			srv_make_unix_date3(req->inbuf + smb_vwv1));
+	ts[1] = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+1));
 			/* mtime. */
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-                        (const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcreate);
@@ -1985,7 +1930,7 @@ void reply_mknew(struct smb_request *req)
 			"please report this\n", fname));
 	}
 
-	if(com == SMBmknew) {
+	if(req->cmd == SMBmknew) {
 		/* We should fail if file exists. */
 		create_disposition = FILE_CREATE;
 	} else {
@@ -2074,11 +2019,11 @@ void reply_ctemp(struct smb_request *req)
 		return;
 	}
 
-	fattr = SVAL(req->inbuf,smb_vwv0);
+	fattr = SVAL(req->vwv+0, 0);
 	oplock_request = CORE_OPLOCK_REQUEST(req->inbuf);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &fname,
-			(const char *)req->buf+1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf+1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBctemp);
@@ -2545,11 +2490,11 @@ void reply_unlink(struct smb_request *req)
 		return;
 	}
 
-	dirtype = SVAL(req->inbuf,smb_vwv0);
+	dirtype = SVAL(req->vwv+0, 0);
 
-	srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name,
-			      (const char *)req->buf + 1, 0, STR_TERMINATE,
-			      &status, &path_contains_wcard);
+	srvstr_get_path_req_wcard(ctx, req, &name, (const char *)req->buf + 1,
+				  STR_TERMINATE, &status,
+				  &path_contains_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBunlink);
@@ -2800,7 +2745,7 @@ void reply_readbraw(struct smb_request *req)
 	 * return a zero length response here.
 	 */
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	/*
 	 * We have to do a check_fsp by hand here, as
@@ -2816,7 +2761,7 @@ void reply_readbraw(struct smb_request *req)
 		 */
 		DEBUG(3,("reply_readbraw: fnum %d not valid "
 			"- cache prime?\n",
-			(int)SVAL(req->inbuf,smb_vwv0)));
+			(int)SVAL(req->vwv+0, 0)));
 		reply_readbraw_error();
 		END_PROFILE(SMBreadbraw);
 		return;
@@ -2827,7 +2772,7 @@ void reply_readbraw(struct smb_request *req)
 			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) &&
 				(fsp->access_mask & FILE_EXECUTE)))) {
 		DEBUG(3,("reply_readbraw: fnum %d not readable.\n",
-				(int)SVAL(req->inbuf,smb_vwv0)));
+				(int)SVAL(req->vwv+0, 0)));
 		reply_readbraw_error();
 		END_PROFILE(SMBreadbraw);
 		return;
@@ -2835,14 +2780,14 @@ void reply_readbraw(struct smb_request *req)
 
 	flush_write_cache(fsp, READRAW_FLUSH);
 
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv1);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+1, 0);
 	if(req->wct == 10) {
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
 #ifdef LARGE_SMB_OFF_T
 
-		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv8)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->vwv+8, 0)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -2850,11 +2795,11 @@ void reply_readbraw(struct smb_request *req)
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(req->inbuf,smb_vwv8) != 0) {
+		if(IVAL(req->vwv+8, 0) != 0) {
 			DEBUG(0,("reply_readbraw: large offset "
 				"(%x << 32) used and we don't support "
 				"64 bit offsets.\n",
-			(unsigned int)IVAL(req->inbuf,smb_vwv8) ));
+			(unsigned int)IVAL(req->vwv+8, 0) ));
 			reply_readbraw_error();
 			END_PROFILE(SMBreadbraw);
 			return;
@@ -2872,8 +2817,8 @@ void reply_readbraw(struct smb_request *req)
 		}      
 	}
 
-	maxcount = (SVAL(req->inbuf,smb_vwv3) & 0xFFFF);
-	mincount = (SVAL(req->inbuf,smb_vwv4) & 0xFFFF);
+	maxcount = (SVAL(req->vwv+3, 0) & 0xFFFF);
+	mincount = (SVAL(req->vwv+4, 0) & 0xFFFF);
 
 	/* ensure we don't overrun the packet size */
 	maxcount = MIN(65535,maxcount);
@@ -2942,7 +2887,7 @@ void reply_lockread(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlockread);
@@ -2957,8 +2902,8 @@ void reply_lockread(struct smb_request *req)
 
 	release_level_2_oplocks_on_change(fsp);
 
-	numtoread = SVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	numtoread = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
 	numtoread = MIN(BUFFER_SIZE - (smb_size + 3*2 + 3), numtoread);
 
@@ -3050,7 +2995,7 @@ void reply_read(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBread);
@@ -3063,8 +3008,8 @@ void reply_read(struct smb_request *req)
 		return;
 	}
 
-	numtoread = SVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	numtoread = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
 
@@ -3170,7 +3115,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
+	if ((chain_size == 0) && (CVAL(req->vwv+0, 0) == 0xFF) &&
 	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
@@ -3284,7 +3229,7 @@ void reply_read_and_X(struct smb_request *req)
 	size_t smb_maxcnt;
 	bool big_readX = False;
 #if 0
-	size_t smb_mincnt = SVAL(req->inbuf,smb_vwv6);
+	size_t smb_mincnt = SVAL(req->vwv+6, 0);
 #endif
 
 	START_PROFILE(SMBreadX);
@@ -3294,9 +3239,9 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv2));
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
-	smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
+	fsp = file_fsp(req, SVAL(req->vwv+2, 0));
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+3, 0);
+	smb_maxcnt = SVAL(req->vwv+5, 0);
 
 	/* If it's an IPC, pass off the pipe handler. */
 	if (IS_IPC(conn)) {
@@ -3317,11 +3262,11 @@ void reply_read_and_X(struct smb_request *req)
 	}
 
 	if (global_client_caps & CAP_LARGE_READX) {
-		size_t upper_size = SVAL(req->inbuf,smb_vwv7);
+		size_t upper_size = SVAL(req->vwv+7, 0);
 		smb_maxcnt |= (upper_size<<16);
 		if (upper_size > 1) {
 			/* Can't do this on a chained packet. */
-			if ((CVAL(req->inbuf,smb_vwv0) != 0xFF)) {
+			if ((CVAL(req->vwv+0, 0) != 0xFF)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -3348,7 +3293,7 @@ void reply_read_and_X(struct smb_request *req)
 		/*
 		 * This is a large offset (64 bit) read.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv10)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->vwv+10, 0)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -3356,10 +3301,10 @@ void reply_read_and_X(struct smb_request *req)
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(req->inbuf,smb_vwv10) != 0) {
+		if(IVAL(req->vwv+10, 0) != 0) {
 			DEBUG(0,("reply_read_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(req->inbuf,smb_vwv10) ));
+				 (unsigned int)IVAL(req->vwv+10, 0) ));
 			END_PROFILE(SMBreadX);
 			reply_doserror(req, ERRDOS, ERRbadaccess);
 			return;
@@ -3442,7 +3387,7 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 	if (!check_fsp(conn, req, fsp)) {
 		error_to_writebrawerr(req);
 		END_PROFILE(SMBwritebraw);
@@ -3456,9 +3401,9 @@ void reply_writebraw(struct smb_request *req)
 		return;
 	}
 
-	tcount = IVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
-	write_through = BITSETW(req->inbuf+smb_vwv7,0);
+	tcount = IVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+3, 0);
+	write_through = BITSETW(req->vwv+7,0);
 
 	/* We have to deal with slightly different formats depending
 		on whether we are using the core+ or lanman1.0 protocol */
@@ -3467,8 +3412,8 @@ void reply_writebraw(struct smb_request *req)
 		numtowrite = SVAL(smb_buf(req->inbuf),-2);
 		data = smb_buf(req->inbuf);
 	} else {
-		numtowrite = SVAL(req->inbuf,smb_vwv10);
-		data = smb_base(req->inbuf) + SVAL(req->inbuf, smb_vwv11);
+		numtowrite = SVAL(req->vwv+10, 0);
+		data = smb_base(req->inbuf) + SVAL(req->vwv+11, 0);
 	}
 
 	/* Ensure we don't write bytes past the end of this packet. */
@@ -3647,7 +3592,7 @@ void reply_writeunlock(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteunlock);
@@ -3660,8 +3605,8 @@ void reply_writeunlock(struct smb_request *req)
 		return;
 	}
 
-	numtowrite = SVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	numtowrite = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
 	if (numtowrite
@@ -3754,7 +3699,7 @@ void reply_write(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwrite);
@@ -3767,8 +3712,8 @@ void reply_write(struct smb_request *req)
 		return;
 	}
 
-	numtowrite = SVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
+	numtowrite = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 	data = (const char *)req->buf + 3;
 
 	if (is_locked(fsp, (uint32)req->smbpid, (uint64_t)numtowrite,
@@ -3941,14 +3886,14 @@ void reply_write_and_X(struct smb_request *req)
 		return;
 	}
 
-	numtowrite = SVAL(req->inbuf,smb_vwv10);
-	smb_doff = SVAL(req->inbuf,smb_vwv11);
+	numtowrite = SVAL(req->vwv+10, 0);
+	smb_doff = SVAL(req->vwv+11, 0);
 	smblen = smb_len(req->inbuf);
 
 	if (req->unread_bytes > 0xFFFF ||
 			(smblen > smb_doff &&
 				smblen - smb_doff > 0xFFFF)) {
-		numtowrite |= (((size_t)SVAL(req->inbuf,smb_vwv9))<<16);
+		numtowrite |= (((size_t)SVAL(req->vwv+9, 0))<<16);
 	}
 
 	if (req->unread_bytes) {
@@ -3984,9 +3929,9 @@ void reply_write_and_X(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv2));
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv3);
-	write_through = BITSETW(req->inbuf+smb_vwv7,0);
+	fsp = file_fsp(req, SVAL(req->vwv+2, 0));
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+3, 0);
+	write_through = BITSETW(req->vwv+7,0);
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteX);
@@ -4006,7 +3951,7 @@ void reply_write_and_X(struct smb_request *req)
 		/*
 		 * This is a large offset (64 bit) write.
 		 */
-		startpos |= (((SMB_OFF_T)IVAL(req->inbuf,smb_vwv12)) << 32);
+		startpos |= (((SMB_OFF_T)IVAL(req->vwv+12, 0)) << 32);
 
 #else /* !LARGE_SMB_OFF_T */
 
@@ -4014,10 +3959,10 @@ void reply_write_and_X(struct smb_request *req)
 		 * Ensure we haven't been sent a >32 bit offset.
 		 */
 
-		if(IVAL(req->inbuf,smb_vwv12) != 0) {
+		if(IVAL(req->vwv+12, 0) != 0) {
 			DEBUG(0,("reply_write_and_X - large offset (%x << 32) "
 				 "used and we don't support 64 bit offsets.\n",
-				 (unsigned int)IVAL(req->inbuf,smb_vwv12) ));
+				 (unsigned int)IVAL(req->vwv+12, 0) ));
 			reply_doserror(req, ERRDOS, ERRbadaccess);
 			END_PROFILE(SMBwriteX);
 			return;
@@ -4105,7 +4050,7 @@ void reply_lseek(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		return;
@@ -4113,9 +4058,9 @@ void reply_lseek(struct smb_request *req)
 
 	flush_write_cache(fsp, SEEK_FLUSH);
 
-	mode = SVAL(req->inbuf,smb_vwv1) & 3;
+	mode = SVAL(req->vwv+1, 0) & 3;
 	/* NB. This doesn't use IVAL_TO_SMB_OFF_T as startpos can be signed in this case. */
-	startpos = (SMB_OFF_T)IVALS(req->inbuf,smb_vwv2);
+	startpos = (SMB_OFF_T)IVALS(req->vwv+2, 0);
 
 	switch (mode) {
 		case 0:
@@ -4190,7 +4135,7 @@ void reply_flush(struct smb_request *req)
 		return;
 	}
 
-	fnum = SVAL(req->inbuf,smb_vwv0);
+	fnum = SVAL(req->vwv+0, 0);
 	fsp = file_fsp(req, fnum);
 
 	if ((fnum != 0xFFFF) && !check_fsp(conn, req, fsp)) {
@@ -4253,7 +4198,7 @@ void reply_close(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	/*
 	 * We can only use check_fsp if we know it's not a directory.
@@ -4285,7 +4230,7 @@ void reply_close(struct smb_request *req)
 		 * Take care of any time sent in the close.
 		 */
 
-		t = srv_make_unix_date3(req->inbuf+smb_vwv1);
+		t = srv_make_unix_date3(req->vwv+1);
 		set_close_write_time(fsp, convert_time_t_to_timespec(t));
 
 		/*
@@ -4331,7 +4276,7 @@ void reply_writeclose(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBwriteclose);
@@ -4343,10 +4288,9 @@ void reply_writeclose(struct smb_request *req)
 		return;
 	}
 
-	numtowrite = SVAL(req->inbuf,smb_vwv1);
-	startpos = IVAL_TO_SMB_OFF_T(req->inbuf,smb_vwv2);
-	mtime = convert_time_t_to_timespec(srv_make_unix_date3(
-						   req->inbuf+smb_vwv4));
+	numtowrite = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
+	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
 	if (numtowrite
@@ -4418,7 +4362,7 @@ void reply_lock(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBlock);
@@ -4427,8 +4371,8 @@ void reply_lock(struct smb_request *req)
 
 	release_level_2_oplocks_on_change(fsp);
 
-	count = (uint64_t)IVAL(req->inbuf,smb_vwv1);
-	offset = (uint64_t)IVAL(req->inbuf,smb_vwv3);
+	count = (uint64_t)IVAL(req->vwv+1, 0);
+	offset = (uint64_t)IVAL(req->vwv+3, 0);
 
 	DEBUG(3,("lock fd=%d fnum=%d offset=%.0f count=%.0f\n",
 		 fsp->fh->fd, fsp->fnum, (double)offset, (double)count));
@@ -4477,15 +4421,15 @@ void reply_unlock(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBunlock);
 		return;
 	}
 
-	count = (uint64_t)IVAL(req->inbuf,smb_vwv1);
-	offset = (uint64_t)IVAL(req->inbuf,smb_vwv3);
+	count = (uint64_t)IVAL(req->vwv+1, 0);
+	offset = (uint64_t)IVAL(req->vwv+3, 0);
 
 	status = do_unlock(smbd_messaging_context(),
 			fsp,
@@ -4558,7 +4502,7 @@ void reply_echo(struct smb_request *req)
 		return;
 	}
 
-	smb_reverb = SVAL(req->inbuf,smb_vwv0);
+	smb_reverb = SVAL(req->vwv+0, 0);
 
 	reply_outbuf(req, 1, req->buflen);
 
@@ -4651,7 +4595,7 @@ void reply_printclose(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBsplclose);
@@ -4699,8 +4643,8 @@ void reply_printqueue(struct smb_request *req)
 		return;
 	}
 
-	max_count = SVAL(req->inbuf,smb_vwv0);
-	start_index = SVAL(req->inbuf,smb_vwv1);
+	max_count = SVAL(req->vwv+0, 0);
+	start_index = SVAL(req->vwv+1, 0);
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
@@ -4793,7 +4737,7 @@ void reply_printwrite(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if (!check_fsp(conn, req, fsp)) {
 		END_PROFILE(SMBsplwr);
@@ -4848,8 +4792,8 @@ void reply_mkdir(struct smb_request *req)
 
 	START_PROFILE(SMBmkdir);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &directory,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &directory, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmkdir);
@@ -5118,8 +5062,8 @@ void reply_rmdir(struct smb_request *req)
 
 	START_PROFILE(SMBrmdir);
 
-	srvstr_get_path(ctx, (char *)req->inbuf, req->flags2, &directory,
-			(const char *)req->buf + 1, 0, STR_TERMINATE, &status);
+	srvstr_get_path_req(ctx, req, &directory, (const char *)req->buf + 1,
+			    STR_TERMINATE, &status);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBrmdir);
@@ -5914,21 +5858,19 @@ void reply_mv(struct smb_request *req)
 		return;
 	}
 
-	attrs = SVAL(req->inbuf,smb_vwv0);
+	attrs = SVAL(req->vwv+0, 0);
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name, p,
-				   0, STR_TERMINATE, &status,
-				   &src_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
+				       &status, &src_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
 		return;
 	}
 	p++;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &newname, p,
-				   0, STR_TERMINATE, &status,
-				   &dest_has_wcard);
+	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+				       &status, &dest_has_wcard);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBmv);
@@ -6156,22 +6098,20 @@ void reply_copy(struct smb_request *req)
 		return;
 	}
 
-	tid2 = SVAL(req->inbuf,smb_vwv0);
-	ofun = SVAL(req->inbuf,smb_vwv1);
-	flags = SVAL(req->inbuf,smb_vwv2);
+	tid2 = SVAL(req->vwv+0, 0);
+	ofun = SVAL(req->vwv+1, 0);
+	flags = SVAL(req->vwv+2, 0);
 
 	p = (const char *)req->buf;
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &name, p,
-				   0, STR_TERMINATE, &status,
-				   &source_has_wild);
+	p += srvstr_get_path_req_wcard(ctx, req, &name, p, STR_TERMINATE,
+				       &status, &source_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
 		return;
 	}
-	p += srvstr_get_path_wcard(ctx, (char *)req->inbuf, req->flags2, &newname, p,
-				   0, STR_TERMINATE, &status,
-				   &dest_has_wild);
+	p += srvstr_get_path_req_wcard(ctx, req, &newname, p, STR_TERMINATE,
+				       &status, &dest_has_wild);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBcopy);
@@ -6617,12 +6557,12 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv2));
-	locktype = CVAL(req->inbuf,smb_vwv3);
-	oplocklevel = CVAL(req->inbuf,smb_vwv3+1);
-	num_ulocks = SVAL(req->inbuf,smb_vwv6);
-	num_locks = SVAL(req->inbuf,smb_vwv7);
-	lock_timeout = IVAL(req->inbuf,smb_vwv4);
+	fsp = file_fsp(req, SVAL(req->vwv+2, 0));
+	locktype = CVAL(req->vwv+3, 0);
+	oplocklevel = CVAL(req->vwv+3, 1);
+	num_ulocks = SVAL(req->vwv+6, 0);
+	num_locks = SVAL(req->vwv+7, 0);
+	lock_timeout = IVAL(req->vwv+4, 0);
 	large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES)?True:False;
 
 	if (!check_fsp(conn, req, fsp)) {
@@ -6704,11 +6644,10 @@ void reply_lockingX(struct smb_request *req)
 		if (num_locks == 0 && num_ulocks == 0) {
 			/* Sanity check - ensure a pure oplock break is not a
 			   chained request. */
-			if(CVAL(req->inbuf,smb_vwv0) != 0xff)
+			if(CVAL(req->vwv+0, 0) != 0xff)
 				DEBUG(0,("reply_lockingX: Error : pure oplock "
 					 "break is a chained %d request !\n",
-					 (unsigned int)CVAL(req->inbuf,
-							    smb_vwv0) ));
+					 (unsigned int)CVAL(req->vwv+0, 0)));
 			END_PROFILE(SMBlockingX);
 			return;
 		}
@@ -6993,7 +6932,7 @@ void reply_setattrE(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if(!fsp || (fsp->conn != conn)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -7008,9 +6947,9 @@ void reply_setattrE(struct smb_request *req)
 	 */
 
 	ts[0] = convert_time_t_to_timespec(
-		srv_make_unix_date2(req->inbuf+smb_vwv3)); /* atime. */
+		srv_make_unix_date2(req->vwv+3)); /* atime. */
 	ts[1] = convert_time_t_to_timespec(
-		srv_make_unix_date2(req->inbuf+smb_vwv5)); /* mtime. */
+		srv_make_unix_date2(req->vwv+5)); /* mtime. */
 
 	reply_outbuf(req, 0, 0);
 
@@ -7104,7 +7043,7 @@ void reply_getattrE(struct smb_request *req)
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
 
 	if(!fsp || (fsp->conn != conn)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);

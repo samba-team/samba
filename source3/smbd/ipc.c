@@ -81,7 +81,8 @@ static void copy_trans_params_and_data(char *outbuf, int align,
  Send a trans reply.
  ****************************************************************************/
 
-void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
+void send_trans_reply(connection_struct *conn,
+		      struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large)
@@ -103,7 +104,7 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 
 	align = ((this_lparam)%4);
 
-	if (!create_outbuf(talloc_tos(), (char *)inbuf, &outbuf,
+	if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
 			   10, 1+align+this_ldata+this_lparam)) {
 		smb_panic("could not allocate outbuf");
 	}
@@ -154,7 +155,7 @@ void send_trans_reply(connection_struct *conn, const uint8_t *inbuf,
 
 		align = (this_lparam%4);
 
-		if (!create_outbuf(talloc_tos(), (char *)inbuf, &outbuf,
+		if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
 				   10, 1+align+this_ldata+this_lparam)) {
 			smb_panic("could not allocate outbuf");
 		}
@@ -218,7 +219,7 @@ static void api_rpc_trans_reply(connection_struct *conn,
 		return;
 	}
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, (char *)rdata, data_len,
+	send_trans_reply(conn, req, NULL, 0, (char *)rdata, data_len,
 			 is_data_outstanding);
 	SAFE_FREE(rdata);
 	return;
@@ -239,7 +240,7 @@ static void api_WNPHS(connection_struct *conn, struct smb_request *req,
 	DEBUG(4,("WaitNamedPipeHandleState priority %x\n",
 		 (int)SVAL(param,0)));
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
+	send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 }
 
 
@@ -257,7 +258,7 @@ static void api_SNPHS(connection_struct *conn, struct smb_request *req,
 
 	DEBUG(4,("SetNamedPipeHandleState to code %x\n", (int)SVAL(param,0)));
 
-	send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0, False);
+	send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 }
 
 
@@ -276,7 +277,7 @@ static void api_no_reply(connection_struct *conn, struct smb_request *req)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(conn, req->inbuf, rparam, 4, NULL, 0, False);
+	send_trans_reply(conn, req, rparam, 4, NULL, 0, False);
 
 	return;
 }
@@ -320,8 +321,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply(conn, req->inbuf, NULL, 0, NULL, 0,
-					 False);
+			send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 			return;
 		}
 
@@ -506,10 +506,10 @@ void reply_trans(struct smb_request *req)
 
 	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
-	dsoff = SVAL(req->inbuf, smb_dsoff);
-	dscnt = SVAL(req->inbuf, smb_dscnt);
-	psoff = SVAL(req->inbuf, smb_psoff);
-	pscnt = SVAL(req->inbuf, smb_pscnt);
+	dsoff = SVAL(req->vwv+12, 0);
+	dscnt = SVAL(req->vwv+11, 0);
+	psoff = SVAL(req->vwv+10, 0);
+	pscnt = SVAL(req->vwv+9, 0);
 
 	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -531,20 +531,20 @@ void reply_trans(struct smb_request *req)
 
 	state->mid = req->mid;
 	state->vuid = req->vuid;
-	state->setup_count = CVAL(req->inbuf, smb_suwcnt);
+	state->setup_count = CVAL(req->vwv+13, 0);
 	state->setup = NULL;
-	state->total_param = SVAL(req->inbuf, smb_tpscnt);
+	state->total_param = SVAL(req->vwv+0, 0);
 	state->param = NULL;
-	state->total_data = SVAL(req->inbuf, smb_tdscnt);
+	state->total_data = SVAL(req->vwv+1, 0);
 	state->data = NULL;
-	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
-	state->max_data_return = SVAL(req->inbuf, smb_mdrcnt);
-	state->max_setup_return = CVAL(req->inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
+	state->max_param_return = SVAL(req->vwv+2, 0);
+	state->max_data_return = SVAL(req->vwv+3, 0);
+	state->max_setup_return = CVAL(req->vwv+4, 0);
+	state->close_on_completion = BITSETW(req->vwv+5, 0);
+	state->one_way = BITSETW(req->vwv+5, 1);
 
-	srvstr_pull_buf_talloc(state, req->inbuf, req->flags2, &state->name,
-			       req->buf, STR_TERMINATE);
+	srvstr_pull_req_talloc(state, req, &state->name, req->buf,
+			       STR_TERMINATE);
 
 	if ((dscnt > state->total_data) || (pscnt > state->total_param) ||
 			!state->name)
@@ -710,20 +710,20 @@ void reply_transs(struct smb_request *req)
 	/* Revise total_params and total_data in case they have changed
 	 * downwards */
 
-	if (SVAL(req->inbuf, smb_vwv0) < state->total_param)
-		state->total_param = SVAL(req->inbuf,smb_vwv0);
-	if (SVAL(req->inbuf, smb_vwv1) < state->total_data)
-		state->total_data = SVAL(req->inbuf,smb_vwv1);
+	if (SVAL(req->vwv+0, 0) < state->total_param)
+		state->total_param = SVAL(req->vwv+0, 0);
+	if (SVAL(req->vwv+1, 0) < state->total_data)
+		state->total_data = SVAL(req->vwv+1, 0);
 
 	av_size = smb_len(req->inbuf);
 
-	pcnt = SVAL(req->inbuf, smb_spscnt);
-	poff = SVAL(req->inbuf, smb_spsoff);
-	pdisp = SVAL(req->inbuf, smb_spsdisp);
+	pcnt = SVAL(req->vwv+2, 0);
+	poff = SVAL(req->vwv+3, 0);
+	pdisp = SVAL(req->vwv+4, 0);
 
-	dcnt = SVAL(req->inbuf, smb_sdscnt);
-	doff = SVAL(req->inbuf, smb_sdsoff);
-	ddisp = SVAL(req->inbuf, smb_sdsdisp);
+	dcnt = SVAL(req->vwv+5, 0);
+	doff = SVAL(req->vwv+6, 0);
+	ddisp = SVAL(req->vwv+7, 0);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;

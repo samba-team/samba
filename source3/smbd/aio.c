@@ -221,6 +221,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	SMB_STRUCT_AIOCB *a;
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
+	int ret;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -240,7 +241,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
@@ -279,14 +280,15 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
 	become_root();
-	if (SMB_VFS_AIO_READ(fsp,a) == -1) {
+	ret = SMB_VFS_AIO_READ(fsp, a);
+	unbecome_root();
+
+	if (ret == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
 		delete_aio_ex(aio_ex);
-		unbecome_root();
 		return False;
 	}
-	unbecome_root();
 
 	DEBUG(10,("schedule_aio_read_and_X: scheduled aio_read for file %s, "
 		  "offset %.0f, len = %u (mid = %u)\n",
@@ -311,8 +313,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t inbufsize, outbufsize;
-	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
+	bool write_through = BITSETW(req->vwv+7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
+	int ret;
 
 	if (fsp->base_fsp != NULL) {
 		/* No AIO on streams yet */
@@ -332,7 +335,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
@@ -380,15 +383,16 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	a->aio_sigevent.sigev_value.sival_int = aio_ex->mid;
 
 	become_root();
-	if (SMB_VFS_AIO_WRITE(fsp,a) == -1) {
+	ret = SMB_VFS_AIO_WRITE(fsp, a);
+	unbecome_root();
+
+	if (ret == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
 		delete_aio_ex(aio_ex);
-		unbecome_root();
 		return False;
 	}
-	unbecome_root();
-	
+
 	release_level_2_oplocks_on_change(fsp);
 
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))

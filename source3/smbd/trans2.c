@@ -2183,7 +2183,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	DEBUG( 4, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask, directory, dirtype, numentries ) );
 
 	/*
@@ -2481,7 +2481,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 
 	DEBUG( 3, ( "%s mask=%s directory=%s dirtype=%d numentries=%d\n",
-		smb_fn_name(CVAL(req->inbuf,smb_com)),
+		smb_fn_name(req->cmd),
 		mask, directory, dirtype, numentries ) );
 
 	/* Check if we can close the dirptr */
@@ -3118,7 +3118,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n",
-		    smb_fn_name(CVAL(req->inbuf,smb_com)), info_level) );
+		    smb_fn_name(req->cmd), info_level) );
 
 	return;
 }
@@ -7254,7 +7254,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			     unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv15));
+	files_struct *fsp = file_fsp(req, SVAL(req->vwv+15, 0));
 
 	/* check for an invalid fid before proceeding */
 
@@ -7307,7 +7307,7 @@ void reply_findclose(struct smb_request *req)
 		return;
 	}
 
-	dptr_num = SVALS(req->inbuf,smb_vwv0);
+	dptr_num = SVALS(req->vwv+0, 0);
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
@@ -7337,7 +7337,7 @@ void reply_findnclose(struct smb_request *req)
 		return;
 	}
 	
-	dptr_num = SVAL(req->inbuf,smb_vwv0);
+	dptr_num = SVAL(req->vwv+0, 0);
 
 	DEBUG(3,("reply_findnclose, dptr_num = %d\n", dptr_num));
 
@@ -7540,11 +7540,11 @@ void reply_trans2(struct smb_request *req)
 		return;
 	}
 
-	dsoff = SVAL(req->inbuf, smb_dsoff);
-	dscnt = SVAL(req->inbuf, smb_dscnt);
-	psoff = SVAL(req->inbuf, smb_psoff);
-	pscnt = SVAL(req->inbuf, smb_pscnt);
-	tran_call = SVAL(req->inbuf, smb_setup0);
+	dsoff = SVAL(req->vwv+12, 0);
+	dscnt = SVAL(req->vwv+11, 0);
+	psoff = SVAL(req->vwv+10, 0);
+	pscnt = SVAL(req->vwv+9, 0);
+	tran_call = SVAL(req->vwv+14, 0);
 	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
 
@@ -7584,17 +7584,17 @@ void reply_trans2(struct smb_request *req)
 
 	state->mid = req->mid;
 	state->vuid = req->vuid;
-	state->setup_count = SVAL(req->inbuf, smb_suwcnt);
+	state->setup_count = SVAL(req->vwv+13, 0);
 	state->setup = NULL;
-	state->total_param = SVAL(req->inbuf, smb_tpscnt);
+	state->total_param = SVAL(req->vwv+0, 0);
 	state->param = NULL;
-	state->total_data =  SVAL(req->inbuf, smb_tdscnt);
+	state->total_data =  SVAL(req->vwv+1, 0);
 	state->data = NULL;
-	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
-	state->max_data_return  = SVAL(req->inbuf, smb_mdrcnt);
-	state->max_setup_return = SVAL(req->inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
+	state->max_param_return = SVAL(req->vwv+2, 0);
+	state->max_data_return  = SVAL(req->vwv+3, 0);
+	state->max_setup_return = SVAL(req->vwv+4, 0);
+	state->close_on_completion = BITSETW(req->vwv+5, 0);
+	state->one_way = BITSETW(req->vwv+5, 1);
 
 	state->call = tran_call;
 
@@ -7758,18 +7758,18 @@ void reply_transs2(struct smb_request *req)
 	/* Revise state->total_param and state->total_data in case they have
 	   changed downwards */
 
-	if (SVAL(req->inbuf, smb_tpscnt) < state->total_param)
-		state->total_param = SVAL(req->inbuf, smb_tpscnt);
-	if (SVAL(req->inbuf, smb_tdscnt) < state->total_data)
-		state->total_data = SVAL(req->inbuf, smb_tdscnt);
+	if (SVAL(req->vwv+0, 0) < state->total_param)
+		state->total_param = SVAL(req->vwv+0, 0);
+	if (SVAL(req->vwv+1, 0) < state->total_data)
+		state->total_data = SVAL(req->vwv+1, 0);
 
-	pcnt = SVAL(req->inbuf, smb_spscnt);
-	poff = SVAL(req->inbuf, smb_spsoff);
-	pdisp = SVAL(req->inbuf, smb_spsdisp);
+	pcnt = SVAL(req->vwv+2, 0);
+	poff = SVAL(req->vwv+3, 0);
+	pdisp = SVAL(req->vwv+4, 0);
 
-	dcnt = SVAL(req->inbuf, smb_sdscnt);
-	doff = SVAL(req->inbuf, smb_sdsoff);
-	ddisp = SVAL(req->inbuf, smb_sdsdisp);
+	dcnt = SVAL(req->vwv+5, 0);
+	doff = SVAL(req->vwv+6, 0);
+	ddisp = SVAL(req->vwv+7, 0);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;

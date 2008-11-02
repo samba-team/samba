@@ -625,12 +625,14 @@ struct current_user {
 };
 
 struct smb_request {
+	uint8_t cmd;
 	uint16 flags2;
 	uint16 smbpid;
 	uint16 mid;
 	uint16 vuid;
 	uint16 tid;
 	uint8  wct;
+	uint16_t *vwv;
 	uint16_t buflen;
 	const uint8_t *buf;
 	const uint8 *inbuf;

@@ -25,5 +25,6 @@
    end of the smbbuf area 
 */
 
-#define srvstr_pull_buf_talloc(ctx, inbuf, smb_flags2, dest, src, flags) \
-    pull_string_talloc(ctx, inbuf, smb_flags2, dest, src, smb_bufrem(inbuf, src), flags)
+#define srvstr_pull_req_talloc(ctx, req_, dest, src, flags) \
+    pull_string_talloc(ctx, req_->inbuf, req_->flags2, dest, src, \
+		       smbreq_bufrem(req_, src), flags)

@@ -7869,7 +7869,7 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
 /* The following definitions come from smbd/ipc.c  */
 
 void send_trans_reply(connection_struct *conn,
-		      const uint8_t *inbuf,
+		      struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large);
@@ -8266,6 +8266,12 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags,
 			NTSTATUS *err);
+size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
+				 char **pp_dest, const char *src, int flags,
+				 NTSTATUS *err, bool *contains_wcard);
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			   char **pp_dest, const char *src, int flags,
+			   NTSTATUS *err);
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 		    files_struct *fsp);
 bool check_fsp(connection_struct *conn, struct smb_request *req,
