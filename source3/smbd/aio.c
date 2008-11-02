@@ -240,7 +240,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}
@@ -311,7 +311,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	struct aio_extra *aio_ex;
 	SMB_STRUCT_AIOCB *a;
 	size_t inbufsize, outbufsize;
-	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
+	bool write_through = BITSETW(req->vwv+7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
 	if (fsp->base_fsp != NULL) {
@@ -332,7 +332,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->inbuf,smb_vwv0) != 0xFF)
+        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
 	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
 		return False;
 	}

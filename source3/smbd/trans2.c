@@ -7254,7 +7254,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			     unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
-	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv15));
+	files_struct *fsp = file_fsp(req, SVAL(req->vwv+15, 0));
 
 	/* check for an invalid fid before proceeding */
 
@@ -7307,7 +7307,7 @@ void reply_findclose(struct smb_request *req)
 		return;
 	}
 
-	dptr_num = SVALS(req->inbuf,smb_vwv0);
+	dptr_num = SVALS(req->vwv+0, 0);
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
@@ -7337,7 +7337,7 @@ void reply_findnclose(struct smb_request *req)
 		return;
 	}
 	
-	dptr_num = SVAL(req->inbuf,smb_vwv0);
+	dptr_num = SVAL(req->vwv+0, 0);
 
 	DEBUG(3,("reply_findnclose, dptr_num = %d\n", dptr_num));
 
@@ -7593,8 +7593,8 @@ void reply_trans2(struct smb_request *req)
 	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
 	state->max_data_return  = SVAL(req->inbuf, smb_mdrcnt);
 	state->max_setup_return = SVAL(req->inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
+	state->close_on_completion = BITSETW(req->vwv+5, 0);
+	state->one_way = BITSETW(req->vwv+5, 1);
 
 	state->call = tran_call;
 

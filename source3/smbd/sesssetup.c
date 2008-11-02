@@ -1169,7 +1169,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const char *native_lanman;
 	const char *primary_domain;
 	const char *p2;
-	uint16 data_blob_len = SVAL(req->inbuf, smb_vwv7);
+	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
 	int vuid = SVAL(req->inbuf,smb_uid);
 	user_struct *vuser = NULL;
@@ -1179,7 +1179,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	DEBUG(3,("Doing spnego session setup\n"));
 
 	if (global_client_caps == 0) {
-		global_client_caps = IVAL(req->inbuf,smb_vwv10);
+		global_client_caps = IVAL(req->vwv+10, 0);
 
 		if (!(global_client_caps & CAP_STATUS32)) {
 			remove_from_common_flags2(FLAGS2_32_BIT_ERROR_CODES);
@@ -1438,7 +1438,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			return;
 		}
 
-		if (SVAL(req->inbuf,smb_vwv4) == 0) {
+		if (SVAL(req->vwv+4, 0) == 0) {
 			setup_new_vc_session();
 		}
 
@@ -1447,10 +1447,10 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 
-	smb_bufsize = SVAL(req->inbuf,smb_vwv2);
+	smb_bufsize = SVAL(req->vwv+2, 0);
 
 	if (Protocol < PROTOCOL_NT1) {
-		uint16 passlen1 = SVAL(req->inbuf,smb_vwv7);
+		uint16 passlen1 = SVAL(req->vwv+7, 0);
 
 		/* Never do NT status codes with protocols before NT1 as we
 		 * don't get client caps. */
@@ -1478,8 +1478,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		domain = "";
 
 	} else {
-		uint16 passlen1 = SVAL(req->inbuf,smb_vwv7);
-		uint16 passlen2 = SVAL(req->inbuf,smb_vwv8);
+		uint16 passlen1 = SVAL(req->vwv+7, 0);
+		uint16 passlen2 = SVAL(req->vwv+8, 0);
 		enum remote_arch_types ra_type = get_remote_arch();
 		const uint8_t *p = req->buf;
 		const uint8_t *save_p = req->buf;
@@ -1487,7 +1487,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 
 		if(global_client_caps == 0) {
-			global_client_caps = IVAL(req->inbuf,smb_vwv11);
+			global_client_caps = IVAL(req->vwv+11, 0);
 
 			if (!(global_client_caps & CAP_STATUS32)) {
 				remove_from_common_flags2(
@@ -1613,7 +1613,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		 * Windows 9x does not include a string here at all so we have
 		 * to check if we have any extra bytes left */
 
-		byte_count = SVAL(req->inbuf, smb_vwv13);
+		byte_count = SVAL(req->vwv+13, 0);
 		if ( PTR_DIFF(p, save_p) < byte_count) {
 			p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 						    STR_TERMINATE);
@@ -1635,7 +1635,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	}
 
-	if (SVAL(req->inbuf,smb_vwv4) == 0) {
+	if (SVAL(req->vwv+4, 0) == 0) {
 		setup_new_vc_session();
 	}
 

@@ -118,8 +118,8 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 
 void reply_pipe_write(struct smb_request *req)
 {
-	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
-	size_t numtowrite = SVAL(req->inbuf,smb_vwv1);
+	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
+	size_t numtowrite = SVAL(req->vwv+1, 0);
 	ssize_t nwritten;
 	const uint8_t *data;
 
@@ -170,13 +170,12 @@ void reply_pipe_write(struct smb_request *req)
 
 void reply_pipe_write_and_X(struct smb_request *req)
 {
-	files_struct *fsp = file_fsp(req, SVAL(req->inbuf, smb_vwv2));
-	size_t numtowrite = SVAL(req->inbuf,smb_vwv10);
+	files_struct *fsp = file_fsp(req, SVAL(req->vwv+2, 0));
+	size_t numtowrite = SVAL(req->vwv+10, 0);
 	ssize_t nwritten;
-	int smb_doff = SVAL(req->inbuf, smb_vwv11);
+	int smb_doff = SVAL(req->vwv+11, 0);
 	bool pipe_start_message_raw =
-		((SVAL(req->inbuf, smb_vwv7)
-		  & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
+		((SVAL(req->vwv+7, 0) & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	uint8_t *data;
 
@@ -246,9 +245,9 @@ void reply_pipe_write_and_X(struct smb_request *req)
 
 void reply_pipe_read_and_X(struct smb_request *req)
 {
-	files_struct *fsp = file_fsp(req, SVAL(req->inbuf,smb_vwv0));
-	int smb_maxcnt = SVAL(req->inbuf,smb_vwv5);
-	int smb_mincnt = SVAL(req->inbuf,smb_vwv6);
+	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
+	int smb_maxcnt = SVAL(req->vwv+5, 0);
+	int smb_mincnt = SVAL(req->vwv+6, 0);
 	ssize_t nread;
 	uint8_t *data;
 	bool unused;
@@ -258,7 +257,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
            is deliberate, instead we always return the next lump of
            data on the pipe */
 #if 0
-	uint32 smb_offs = IVAL(req->inbuf,smb_vwv3);
+	uint32 smb_offs = IVAL(req->vwv+3, 0);
 #endif
 
 	if (!fsp_is_np(fsp)) {

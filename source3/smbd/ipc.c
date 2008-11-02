@@ -540,8 +540,8 @@ void reply_trans(struct smb_request *req)
 	state->max_param_return = SVAL(req->inbuf, smb_mprcnt);
 	state->max_data_return = SVAL(req->inbuf, smb_mdrcnt);
 	state->max_setup_return = CVAL(req->inbuf, smb_msrcnt);
-	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
-	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
+	state->close_on_completion = BITSETW(req->vwv+5, 0);
+	state->one_way = BITSETW(req->vwv+5, 1);
 
 	srvstr_pull_req_talloc(state, req, &state->name, req->buf,
 			       STR_TERMINATE);
@@ -710,10 +710,10 @@ void reply_transs(struct smb_request *req)
 	/* Revise total_params and total_data in case they have changed
 	 * downwards */
 
-	if (SVAL(req->inbuf, smb_vwv0) < state->total_param)
-		state->total_param = SVAL(req->inbuf,smb_vwv0);
-	if (SVAL(req->inbuf, smb_vwv1) < state->total_data)
-		state->total_data = SVAL(req->inbuf,smb_vwv1);
+	if (SVAL(req->vwv+0, 0) < state->total_param)
+		state->total_param = SVAL(req->vwv+0, 0);
+	if (SVAL(req->vwv+1, 0) < state->total_data)
+		state->total_data = SVAL(req->vwv+1, 0);
 
 	av_size = smb_len(req->inbuf);
 

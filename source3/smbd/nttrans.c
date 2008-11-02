@@ -1243,8 +1243,8 @@ void reply_ntrename(struct smb_request *req)
 		return;
 	}
 
-	attrs = SVAL(req->inbuf,smb_vwv0);
-	rename_type = SVAL(req->inbuf,smb_vwv1);
+	attrs = SVAL(req->vwv+0, 0);
+	rename_type = SVAL(req->vwv+1, 0);
 
 	p = (const char *)req->buf + 1;
 	p += srvstr_get_path_req_wcard(ctx, req, &oldname, p, STR_TERMINATE,
