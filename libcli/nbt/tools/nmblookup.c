@@ -212,7 +212,9 @@ static bool process_one(struct loadparm_context *lp_ctx, struct event_context *e
 		node_name = talloc_strdup(tmp_ctx, name);
 	}
 
-	nbtsock = nbt_name_socket_init(tmp_ctx, ev, lp_iconv_convenience(lp_ctx));
+	nbtsock = nbt_name_socket_init(tmp_ctx, ev, lp_iconv_convenience(lp_ctx),
+								   lp_parm_int(lp_ctx, NULL, "nbt", "wack_timeout", 30)
+								   );
 	
 	if (options.root_port) {
 		all_zero_addr = socket_address_from_strings(tmp_ctx, nbtsock->sock->backend_name, 
