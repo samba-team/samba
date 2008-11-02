@@ -40,6 +40,8 @@
 #define KCM_PROTOCOL_VERSION_MAJOR	2
 #define KCM_PROTOCOL_VERSION_MINOR	0
 
+typedef unsigned char kcmuuid_t[16];
+
 typedef enum kcm_operation {
     KCM_OP_NOOP,
     KCM_OP_GET_NAME,
