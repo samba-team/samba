@@ -472,7 +472,7 @@ kcm_op_get_next(krb5_context context,
     kcm_ccache ccache;
     char *name;
     struct kcm_creds *c;
-    uuid_t uuid;
+    kcmuuid_t uuid;
     ssize_t sret;
 
     ret = krb5_ret_stringz(request, &name);
