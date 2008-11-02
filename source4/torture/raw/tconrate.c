@@ -103,7 +103,8 @@ static int fork_tcon_client(struct torture_context *tctx,
 				NULL, lp_socket_options(tctx->lp_ctx), cmdline_credentials,
 				lp_resolve_context(tctx->lp_ctx),
 				tctx->ev, &options, &session_options,
-				lp_iconv_convenience(tctx->lp_ctx));
+				lp_iconv_convenience(tctx->lp_ctx),
+				lp_gensec_settings(tctx, tctx->lp_ctx));
 
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("failed to connect to //%s/%s: %s\n",

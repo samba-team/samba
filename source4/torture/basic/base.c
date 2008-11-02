@@ -1450,13 +1450,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	const char *os2_fname = ".+,;=[].";
 	const char *dname = "samba3_errordir";
 	union smb_open io;
-	TALLOC_CTX *mem_ctx = talloc_init("samba3_errorpaths");
 	NTSTATUS status;
-
-	if (mem_ctx == NULL) {
-		torture_comment(tctx, "talloc_init failed\n");
-		return false;
-	}
 
 	nt_status_support = lp_nt_status_support(tctx->lp_ctx);
 
@@ -1506,14 +1500,14 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = dname;
 
-	status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
+	status = smb_raw_open(cli_nt->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
 		       nt_errstr(NT_STATUS_OBJECT_NAME_COLLISION));
 		goto fail;
 	}
-	status = smb_raw_open(cli_dos->tree, mem_ctx, &io);
+	status = smb_raw_open(cli_dos->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
 		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
@@ -1563,7 +1557,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 	}
 
 	io.ntcreatex.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
-	status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
+	status = smb_raw_open(cli_nt->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
 		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
@@ -1571,7 +1565,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		goto fail;
 	}
 
-	status = smb_raw_open(cli_dos->tree, mem_ctx, &io);
+	status = smb_raw_open(cli_dos->tree, tctx, &io);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS, ERRfilexists))) {
 		torture_comment(tctx, "(%s) incorrect status %s should be %s\n",
 		       __location__, nt_errstr(status),
@@ -1644,7 +1638,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 		io.ntcreatex.in.fname = fname;
 		io.ntcreatex.in.flags = 0;
 
-		status = smb_raw_open(cli_nt->tree, mem_ctx, &io);
+		status = smb_raw_open(cli_nt->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
 			torture_comment(tctx, "ntcreate as dir gave %s, "
 					"expected NT_STATUS_NOT_A_DIRECTORY\n",
@@ -1656,7 +1650,7 @@ static bool torture_samba3_errorpaths(struct torture_context *tctx)
 			smbcli_close(cli_nt->tree, io.ntcreatex.out.file.fnum);
 		}
 
-		status = smb_raw_open(cli_dos->tree, mem_ctx, &io);
+		status = smb_raw_open(cli_dos->tree, tctx, &io);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_DOS(ERRDOS,
 							   ERRbaddirectory))) {
 			torture_comment(tctx, "ntcreate as dir gave %s, "

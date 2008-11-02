@@ -490,7 +490,8 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 					cmdline_credentials, 
 					lp_resolve_context(tctx->lp_ctx),
 					ev, &options, &session_options,
-					lp_iconv_convenience(tctx->lp_ctx));
+					lp_iconv_convenience(tctx->lp_ctx),
+					lp_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;

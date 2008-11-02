@@ -79,7 +79,8 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					const char *socket_options,
 					struct smbcli_options *options,
 					struct smbcli_session_options *session_options,
-					struct smb_iconv_convenience *iconv_convenience)
+					struct smb_iconv_convenience *iconv_convenience,
+					struct gensec_settings *gensec_settings)
 {
 	struct smbcli_state *c;
 	char *server;
@@ -100,7 +101,8 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					socket_options,
 					cmdline_credentials, resolve_ctx, ev,
 					options, session_options,
-					iconv_convenience);
+					iconv_convenience,
+					gensec_settings);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -372,7 +374,8 @@ static void usage(poptContext pc)
 	cli = connect_one(lp_resolve_context(lp_ctx), ev, mem_ctx, share, 
 			  lp_smb_ports(lp_ctx), lp_socket_options(lp_ctx), 
 			  &options, &session_options,
-			  lp_iconv_convenience(lp_ctx));
+			  lp_iconv_convenience(lp_ctx),
+			  lp_gensec_settings(mem_ctx, lp_ctx));
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

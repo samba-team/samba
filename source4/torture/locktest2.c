@@ -144,6 +144,7 @@ static struct smbcli_state *connect_one(TALLOC_CTX *mem_ctx,
 										char *share, const char **ports,
 					struct smb_options *options,
 					struct smb_options *session_options,
+					struct gensec_settings *gensec_settings,
 					struct event_context *ev)
 {
 	struct smbcli_state *c;
@@ -173,7 +174,7 @@ static struct smbcli_state *connect_one(TALLOC_CTX *mem_ctx,
 	nt_status = smbcli_full_connection(NULL, 
 			   &c, myname, server_n, ports, share, NULL,
 			   username, lp_workgroup(), password, ev,
-			   options, session_options);
+			   options, session_options, gensec_settings);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smbcli_full_connection failed with error %s\n", nt_errstr(nt_status)));
 		return NULL;
@@ -192,6 +193,7 @@ static void reconnect(TALLOC_CTX *mem_ctx,
 		      const char **ports,
 		      struct smbcli_options *options,
 		      struct smbcli_session_options *session_options,
+			  struct gensec_settings *gensec_settings,
 		      struct event_context *ev,
 		      char *share1, char *share2)
 {
@@ -211,7 +213,7 @@ static void reconnect(TALLOC_CTX *mem_ctx,
 			smbcli_ulogoff(cli[server][conn]);
 			talloc_free(cli[server][conn]);
 		}
-		cli[server][conn] = connect_one(mem_ctx, share[server], ports, options, session_options, ev);
+		cli[server][conn] = connect_one(mem_ctx, share[server], ports, options, session_options, gensec_settings, ev);
 		if (!cli[server][conn]) {
 			DEBUG(0,("Failed to connect to %s\n", share[server]));
 			exit(1);
@@ -362,6 +364,7 @@ static void test_locks(TALLOC_CTX *mem_ctx, char *share1, char *share2,
 			const char **ports,
 			struct smbcli_options *options,
 			struct smbcli_session_options *session_options,
+			struct gensec_settings *gensec_settings,
 			struct event_context *ev)
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
@@ -391,7 +394,7 @@ static void test_locks(TALLOC_CTX *mem_ctx, char *share1, char *share2,
 		recorded[n].needed = true;
 	}
 
-	reconnect(mem_ctx, cli, nfs, fnum, ports, options, session_options, ev, share1, share2);
+	reconnect(mem_ctx, cli, nfs, fnum, ports, options, session_options, gensec_settings, ev, share1, share2);
 	open_files(cli, nfs, fnum);
 	n = retest(cli, nfs, fnum, numops);
 
@@ -429,7 +432,7 @@ static void test_locks(TALLOC_CTX *mem_ctx, char *share1, char *share2,
 	}
 
 	close_files(cli, nfs, fnum);
-	reconnect(mem_ctx, cli, nfs, fnum, ports, options, session_options, ev, share1, share2);
+	reconnect(mem_ctx, cli, nfs, fnum, ports, options, session_options, gensec_settings, ev, share1, share2);
 	open_files(cli, nfs, fnum);
 	showall = true;
 	n1 = retest(cli, nfs, fnum, n);
@@ -567,8 +570,9 @@ static void usage(void)
 	locking_init(1);
 	lp_smbcli_options(lp_ctx, &options);
 	lp_smbcli_session_options(lp_ctx, &session_options);
-	test_locks(mem_ctx, share1, share2, nfspath1, nfspath2, lp_smb_ports(lp_ctx),
-		   &options, &session_options, ev);
+	test_locks(mem_ctx, share1, share2, nfspath1, nfspath2, 
+			   lp_smb_ports(lp_ctx),
+			   &options, &session_options, lp_gensec_settings(lp_ctx), ev);
 
 	return(0);
 }

@@ -154,6 +154,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
 	state->connect->in.iconv_convenience = io->in.iconv_convenience;
+	state->connect->in.gensec_settings = io->in.gensec_settings;
 
 	state->connect->in.options = tree->session->transport->options;
 	state->connect->in.session_options = tree->session->options;

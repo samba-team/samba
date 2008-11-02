@@ -164,6 +164,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	io2.in.filename = fname;
 	io2.in.resolve_ctx = lp_resolve_context(tctx->lp_ctx);
 	io2.in.iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
+	io2.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 	lp_smbcli_options(tctx->lp_ctx, &io2.in.options);
 	lp_smbcli_session_options(tctx->lp_ctx, &io2.in.session_options);
 
@@ -355,6 +356,7 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 	io1.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	io1.in.level = RAW_QFS_OBJECTID_INFORMATION;
 	io1.in.iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
+	io1.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 
 	printf("testing parallel queryfsinfo [Object ID] with %d ops\n", torture_numops);
 

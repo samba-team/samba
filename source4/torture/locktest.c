@@ -168,7 +168,8 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 						servers[snum], 
 						lp_resolve_context(lp_ctx),
 						ev, &options, &session_options,
-						lp_iconv_convenience(lp_ctx));
+						lp_iconv_convenience(lp_ctx),
+						lp_gensec_settings(mem_ctx, lp_ctx));
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

@@ -207,6 +207,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	io.in.iconv_convenience = lp_iconv_convenience(ntvfs->ctx->lp_ctx);
+	io.in.gensec_settings = lp_gensec_settings(private, ntvfs->ctx->lp_ctx);
 	lp_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
 	lp_smbcli_session_options(ntvfs->ctx->lp_ctx, &io.in.session_options);
 

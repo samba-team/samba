@@ -190,7 +190,8 @@ static bool open_connection_no_level2_oplocks(struct torture_context *tctx,
 					NULL, lp_socket_options(tctx->lp_ctx), cmdline_credentials,
 					lp_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
-					lp_iconv_convenience(tctx->lp_ctx));
+					lp_iconv_convenience(tctx->lp_ctx),
+					lp_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;

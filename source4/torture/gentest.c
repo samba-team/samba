@@ -246,7 +246,8 @@ static bool connect_servers(struct event_context *ev,
 								     lp_resolve_context(lp_ctx), ev,
 								     &smb_options,
 								     &smb_session_options,
-									 lp_iconv_convenience(lp_ctx));
+									 lp_iconv_convenience(lp_ctx),
+									 lp_gensec_settings(lp_ctx, lp_ctx));
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",

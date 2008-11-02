@@ -67,6 +67,7 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 	}
 	io.in.dest_ports = lp_smb_ports(ctx->auth_ctx->lp_ctx); 
 	io.in.socket_options = lp_socket_options(ctx->auth_ctx->lp_ctx);
+	io.in.gensec_settings = lp_gensec_settings(mem_ctx, ctx->auth_ctx->lp_ctx);
 
 	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
 

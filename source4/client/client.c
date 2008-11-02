@@ -3049,7 +3049,8 @@ static bool do_connect(struct smbclient_context *ctx,
 		       struct cli_credentials *cred, 
 		       struct smbcli_options *options,
 		       struct smbcli_session_options *session_options,
-			   struct smb_iconv_convenience *iconv_convenience)
+			   struct smb_iconv_convenience *iconv_convenience,
+			   struct gensec_settings *gensec_settings)
 {
 	NTSTATUS status;
 	char *server, *share;
@@ -3071,7 +3072,8 @@ static bool do_connect(struct smbclient_context *ctx,
 					socket_options,
 					cred, resolve_ctx, 
 					ev_ctx, options, session_options,
-					iconv_convenience);
+					iconv_convenience,
+					gensec_settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
 			 server, share, nt_errstr(status));
@@ -3284,7 +3286,8 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 			desthost, lp_smb_ports(cmdline_lp_ctx), service,
 			lp_socket_options(cmdline_lp_ctx),
 			cmdline_credentials, &smb_options, &smb_session_options,
-			lp_iconv_convenience(cmdline_lp_ctx)))
+			lp_iconv_convenience(cmdline_lp_ctx),
+			lp_gensec_settings(ctx, cmdline_lp_ctx)))
 		return 1;
 
 	if (base_directory) 

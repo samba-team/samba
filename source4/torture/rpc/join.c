@@ -43,7 +43,8 @@ bool torture_rpc_join(struct torture_context *torture)
 					machine_account,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx));
+					lp_iconv_convenience(torture->lp_ctx),
+					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));
@@ -71,7 +72,8 @@ bool torture_rpc_join(struct torture_context *torture)
 					machine_account,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx));
+					lp_iconv_convenience(torture->lp_ctx),
+					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
 			  TORTURE_NETBIOS_NAME));
