@@ -167,7 +167,6 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 }
 
 void *global_iconv_convenience;
-void *global_loadparm;
 void *cmdline_lp_ctx;
 struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx)
 {
