@@ -25,39 +25,6 @@
 #include "lib/socket/netif.h"
 #include "param/param.h"
 
-/**
-  get the list of IP addresses for configured interfaces
-*/
-krb5_error_code KRB5_LIB_FUNCTION krb5_get_all_client_addrs(krb5_context context, krb5_addresses *res)
-{
-	int i;
-	struct interface *ifaces;
-
-	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
-
-	res->len = iface_count(ifaces);
-	res->val = malloc_array_p(HostAddress, res->len);
-	if (res->val == NULL) {
-		talloc_free(ifaces);
-		return ENOMEM;
-	}
-	for (i=0;i<res->len;i++) {
-		const char *ip = iface_n_ip(ifaces, i);
-		res->val[i].addr_type = AF_INET;
-		res->val[i].address.length = 4;
-		res->val[i].address.data = malloc(4);
-		if (res->val[i].address.data == NULL) {
-			talloc_free(ifaces);
-			return ENOMEM;
-		}
-		((struct in_addr *)res->val[i].address.data)->s_addr = inet_addr(ip);
-	}
-
-	talloc_free(ifaces);
-
-	return 0;
-}
-
 #include "heimdal/lib/krb5/krb5_locl.h"
 
 const krb5_cc_ops krb5_scc_ops = {
