@@ -219,8 +219,6 @@ kcm_ccache_alloc(krb5_context context,
     slot->client = NULL;
     slot->server = NULL;
     slot->creds = NULL;
-    slot->n_cursor = 0;
-    slot->cursors = NULL;
     slot->key.keytab = NULL;
     slot->tkt_life = 0;
     slot->renew_life = 0;
@@ -247,7 +245,6 @@ kcm_ccache_remove_creds_internal(krb5_context context,
 				 kcm_ccache ccache)
 {
     struct kcm_creds *k;
-    struct kcm_cursor *c;
 
     k = ccache->creds;
     while (k != NULL) {
@@ -259,20 +256,6 @@ kcm_ccache_remove_creds_internal(krb5_context context,
 	free(old);
     }
     ccache->creds = NULL;
-
-    /* remove anything that would have pointed into the creds too */
-
-    ccache->n_cursor = 0;
-
-    c = ccache->cursors;
-    while (c != NULL) {
-	struct kcm_cursor *old;
-
-	old = c;
-	c = c->next;
-	free(old);
-    }
-    ccache->cursors = NULL;
 
     return 0;
 }
