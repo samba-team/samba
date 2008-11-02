@@ -208,7 +208,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 ****************************************************************************/
 
 size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
-			const char *inbuf,
+			const char *base_ptr,
 			uint16 smb_flags2,
 			char **pp_dest,
 			const char *src,
@@ -221,8 +221,8 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 
 	*pp_dest = NULL;
 
-	ret = srvstr_pull_talloc(ctx, inbuf, smb_flags2, pp_dest, src, src_len,
-				 flags);
+	ret = srvstr_pull_talloc(ctx, base_ptr, smb_flags2, pp_dest, src,
+				 src_len, flags);
 
 	if (!*pp_dest) {
 		*err = NT_STATUS_INVALID_PARAMETER;
@@ -254,7 +254,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 ****************************************************************************/
 
 size_t srvstr_get_path(TALLOC_CTX *ctx,
-			const char *inbuf,
+			const char *base_ptr,
 			uint16 smb_flags2,
 			char **pp_dest,
 			const char *src,
@@ -263,7 +263,7 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			NTSTATUS *err)
 {
 	bool ignore;
-	return srvstr_get_path_wcard(ctx, inbuf, smb_flags2, pp_dest, src,
+	return srvstr_get_path_wcard(ctx, base_ptr, smb_flags2, pp_dest, src,
 				     src_len, flags, err, &ignore);
 }
 
