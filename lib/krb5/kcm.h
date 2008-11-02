@@ -37,7 +37,7 @@
  * KCM protocol definitions
  */
 
-#define KCM_PROTOCOL_VERSION_MAJOR	1
+#define KCM_PROTOCOL_VERSION_MAJOR	2
 #define KCM_PROTOCOL_VERSION_MINOR	0
 
 typedef enum kcm_operation {
