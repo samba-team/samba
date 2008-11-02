@@ -83,7 +83,7 @@ enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
 */
 _PUBLIC_ void dbghdr(int level, const char *location, const char *func);
 
-_PUBLIC_ void dbghdrclass(int level, int class, const char *location, const char *func);
+_PUBLIC_ void dbghdrclass(int level, int cls, const char *location, const char *func);
 
 /**
   reopen the log file (usually called because the log file name might have changed)
