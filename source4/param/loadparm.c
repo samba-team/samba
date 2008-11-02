@@ -2482,6 +2482,14 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx);
 
+	/* FIXME: This is a bit of a hack, but we can't use a global, since 
+	 * not everything that uses lp also uses the socket library */
+	if (lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
+		setenv("SOCKET_TESTNONBLOCK", "1", 1);
+	} else {
+		unsetenv("SOCKET_TESTNONBLOCK");
+	}
+
 	/* FIXME: Check locale in environment for this: */
 	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
 		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)));
