@@ -239,7 +239,7 @@ NTSTATUS gensec_session_key(struct gensec_security *gensec_security,
 			    DATA_BLOB *session_key);
 NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
 				  const char *mech_oid);
-const char *gensec_get_name_by_oid(const char *oid_string);
+const char *gensec_get_name_by_oid(struct gensec_security *gensec_security, const char *oid_string);
 struct cli_credentials *gensec_get_credentials(struct gensec_security *gensec_security);
 struct socket_address *gensec_get_peer_addr(struct gensec_security *gensec_security);
 NTSTATUS gensec_init(struct loadparm_context *lp_ctx);
@@ -266,7 +266,7 @@ NTSTATUS gensec_sign_packet(struct gensec_security *gensec_security,
 			    DATA_BLOB *sig);
 NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security, 
 				       uint8_t auth_type, uint8_t auth_level);
-const char *gensec_get_name_by_authtype(uint8_t authtype);
+const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype);
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
 			     struct gensec_settings *settings,

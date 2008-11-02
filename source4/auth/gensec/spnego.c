@@ -337,7 +337,8 @@ static NTSTATUS gensec_spnego_server_try_fallback(struct gensec_security *gensec
 		bool is_spnego;
 		NTSTATUS nt_status;
 
-	    	if (gensec_security_ops_enabled(all_ops[i], gensec_security->settings->lp_ctx))
+	    	if (gensec_security != NULL && 
+				!gensec_security_ops_enabled(all_ops[i], gensec_security->settings->lp_ctx))
 		    continue;
 
 		if (!all_ops[i]->oid) {
@@ -973,8 +974,8 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 		    spnego.negTokenTarg.supportedMech &&
 		    strcmp(spnego.negTokenTarg.supportedMech, spnego_state->neg_oid) != 0) {
 			DEBUG(3,("GENSEC SPNEGO: client preferred mech (%s) not accepted, server wants: %s\n",
-				 gensec_get_name_by_oid(spnego.negTokenTarg.supportedMech), 
-				 gensec_get_name_by_oid(spnego_state->neg_oid)));
+				 gensec_get_name_by_oid(gensec_security, spnego.negTokenTarg.supportedMech), 
+				 gensec_get_name_by_oid(gensec_security, spnego_state->neg_oid)));
 			
 			talloc_free(spnego_state->sub_sec_security);
 			nt_status = gensec_subcontext_start(spnego_state,

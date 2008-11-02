@@ -33,6 +33,7 @@
 #include "torture/smbtorture.h"
 #include "../lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
+#include "auth/gensec/gensec.h"
 #include "param/param.h"
 
 #include "auth/credentials/credentials.h"
@@ -647,6 +648,8 @@ int main(int argc,char *argv[])
 	}
 
 	torture->lp_ctx = cmdline_lp_ctx;
+
+	gensec_init(cmdline_lp_ctx);
 
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");

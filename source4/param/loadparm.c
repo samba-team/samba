@@ -2478,7 +2478,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	reload_charcnv(lp_ctx);
 
-	ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx);
+	/* FIXME: ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx); */
 
 	/* FIXME: This is a bit of a hack, but we can't use a global, since 
 	 * not everything that uses lp also uses the socket library */
@@ -2687,9 +2687,10 @@ _PUBLIC_ struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, s
 
 struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	struct gensec_settings *settings = talloc(mem_ctx, struct gensec_settings);
+	struct gensec_settings *settings = talloc(NULL, struct gensec_settings);
 	if (settings == NULL)
 		return NULL;
+	SMB_ASSERT(lp_ctx != NULL);
 	settings->lp_ctx = talloc_reference(settings, lp_ctx);
 	settings->iconv_convenience = lp_iconv_convenience(lp_ctx);
 	settings->target_hostname = lp_parm_string(lp_ctx, NULL, "gensec", "target_hostname");

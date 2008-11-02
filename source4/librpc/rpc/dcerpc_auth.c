@@ -291,7 +291,7 @@ struct composite_context *dcerpc_bind_auth_send(TALLOC_CTX *mem_ctx,
 						  auth_type, auth_level);
 	if (!NT_STATUS_IS_OK(c->status)) {
 		DEBUG(1, ("Failed to start GENSEC client mechanism %s: %s\n",
-			  gensec_get_name_by_authtype(auth_type),
+			  gensec_get_name_by_authtype(sec->generic_state, auth_type),
 			  nt_errstr(c->status)));
 		composite_error(c, c->status);
 		return c;

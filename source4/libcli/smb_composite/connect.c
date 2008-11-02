@@ -470,6 +470,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	state = talloc_zero(c, struct connect_state);
 	if (state == NULL) goto failed;
 
+	if (io->in.gensec_settings == NULL) goto failed;
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;

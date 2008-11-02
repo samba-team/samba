@@ -147,7 +147,8 @@ static const struct gensec_security_ops *gensec_security_by_authtype(struct gens
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (!gensec_security_ops_enabled(backends[i], 
+											 gensec_security->settings->lp_ctx))
 		    continue;
 		if (backends[i]->auth_type == auth_type) {
 			backend = backends[i];
@@ -172,7 +173,9 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (gensec_security != NULL && 
+				!gensec_security_ops_enabled(backends[i], 
+											 gensec_security->settings->lp_ctx))
 		    continue;
 		if (backends[i]->oid) {
 			for (j=0; backends[i]->oid[j]; j++) { 
@@ -202,7 +205,7 @@ const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_sec
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (!gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
 		    continue;
 		if (backends[i]->sasl_name 
 		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
@@ -228,7 +231,8 @@ static const struct gensec_security_ops *gensec_security_by_name(struct gensec_s
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (gensec_security != NULL && 
+				!gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
 		    continue;
 		if (backends[i]->name 
 		    && (strcmp(backends[i]->name, name) == 0)) {
@@ -273,7 +277,8 @@ const struct gensec_security_ops **gensec_security_by_sasl_list(struct gensec_se
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (gensec_security != NULL &&
+				!gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
 		    continue;
 		for (sasl_idx = 0; sasl_names[sasl_idx]; sasl_idx++) {
 			if (!backends[i]->sasl_name ||
@@ -343,7 +348,8 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
-	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+	    	if (gensec_security != NULL && 
+				!gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
 		    continue;
 		if (!backends[i]->oid) {
 			continue;
@@ -393,7 +399,8 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
  * Return OIDS from the security subsystems listed
  */
 
-const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx, 
+const char **gensec_security_oids_from_ops(struct gensec_security *gensec_security,
+										   TALLOC_CTX *mem_ctx, 
 					   struct gensec_security_ops **ops,				   
 					   const char *skip) 
 {
@@ -410,6 +417,10 @@ const char **gensec_security_oids_from_ops(TALLOC_CTX *mem_ctx,
 	}
 	
 	for (i=0; ops && ops[i]; i++) {
+		if (gensec_security != NULL && 
+			!gensec_security_ops_enabled(ops[i], gensec_security->settings->lp_ctx)) {
+			continue;
+		}
 		if (!ops[i]->oid) {
 			continue;
 		}
@@ -483,7 +494,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 {
 	struct gensec_security_ops **ops
 		= gensec_security_mechs(gensec_security, mem_ctx);
-	return gensec_security_oids_from_ops(mem_ctx, ops, skip);
+	return gensec_security_oids_from_ops(gensec_security, mem_ctx, ops, skip);
 }
 
 
@@ -520,6 +531,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->event_ctx = ev;
 	(*gensec_security)->msg_ctx = msg;
+	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
 
 	return NT_STATUS_OK;
@@ -566,6 +578,11 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
+	if (settings == NULL) {
+		DEBUG(0,("gensec_client_start: no settings given!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	status = gensec_start(mem_ctx, ev, settings, NULL, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -596,6 +613,11 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 
 	if (!msg) {
 		DEBUG(0,("gensec_server_start: no messaging context given!\n"));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!settings) {
+		DEBUG(0,("gensec_server_start: no settings given!\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
@@ -672,10 +694,10 @@ _PUBLIC_ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_s
 	return gensec_start_mech(gensec_security);
 }
 
-_PUBLIC_ const char *gensec_get_name_by_authtype(uint8_t authtype) 
+_PUBLIC_ const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype) 
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_authtype(NULL, authtype);
+	ops = gensec_security_by_authtype(gensec_security, authtype);
 	if (ops) {
 		return ops->name;
 	}
@@ -683,10 +705,11 @@ _PUBLIC_ const char *gensec_get_name_by_authtype(uint8_t authtype)
 }
 	
 
-_PUBLIC_ const char *gensec_get_name_by_oid(const char *oid_string) 
+_PUBLIC_ const char *gensec_get_name_by_oid(struct gensec_security *gensec_security,
+											const char *oid_string) 
 {
 	const struct gensec_security_ops *ops;
-	ops = gensec_security_by_oid(NULL, oid_string);
+	ops = gensec_security_by_oid(gensec_security, oid_string);
 	if (ops) {
 		return ops->name;
 	}
@@ -716,6 +739,8 @@ NTSTATUS gensec_start_mech_by_ops(struct gensec_security *gensec_security,
 _PUBLIC_ NTSTATUS gensec_start_mech_by_oid(struct gensec_security *gensec_security, 
 				  const char *mech_oid) 
 {
+	SMB_ASSERT(gensec_security != NULL);
+
 	gensec_security->ops = gensec_security_by_oid(gensec_security, mech_oid);
 	if (!gensec_security->ops) {
 		DEBUG(3, ("Could not find GENSEC backend for oid=%s\n", mech_oid));
@@ -1223,8 +1248,6 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 */
 NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 {
-
-
 	if (gensec_security_by_name(NULL, ops->name) != NULL) {
 		/* its already registered! */
 		DEBUG(0,("GENSEC backend '%s' already registered\n", 

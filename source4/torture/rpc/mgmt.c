@@ -128,7 +128,7 @@ static bool test_inq_princ_name(struct dcerpc_pipe *p,
 			continue;
 		}
 		if (W_ERROR_IS_OK(r.out.result)) {
-			const char *name = gensec_get_name_by_authtype(i);
+			const char *name = gensec_get_name_by_authtype(NULL, i);
 			ret = true;
 			if (name) {
 				printf("\tprinciple name for proto %u (%s) is '%s'\n", 
