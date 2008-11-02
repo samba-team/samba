@@ -74,6 +74,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	struct smbcli_tree *tree;
 	struct smb_composite_sesssetup setup;
 	struct smb_composite_sesssetup setups[15];
+	struct gensec_settings *gensec_settings;
 	union smb_open io;
 	union smb_write wr;
 	union smb_close cl;
@@ -92,6 +93,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	printf("create a second security context on the same transport\n");
 
 	lp_smbcli_session_options(tctx->lp_ctx, &options);
+	gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 
 	session = smbcli_session_init(cli->transport, tctx, false, options);
 
@@ -100,6 +102,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 
 	setup.in.credentials = cmdline_credentials;
+	setup.in.gensec_settings = gensec_settings;
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -142,7 +145,6 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	
 		setup.in.credentials = cmdline_credentials;
-	
 
 		status = smb_composite_sesssetup(session3, &setup);
 		CHECK_STATUS(status, NT_STATUS_LOGON_FAILURE);
@@ -233,6 +235,7 @@ static bool test_session(struct smbcli_state *cli, struct torture_context *tctx)
 		setups[i].in.workgroup = lp_workgroup(tctx->lp_ctx);
 		
 		setups[i].in.credentials = cmdline_credentials;
+		setups[i].in.gensec_settings = gensec_settings;
 
 		sessions[i] = smbcli_session_init(cli->transport, tctx, false, options);
 		composite_contexts[i] = smb_composite_sesssetup_send(sessions[i], &setups[i]);
@@ -402,6 +405,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
+	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session1, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session1->vuid = setup.out.vuid;
@@ -458,6 +462,7 @@ static bool test_tree_ulogoff(struct smbcli_state *cli, struct torture_context *
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
+	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session2, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session2->vuid = setup.out.vuid;
@@ -657,8 +662,8 @@ static bool test_pid_2sess(struct smbcli_state *cli, struct torture_context *tct
 	setup.in.sesskey = cli->transport->negotiate.sesskey;
 	setup.in.capabilities = cli->transport->negotiate.capabilities; /* ignored in secondary session setup, except by our libs, which care about the extended security bit */
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
-
 	setup.in.credentials = cmdline_credentials;
+	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);	

@@ -140,7 +140,7 @@ static void continue_negprot(struct smb2_request *req)
 		break;
 	}
 
-	state->session = smb2_session_init(transport, global_loadparm, state, true);
+	state->session = smb2_session_init(transport, lp_gensec_settings(transport, global_loadparm), state, true);
 	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
@@ -239,6 +239,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 						const char *socket_options)
 {
 	struct composite_context *c;
+	const char *default_ports[] = { "445", NULL };
 	struct smb2_connect_state *state;
 	struct nbt_name name;
 	struct composite_context *creq;

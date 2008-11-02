@@ -66,6 +66,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "rpc_server/common/common.h"
 #include "lib/socket/socket.h"
+#include "auth/gensec/gensec.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -2673,4 +2674,15 @@ _PUBLIC_ struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, s
 	ret->version_build = lp_parm_int(lp_ctx, NULL, "server_info", "version_build", 3790);
 
 	return ret;
+}
+
+struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
+{
+	struct gensec_settings *settings = talloc(mem_ctx, struct gensec_settings);
+	if (settings == NULL)
+		return NULL;
+	settings->lp_ctx = talloc_reference(settings, lp_ctx);
+	settings->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	settings->target_hostname = lp_parm_string(lp_ctx, NULL, "gensec", "target_hostname");
+	return settings;
 }

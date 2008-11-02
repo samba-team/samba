@@ -73,7 +73,8 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials,
 			      const char *workgroup,
-			      struct smbcli_session_options options)
+			      struct smbcli_session_options options,
+			      struct gensec_settings *gensec_settings)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
@@ -86,6 +87,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.credentials = credentials;
 	setup.in.workgroup = workgroup;
+	setup.in.gensec_settings = gensec_settings;
 
 	status = smb_composite_sesssetup(cli->session, &setup);
 
@@ -146,6 +148,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				const char **ports,
 				const char *sharename,
 				const char *devtype,
+				const char *socket_options,
 				struct cli_credentials *credentials,
 				struct resolve_context *resolve_ctx,
 				struct event_context *ev,
@@ -161,6 +164,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	status = smbcli_tree_full_connection(parent_ctx,
 					     &tree, host, ports, 
 					     sharename, devtype,
+						 socket_options,
 					     credentials, resolve_ctx, ev,
 					     options,
 					     session_options,

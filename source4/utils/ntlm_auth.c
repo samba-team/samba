@@ -473,7 +473,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
-			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, lp_ctx);
+			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, 
+							lp_gensec_settings(NULL, lp_ctx));
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				exit(1);
 			}
@@ -486,7 +487,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!msg) {
 				exit(1);
 			}
-			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, lp_ctx, msg, &state->gensec_state))) {
+			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, lp_gensec_settings(state, lp_ctx), 
+								 msg, &state->gensec_state))) {
 				exit(1);
 			}
 			break;

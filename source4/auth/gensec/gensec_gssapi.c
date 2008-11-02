@@ -154,7 +154,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	
 	gensec_gssapi_state->gss_exchange_count = 0;
 	gensec_gssapi_state->max_wrap_buf_size
-		= lp_parm_int(gensec_security->lp_ctx, NULL, "gensec_gssapi", "max wrap buf size", 65536);
+		= gensec_setting_int(gensec_security->settings, "gensec_gssapi", "max wrap buf size", 65536);
 		
 	gensec_gssapi_state->sasl = false;
 	gensec_gssapi_state->sasl_state = STAGE_GSS_NEG;
@@ -170,16 +170,16 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	gensec_gssapi_state->input_chan_bindings = GSS_C_NO_CHANNEL_BINDINGS;
 	
 	gensec_gssapi_state->want_flags = 0;
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "mutual", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "mutual", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_MUTUAL_FLAG;
 	}
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "delegation", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "delegation", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_DELEG_FLAG;
 	}
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "replay", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "replay", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_REPLAY_FLAG;
 	}
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "sequence", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "sequence", true)) {
 		gensec_gssapi_state->want_flags |= GSS_C_SEQUENCE_FLAG;
 	}
 
@@ -214,10 +214,10 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 		talloc_free(gensec_gssapi_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
-	if (lp_realm(gensec_security->lp_ctx) && *lp_realm(gensec_security->lp_ctx)) {
-		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(gensec_security->lp_ctx));
+	if (lp_realm(gensec_security->settings->lp_ctx) && *lp_realm(gensec_security->settings->lp_ctx)) {
+		char *upper_realm = strupper_talloc(gensec_gssapi_state, lp_realm(gensec_security->settings->lp_ctx));
 		if (!upper_realm) {
-			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(gensec_security->lp_ctx)));
+			DEBUG(1,("gensec_krb5_start: could not uppercase realm: %s\n", lp_realm(gensec_security->settings->lp_ctx)));
 			talloc_free(gensec_gssapi_state);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -231,7 +231,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 	}
 
 	/* don't do DNS lookups of any kind, it might/will fail for a netbios name */
-	ret = gsskrb5_set_dns_canonicalize(lp_parm_bool(gensec_security->lp_ctx, NULL, "krb5", "set_dns_canonicalize", false));
+	ret = gsskrb5_set_dns_canonicalize(gensec_setting_bool(gensec_security->settings, "krb5", "set_dns_canonicalize", false));
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: gsskrb5_set_dns_canonicalize failed\n"));
 		talloc_free(gensec_gssapi_state);
@@ -240,7 +240,7 @@ static NTSTATUS gensec_gssapi_start(struct gensec_security *gensec_security)
 
 	ret = smb_krb5_init_context(gensec_gssapi_state, 
 				    gensec_security->event_ctx,
-				    gensec_security->lp_ctx,
+				    gensec_security->settings->lp_ctx,
 				    &gensec_gssapi_state->smb_krb5_context);
 	if (ret) {
 		DEBUG(1,("gensec_krb5_start: krb5_init_context failed (%s)\n",
@@ -274,7 +274,7 @@ static NTSTATUS gensec_gssapi_server_start(struct gensec_security *gensec_securi
 	} else {
 		ret = cli_credentials_get_server_gss_creds(machine_account, 
 							   gensec_security->event_ctx, 
-							   gensec_security->lp_ctx, &gcc);
+							   gensec_security->settings->lp_ctx, &gcc);
 		if (ret) {
 			DEBUG(1, ("Aquiring acceptor credentials failed: %s\n", 
 				  error_message(ret)));
@@ -336,7 +336,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 	gensec_gssapi_state->gss_oid = gss_mech_krb5;
 
 	principal = gensec_get_target_principal(gensec_security);
-	if (principal && lp_client_use_spnego_principal(gensec_security->lp_ctx)) {
+	if (principal && lp_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
 		name_type = GSS_C_NULL_OID;
 	} else {
 		principal = talloc_asprintf(gensec_gssapi_state, "%s@%s", 
@@ -362,7 +362,7 @@ static NTSTATUS gensec_gssapi_client_start(struct gensec_security *gensec_securi
 
 	ret = cli_credentials_get_client_gss_creds(creds, 
 						   gensec_security->event_ctx, 
-						   gensec_security->lp_ctx, &gcc);
+						   gensec_security->settings->lp_ctx, &gcc);
 	switch (ret) {
 	case 0:
 		break;
@@ -1142,10 +1142,10 @@ static bool gensec_gssapi_have_feature(struct gensec_security *gensec_security,
 			return false;
 		}
 
-		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "force_new_spnego", false)) {
+		if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "force_new_spnego", false)) {
 			return true;
 		}
-		if (lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec_gssapi", "disable_new_spnego", false)) {
+		if (gensec_setting_bool(gensec_security->settings, "gensec_gssapi", "disable_new_spnego", false)) {
 			return false;
 		}
 
@@ -1256,7 +1256,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 	 */
 	if (pac_blob.length) {
 		nt_status = kerberos_pac_blob_to_server_info(mem_ctx, 
-							     lp_iconv_convenience(gensec_security->lp_ctx),
+							     gensec_security->settings->iconv_convenience,
 							     pac_blob, 
 							     gensec_gssapi_state->smb_krb5_context->krb5_context,
 							     &server_info);
@@ -1290,11 +1290,11 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec", "require_pac", false)) {
+		if (!gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
 			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
 				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
 			nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, 
-								  gensec_security->lp_ctx, principal_string,
+								  gensec_security->settings->lp_ctx, principal_string,
 								  &server_info);
 			
 			if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1311,7 +1311,7 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 
 	/* references the server_info into the session_info */
 	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, 
-					       gensec_security->lp_ctx, server_info, &session_info);
+					       gensec_security->settings->lp_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
@@ -1334,13 +1334,13 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		cli_credentials_set_conf(session_info->credentials, gensec_security->lp_ctx);
+		cli_credentials_set_conf(session_info->credentials, gensec_security->settings->lp_ctx);
 		/* Just so we don't segfault trying to get at a username */
 		cli_credentials_set_anonymous(session_info->credentials);
 		
 		ret = cli_credentials_set_client_gss_creds(session_info->credentials, 
 							   gensec_security->event_ctx,
-							   gensec_security->lp_ctx, 
+							   gensec_security->settings->lp_ctx, 
 							   gensec_gssapi_state->delegated_cred_handle,
 							   CRED_SPECIFIED);
 		if (ret) {

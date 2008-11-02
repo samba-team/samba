@@ -85,7 +85,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 #endif
 		
 		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
-					       lp_iconv_convenience(gensec_security->lp_ctx), &bind_schannel,
+					       gensec_security->settings->iconv_convenience, &bind_schannel,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -106,7 +106,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		
 		/* parse the schannel startup blob */
 		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx,
-			lp_iconv_convenience(gensec_security->lp_ctx),
+			gensec_security->settings->iconv_convenience,
 			&bind_schannel, 
 			(ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -126,7 +126,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		
 		/* pull the session key for this client */
 		status = schannel_fetch_session_key(out_mem_ctx, gensec_security->event_ctx, 
-						    gensec_security->lp_ctx, workstation, 
+						    gensec_security->settings->lp_ctx, workstation, 
 						    domain, &creds);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not find session key for attempted schannel connection from %s: %s\n",
@@ -144,7 +144,7 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel_ack.unknown3 = 0x6c0000;
 		
 		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
-					       lp_iconv_convenience(gensec_security->lp_ctx), &bind_schannel_ack,
+					       gensec_security->settings->iconv_convenience, &bind_schannel_ack,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -190,7 +190,7 @@ static NTSTATUS schannel_session_info(struct gensec_security *gensec_security,
 					 struct auth_session_info **_session_info) 
 {
 	struct schannel_state *state = talloc_get_type(gensec_security->private_data, struct schannel_state);
-	return auth_anonymous_session_info(state, gensec_security->event_ctx, gensec_security->lp_ctx, _session_info);
+	return auth_anonymous_session_info(state, gensec_security->event_ctx, gensec_security->settings->lp_ctx, _session_info);
 }
 
 static NTSTATUS schannel_start(struct gensec_security *gensec_security)

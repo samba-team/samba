@@ -408,7 +408,7 @@ static NTSTATUS session_setup_spnego(struct composite_context *c,
 	smbcli_temp_set_signing(session->transport);
 
 	status = gensec_client_start(session, &session->gensec, c->event_ctx,
-				     global_loadparm);
+				     io->in.gensec_settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		return status;

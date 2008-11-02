@@ -122,6 +122,7 @@ struct smb_composite_sesssetup {
 		uint32_t capabilities;
 		struct cli_credentials *credentials;
 		const char *workgroup;
+		struct gensec_settings *gensec_settings;
 	} in;
 	struct {
 		uint16_t vuid;

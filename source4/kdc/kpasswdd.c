@@ -483,7 +483,9 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	ap_req = data_blob_const(&input->data[header_len], ap_req_len);
 	krb_priv_req = data_blob_const(&input->data[header_len + ap_req_len], krb_priv_len);
 	
-	nt_status = gensec_server_start(tmp_ctx, kdc->task->event_ctx, kdc->task->lp_ctx, kdc->task->msg_ctx, &gensec_security);
+	nt_status = gensec_server_start(tmp_ctx, kdc->task->event_ctx, 
+					lp_gensec_settings(tmp_ctx, kdc->task->lp_ctx), kdc->task->msg_ctx, 
+					&gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return false;

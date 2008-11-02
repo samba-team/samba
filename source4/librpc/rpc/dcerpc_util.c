@@ -421,7 +421,8 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx),
 					 DCERPC_AUTH_TYPE_NTLMSSP,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
@@ -453,7 +454,9 @@ static void continue_spnego_after_wrong_pass(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx), 
+					 DCERPC_AUTH_TYPE_SPNEGO,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -572,7 +575,9 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	} else {
 		/* try SPNEGO with fallback to NTLMSSP */
 		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
+						 s->credentials, 
+						 lp_gensec_settings(c, s->lp_ctx), 
+						 DCERPC_AUTH_TYPE_SPNEGO,
 						 dcerpc_auth_level(conn),
 						 s->table->authservices->names[0]);
 		composite_continue(c, auth_req, continue_auth_auto, c);
@@ -580,7 +585,9 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	}
 
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx, auth_type,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx), 
+					 auth_type,
 					 dcerpc_auth_level(conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);

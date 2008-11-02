@@ -186,7 +186,7 @@ NTSTATUS ntlmssp_server_negotiate(struct gensec_security *gensec_security,
 
 		/* Find out the DNS domain name */
 		dnsdomname[0] = '\0';
-		safe_strcpy(dnsdomname, lp_realm(gensec_security->lp_ctx), sizeof(dnsdomname) - 1);
+		safe_strcpy(dnsdomname, lp_realm(gensec_security->settings->lp_ctx), sizeof(dnsdomname) - 1);
 		strlower_m(dnsdomname);
 
 		/* Find out the DNS host name */
@@ -722,7 +722,7 @@ NTSTATUS gensec_ntlmssp_session_info(struct gensec_security *gensec_security,
 	NTSTATUS nt_status;
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = (struct gensec_ntlmssp_state *)gensec_security->private_data;
 
-	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_security->event_ctx, gensec_security->lp_ctx, gensec_ntlmssp_state->server_info, session_info);
+	nt_status = auth_generate_session_info(gensec_ntlmssp_state, gensec_security->event_ctx, gensec_security->settings->lp_ctx, gensec_ntlmssp_state->server_info, session_info);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	(*session_info)->session_key = data_blob_talloc(*session_info, 
@@ -749,14 +749,14 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->role = NTLMSSP_SERVER;
 
 	gensec_ntlmssp_state->workstation = NULL;
-	gensec_ntlmssp_state->server_name = lp_netbios_name(gensec_security->lp_ctx);
+	gensec_ntlmssp_state->server_name = lp_netbios_name(gensec_security->settings->lp_ctx);
 
-	gensec_ntlmssp_state->domain = lp_workgroup(gensec_security->lp_ctx);
+	gensec_ntlmssp_state->domain = lp_workgroup(gensec_security->settings->lp_ctx);
 
 	gensec_ntlmssp_state->expected_state = NTLMSSP_NEGOTIATE;
 
-	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->lp_ctx) 
-					  && lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "allow_lm_key", false));
+	gensec_ntlmssp_state->allow_lm_key = (lp_lanman_auth(gensec_security->settings->lp_ctx) 
+					  && gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "allow_lm_key", false));
 
 	gensec_ntlmssp_state->server_multiple_authentications = false;
 	
@@ -767,23 +767,23 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->nt_resp = data_blob(NULL, 0);
 	gensec_ntlmssp_state->encrypted_session_key = data_blob(NULL, 0);
 
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "128bit", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "128bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_128;		
 	}
 
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "56bit", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "56bit", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_56;		
 	}
 
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "keyexchange", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "keyexchange", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_KEY_EXCH;		
 	}
 
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "alwayssign", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "alwayssign", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_ALWAYS_SIGN;		
 	}
 
-	if (lp_parm_bool(gensec_security->lp_ctx, NULL, "ntlmssp_server", "ntlm2", true)) {
+	if (gensec_setting_bool(gensec_security->settings, "ntlmssp_server", "ntlm2", true)) {
 		gensec_ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;		
 	}
 
@@ -797,7 +797,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	nt_status = auth_context_create(gensec_ntlmssp_state, 
 					gensec_security->event_ctx,
 					gensec_security->msg_ctx,
-					gensec_security->lp_ctx,
+					gensec_security->settings->lp_ctx,
 					&gensec_ntlmssp_state->auth_context);
 	NT_STATUS_NOT_OK_RETURN(nt_status);
 
@@ -805,7 +805,7 @@ NTSTATUS gensec_ntlmssp_server_start(struct gensec_security *gensec_security)
 	gensec_ntlmssp_state->may_set_challenge = auth_ntlmssp_may_set_challenge;
 	gensec_ntlmssp_state->set_challenge = auth_ntlmssp_set_challenge;
 	gensec_ntlmssp_state->check_password = auth_ntlmssp_check_password;
-	gensec_ntlmssp_state->server_role = lp_server_role(gensec_security->lp_ctx);
+	gensec_ntlmssp_state->server_role = lp_server_role(gensec_security->settings->lp_ctx);
 
 	return NT_STATUS_OK;
 }

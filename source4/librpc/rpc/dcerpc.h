@@ -40,6 +40,7 @@ enum dcerpc_transport_t {
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
 struct dcerpc_connection;
+struct gensec_settings;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
@@ -322,7 +323,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
-			  struct loadparm_context *lp_ctx,
+			  struct gensec_settings *gensec_settings,
 			  uint8_t auth_type, uint8_t auth_level,
 			  const char *service);
 struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,

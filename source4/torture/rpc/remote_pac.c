@@ -92,7 +92,8 @@ static bool test_PACVerify(struct torture_context *tctx,
 	
 	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init messaging context");
 
-	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, tctx->lp_ctx);
+	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, 
+				     lp_gensec_settings(tctx, tctx->lp_ctx));
 	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
 
 	status = gensec_set_target_hostname(gensec_client_context, TEST_MACHINE_NAME);
@@ -103,7 +104,9 @@ static bool test_PACVerify(struct torture_context *tctx,
 	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
 	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
 
-	status = gensec_server_start(tctx, tctx->ev, tctx->lp_ctx, msg_server_ctx, &gensec_server_context);
+	status = gensec_server_start(tctx, tctx->ev, 
+				     lp_gensec_settings(tctx, tctx->lp_ctx), 
+				     msg_server_ctx, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
 	status = gensec_set_credentials(gensec_server_context, credentials);

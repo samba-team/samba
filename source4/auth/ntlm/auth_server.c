@@ -146,6 +146,7 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 
 	session_setup.in.credentials = creds;
 	session_setup.in.workgroup = ""; /* Only used with SPNEGO, which we are not doing */
+	session_setup.in.gensec_settings = lp_gensec_settings(session, ctx->auth_ctx->lp_ctx);
 
 	/* Check password with remove server - this should be async some day */
 	nt_status = smb_composite_sesssetup(session, &session_setup);

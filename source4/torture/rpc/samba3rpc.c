@@ -160,6 +160,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = "";
 	setup.in.credentials = anon_creds;
+	setup.in.gensec_settings = lp_gensec_settings(torture, torture->lp_ctx);
 
 	status = smb_composite_sesssetup(session2, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -233,7 +234,7 @@ static bool bindtest(struct smbcli_state *cli,
 	}
 
 	status = dcerpc_bind_auth(lsa_pipe, &ndr_table_lsarpc,
-				  credentials, lp_ctx, auth_type, auth_level,
+				  credentials, lp_gensec_settings(lp_ctx, lp_ctx), auth_type, auth_level,
 				  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_bind_auth failed: %s\n", nt_errstr(status));
@@ -384,7 +385,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	if (admin_creds != NULL) {
 		status = dcerpc_bind_auth(samr_pipe, &ndr_table_samr,
-					  admin_creds, lp_ctx, auth_type, auth_level,
+					  admin_creds, lp_gensec_settings(lp_ctx, lp_ctx), auth_type, auth_level,
 					  NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("dcerpc_bind_auth failed: %s\n",
@@ -1013,7 +1014,7 @@ static bool schan(struct smbcli_state *cli,
 #if 1
 	net_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 	status = dcerpc_bind_auth(net_pipe, &ndr_table_netlogon,
-				  wks_creds, lp_ctx, DCERPC_AUTH_TYPE_SCHANNEL,
+				  wks_creds, lp_gensec_settings(lp_ctx, lp_ctx), DCERPC_AUTH_TYPE_SCHANNEL,
 				  DCERPC_AUTH_LEVEL_PRIVACY,
 				  NULL);
 #else
@@ -1812,6 +1813,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		setup.in.capabilities = cli->transport->negotiate.capabilities;
 		setup.in.workgroup = "";
 		setup.in.credentials = user_creds;
+		setup.in.gensec_settings = lp_gensec_settings(torture, torture->lp_ctx);
 
 		status = smb_composite_sesssetup(session2, &setup);
 		if (!NT_STATUS_IS_OK(status)) {

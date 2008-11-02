@@ -64,6 +64,7 @@ enum gensec_role
 
 struct auth_session_info;
 struct cli_credentials;
+struct gensec_settings;
 
 struct gensec_update_request {
 	struct gensec_security *gensec_security;
@@ -75,6 +76,12 @@ struct gensec_update_request {
 		void (*fn)(struct gensec_update_request *req, void *private_data);
 		void *private_data;
 	} callback;
+};
+
+struct gensec_settings {
+	struct loadparm_context *lp_ctx;
+	struct smb_iconv_convenience *iconv_convenience;
+	const char *target_hostname;
 };
 
 struct gensec_security_ops {
@@ -151,7 +158,6 @@ struct gensec_security_ops_wrapper {
 
 struct gensec_security {
 	const struct gensec_security_ops *ops;
-	struct loadparm_context *lp_ctx;
 	void *private_data;
 	struct cli_credentials *credentials;
 	struct gensec_target target;
@@ -161,6 +167,7 @@ struct gensec_security {
 	struct event_context *event_ctx;
 	struct messaging_context *msg_ctx; /* only valid as server */
 	struct socket_address *my_addr, *peer_addr;
+	struct gensec_settings *settings;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -210,7 +217,7 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
 			     struct gensec_security **gensec_security,
 			     struct event_context *ev,
-			     struct loadparm_context *lp_ctx);
+			     struct gensec_settings *settings);
 NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
 						 const char **sasl_names);
 NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_mem_ctx, 
@@ -262,7 +269,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 const char *gensec_get_name_by_authtype(uint8_t authtype);
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
-			     struct loadparm_context *lp_ctx,
+			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security);
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
@@ -295,5 +302,7 @@ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_ctx,
 NTSTATUS gensec_start_mech_by_sasl_name(struct gensec_security *gensec_security, 
 					const char *sasl_name);
 
+int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value);
+bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value);
 
 #endif /* __GENSEC_H__ */

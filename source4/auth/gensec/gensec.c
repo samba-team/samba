@@ -477,7 +477,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
-			     struct loadparm_context *lp_ctx,
+			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security)
 {
@@ -501,7 +501,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->event_ctx = ev;
 	(*gensec_security)->msg_ctx = msg;
-	(*gensec_security)->lp_ctx = lp_ctx;
+	(*gensec_security)->settings = settings;
 
 	return NT_STATUS_OK;
 }
@@ -529,7 +529,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->want_features = parent->want_features;
 	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->msg_ctx = parent->msg_ctx;
-	(*gensec_security)->lp_ctx = parent->lp_ctx;
+	(*gensec_security)->settings = parent->settings;
 
 	return NT_STATUS_OK;
 }
@@ -543,11 +543,11 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
 			     struct gensec_security **gensec_security,
 			     struct event_context *ev,
-			     struct loadparm_context *lp_ctx)
+			     struct gensec_settings *settings)
 {
 	NTSTATUS status;
 
-	status = gensec_start(mem_ctx, ev, lp_ctx, NULL, gensec_security);
+	status = gensec_start(mem_ctx, ev, settings, NULL, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -564,7 +564,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct event_context *ev,
-			     struct loadparm_context *lp_ctx,
+			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security)
 {
@@ -580,7 +580,7 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = gensec_start(mem_ctx, ev, lp_ctx, msg, gensec_security);
+	status = gensec_start(mem_ctx, ev, settings, msg, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1107,9 +1107,8 @@ _PUBLIC_ NTSTATUS gensec_set_target_hostname(struct gensec_security *gensec_secu
 _PUBLIC_ const char *gensec_get_target_hostname(struct gensec_security *gensec_security) 
 {
 	/* We allow the target hostname to be overriden for testing purposes */
-	const char *target_hostname = lp_parm_string(gensec_security->lp_ctx, NULL, "gensec", "target_hostname");
-	if (target_hostname) {
-		return target_hostname;
+	if (gensec_security->settings->target_hostname) {
+		return gensec_security->settings->target_hostname;
 	}
 
 	if (gensec_security->target.hostname) {
@@ -1253,6 +1252,16 @@ const struct gensec_critical_sizes *gensec_interface_version(void)
 
 static int sort_gensec(struct gensec_security_ops **gs1, struct gensec_security_ops **gs2) {
 	return (*gs2)->priority - (*gs1)->priority;
+}
+
+int gensec_setting_int(struct gensec_settings *settings, const char *mechanism, const char *name, int default_value)
+{
+	return lp_parm_int(settings->lp_ctx, NULL, mechanism, name, default_value);
+}
+
+bool gensec_setting_bool(struct gensec_settings *settings, const char *mechanism, const char *name, bool default_value)
+{
+	return lp_parm_bool(settings->lp_ctx, NULL, mechanism, name, default_value);
 }
 
 /*
