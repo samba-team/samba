@@ -645,13 +645,16 @@ kcm_get_first (krb5_context context,
 	return ret;
     }
 
-    do {
+    while (1) {
 	ssize_t sret;
 	uuid_t uuid;
 	void *ptr;
 
 	sret = krb5_storage_read(response, &uuid, sizeof(uuid));
-	if (sret != sizeof(uuid)) {
+	if (sret == 0) {
+	    ret = 0;
+	    break;
+	} else if (sret != sizeof(uuid)) {
 	    ret = EINVAL;
 	    break;
 	}
@@ -660,15 +663,15 @@ kcm_get_first (krb5_context context,
 	if (ptr == NULL) {
 	    free(c->uuids);
 	    free(c);
-	    krb5_clear_error_message(context);
+	    krb5_set_error_message(context, ENOMEM, 
+				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 	c->uuids = ptr;
 
 	memcpy(&c->uuids[c->length], &uuid, sizeof(uuid));
 	c->length += 1;
-
-    } while (ret == 0);
+    }
 
     krb5_storage_free(response);
     krb5_data_free(&response_data);
