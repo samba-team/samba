@@ -66,7 +66,7 @@ struct kcm_ccache_data;
 struct kcm_creds;
 
 struct kcm_creds {
-    uuid_t uuid;
+    kcmuuid_t uuid;
     krb5_creds cred;
     struct kcm_creds *next;
 };
