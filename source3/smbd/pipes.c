@@ -48,8 +48,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	NTSTATUS status;
 
 	/* XXXX we need to handle passed times, sattr and flags */
-	srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &pipe_name,
-			       req->buf, STR_TERMINATE);
+	srvstr_pull_req_talloc(ctx, req, &pipe_name, req->buf, STR_TERMINATE);
 	if (!pipe_name) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
 				ERRDOS, ERRbadpipe);

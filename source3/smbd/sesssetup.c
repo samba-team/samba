@@ -1175,7 +1175,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint16 smbpid = req->smbpid;
-	uint16 smb_flag2 = req->flags2;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -1206,16 +1205,16 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 	p2 = (char *)req->inbuf + smb_vwv13 + data_blob_len;
 
-	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
-				     &tmp, p2, STR_TERMINATE);
+	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+				     STR_TERMINATE);
 	native_os = tmp ? tmp : "";
 
-	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
-				     &tmp, p2, STR_TERMINATE);
+	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+				     STR_TERMINATE);
 	native_lanman = tmp ? tmp : "";
 
-	p2 += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, smb_flag2,
-				     &tmp, p2,STR_TERMINATE);
+	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
+				     STR_TERMINATE);
 	primary_domain = tmp ? tmp : "";
 
 	DEBUG(3,("NativeOS=[%s] NativeLanMan=[%s] PrimaryDomain=[%s]\n",
@@ -1472,9 +1471,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 			plaintext_password.data[passlen1] = 0;
 		}
 
-		srvstr_pull_buf_talloc(talloc_tos(), req->inbuf, req->flags2,
-				       &tmp, req->buf + passlen1,
-				       STR_TERMINATE);
+		srvstr_pull_req_talloc(talloc_tos(), req, &tmp,
+				       req->buf + passlen1, STR_TERMINATE);
 		user = tmp ? tmp : "";
 
 		domain = "";
@@ -1592,23 +1590,19 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 		p += passlen1 + passlen2;
 
-		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
-					    req->flags2, &tmp, p,
+		p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 					    STR_TERMINATE);
 		user = tmp ? tmp : "";
 
-		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
-					    req->flags2, &tmp, p,
+		p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 					    STR_TERMINATE);
 		domain = tmp ? tmp : "";
 
-		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
-					    req->flags2, &tmp, p,
+		p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 					    STR_TERMINATE);
 		native_os = tmp ? tmp : "";
 
-		p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
-					    req->flags2, &tmp, p,
+		p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 					    STR_TERMINATE);
 		native_lanman = tmp ? tmp : "";
 
@@ -1621,8 +1615,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 		byte_count = SVAL(req->inbuf, smb_vwv13);
 		if ( PTR_DIFF(p, save_p) < byte_count) {
-			p += srvstr_pull_buf_talloc(talloc_tos(), req->inbuf,
-						    req->flags2, &tmp, p,
+			p += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p,
 						    STR_TERMINATE);
 			primary_domain = tmp ? tmp : "";
 		} else {

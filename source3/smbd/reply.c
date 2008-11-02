@@ -495,13 +495,12 @@ void reply_tcon(struct smb_request *req)
 	}
 
 	p = (const char *)req->buf + 1;
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				    &service_buf, p, STR_TERMINATE) + 1;
-	pwlen = srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				       &password, p, STR_TERMINATE) + 1;
-	p += pwlen;
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2,
-				    &dev, p, STR_TERMINATE) + 1;
+	p += srvstr_pull_req_talloc(ctx, req, &service_buf, p, STR_TERMINATE);
+	p += 1;
+	pwlen = srvstr_pull_req_talloc(ctx, req, &password, p, STR_TERMINATE);
+	p += pwlen+1;
+	p += srvstr_pull_req_talloc(ctx, req, &dev, p, STR_TERMINATE);
+	p += 1;
 
 	if (service_buf == NULL || password == NULL || dev == NULL) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -603,8 +602,7 @@ void reply_tcon_and_X(struct smb_request *req)
 		p = (const char *)req->buf + passlen + 1;
 	}
 
-	p += srvstr_pull_buf_talloc(ctx, req->inbuf, req->flags2, &path, p,
-			     STR_TERMINATE);
+	p += srvstr_pull_req_talloc(ctx, req, &path, p, STR_TERMINATE);
 
 	if (path == NULL) {
 		data_blob_clear_free(&password);

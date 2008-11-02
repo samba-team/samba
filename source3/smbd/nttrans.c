@@ -307,8 +307,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	uint32 flags = IVAL(req->inbuf,smb_ntcreate_Flags);
 	TALLOC_CTX *ctx = talloc_tos();
 
-	srvstr_pull_buf_talloc(ctx, (char *)req->inbuf, req->flags2, &fname,
-			       req->buf, STR_TERMINATE);
+	srvstr_pull_req_talloc(ctx, req, &fname, req->buf, STR_TERMINATE);
 
 	if (!fname) {
 		reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,

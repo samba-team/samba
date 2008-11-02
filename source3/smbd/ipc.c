@@ -543,8 +543,8 @@ void reply_trans(struct smb_request *req)
 	state->close_on_completion = BITSETW(req->inbuf+smb_vwv5,0);
 	state->one_way = BITSETW(req->inbuf+smb_vwv5,1);
 
-	srvstr_pull_buf_talloc(state, req->inbuf, req->flags2, &state->name,
-			       req->buf, STR_TERMINATE);
+	srvstr_pull_req_talloc(state, req, &state->name, req->buf,
+			       STR_TERMINATE);
 
 	if ((dscnt > state->total_data) || (pscnt > state->total_param) ||
 			!state->name)
