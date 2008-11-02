@@ -183,7 +183,7 @@ static int binary_net(int argc, const char **argv)
 		return net_usage(ctx, argc, argv);
 	}
 
-	dcerpc_init();
+	dcerpc_init(cmdline_lp_ctx);
 
 	ev = s4_event_context_init(NULL);
 	if (!ev) {

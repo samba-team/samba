@@ -486,7 +486,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 	struct dcerpc_pipe *p;
 	struct rpc_registry_context *rctx;
 
-	dcerpc_init();
+	dcerpc_init(lp_ctx);
 
 	rctx = talloc(NULL, struct rpc_registry_context);
 

@@ -309,7 +309,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct loadparm_context *lp_ctx,
 				   uint8_t auth_level);
 struct event_context *dcerpc_event_context(struct dcerpc_pipe *p);
-NTSTATUS dcerpc_init(void);
+NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx);
 struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c);
 uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c);
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 

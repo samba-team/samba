@@ -1157,8 +1157,8 @@ static const struct {
 	{NT_STATUS(0x80000025), W_ERROR(0x962)},
 	{NT_STATUS(0x80000288), W_ERROR(0x48d)},
 	{NT_STATUS(0x80000289), W_ERROR(0x48e)},
-	{NT_STATUS_OK, WERR_OK}};
-
+	{NT_STATUS_OK, WERR_OK}
+};
 
 /*
   check if a DOS encoded NTSTATUS code maps to the given NTSTATUS code

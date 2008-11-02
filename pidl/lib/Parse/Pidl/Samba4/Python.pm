@@ -698,6 +698,14 @@ sub Interface($$$)
 		$self->pidl("}");
 		$self->pidl("");
 
+		$self->pidl("status = dcerpc_init(lp_ctx);");
+		$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
+		$self->indent;
+		$self->pidl("PyErr_SetNTSTATUS(status);");
+		$self->pidl("return;");
+		$self->deindent;
+		$self->pidl("}");
+
 		$self->pidl("credentials = cli_credentials_from_py_object(py_credentials);");
 		$self->pidl("if (credentials == NULL) {");
 		$self->indent;
@@ -1210,14 +1218,6 @@ sub Parse($$$$$)
 	}
 
 	$self->pidl("");
-	$self->pidl("status = dcerpc_init();");
-	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
-	$self->indent;
-	$self->pidl("PyErr_SetNTSTATUS(status);");
-	$self->pidl("return;");
-	$self->deindent;
-	$self->pidl("}");
-
 	$self->deindent;
 	$self->pidl("}");
     return ($self->{res_hdr}, $self->{res});

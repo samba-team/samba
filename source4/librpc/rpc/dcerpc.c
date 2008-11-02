@@ -31,9 +31,9 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
-_PUBLIC_ NTSTATUS dcerpc_init(void)
+_PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
 {
-	return gensec_init(global_loadparm);
+	return gensec_init(lp_ctx);
 }
 
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status);
