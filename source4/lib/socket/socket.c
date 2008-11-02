@@ -25,6 +25,8 @@
 #include "system/network.h"
 #include "param/param.h"
 
+bool testnonblock = false;
+
 /*
   auto-close sockets on free
 */
@@ -70,7 +72,7 @@ _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socke
 
 	if (!(flags & SOCKET_FLAG_BLOCK) &&
 	    type == SOCKET_TYPE_STREAM &&
-	    lp_parm_bool(global_loadparm, NULL, "socket", "testnonblock", false)) {
+	    testnonblock) {
 		(*new_sock)->flags |= SOCKET_FLAG_TESTNONBLOCK;
 	}
 

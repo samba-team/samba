@@ -65,6 +65,7 @@
 #include "param/loadparm.h"
 #include "libcli/raw/libcliraw.h"
 #include "rpc_server/common/common.h"
+#include "lib/socket/socket.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -2474,6 +2475,8 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 	panic_action = lp_ctx->globals->panic_action;
 
 	reload_charcnv(lp_ctx);
+
+	testnonblock = lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false);
 
 	/* FIXME: Check locale in environment for this: */
 	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
