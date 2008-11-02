@@ -304,7 +304,7 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
 	char *fname = NULL;
 	int pnum = -1;
 	char *p = NULL;
-	uint32 flags = IVAL(req->inbuf,smb_ntcreate_Flags);
+	uint32 flags = IVAL(req->vwv+3, 1);
 	TALLOC_CTX *ctx = talloc_tos();
 
 	srvstr_pull_req_talloc(ctx, req, &fname, req->buf, STR_TERMINATE);
@@ -407,20 +407,17 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		return;
 	}
 
-	flags = IVAL(req->inbuf,smb_ntcreate_Flags);
-	access_mask = IVAL(req->inbuf,smb_ntcreate_DesiredAccess);
-	file_attributes = IVAL(req->inbuf,smb_ntcreate_FileAttributes);
-	share_access = IVAL(req->inbuf,smb_ntcreate_ShareAccess);
-	create_disposition = IVAL(req->inbuf,smb_ntcreate_CreateDisposition);
-	create_options = IVAL(req->inbuf,smb_ntcreate_CreateOptions);
-	root_dir_fid = (uint16)IVAL(req->inbuf,smb_ntcreate_RootDirectoryFid);
+	flags = IVAL(req->vwv+3, 1);
+	access_mask = IVAL(req->vwv+7, 1);
+	file_attributes = IVAL(req->vwv+13, 1);
+	share_access = IVAL(req->vwv+15, 1);
+	create_disposition = IVAL(req->vwv+17, 1);
+	create_options = IVAL(req->vwv+19, 1);
+	root_dir_fid = (uint16)IVAL(req->vwv+5, 1);
 
-	allocation_size = (uint64_t)IVAL(req->inbuf,
-					     smb_ntcreate_AllocationSize);
+	allocation_size = (uint64_t)IVAL(req->vwv+9, 1);
 #ifdef LARGE_SMB_OFF_T
-	allocation_size |= (((uint64_t)IVAL(
-				     req->inbuf,
-				     smb_ntcreate_AllocationSize + 4)) << 32);
+	allocation_size |= (((uint64_t)IVAL(req->vwv+11, 1)) << 32);
 #endif
 
 	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf,
@@ -2535,11 +2532,11 @@ void reply_nttrans(struct smb_request *req)
 
 	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
-	pscnt = IVAL(req->inbuf,smb_nt_ParameterCount);
-	psoff = IVAL(req->inbuf,smb_nt_ParameterOffset);
-	dscnt = IVAL(req->inbuf,smb_nt_DataCount);
-	dsoff = IVAL(req->inbuf,smb_nt_DataOffset);
-	function_code = SVAL(req->inbuf, smb_nt_Function);
+	pscnt = IVAL(req->vwv+9, 1);
+	psoff = IVAL(req->vwv+11, 1);
+	dscnt = IVAL(req->vwv+13, 1);
+	dsoff = IVAL(req->vwv+15, 1);
+	function_code = SVAL(req->vwv+18, 0);
 
 	if (IS_IPC(conn) && (function_code != NT_TRANSACT_CREATE)) {
 		reply_doserror(req, ERRSRV, ERRaccess);
@@ -2565,15 +2562,15 @@ void reply_nttrans(struct smb_request *req)
 
 	state->mid = req->mid;
 	state->vuid = req->vuid;
-	state->total_data = IVAL(req->inbuf, smb_nt_TotalDataCount);
+	state->total_data = IVAL(req->vwv+3, 1);
 	state->data = NULL;
-	state->total_param = IVAL(req->inbuf, smb_nt_TotalParameterCount);
+	state->total_param = IVAL(req->vwv+1, 1);
 	state->param = NULL;
-	state->max_data_return = IVAL(req->inbuf,smb_nt_MaxDataCount);
-	state->max_param_return = IVAL(req->inbuf,smb_nt_MaxParameterCount);
+	state->max_data_return = IVAL(req->vwv+7, 1);
+	state->max_param_return = IVAL(req->vwv+5, 1);
 
 	/* setup count is in *words* */
-	state->setup_count = 2*CVAL(req->inbuf,smb_nt_SetupCount);
+	state->setup_count = 2*CVAL(req->vwv+17, 1);
 	state->setup = NULL;
 	state->call = function_code;
 
@@ -2760,25 +2757,23 @@ void reply_nttranss(struct smb_request *req)
 
 	/* Revise state->total_param and state->total_data in case they have
 	   changed downwards */
-	if (IVAL(req->inbuf, smb_nts_TotalParameterCount)
-	    < state->total_param) {
-		state->total_param = IVAL(req->inbuf,
-					  smb_nts_TotalParameterCount);
+	if (IVAL(req->vwv+1, 1) < state->total_param) {
+		state->total_param = IVAL(req->vwv+1, 1);
 	}
-	if (IVAL(req->inbuf, smb_nts_TotalDataCount) < state->total_data) {
-		state->total_data = IVAL(req->inbuf, smb_nts_TotalDataCount);
+	if (IVAL(req->vwv+3, 1) < state->total_data) {
+		state->total_data = IVAL(req->vwv+3, 1);
 	}
 
 	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
 
-	pcnt = IVAL(req->inbuf,smb_nts_ParameterCount);
-	poff = IVAL(req->inbuf, smb_nts_ParameterOffset);
-	pdisp = IVAL(req->inbuf, smb_nts_ParameterDisplacement);
+	pcnt = IVAL(req->vwv+5, 1);
+	poff = IVAL(req->vwv+7, 1);
+	pdisp = IVAL(req->vwv+9, 1);
 
-	dcnt = IVAL(req->inbuf, smb_nts_DataCount);
-	ddisp = IVAL(req->inbuf, smb_nts_DataDisplacement);
-	doff = IVAL(req->inbuf, smb_nts_DataOffset);
+	dcnt = IVAL(req->vwv+11, 1);
+	doff = IVAL(req->vwv+13, 1);
+	ddisp = IVAL(req->vwv+15, 1);
 
 	state->received_param += pcnt;
 	state->received_data += dcnt;
