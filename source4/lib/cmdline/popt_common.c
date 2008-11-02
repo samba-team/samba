@@ -78,11 +78,7 @@ static void popt_samba_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		if (global_loadparm != NULL) {
-			cmdline_lp_ctx = global_loadparm;
-		} else {
-			cmdline_lp_ctx = global_loadparm = loadparm_init(talloc_autofree_context());
-		}
+		cmdline_lp_ctx = loadparm_init(talloc_autofree_context());
 
 		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */

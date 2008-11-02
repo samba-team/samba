@@ -71,8 +71,6 @@ struct gensec_settings;
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
 
-extern _DEPRECATED_ struct loadparm_context *global_loadparm;
-
 struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx);
 struct parm_struct *lp_parm_table(void);
 int lp_server_role(struct loadparm_context *);

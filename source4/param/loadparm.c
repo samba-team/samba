@@ -228,8 +228,6 @@ struct loadparm_service
 };
 
 
-struct loadparm_context *global_loadparm = NULL;
-
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 
