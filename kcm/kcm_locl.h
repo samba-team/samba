@@ -65,12 +65,11 @@
 struct kcm_ccache_data;
 struct kcm_creds;
 
-typedef struct kcm_cursor {
-    pid_t pid;
-    uint32_t key;
-    struct kcm_creds *credp;		/* pointer to next credential */
-    struct kcm_cursor *next;
-} kcm_cursor;
+struct kcm_creds {
+    uuid_t uuid;
+    krb5_creds cred;
+    struct kcm_creds *next;
+};
 
 typedef struct kcm_ccache_data {
     char *name;
@@ -81,12 +80,7 @@ typedef struct kcm_ccache_data {
     gid_t gid;
     krb5_principal client; /* primary client principal */
     krb5_principal server; /* primary server principal (TGS if NULL) */
-    struct kcm_creds {
-	krb5_creds cred; /* XXX would be useful for have ACLs on creds */
-	struct kcm_creds *next;
-    } *creds;
-    uint32_t n_cursor;
-    kcm_cursor *cursors;
+    struct kcm_creds *creds;
     krb5_deltat tkt_life;
     krb5_deltat renew_life;
     union {
