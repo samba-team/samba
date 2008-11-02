@@ -292,7 +292,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_netlogon, &ndr_table_netlogon, 
-				  credentials, tctx->lp_ctx,
+				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -319,7 +319,7 @@ static bool test_schannel(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "seconday connection");
 
 	status = dcerpc_bind_auth(p_lsa, &ndr_table_lsarpc,
-				  credentials, tctx->lp_ctx,
+				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p->conn),
 				  NULL);
@@ -360,7 +360,7 @@ static bool test_schannel(struct torture_context *tctx,
 
 	/* and now setup an SCHANNEL bind on netlogon */
 	status = dcerpc_bind_auth(p_netlogon2, &ndr_table_netlogon,
-				  credentials, tctx->lp_ctx,
+				  credentials, lp_gensec_settings(tctx, tctx->lp_ctx),
 				  DCERPC_AUTH_TYPE_SCHANNEL,
 				  dcerpc_auth_level(p_samr2->conn),
 				  NULL);

@@ -100,7 +100,7 @@ static int fork_tcon_client(struct torture_context *tctx,
 
 		status = smbcli_full_connection(NULL, &cli,
 				host, lp_smb_ports(tctx->lp_ctx), share,
-				NULL, cmdline_credentials,
+				NULL, lp_socket_options(tctx->lp_ctx), cmdline_credentials,
 				lp_resolve_context(tctx->lp_ctx),
 				tctx->ev, &options, &session_options,
 				lp_iconv_convenience(tctx->lp_ctx));

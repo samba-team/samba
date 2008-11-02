@@ -3045,6 +3045,7 @@ static bool do_connect(struct smbclient_context *ctx,
 		       struct resolve_context *resolve_ctx,
 		       const char *specified_server, const char **ports, 
 		       const char *specified_share, 
+			   const char *socket_options,
 		       struct cli_credentials *cred, 
 		       struct smbcli_options *options,
 		       struct smbcli_session_options *session_options,
@@ -3066,7 +3067,9 @@ static bool do_connect(struct smbclient_context *ctx,
 	ctx->remote_cur_dir = talloc_strdup(ctx, "\\");
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
-					share, NULL, cred, resolve_ctx, 
+					share, NULL, 
+					socket_options,
+					cred, resolve_ctx, 
 					ev_ctx, options, session_options,
 					iconv_convenience);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3279,6 +3282,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	
 	if (!do_connect(ctx, ev_ctx, lp_resolve_context(cmdline_lp_ctx),
 			desthost, lp_smb_ports(cmdline_lp_ctx), service,
+			lp_socket_options(cmdline_lp_ctx),
 			cmdline_credentials, &smb_options, &smb_session_options,
 			lp_iconv_convenience(cmdline_lp_ctx)))
 		return 1;

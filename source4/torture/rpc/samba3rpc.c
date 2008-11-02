@@ -89,7 +89,9 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, cmdline_credentials,
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lp_iconv_convenience(torture->lp_ctx));
@@ -309,7 +311,9 @@ bool torture_bind_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, cmdline_credentials,
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lp_iconv_convenience(torture->lp_ctx));
@@ -1245,7 +1249,9 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, anon_creds, 
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					anon_creds, 
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
 					lp_iconv_convenience(torture->lp_ctx));
@@ -1335,8 +1341,8 @@ static bool test_join3(struct torture_context *tctx,
 	status = smbcli_full_connection(tctx, &cli,
 					torture_setting_string(tctx, "host", NULL),
 					lp_smb_ports(tctx->lp_ctx),
-					"IPC$", NULL, smb_creds, 
-					lp_resolve_context(tctx->lp_ctx),
+					"IPC$", NULL, lp_socket_options(tctx->lp_ctx),
+					smb_creds, lp_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
 					lp_iconv_convenience(tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1718,7 +1724,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		lp_smb_ports(torture->lp_ctx),
-		"IPC$", NULL, cmdline_credentials, 
+		"IPC$", NULL, lp_socket_options(torture->lp_ctx), cmdline_credentials, 
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
 		lp_iconv_convenience(torture->lp_ctx));
@@ -1745,8 +1751,8 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
-		lp_smb_ports(torture->lp_ctx),
-		"IPC$", NULL, anon_creds, 
+		lp_smb_ports(torture->lp_ctx), "IPC$", NULL, 
+		lp_socket_options(torture->lp_ctx), anon_creds, 
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
 		lp_iconv_convenience(torture->lp_ctx));

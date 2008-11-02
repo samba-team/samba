@@ -274,7 +274,9 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 
 	lp_smbcli_options(tctx->lp_ctx, &options);
 
-	status = smb2_connect(tctx, host, share, 
+	status = smb2_connect(tctx, host, 
+						  lp_smb_ports(tctx->lp_ctx),
+						  share, 
 			      lp_resolve_context(tctx->lp_ctx),
 			      credentials, tree, 
 			      tctx->ev, &options,
