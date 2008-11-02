@@ -2431,7 +2431,10 @@ const char *lp_configfile(struct loadparm_context *lp_ctx)
 
 bool lp_load_default(struct loadparm_context *lp_ctx)
 {
-	return lp_load(lp_ctx, dyn_CONFIGFILE);
+    if (getenv("SMB_CONF_PATH"))
+        return lp_load(lp_ctx, getenv("SMB_CONF_PATH"));
+    else
+        return lp_load(lp_ctx, dyn_CONFIGFILE);
 }
 
 /**
