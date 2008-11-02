@@ -821,10 +821,10 @@ void reply_ioctl(struct smb_request *req)
  Strange checkpath NTSTATUS mapping.
 ****************************************************************************/
 
-static NTSTATUS map_checkpath_error(const char *inbuf, NTSTATUS status)
+static NTSTATUS map_checkpath_error(uint16_t flags2, NTSTATUS status)
 {
 	/* Strange DOS error code semantics only for checkpath... */
-	if (!(SVAL(inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES)) {
+	if (!(flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
 		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_INVALID,status)) {
 			/* We need to map to ERRbadpath */
 			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
@@ -851,7 +851,7 @@ void reply_checkpath(struct smb_request *req)
 			    STR_TERMINATE, &status);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		status = map_checkpath_error((char *)req->inbuf, status);
+		status = map_checkpath_error(req->flags2, status);
 		reply_nterror(req, status);
 		END_PROFILE(SMBcheckpath);
 		return;
@@ -911,7 +911,7 @@ void reply_checkpath(struct smb_request *req)
 		one at a time - if a component fails it expects
 		ERRbadpath, not ERRbadfile.
 	*/
-	status = map_checkpath_error((char *)req->inbuf, status);
+	status = map_checkpath_error(req->flags2, status);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		/*
 		 * Windows returns different error codes if
