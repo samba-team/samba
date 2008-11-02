@@ -703,6 +703,7 @@ kcm_get_next (krb5_context context,
     krb5_kcm_cursor c = KCMCURSOR(*cursor);
     krb5_storage *request, *response;
     krb5_data response_data;
+    ssize_t sret;
 
  again:
 
@@ -719,13 +720,14 @@ kcm_get_next (krb5_context context,
 	return ret;
     }
 
-    ret = krb5_storage_write(request, 
-			     &c->uuids[c->offset],
-			     sizeof(c->uuids[c->offset]));
+    sret = krb5_storage_write(request, 
+			      &c->uuids[c->offset],
+			      sizeof(c->uuids[c->offset]));
     c->offset++;
-    if (ret) {
+    if (sret != sizeof(c->uuids[c->offset])) {
 	krb5_storage_free(request);
-	return ret;
+	krb5_clear_error_message(context);
+	return ENOMEM;
     }
 
     ret = kcm_call(context, k, request, &response, &response_data);
