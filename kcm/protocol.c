@@ -440,9 +440,12 @@ kcm_op_get_first(krb5_context context,
 	return ret;
 
     for (creds = ccache->creds ; creds ; creds = creds->next) {
-	ret = krb5_storage_write(response, &creds->uuid, sizeof(creds->uuid));
-	if (ret)
+	ssize_t sret;
+	sret = krb5_storage_write(response, &creds->uuid, sizeof(creds->uuid));
+	if (sret != sizeof(creds->uuid)) {
+	    ret = ENOMEM;
 	    break;
+	}
     }
 
     kcm_release_ccache(context, &ccache);
@@ -470,6 +473,7 @@ kcm_op_get_next(krb5_context context,
     char *name;
     struct kcm_creds *c;
     uuid_t uuid;
+    ssize_t sret;
 
     ret = krb5_ret_stringz(request, &name);
     if (ret)
@@ -483,9 +487,12 @@ kcm_op_get_next(krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_storage_read(request, &uuid, sizeof(uuid));
-    if (ret)
-	return ret;
+    sret = krb5_storage_read(request, &uuid, sizeof(uuid));
+    if (sret != sizeof(uuid)) {
+	kcm_release_ccache(context, &ccache);
+	krb5_clear_error_message(context);
+	return KRB5_CC_IO;
+    }
 
     c = kcm_ccache_find_cred_uuid(context, ccache, uuid);
     if (c == NULL) {
