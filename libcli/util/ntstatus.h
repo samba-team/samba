@@ -628,6 +628,9 @@ const char *get_nt_error_c_code(NTSTATUS nt_code);
  *****************************************************************************/
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
 
+/** Used by ntstatus_dos_equal: */
+extern bool ntstatus_check_dos_mapping;
+
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)
 /* checking for DOS error mapping here is ugly, but unfortunately the

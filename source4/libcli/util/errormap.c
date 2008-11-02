@@ -1160,6 +1160,8 @@ static const struct {
 	{NT_STATUS_OK, WERR_OK}
 };
 
+bool ntstatus_check_dos_mapping = true;
+
 /*
   check if a DOS encoded NTSTATUS code maps to the given NTSTATUS code
 */
@@ -1169,7 +1171,7 @@ bool ntstatus_dos_equal(NTSTATUS status1, NTSTATUS status2)
 	   the mapping of dos codes, as we want to catch the cases where
 	   a forced dos code is needed
 	*/
-	if (lp_nt_status_support(global_loadparm)) {
+	if (ntstatus_check_dos_mapping) {
 		return NT_STATUS_V(status1) == NT_STATUS_V(status2);
 	}
 
