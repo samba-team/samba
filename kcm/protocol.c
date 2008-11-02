@@ -422,9 +422,9 @@ kcm_op_get_first(krb5_context context,
 		 krb5_storage *request,
 		 krb5_storage *response)
 {
+    struct kcm_creds *creds;
     krb5_error_code ret;
     kcm_ccache ccache;
-    uint32_t cursor;
     char *name;
 
     ret = krb5_ret_stringz(request, &name);
@@ -435,21 +435,16 @@ kcm_op_get_first(krb5_context context,
 
     ret = kcm_ccache_resolve_client(context, client, opcode,
 				    name, &ccache);
-    if (ret) {
-	free(name);
-	return ret;
-    }
-
-    ret = kcm_cursor_new(context, client->pid, ccache, &cursor);
-    if (ret) {
-	kcm_release_ccache(context, &ccache);
-	free(name);
-	return ret;
-    }
-
-    ret = krb5_store_int32(response, cursor);
-
     free(name);
+    if (ret)
+	return ret;
+
+    for (creds = ccache->creds ; creds ; creds = creds->next) {
+	ret = krb5_storage_write(response, &creds->uuid, sizeof(creds->uuid));
+	if (ret)
+	    break;
+    }
+
     kcm_release_ccache(context, &ccache);
 
     return ret;
@@ -473,8 +468,8 @@ kcm_op_get_next(krb5_context context,
     krb5_error_code ret;
     kcm_ccache ccache;
     char *name;
-    uint32_t cursor;
-    kcm_cursor *c;
+    struct kcm_creds *c;
+    uuid_t uuid;
 
     ret = krb5_ret_stringz(request, &name);
     if (ret)
@@ -482,36 +477,26 @@ kcm_op_get_next(krb5_context context,
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
 
-    ret = krb5_ret_uint32(request, &cursor);
-    if (ret) {
-	free(name);
-	return ret;
-    }
-
     ret = kcm_ccache_resolve_client(context, client, opcode,
 				    name, &ccache);
-    if (ret) {
-	free(name);
+    free(name);
+    if (ret)
 	return ret;
-    }
 
-    ret = kcm_cursor_find(context, client->pid, ccache, cursor, &c);
-    if (ret) {
-	kcm_release_ccache(context, &ccache);
-	free(name);
+    ret = krb5_storage_read(request, &uuid, sizeof(uuid));
+    if (ret)
 	return ret;
+
+    c = kcm_ccache_find_cred_uuid(context, ccache, uuid);
+    if (c == NULL) {
+	kcm_release_ccache(context, &ccache);
+	return KRB5_CC_END;
     }
 
     HEIMDAL_MUTEX_lock(&ccache->mutex);
-    if (c->credp == NULL) {
-	ret = KRB5_CC_END;
-    } else {
-	ret = krb5_store_creds(response, &c->credp->cred);
-	c->credp = c->credp->next;
-    }
+    ret = krb5_store_creds(response, &c->cred);
     HEIMDAL_MUTEX_unlock(&ccache->mutex);
 
-    free(name);
     kcm_release_ccache(context, &ccache);
 
     return ret;
@@ -533,8 +518,6 @@ kcm_op_end_get(krb5_context context,
 	       krb5_storage *response)
 {
     krb5_error_code ret;
-    kcm_ccache ccache;
-    uint32_t cursor;
     char *name;
 
     ret = krb5_ret_stringz(request, &name);
@@ -542,24 +525,7 @@ kcm_op_end_get(krb5_context context,
 	return ret;
 
     KCM_LOG_REQUEST_NAME(context, client, opcode, name);
-
-    ret = krb5_ret_uint32(request, &cursor);
-    if (ret) {
-	free(name);
-	return ret;
-    }
-
-    ret = kcm_ccache_resolve_client(context, client, opcode,
-				    name, &ccache);
-    if (ret) {
-	free(name);
-	return ret;
-    }
-
-    ret = kcm_cursor_delete(context, client->pid, ccache, cursor);
-
     free(name);
-    kcm_release_ccache(context, &ccache);
 
     return ret;
 }
