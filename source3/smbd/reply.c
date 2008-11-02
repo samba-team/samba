@@ -272,7 +272,7 @@ size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
 				 NTSTATUS *err, bool *contains_wcard)
 {
 	return srvstr_get_path_wcard(mem_ctx, (char *)req->inbuf, req->flags2,
-				     pp_dest, src, smb_bufrem(req->inbuf, src),
+				     pp_dest, src, smbreq_bufrem(req, src),
 				     flags, err, contains_wcard);
 }
 
@@ -630,7 +630,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 	p += srvstr_pull_talloc(ctx, req->inbuf, req->flags2,
 				&client_devicetype, p,
-				MIN(6,smb_bufrem(req->inbuf, p)), STR_ASCII);
+				MIN(6, smbreq_bufrem(req, p)), STR_ASCII);
 
 	if (client_devicetype == NULL) {
 		data_blob_clear_free(&password);

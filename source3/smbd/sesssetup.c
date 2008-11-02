@@ -1195,7 +1195,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		return;
 	}
 
-	bufrem = smb_bufrem(req->inbuf, p);
+	bufrem = smbreq_bufrem(req, p);
 	/* pull the spnego blob */
 	blob1 = data_blob(p, MIN(bufrem, data_blob_len));
 
@@ -1529,7 +1529,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 		/* check for nasty tricks */
 		if (passlen1 > MAX_PASS_LEN
-		    || passlen1 > smb_bufrem(req->inbuf, p)) {
+		    || passlen1 > smbreq_bufrem(req, p)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
 			END_PROFILE(SMBsesssetupX);
@@ -1537,7 +1537,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 
 		if (passlen2 > MAX_PASS_LEN
-		    || passlen2 > smb_bufrem(req->inbuf, p+passlen1)) {
+		    || passlen2 > smbreq_bufrem(req, p+passlen1)) {
 			reply_nterror(req, nt_status_squash(
 					      NT_STATUS_INVALID_PARAMETER));
 			END_PROFILE(SMBsesssetupX);

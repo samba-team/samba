@@ -27,4 +27,4 @@
 
 #define srvstr_pull_req_talloc(ctx, req_, dest, src, flags) \
     pull_string_talloc(ctx, req_->inbuf, req_->flags2, dest, src, \
-		       smb_bufrem(req_->inbuf, src), flags)
+		       smbreq_bufrem(req_, src), flags)

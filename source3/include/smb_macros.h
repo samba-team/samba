@@ -131,6 +131,8 @@
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
 #define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
+#define smbreq_bufrem(req, p) (req->buflen - PTR_DIFF(p, req->buf))
+
 
 /* Note that chain_size must be available as an extern int to this macro. */
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)

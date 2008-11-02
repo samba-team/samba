@@ -539,7 +539,7 @@ void reply_negprot(struct smb_request *req)
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (smb_bufrem(req->inbuf, p) > 0) {
+	while (smbreq_bufrem(req, p) > 0) {
 
 		char **tmp;
 
