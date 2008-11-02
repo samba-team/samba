@@ -232,7 +232,8 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 				 lp_resolve_context(ntvfs->ctx->lp_ctx),
 				 credentials,
 				 ntvfs->ctx->event_ctx, &options,
-				 lp_socket_options(ntvfs->ctx->lp_ctx)
+				 lp_socket_options(ntvfs->ctx->lp_ctx),
+				 lp_gensec_settings(private, ntvfs->ctx->lp_ctx)
 				 );
 
 	status = smb2_connect_recv(creq, private, &tree);

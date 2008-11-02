@@ -255,7 +255,8 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 				     s->io.creds,
 				     c->event_ctx,
 				     &options,
-					 lp_socket_options(lp_ctx)
+					 lp_socket_options(lp_ctx),
+					 lp_gensec_settings(mem_ctx, lp_ctx)
 					 );
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 	return c;

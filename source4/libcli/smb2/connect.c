@@ -35,6 +35,7 @@ struct smb2_connect_state {
 	const char *share;
 	const char **ports;
 	const char *socket_options;
+	struct gensec_settings *gensec_settings;
 	struct smbcli_options options;
 	struct smb2_negprot negprot;
 	struct smb2_tree_connect tcon;
@@ -140,7 +141,7 @@ static void continue_negprot(struct smb2_request *req)
 		break;
 	}
 
-	state->session = smb2_session_init(transport, lp_gensec_settings(transport, global_loadparm), state, true);
+	state->session = smb2_session_init(transport, state->gensec_settings, state, true);
 	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
@@ -236,7 +237,8 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    struct cli_credentials *credentials,
 					    struct event_context *ev,
 					    struct smbcli_options *options,
-						const char *socket_options)
+						const char *socket_options,
+						struct gensec_settings *gensec_settings)
 {
 	struct composite_context *c;
 	struct smb2_connect_state *state;
@@ -259,7 +261,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(state->share, c)) return c;
 	state->resolve_ctx = talloc_reference(state, resolve_ctx);
 	state->socket_options = talloc_reference(state, socket_options);
-	if (composite_nomem(state->socket_options, c)) return c;
+	state->gensec_settings = talloc_reference(state, gensec_settings);
 
 	ZERO_STRUCT(name);
 	name.name = host;
@@ -297,11 +299,13 @@ NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx,
 		      struct smb2_tree **tree,
 		      struct event_context *ev,
 		      struct smbcli_options *options,
-			  const char *socket_options)
+			  const char *socket_options,
+			  struct gensec_settings *gensec_settings)
 {
 	struct composite_context *c = smb2_connect_send(mem_ctx, host, ports, 
 													share, resolve_ctx, 
 													credentials, ev, options,
-													socket_options);
+													socket_options,
+													gensec_settings);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }

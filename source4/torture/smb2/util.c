@@ -280,7 +280,8 @@ bool torture_smb2_connection(struct torture_context *tctx, struct smb2_tree **tr
 			      lp_resolve_context(tctx->lp_ctx),
 			      credentials, tree, 
 			      tctx->ev, &options,
-				  lp_socket_options(tctx->lp_ctx)
+				  lp_socket_options(tctx->lp_ctx),
+				  lp_gensec_settings(tctx, tctx->lp_ctx)
 				  );
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to SMB2 share \\\\%s\\%s - %s\n",
