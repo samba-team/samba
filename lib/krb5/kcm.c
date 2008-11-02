@@ -207,7 +207,8 @@ kcm_alloc(krb5_context context, const char *name, krb5_ccache *id)
 
     k = malloc(sizeof(*k));
     if (k == NULL) {
-	krb5_set_error_message(context, KRB5_CC_NOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, KRB5_CC_NOMEM,
+			       N_("malloc: out of memory", ""));
 	return KRB5_CC_NOMEM;
     }
 
