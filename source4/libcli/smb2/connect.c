@@ -239,7 +239,6 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 						const char *socket_options)
 {
 	struct composite_context *c;
-	const char *default_ports[] = { "445", NULL };
 	struct smb2_connect_state *state;
 	struct nbt_name name;
 	struct composite_context *creq;
@@ -256,7 +255,6 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->host = talloc_strdup(c, host);
 	if (composite_nomem(state->host, c)) return c;
 	state->ports = talloc_reference(state, ports);
-	if (composite_nomem(state->ports, c)) return c;
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
 	state->resolve_ctx = talloc_reference(state, resolve_ctx);

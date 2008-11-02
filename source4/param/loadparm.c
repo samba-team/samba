@@ -2477,8 +2477,6 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 
 	reload_charcnv(lp_ctx);
 
-	testnonblock = lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false);
-
 	/* FIXME: Check locale in environment for this: */
 	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
 		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)));

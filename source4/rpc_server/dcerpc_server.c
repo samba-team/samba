@@ -339,6 +339,7 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->endpoint = ep;
 	p->contexts = NULL;
 	p->call_list = NULL;
+	p->packet_log_dir = lp_lockdir(dce_ctx->lp_ctx);
 	p->incoming_fragmented_call_list = NULL;
 	p->pending_call_list = NULL;
 	p->cli_max_recv_frag = 0;

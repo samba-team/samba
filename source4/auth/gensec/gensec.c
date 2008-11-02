@@ -501,7 +501,7 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 
 	(*gensec_security)->event_ctx = ev;
 	(*gensec_security)->msg_ctx = msg;
-	(*gensec_security)->settings = settings;
+	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
 
 	return NT_STATUS_OK;
 }
@@ -529,7 +529,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->want_features = parent->want_features;
 	(*gensec_security)->event_ctx = parent->event_ctx;
 	(*gensec_security)->msg_ctx = parent->msg_ctx;
-	(*gensec_security)->settings = parent->settings;
+	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
 
 	return NT_STATUS_OK;
 }
