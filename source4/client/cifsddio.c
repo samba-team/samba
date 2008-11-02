@@ -225,6 +225,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 					      const char * host,
 					      const char **ports,
 					      const char * share,
+					      const char *socket_options,
 					      struct smbcli_options *options,
 					      struct smbcli_session_options *session_options,
 					      struct smb_iconv_convenience *iconv_convenience)
@@ -237,6 +238,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	 */
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
 				     NULL /* devtype */,
+				     socket_options,
 				     cmdline_credentials, resolve_ctx,
 				     ev, options,
 				     session_options,
@@ -306,6 +308,7 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 					const char * path,
 					uint64_t io_size,
 					int options,
+					const char *socket_options,
 					struct smbcli_options *smb_options,
 					struct smbcli_session_options *smb_session_options,
 					struct smb_iconv_convenience *iconv_convenience)
@@ -329,6 +332,7 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	smbh->h.io_seek = smb_seek_func;
 
 	if ((smbh->cli = init_smb_session(resolve_ctx, ev, host, ports, share,
+					  socket_options,
 					  smb_options, smb_session_options,
 					  iconv_convenience)) == NULL) {
 		return(NULL);
@@ -351,6 +355,7 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char **ports,
 				uint64_t io_size,
 				int options,
+				const char *socket_options,
 				struct smbcli_options *smb_options,
 				struct smbcli_session_options *smb_session_options,
 				struct smb_iconv_convenience *iconv_convenience)
@@ -370,7 +375,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 
 			return(open_cifs_handle(resolve_ctx, ev, host, ports,
 						share, remain,
-						io_size, options, smb_options,
+						io_size, options, 
+						socket_options, smb_options,
 						smb_session_options,
 						iconv_convenience));
 		}

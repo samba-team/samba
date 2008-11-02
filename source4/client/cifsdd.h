@@ -97,6 +97,7 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size, int options, 
+				const char *socket_options,
 				struct smbcli_options *smb_options,
 				struct smbcli_session_options *smb_session_options,
 				struct smb_iconv_convenience *iconv_convenience);
