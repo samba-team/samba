@@ -2687,7 +2687,7 @@ _PUBLIC_ struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, s
 
 struct gensec_settings *lp_gensec_settings(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	struct gensec_settings *settings = talloc(NULL, struct gensec_settings);
+	struct gensec_settings *settings = talloc(mem_ctx, struct gensec_settings);
 	if (settings == NULL)
 		return NULL;
 	SMB_ASSERT(lp_ctx != NULL);
