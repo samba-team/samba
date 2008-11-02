@@ -40,6 +40,12 @@ _PUBLIC_ struct gensec_security_ops **gensec_security_all(void)
 	return generic_security_ops;
 }
 
+bool gensec_security_ops_enabled(struct gensec_security_ops *ops, 
+				 struct loadparm_context *lp_ctx)
+{
+	return lp_parm_bool(lp_ctx, NULL, "gensec", ops->name, ops->enabled);
+}
+
 /* Sometimes we want to force only kerberos, sometimes we want to
  * force it's avoidance.  The old list could be either
  * gensec_security_all(), or from cli_credentials_gensec_list() (ie,
@@ -76,6 +82,7 @@ _PUBLIC_ struct gensec_security_ops **gensec_use_kerberos_mechs(TALLOC_CTX *mem_
 	j = 0;
 	for (i=0; old_gensec_list && old_gensec_list[i]; i++) {
 		int oid_idx;
+
 		for (oid_idx = 0; old_gensec_list[i]->oid && old_gensec_list[i]->oid[oid_idx]; oid_idx++) {
 			if (strcmp(old_gensec_list[i]->oid[oid_idx], GENSEC_OID_SPNEGO) == 0) {
 				new_gensec_list[j] = old_gensec_list[i];
@@ -140,6 +147,8 @@ static const struct gensec_security_ops *gensec_security_by_authtype(struct gens
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		if (backends[i]->auth_type == auth_type) {
 			backend = backends[i];
 			talloc_free(mem_ctx);
@@ -163,6 +172,8 @@ const struct gensec_security_ops *gensec_security_by_oid(struct gensec_security 
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		if (backends[i]->oid) {
 			for (j=0; backends[i]->oid[j]; j++) { 
 				if (backends[i]->oid[j] &&
@@ -191,6 +202,8 @@ const struct gensec_security_ops *gensec_security_by_sasl_name(struct gensec_sec
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		if (backends[i]->sasl_name 
 		    && (strcmp(backends[i]->sasl_name, sasl_name) == 0)) {
 			backend = backends[i];
@@ -215,6 +228,8 @@ static const struct gensec_security_ops *gensec_security_by_name(struct gensec_s
 	}
 	backends = gensec_security_mechs(gensec_security, mem_ctx);
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		if (backends[i]->name 
 		    && (strcmp(backends[i]->name, name) == 0)) {
 			backend = backends[i];
@@ -258,6 +273,8 @@ const struct gensec_security_ops **gensec_security_by_sasl_list(struct gensec_se
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		for (sasl_idx = 0; sasl_names[sasl_idx]; sasl_idx++) {
 			if (!backends[i]->sasl_name ||
 			    !(strcmp(backends[i]->sasl_name, 
@@ -326,6 +343,8 @@ const struct gensec_security_ops_wrapper *gensec_security_by_oid_list(struct gen
 	/* Find backends in our preferred order, by walking our list,
 	 * then looking in the supplied list */
 	for (i=0; backends && backends[i]; i++) {
+	    	if (gensec_security_ops_enabled(backends[i], gensec_security->settings->lp_ctx))
+		    continue;
 		if (!backends[i]->oid) {
 			continue;
 		}
@@ -1204,10 +1223,7 @@ const char *gensec_get_target_principal(struct gensec_security *gensec_security)
 */
 NTSTATUS gensec_register(const struct gensec_security_ops *ops)
 {
-	if (!lp_parm_bool(global_loadparm, NULL, "gensec", ops->name, ops->enabled)) {
-		DEBUG(2,("gensec subsystem %s is disabled\n", ops->name));
-		return NT_STATUS_OK;
-	}
+
 
 	if (gensec_security_by_name(NULL, ops->name) != NULL) {
 		/* its already registered! */
