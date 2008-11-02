@@ -857,19 +857,6 @@ if test x"$ac_cv_func_dirfd" = x"yes"; then
 	default_shared_modules="$default_shared_modules vfs_syncops"
 fi
 
-AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
-    AC_TRY_COMPILE([
-#include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <signal.h>],[sig_atomic_t i = 0],
-	samba_cv_sig_atomic_t=yes,samba_cv_sig_atomic_t=no)])
-if test x"$samba_cv_sig_atomic_t" = x"yes"; then
-   AC_DEFINE(HAVE_SIG_ATOMIC_T_TYPE,1,[Whether we have the atomic_t variable type])
-fi
-
 AC_CACHE_CHECK([for struct sigevent type],samba_cv_struct_sigevent, [
     AC_TRY_COMPILE([
 #include <sys/types.h>
@@ -907,11 +894,6 @@ AC_CACHE_CHECK([for struct timespec type],samba_cv_struct_timespec, [
 if test x"$samba_cv_struct_timespec" = x"yes"; then
    AC_DEFINE(HAVE_STRUCT_TIMESPEC,1,[Whether we have struct timespec])
 fi
-
-# stupid headers have the functions but no declaration. grrrr.
-AC_HAVE_DECL(errno, [#include <errno.h>])
-AC_HAVE_DECL(setresuid, [#include <unistd.h>])
-AC_HAVE_DECL(setresgid, [#include <unistd.h>])
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
@@ -1025,20 +1007,20 @@ if test x"$ac_cv_func_execl" = x"no"; then
     EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/smbrun\$(EXEEXT)"
 fi
 
-AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror fchown chmod fchmod mknod mknod64)
-AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
+AC_CHECK_FUNCS(getcwd fchown chmod fchmod mknod mknod64)
+AC_CHECK_FUNCS(strtol)
 AC_CHECK_FUNCS(fstat strchr chflags)
-AC_CHECK_FUNCS(getrlimit fsync fdatasync memset strlcpy strlcat setpgid)
-AC_CHECK_FUNCS(memmove setsid glob strpbrk pipe crypt16 getauthuid)
-AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
+AC_CHECK_FUNCS(getrlimit fsync fdatasync setpgid)
+AC_CHECK_FUNCS(setsid glob strpbrk crypt16 getauthuid)
+AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf)
-AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize stat64 fstat64)
-AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt dup2 lseek64 ftruncate64)
-AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam setlinebuf)
+AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf stat64 fstat64)
+AC_CHECK_FUNCS(lstat64 fopen64 atexit grantpt lseek64 ftruncate64)
+AC_CHECK_FUNCS(fseek64 fseeko64 ftell64 ftello64 setluid getpwanam)
 AC_CHECK_FUNCS(opendir64 readdir64 seekdir64 telldir64 rewinddir64 closedir64)
 AC_CHECK_FUNCS(getpwent_r)
-AC_CHECK_FUNCS(getdents getdents64)
-AC_CHECK_FUNCS(srandom random srand rand setenv usleep strcasecmp fcvt fcvtl)
+AC_CHECK_FUNCS(getdents64)
+AC_CHECK_FUNCS(setenv strcasecmp fcvt fcvtl)
 AC_CHECK_FUNCS(syslog vsyslog timegm)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(nanosleep)
@@ -1046,7 +1028,7 @@ AC_CHECK_FUNCS(mlock munlock mlockall munlockall)
 AC_CHECK_FUNCS(memalign posix_memalign hstrerror)
 AC_CHECK_HEADERS(sys/mman.h)
 # setbuffer, shmget, shm_open are needed for smbtorture
-AC_CHECK_FUNCS(setbuffer shmget shm_open)
+AC_CHECK_FUNCS(shmget shm_open)
 
 # Find a method of generating a stack trace
 AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)

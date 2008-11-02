@@ -805,14 +805,6 @@ enum flush_reason_enum {
 #define ULTRIX_AUTH 1
 #endif
 
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
-/* stupid glibc */
-int setresuid(uid_t ruid, uid_t euid, uid_t suid);
-#endif
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
-int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
-
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 

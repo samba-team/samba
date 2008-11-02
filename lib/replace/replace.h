@@ -4,7 +4,7 @@
    macros to go along with the lib/replace/ portability layer code
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Jelmer Vernooij 2006-2008
    Copyright (C) Jeremy Allison 2007.
 
      ** NOTE! The following LGPL license applies to the replace
@@ -213,6 +213,14 @@ int rep_seteuid(uid_t);
 #ifndef HAVE_SETEGID
 #define setegid rep_setegid
 int rep_setegid(gid_t);
+#endif
+
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
+/* stupid glibc */
+int setresuid(uid_t ruid, uid_t euid, uid_t suid);
+#endif
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
+int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #endif
 
 #ifndef HAVE_CHOWN
