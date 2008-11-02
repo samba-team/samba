@@ -51,8 +51,6 @@ typedef struct krb5_kcmcache {
     char *door_path;
 } krb5_kcmcache;
 
-typedef unsigned char kcmuuid_t[16];
-
 typedef struct krb5_kcm_cursor {
     unsigned long offset;
     unsigned long length;
