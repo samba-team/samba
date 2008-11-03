@@ -257,7 +257,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	a = &aio_ex->acb;
 
 	/* Now set up the aio record for the read call. */
-	
+
 	a->aio_fildes = fsp->fh->fd;
 	a->aio_buf = smb_buf(aio_ex->outbuf);
 	a->aio_nbytes = smb_maxcnt;
@@ -360,7 +360,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	a = &aio_ex->acb;
 
 	/* Now set up the aio record for the write call. */
-	
+
 	a->aio_fildes = fsp->fh->fd;
 	a->aio_buf = aio_ex->inbuf + (PTR_DIFF(data, req->inbuf));
 	a->aio_nbytes = numtowrite;
@@ -729,7 +729,7 @@ int wait_for_aio_completion(files_struct *fsp)
 
 		DEBUG(10,("wait_for_aio_completion: returned err = %d, "
 			  "errno = %s\n", err, strerror(errno) ));
-		
+
 		if (err == -1 && errno == EAGAIN) {
 			DEBUG(0,("wait_for_aio_completion: aio_suspend timed "
 				 "out waiting for %d events after a wait of "
