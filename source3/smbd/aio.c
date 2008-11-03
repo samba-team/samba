@@ -132,7 +132,7 @@ static void delete_aio_ex(struct aio_extra *aio_ex)
 }
 
 /****************************************************************************
- Given the aiocb struct find the extended aio struct containing it.
+ Given the mid find the extended aio struct containing it.
 *****************************************************************************/
 
 static struct aio_extra *find_aio_ex(uint16 mid)
