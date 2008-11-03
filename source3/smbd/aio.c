@@ -250,7 +250,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
-	construct_reply_common((char *)req->inbuf, aio_ex->outbuf);
+	construct_reply_common_req(req, aio_ex->outbuf);
 	srv_set_message(aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 

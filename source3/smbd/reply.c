@@ -3129,7 +3129,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
-		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
+		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
@@ -3181,7 +3181,7 @@ normal_read:
 	if ((smb_maxcnt & 0xFF0000) > 0x10000) {
 		uint8 headerbuf[smb_size + 2*12];
 
-		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
+		construct_reply_common_req(req, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */

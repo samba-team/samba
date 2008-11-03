@@ -1608,6 +1608,11 @@ void construct_reply_common(const char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
 }
 
+void construct_reply_common_req(struct smb_request *req, char *outbuf)
+{
+	return construct_reply_common((char *)req->inbuf, outbuf);
+}
+
 /****************************************************************************
  Construct a chained reply and add it to the already made reply
 ****************************************************************************/
