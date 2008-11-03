@@ -931,11 +931,19 @@ interface netlogon
 
 	/* i'm not at all sure how this call works */
 
+	typedef [bitmap16bit] bitmap {
+		NETR_CHANGELOG_IMMEDIATE_REPL_REQUIRED	= 0x0001,
+		NETR_CHANGELOG_CHANGED_PASSWORD		= 0x0002,
+		NETR_CHANGELOG_SID_INCLUDED		= 0x0004,
+		NETR_CHANGELOG_NAME_INCLUDED		= 0x0008,
+		NETR_CHANGELOG_FIRST_PROMOTION_OBJ	= 0x0010
+	} netr_ChangeLogFlags;
+
 	typedef [public] struct {
 		uint32 serial_number1;
 		uint32 serial_number2;
 		uint32 object_rid;
-		uint16 flags;
+		netr_ChangeLogFlags flags;
 		uint8 db_index;
 		uint8 delta_type;
 		[value(ndr_size_dom_sid0(&object_sid, ndr->flags))] uint32 sid_size;
