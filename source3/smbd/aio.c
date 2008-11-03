@@ -61,18 +61,18 @@ static struct aio_extra *aio_list_head;
 static struct aio_extra *create_aio_ex_read(files_struct *fsp, size_t buflen,
 					    uint16 mid)
 {
-	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
+	struct aio_extra *aio_ex = TALLOC_ZERO_P(NULL, struct aio_extra);
 
 	if (!aio_ex) {
 		return NULL;
 	}
-	ZERO_STRUCTP(aio_ex);
+
 	/* The output buffer stored in the aio_ex is the start of
 	   the smb return buffer. The buffer used in the acb
 	   is the start of the reply data portion of that buffer. */
-	aio_ex->outbuf = SMB_MALLOC_ARRAY(char, buflen);
+	aio_ex->outbuf = TALLOC_ARRAY(aio_ex, char, buflen);
 	if (!aio_ex->outbuf) {
-		SAFE_FREE(aio_ex);
+		TALLOC_FREE(aio_ex);
 		return NULL;
 	}
 	DLIST_ADD(aio_list_head, aio_ex);
@@ -92,23 +92,22 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp,
 					     size_t outbuflen,
 					     uint16 mid)
 {
-	struct aio_extra *aio_ex = SMB_MALLOC_P(struct aio_extra);
+	struct aio_extra *aio_ex = TALLOC_ZERO_P(NULL, struct aio_extra);
 
 	if (!aio_ex) {
 		return NULL;
 	}
-	ZERO_STRUCTP(aio_ex);
 
 	/* We need space for an output reply of outbuflen bytes. */
-	aio_ex->outbuf = SMB_MALLOC_ARRAY(char, outbuflen);
+	aio_ex->outbuf = TALLOC_ARRAY(aio_ex, char, outbuflen);
 	if (!aio_ex->outbuf) {
-		SAFE_FREE(aio_ex);
+		TALLOC_FREE(aio_ex);
 		return NULL;
 	}
 
-	if (!(aio_ex->inbuf = SMB_MALLOC_ARRAY(char, inbuflen))) {
-		SAFE_FREE(aio_ex->outbuf);
-		SAFE_FREE(aio_ex);
+	aio_ex->inbuf = TALLOC_ARRAY(aio_ex, char, inbuflen);
+	if (!aio_ex->inbuf) {
+		TALLOC_FREE(aio_ex);
 		return NULL;
 	}
 
@@ -117,18 +116,6 @@ static struct aio_extra *create_aio_ex_write(files_struct *fsp,
 	aio_ex->read_req = False;
 	aio_ex->mid = mid;
 	return aio_ex;
-}
-
-/****************************************************************************
- Delete the extended aio struct.
-*****************************************************************************/
-
-static void delete_aio_ex(struct aio_extra *aio_ex)
-{
-	DLIST_REMOVE(aio_list_head, aio_ex);
-	SAFE_FREE(aio_ex->inbuf);
-	SAFE_FREE(aio_ex->outbuf);
-	SAFE_FREE(aio_ex);
 }
 
 /****************************************************************************
@@ -286,7 +273,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	if (ret == -1) {
 		DEBUG(0,("schedule_aio_read_and_X: aio_read failed. "
 			 "Error %s\n", strerror(errno) ));
-		delete_aio_ex(aio_ex);
+		TALLOC_FREE(aio_ex);
 		return False;
 	}
 
@@ -389,7 +376,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	if (ret == -1) {
 		DEBUG(3,("schedule_aio_wrote_and_X: aio_write failed. "
 			 "Error %s\n", strerror(errno) ));
-		delete_aio_ex(aio_ex);
+		TALLOC_FREE(aio_ex);
 		return False;
 	}
 
@@ -670,7 +657,7 @@ int process_aio_queue(void)
 			continue;
 		}
 
-		delete_aio_ex(aio_ex);
+		TALLOC_FREE(aio_ex);
 	}
 
 	outstanding_aio_calls -= signals_received;
@@ -771,7 +758,7 @@ int wait_for_aio_completion(files_struct *fsp)
 			if (!handle_aio_completed(aio_ex, &err)) {
 				continue;
 			}
-			delete_aio_ex(aio_ex);
+			TALLOC_FREE(aio_ex);
 		}
 
 		SAFE_FREE(aiocb_list);
