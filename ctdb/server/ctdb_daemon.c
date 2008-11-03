@@ -269,7 +269,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	int res;
 	uint32_t length;
 	struct ctdb_client *client = dstate->client;
-	struct ctdb_db_context = state->ctdb_db;
+	struct ctdb_db_context *ctdb_db = state->ctdb_db;
 
 	talloc_steal(client, dstate);
 	talloc_steal(dstate, dstate->call);
