@@ -1380,7 +1380,6 @@ tgs_build_reply(krb5_context context,
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
     krb5_data rspac;
-    int cross_realm = 0;
 
     METHOD_DATA enc_pa_data;
 
@@ -1390,6 +1389,8 @@ tgs_build_reply(krb5_context context,
     EncTicketPart adtkt;
     char opt_str[128];
     int signedpath = 0;
+
+    Key *tkey;
 
     memset(&sessionkey, 0, sizeof(sessionkey));
     memset(&adtkt, 0, sizeof(adtkt));
@@ -1558,8 +1559,6 @@ server_lookup:
 	
 	kdc_log(context, config, 1, "Client not found in database: %s: %s",
 		cpn, krb5_get_err_text(context, ret));
-
-	cross_realm = 1;
     }
 
     /*
@@ -1603,10 +1602,6 @@ server_lookup:
     }
 
     /*
-     * Validate authoriation data
-     */
-
-    /*
      * Check that service is in the same realm as the krbtgt. If it's
      * not the same, it's someone that is using a uni-directional trust
      * backward.
@@ -1627,27 +1622,26 @@ server_lookup:
 	goto out;
     }
 
-    /* check PAC if not cross realm and if there is one */
-    if (!cross_realm) {
-	Key *tkey;
+    /*
+     * Validate authoriation data
+     */
 
-	ret = hdb_enctype2key(context, &krbtgt->entry,
-			      krbtgt_etype, &tkey);
-	if(ret) {
-	    kdc_log(context, config, 0,
+    ret = hdb_enctype2key(context, &krbtgt->entry,
+			  krbtgt_etype, &tkey);
+    if(ret) {
+	kdc_log(context, config, 0,
 		    "Failed to find key for krbtgt PAC check");
-	    goto out;
-	}
+	goto out;
+    }
 
-	ret = check_PAC(context, config, cp,
-			client, server, ekey, &tkey->key,
-			tgt, &rspac, &signedpath);
-	if (ret) {
-	    kdc_log(context, config, 0,
-		    "Verify PAC failed for %s (%s) from %s with %s",
-		    spn, cpn, from, krb5_get_err_text(context, ret));
-	    goto out;
-	}
+    ret = check_PAC(context, config, cp,
+		    client, server, ekey, &tkey->key,
+		    tgt, &rspac, &signedpath);
+    if (ret) {
+	kdc_log(context, config, 0,
+		"Verify PAC failed for %s (%s) from %s with %s",
+		spn, cpn, from, krb5_get_err_text(context, ret));
+	goto out;
     }
 
     /* also check the krbtgt for signature */
