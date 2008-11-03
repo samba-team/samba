@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _TORTURE_PROVISION_H_
-#define _TORTURE_PROVISION_H_
+#ifndef _TORTURE_UTIL_H_
+#define _TORTURE_UTIL_H_
 
 #include "torture/torture.h"
 
@@ -94,4 +94,4 @@ NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 
 
 
-#endif /* _TORTURE_PROVISION_H_ */
+#endif /* _TORTURE_UTIL_H_ */
