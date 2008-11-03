@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Blocking Locking functions
    Copyright (C) Jeremy Allison 1998-2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -340,7 +340,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 
 	data = (uint8_t *)smb_buf(inbuf)
 		+ ((large_file_format ? 20 : 10)*num_ulocks);
-	
+
 	/* 
 	 * Data now points at the beginning of the list
 	 * of smb_lkrng structs.
@@ -351,19 +351,19 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 	 * as under POSIX rules, if we have a lock already there, we
 	 * will delete it (and we shouldn't) .....
 	 */
-	
+
 	for(i = blr->lock_num - 1; i >= 0; i--) {
 		bool err;
-		
+
 		lock_pid = get_lock_pid( data, i, large_file_format);
 		count = get_lock_count( data, i, large_file_format);
 		offset = get_lock_offset( data, i, large_file_format, &err);
-		
+
 		/*
 		 * We know err cannot be set as if it was the lock
 		 * request would never have been queued. JRA.
 		 */
-		
+
 		do_unlock(smbd_messaging_context(),
 			fsp,
 			lock_pid,
@@ -371,7 +371,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
 			offset,
 			WINDOWS_LOCK);
 	}
-	
+
 	generic_blocking_lock_error(blr, status);
 }
 
@@ -442,7 +442,7 @@ static bool process_lockingX(blocking_lock_record *blr)
 		lock_pid = get_lock_pid( data, blr->lock_num, large_file_format);
 		count = get_lock_count( data, blr->lock_num, large_file_format);
 		offset = get_lock_offset( data, blr->lock_num, large_file_format, &err);
-		
+
 		/*
 		 * We know err cannot be set as if it was the lock
 		 * request would never have been queued. JRA.
@@ -471,7 +471,7 @@ static bool process_lockingX(blocking_lock_record *blr)
 		/*
 		 * Success - we got all the locks.
 		 */
-		
+
 		DEBUG(3,("process_lockingX file = %s, fnum=%d type=%d num_locks=%d\n",
 			 fsp->fsp_name, fsp->fnum, (unsigned int)locktype, num_locks) );
 
@@ -484,7 +484,7 @@ static bool process_lockingX(blocking_lock_record *blr)
 			 * error. Free any locks we had and return an error.
 			 * Return True so we get dequeued.
 			 */
-		
+
 		blocking_lock_reply_error(blr, status);
 		return True;
 	}
@@ -492,11 +492,11 @@ static bool process_lockingX(blocking_lock_record *blr)
 	/*
 	 * Still can't get all the locks - keep waiting.
 	 */
-	
+
 	DEBUG(10,("process_lockingX: only got %d locks of %d needed for file %s, fnum = %d. \
 Waiting....\n", 
 		  blr->lock_num, num_locks, fsp->fsp_name, fsp->fnum));
-	
+
 	return False;
 }
 
