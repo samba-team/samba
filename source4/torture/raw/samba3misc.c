@@ -889,3 +889,83 @@ bool torture_samba3_rootdirfid(struct torture_context *tctx)
 	return ret;
 }
 
+bool torture_samba3_oplock_logoff(struct torture_context *tctx)
+{
+	struct smbcli_state *cli;
+	NTSTATUS status;
+	uint16_t fnum1;
+	union smb_open io;
+	const char *fname = "testfile";
+	bool ret = false;
+	struct smbcli_request *req;
+	struct smb_echo echo_req;
+
+	if (!torture_open_connection(&cli, tctx, 0)) {
+		ret = false;
+		goto done;
+	}
+
+	smbcli_unlink(cli->tree, fname);
+
+	ZERO_STRUCT(io);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.access_mask =
+		SEC_STD_SYNCHRONIZE | SEC_FILE_EXECUTE;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.fname = "testfile";
+	status = smb_raw_open(cli->tree, tctx, &io);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("first smb_open failed: %s\n", nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * Create a conflicting open, causing the one-second delay
+	 */
+
+	req = smb_raw_open_send(cli->tree, &io);
+	if (req == NULL) {
+		d_printf("smb_raw_open_send failed\n");
+		ret = false;
+		goto done;
+	}
+
+	/*
+	 * Pull the VUID from under that request. As of Nov 3, 2008 all Samba3
+	 * versions (3.0, 3.2 and master) would spin sending ERRinvuid errors
+	 * as long as the client is still connected.
+	 */
+
+	status = smb_raw_ulogoff(cli->session);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("ulogoff failed: %s\n", nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	echo_req.in.repeat_count = 1;
+	echo_req.in.size = 1;
+	echo_req.in.data = (uint8_t *)"";
+
+	status = smb_raw_echo(cli->session->transport, &echo_req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("smb_raw_echo returned %s\n",
+			 nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	ret = true;
+ done:
+	return ret;
+}
