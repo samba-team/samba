@@ -400,7 +400,6 @@ void init_smb_request(struct smb_request *req,
 			(unsigned int)req_size));
 		exit_server_cleanly("Invalid SMB request");
 	}
-	req->inbuf  = inbuf;
 	req->outbuf = NULL;
 }
 
@@ -1497,6 +1496,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
+	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
 	conn = switch_message(req->cmd, req, size);
 
@@ -1723,6 +1723,7 @@ void chain_reply(struct smb_request *req)
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
+	req2->inbuf = (uint8_t *)inbuf2;
 	req2->chain_fsp = req->chain_fsp;
 
 	/* process the request */
@@ -1930,8 +1931,6 @@ void smbd_process(void)
 		}
 
 		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
-
-		TALLOC_FREE(inbuf);
 
 		num_smbs++;
 

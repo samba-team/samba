@@ -198,6 +198,7 @@ void change_notify_reply(connection_struct *conn,
 	SCVAL(tmp_request, smb_wct, 0);
 
 	init_smb_request(req, tmp_request,0, conn->encrypted_tid);
+	req->inbuf = tmp_request;
 
 	send_nt_replies(conn, req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);

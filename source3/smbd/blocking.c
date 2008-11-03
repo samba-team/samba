@@ -263,6 +263,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	}
 
 	init_smb_request(req, (uint8 *)blr->inbuf, 0, blr->encrypted);
+	req->inbuf = (uint8_t *)(blr->inbuf);
 	reply_outbuf(req, 2, 0);
 
 	/*
@@ -543,6 +544,7 @@ static bool process_trans2(blocking_lock_record *blr)
 	}
 
 	init_smb_request(req, (uint8 *)blr->inbuf, 0, blr->encrypted);
+	req->inbuf = (uint8_t *)(blr->inbuf);
 
 	SCVAL(req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);
