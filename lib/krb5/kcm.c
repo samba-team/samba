@@ -62,13 +62,14 @@ typedef struct krb5_kcm_cursor {
 #define CACHENAME(X)	(KCMCACHE(X)->name)
 #define KCMCURSOR(C)	((krb5_kcm_cursor)(C))
 
+#ifdef HAVE_DOOR_CREATE
+
 static krb5_error_code
 try_door(krb5_context context,
 	 krb5_kcmcache *k,
 	 krb5_data *request_data,
 	 krb5_data *response_data)
 {
-#ifdef HAVE_DOOR_CREATE
     door_arg_t arg;
     int fd;
     int ret;
@@ -98,10 +99,8 @@ try_door(krb5_context context,
 	return ret;
 
     return 0;
-#else
-    return KRB5_CC_IO;
-#endif
 }
+#endif /* HAVE_DOOR_CREATE */
 
 static krb5_error_code
 try_unix_socket(krb5_context context,
@@ -150,9 +149,11 @@ kcm_send_request(krb5_context context,
     ret = KRB5_CC_NOSUPP;
 
     for (i = 0; i < context->max_retries; i++) {
+#ifdef HAVE_DOOR_CREATE
 	ret = try_door(context, k, &request_data, response_data);
 	if (ret == 0 && response_data->length != 0)
 	    break;
+#endif
 	ret = try_unix_socket(context, k, &request_data, response_data);
 	if (ret == 0 && response_data->length != 0)
 	    break;
