@@ -967,6 +967,8 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 			}
 
 			if (!change_to_user(conn,session_tag)) {
+				remove_deferred_open_smb_message(
+					SVAL(inbuf, smb_mid));
 				return(ERROR_NT(NT_STATUS_DOS(ERRSRV,ERRbaduid)));
 			}
 
