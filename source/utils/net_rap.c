@@ -1024,7 +1024,7 @@ int net_rap_groupmember_usage(struct net_context *c, int argc, const char **argv
 	 "net rap groupmember LIST <group> [misc. options] [targets]"
 	 "\n\t Enumerate users in a group\n"
 	 "\nnet rap groupmember DELETE <group> <user> [misc. options] "
-	 "[targets]\n\t Delete sepcified user from specified group\n"
+	 "[targets]\n\t Delete specified user from specified group\n"
 	 "\nnet rap groupmember ADD <group> <user> [misc. options] [targets]"
 	 "\n\t Add specified user to specified group\n");
 
