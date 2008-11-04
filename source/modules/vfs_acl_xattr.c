@@ -442,6 +442,10 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					fsp->access_mask,
 					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("open_acl_xattr: file %s open "
+				"refused with error %s\n",
+				fname,
+				nt_errstr(status) ));
 			errno = map_errno_from_nt_status(status);
 			return -1;
 		}
