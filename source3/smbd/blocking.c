@@ -26,9 +26,9 @@
  notify. It consists of the requesting SMB and the expiry time.
 *****************************************************************************/
 
-typedef struct _blocking_lock_record {
-	struct _blocking_lock_record *next;
-	struct _blocking_lock_record *prev;
+typedef struct blocking_lock_record {
+	struct blocking_lock_record *next;
+	struct blocking_lock_record *prev;
 	int com_type;
 	files_struct *fsp;
 	struct timeval expire_time;
@@ -52,16 +52,6 @@ static blocking_lock_record *blocking_lock_cancelled_queue;
 
 /* The event that makes us process our blocking lock queue */
 static struct timed_event *brl_timeout;
-
-/****************************************************************************
- Destructor for the above structure.
-****************************************************************************/
-
-static void free_blocking_lock_record(blocking_lock_record *blr)
-{
-	SAFE_FREE(blr->inbuf);
-	SAFE_FREE(blr);
-}
 
 /****************************************************************************
  Determine if this is a secondary element of a chained SMB.
@@ -176,7 +166,8 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	 * the expiration time here.
 	 */
 
-	if((blr = SMB_MALLOC_P(blocking_lock_record)) == NULL) {
+	blr = talloc(NULL, struct blocking_lock_record);
+	if (blr == NULL) {
 		DEBUG(0,("push_blocking_lock_request: Malloc fail !\n" ));
 		return False;
 	}
@@ -184,9 +175,10 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blr->next = NULL;
 	blr->prev = NULL;
 
-	if((blr->inbuf = (char *)SMB_MALLOC(length)) == NULL) {
+	blr->inbuf = TALLOC_ARRAY(blr, char, length);
+	if (blr->inbuf == NULL) {
 		DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
-		SAFE_FREE(blr);
+		TALLOC_FREE(blr);
 		return False;
 	}
 
@@ -224,7 +216,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("push_blocking_lock_request: failed to add PENDING_LOCK record.\n"));
 		DLIST_REMOVE(blocking_lock_queue, blr);
-		free_blocking_lock_record(blr);
+		TALLOC_FREE(blr);
 		return False;
 	}
 
@@ -646,7 +638,7 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
+			TALLOC_FREE(blr);
 		}
 	}
 }
@@ -738,7 +730,7 @@ static void process_blocking_lock_queue(void)
 				vuid ));
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
+			TALLOC_FREE(blr);
 			recalc_timeout = True;
 			continue;
 		}
@@ -763,7 +755,7 @@ static void process_blocking_lock_queue(void)
 			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
 			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
 			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
+			TALLOC_FREE(blr);
 			recalc_timeout = True;
 			change_to_root_user();
 			continue;
@@ -789,7 +781,7 @@ static void process_blocking_lock_queue(void)
 			}
 
 			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
+			TALLOC_FREE(blr);
 			recalc_timeout = True;
 			change_to_root_user();
 			continue;
@@ -825,7 +817,7 @@ static void process_blocking_lock_queue(void)
 
 			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
 			DLIST_REMOVE(blocking_lock_queue, blr);
-			free_blocking_lock_record(blr);
+			TALLOC_FREE(blr);
 			recalc_timeout = True;
 		}
 	}
@@ -869,7 +861,7 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 
 	blocking_lock_reply_error(blr, err);
 	DLIST_REMOVE(blocking_lock_cancelled_queue, blr);
-	free_blocking_lock_record(blr);
+	TALLOC_FREE(blr);
 }
 
 /****************************************************************************
