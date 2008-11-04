@@ -1454,7 +1454,7 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.return_authenticator = r->in.return_authenticator;
-	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY);
+	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY *);
 	if (r->out.delta_enum_array == NULL) {
 		talloc_free(r);
 		return false;

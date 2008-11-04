@@ -1251,14 +1251,14 @@ struct netr_DatabaseRedo {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
-		uint8_t *change_log_entry;/* [unique,size_is(change_log_entry_size)] */
+		struct netr_Authenticator *credential;/* [ref] */
+		uint8_t *change_log_entry;/* [ref,size_is(change_log_entry_size)] */
 		uint32_t change_log_entry_size;
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		NTSTATUS result;
 	} out;

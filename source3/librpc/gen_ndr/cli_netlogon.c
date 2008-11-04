@@ -890,11 +890,11 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  const char *logon_server /* [in] [charset(UTF16)] */,
 				  const char *computername /* [in] [charset(UTF16)] */,
-				  struct netr_Authenticator credential /* [in]  */,
+				  struct netr_Authenticator *credential /* [in] [ref] */,
 				  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
-				  uint8_t *change_log_entry /* [in] [unique,size_is(change_log_entry_size)] */,
+				  uint8_t *change_log_entry /* [in] [ref,size_is(change_log_entry_size)] */,
 				  uint32_t change_log_entry_size /* [in]  */,
-				  struct netr_DELTA_ENUM_ARRAY *delta_enum_array /* [out] [ref] */)
+				  struct netr_DELTA_ENUM_ARRAY **delta_enum_array /* [out] [ref] */)
 {
 	struct netr_DatabaseRedo r;
 	NTSTATUS status;
