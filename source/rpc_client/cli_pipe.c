@@ -2931,34 +2931,35 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
  ****************************************************************************/
 
 static NTSTATUS cli_rpc_pipe_open(struct cli_state *cli,
+				  enum dcerpc_transport_t transport,
 				  const struct ndr_syntax_id *interface,
 				  struct rpc_pipe_client **presult)
 {
-	if (ndr_syntax_id_equal(interface, &ndr_table_drsuapi.syntax_id)) {
-		/*
-		 * We should have a better way to figure out this drsuapi
-		 * speciality...
-		 */
+	switch (transport) {
+	case NCACN_IP_TCP:
 		return rpc_pipe_open_tcp(NULL, cli->desthost, interface,
 					 presult);
+	case NCACN_NP:
+		return rpc_pipe_open_np(cli, interface, presult);
+	default:
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-
-	return rpc_pipe_open_np(cli, interface, presult);
 }
 
 /****************************************************************************
  Open a named pipe to an SMB server and bind anonymously.
  ****************************************************************************/
 
-NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
-				  const struct ndr_syntax_id *interface,
-				  struct rpc_pipe_client **presult)
+NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
+					    enum dcerpc_transport_t transport,
+					    const struct ndr_syntax_id *interface,
+					    struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result;
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, interface, &result);
+	status = cli_rpc_pipe_open(cli, transport, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3015,6 +3016,17 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 }
 
 /****************************************************************************
+ ****************************************************************************/
+
+NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
+				  const struct ndr_syntax_id *interface,
+				  struct rpc_pipe_client **presult)
+{
+	return cli_rpc_pipe_open_noauth_transport(cli, NCACN_NP,
+						  interface, presult);
+}
+
+/****************************************************************************
  Open a named pipe to an SMB server and bind using NTLMSSP or SPNEGO NTLMSSP
  ****************************************************************************/
 
@@ -3031,7 +3043,7 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, interface, &result);
+	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3210,7 +3222,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, interface, &result);
+	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -3386,7 +3398,7 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 	struct cli_pipe_auth_data *auth;
 	NTSTATUS status;
 
-	status = cli_rpc_pipe_open(cli, interface, &result);
+	status = cli_rpc_pipe_open(cli, NCACN_NP, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
