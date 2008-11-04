@@ -1206,15 +1206,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   create_disposition, create_options, unx_mode,
 		   oplock_request));
 
-	if ((access_mask & FILE_READ_DATA)||(access_mask & FILE_WRITE_DATA)) {
-		DEBUG(10, ("open_file_ntcreate: adding FILE_READ_ATTRIBUTES "
-			"to requested access_mask 0x%x, new mask 0x%x",
-			access_mask,
-			access_mask | FILE_READ_ATTRIBUTES ));
-
-		access_mask |= FILE_READ_ATTRIBUTES;
-	}
-
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
 		DEBUG(0, ("No smb request but not an internal only open!\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -1408,10 +1399,6 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			}
 
 			access_mask = access_granted;
-			/*
-			 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
-			 */
-			access_mask |= FILE_READ_ATTRIBUTES;
 		} else {
 			access_mask = FILE_GENERIC_ALL;
 		}
@@ -1856,7 +1843,10 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* Record the options we were opened with. */
 	fsp->share_access = share_access;
 	fsp->fh->private_options = create_options;
-	fsp->access_mask = access_mask;
+	/*
+	 * According to Samba4, SEC_FILE_READ_ATTRIBUTE is always granted,
+	 */
+	fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
 
 	if (file_existed) {
 		/* stat opens on existing files don't get oplocks. */
