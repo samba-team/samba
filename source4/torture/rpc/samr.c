@@ -3508,14 +3508,19 @@ static bool test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 	bool ret = true;
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	uint16_t ok_lvl[] = {1, 1, 1, 0, 0};
+	struct lsa_String name;
+	uint32_t idx = 0;
 	int i;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		printf("Testing GetDisplayEnumerationIndex2 level %u\n", levels[i]);
 
+		init_lsa_String(&name, TEST_ACCOUNT_NAME);
+
 		r.in.domain_handle = handle;
 		r.in.level = levels[i];
-		init_lsa_String(&r.in.name, TEST_ACCOUNT_NAME);
+		r.in.name = &name;
+		r.out.idx = &idx;
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
 		if (ok_lvl[i] && 
@@ -3526,7 +3531,7 @@ static bool test_GetDisplayEnumerationIndex2(struct dcerpc_pipe *p, TALLOC_CTX *
 			ret = false;
 		}
 
-		init_lsa_String(&r.in.name, "zzzzzzzz");
+		init_lsa_String(&name, "zzzzzzzz");
 
 		status = dcerpc_samr_GetDisplayEnumerationIndex2(p, mem_ctx, &r);
 		if (ok_lvl[i] && !NT_STATUS_EQUAL(NT_STATUS_NO_MORE_ENTRIES, status)) {
