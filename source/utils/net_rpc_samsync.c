@@ -26,6 +26,81 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
+						      int argc,
+						      const char **argv,
+						      bool *do_single_object_replication,
+						      struct samsync_object **objects,
+						      uint32_t *num_objects)
+{
+	int i;
+
+	if (argc > 0) {
+		*do_single_object_replication = true;
+	}
+
+	for (i=0; i<argc; i++) {
+
+		struct samsync_object o;
+
+		ZERO_STRUCT(o);
+
+		if (!StrnCaseCmp(argv[i], "user_rid=", strlen("user_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_USER;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "group_rid=", strlen("group_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_GROUP;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "group_member_rid=", strlen("group_member_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_GROUP_MEMBER;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "alias_rid=", strlen("alias_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_ALIAS;
+			o.database_id			= SAM_DATABASE_BUILTIN;
+		}
+		if (!StrnCaseCmp(argv[i], "alias_member_rid=", strlen("alias_member_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_ALIAS_MEMBER;
+			o.database_id			= SAM_DATABASE_BUILTIN;
+		}
+		if (!StrnCaseCmp(argv[i], "account_sid=", strlen("account_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_ACCOUNT;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "policy_sid=", strlen("policy_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_POLICY;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "trustdom_sid=", strlen("trustdom_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_TRUSTED_DOMAIN;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "secret_name=", strlen("secret_name="))) {
+			o.object_identifier.name	= get_string_param(argv[i]);
+			o.object_type			= NETR_DELTA_SECRET;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+
+		if (o.object_type > 0) {
+			ADD_TO_ARRAY(mem_ctx, struct samsync_object, o,
+				     objects, num_objects);
+		}
+	}
+}
+
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_samdump_internals(struct net_context *c,
 				const DOM_SID *domain_sid,
@@ -50,6 +125,14 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 	ctx->cli		= pipe_hnd;
 	ctx->delta_fn		= display_sam_entries;
 	ctx->domain_name	= domain_name;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
+
+	parse_samsync_partial_replication_objects(ctx, argc, argv,
+						  &ctx->single_object_replication,
+						  &ctx->objects,
+						  &ctx->num_objects);
 
 	libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
 
@@ -126,6 +209,14 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	ctx->delta_fn		= fetch_sam_entries;
 	ctx->domain_name	= domain_name;
 
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
+
+	parse_samsync_partial_replication_objects(ctx, argc, argv,
+						  &ctx->single_object_replication,
+						  &ctx->objects,
+						  &ctx->num_objects);
+
 	/* fetch domain */
 	result = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
 
@@ -179,11 +270,20 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];
 	}
+	if (argc >= 2) {
+		parse_samsync_partial_replication_objects(ctx, argc-1, argv+1,
+							  &ctx->single_object_replication,
+							  &ctx->objects,
+							  &ctx->num_objects);
+	}
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_LDIF;
 	ctx->cli		= pipe_hnd;
 	ctx->delta_fn		= fetch_sam_entries_ldif;
 	ctx->domain_name	= domain_name;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
 	/* fetch domain */
 	status = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
@@ -255,6 +355,12 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 	} else {
 		ctx->output_filename = argv[0];
 	}
+	if (argc >= 2) {
+		parse_samsync_partial_replication_objects(ctx, argc-1, argv+1,
+							  &ctx->single_object_replication,
+							  &ctx->objects,
+							  &ctx->num_objects);
+	}
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_KEYTAB;
 	ctx->cli		= pipe_hnd;
@@ -262,6 +368,9 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 	ctx->domain_name	= domain_name;
 	ctx->username		= c->opt_user_name;
 	ctx->password		= c->opt_password;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
 	/* fetch domain */
 	status = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
