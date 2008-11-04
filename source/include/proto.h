@@ -9899,6 +9899,10 @@ void reply_nttranss(struct smb_request *req);
 
 /* The following definitions come from smbd/open.c  */
 
+NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
+                          const NT_USER_TOKEN *token,
+                          uint32_t access_desired,
+                          uint32_t *access_granted);
 NTSTATUS fd_close(files_struct *fsp);
 bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
 				 uint32 *paccess_mask,
