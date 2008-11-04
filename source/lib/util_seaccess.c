@@ -164,10 +164,17 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 
 	/* handle the maximum allowed flag */
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		uint32_t orig_access_desired = access_desired;
+
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
 		bits_remaining = access_desired & ~SEC_STD_DELETE;
+
+		DEBUG(10,("se_access_check: MAX desired = 0x%x, granted = 0x%x, remaining = 0x%x\n",
+			orig_access_desired,
+			*access_granted,
+			bits_remaining));
 	}
 
 #if 0
