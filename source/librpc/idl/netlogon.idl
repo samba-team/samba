@@ -939,6 +939,12 @@ interface netlogon
 		NETR_CHANGELOG_FIRST_PROMOTION_OBJ	= 0x0010
 	} netr_ChangeLogFlags;
 
+	typedef [nodiscriminant] union {
+		[case(NETR_CHANGELOG_SID_INCLUDED)] dom_sid object_sid;
+		[case(NETR_CHANGELOG_NAME_INCLUDED)] nstring object_name;
+		[default];
+	} netr_ChangeLogObject;
+
 	typedef [public] struct {
 		uint32 serial_number1;
 		uint32 serial_number2;
@@ -946,9 +952,7 @@ interface netlogon
 		netr_ChangeLogFlags flags;
 		uint8 db_index;
 		uint8 delta_type;
-		[value(ndr_size_dom_sid0(&object_sid, ndr->flags))] uint32 sid_size;
-		[subcontext(0),subcontext_size(sid_size)] dom_sid0 object_sid;
-		[string,charset(UTF16)] uint16 *object_name;
+		[switch_is(flags & (NETR_CHANGELOG_SID_INCLUDED|NETR_CHANGELOG_NAME_INCLUDED))] netr_ChangeLogObject object;
 	} netr_ChangeLogEntry;
 
 	NTSTATUS netr_DatabaseRedo(
