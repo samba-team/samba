@@ -1443,7 +1443,8 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		 * here.
 		 */
 
-		change_notify_reply(fsp->conn, req->inbuf, max_param_count, fsp->notify);
+		change_notify_reply(fsp->conn, req, max_param_count,
+				    fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its

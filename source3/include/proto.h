@@ -7973,11 +7973,11 @@ void reply_negprot(struct smb_request *req);
 /* The following definitions come from smbd/notify.c  */
 
 void change_notify_reply(connection_struct *conn,
-			const uint8 *request_buf, uint32 max_param,
+			 struct smb_request *req, uint32 max_param,
 			 struct notify_change_buf *notify_buf);
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive);
-NTSTATUS change_notify_add_request(const struct smb_request *req,
+NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
 				struct files_struct *fsp);
