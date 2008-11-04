@@ -50,6 +50,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	struct samr_Password nt_verifier, lm_verifier;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	/* prepare connect to the SAMR pipe of the users domain PDC */
 	c.level                    = LIBNET_RPC_CONNECT_PDC;
@@ -92,6 +94,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw3.in.lm_password = &lm_pass;
 	pw3.in.lm_verifier = &lm_verifier;
 	pw3.in.password3 = NULL;
+	pw3.out.dominfo = &dominfo;
+	pw3.out.reject = &reject;
 
 	/* 2. try samr_ChangePasswordUser3 */
 	status = dcerpc_samr_ChangePasswordUser3(c.out.dcerpc_pipe, mem_ctx, &pw3);

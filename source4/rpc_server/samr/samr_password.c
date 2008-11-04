@@ -352,7 +352,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	uint8_t new_nt_hash[16], new_lm_hash[16];
 	struct samr_Password nt_verifier, lm_verifier;
 
-	ZERO_STRUCT(r->out);
+	*r->out.dominfo = NULL;
+	*r->out.reject = NULL;
 
 	if (r->in.nt_password == NULL ||
 	    r->in.nt_verifier == NULL) {
@@ -495,8 +496,8 @@ failed:
 	talloc_free(sam_ctx);
 
 	reject = talloc(mem_ctx, struct samr_ChangeReject);
-	r->out.dominfo = dominfo;
-	r->out.reject = reject;
+	*r->out.dominfo = dominfo;
+	*r->out.reject = reject;
 
 	if (reject == NULL) {
 		return status;
@@ -518,6 +519,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TAL
 				  struct samr_ChangePasswordUser2 *r)
 {
 	struct samr_ChangePasswordUser3 r2;
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	r2.in.server = r->in.server;
 	r2.in.account = r->in.account;
@@ -527,6 +530,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser2(struct dcesrv_call_state *dce_call, TAL
 	r2.in.lm_password = r->in.lm_password;
 	r2.in.lm_verifier = r->in.lm_verifier;
 	r2.in.password3 = NULL;
+	r2.out.dominfo = &dominfo;
+	r2.out.reject = &reject;
 
 	return dcesrv_samr_ChangePasswordUser3(dce_call, mem_ctx, &r2);
 }

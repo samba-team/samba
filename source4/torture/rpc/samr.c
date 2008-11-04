@@ -1633,6 +1633,8 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	NTTIME t;
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	torture_comment(tctx, "Testing ChangePasswordUser3\n");
 
@@ -1680,6 +1682,8 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	r.in.lm_password = &lm_pass;
 	r.in.lm_verifier = &lm_verifier;
 	r.in.password3 = NULL;
+	r.out.dominfo = &dominfo;
+	r.out.reject = &reject;
 
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) &&
@@ -1709,6 +1713,8 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	r.in.lm_password = &lm_pass;
 	r.in.lm_verifier = &lm_verifier;
 	r.in.password3 = NULL;
+	r.out.dominfo = &dominfo;
+	r.out.reject = &reject;
 
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) &&
@@ -1751,21 +1757,23 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	r.in.lm_password = &lm_pass;
 	r.in.lm_verifier = &lm_verifier;
 	r.in.password3 = NULL;
+	r.out.dominfo = &dominfo;
+	r.out.reject = &reject;
 
 	unix_to_nt_time(&t, time(NULL));
 
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
-	    && r.out.dominfo
-	    && r.out.reject
+	    && dominfo
+	    && reject
 	    && handle_reject_reason
-	    && (!null_nttime(last_password_change) || !r.out.dominfo->min_password_age)) {
-		if (r.out.dominfo->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE ) {
+	    && (!null_nttime(last_password_change) || !dominfo->min_password_age)) {
+		if (dominfo->password_properties & DOMAIN_REFUSE_PASSWORD_CHANGE ) {
 
-			if (r.out.reject && (r.out.reject->reason != SAMR_REJECT_OTHER)) {
+			if (reject && (reject->reason != SAMR_REJECT_OTHER)) {
 				printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
-					SAMR_REJECT_OTHER, r.out.reject->reason);
+					SAMR_REJECT_OTHER, reject->reason);
 				return false;
 			}
 		}
@@ -1779,54 +1787,54 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 
 		Guenther */
 
-		if ((r.out.dominfo->min_password_age > 0) && !null_nttime(last_password_change) && 
-			   (last_password_change + r.out.dominfo->min_password_age > t)) {
+		if ((dominfo->min_password_age > 0) && !null_nttime(last_password_change) &&
+			   (last_password_change + dominfo->min_password_age > t)) {
 
-			if (r.out.reject->reason != SAMR_REJECT_OTHER) {
+			if (reject->reason != SAMR_REJECT_OTHER) {
 				printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
-					SAMR_REJECT_OTHER, r.out.reject->reason);
+					SAMR_REJECT_OTHER, reject->reason);
 				return false;
 			}
 
-		} else if ((r.out.dominfo->min_password_length > 0) && 
-			   (strlen(newpass) < r.out.dominfo->min_password_length)) {
+		} else if ((dominfo->min_password_length > 0) &&
+			   (strlen(newpass) < dominfo->min_password_length)) {
 
-			if (r.out.reject->reason != SAMR_REJECT_TOO_SHORT) {
+			if (reject->reason != SAMR_REJECT_TOO_SHORT) {
 				printf("expected SAMR_REJECT_TOO_SHORT (%d), got %d\n", 
-					SAMR_REJECT_TOO_SHORT, r.out.reject->reason);
+					SAMR_REJECT_TOO_SHORT, reject->reason);
 				return false;
 			}
 
-		} else if ((r.out.dominfo->password_history_length > 0) && 
+		} else if ((dominfo->password_history_length > 0) &&
 			    strequal(oldpass, newpass)) {
 
-			if (r.out.reject->reason != SAMR_REJECT_IN_HISTORY) {
+			if (reject->reason != SAMR_REJECT_IN_HISTORY) {
 				printf("expected SAMR_REJECT_IN_HISTORY (%d), got %d\n", 
-					SAMR_REJECT_IN_HISTORY, r.out.reject->reason);
+					SAMR_REJECT_IN_HISTORY, reject->reason);
 				return false;
 			}
-		} else if (r.out.dominfo->password_properties & DOMAIN_PASSWORD_COMPLEX) {
+		} else if (dominfo->password_properties & DOMAIN_PASSWORD_COMPLEX) {
 
-			if (r.out.reject->reason != SAMR_REJECT_COMPLEXITY) {
+			if (reject->reason != SAMR_REJECT_COMPLEXITY) {
 				printf("expected SAMR_REJECT_COMPLEXITY (%d), got %d\n", 
-					SAMR_REJECT_COMPLEXITY, r.out.reject->reason);
+					SAMR_REJECT_COMPLEXITY, reject->reason);
 				return false;
 			}
 
 		}
 
-		if (r.out.reject->reason == SAMR_REJECT_TOO_SHORT) {
+		if (reject->reason == SAMR_REJECT_TOO_SHORT) {
 			/* retry with adjusted size */
 			return test_ChangePasswordUser3(p, tctx, account_string, 
-							r.out.dominfo->min_password_length, 
+							dominfo->min_password_length,
 							password, NULL, 0, false); 
 
 		}
 
 	} else if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (r.out.reject && r.out.reject->reason != SAMR_REJECT_OTHER) {
+		if (reject && reject->reason != SAMR_REJECT_OTHER) {
 			printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
-			       SAMR_REJECT_OTHER, r.out.reject->reason);
+			       SAMR_REJECT_OTHER, reject->reason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */
@@ -1862,6 +1870,8 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	char *oldpass;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	NTTIME t;
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	new_random_pass = samr_very_rand_pass(tctx, 128);
 
@@ -1928,15 +1938,17 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	r.in.lm_password = NULL;
 	r.in.lm_verifier = NULL;
 	r.in.password3 = NULL;
+	r.out.dominfo = &dominfo;
+	r.out.reject = &reject;
 
 	unix_to_nt_time(&t, time(NULL));
 
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (r.out.reject && r.out.reject->reason != SAMR_REJECT_OTHER) {
+		if (reject && reject->reason != SAMR_REJECT_OTHER) {
 			printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
-			       SAMR_REJECT_OTHER, r.out.reject->reason);
+			       SAMR_REJECT_OTHER, reject->reason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */
@@ -1964,15 +1976,17 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	r.in.lm_password = NULL;
 	r.in.lm_verifier = NULL;
 	r.in.password3 = NULL;
+	r.out.dominfo = &dominfo;
+	r.out.reject = &reject;
 
 	unix_to_nt_time(&t, time(NULL));
 
 	status = dcerpc_samr_ChangePasswordUser3(p, tctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
-		if (r.out.reject && r.out.reject->reason != SAMR_REJECT_OTHER) {
+		if (reject && reject->reason != SAMR_REJECT_OTHER) {
 			printf("expected SAMR_REJECT_OTHER (%d), got %d\n", 
-			       SAMR_REJECT_OTHER, r.out.reject->reason);
+			       SAMR_REJECT_OTHER, reject->reason);
 			return false;
 		}
 		/* Perhaps the server has a 'min password age' set? */

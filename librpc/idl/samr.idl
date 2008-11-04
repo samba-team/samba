@@ -1399,8 +1399,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,unique]       samr_CryptPassword *lm_password,
 		[in,unique]       samr_Password *lm_verifier,
 		[in,unique]       samr_CryptPassword *password3,
-		[out,unique]      samr_DomInfo1 *dominfo,
-		[out,unique]      samr_ChangeReject *reject
+		[out,ref]         samr_DomInfo1 **dominfo,
+		[out,ref]         samr_ChangeReject **reject
 		);
 
 	/************************/
