@@ -30,6 +30,56 @@ struct deferred_open_record {
 };
 
 /****************************************************************************
+ SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
+****************************************************************************/
+
+NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
+                          const NT_USER_TOKEN *token,
+                          uint32_t access_desired,
+                          uint32_t *access_granted)
+{
+	return se_access_check(sd,
+				token,
+				(access_desired & ~FILE_READ_ATTRIBUTES),
+				access_granted);
+}
+
+/****************************************************************************
+ Check if we have open rights.
+****************************************************************************/
+
+static NTSTATUS check_open_rights(struct connection_struct *conn,
+				const char *fname,
+				uint32_t access_mask)
+{
+	/* Check if we have rights to open. */
+	NTSTATUS status;
+	uint32_t access_granted = 0;
+	struct security_descriptor *sd;
+
+	status = SMB_VFS_GET_NT_ACL(conn, fname,
+			(OWNER_SECURITY_INFORMATION |
+			GROUP_SECURITY_INFORMATION |
+			DACL_SECURITY_INFORMATION),&sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("check_open_rights: Could not get acl "
+			"on %s: %s\n",
+			fname,
+			nt_errstr(status)));
+		return status;
+	}
+
+	status = smb1_file_se_access_check(sd,
+				conn->server_info->ptok,
+				access_mask,
+				&access_granted);
+
+	TALLOC_FREE(sd);
+	return status;
+}
+
+/****************************************************************************
  fd support routines - attempt to do a dos_open.
 ****************************************************************************/
 
@@ -337,6 +387,17 @@ static NTSTATUS open_file(files_struct *fsp,
 
 	} else {
 		fsp->fh->fd = -1; /* What we used to call a stat open. */
+		if (file_existed) {
+			status = check_open_rights(conn,
+					path,
+					access_mask);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("open_file: Access denied on "
+					"file %s\n",
+					path));
+				return status;
+			}
+		}
 	}
 
 	if (!file_existed) {
@@ -1145,6 +1206,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 	/* Calculate MAXIMUM_ALLOWED_ACCESS if requested. */
 	if (access_mask & MAXIMUM_ALLOWED_ACCESS) {
 		if (file_existed) {
+
 			struct security_descriptor *sd;
 			uint32_t access_granted = 0;
 
@@ -1161,8 +1223,10 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			status = se_access_check(sd, conn->server_info->ptok,
-					access_mask, &access_granted);
+			status = smb1_file_se_access_check(sd,
+					conn->server_info->ptok,
+					access_mask,
+					&access_granted);
 
 			TALLOC_FREE(sd);
 
@@ -2270,6 +2334,19 @@ NTSTATUS open_directory(connection_struct *conn,
 		DEBUG(5,("open_directory: %s is not a directory !\n",
 			 fname ));
 		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	if (info == FILE_WAS_OPENED) {
+		status = check_open_rights(conn,
+					fname,
+					access_mask);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("open_directory: check_open_rights on "
+				"file  %s failed with %s\n",
+				fname,
+				nt_errstr(status)));
+			return status;
+		}
 	}
 
 	status = file_new(conn, &fsp);
