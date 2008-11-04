@@ -225,10 +225,10 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	close_conns_after_fork();
 
 	if (!override_logfile) {
-		char *logfile;
-		if (asprintf(&logfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
-			lp_set_logfile(logfile);
-			SAFE_FREE(logfile);
+		char *lfile;
+		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
+			lp_set_logfile(lfile);
+			SAFE_FREE(lfile);
 			reopen_logs();
 		}
 	}
