@@ -470,14 +470,15 @@ static bool process_lockingX(blocking_lock_record *blr)
 
 		reply_lockingX_success(blr);
 		return True;
-	} else if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
-			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
-			/*
-			 * We have other than a "can't get lock"
-			 * error. Free any locks we had and return an error.
-			 * Return True so we get dequeued.
-			 */
+	}
 
+	if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+	    !NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
+		/*
+		 * We have other than a "can't get lock"
+		 * error. Free any locks we had and return an error.
+		 * Return True so we get dequeued.
+		 */
 		blocking_lock_reply_error(blr, status);
 		return True;
 	}
