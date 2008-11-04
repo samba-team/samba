@@ -5311,6 +5311,10 @@ NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id 
 NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 				  const struct ndr_syntax_id *interface,
 				  struct rpc_pipe_client **presult);
+NTSTATUS cli_rpc_pipe_open_noauth_transport(struct cli_state *cli,
+					    enum dcerpc_transport_t transport,
+					    const struct ndr_syntax_id *interface,
+					    struct rpc_pipe_client **presult);
 NTSTATUS cli_rpc_pipe_open_ntlmssp(struct cli_state *cli,
 				   const struct ndr_syntax_id *interface,
 				   enum pipe_auth_level auth_level,
