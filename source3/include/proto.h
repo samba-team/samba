@@ -7598,7 +7598,7 @@ int wait_for_aio_completion(files_struct *fsp);
 /* The following definitions come from smbd/blocking.c  */
 
 bool push_blocking_lock_request( struct byte_range_lock *br_lck,
-		const struct smb_request *req,
+		struct smb_request *req,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
