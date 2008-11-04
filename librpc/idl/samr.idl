@@ -1139,8 +1139,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_GetDisplayEnumerationIndex(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint16 level,
-		[in]        lsa_String name,
-		[out]       uint32 idx
+		[in,ref]    lsa_String *name,
+		[out,ref]   uint32 *idx
 		);
 
 
