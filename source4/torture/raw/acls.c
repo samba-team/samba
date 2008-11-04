@@ -1088,7 +1088,7 @@ static bool test_owner_bits(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	union smb_open io;
-	const char *fname = BASEDIR "\\generic.txt";
+	const char *fname = BASEDIR "\\test_owner_bits.txt";
 	bool ret = true;
 	int fnum = -1, i;
 	union smb_fileinfo q;

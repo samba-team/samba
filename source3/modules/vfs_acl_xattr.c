@@ -437,7 +437,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
-		status = se_access_check(pdesc,
+		status = smb1_file_se_access_check(pdesc,
 					handle->conn->server_info->ptok,
 					fsp->access_mask,
 					&access_granted);
