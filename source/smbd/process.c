@@ -1405,6 +1405,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+			remove_deferred_open_smb_message(req->mid);
 			return conn;
 		}
 
