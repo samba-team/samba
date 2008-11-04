@@ -622,28 +622,36 @@ void remove_pending_lock_requests_by_mid(int mid)
 	blocking_lock_record *blr, *next = NULL;
 
 	for(blr = blocking_lock_queue; blr; blr = next) {
+		files_struct *fsp;
+		struct byte_range_lock *br_lck;
+
 		next = blr->next;
-		if(SVAL(blr->inbuf,smb_mid) == mid) {
-			files_struct *fsp = blr->fsp;
-			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
-			if (br_lck) {
-				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
-file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
+		if (SVAL(blr->inbuf,smb_mid) != mid) {
+			continue;
+		}
 
-				brl_lock_cancel(br_lck,
+		fsp = blr->fsp;
+		br_lck = brl_get_locks(talloc_tos(), fsp);
+
+		if (br_lck) {
+			DEBUG(10, ("remove_pending_lock_requests_by_mid - "
+				   "removing request type %d for file %s fnum "
+				   "= %d\n", blr->com_type, fsp->fsp_name,
+				   fsp->fnum ));
+
+			brl_lock_cancel(br_lck,
 					blr->lock_pid,
 					procid_self(),
 					blr->offset,
 					blr->count,
 					blr->lock_flav);
-				TALLOC_FREE(br_lck);
-			}
-
-			blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
-			DLIST_REMOVE(blocking_lock_queue, blr);
-			TALLOC_FREE(blr);
+			TALLOC_FREE(br_lck);
 		}
+
+		blocking_lock_reply_error(blr,NT_STATUS_FILE_LOCK_CONFLICT);
+		DLIST_REMOVE(blocking_lock_queue, blr);
+		TALLOC_FREE(blr);
 	}
 }
 
