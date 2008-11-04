@@ -1389,7 +1389,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalid password verifier - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalid password verifier - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1411,7 +1411,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1428,7 +1428,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-		printf("ChangePasswordUser3 failed, should have returned INVALID_PARAMETER (or at least 'PASSWORD_RESTRICTON') for no supplied validation hash - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned INVALID_PARAMETER (or at least 'PASSWORD_RESTRICTON') for no supplied validation hash - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1440,7 +1440,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 	status = dcerpc_samr_OemChangePasswordUser2(p, tctx, &r);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-		printf("ChangePasswordUser3 failed, should have returned INVALID_PARAMETER for no supplied validation hash and invalid user - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned INVALID_PARAMETER for no supplied validation hash and invalid user - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1454,7 +1454,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 	status = dcerpc_samr_OemChangePasswordUser2(p, tctx, &r);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
-		printf("ChangePasswordUser3 failed, should have returned WRONG_PASSWORD for invalid user - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD for invalid user - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1468,7 +1468,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 	status = dcerpc_samr_OemChangePasswordUser2(p, tctx, &r);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
-		printf("ChangePasswordUser3 failed, should have returned INVALID_PARAMETER for no supplied password and invalid user - %s\n",
+		printf("OemChangePasswordUser2 failed, should have returned INVALID_PARAMETER for no supplied password and invalid user - %s\n",
 			nt_errstr(status));
 		ret = false;
 	}
@@ -1524,7 +1524,7 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 	torture_comment(tctx, "Testing ChangePasswordUser2 on %s\n", acct_name);
 
 	torture_assert(tctx, *password != NULL, 
-				   "Failing ChangePasswordUser3 as old password was NULL.  Previous test failed?");
+				   "Failing ChangePasswordUser2 as old password was NULL.  Previous test failed?");
 	oldpass = *password;
 
 	if (!newpass) {
