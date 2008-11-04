@@ -1181,6 +1181,11 @@ static bool test_owner_bits(struct torture_context *tctx,
 			CHECK_ACCESS_FLAGS(io.ntcreatex.out.file.fnum, bit | SEC_FILE_READ_ATTRIBUTE);
 			smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
 		} else {
+			if (NT_STATUS_IS_OK(status)) {
+				printf("open succeeded with access mask 0x%08x of "
+					"expected 0x%08x - should fail\n",
+				       bit, expected_bits);
+			}
 			CHECK_STATUS(status, NT_STATUS_ACCESS_DENIED);
 		}
 	}
