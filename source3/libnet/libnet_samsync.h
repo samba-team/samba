@@ -33,6 +33,16 @@ typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
 				       bool,
 				       struct samsync_context *);
 
+struct samsync_object {
+	uint16_t database_id;
+	uint16_t object_type;
+	union {
+		uint32_t rid;
+		const char *name;
+		struct dom_sid sid;
+	} object_identifier;
+};
+
 struct samsync_context {
 	enum net_samsync_mode mode;
 	const struct dom_sid *domain_sid;
@@ -45,6 +55,13 @@ struct samsync_context {
 
 	char *result_message;
 	char *error_message;
+
+	bool single_object_replication;
+	bool force_full_replication;
+	bool clean_old_entries;
+
+	uint32_t num_objects;
+	struct samsync_object *objects;
 
 	struct rpc_pipe_client *cli;
 	samsync_delta_fn_t delta_fn;

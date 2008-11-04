@@ -282,8 +282,58 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
  * libnet_samsync
  */
 
-NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
-			struct samsync_context *ctx)
+void libnet_init_netr_ChangeLogEntry(struct samsync_object *o,
+				     struct netr_ChangeLogEntry *e)
+{
+	ZERO_STRUCTP(e);
+
+	e->db_index		= o->database_id;
+	e->delta_type		= o->object_type;
+
+	switch (e->delta_type) {
+		case NETR_DELTA_DOMAIN:
+		case NETR_DELTA_DELETE_GROUP:
+		case NETR_DELTA_RENAME_GROUP:
+		case NETR_DELTA_DELETE_USER:
+		case NETR_DELTA_RENAME_USER:
+		case NETR_DELTA_DELETE_ALIAS:
+		case NETR_DELTA_RENAME_ALIAS:
+		case NETR_DELTA_DELETE_TRUST:
+		case NETR_DELTA_DELETE_ACCOUNT:
+		case NETR_DELTA_DELETE_SECRET:
+		case NETR_DELTA_DELETE_GROUP2:
+		case NETR_DELTA_DELETE_USER2:
+		case NETR_DELTA_MODIFY_COUNT:
+			break;
+		case NETR_DELTA_USER:
+		case NETR_DELTA_GROUP:
+		case NETR_DELTA_GROUP_MEMBER:
+		case NETR_DELTA_ALIAS:
+		case NETR_DELTA_ALIAS_MEMBER:
+			e->object_rid = o->object_identifier.rid;
+			break;
+		case NETR_DELTA_SECRET:
+			e->object.object_name = o->object_identifier.name;
+			e->flags = NETR_CHANGELOG_NAME_INCLUDED;
+			break;
+		case NETR_DELTA_TRUSTED_DOMAIN:
+		case NETR_DELTA_ACCOUNT:
+		case NETR_DELTA_POLICY:
+			e->object.object_sid = o->object_identifier.sid;
+			e->flags = NETR_CHANGELOG_SID_INCLUDED;
+			break;
+		default:
+			break;
+	}
+}
+
+/**
+ * libnet_samsync_delta
+ */
+
+static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
+				     struct samsync_context *ctx,
+				     struct netr_ChangeLogEntry *e)
 {
 	NTSTATUS result;
 	TALLOC_CTX *mem_ctx;
@@ -313,16 +363,28 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 
 		netlogon_creds_client_step(ctx->cli->dc, &credential);
 
-		result = rpccli_netr_DatabaseSync2(ctx->cli, mem_ctx,
-						   logon_server,
-						   computername,
-						   &credential,
-						   &return_authenticator,
-						   database_id,
-						   restart_state,
-						   &sync_context,
-						   &delta_enum_array,
-						   0xffff);
+		if (ctx->single_object_replication) {
+			result = rpccli_netr_DatabaseRedo(ctx->cli, mem_ctx,
+							  logon_server,
+							  computername,
+							  &credential,
+							  &return_authenticator,
+							  *e,
+							  0,
+							  &delta_enum_array);
+		} else {
+			result = rpccli_netr_DatabaseSync2(ctx->cli, mem_ctx,
+							   logon_server,
+							   computername,
+							   &credential,
+							   &return_authenticator,
+							   database_id,
+							   restart_state,
+							   &sync_context,
+							   &delta_enum_array,
+							   0xffff);
+		}
+
 		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
 			return result;
 		}
@@ -381,6 +443,39 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 	talloc_destroy(mem_ctx);
 
 	return result;
+}
+
+/**
+ * libnet_samsync
+ */
+
+NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
+			struct samsync_context *ctx)
+{
+	NTSTATUS status = NT_STATUS_OK;
+	int i = 0;
+
+	if (!ctx->single_object_replication) {
+		return libnet_samsync_delta(database_id, ctx, NULL);
+	}
+
+	for (i=0; i<ctx->num_objects; i++) {
+
+		struct netr_ChangeLogEntry e;
+
+		if (ctx->objects[i].database_id != database_id) {
+			continue;
+		}
+
+		libnet_init_netr_ChangeLogEntry(&ctx->objects[i], &e);
+
+		status = libnet_samsync_delta(database_id, ctx, &e);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return status;
 }
 
 /**
