@@ -587,27 +587,25 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 			locktype = CVAL(blr->inbuf,smb_vwv3);
 		}
 
-		if (br_lck) {
-			DEBUG(10, ("remove_pending_lock_requests_by_fid - "
-				   "removing request type %d for file %s fnum "
-				   "= %d\n", blr->com_type, fsp->fsp_name,
-				   fsp->fnum));
+		DEBUG(10, ("remove_pending_lock_requests_by_fid - removing "
+			   "request type %d for file %s fnum = %d\n",
+			   blr->com_type, fsp->fsp_name, fsp->fnum));
 
-			brl_lock_cancel(br_lck,
-					blr->lock_pid,
-					procid_self(),
-					blr->offset,
-					blr->count,
-					blr->lock_flav);
+		brl_lock_cancel(br_lck,
+				blr->lock_pid,
+				procid_self(),
+				blr->offset,
+				blr->count,
+				blr->lock_flav);
 
-			blocking_lock_cancel(fsp,
-					     blr->lock_pid,
-					     blr->offset,
-					     blr->count,
-					     blr->lock_flav,
-					     locktype,
-					     NT_STATUS_RANGE_NOT_LOCKED);
-		}
+		blocking_lock_cancel(fsp,
+				     blr->lock_pid,
+				     blr->offset,
+				     blr->count,
+				     blr->lock_flav,
+				     locktype,
+				     NT_STATUS_RANGE_NOT_LOCKED);
+
 		/* We're closing the file fsp here, so ensure
 		 * we don't have a dangling pointer. */
 		blr->fsp = NULL;
