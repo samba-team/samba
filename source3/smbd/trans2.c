@@ -5473,7 +5473,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_posix_lock(connection_struct *conn,
-				const struct smb_request *req,
+				struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp)
