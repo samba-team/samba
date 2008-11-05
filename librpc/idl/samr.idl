@@ -1418,8 +1418,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 	[public] NTSTATUS samr_Connect5(
 		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in]       samr_ConnectAccessMask  access_mask,
-		[in,out]   uint32             level,
-		[in,out,switch_is(level),ref] samr_ConnectInfo *info,
+		[in]       uint32             level_in,
+		[in,ref,switch_is(level_in)] samr_ConnectInfo *info_in,
+		[out,ref]  uint32             *level_out,
+		[out,ref,switch_is(*level_out)] samr_ConnectInfo *info_out,
 		[out,ref]  policy_handle      *connect_handle
 		);
 

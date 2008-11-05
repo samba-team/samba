@@ -52,13 +52,15 @@ static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
 	NTSTATUS status;
 	struct samr_Connect5 r5;
 	union samr_ConnectInfo info;
+	uint32_t level_out = 0;
 
 	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
 	r5.in.system_name = "";
-	r5.in.level = 1;
-	r5.in.info = &info;
-	r5.out.info = &info;
+	r5.in.level_in = 1;
+	r5.in.info_in = &info;
+	r5.out.info_out = &info;
+	r5.out.level_out = &level_out;
 	r5.out.connect_handle = h;
 	r5.in.access_mask = mask;
 

@@ -4565,6 +4565,7 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct samr_Connect5 r5;
 	union samr_ConnectInfo info;
 	struct policy_handle h;
+	uint32_t level_out = 0;
 	bool ret = true, got_handle = false;
 
 	torture_comment(tctx, "testing samr_Connect\n");
@@ -4645,9 +4646,10 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	r5.in.system_name = "";
 	r5.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r5.in.level = 1;
-	r5.in.info = &info;
-	r5.out.info = &info;
+	r5.in.level_in = 1;
+	r5.out.level_out = &level_out;
+	r5.in.info_in = &info;
+	r5.out.info_out = &info;
 	r5.out.connect_handle = &h;
 
 	status = dcerpc_samr_Connect5(p, tctx, &r5);
