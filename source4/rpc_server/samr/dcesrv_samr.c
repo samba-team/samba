@@ -3829,65 +3829,65 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		count += 1;
 	}
 
-	r->out.total_size = count;
+	*r->out.total_size = count;
 
 	if (r->in.start_idx >= count) {
-		r->out.returned_size = 0;
+		*r->out.returned_size = 0;
 		switch(r->in.level) {
 		case 1:
-			r->out.info.info1.count = r->out.returned_size;
-			r->out.info.info1.entries = NULL;
+			r->out.info->info1.count = *r->out.returned_size;
+			r->out.info->info1.entries = NULL;
 			break;
 		case 2:
-			r->out.info.info2.count = r->out.returned_size;
-			r->out.info.info2.entries = NULL;
+			r->out.info->info2.count = *r->out.returned_size;
+			r->out.info->info2.entries = NULL;
 			break;
 		case 3:
-			r->out.info.info3.count = r->out.returned_size;
-			r->out.info.info3.entries = NULL;
+			r->out.info->info3.count = *r->out.returned_size;
+			r->out.info->info3.entries = NULL;
 			break;
 		case 4:
-			r->out.info.info4.count = r->out.returned_size;
-			r->out.info.info4.entries = NULL;
+			r->out.info->info4.count = *r->out.returned_size;
+			r->out.info->info4.entries = NULL;
 			break;
 		case 5:
-			r->out.info.info5.count = r->out.returned_size;
-			r->out.info.info5.entries = NULL;
+			r->out.info->info5.count = *r->out.returned_size;
+			r->out.info->info5.entries = NULL;
 			break;
 		}
 	} else {
-		r->out.returned_size = MIN(count - r->in.start_idx,
+		*r->out.returned_size = MIN(count - r->in.start_idx,
 					   r->in.max_entries);
 		switch(r->in.level) {
 		case 1:
-			r->out.info.info1.count = r->out.returned_size;
-			r->out.info.info1.entries =
+			r->out.info->info1.count = *r->out.returned_size;
+			r->out.info->info1.entries =
 				&(entriesGeneral[r->in.start_idx]);
 			break;
 		case 2:
-			r->out.info.info2.count = r->out.returned_size;
-			r->out.info.info2.entries =
+			r->out.info->info2.count = *r->out.returned_size;
+			r->out.info->info2.entries =
 				&(entriesFull[r->in.start_idx]);
 			break;
 		case 3:
-			r->out.info.info3.count = r->out.returned_size;
-			r->out.info.info3.entries =
+			r->out.info->info3.count = *r->out.returned_size;
+			r->out.info->info3.entries =
 				&(entriesFullGroup[r->in.start_idx]);
 			break;
 		case 4:
-			r->out.info.info4.count = r->out.returned_size;
-			r->out.info.info4.entries =
+			r->out.info->info4.count = *r->out.returned_size;
+			r->out.info->info4.entries =
 				&(entriesAscii[r->in.start_idx]);
 			break;
 		case 5:
-			r->out.info.info5.count = r->out.returned_size;
-			r->out.info.info5.entries =
+			r->out.info->info5.count = *r->out.returned_size;
+			r->out.info->info5.entries =
 				&(entriesAscii[r->in.start_idx]);
 			break;
 		}
 	}
 
-	return (r->out.returned_size < (count - r->in.start_idx)) ?
+	return (*r->out.returned_size < (count - r->in.start_idx)) ?
 		STATUS_MORE_ENTRIES : NT_STATUS_OK;
 }
 
@@ -4074,13 +4074,11 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call
 	q.in.start_idx = r->in.start_idx;
 	q.in.max_entries = r->in.max_entries;
 	q.in.buf_size = r->in.buf_size;
-	ZERO_STRUCT(q.out);
+	q.out.total_size = r->out.total_size;
+	q.out.returned_size = r->out.returned_size;
+	q.out.info = r->out.info;
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
-
-	*r->out.total_size = q.out.total_size;
-	*r->out.returned_size = q.out.returned_size;
-	*r->out.info = q.out.info;
 
 	return result;
 }
@@ -4110,13 +4108,11 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call
 	q.in.start_idx = r->in.start_idx;
 	q.in.max_entries = r->in.max_entries;
 	q.in.buf_size = r->in.buf_size;
-	ZERO_STRUCT(q.out);
+	q.out.total_size = r->out.total_size;
+	q.out.returned_size = r->out.returned_size;
+	q.out.info = r->out.info;
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
-
-	*r->out.total_size = q.out.total_size;
-	*r->out.returned_size = q.out.returned_size;
-	*r->out.info = q.out.info;
 
 	return result;
 }

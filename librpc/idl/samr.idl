@@ -1118,9 +1118,9 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in]        uint32 start_idx,
 		[in]        uint32 max_entries,
 		[in]        uint32 buf_size,
-		[out]       uint32 total_size,
-		[out]       uint32 returned_size,
-		[out,switch_is(level)] samr_DispInfo info
+		[out,ref]   uint32 *total_size,
+		[out,ref]   uint32 *returned_size,
+		[out,ref,switch_is(level)] samr_DispInfo *info
 		);
 
 

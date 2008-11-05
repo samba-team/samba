@@ -3605,16 +3605,16 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 	for (i = 0; ; i++) {
 		switch (querydisplayinfo->in.level) {
 		case 1:
-			if (i >= querydisplayinfo->out.info.info1.count) {
+			if (i >= querydisplayinfo->out.info->info1.count) {
 				return ret;
 			}
-			r.in.rid = querydisplayinfo->out.info.info1.entries[i].rid;
+			r.in.rid = querydisplayinfo->out.info->info1.entries[i].rid;
 			break;
 		case 2:
-			if (i >= querydisplayinfo->out.info.info2.count) {
+			if (i >= querydisplayinfo->out.info->info2.count) {
 				return ret;
 			}
-			r.in.rid = querydisplayinfo->out.info.info2.entries[i].rid;
+			r.in.rid = querydisplayinfo->out.info->info2.entries[i].rid;
 			break;
 		case 3:
 			/* Groups */
@@ -3649,29 +3649,29 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 			if (seen_testuser && strcmp(q.out.info->info21.account_name.string, TEST_ACCOUNT_NAME) == 0) {
 				*seen_testuser = true;
 			}
-			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].full_name, 
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].full_name,
 					   q.out.info->info21.full_name, q.out.info->info21.account_name);
-			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].account_name, 
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].account_name,
 					   q.out.info->info21.account_name, q.out.info->info21.account_name);
-			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].description, 
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].description,
 					   q.out.info->info21.description, q.out.info->info21.account_name);
-			INT_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].rid, 
+			INT_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].rid,
 					q.out.info->info21.rid, q.out.info->info21.account_name);
-			INT_EQUAL_QUERY(querydisplayinfo->out.info.info1.entries[i].acct_flags, 
+			INT_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].acct_flags,
 					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
 			
 			break;
 		case 2:
-			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].account_name, 
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].account_name,
 					   q.out.info->info21.account_name, q.out.info->info21.account_name);
-			STRING_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].description, 
+			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].description,
 					   q.out.info->info21.description, q.out.info->info21.account_name);
-			INT_EQUAL_QUERY(querydisplayinfo->out.info.info2.entries[i].rid, 
+			INT_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].rid,
 					q.out.info->info21.rid, q.out.info->info21.account_name);
-			INT_EQUAL_QUERY((querydisplayinfo->out.info.info2.entries[i].acct_flags & ~ACB_NORMAL), 
+			INT_EQUAL_QUERY((querydisplayinfo->out.info->info2.entries[i].acct_flags & ~ACB_NORMAL),
 					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
 			
-			if (!(querydisplayinfo->out.info.info2.entries[i].acct_flags & ACB_NORMAL)) {
+			if (!(querydisplayinfo->out.info->info2.entries[i].acct_flags & ACB_NORMAL)) {
 				printf("Missing ACB_NORMAL in querydisplayinfo->out.info.info2.entries[i].acct_flags on %s\n", 
 				       q.out.info->info21.account_name.string);
 			}
@@ -3679,7 +3679,7 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 			if (!(q.out.info->info21.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST))) {
 				printf("Found non-trust account %s in trust account listing: 0x%x 0x%x\n",
 				       q.out.info->info21.account_name.string,
-				       querydisplayinfo->out.info.info2.entries[i].acct_flags,
+				       querydisplayinfo->out.info->info2.entries[i].acct_flags,
 				       q.out.info->info21.acct_flags);
 				return false;
 			}
@@ -3705,6 +3705,10 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 	bool seen_testuser = false;
+	uint32_t total_size;
+	uint32_t returned_size;
+	union samr_DispInfo disp_info;
+
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		printf("Testing QueryDisplayInfo level %u\n", levels[i]);
@@ -3716,6 +3720,9 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			r.in.level = levels[i];
 			r.in.max_entries = 2;
 			r.in.buf_size = (uint32_t)-1;
+			r.out.total_size = &total_size;
+			r.out.returned_size = &returned_size;
+			r.out.info = &disp_info;
 			
 			status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
 			if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) && !NT_STATUS_IS_OK(status)) {
@@ -3728,22 +3735,22 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				if (!test_each_DisplayInfo_user(p, mem_ctx, &r, &seen_testuser)) {
 					ret = false;
 				}
-				r.in.start_idx += r.out.info.info1.count;
+				r.in.start_idx += r.out.info->info1.count;
 				break;
 			case 2:
 				if (!test_each_DisplayInfo_user(p, mem_ctx, &r, NULL)) {
 					ret = false;
 				}
-				r.in.start_idx += r.out.info.info2.count;
+				r.in.start_idx += r.out.info->info2.count;
 				break;
 			case 3:
-				r.in.start_idx += r.out.info.info3.count;
+				r.in.start_idx += r.out.info->info3.count;
 				break;
 			case 4:
-				r.in.start_idx += r.out.info.info4.count;
+				r.in.start_idx += r.out.info->info4.count;
 				break;
 			case 5:
-				r.in.start_idx += r.out.info.info5.count;
+				r.in.start_idx += r.out.info->info5.count;
 				break;
 			}
 		}
@@ -3872,6 +3879,9 @@ static bool test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
 	bool ret = true;
+	uint32_t total_size;
+	uint32_t returned_size;
+	union samr_DispInfo info;
 
 	printf("Testing QueryDisplayInfo continuation\n");
 
@@ -3880,14 +3890,17 @@ static bool test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 	r.in.start_idx = 0;
 	r.in.max_entries = 1;
 	r.in.buf_size = (uint32_t)-1;
+	r.out.total_size = &total_size;
+	r.out.returned_size = &returned_size;
+	r.out.info = &info;
 
 	do {
 		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
-		if (NT_STATUS_IS_OK(status) && r.out.returned_size != 0) {
-			if (r.out.info.info1.entries[0].idx != r.in.start_idx + 1) {
+		if (NT_STATUS_IS_OK(status) && *r.out.returned_size != 0) {
+			if (r.out.info->info1.entries[0].idx != r.in.start_idx + 1) {
 				printf("expected idx %d but got %d\n",
 				       r.in.start_idx + 1,
-				       r.out.info.info1.entries[0].idx);
+				       r.out.info->info1.entries[0].idx);
 				break;
 			}
 		}
@@ -3901,7 +3914,7 @@ static bool test_QueryDisplayInfo_continue(struct dcerpc_pipe *p, TALLOC_CTX *me
 		r.in.start_idx++;
 	} while ((NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) ||
 		  NT_STATUS_IS_OK(status)) &&
-		 r.out.returned_size != 0);
+		 *r.out.returned_size != 0);
 	
 	return ret;	
 }
@@ -4065,6 +4078,9 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 	uint32_t resume_handle=0;
 	int i;
 	bool ret = true;
+	uint32_t total_size;
+	uint32_t returned_size;
+	union samr_DispInfo info;
 
 	int num_names = 0;
 	const char **names = NULL;
@@ -4100,6 +4116,9 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 	q2.in.start_idx = 0;
 	q2.in.max_entries = 5;
 	q2.in.buf_size = (uint32_t)-1;
+	q2.out.total_size = &total_size;
+	q2.out.returned_size = &returned_size;
+	q2.out.info = &info;
 
 	status = STATUS_MORE_ENTRIES;
 	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -4109,9 +4128,9 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			break;
 
-		for (i=0; i<q2.out.info.info5.count; i++) {
+		for (i=0; i<q2.out.info->info5.count; i++) {
 			int j;
-			const char *name = q2.out.info.info5.entries[i].account_name.string;
+			const char *name = q2.out.info->info5.entries[i].account_name.string;
 			bool found = false;
 			for (j=0; j<num_names; j++) {
 				if (names[j] == NULL)
@@ -4129,7 +4148,7 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 				ret = false;
 			}
 		}
-		q2.in.start_idx += q2.out.info.info5.count;
+		q2.in.start_idx += q2.out.info->info5.count;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
