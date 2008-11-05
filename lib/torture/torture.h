@@ -284,6 +284,21 @@ void torture_result(struct torture_context *test,
 	} \
 	} while(0)
 
+#define torture_assert_data_blob_equal(torture_ctx,got,expected,cmt)\
+	do { const DATA_BLOB __got = (got), __expected = (expected); \
+	if (__got.length != __expected.length) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			       __location__": "#got".len %d did not match "#expected" len %d: %s", \
+			       (int)__got.length, (int)__expected.length, cmt); \
+		return false; \
+	} \
+	if (memcmp(__got.data, __expected.data, __got.length) != 0) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			       __location__": "#got" of len %d did not match"#expected": %s", (int)__got.length, cmt); \
+		return false; \
+	} \
+	} while(0)
+
 #define torture_assert_file_contains_text(torture_ctx,filename,expected,cmt)\
 	do { \
 	char *__got; \
