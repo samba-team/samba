@@ -325,6 +325,8 @@ struct samr_getuserdomgroups_state {
 	int num_rids;
 	uint32_t *rids;
 
+	struct samr_RidWithAttributeArray *rid_array;
+
 	struct policy_handle *user_handle;
 	struct samr_OpenUser o;
 	struct samr_GetGroupsForUser g;
@@ -386,6 +388,7 @@ static void samr_usergroups_recv_open(struct rpc_request *req)
 	if (!composite_is_ok(state->ctx)) return;
 
 	state->g.in.user_handle = state->user_handle;
+	state->g.out.rids = &state->rid_array;
 
 	req = dcerpc_samr_GetGroupsForUser_send(state->samr_pipe, state,
 						&state->g);
@@ -438,7 +441,7 @@ NTSTATUS wb_samr_userdomgroups_recv(struct composite_context *ctx,
 	NTSTATUS status = composite_wait(ctx);
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
-	*num_rids = state->g.out.rids->count;
+	*num_rids = state->rid_array->count;
 	*rids = talloc_array(mem_ctx, uint32_t, *num_rids);
 	if (*rids == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -446,7 +449,7 @@ NTSTATUS wb_samr_userdomgroups_recv(struct composite_context *ctx,
 	}
 
 	for (i=0; i<*num_rids; i++) {
-		(*rids)[i] = state->g.out.rids->rids[i].rid;
+		(*rids)[i] = state->rid_array->rids[i].rid;
 	}
 
  done:

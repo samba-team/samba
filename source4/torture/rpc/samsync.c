@@ -442,6 +442,8 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	struct policy_handle user_handle;
 
 	struct samr_GetGroupsForUser getgroups;
+	struct samr_RidWithAttributeArray *rids;
+
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
 		return false;
@@ -471,6 +473,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	}
 
 	getgroups.in.user_handle = &user_handle;
+	getgroups.out.rids = &rids;
 	
 	nt_status = dcerpc_samr_GetGroupsForUser(samsync_state->p_samr, mem_ctx, &getgroups);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -681,28 +684,28 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 			TEST_TIME_EQUAL(user->last_logoff, info3->base.last_logoff);
 		}
 
-		TEST_INT_EQUAL(getgroups.out.rids->count, info3->base.groups.count);
-		if (getgroups.out.rids->count == info3->base.groups.count) {
+		TEST_INT_EQUAL(rids->count, info3->base.groups.count);
+		if (rids->count == info3->base.groups.count) {
 			int i, j;
-			int count = getgroups.out.rids->count;
-			bool *matched = talloc_zero_array(mem_ctx, bool, getgroups.out.rids->count);
+			int count = rids->count;
+			bool *matched = talloc_zero_array(mem_ctx, bool, rids->count);
 				
 			for (i = 0; i < count; i++) {
 				for (j = 0; j < count; j++) {
-					if ((getgroups.out.rids->rids[i].rid == 
+					if ((rids->rids[i].rid ==
 					     info3->base.groups.rids[j].rid)
-					    && (getgroups.out.rids->rids[i].attributes == 
+					    && (rids->rids[i].attributes ==
 						info3->base.groups.rids[j].attributes)) {
 							matched[i] = true;
 						}
 				}
 			}
 
-			for (i = 0; i < getgroups.out.rids->count; i++) {
+			for (i = 0; i < rids->count; i++) {
 				if (matched[i] == false) {
 					ret = false;
 					printf("Could not find group RID %u found in getgroups in NETLOGON reply\n",
-					       getgroups.out.rids->rids[i].rid); 
+					       rids->rids[i].rid);
 				}
 			}
 		}

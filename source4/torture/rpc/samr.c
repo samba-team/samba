@@ -891,11 +891,13 @@ static bool test_GetGroupsForUser(struct dcerpc_pipe *p, struct torture_context 
 				  struct policy_handle *user_handle)
 {
 	struct samr_GetGroupsForUser r;
+	struct samr_RidWithAttributeArray *rids = NULL;
 	NTSTATUS status;
 
 	torture_comment(tctx, "testing GetGroupsForUser\n");
 
 	r.in.user_handle = user_handle;
+	r.out.rids = &rids;
 
 	status = dcerpc_samr_GetGroupsForUser(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetGroupsForUser");
