@@ -1433,6 +1433,25 @@ if test x"$samba_cv_stat_st_birthtime" = x"yes" ; then
     AC_DEFINE(HAVE_STAT_ST_BIRTHTIME, 1, [whether struct stat contains st_birthtime])
 fi
 
+AC_CACHE_CHECK([whether there is DOS flags support in the stat struct], samba_cv_stat_dos_flags,
+    [
+	AC_TRY_COMPILE(
+	    [#include <sys/stat.h>],
+	    [
+		int a = UF_DOS_ARCHIVE;
+		int h = UF_DOS_HIDDEN;
+		int r = UF_DOS_RO;
+		int s = UF_DOS_SYSTEM;
+		int i = UF_DOS_NOINDEX;
+		int f = UF_DOS_FLAGS;
+	    ],
+	    samba_cv_stat_dos_flags=yes, samba_cv_stat_dos_flags=no)
+    ])
+
+if test x"$samba_cv_stat_dos_flags" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_DOS_FLAGS, 1, [whether there is DOS flags support in the stat struct])
+fi
+
 #####################################
 # needed for SRV lookups
 AC_CHECK_LIB(resolv, dn_expand)
