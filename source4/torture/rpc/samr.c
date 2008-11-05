@@ -909,8 +909,11 @@ static bool test_GetDomPwInfo(struct dcerpc_pipe *p, struct torture_context *tct
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
+	struct samr_PwInfo info;
 
 	r.in.domain_name = domain_name;
+	r.out.info = &info;
+
 	torture_comment(tctx, "Testing GetDomPwInfo with name %s\n", r.in.domain_name->string);
 
 	status = dcerpc_samr_GetDomPwInfo(p, tctx, &r);
@@ -1399,12 +1402,14 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	struct samr_GetDomPwInfo dom_pw_info;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 
 	struct lsa_String domain_name;
 
 	domain_name.string = "";
 	dom_pw_info.in.domain_name = &domain_name;
+	dom_pw_info.out.info = &info;
 
 	torture_comment(tctx, "Testing OemChangePasswordUser2\n");
 
@@ -1415,7 +1420,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p, struct torture_co
 
 	status = dcerpc_samr_GetDomPwInfo(p, tctx, &dom_pw_info);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = dom_pw_info.out.info.min_password_length;
+		policy_min_pw_len = dom_pw_info.out.info->min_password_length;
 	}
 
 	newpass = samr_rand_pass(tctx, policy_min_pw_len);
@@ -1568,11 +1573,13 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 
 	struct samr_GetDomPwInfo dom_pw_info;
+	struct samr_PwInfo info;
 
 	struct lsa_String domain_name;
 
 	domain_name.string = "";
 	dom_pw_info.in.domain_name = &domain_name;
+	dom_pw_info.out.info = &info;
 
 	torture_comment(tctx, "Testing ChangePasswordUser2 on %s\n", acct_name);
 
@@ -1584,7 +1591,7 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 		int policy_min_pw_len = 0;
 		status = dcerpc_samr_GetDomPwInfo(p, tctx, &dom_pw_info);
 		if (NT_STATUS_IS_OK(status)) {
-			policy_min_pw_len = dom_pw_info.out.info.min_password_length;
+			policy_min_pw_len = dom_pw_info.out.info->min_password_length;
 		}
 
 		newpass = samr_rand_pass(tctx, policy_min_pw_len);

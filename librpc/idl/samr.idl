@@ -1312,7 +1312,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
 		[in,unique] lsa_String *domain_name,
-		[out]       samr_PwInfo info
+		[out,ref]   samr_PwInfo *info
 		);
 
 	/************************/

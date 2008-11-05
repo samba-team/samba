@@ -4156,7 +4156,7 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 	struct ldb_context *sam_ctx;
 
-	ZERO_STRUCT(r->out.info);
+	ZERO_STRUCTP(r->out.info);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (sam_ctx == NULL) {
@@ -4174,8 +4174,8 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info.min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
-	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
+	r->out.info->min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
+	r->out.info->password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
 	talloc_free(msgs);
 
