@@ -45,6 +45,9 @@
 
 #define DISP_INFO_CACHE_TIMEOUT 10
 
+#define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
+#define MAX_SAM_ENTRIES_W95 50
+
 typedef struct disp_info {
 	DOM_SID sid; /* identify which domain this is. */
 	bool builtin_domain; /* Quick flag to check if this is the builtin domain. */
