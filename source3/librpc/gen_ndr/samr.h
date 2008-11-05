@@ -1465,7 +1465,7 @@ struct samr_QueryUserInfo2 {
 	} in;
 
 	struct {
-		union samr_UserInfo *info;/* [ref,switch_is(level)] */
+		union samr_UserInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -1771,11 +1771,11 @@ struct samr_SetDsrmPassword {
 struct samr_ValidatePassword {
 	struct {
 		enum samr_ValidatePasswordLevel level;
-		union samr_ValidatePasswordReq req;/* [switch_is(level)] */
+		union samr_ValidatePasswordReq *req;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {
-		union samr_ValidatePasswordRep *rep;/* [ref,switch_is(level)] */
+		union samr_ValidatePasswordRep **rep;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
