@@ -1610,7 +1610,7 @@ void construct_reply_common(const char *inbuf, char *outbuf)
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	return construct_reply_common((char *)req->inbuf, outbuf);
+	construct_reply_common((char *)req->inbuf, outbuf);
 }
 
 /****************************************************************************
