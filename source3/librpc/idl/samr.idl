@@ -1212,7 +1212,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryUserInfo2(
 		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
-		[out,ref,switch_is(level)]    samr_UserInfo *info
+		[out,ref,switch_is(level)]    samr_UserInfo **info
 		);
 
 	/************************/
