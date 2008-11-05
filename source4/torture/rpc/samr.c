@@ -4202,10 +4202,12 @@ static bool test_GetBootKeyInformation(struct dcerpc_pipe *p, struct torture_con
 	struct samr_GetBootKeyInformation r;
 	NTSTATUS status;
 	bool ret = true;
+	uint32_t unknown = 0;
 
 	torture_comment(tctx, "Testing GetBootKeyInformation\n");
 
 	r.in.domain_handle = domain_handle;
+	r.out.unknown = &unknown;
 
 	status = dcerpc_samr_GetBootKeyInformation(p, tctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
