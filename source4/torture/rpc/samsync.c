@@ -305,6 +305,7 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	struct netr_DELTA_DOMAIN *domain = delta->delta_union.domain;
 	struct dom_sid *dom_sid;
 	struct samr_QueryDomainInfo q[14]; /* q[0] will be unused simple for clarity */
+	union samr_DomainInfo *info[14];
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	NTSTATUS nt_status;
 	int i;
@@ -352,8 +353,10 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	       (long long)samsync_state->seq_num[database_id]);
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+
 		q[levels[i]].in.domain_handle = samsync_state->domain_handle[database_id];
 		q[levels[i]].in.level = levels[i];
+		q[levels[i]].out.info = &info[levels[i]];
 
 		nt_status = dcerpc_samr_QueryDomainInfo(samsync_state->p_samr, mem_ctx, &q[levels[i]]);
 
@@ -364,23 +367,23 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		}
 	}
 
-	TEST_STRING_EQUAL(q[5].out.info->info5.domain_name, domain->domain_name);
+	TEST_STRING_EQUAL(info[5]->info5.domain_name, domain->domain_name);
 	
-	TEST_STRING_EQUAL(q[2].out.info->general.oem_information, domain->oem_information);
-	TEST_STRING_EQUAL(q[4].out.info->oem.oem_information, domain->oem_information);
-	TEST_TIME_EQUAL(q[2].out.info->general.force_logoff_time, domain->force_logoff_time);
-	TEST_TIME_EQUAL(q[3].out.info->info3.force_logoff_time, domain->force_logoff_time);
+	TEST_STRING_EQUAL(info[2]->general.oem_information, domain->oem_information);
+	TEST_STRING_EQUAL(info[4]->oem.oem_information, domain->oem_information);
+	TEST_TIME_EQUAL(info[2]->general.force_logoff_time, domain->force_logoff_time);
+	TEST_TIME_EQUAL(info[3]->info3.force_logoff_time, domain->force_logoff_time);
 
-	TEST_TIME_EQUAL(q[1].out.info->info1.min_password_length, domain->min_password_length);
-	TEST_TIME_EQUAL(q[1].out.info->info1.password_history_length, domain->password_history_length);
-	TEST_TIME_EQUAL(q[1].out.info->info1.max_password_age, domain->max_password_age);
-	TEST_TIME_EQUAL(q[1].out.info->info1.min_password_age, domain->min_password_age);
+	TEST_TIME_EQUAL(info[1]->info1.min_password_length, domain->min_password_length);
+	TEST_TIME_EQUAL(info[1]->info1.password_history_length, domain->password_history_length);
+	TEST_TIME_EQUAL(info[1]->info1.max_password_age, domain->max_password_age);
+	TEST_TIME_EQUAL(info[1]->info1.min_password_age, domain->min_password_age);
 
-	TEST_UINT64_EQUAL(q[8].out.info->info8.sequence_num, 
+	TEST_UINT64_EQUAL(info[8]->info8.sequence_num,
 			domain->sequence_num);
-	TEST_TIME_EQUAL(q[8].out.info->info8.domain_create_time, 
+	TEST_TIME_EQUAL(info[8]->info8.domain_create_time,
 			domain->domain_create_time);
-	TEST_TIME_EQUAL(q[13].out.info->info13.domain_create_time, 
+	TEST_TIME_EQUAL(info[13]->info13.domain_create_time,
 			domain->domain_create_time);
 
 	TEST_SEC_DESC_EQUAL(domain->sdbuf, samr, samsync_state->domain_handle[database_id]);

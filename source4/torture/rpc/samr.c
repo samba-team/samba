@@ -2555,6 +2555,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	/* set samr_SetDomainInfo level 1 with min_length 5 */
 	{
 		struct samr_QueryDomainInfo r;
+		union samr_DomainInfo *info = NULL;
 		struct samr_SetDomainInfo s;
 		uint16_t len_old, len;
 		uint32_t pwd_prop_old;
@@ -2565,6 +2566,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.domain_handle = domain_handle;
 		r.in.level = 1;
+		r.out.info = &info;
 
 		printf("testing samr_QueryDomainInfo level 1\n");
 		status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &r);
@@ -2574,7 +2576,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		s.in.domain_handle = domain_handle;
 		s.in.level = 1;
-		s.in.info = r.out.info;
+		s.in.info = info;
 
 		/* remember the old min length, so we can reset it */
 		len_old = s.in.info->info1.min_password_length;
@@ -3696,6 +3698,7 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
 	struct samr_QueryDomainInfo dom_info;
+	union samr_DomainInfo *info = NULL;
 	bool ret = true;
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
@@ -3744,6 +3747,8 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 		dom_info.in.domain_handle = handle;
 		dom_info.in.level = 2;
+		dom_info.out.info = &info;
+
 		/* Check number of users returned is correct */
 		status = dcerpc_samr_QueryDomainInfo(p, mem_ctx, &dom_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3755,17 +3760,17 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		switch (r.in.level) {
 		case 1:
 		case 4:
-			if (dom_info.out.info->general.num_users < r.in.start_idx) {
+			if (info->general.num_users < r.in.start_idx) {
 				printf("QueryDomainInfo indicates that QueryDisplayInfo returned more users (%d/%d) than the domain %s is said to contain!\n",
-				       r.in.start_idx, dom_info.out.info->general.num_groups,
-				       dom_info.out.info->general.domain_name.string);
+				       r.in.start_idx, info->general.num_groups,
+				       info->general.domain_name.string);
 				ret = false;
 			}
 			if (!seen_testuser) {
 				struct policy_handle user_handle;
 				if (NT_STATUS_IS_OK(test_OpenUser_byname(p, mem_ctx, handle, TEST_ACCOUNT_NAME, &user_handle))) {
 					printf("Didn't find test user " TEST_ACCOUNT_NAME " in enumeration of %s\n", 
-					       dom_info.out.info->general.domain_name.string);
+					       info->general.domain_name.string);
 					ret = false;
 					test_samr_handle_Close(p, mem_ctx, &user_handle);
 				}
@@ -3773,10 +3778,10 @@ static bool test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			break;
 		case 3:
 		case 5:
-			if (dom_info.out.info->general.num_groups != r.in.start_idx) {
+			if (info->general.num_groups != r.in.start_idx) {
 				printf("QueryDomainInfo indicates that QueryDisplayInfo didn't return all (%d/%d) the groups in %s\n",
-				       r.in.start_idx, dom_info.out.info->general.num_groups,
-				       dom_info.out.info->general.domain_name.string);
+				       r.in.start_idx, info->general.num_groups,
+				       info->general.domain_name.string);
 				ret = false;
 			}
 			
@@ -3892,6 +3897,7 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 {
 	NTSTATUS status;
 	struct samr_QueryDomainInfo r;
+	union samr_DomainInfo *info = NULL;
 	struct samr_SetDomainInfo s;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	uint16_t set_ok[] = {1, 0, 1, 1, 0, 1, 1, 0, 1,  0,  1,  0};
@@ -3918,6 +3924,7 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 
 		r.in.domain_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryDomainInfo(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3929,40 +3936,40 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 
 		switch (levels[i]) {
 		case 2:
-			if (strcmp(r.out.info->general.oem_information.string, domain_comment) != 0) {
+			if (strcmp(info->general.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different oem_information (comment) (%s, expected %s)\n",
-				       levels[i], r.out.info->general.oem_information.string, domain_comment);
+				       levels[i], info->general.oem_information.string, domain_comment);
 				ret = false;
 			}
-			if (!r.out.info->general.primary.string) {
+			if (!info->general.primary.string) {
 				printf("QueryDomainInfo level %u returned no PDC name\n",
 				       levels[i]);
 				ret = false;
-			} else if (r.out.info->general.role == SAMR_ROLE_DOMAIN_PDC) {
-				if (dcerpc_server_name(p) && strcasecmp_m(dcerpc_server_name(p), r.out.info->general.primary.string) != 0) {
+			} else if (info->general.role == SAMR_ROLE_DOMAIN_PDC) {
+				if (dcerpc_server_name(p) && strcasecmp_m(dcerpc_server_name(p), info->general.primary.string) != 0) {
 					printf("QueryDomainInfo level %u returned different PDC name (%s) compared to server name (%s), despite claiming to be the PDC\n",
-					       levels[i], r.out.info->general.primary.string, dcerpc_server_name(p));
+					       levels[i], info->general.primary.string, dcerpc_server_name(p));
 				}
 			}
 			break;
 		case 4:
-			if (strcmp(r.out.info->oem.oem_information.string, domain_comment) != 0) {
+			if (strcmp(info->oem.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different oem_information (comment) (%s, expected %s)\n",
-				       levels[i], r.out.info->oem.oem_information.string, domain_comment);
+				       levels[i], info->oem.oem_information.string, domain_comment);
 				ret = false;
 			}
 			break;
 		case 6:
-			if (!r.out.info->info6.primary.string) {
+			if (!info->info6.primary.string) {
 				printf("QueryDomainInfo level %u returned no PDC name\n",
 				       levels[i]);
 				ret = false;
 			}
 			break;
 		case 11:
-			if (strcmp(r.out.info->general2.general.oem_information.string, domain_comment) != 0) {
+			if (strcmp(info->general2.general.oem_information.string, domain_comment) != 0) {
 				printf("QueryDomainInfo level %u returned different comment (%s, expected %s)\n",
-				       levels[i], r.out.info->general2.general.oem_information.string, domain_comment);
+				       levels[i], info->general2.general.oem_information.string, domain_comment);
 				ret = false;
 			}
 			break;
@@ -3972,7 +3979,7 @@ static bool test_QueryDomainInfo(struct dcerpc_pipe *p, struct torture_context *
 
 		s.in.domain_handle = handle;
 		s.in.level = levels[i];
-		s.in.info = r.out.info;
+		s.in.info = info;
 
 		status = dcerpc_samr_SetDomainInfo(p, tctx, &s);
 		if (set_ok[i]) {

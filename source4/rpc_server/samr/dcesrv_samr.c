@@ -777,18 +777,19 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
+	union samr_DomainInfo *info;
 
 	struct ldb_message **dom_msgs;
 	const char * const *attrs = NULL;
 	
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
 	d_state = h->data;
 
-	r->out.info = talloc(mem_ctx, union samr_DomainInfo);
-	if (!r->out.info) {
+	info = talloc(mem_ctx, union samr_DomainInfo);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -893,47 +894,49 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		}
 	}
 
-	ZERO_STRUCTP(r->out.info);
+	*r->out.info = info;
+
+	ZERO_STRUCTP(info);
 
 	switch (r->in.level) {
 	case 1:
 		return dcesrv_samr_info_DomInfo1(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info1);
+						 &info->info1);
 	case 2:
 		return dcesrv_samr_info_DomGeneralInformation(d_state, mem_ctx, dom_msgs, 
-							      &r->out.info->general);
+							      &info->general);
 	case 3:
 		return dcesrv_samr_info_DomInfo3(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info3);
+						 &info->info3);
 	case 4:
 		return dcesrv_samr_info_DomOEMInformation(d_state, mem_ctx, dom_msgs, 
-							  &r->out.info->oem);
+							  &info->oem);
 	case 5:
 		return dcesrv_samr_info_DomInfo5(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info5);
+						 &info->info5);
 	case 6:
 		return dcesrv_samr_info_DomInfo6(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info6);
+						 &info->info6);
 	case 7:
 		return dcesrv_samr_info_DomInfo7(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info7);
+						 &info->info7);
 	case 8:
 		return dcesrv_samr_info_DomInfo8(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info8);
+						 &info->info8);
 	case 9:
 		return dcesrv_samr_info_DomInfo9(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info9);
+						 &info->info9);
 	case 11:
 		return dcesrv_samr_info_DomGeneralInformation2(d_state, mem_ctx, dom_msgs, 
-							       &r->out.info->general2);
+							       &info->general2);
 	case 12:
 		return dcesrv_samr_info_DomInfo12(d_state, mem_ctx, dom_msgs, 
-						  &r->out.info->info12);
+						  &info->info12);
 	case 13:
 		return dcesrv_samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
-						  &r->out.info->info13);
+						  &info->info13);
 	}
-	
+
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -4026,11 +4029,10 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call,
 	ZERO_STRUCT(r1.out);
 	r1.in.domain_handle = r->in.domain_handle;
 	r1.in.level  = r->in.level;
-	
+	r1.out.info  = r->out.info;
+
 	status = dcesrv_samr_QueryDomainInfo(dce_call, mem_ctx, &r1);
 	
-	r->out.info = r1.out.info;
-
 	return status;
 }
 
