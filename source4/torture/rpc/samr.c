@@ -967,15 +967,18 @@ static NTSTATUS test_LookupName(struct dcerpc_pipe *p, struct torture_context *t
 	NTSTATUS status;
 	struct samr_LookupNames n;
 	struct lsa_String sname[2];
+	struct samr_Ids rids, types;
 
 	init_lsa_String(&sname[0], name);
 
 	n.in.domain_handle = domain_handle;
 	n.in.num_names = 1;
 	n.in.names = sname;
+	n.out.rids = &rids;
+	n.out.types = &types;
 	status = dcerpc_samr_LookupNames(p, tctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
-		*rid = n.out.rids.ids[0];
+		*rid = n.out.rids->ids[0];
 	} else {
 		return status;
 	}
@@ -2620,11 +2623,14 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		struct samr_QueryUserInfo q;
 		struct samr_LookupNames n;
 		struct policy_handle user_handle;
+		struct samr_Ids rids, types;
 
 		n.in.domain_handle = domain_handle;
 		n.in.num_names = 1;
 		n.in.names = talloc_array(mem_ctx, struct lsa_String, 1);
 		n.in.names[0].string = acct_name; 
+		n.out.rids = &rids;
+		n.out.types = &types;
 
 		status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2634,12 +2640,12 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.domain_handle = domain_handle;
 		r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		r.in.rid = n.out.rids.ids[0];
+		r.in.rid = n.out.rids->ids[0];
 		r.out.user_handle = &user_handle;
 
 		status = dcerpc_samr_OpenUser(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("OpenUser(%u) failed - %s\n", n.out.rids.ids[0], nt_errstr(status));
+			printf("OpenUser(%u) failed - %s\n", n.out.rids->ids[0], nt_errstr(status));
 			return false;
 		}
 
@@ -3304,7 +3310,7 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 	struct samr_LookupNames n;
 	struct samr_LookupRids  lr ;
 	struct lsa_Strings names;
-	struct samr_Ids types;
+	struct samr_Ids rids, types;
 
 	uint32_t masks[] = {ACB_NORMAL, ACB_DOMTRUST, ACB_WSTRUST, 
 			    ACB_DISABLED, ACB_NORMAL | ACB_DISABLED, 
@@ -3348,6 +3354,8 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 	n.in.domain_handle = handle;
 	n.in.num_names = r.out.sam->count;
 	n.in.names = talloc_array(tctx, struct lsa_String, r.out.sam->count);
+	n.out.rids = &rids;
+	n.out.types = &types;
 	for (i=0;i<r.out.sam->count;i++) {
 		n.in.names[i].string = r.out.sam->entries[i].name.string;
 	}

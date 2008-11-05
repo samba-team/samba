@@ -477,10 +477,13 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		struct samr_LookupNames ln;
 		struct samr_OpenUser ou;
+		struct samr_Ids rids, types;
 
 		ln.in.domain_handle = &domain_handle;
 		ln.in.num_names = 1;
 		ln.in.names = &user_name;
+		ln.out.rids = &rids;
+		ln.out.types = &types;
 
 		status = dcerpc_samr_LookupNames(samr_pipe, mem_ctx, &ln);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -491,7 +494,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 		ou.in.domain_handle = &domain_handle;
 		ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		user_rid = ou.in.rid = ln.out.rids.ids[0];
+		user_rid = ou.in.rid = ln.out.rids->ids[0];
 		ou.out.user_handle = user_handle;
 
 		status = dcerpc_samr_OpenUser(samr_pipe, mem_ctx, &ou);

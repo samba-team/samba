@@ -84,19 +84,22 @@ bool test_user_cleanup(struct torture_context *tctx, struct dcerpc_pipe *p,
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
+	struct samr_Ids rids, types;
 
 	names[0].string = name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
+	r1.out.rids          = &rids;
+	r1.out.types         = &types;
 	
 	torture_comment(tctx, "user account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	torture_assert_ntstatus_ok(tctx, status, "LookupNames failed");
 
-	rid = r1.out.rids.ids[0];
+	rid = r1.out.rids->ids[0];
 	
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -174,12 +177,15 @@ bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle group_handle;
+	struct samr_Ids rids, types;
 
 	names[0].string = name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
+	r1.out.rids          = &rids;
+	r1.out.types         = &types;
 	
 	printf("group account lookup '%s'\n", name);
 
@@ -189,7 +195,7 @@ bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	rid = r1.out.rids.ids[0];
+	rid = r1.out.rids->ids[0];
 	
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;

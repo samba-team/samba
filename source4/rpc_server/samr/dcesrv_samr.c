@@ -1877,8 +1877,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
 	int count;
 
-	ZERO_STRUCT(r->out.rids);
-	ZERO_STRUCT(r->out.types);
+	ZERO_STRUCTP(r->out.rids);
+	ZERO_STRUCTP(r->out.types);
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1888,13 +1888,13 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_OK;
 	}
 
-	r->out.rids.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
-	r->out.types.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
-	if (!r->out.rids.ids || !r->out.types.ids) {
+	r->out.rids->ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
+	r->out.types->ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
+	if (!r->out.rids->ids || !r->out.types->ids) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.rids.count = r->in.num_names;
-	r->out.types.count = r->in.num_names;
+	r->out.rids->count = r->in.num_names;
+	r->out.types->count = r->in.num_names;
 
 	num_mapped = 0;
 
@@ -1903,8 +1903,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 		struct dom_sid *sid;
 		uint32_t atype, rtype;
 
-		r->out.rids.ids[i] = 0;
-		r->out.types.ids[i] = SID_NAME_UNKNOWN;
+		r->out.rids->ids[i] = 0;
+		r->out.types->ids[i] = SID_NAME_UNKNOWN;
 
 		count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 				     "sAMAccountName=%s", 
@@ -1933,8 +1933,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 			continue;
 		}
 
-		r->out.rids.ids[i] = sid->sub_auths[sid->num_auths-1];
-		r->out.types.ids[i] = rtype;
+		r->out.rids->ids[i] = sid->sub_auths[sid->num_auths-1];
+		r->out.types->ids[i] = rtype;
 		num_mapped++;
 	}
 	

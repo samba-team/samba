@@ -42,12 +42,15 @@ static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle group_handle;
+	struct samr_Ids rids, types;
 
 	names[0].string = groupname;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
+	r1.out.rids          = &rids;
+	r1.out.types         = &types;
 	
 	printf("group account lookup '%s'\n", groupname);
 
@@ -57,7 +60,7 @@ static bool test_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	rid = r1.out.rids.ids[0];
+	rid = r1.out.rids->ids[0];
 	
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;

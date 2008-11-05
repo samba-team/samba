@@ -535,6 +535,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
+	struct samr_Ids rids, types;
 	struct samr_OpenUser ou;
 	struct policy_handle u_handle;
 	union libnet_SetPassword r2;
@@ -602,6 +603,8 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
 	ln.in.names = talloc_array(mem_ctx, struct lsa_String, 1);
+	ln.out.rids = &rids;
+	ln.out.types = &types;
 	if (!ln.in.names) {
 		r->samr.out.error_string = "Out of Memory";
 		return NT_STATUS_NO_MEMORY;
@@ -618,10 +621,10 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* check if we got one RID for the user */
-	if (ln.out.rids.count != 1) {
+	if (ln.out.rids->count != 1) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] returns %d RIDs",
-						r->samr.in.account_name, ln.out.rids.count);
+						r->samr.in.account_name, ln.out.rids->count);
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto disconnect;	
 	}
@@ -630,7 +633,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ZERO_STRUCT(u_handle);
 	ou.in.domain_handle = &d_handle;
 	ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	ou.in.rid = ln.out.rids.ids[0];
+	ou.in.rid = ln.out.rids->ids[0];
 	ou.out.user_handle = &u_handle;
 
 	/* 6. do a samr_OpenUser to get a user handle */

@@ -59,6 +59,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle user_handle;
 	uint32_t rid;
 	struct samr_LookupNames n;
+	struct samr_Ids rids, types;
 	struct lsa_String sname;
 	struct samr_OpenUser r;
 
@@ -67,10 +68,12 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	n.in.domain_handle = handle;
 	n.in.num_names = 1;
 	n.in.names = &sname;
+	n.out.rids = &rids;
+	n.out.types = &types;
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
-		rid = n.out.rids.ids[0];
+		rid = n.out.rids->ids[0];
 	} else {
 		return status;
 	}
