@@ -3457,6 +3457,8 @@ static bool test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomainAliases r;
 	uint32_t resume_handle=0;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 	int i;
 	bool ret = true;
 
@@ -3464,7 +3466,9 @@ static bool test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r.in.domain_handle = handle;
 	r.in.resume_handle = &resume_handle;
-	r.in.acct_flags = (uint32_t)-1;
+	r.in.max_size = (uint32_t)-1;
+	r.out.sam = &sam;
+	r.out.num_entries = &num_entries;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_samr_EnumDomainAliases(p, mem_ctx, &r);
@@ -3473,12 +3477,12 @@ static bool test_EnumDomainAliases(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	
-	if (!r.out.sam) {
+	if (!sam) {
 		return false;
 	}
 
-	for (i=0;i<r.out.sam->count;i++) {
-		if (!test_OpenAlias(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
+	for (i=0;i<sam->count;i++) {
+		if (!test_OpenAlias(p, mem_ctx, handle, sam->entries[i].idx)) {
 			ret = false;
 		}
 	}
