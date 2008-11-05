@@ -1952,8 +1952,8 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 	struct lsa_String *names;
 	uint32_t *ids;
 
-	ZERO_STRUCT(r->out.names);
-	ZERO_STRUCT(r->out.types);
+	ZERO_STRUCTP(r->out.names);
+	ZERO_STRUCTP(r->out.types);
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -2014,11 +2014,11 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 		}
 	}
 
-	r->out.names.names = names;
-	r->out.names.count = r->in.num_rids;
+	r->out.names->names = names;
+	r->out.names->count = r->in.num_rids;
 
-	r->out.types.ids = ids;
-	r->out.types.count = r->in.num_rids;
+	r->out.types->ids = ids;
+	r->out.types->count = r->in.num_rids;
 
 	return status;
 }

@@ -3276,6 +3276,9 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 	bool ret = true;
 	struct samr_LookupNames n;
 	struct samr_LookupRids  lr ;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+
 	uint32_t masks[] = {ACB_NORMAL, ACB_DOMTRUST, ACB_WSTRUST, 
 			    ACB_DISABLED, ACB_NORMAL | ACB_DISABLED, 
 			    ACB_SVRTRUST | ACB_DOMTRUST | ACB_WSTRUST, 
@@ -3332,6 +3335,8 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 	lr.in.domain_handle = handle;
 	lr.in.num_rids = r.out.sam->count;
 	lr.in.rids = talloc_array(tctx, uint32_t, r.out.sam->count);
+	lr.out.names = &names;
+	lr.out.types = &types;
 	for (i=0;i<r.out.sam->count;i++) {
 		lr.in.rids[i] = r.out.sam->entries[i].idx;
 	}
