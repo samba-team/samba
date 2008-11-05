@@ -114,6 +114,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	struct policy_handle handle;
@@ -224,10 +225,11 @@ again:
 	join->user_sid = dom_sid_add_rid(join, join->dom_sid, rid);
 
 	pwp.in.user_handle = &join->user_handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(join->p, join, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 
 	random_pw = generate_random_str(join, MAX(8, policy_min_pw_len));

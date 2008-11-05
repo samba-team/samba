@@ -451,6 +451,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_UserInfo21 u_info21;
 	union libnet_SetPassword r2;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	struct lsa_String samr_account_name;
 	
 	uint32_t acct_flags, old_acct_flags;
@@ -778,10 +779,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 
 	/* Find out what password policy this user has */
 	pwp.in.user_handle = u_handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);				
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	
 	/* Grab a password of that minimum length */

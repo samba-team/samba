@@ -553,12 +553,14 @@ static bool test_SetUserPass(struct dcerpc_pipe *p, struct torture_context *tctx
 	DATA_BLOB session_key;
 	char *newpass;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	newpass = samr_rand_pass(tctx, policy_min_pw_len);
 
@@ -605,12 +607,14 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 	DATA_BLOB session_key;
 	char *newpass;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	newpass = samr_rand_pass(tctx, policy_min_pw_len);
 
@@ -684,12 +688,14 @@ static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tc
 	char *newpass;
 	struct MD5Context ctx;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	if (makeshort && policy_min_pw_len) {
 		newpass = samr_rand_pass_fixed_len(tctx, policy_min_pw_len - 1);
@@ -766,12 +772,14 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	uint8_t confounder[16];
 	char *newpass;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	newpass = samr_rand_pass(tctx, policy_min_pw_len);
 
@@ -934,10 +942,12 @@ static bool test_GetUserPwInfo(struct dcerpc_pipe *p, struct torture_context *tc
 {
 	NTSTATUS status;
 	struct samr_GetUserPwInfo r;
+	struct samr_PwInfo info;
 
 	torture_comment(tctx, "Testing GetUserPwInfo\n");
 
 	r.in.user_handle = handle;
+	r.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetUserPwInfo");
@@ -1112,6 +1122,7 @@ static bool test_ChangePasswordUser(struct dcerpc_pipe *p, struct torture_contex
 
 	char *newpass;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 
 	status = test_OpenUser_byname(p, tctx, handle, acct_name, &user_handle);
@@ -1119,10 +1130,11 @@ static bool test_ChangePasswordUser(struct dcerpc_pipe *p, struct torture_contex
 		return false;
 	}
 	pwp.in.user_handle = &user_handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	newpass = samr_rand_pass(tctx, policy_min_pw_len);
 

@@ -1177,7 +1177,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	[public] NTSTATUS samr_GetUserPwInfo(
 		[in,ref]    policy_handle *user_handle,
-		[out]       samr_PwInfo info
+		[out,ref]   samr_PwInfo *info
 		);
 
 	/************************/

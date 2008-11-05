@@ -3928,18 +3928,18 @@ static NTSTATUS dcesrv_samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TA
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 
-	ZERO_STRUCT(r->out.info);
+	ZERO_STRUCTP(r->out.info);
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 
-	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->domain_state->domain_dn, "minPwdLength", 
-							    NULL);
-	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->account_dn, 
-							    "pwdProperties", NULL);
+	r->out.info->min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							     a_state->domain_state->domain_dn, "minPwdLength",
+							     NULL);
+	r->out.info->password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							     a_state->account_dn,
+							     "pwdProperties", NULL);
 	return NT_STATUS_OK;
 }
 
