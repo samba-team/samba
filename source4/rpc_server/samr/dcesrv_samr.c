@@ -4078,9 +4078,9 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
 
-	r->out.total_size = q.out.total_size;
-	r->out.returned_size = q.out.returned_size;
-	r->out.info = q.out.info;
+	*r->out.total_size = q.out.total_size;
+	*r->out.returned_size = q.out.returned_size;
+	*r->out.info = q.out.info;
 
 	return result;
 }
