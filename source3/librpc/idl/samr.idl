@@ -1548,7 +1548,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_ValidatePassword(
 		[in] samr_ValidatePasswordLevel level,
-		[in,switch_is(level)] samr_ValidatePasswordReq req,
-		[out,ref,switch_is(level)] samr_ValidatePasswordRep *rep
+		[in,switch_is(level)] samr_ValidatePasswordReq *req,
+		[out,ref,switch_is(level)] samr_ValidatePasswordRep **rep
 		);
 }
