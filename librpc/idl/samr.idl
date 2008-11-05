@@ -1196,7 +1196,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryDomainInfo2(
 		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
-		[out,unique,switch_is(level)] samr_DomainInfo *info
+		[out,ref,switch_is(level)] samr_DomainInfo **info
 		);
 
 	/************************/

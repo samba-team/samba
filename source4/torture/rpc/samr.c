@@ -4016,6 +4016,7 @@ static bool test_QueryDomainInfo2(struct dcerpc_pipe *p, struct torture_context 
 {
 	NTSTATUS status;
 	struct samr_QueryDomainInfo2 r;
+	union samr_DomainInfo *info = NULL;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	int i;
 	bool ret = true;
@@ -4025,6 +4026,7 @@ static bool test_QueryDomainInfo2(struct dcerpc_pipe *p, struct torture_context 
 
 		r.in.domain_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryDomainInfo2(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
