@@ -723,6 +723,7 @@ bool sec_acl_equal(SEC_ACL *s1, SEC_ACL *s2);
 /* The following definitions come from lib/secdesc.c  */
 
 bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2);
+uint32_t get_sec_info(const SEC_DESC *sd);
 SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BUF *old_sdb);
 SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 			enum security_descriptor_revision revision,

@@ -100,6 +100,33 @@ bool sec_desc_equal(SEC_DESC *s1, SEC_DESC *s2)
 }
 
 /*******************************************************************
+ Given a security_descriptor return the sec_info.
+********************************************************************/
+
+uint32_t get_sec_info(const SEC_DESC *sd)
+{
+	uint32_t sec_info = ALL_SECURITY_INFORMATION;
+
+	SMB_ASSERT(sd);
+
+	if (sd->owner_sid == NULL) {
+		sec_info &= ~OWNER_SECURITY_INFORMATION;
+	}
+	if (sd->group_sid == NULL) {
+		sec_info &= ~GROUP_SECURITY_INFORMATION;
+	}
+	if (sd->sacl == NULL) {
+		sec_info &= ~SACL_SECURITY_INFORMATION;
+	}
+	if (sd->dacl == NULL) {
+		sec_info &= ~DACL_SECURITY_INFORMATION;
+	}
+
+	return sec_info;
+}
+
+
+/*******************************************************************
  Merge part of security descriptor old_sec in to the empty sections of 
  security descriptor new_sec.
 ********************************************************************/

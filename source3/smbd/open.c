@@ -2963,21 +2963,10 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	if ((sd != NULL) && (info == FILE_WAS_CREATED)
 	    && lp_nt_acl_support(SNUM(conn))) {
 
-		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
+		uint32_t sec_info_sent;
 		uint32_t saved_access_mask = fsp->access_mask;
 
-		if (sd->owner_sid == NULL) {
-			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
-		}
-		if (sd->group_sid == NULL) {
-			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
-		}
-		if (sd->sacl == NULL) {
-			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
-		}
-		if (sd->dacl == NULL) {
-			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
-		}
+		sec_info_sent = get_sec_info(sd);
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
