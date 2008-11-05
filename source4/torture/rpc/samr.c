@@ -3832,6 +3832,9 @@ static bool test_QueryDisplayInfo3(struct dcerpc_pipe *p, struct torture_context
 	bool ret = true;
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
+	uint32_t total_size;
+	uint32_t returned_size;
+	union samr_DispInfo info;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		torture_comment(tctx, "Testing QueryDisplayInfo3 level %u\n", levels[i]);
@@ -3841,6 +3844,9 @@ static bool test_QueryDisplayInfo3(struct dcerpc_pipe *p, struct torture_context
 		r.in.start_idx = 0;
 		r.in.max_entries = 1000;
 		r.in.buf_size = (uint32_t)-1;
+		r.out.total_size = &total_size;
+		r.out.returned_size = &returned_size;
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryDisplayInfo3(p, tctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
