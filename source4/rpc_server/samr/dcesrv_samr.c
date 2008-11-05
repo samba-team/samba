@@ -2481,7 +2481,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	r->out.rids = array;
+	*r->out.rids = array;
 
 	return NT_STATUS_OK;
 }

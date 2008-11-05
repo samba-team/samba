@@ -2978,11 +2978,13 @@ static bool test_QueryGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupMember r;
+	struct samr_RidTypeArray *rids = NULL;
 	bool ret = true;
 
 	printf("Testing QueryGroupMember\n");
 
 	r.in.group_handle = handle;
+	r.out.rids = &rids;
 
 	status = dcerpc_samr_QueryGroupMember(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4226,6 +4228,7 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 	struct samr_AddGroupMember r;
 	struct samr_DeleteGroupMember d;
 	struct samr_QueryGroupMember q;
+	struct samr_RidTypeArray *rids = NULL;
 	struct samr_SetMemberAttributesOfGroup s;
 	uint32_t rid;
 
@@ -4265,6 +4268,7 @@ static bool test_AddGroupMember(struct dcerpc_pipe *p, struct torture_context *t
 	}
 
 	q.in.group_handle = group_handle;
+	q.out.rids = &rids;
 
 	status = dcerpc_samr_QueryGroupMember(p, tctx, &q);
 	torture_assert_ntstatus_ok(tctx, status, "QueryGroupMember");

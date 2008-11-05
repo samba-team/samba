@@ -632,7 +632,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_QueryGroupMember(
 		[in,ref]  policy_handle *group_handle,
-		[out,unique] samr_RidTypeArray *rids
+		[out,ref] samr_RidTypeArray **rids
 		);
 
 
