@@ -2689,8 +2689,7 @@ void reply_nttrans(struct smb_request *req)
 			goto bad_param;
 		}
 
-		memcpy( state->setup, &req->inbuf[smb_nt_SetupStart],
-			state->setup_count);
+		memcpy(state->setup, req->vwv+19, state->setup_count);
 		dump_data(10, (uint8 *)state->setup, state->setup_count);
 	}
 
