@@ -2894,7 +2894,7 @@ void reply_lockread(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBlockread);
 		return;
@@ -3002,7 +3002,7 @@ void reply_read(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBread);
 		return;
@@ -3255,7 +3255,7 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS,ERRbadaccess);
 		END_PROFILE(SMBreadX);
 		return;
