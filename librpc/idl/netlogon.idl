@@ -8,10 +8,13 @@ import "misc.idl", "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 #include "idl_types.h"
 
+cpp_quote("#define netr_DeltaEnum8Bit netr_DeltaEnum")
+
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
+  helper("../librpc/ndr/ndr_netlogon.h"),
   pointer_default(unique)
 ]
 
@@ -19,6 +22,7 @@ interface netlogon
 {
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
 	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
+	typedef enum netr_DeltaEnum8Bit netr_DeltaEnum8Bit;
 
 	/*****************/
 	/* Function 0x00 */

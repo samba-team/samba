@@ -278,7 +278,8 @@ RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
 		  librpc/gen_ndr/ndr_lsa.o
 
-LIBNDR_GEN_OBJ1 = librpc/gen_ndr/ndr_netlogon.o
+LIBNDR_GEN_OBJ1 = librpc/gen_ndr/ndr_netlogon.o \
+		  ../librpc/ndr/ndr_netlogon.o
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \

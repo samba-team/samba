@@ -299,7 +299,7 @@ NDR_NTSVCS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_ntsvcs.o
 [SUBSYSTEM::NDR_NETLOGON]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SAMR NDR_LSA NDR_SECURITY
 
-NDR_NETLOGON_OBJ_FILES = $(gen_ndrsrcdir)/ndr_netlogon.o
+NDR_NETLOGON_OBJ_FILES = $(gen_ndrsrcdir)/ndr_netlogon.o ../librpc/ndr/ndr_netlogon.o
 
 PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/netlogon.h)
 
