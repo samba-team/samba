@@ -528,10 +528,6 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 			CONST_DISCARD(struct security_descriptor *,psd));
 	}
 
-	if (!psd->owner_sid && !psd->group_sid && !(psd->type & SEC_DESC_DACL_PRESENT)) {
-		return NT_STATUS_OK;
-	}
-
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
