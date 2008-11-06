@@ -366,26 +366,26 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 					parent_name,
 					DACL_SECURITY_INFORMATION,
 					&parent_desc);
-        if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("inherit_new_acl: directory %s failed "
-			"to get acl %s\n",
-			parent_name,
-			nt_errstr(status) ));
-		return status;
-	}
-
-	/* Create an inherited descriptor from the parent. */
-	status = se_create_child_secdesc(ctx,
+        if (NT_STATUS_IS_OK(status)) {
+		/* Create an inherited descriptor from the parent. */
+		status = se_create_child_secdesc(ctx,
 				&psd,
 				&size,
 				parent_desc,
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
 				container);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	} else {
+		DEBUG(10,("inherit_new_acl: directory %s failed "
+			"to get acl %s\n",
+			parent_name,
+			nt_errstr(status) ));
 	}
-	if (psd->dacl == NULL) {
+
+	if (!psd || psd->dacl == NULL) {
 		SMB_STRUCT_STAT sbuf;
 		int ret;
 
@@ -393,7 +393,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
 			ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		} else {
-			ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+			ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
 		}
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
@@ -526,6 +526,10 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
+	}
+
+	if (!psd->owner_sid && !psd->group_sid && !(psd->type & SEC_DESC_DACL_PRESENT)) {
+		return NT_STATUS_OK;
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
