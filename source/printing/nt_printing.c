@@ -5769,7 +5769,6 @@ bool print_access_check(struct auth_serversupplied_info *server_info, int snum,
 	SEC_DESC_BUF *secdesc = NULL;
 	uint32 access_granted;
 	NTSTATUS status;
-	bool result;
 	const char *pname;
 	TALLOC_CTX *mem_ctx = NULL;
 	SE_PRIV se_printop = SE_PRINT_OPERATOR;
