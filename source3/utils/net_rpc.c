@@ -37,6 +37,8 @@
 #include "secrets.h"
 #include "lib/netapi/netapi.h"
 #include "lib/netapi/netapi_net.h"
+#include "librpc/gen_ndr/libnet_join.h"
+#include "libnet/libnet_join.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
@@ -314,113 +316,13 @@ int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv)
 }
 
 /**
- * Join a domain, the old way.
+ * Join a domain, the old way.  This function exists to allow
+ * the message to be displayed when oldjoin was explicitly
+ * requested, but not when it was implied by "net rpc join".
  *
  * This uses 'machinename' as the inital password, and changes it.
  *
  * The password should be created with 'server manager' or equiv first.
- *
- * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passed through.
- *
- * @param domain_sid The domain sid acquired from the remote server.
- * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destroyed on completion of the function.
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return Normal NTSTATUS return.
- **/
-
-static NTSTATUS rpc_oldjoin_internals(struct net_context *c,
-					const struct dom_sid *domain_sid,
-					const char *domain_name,
-					struct cli_state *cli,
-					struct rpc_pipe_client *pipe_hnd,
-					TALLOC_CTX *mem_ctx,
-					int argc,
-					const char **argv)
-{
-
-	fstring trust_passwd;
-	unsigned char orig_trust_passwd_hash[16];
-	NTSTATUS result;
-	enum netr_SchannelType sec_channel_type;
-
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon,
-					  &pipe_hnd);
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("rpc_oldjoin_internals: netlogon pipe open to machine %s failed. "
-			"error was %s\n",
-			smbXcli_conn_remote_name(cli->conn),
-			nt_errstr(result) ));
-		return result;
-	}
-
-	/*
-	   check what type of join - if the user want's to join as
-	   a BDC, the server must agree that we are a BDC.
-	*/
-	if (argc >= 0) {
-		sec_channel_type = get_sec_channel_type(argv[0]);
-	} else {
-		sec_channel_type = get_sec_channel_type(NULL);
-	}
-
-	fstrcpy(trust_passwd, lp_netbios_name());
-	if (!strlower_m(trust_passwd)) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/*
-	 * Machine names can be 15 characters, but the max length on
-	 * a password is 14.  --jerry
-	 */
-
-	trust_passwd[14] = '\0';
-
-	E_md4hash(trust_passwd, orig_trust_passwd_hash);
-
-	result = trust_pw_change_and_store_it(pipe_hnd, mem_ctx, c->opt_target_workgroup,
-					      lp_netbios_name(),
-					      orig_trust_passwd_hash,
-					      sec_channel_type);
-
-	if (NT_STATUS_IS_OK(result))
-		printf(_("Joined domain %s.\n"), c->opt_target_workgroup);
-
-
-	if (!secrets_store_domain_sid(c->opt_target_workgroup, domain_sid)) {
-		DEBUG(0, ("error storing domain sid for %s\n", c->opt_target_workgroup));
-		result = NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return result;
-}
-
-/**
- * Join a domain, the old way.
- *
- * @param argc  Standard main() style argc.
- * @param argv  Standard main() style argv. Initial components are already
- *              stripped.
- *
- * @return A shell status integer (0 for success).
- **/
-
-static int net_rpc_perform_oldjoin(struct net_context *c, int argc, const char **argv)
-{
-	return run_rpc_command(c, NULL, &ndr_table_netlogon,
-			       NET_FLAGS_NO_PIPE | NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC,
-			       rpc_oldjoin_internals,
-			       argc, argv);
-}
-
-/**
- * Join a domain, the old way.  This function exists to allow
- * the message to be displayed when oldjoin was explicitly
- * requested, but not when it was implied by "net rpc join".
  *
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
@@ -431,24 +333,108 @@ static int net_rpc_perform_oldjoin(struct net_context *c, int argc, const char *
 
 static int net_rpc_oldjoin(struct net_context *c, int argc, const char **argv)
 {
-	int rc = -1;
+	struct libnet_JoinCtx *r = NULL;
+	TALLOC_CTX *mem_ctx;
+	WERROR werr;
+	const char *domain = lp_workgroup(); /* FIXME */
+	bool modify_config = lp_config_backend_is_registry();
+	enum netr_SchannelType sec_chan_type;
+	char *pw = NULL;
 
 	if (c->display_usage) {
-		d_printf(  "%s\n"
-			   "net rpc oldjoin\n"
-			   "    %s\n",
-			 _("Usage:"),
-			 _("Join a domain the old way"));
+		d_printf("Usage:\n"
+			 "net rpc oldjoin\n"
+			 "    Join a domain the old way\n");
 		return 0;
 	}
 
-	rc = net_rpc_perform_oldjoin(c, argc, argv);
-
-	if (rc) {
-		d_fprintf(stderr, _("Failed to join domain\n"));
+	mem_ctx = talloc_init("net_rpc_oldjoin");
+	if (!mem_ctx) {
+		return -1;
 	}
 
-	return rc;
+	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto fail;
+	}
+
+	/*
+	   check what type of join - if the user want's to join as
+	   a BDC, the server must agree that we are a BDC.
+	*/
+	if (argc >= 0) {
+		sec_chan_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_chan_type = get_sec_channel_type(NULL);
+	}
+
+	if (!c->msg_ctx) {
+		d_fprintf(stderr, _("Could not initialise message context. "
+			"Try running as root\n"));
+		werr = WERR_ACCESS_DENIED;
+		goto fail;
+	}
+
+	pw = talloc_strndup(r, lp_netbios_name(), 14);
+	if (pw == NULL) {
+		werr = WERR_NOMEM;
+		goto fail;
+	}
+
+	r->in.msg_ctx			= c->msg_ctx;
+	r->in.domain_name		= domain;
+	r->in.secure_channel_type	= sec_chan_type;
+	r->in.dc_name			= c->opt_host;
+	r->in.admin_account		= "";
+	r->in.admin_password		= strlower_talloc(r, pw);
+	if (r->in.admin_password == NULL) {
+		werr = WERR_NOMEM;
+		goto fail;
+	}
+	r->in.debug			= true;
+	r->in.modify_config		= modify_config;
+	r->in.join_flags		= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+					  WKSSVC_JOIN_FLAGS_JOIN_UNSECURE |
+					  WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED;
+
+	werr = libnet_Join(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto fail;
+	}
+
+	/* Check the short name of the domain */
+
+	if (!modify_config && !strequal(lp_workgroup(), r->out.netbios_domain_name)) {
+		d_printf("The workgroup in %s does not match the short\n", get_dyn_CONFIGFILE());
+		d_printf("domain name obtained from the server.\n");
+		d_printf("Using the name [%s] from the server.\n", r->out.netbios_domain_name);
+		d_printf("You should set \"workgroup = %s\" in %s.\n",
+			 r->out.netbios_domain_name, get_dyn_CONFIGFILE());
+	}
+
+	d_printf("Using short domain name -- %s\n", r->out.netbios_domain_name);
+
+	if (r->out.dns_domain_name) {
+		d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
+			r->out.dns_domain_name);
+	} else {
+		d_printf("Joined '%s' to domain '%s'\n", r->in.machine_name,
+			r->out.netbios_domain_name);
+	}
+
+	TALLOC_FREE(mem_ctx);
+
+	return 0;
+
+fail:
+	/* issue an overall failure message at the end. */
+	d_fprintf(stderr, _("Failed to join domain: %s\n"),
+		r && r->out.error_string ? r->out.error_string :
+		get_friendly_werror_msg(werr));
+
+	TALLOC_FREE(mem_ctx);
+
+	return -1;
 }
 
 /**
@@ -492,7 +478,7 @@ int net_rpc_join(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	if ((net_rpc_perform_oldjoin(c, argc, argv) == 0))
+	if ((net_rpc_oldjoin(c, argc, argv) == 0))
 		return 0;
 
 	return net_rpc_join_newstyle(c, argc, argv);
