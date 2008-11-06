@@ -725,6 +725,9 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	if (psd->sacl==0) {
 		security_info_sent &= ~SACL_SECURITY_INFORMATION;
 	}
+	if (security_info_sent & DACL_SECURITY_INFORMATION) {
+		psd->type |= SEC_DESC_DACL_PRESENT;
+	}
 	if (psd->dacl==0) {
 		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
