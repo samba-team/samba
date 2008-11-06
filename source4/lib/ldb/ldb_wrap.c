@@ -4823,7 +4823,7 @@ SWIGINTERN PyObject *_wrap_Ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject 
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
   unsigned int arg3 = (unsigned int) 0 ;
-  char **arg4 = (char **) (char **)NULL ;
+  char **arg4 = (char **) NULL ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int res2 ;
@@ -4831,8 +4831,6 @@ SWIGINTERN PyObject *_wrap_Ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject 
   int alloc2 = 0 ;
   unsigned int val3 ;
   int ecode3 = 0 ;
-  void *argp4 = 0 ;
-  int res4 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
@@ -4861,25 +4859,33 @@ SWIGINTERN PyObject *_wrap_Ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject 
     arg3 = (unsigned int)(val3);
   }
   if (obj3) {
-    res4 = SWIG_ConvertPtr(obj3, &argp4,SWIGTYPE_p_p_char, 0 |  0 );
-    if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "Ldb_connect" "', argument " "4"" of type '" "char const *[]""'"); 
-    } 
-    arg4 = (char **)(argp4);
+    if (obj3 == Py_None) {
+      arg4 = NULL;
+    } else if (PySequence_Check(obj3)) {
+      int i;
+      arg4 = talloc_array(NULL, char *, PySequence_Size(obj3)+1);
+      for(i = 0; i < PySequence_Size(obj3); i++)
+      arg4[i] = PyString_AsString(PySequence_GetItem(obj3, i));
+      arg4[i] = NULL;
+    } else {
+      SWIG_exception(SWIG_TypeError, "expected sequence");
+    }
   }
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "ldb context must be non-NULL");
-  result = ldb_connect(arg1,(char const *)arg2,arg3,(char const *(*))arg4);
+  result = ldb_connect(arg1,(char const *)arg2,arg3,(char const *const *)arg4);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_errstring(arg1)));
     SWIG_fail;
   }
   resultobj = Py_None;
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  talloc_free(arg4);
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  talloc_free(arg4);
   return NULL;
 }
 
