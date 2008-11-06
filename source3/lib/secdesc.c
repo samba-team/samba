@@ -574,8 +574,7 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	}
 	*ppsd = make_sec_desc(ctx,
 			SECURITY_DESCRIPTOR_REVISION_1,
-			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT|
-				SEC_DESC_DACL_DEFAULTED,
+			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
 			owner_sid,
 			group_sid,
 			NULL,

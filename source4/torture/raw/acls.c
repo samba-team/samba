@@ -1410,7 +1410,9 @@ static bool test_inheritance(struct torture_context *tctx,
 
 		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
-				printf("Expected default sd at %d - got:\n", i);
+				printf("Expected default sd:\n");
+				NDR_PRINT_DEBUG(security_descriptor, sd_def);
+				printf("at %d - got:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			}
 			goto check_dir;
