@@ -5549,7 +5549,8 @@ void init_netr_SamInfo3(struct netr_SamInfo3 *r,
 			uint32_t sidcount,
 			struct netr_SidAttr *sids);
 NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
-				uint8_t pipe_session_key[16],
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
 void init_netr_IdentityInfo(struct netr_IdentityInfo *r,
 			    const char *domain_name,

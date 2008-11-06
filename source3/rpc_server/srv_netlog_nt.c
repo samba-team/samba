@@ -981,7 +981,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 	}
 
-	status = serverinfo_to_SamInfo3(server_info, pipe_session_key, sam3);
+	status = serverinfo_to_SamInfo3(server_info, pipe_session_key, 16, sam3);
 	TALLOC_FREE(server_info);
 	return status;
 }
