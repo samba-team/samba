@@ -74,7 +74,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	}
 #endif
 
-	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_ts->sd->type | SEC_DESC_SELF_RELATIVE,
 			(security_info & OWNER_SECURITY_INFORMATION)
 			? xacl.info.sd_ts->sd->owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION)
