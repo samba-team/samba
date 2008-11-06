@@ -954,8 +954,8 @@ interface netlogon
 		uint32 serial_number2;
 		uint32 object_rid;
 		netr_ChangeLogFlags flags;
-		uint8 db_index;
-		uint8 delta_type;
+		netr_SamDatabaseID8Bit db_index;
+		netr_DeltaEnum8Bit delta_type;
 		[switch_is(flags & (NETR_CHANGELOG_SID_INCLUDED|NETR_CHANGELOG_NAME_INCLUDED))] netr_ChangeLogObject object;
 	} netr_ChangeLogEntry;
 
