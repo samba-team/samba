@@ -2921,7 +2921,12 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		security_acl_map_generic(sd->dacl, &file_generic_mapping);
 		security_acl_map_generic(sd->sacl, &file_generic_mapping);
 
-		status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
+		if (sec_info_sent & (OWNER_SECURITY_INFORMATION|
+					GROUP_SECURITY_INFORMATION|
+					DACL_SECURITY_INFORMATION|
+					SACL_SECURITY_INFORMATION)) {
+			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
+		}
 
 		fsp->access_mask = saved_access_mask;
 
