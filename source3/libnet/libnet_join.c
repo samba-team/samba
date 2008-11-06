@@ -743,6 +743,55 @@ static NTSTATUS libnet_join_lookup_dc_rpc(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+ Do the domain join unsecure
+****************************************************************/
+
+static NTSTATUS libnet_join_joindomain_rpc_unsecure(TALLOC_CTX *mem_ctx,
+						    struct libnet_JoinCtx *r,
+						    struct cli_state *cli)
+{
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	unsigned char orig_trust_passwd_hash[16];
+	unsigned char new_trust_passwd_hash[16];
+	fstring trust_passwd;
+	NTSTATUS status;
+
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_netlogon.syntax_id,
+					  &pipe_hnd);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (!r->in.machine_password) {
+		r->in.machine_password = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
+		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
+	}
+
+	E_md4hash(r->in.machine_password, new_trust_passwd_hash);
+
+	/* according to WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED */
+	fstrcpy(trust_passwd, r->in.admin_password);
+	strlower_m(trust_passwd);
+
+	/*
+	 * Machine names can be 15 characters, but the max length on
+	 * a password is 14.  --jerry
+	 */
+
+	trust_passwd[14] = '\0';
+
+	E_md4hash(trust_passwd, orig_trust_passwd_hash);
+
+	status = rpccli_netlogon_set_trust_password(pipe_hnd, mem_ctx,
+						    orig_trust_passwd_hash,
+						    r->in.machine_password,
+						    new_trust_passwd_hash,
+						    r->in.secure_channel_type);
+
+	return status;
+}
+
+/****************************************************************
  Do the domain join
 ****************************************************************/
 
@@ -1524,7 +1573,8 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 	}
 
 #ifdef WITH_ADS
-	if (r->out.domain_is_ad) {
+	if (r->out.domain_is_ad &&
+	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 		ADS_STATUS ads_status;
 
 		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
@@ -1784,7 +1834,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	}
 
 #ifdef WITH_ADS
-	if (r->out.domain_is_ad && r->in.account_ou) {
+	if (r->out.domain_is_ad && r->in.account_ou &&
+	    !(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE)) {
 
 		ads_status = libnet_join_connect_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
@@ -1804,7 +1855,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	}
 #endif /* WITH_ADS */
 
-	status = libnet_join_joindomain_rpc(mem_ctx, r, cli);
+	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
+	    (r->in.join_flags & WKSSVC_JOIN_FLAGS_MACHINE_PWD_PASSED)) {
+		status = libnet_join_joindomain_rpc_unsecure(mem_ctx, r, cli);
+	} else {
+		status = libnet_join_joindomain_rpc(mem_ctx, r, cli);
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to join domain '%s' over rpc: %s",
