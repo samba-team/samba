@@ -851,9 +851,9 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 	  $(LIBNDR_GEN_OBJ0)
 
-CIFS_MOUNT_OBJ = client/mount.cifs.o
+CIFS_MOUNT_OBJ = client/mount.cifs.o client/mtab.o
 
-CIFS_UMOUNT_OBJ = client/umount.cifs.o
+CIFS_UMOUNT_OBJ = client/umount.cifs.o client/mtab.o
 
 CIFS_UPCALL_OBJ = client/cifs.upcall.o
 
