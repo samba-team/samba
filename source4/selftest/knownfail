@@ -35,6 +35,7 @@ rpc.netlogon.*.DsRAddressToSitenamesW
 rpc.netlogon.*.DsRAddressToSitenamesExW
 rpc.netlogon.*.GetPassword
 rpc.netlogon.*.GetTrustPasswords
+rpc.netlogon.*.DatabaseRedo
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
