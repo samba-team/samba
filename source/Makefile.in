@@ -642,9 +642,9 @@ MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
 
 UMOUNT_OBJ = client/smbumount.o $(SOCKET_WRAPPER_OBJ)
 
-CIFS_MOUNT_OBJ = client/mount.cifs.o
+CIFS_MOUNT_OBJ = client/mount.cifs.o client/mtab.o
 
-CIFS_UMOUNT_OBJ = client/umount.cifs.o
+CIFS_UMOUNT_OBJ = client/umount.cifs.o client/mtab.o
 
 CIFS_UPCALL_OBJ = client/cifs.upcall.o
 

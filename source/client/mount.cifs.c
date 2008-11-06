@@ -39,9 +39,10 @@
 #include <mntent.h>
 #include <fcntl.h>
 #include <limits.h>
+#include "mount.h"
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "10"
+#define MOUNT_CIFS_VERSION_MINOR "12"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
@@ -67,15 +68,6 @@
 #define MAX_UNC_LEN 1024
 
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
-
-/* exit status - bits below are ORed */
-#define EX_USAGE        1       /* incorrect invocation or permission */
-#define EX_SYSERR       2       /* out of memory, cannot fork, ... */
-#define EX_SOFTWARE     4       /* internal mount bug or wrong version */
-#define EX_USER         8       /* user interrupt */
-#define EX_FILEIO      16       /* problems writing, locking, ... mtab/fstab */
-#define EX_FAIL        32       /* mount failure */
-#define EX_SOMEOK      64       /* some mount succeeded */
 
 const char *thisprogram;
 int verboseflag = 0;
@@ -1409,51 +1401,60 @@ mount_retry:
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
 		rc = EX_FAIL;
 	} else {
+		atexit(unlock_mtab);
+		rc = lock_mtab();
+		if (rc) {
+			printf("cannot lock mtab");
+			goto mount_exit;
+		}
 		pmntfile = setmntent(MOUNTED, "a+");
-		if(pmntfile) {
-			mountent.mnt_fsname = dev_name;
-			mountent.mnt_dir = mountpoint;
-			mountent.mnt_type = CONST_DISCARD(char *,"cifs");
-			mountent.mnt_opts = (char *)malloc(220);
-			if(mountent.mnt_opts) {
-				char * mount_user = getusername();
-				memset(mountent.mnt_opts,0,200);
-				if(flags & MS_RDONLY)
-					strlcat(mountent.mnt_opts,"ro",220);
-				else
-					strlcat(mountent.mnt_opts,"rw",220);
-				if(flags & MS_MANDLOCK)
-					strlcat(mountent.mnt_opts,",mand",220);
-				if(flags & MS_NOEXEC)
-					strlcat(mountent.mnt_opts,",noexec",220);
-				if(flags & MS_NOSUID)
-					strlcat(mountent.mnt_opts,",nosuid",220);
-				if(flags & MS_NODEV)
-					strlcat(mountent.mnt_opts,",nodev",220);
-				if(flags & MS_SYNCHRONOUS)
-					strlcat(mountent.mnt_opts,",synch",220);
-				if(mount_user) {
-					if(getuid() != 0) {
-						strlcat(mountent.mnt_opts,",user=",220);
-						strlcat(mountent.mnt_opts,mount_user,220);
-					}
-					/* free(mount_user); do not free static mem */
+		if (!pmntfile) {
+			printf("could not update mount table\n");
+			unlock_mtab();
+			rc = EX_FILEIO;
+			goto mount_exit;
+		}
+		mountent.mnt_fsname = dev_name;
+		mountent.mnt_dir = mountpoint;
+		mountent.mnt_type = CONST_DISCARD(char *,"cifs");
+		mountent.mnt_opts = (char *)malloc(220);
+		if(mountent.mnt_opts) {
+			char * mount_user = getusername();
+			memset(mountent.mnt_opts,0,200);
+			if(flags & MS_RDONLY)
+				strlcat(mountent.mnt_opts,"ro",220);
+			else
+				strlcat(mountent.mnt_opts,"rw",220);
+			if(flags & MS_MANDLOCK)
+				strlcat(mountent.mnt_opts,",mand",220);
+			if(flags & MS_NOEXEC)
+				strlcat(mountent.mnt_opts,",noexec",220);
+			if(flags & MS_NOSUID)
+				strlcat(mountent.mnt_opts,",nosuid",220);
+			if(flags & MS_NODEV)
+				strlcat(mountent.mnt_opts,",nodev",220);
+			if(flags & MS_SYNCHRONOUS)
+				strlcat(mountent.mnt_opts,",sync",220);
+			if(mount_user) {
+				if(getuid() != 0) {
+					strlcat(mountent.mnt_opts,
+						",user=", 220);
+					strlcat(mountent.mnt_opts,
+						mount_user, 220);
 				}
 			}
-			mountent.mnt_freq = 0;
-			mountent.mnt_passno = 0;
-			rc = addmntent(pmntfile,&mountent);
-			endmntent(pmntfile);
-			if(mountent.mnt_opts) {
-				free(mountent.mnt_opts);
-				mountent.mnt_opts = NULL;
-			}
-			if (rc)
-				rc = EX_FILEIO;
-		} else {
-			printf("could not update mount table\n");
-			rc = EX_FILEIO;
 		}
+		mountent.mnt_freq = 0;
+		mountent.mnt_passno = 0;
+		rc = addmntent(pmntfile,&mountent);
+		endmntent(pmntfile);
+		unlock_mtab();
+		if(mountent.mnt_opts) {
+			free(mountent.mnt_opts);
+			mountent.mnt_opts = NULL;
+		}
+		if (rc)
+			rc = EX_FILEIO;
 	}
 mount_exit:
 	if(mountpassword) {
