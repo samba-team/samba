@@ -1715,6 +1715,15 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
+	if (strlen(r->in.machine_name) > 15) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Our netbios name can be at most 15 chars long, "
+                         "\"%s\" is %u chars long\n",
+                         r->in.machine_name,
+			 (unsigned int)strlen(r->in.machine_name));
+		return WERR_INVALID_PARAM;
+        }
+
 	if (!libnet_parse_domain_dc(mem_ctx, r->in.domain_name,
 				    &r->in.domain_name,
 				    &r->in.dc_name)) {
