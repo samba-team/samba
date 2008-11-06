@@ -1040,6 +1040,8 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 			r->data.nt4 = logon1;
 			r->ntver = nt_version;
 
+			map_netlogon_samlogon_response(r);
+
 			namecache_store(tmp_dc_name, NBT_NAME_SERVER, 1, &ip_list);
 
 			goto make_reply;
