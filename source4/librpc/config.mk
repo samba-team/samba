@@ -370,7 +370,7 @@ NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
 $(librpcsrcdir)/idl-deps:
-	$(PERL) $(librpcsrcdir)/idl-deps.pl $(filter-out ../librpc/idl/security.idl,$(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl)) >$@
+	$(PERL) $(librpcsrcdir)/idl-deps.pl $(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl) >$@
 
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
