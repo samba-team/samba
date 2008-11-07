@@ -355,7 +355,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       char **domain,
 			       struct dcerpc_pipe **result_pipe,
 			       struct policy_handle **result_handle,
-			       struct dom_sid **sid)
+			       struct dom_sid **sid_p)
 {
 	struct dcerpc_pipe *samr_pipe;
 	NTSTATUS status;
@@ -366,6 +366,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	struct samr_EnumDomains enumdom;
 	uint32_t resume_handle = 0;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	int dom_idx;
 	struct lsa_String domain_name;
 	struct lsa_String user_name;
@@ -444,6 +445,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	domain_name.string = enumdom.out.sam->entries[dom_idx].name.string;
 	*domain = talloc_strdup(mem_ctx, domain_name.string);
 	l.in.domain_name = &domain_name;
+	l.out.sid = &sid;
 
 	status = dcerpc_samr_LookupDomain(samr_pipe, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -453,7 +455,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	o.in.connect_handle = &conn_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(samr_pipe, mem_ctx, &o);
@@ -512,8 +514,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	*result_pipe = samr_pipe;
 	*result_handle = user_handle;
-	if (sid != NULL) {
-		*sid = dom_sid_add_rid(mem_ctx, l.out.sid, user_rid);
+	if (sid_p != NULL) {
+		*sid_p = dom_sid_add_rid(mem_ctx, *l.out.sid, user_rid);
 	}
 	return NT_STATUS_OK;
 

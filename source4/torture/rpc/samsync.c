@@ -151,17 +151,19 @@ struct samsync_trusted_domain {
 static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx, 
 						 struct samsync_state *samsync_state, 
 						 const char *domain, 
-						 struct dom_sid **sid)
+						 struct dom_sid **sid_p)
 {
 	struct lsa_String name;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	struct policy_handle *domain_handle = talloc(mem_ctx, struct policy_handle);
 	NTSTATUS nt_status;
 
 	name.string = domain;
 	l.in.connect_handle = samsync_state->connect_handle;
 	l.in.domain_name = &name;
+	l.out.sid = &sid;
 
 	nt_status = dcerpc_samr_LookupDomain(samsync_state->p_samr, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -171,11 +173,11 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 
 	o.in.connect_handle = samsync_state->connect_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = domain_handle;
 	
 	if (sid) {
-		*sid = l.out.sid;
+		*sid_p = *l.out.sid;
 	}
 
 	nt_status = dcerpc_samr_OpenDomain(samsync_state->p_samr, mem_ctx, &o);

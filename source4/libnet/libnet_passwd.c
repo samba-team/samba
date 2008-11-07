@@ -531,6 +531,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct lsa_String d_name;
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
@@ -573,6 +574,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	d_name.string = r->samr.in.domain_name;
 	ld.in.connect_handle = &p_handle;
 	ld.in.domain_name = &d_name;
+	ld.out.sid = &sid;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
 	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
@@ -587,7 +589,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;
 	od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	od.in.sid = ld.out.sid;
+	od.in.sid = *ld.out.sid;
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */

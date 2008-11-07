@@ -277,7 +277,7 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 	int ret;
 	struct ldb_dn *partitions_basedn;
 
-	r->out.sid = NULL;
+	*r->out.sid = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
 
@@ -319,7 +319,7 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	r->out.sid = sid;
+	*r->out.sid = sid;
 
 	return NT_STATUS_OK;
 }

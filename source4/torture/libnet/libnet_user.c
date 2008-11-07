@@ -95,6 +95,7 @@ static bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
+	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
 	
 	printf("connecting\n");
@@ -111,6 +112,7 @@ static bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
+	r2.out.sid = &sid;
 
 	printf("domain lookup on %s\n", domname->string);
 
@@ -122,7 +124,7 @@ static bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r3.in.sid = r2.out.sid;
+	r3.in.sid = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
 	printf("opening domain\n");

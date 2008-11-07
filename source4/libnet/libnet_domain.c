@@ -40,6 +40,7 @@ struct domain_open_samr_state {
 	uint32_t                  access_mask;
 	struct policy_handle      connect_handle;
 	struct policy_handle      domain_handle;
+	struct dom_sid2           *domain_sid;
 
 	/* information about the progress */
 	void (*monitor_fn)(struct monitor_msg*);
@@ -159,6 +160,8 @@ static void continue_domain_open_connect(struct rpc_request *req)
 	/* prepare for samr_LookupDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.domain_name    = &s->domain_name;
+	r->out.sid           = talloc(s, struct dom_sid2 *);
+	if (composite_nomem(r->out.sid, c)) return;
 
 	lookup_req = dcerpc_samr_LookupDomain_send(s->pipe, c, r);
 	if (composite_nomem(lookup_req, c)) return;
@@ -209,7 +212,7 @@ static void continue_domain_open_lookup(struct rpc_request *req)
 	/* prepare for samr_OpenDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r->in.sid            = s->lookup.out.sid;
+	r->in.sid            = *s->lookup.out.sid;
 	r->out.domain_handle = &s->domain_handle;
 
 	opendom_req = dcerpc_samr_OpenDomain_send(s->pipe, c, r);
@@ -361,7 +364,7 @@ NTSTATUS libnet_DomainOpenSamr_recv(struct composite_context *c, struct libnet_c
 		   libnet functions */
 		ctx->samr.connect_handle = s->connect_handle;
 		ctx->samr.handle      = s->domain_handle;
-		ctx->samr.sid         = talloc_steal(ctx, s->lookup.out.sid);
+		ctx->samr.sid         = talloc_steal(ctx, *s->lookup.out.sid);
 		ctx->samr.name        = talloc_steal(ctx, s->domain_name.string);
 		ctx->samr.access_mask = s->access_mask;
 	}

@@ -116,6 +116,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	struct samr_CreateUser2 r;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	struct samr_GetUserPwInfo pwp;
 	struct samr_PwInfo info;
 	struct samr_SetUserInfo s;
@@ -176,6 +177,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	name.string = domain;
 	l.in.connect_handle = &handle;
 	l.in.domain_name = &name;
+	l.out.sid = &sid;
 
 	status = dcerpc_samr_LookupDomain(join->p, join, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -183,14 +185,14 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 		goto failed;
 	}
 
-	talloc_steal(join, l.out.sid);
-	join->dom_sid = l.out.sid;
+	talloc_steal(join, *l.out.sid);
+	join->dom_sid = *l.out.sid;
 	join->dom_netbios_name = talloc_strdup(join, domain);
 	if (!join->dom_netbios_name) goto failed;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(join->p, join, &o);

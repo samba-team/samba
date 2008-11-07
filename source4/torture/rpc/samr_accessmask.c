@@ -390,6 +390,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct policy_handle ch;
 	struct lsa_String dn;
 	int i;
@@ -415,6 +416,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
+			ld.out.sid           = &sid;
 			dn.string            = lp_workgroup(tctx->lp_ctx);
 
 			status = dcerpc_samr_LookupDomain(p, tctx, &ld);
@@ -474,6 +476,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain od;
 	struct policy_handle ch;
 	struct policy_handle dh;
@@ -491,6 +494,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 	ld.in.connect_handle = &ch;
 	ld.in.domain_name    = &dn;
+	ld.out.sid           = &sid;
 	dn.string            = lp_workgroup(tctx->lp_ctx);
 	status = dcerpc_samr_LookupDomain(p, tctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -520,7 +524,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 			od.in.connect_handle = &ch;
 			od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-			od.in.sid = ld.out.sid;
+			od.in.sid = *ld.out.sid;
 			od.out.domain_handle = &dh;
 
 			status = dcerpc_samr_OpenDomain(p, tctx, &od);

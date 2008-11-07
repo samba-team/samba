@@ -561,9 +561,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (!connect_with_info->out.domain_sid) {
 		struct lsa_String name;
 		struct samr_LookupDomain l;
+		struct dom_sid2 *sid = NULL;
 		name.string = connect_with_info->out.domain_name;
 		l.in.connect_handle = &p_handle;
 		l.in.domain_name = &name;
+		l.out.sid = &sid;
 		
 		status = dcerpc_samr_LookupDomain(samr_pipe, tmp_ctx, &l);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -573,7 +575,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			talloc_free(tmp_ctx);
 			return status;
 		}
-		connect_with_info->out.domain_sid = l.out.sid;
+		connect_with_info->out.domain_sid = *l.out.sid;
 	}
 
 	/* prepare samr_OpenDomain */

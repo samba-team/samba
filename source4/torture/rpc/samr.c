@@ -4538,6 +4538,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
+	struct dom_sid2 *sid = NULL;
 	struct lsa_String n1;
 	struct lsa_String n2;
 	bool ret = true;
@@ -4547,6 +4548,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 	/* check for correct error codes */
 	r.in.connect_handle = handle;
 	r.in.domain_name = &n2;
+	r.out.sid = &sid;
 	n2.string = NULL;
 
 	status = dcerpc_samr_LookupDomain(p, tctx, &r);
@@ -4569,7 +4571,7 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 		ret = false;
 	}
 
-	if (!test_OpenDomain(p, tctx, handle, r.out.sid, which_ops)) {
+	if (!test_OpenDomain(p, tctx, handle, *r.out.sid, which_ops)) {
 		ret = false;
 	}
 
