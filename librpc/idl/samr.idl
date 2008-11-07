@@ -468,12 +468,12 @@ import "misc.idl", "lsa.idl", "security.idl";
 	const int SAMR_ENUM_USERS_MULTIPLIER = 54;
 
 	NTSTATUS samr_EnumDomainUsers(
-		[in,ref]      policy_handle *domain_handle,
+		[in]          policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          samr_AcctFlags acct_flags,
+		[out,ref]     samr_SamArray **sam,
 		[in]          uint32 max_size,
-		[out,unique]  samr_SamArray *sam,
-		[out]         uint32 num_entries
+		[out,ref]     uint32 *num_entries
 		);
 
 	/************************/

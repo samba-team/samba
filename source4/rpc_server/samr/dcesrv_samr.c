@@ -1507,10 +1507,11 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	int ret, num_filtered_entries, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName", "userAccountControl", NULL };
+	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1554,24 +1555,26 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
-	r->out.num_entries = num_filtered_entries - first;
-	r->out.num_entries = MIN(r->out.num_entries, 
+	*r->out.num_entries = num_filtered_entries - first;
+	*r->out.num_entries = MIN(*r->out.num_entries,
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
-	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
-	if (!r->out.sam) {
+	sam = talloc(mem_ctx, struct samr_SamArray);
+	if (!sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sam->entries = entries+first;
-	r->out.sam->count = r->out.num_entries;
+	sam->entries = entries+first;
+	sam->count = *r->out.num_entries;
+
+	*r->out.sam = sam;
 
 	if (first == num_filtered_entries) {
 		return NT_STATUS_OK;
 	}
 
-	if (r->out.num_entries < num_filtered_entries - first) {
-		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
+	if (*r->out.num_entries < num_filtered_entries - first) {
+		*r->out.resume_handle = entries[first+*r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
 

@@ -3311,6 +3311,8 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 	struct samr_LookupRids  lr ;
 	struct lsa_Strings names;
 	struct samr_Ids rids, types;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 
 	uint32_t masks[] = {ACB_NORMAL, ACB_DOMTRUST, ACB_WSTRUST, 
 			    ACB_DISABLED, ACB_NORMAL | ACB_DISABLED, 
@@ -3325,6 +3327,8 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 		r.in.acct_flags = mask = masks[mask_idx];
 		r.in.max_size = (uint32_t)-1;
 		r.out.resume_handle = &resume_handle;
+		r.out.num_entries = &num_entries;
+		r.out.sam = &sam;
 
 		status = dcerpc_samr_EnumDomainUsers(p, tctx, &r);
 		if (!NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES) &&  
@@ -3333,18 +3337,18 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 			return false;
 		}
 	
-		torture_assert(tctx, r.out.sam, "EnumDomainUsers failed: r.out.sam unexpectedly NULL");
+		torture_assert(tctx, sam, "EnumDomainUsers failed: r.out.sam unexpectedly NULL");
 
-		if (r.out.sam->count == 0) {
+		if (sam->count == 0) {
 			continue;
 		}
 
-		for (i=0;i<r.out.sam->count;i++) {
+		for (i=0;i<sam->count;i++) {
 			if (mask) {
-				if (!check_mask(p, tctx, handle, r.out.sam->entries[i].idx, mask)) {
+				if (!check_mask(p, tctx, handle, sam->entries[i].idx, mask)) {
 					ret = false;
 				}
-			} else if (!test_OpenUser(p, tctx, handle, r.out.sam->entries[i].idx)) {
+			} else if (!test_OpenUser(p, tctx, handle, sam->entries[i].idx)) {
 				ret = false;
 			}
 		}
@@ -3352,12 +3356,12 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 
 	printf("Testing LookupNames\n");
 	n.in.domain_handle = handle;
-	n.in.num_names = r.out.sam->count;
-	n.in.names = talloc_array(tctx, struct lsa_String, r.out.sam->count);
+	n.in.num_names = sam->count;
+	n.in.names = talloc_array(tctx, struct lsa_String, sam->count);
 	n.out.rids = &rids;
 	n.out.types = &types;
-	for (i=0;i<r.out.sam->count;i++) {
-		n.in.names[i].string = r.out.sam->entries[i].name.string;
+	for (i=0;i<sam->count;i++) {
+		n.in.names[i].string = sam->entries[i].name.string;
 	}
 	status = dcerpc_samr_LookupNames(p, tctx, &n);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3368,12 +3372,12 @@ static bool test_EnumDomainUsers(struct dcerpc_pipe *p, struct torture_context *
 
 	printf("Testing LookupRids\n");
 	lr.in.domain_handle = handle;
-	lr.in.num_rids = r.out.sam->count;
-	lr.in.rids = talloc_array(tctx, uint32_t, r.out.sam->count);
+	lr.in.num_rids = sam->count;
+	lr.in.rids = talloc_array(tctx, uint32_t, sam->count);
 	lr.out.names = &names;
 	lr.out.types = &types;
-	for (i=0;i<r.out.sam->count;i++) {
-		lr.in.rids[i] = r.out.sam->entries[i].idx;
+	for (i=0;i<sam->count;i++) {
+		lr.in.rids[i] = sam->entries[i].idx;
 	}
 	status = dcerpc_samr_LookupRids(p, tctx, &lr);
 	torture_assert_ntstatus_ok(tctx, status, "LookupRids");
