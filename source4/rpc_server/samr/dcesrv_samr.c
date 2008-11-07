@@ -57,6 +57,8 @@
 	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
 	r->out.info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
+#define QUERY_PARAMETERS(msg, field, attr) \
+	r->out.info->field = samdb_result_parameters(mem_ctx, msg, attr);
 
 
 /* these are used to make the Set[User|Group]Info code easier to follow */
@@ -135,6 +137,16 @@
         set_el = ldb_msg_find_element(msg, attr);			\
  	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)
+
+#define SET_PARAMETERS(msg, field, attr) do {				\
+	struct ldb_message_element *set_el;				\
+	if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY;				\
+	}								\
+	set_el = ldb_msg_find_element(msg, attr);			\
+	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
+} while (0)
+
 
 
 /* 
@@ -3290,7 +3302,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		break;
 
 	case 20:
-		QUERY_STRING(msg, info20.parameters,    "userParameters");
+		QUERY_PARAMETERS(msg, info20.parameters,    "userParameters");
 		break;
 
 	case 21:
@@ -3309,7 +3321,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_STRING(msg, info21.description,          "description");
 		QUERY_STRING(msg, info21.workstations,         "userWorkstations");
 		QUERY_STRING(msg, info21.comment,              "comment");
-		QUERY_STRING(msg, info21.parameters,           "userParameters");
+		QUERY_PARAMETERS(msg, info21.parameters,       "userParameters");
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
 		QUERY_AFLAGS(msg, info21.acct_flags,           "userAccountControl");
@@ -3416,7 +3428,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 20:
-		SET_STRING(msg, info20.parameters,      "userParameters");
+		SET_PARAMETERS(msg, info20.parameters,      "userParameters");
 		break;
 
 	case 21:
@@ -3446,7 +3458,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)
 			SET_AFLAGS(msg, info21.acct_flags,     "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)   
-			SET_STRING(msg, info21.parameters,     "userParameters");
+			SET_PARAMETERS(msg, info21.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
@@ -3477,7 +3489,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)     
 			SET_AFLAGS(msg, info23.info.acct_flags,   "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)     
-			SET_STRING(msg, info23.info.parameters,   "userParameters");
+			SET_PARAMETERS(msg, info23.info.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
 			SET_UINT  (msg, info23.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
@@ -3533,7 +3545,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)     
 			SET_AFLAGS(msg, info25.info.acct_flags,   "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)     
-			SET_STRING(msg, info25.info.parameters,   "userParameters");
+			SET_PARAMETERS(msg, info25.info.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
 			SET_UINT  (msg, info25.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
