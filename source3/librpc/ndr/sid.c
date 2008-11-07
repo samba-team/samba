@@ -21,6 +21,35 @@
 
 #include "includes.h"
 
+/*
+  return the wire size of a dom_sid
+*/
+size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
+{
+	if (!sid) return 0;
+	return 8 + 4*sid->num_auths;
+}
+
+size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags)
+{
+	struct dom_sid zero_sid;
+
+	if (!sid) return 0;
+
+	ZERO_STRUCT(zero_sid);
+
+	if (memcmp(&zero_sid, sid, sizeof(zero_sid)) == 0) {
+		return 0;
+	}
+
+	return 8 + 4*sid->num_auths;
+}
+
+size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags)
+{
+	return ndr_size_dom_sid28(sid, flags);
+}
+
 enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *r)
 {
 	uint32_t cntr_sub_auths_0;
@@ -228,3 +257,27 @@ enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const s
 
 	return ndr_push_dom_sid(ndr, ndr_flags, sid);
 }
+
+/*
+  print a dom_sid
+*/
+void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
+{
+	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr, sid));
+}
+
+void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+
+void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+
+void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid)
+{
+	ndr_print_dom_sid(ndr, name, sid);
+}
+

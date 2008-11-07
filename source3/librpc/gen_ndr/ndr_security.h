@@ -6,6 +6,7 @@
 #ifndef _HEADER_NDR_security
 #define _HEADER_NDR_security
 
+#include "librpc/gen_ndr/ndr_dom_sid.h"
 #define NDR_SECURITY_CALL_COUNT (0)
 void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *name, uint8_t r);
 void ndr_print_security_ace_type(struct ndr_print *ndr, const char *name, enum security_ace_type r);
