@@ -225,13 +225,6 @@ interface security
 		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 24
 	} sec_privilege;
 
-	/* id used to identify a endpoint, possibly in a cluster */
-	typedef [public] struct {
-		hyper id;
-		uint32 id2;
-		uint32 node;
-	} server_id;
-
 	typedef [bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
 		SEC_ACE_FLAG_CONTAINER_INHERIT		= 0x02,

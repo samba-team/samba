@@ -30,5 +30,13 @@ interface dom_sid
 		uint8  id_auth[6];              /**< Identifier Authority */
 		uint32 sub_auths[num_auths];
 	} dom_sid;
+
+	/* id used to identify a endpoint, possibly in a cluster */
+	typedef [public] struct {
+		hyper id;
+		uint32 id2;
+		uint32 node;
+	} server_id;
+
 }
 
