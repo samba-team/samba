@@ -289,7 +289,7 @@ interface security
 		[default];
 	} security_ace_object_ctr;
 
-	typedef [public,gensize,nosize] struct {
+	typedef [public,nopull,gensize,nosize] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
