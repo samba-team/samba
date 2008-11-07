@@ -563,15 +563,17 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	}
 
 	/* Create child security descriptor to return */
-
-	new_dacl = make_sec_acl(ctx,
+	if (new_ace_list_ndx) {
+		new_dacl = make_sec_acl(ctx,
 				NT4_ACL_REVISION,
 				new_ace_list_ndx,
 				new_ace_list);
 
-	if (!new_dacl) {
-		return NT_STATUS_NO_MEMORY;
+		if (!new_dacl) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+
 	*ppsd = make_sec_desc(ctx,
 			SECURITY_DESCRIPTOR_REVISION_1,
 			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
