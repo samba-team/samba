@@ -91,7 +91,6 @@ void send_trans_reply(connection_struct *conn,
 	int tot_data_sent = 0;
 	int tot_param_sent = 0;
 	int align;
-	char *outbuf;
 
 	int ldata  = rdata  ? rdata_len : 0;
 	int lparam = rparam ? rparam_len : 0;
@@ -104,38 +103,37 @@ void send_trans_reply(connection_struct *conn,
 
 	align = ((this_lparam)%4);
 
-	if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
-			   10, 1+align+this_ldata+this_lparam)) {
-		smb_panic("could not allocate outbuf");
-	}
+	reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
-	copy_trans_params_and_data(outbuf, align,
+	copy_trans_params_and_data((char *)req->outbuf, align,
 				rparam, tot_param_sent, this_lparam,
 				rdata, tot_data_sent, this_ldata);
 
-	SSVAL(outbuf,smb_vwv0,lparam);
-	SSVAL(outbuf,smb_vwv1,ldata);
-	SSVAL(outbuf,smb_vwv3,this_lparam);
-	SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-	SSVAL(outbuf,smb_vwv5,0);
-	SSVAL(outbuf,smb_vwv6,this_ldata);
-	SSVAL(outbuf,smb_vwv7,smb_offset(smb_buf(outbuf)+1+this_lparam+align,
-					 outbuf));
-	SSVAL(outbuf,smb_vwv8,0);
-	SSVAL(outbuf,smb_vwv9,0);
+	SSVAL(req->outbuf,smb_vwv0,lparam);
+	SSVAL(req->outbuf,smb_vwv1,ldata);
+	SSVAL(req->outbuf,smb_vwv3,this_lparam);
+	SSVAL(req->outbuf,smb_vwv4,
+	      smb_offset(smb_buf(req->outbuf)+1, req->outbuf));
+	SSVAL(req->outbuf,smb_vwv5,0);
+	SSVAL(req->outbuf,smb_vwv6,this_ldata);
+	SSVAL(req->outbuf,smb_vwv7,
+	      smb_offset(smb_buf(req->outbuf)+1+this_lparam+align,
+			 req->outbuf));
+	SSVAL(req->outbuf,smb_vwv8,0);
+	SSVAL(req->outbuf,smb_vwv9,0);
 
 	if (buffer_too_large) {
-		error_packet_set((char *)outbuf, ERRDOS, ERRmoredata,
+		error_packet_set((char *)req->outbuf, ERRDOS, ERRmoredata,
 				 STATUS_BUFFER_OVERFLOW, __LINE__, __FILE__);
 	}
 
-	show_msg(outbuf);
-	if (!srv_send_smb(smbd_server_fd(), (char *)outbuf,
+	show_msg((char *)req->outbuf);
+	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
 			  IS_CONN_ENCRYPTED(conn))) {
 		exit_server_cleanly("send_trans_reply: srv_send_smb failed.");
 	}
 
-	TALLOC_FREE(outbuf);
+	TALLOC_FREE(req->outbuf);
 
 	tot_data_sent = this_ldata;
 	tot_param_sent = this_lparam;
@@ -155,39 +153,39 @@ void send_trans_reply(connection_struct *conn,
 
 		align = (this_lparam%4);
 
-		if (!create_outbuf(talloc_tos(), (char *)req->inbuf, &outbuf,
-				   10, 1+align+this_ldata+this_lparam)) {
-			smb_panic("could not allocate outbuf");
-		}
+		reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
-		copy_trans_params_and_data(outbuf, align,
+		copy_trans_params_and_data((char *)req->outbuf, align,
 					   rparam, tot_param_sent, this_lparam,
 					   rdata, tot_data_sent, this_ldata);
 
-		SSVAL(outbuf,smb_vwv3,this_lparam);
-		SSVAL(outbuf,smb_vwv4,smb_offset(smb_buf(outbuf)+1,outbuf));
-		SSVAL(outbuf,smb_vwv5,tot_param_sent);
-		SSVAL(outbuf,smb_vwv6,this_ldata);
-		SSVAL(outbuf,smb_vwv7,
-		      smb_offset(smb_buf(outbuf)+1+this_lparam+align, outbuf));
-		SSVAL(outbuf,smb_vwv8,tot_data_sent);
-		SSVAL(outbuf,smb_vwv9,0);
+		SSVAL(req->outbuf,smb_vwv3,this_lparam);
+		SSVAL(req->outbuf,smb_vwv4,
+		      smb_offset(smb_buf(req->outbuf)+1,req->outbuf));
+		SSVAL(req->outbuf,smb_vwv5,tot_param_sent);
+		SSVAL(req->outbuf,smb_vwv6,this_ldata);
+		SSVAL(req->outbuf,smb_vwv7,
+		      smb_offset(smb_buf(req->outbuf)+1+this_lparam+align,
+				 req->outbuf));
+		SSVAL(req->outbuf,smb_vwv8,tot_data_sent);
+		SSVAL(req->outbuf,smb_vwv9,0);
 
 		if (buffer_too_large) {
-			error_packet_set(outbuf, ERRDOS, ERRmoredata,
+			error_packet_set((char *)req->outbuf,
+					 ERRDOS, ERRmoredata,
 					 STATUS_BUFFER_OVERFLOW,
 					 __LINE__, __FILE__);
 		}
 
-		show_msg(outbuf);
-		if (!srv_send_smb(smbd_server_fd(), outbuf,
+		show_msg((char *)req->outbuf);
+		if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
 				  IS_CONN_ENCRYPTED(conn)))
 			exit_server_cleanly("send_trans_reply: srv_send_smb "
 					    "failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
-		TALLOC_FREE(outbuf);
+		TALLOC_FREE(req->outbuf);
 	}
 }
 
