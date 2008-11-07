@@ -4301,7 +4301,7 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	finfo.fh->fd = -1;
 	finfo.fsp_name = CONST_DISCARD(char *,fname);
 
-	if (!NT_STATUS_IS_OK(posix_fget_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
+	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		conn_free_internal( conn );
 		return NULL;
