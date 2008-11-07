@@ -1762,17 +1762,27 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	if (state->request.data.auth_crap.lm_resp_len > sizeof(state->request.data.auth_crap.lm_resp)
 		|| state->request.data.auth_crap.nt_resp_len > sizeof(state->request.data.auth_crap.nt_resp)) {
-		DEBUG(0, ("winbindd_pam_auth_crap: invalid password length %u/%u\n", 
-			  state->request.data.auth_crap.lm_resp_len, 
-			  state->request.data.auth_crap.nt_resp_len));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		if (!state->request.flags & WBFLAG_BIG_NTLMV2_BLOB ||
+		     state->request.extra_len != state->request.data.auth_crap.nt_resp_len) {
+			DEBUG(0, ("winbindd_pam_auth_crap: invalid password length %u/%u\n",
+				  state->request.data.auth_crap.lm_resp_len,
+				  state->request.data.auth_crap.nt_resp_len));
+				  result = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 	}
 
 	lm_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.lm_resp,
 					state->request.data.auth_crap.lm_resp_len);
-	nt_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.nt_resp,
-					state->request.data.auth_crap.nt_resp_len);
+	if (state->request.flags & WBFLAG_BIG_NTLMV2_BLOB) {
+		nt_resp = data_blob_talloc(state->mem_ctx,
+					   state->request.extra_data.data,
+					   state->request.data.auth_crap.nt_resp_len);
+	} else {
+		nt_resp = data_blob_talloc(state->mem_ctx,
+					   state->request.data.auth_crap.nt_resp,
+					   state->request.data.auth_crap.nt_resp_len);
+	}
 
 	/* what domain should we contact? */
 	
