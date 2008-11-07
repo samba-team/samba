@@ -1093,7 +1093,8 @@ VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 # now the rules...
 ######################################################################
 all:: SHOWFLAGS libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @CIFSUPCALL_PROGS@ \
+	@EXTRA_ALL_TARGETS@
 
 nss_modules:: $(NSS_MODULES)
 
