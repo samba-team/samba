@@ -52,7 +52,7 @@ NDR_COMPRESSION_OBJ_FILES = ../librpc/ndr/ndr_compression.o
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
 
 NDR_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security.o \
-			 $(ndrsrcdir)/ndr_sec_helper.o \
+			 ../librpc/ndr/ndr_sec_helper.o \
 			 $(gen_ndrsrcdir)/ndr_dom_sid.o \
 			 $(ndrsrcdir)/ndr_dom_sid.o
 
