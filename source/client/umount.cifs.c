@@ -33,9 +33,10 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
+#include "mount.h"
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
-#define UNMOUNT_CIFS_VERSION_MINOR "5"
+#define UNMOUNT_CIFS_VERSION_MINOR "6"
 
 #ifndef UNMOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
@@ -137,24 +138,6 @@ static int umount_check_perm(char * dir)
 	return rc;
 }
 
-static int lock_mtab(void)
-{
-	int rc;
-	
-	rc = mknod(MOUNTED_LOCK , 0600, 0);
-	if(rc == -1)
-		printf("\ngetting lock file %s failed with %s\n",MOUNTED_LOCK,
-				strerror(errno));
-		
-	return rc;	
-	
-}
-
-static void unlock_mtab(void)
-{
-	unlink(MOUNTED_LOCK);	
-}
-
 static int remove_from_mtab(char * mountpoint)
 {
 	int rc;
@@ -168,6 +151,7 @@ static int remove_from_mtab(char * mountpoint)
 
 	/* Do we first need to check if it is writable? */ 
 
+	atexit(unlock_mtab);
 	if (lock_mtab()) {
 		printf("Mount table locked\n");
 		return -EACCES;
