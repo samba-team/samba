@@ -1497,7 +1497,7 @@ uid_t nametouid(const char *name)
 	char *p;
 	uid_t u;
 
-	pass = getpwnam_alloc(NULL, name);
+	pass = getpwnam_alloc(talloc_autofree_context(), name);
 	if (pass) {
 		u = pass->pw_uid;
 		TALLOC_FREE(pass);
@@ -2255,8 +2255,8 @@ char *myhostname(void)
 	static char *ret;
 	if (ret == NULL) {
 		/* This is cached forever so
-		 * use NULL talloc ctx. */
-		ret = talloc_get_myname(NULL);
+		 * use talloc_autofree_context() ctx. */
+		ret = talloc_get_myname(talloc_autofree_context());
 	}
 	return ret;
 }

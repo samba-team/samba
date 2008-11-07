@@ -1735,7 +1735,7 @@ doma_done:
 
 	d_printf("Checking Guest's group.\n");
 
-	pwd = getpwnam_alloc(NULL, lp_guestaccount());
+	pwd = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
 	if (!pwd) {
 		d_fprintf(stderr, "Failed to find just created Guest account!\n"
 				  "   Is nss properly configured?!\n");

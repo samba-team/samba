@@ -665,7 +665,7 @@ NTSTATUS local_password_change(const char *user_name,
 				DEBUGLEVEL = 1;
 			}
 
-			if ( !(pwd = getpwnam_alloc( NULL, user_name)) ) {
+			if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), user_name)) ) {
 				return NT_STATUS_NO_SUCH_USER;
 			}
 

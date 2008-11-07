@@ -242,7 +242,7 @@ bool guest_user_info( struct samu *user )
 	NTSTATUS result;
 	const char *guestname = lp_guestaccount();
 	
-	if ( !(pwd = getpwnam_alloc( NULL, guestname ) ) ) {
+	if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), guestname ) ) ) {
 		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
 			guestname));
 		return False;
@@ -2016,7 +2016,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 {
 	/* allocate memory for the structure as its own talloc CTX */
 
-	if ( !(*methods = TALLOC_ZERO_P(NULL, struct pdb_methods) ) ) {
+	if ( !(*methods = TALLOC_ZERO_P(talloc_autofree_context(), struct pdb_methods) ) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

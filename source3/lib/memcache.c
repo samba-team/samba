@@ -40,37 +40,11 @@ struct memcache {
 static void memcache_element_parse(struct memcache_element *e,
 				   DATA_BLOB *key, DATA_BLOB *value);
 
-static bool memcache_is_talloc(enum memcache_number n)
-{
-	bool result;
-
-	switch (n) {
-	case GETPWNAM_CACHE:
-	case PDB_GETPWSID_CACHE:
-	case SINGLETON_CACHE_TALLOC:
-		result = true;
-		break;
-	default:
-		result = false;
-		break;
-	}
-
-	return result;
-}
-
 static int memcache_destructor(struct memcache *cache) {
 	struct memcache_element *e, *next;
 
 	for (e = cache->mru; e != NULL; e = next) {
 		next = e->next;
-		if (memcache_is_talloc((enum memcache_number)e->n)
-		    && (e->valuelength == sizeof(void *))) {
-			DATA_BLOB key, value;
-			void *ptr;
-			memcache_element_parse(e, &key, &value);
-			memcpy(&ptr, value.data, sizeof(ptr));
-			TALLOC_FREE(ptr);
-		}
 		SAFE_FREE(e);
 	}
 	return 0;
