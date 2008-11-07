@@ -472,7 +472,7 @@ bool debug_parse_levels(const char *params_str)
 	if (AllowDebugChange == False)
 		return True;
 
-	params = str_list_make(talloc_tos(), params_str, NULL);
+	params = str_list_make_v3(talloc_tos(), params_str, NULL);
 
 	if (debug_parse_params(params)) {
 		debug_dump_status(5);

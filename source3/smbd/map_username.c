@@ -178,7 +178,7 @@ bool map_username(fstring user)
 
 		/* skip lines like 'user = ' */
 
-		dosuserlist = str_list_make(talloc_tos(), dosname, NULL);
+		dosuserlist = str_list_make_v3(talloc_tos(), dosname, NULL);
 		if (!dosuserlist) {
 			DEBUG(0,("Bad username map entry.  Unable to build user list.  Ignoring.\n"));
 			continue;
