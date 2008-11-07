@@ -3434,6 +3434,8 @@ static bool test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_EnumDomainGroups r;
 	uint32_t resume_handle=0;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 	int i;
 	bool ret = true;
 
@@ -3443,6 +3445,8 @@ static bool test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.in.resume_handle = &resume_handle;
 	r.in.max_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
+	r.out.num_entries = &num_entries;
+	r.out.sam = &sam;
 
 	status = dcerpc_samr_EnumDomainGroups(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3450,12 +3454,12 @@ static bool test_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	
-	if (!r.out.sam) {
+	if (!sam) {
 		return false;
 	}
 
-	for (i=0;i<r.out.sam->count;i++) {
-		if (!test_OpenGroup(p, mem_ctx, handle, r.out.sam->entries[i].idx)) {
+	for (i=0;i<sam->count;i++) {
+		if (!test_OpenGroup(p, mem_ctx, handle, sam->entries[i].idx)) {
 			ret = false;
 		}
 	}
@@ -4092,6 +4096,8 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct samr_QueryDisplayInfo q2;
 	NTSTATUS status;
 	uint32_t resume_handle=0;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 	int i;
 	bool ret = true;
 	uint32_t total_size;
@@ -4107,6 +4113,8 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 	q1.in.resume_handle = &resume_handle;
 	q1.in.max_size = 5;
 	q1.out.resume_handle = &resume_handle;
+	q1.out.num_entries = &num_entries;
+	q1.out.sam = &sam;
 
 	status = STATUS_MORE_ENTRIES;
 	while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
@@ -4116,16 +4124,16 @@ static bool test_GroupList(struct dcerpc_pipe *p, struct torture_context *tctx,
 		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			break;
 
-		for (i=0; i<q1.out.num_entries; i++) {
+		for (i=0; i<*q1.out.num_entries; i++) {
 			add_string_to_array(tctx,
-					    q1.out.sam->entries[i].name.string,
+					    sam->entries[i].name.string,
 					    &names, &num_names);
 		}
 	}
 
 	torture_assert_ntstatus_ok(tctx, status, "EnumDomainGroups");
 	
-	torture_assert(tctx, q1.out.sam, "EnumDomainGroups failed to return q1.out.sam");
+	torture_assert(tctx, sam, "EnumDomainGroups failed to return sam");
 
 	q2.in.domain_handle = handle;
 	q2.in.level = 5;
