@@ -4585,6 +4585,8 @@ static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx
 	NTSTATUS status;
 	struct samr_EnumDomains r;
 	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	struct samr_SamArray *sam = NULL;
 	int i;
 	bool ret = true;
 
@@ -4592,17 +4594,19 @@ static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx
 	r.in.resume_handle = &resume_handle;
 	r.in.buf_size = (uint32_t)-1;
 	r.out.resume_handle = &resume_handle;
+	r.out.num_entries = &num_entries;
+	r.out.sam = &sam;
 
 	status = dcerpc_samr_EnumDomains(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "EnumDomains");
 
-	if (!r.out.sam) {
+	if (!*r.out.sam) {
 		return false;
 	}
 
-	for (i=0;i<r.out.sam->count;i++) {
+	for (i=0;i<sam->count;i++) {
 		if (!test_LookupDomain(p, tctx, handle, 
-				       r.out.sam->entries[i].name.string, which_ops)) {
+				       sam->entries[i].name.string, which_ops)) {
 			ret = false;
 		}
 	}

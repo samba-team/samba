@@ -344,8 +344,8 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	struct ldb_dn *partitions_basedn;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
 
@@ -401,9 +401,9 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 		}
 	}
 
-	r->out.sam = array;
-	r->out.num_entries = i;
-	array->count = r->out.num_entries;
+	*r->out.sam = array;
+	*r->out.num_entries = i;
+	array->count = *r->out.num_entries;
 
 	return NT_STATUS_OK;
 }

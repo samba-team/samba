@@ -365,6 +365,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	struct samr_Connect2 conn;
 	struct samr_EnumDomains enumdom;
 	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	struct samr_SamArray *sam = NULL;
 	struct samr_LookupDomain l;
 	struct dom_sid2 *sid = NULL;
 	int dom_idx;
@@ -424,6 +426,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	enumdom.in.resume_handle = &resume_handle;
 	enumdom.in.buf_size = (uint32_t)-1;
 	enumdom.out.resume_handle = &resume_handle;
+	enumdom.out.num_entries = &num_entries;
+	enumdom.out.sam = &sam;
 
 	status = dcerpc_samr_EnumDomains(samr_pipe, mem_ctx, &enumdom);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -431,18 +435,18 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		goto fail;
 	}
 
-	if (enumdom.out.num_entries != 2) {
+	if (*enumdom.out.num_entries != 2) {
 		d_printf("samr_EnumDomains returned %d entries, expected 2\n",
-			 enumdom.out.num_entries);
+			 *enumdom.out.num_entries);
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto fail;
 	}
 
-	dom_idx = strequal(enumdom.out.sam->entries[0].name.string,
+	dom_idx = strequal(sam->entries[0].name.string,
 			   "builtin") ? 1:0;
 
 	l.in.connect_handle = &conn_handle;
-	domain_name.string = enumdom.out.sam->entries[dom_idx].name.string;
+	domain_name.string = sam->entries[dom_idx].name.string;
 	*domain = talloc_strdup(mem_ctx, domain_name.string);
 	l.in.domain_name = &domain_name;
 	l.out.sid = &sid;

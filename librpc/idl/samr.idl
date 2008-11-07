@@ -284,11 +284,11 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_SamArray;
 
 	NTSTATUS samr_EnumDomains (
-		[in,ref]      policy_handle *connect_handle,
+		[in]          policy_handle *connect_handle,
 		[in,out,ref]  uint32 *resume_handle,
+		[out,ref]     samr_SamArray **sam,
 		[in]          uint32 buf_size,
-		[out,unique]  samr_SamArray *sam,
-		[out]         uint32 num_entries
+		[out,ref]     uint32 *num_entries
 		);
 
 

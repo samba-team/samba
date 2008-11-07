@@ -149,6 +149,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 	int i;
 	uint32_t mask;
 	uint32_t resume_handle = 0;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 
 	printf("testing which bits in Connect5 accessmask allows us to EnumDomains\n");
 	mask = 1;
@@ -172,6 +174,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 			ed.in.resume_handle = &resume_handle;
 			ed.in.buf_size = (uint32_t)-1;
 			ed.out.resume_handle = &resume_handle;
+			ed.out.num_entries = &num_entries;
+			ed.out.sam = &sam;
 
 			status = dcerpc_samr_EnumDomains(p, tctx, &ed);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -197,6 +201,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 			ed.in.resume_handle = &resume_handle;
 			ed.in.buf_size = (uint32_t)-1;
 			ed.out.resume_handle = &resume_handle;
+			ed.out.num_entries = &num_entries;
+			ed.out.sam = &sam;
 
 			status = dcerpc_samr_EnumDomains(p, tctx, &ed);
 			if(!NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
