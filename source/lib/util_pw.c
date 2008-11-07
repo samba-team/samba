@@ -57,7 +57,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 		return NULL;
 	}
 
-	cached = tcopy_passwd(NULL, temp);
+	cached = tcopy_passwd(talloc_autofree_context(), temp);
 	if (cached == NULL) {
 		/*
 		 * Just don't add this into the cache, ignore the failure

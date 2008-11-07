@@ -564,7 +564,7 @@ static int new_user (struct pdb_methods *in, const char *username,
 
 	get_global_sam_sid();
 
-	if ( !(pwd = getpwnam_alloc( NULL, username )) ) {
+	if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), username )) ) {
 		DEBUG(0,("Cannot locate Unix account for %s\n", username));
 		return -1;
 	}
@@ -668,7 +668,7 @@ static int new_machine (struct pdb_methods *in, const char *machine_in)
 	fstrcpy(machineaccount, machinename);
 	fstrcat(machineaccount, "$");
 
-	if ( !(pwd = getpwnam_alloc( NULL, machineaccount )) ) {
+	if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), machineaccount )) ) {
 		DEBUG(0,("Cannot locate Unix account for %s\n", machineaccount));
 		return -1;
 	}
