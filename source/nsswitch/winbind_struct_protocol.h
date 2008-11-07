@@ -202,7 +202,9 @@ typedef struct winbindd_gr {
 #define WBFLAG_IS_PRIVILEGED		0x00000400	/* not used */
 /* Flag to say this is a winbindd internal send - don't recurse. */
 #define WBFLAG_RECURSE			0x00000800
-
+/* Flag to tell winbind the NTLMv2 blob is too big for the struct and is in the
+ * extra_data field */
+#define WBFLAG_BIG_NTLMV2_BLOB		0x00010000
 
 #define WINBINDD_MAX_EXTRA_DATA (128*1024)
 
