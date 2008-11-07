@@ -8233,7 +8233,6 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);
-void construct_reply_common(const char *inbuf, char *outbuf);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
 void chain_reply(struct smb_request *req);
 void check_reload(time_t t);
