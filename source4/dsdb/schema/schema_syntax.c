@@ -1322,9 +1322,6 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
-		.equality               = "distinguishedNameMatch",
-		.comment                = "OctetString: String+DN",
-		.ldb_syntax             = LDB_SYNTAX_DN,
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(DN-String)",
@@ -1334,6 +1331,8 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.14",
 		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
+		.equality               = "distinguishedNameMatch",
+		.comment                = "OctetString: String+DN",
 		.ldb_syntax             = LDB_SYNTAX_DN,
 	}
 };
