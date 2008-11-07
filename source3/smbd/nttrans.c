@@ -120,6 +120,11 @@ void send_nt_replies(connection_struct *conn,
 			     + data_alignment_offset);
 
 		/*
+		 * We might have had SMBnttranss in req->inbuf, fix that.
+		 */
+		SCVAL(req->outbuf, smb_com, SMBnttrans);
+
+		/*
 		 * Set total params and data to be sent.
 		 */
 
@@ -2828,12 +2833,6 @@ void reply_nttranss(struct smb_request *req)
 		END_PROFILE(SMBnttranss);
 		return;
 	}
-
-	/*
-	 * construct_reply_common will copy smb_com from inbuf to
-	 * outbuf. SMBnttranss is wrong here.
-	 */
-	SCVAL(req->inbuf,smb_com,SMBnttrans);
 
 	handle_nttrans(conn, state, req);
 

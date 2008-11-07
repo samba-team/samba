@@ -505,7 +505,6 @@ static bool process_trans2(blocking_lock_record *blr)
 
 	/* We finally got the lock, return success. */
 
-	SCVAL(blr->req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
 	send_trans2_replies(blr->fsp->conn, blr->req, params, 2, NULL, 0, 0xffff);

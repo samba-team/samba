@@ -105,6 +105,12 @@ void send_trans_reply(connection_struct *conn,
 
 	reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
 
+	/*
+	 * We might have SMBtranss in req which was transferred to the outbuf,
+	 * fix that.
+	 */
+	SCVAL(req->outbuf, smb_com, SMBtrans);
+
 	copy_trans_params_and_data((char *)req->outbuf, align,
 				rparam, tot_param_sent, this_lparam,
 				rdata, tot_data_sent, this_ldata);
@@ -154,6 +160,12 @@ void send_trans_reply(connection_struct *conn,
 		align = (this_lparam%4);
 
 		reply_outbuf(req, 10, 1+align+this_ldata+this_lparam);
+
+		/*
+		 * We might have SMBtranss in req which was transferred to the
+		 * outbuf, fix that.
+		 */
+		SCVAL(req->outbuf, smb_com, SMBtrans);
 
 		copy_trans_params_and_data((char *)req->outbuf, align,
 					   rparam, tot_param_sent, this_lparam,
@@ -773,12 +785,6 @@ void reply_transs(struct smb_request *req)
 		END_PROFILE(SMBtranss);
 		return;
 	}
-
-        /*
-	 * construct_reply_common will copy smb_com from inbuf to
-	 * outbuf. SMBtranss is wrong here.
-         */
-        SCVAL(req->inbuf,smb_com,SMBtrans);
 
 	handle_trans(conn, req, state);
 
