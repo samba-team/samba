@@ -503,7 +503,6 @@ void reply_trans(struct smb_request *req)
 	unsigned int pscnt;
 	struct trans_state *state;
 	NTSTATUS result;
-	unsigned int size;
 	unsigned int av_size;
 
 	START_PROFILE(SMBtrans);
@@ -514,7 +513,6 @@ void reply_trans(struct smb_request *req)
 		return;
 	}
 
-	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
 	dsoff = SVAL(req->vwv+12, 0);
 	dscnt = SVAL(req->vwv+11, 0);
@@ -624,6 +622,19 @@ void reply_trans(struct smb_request *req)
 
 	if (state->setup_count) {
 		unsigned int i;
+
+		/*
+		 * No overflow possible here, state->setup_count is an
+		 * unsigned int, being filled by a single byte from
+		 * CVAL(req->vwv+13, 0) above. The cast in the comparison
+		 * below is not necessary, it's here to clarify things. The
+		 * validity of req->vwv and req->wct has been checked in
+		 * init_smb_request already.
+		 */
+		if (state->setup_count + 14 > (unsigned int)req->wct) {
+			goto bad_param;
+		}
+
 		if((state->setup = TALLOC_ARRAY(
 			    state, uint16, state->setup_count)) == NULL) {
 			DEBUG(0,("reply_trans: setup malloc fail for %u "
@@ -636,17 +647,10 @@ void reply_trans(struct smb_request *req)
 			END_PROFILE(SMBtrans);
 			return;
 		} 
-		if (req->inbuf+smb_vwv14+(state->setup_count*SIZEOFWORD) >
-		    req->inbuf + size)
-			goto bad_param;
-		if ((smb_vwv14+(state->setup_count*SIZEOFWORD) < smb_vwv14) ||
-		    (smb_vwv14+(state->setup_count*SIZEOFWORD) <
-		     (state->setup_count*SIZEOFWORD)))
-			goto bad_param;
 
-		for (i=0;i<state->setup_count;i++)
-			state->setup[i] = SVAL(req->inbuf,
-					       smb_vwv14+i*SIZEOFWORD);
+		for (i=0;i<state->setup_count;i++) {
+			state->setup[i] = SVAL(req->vwv + 14 + i, 0);
+		}
 	}
 
 	state->received_param = pscnt;
