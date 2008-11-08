@@ -680,13 +680,13 @@ int reply_transs(connection_struct *conn, char *inbuf,char *outbuf,
 				dcnt > state->total_data ||
 				ddisp+dcnt > state->total_data ||
 				ddisp+dcnt < ddisp) {
-			goto bad_param; 
+			goto bad_param;
 		}
 
-		if (ddisp > av_size ||
+		if (doff > av_size ||
 				dcnt > av_size ||
-				ddisp+dcnt > av_size ||
-				ddisp+dcnt < ddisp) {
+				doff+dcnt > av_size ||
+				doff+dcnt < doff) {
 			goto bad_param;
 		}
 
