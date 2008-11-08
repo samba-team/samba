@@ -2529,7 +2529,6 @@ void reply_nttrans(struct smb_request *req)
 	uint16 function_code;
 	NTSTATUS result;
 	struct trans_state *state;
-	uint32_t size;
 	uint32_t av_size;
 
 	START_PROFILE(SMBnttrans);
@@ -2540,7 +2539,6 @@ void reply_nttrans(struct smb_request *req)
 		return;
 	}
 
-	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
 	pscnt = IVAL(req->vwv+9, 1);
 	psoff = IVAL(req->vwv+11, 1);
@@ -2676,6 +2674,19 @@ void reply_nttrans(struct smb_request *req)
 	if(state->setup_count > 0) {
 		DEBUG(10,("reply_nttrans: state->setup_count = %d\n",
 			  state->setup_count));
+
+		/*
+		 * No overflow possible here, state->setup_count is an
+		 * unsigned int, being filled by a single byte from
+		 * CVAL(req->vwv+13, 0) above. The cast in the comparison
+		 * below is not necessary, it's here to clarify things. The
+		 * validity of req->vwv and req->wct has been checked in
+		 * init_smb_request already.
+		 */
+		if ((state->setup_count/2) + 19 > (unsigned int)req->wct) {
+			goto bad_param;
+		}
+
 		state->setup = (uint16 *)TALLOC(state, state->setup_count);
 		if (state->setup == NULL) {
 			DEBUG(0,("reply_nttrans : Out of memory\n"));
@@ -2685,14 +2696,6 @@ void reply_nttrans(struct smb_request *req)
 			reply_doserror(req, ERRDOS, ERRnomem);
 			END_PROFILE(SMBnttrans);
 			return;
-		}
-
-		if ((smb_nt_SetupStart + state->setup_count < smb_nt_SetupStart) ||
-		    (smb_nt_SetupStart + state->setup_count < state->setup_count)) {
-			goto bad_param;
-		}
-		if (smb_nt_SetupStart + state->setup_count > size) {
-			goto bad_param;
 		}
 
 		memcpy(state->setup, req->vwv+19, state->setup_count);
