@@ -7533,7 +7533,6 @@ void reply_trans2(struct smb_request *req)
 	unsigned int psoff;
 	unsigned int pscnt;
 	unsigned int tran_call;
-	unsigned int size;
 	unsigned int av_size;
 	struct trans_state *state;
 	NTSTATUS result;
@@ -7551,7 +7550,6 @@ void reply_trans2(struct smb_request *req)
 	psoff = SVAL(req->vwv+10, 0);
 	pscnt = SVAL(req->vwv+9, 0);
 	tran_call = SVAL(req->vwv+14, 0);
-	size = smb_len(req->inbuf) + 4;
 	av_size = smb_len(req->inbuf);
 
 	result = allow_new_trans(conn->pending_trans, req->mid);
