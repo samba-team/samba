@@ -764,10 +764,10 @@ void reply_transs(struct smb_request *req)
 			goto bad_param;
 		}
 
-		if (ddisp > av_size ||
+		if (doff > av_size ||
 				dcnt > av_size ||
-				ddisp+dcnt > av_size ||
-				ddisp+dcnt < ddisp) {
+				doff+dcnt > av_size ||
+				doff+dcnt < doff) {
 			goto bad_param;
 		}
 
