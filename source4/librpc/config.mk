@@ -737,12 +737,17 @@ PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dc
 
 python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 
-[PYTHON::python_dcerpc_security]
-LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
+[PYTHON::python_dcerpc_dom_sid]
+LIBRARY_REALNAME = samba/dcerpc/dom_sid.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
 
-python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o \
-				   $(gen_ndrsrcdir)/py_dom_sid.o
+python_dcerpc_dom_sid_OBJ_FILES = $(gen_ndrsrcdir)/py_dom_sid.o
+
+[PYTHON::python_dcerpc_security]
+LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc_dom_sid python_dcerpc
+
+python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 
 $(IDL_HEADER_FILES) $(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
