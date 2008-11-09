@@ -7269,8 +7269,8 @@ static void call_trans2ioctl(connection_struct *conn,
 		return;
 	}
 
-	if ((SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
-	    && (SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+	if ((SVAL(req->vwv+16, 0) == LMCAT_SPL)
+	    && (SVAL(req->vwv+17, 0) == LMFUNC_GETJOBID)) {
 		*ppdata = (char *)SMB_REALLOC(*ppdata, 32);
 		if (*ppdata == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -7613,8 +7613,8 @@ void reply_trans2(struct smb_request *req)
 		 */
 		if ( (state->setup_count == 4)
 		     && (tran_call == TRANSACT2_IOCTL)
-		     && (SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
-		     &&	(SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+		     && (SVAL(req->vwv+16, 0) == LMCAT_SPL)
+		     &&	(SVAL(req->vwv+17, 0) == LMFUNC_GETJOBID)) {
 			DEBUG(2,("Got Trans2 DevIOctl jobid\n"));
 		} else {
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%u)\n",state->setup_count));
