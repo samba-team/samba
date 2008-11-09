@@ -1078,9 +1078,10 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
-		 const char *name, struct files_struct **pfsp)
+NTSTATUS np_open(struct smb_request *smb_req, const char *name,
+		 struct files_struct **pfsp)
 {
+	struct connection_struct *conn = smb_req->conn;
 	NTSTATUS status;
 	struct files_struct *fsp;
 	const char **proxy_list;
