@@ -363,10 +363,18 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	status = get_nt_acl_xattr_internal(handle,
 					NULL,
 					parent_name,
-					DACL_SECURITY_INFORMATION,
+					(OWNER_SECURITY_INFORMATION |
+					 GROUP_SECURITY_INFORMATION |
+					 DACL_SECURITY_INFORMATION),
 					&parent_desc);
         if (NT_STATUS_IS_OK(status)) {
 		/* Create an inherited descriptor from the parent. */
+
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: parent acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, parent_desc);
+		}
+
 		status = se_create_child_secdesc(ctx,
 				&psd,
 				&size,
@@ -377,6 +385,12 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: child acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, psd);
+		}
+
 	} else {
 		DEBUG(10,("inherit_new_acl: directory %s failed "
 			"to get acl %s\n",
@@ -400,6 +414,11 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 		psd = default_file_sd(ctx, &sbuf);
 		if (!psd) {
 			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: default acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, psd);
 		}
 	}
 
