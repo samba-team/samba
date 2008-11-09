@@ -43,7 +43,6 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	const char *fname = NULL;
 	char *pipe_name = NULL;
 	files_struct *fsp;
-	int size=0,fmode=0,mtime=0,rmode=0;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status;
 
@@ -96,17 +95,12 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv9,2);
 	SSVAL(req->outbuf,smb_vwv10,0xc700);
 
-	if (rmode == 2) {
-		DEBUG(4,("Resetting open result to open from create.\n"));
-		rmode = 1;
-	}
-
-	SSVAL(req->outbuf,smb_vwv2, fsp->fnum);
-	SSVAL(req->outbuf,smb_vwv3,fmode);
-	srv_put_dos_date3((char *)req->outbuf,smb_vwv4,mtime);
-	SIVAL(req->outbuf,smb_vwv6,size);
-	SSVAL(req->outbuf,smb_vwv8,rmode);
-	SSVAL(req->outbuf,smb_vwv11,0x0001);
+	SSVAL(req->outbuf, smb_vwv2, fsp->fnum);
+	SSVAL(req->outbuf, smb_vwv3, 0);	/* fmode */
+	srv_put_dos_date3((char *)req->outbuf, smb_vwv4, 0);	/* mtime */
+	SIVAL(req->outbuf, smb_vwv6, 0);	/* size */
+	SSVAL(req->outbuf, smb_vwv8, 0);	/* rmode */
+	SSVAL(req->outbuf, smb_vwv11, 0x0001);
 
 	chain_reply(req);
 	return;
