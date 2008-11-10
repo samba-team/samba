@@ -140,7 +140,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/******************/
 	/* Function: 0x05 */
 	NTSTATUS samr_LookupDomain (
-		[in,ref]  policy_handle *connect_handle,		
+		[in,ref]  policy_handle *connect_handle,
 		[in,ref]  lsa_String *domain_name,
 		[out,unique] dom_sid2 *sid
 		);
@@ -293,7 +293,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x09     */
 	/*
-	  only levels 1, 3, 4, 6, 7, 9, 12 are valid for this 
+	  only levels 1, 3, 4, 6, 7, 9, 12 are valid for this
 	  call in w2k3
 	*/
 	NTSTATUS samr_SetDomainInfo(
@@ -312,7 +312,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[out,ref]     policy_handle *group_handle,
 		[out,ref]     uint32 *rid
 		);
-		
+
 
 	/************************/
 	/* Function    0x0b     */
@@ -725,7 +725,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		samr_AcctFlags acct_flags;
 	} samr_UserInfo16;
-	
+
 	typedef struct {
 		NTTIME acct_expiry;
 	} samr_UserInfo17;
@@ -1007,7 +1007,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	  this seems to be an alphabetic search function. The returned index
 	  is the index for samr_QueryDisplayInfo needed to get names occurring
 	  after the specified name. The supplied name does not need to exist
-	  in the database (for example you can supply just a first letter for 
+	  in the database (for example you can supply just a first letter for
 	  searching starting at that letter)
 
 	  The level corresponds to the samr_QueryDisplayInfo level
@@ -1202,7 +1202,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3a     */
 	/*
-	  seems to be an exact alias for samr_SetUserInfo() 
+	  seems to be an exact alias for samr_SetUserInfo()
 	*/
 	[public] NTSTATUS samr_SetUserInfo2(
 		[in,ref]                   policy_handle *user_handle,
