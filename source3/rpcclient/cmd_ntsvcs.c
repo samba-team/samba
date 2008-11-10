@@ -215,6 +215,51 @@ static WERROR cmd_ntsvcs_get_dev_list_size(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_get_dev_list(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc,
+				      const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	const char *filter = NULL;
+	uint16_t *buffer = NULL;
+	uint32_t length = 0;
+	uint32_t flags = 0;
+
+	if (argc > 3) {
+		printf("usage: %s [length] [filter]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		length = atoi(argv[1]);
+	}
+
+	if (argc >= 3) {
+		filter = argv[2];
+	}
+
+	buffer = talloc(mem_ctx, uint16_t);
+	if (!buffer) {
+		return WERR_NOMEM;
+	}
+
+	status = rpccli_PNP_GetDeviceList(cli, mem_ctx,
+					  filter,
+					  buffer,
+					  &length,
+					  flags,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	printf("devlist needs size: %d\n", length);
+
+	return werr;
+}
+
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
@@ -224,5 +269,6 @@ struct cmd_set ntsvcs_commands[] = {
 	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS HW prof info", "" },
 	{ "ntsvcs_getdevregprop", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_reg_prop, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device registry property", "" },
 	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_list_size, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device list size", "" },
+	{ "ntsvcs_getdevlist", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_list, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device list", "" },
 	{ NULL }
 };
