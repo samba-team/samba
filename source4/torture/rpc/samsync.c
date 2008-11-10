@@ -260,6 +260,15 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 	} \
 } while (0)
 
+#define TEST_BINARY_STRING_EQUAL(s1, s2) do {\
+	if (!((!s1.array || s1.array[0]=='\0') && (!s2.array || s2.array[0]=='\0')) \
+	    && memcmp(s1.array, s2.array, s1.length * 2) != 0) {\
+	      printf("%s: string mismatch: " #s1 ":%s != " #s2 ": %s\n", \
+		     __location__, (const char *)s1.array, (const char *)s2.array);\
+	      ret = false;\
+	} \
+} while (0)
+
 #define TEST_SID_EQUAL(s1, s2) do {\
 	if (!dom_sid_equal(s1, s2)) {\
 	      printf("%s: dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
@@ -535,7 +544,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	TEST_INT_EQUAL(q.out.info->info21.password_expired, user->password_expired);
 
 	TEST_STRING_EQUAL(q.out.info->info21.comment, user->comment);
-	TEST_STRING_EQUAL(q.out.info->info21.parameters, user->parameters);
+	TEST_BINARY_STRING_EQUAL(q.out.info->info21.parameters, user->parameters);
 
 	TEST_INT_EQUAL(q.out.info->info21.country_code, user->country_code);
 	TEST_INT_EQUAL(q.out.info->info21.code_page, user->code_page);
