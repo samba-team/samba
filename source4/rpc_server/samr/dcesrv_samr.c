@@ -37,28 +37,28 @@
 #include "../lib/util/util_ldb.h"
 #include "param/param.h"
 
-/* these query macros make samr_Query[User|Group]Info a bit easier to read */
+/* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
 #define QUERY_STRING(msg, field, attr) \
-	r->out.info->field.string = samdb_result_string(msg, attr, "");
+	info->field.string = samdb_result_string(msg, attr, "");
 #define QUERY_UINT(msg, field, attr) \
-	r->out.info->field = samdb_result_uint(msg, attr, 0);
+	info->field = samdb_result_uint(msg, attr, 0);
 #define QUERY_RID(msg, field, attr) \
-	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
+	info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
 #define QUERY_UINT64(msg, field, attr) \
-	r->out.info->field = samdb_result_uint64(msg, attr, 0);
+	info->field = samdb_result_uint64(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
-							   a_state->domain_state->domain_dn, msg, attr);
+	info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
+							 a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_FPASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_force_password_change(sam_ctx, mem_ctx, \
-							   a_state->domain_state->domain_dn, msg);
+	info->field = samdb_result_force_password_change(sam_ctx, mem_ctx, \
+							 a_state->domain_state->domain_dn, msg);
 #define QUERY_LHOURS(msg, field, attr) \
-	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
+	info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
-	r->out.info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
+	info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
 #define QUERY_PARAMETERS(msg, field, attr) \
-	r->out.info->field = samdb_result_parameters(mem_ctx, msg, attr);
+	info->field = samdb_result_parameters(mem_ctx, msg, attr);
 
 
 /* these are used to make the Set[User|Group]Info code easier to follow */
@@ -2115,6 +2115,7 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
+	union samr_GroupInfo *info;
 
 	r->out.info = NULL;
 
@@ -2139,17 +2140,16 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	msg = res->msgs[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_GroupInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_GroupInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	/* Fill in the level */
 	switch (r->in.level) {
 	case GROUPINFOALL:
 		QUERY_STRING(msg, all.name,        "sAMAccountName");
-		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		QUERY_UINT  (msg, all.num_members,      "numMembers")
 		QUERY_STRING(msg, all.description, "description");
 		break;
@@ -2157,22 +2157,24 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 		QUERY_STRING(msg, name,            "sAMAccountName");
 		break;
 	case GROUPINFOATTRIBUTES:
-		r->out.info->attributes.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->attributes.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		break;
 	case GROUPINFODESCRIPTION:
 		QUERY_STRING(msg, description, "description");
 		break;
 	case GROUPINFOALL2:
 		QUERY_STRING(msg, all2.name,        "sAMAccountName");
-		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		QUERY_UINT  (msg, all2.num_members,      "numMembers")
 		QUERY_STRING(msg, all2.description, "description");
 		break;
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
@@ -2586,6 +2588,7 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
+	union samr_AliasInfo *info;
 
 	r->out.info = NULL;
 
@@ -2602,11 +2605,10 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_AliasInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_AliasInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	switch(r->in.level) {
 	case ALIASINFOALL:
@@ -2621,10 +2623,12 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 		QUERY_STRING(msg, description, "description");
 		break;
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
@@ -3001,6 +3005,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	struct ldb_context *sam_ctx;
 
 	const char * const *attrs = NULL;
+	union samr_UserInfo *info;
 
 	r->out.info = NULL;
 
@@ -3187,11 +3192,10 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_UserInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_UserInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	/* fill in the reply */
 	switch (r->in.level) {
@@ -3325,7 +3329,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
 		QUERY_AFLAGS(msg, info21.acct_flags,           "userAccountControl");
-		r->out.info->info21.fields_present = 0x00FFFFFF;
+		info->info21.fields_present = 0x00FFFFFF;
 		QUERY_LHOURS(msg, info21.logon_hours,          "logonHours");
 		QUERY_UINT  (msg, info21.bad_password_count,   "badPwdCount");
 		QUERY_UINT  (msg, info21.logon_count,          "logonCount");
@@ -3335,10 +3339,12 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		
 
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
