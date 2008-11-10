@@ -686,7 +686,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
 		[in]                      samr_AliasInfoEnum      level,
-		[out,switch_is(level),unique] samr_AliasInfo *info
+		[out,ref,switch_is(level)] samr_AliasInfo **info
 		);
 
 	/************************/

@@ -730,6 +730,7 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	struct samr_OpenAlias r;
 	struct samr_QueryAliasInfo q;
+	union samr_AliasInfo *info;
 	struct policy_handle alias_handle;
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
@@ -750,6 +751,7 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	q.in.alias_handle = &alias_handle;
 	q.in.level = 1;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(alias->sdbuf, samr, &alias_handle);
 
@@ -764,8 +766,8 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->all.name, alias->alias_name);
-	TEST_STRING_EQUAL(q.out.info->all.description, alias->description);
+	TEST_STRING_EQUAL(info->all.name, alias->alias_name);
+	TEST_STRING_EQUAL(info->all.description, alias->description);
 	return ret;
 }
 

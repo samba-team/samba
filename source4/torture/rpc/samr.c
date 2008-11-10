@@ -845,6 +845,7 @@ static bool test_SetAliasInfo(struct dcerpc_pipe *p, struct torture_context *tct
 	NTSTATUS status;
 	struct samr_SetAliasInfo r;
 	struct samr_QueryAliasInfo q;
+	union samr_AliasInfo *info;
 	uint16_t levels[] = {2, 3};
 	int i;
 	bool ret = true;
@@ -875,6 +876,7 @@ static bool test_SetAliasInfo(struct dcerpc_pipe *p, struct torture_context *tct
 
 		q.in.alias_handle = handle;
 		q.in.level = levels[i];
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryAliasInfo(p, tctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2936,6 +2938,7 @@ static bool test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryAliasInfo r;
+	union samr_AliasInfo *info;
 	uint16_t levels[] = {1, 2, 3};
 	int i;
 	bool ret = true;
@@ -2945,6 +2948,7 @@ static bool test_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.alias_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryAliasInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {

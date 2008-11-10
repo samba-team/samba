@@ -2602,7 +2602,7 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 	int ret;
 	union samr_AliasInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
@@ -2639,7 +2639,7 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	r->out.info = info;
+	*r->out.info = info;
 
 	return NT_STATUS_OK;
 }
