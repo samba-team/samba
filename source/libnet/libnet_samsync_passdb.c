@@ -118,12 +118,12 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
-	if (r->parameters.string) {
+	if (r->parameters.array) {
 		DATA_BLOB mung;
 		char *newstr;
 		old_string = pdb_get_munged_dial(account);
-		mung.length = r->parameters.length;
-		mung.data = (uint8 *) r->parameters.string;
+		mung.length = r->parameters.length * 2;
+		mung.data = (uint8_t *) r->parameters.array;
 		newstr = (mung.length == 0) ? NULL :
 			base64_encode_data_blob(talloc_tos(), mung);
 
