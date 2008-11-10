@@ -1158,7 +1158,8 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 # now the rules...
 ######################################################################
 all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @CIFSUPCALL_PROGS@ \
+	@EXTRA_ALL_TARGETS@
 
 basics::
 
