@@ -627,7 +627,16 @@ struct smb_request {
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
+
+	/*
+	 * Chained request handling
+	 */
 	struct files_struct *chain_fsp;
+
+	/*
+	 * Here we collect the outbufs from the chain handlers
+	 */
+	uint8_t *chain_outbuf;
 };
 
 /* Defines for the sent_oplock_break field above. */

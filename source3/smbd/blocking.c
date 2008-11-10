@@ -238,12 +238,6 @@ static void reply_lockingX_success(blocking_lock_record *blr)
 	 */
 
 	chain_reply(blr->req);
-
-	if (!srv_send_smb(smbd_server_fd(), (char *)blr->req->outbuf,
-			IS_CONN_ENCRYPTED(blr->fsp->conn))) {
-		exit_server_cleanly("send_blocking_reply: srv_send_smb failed.");
-	}
-
 	TALLOC_FREE(blr->req->outbuf);
 }
 
