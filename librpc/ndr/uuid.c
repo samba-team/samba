@@ -27,7 +27,7 @@
 /**
   build a GUID from a string
 */
-_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+_PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	uint32_t time_low;
@@ -36,19 +36,23 @@ _PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 	uint32_t node[6];
 	int i;
 
-	if (s == NULL) {
+	if (s->data == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (11 == sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+	if (s->length == 36 && 
+	    11 == sscanf((const char *)s->data, 
+			 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 			 &time_low, &time_mid, &time_hi_and_version, 
 			 &clock_seq[0], &clock_seq[1],
 			 &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 	        status = NT_STATUS_OK;
-	} else if (11 == sscanf(s, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-				&time_low, &time_mid, &time_hi_and_version, 
-				&clock_seq[0], &clock_seq[1],
-				&node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
+	} else if (s->length == 38
+		   && 11 == sscanf((const char *)s->data, 
+				   "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+				   &time_low, &time_mid, &time_hi_and_version, 
+				   &clock_seq[0], &clock_seq[1],
+				   &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 		status = NT_STATUS_OK;
 	}
 
@@ -65,6 +69,16 @@ _PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 		guid->node[i] = node[i];
 	}
 
+	return NT_STATUS_OK;
+}
+
+/**
+  build a GUID from a string
+*/
+_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+{
+	DATA_BLOB blob = data_blob_string_const(s);
+	return GUID_from_data_blob(&blob, guid);
 	return NT_STATUS_OK;
 }
 
