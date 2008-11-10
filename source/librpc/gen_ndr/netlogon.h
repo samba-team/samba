@@ -283,7 +283,7 @@ struct netr_DELTA_USER {
 	uint8_t lm_password_present;
 	uint8_t password_expired;
 	struct lsa_String comment;
-	struct lsa_String parameters;
+	struct lsa_BinaryString parameters;
 	uint16_t country_code;
 	uint16_t code_page;
 	struct netr_USER_PRIVATE_INFO user_private_info;

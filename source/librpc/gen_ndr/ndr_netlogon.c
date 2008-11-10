@@ -2269,7 +2269,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->lm_password_present));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->password_expired));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->comment));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->parameters));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_SCALARS, &r->parameters));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->country_code));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->code_page));
 		NDR_CHECK(ndr_push_netr_USER_PRIVATE_INFO(ndr, NDR_SCALARS, &r->user_private_info));
@@ -2296,7 +2296,7 @@ static enum ndr_err_code ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
 		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->parameters));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
 		NDR_CHECK(ndr_push_netr_USER_PRIVATE_INFO(ndr, NDR_BUFFERS, &r->user_private_info));
 		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_BUFFERS, &r->sdbuf));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->profile_path));
@@ -2334,7 +2334,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_USER(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->lm_password_present));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->password_expired));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->comment));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->parameters));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_SCALARS, &r->parameters));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->country_code));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->code_page));
 		NDR_CHECK(ndr_pull_netr_USER_PRIVATE_INFO(ndr, NDR_SCALARS, &r->user_private_info));
@@ -2361,7 +2361,7 @@ static enum ndr_err_code ndr_pull_netr_DELTA_USER(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
 		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->parameters));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
 		NDR_CHECK(ndr_pull_netr_USER_PRIVATE_INFO(ndr, NDR_BUFFERS, &r->user_private_info));
 		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_BUFFERS, &r->sdbuf));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->profile_path));
@@ -2399,7 +2399,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_USER(struct ndr_print *ndr, const char *name,
 	ndr_print_uint8(ndr, "lm_password_present", r->lm_password_present);
 	ndr_print_uint8(ndr, "password_expired", r->password_expired);
 	ndr_print_lsa_String(ndr, "comment", &r->comment);
-	ndr_print_lsa_String(ndr, "parameters", &r->parameters);
+	ndr_print_lsa_BinaryString(ndr, "parameters", &r->parameters);
 	ndr_print_uint16(ndr, "country_code", r->country_code);
 	ndr_print_uint16(ndr, "code_page", r->code_page);
 	ndr_print_netr_USER_PRIVATE_INFO(ndr, "user_private_info", &r->user_private_info);
