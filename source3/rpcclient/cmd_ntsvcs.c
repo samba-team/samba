@@ -75,44 +75,6 @@ static WERROR cmd_ntsvcs_validate_dev_inst(struct rpc_pipe_client *cli,
 	return werr;
 }
 
-static WERROR cmd_ntsvcs_get_device_list_size(struct rpc_pipe_client *cli,
-					      TALLOC_CTX *mem_ctx,
-					      int argc,
-					      const char **argv)
-{
-	NTSTATUS status;
-	WERROR werr;
-	const char *devicename = NULL;
-	uint32_t flags = 0;
-	uint32_t size = 0;
-
-	if (argc < 2 || argc > 4) {
-		printf("usage: %s [devicename] <flags>\n", argv[0]);
-		return WERR_OK;
-	}
-
-	devicename = argv[1];
-
-	if (argc >= 3) {
-		flags = atoi(argv[2]);
-	}
-
-	status = rpccli_PNP_GetDeviceListSize(cli, mem_ctx,
-					      devicename,
-					      &size,
-					      flags,
-					      &werr);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ntstatus_to_werror(status);
-	}
-
-	if (W_ERROR_IS_OK(werr)) {
-		printf("size: %d\n", size);
-	}
-
-	return werr;
-}
-
 static WERROR cmd_ntsvcs_hw_prof_flags(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       int argc,
@@ -215,15 +177,52 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_get_dev_list_size(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t size = 0;
+	uint32_t flags = 0;
+	const char *filter = NULL;
+
+	if (argc > 3) {
+		printf("usage: %s [filter] [flags]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		filter = argv[1];
+	}
+
+	if (argc >= 3) {
+		flags = atoi(argv[2]);
+	}
+
+	status = rpccli_PNP_GetDeviceListSize(cli, mem_ctx,
+					      filter,
+					      &size,
+					      flags,
+					      &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	printf("size: %d\n", size);
+
+	return werr;
+}
 
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
 	{ "ntsvcs_getversion", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_version, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS version", "" },
 	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device instance", "" },
-	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS get device list", "" },
 	{ "ntsvcs_hwprofflags", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_hw_prof_flags, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS HW prof flags", "" },
 	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS HW prof info", "" },
 	{ "ntsvcs_getdevregprop", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_reg_prop, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device registry property", "" },
+	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_list_size, &ndr_table_ntsvcs.syntax_id, NULL, "Query NTSVCS device list size", "" },
 	{ NULL }
 };
