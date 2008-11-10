@@ -441,6 +441,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 
 	struct samr_OpenUser r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 
 	struct samr_GetGroupsForUser getgroups;
@@ -464,6 +465,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 
 	q.in.user_handle = &user_handle;
 	q.in.level = 21;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(user->sdbuf, samr, &user_handle);
 
@@ -499,67 +501,67 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->info21.account_name, user->account_name);
-	TEST_STRING_EQUAL(q.out.info->info21.full_name, user->full_name);
-	TEST_INT_EQUAL(q.out.info->info21.rid, user->rid);
-	TEST_INT_EQUAL(q.out.info->info21.primary_gid, user->primary_gid);
-	TEST_STRING_EQUAL(q.out.info->info21.home_directory, user->home_directory);
-	TEST_STRING_EQUAL(q.out.info->info21.home_drive, user->home_drive);
-	TEST_STRING_EQUAL(q.out.info->info21.logon_script, user->logon_script);
-	TEST_STRING_EQUAL(q.out.info->info21.description, user->description);
-	TEST_STRING_EQUAL(q.out.info->info21.workstations, user->workstations);
+	TEST_STRING_EQUAL(info->info21.account_name, user->account_name);
+	TEST_STRING_EQUAL(info->info21.full_name, user->full_name);
+	TEST_INT_EQUAL(info->info21.rid, user->rid);
+	TEST_INT_EQUAL(info->info21.primary_gid, user->primary_gid);
+	TEST_STRING_EQUAL(info->info21.home_directory, user->home_directory);
+	TEST_STRING_EQUAL(info->info21.home_drive, user->home_drive);
+	TEST_STRING_EQUAL(info->info21.logon_script, user->logon_script);
+	TEST_STRING_EQUAL(info->info21.description, user->description);
+	TEST_STRING_EQUAL(info->info21.workstations, user->workstations);
 
-	TEST_TIME_EQUAL(q.out.info->info21.last_logon, user->last_logon);
-	TEST_TIME_EQUAL(q.out.info->info21.last_logoff, user->last_logoff);
+	TEST_TIME_EQUAL(info->info21.last_logon, user->last_logon);
+	TEST_TIME_EQUAL(info->info21.last_logoff, user->last_logoff);
 
 
-	TEST_INT_EQUAL(q.out.info->info21.logon_hours.units_per_week, 
+	TEST_INT_EQUAL(info->info21.logon_hours.units_per_week,
 		       user->logon_hours.units_per_week);
 	if (ret) {
-		if (memcmp(q.out.info->info21.logon_hours.bits, user->logon_hours.bits, 
-			   q.out.info->info21.logon_hours.units_per_week/8) != 0) {
+		if (memcmp(info->info21.logon_hours.bits, user->logon_hours.bits,
+			   info->info21.logon_hours.units_per_week/8) != 0) {
 			printf("Logon hours mismatch\n");
 			ret = false;
 		}
 	}
 
-	TEST_INT_EQUAL(q.out.info->info21.bad_password_count,
+	TEST_INT_EQUAL(info->info21.bad_password_count,
 		       user->bad_password_count);
-	TEST_INT_EQUAL(q.out.info->info21.logon_count,
+	TEST_INT_EQUAL(info->info21.logon_count,
 		       user->logon_count);
 
-	TEST_TIME_EQUAL(q.out.info->info21.last_password_change,
+	TEST_TIME_EQUAL(info->info21.last_password_change,
 		       user->last_password_change);
-	TEST_TIME_EQUAL(q.out.info->info21.acct_expiry,
+	TEST_TIME_EQUAL(info->info21.acct_expiry,
 		       user->acct_expiry);
 
-	TEST_INT_EQUAL((q.out.info->info21.acct_flags & ~ACB_PW_EXPIRED), user->acct_flags);
+	TEST_INT_EQUAL((info->info21.acct_flags & ~ACB_PW_EXPIRED), user->acct_flags);
 	if (user->acct_flags & ACB_PWNOEXP) {
-		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+		if (info->info21.acct_flags & ACB_PW_EXPIRED) {
 			printf("ACB flags mismatch: both expired and no expiry!\n");
 			ret = false;
 		}
-		if (q.out.info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
+		if (info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
 			printf("ACB flags mismatch: no password expiry, but force password change 0x%016llx (%lld) != 0x%016llx (%lld)\n",
-			       (unsigned long long)q.out.info->info21.force_password_change, 
-			       (unsigned long long)q.out.info->info21.force_password_change,
+			       (unsigned long long)info->info21.force_password_change,
+			       (unsigned long long)info->info21.force_password_change,
 			       (unsigned long long)0x7FFFFFFFFFFFFFFFULL, (unsigned long long)0x7FFFFFFFFFFFFFFFULL
 				);
 			ret = false;
 		}
 	}
 
-	TEST_INT_EQUAL(q.out.info->info21.nt_password_set, user->nt_password_present);
-	TEST_INT_EQUAL(q.out.info->info21.lm_password_set, user->lm_password_present);
-	TEST_INT_EQUAL(q.out.info->info21.password_expired, user->password_expired);
+	TEST_INT_EQUAL(info->info21.nt_password_set, user->nt_password_present);
+	TEST_INT_EQUAL(info->info21.lm_password_set, user->lm_password_present);
+	TEST_INT_EQUAL(info->info21.password_expired, user->password_expired);
 
-	TEST_STRING_EQUAL(q.out.info->info21.comment, user->comment);
-	TEST_BINARY_STRING_EQUAL(q.out.info->info21.parameters, user->parameters);
+	TEST_STRING_EQUAL(info->info21.comment, user->comment);
+	TEST_BINARY_STRING_EQUAL(info->info21.parameters, user->parameters);
 
-	TEST_INT_EQUAL(q.out.info->info21.country_code, user->country_code);
-	TEST_INT_EQUAL(q.out.info->info21.code_page, user->code_page);
+	TEST_INT_EQUAL(info->info21.country_code, user->country_code);
+	TEST_INT_EQUAL(info->info21.code_page, user->code_page);
 
-	TEST_STRING_EQUAL(q.out.info->info21.profile_path, user->profile_path);
+	TEST_STRING_EQUAL(info->info21.profile_path, user->profile_path);
 
 	if (user->lm_password_present) {
 		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
@@ -638,7 +640,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED)) {
-		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+		if (info->info21.acct_flags & ACB_PW_EXPIRED) {
 			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -673,7 +675,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		TEST_TIME_EQUAL(user->last_logon, info3->base.last_logon);
 		TEST_TIME_EQUAL(user->acct_expiry, info3->base.acct_expiry);
 		TEST_TIME_EQUAL(user->last_password_change, info3->base.last_password_change);
-		TEST_TIME_EQUAL(q.out.info->info21.force_password_change, info3->base.force_password_change);
+		TEST_TIME_EQUAL(info->info21.force_password_change, info3->base.force_password_change);
 
 		/* Does the concept of a logoff time ever really
 		 * exist? (not in any sensible way, according to the

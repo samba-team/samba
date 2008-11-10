@@ -449,6 +449,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_CreateUser2 cu;
 	struct policy_handle *u_handle = NULL;
 	struct samr_QueryUserInfo qui;
+	union samr_UserInfo *uinfo;
 	struct samr_UserInfo21 u_info21;
 	union libnet_SetPassword r2;
 	struct samr_GetUserPwInfo pwp;
@@ -700,6 +701,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	/* prepare samr_QueryUserInfo (get flags) */
 	qui.in.user_handle = u_handle;
 	qui.in.level = 16;
+	qui.out.info = &uinfo;
 	
 	status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -711,7 +713,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 	
-	if (!qui.out.info) {
+	if (!uinfo) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		r->out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -721,7 +723,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	old_acct_flags = (qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST));
+	old_acct_flags = (uinfo->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST));
 	/* Possibly bail if the account is of the wrong type */
 	if (old_acct_flags
 	    != r->in.acct_type) {
@@ -777,7 +779,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			return NT_STATUS_USER_EXISTS;
 		}
 	} else {
-		acct_flags = qui.out.info->info16.acct_flags;
+		acct_flags = uinfo->info16.acct_flags;
 	}
 	
 	acct_flags = (acct_flags & ~(ACB_DISABLED|ACB_PWNOTREQ));

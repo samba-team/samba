@@ -177,6 +177,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	struct samr_QueryUserInfo q;
 	struct samr_QueryUserInfo q0;
 	union samr_UserInfo u;
+	union samr_UserInfo *info;
 	bool ret = true;
 	const char *test_account_name;
 
@@ -193,7 +194,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	s2.in.info = &u;
 
 	q.in.user_handle = handle;
-	q.out.info = &u;
+	q.out.info = &info;
 	q0 = q;
 
 #define TESTCALL(call, r) \
@@ -235,7 +236,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		s2.in.level = lvl1; \
-		u = *q.out.info; \
+		u = *info; \
 		if (lvl1 == 21) { \
 			ZERO_STRUCT(u.info21); \
 			u.info21.fields_present = fpval; \
@@ -245,11 +246,11 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(SetUserInfo2, s2) \
 		init_lsa_String(&u.info ## lvl1.field1, ""); \
 		TESTCALL(QueryUserInfo, q); \
-		u = *q.out.info; \
+		u = *info; \
 		STRING_EQUAL(u.info ## lvl1.field1.string, value, field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
-		u = *q.out.info; \
+		u = *info; \
 		STRING_EQUAL(u.info ## lvl2.field2.string, value, field2); \
 	} while (0)
 
@@ -259,7 +260,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		s2.in.level = lvl1; \
-		u = *q.out.info; \
+		u = *info; \
 		if (lvl1 == 21) { \
 			ZERO_STRUCT(u.info21); \
 			u.info21.fields_present = fpval; \
@@ -269,11 +270,11 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(SetUserInfo2, s2) \
 		init_lsa_BinaryString(&u.info ## lvl1.field1, "", 1); \
 		TESTCALL(QueryUserInfo, q); \
-		u = *q.out.info; \
+		u = *info; \
 		MEM_EQUAL(u.info ## lvl1.field1.array, value, strlen(value), field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
-		u = *q.out.info; \
+		u = *info; \
 		MEM_EQUAL(u.info ## lvl2.field2.array, value, strlen(value), field2); \
 	} while (0)
 
@@ -283,7 +284,7 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(QueryUserInfo, q) \
 		s.in.level = lvl1; \
 		s2.in.level = lvl1; \
-		u = *q.out.info; \
+		u = *info; \
 		if (lvl1 == 21) { \
 			uint8_t *bits = u.info21.logon_hours.bits; \
 			ZERO_STRUCT(u.info21); \
@@ -298,11 +299,11 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(SetUserInfo2, s2) \
 		u.info ## lvl1.field1 = 0; \
 		TESTCALL(QueryUserInfo, q); \
-		u = *q.out.info; \
+		u = *info; \
 		INT_EQUAL(u.info ## lvl1.field1, exp_value, field1); \
 		q.in.level = lvl2; \
 		TESTCALL(QueryUserInfo, q) \
-		u = *q.out.info; \
+		u = *info; \
 		INT_EQUAL(u.info ## lvl2.field2, exp_value, field1); \
 	} while (0)
 
@@ -2142,6 +2143,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 {
 	char *password = NULL;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	NTSTATUS status;
 
 	bool ret = true;
@@ -2257,6 +2259,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 
 		q.in.user_handle = user_handle;
 		q.in.level = 5;
+		q.out.info = &info;
 		
 		status = dcerpc_samr_QueryUserInfo(p, tctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2265,15 +2268,15 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			ret = false;
 		} else {
 			uint32_t expected_flags = (base_acct_flags | ACB_PWNOTREQ | ACB_DISABLED);
-			if ((q.out.info->info5.acct_flags) != expected_flags) {
+			if ((info->info5.acct_flags) != expected_flags) {
 				printf("QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
-				       q.out.info->info5.acct_flags, 
+				       info->info5.acct_flags,
 				       expected_flags);
 				ret = false;
 			}
-			if (q.out.info->info5.rid != rid) {
+			if (info->info5.rid != rid) {
 				printf("QuerUserInfo level 5 failed, it returned %u when we expected rid of %u\n",
-				       q.out.info->info5.rid, rid);
+				       info->info5.rid, rid);
 
 			}
 		}
@@ -2623,6 +2626,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		NTSTATUS status;
 		struct samr_OpenUser r;
 		struct samr_QueryUserInfo q;
+		union samr_UserInfo *info;
 		struct samr_LookupNames n;
 		struct policy_handle user_handle;
 		struct samr_Ids rids, types;
@@ -2653,6 +2657,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		q.in.user_handle = &user_handle;
 		q.in.level = 5;
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2663,7 +2668,7 @@ static bool test_ChangePassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		printf("calling test_ChangePasswordUser3 with too early password change\n");
 
 		if (!test_ChangePasswordUser3(p, mem_ctx, acct_name, 0, password, NULL, 
-					      q.out.info->info5.last_password_change, true)) {
+					      info->info5.last_password_change, true)) {
 			ret = false;
 		}
 	}
@@ -2693,6 +2698,7 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 	NTSTATUS status;
 	struct samr_CreateUser r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct samr_DeleteUser d;
 	uint32_t rid;
 
@@ -2740,6 +2746,7 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 	} else {
 		q.in.user_handle = &user_handle;
 		q.in.level = 16;
+		q.out.info = &info;
 		
 		status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2747,9 +2754,9 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 			       q.in.level, nt_errstr(status));
 			ret = false;
 		} else {
-			if ((q.out.info->info16.acct_flags & acct_flags) != acct_flags) {
+			if ((info->info16.acct_flags & acct_flags) != acct_flags) {
 				printf("QuerUserInfo level 16 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
-				       q.out.info->info16.acct_flags, 
+				       info->info16.acct_flags,
 				       acct_flags);
 				ret = false;
 			}
@@ -2791,6 +2798,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 	NTSTATUS status;
 	struct samr_CreateUser2 r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct samr_DeleteUser d;
 	struct policy_handle user_handle;
 	uint32_t rid;
@@ -2869,6 +2877,7 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 		if (NT_STATUS_IS_OK(status)) {
 			q.in.user_handle = &user_handle;
 			q.in.level = 5;
+			q.out.info = &info;
 			
 			status = dcerpc_samr_QueryUserInfo(p, user_ctx, &q);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -2880,31 +2889,31 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 				if (acct_flags == ACB_NORMAL) {
 					expected_flags |= ACB_PW_EXPIRED;
 				}
-				if ((q.out.info->info5.acct_flags) != expected_flags) {
+				if ((info->info5.acct_flags) != expected_flags) {
 					printf("QuerUserInfo level 5 failed, it returned 0x%08x when we expected flags of 0x%08x\n",
-					       q.out.info->info5.acct_flags, 
+					       info->info5.acct_flags,
 					       expected_flags);
 					ret = false;
 				} 
 				switch (acct_flags) {
 				case ACB_SVRTRUST:
-					if (q.out.info->info5.primary_gid != DOMAIN_RID_DCS) {
+					if (info->info5.primary_gid != DOMAIN_RID_DCS) {
 						printf("QuerUserInfo level 5: DC should have had Primary Group %d, got %d\n", 
-						       DOMAIN_RID_DCS, q.out.info->info5.primary_gid);
+						       DOMAIN_RID_DCS, info->info5.primary_gid);
 						ret = false;
 					}
 					break;
 				case ACB_WSTRUST:
-					if (q.out.info->info5.primary_gid != DOMAIN_RID_DOMAIN_MEMBERS) {
+					if (info->info5.primary_gid != DOMAIN_RID_DOMAIN_MEMBERS) {
 						printf("QuerUserInfo level 5: Domain Member should have had Primary Group %d, got %d\n", 
-						       DOMAIN_RID_DOMAIN_MEMBERS, q.out.info->info5.primary_gid);
+						       DOMAIN_RID_DOMAIN_MEMBERS, info->info5.primary_gid);
 						ret = false;
 					}
 					break;
 				case ACB_NORMAL:
-					if (q.out.info->info5.primary_gid != DOMAIN_RID_USERS) {
+					if (info->info5.primary_gid != DOMAIN_RID_USERS) {
 						printf("QuerUserInfo level 5: Users should have had Primary Group %d, got %d\n", 
-						       DOMAIN_RID_USERS, q.out.info->info5.primary_gid);
+						       DOMAIN_RID_USERS, info->info5.primary_gid);
 						ret = false;
 					}
 					break;
@@ -3084,6 +3093,7 @@ static bool test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo r;
+	union samr_UserInfo *info;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 			   11, 12, 13, 14, 16, 17, 20, 21};
 	int i;
@@ -3094,6 +3104,7 @@ static bool test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.user_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3111,6 +3122,7 @@ static bool test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryUserInfo2 r;
+	union samr_UserInfo *info;
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
 			   11, 12, 13, 14, 16, 17, 20, 21};
 	int i;
@@ -3121,6 +3133,7 @@ static bool test_QueryUserInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.user_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo2(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3268,6 +3281,7 @@ static bool check_mask(struct dcerpc_pipe *p, struct torture_context *tctx,
 	NTSTATUS status;
 	struct samr_OpenUser r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 	bool ret = true;
 
@@ -3286,6 +3300,7 @@ static bool check_mask(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 	q.in.user_handle = &user_handle;
 	q.in.level = 16;
+	q.out.info = &info;
 	
 	status = dcerpc_samr_QueryUserInfo(p, tctx, &q);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3293,9 +3308,9 @@ static bool check_mask(struct dcerpc_pipe *p, struct torture_context *tctx,
 		       nt_errstr(status));
 		ret = false;
 	} else {
-		if ((acct_flag_mask & q.out.info->info16.acct_flags) == 0) {
+		if ((acct_flag_mask & info->info16.acct_flags) == 0) {
 			printf("Server failed to filter for 0x%x, allowed 0x%x (%d) on EnumDomainUsers\n",
-			       acct_flag_mask, q.out.info->info16.acct_flags, rid);
+			       acct_flag_mask, info->info16.acct_flags, rid);
 			ret = false;
 		}
 	}
@@ -3625,6 +3640,7 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 {
 	struct samr_OpenUser r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 	int i, ret = true;
 	NTSTATUS status;
@@ -3666,6 +3682,7 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 		
 		q.in.user_handle = &user_handle;
 		q.in.level = 21;
+		q.out.info = &info;
 		status = dcerpc_samr_QueryUserInfo(p, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("QueryUserInfo(%u) failed - %s\n", r.in.rid, nt_errstr(status));
@@ -3674,41 +3691,41 @@ static bool test_each_DisplayInfo_user(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 		
 		switch (querydisplayinfo->in.level) {
 		case 1:
-			if (seen_testuser && strcmp(q.out.info->info21.account_name.string, TEST_ACCOUNT_NAME) == 0) {
+			if (seen_testuser && strcmp(info->info21.account_name.string, TEST_ACCOUNT_NAME) == 0) {
 				*seen_testuser = true;
 			}
 			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].full_name,
-					   q.out.info->info21.full_name, q.out.info->info21.account_name);
+					   info->info21.full_name, info->info21.account_name);
 			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].account_name,
-					   q.out.info->info21.account_name, q.out.info->info21.account_name);
+					   info->info21.account_name, info->info21.account_name);
 			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].description,
-					   q.out.info->info21.description, q.out.info->info21.account_name);
+					   info->info21.description, info->info21.account_name);
 			INT_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].rid,
-					q.out.info->info21.rid, q.out.info->info21.account_name);
+					info->info21.rid, info->info21.account_name);
 			INT_EQUAL_QUERY(querydisplayinfo->out.info->info1.entries[i].acct_flags,
-					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
+					info->info21.acct_flags, info->info21.account_name);
 			
 			break;
 		case 2:
 			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].account_name,
-					   q.out.info->info21.account_name, q.out.info->info21.account_name);
+					   info->info21.account_name, info->info21.account_name);
 			STRING_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].description,
-					   q.out.info->info21.description, q.out.info->info21.account_name);
+					   info->info21.description, info->info21.account_name);
 			INT_EQUAL_QUERY(querydisplayinfo->out.info->info2.entries[i].rid,
-					q.out.info->info21.rid, q.out.info->info21.account_name);
+					info->info21.rid, info->info21.account_name);
 			INT_EQUAL_QUERY((querydisplayinfo->out.info->info2.entries[i].acct_flags & ~ACB_NORMAL),
-					q.out.info->info21.acct_flags, q.out.info->info21.account_name);
+					info->info21.acct_flags, info->info21.account_name);
 			
 			if (!(querydisplayinfo->out.info->info2.entries[i].acct_flags & ACB_NORMAL)) {
 				printf("Missing ACB_NORMAL in querydisplayinfo->out.info.info2.entries[i].acct_flags on %s\n", 
-				       q.out.info->info21.account_name.string);
+				       info->info21.account_name.string);
 			}
 
-			if (!(q.out.info->info21.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST))) {
+			if (!(info->info21.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST))) {
 				printf("Found non-trust account %s in trust account listing: 0x%x 0x%x\n",
-				       q.out.info->info21.account_name.string,
+				       info->info21.account_name.string,
 				       querydisplayinfo->out.info->info2.entries[i].acct_flags,
-				       q.out.info->info21.acct_flags);
+				       info->info21.acct_flags);
 				return false;
 			}
 			

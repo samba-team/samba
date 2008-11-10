@@ -151,6 +151,8 @@ static void continue_userinfo_openuser(struct rpc_request *req)
 	/* prepare parameters for QueryUserInfo call */
 	s->queryuserinfo.in.user_handle = &s->user_handle;
 	s->queryuserinfo.in.level       = s->level;
+	s->queryuserinfo.out.info       = talloc(s, union samr_UserInfo *);
+	if (composite_nomem(s->queryuserinfo.out.info, c)) return;
 	
 	/* queue rpc call, set event handling and new state */
 	queryuser_req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuserinfo);
@@ -184,7 +186,7 @@ static void continue_userinfo_getuser(struct rpc_request *req)
 		return;
 	}
 
-	s->info = talloc_steal(s, s->queryuserinfo.out.info);
+	s->info = talloc_steal(s, *(s->queryuserinfo.out.info));
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {

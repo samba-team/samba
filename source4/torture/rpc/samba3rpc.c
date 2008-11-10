@@ -564,6 +564,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		struct samr_SetUserInfo sui;
 		struct samr_QueryUserInfo qui;
 		union samr_UserInfo u_info;
+		union samr_UserInfo *info;
 		DATA_BLOB session_key;
 
 
@@ -606,6 +607,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 
 		qui.in.user_handle = wks_handle;
 		qui.in.level = 21;
+		qui.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -613,14 +615,14 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 			goto done;
 		}
 
-		qui.out.info->info21.allow_password_change = 0;
-		qui.out.info->info21.force_password_change = 0;
-		qui.out.info->info21.account_name.string = NULL;
-		qui.out.info->info21.rid = 0;
-		qui.out.info->info21.acct_expiry = 0;
-		qui.out.info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
+		info->info21.allow_password_change = 0;
+		info->info21.force_password_change = 0;
+		info->info21.account_name.string = NULL;
+		info->info21.rid = 0;
+		info->info21.acct_expiry = 0;
+		info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
 
-		u_info.info21 = qui.out.info->info21;
+		u_info.info21 = info->info21;
 		sui.in.user_handle = wks_handle;
 		sui.in.info = &u_info;
 		sui.in.level = 21;
@@ -730,9 +732,11 @@ static bool join3(struct smbcli_state *cli,
 
 	{
 		struct samr_QueryUserInfo q;
+		union samr_UserInfo *info;
 
 		q.in.user_handle = wks_handle;
 		q.in.level = 21;
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -741,7 +745,7 @@ static bool join3(struct smbcli_state *cli,
 			goto done;
 		}
 
-		last_password_change = q.out.info->info21.last_password_change;
+		last_password_change = info->info21.last_password_change;
 	}
 
 	cli_credentials_set_domain(wks_creds, dom_name, CRED_SPECIFIED);
@@ -839,9 +843,11 @@ static bool join3(struct smbcli_state *cli,
 
 	{
 		struct samr_QueryUserInfo q;
+		union samr_UserInfo *info;
 
 		q.in.user_handle = wks_handle;
 		q.in.level = 21;
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -852,7 +858,7 @@ static bool join3(struct smbcli_state *cli,
 
 		if (use_level25) {
 			if (last_password_change
-			    == q.out.info->info21.last_password_change) {
+			    == info->info21.last_password_change) {
 				d_printf("(%s) last_password_change unchanged "
 					 "during join, level25 must change "
 					 "it\n", __location__);
@@ -861,7 +867,7 @@ static bool join3(struct smbcli_state *cli,
 		}
 		else {
 			if (last_password_change
-			    != q.out.info->info21.last_password_change) {
+			    != info->info21.last_password_change) {
 				d_printf("(%s) last_password_change changed "
 					 "during join, level24 doesn't "
 					 "change it\n", __location__);

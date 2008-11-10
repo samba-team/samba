@@ -3019,7 +3019,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	const char * const *attrs = NULL;
 	union samr_UserInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
@@ -3355,7 +3355,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	r->out.info = info;
+	*r->out.info = info;
 
 	return NT_STATUS_OK;
 }
@@ -4057,13 +4057,11 @@ static NTSTATUS dcesrv_samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, T
 	struct samr_QueryUserInfo r1;
 	NTSTATUS status;
 
-	ZERO_STRUCT(r1.out);
 	r1.in.user_handle = r->in.user_handle;
 	r1.in.level  = r->in.level;
+	r1.out.info  = r->out.info;
 	
 	status = dcesrv_samr_QueryUserInfo(dce_call, mem_ctx, &r1);
-	
-	r->out.info = r1.out.info;
 
 	return status;
 }

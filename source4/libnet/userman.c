@@ -683,6 +683,9 @@ static NTSTATUS usermod_change(struct composite_context *c,
 	if (!do_set) {
 		s->queryuser.in.user_handle = &s->user_handle;
 		s->queryuser.in.level       = level;
+		s->queryuser.out.info       = talloc(s, union samr_UserInfo *);
+		if (composite_nomem(s->queryuser.out.info, c)) return;
+
 
 		/* send query user info request to retrieve complete data of
 		   a particular info level */
@@ -755,7 +758,7 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 
 	/* get returned user data and make a change (potentially one
 	   of many) */
-	s->info = *s->queryuser.out.info;
+	s->info = *(*s->queryuser.out.info);
 
 	usermod_setfields(s, &level, i, true);
 
