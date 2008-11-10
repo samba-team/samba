@@ -59,6 +59,13 @@ static void init_lsa_String(struct lsa_String *string, const char *s)
 	string->string = s;
 }
 
+static void init_lsa_BinaryString(struct lsa_BinaryString *string, const char *s, uint32_t length)
+{
+	string->length = length;
+	string->size = length;
+	string->array = (uint16_t *)discard_const(s);
+}
+
 bool test_samr_handle_Close(struct dcerpc_pipe *p, struct torture_context *tctx,
 				   struct policy_handle *handle)
 {
@@ -204,6 +211,14 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 			break; \
 		}
 
+#define MEM_EQUAL(s1, s2, length, field) \
+		if ((s1 && !s2) || (s2 && !s1) || memcmp(s1, s2, length)) { \
+			torture_comment(tctx, "Failed to set %s to '%s' (%s)\n", \
+			       #field, (const char *)s2, __location__); \
+			ret = false; \
+			break; \
+		}
+
 #define INT_EQUAL(i1, i2, field) \
 		if (i1 != i2) { \
 			torture_comment(tctx, "Failed to set %s to 0x%llx - got 0x%llx (%s)\n", \
@@ -234,6 +249,30 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 		TESTCALL(QueryUserInfo, q) \
 		u = *q.out.info; \
 		STRING_EQUAL(u.info ## lvl2.field2.string, value, field2); \
+	} while (0)
+
+#define TEST_USERINFO_BINARYSTRING(lvl1, field1, lvl2, field2, value, fpval) do { \
+		torture_comment(tctx, "field test %d/%s vs %d/%s\n", lvl1, #field1, lvl2, #field2); \
+		q.in.level = lvl1; \
+		TESTCALL(QueryUserInfo, q) \
+		s.in.level = lvl1; \
+		s2.in.level = lvl1; \
+		u = *q.out.info; \
+		if (lvl1 == 21) { \
+			ZERO_STRUCT(u.info21); \
+			u.info21.fields_present = fpval; \
+		} \
+		init_lsa_BinaryString(&u.info ## lvl1.field1, value, strlen(value)); \
+		TESTCALL(SetUserInfo, s) \
+		TESTCALL(SetUserInfo2, s2) \
+		init_lsa_BinaryString(&u.info ## lvl1.field1, "", 1); \
+		TESTCALL(QueryUserInfo, q); \
+		u = *q.out.info; \
+		MEM_EQUAL(u.info ## lvl1.field1.array, value, strlen(value), field1); \
+		q.in.level = lvl2; \
+		TESTCALL(QueryUserInfo, q) \
+		u = *q.out.info; \
+		MEM_EQUAL(u.info ## lvl2.field2.array, value, strlen(value), field2); \
 	} while (0)
 
 #define TEST_USERINFO_INT_EXP(lvl1, field1, lvl2, field2, value, exp_value, fpval) do { \
@@ -359,10 +398,10 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 	TEST_USERINFO_STRING(21, workstations, 14, workstations, "21workstation14", 
 			   SAMR_FIELD_WORKSTATIONS);
 
-	TEST_USERINFO_STRING(20, parameters, 21, parameters, "xx20-21 parameters", 0);
-	TEST_USERINFO_STRING(21, parameters, 21, parameters, "xx21-21 parameters", 
+	TEST_USERINFO_BINARYSTRING(20, parameters, 21, parameters, "xx20-21 parameters", 0);
+	TEST_USERINFO_BINARYSTRING(21, parameters, 21, parameters, "xx21-21 parameters",
 			   SAMR_FIELD_PARAMETERS);
-	TEST_USERINFO_STRING(21, parameters, 20, parameters, "xx21-20 parameters", 
+	TEST_USERINFO_BINARYSTRING(21, parameters, 20, parameters, "xx21-20 parameters",
 			   SAMR_FIELD_PARAMETERS);
 
 	TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
