@@ -781,6 +781,7 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	struct samr_OpenGroup r;
 	struct samr_QueryGroupInfo q;
+	union samr_GroupInfo *info;
 	struct policy_handle group_handle;
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
@@ -801,6 +802,7 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	q.in.group_handle = &group_handle;
 	q.in.level = 1;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(group->sdbuf, samr, &group_handle);
 
@@ -815,9 +817,9 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->all.name, group->group_name);
-	TEST_INT_EQUAL(q.out.info->all.attributes, group->attributes);
-	TEST_STRING_EQUAL(q.out.info->all.description, group->description);
+	TEST_STRING_EQUAL(info->all.name, group->group_name);
+	TEST_INT_EQUAL(info->all.attributes, group->attributes);
+	TEST_STRING_EQUAL(info->all.description, group->description);
 	return ret;
 }
 

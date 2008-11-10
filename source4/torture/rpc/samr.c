@@ -2966,6 +2966,7 @@ static bool test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
+	union samr_GroupInfo *info;
 	uint16_t levels[] = {1, 2, 3, 4, 5};
 	int i;
 	bool ret = true;
@@ -2975,6 +2976,7 @@ static bool test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.group_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryGroupInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3015,6 +3017,7 @@ static bool test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
+	union samr_GroupInfo *info;
 	struct samr_SetGroupInfo s;
 	uint16_t levels[] = {1, 2, 3, 4};
 	uint16_t set_ok[] = {0, 1, 1, 1};
@@ -3026,6 +3029,7 @@ static bool test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		r.in.group_handle = handle;
 		r.in.level = levels[i];
+		r.out.info = &info;
 
 		status = dcerpc_samr_QueryGroupInfo(p, mem_ctx, &r);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -3038,7 +3042,7 @@ static bool test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		s.in.group_handle = handle;
 		s.in.level = levels[i];
-		s.in.info = r.out.info;
+		s.in.info = *r.out.info;
 
 #if 0
 		/* disabled this, as it changes the name only from the point of view of samr, 

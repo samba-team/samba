@@ -589,7 +589,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
 		[in]                      samr_GroupInfoEnum level,
-		[out,switch_is(level),unique] samr_GroupInfo *info
+		[out,ref,switch_is(level)] samr_GroupInfo **info
 		);
 
 	/************************/

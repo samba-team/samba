@@ -152,6 +152,8 @@ static void continue_groupinfo_opengroup(struct rpc_request *req)
 	/* prepare parameters for QueryGroupInfo call */
 	s->querygroupinfo.in.group_handle = &s->group_handle;
 	s->querygroupinfo.in.level        = s->level;
+	s->querygroupinfo.out.info        = talloc(s, union samr_GroupInfo *);
+	if (composite_nomem(s->querygroupinfo.out.info, c)) return;
 	
 	/* queue rpc call, set event handling and new state */
 	querygroup_req = dcerpc_samr_QueryGroupInfo_send(s->pipe, c, &s->querygroupinfo);
@@ -185,7 +187,7 @@ static void continue_groupinfo_getgroup(struct rpc_request *req)
 		return;
 	}
 
-	s->info = talloc_steal(s, s->querygroupinfo.out.info);
+	s->info = talloc_steal(s, *s->querygroupinfo.out.info);
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {

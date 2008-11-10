@@ -2129,7 +2129,7 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	int ret;
 	union samr_GroupInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
@@ -2185,7 +2185,7 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	r->out.info = info;
+	*r->out.info = info;
 
 	return NT_STATUS_OK;
 }
