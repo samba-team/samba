@@ -657,6 +657,28 @@ uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ct
 	return acct_flags;
 }
 
+struct lsa_BinaryString samdb_result_parameters(TALLOC_CTX *mem_ctx,
+						struct ldb_message *msg,
+						const char *attr)
+{
+	struct lsa_BinaryString s;
+	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
+
+	ZERO_STRUCT(s);
+
+	if (!val) {
+		return s;
+	}
+
+	s.array = talloc_array(mem_ctx, uint16_t, val->length/2);
+	if (!s.array) {
+		return s;
+	}
+	s.length = s.size = val->length/2;
+	memcpy(s.array, val->data, val->length);
+
+	return s;
+}
 
 /* Find an attribute, with a particular value */
 
