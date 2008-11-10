@@ -919,6 +919,17 @@ int samdb_msg_add_logon_hours(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, 
 }
 
 /*
+  add a parameters element to a message
+*/
+int samdb_msg_add_parameters(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			     const char *attr_name, struct lsa_BinaryString *parameters)
+{
+	struct ldb_val val;
+	val.length = parameters->length * 2;
+	val.data = (uint8_t *)parameters->array;
+	return ldb_msg_add_value(msg, attr_name, &val, NULL);
+}
+/*
   add a general value element to a message
 */
 int samdb_msg_add_value(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
