@@ -221,7 +221,9 @@ NSS_INFO_MODULES = @NSS_INFO_MODULES@
 MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
           $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES)
 
-######################################################################
+EXTRA_ALL_TARGETS = @EXTRA_ALL_TARGETS@
+
+#####################################################################
 # object file lists
 ######################################################################
 
@@ -1094,7 +1096,7 @@ VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 ######################################################################
 all:: SHOWFLAGS libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
 	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @CIFSUPCALL_PROGS@ \
-	@EXTRA_ALL_TARGETS@
+	$(EXTRA_ALL_TARGETS)
 
 nss_modules:: $(NSS_MODULES)
 
