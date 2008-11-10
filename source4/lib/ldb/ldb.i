@@ -262,7 +262,6 @@ fail:
         {
             char *dn = ldb_dn_get_linearized($self), *ret;
             asprintf(&ret, "Dn('%s')", dn);
-            talloc_free(dn);
             return ret;
         }
 
