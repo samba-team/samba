@@ -5202,7 +5202,7 @@ static bool api_samr_RidToSid(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sid = talloc_zero(r, struct dom_sid2);
+	r->out.sid = talloc_zero(r, struct dom_sid2 *);
 	if (r->out.sid == NULL) {
 		talloc_free(r);
 		return false;

@@ -375,7 +375,7 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *domain_handle /* [in] [ref] */,
 			      uint32_t rid /* [in]  */,
-			      struct dom_sid2 *sid /* [out] [ref] */);
+			      struct dom_sid2 **sid /* [out] [ref] */);
 NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct lsa_String *name /* [in] [unique] */,
