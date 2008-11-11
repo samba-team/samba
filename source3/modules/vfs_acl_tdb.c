@@ -112,7 +112,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	enum ndr_err_code ndr_err;
 	size_t sd_size;
 
-	ndr_err = ndr_pull_struct_blob(pblob, ctx, &xacl,
+	ndr_err = ndr_pull_struct_blob(pblob, ctx, NULL, &xacl,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
