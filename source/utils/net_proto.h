@@ -473,6 +473,10 @@ void net_display_usage_from_functable(struct functable *table);
 
 const char *net_share_type_str(int num_type);
 
+NTSTATUS net_scan_dc(struct net_context *c,
+		     struct cli_state *cli,
+		     struct net_dc_info *dc_info);
+
 /* The following definitions come from utils/netlookup.c  */
 
 NTSTATUS net_lookup_name_from_sid(struct net_context *c,
