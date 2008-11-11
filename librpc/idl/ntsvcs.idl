@@ -239,15 +239,15 @@ interface ntsvcs
 	/* Function: 0x28 */
 
 	WERROR PNP_HwProfFlags(
-		[in] uint32 unknown1,
+		[in] uint32 action,
 		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
-		[in] uint32 unknown2,
-		[in,out,ref] uint32 *unknown3,
-		[in,out,unique] uint16 *unknown4,
+		[in] uint32 config,
+		[in,out,ref] uint32 *profile_flags,
+		[in,out,unique] uint16 *veto_type,
 		[in,unique] [string,charset(UTF16)] uint16 *unknown5,
 		[out,unique] [string,charset(UTF16)] uint16 **unknown5a,
-		[in] uint32 unknown6,
-		[in] uint32 unknown7
+		[in] uint32 name_length,
+		[in] uint32 flags
 		);
 
 	/******************/
