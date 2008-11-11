@@ -242,7 +242,7 @@ bool guest_user_info( struct samu *user )
 	NTSTATUS result;
 	const char *guestname = lp_guestaccount();
 	
-	if ( !(pwd = getpwnam_alloc( NULL, guestname ) ) ) {
+	if ( !(pwd = getpwnam_alloc(talloc_autofree_context(), guestname ) ) ) {
 		DEBUG(0,("guest_user_info: Unable to locate guest account [%s]!\n", 
 			guestname));
 		return False;
@@ -1150,7 +1150,9 @@ static NTSTATUS pdb_default_rename_sam_account (struct pdb_methods *methods, str
 
 static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, struct samu *newpwd, bool success)
 {
-	return NT_STATUS_NOT_IMPLEMENTED;
+	/* Only the pdb_nds backend implements this, by
+	 * default just return ok. */
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
@@ -2014,7 +2016,7 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 {
 	/* allocate memory for the structure as its own talloc CTX */
 
-	if ( !(*methods = TALLOC_ZERO_P(NULL, struct pdb_methods) ) ) {
+	if ( !(*methods = TALLOC_ZERO_P(talloc_autofree_context(), struct pdb_methods) ) ) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

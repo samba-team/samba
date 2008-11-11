@@ -32,7 +32,7 @@ bool change_to_guest(void)
 
 	if (!pass) {
 		/* Don't need to free() this as its stored in a static */
-		pass = getpwnam_alloc(NULL, lp_guestaccount());
+		pass = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
 		if (!pass)
 			return(False);
 	}

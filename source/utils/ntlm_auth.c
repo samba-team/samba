@@ -380,13 +380,25 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (nt_response && nt_response->length) {
-		memcpy(request.data.auth_crap.nt_resp, 
-		       nt_response->data, 
-		       MIN(nt_response->length, sizeof(request.data.auth_crap.nt_resp)));
+		if (nt_response->length > sizeof(request.data.auth_crap.nt_resp)) {
+			request.flags = request.flags | WBFLAG_BIG_NTLMV2_BLOB;
+			request.extra_len = nt_response->length;
+			request.extra_data.data = SMB_MALLOC_ARRAY(char, request.extra_len);
+			if (request.extra_data.data == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			memcpy(request.extra_data.data, nt_response->data,
+			       nt_response->length);
+
+		} else {
+			memcpy(request.data.auth_crap.nt_resp,
+			       nt_response->data, nt_response->length);
+		}
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 	
 	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	SAFE_FREE(request.extra_data.data);
 
 	/* Display response */
 

@@ -574,6 +574,13 @@ static int upgrade_map_record(TDB_CONTEXT *tdb_ctx, TDB_DATA key,
 		return -1;
 	}
 
+	if ((int)map.gid == -1) {
+		/*
+		 * Ignore old invalid mappings
+		 */
+		return 0;
+	}
+
 	if (!add_mapping_entry(&map, 0)) {
 		DEBUG(0,("Failed to add mapping entry during upgrade\n"));
 		*(int *)state = -1;

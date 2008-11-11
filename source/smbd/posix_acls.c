@@ -3511,7 +3511,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
 	/* See here: http://www.codeproject.com/KB/winsdk/accessctrl2.aspx
- 	 * for details. JRA.
+ 	 * for details and also the log trace in bug #4308. JRA.
  	 */
 
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
@@ -4301,7 +4301,7 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname)
 	finfo.fh->fd = -1;
 	finfo.fsp_name = CONST_DISCARD(char *,fname);
 
-	if (!NT_STATUS_IS_OK(posix_fget_nt_acl( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
+	if (!NT_STATUS_IS_OK(SMB_VFS_FGET_NT_ACL( &finfo, DACL_SECURITY_INFORMATION, &psd))) {
 		DEBUG(0,("get_nt_acl_no_snum: get_nt_acl returned zero.\n"));
 		conn_free_internal( conn );
 		return NULL;

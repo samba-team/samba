@@ -65,7 +65,7 @@ void setup_async_write(struct fd_event *event, void *data, size_t length,
 		       void *private_data);
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
-void winbind_check_sighup(const char *logfile);
+void winbind_check_sighup(const char *lfile);
 void winbind_check_sigterm(bool in_parent);
 int main(int argc, char **argv, char **envp);
 

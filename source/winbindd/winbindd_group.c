@@ -378,6 +378,24 @@ static int namecmp( const void *a, const void *b )
 	return StrCaseCmp( * (char * const *) a, * (char * const *) b);
 }
 
+static void sort_unique_list(char ***list, uint32 *n_list)
+{
+	uint32_t i;
+
+	/* search for duplicates for sorting and looking for matching
+	   neighbors */
+
+	qsort(*list, *n_list, sizeof(char*), QSORT_CAST namecmp);
+
+	for (i=1; i < *n_list; i++) {
+		if (strcmp((*list)[i-1], (*list)[i]) == 0) {
+			memmove(&((*list)[i-1]), &((*list)[i]),
+				 sizeof(char*)*((*n_list)-i));
+			(*n_list)--;
+		}
+	}
+}
+
 static NTSTATUS add_names_to_list( TALLOC_CTX *ctx,
 				   char ***list, uint32 *n_list,
 				   char **names, uint32 n_names )
@@ -408,19 +426,6 @@ static NTSTATUS add_names_to_list( TALLOC_CTX *ctx,
 
 	for ( i=*n_list, j=0; i<n_new_list; i++, j++ ) {
 		new_list[i] = talloc_strdup( new_list, names[j] );
-	}
-
-	/* search for duplicates for sorting and looking for matching
-	   neighbors */
-
-	qsort( new_list, n_new_list, sizeof(char*), QSORT_CAST namecmp );
-
-	for ( i=1; i<n_new_list; i++ ) {
-		if ( strcmp( new_list[i-1], new_list[i] ) == 0 ) {
-			memmove( &new_list[i-1], &new_list[i],
-				 sizeof(char*)*(n_new_list-i) );
-			n_new_list--;
-		}
 	}
 
 	*list = new_list;
@@ -658,6 +663,8 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 		n_glist = n_new_glist;
 	}
 	TALLOC_FREE( glist );
+
+	sort_unique_list(&names, &num_names);
 
 	DEBUG(10, ("looked up %d names\n", num_names));
 

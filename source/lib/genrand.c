@@ -113,7 +113,7 @@ static int do_reseed(bool use_fd, int fd)
 	 * seriously this will be secret.
 	 */
 
-	pw = getpwnam_alloc(NULL, "root");
+	pw = getpwnam_alloc(talloc_autofree_context(), "root");
 	if (pw && pw->pw_passwd) {
 		size_t i;
 		unsigned char md4_tmp[16];
