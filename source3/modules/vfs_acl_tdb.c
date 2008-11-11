@@ -222,7 +222,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB
 		timestring(ctx, curr.tv_sec) ));
 
 	ndr_err = ndr_push_struct_blob(
-			pblob, ctx, &xacl,
+			pblob, ctx, NULL, &xacl,
 			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
