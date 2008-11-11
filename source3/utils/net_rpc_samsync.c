@@ -457,6 +457,9 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 {
 	int ret = 0;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct net_dc_info dc_info;
 
 	if (c->display_usage || (argc < 1)) {
 		d_printf("Usage:\n"
@@ -465,14 +468,30 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	ret = run_rpc_command(c, NULL, &ndr_table_drsuapi.syntax_id,
-			      NET_FLAGS_SEAL,
-			      rpc_vampire_keytab_ds_internals, argc, argv);
-	if (ret == 0) {
-		return 0;
+	status = net_make_ipc_connection(c, 0, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
-			       rpc_vampire_keytab_internals,
-			       argc, argv);
+	status = net_scan_dc(c, cli, &dc_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	if (!dc_info.is_ad) {
+		printf("DC is not running Active Directory\n");
+		return -1;
+	}
+
+	if (dc_info.is_mixed_mode) {
+		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+				      0,
+				      rpc_vampire_keytab_internals, argc, argv);
+	} else {
+		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
+				      NET_FLAGS_SEAL,
+				      rpc_vampire_keytab_ds_internals, argc, argv);
+	}
+
+	return ret;
 }
