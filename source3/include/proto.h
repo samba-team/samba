@@ -5296,7 +5296,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
                          POLICY_HND *reg_hnd);
-uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val );
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 
@@ -5910,8 +5909,6 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len);
 void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf);
 void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len);
 bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len);
-bool smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len);
@@ -5974,8 +5971,6 @@ bool policy_handle_is_valid(const POLICY_HND *hnd);
 
 bool ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth);
 bool ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth);
-bool ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, prs_struct *ps, int depth);
-bool ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
@@ -6031,7 +6026,6 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str);
-bool prs_regval_buffer(bool charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf);
 bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STRING2 *str);
 bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
 bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth);
@@ -6824,7 +6818,6 @@ WERROR _PNP_GetVersion(pipes_struct *p,
 WERROR _PNP_GetDeviceListSize(pipes_struct *p,
 			      struct PNP_GetDeviceListSize *r);
 WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u );
-WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u );
 WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
 				   struct PNP_ValidateDeviceInstance *r);
 WERROR _PNP_GetHwProfInfo(pipes_struct *p,

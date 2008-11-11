@@ -558,60 +558,6 @@ bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
- Inits a REGVAL_BUFFER structure.
-********************************************************************/
-
-void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len)
-{
-	ZERO_STRUCTP(str);
-
-	/* max buffer size (allocated size) */
-	str->buf_max_len = len;
-	str->offset = 0;
-	str->buf_len = buf != NULL ? len : 0;
-
-	if (buf != NULL) {
-		SMB_ASSERT(str->buf_max_len >= str->buf_len);
-		str->buffer = (uint16 *)TALLOC_ZERO(talloc_tos(),
-						    str->buf_max_len);
-		if (str->buffer == NULL)
-			smb_panic("init_regval_buffer: talloc fail");
-		memcpy(str->buffer, buf, str->buf_len);
-	}
-}
-
-/*******************************************************************
- Reads or writes a REGVAL_BUFFER structure.
-   the uni_max_len member tells you how large the buffer is.
-   the uni_str_len member tells you how much of the buffer is really used.
-********************************************************************/
-
-bool smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2)
-{
-
-	prs_debug(ps, depth, desc, "smb_io_regval_buffer");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-		
-	if(!prs_uint32("buf_max_len", ps, depth, &buf2->buf_max_len))
-		return False;
-	if(!prs_uint32("offset     ", ps, depth, &buf2->offset))
-		return False;
-	if(!prs_uint32("buf_len    ", ps, depth, &buf2->buf_len))
-		return False;
-
-	/* buffer advanced by indicated length of string
-	   NOT by searching for null-termination */
-
-	if(!prs_regval_buffer(True, "buffer     ", ps, depth, buf2))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 creates a UNISTR2 structure: sets up the buffer, too
 ********************************************************************/
 

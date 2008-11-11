@@ -1056,39 +1056,6 @@ bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUF
 }
 
 /******************************************************************
- Stream a "not" unicode string, length/buffer specified separately,
- in byte chars. String is in little-endian format.
- ********************************************************************/
-
-bool prs_regval_buffer(bool charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf)
-{
-	char *p;
-	char *q = prs_mem_get(ps, buf->buf_len);
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (buf->buf_len > buf->buf_max_len) {
-			return False;
-		}
-		if ( buf->buf_max_len ) {
-			buf->buffer = PRS_ALLOC_MEM(ps, uint16, buf->buf_max_len);
-			if ( buf->buffer == NULL )
-				return False;
-		} else {
-			buf->buffer = NULL;
-		}
-	}
-
-	p = (char *)buf->buffer;
-
-	dbg_rw_punival(charmode, name, depth, ps, q, p, buf->buf_len/2);
-	ps->data_offset += buf->buf_len;
-
-	return True;
-}
-
-/******************************************************************
  Stream a string, length/buffer specified separately,
  in uint8 chars.
  ********************************************************************/
