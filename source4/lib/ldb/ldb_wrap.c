@@ -2732,7 +2732,6 @@ SWIGINTERN char const *ldb_dn_canonical_ex_str(ldb_dn *self){
 SWIGINTERN char *ldb_dn___repr__(ldb_dn *self){
             char *dn = ldb_dn_get_linearized(self), *ret;
             asprintf(&ret, "Dn('%s')", dn);
-            talloc_free(dn);
             return ret;
         }
 SWIGINTERN ldb_dn *ldb_dn___add__(ldb_dn *self,ldb_dn *other){
