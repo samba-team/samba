@@ -49,6 +49,7 @@ rpc.initshutdown					# Not provided by Samba 4
 rpc.svcctl							# Not provided by Samba 4
 rpc.atsvc							# Not provided by Samba 4
 rpc.frsapi							# Not provided by Samba 4
+rpc.ntsvcs							# Not provided by Samba 4
 ^samba4.base.samba3.*						# Samba3-specific test
 ^samba4.ntvfs.cifs.base.samba3.*				# Samba3-specific test
 ^samba4.raw.samba3.*						# Samba3-specific test
