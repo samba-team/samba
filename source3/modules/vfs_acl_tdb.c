@@ -1,5 +1,5 @@
 /*
- * Store Windows ACLs in xattrs.
+ * Store Windows ACLs in xattrs, or a tdb if configured that way.
  *
  * Copyright (C) Volker Lendecke, 2008
  * Copyright (C) Jeremy Allison, 2008
@@ -27,6 +27,78 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+static unsigned int ref_count;
+static struct db_context *acl_db;
+
+/*******************************************************************
+ Open acl_db if not already open, increment ref count.
+*******************************************************************/
+
+static bool acl_tdb_init(struct db_context **pp_db)
+{
+	const char *dbname;
+
+	if (acl_db) {
+		*pp_db = acl_db;
+		ref_count++;
+		return true;
+	}
+
+	dbname = lock_path("file_ntacls.tdb");
+
+	if (dbname == NULL) {
+		errno = ENOSYS;
+		return false;
+	}
+
+	become_root();
+	*pp_db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
+	unbecome_root();
+
+	if (*pp_db == NULL) {
+#if defined(ENOTSUP)
+		errno = ENOTSUP;
+#else
+		errno = ENOSYS;
+#endif
+		return false;
+	}
+
+	ref_count++;
+	return true;
+}
+
+/*******************************************************************
+ Lower ref count and close acl_db if zero.
+*******************************************************************/
+
+static void free_acl_xattr_data(void **pptr)
+{
+	struct db_context **pp_db = (struct db_context **)pptr;
+
+	ref_count--;
+	if (ref_count == 0) {
+		TALLOC_FREE(*pp_db);
+		acl_db = NULL;
+	}
+}
+
+/*******************************************************************
+ Fetch_lock the tdb acl record for a file
+*******************************************************************/
+
+static struct db_record *acl_xattr_tdb_lock(TALLOC_CTX *mem_ctx,
+					struct db_context *db,
+					const struct file_id *id)
+{
+	uint8 id_buf[16];
+	push_file_id_16((char *)id_buf, id);
+	return db->fetch_locked(db,
+				mem_ctx,
+				make_tdb_data(id_buf,
+					sizeof(id_buf)));
+}
+
 /*******************************************************************
  Parse out a struct security_descriptor from a DATA_BLOB.
 *******************************************************************/
@@ -40,7 +112,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 	enum ndr_err_code ndr_err;
 	size_t sd_size;
 
-	ndr_err = ndr_pull_struct_blob(pblob, ctx, NULL, &xacl,
+	ndr_err = ndr_pull_struct_blob(pblob, ctx, &xacl,
 			(ndr_pull_flags_fn_t)ndr_pull_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -70,7 +142,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 }
 
 /*******************************************************************
- Pull a security descriptor into a DATA_BLOB from a xattr.
+ Pull a security descriptor into a DATA_BLOB from a tdb store.
 *******************************************************************/
 
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
@@ -79,51 +151,44 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			const char *name,
 			DATA_BLOB *pblob)
 {
-	size_t size = 1024;
-	uint8_t *val = NULL;
-	uint8_t *tmp;
-	ssize_t sizeret;
-	int saved_errno = 0;
+	uint8 id_buf[16];
+	TDB_DATA data;
+	struct file_id id;
+	struct db_context *db;
+	SMB_STRUCT_STAT sbuf;
 
-	ZERO_STRUCTP(pblob);
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
+		return NT_STATUS_INTERNAL_DB_CORRUPTION);
 
-  again:
-
-	tmp = TALLOC_REALLOC_ARRAY(ctx, val, uint8_t, size);
-	if (tmp == NULL) {
-		TALLOC_FREE(val);
-		return NT_STATUS_NO_MEMORY;
-	}
-	val = tmp;
-
-	become_root();
 	if (fsp && fsp->fh->fd != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, XATTR_NTACL_NAME, val, size);
-	} else {
-		sizeret = SMB_VFS_GETXATTR(handle->conn, name,
-					XATTR_NTACL_NAME, val, size);
-	}
-	if (sizeret == -1) {
-		saved_errno = errno;
-	}
-	unbecome_root();
-
-	/* Max ACL size is 65536 bytes. */
-	if (sizeret == -1) {
-		errno = saved_errno;
-		if ((errno == ERANGE) && (size != 65536)) {
-			/* Too small, try again. */
-			size = 65536;
-			goto again;
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
 		}
+	} else {
+		if (SMB_VFS_STAT(handle->conn, name, &sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
 
-		/* Real error - exit here. */
-		TALLOC_FREE(val);
-		return map_nt_error_from_unix(errno);
+	push_file_id_16((char *)id_buf, &id);
+
+	if (db->fetch(db,
+			ctx,
+			make_tdb_data(id_buf, sizeof(id_buf)),
+			&data) == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	pblob->data = val;
-	pblob->length = sizeret;
+	pblob->data = data.dptr;
+	pblob->length = data.dsize;
+
+	DEBUG(10,("get_acl_blob: returned %u bytes from file %s\n",
+		(unsigned int)data.dsize, name ));
+
+	if (pblob->length == 0 || pblob->data == NULL) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -157,7 +222,7 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB
 		timestring(ctx, curr.tv_sec) ));
 
 	ndr_err = ndr_push_struct_blob(
-			pblob, ctx, NULL, &xacl,
+			pblob, ctx, &xacl,
 			(ndr_push_flags_fn_t)ndr_push_xattr_NTACL);
 
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -170,76 +235,89 @@ static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB
 }
 
 /*******************************************************************
- Store a DATA_BLOB into an xattr given an fsp pointer.
+ Store a DATA_BLOB into a tdb record given an fsp pointer.
 *******************************************************************/
 
 static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 				files_struct *fsp,
 				DATA_BLOB *pblob)
 {
-	int ret;
-	int saved_errno = 0;
+	uint8 id_buf[16];
+	struct file_id id;
+	SMB_STRUCT_STAT sbuf;
+	TDB_DATA data;
+	struct db_context *db;
+	struct db_record *rec;
 
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
 			(unsigned int)pblob->length, fsp->fsp_name));
 
-	become_root();
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
+		return NT_STATUS_INTERNAL_DB_CORRUPTION);
+
 	if (fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp, XATTR_NTACL_NAME,
-			pblob->data, pblob->length, 0);
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->fsp_name,
-				XATTR_NTACL_NAME,
-				pblob->data, pblob->length, 0);
+		if (SMB_VFS_STAT(handle->conn, fsp->fsp_name, &sbuf) == -1) {
+			return map_nt_error_from_unix(errno);
+		}
 	}
-	if (ret) {
-		saved_errno = errno;
+	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
+
+	push_file_id_16((char *)id_buf, &id);
+	rec = db->fetch_locked(db, talloc_tos(),
+				make_tdb_data(id_buf,
+					sizeof(id_buf)));
+	if (rec == NULL) {
+		DEBUG(0, ("store_acl_blob_fsp_tdb: fetch_lock failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	unbecome_root();
-	if (ret) {
-		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob_fsp: setting attr failed for file %s"
-			"with error %s\n",
-			fsp->fsp_name,
-			strerror(errno) ));
-		return map_nt_error_from_unix(errno);
-	}
-	return NT_STATUS_OK;
+	data.dptr = pblob->data;
+	data.dsize = pblob->length;
+	return rec->store(rec, data, 0);
 }
 
 /*******************************************************************
- Store a DATA_BLOB into an xattr given a pathname.
+ Store a DATA_BLOB into a tdb record given a pathname.
 *******************************************************************/
 
 static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 					const char *fname,
 					DATA_BLOB *pblob)
 {
-	connection_struct *conn = handle->conn;
-	int ret;
-	int saved_errno = 0;
+	uint8 id_buf[16];
+	struct file_id id;
+	TDB_DATA data;
+	SMB_STRUCT_STAT sbuf;
+	struct db_context *db;
+	struct db_record *rec;
 
 	DEBUG(10,("store_acl_blob_pathname: storing blob "
 			"length %u on file %s\n",
 			(unsigned int)pblob->length, fname));
 
-	become_root();
-	ret = SMB_VFS_SETXATTR(conn, fname,
-				XATTR_NTACL_NAME,
-				pblob->data, pblob->length, 0);
-	if (ret) {
-		saved_errno = errno;
-	}
-	unbecome_root();
-	if (ret) {
-		errno = saved_errno;
-		DEBUG(5, ("store_acl_blob_pathname: setting attr failed "
-			"for file %s with error %s\n",
-			fname,
-			strerror(errno) ));
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
+		return NT_STATUS_INTERNAL_DB_CORRUPTION);
+
+	if (SMB_VFS_STAT(handle->conn, fname, &sbuf) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
-	return NT_STATUS_OK;
+
+	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
+	push_file_id_16((char *)id_buf, &id);
+
+	rec = db->fetch_locked(db, talloc_tos(),
+				make_tdb_data(id_buf,
+					sizeof(id_buf)));
+	if (rec == NULL) {
+		DEBUG(0, ("store_acl_blob_pathname_tdb: fetch_lock failed\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	data.dptr = pblob->data;
+	data.dsize = pblob->length;
+	return rec->store(rec, data, 0);
 }
 
 /*******************************************************************
@@ -475,6 +553,55 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 	return fsp->fh->fd;
 }
 
+/*********************************************************************
+ On unlink we need to delete the tdb record (if using tdb).
+*********************************************************************/
+
+static int unlink_acl_xattr(vfs_handle_struct *handle, const char *path)
+{
+	SMB_STRUCT_STAT sbuf;
+	struct file_id id;
+	struct db_context *db;
+	struct db_record *rec;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+
+	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_UNLINK(handle, path);
+
+	if (ret == -1) {
+		return -1;
+	}
+
+	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
+
+	rec = acl_xattr_tdb_lock(talloc_tos(), db, &id);
+
+	/*
+	 * If rec == NULL there's not much we can do about it
+	 */
+
+	if (rec == NULL) {
+		DEBUG(10,("unlink_acl_xattr: path %s rec == NULL\n",
+			path ));
+		TALLOC_FREE(rec);
+		return 0;
+	}
+
+	rec->delete_rec(rec);
+	TALLOC_FREE(rec);
+
+	return 0;
+}
+
+/*********************************************************************
+ Store an inherited SD on mkdir.
+*********************************************************************/
+
 static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
@@ -485,6 +612,51 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t m
 	/* New directory - inherit from parent. */
 	inherit_new_acl(handle, path, NULL, true);
 	return ret;
+}
+
+/*********************************************************************
+ On rmdir we need to delete the tdb record (if using tdb).
+*********************************************************************/
+
+static int rmdir_acl_xattr(vfs_handle_struct *handle, const char *path)
+{
+	SMB_STRUCT_STAT sbuf;
+	struct file_id id;
+	struct db_context *db;
+	struct db_record *rec;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+
+	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_RMDIR(handle, path);
+
+	if (ret == -1) {
+		return -1;
+	}
+
+	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
+
+	rec = acl_xattr_tdb_lock(talloc_tos(), db, &id);
+
+	/*
+	 * If rec == NULL there's not much we can do about it
+	 */
+
+	if (rec == NULL) {
+		DEBUG(10,("rmdir_acl_xattr: path %s rec == NULL\n",
+			path ));
+		TALLOC_FREE(rec);
+		return 0;
+	}
+
+	rec->delete_rec(rec);
+	TALLOC_FREE(rec);
+
+	return 0;
 }
 
 /*********************************************************************
@@ -617,12 +789,44 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+ Handle opening the storage tdb if so configured.
+*******************************************************************/
+
+static int connect_acl_xattr(struct vfs_handle_struct *handle,
+				const char *service,
+				const char *user)
+{
+	struct db_context *db;
+	int res;
+
+        res = SMB_VFS_NEXT_CONNECT(handle, service, user);
+        if (res < 0) {
+                return res;
+        }
+
+	if (!acl_tdb_init(&db)) {
+		SMB_VFS_NEXT_DISCONNECT(handle);
+		return -1;
+	}
+
+	SMB_VFS_HANDLE_SET_DATA(handle, db, free_acl_xattr_data,
+				struct db_context, return -1);
+
+	return 0;
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] =
 {
+	{SMB_VFS_OP(connect_acl_xattr), SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
+
 	{SMB_VFS_OP(mkdir_acl_xattr), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(rmdir_acl_xattr), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
+
 	{SMB_VFS_OP(open_acl_xattr),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(unlink_acl_xattr), SMB_VFS_OP_UNLINK, SMB_VFS_LAYER_TRANSPARENT},
 
         /* NT File ACL operations */
 
@@ -635,5 +839,5 @@ static vfs_op_tuple skel_op_tuples[] =
 
 NTSTATUS vfs_acl_xattr_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_xattr", skel_op_tuples);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb", skel_op_tuples);
 }
