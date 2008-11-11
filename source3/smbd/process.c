@@ -20,8 +20,6 @@
 
 #include "includes.h"
 
-extern int smb_echo_count;
-
 /*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -38,6 +36,8 @@ SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
 extern int max_send;
+
+static void construct_reply_common(const char *inbuf, char *outbuf);
 
 /* Accessor function for smb_read_error for smbd functions. */
 
@@ -371,12 +371,16 @@ void init_smb_request(struct smb_request *req,
 			(unsigned int)req_size ));
 		exit_server_cleanly("Invalid SMB request");
 	}
+	req->cmd    = CVAL(inbuf, smb_com);
 	req->flags2 = SVAL(inbuf, smb_flg2);
 	req->smbpid = SVAL(inbuf, smb_pid);
 	req->mid    = SVAL(inbuf, smb_mid);
 	req->vuid   = SVAL(inbuf, smb_uid);
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
+	req->vwv    = (uint16_t *)(inbuf+smb_vwv);
+	req->buflen = smb_buflen(inbuf);
+	req->buf    = (const uint8_t *)smb_buf(inbuf);
 	req->unread_bytes = unread_bytes;
 	req->encrypted = encrypted;
 	req->conn = conn_find(req->tid);
@@ -390,15 +394,14 @@ void init_smb_request(struct smb_request *req,
 		exit_server_cleanly("Invalid SMB request");
 	}
 	/* Ensure bcc is correct. */
-	if (((uint8 *)smb_buf(inbuf)) + smb_buflen(inbuf) > inbuf + req_size) {
+	if (((uint8 *)smb_buf(inbuf)) + req->buflen > inbuf + req_size) {
 		DEBUG(0,("init_smb_request: invalid bcc number %u "
 			"(wct = %u, size %u)\n",
-			(unsigned int)smb_buflen(inbuf),
+			(unsigned int)req->buflen,
 			(unsigned int)req->wct,
 			(unsigned int)req_size));
 		exit_server_cleanly("Invalid SMB request");
 	}
-	req->inbuf  = inbuf;
 	req->outbuf = NULL;
 }
 
@@ -1422,6 +1425,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
+			remove_deferred_open_smb_message(req->mid);
 			return conn;
 		}
 
@@ -1450,8 +1454,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 			/* encrypted required from now on. */
 			conn->encrypt_level = Required;
 		} else if (ENCRYPTION_REQUIRED(conn)) {
-			uint8 com = CVAL(req->inbuf,smb_com);
-			if (com != SMBtrans2 && com != SMBtranss2) {
+			if (req->cmd != SMBtrans2 && req->cmd != SMBtranss2) {
 				exit_server_cleanly("encryption required "
 					"on connection");
 				return conn;
@@ -1486,7 +1489,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 
 static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool encrypted)
 {
-	uint8 type = CVAL(inbuf,smb_com);
 	connection_struct *conn;
 	struct smb_request *req;
 
@@ -1496,8 +1498,9 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
+	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
 
-	conn = switch_message(type, req, size);
+	conn = switch_message(req->cmd, req, size);
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
@@ -1589,7 +1592,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-void construct_reply_common(const char *inbuf, char *outbuf)
+static void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	srv_set_message(outbuf,0,0,false);
 	
@@ -1605,6 +1608,11 @@ void construct_reply_common(const char *inbuf, char *outbuf)
 	SSVAL(outbuf,smb_pid,SVAL(inbuf,smb_pid));
 	SSVAL(outbuf,smb_uid,SVAL(inbuf,smb_uid));
 	SSVAL(outbuf,smb_mid,SVAL(inbuf,smb_mid));
+}
+
+void construct_reply_common_req(struct smb_request *req, char *outbuf)
+{
+	construct_reply_common((char *)req->inbuf, outbuf);
 }
 
 /****************************************************************************
@@ -1717,6 +1725,7 @@ void chain_reply(struct smb_request *req)
 		smb_panic("could not allocate smb_request");
 	}
 	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
+	req2->inbuf = (uint8_t *)inbuf2;
 	req2->chain_fsp = req->chain_fsp;
 
 	/* process the request */
@@ -1924,8 +1933,6 @@ void smbd_process(void)
 		}
 
 		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
-
-		TALLOC_FREE(inbuf);
 
 		num_smbs++;
 

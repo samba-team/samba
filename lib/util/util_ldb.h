@@ -1,6 +1,8 @@
 #ifndef __LIB_UTIL_UTIL_LDB_H__
 #define __LIB_UTIL_UTIL_LDB_H__
 
+struct ldb_dn;
+
 /* The following definitions come from lib/util/util_ldb.c  */
 
 int gendb_search_v(struct ldb_context *ldb,

@@ -516,7 +516,7 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
 
 	/* w2k with kerberos doesn't properly null terminate this field */
-	len = smb_buflen(cli->inbuf) - PTR_DIFF(p, smb_buf(cli->inbuf));
+	len = smb_bufrem(cli->inbuf, p);
 	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), len, 0);
 
 	return blob2;

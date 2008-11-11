@@ -603,7 +603,7 @@ NTSTATUS init_gp_extensions(TALLOC_CTX *mem_ctx)
 			werr = gp_extension_store_reg(mem_ctx, reg_ctx, info);
 			if (!W_ERROR_IS_OK(werr)) {
 				DEBUG(1,("gp_extension_store_reg failed: %s\n",
-					dos_errstr(werr)));
+					win_errstr(werr)));
 				TALLOC_FREE(info);
 				gpext->methods->shutdown();
 				status = werror_to_ntstatus(werr);

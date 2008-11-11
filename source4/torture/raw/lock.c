@@ -598,6 +598,7 @@ static bool test_async(struct torture_context *tctx,
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = lp_workgroup(tctx->lp_ctx);
 	setup.in.credentials = cmdline_credentials;
+	setup.in.gensec_settings = lp_gensec_settings(tctx, tctx->lp_ctx);
 	status = smb_composite_sesssetup(session, &setup);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	session->vuid = setup.out.vuid;

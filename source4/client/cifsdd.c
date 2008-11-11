@@ -358,8 +358,10 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 				      struct event_context *ev,
 				      const char * which, const char **ports,
 				      struct smbcli_options *smb_options,
+				      const char *socket_options,
 				      struct smbcli_session_options *smb_session_options,
-				      struct smb_iconv_convenience *iconv_convenience)
+				      struct smb_iconv_convenience *iconv_convenience,
+				      struct gensec_settings *gensec_settings)
 {
 	int			options = 0;
 	const char *		path = NULL;
@@ -381,15 +383,19 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 		path = check_arg_pathname("if");
 		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("ibs"), options,
+				      socket_options,
 				      smb_options, smb_session_options,
-				      iconv_convenience);
+				      iconv_convenience,
+				      gensec_settings);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
 		handle = dd_open_path(resolve_ctx, ev, path, ports,
 				      check_arg_numeric("obs"), options,
+				      socket_options,
 				      smb_options, smb_session_options,
-				      iconv_convenience);
+				      iconv_convenience,
+				      gensec_settings);
 	} else {
 		SMB_ASSERT(0);
 		return(NULL);
@@ -443,14 +449,18 @@ static int copy_files(struct event_context *ev, struct loadparm_context *lp_ctx)
 
 	if (!(ifile = open_file(lp_resolve_context(lp_ctx), ev, "if",
 				lp_smb_ports(lp_ctx), &options,
-				&session_options, lp_iconv_convenience(lp_ctx)))) {
+				lp_socket_options(lp_ctx),
+				&session_options, lp_iconv_convenience(lp_ctx),
+				lp_gensec_settings(lp_ctx, lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
 	if (!(ofile = open_file(lp_resolve_context(lp_ctx), ev, "of",
 				lp_smb_ports(lp_ctx), &options,
+				lp_socket_options(lp_ctx),
 				&session_options,
-				lp_iconv_convenience(lp_ctx)))) {
+				lp_iconv_convenience(lp_ctx),
+				lp_gensec_settings(lp_ctx, lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 

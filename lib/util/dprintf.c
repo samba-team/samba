@@ -60,7 +60,7 @@ _PUBLIC_ int d_vfprintf(FILE *f, const char *format, va_list ap)
 
 	if (ret <= 0) return ret;
 
-	clen = convert_string_talloc_descriptor(NULL, display_cd, p, ret, (void **)&p2);
+	clen = iconv_talloc(NULL, display_cd, p, ret, (void **)&p2);
         if (clen == -1) {
 		/* the string can't be converted - do the best we can,
 		   filling in non-printing chars with '?' */

@@ -138,12 +138,14 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 
 	state->connect->in.dest_host    = io->in.dest_host;
 	state->connect->in.dest_ports   = io->in.ports;
+	state->connect->in.socket_options = io->in.socket_options;
 	state->connect->in.called_name  = io->in.called_name;
 	state->connect->in.service      = io->in.service;
 	state->connect->in.service_type = io->in.service_type;
 	state->connect->in.credentials  = io->in.credentials;
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
+	state->connect->in.gensec_settings = io->in.gensec_settings;
 	state->connect->in.iconv_convenience = io->in.iconv_convenience;
 
 	state->connect->in.options	= io->in.options;

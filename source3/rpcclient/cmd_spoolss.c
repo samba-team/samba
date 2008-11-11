@@ -1539,7 +1539,7 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
 		{
 			if ( !W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ) {
 				printf ("Failed to remove driver %s for arch [%s] (version: %d): %s\n", 
-					argv[1], archi_table[i].long_archi, archi_table[i].version, dos_errstr(result));
+					argv[1], archi_table[i].long_archi, archi_table[i].version, win_errstr(result));
 			}
 		} 
 		else 
@@ -2555,7 +2555,7 @@ static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 	printf("Retrieving printer propertiesfor %s...", cli1->desthost);
 	werror = rpccli_spoolss_getprinter( cli1, mem_ctx, hnd1, 2, &ctr1);
 	if ( !W_ERROR_IS_OK(werror) ) {
-		printf("failed (%s)\n", dos_errstr(werror));
+		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
 		return False;
 	}
@@ -2564,7 +2564,7 @@ static bool compare_printer( struct rpc_pipe_client *cli1, POLICY_HND *hnd1,
 	printf("Retrieving printer properties for %s...", cli2->desthost);
 	werror = rpccli_spoolss_getprinter( cli2, mem_ctx, hnd2, 2, &ctr2);
 	if ( !W_ERROR_IS_OK(werror) ) {
-		printf("failed (%s)\n", dos_errstr(werror));
+		printf("failed (%s)\n", win_errstr(werror));
 		talloc_destroy(mem_ctx);
 		return False;
 	}
@@ -2591,7 +2591,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 	printf("Retrieving printer security for %s...", cli1->desthost);
 	werror = rpccli_spoolss_getprinter( cli1, mem_ctx, hnd1, 3, &ctr1);
 	if ( !W_ERROR_IS_OK(werror) ) {
-		printf("failed (%s)\n", dos_errstr(werror));
+		printf("failed (%s)\n", win_errstr(werror));
 		result = False;
 		goto done;
 	}
@@ -2600,7 +2600,7 @@ static bool compare_printer_secdesc( struct rpc_pipe_client *cli1, POLICY_HND *h
 	printf("Retrieving printer security for %s...", cli2->desthost);
 	werror = rpccli_spoolss_getprinter( cli2, mem_ctx, hnd2, 3, &ctr2);
 	if ( !W_ERROR_IS_OK(werror) ) {
-		printf("failed (%s)\n", dos_errstr(werror));
+		printf("failed (%s)\n", win_errstr(werror));
 		result = False;
 		goto done;
 	}
@@ -2701,7 +2701,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	werror = rpccli_spoolss_open_printer_ex( cli, mem_ctx, printername_path, 
 		"", PRINTER_ALL_ACCESS, servername1, cli_server1->user_name, &hPrinter1);
 	if ( !W_ERROR_IS_OK(werror) ) {
-		printf("failed (%s)\n", dos_errstr(werror));
+		printf("failed (%s)\n", win_errstr(werror));
 		goto done;
 	}
 	printf("ok\n");
@@ -2717,7 +2717,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	werror = rpccli_spoolss_open_printer_ex( cli2, mem_ctx, printername_path,  
 		"", PRINTER_ALL_ACCESS, servername2, cli_server2->user_name, &hPrinter2 );
 	if ( !W_ERROR_IS_OK(werror) ) {
-		 printf("failed (%s)\n", dos_errstr(werror));
+		 printf("failed (%s)\n", win_errstr(werror));
 		goto done;
 	}
 	printf("ok\n");

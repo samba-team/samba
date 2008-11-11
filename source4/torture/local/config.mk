@@ -14,7 +14,8 @@ PRIVATE_DEPENDENCIES = \
 		TORTURE_UTIL \
 		TORTURE_NDR \
 		share \
-		torture_registry
+		torture_registry \
+		PROVISION
 # End SUBSYSTEM TORTURE_LOCAL
 #################################
 

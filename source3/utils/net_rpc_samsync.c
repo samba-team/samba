@@ -249,7 +249,10 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 		return status;
 	}
 
-	if (argc >= 1) {
+	if (argc < 1) {
+		/* the caller should ensure that a filename is provided */
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		ctx->output_filename = argv[0];
 	}
 
@@ -299,9 +302,13 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
 	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
-	if (argc >= 1) {
+	if (argc < 1) {
+		/* the caller should ensure that a filename is provided */
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		ctx->output_filename = argv[0];
 	}
+
 	if (argc >= 2) {
 		ctx->object_dns = &argv[1];
 		ctx->object_count = argc - 1;
@@ -342,9 +349,9 @@ int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 {
 	int ret = 0;
 
-	if (c->display_usage) {
+	if (c->display_usage || (argc < 1)) {
 		d_printf("Usage:\n"
-			 "net rpc vampire keytab\n"
+			 "net rpc vampire keytab <keytabfile>\n"
 			 "    Dump remote SAM database to Kerberos keytab file\n");
 		return 0;
 	}

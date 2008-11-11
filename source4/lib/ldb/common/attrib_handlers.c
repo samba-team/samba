@@ -240,7 +240,7 @@ int ldb_canonicalise_dn(struct ldb_context *ldb, void *mem_ctx,
 	out->length = 0;
 	out->data = NULL;
 
-	dn = ldb_dn_new(ldb, mem_ctx, (char *)in->data);
+	dn = ldb_dn_from_ldb_val(ldb, mem_ctx, in);
 	if ( ! ldb_dn_validate(dn)) {
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
@@ -268,10 +268,10 @@ int ldb_comparison_dn(struct ldb_context *ldb, void *mem_ctx,
 	struct ldb_dn *dn1 = NULL, *dn2 = NULL;
 	int ret;
 
-	dn1 = ldb_dn_new(ldb, mem_ctx, (char *)v1->data);
+	dn1 = ldb_dn_from_ldb_val(ldb, mem_ctx, v1);
 	if ( ! ldb_dn_validate(dn1)) return -1;
 
-	dn2 = ldb_dn_new(ldb, mem_ctx, (char *)v2->data);
+	dn2 = ldb_dn_from_ldb_val(ldb, mem_ctx, v2);
 	if ( ! ldb_dn_validate(dn2)) {
 		talloc_free(dn1);
 		return -1;

@@ -45,7 +45,7 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_get_global_includes(ctx, mem_ctx,
 					   &num_includes, &includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: get_includes - %s\n", dos_errstr(werr));
+		printf("failure: get_includes - %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -80,7 +80,7 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: get_set_includes (setting includes) - %s\n",
-		       dos_errstr(werr));
+		       win_errstr(werr));
 		goto done;
 	}
 
@@ -88,7 +88,7 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 					   &get_includes);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: get_set_includes (getting includes) - %s\n",
-		       dos_errstr(werr));
+		       win_errstr(werr));
 		goto done;
 	}
 
@@ -135,14 +135,14 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: delete_includes (setting includes) - %s\n",
-		       dos_errstr(werr));
+		       win_errstr(werr));
 		goto done;
 	}
 
 	werr = smbconf_delete_global_includes(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: delete_includes (deleting includes) - %s\n",
-		       dos_errstr(werr));
+		       win_errstr(werr));
 		goto done;
 	}
 
@@ -150,7 +150,7 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 					   &get_includes);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failure: delete_includes (getting includes) - %s\n",
-		       dos_errstr(werr));
+		       win_errstr(werr));
 		goto done;
 	}
 
@@ -162,7 +162,7 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_delete_global_includes(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		printf("failuer: delete_includes (delete empty includes) - "
-		       "%s\n", dos_errstr(werr));
+		       "%s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -214,7 +214,7 @@ static bool torture_smbconf_txt(void)
 	printf("test: init\n");
 	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: init failed: %s\n", dos_errstr(werr));
+		printf("failure: init failed: %s\n", win_errstr(werr));
 		ret = false;
 		goto done;
 	}
@@ -251,7 +251,7 @@ static bool torture_smbconf_reg(void)
 	printf("test: init\n");
 	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: init failed: %s\n", dos_errstr(werr));
+		printf("failure: init failed: %s\n", win_errstr(werr));
 		ret = false;
 		goto done;
 	}

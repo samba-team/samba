@@ -87,14 +87,14 @@ WERROR registry_init_smbconf(const char *keyname)
 	werr = init_registry_key(keyname);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Failed to initialize registry key '%s': %s\n",
-			  keyname, dos_errstr(werr)));
+			  keyname, win_errstr(werr)));
 		goto done;
 	}
 
 	werr = reghook_cache_add(keyname, &smbconf_reg_ops);
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Failed to add smbconf reghooks to reghook cache: "
-			  "%s\n", dos_errstr(werr)));
+			  "%s\n", win_errstr(werr)));
 		goto done;
 	}
 

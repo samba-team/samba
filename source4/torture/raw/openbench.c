@@ -130,12 +130,14 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 
 	io->in.dest_host    = state->dest_host;
 	io->in.dest_ports   = state->dest_ports;
+	io->in.socket_options = lp_socket_options(state->tctx->lp_ctx);
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
 	io->in.credentials  = cmdline_credentials;
 	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lp_workgroup(state->tctx->lp_ctx);
+	io->in.gensec_settings = lp_gensec_settings(state->mem_ctx, state->tctx->lp_ctx);
 	lp_smbcli_options(state->tctx->lp_ctx, &io->in.options);
 	lp_smbcli_session_options(state->tctx->lp_ctx, &io->in.session_options);
 

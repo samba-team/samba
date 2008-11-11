@@ -20,6 +20,7 @@
  */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -944,6 +945,17 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	struct np_proxy_state *result;
 	struct sockaddr_un addr;
 	char *socket_path;
+	const char *socket_dir;
+
+	DATA_BLOB req_blob;
+	struct netr_SamInfo3 *info3;
+	struct named_pipe_auth_req req;
+	DATA_BLOB rep_blob;
+	uint8 rep_buf[20];
+	struct named_pipe_auth_rep rep;
+	enum ndr_err_code ndr_err;
+	NTSTATUS status;
+	ssize_t written;
 
 	result = talloc(mem_ctx, struct np_proxy_state);
 	if (result == NULL) {
@@ -961,8 +973,16 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(addr);
 	addr.sun_family = AF_UNIX;
 
-	socket_path = talloc_asprintf(talloc_tos(), "%s/%s",
-				      get_dyn_NCALRPCDIR(), "DEFAULT");
+	socket_dir = lp_parm_const_string(
+		GLOBAL_SECTION_SNUM, "external_rpc_pipe", "socket_dir",
+		get_dyn_NCALRPCDIR());
+	if (socket_dir == NULL) {
+		DEBUG(0, ("externan_rpc_pipe:socket_dir not set\n"));
+		goto fail;
+	}
+
+	socket_path = talloc_asprintf(talloc_tos(), "%s/np/%s",
+				      socket_dir, pipe_name);
 	if (socket_path == NULL) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
 		goto fail;
@@ -970,9 +990,94 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	strncpy(addr.sun_path, socket_path, sizeof(addr.sun_path));
 	TALLOC_FREE(socket_path);
 
+	become_root();
 	if (sys_connect(result->fd, (struct sockaddr *)&addr) == -1) {
+		unbecome_root();
 		DEBUG(0, ("connect(%s) failed: %s\n", addr.sun_path,
 			  strerror(errno)));
+		goto fail;
+	}
+	unbecome_root();
+
+	info3 = talloc(talloc_tos(), struct netr_SamInfo3);
+	if (info3 == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		goto fail;
+	}
+
+	status = serverinfo_to_SamInfo3(server_info, NULL, 0, info3);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(info3);
+		DEBUG(0, ("serverinfo_to_SamInfo3 failed: %s\n",
+			  nt_errstr(status)));
+		goto fail;
+	}
+
+	req.level = 1;
+	req.info.info1 = *info3;
+
+	ndr_err = ndr_push_struct_blob(
+		&req_blob, talloc_tos(), NULL, &req,
+		(ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10, ("ndr_push_named_pipe_auth_req failed: %s\n",
+			   ndr_errstr(ndr_err)));
+		goto fail;
+	}
+
+	DEBUG(10, ("named_pipe_auth_req(client)[%u]\n", (uint32_t)req_blob.length));
+	dump_data(10, req_blob.data, req_blob.length);
+
+	written = write_data(result->fd, (char *)req_blob.data,
+			     req_blob.length);
+	if (written == -1) {
+		DEBUG(3, ("Could not write auth req data to RPC server\n"));
+		goto fail;
+	}
+
+	status = read_data(result->fd, (char *)rep_buf, sizeof(rep_buf));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("Could not read auth result\n"));
+		goto fail;
+	}
+
+	rep_blob = data_blob_const(rep_buf, sizeof(rep_buf));
+
+	DEBUG(10,("name_pipe_auth_rep(client)[%u]\n", (uint32_t)rep_blob.length));
+	dump_data(10, rep_blob.data, rep_blob.length);
+
+	ndr_err = ndr_pull_struct_blob(
+		&rep_blob, talloc_tos(), NULL, &rep,
+		(ndr_pull_flags_fn_t)ndr_pull_named_pipe_auth_rep);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_pull_named_pipe_auth_rep failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		goto fail;
+	}
+
+	if (rep.length != 16) {
+		DEBUG(0, ("req invalid length: %u != 16\n",
+			  rep.length));
+		goto fail;
+	}
+
+	if (strcmp(NAMED_PIPE_AUTH_MAGIC, rep.magic) != 0) {
+		DEBUG(0, ("req invalid magic: %s != %s\n",
+			  rep.magic, NAMED_PIPE_AUTH_MAGIC));
+		goto fail;
+	}
+
+	if (!NT_STATUS_IS_OK(rep.status)) {
+		DEBUG(0, ("req failed: %s\n",
+			  nt_errstr(rep.status)));
+		goto fail;
+	}
+
+	if (rep.level != 1) {
+		DEBUG(0, ("req invalid level: %u != 1\n",
+			  rep.level));
 		goto fail;
 	}
 
@@ -1046,7 +1151,7 @@ NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		  ssize_t *nwritten)
 {
 	if (!fsp_is_np(fsp)) {

@@ -199,6 +199,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	/* connect to the server, using the smbd event context */
 	io.in.dest_host = host;
 	io.in.dest_ports = lp_smb_ports(ntvfs->ctx->lp_ctx);
+	io.in.socket_options = lp_socket_options(ntvfs->ctx->lp_ctx);
 	io.in.called_name = host;
 	io.in.credentials = credentials;
 	io.in.fallback_to_anonymous = false;
@@ -206,6 +207,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	io.in.iconv_convenience = lp_iconv_convenience(ntvfs->ctx->lp_ctx);
+	io.in.gensec_settings = lp_gensec_settings(private, ntvfs->ctx->lp_ctx);
 	lp_smbcli_options(ntvfs->ctx->lp_ctx, &io.in.options);
 	lp_smbcli_session_options(ntvfs->ctx->lp_ctx, &io.in.session_options);
 

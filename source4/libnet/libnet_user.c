@@ -1032,6 +1032,10 @@ static void continue_domain_queried(struct rpc_request *req)
 	s->user_list.in.resume_handle = &s->resume_index;
 	s->user_list.in.acct_flags = ACB_NORMAL;
 	s->user_list.out.resume_handle = &s->resume_index;
+	s->user_list.out.num_entries = talloc(s, uint32_t);
+	if (composite_nomem(s->user_list.out.num_entries, c)) return;
+	s->user_list.out.sam = talloc(s, struct samr_SamArray *);
+	if (composite_nomem(s->user_list.out.sam, c)) return;
 
 	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
@@ -1064,6 +1068,10 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	s->user_list.in.resume_handle = &s->resume_index;
 	s->user_list.in.acct_flags = ACB_NORMAL;
 	s->user_list.out.resume_handle = &s->resume_index;
+	s->user_list.out.sam = talloc(s, struct samr_SamArray *);
+	if (composite_nomem(s->user_list.out.sam, c)) return;
+	s->user_list.out.num_entries = talloc(s, uint32_t);
+	if (composite_nomem(s->user_list.out.num_entries, c)) return;
 	
 	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainUsers_send(s->ctx->samr.pipe, c, &s->user_list);
@@ -1102,15 +1110,15 @@ static void continue_users_enumerated(struct rpc_request *req)
 		/* get enumerated accounts counter and resume handle (the latter allows
 		   making subsequent call to continue enumeration) */
 		s->resume_index = *s->user_list.out.resume_handle;
-		s->count        = s->user_list.out.num_entries;
+		s->count        = *s->user_list.out.num_entries;
 		
 		/* prepare returned user accounts array */
-		s->users        = talloc_array(c, struct userlist, s->user_list.out.sam->count);
+		s->users        = talloc_array(c, struct userlist, (*s->user_list.out.sam)->count);
 		if (composite_nomem(s->users, c)) return;
 
-		for (i = 0; i < s->user_list.out.sam->count; i++) {
+		for (i = 0; i < (*s->user_list.out.sam)->count; i++) {
 			struct dom_sid *user_sid;
-			struct samr_SamEntry *entry = &s->user_list.out.sam->entries[i];
+			struct samr_SamEntry *entry = &(*s->user_list.out.sam)->entries[i];
 			struct dom_sid *domain_sid = (*s->query_domain.out.info)->domain.sid;
 			
 			/* construct user sid from returned rid and queried domain sid */

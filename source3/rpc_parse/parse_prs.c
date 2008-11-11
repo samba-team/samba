@@ -843,7 +843,7 @@ bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status)
 	}
 
 	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
-		 dos_errstr(*status)));
+		 win_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
 

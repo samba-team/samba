@@ -46,6 +46,8 @@ mkdtemp
 mkstemp (a secure one!)
 pread
 pwrite
+chown
+lchown
 getpass
 readline (the library)
 inet_ntoa
@@ -64,6 +66,11 @@ getifaddrs
 freeifaddrs
 utime
 utimes
+dup2
+link
+readlink
+symlink
+realpath
 
 Types:
 bool

@@ -79,15 +79,17 @@ static struct la_context *linked_attributes_init(struct ldb_module *module,
 /* Common routine to handle reading the attributes and creating a
  * series of modify requests */
 static int la_store_op(struct la_context *ac,
-			enum la_op op, char *dn,
+		       enum la_op op, struct ldb_val *dn,
 			const char *name, const char *value)
 {
 	struct la_op_store *os, *tmp;
 	struct ldb_dn *op_dn;
 
-	op_dn = ldb_dn_new(ac, ac->module->ldb, dn);
+	op_dn = ldb_dn_from_ldb_val(ac, ac->module->ldb, dn);
 	if (!op_dn) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		ldb_asprintf_errstring(ac->module->ldb, 
+				       "could not parse attribute as a DN");
+		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	/* optimize out del - add operations that would end up
@@ -177,7 +179,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	int ret;
 	int i, j;
 
-	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		/* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
@@ -233,7 +235,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 
 		for (j = 0; j < el->num_values; j++) {
 			ret = la_store_op(ac, LA_OP_ADD,
-					  (char *)el->values[j].data,
+					  &el->values[j],
 					  attr_name, attr_val);
 			if (ret != LDB_SUCCESS) {
 				return ret;
@@ -327,7 +329,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 			/* make sure we manage each value */
 			for (j = 0; j < search_el->num_values; j++) {
 				ret = la_store_op(ac, LA_OP_DEL,
-					  (char *)search_el->values[j].data,
+						  &search_el->values[j],
 						  attr_name, dn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(ares);
@@ -445,7 +447,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			/* For each value being added, we need to setup the adds */
 			for (j = 0; j < el->num_values; j++) {
 				ret = la_store_op(ac, LA_OP_ADD,
-					  (char *)el->values[j].data,
+						  &el->values[j],
 						  attr_name, attr_val);
 				if (ret != LDB_SUCCESS) {
 					return ret;
@@ -459,7 +461,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 				/* For each value being deleted, we need to setup the delete */
 				for (j = 0; j < el->num_values; j++) {
 					ret = la_store_op(ac, LA_OP_DEL,
-						  (char *)el->values[j].data,
+							  &el->values[j],
 							  attr_name, attr_val);
 					if (ret != LDB_SUCCESS) {
 						return ret;
@@ -701,7 +703,7 @@ static int la_op_search_callback(struct ldb_request *req,
 			}
 			for (j = 0; j < el->num_values; j++) {
 				ret = la_store_op(ac, LA_OP_DEL,
-					  (char *)el->values[j].data,
+						  &el->values[j],
 						  attr_name, deldn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(ares);
@@ -710,7 +712,7 @@ static int la_op_search_callback(struct ldb_request *req,
 				}
 				if (!adddn) continue;
 				ret = la_store_op(ac, LA_OP_ADD,
-					  (char *)el->values[j].data,
+						  &el->values[j],
 						  attr_name, adddn);
 				if (ret != LDB_SUCCESS) {
 					talloc_free(ares);

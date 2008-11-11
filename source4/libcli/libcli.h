@@ -64,6 +64,7 @@ enum brl_type {
 
 
 #include "libcli/raw/libcliraw.h"
+struct gensec_settings;
 #include "libcli/libcli_proto.h"
 
 #endif /* __LIBCLI_H__ */

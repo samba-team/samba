@@ -37,6 +37,7 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_BAD_NET_RESP",  WERR_BAD_NET_RESP },
 	{ "WERR_UNEXP_NET_ERR", WERR_UNEXP_NET_ERR },
 	{ "WERR_INSUFFICIENT_BUFFER", WERR_INSUFFICIENT_BUFFER },
+	{ "WERR_SEM_TIMEOUT", WERR_SEM_TIMEOUT },
 	{ "WERR_NO_SUCH_SHARE", WERR_NO_SUCH_SHARE },
 	{ "WERR_FILE_EXISTS", WERR_FILE_EXISTS },
 	{ "WERR_INVALID_PARAM", WERR_INVALID_PARAM },
@@ -61,6 +62,8 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_BUF_TOO_SMALL", WERR_BUF_TOO_SMALL },
 	{ "WERR_JOB_NOT_FOUND", WERR_JOB_NOT_FOUND },
 	{ "WERR_DEST_NOT_FOUND", WERR_DEST_NOT_FOUND },
+	{ "WERR_GROUP_NOT_FOUND", WERR_GROUP_NOT_FOUND },
+	{ "WERR_USER_NOT_FOUND", WERR_USER_NOT_FOUND },
 	{ "WERR_NOT_LOCAL_DOMAIN", WERR_NOT_LOCAL_DOMAIN },
 	{ "WERR_DOMAIN_CONTROLLER_NOT_FOUND", WERR_DOMAIN_CONTROLLER_NOT_FOUND },
 	{ "WERR_TIME_DIFF_AT_DC", WERR_TIME_DIFF_AT_DC },
@@ -68,6 +71,16 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_SETUP_ALREADY_JOINED", WERR_SETUP_ALREADY_JOINED },
 	{ "WERR_SETUP_DOMAIN_CONTROLLER", WERR_SETUP_DOMAIN_CONTROLLER },
 	{ "WERR_DEVICE_NOT_AVAILABLE", WERR_DEVICE_NOT_AVAILABLE },
+	{ "WERR_DEFAULT_JOIN_REQUIRED", WERR_DEFAULT_JOIN_REQUIRED },
+	{ "WERR_USER_EXISTS", WERR_USER_EXISTS },
+	{ "WERR_REVISION_MISMATCH", WERR_REVISION_MISMATCH },
+	{ "WERR_NO_LOGON_SERVERS", WERR_NO_LOGON_SERVERS },
+	{ "WERR_NO_SUCH_LOGON_SESSION", WERR_NO_SUCH_LOGON_SESSION },
+	{ "WERR_USER_ALREADY_EXISTS", WERR_USER_ALREADY_EXISTS },
+	{ "WERR_NO_SUCH_USER", WERR_NO_SUCH_USER },
+	{ "WERR_GROUP_EXISTS", WERR_GROUP_EXISTS },
+	{ "WERR_MEMBER_IN_GROUP", WERR_MEMBER_IN_GROUP },
+	{ "WERR_USER_NOT_IN_GROUP", WERR_USER_NOT_IN_GROUP },
 	{ "WERR_PRINTER_DRIVER_IN_USE", WERR_PRINTER_DRIVER_IN_USE },
 	{ "WERR_STATUS_MORE_ENTRIES", WERR_STATUS_MORE_ENTRIES },
 	{ "WERR_NET_NAME_NOT_FOUND", WERR_NET_NAME_NOT_FOUND },
@@ -85,6 +98,8 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_INVALID_OWNER", WERR_INVALID_OWNER },
 	{ "WERR_INVALID_COMPUTERNAME", WERR_INVALID_COMPUTERNAME },
 	{ "WERR_INVALID_DOMAINNAME", WERR_INVALID_DOMAINNAME },
+	{ "WERR_MACHINE_LOCKED", WERR_MACHINE_LOCKED },
+	{ "WERR_DC_NOT_FOUND", WERR_DC_NOT_FOUND },
 	{ "WERR_NO_LOGON_SERVERS", WERR_NO_LOGON_SERVERS },
 	{ "WERR_NO_SUCH_LOGON_SESSION", WERR_NO_SUCH_LOGON_SESSION },
 	{ "WERR_NO_SUCH_PRIVILEGE", WERR_NO_SUCH_PRIVILEGE },
@@ -120,6 +135,7 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_INVALID_FLAGS", WERR_INVALID_FLAGS },
 	{ "WERR_NOT_FOUND", WERR_NOT_FOUND },
 	{ "WERR_SERVER_UNAVAILABLE", WERR_SERVER_UNAVAILABLE },
+	{ "WERR_NO_TRUST_SAM_ACCOUNT", WERR_NO_TRUST_SAM_ACCOUNT },
 	{ "WERR_CLASS_NOT_REGISTERED", WERR_CLASS_NOT_REGISTERED },
 	{ "WERR_NO_SHUTDOWN_IN_PROGRESS", WERR_NO_SHUTDOWN_IN_PROGRESS },
 	{ "WERR_SHUTDOWN_ALREADY_IN_PROGRESS", WERR_SHUTDOWN_ALREADY_IN_PROGRESS },
@@ -134,6 +150,24 @@ static const struct werror_code_struct dos_errs[] =
 	{ "WERR_RPC_E_REMOTE_DISABLED", WERR_RPC_E_REMOTE_DISABLED },
 	{ "WERR_NOT_CONNECTED", WERR_NOT_CONNECTED },
 	{ "WERR_NAME_NOT_FOUND", WERR_NAME_NOT_FOUND},
+	{ "WERR_NONE_MAPPED", WERR_NONE_MAPPED },
+	{ "WERR_INVALID_DOMAIN_STATE", WERR_INVALID_DOMAIN_STATE },
+	{ "WERR_SPECIAL_ACCOUNT", WERR_SPECIAL_ACCOUNT },
+	{ "WERR_ALIAS_EXISTS", WERR_ALIAS_EXISTS },
+	{ "WERR_NO_SUCH_ALIAS", WERR_NO_SUCH_ALIAS },
+	{ "WERR_MEMBER_IN_ALIAS", WERR_MEMBER_IN_ALIAS },
+	{ "WERR_TIME_SKEW", WERR_TIME_SKEW },
+	{ "WERR_IO_PENDING", WERR_IO_PENDING },
+	{ "WERR_INVALID_SERVICE_CONTROL", WERR_INVALID_SERVICE_CONTROL },
+	{ "WERR_SERVICE_ALREADY_RUNNING", WERR_SERVICE_ALREADY_RUNNING },
+	{ "WERR_REG_CORRUPT", WERR_REG_CORRUPT },
+	{ "WERR_REG_IO_FAILURE", WERR_REG_IO_FAILURE },
+	{ "WERR_REG_FILE_INVALID", WERR_REG_FILE_INVALID },
+	{ "WERR_NO_SUCH_SERVICE", WERR_NO_SUCH_SERVICE },
+	{ "WERR_SERVICE_DISABLED", WERR_SERVICE_DISABLED },
+	{ "WERR_SERVICE_NEVER_STARTED", WERR_SERVICE_NEVER_STARTED },
+	{ "WERR_PASSWORD_MUST_CHANGE", WERR_PASSWORD_MUST_CHANGE },
+	{ "WERR_ACCOUNT_LOCKED_OUT", WERR_ACCOUNT_LOCKED_OUT },
 	{ NULL, W_ERROR(0) }
 };
 
@@ -160,4 +194,58 @@ const char *win_errstr(WERROR werror)
 	slprintf(msg, sizeof(msg), "DOS code 0x%08x", W_ERROR_V(werror));
 
         return msg;
+}
+
+struct werror_str_struct {
+	WERROR werror;
+	const char *friendly_errstr;
+};
+
+const struct werror_str_struct dos_err_strs[] = {
+	{ WERR_OK, "Success" },
+	{ WERR_ACCESS_DENIED, "Access is denied" },
+	{ WERR_INVALID_PARAM, "Invalid parameter" },
+	{ WERR_NOT_SUPPORTED, "Not supported" },
+	{ WERR_BAD_PASSWORD, "A bad password was supplied" },
+	{ WERR_NOMEM, "Out of memory" },
+	{ WERR_NO_LOGON_SERVERS, "No logon servers found" },
+	{ WERR_NO_SUCH_LOGON_SESSION, "No such logon session" },
+	{ WERR_DOMAIN_CONTROLLER_NOT_FOUND, "A domain controller could not be found" },
+	{ WERR_DC_NOT_FOUND, "A domain controller could not be found" },
+	{ WERR_SETUP_NOT_JOINED, "Join failed" },
+	{ WERR_SETUP_ALREADY_JOINED, "Machine is already joined" },
+	{ WERR_SETUP_DOMAIN_CONTROLLER, "Machine is a Domain Controller" },
+	{ WERR_LOGON_FAILURE, "Invalid logon credentials" },
+	{ WERR_USER_EXISTS, "User account already exists" },
+	{ WERR_PASSWORD_MUST_CHANGE, "The password must be changed" },
+	{ WERR_ACCOUNT_LOCKED_OUT, "Account locked out" },
+	{ WERR_TIME_SKEW, "Time difference between client and server" },
+	{ WERR_USER_ALREADY_EXISTS, "User already exists" },
+	{ WERR_PASSWORD_RESTRICTION, "Password does not meet restrictions" },
+	{ WERR_NONE_MAPPED, "Could not map names to SIDs" },
+	{ WERR_NO_SUCH_USER, "No such User" },
+	{ WERR_GROUP_EXISTS, "Group already exists" },
+	{ WERR_DS_DRA_BAD_DN, "An invalid distinguished name was specified for this replication" },
+	{ WERR_DS_DRA_BAD_NC, "An invalid naming context was specified for this replication operation" },
+	{ WERR_WRONG_PASSWORD, "The current password is incorrect" }
+};
+
+
+
+/*****************************************************************************
+ Get friendly error string for WERRORs
+ *****************************************************************************/
+
+const char *get_friendly_werror_msg(WERROR werror)
+{
+	int i = 0;
+
+	for (i = 0; i < ARRAY_SIZE(dos_err_strs); i++) {
+		if (W_ERROR_V(dos_err_strs[i].werror) ==
+                    W_ERROR_V(werror)) {
+			return dos_err_strs[i].friendly_errstr;
+		}
+	}
+
+	return win_errstr(werror);
 }

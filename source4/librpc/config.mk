@@ -51,7 +51,10 @@ NDR_COMPRESSION_OBJ_FILES = ../librpc/ndr/ndr_compression.o
 [SUBSYSTEM::NDR_SECURITY]
 PUBLIC_DEPENDENCIES = NDR_MISC LIBSECURITY
 
-NDR_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security.o $(ndrsrcdir)/ndr_sec_helper.o 
+NDR_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security.o \
+			 ../librpc/ndr/ndr_sec_helper.o \
+			 $(gen_ndrsrcdir)/ndr_dom_sid.o \
+			 $(ndrsrcdir)/ndr_dom_sid.o
 
 PUBLIC_HEADERS += $(gen_ndrsrcdir)/security.h
 
@@ -59,6 +62,11 @@ PUBLIC_HEADERS += $(gen_ndrsrcdir)/security.h
 PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_AUDIOSRV_OBJ_FILES = $(gen_ndrsrcdir)/ndr_audiosrv.o
+
+[SUBSYSTEM::NDR_NAMED_PIPE_AUTH]
+PUBLIC_DEPENDENCIES = LIBNDR
+
+NDR_NAMED_PIPE_AUTH_OBJ_FILES = $(gen_ndrsrcdir)/ndr_named_pipe_auth.o
 
 [SUBSYSTEM::NDR_DNSSERVER]
 PUBLIC_DEPENDENCIES = LIBNDR
@@ -299,7 +307,7 @@ NDR_NTSVCS_OBJ_FILES = $(gen_ndrsrcdir)/ndr_ntsvcs.o
 [SUBSYSTEM::NDR_NETLOGON]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SAMR NDR_LSA NDR_SECURITY
 
-NDR_NETLOGON_OBJ_FILES = $(gen_ndrsrcdir)/ndr_netlogon.o
+NDR_NETLOGON_OBJ_FILES = $(gen_ndrsrcdir)/ndr_netlogon.o ../librpc/ndr/ndr_netlogon.o
 
 PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/netlogon.h)
 
@@ -362,7 +370,7 @@ NDR_WINBIND_OBJ_FILES = $(gen_ndrsrcdir)/ndr_winbind.o
 #PUBLIC_HEADERS += $(gen_ndrsrcdir)/winbind.h
 
 $(librpcsrcdir)/idl-deps:
-	$(PERL) $(librpcsrcdir)/idl-deps.pl $(filter-out ../librpc/idl/security.idl,$(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl)) >$@
+	$(PERL) $(librpcsrcdir)/idl-deps.pl $(wildcard $(librpcsrcdir)/idl/*.idl ../librpc/idl/*.idl) >$@
 
 clean:: 
 	rm -f $(librpcsrcdir)/idl-deps
@@ -386,7 +394,7 @@ PUBLIC_DEPENDENCIES = \
 	NDR_ROT NDR_DRSBLOBS NDR_SVCCTL NDR_NBT NDR_WINSREPL NDR_SECURITY \
 	NDR_INITSHUTDOWN NDR_DNSSERVER NDR_WINSTATION NDR_IRPC NDR_OPENDB \
 	NDR_SASL_HELPERS NDR_NOTIFY NDR_WINBIND NDR_FRSRPC NDR_FRSAPI NDR_NFS4ACL NDR_NTP_SIGND \
-	NDR_DCOM NDR_WMI
+	NDR_DCOM NDR_WMI NDR_NAMED_PIPE_AUTH
 
 NDR_TABLE_OBJ_FILES = ../librpc/ndr/ndr_table.o $(gen_ndrsrcdir)/tables.o
 
@@ -729,9 +737,15 @@ PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dc
 
 python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 
+[PYTHON::python_dcerpc_dom_sid]
+LIBRARY_REALNAME = samba/dcerpc/dom_sid.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
+
+python_dcerpc_dom_sid_OBJ_FILES = $(gen_ndrsrcdir)/py_dom_sid.o
+
 [PYTHON::python_dcerpc_security]
 LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc_dom_sid python_dcerpc
 
 python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 

@@ -185,7 +185,7 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		*lm_sess_key = data_blob(NULL, 0);
 		*user_sess_key = data_blob(NULL, 0);
 		status = hash_password_check(mem_ctx, 
-					     auth_context->lp_ctx,
+					     lp_lanman_auth(auth_context->lp_ctx),
 					     user_info->password.hash.lanman,
 					     user_info->password.hash.nt,
 					     user_info->mapped.account_name,
@@ -195,7 +195,8 @@ static NTSTATUS authsam_password_ok(struct auth_context *auth_context,
 		
 	case AUTH_PASSWORD_RESPONSE:
 		status = ntlm_password_check(mem_ctx, 
-					     auth_context->lp_ctx,
+					     lp_lanman_auth(auth_context->lp_ctx),
+						 lp_ntlm_auth(auth_context->lp_ctx),
 					     user_info->logon_parameters, 
 					     &auth_context->challenge.data, 
 					     &user_info->password.response.lanman, 

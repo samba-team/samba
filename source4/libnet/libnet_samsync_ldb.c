@@ -384,7 +384,11 @@ static NTSTATUS samsync_ldb_handle_user(TALLOC_CTX *mem_ctx,
 	}
 	    
 	ADD_OR_DEL(string, "comment", comment.string);
-	ADD_OR_DEL(string, "userParameters", parameters.string);
+
+	if (samdb_msg_add_parameters(state->sam_ldb, mem_ctx, msg, "userParameters", &user->parameters) != 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	ADD_OR_DEL(uint, "countryCode", country_code);
 	ADD_OR_DEL(uint, "codePage", code_page);
 

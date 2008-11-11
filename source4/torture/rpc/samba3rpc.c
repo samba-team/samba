@@ -89,10 +89,13 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, cmdline_credentials,
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx));
+					lp_iconv_convenience(torture->lp_ctx),
+					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -160,6 +163,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.workgroup = "";
 	setup.in.credentials = anon_creds;
+	setup.in.gensec_settings = lp_gensec_settings(torture, torture->lp_ctx);
 
 	status = smb_composite_sesssetup(session2, &setup);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -233,7 +237,7 @@ static bool bindtest(struct smbcli_state *cli,
 	}
 
 	status = dcerpc_bind_auth(lsa_pipe, &ndr_table_lsarpc,
-				  credentials, lp_ctx, auth_type, auth_level,
+				  credentials, lp_gensec_settings(lp_ctx, lp_ctx), auth_type, auth_level,
 				  NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("dcerpc_bind_auth failed: %s\n", nt_errstr(status));
@@ -308,10 +312,13 @@ bool torture_bind_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, cmdline_credentials,
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx));
+					lp_iconv_convenience(torture->lp_ctx),
+					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -348,7 +355,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 			       char **domain,
 			       struct dcerpc_pipe **result_pipe,
 			       struct policy_handle **result_handle,
-			       struct dom_sid **sid)
+			       struct dom_sid **sid_p)
 {
 	struct dcerpc_pipe *samr_pipe;
 	NTSTATUS status;
@@ -358,7 +365,10 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	struct samr_Connect2 conn;
 	struct samr_EnumDomains enumdom;
 	uint32_t resume_handle = 0;
+	uint32_t num_entries = 0;
+	struct samr_SamArray *sam = NULL;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	int dom_idx;
 	struct lsa_String domain_name;
 	struct lsa_String user_name;
@@ -384,7 +394,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	if (admin_creds != NULL) {
 		status = dcerpc_bind_auth(samr_pipe, &ndr_table_samr,
-					  admin_creds, lp_ctx, auth_type, auth_level,
+					  admin_creds, lp_gensec_settings(lp_ctx, lp_ctx), auth_type, auth_level,
 					  NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			d_printf("dcerpc_bind_auth failed: %s\n",
@@ -416,6 +426,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	enumdom.in.resume_handle = &resume_handle;
 	enumdom.in.buf_size = (uint32_t)-1;
 	enumdom.out.resume_handle = &resume_handle;
+	enumdom.out.num_entries = &num_entries;
+	enumdom.out.sam = &sam;
 
 	status = dcerpc_samr_EnumDomains(samr_pipe, mem_ctx, &enumdom);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -423,20 +435,21 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 		goto fail;
 	}
 
-	if (enumdom.out.num_entries != 2) {
+	if (*enumdom.out.num_entries != 2) {
 		d_printf("samr_EnumDomains returned %d entries, expected 2\n",
-			 enumdom.out.num_entries);
+			 *enumdom.out.num_entries);
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto fail;
 	}
 
-	dom_idx = strequal(enumdom.out.sam->entries[0].name.string,
+	dom_idx = strequal(sam->entries[0].name.string,
 			   "builtin") ? 1:0;
 
 	l.in.connect_handle = &conn_handle;
-	domain_name.string = enumdom.out.sam->entries[dom_idx].name.string;
+	domain_name.string = sam->entries[dom_idx].name.string;
 	*domain = talloc_strdup(mem_ctx, domain_name.string);
 	l.in.domain_name = &domain_name;
+	l.out.sid = &sid;
 
 	status = dcerpc_samr_LookupDomain(samr_pipe, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -446,7 +459,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	o.in.connect_handle = &conn_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(samr_pipe, mem_ctx, &o);
@@ -470,10 +483,13 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		struct samr_LookupNames ln;
 		struct samr_OpenUser ou;
+		struct samr_Ids rids, types;
 
 		ln.in.domain_handle = &domain_handle;
 		ln.in.num_names = 1;
 		ln.in.names = &user_name;
+		ln.out.rids = &rids;
+		ln.out.types = &types;
 
 		status = dcerpc_samr_LookupNames(samr_pipe, mem_ctx, &ln);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -484,7 +500,7 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 		ou.in.domain_handle = &domain_handle;
 		ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		user_rid = ou.in.rid = ln.out.rids.ids[0];
+		user_rid = ou.in.rid = ln.out.rids->ids[0];
 		ou.out.user_handle = user_handle;
 
 		status = dcerpc_samr_OpenUser(samr_pipe, mem_ctx, &ou);
@@ -502,8 +518,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 
 	*result_pipe = samr_pipe;
 	*result_handle = user_handle;
-	if (sid != NULL) {
-		*sid = dom_sid_add_rid(mem_ctx, l.out.sid, user_rid);
+	if (sid_p != NULL) {
+		*sid_p = dom_sid_add_rid(mem_ctx, *l.out.sid, user_rid);
 	}
 	return NT_STATUS_OK;
 
@@ -548,6 +564,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		struct samr_SetUserInfo sui;
 		struct samr_QueryUserInfo qui;
 		union samr_UserInfo u_info;
+		union samr_UserInfo *info;
 		DATA_BLOB session_key;
 
 
@@ -590,6 +607,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 
 		qui.in.user_handle = wks_handle;
 		qui.in.level = 21;
+		qui.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -597,14 +615,14 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 			goto done;
 		}
 
-		qui.out.info->info21.allow_password_change = 0;
-		qui.out.info->info21.force_password_change = 0;
-		qui.out.info->info21.account_name.string = NULL;
-		qui.out.info->info21.rid = 0;
-		qui.out.info->info21.acct_expiry = 0;
-		qui.out.info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
+		info->info21.allow_password_change = 0;
+		info->info21.force_password_change = 0;
+		info->info21.account_name.string = NULL;
+		info->info21.rid = 0;
+		info->info21.acct_expiry = 0;
+		info->info21.fields_present = 0x81827fa; /* copy usrmgr.exe */
 
-		u_info.info21 = qui.out.info->info21;
+		u_info.info21 = info->info21;
 		sui.in.user_handle = wks_handle;
 		sui.in.info = &u_info;
 		sui.in.level = 21;
@@ -714,9 +732,11 @@ static bool join3(struct smbcli_state *cli,
 
 	{
 		struct samr_QueryUserInfo q;
+		union samr_UserInfo *info;
 
 		q.in.user_handle = wks_handle;
 		q.in.level = 21;
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -725,7 +745,7 @@ static bool join3(struct smbcli_state *cli,
 			goto done;
 		}
 
-		last_password_change = q.out.info->info21.last_password_change;
+		last_password_change = info->info21.last_password_change;
 	}
 
 	cli_credentials_set_domain(wks_creds, dom_name, CRED_SPECIFIED);
@@ -823,9 +843,11 @@ static bool join3(struct smbcli_state *cli,
 
 	{
 		struct samr_QueryUserInfo q;
+		union samr_UserInfo *info;
 
 		q.in.user_handle = wks_handle;
 		q.in.level = 21;
+		q.out.info = &info;
 
 		status = dcerpc_samr_QueryUserInfo(samr_pipe, mem_ctx, &q);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -836,7 +858,7 @@ static bool join3(struct smbcli_state *cli,
 
 		if (use_level25) {
 			if (last_password_change
-			    == q.out.info->info21.last_password_change) {
+			    == info->info21.last_password_change) {
 				d_printf("(%s) last_password_change unchanged "
 					 "during join, level25 must change "
 					 "it\n", __location__);
@@ -845,7 +867,7 @@ static bool join3(struct smbcli_state *cli,
 		}
 		else {
 			if (last_password_change
-			    != q.out.info->info21.last_password_change) {
+			    != info->info21.last_password_change) {
 				d_printf("(%s) last_password_change changed "
 					 "during join, level24 doesn't "
 					 "change it\n", __location__);
@@ -1013,7 +1035,7 @@ static bool schan(struct smbcli_state *cli,
 #if 1
 	net_pipe->conn->flags |= (DCERPC_SIGN | DCERPC_SEAL);
 	status = dcerpc_bind_auth(net_pipe, &ndr_table_netlogon,
-				  wks_creds, lp_ctx, DCERPC_AUTH_TYPE_SCHANNEL,
+				  wks_creds, lp_gensec_settings(lp_ctx, lp_ctx), DCERPC_AUTH_TYPE_SCHANNEL,
 				  DCERPC_AUTH_LEVEL_PRIVACY,
 				  NULL);
 #else
@@ -1244,10 +1266,13 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
-					"IPC$", NULL, anon_creds, 
+					"IPC$", NULL, 
+					lp_socket_options(torture->lp_ctx),
+					anon_creds, 
 					lp_resolve_context(torture->lp_ctx),
 					torture->ev, &options, &session_options,
-					lp_iconv_convenience(torture->lp_ctx));
+					lp_iconv_convenience(torture->lp_ctx),
+					lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1334,10 +1359,11 @@ static bool test_join3(struct torture_context *tctx,
 	status = smbcli_full_connection(tctx, &cli,
 					torture_setting_string(tctx, "host", NULL),
 					lp_smb_ports(tctx->lp_ctx),
-					"IPC$", NULL, smb_creds, 
-					lp_resolve_context(tctx->lp_ctx),
+					"IPC$", NULL, lp_socket_options(tctx->lp_ctx),
+					smb_creds, lp_resolve_context(tctx->lp_ctx),
 					tctx->ev, &options, &session_options,
-					lp_iconv_convenience(tctx->lp_ctx));
+					lp_iconv_convenience(tctx->lp_ctx),
+					lp_gensec_settings(tctx, tctx->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1717,10 +1743,11 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		lp_smb_ports(torture->lp_ctx),
-		"IPC$", NULL, cmdline_credentials, 
+		"IPC$", NULL, lp_socket_options(torture->lp_ctx), cmdline_credentials, 
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
-		lp_iconv_convenience(torture->lp_ctx));
+		lp_iconv_convenience(torture->lp_ctx),
+		lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1744,11 +1771,12 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
-		lp_smb_ports(torture->lp_ctx),
-		"IPC$", NULL, anon_creds, 
+		lp_smb_ports(torture->lp_ctx), "IPC$", NULL, 
+		lp_socket_options(torture->lp_ctx), anon_creds, 
 		lp_resolve_context(torture->lp_ctx),
 		torture->ev, &options, &session_options,
-		lp_iconv_convenience(torture->lp_ctx));
+		lp_iconv_convenience(torture->lp_ctx),
+		lp_gensec_settings(torture, torture->lp_ctx));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1812,6 +1840,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		setup.in.capabilities = cli->transport->negotiate.capabilities;
 		setup.in.workgroup = "";
 		setup.in.credentials = user_creds;
+		setup.in.gensec_settings = lp_gensec_settings(torture, torture->lp_ctx);
 
 		status = smb_composite_sesssetup(session2, &setup);
 		if (!NT_STATUS_IS_OK(status)) {

@@ -32,6 +32,7 @@ struct smbcli_transport;  /* forward declare */
 
 struct resolve_context;
 struct cli_credentials;
+struct gensec_settings;
 
 /* default timeout for all smb requests */
 #define SMB_REQUEST_TIMEOUT 60
@@ -376,7 +377,8 @@ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
-						 struct event_context *event_ctx);
+						 struct event_context *event_ctx,
+						 const char *socket_options);
 void smbcli_sock_dead(struct smbcli_socket *sock);
 
 #endif /* __LIBCLI_RAW__H__ */

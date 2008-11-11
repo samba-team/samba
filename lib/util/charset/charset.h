@@ -122,6 +122,11 @@ ssize_t convert_string(charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen);
 
+ssize_t iconv_talloc(TALLOC_CTX *mem_ctx, 
+				       smb_iconv_t cd,
+				       void const *src, size_t srclen, 
+				       void **dest);
+
 extern struct smb_iconv_convenience *global_iconv_convenience;
 
 codepoint_t next_codepoint(const char *str, size_t *size);
@@ -145,7 +150,6 @@ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 				charset_t from, charset_t to,
 				void const *src, size_t srclen, 
 				void *dest, size_t destlen);
-ssize_t convert_string_talloc_descriptor(TALLOC_CTX *ctx, smb_iconv_t descriptor, void const *src, size_t srclen, void **dest);
 ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx, 
 				       struct smb_iconv_convenience *ic, 
 				       charset_t from, charset_t to, 

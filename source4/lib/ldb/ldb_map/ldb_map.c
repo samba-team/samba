@@ -626,7 +626,7 @@ static struct ldb_val ldb_dn_convert_local(struct ldb_module *module, void *mem_
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_new(mem_ctx, module->ldb, (char *)val->data);
+	dn = ldb_dn_from_ldb_val(mem_ctx, module->ldb, val);
 	if (! ldb_dn_validate(dn)) {
 		newval.length = 0;
 		newval.data = NULL;
@@ -652,7 +652,7 @@ static struct ldb_val ldb_dn_convert_remote(struct ldb_module *module, void *mem
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_new(mem_ctx, module->ldb, (char *)val->data);
+	dn = ldb_dn_from_ldb_val(mem_ctx, module->ldb, val);
 	if (! ldb_dn_validate(dn)) {
 		newval.length = 0;
 		newval.data = NULL;

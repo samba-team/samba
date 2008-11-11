@@ -542,7 +542,6 @@ int cancel_named_event(struct event_context *event_ctx,
 void dump_event_list(struct event_context *event_ctx);
 
 /* The following definitions come from lib/fault.c  */
-
 void fault_setup(void (*fn)(void *));
 void dump_core_setup(const char *progname);
 
@@ -554,10 +553,6 @@ bool file_id_equal(const struct file_id *id1, const struct file_id *id2);
 const char *file_id_string_tos(const struct file_id *id);
 void push_file_id_16(char *buf, const struct file_id *id);
 void pull_file_id_16(char *buf, struct file_id *id);
-
-/* The following definitions come from lib/fsusage.c  */
-
-int sys_fsusage(const char *path, uint64_t *dfree, uint64_t *dsize);
 
 /* The following definitions come from lib/gencache.c  */
 
@@ -572,13 +567,6 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
                       void* data, const char* keystr_pattern);
 int gencache_lock_entry( const char *key );
 void gencache_unlock_entry( const char *key );
-
-/* The following definitions come from lib/genrand.c  */
-
-void set_rand_reseed_callback(void (*fn)(void *, int *), void *userdata);
-void set_need_random_reseed(void);
-void generate_random_buffer(uint8_t *out, int len);
-char *generate_random_str(TALLOC_CTX *mem_ctx, size_t len);
 
 /* The following definitions come from lib/iconv.c  */
 
@@ -618,10 +606,6 @@ void init_ldap_debugging(void);
 
 char *escape_ldap_string_alloc(const char *s);
 char *escape_rdn_val_string_alloc(const char *s);
-
-/* The following definitions come from lib/md4.c  */
-
-void mdfour(unsigned char *out, const unsigned char *in, int n);
 
 /* The following definitions come from lib/module.c  */
 
@@ -796,13 +780,6 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 			uint32 desired_access);
 bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd);
 
-/* The following definitions come from lib/signal.c  */
-
-void BlockSignals(bool block,int signum);
-void (*CatchSignal(int signum,void (*handler)(int )))(int);
-void CatchChild(void);
-void CatchChildLeaveStatus(void);
-
 /* The following definitions come from lib/smbldap.c  */
 
 int smb_ldap_start_tls(LDAP *ldap_struct, int version);
@@ -976,17 +953,10 @@ int no_acl_syscall_error(int err);
 int sys_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 int sys_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 
-/* The following definitions come from lib/sysquotas_4A.c  */
+/* The following definitions come from lib/sysquotas_*.c  */
 
 int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
-
-/* The following definitions come from lib/sysquotas_linux.c  */
-
-int sys_get_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
-int sys_set_vfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
-
-/* The following definitions come from lib/sysquotas_xfs.c  */
 
 int sys_get_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
@@ -1023,15 +993,8 @@ long sys_telldir(SMB_STRUCT_DIR *dirp);
 void sys_rewinddir(SMB_STRUCT_DIR *dirp);
 int sys_closedir(SMB_STRUCT_DIR *dirp);
 int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev);
-char *sys_realpath(const char *path, char *resolved_path);
 int sys_waitpid(pid_t pid,int *status,int options);
 char *sys_getwd(char *s);
-int sys_symlink(const char *oldpath, const char *newpath);
-int sys_readlink(const char *path, char *buf, size_t bufsiz);
-int sys_link(const char *oldpath, const char *newpath);
-int sys_chown(const char *fname,uid_t uid,gid_t gid);
-int sys_lchown(const char *fname,uid_t uid,gid_t gid);
-int sys_chroot(const char *dname);
 void set_effective_capability(enum smbd_capability capability);
 void drop_effective_capability(enum smbd_capability capability);
 long sys_random(void);
@@ -1050,11 +1013,6 @@ pid_t sys_fork(void);
 pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
-void *sys_dlopen(const char *name, int flags);
-void *sys_dlsym(void *handle, const char *symbol);
-int sys_dlclose (void *handle);
-const char *sys_dlerror(void);
-int sys_dup2(int oldfd, int newfd) ;
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_lgetxattr (const char *path, const char *name, void *value, size_t size);
 ssize_t sys_fgetxattr (int filedes, const char *name, void *value, size_t size);
@@ -1105,45 +1063,14 @@ void register_msg_pool_usage(struct messaging_context *msg_ctx);
 
 /* The following definitions come from lib/time.c  */
 
-time_t get_time_t_max(void);
-void GetTimeOfDay(struct timeval *tval);
-time_t nt_time_to_unix(NTTIME nt);
-void unix_to_nt_time(NTTIME *nt, time_t t);
-bool null_time(time_t t);
-bool null_nttime(NTTIME t);
-bool null_timespec(struct timespec ts);
 void push_dos_date(uint8_t *buf, int offset, time_t unixdate, int zone_offset);
 void push_dos_date2(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 void push_dos_date3(uint8_t *buf,int offset,time_t unixdate, int zone_offset);
 time_t pull_dos_date(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset);
 time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
-char *timestring(TALLOC_CTX *mem_ctx, time_t t);
-const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt);
-NTTIME nttime_from_string(const char *s);
-struct timeval timeval_zero(void);
-bool timeval_is_zero(const struct timeval *tv);
-struct timeval timeval_current(void);
-struct timeval timeval_set(uint32_t secs, uint32_t usecs);
-struct timeval timeval_add(const struct timeval *tv,
-			   uint32_t secs, uint32_t usecs);
-struct timeval timeval_sum(const struct timeval *tv1,
-			   const struct timeval *tv2);
-struct timeval timeval_current_ofs(uint32_t secs, uint32_t usecs);
-int timeval_compare(const struct timeval *tv1, const struct timeval *tv2);
-bool timeval_expired(const struct timeval *tv);
-double timeval_elapsed2(const struct timeval *tv1, const struct timeval *tv2);
-double timeval_elapsed(const struct timeval *tv);
-struct timeval timeval_min(const struct timeval *tv1,
-			   const struct timeval *tv2);
-struct timeval timeval_max(const struct timeval *tv1,
-			   const struct timeval *tv2);
-struct timeval timeval_until(const struct timeval *tv1,
-			     const struct timeval *tv2);
-NTTIME timeval_to_nttime(const struct timeval *tv);
 uint32 convert_time_t_to_uint32(time_t t);
 time_t convert_uint32_to_time_t(uint32 u);
-int get_time_zone(time_t t);
 bool nt_time_is_zero(const NTTIME *nt);
 time_t generalized_to_unix_time(const char *str);
 int get_server_zone_offset(void);
@@ -1180,7 +1107,6 @@ void cli_put_dos_date3(struct cli_state *cli, char *buf, int offset, time_t unix
 time_t cli_make_unix_date(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date2(struct cli_state *cli, const void *date_ptr);
 time_t cli_make_unix_date3(struct cli_state *cli, const void *date_ptr);
-struct timespec nt_time_to_unix_timespec(NTTIME *nt);
 bool nt_time_equals(const NTTIME *nt1, const NTTIME *nt2);
 void TimeInit(void);
 void get_process_uptime(struct timeval *ret_time);
@@ -1228,16 +1154,12 @@ bool get_cmdline_auth_info_smb_encrypt(void);
 bool get_cmdline_auth_info_use_machine_account(void);
 bool get_cmdline_auth_info_copy(struct user_auth_info *info);
 bool set_cmdline_auth_info_machine_account_creds(void);
-const char *tmpdir(void);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 const char *get_numlist(const char *p, uint32 **num, int *count);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
-bool file_exist(const char *fname);
 bool socket_exist(const char *fname);
-time_t file_modtime(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
-bool directory_exist(const char *dname);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
@@ -1256,22 +1178,18 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 		       bool parent_longlived);
 bool yesno(const char *p);
 void *malloc_(size_t size);
-void *malloc_array(size_t el_size, unsigned int count);
 void *memalign_array(size_t el_size, size_t align, unsigned int count);
 void *calloc_array(size_t size, size_t nmemb);
 void *Realloc(void *p, size_t size, bool free_old_on_error);
-void *realloc_array(void *p, size_t el_size, unsigned int count, bool free_old_on_error);
 void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 			void *element, void *_array, uint32 *num_elements,
 			ssize_t *array_size);
-void safe_free(void *p);
 char *talloc_get_myname(TALLOC_CTX *ctx);
 char *get_mydnsdomname(TALLOC_CTX *ctx);
 int interpret_protocol(const char *str,int def);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name);
 bool process_exists(const struct server_id pid);
-bool process_exists_by_pid(pid_t pid);
 const char *uidtoname(uid_t uid);
 char *gidtoname(gid_t gid);
 uid_t nametouid(const char *name);
@@ -1290,20 +1208,12 @@ void ra_lanman_string( const char *native_lanman );
 const char *get_remote_arch_str(void);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch(void);
-void print_asc(int level, const unsigned char *buf,int len);
-void dump_data(int level, const unsigned char *buf1,int len);
-void dump_data_pw(const char *msg, const uchar * data, size_t len);
-void dump_data_skip_zeros(int level, const uint8_t *buf, int len);
 const char *tab_depth(int level, int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 int smb_mkstemp(char *name_template);
 void *smb_xmalloc_array(size_t size, unsigned int count);
-void *smb_xmemdup(const void *p, size_t size);
-char *smb_xstrdup(const char *s);
-char *smb_xstrndup(const char *s, size_t n);
-void *memdup(const void *p, size_t size);
 char *myhostname(void);
 char *lock_path(const char *name);
 char *pid_path(const char *name);
@@ -1364,17 +1274,8 @@ const char *strip_hostname(const char *s);
 
 /* The following definitions come from lib/util_file.c  */
 
-char *fgets_slash(char *s2,int maxlen,XFILE *f);
-char *file_load(const char *fname, size_t *size, size_t maxsize, TALLOC_CTX *mem_ctx);
-char **file_lines_parse(char *p, size_t size, int *numlines, TALLOC_CTX *mem_ctx);
-bool unmap_file(void* start, size_t size);
-void *map_file(const char *fname, size_t size);
-char **file_lines_load(const char *fname, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
-char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX *mem_ctx);
 char **file_lines_pload(const char *syscmd, int *numlines);
 void file_lines_free(char **lines);
-void file_lines_slashcont(char **lines);
-bool file_save(const char *fname, const void *packet, size_t length);
 
 /* The following definitions come from lib/util_nscd.c  */
 
@@ -1486,21 +1387,15 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 bool interpret_string_addr_internal(struct addrinfo **ppres,
 					const char *str, int flags);
-bool is_ipaddress_v4(const char *str);
-bool is_ipaddress(const char *str);
 bool is_broadcast_addr(const struct sockaddr *pss);
-uint32 interpret_addr(const char *str);
-struct in_addr interpret_addr2(const char *str);
 bool interpret_string_addr(struct sockaddr_storage *pss,
 		const char *str,
 		int flags);
 bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
-bool is_zero_ip_v4(struct in_addr ip);
 bool is_zero_addr(const struct sockaddr *pss);
 void zero_ip_v4(struct in_addr *ip);
 void zero_addr(struct sockaddr_storage *pss);
-bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
 bool same_net(const struct sockaddr *ip1,
@@ -1581,22 +1476,17 @@ bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 			const char *sep);
 int StrCaseCmp(const char *s, const char *t);
 int StrnCaseCmp(const char *s, const char *t, size_t len);
-bool strequal(const char *s1, const char *s2);
 bool strnequal(const char *s1,const char *s2,size_t n);
 bool strcsequal(const char *s1,const char *s2);
-int strwicmp(const char *psz1, const char *psz2);
 void strnorm(char *s, int case_default);
 bool strisnormal(const char *s, int case_default);
-void string_replace( char *s, char oldc, char newc );
 char *push_skip_string(char *buf);
 char *skip_string(const char *base, size_t len, char *buf);
 size_t str_charnum(const char *s);
 size_t str_ascii_charnum(const char *s);
 bool trim_char(char *s,char cfront,char cback);
-bool trim_string(char *s,const char *front,const char *back);
 bool strhasupper(const char *s);
 bool strhaslower(const char *s);
-size_t count_chars(const char *s,char c);
 char *safe_strcpy_fn(const char *fn,
 		int line,
 		char *dest,
@@ -1614,9 +1504,6 @@ char *alpha_strcpy_fn(const char *fn,
 		const char *other_safe_chars,
 		size_t maxlength);
 char *StrnCpy_fn(const char *fn, int line,char *dest,const char *src,size_t n);
-size_t strhex_to_str(char *buf, size_t buf_len, const char *strhex, size_t strhex_len);
-DATA_BLOB strhex_to_data_blob(TALLOC_CTX *mem_ctx, const char *strhex);
-char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_in, size_t len);
 bool in_list(const char *s, const char *list, bool casesensitive);
 void string_free(char **s);
 bool string_set(char **dest,const char *src);
@@ -1664,10 +1551,6 @@ size_t strlen_m_term_null(const char *s);
 char *binary_string_rfc2254(char *buf, int len);
 char *binary_string(char *buf, int len);
 int fstr_sprintf(fstring s, const char *fmt, ...);
-char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
-char **str_list_copy(TALLOC_CTX *mem_ctx, const char **list);
-bool str_list_equal(const char **list1, const char **list2);
-size_t str_list_length( const char * const*list );
 bool str_list_sub_basic( char **list, const char *smb_name,
 			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);
@@ -1698,10 +1581,8 @@ char *sstring_sub(const char *src, char front, char back);
 bool validate_net_name( const char *name,
 		const char *invalid_chars,
 		int max_len);
-size_t ascii_len_n(const char *src, size_t n);
-size_t utf16_len(const void *buf);
-size_t utf16_len_n(const void *src, size_t n);
 char *escape_shell_string(const char *src);
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 
 /* The following definitions come from lib/util_unistr.c  */
 
@@ -1824,25 +1705,6 @@ char **wins_srv_tags(void);
 void wins_srv_tags_free(char **list);
 struct in_addr wins_srv_ip_tag(const char *tag, struct in_addr src_ip);
 unsigned wins_srv_count_tag(const char *tag);
-
-/* The following definitions come from lib/xfile.c  */
-
-int x_setvbuf(XFILE *f, char *buf, int mode, size_t size);
-XFILE *x_fopen(const char *fname, int flags, mode_t mode);
-XFILE *x_fdup(const XFILE *f);
-int x_fclose(XFILE *f);
-size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f);
-int x_fileno(const XFILE *f);
-int x_fflush(XFILE *f);
-void x_setbuffer(XFILE *f, char *buf, size_t size);
-void x_setbuf(XFILE *f, char *buf);
-void x_setlinebuf(XFILE *f);
-int x_feof(XFILE *f);
-int x_ferror(XFILE *f);
-int x_fgetc(XFILE *f);
-size_t x_fread(void *p, size_t size, size_t nmemb, XFILE *f);
-char *x_fgets(char *s, int size, XFILE *stream) ;
-off_t x_tseek(XFILE *f, off_t offset, int whence);
 
 /* The following definitions come from libads/ads_status.c  */
 
@@ -3074,12 +2936,6 @@ void netlogon_creds_client_step(struct dcinfo *dc,
 /* The following definitions come from ../librpc/rpc/dcerpc_error.c  */
 
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
-
-/* The following definitions come from libsmb/doserr.c  */
-
-const char *dos_errstr(WERROR werror);
-const char *get_friendly_werror_msg(WERROR werror);
-const char *win_errstr(WERROR werror);
 
 /* The following definitions come from libsmb/dsgetdcname.c  */
 
@@ -5694,7 +5550,8 @@ void init_netr_SamInfo3(struct netr_SamInfo3 *r,
 			uint32_t sidcount,
 			struct netr_SidAttr *sids);
 NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
-				uint8_t pipe_session_key[16],
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
 void init_netr_IdentityInfo(struct netr_IdentityInfo *r,
 			    const char *domain_name,
@@ -7126,7 +6983,7 @@ void init_rpc_pipe_hnd(void);
 bool fsp_is_np(struct files_struct *fsp);
 NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
 		 const char *name, struct files_struct **pfsp);
-NTSTATUS np_write(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		  ssize_t *nwritten);
 NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding);
@@ -7743,7 +7600,7 @@ int wait_for_aio_completion(files_struct *fsp);
 /* The following definitions come from smbd/blocking.c  */
 
 bool push_blocking_lock_request( struct byte_range_lock *br_lck,
-		const struct smb_request *req,
+		struct smb_request *req,
 		files_struct *fsp,
 		int lock_timeout,
 		int lock_num,
@@ -8017,7 +7874,7 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
 /* The following definitions come from smbd/ipc.c  */
 
 void send_trans_reply(connection_struct *conn,
-		      const uint8_t *inbuf,
+		      struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large);
@@ -8116,11 +7973,11 @@ void reply_negprot(struct smb_request *req);
 /* The following definitions come from smbd/notify.c  */
 
 void change_notify_reply(connection_struct *conn,
-			const uint8 *request_buf, uint32 max_param,
+			 struct smb_request *req, uint32 max_param,
 			 struct notify_change_buf *notify_buf);
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive);
-NTSTATUS change_notify_add_request(const struct smb_request *req,
+NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
 				struct files_struct *fsp);
@@ -8185,6 +8042,10 @@ void reply_nttranss(struct smb_request *req);
 
 /* The following definitions come from smbd/open.c  */
 
+NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
+                          const NT_USER_TOKEN *token,
+                          uint32_t access_desired,
+                          uint32_t *access_granted);
 NTSTATUS fd_close(files_struct *fsp);
 bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func,
 				 uint32 *paccess_mask,
@@ -8372,7 +8233,7 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);
-void construct_reply_common(const char *inbuf, char *outbuf);
+void construct_reply_common_req(struct smb_request *req, char *outbuf);
 void chain_reply(struct smb_request *req);
 void check_reload(time_t t);
 void smbd_process(void);
@@ -8414,6 +8275,12 @@ size_t srvstr_get_path(TALLOC_CTX *ctx,
 			size_t src_len,
 			int flags,
 			NTSTATUS *err);
+size_t srvstr_get_path_req_wcard(TALLOC_CTX *mem_ctx, struct smb_request *req,
+				 char **pp_dest, const char *src, int flags,
+				 NTSTATUS *err, bool *contains_wcard);
+size_t srvstr_get_path_req(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			   char **pp_dest, const char *src, int flags,
+			   NTSTATUS *err);
 bool check_fsp_open(connection_struct *conn, struct smb_request *req,
 		    files_struct *fsp);
 bool check_fsp(connection_struct *conn, struct smb_request *req,
@@ -8499,9 +8366,12 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 			int count,
 			bool target_is_directory);
 void reply_copy(struct smb_request *req);
-uint32 get_lock_pid( char *data, int data_offset, bool large_file_format);
-uint64_t get_lock_count( char *data, int data_offset, bool large_file_format);
-uint64_t get_lock_offset( char *data, int data_offset, bool large_file_format, bool *err);
+uint32 get_lock_pid(const uint8_t *data, int data_offset,
+		    bool large_file_format);
+uint64_t get_lock_count(const uint8_t *data, int data_offset,
+			bool large_file_format);
+uint64_t get_lock_offset(const uint8_t *data, int data_offset,
+			 bool large_file_format, bool *err);
 void reply_lockingX(struct smb_request *req);
 void reply_readbmpx(struct smb_request *req);
 void reply_readbs(struct smb_request *req);

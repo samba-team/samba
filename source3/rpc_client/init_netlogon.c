@@ -172,7 +172,8 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 *****************************************************************************/
 
 NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
-				uint8_t pipe_session_key[16],
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3)
 {
 	struct samu *sampw;
@@ -202,6 +203,13 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 
 	user_sid = pdb_get_user_sid(sampw);
 	group_sid = pdb_get_group_sid(sampw);
+
+	if (pipe_session_key && pipe_session_key_len != 16) {
+		DEBUG(0,("serverinfo_to_SamInfo3: invalid "
+			 "pipe_session_key_len[%u] != 16\n",
+			 pipe_session_key_len));
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	if ((user_sid == NULL) || (group_sid == NULL)) {
 		DEBUG(1, ("_netr_LogonSamLogon: User without group or user SID\n"));
@@ -248,14 +256,18 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 		       server_info->user_session_key.data,
 		       MIN(sizeof(user_session_key.key),
 			   server_info->user_session_key.length));
-		SamOEMhash(user_session_key.key, pipe_session_key, 16);
+		if (pipe_session_key) {
+			SamOEMhash(user_session_key.key, pipe_session_key, 16);
+		}
 	}
 	if (server_info->lm_session_key.length) {
 		memcpy(lm_session_key.key,
 		       server_info->lm_session_key.data,
 		       MIN(sizeof(lm_session_key.key),
 			   server_info->lm_session_key.length));
-		SamOEMhash(lm_session_key.key, pipe_session_key, 8);
+		if (pipe_session_key) {
+			SamOEMhash(lm_session_key.key, pipe_session_key, 8);
+		}
 	}
 
 	groups.count = num_gids;

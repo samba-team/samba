@@ -20,7 +20,7 @@
 #include "includes.h"
 #include "lib/torture/torture.h"
 
-static void subunit_init(struct torture_context *ctx) 
+static void subunit_init(struct torture_results *results) 
 {
 	/* FIXME: register segv and bus handler */
 }

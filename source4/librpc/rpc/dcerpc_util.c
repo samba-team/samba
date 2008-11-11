@@ -421,7 +421,8 @@ static void continue_ntlmssp_connection(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx),
 					 DCERPC_AUTH_TYPE_NTLMSSP,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
@@ -453,7 +454,9 @@ static void continue_spnego_after_wrong_pass(struct composite_context *ctx)
 
 	/* initiate a authenticated bind */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx), 
+					 DCERPC_AUTH_TYPE_SPNEGO,
 					 dcerpc_auth_level(s->pipe->conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -572,7 +575,9 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	} else {
 		/* try SPNEGO with fallback to NTLMSSP */
 		auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-						 s->credentials, s->lp_ctx, DCERPC_AUTH_TYPE_SPNEGO,
+						 s->credentials, 
+						 lp_gensec_settings(c, s->lp_ctx), 
+						 DCERPC_AUTH_TYPE_SPNEGO,
 						 dcerpc_auth_level(conn),
 						 s->table->authservices->names[0]);
 		composite_continue(c, auth_req, continue_auth_auto, c);
@@ -580,7 +585,9 @@ struct composite_context *dcerpc_pipe_auth_send(struct dcerpc_pipe *p,
 	}
 
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table,
-					 s->credentials, s->lp_ctx, auth_type,
+					 s->credentials, 
+					 lp_gensec_settings(c, s->lp_ctx), 
+					 auth_type,
 					 dcerpc_auth_level(conn),
 					 s->table->authservices->names[0]);
 	composite_continue(c, auth_req, continue_auth, c);
@@ -671,19 +678,20 @@ _PUBLIC_ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
 
   this triggers on a debug level of >= 10
 */
-_PUBLIC_ void dcerpc_log_packet(const struct ndr_interface_table *ndr,
+_PUBLIC_ void dcerpc_log_packet(const char *lockdir,
+								const struct ndr_interface_table *ndr,
 		       uint32_t opnum, uint32_t flags, 
 		       DATA_BLOB *pkt)
 {
 	const int num_examples = 20;
 	int i;
 
-	if (DEBUGLEVEL < 10) return;
+	if (lockdir == NULL) return;
 
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
 		asprintf(&name, "%s/rpclog/%s-%u.%d.%s", 
-			 lp_lockdir(global_loadparm), ndr->name, opnum, i,
+			 lockdir, ndr->name, opnum, i,
 			 (flags&NDR_IN)?"in":"out");
 		if (name == NULL) {
 			return;

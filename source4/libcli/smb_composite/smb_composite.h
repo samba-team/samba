@@ -53,6 +53,7 @@ struct smb_composite_fetchfile {
 		const char *called_name;
 		const char *service;
 		const char *service_type;
+		const char *socket_options;
 		struct cli_credentials *credentials;
 		const char *workgroup;
 		const char *filename;
@@ -60,6 +61,7 @@ struct smb_composite_fetchfile {
 		struct smbcli_session_options session_options;
 		struct resolve_context *resolve_ctx;
 		struct smb_iconv_convenience *iconv_convenience;
+		struct gensec_settings *gensec_settings;
 	} in;
 	struct {
 		uint8_t *data;
@@ -93,6 +95,7 @@ struct smb_composite_connect {
 	struct {
 		const char *dest_host;
 		const char **dest_ports;
+		const char *socket_options;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
@@ -102,6 +105,7 @@ struct smb_composite_connect {
 		struct smbcli_options options;
 		struct smbcli_session_options session_options;
 		struct smb_iconv_convenience *iconv_convenience;
+		struct gensec_settings *gensec_settings;
 	} in;
 	struct {
 		struct smbcli_tree *tree;
@@ -120,6 +124,7 @@ struct smb_composite_sesssetup {
 		uint32_t capabilities;
 		struct cli_credentials *credentials;
 		const char *workgroup;
+		struct gensec_settings *gensec_settings;
 	} in;
 	struct {
 		uint16_t vuid;
@@ -133,6 +138,7 @@ struct smb_composite_fsinfo {
 	struct {
 		const char *dest_host;
 		const char **dest_ports;
+		const char *socket_options;
 		const char *called_name;
 		const char *service;
 		const char *service_type;
@@ -140,6 +146,7 @@ struct smb_composite_fsinfo {
 		const char *workgroup;
 		enum smb_fsinfo_level level;
 		struct smb_iconv_convenience *iconv_convenience;
+		struct gensec_settings *gensec_settings;
 	} in;
 	
 	struct {

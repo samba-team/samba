@@ -3,9 +3,7 @@
 #include <stdint.h>
 
 #include "librpc/gen_ndr/misc.h"
-#define dom_sid2 dom_sid
-#define dom_sid28 dom_sid
-#define dom_sid0 dom_sid
+#include "librpc/gen_ndr/dom_sid.h"
 #ifndef _HEADER_security
 #define _HEADER_security
 
@@ -68,6 +66,12 @@
 #define SEC_RIGHTS_DIR_WRITE	( SEC_RIGHTS_FILE_WRITE )
 #define SEC_RIGHTS_DIR_EXECUTE	( SEC_RIGHTS_FILE_EXECUTE )
 #define SEC_RIGHTS_DIR_ALL	( SEC_RIGHTS_FILE_ALL )
+#define STANDARD_RIGHTS_ALL_ACCESS	( SEC_STD_ALL )
+#define STANDARD_RIGHTS_MODIFY_ACCESS	( SEC_STD_READ_CONTROL )
+#define STANDARD_RIGHTS_EXECUTE_ACCESS	( SEC_STD_READ_CONTROL )
+#define STANDARD_RIGHTS_READ_ACCESS	( SEC_STD_READ_CONTROL )
+#define STANDARD_RIGHTS_WRITE_ACCESS	( (SEC_STD_WRITE_OWNER|SEC_STD_WRITE_DAC|SEC_STD_DELETE) )
+#define STANDARD_RIGHTS_REQUIRED_ACCESS	( (SEC_STD_DELETE|SEC_STD_READ_CONTROL|SEC_STD_WRITE_DAC|SEC_STD_WRITE_OWNER) )
 #define SID_NULL	( "S-1-0-0" )
 #define NAME_WORLD	( "WORLD" )
 #define SID_WORLD_DOMAIN	( "S-1-1" )
@@ -239,7 +243,7 @@ struct security_ace_object {
 
 union security_ace_object_ctr {
 	struct security_ace_object object;/* [case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] */
-}/* [nodiscriminant] */;
+}/* [public,nodiscriminant] */;
 
 struct security_ace {
 	enum security_ace_type type;
@@ -248,7 +252,7 @@ struct security_ace {
 	uint32_t access_mask;
 	union security_ace_object_ctr object;/* [switch_is(type)] */
 	struct dom_sid trustee;
-}/* [gensize,public,nosize] */;
+}/* [gensize,public,nopull,nosize] */;
 
 enum security_acl_revision
 #ifndef USE_UINT_ENUMS

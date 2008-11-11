@@ -225,10 +225,10 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	close_conns_after_fork();
 
 	if (!override_logfile) {
-		char *logfile;
-		if (asprintf(&logfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
-			lp_set_logfile(logfile);
-			SAFE_FREE(logfile);
+		char *lfile;
+		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
+			lp_set_logfile(lfile);
+			SAFE_FREE(lfile);
 			reopen_logs();
 		}
 	}
@@ -672,7 +672,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
-			   dos_errstr(werr)));
+			   win_errstr(werr)));
 		talloc_destroy(mem_ctx);
 		return false;
 	}

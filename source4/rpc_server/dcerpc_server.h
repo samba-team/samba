@@ -210,6 +210,8 @@ struct dcesrv_connection {
 
 	bool processing;
 
+	const char *packet_log_dir;
+
 	/* this is the default state_flags for dcesrv_call_state structs */
 	uint32_t state_flags;
 

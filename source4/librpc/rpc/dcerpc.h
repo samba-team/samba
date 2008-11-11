@@ -40,6 +40,7 @@ enum dcerpc_transport_t {
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
 struct dcerpc_connection;
+struct gensec_settings;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
@@ -60,6 +61,9 @@ struct dcerpc_connection {
 	const char *binding_string;
 	struct event_context *event_ctx;
 	struct smb_iconv_convenience *iconv_convenience;
+
+	/** Directory in which to save ndrdump-parseable files */
+	const char *packet_log_dir;
 
 	bool dead;
 	bool free_skipped;
@@ -109,10 +113,10 @@ struct dcerpc_pipe {
 	struct dcerpc_connection *conn;
 	struct dcerpc_binding *binding;
 
-	/* the last fault code from a DCERPC fault */
+	/** the last fault code from a DCERPC fault */
 	uint32_t last_fault_code;
 
-	/* timeout for individual rpc requests, in seconds */
+	/** timeout for individual rpc requests, in seconds */
 	uint32_t request_timeout;
 };
 
@@ -305,7 +309,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct loadparm_context *lp_ctx,
 				   uint8_t auth_level);
 struct event_context *dcerpc_event_context(struct dcerpc_pipe *p);
-NTSTATUS dcerpc_init(void);
+NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx);
 struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c);
 uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c);
 NTSTATUS dcerpc_secondary_context(struct dcerpc_pipe *p, 
@@ -319,7 +323,7 @@ NTSTATUS dcerpc_alter_context(struct dcerpc_pipe *p,
 NTSTATUS dcerpc_bind_auth(struct dcerpc_pipe *p,
 			  const struct ndr_interface_table *table,
 			  struct cli_credentials *credentials,
-			  struct loadparm_context *lp_ctx,
+			  struct gensec_settings *gensec_settings,
 			  uint8_t auth_type, uint8_t auth_level,
 			  const char *service);
 struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
@@ -345,9 +349,10 @@ NTSTATUS dcerpc_secondary_auth_connection_recv(struct composite_context *c,
 
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   struct dcerpc_binding *b);
-void dcerpc_log_packet(const struct ndr_interface_table *ndr,
-		       uint32_t opnum, uint32_t flags, 
-		       DATA_BLOB *pkt);
+void dcerpc_log_packet(const char *lockdir, 
+					   const struct ndr_interface_table *ndr,
+					   uint32_t opnum, uint32_t flags, 
+					   DATA_BLOB *pkt);
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
 
 NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);

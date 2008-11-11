@@ -2532,3 +2532,19 @@ char *escape_shell_string(const char *src)
 	*dest++ = '\0';
 	return ret;
 }
+
+/***************************************************
+ Wrapper for str_list_make() to restore the s3 behavior.
+ In samba 3.2 passing NULL or an empty string returned NULL.
+
+ In master, it now returns a list of length 1 with the first string set
+ to NULL (an empty list)
+***************************************************/
+
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
+{
+	if (!string || !*string) {
+		return NULL;
+	}
+	return str_list_make(mem_ctx, string, sep);
+}

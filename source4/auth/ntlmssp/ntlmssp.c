@@ -159,7 +159,6 @@ static NTSTATUS gensec_ntlmssp_update_find(struct gensec_ntlmssp_state *gensec_n
 		}
 	} else {
 		if (!msrpc_parse(gensec_ntlmssp_state, 
-				 lp_iconv_convenience(gensec_security->lp_ctx),
 				 &input, "Cd",
 				 "NTLMSSP",
 				 &ntlmssp_command)) {

@@ -35,12 +35,13 @@
 
 static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle, struct lsa_String *domname,
-				 uint32_t *access_mask, struct dom_sid **sid)
+				 uint32_t *access_mask, struct dom_sid **sid_p)
 {
 	NTSTATUS status;
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
+	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
 	
 	printf("connecting\n");
@@ -59,6 +60,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
+	r2.out.sid = &sid;
 
 	printf("domain lookup on %s\n", domname->string);
 
@@ -70,7 +72,7 @@ static bool test_opendomain_samr(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = *access_mask;
-	r3.in.sid = *sid = r2.out.sid;
+	r3.in.sid = *sid_p = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
 	printf("opening domain\n");

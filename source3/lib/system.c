@@ -538,21 +538,6 @@ int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
 }
 
 /*******************************************************************
- Wrapper for realpath.
-********************************************************************/
-
-char *sys_realpath(const char *path, char *resolved_path)
-{
-#if defined(HAVE_REALPATH)
-	return realpath(path, resolved_path);
-#else
-	/* As realpath is not a system call we can't return ENOSYS. */
-	errno = EINVAL;
-	return NULL;
-#endif
-}
-
-/*******************************************************************
 The wait() calls vary between systems
 ********************************************************************/
 
@@ -578,104 +563,6 @@ char *sys_getwd(char *s)
 	wd = (char *)getwd(s);
 #endif
 	return wd;
-}
-
-/*******************************************************************
-system wrapper for symlink
-********************************************************************/
-
-int sys_symlink(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_SYMLINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return symlink(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
-system wrapper for readlink
-********************************************************************/
-
-int sys_readlink(const char *path, char *buf, size_t bufsiz)
-{
-#ifndef HAVE_READLINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return readlink(path, buf, bufsiz);
-#endif
-}
-
-/*******************************************************************
-system wrapper for link
-********************************************************************/
-
-int sys_link(const char *oldpath, const char *newpath)
-{
-#ifndef HAVE_LINK
-	errno = ENOSYS;
-	return -1;
-#else
-	return link(oldpath, newpath);
-#endif
-}
-
-/*******************************************************************
-chown isn't used much but OS/2 doesn't have it
-********************************************************************/
-
-int sys_chown(const char *fname,uid_t uid,gid_t gid)
-{
-#ifndef HAVE_CHOWN
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chown!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chown(fname,uid,gid));
-#endif
-}
-
-/*******************************************************************
- Wrapper for lchown.
-********************************************************************/
-
-int sys_lchown(const char *fname,uid_t uid,gid_t gid)
-{
-#ifndef HAVE_LCHOWN
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no lchown!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(lchown(fname,uid,gid));
-#endif
-}
-
-/*******************************************************************
-os/2 also doesn't have chroot
-********************************************************************/
-int sys_chroot(const char *dname)
-{
-#ifndef HAVE_CHROOT
-	static int done;
-	if (!done) {
-		DEBUG(1,("WARNING: no chroot!\n"));
-		done=1;
-	}
-	errno = ENOSYS;
-	return -1;
-#else
-	return(chroot(dname));
-#endif
 }
 
 #if defined(HAVE_POSIX_CAPABILITIES)
@@ -1301,56 +1188,6 @@ int sys_pclose(int fd)
 	if (wait_pid == -1)
 		return -1;
 	return wstatus;
-}
-
-/**************************************************************************
- Wrappers for dlopen, dlsym, dlclose.
-****************************************************************************/
-
-void *sys_dlopen(const char *name, int flags)
-{
-#if defined(HAVE_DLOPEN)
-	return dlopen(name, flags);
-#else
-	return NULL;
-#endif
-}
-
-void *sys_dlsym(void *handle, const char *symbol)
-{
-#if defined(HAVE_DLSYM)
-    return dlsym(handle, symbol);
-#else
-    return NULL;
-#endif
-}
-
-int sys_dlclose (void *handle)
-{
-#if defined(HAVE_DLCLOSE)
-	return dlclose(handle);
-#else
-	return 0;
-#endif
-}
-
-const char *sys_dlerror(void)
-{
-#if defined(HAVE_DLERROR)
-	return dlerror();
-#else
-	return NULL;
-#endif
-}
-
-int sys_dup2(int oldfd, int newfd) 
-{
-#if defined(HAVE_DUP2)
-	return dup2(oldfd, newfd);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
 }
 
 /**************************************************************************

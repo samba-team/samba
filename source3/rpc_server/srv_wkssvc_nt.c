@@ -349,7 +349,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5,("_wkssvc_NetrJoinDomain2: libnet_Join failed with: %s\n",
 			j->out.error_string ? j->out.error_string :
-			dos_errstr(werr)));
+			win_errstr(werr)));
 	}
 
 	TALLOC_FREE(j);
@@ -415,7 +415,7 @@ WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: libnet_Unjoin failed with: %s\n",
 			u->out.error_string ? u->out.error_string :
-			dos_errstr(werr)));
+			win_errstr(werr)));
 	}
 
 	TALLOC_FREE(u);

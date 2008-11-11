@@ -290,6 +290,7 @@ HEIMDAL_KRB5_OBJ_FILES = \
 	$(heimdalsrcdir)/lib/krb5/free_host_realm.o \
 	$(heimdalsrcdir)/lib/krb5/generate_seq_number.o \
 	$(heimdalsrcdir)/lib/krb5/generate_subkey.o \
+	$(heimdalsrcdir)/lib/krb5/get_addrs.o \
 	$(heimdalsrcdir)/lib/krb5/get_cred.o \
 	$(heimdalsrcdir)/lib/krb5/get_default_principal.o \
 	$(heimdalsrcdir)/lib/krb5/get_default_realm.o \

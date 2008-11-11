@@ -39,7 +39,7 @@ extern bool override_logfile;
 static void set_logfile(poptContext con, const char * arg)
 {
 
-	char *logfile = NULL;
+	char *lfile = NULL;
 	const char *pname;
 
 	/* Find out basename of current program */
@@ -50,11 +50,11 @@ static void set_logfile(poptContext con, const char * arg)
 	else
 		pname++;
 
-	if (asprintf(&logfile, "%s/log.%s", arg, pname) < 0) {
+	if (asprintf(&lfile, "%s/log.%s", arg, pname) < 0) {
 		return;
 	}
-	lp_set_logfile(logfile);
-	SAFE_FREE(logfile);
+	lp_set_logfile(lfile);
+	SAFE_FREE(lfile);
 }
 
 static bool PrintSambaVersionString;

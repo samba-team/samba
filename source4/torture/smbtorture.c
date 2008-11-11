@@ -33,6 +33,7 @@
 #include "torture/smbtorture.h"
 #include "../lib/util/dlinklist.h"
 #include "librpc/rpc/dcerpc.h"
+#include "auth/gensec/gensec.h"
 #include "param/param.h"
 
 #include "auth/credentials/credentials.h"
@@ -370,7 +371,7 @@ static void quiet_suite_start(struct torture_context *ctx,
 			      struct torture_suite *suite)
 {
 	int i;
-	ctx->quiet = true;
+	ctx->results->quiet = true;
 	for (i = 1; i < ctx->level; i++) putchar('\t');
 	printf("%s: ", suite->name);
 	fflush(stdout);
@@ -456,6 +457,7 @@ int main(int argc,char *argv[])
 	int max_runtime=0;
 	int argc_new;
 	struct torture_context *torture;
+	struct torture_results *results;
 	const struct torture_ui_ops *ui_ops;
 	char **argv_new;
 	poptContext pc;
@@ -627,7 +629,9 @@ int main(int argc,char *argv[])
 		exit(1);
 	}
 
-	torture = torture_context_init(s4_event_context_init(NULL), ui_ops);
+	results = torture_results_init(talloc_autofree_context(), ui_ops);
+
+	torture = torture_context_init(s4_event_context_init(NULL), results);
 	if (basedir != NULL) {
 		if (basedir[0] != '/') {
 			fprintf(stderr, "Please specify an absolute path to --basedir\n");
@@ -645,6 +649,8 @@ int main(int argc,char *argv[])
 
 	torture->lp_ctx = cmdline_lp_ctx;
 
+	gensec_init(cmdline_lp_ctx);
+
 	if (argc_new == 0) {
 		printf("You must specify a test to run, or 'ALL'\n");
 	} else if (shell) {
@@ -657,7 +663,7 @@ int main(int argc,char *argv[])
 		}
 	}
 
-	if (torture->returncode && correct) {
+	if (torture->results->returncode && correct) {
 		return(0);
 	} else {
 		return(1);

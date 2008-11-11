@@ -34,29 +34,6 @@
 #define IS_DOS_SYSTEM(test_mode)   (((test_mode) & aSYSTEM) != 0)
 #define IS_DOS_HIDDEN(test_mode)   (((test_mode) & aHIDDEN) != 0)
 
-#ifndef SAFE_FREE /* Oh no this is also defined in tdb.h */
-
-/**
- * Free memory if the pointer and zero the pointer.
- *
- * @note You are explicitly allowed to pass NULL pointers -- they will
- * always be ignored.
- **/
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
-#endif
-
-/* assert macros */
-#ifdef DEVELOPER
-#define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-		 __FILE__, __LINE__, #b)), smb_panic("assert failed: " #b)))
-#else
-/* redefine the assert macro for non-developer builds */
-#define SMB_ASSERT(b) ( (b) ? (void)0 : \
-        (DEBUG(0,("PANIC: assert failed at %s(%d): %s\n", \
-	    __FILE__, __LINE__, #b))))
-#endif
-
 #define SMB_WARN(condition, message) \
     ((condition) ? (void)0 : \
      DEBUG(0, ("WARNING: %s: %s\n", #condition, message)))
@@ -75,8 +52,8 @@
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-#define CHECK_READ(fsp,inbuf) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
-			((SVAL((inbuf),smb_flg2) & FLAGS2_READ_PERMIT_EXECUTE) && \
+#define CHECK_READ(fsp,req) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
+			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
 			 (fsp->access_mask & FILE_EXECUTE))))
 
 #define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))
@@ -114,17 +91,6 @@
 #define VALID_STAT(st) ((st).st_nlink != 0)  
 #define VALID_STAT_OF_DIR(st) (VALID_STAT(st) && S_ISDIR((st).st_mode))
 #define SET_STAT_INVALID(st) ((st).st_nlink = 0)
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-#ifndef ABS
-#define ABS(a) ((a)>0?(a):(-(a)))
-#endif
 
 /* Macros to get at offsets within smb_lkrng and smb_unlkrng
    structures. We cannot define these as actual structures
@@ -165,6 +131,8 @@
 
 /* the remaining number of bytes in smb buffer 'buf' from pointer 'p'. */
 #define smb_bufrem(buf, p) (smb_buflen(buf)-PTR_DIFF(p, smb_buf(buf)))
+#define smbreq_bufrem(req, p) (req->buflen - PTR_DIFF(p, req->buf))
+
 
 /* Note that chain_size must be available as an extern int to this macro. */
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
@@ -360,14 +328,6 @@ do { \
 
 #define ADD_TO_LARGE_ARRAY(mem_ctx, type, elem, array, num, size) \
 	add_to_large_array((mem_ctx), sizeof(type), &(elem), (void *)(array), (num), (size));
-
-#ifndef ISDOT
-#define ISDOT(p) (*(p) == '.' && *((p) + 1) == '\0')
-#endif /* ISDOT */
-
-#ifndef ISDOTDOT
-#define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
-#endif /* ISDOTDOT */
 
 #ifndef toupper_ascii_fast
 /* Warning - this must only be called with 0 <= c < 128. IT WILL

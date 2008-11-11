@@ -224,6 +224,8 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
           $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES) \
 	  $(GPEXT_MODULES)
 
+EXTRA_ALL_TARGETS = @EXTRA_ALL_TARGETS@
+
 ######################################################################
 # object file lists
 ######################################################################
@@ -267,7 +269,7 @@ LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/ndr/ndr_misc.o \
 	     librpc/gen_ndr/ndr_misc.o \
 	     librpc/gen_ndr/ndr_security.o \
-	     librpc/ndr/ndr_sec_helper.o \
+	     ../librpc/ndr/ndr_sec_helper.o \
 	     librpc/ndr/ndr_string.o \
 	     librpc/ndr/sid.o \
 	     ../librpc/ndr/uuid.o \
@@ -278,7 +280,8 @@ RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
 LIBNDR_GEN_OBJ0 = librpc/gen_ndr/ndr_samr.o \
 		  librpc/gen_ndr/ndr_lsa.o
 
-LIBNDR_GEN_OBJ1 = librpc/gen_ndr/ndr_netlogon.o
+LIBNDR_GEN_OBJ1 = librpc/gen_ndr/ndr_netlogon.o \
+		  ../librpc/ndr/ndr_netlogon.o
 
 LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
@@ -293,6 +296,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_xattr.o \
 		 librpc/gen_ndr/ndr_epmapper.o \
+		 librpc/gen_ndr/ndr_named_pipe_auth.o \
 		 librpc/gen_ndr/ndr_ntsvcs.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
@@ -404,7 +408,7 @@ LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
 
 NTERR_OBJ = libsmb/nterr.o
-DOSERR_OBJ = libsmb/doserr.o
+DOSERR_OBJ = ../libcli/util/doserr.o
 ERRORMAP_OBJ = libsmb/errormap.o
 DCE_RPC_ERR_OBJ = ../librpc/rpc/dcerpc_error.o
 
@@ -639,6 +643,7 @@ VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 VFS_ACL_XATTR_OBJ = modules/vfs_acl_xattr.o
+VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
@@ -903,9 +908,9 @@ CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 	  $(LIBNDR_GEN_OBJ0)
 
-CIFS_MOUNT_OBJ = client/mount.cifs.o
+CIFS_MOUNT_OBJ = client/mount.cifs.o client/mtab.o
 
-CIFS_UMOUNT_OBJ = client/umount.cifs.o
+CIFS_UMOUNT_OBJ = client/umount.cifs.o client/mtab.o
 
 CIFS_UPCALL_OBJ = client/cifs.upcall.o
 
@@ -1156,7 +1161,8 @@ RPC_OPEN_TCP_OBJ = torture/rpc_open_tcp.o \
 # now the rules...
 ######################################################################
 all:: SHOWFLAGS basics libs $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @CIFSUPCALL_PROGS@ \
+	$(EXTRA_ALL_TARGETS)
 
 basics::
 
@@ -1219,10 +1225,11 @@ samba3-idl::
 		../librpc/idl/initshutdown.idl ../librpc/idl/srvsvc.idl ../librpc/idl/svcctl.idl \
 		../librpc/idl/eventlog.idl ../librpc/idl/wkssvc.idl ../librpc/idl/netlogon.idl \
 		../librpc/idl/notify.idl ../librpc/idl/epmapper.idl librpc/idl/messaging.idl \
-		../librpc/idl/xattr.idl ../librpc/idl/misc.idl librpc/idl/samr.idl \
+		../librpc/idl/xattr.idl ../librpc/idl/misc.idl ../librpc/idl/samr.idl \
 		../librpc/idl/security.idl ../librpc/idl/dssetup.idl ../librpc/idl/krb5pac.idl \
 		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl ../librpc/idl/drsuapi.idl \
-		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl
+		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl \
+		../librpc/idl/named_pipe_auth.idl librpc/idl/dom_sid.idl
 
 librpc/gen_ndr/tables.c:: librpc/gen_ndr/*.h
 	@echo "Generating $@"
@@ -2453,6 +2460,10 @@ bin/smb_traffic_analyzer.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SMB_TRAFFIC_ANALYZE
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SMB_TRAFFIC_ANALYZER_OBJ)
 
+bin/acl_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_TDB_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_ACL_TDB_OBJ)
+
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) libgpo/gpext/registry.o
@@ -2847,9 +2858,10 @@ valgrindtest:: all torture timelimit
 	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
 
 SELFTEST_FORMAT = plain
+selftestdir = ../selftest
 
 selftest:: all torture timelimit
-	@../selftest/selftest.pl --prefix=st --target=samba3 \
+	@$(selftestdir)/selftest.pl --prefix=st --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--expected-failures=$(srcdir)/selftest/knownfail \
 		--exclude=$(srcdir)/selftest/skip \

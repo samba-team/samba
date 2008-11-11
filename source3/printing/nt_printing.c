@@ -659,7 +659,7 @@ bool nt_printing_init(struct messaging_context *msg_ctx)
 	if ( lp_security() == SEC_ADS ) {
 		win_rc = check_published_printers();
 		if (!W_ERROR_IS_OK(win_rc))
-			DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", dos_errstr(win_rc)));
+			DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", win_errstr(win_rc)));
 	}
 
 	return True;
@@ -4749,7 +4749,7 @@ static WERROR get_a_printer_internal( Printer_entry *print_hnd, NT_PRINTER_INFO_
 			if ( !W_ERROR_IS_OK(result) ) {
 				TALLOC_FREE( *pp_printer );
 				DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", 
-					sharename, (unsigned int)level, dos_errstr(result)));
+					sharename, (unsigned int)level, win_errstr(result)));
 				return result;
 			}
 

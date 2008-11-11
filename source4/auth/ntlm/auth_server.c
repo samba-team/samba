@@ -66,6 +66,8 @@ static NTSTATUS server_get_challenge(struct auth_method_context *ctx, TALLOC_CTX
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 	io.in.dest_ports = lp_smb_ports(ctx->auth_ctx->lp_ctx); 
+	io.in.socket_options = lp_socket_options(ctx->auth_ctx->lp_ctx);
+	io.in.gensec_settings = lp_gensec_settings(mem_ctx, ctx->auth_ctx->lp_ctx);
 
 	io.in.called_name = strupper_talloc(mem_ctx, io.in.dest_host);
 
@@ -145,6 +147,7 @@ static NTSTATUS server_check_password(struct auth_method_context *ctx,
 
 	session_setup.in.credentials = creds;
 	session_setup.in.workgroup = ""; /* Only used with SPNEGO, which we are not doing */
+	session_setup.in.gensec_settings = lp_gensec_settings(session, ctx->auth_ctx->lp_ctx);
 
 	/* Check password with remove server - this should be async some day */
 	nt_status = smb_composite_sesssetup(session, &session_setup);

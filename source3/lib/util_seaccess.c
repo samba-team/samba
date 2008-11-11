@@ -110,7 +110,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 {
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
-	
+
 	if (is_sid_in_token(token, sd->owner_sid)) {
 		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
 	} else if (user_has_privileges(token, &se_restore)) {
@@ -120,7 +120,7 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	if (sd->dacl == NULL) {
 		return granted & ~denied;
 	}
-	
+
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 
@@ -164,10 +164,17 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 
 	/* handle the maximum allowed flag */
 	if (access_desired & SEC_FLAG_MAXIMUM_ALLOWED) {
+		uint32_t orig_access_desired = access_desired;
+
 		access_desired |= access_check_max_allowed(sd, token);
 		access_desired &= ~SEC_FLAG_MAXIMUM_ALLOWED;
 		*access_granted = access_desired;
 		bits_remaining = access_desired & ~SEC_STD_DELETE;
+
+		DEBUG(10,("se_access_check: MAX desired = 0x%x, granted = 0x%x, remaining = 0x%x\n",
+			orig_access_desired,
+			*access_granted,
+			bits_remaining));
 	}
 
 #if 0

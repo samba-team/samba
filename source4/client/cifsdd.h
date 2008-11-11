@@ -97,9 +97,11 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size, int options, 
+				const char *socket_options,
 				struct smbcli_options *smb_options,
 				struct smbcli_session_options *smb_session_options,
-				struct smb_iconv_convenience *iconv_convenience);
+				struct smb_iconv_convenience *iconv_convenience,
+				struct gensec_settings *gensec_settings);
 bool dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);
 bool dd_flush_block(struct dd_iohandle * h, uint8_t * buf,

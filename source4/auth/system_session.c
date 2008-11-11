@@ -234,6 +234,7 @@ NTSTATUS auth_system_server_info(TALLOC_CTX *mem_ctx, const char *netbios_name,
 				 struct auth_serversupplied_info **_server_info) 
 {
 	struct auth_serversupplied_info *server_info;
+
 	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
 	NT_STATUS_HAVE_NO_MEMORY(server_info);
 

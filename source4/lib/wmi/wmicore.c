@@ -37,9 +37,10 @@ struct IWbemContext;
                             DEBUG(1, ("OK   : %s\n", msg)); \
                         }
 
-void wmi_init(struct com_context **ctx, struct cli_credentials *credentials)
+void wmi_init(struct com_context **ctx, struct cli_credentials *credentials,
+			  struct loadparm_context *lp_ctx)
 {
-	dcerpc_init();
+	dcerpc_init(lp_ctx);
 	ndr_table_init();
 
 	/* FIXME: Register DCOM proxies? */

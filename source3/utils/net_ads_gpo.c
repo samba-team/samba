@@ -107,7 +107,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		WERROR werr = gp_reg_state_store(mem_ctx, flags, dn,
 						 token, gpo_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			d_printf("failed: %s\n", dos_errstr(werr));
+			d_printf("failed: %s\n", win_errstr(werr));
 			goto out;
 		}
 	}
@@ -152,7 +152,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 						&token->user_sids[0],
 						&read_list);
 		if (!W_ERROR_IS_OK(werr)) {
-			d_printf("failed: %s\n", dos_errstr(werr));
+			d_printf("failed: %s\n", win_errstr(werr));
 			goto out;
 		}
 	}

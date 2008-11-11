@@ -129,7 +129,7 @@ void dump_core_setup(const char *progname)
 	}
 	mkdir(corepath,0700);
 
-	sys_chown(corepath,getuid(),getgid());
+	chown(corepath,getuid(),getgid());
 	chmod(corepath,0700);
 
 	SAFE_FREE(logbase);

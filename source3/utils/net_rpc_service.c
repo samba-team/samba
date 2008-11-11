@@ -79,7 +79,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 					    &hService,
 					    &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
 		return result;
 	}
 
@@ -158,7 +158,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -171,7 +171,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 					      &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Control service request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Control service request failed.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -220,7 +220,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -228,7 +228,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 		SVCCTL_STATE_ALL, &num_services, &services );
 
 	if ( !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to enumerate services.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to enumerate services.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -281,7 +281,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -295,7 +295,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -307,7 +307,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 						  &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query status request failed.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -332,7 +332,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	}
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query config request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query config request failed.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -404,7 +404,7 @@ static NTSTATUS rpc_service_stop_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -448,7 +448,7 @@ static NTSTATUS rpc_service_pause_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -492,7 +492,7 @@ static NTSTATUS rpc_service_resume_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -534,7 +534,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					      &hSCM,
 					      &result);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open Service Control Manager.  [%s]\n", win_errstr(result));
 		return werror_to_ntstatus(result);
 	}
 
@@ -548,7 +548,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					    &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to open service.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Failed to open service.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -561,7 +561,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 					     &result);
 
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
+		d_fprintf(stderr, "Query status request failed.  [%s]\n", win_errstr(result));
 		goto done;
 	}
 
@@ -570,7 +570,7 @@ static NTSTATUS rpc_service_start_internal(struct net_context *c,
 	if ( W_ERROR_IS_OK(result) && (state == SVCCTL_RUNNING) )
 		d_printf("Successfully started service: %s\n", argv[0] );
 	else
-		d_fprintf(stderr, "Failed to start service: %s [%s]\n", argv[0], dos_errstr(result) );
+		d_fprintf(stderr, "Failed to start service: %s [%s]\n", argv[0], win_errstr(result) );
 
 done:
 	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hService, NULL);

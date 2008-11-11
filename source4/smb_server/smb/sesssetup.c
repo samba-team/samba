@@ -365,7 +365,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 
 		status = gensec_server_start(req,
 					     req->smb_conn->connection->event.ctx,
-					     req->smb_conn->lp_ctx,
+					     lp_gensec_settings(req, req->smb_conn->lp_ctx),
 					     req->smb_conn->connection->msg_ctx,
 					     &gensec_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -382,7 +382,7 @@ static void sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup *se
 		status = gensec_start_mech_by_oid(gensec_ctx, req->smb_conn->negotiate.oid);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC %s server code: %s\n", 
-				  gensec_get_name_by_oid(req->smb_conn->negotiate.oid), nt_errstr(status)));
+				  gensec_get_name_by_oid(gensec_ctx, req->smb_conn->negotiate.oid), nt_errstr(status)));
 			goto failed;
 		}
 

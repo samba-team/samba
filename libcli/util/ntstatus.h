@@ -592,6 +592,7 @@ typedef uint32_t NTSTATUS;
 #define NT_STATUS_TOO_MANY_LINKS NT_STATUS(0xC0000000 | 0x0265)
 #define NT_STATUS_QUOTA_LIST_INCONSISTENT NT_STATUS(0xC0000000 | 0x0266)
 #define NT_STATUS_FILE_IS_OFFLINE NT_STATUS(0xC0000000 | 0x0267)
+#define NT_STATUS_DS_BUSY NT_STATUS(0xC0000000 | 0x02a5)
 #define NT_STATUS_DS_NO_MORE_RIDS NT_STATUS(0xC0000000 | 0x02a8)
 #define NT_STATUS_NOT_A_REPARSE_POINT NT_STATUS(0xC0000000 | 0x0275)
 #define NT_STATUS_CURRENT_DOMAIN_NOT_ALLOWED NT_STATUS(0xC0000000 | 0x02E9)
@@ -627,6 +628,9 @@ const char *get_nt_error_c_code(NTSTATUS nt_code);
  returns the NT_STATUS constant matching the string supplied (as an NTSTATUS)
  *****************************************************************************/
 NTSTATUS nt_status_string_to_code(const char *nt_status_str);
+
+/** Used by ntstatus_dos_equal: */
+extern bool ntstatus_check_dos_mapping;
 
 #define NT_STATUS_IS_OK(x) (NT_STATUS_V(x) == 0)
 #define NT_STATUS_IS_ERR(x) ((NT_STATUS_V(x) & 0xc0000000) == 0xc0000000)

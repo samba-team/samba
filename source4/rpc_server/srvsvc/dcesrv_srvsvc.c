@@ -1458,6 +1458,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		       struct srvsvc_NetSrvGetInfo *r)
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
+	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -1487,8 +1488,8 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info101->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, r->in.server_unc);
 		W_ERROR_HAVE_NO_MEMORY(info101->server_name);
 
-		info101->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx->lp_ctx);
-		info101->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx->lp_ctx);
+		info101->version_major	= server_info->version_major;
+		info101->version_minor	= server_info->version_minor;
 		info101->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_call->event_ctx, dce_ctx);
 		info101->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info101->comment);
@@ -1507,8 +1508,8 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info102->server_name	= dcesrv_common_get_server_name(mem_ctx, dce_ctx, r->in.server_unc);
 		W_ERROR_HAVE_NO_MEMORY(info102->server_name);
 
-		info102->version_major	= dcesrv_common_get_version_major(mem_ctx, dce_ctx->lp_ctx);
-		info102->version_minor	= dcesrv_common_get_version_minor(mem_ctx, dce_ctx->lp_ctx);
+		info102->version_major	= server_info->version_major;
+		info102->version_minor	= server_info->version_minor;
 		info102->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_call->event_ctx, dce_ctx);
 		info102->comment	= talloc_strdup(mem_ctx, lp_serverstring(dce_ctx->lp_ctx));
 		W_ERROR_HAVE_NO_MEMORY(info102->comment);

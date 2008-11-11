@@ -2609,6 +2609,7 @@ SWIGINTERN PyObject *_wrap_smbcli_sock_connect_byname(PyObject *SWIGUNUSEDPARM(s
   TALLOC_CTX *arg3 = (TALLOC_CTX *) 0 ;
   struct resolve_context *arg4 = (struct resolve_context *) 0 ;
   struct event_context *arg5 = (struct event_context *) 0 ;
+  char *arg6 = (char *) 0 ;
   int res1 ;
   char *buf1 = 0 ;
   int alloc1 = 0 ;
@@ -2618,18 +2619,22 @@ SWIGINTERN PyObject *_wrap_smbcli_sock_connect_byname(PyObject *SWIGUNUSEDPARM(s
   int res4 = 0 ;
   void *argp5 = 0 ;
   int res5 = 0 ;
+  int res6 ;
+  char *buf6 = 0 ;
+  int alloc6 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "host",(char *) "ports",(char *) "resolve_ctx",(char *) "event_ctx", NULL 
+    (char *) "host",(char *) "ports",(char *) "resolve_ctx",(char *) "event_ctx",(char *) "socket_options", NULL 
   };
   struct smbcli_socket *result = 0 ;
   
   arg5 = event_context_init(NULL);
   arg3 = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:smbcli_sock_connect_byname",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|OO:smbcli_sock_connect_byname",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smbcli_sock_connect_byname" "', argument " "1"" of type '" "char const *""'");
@@ -2652,12 +2657,21 @@ SWIGINTERN PyObject *_wrap_smbcli_sock_connect_byname(PyObject *SWIGUNUSEDPARM(s
     }
     arg5 = (struct event_context *)(argp5);
   }
-  result = (struct smbcli_socket *)smbcli_sock_connect_byname((char const *)arg1,(char const **)arg2,arg3,arg4,arg5);
+  if (obj4) {
+    res6 = SWIG_AsCharPtrAndSize(obj4, &buf6, NULL, &alloc6);
+    if (!SWIG_IsOK(res6)) {
+      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "smbcli_sock_connect_byname" "', argument " "6"" of type '" "char const *""'");
+    }
+    arg6 = (char *)(buf6);
+  }
+  result = (struct smbcli_socket *)smbcli_sock_connect_byname((char const *)arg1,(char const **)arg2,arg3,arg4,arg5,(char const *)arg6);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_smbcli_socket, 0 |  0 );
   if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
+  if (alloc6 == SWIG_NEWOBJ) free((char*)buf6);
   return resultobj;
 fail:
   if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
+  if (alloc6 == SWIG_NEWOBJ) free((char*)buf6);
   return NULL;
 }
 

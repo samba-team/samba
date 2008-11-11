@@ -120,7 +120,7 @@ static int normalize_search_callback(struct ldb_request *req, struct ldb_reply *
 			}
 			for (j = 0; j < msg->elements[i].num_values; j++) {
 				const char *dn_str;
-				struct ldb_dn *dn = ldb_dn_new(ac, ac->module->ldb, (const char *)msg->elements[i].values[j].data);
+				struct ldb_dn *dn = ldb_dn_from_ldb_val(ac, ac->module->ldb, &msg->elements[i].values[j]);
 				if (!dn) {
 					return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_OPERATIONS_ERROR);
 				}

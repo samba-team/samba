@@ -24,7 +24,7 @@ struct param_opt {
 	struct param_opt *prev, *next;
 	char *key;
 	char *value;
-	int flags;
+	int priority;
 };
 
 struct param_context {
@@ -67,10 +67,9 @@ struct loadparm_context;
 struct loadparm_service;
 struct smbcli_options;
 struct smbcli_session_options;
+struct gensec_settings;
 
 void reload_charcnv(struct loadparm_context *lp_ctx);
-
-extern _DEPRECATED_ struct loadparm_context *global_loadparm;
 
 struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx);
 struct parm_struct *lp_parm_table(void);
@@ -166,7 +165,6 @@ int lp_cli_minprotocol(struct loadparm_context *);
 int lp_security(struct loadparm_context *);
 bool lp_paranoid_server_security(struct loadparm_context *);
 int lp_announce_as(struct loadparm_context *);
-const char **lp_js_include(struct loadparm_context *);
 
 const char *lp_servicename(const struct loadparm_service *service);
 const char *lp_pathname(struct loadparm_service *, struct loadparm_service *);
@@ -195,6 +193,7 @@ int lp_force_dir_mode(struct loadparm_service *, struct loadparm_service *);
 int lp_server_signing(struct loadparm_context *);
 int lp_client_signing(struct loadparm_context *);
 const char *lp_ntp_signd_socket_directory(struct loadparm_context *);
+
 
 const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 			      struct loadparm_service *service,
@@ -327,6 +326,9 @@ void lp_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options);
 void lp_smbcli_session_options(struct loadparm_context *lp_ctx,
 				 struct smbcli_session_options *options);
+struct dcerpc_server_info *lp_dcerpc_server_info(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
+struct gensec_settings *lp_gensec_settings(TALLOC_CTX *, struct loadparm_context *);
+
 
 /* The following definitions come from param/generic.c  */
 

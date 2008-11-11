@@ -71,6 +71,17 @@ _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_confi
 	}
 
 	for (i=0;i<num_backends;i++) {
+		char *enable_opt_name;
+		bool enabled;
+		
+		enable_opt_name = talloc_asprintf(mem_ctx, "notify:%s", 
+										  backends[i].name);
+		enabled = share_bool_option(scfg, enable_opt_name, true);
+		talloc_free(enable_opt_name);
+
+		if (!enabled) 
+			continue;
+
 		if (strcasecmp(backends[i].name, bname) == 0) {
 			bname = backends[i].name;
 			break;

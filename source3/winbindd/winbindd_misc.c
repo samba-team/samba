@@ -492,7 +492,7 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error requesting DCname for domain %s: %s\n",
-			state->request.domain_name, dos_errstr(werr)));
+			state->request.domain_name, win_errstr(werr)));
 		return WINBINDD_ERROR;
 	}
 

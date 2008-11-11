@@ -140,7 +140,7 @@ bool name_to_8_3(const char *in,
 	/* name mangling can be disabled for speed, in which case
 	   we just truncate the string */
 	if (!lp_manglednames(p)) {
-		safe_strcpy(out,in,12);
+		strlcpy(out, in, 13);
 		return True;
 	}
 

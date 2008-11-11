@@ -4899,7 +4899,7 @@ static void init_globals(bool first_time_only)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make(NULL, "template", NULL);
+	Globals.szWinbindNssInfo = str_list_make_v3(talloc_autofree_context(), "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
@@ -5418,7 +5418,6 @@ FN_GLOBAL_INTEGER(lp_client_ldap_sasl_wrapping, &Globals.client_ldap_sasl_wrappi
 
 static int map_parameter(const char *pszParmName);
 static int map_parameter_canonical(const char *pszParmName, bool *inverse);
-static bool set_boolean(bool *pb, const char *pszParmValue);
 static const char *get_boolean(bool bool_value);
 static int getservicebyname(const char *pszServiceName,
 			    struct service *pserviceDest);
@@ -5532,7 +5531,7 @@ static bool lp_bool(const char *s)
 		return False;
 	}
 	
-	if (!set_boolean(&ret,s)) {
+	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
 		return False;
 	}
@@ -5616,7 +5615,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		return (const char **)def;
 		
 	if (data->list==NULL) {
-		data->list = str_list_make(NULL, data->value, NULL);
+		data->list = str_list_make_v3(talloc_autofree_context(), data->value, NULL);
 	}
 
 	return (const char **)data->list;
@@ -6315,48 +6314,12 @@ void show_parameter_list(void)
 }
 
 /***************************************************************************
- Set a boolean variable from the text value stored in the passed string.
- Returns True in success, False if the passed string does not correctly 
- represent a boolean.
-***************************************************************************/
-
-static bool set_boolean(bool *pb, const char *pszParmValue)
-{
-	bool bRetval;
-	bool value;
-
-	bRetval = True;
-	value = False;
-	if (strwicmp(pszParmValue, "yes") == 0 ||
-	    strwicmp(pszParmValue, "true") == 0 ||
-	    strwicmp(pszParmValue, "1") == 0)
-		value = True;
-	else if (strwicmp(pszParmValue, "no") == 0 ||
-		    strwicmp(pszParmValue, "False") == 0 ||
-		    strwicmp(pszParmValue, "0") == 0)
-		value = False;
-	else {
-		DEBUG(2,
-		      ("ERROR: Badly formed boolean in configuration file: \"%s\".\n",
-		       pszParmValue));
-		bRetval = False;
-	}
-
-	if ((pb != NULL) && (bRetval != False)) {
-		*pb = value;
-	}
-
-	return (bRetval);
-}
-
-
-/***************************************************************************
  Check if a given string correctly represents a boolean value.
 ***************************************************************************/
 
 bool lp_string_is_valid_boolean(const char *parm_value)
 {
-	return set_boolean(NULL, parm_value);
+	return set_boolean(parm_value, NULL);
 }
 
 /***************************************************************************
@@ -6381,7 +6344,7 @@ bool lp_invert_boolean(const char *str, const char **inverse_str)
 {
 	bool val;
 
-	if (!set_boolean(&val, str)) {
+	if (!set_boolean(str, &val)) {
 		return False;
 	}
 
@@ -6399,7 +6362,7 @@ bool lp_canonicalize_boolean(const char *str, const char**canon_str)
 {
 	bool val;
 
-	if (!set_boolean(&val, str)) {
+	if (!set_boolean(str, &val)) {
 		return False;
 	}
 
@@ -6606,7 +6569,7 @@ static struct smbconf_ctx *lp_smbconf_ctx(void)
 		werr = smbconf_init(NULL, &conf_ctx, "registry:");
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(1, ("error initializing registry configuration: "
-				  "%s\n", dos_errstr(werr)));
+				  "%s\n", win_errstr(werr)));
 			conf_ctx = NULL;
 		}
 	}
@@ -6896,7 +6859,7 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(Globals.szNetbiosAliases);
-	Globals.szNetbiosAliases = str_list_make(NULL, pszParmValue, NULL);
+	Globals.szNetbiosAliases = str_list_make_v3(talloc_autofree_context(), pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
 
@@ -7298,8 +7261,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_LIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
-			*(char ***)parm_ptr = str_list_make(
-				NULL, pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make_v3(
+				talloc_autofree_context(), pszParmValue, NULL);
 			break;
 
 		case P_STRING:

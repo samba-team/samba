@@ -4,7 +4,7 @@
    macros to go along with the lib/replace/ portability layer code
 
    Copyright (C) Andrew Tridgell 2005
-   Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Jelmer Vernooij 2006-2008
    Copyright (C) Jeremy Allison 2007.
 
      ** NOTE! The following LGPL license applies to the replace
@@ -215,6 +215,49 @@ int rep_seteuid(uid_t);
 int rep_setegid(gid_t);
 #endif
 
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
+/* stupid glibc */
+int setresuid(uid_t ruid, uid_t euid, uid_t suid);
+#endif
+#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
+int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
+#endif
+
+#ifndef HAVE_CHOWN
+#define chown rep_chown
+int rep_chown(const char *path, uid_t uid, gid_t gid);
+#endif
+
+#ifndef HAVE_CHROOT
+#define chroot rep_chroot
+int rep_chroot(const char *dirname);
+#endif
+
+#ifndef HAVE_LINK
+#define link rep_link
+int rep_link(const char *oldpath, const char *newpath);
+#endif
+
+#ifndef HAVE_READLINK
+#define readlink rep_readlink
+ssize_t rep_readlink(const char *path, char *buf, size_t bufsize);
+#endif
+
+#ifndef HAVE_SYMLINK
+#define symlink rep_symlink
+int rep_symlink(const char *oldpath, const char *newpath);
+#endif
+
+#ifndef HAVE_REALPATH
+#define realpath rep_realpath
+char *rep_realpath(const char *path, char *resolved_path);
+#endif
+
+#ifndef HAVE_LCHOWN
+#define lchown rep_lchown
+int rep_lchown(const char *fname,uid_t uid,gid_t gid);
+#endif
+
 #ifndef HAVE_SETLINEBUF
 #define setlinebuf rep_setlinebuf
 void rep_setlinebuf(FILE *);
@@ -356,6 +399,11 @@ typedef int (*comparison_fn_t)(const void *, const void *);
 #define strptime rep_strptime
 struct tm;
 char *rep_strptime(const char *buf, const char *format, struct tm *tm);
+#endif
+
+#ifndef HAVE_DUP2
+#define dup2 rep_dup2
+int rep_dup2(int oldfd, int newfd);
 #endif
 
 /* Load header file for dynamic linking stuff */

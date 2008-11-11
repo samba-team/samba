@@ -339,10 +339,6 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	/* maybe setup the inotify fd */
 	if (ctx->private_data == NULL) {
 		NTSTATUS status;
-		if (!lp_parm_bool(global_loadparm, NULL, "notify", "inotify", true)) {
-			return NT_STATUS_INVALID_SYSTEM_SERVICE;
-		}
-
 		status = inotify_setup(ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

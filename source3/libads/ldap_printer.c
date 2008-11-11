@@ -309,7 +309,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 					     &pol);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
-			  printername, dos_errstr(result)));
+			  printername, win_errstr(result)));
 		return result;
 	}
 	
@@ -320,7 +320,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
-			  printername, dos_errstr(result)));
+			  printername, win_errstr(result)));
 	} else {
 		uint32 num_values = regval_ctr_numvals( dsdriver_ctr );
 
@@ -337,7 +337,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to do enumdataex on %s, error is %s.\n",
-			  printername, dos_errstr(result)));
+			  printername, win_errstr(result)));
 	} else {
 		uint32 num_values = regval_ctr_numvals( dsspooler_ctr );
 

@@ -35,12 +35,14 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 			   struct event_context *ev_ctx,
 			   struct resolve_context *resolve_ctx,
 			   struct smbcli_options *options,
-			   struct smb_iconv_convenience *iconv_convenience)
+			   struct smb_iconv_convenience *iconv_convenience,
+               const char *socket_options)
 {
 	struct smbcli_socket *sock;
 
 	sock = smbcli_sock_connect_byname(server, ports, NULL,
-					  resolve_ctx, ev_ctx);
+					  resolve_ctx, ev_ctx,
+                      socket_options);
 
 	if (sock == NULL) return false;
 	
@@ -71,7 +73,8 @@ NTSTATUS smbcli_negprot(struct smbcli_state *cli, bool unicode, int maxprotocol)
 NTSTATUS smbcli_session_setup(struct smbcli_state *cli, 
 			      struct cli_credentials *credentials,
 			      const char *workgroup,
-			      struct smbcli_session_options options)
+			      struct smbcli_session_options options,
+			      struct gensec_settings *gensec_settings)
 {
 	struct smb_composite_sesssetup setup;
 	NTSTATUS status;
@@ -84,6 +87,7 @@ NTSTATUS smbcli_session_setup(struct smbcli_state *cli,
 	setup.in.capabilities = cli->transport->negotiate.capabilities;
 	setup.in.credentials = credentials;
 	setup.in.workgroup = workgroup;
+	setup.in.gensec_settings = gensec_settings;
 
 	status = smb_composite_sesssetup(cli->session, &setup);
 
@@ -144,12 +148,14 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				const char **ports,
 				const char *sharename,
 				const char *devtype,
+				const char *socket_options,
 				struct cli_credentials *credentials,
 				struct resolve_context *resolve_ctx,
 				struct event_context *ev,
 				struct smbcli_options *options,
 				struct smbcli_session_options *session_options,
-				struct smb_iconv_convenience *iconv_convenience)
+				struct smb_iconv_convenience *iconv_convenience,
+				struct gensec_settings *gensec_settings)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -159,10 +165,12 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	status = smbcli_tree_full_connection(parent_ctx,
 					     &tree, host, ports, 
 					     sharename, devtype,
+						 socket_options,
 					     credentials, resolve_ctx, ev,
 					     options,
 					     session_options,
-						 iconv_convenience);
+						 iconv_convenience,
+						 gensec_settings);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

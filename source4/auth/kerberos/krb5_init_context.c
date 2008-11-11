@@ -250,14 +250,10 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		status = NT_STATUS_INVALID_PARAMETER;
 		switch (hi->proto) {
 		case KRB5_KRBHST_UDP:
-			if (lp_parm_bool(global_loadparm, NULL, "krb5", "udp", true)) {
-				status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
-			}
+			status = socket_create(name, SOCKET_TYPE_DGRAM, &smb_krb5->sock, 0);
 			break;
 		case KRB5_KRBHST_TCP:
-			if (lp_parm_bool(global_loadparm, NULL, "krb5", "tcp", true)) {
-				status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
-			}
+			status = socket_create(name, SOCKET_TYPE_STREAM, &smb_krb5->sock, 0);
 			break;
 		case KRB5_KRBHST_HTTP:
 			talloc_free(smb_krb5);

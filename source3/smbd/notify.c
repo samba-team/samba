@@ -24,7 +24,7 @@
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
 	struct files_struct *fsp;	/* backpointer for cancel by mid */
-	uint8 request_buf[smb_size];
+	struct smb_request *req;
 	uint32 filter;
 	uint32 max_param;
 	struct notify_mid_map *mid_map;
@@ -133,40 +133,33 @@ static bool notify_marshall_changes(int num_changes,
 *****************************************************************************/
 
 static void change_notify_reply_packet(connection_struct *conn,
-				const uint8 *request_buf,
+				       struct smb_request *req,
 				       NTSTATUS error_code)
 {
-	char outbuf[smb_size+38];
+	reply_outbuf(req, 18, 0);
 
-	memset(outbuf, '\0', sizeof(outbuf));
-	construct_reply_common((char *)request_buf, outbuf);
+	if (!NT_STATUS_IS_OK(error_code)) {
+		error_packet_set((char *)req->outbuf, 0, 0, error_code,
+				 __LINE__,__FILE__);
+	}
 
-	ERROR_NT(error_code);
-
-	/*
-	 * Seems NT needs a transact command with an error code
-	 * in it. This is a longer packet than a simple error.
-	 */
-	srv_set_message(outbuf,18,0,False);
-
-	show_msg(outbuf);
-	if (!srv_send_smb(smbd_server_fd(),
-			outbuf,
-			IS_CONN_ENCRYPTED(conn)))
+	show_msg((char *)req->outbuf);
+	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+			  req->encrypted)) {
 		exit_server_cleanly("change_notify_reply_packet: srv_send_smb "
 				    "failed.");
+	}
+	TALLOC_FREE(req->outbuf);
 }
 
 void change_notify_reply(connection_struct *conn,
-			const uint8 *request_buf, uint32 max_param,
+			 struct smb_request *req, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	prs_struct ps;
-	struct smb_request *req = NULL;
-	uint8 tmp_request[smb_size];
 
 	if (notify_buf->num_changes == -1) {
-		change_notify_reply_packet(conn, request_buf, NT_STATUS_OK);
+		change_notify_reply_packet(conn, req, NT_STATUS_OK);
 		notify_buf->num_changes = 0;
 		return;
 	}
@@ -179,31 +172,14 @@ void change_notify_reply(connection_struct *conn,
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
 		 */
-		change_notify_reply_packet(conn, request_buf, NT_STATUS_OK);
+		change_notify_reply_packet(conn, req, NT_STATUS_OK);
 		goto done;
 	}
-
-	if (!(req = talloc(talloc_tos(), struct smb_request))) {
-		change_notify_reply_packet(conn, request_buf, NT_STATUS_NO_MEMORY);
-		goto done;
-	}
-
-	memcpy(tmp_request, request_buf, smb_size);
-
-	/*
-	 * We're only interested in the header fields here
-	 */
-
-	smb_setlen((char *)tmp_request, smb_size);
-	SCVAL(tmp_request, smb_wct, 0);
-
-	init_smb_request(req, tmp_request,0, conn->encrypted_tid);
 
 	send_nt_replies(conn, req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);
 
  done:
-	TALLOC_FREE(req);
 	prs_mem_free(&ps);
 
 	TALLOC_FREE(notify_buf->changes);
@@ -251,7 +227,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const struct smb_request *req,
+NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
 				struct files_struct *fsp)
@@ -262,16 +238,16 @@ NTSTATUS change_notify_add_request(const struct smb_request *req,
 	DEBUG(10, ("change_notify_add_request: Adding request for %s: "
 		   "max_param = %d\n", fsp->fsp_name, (int)max_param));
 
-	if (!(request = SMB_MALLOC_P(struct notify_change_request))
-	    || !(map = SMB_MALLOC_P(struct notify_mid_map))) {
-		SAFE_FREE(request);
+	if (!(request = talloc(NULL, struct notify_change_request))
+	    || !(map = talloc(request, struct notify_mid_map))) {
+		TALLOC_FREE(request);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	request->mid_map = map;
 	map->req = request;
 
-	memcpy(request->request_buf, req->inbuf, sizeof(request->request_buf));
+	request->req = talloc_move(request, &req);
 	request->max_param = max_param;
 	request->filter = filter;
 	request->fsp = fsp;
@@ -280,11 +256,11 @@ NTSTATUS change_notify_add_request(const struct smb_request *req,
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
 
-	map->mid = SVAL(req->inbuf, smb_mid);
+	map->mid = request->req->mid;
 	DLIST_ADD(notify_changes_by_mid, map);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(req->inbuf,smb_mid));
+	srv_defer_sign_response(request->req->mid);
 
 	return NT_STATUS_OK;
 }
@@ -314,9 +290,7 @@ static void change_notify_remove_request(struct notify_change_request *remove_re
 
 	DLIST_REMOVE(fsp->notify->requests, req);
 	DLIST_REMOVE(notify_changes_by_mid, req->mid_map);
-	SAFE_FREE(req->mid_map);
-	TALLOC_FREE(req->backend_data);
-	SAFE_FREE(req);
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
@@ -337,8 +311,8 @@ void remove_pending_change_notify_requests_by_mid(uint16 mid)
 		return;
 	}
 
-	change_notify_reply_packet(map->req->fsp->conn,
-			map->req->request_buf, NT_STATUS_CANCELLED);
+	change_notify_reply_packet(map->req->fsp->conn, map->req->req,
+				   NT_STATUS_CANCELLED);
 	change_notify_remove_request(map->req);
 }
 
@@ -354,8 +328,8 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 
 	while (fsp->notify->requests != NULL) {
-		change_notify_reply_packet(fsp->conn,
-			fsp->notify->requests->request_buf, status);
+		change_notify_reply_packet(
+			fsp->conn, fsp->notify->requests->req, status);
 		change_notify_remove_request(fsp->notify->requests);
 	}
 }
@@ -449,7 +423,7 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 */
 
 	change_notify_reply(fsp->conn,
-			fsp->notify->requests->request_buf,
+			    fsp->notify->requests->req,
 			    fsp->notify->requests->max_param,
 			    fsp->notify);
 

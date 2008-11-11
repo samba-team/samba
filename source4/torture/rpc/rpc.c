@@ -77,6 +77,8 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcerpc_binding *binding;
 
+	dcerpc_init(tctx->lp_ctx);
+
 	status = torture_rpc_binding(tctx, &binding);
 	if (NT_STATUS_IS_ERR(status))
 		return status;
@@ -370,8 +372,6 @@ _PUBLIC_ struct torture_test *torture_rpc_tcase_add_test_ex(
 NTSTATUS torture_rpc_init(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "RPC");
-
-	dcerpc_init();
 
 	ndr_table_init();
 

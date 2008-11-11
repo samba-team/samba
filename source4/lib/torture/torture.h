@@ -25,6 +25,7 @@ struct torture_test;
 struct torture_context;
 struct torture_suite;
 struct torture_tcase;
+struct torture_results;
 
 enum torture_result { 
 	TORTURE_OK=0, 
@@ -39,7 +40,7 @@ enum torture_result {
  */
 struct torture_ui_ops
 {
-	void (*init) (struct torture_context *);
+	void (*init) (struct torture_results *);
 	void (*comment) (struct torture_context *, const char *);
 	void (*warning) (struct torture_context *, const char *);
 	void (*suite_start) (struct torture_context *, struct torture_suite *);
@@ -73,44 +74,67 @@ void torture_ui_test_result(struct torture_context *context,
 
 struct torture_context
 {
-	const struct torture_ui_ops *ui_ops;
-	void *ui_data;
+	struct torture_results *results;
 
 	char *active_testname;
 	struct torture_test *active_test;
 	struct torture_tcase *active_tcase;
 
-	bool quiet; /* Whether tests should avoid writing output to stdout */
-
 	enum torture_result last_result;
 	char *last_reason;
 
-	bool returncode;
-
+	/** Directory used for temporary test data */
 	const char *outputdir;
+	
+	/** Indentation level */
 	int level;
+
+	/** Event context */
 	struct event_context *ev;
 
+	/** Loadparm context (will go away in favor of torture_setting_ at some point) */
 	struct loadparm_context *lp_ctx;
+};
+
+struct torture_results
+{
+	const struct torture_ui_ops *ui_ops;
+	void *ui_data;
+
+	/** Whether tests should avoid writing output to stdout */
+	bool quiet;
+
+	bool returncode;
+
+
 };
 
 /* 
  * Describes a particular torture test
  */
 struct torture_test {
+	/** Short unique name for the test. */
 	const char *name;
+
+	/** Long description for the test. */
 	const char *description;
+
+	/** Whether this is a dangerous test 
+	 * (can corrupt the remote servers data or bring it down). */
 	bool dangerous;
-	/* Function to call to run this test */
+
+	/** Function to call to run this test */
 	bool (*run) (struct torture_context *torture_ctx, 
 				 struct torture_tcase *tcase,
 				 struct torture_test *test);
 
 	struct torture_test *prev, *next;
 
-	/* Pointer to the actual test function. This is run by the 
-	 * run() function above. */
+	/** Pointer to the actual test function. This is run by the 
+	  * run() function above. */
 	void *fn;
+
+	/** Use data for this test */
 	const void *data;
 };
 
@@ -390,8 +414,11 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 			      struct torture_tcase *tcase, 
 			      const char *name);
 
-struct torture_context *torture_context_init(struct event_context *event_ctx, 
-					     const struct torture_ui_ops *ui_ops);
+struct torture_context *torture_context_init(struct event_context *event_ctx, struct torture_results *results);
+
+struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops);
+
+struct torture_context *torture_context_child(struct torture_context *tctx);
 
 extern const struct torture_ui_ops torture_subunit_ui_ops;
 

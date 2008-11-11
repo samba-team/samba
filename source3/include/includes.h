@@ -524,14 +524,6 @@ struct timespec {
 };
 #endif
 
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
 #ifdef HAVE_BROKEN_GETGROUPS
 #define GID_T int
 #else
@@ -567,11 +559,12 @@ typedef char fstring[FSTRING_LEN];
 #endif
 
 /* Samba 3 doesn't use iconv_convenience: */
-extern void *global_loadparm;
+extern void *global_iconv_convenience;
 extern void *cmdline_lp_ctx;
 struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 
 /* Lists, trees, caching, database... */
+#include "../lib/util/util.h"
 #include "../lib/util/xfile.h"
 #include "../lib/util/memory.h"
 #include "../lib/util/attr.h"
@@ -619,6 +612,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "msdfs.h"
 #include "rap.h"
 #include "../lib/crypto/md5.h"
+#include "../lib/crypto/md4.h"
 #include "../lib/crypto/arcfour.h"
 #include "../lib/crypto/crc32.h"
 #include "../lib/crypto/hmacmd5.h"
@@ -717,7 +711,7 @@ enum flush_reason_enum {
 #include "modules/nfs4_acls.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-/***** automatically generated prototypes *****/
+/***** prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
 #endif
@@ -810,14 +804,6 @@ enum flush_reason_enum {
 #define ULTRIX_AUTH 1
 #endif
 
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESUID_DECL))
-/* stupid glibc */
-int setresuid(uid_t ruid, uid_t euid, uid_t suid);
-#endif
-#if (defined(USE_SETRESUID) && !defined(HAVE_SETRESGID_DECL))
-int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
-#endif
-
 /* yuck, I'd like a better way of doing this */
 #define DIRP_SIZE (256 + 32)
 
@@ -889,11 +875,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 
 int asprintf_strupper_m(char **strp, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
-
-/* we used to use these fns, but now we have good replacements
-   for snprintf and vsnprintf */
-#define slprintf snprintf
-#define vslprintf vsnprintf
 
 /*
  * Veritas File System.  Often in addition to native.

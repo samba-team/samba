@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/rpc/dcerpc_proto.h"
+#include "param/param.h"
 
 struct schannel_key_state {
 	struct dcerpc_pipe *pipe;
@@ -319,7 +320,7 @@ static void continue_schannel_key(struct composite_context *ctx)
 
 	/* send bind auth request with received creds */
 	auth_req = dcerpc_bind_auth_send(c, s->pipe, s->table, s->credentials, 
-					 s->lp_ctx,
+					 lp_gensec_settings(c, s->lp_ctx),
 					 DCERPC_AUTH_TYPE_SCHANNEL, s->auth_level,
 					 NULL);
 	if (composite_nomem(auth_req, c)) return;

@@ -50,7 +50,8 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char **ports,
 						   const char *host_name,
 						   struct resolve_context *resolve_ctx,
-						   struct event_context *event_ctx)
+						   struct event_context *event_ctx,
+						   const char *socket_options)
 {
 	struct composite_context *result, *ctx;
 	struct sock_connect_state *state;
@@ -77,7 +78,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 	for (i=0;ports[i];i++) {
 		state->ports[i] = atoi(ports[i]);
 	}
-	state->socket_options = lp_socket_options(global_loadparm);
+	state->socket_options = talloc_reference(state, socket_options);
 
 	ctx = socket_connect_multi_send(state, host_addr,
 					state->num_ports, state->ports,
@@ -153,12 +154,13 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 			     const char *host_name,
 			     struct resolve_context *resolve_ctx,
 			     struct event_context *event_ctx,
+				 const char *socket_options,
 			     struct smbcli_socket **result)
 {
 	struct composite_context *c =
 		smbcli_sock_connect_send(mem_ctx, host_addr, ports, host_name,
 					 resolve_ctx,
-					 event_ctx);
+					 event_ctx, socket_options);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
 
@@ -188,7 +190,8 @@ resolve a hostname and connect
 _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
-						 struct event_context *event_ctx)
+						 struct event_context *event_ctx,
+						 const char *socket_options)
 {
 	int name_type = NBT_NAME_SERVER;
 	const char *address;
@@ -230,7 +233,8 @@ _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, cons
 	}
 
 	status = smbcli_sock_connect(mem_ctx, address, ports, name, resolve_ctx,
-				     event_ctx, &result);
+				     event_ctx, 
+					 socket_options, &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(9, ("smbcli_sock_connect failed: %s\n",

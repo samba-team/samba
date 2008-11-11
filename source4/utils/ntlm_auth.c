@@ -212,7 +212,8 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 		
 		
 		nt_status = ntlm_password_check(mem_ctx, 
-						lp_ctx,
+						lp_lanman_auth(lp_ctx),
+						lp_ntlm_auth(lp_ctx),
 						MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
 						MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 						challenge,
@@ -472,7 +473,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		case NTLMSSP_CLIENT_1:
 			/* setup the client side */
 
-			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, lp_ctx);
+			nt_status = gensec_client_start(NULL, &state->gensec_state, ev, 
+							lp_gensec_settings(NULL, lp_ctx));
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				exit(1);
 			}
@@ -485,7 +487,8 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			if (!msg) {
 				exit(1);
 			}
-			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, lp_ctx, msg, &state->gensec_state))) {
+			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, lp_gensec_settings(state, lp_ctx), 
+								 msg, &state->gensec_state))) {
 				exit(1);
 			}
 			break;

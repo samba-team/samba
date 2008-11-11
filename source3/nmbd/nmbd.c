@@ -803,12 +803,12 @@ static bool open_sockets(bool isdaemon, int port)
 	sys_srandom(time(NULL) ^ sys_getpid());
 	
 	if (!override_logfile) {
-		char *logfile = NULL;
-		if (asprintf(&logfile, "%s/log.nmbd", get_dyn_LOGFILEBASE()) < 0) {
+		char *lfile = NULL;
+		if (asprintf(&lfile, "%s/log.nmbd", get_dyn_LOGFILEBASE()) < 0) {
 			exit(1);
 		}
-		lp_set_logfile(logfile);
-		SAFE_FREE(logfile);
+		lp_set_logfile(lfile);
+		SAFE_FREE(lfile);
 	}
 	
 	fault_setup((void (*)(void *))fault_continue );

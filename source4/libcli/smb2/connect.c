@@ -33,6 +33,9 @@ struct smb2_connect_state {
 	struct resolve_context *resolve_ctx;
 	const char *host;
 	const char *share;
+	const char **ports;
+	const char *socket_options;
+	struct gensec_settings *gensec_settings;
 	struct smbcli_options options;
 	struct smb2_negprot negprot;
 	struct smb2_tree_connect tcon;
@@ -137,9 +140,8 @@ static void continue_negprot(struct smb2_request *req)
 		}
 		break;
 	}
-	
 
-	state->session = smb2_session_init(transport, global_loadparm, state, true);
+	state->session = smb2_session_init(transport, state->gensec_settings, state, true);
 	if (composite_nomem(state->session, c)) return;
 
 	creq = smb2_session_setup_spnego_send(state->session, state->credentials);
@@ -209,15 +211,16 @@ static void continue_resolve(struct composite_context *creq)
 	const char **ports;
 	const char *default_ports[] = { "445", NULL };
 
-	ports = lp_parm_string_list(state, global_loadparm, NULL, "smb2", "ports", NULL);
-	if (ports == NULL) {
-		ports = default_ports;
-	}
-
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
 
-	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx);
+	if (state->ports == NULL) {
+		ports = default_ports;
+	} else {
+		ports = state->ports;
+	}
+
+	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx, state->socket_options);
 
 	composite_continue(c, creq, continue_socket, c);
 }
@@ -228,11 +231,14 @@ static void continue_resolve(struct composite_context *creq)
  */
 struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 					    const char *host,
+						const char **ports,
 					    const char *share,
 					    struct resolve_context *resolve_ctx,
 					    struct cli_credentials *credentials,
 					    struct event_context *ev,
-					    struct smbcli_options *options)
+					    struct smbcli_options *options,
+						const char *socket_options,
+						struct gensec_settings *gensec_settings)
 {
 	struct composite_context *c;
 	struct smb2_connect_state *state;
@@ -250,9 +256,12 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	state->options = *options;
 	state->host = talloc_strdup(c, host);
 	if (composite_nomem(state->host, c)) return c;
+	state->ports = talloc_reference(state, ports);
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
 	state->resolve_ctx = talloc_reference(state, resolve_ctx);
+	state->socket_options = talloc_reference(state, socket_options);
+	state->gensec_settings = talloc_reference(state, gensec_settings);
 
 	ZERO_STRUCT(name);
 	name.name = host;
@@ -283,15 +292,20 @@ NTSTATUS smb2_connect_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
   sync version of smb2_connect
 */
 NTSTATUS smb2_connect(TALLOC_CTX *mem_ctx, 
-		      const char *host, const char *share,
+		      const char *host, const char **ports, 
+			  const char *share,
 		      struct resolve_context *resolve_ctx,
 		      struct cli_credentials *credentials,
 		      struct smb2_tree **tree,
 		      struct event_context *ev,
-		      struct smbcli_options *options)
+		      struct smbcli_options *options,
+			  const char *socket_options,
+			  struct gensec_settings *gensec_settings)
 {
-	struct composite_context *c = smb2_connect_send(mem_ctx, host, share, 
-							resolve_ctx,
-							credentials, ev, options);
+	struct composite_context *c = smb2_connect_send(mem_ctx, host, ports, 
+													share, resolve_ctx, 
+													credentials, ev, options,
+													socket_options,
+													gensec_settings);
 	return smb2_connect_recv(c, mem_ctx, tree);
 }

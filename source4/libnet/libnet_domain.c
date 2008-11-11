@@ -40,6 +40,7 @@ struct domain_open_samr_state {
 	uint32_t                  access_mask;
 	struct policy_handle      connect_handle;
 	struct policy_handle      domain_handle;
+	struct dom_sid2           *domain_sid;
 
 	/* information about the progress */
 	void (*monitor_fn)(struct monitor_msg*);
@@ -159,6 +160,8 @@ static void continue_domain_open_connect(struct rpc_request *req)
 	/* prepare for samr_LookupDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.domain_name    = &s->domain_name;
+	r->out.sid           = talloc(s, struct dom_sid2 *);
+	if (composite_nomem(r->out.sid, c)) return;
 
 	lookup_req = dcerpc_samr_LookupDomain_send(s->pipe, c, r);
 	if (composite_nomem(lookup_req, c)) return;
@@ -209,7 +212,7 @@ static void continue_domain_open_lookup(struct rpc_request *req)
 	/* prepare for samr_OpenDomain call */
 	r->in.connect_handle = &s->connect_handle;
 	r->in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	r->in.sid            = s->lookup.out.sid;
+	r->in.sid            = *s->lookup.out.sid;
 	r->out.domain_handle = &s->domain_handle;
 
 	opendom_req = dcerpc_samr_OpenDomain_send(s->pipe, c, r);
@@ -361,7 +364,7 @@ NTSTATUS libnet_DomainOpenSamr_recv(struct composite_context *c, struct libnet_c
 		   libnet functions */
 		ctx->samr.connect_handle = s->connect_handle;
 		ctx->samr.handle      = s->domain_handle;
-		ctx->samr.sid         = talloc_steal(ctx, s->lookup.out.sid);
+		ctx->samr.sid         = talloc_steal(ctx, *s->lookup.out.sid);
 		ctx->samr.name        = talloc_steal(ctx, s->domain_name.string);
 		ctx->samr.access_mask = s->access_mask;
 	}
@@ -998,6 +1001,10 @@ static void continue_samr_connect(struct rpc_request *req)
 	s->enumdom.in.resume_handle  = &s->resume_handle;
 	s->enumdom.in.buf_size       = s->buf_size;
 	s->enumdom.out.resume_handle = &s->resume_handle;
+	s->enumdom.out.num_entries   = talloc(s, uint32_t);
+	if (composite_nomem(s->enumdom.out.num_entries, c)) return;
+	s->enumdom.out.sam           = talloc(s, struct samr_SamArray *);
+	if (composite_nomem(s->enumdom.out.sam, c)) return;
 
 	enumdom_req = dcerpc_samr_EnumDomains_send(s->ctx->samr.pipe, c, &s->enumdom);
 	if (composite_nomem(enumdom_req, c)) return;
@@ -1113,16 +1120,16 @@ static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_lis
 	/* prepare domains array */
 	if (s->domains == NULL) {
 		s->domains = talloc_array(mem_ctx, struct domainlist,
-					  s->enumdom.out.num_entries);
+					  *s->enumdom.out.num_entries);
 	} else {
 		s->domains = talloc_realloc(mem_ctx, s->domains, struct domainlist,
-					    s->count + s->enumdom.out.num_entries);
+					    s->count + *s->enumdom.out.num_entries);
 	}
 
 	/* copy domain names returned from samr_EnumDomains call */
-	for (i = s->count; i < s->count + s->enumdom.out.num_entries; i++)
+	for (i = s->count; i < s->count + *s->enumdom.out.num_entries; i++)
 	{
-		struct lsa_String *domain_name = &s->enumdom.out.sam->entries[i - s->count].name;
+		struct lsa_String *domain_name = &(*s->enumdom.out.sam)->entries[i - s->count].name;
 
 		/* strdup name as a child of allocated array to make it follow the array
 		   in case of talloc_steal or talloc_free */
@@ -1131,7 +1138,7 @@ static struct domainlist* get_domain_list(TALLOC_CTX *mem_ctx, struct domain_lis
 	}
 
 	/* number of entries returned (domains enumerated) */
-	s->count += s->enumdom.out.num_entries;
+	s->count += *s->enumdom.out.num_entries;
 	
 	return s->domains;
 }

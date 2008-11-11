@@ -116,10 +116,11 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
 	else
 		conn->in.called_name            = s->io.binding->target_hostname;
+	conn->in.socket_options         = lp_socket_options(lp_ctx);
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
 	conn->in.workgroup		= lp_workgroup(lp_ctx);
-
+	conn->in.gensec_settings = lp_gensec_settings(conn, lp_ctx);
 	conn->in.iconv_convenience = lp_iconv_convenience(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &conn->in.options);
@@ -247,11 +248,16 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 	lp_smbcli_options(lp_ctx, &options);
 
 	/* send smb2 connect request */
-	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, "IPC$", 
+	conn_req = smb2_connect_send(mem_ctx, s->io.binding->host, 
+			lp_parm_string_list(mem_ctx, lp_ctx, NULL, "smb2", "ports", NULL),
+					"IPC$", 
 				     s->io.resolve_ctx,
 				     s->io.creds,
 				     c->event_ctx,
-				     &options);
+				     &options,
+					 lp_socket_options(lp_ctx),
+					 lp_gensec_settings(mem_ctx, lp_ctx)
+					 );
 	composite_continue(c, conn_req, continue_smb2_connect, c);
 	return c;
 }
@@ -739,6 +745,9 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 	/* initialise dcerpc pipe structure */
 	s->pipe = dcerpc_pipe_init(c, ev, lp_iconv_convenience(lp_ctx));
 	if (composite_nomem(s->pipe, c)) return c;
+
+	if (DEBUGLEVEL >= 10)
+		s->pipe->conn->packet_log_dir = lp_lockdir(lp_ctx);
 
 	/* store parameters in state structure */
 	s->binding      = binding;

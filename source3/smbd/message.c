@@ -140,8 +140,8 @@ void reply_sends(struct smb_request *req)
 {
 	struct msg_state *state;
 	int len;
-	char *msg;
-	char *p;
+	const char *msg;
+	const char *p;
 
 	START_PROFILE(SMBsends);
 
@@ -153,18 +153,16 @@ void reply_sends(struct smb_request *req)
 
 	state = talloc(talloc_tos(), struct msg_state);
 
-	p = smb_buf(req->inbuf)+1;
-	p += srvstr_pull_buf_talloc(
-		state, (char *)req->inbuf, req->flags2, &state->from, p,
-		STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf_talloc(
-		state, (char *)req->inbuf, req->flags2, &state->to, p,
-		STR_ASCII|STR_TERMINATE) + 1;
+	p = (const char *)req->buf + 1;
+	p += srvstr_pull_req_talloc(
+		state, req, &state->from, p, STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_req_talloc(
+		state, req, &state->to, p, STR_ASCII|STR_TERMINATE) + 1;
 
 	msg = p;
 
 	len = SVAL(msg,0);
-	len = MIN(len, smb_bufrem(req->inbuf, msg+2));
+	len = MIN(len, smbreq_bufrem(req, msg+2));
 
 	state->msg = talloc_array(state, char, len);
 
@@ -191,7 +189,7 @@ void reply_sends(struct smb_request *req)
 
 void reply_sendstrt(struct smb_request *req)
 {
-	char *p;
+	const char *p;
 
 	START_PROFILE(SMBsendstrt);
 
@@ -211,13 +209,13 @@ void reply_sendstrt(struct smb_request *req)
 		return;
 	}
 
-	p = smb_buf(req->inbuf)+1;
-	p += srvstr_pull_buf_talloc(
-		smbd_msg_state, (char *)req->inbuf, req->flags2,
-		&smbd_msg_state->from, p, STR_ASCII|STR_TERMINATE) + 1;
-	p += srvstr_pull_buf_talloc(
-		smbd_msg_state, (char *)req->inbuf, req->flags2,
-		&smbd_msg_state->to, p, STR_ASCII|STR_TERMINATE) + 1;
+	p = (const char *)req->buf+1;
+	p += srvstr_pull_req_talloc(
+		smbd_msg_state, req, &smbd_msg_state->from, p,
+		STR_ASCII|STR_TERMINATE) + 1;
+	p += srvstr_pull_req_talloc(
+		smbd_msg_state, req, &smbd_msg_state->to, p,
+		STR_ASCII|STR_TERMINATE) + 1;
 
 	DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", smbd_msg_state->from,
 		    smbd_msg_state->to ) );
@@ -236,7 +234,7 @@ void reply_sendstrt(struct smb_request *req)
 void reply_sendtxt(struct smb_request *req)
 {
 	int len;
-	char *msg;
+	const char *msg;
 	char *tmp;
 	size_t old_len;
 
@@ -254,11 +252,11 @@ void reply_sendtxt(struct smb_request *req)
 		return;
 	}
 
-	msg = smb_buf(req->inbuf) + 1;
+	msg = (const char *)req->buf + 1;
 
 	old_len = talloc_get_size(smbd_msg_state->msg);
 
-	len = MIN(SVAL(msg, 0), smb_bufrem(req->inbuf, msg+2));
+	len = MIN(SVAL(msg, 0), smbreq_bufrem(req, msg+2));
 
 	tmp = TALLOC_REALLOC_ARRAY(smbd_msg_state, smbd_msg_state->msg,
 				   char, old_len + len);

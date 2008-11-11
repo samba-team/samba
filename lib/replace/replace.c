@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    replacement routines for broken systems
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jelmer Vernooij 2005-2008
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -612,5 +613,65 @@ int rep_utimes(const char *filename, const struct timeval tv[2])
 	}
 
 	return utime(filename, &u);
+}
+#endif
+
+#ifndef HAVE_DUP2
+int rep_dup2(int oldfd, int newfd) 
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_CHOWN
+/**
+chown isn't used much but OS/2 doesn't have it
+**/
+int rep_chown(const char *fname, uid_t uid, gid_t gid)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_LINK
+int rep_link(const char *oldpath, const char *newpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_READLINK
+int rep_readlink(const char *path, char *buf, size_t bufsiz)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_SYMLINK
+int rep_symlink(const char *oldpath, const char *newpath)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_LCHOWN
+int rep_lchown(const char *fname,uid_t uid,gid_t gid)
+{
+	errno = ENOSYS;
+	return -1;
+}
+#endif
+
+#ifndef HAVE_REALPATH
+char *rep_realpath(const char *path, char *resolved_path)
+{
+	/* As realpath is not a system call we can't return ENOSYS. */
+	errno = EINVAL;
+	return NULL;
 }
 #endif

@@ -155,6 +155,78 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 	return ic->conv_handles[from][to];
 }
 
+/**
+ * Convert string from one encoding to another, making error checking etc
+ *
+ * @param mem_ctx Memory context
+ * @param cd Iconv handle
+ * @param src pointer to source string (multibyte or singlebyte)
+ * @param srclen length of the source string in bytes
+ * @param dest pointer to destination string (multibyte or singlebyte)
+ * @param destlen maximal length allowed for string
+ * @returns the number of bytes occupied in the destination
+ **/
+_PUBLIC_ ssize_t iconv_talloc(TALLOC_CTX *ctx, 
+				       smb_iconv_t cd,
+				       void const *src, size_t srclen, 
+				       void **dest)
+{
+	size_t i_len, o_len, destlen;
+	size_t retval;
+	const char *inbuf = (const char *)src;
+	char *outbuf, *ob;
+
+	*dest = NULL;
+
+	/* it is _very_ rare that a conversion increases the size by
+	   more than 3x */
+	destlen = srclen;
+	outbuf = NULL;
+convert:
+	destlen = 2 + (destlen*3);
+	ob = talloc_realloc(ctx, outbuf, char, destlen);
+	if (!ob) {
+		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
+		talloc_free(outbuf);
+		return (size_t)-1;
+	} else {
+		outbuf = ob;
+	}
+
+	/* we give iconv 2 less bytes to allow us to terminate at the
+	   end */
+	i_len = srclen;
+	o_len = destlen-2;
+	retval = smb_iconv(cd,
+			   &inbuf, &i_len,
+			   &outbuf, &o_len);
+	if(retval == (size_t)-1) 		{
+	    	const char *reason="unknown error";
+		switch(errno) {
+			case EINVAL:
+				reason="Incomplete multibyte sequence";
+				break;
+			case E2BIG:
+				goto convert;		
+			case EILSEQ:
+				reason="Illegal multibyte sequence";
+				break;
+		}
+		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+		talloc_free(ob);
+		return (size_t)-1;
+	}
+	
+	destlen = (destlen-2) - o_len;
+
+	/* guarantee null termination in all charsets */
+	SSVAL(ob, destlen, 0);
+
+	*dest = ob;
+
+	return destlen;
+
+}
 
 /**
  * Convert string from one encoding to another, making error checking etc
@@ -219,64 +291,6 @@ _PUBLIC_ ssize_t convert_string_convenience(struct smb_iconv_convenience *ic,
 	return destlen-o_len;
 }
 	
-_PUBLIC_ ssize_t convert_string_talloc_descriptor(TALLOC_CTX *ctx, smb_iconv_t descriptor, void const *src, size_t srclen, void **dest)
-{
-	size_t i_len, o_len, destlen;
-	size_t retval;
-	const char *inbuf = (const char *)src;
-	char *outbuf, *ob;
-
-	*dest = NULL;
-
-	/* it is _very_ rare that a conversion increases the size by
-	   more than 3x */
-	destlen = srclen;
-	outbuf = NULL;
-convert:
-	destlen = 2 + (destlen*3);
-	ob = talloc_realloc(ctx, outbuf, char, destlen);
-	if (!ob) {
-		DEBUG(0, ("convert_string_talloc: realloc failed!\n"));
-		talloc_free(outbuf);
-		return (size_t)-1;
-	} else {
-		outbuf = ob;
-	}
-
-	/* we give iconv 2 less bytes to allow us to terminate at the
-	   end */
-	i_len = srclen;
-	o_len = destlen-2;
-	retval = smb_iconv(descriptor,
-			   &inbuf, &i_len,
-			   &outbuf, &o_len);
-	if(retval == (size_t)-1) 		{
-	    	const char *reason="unknown error";
-		switch(errno) {
-			case EINVAL:
-				reason="Incomplete multibyte sequence";
-				break;
-			case E2BIG:
-				goto convert;		
-			case EILSEQ:
-				reason="Illegal multibyte sequence";
-				break;
-		}
-		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
-		talloc_free(ob);
-		return (size_t)-1;
-	}
-	
-	destlen = (destlen-2) - o_len;
-
-	/* guarantee null termination in all charsets */
-	SSVAL(ob, destlen, 0);
-
-	*dest = ob;
-
-	return destlen;
-}
-
 /**
  * Convert between character sets, allocating a new buffer using talloc for the result.
  *
@@ -310,7 +324,7 @@ _PUBLIC_ ssize_t convert_string_talloc_convenience(TALLOC_CTX *ctx,
 		return -1;
 	}
 
-	return convert_string_talloc_descriptor(ctx, descriptor, src, srclen, dest);
+	return iconv_talloc(ctx, descriptor, src, srclen, dest);
 }
 
 /*

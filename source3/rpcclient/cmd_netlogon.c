@@ -221,7 +221,7 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 	}
 
 	printf("rpccli_netlogon_dsr_getdcname returned %s\n",
-	       dos_errstr(werr));
+	       win_errstr(werr));
 
 	return werr;
 }
@@ -1040,6 +1040,72 @@ static WERROR cmd_netlogon_getdcsitecoverage(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static NTSTATUS cmd_netlogon_database_redo(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx, int argc,
+					   const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	const char *server_name = cli->desthost;
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_ADS_FLAGS;
+	struct netr_Authenticator clnt_creds, srv_cred;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+	unsigned char trust_passwd_hash[16];
+	uint32_t sec_channel_type = 0;
+	struct netr_ChangeLogEntry e;
+	uint32_t rid = 500;
+
+	if (argc > 2) {
+		fprintf(stderr, "Usage: %s <user rid>\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc == 2) {
+		sscanf(argv[1], "%d", &rid);
+	}
+
+	if (!secrets_fetch_trust_account_password(lp_workgroup(),
+						  trust_passwd_hash,
+						  NULL, &sec_channel_type)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = rpccli_netlogon_setup_creds(cli,
+					     server_name, /* server name */
+					     lp_workgroup(), /* domain */
+					     global_myname(), /* client name */
+					     global_myname(), /* machine account name */
+					     trust_passwd_hash,
+					     sec_channel_type,
+					     &neg_flags);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	netlogon_creds_client_step(cli->dc, &clnt_creds);
+
+	ZERO_STRUCT(e);
+
+	e.object_rid		= rid;
+	e.db_index		= SAM_DATABASE_DOMAIN;
+	e.delta_type		= NETR_DELTA_USER;
+
+	status = rpccli_netr_DatabaseRedo(cli, mem_ctx,
+					  server_name,
+					  global_myname(),
+					  &clnt_creds,
+					  &srv_cred,
+					  e,
+					  0, /* is calculated automatically */
+					  &delta_enum_array);
+
+	if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
+		DEBUG(0,("credentials chain check failed\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	return status;
+}
 
 /* List of commands exported by this module */
 
@@ -1067,6 +1133,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "netrenumtrusteddomains", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomains, &ndr_table_netlogon.syntax_id, NULL, "Enumerate trusted domains",     "" },
 	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, &ndr_table_netlogon.syntax_id, NULL, "Enumerate trusted domains",     "" },
 	{ "getdcsitecoverage", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcsitecoverage, &ndr_table_netlogon.syntax_id, NULL, "Get the Site-Coverage from a DC",     "" },
+	{ "database_redo", RPC_RTYPE_NTSTATUS, cmd_netlogon_database_redo, NULL, &ndr_table_netlogon.syntax_id, NULL, "Replicate single object from a DC",     "" },
 
 	{ NULL }
 };

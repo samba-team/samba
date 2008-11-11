@@ -23,7 +23,6 @@
 #include "version.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
-#include "dynconfig/dynconfig.h"
 
 /* Handle command line options:
  *		-d,--debuglevel 
@@ -63,10 +62,7 @@ static void popt_samba_callback(poptContext con,
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
 		if (lp_configfile(cmdline_lp_ctx) == NULL) {
-			if (getenv("SMB_CONF_PATH"))
-				lp_load(cmdline_lp_ctx, getenv("SMB_CONF_PATH"));
-			else
-				lp_load(cmdline_lp_ctx, dyn_CONFIGFILE);
+            lp_load_default(cmdline_lp_ctx);
 		}
 		/* Hook any 'every Samba program must do this, after
 		 * the smb.conf is setup' functions here */
@@ -82,11 +78,7 @@ static void popt_samba_callback(poptContext con,
 		pname++;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		if (global_loadparm != NULL) {
-			cmdline_lp_ctx = global_loadparm;
-		} else {
-			cmdline_lp_ctx = global_loadparm = loadparm_init(talloc_autofree_context());
-		}
+		cmdline_lp_ctx = loadparm_init(talloc_autofree_context());
 
 		/* Hook for 'almost the first thing to do in a samba program' here */
 		/* setup for panics */

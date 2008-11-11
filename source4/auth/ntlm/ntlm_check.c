@@ -23,7 +23,6 @@
 #include "../lib/crypto/crypto.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
-#include "param/param.h"
 #include "auth/ntlm/ntlm_check.h"
 
 /****************************************************************************
@@ -220,7 +219,7 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
-			     struct loadparm_context *lp_ctx, 
+				 bool lanman_auth,
 			     const struct samr_Password *client_lanman,
 			     const struct samr_Password *client_nt,
 			     const char *username, 
@@ -242,7 +241,7 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
 		}
 
 	} else if (client_lanman && stored_lanman) {
-		if (!lp_lanman_auth(lp_ctx)) {
+		if (!lanman_auth) {
 			DEBUG(3,("ntlm_password_check: Interactive logon: only LANMAN password supplied for user %s, and LM passwords are disabled!\n",
 				 username));
 			return NT_STATUS_WRONG_PASSWORD;
@@ -283,7 +282,8 @@ NTSTATUS hash_password_check(TALLOC_CTX *mem_ctx,
  */
 
 NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
-			     struct loadparm_context *lp_ctx,
+				 bool lanman_auth,
+				 bool ntlm_auth,
 			     uint32_t logon_parameters,
 			     const DATA_BLOB *challenge,
 			     const DATA_BLOB *lm_response,
@@ -321,7 +321,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		mdfour(client_nt.hash, nt_response->data, nt_response->length);
 		
 		if (lm_response->length && 
-		    (convert_string_talloc_convenience(mem_ctx, lp_iconv_convenience(lp_ctx), CH_DOS, CH_UNIX, 
+		    (convert_string_talloc(mem_ctx, CH_DOS, CH_UNIX, 
 					  lm_response->data, lm_response->length, 
 					   (void **)&unix_pw) != -1)) {
 			if (E_deshash(unix_pw, client_lm.hash)) {
@@ -333,7 +333,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			lm_ok = false;
 		}
 		return hash_password_check(mem_ctx, 
-					   lp_ctx,
+					   lanman_auth,
 					   lm_ok ? &client_lm : NULL, 
 					   nt_response->length ? &client_nt : NULL, 
 					   username,  
@@ -396,7 +396,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			DEBUG(3,("ntlm_password_check: NTLMv2 password check failed\n"));
 		}
 	} else if (nt_response->length == 24 && stored_nt) {
-		if (lp_ntlm_auth(lp_ctx)) {		
+		if (ntlm_auth) {		
 			/* We have the NT MD4 hash challenge available - see if we can
 			   use it (ie. does it exist in the smbpasswd file).
 			*/
@@ -408,7 +408,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				/* The LM session key for this response is not very secure, 
 				   so use it only if we otherwise allow LM authentication */
 				
-				if (lp_lanman_auth(lp_ctx) && stored_lanman) {
+				if (lanman_auth && stored_lanman) {
 					*lm_sess_key = data_blob_talloc(mem_ctx, stored_lanman->hash, 8);
 				}
 				return NT_STATUS_OK;
@@ -436,7 +436,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 		
-	if (!lp_lanman_auth(lp_ctx)) {
+	if (!lanman_auth) {
 		DEBUG(3,("ntlm_password_check: Lanman passwords NOT PERMITTED for user %s\n",
 			 username));
 	} else if (!stored_lanman) {
@@ -455,7 +455,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   It not very secure, so use it only if we otherwise 
 			   allow LM authentication */
 
-			if (lp_lanman_auth(lp_ctx) && stored_lanman) {
+			if (lanman_auth && stored_lanman) {
 				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, stored_lanman->hash, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);
@@ -571,7 +571,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	   - I think this is related to Win9X pass-though authentication
 	*/
 	DEBUG(4,("ntlm_password_check: Checking NT MD4 password in LM field\n"));
-	if (lp_ntlm_auth(lp_ctx)) {
+	if (ntlm_auth) {
 		if (smb_pwd_check_ntlmv1(mem_ctx, 
 					 lm_response, 
 					 stored_nt->hash, challenge,
@@ -580,7 +580,7 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 			   It not very secure, so use it only if we otherwise 
 			   allow LM authentication */
 
-			if (lp_lanman_auth(lp_ctx) && stored_lanman) {
+			if (lanman_auth && stored_lanman) {
 				uint8_t first_8_lm_hash[16];
 				memcpy(first_8_lm_hash, stored_lanman->hash, 8);
 				memset(first_8_lm_hash + 8, '\0', 8);

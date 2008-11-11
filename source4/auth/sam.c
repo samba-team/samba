@@ -447,7 +447,8 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	sam_ctx = samdb_connect(tmp_ctx, event_ctx, lp_ctx, system_session(tmp_ctx, lp_ctx));
+	sam_ctx = samdb_connect(tmp_ctx, event_ctx, lp_ctx, 
+				system_session(tmp_ctx, lp_ctx));
 	if (sam_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -459,7 +460,8 @@ NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, lp_netbios_name(lp_ctx),
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, 
+					     lp_netbios_name(lp_ctx),
 					     msgs[0], msgs_domain_ref[0],
 					     user_sess_key, lm_sess_key,
 					     server_info);

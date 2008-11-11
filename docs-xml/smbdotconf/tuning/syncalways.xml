@@ -12,7 +12,7 @@
     </command> call to ensure the data is written to disk. Note that 
     the <parameter moreinfo="none">strict sync</parameter> parameter must be set to
     <constant>yes</constant> in order for this parameter to have 
-    any affect.</para>
+    any effect.</para>
 </description>
 
 <related>strict sync</related>

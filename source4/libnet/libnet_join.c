@@ -444,13 +444,16 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
+	struct samr_Ids rids, types;
 	struct samr_OpenUser ou;
 	struct samr_CreateUser2 cu;
 	struct policy_handle *u_handle = NULL;
 	struct samr_QueryUserInfo qui;
+	union samr_UserInfo *uinfo;
 	struct samr_UserInfo21 u_info21;
 	union libnet_SetPassword r2;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	struct lsa_String samr_account_name;
 	
 	uint32_t acct_flags, old_acct_flags;
@@ -559,9 +562,11 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	if (!connect_with_info->out.domain_sid) {
 		struct lsa_String name;
 		struct samr_LookupDomain l;
+		struct dom_sid2 *sid = NULL;
 		name.string = connect_with_info->out.domain_name;
 		l.in.connect_handle = &p_handle;
 		l.in.domain_name = &name;
+		l.out.sid = &sid;
 		
 		status = dcerpc_samr_LookupDomain(samr_pipe, tmp_ctx, &l);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -571,7 +576,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			talloc_free(tmp_ctx);
 			return status;
 		}
-		connect_with_info->out.domain_sid = l.out.sid;
+		connect_with_info->out.domain_sid = *l.out.sid;
 	}
 
 	/* prepare samr_OpenDomain */
@@ -611,6 +616,8 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		ln.in.domain_handle = &d_handle;
 		ln.in.num_names = 1;
 		ln.in.names = talloc_array(tmp_ctx, struct lsa_String, 1);
+		ln.out.rids = &rids;
+		ln.out.types = &types;
 		if (!ln.in.names) {
 			r->out.error_string = NULL;
 			talloc_free(tmp_ctx);
@@ -630,10 +637,10 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		}
 		
 		/* check if we got one RID for the user */
-		if (ln.out.rids.count != 1) {
+		if (ln.out.rids->count != 1) {
 			r->out.error_string = talloc_asprintf(mem_ctx,
 							      "samr_LookupNames for [%s] returns %d RIDs",
-							      r->in.account_name, ln.out.rids.count);
+							      r->in.account_name, ln.out.rids->count);
 			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -642,7 +649,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		ZERO_STRUCTP(u_handle);
 		ou.in.domain_handle = &d_handle;
 		ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-		ou.in.rid = ln.out.rids.ids[0];
+		ou.in.rid = ln.out.rids->ids[0];
 		rid = ou.in.rid;
 		ou.out.user_handle = u_handle;
 		
@@ -694,6 +701,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 	/* prepare samr_QueryUserInfo (get flags) */
 	qui.in.user_handle = u_handle;
 	qui.in.level = 16;
+	qui.out.info = &uinfo;
 	
 	status = dcerpc_samr_QueryUserInfo(samr_pipe, tmp_ctx, &qui);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -705,7 +713,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 	
-	if (!qui.out.info) {
+	if (!uinfo) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		r->out.error_string
 			= talloc_asprintf(mem_ctx,
@@ -715,7 +723,7 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 		return status;
 	}
 
-	old_acct_flags = (qui.out.info->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST));
+	old_acct_flags = (uinfo->info16.acct_flags & (ACB_WSTRUST | ACB_SVRTRUST | ACB_DOMTRUST));
 	/* Possibly bail if the account is of the wrong type */
 	if (old_acct_flags
 	    != r->in.acct_type) {
@@ -771,17 +779,18 @@ NTSTATUS libnet_JoinDomain(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, stru
 			return NT_STATUS_USER_EXISTS;
 		}
 	} else {
-		acct_flags = qui.out.info->info16.acct_flags;
+		acct_flags = uinfo->info16.acct_flags;
 	}
 	
 	acct_flags = (acct_flags & ~(ACB_DISABLED|ACB_PWNOTREQ));
 
 	/* Find out what password policy this user has */
 	pwp.in.user_handle = u_handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(samr_pipe, tmp_ctx, &pwp);				
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 	
 	/* Grab a password of that minimum length */

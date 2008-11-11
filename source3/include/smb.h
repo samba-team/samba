@@ -625,12 +625,16 @@ struct current_user {
 };
 
 struct smb_request {
+	uint8_t cmd;
 	uint16 flags2;
 	uint16 smbpid;
 	uint16 mid;
 	uint16 vuid;
 	uint16 tid;
 	uint8  wct;
+	uint16_t *vwv;
+	uint16_t buflen;
+	const uint8_t *buf;
 	const uint8 *inbuf;
 	uint8 *outbuf;
 	size_t unread_bytes;
@@ -1228,7 +1232,7 @@ struct bitmap {
 #define FILE_GENERIC_WRITE (STD_RIGHT_READ_CONTROL_ACCESS|FILE_WRITE_DATA|FILE_WRITE_ATTRIBUTES|\
 							FILE_WRITE_EA|FILE_APPEND_DATA|SYNCHRONIZE_ACCESS)
 
-#define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|\
+#define FILE_GENERIC_EXECUTE (STANDARD_RIGHTS_EXECUTE_ACCESS|FILE_READ_ATTRIBUTES|\
 								FILE_EXECUTE|SYNCHRONIZE_ACCESS)
 
 /* Share specific rights. */

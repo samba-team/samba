@@ -120,7 +120,7 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 
 	if (cli_credentials_get_krb5_context(creds, 
 					     gensec_security->event_ctx, 
-					     gensec_security->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
+					     gensec_security->settings->lp_ctx, &gensec_krb5_state->smb_krb5_context)) {
 		talloc_free(gensec_krb5_state);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
@@ -252,7 +252,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 
 	ret = cli_credentials_get_ccache(gensec_get_credentials(gensec_security), 
 				         gensec_security->event_ctx, 
-					 gensec_security->lp_ctx, &ccache_container);
+					 gensec_security->settings->lp_ctx, &ccache_container);
 	switch (ret) {
 	case 0:
 		break;
@@ -267,7 +267,7 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 	}
 	in_data.length = 0;
 	
-	if (principal && lp_client_use_spnego_principal(gensec_security->lp_ctx)) {
+	if (principal && lp_client_use_spnego_principal(gensec_security->settings->lp_ctx)) {
 		krb5_principal target_principal;
 		ret = krb5_parse_name(gensec_krb5_state->smb_krb5_context->krb5_context, principal,
 				      &target_principal);
@@ -452,7 +452,7 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security,
 		/* Grab the keytab, however generated */
 		ret = cli_credentials_get_keytab(gensec_get_credentials(gensec_security), 
 					         gensec_security->event_ctx, 
-						 gensec_security->lp_ctx, &keytab);
+						 gensec_security->settings->lp_ctx, &keytab);
 		if (ret) {
 			return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
@@ -594,7 +594,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 						      KRB5_AUTHDATA_WIN2K_PAC, 
 						      &pac_data);
 	
-	if (ret && lp_parm_bool(gensec_security->lp_ctx, NULL, "gensec", "require_pac", false)) {
+	if (ret && gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
 		DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access: %s \n",
 			  principal_string,
 			  smb_get_krb5_error_message(context, 
@@ -607,7 +607,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, principal_string,
+		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->settings->lp_ctx, principal_string,
 							  &server_info);
 		krb5_free_principal(context, client_principal);
 		free(principal_string);
@@ -630,7 +630,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 
 		/* decode and verify the pac */
 		nt_status = kerberos_pac_logon_info(gensec_krb5_state, 
-						    lp_iconv_convenience(gensec_security->lp_ctx),
+						    gensec_security->settings->iconv_convenience,
 						    &logon_info, pac,
 						    gensec_krb5_state->smb_krb5_context->krb5_context,
 						    NULL, gensec_krb5_state->keyblock,
@@ -655,7 +655,7 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 	}
 
 	/* references the server_info into the session_info */
-	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, gensec_security->lp_ctx, server_info, &session_info);
+	nt_status = auth_generate_session_info(mem_ctx, gensec_security->event_ctx, gensec_security->settings->lp_ctx, server_info, &session_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

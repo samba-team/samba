@@ -29,6 +29,7 @@
 #include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "param/param.h"
 
 /* the stages of this call */
 enum connect_stage {CONNECT_RESOLVE, 
@@ -256,6 +257,7 @@ static NTSTATUS connect_negprot(struct composite_context *c,
 	state->io_setup->in.capabilities = state->transport->negotiate.capabilities;
 	state->io_setup->in.credentials  = io->in.credentials;
 	state->io_setup->in.workgroup    = io->in.workgroup;
+	state->io_setup->in.gensec_settings = io->in.gensec_settings;
 
 	state->creq = smb_composite_sesssetup_send(state->session, state->io_setup);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
@@ -375,7 +377,8 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 	state->creq = smbcli_sock_connect_send(state, address, 
 					       io->in.dest_ports,
 					       io->in.dest_host, 
-					       NULL, c->event_ctx);
+					       NULL, c->event_ctx, 
+						  io->in.socket_options);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;
@@ -467,6 +470,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 	state = talloc_zero(c, struct connect_state);
 	if (state == NULL) goto failed;
 
+	if (io->in.gensec_settings == NULL) goto failed;
 	state->io = io;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;

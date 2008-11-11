@@ -507,11 +507,9 @@ static const struct {
 
 void reply_negprot(struct smb_request *req)
 {
-	size_t size = smb_len(req->inbuf) + 4;
 	int choice= -1;
 	int protocol;
-	char *p;
-	int bcc = SVAL(smb_buf(req->inbuf),-2);
+	const char *p;
 	int arch = ARCH_ALL;
 	int num_cliprotos;
 	char **cliprotos;
@@ -528,19 +526,26 @@ void reply_negprot(struct smb_request *req)
 	}
 	done_negprot = True;
 
-	if (req->inbuf[size-1] != '\0') {
+	if (req->buflen == 0) {
+		DEBUG(0, ("negprot got no protocols\n"));
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBnegprot);
+		return;
+	}
+
+	if (req->buf[req->buflen-1] != '\0') {
 		DEBUG(0, ("negprot protocols not 0-terminated\n"));
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBnegprot);
 		return;
 	}
 
-	p = smb_buf(req->inbuf) + 1;
+	p = (const char *)req->buf + 1;
 
 	num_cliprotos = 0;
 	cliprotos = NULL;
 
-	while (p < (smb_buf(req->inbuf) + bcc)) {
+	while (smbreq_bufrem(req, p) > 0) {
 
 		char **tmp;
 

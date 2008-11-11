@@ -24,23 +24,55 @@
 #include "param/param.h"
 #include "system/filesys.h"
 
+struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops)
+{
+	struct torture_results *results = talloc_zero(mem_ctx, struct torture_results);
+
+	results->ui_ops = ui_ops;
+	results->returncode = true;
+
+	if (ui_ops->init)
+		ui_ops->init(results);
+
+	return results;
+}
+
 /**
  * Initialize a torture context
  */
 struct torture_context *torture_context_init(struct event_context *event_ctx, 
-											 const struct torture_ui_ops *ui_ops)
+											 struct torture_results *results)
 {
 	struct torture_context *torture = talloc_zero(event_ctx, 
 						      struct torture_context);
-	torture->ui_ops = ui_ops;
-	torture->returncode = true;
-	torture->ev = event_ctx;
 
-	if (ui_ops->init)
-		ui_ops->init(torture);
+	if (torture == NULL)
+		return NULL;
+
+	torture->ev = event_ctx;
+	torture->results = talloc_reference(torture, results);
 
 	return torture;
 }
+
+/**
+ * Create a sub torture context
+ */
+struct torture_context *torture_context_child(struct torture_context *parent)
+{
+	struct torture_context *subtorture = talloc_zero(parent, struct torture_context);
+
+	if (subtorture == NULL)
+		return NULL;
+
+	subtorture->level = parent->level+1;
+	subtorture->ev = talloc_reference(subtorture, parent->ev);
+	subtorture->lp_ctx = talloc_reference(subtorture, parent->lp_ctx);
+	subtorture->outputdir = talloc_reference(subtorture, parent->outputdir);
+	subtorture->results = talloc_reference(subtorture, parent->results);
+
+	return subtorture;
+}	
 
 /**
  create a temporary directory.
@@ -70,13 +102,13 @@ void torture_comment(struct torture_context *context, const char *comment, ...)
 	va_list ap;
 	char *tmp;
 
-	if (!context->ui_ops->comment)
+	if (!context->results->ui_ops->comment)
 		return;
 
 	va_start(ap, comment);
 	tmp = talloc_vasprintf(context, comment, ap);
 		
-	context->ui_ops->comment(context, tmp);
+	context->results->ui_ops->comment(context, tmp);
 	
 	talloc_free(tmp);
 }
@@ -89,13 +121,13 @@ void torture_warning(struct torture_context *context, const char *comment, ...)
 	va_list ap;
 	char *tmp;
 
-	if (!context->ui_ops->warning)
+	if (!context->results->ui_ops->warning)
 		return;
 
 	va_start(ap, comment);
 	tmp = talloc_vasprintf(context, comment, ap);
 
-	context->ui_ops->warning(context, tmp);
+	context->results->ui_ops->warning(context, tmp);
 
 	talloc_free(tmp);
 }
@@ -224,8 +256,8 @@ bool torture_run_suite(struct torture_context *context,
 	char *old_testname;
 
 	context->level++;
-	if (context->ui_ops->suite_start)
-		context->ui_ops->suite_start(context, suite);
+	if (context->results->ui_ops->suite_start)
+		context->results->ui_ops->suite_start(context, suite);
 
 	old_testname = context->active_testname;
 	if (old_testname != NULL)
@@ -245,8 +277,8 @@ bool torture_run_suite(struct torture_context *context,
 	talloc_free(context->active_testname);
 	context->active_testname = old_testname;
 
-	if (context->ui_ops->suite_finish)
-		context->ui_ops->suite_finish(context, suite);
+	if (context->results->ui_ops->suite_finish)
+		context->results->ui_ops->suite_finish(context, suite);
 
 	context->level--;
 	
@@ -257,19 +289,19 @@ void torture_ui_test_start(struct torture_context *context,
 			   struct torture_tcase *tcase, 
 			   struct torture_test *test)
 {
-	if (context->ui_ops->test_start)
-		context->ui_ops->test_start(context, tcase, test);
+	if (context->results->ui_ops->test_start)
+		context->results->ui_ops->test_start(context, tcase, test);
 }
 
 void torture_ui_test_result(struct torture_context *context, 
 			    enum torture_result result,
 			    const char *comment)
 {
-	if (context->ui_ops->test_result)
-		context->ui_ops->test_result(context, result, comment);
+	if (context->results->ui_ops->test_result)
+		context->results->ui_ops->test_result(context, result, comment);
 
 	if (result == TORTURE_ERROR || result == TORTURE_FAIL)
-		context->returncode = false;
+		context->results->returncode = false;
 }
 
 static bool internal_torture_run_test(struct torture_context *context, 
@@ -347,8 +379,8 @@ bool torture_run_tcase(struct torture_context *context,
 	context->level++;
 
 	context->active_tcase = tcase;
-	if (context->ui_ops->tcase_start) 
-		context->ui_ops->tcase_start(context, tcase);
+	if (context->results->ui_ops->tcase_start) 
+		context->results->ui_ops->tcase_start(context, tcase);
 
 	if (tcase->fixture_persistent && tcase->setup 
 		&& !tcase->setup(context, &tcase->data)) {
@@ -378,8 +410,8 @@ bool torture_run_tcase(struct torture_context *context,
 done:
 	context->active_tcase = NULL;
 
-	if (context->ui_ops->tcase_finish)
-		context->ui_ops->tcase_finish(context, tcase);
+	if (context->results->ui_ops->tcase_finish)
+		context->results->ui_ops->tcase_finish(context, tcase);
 
 	context->level--;
 

@@ -636,6 +636,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+#define MAX_SAM_ENTRIES_W2K 0x400 /* 1024 */
+
 NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 				  TALLOC_CTX *mem_ctx,
 				  uint32 num_sids, const DOM_SID *sids,

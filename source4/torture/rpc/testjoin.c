@@ -59,6 +59,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct policy_handle user_handle;
 	uint32_t rid;
 	struct samr_LookupNames n;
+	struct samr_Ids rids, types;
 	struct lsa_String sname;
 	struct samr_OpenUser r;
 
@@ -67,10 +68,12 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	n.in.domain_handle = handle;
 	n.in.num_names = 1;
 	n.in.names = &sname;
+	n.out.rids = &rids;
+	n.out.types = &types;
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
-		rid = n.out.rids.ids[0];
+		rid = n.out.rids->ids[0];
 	} else {
 		return status;
 	}
@@ -113,7 +116,9 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	struct samr_CreateUser2 r;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	struct policy_handle handle;
@@ -172,6 +177,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	name.string = domain;
 	l.in.connect_handle = &handle;
 	l.in.domain_name = &name;
+	l.out.sid = &sid;
 
 	status = dcerpc_samr_LookupDomain(join->p, join, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -179,14 +185,14 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 		goto failed;
 	}
 
-	talloc_steal(join, l.out.sid);
-	join->dom_sid = l.out.sid;
+	talloc_steal(join, *l.out.sid);
+	join->dom_sid = *l.out.sid;
 	join->dom_netbios_name = talloc_strdup(join, domain);
 	if (!join->dom_netbios_name) goto failed;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(join->p, join, &o);
@@ -224,10 +230,11 @@ again:
 	join->user_sid = dom_sid_add_rid(join, join->dom_sid, rid);
 
 	pwp.in.user_handle = &join->user_handle;
+	pwp.out.info = &info;
 
 	status = dcerpc_samr_GetUserPwInfo(join->p, join, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 
 	random_pw = generate_random_str(join, MAX(8, policy_min_pw_len));

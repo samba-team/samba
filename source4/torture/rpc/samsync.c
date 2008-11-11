@@ -151,17 +151,19 @@ struct samsync_trusted_domain {
 static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx, 
 						 struct samsync_state *samsync_state, 
 						 const char *domain, 
-						 struct dom_sid **sid)
+						 struct dom_sid **sid_p)
 {
 	struct lsa_String name;
 	struct samr_OpenDomain o;
 	struct samr_LookupDomain l;
+	struct dom_sid2 *sid = NULL;
 	struct policy_handle *domain_handle = talloc(mem_ctx, struct policy_handle);
 	NTSTATUS nt_status;
 
 	name.string = domain;
 	l.in.connect_handle = samsync_state->connect_handle;
 	l.in.domain_name = &name;
+	l.out.sid = &sid;
 
 	nt_status = dcerpc_samr_LookupDomain(samsync_state->p_samr, mem_ctx, &l);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -171,11 +173,11 @@ static struct policy_handle *samsync_open_domain(TALLOC_CTX *mem_ctx,
 
 	o.in.connect_handle = samsync_state->connect_handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = domain_handle;
 	
 	if (sid) {
-		*sid = l.out.sid;
+		*sid_p = *l.out.sid;
 	}
 
 	nt_status = dcerpc_samr_OpenDomain(samsync_state->p_samr, mem_ctx, &o);
@@ -192,10 +194,12 @@ static struct sec_desc_buf *samsync_query_samr_sec_desc(TALLOC_CTX *mem_ctx,
 							struct policy_handle *handle) 
 {
 	struct samr_QuerySecurity r;
+	struct sec_desc_buf *sdbuf = NULL;
 	NTSTATUS status;
 
 	r.in.handle = handle;
 	r.in.sec_info = 0x7;
+	r.out.sdbuf = &sdbuf;
 
 	status = dcerpc_samr_QuerySecurity(samsync_state->p_samr, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -203,7 +207,7 @@ static struct sec_desc_buf *samsync_query_samr_sec_desc(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	return r.out.sdbuf;
+	return sdbuf;
 }
 
 static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx, 
@@ -260,6 +264,15 @@ static struct sec_desc_buf *samsync_query_lsa_sec_desc(TALLOC_CTX *mem_ctx,
 	} \
 } while (0)
 
+#define TEST_BINARY_STRING_EQUAL(s1, s2) do {\
+	if (!((!s1.array || s1.array[0]=='\0') && (!s2.array || s2.array[0]=='\0')) \
+	    && memcmp(s1.array, s2.array, s1.length * 2) != 0) {\
+	      printf("%s: string mismatch: " #s1 ":%s != " #s2 ": %s\n", \
+		     __location__, (const char *)s1.array, (const char *)s2.array);\
+	      ret = false;\
+	} \
+} while (0)
+
 #define TEST_SID_EQUAL(s1, s2) do {\
 	if (!dom_sid_equal(s1, s2)) {\
 	      printf("%s: dom_sid mismatch: " #s1 ":%s != " #s2 ": %s\n", \
@@ -294,6 +307,7 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	struct netr_DELTA_DOMAIN *domain = delta->delta_union.domain;
 	struct dom_sid *dom_sid;
 	struct samr_QueryDomainInfo q[14]; /* q[0] will be unused simple for clarity */
+	union samr_DomainInfo *info[14];
 	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13};
 	NTSTATUS nt_status;
 	int i;
@@ -341,8 +355,10 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	       (long long)samsync_state->seq_num[database_id]);
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
+
 		q[levels[i]].in.domain_handle = samsync_state->domain_handle[database_id];
 		q[levels[i]].in.level = levels[i];
+		q[levels[i]].out.info = &info[levels[i]];
 
 		nt_status = dcerpc_samr_QueryDomainInfo(samsync_state->p_samr, mem_ctx, &q[levels[i]]);
 
@@ -353,23 +369,23 @@ static bool samsync_handle_domain(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		}
 	}
 
-	TEST_STRING_EQUAL(q[5].out.info->info5.domain_name, domain->domain_name);
+	TEST_STRING_EQUAL(info[5]->info5.domain_name, domain->domain_name);
 	
-	TEST_STRING_EQUAL(q[2].out.info->general.oem_information, domain->oem_information);
-	TEST_STRING_EQUAL(q[4].out.info->oem.oem_information, domain->oem_information);
-	TEST_TIME_EQUAL(q[2].out.info->general.force_logoff_time, domain->force_logoff_time);
-	TEST_TIME_EQUAL(q[3].out.info->info3.force_logoff_time, domain->force_logoff_time);
+	TEST_STRING_EQUAL(info[2]->general.oem_information, domain->oem_information);
+	TEST_STRING_EQUAL(info[4]->oem.oem_information, domain->oem_information);
+	TEST_TIME_EQUAL(info[2]->general.force_logoff_time, domain->force_logoff_time);
+	TEST_TIME_EQUAL(info[3]->info3.force_logoff_time, domain->force_logoff_time);
 
-	TEST_TIME_EQUAL(q[1].out.info->info1.min_password_length, domain->min_password_length);
-	TEST_TIME_EQUAL(q[1].out.info->info1.password_history_length, domain->password_history_length);
-	TEST_TIME_EQUAL(q[1].out.info->info1.max_password_age, domain->max_password_age);
-	TEST_TIME_EQUAL(q[1].out.info->info1.min_password_age, domain->min_password_age);
+	TEST_TIME_EQUAL(info[1]->info1.min_password_length, domain->min_password_length);
+	TEST_TIME_EQUAL(info[1]->info1.password_history_length, domain->password_history_length);
+	TEST_TIME_EQUAL(info[1]->info1.max_password_age, domain->max_password_age);
+	TEST_TIME_EQUAL(info[1]->info1.min_password_age, domain->min_password_age);
 
-	TEST_UINT64_EQUAL(q[8].out.info->info8.sequence_num, 
+	TEST_UINT64_EQUAL(info[8]->info8.sequence_num,
 			domain->sequence_num);
-	TEST_TIME_EQUAL(q[8].out.info->info8.domain_create_time, 
+	TEST_TIME_EQUAL(info[8]->info8.domain_create_time,
 			domain->domain_create_time);
-	TEST_TIME_EQUAL(q[13].out.info->info13.domain_create_time, 
+	TEST_TIME_EQUAL(info[13]->info13.domain_create_time,
 			domain->domain_create_time);
 
 	TEST_SEC_DESC_EQUAL(domain->sdbuf, samr, samsync_state->domain_handle[database_id]);
@@ -425,9 +441,12 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 
 	struct samr_OpenUser r;
 	struct samr_QueryUserInfo q;
+	union samr_UserInfo *info;
 	struct policy_handle user_handle;
 
 	struct samr_GetGroupsForUser getgroups;
+	struct samr_RidWithAttributeArray *rids;
+
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
 		printf("SamSync needs domain information before the users\n");
 		return false;
@@ -446,6 +465,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 
 	q.in.user_handle = &user_handle;
 	q.in.level = 21;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(user->sdbuf, samr, &user_handle);
 
@@ -457,6 +477,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 	}
 
 	getgroups.in.user_handle = &user_handle;
+	getgroups.out.rids = &rids;
 	
 	nt_status = dcerpc_samr_GetGroupsForUser(samsync_state->p_samr, mem_ctx, &getgroups);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -480,67 +501,67 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->info21.account_name, user->account_name);
-	TEST_STRING_EQUAL(q.out.info->info21.full_name, user->full_name);
-	TEST_INT_EQUAL(q.out.info->info21.rid, user->rid);
-	TEST_INT_EQUAL(q.out.info->info21.primary_gid, user->primary_gid);
-	TEST_STRING_EQUAL(q.out.info->info21.home_directory, user->home_directory);
-	TEST_STRING_EQUAL(q.out.info->info21.home_drive, user->home_drive);
-	TEST_STRING_EQUAL(q.out.info->info21.logon_script, user->logon_script);
-	TEST_STRING_EQUAL(q.out.info->info21.description, user->description);
-	TEST_STRING_EQUAL(q.out.info->info21.workstations, user->workstations);
+	TEST_STRING_EQUAL(info->info21.account_name, user->account_name);
+	TEST_STRING_EQUAL(info->info21.full_name, user->full_name);
+	TEST_INT_EQUAL(info->info21.rid, user->rid);
+	TEST_INT_EQUAL(info->info21.primary_gid, user->primary_gid);
+	TEST_STRING_EQUAL(info->info21.home_directory, user->home_directory);
+	TEST_STRING_EQUAL(info->info21.home_drive, user->home_drive);
+	TEST_STRING_EQUAL(info->info21.logon_script, user->logon_script);
+	TEST_STRING_EQUAL(info->info21.description, user->description);
+	TEST_STRING_EQUAL(info->info21.workstations, user->workstations);
 
-	TEST_TIME_EQUAL(q.out.info->info21.last_logon, user->last_logon);
-	TEST_TIME_EQUAL(q.out.info->info21.last_logoff, user->last_logoff);
+	TEST_TIME_EQUAL(info->info21.last_logon, user->last_logon);
+	TEST_TIME_EQUAL(info->info21.last_logoff, user->last_logoff);
 
 
-	TEST_INT_EQUAL(q.out.info->info21.logon_hours.units_per_week, 
+	TEST_INT_EQUAL(info->info21.logon_hours.units_per_week,
 		       user->logon_hours.units_per_week);
 	if (ret) {
-		if (memcmp(q.out.info->info21.logon_hours.bits, user->logon_hours.bits, 
-			   q.out.info->info21.logon_hours.units_per_week/8) != 0) {
+		if (memcmp(info->info21.logon_hours.bits, user->logon_hours.bits,
+			   info->info21.logon_hours.units_per_week/8) != 0) {
 			printf("Logon hours mismatch\n");
 			ret = false;
 		}
 	}
 
-	TEST_INT_EQUAL(q.out.info->info21.bad_password_count,
+	TEST_INT_EQUAL(info->info21.bad_password_count,
 		       user->bad_password_count);
-	TEST_INT_EQUAL(q.out.info->info21.logon_count,
+	TEST_INT_EQUAL(info->info21.logon_count,
 		       user->logon_count);
 
-	TEST_TIME_EQUAL(q.out.info->info21.last_password_change,
+	TEST_TIME_EQUAL(info->info21.last_password_change,
 		       user->last_password_change);
-	TEST_TIME_EQUAL(q.out.info->info21.acct_expiry,
+	TEST_TIME_EQUAL(info->info21.acct_expiry,
 		       user->acct_expiry);
 
-	TEST_INT_EQUAL((q.out.info->info21.acct_flags & ~ACB_PW_EXPIRED), user->acct_flags);
+	TEST_INT_EQUAL((info->info21.acct_flags & ~ACB_PW_EXPIRED), user->acct_flags);
 	if (user->acct_flags & ACB_PWNOEXP) {
-		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+		if (info->info21.acct_flags & ACB_PW_EXPIRED) {
 			printf("ACB flags mismatch: both expired and no expiry!\n");
 			ret = false;
 		}
-		if (q.out.info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
+		if (info->info21.force_password_change != (NTTIME)0x7FFFFFFFFFFFFFFFULL) {
 			printf("ACB flags mismatch: no password expiry, but force password change 0x%016llx (%lld) != 0x%016llx (%lld)\n",
-			       (unsigned long long)q.out.info->info21.force_password_change, 
-			       (unsigned long long)q.out.info->info21.force_password_change,
+			       (unsigned long long)info->info21.force_password_change,
+			       (unsigned long long)info->info21.force_password_change,
 			       (unsigned long long)0x7FFFFFFFFFFFFFFFULL, (unsigned long long)0x7FFFFFFFFFFFFFFFULL
 				);
 			ret = false;
 		}
 	}
 
-	TEST_INT_EQUAL(q.out.info->info21.nt_password_set, user->nt_password_present);
-	TEST_INT_EQUAL(q.out.info->info21.lm_password_set, user->lm_password_present);
-	TEST_INT_EQUAL(q.out.info->info21.password_expired, user->password_expired);
+	TEST_INT_EQUAL(info->info21.nt_password_set, user->nt_password_present);
+	TEST_INT_EQUAL(info->info21.lm_password_set, user->lm_password_present);
+	TEST_INT_EQUAL(info->info21.password_expired, user->password_expired);
 
-	TEST_STRING_EQUAL(q.out.info->info21.comment, user->comment);
-	TEST_STRING_EQUAL(q.out.info->info21.parameters, user->parameters);
+	TEST_STRING_EQUAL(info->info21.comment, user->comment);
+	TEST_BINARY_STRING_EQUAL(info->info21.parameters, user->parameters);
 
-	TEST_INT_EQUAL(q.out.info->info21.country_code, user->country_code);
-	TEST_INT_EQUAL(q.out.info->info21.code_page, user->code_page);
+	TEST_INT_EQUAL(info->info21.country_code, user->country_code);
+	TEST_INT_EQUAL(info->info21.code_page, user->code_page);
 
-	TEST_STRING_EQUAL(q.out.info->info21.profile_path, user->profile_path);
+	TEST_STRING_EQUAL(info->info21.profile_path, user->profile_path);
 
 	if (user->lm_password_present) {
 		sam_rid_crypt(rid, user->lmpassword.hash, lm_hash.hash, 0);
@@ -619,7 +640,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_PASSWORD_EXPIRED)) {
-		if (q.out.info->info21.acct_flags & ACB_PW_EXPIRED) {
+		if (info->info21.acct_flags & ACB_PW_EXPIRED) {
 			return true;
 		}
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD)) {
@@ -654,7 +675,7 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 		TEST_TIME_EQUAL(user->last_logon, info3->base.last_logon);
 		TEST_TIME_EQUAL(user->acct_expiry, info3->base.acct_expiry);
 		TEST_TIME_EQUAL(user->last_password_change, info3->base.last_password_change);
-		TEST_TIME_EQUAL(q.out.info->info21.force_password_change, info3->base.force_password_change);
+		TEST_TIME_EQUAL(info->info21.force_password_change, info3->base.force_password_change);
 
 		/* Does the concept of a logoff time ever really
 		 * exist? (not in any sensible way, according to the
@@ -667,28 +688,28 @@ static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ct
 			TEST_TIME_EQUAL(user->last_logoff, info3->base.last_logoff);
 		}
 
-		TEST_INT_EQUAL(getgroups.out.rids->count, info3->base.groups.count);
-		if (getgroups.out.rids->count == info3->base.groups.count) {
+		TEST_INT_EQUAL(rids->count, info3->base.groups.count);
+		if (rids->count == info3->base.groups.count) {
 			int i, j;
-			int count = getgroups.out.rids->count;
-			bool *matched = talloc_zero_array(mem_ctx, bool, getgroups.out.rids->count);
+			int count = rids->count;
+			bool *matched = talloc_zero_array(mem_ctx, bool, rids->count);
 				
 			for (i = 0; i < count; i++) {
 				for (j = 0; j < count; j++) {
-					if ((getgroups.out.rids->rids[i].rid == 
+					if ((rids->rids[i].rid ==
 					     info3->base.groups.rids[j].rid)
-					    && (getgroups.out.rids->rids[i].attributes == 
+					    && (rids->rids[i].attributes ==
 						info3->base.groups.rids[j].attributes)) {
 							matched[i] = true;
 						}
 				}
 			}
 
-			for (i = 0; i < getgroups.out.rids->count; i++) {
+			for (i = 0; i < rids->count; i++) {
 				if (matched[i] == false) {
 					ret = false;
 					printf("Could not find group RID %u found in getgroups in NETLOGON reply\n",
-					       getgroups.out.rids->rids[i].rid); 
+					       rids->rids[i].rid);
 				}
 			}
 		}
@@ -711,6 +732,7 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	struct samr_OpenAlias r;
 	struct samr_QueryAliasInfo q;
+	union samr_AliasInfo *info;
 	struct policy_handle alias_handle;
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
@@ -731,6 +753,7 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	q.in.alias_handle = &alias_handle;
 	q.in.level = 1;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(alias->sdbuf, samr, &alias_handle);
 
@@ -745,8 +768,8 @@ static bool samsync_handle_alias(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->all.name, alias->alias_name);
-	TEST_STRING_EQUAL(q.out.info->all.description, alias->description);
+	TEST_STRING_EQUAL(info->all.name, alias->alias_name);
+	TEST_STRING_EQUAL(info->all.description, alias->description);
 	return ret;
 }
 
@@ -760,6 +783,7 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	struct samr_OpenGroup r;
 	struct samr_QueryGroupInfo q;
+	union samr_GroupInfo *info;
 	struct policy_handle group_handle;
 
 	if (!samsync_state->domain_name || !samsync_state->domain_handle[database_id]) {
@@ -780,6 +804,7 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 
 	q.in.group_handle = &group_handle;
 	q.in.level = 1;
+	q.out.info = &info;
 
 	TEST_SEC_DESC_EQUAL(group->sdbuf, samr, &group_handle);
 
@@ -794,9 +819,9 @@ static bool samsync_handle_group(TALLOC_CTX *mem_ctx, struct samsync_state *sams
 		return false;
 	}
 
-	TEST_STRING_EQUAL(q.out.info->all.name, group->group_name);
-	TEST_INT_EQUAL(q.out.info->all.attributes, group->attributes);
-	TEST_STRING_EQUAL(q.out.info->all.description, group->description);
+	TEST_STRING_EQUAL(info->all.name, group->group_name);
+	TEST_INT_EQUAL(info->all.attributes, group->attributes);
+	TEST_STRING_EQUAL(info->all.description, group->description);
 	return ret;
 }
 

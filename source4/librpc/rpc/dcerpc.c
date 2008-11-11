@@ -31,9 +31,9 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 
-_PUBLIC_ NTSTATUS dcerpc_init(void)
+_PUBLIC_ NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx)
 {
-	return gensec_init(global_loadparm);
+	return gensec_init(lp_ctx);
 }
 
 static void dcerpc_connection_dead(struct dcerpc_connection *conn, NTSTATUS status);
@@ -1457,8 +1457,9 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	ndr_err = call->ndr_pull(pull, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
-		dcerpc_log_packet(table, opnum, NDR_OUT, 
-				  &response);
+		dcerpc_log_packet(p->conn->packet_log_dir,
+						  table, opnum, NDR_OUT, 
+						  &response);
 		return status;
 	}
 
@@ -1467,7 +1468,8 @@ _PUBLIC_ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 						 call->ndr_push, call->ndr_pull, 
 						 call->ndr_print);
 		if (!NT_STATUS_IS_OK(status)) {
-			dcerpc_log_packet(table, opnum, NDR_OUT, 
+			dcerpc_log_packet(p->conn->packet_log_dir, 
+							  table, opnum, NDR_OUT, 
 				  &response);
 			return status;
 		}

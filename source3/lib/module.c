@@ -37,11 +37,11 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	 * backwards compatibility, there might be symbols in the 
 	 * plugin referencing to old (removed) functions
 	 */
-	handle = sys_dlopen(module_name, RTLD_LAZY);
+	handle = dlopen(module_name, RTLD_LAZY);
 
 	/* This call should reset any possible non-fatal errors that 
 	   occured since last call to dl* functions */
-	error = sys_dlerror();
+	error = dlerror();
 
 	if(!handle) {
 		int level = is_probe ? 3 : 0;
@@ -49,15 +49,15 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	init = (init_module_function *)sys_dlsym(handle, "init_samba_module");
+	init = (init_module_function *)dlsym(handle, "init_samba_module");
 
-	/* we must check sys_dlerror() to determine if it worked, because
-           sys_dlsym() can validly return NULL */
-	error = sys_dlerror();
+	/* we must check dlerror() to determine if it worked, because
+           dlsym() can validly return NULL */
+	error = dlerror();
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_samba_module' "
 			  "in %s: %s\n", module_name, error));
-		sys_dlclose(handle);
+		dlclose(handle);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -67,7 +67,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Module '%s' initialization failed: %s\n",
 			    module_name, get_friendly_nt_error_msg(status)));
-		sys_dlclose(handle);
+		dlclose(handle);
 	}
 
 	return status;

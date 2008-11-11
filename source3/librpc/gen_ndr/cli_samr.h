@@ -255,7 +255,7 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle /* [in] [ref] */,
 				    uint16_t level /* [in]  */,
-				    union samr_UserInfo *info /* [out] [ref,switch_is(level)] */);
+				    union samr_UserInfo **info /* [out] [ref,switch_is(level)] */);
 NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *domain_handle /* [in] [ref] */,
@@ -375,7 +375,7 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *domain_handle /* [in] [ref] */,
 			      uint32_t rid /* [in]  */,
-			      struct dom_sid2 *sid /* [out] [ref] */);
+			      struct dom_sid2 **sid /* [out] [ref] */);
 NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct lsa_String *name /* [in] [unique] */,
@@ -384,6 +384,6 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      enum samr_ValidatePasswordLevel level /* [in]  */,
-				      union samr_ValidatePasswordReq req /* [in] [switch_is(level)] */,
-				      union samr_ValidatePasswordRep *rep /* [out] [ref,switch_is(level)] */);
+				      union samr_ValidatePasswordReq *req /* [in] [ref,switch_is(level)] */,
+				      union samr_ValidatePasswordRep **rep /* [out] [ref,switch_is(level)] */);
 #endif /* __CLI_SAMR__ */

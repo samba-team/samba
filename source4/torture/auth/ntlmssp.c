@@ -23,6 +23,7 @@
 #include "auth/ntlmssp/ntlmssp.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/torture.h"
+#include "param/param.h"
 
 static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 {
@@ -34,7 +35,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	torture_assert_ntstatus_ok(tctx, 
 		gensec_client_start(mem_ctx, &gensec_security,
-				    tctx->ev, tctx->lp_ctx),
+				    tctx->ev, lp_gensec_settings(tctx, tctx->lp_ctx)),
 		"gensec client start");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);
@@ -89,7 +90,7 @@ static bool torture_ntlmssp_self_check(struct torture_context *tctx)
 
 	torture_assert_ntstatus_ok(tctx, 
 		gensec_client_start(mem_ctx, &gensec_security,
-				    tctx->ev, tctx->lp_ctx),
+				    tctx->ev, lp_gensec_settings(tctx, tctx->lp_ctx)),
 		"Failed to start GENSEC for NTLMSSP");
 
 	gensec_set_credentials(gensec_security, cmdline_credentials);

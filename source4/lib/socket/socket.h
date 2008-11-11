@@ -208,4 +208,6 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 void set_socket_options(int fd, const char *options);
 void socket_set_flags(struct socket_context *socket, unsigned flags);
 
+extern bool testnonblock;
+
 #endif /* _SAMBA_SOCKET_H */

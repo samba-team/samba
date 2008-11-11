@@ -74,6 +74,9 @@ NTSTATUS ldapsrv_backend_Init(struct ldapsrv_connection *conn)
 			= gensec_use_kerberos_mechs(conn, backends, conn->server_credentials);
 		int i, j = 0;
 		for (i = 0; ops && ops[i]; i++) {
+			if (!gensec_security_ops_enabled(ops[i], conn->lp_ctx))
+				continue;
+
 			if (ops[i]->sasl_name && ops[i]->server_start) {
 				char *sasl_name = talloc_strdup(conn, ops[i]->sasl_name);
 

@@ -472,7 +472,7 @@ bool debug_parse_levels(const char *params_str)
 	if (AllowDebugChange == False)
 		return True;
 
-	params = str_list_make(talloc_tos(), params_str, NULL);
+	params = str_list_make_v3(talloc_tos(), params_str, NULL);
 
 	if (debug_parse_params(params)) {
 		debug_dump_status(5);
@@ -680,8 +680,8 @@ bool reopen_logs( void )
 	force_check_log_size();
 	(void)umask(oldumask);
 
-	/* Take over stderr to catch ouput into logs */
-	if (dbf && sys_dup2(x_fileno(dbf), 2) == -1) {
+	/* Take over stderr to catch output into logs */
+	if (dbf && dup2(x_fileno(dbf), 2) == -1) {
 		close_low_fds(True); /* Close stderr too, if dup2 can't point it
 					at the logfile */
 	}

@@ -27,8 +27,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+/*******************************************************************
+ Parse out a struct security_descriptor from a DATA_BLOB.
+*******************************************************************/
+
 static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
-				const struct timespec cts,
 				uint32 security_info,
 				struct security_descriptor **ppdesc)
 {
@@ -50,31 +53,7 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
-#if 0
-	{
-		struct timespec ts;
-		/* Arg. This doesn't work. Too many activities
-		 * change the ctime. May have to roll back to
-		 * version 1.
-		 */
-		/*
-		 * Check that the ctime timestamp is ealier
-		 * than the stored timestamp.
-		 */
-
-		ts = nt_time_to_unix_timespec(&xacl.info.sd_ts->last_changed);
-
-		if (timespec_compare(&cts, &ts) > 0) {
-			DEBUG(5, ("parse_acl_blob: stored ACL out of date "
-				"(%s > %s.\n",
-				timestring(ctx, cts.tv_sec),
-				timestring(ctx, ts.tv_sec)));
-			return NT_STATUS_EA_CORRUPT_ERROR;
-		}
-	}
-#endif
-
-	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_ts->sd->type | SEC_DESC_SELF_RELATIVE,
 			(security_info & OWNER_SECURITY_INFORMATION)
 			? xacl.info.sd_ts->sd->owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION)
@@ -89,6 +68,10 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 
 	return (*ppdesc != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 }
+
+/*******************************************************************
+ Pull a security descriptor into a DATA_BLOB from a xattr.
+*******************************************************************/
 
 static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 			vfs_handle_struct *handle,
@@ -144,7 +127,11 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
+/*******************************************************************
+ Create a DATA_BLOB from a security descriptor.
+*******************************************************************/
+
+static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
 	struct security_descriptor_timestamp sd_ts;
@@ -163,7 +150,7 @@ static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 
 	xacl.version = 2;
 	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = CONST_DISCARD(SEC_DESC *, psd);
+	xacl.info.sd_ts->sd = CONST_DISCARD(struct security_descriptor *, psd);
 	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
 
 	DEBUG(10, ("create_acl_blob: timestamp stored as %s\n",
@@ -182,7 +169,12 @@ static NTSTATUS create_acl_blob(const SEC_DESC *psd, DATA_BLOB *pblob)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS store_acl_blob_fsp(files_struct *fsp,
+/*******************************************************************
+ Store a DATA_BLOB into an xattr given an fsp pointer.
+*******************************************************************/
+
+static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
+				files_struct *fsp,
 				DATA_BLOB *pblob)
 {
 	int ret;
@@ -215,10 +207,15 @@ static NTSTATUS store_acl_blob_fsp(files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS store_acl_blob_pathname(connection_struct *conn,
+/*******************************************************************
+ Store a DATA_BLOB into an xattr given a pathname.
+*******************************************************************/
+
+static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 					const char *fname,
 					DATA_BLOB *pblob)
 {
+	connection_struct *conn = handle->conn;
 	int ret;
 	int saved_errno = 0;
 
@@ -245,16 +242,18 @@ static NTSTATUS store_acl_blob_pathname(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+ Store a DATA_BLOB into an xattr given a pathname.
+*******************************************************************/
 
 static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *name,
 				        uint32 security_info,
-					SEC_DESC **ppdesc)
+					struct security_descriptor **ppdesc)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	DATA_BLOB blob;
-	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
 	if (fsp && name == NULL) {
@@ -269,18 +268,7 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 		return status;
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-	} else {
-		if (SMB_VFS_STAT(handle->conn, name, &sbuf) == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-	}
-
-	status = parse_acl_blob(&blob, get_ctimespec(&sbuf),
-			security_info, ppdesc);
+	status = parse_acl_blob(&blob, security_info, ppdesc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("parse_acl_blob returned %s\n",
 				nt_errstr(status)));
@@ -292,8 +280,49 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 }
 
 /*********************************************************************
- * Currently this only works for existing files. Need to work on
- * inheritance for new files.
+ Create a default security descriptor for a file in case no inheritance
+ exists. All permissions to the owner and SYSTEM.
+*********************************************************************/
+
+static struct security_descriptor *default_file_sd(TALLOC_CTX *mem_ctx,
+						SMB_STRUCT_STAT *psbuf)
+{
+	struct dom_sid owner_sid, group_sid;
+	size_t sd_size;
+	struct security_ace *pace = NULL;
+	struct security_acl *pacl = NULL;
+
+	uid_to_sid(&owner_sid, psbuf->st_uid);
+	gid_to_sid(&group_sid, psbuf->st_gid);
+
+	pace = TALLOC_ARRAY(mem_ctx, struct security_ace, 2);
+	if (!pace) {
+		return NULL;
+	}
+
+	init_sec_ace(&pace[0], &owner_sid, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			SEC_RIGHTS_FILE_ALL, 0);
+	init_sec_ace(&pace[1], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED,
+			SEC_RIGHTS_FILE_ALL, 0);
+
+	pacl = make_sec_acl(mem_ctx,
+				NT4_ACL_REVISION,
+				2,
+				pace);
+	if (!pacl) {
+		return NULL;
+	}
+	return make_sec_desc(mem_ctx,
+			SECURITY_DESCRIPTOR_REVISION_1,
+			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
+			&owner_sid,
+			&group_sid,
+			NULL,
+                        pacl,
+			&sd_size);
+}
+
+/*********************************************************************
 *********************************************************************/
 
 static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
@@ -303,8 +332,8 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status;
-	SEC_DESC *parent_desc = NULL;
-	SEC_DESC *psd = NULL;
+	struct security_descriptor *parent_desc = NULL;
+	struct security_descriptor *psd = NULL;
 	DATA_BLOB blob;
 	size_t size;
 	char *parent_name;
@@ -322,35 +351,73 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	status = get_nt_acl_xattr_internal(handle,
 					NULL,
 					parent_name,
-					DACL_SECURITY_INFORMATION,
+					(OWNER_SECURITY_INFORMATION |
+					 GROUP_SECURITY_INFORMATION |
+					 DACL_SECURITY_INFORMATION),
 					&parent_desc);
-        if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("inherit_new_acl: directory %s failed "
-			"to get acl %s\n",
-			parent_name,
-			nt_errstr(status) ));
-		return status;
-	}
+        if (NT_STATUS_IS_OK(status)) {
+		/* Create an inherited descriptor from the parent. */
 
-	/* Create an inherited descriptor from the parent. */
-	status = se_create_child_secdesc(ctx,
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: parent acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, parent_desc);
+		}
+
+		status = se_create_child_secdesc(ctx,
 				&psd,
 				&size,
 				parent_desc,
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_USER_SID_INDEX],
 				&handle->conn->server_info->ptok->user_sids[PRIMARY_GROUP_SID_INDEX],
 				container);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: child acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, psd);
+		}
+
+	} else {
+		DEBUG(10,("inherit_new_acl: directory %s failed "
+			"to get acl %s\n",
+			parent_name,
+			nt_errstr(status) ));
 	}
+
+	if (!psd || psd->dacl == NULL) {
+		SMB_STRUCT_STAT sbuf;
+		int ret;
+
+		TALLOC_FREE(psd);
+		if (fsp && !fsp->is_directory && fsp->fh->fd != -1) {
+			ret = SMB_VFS_FSTAT(fsp, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(handle->conn,fname, &sbuf);
+		}
+		if (ret == -1) {
+			return map_nt_error_from_unix(errno);
+		}
+		psd = default_file_sd(ctx, &sbuf);
+		if (!psd) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (DEBUGLEVEL >= 10) {
+			DEBUG(10,("inherit_new_acl: default acl is:\n"));
+			NDR_PRINT_DEBUG(security_descriptor, psd);
+		}
+	}
+
 	status = create_acl_blob(psd, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	if (fsp) {
-		return store_acl_blob_fsp(fsp, &blob);
+		return store_acl_blob_fsp(handle, fsp, &blob);
 	} else {
-		return store_acl_blob_pathname(handle->conn, fname, &blob);
+		return store_acl_blob_pathname(handle, fname, &blob);
 	}
 }
 
@@ -365,7 +432,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					mode_t mode)
 {
 	uint32_t access_granted = 0;
-	SEC_DESC *pdesc = NULL;
+	struct security_descriptor *pdesc = NULL;
 	bool file_existed = true;
 	NTSTATUS status = get_nt_acl_xattr_internal(handle,
 					NULL,
@@ -376,11 +443,15 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					&pdesc);
         if (NT_STATUS_IS_OK(status)) {
 		/* See if we can access it. */
-		status = se_access_check(pdesc,
+		status = smb1_file_se_access_check(pdesc,
 					handle->conn->server_info->ptok,
 					fsp->access_mask,
 					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10,("open_acl_xattr: file %s open "
+				"refused with error %s\n",
+				fname,
+				nt_errstr(status) ));
 			errno = map_errno_from_nt_status(status);
 			return -1;
 		}
@@ -416,8 +487,12 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t m
 	return ret;
 }
 
+/*********************************************************************
+ Fetch a security descriptor given an fsp.
+*********************************************************************/
+
 static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info, SEC_DESC **ppdesc)
+        uint32 security_info, struct security_descriptor **ppdesc)
 {
 	NTSTATUS status = get_nt_acl_xattr_internal(handle, fsp,
 				NULL, security_info, ppdesc);
@@ -429,12 +504,21 @@ static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		return NT_STATUS_OK;
 	}
+
+	DEBUG(10,("fget_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
+			fsp->fsp_name,
+			nt_errstr(status) ));
+
 	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp,
 			security_info, ppdesc);
 }
 
+/*********************************************************************
+ Fetch a security descriptor given a pathname.
+*********************************************************************/
+
 static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
-        const char *name, uint32 security_info, SEC_DESC **ppdesc)
+        const char *name, uint32 security_info, struct security_descriptor **ppdesc)
 {
 	NTSTATUS status = get_nt_acl_xattr_internal(handle, NULL,
 				name, security_info, ppdesc);
@@ -446,12 +530,21 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
 		}
 		return NT_STATUS_OK;
 	}
+
+	DEBUG(10,("get_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
+			name,
+			nt_errstr(status) ));
+
 	return SMB_VFS_NEXT_GET_NT_ACL(handle, name,
 			security_info, ppdesc);
 }
 
+/*********************************************************************
+ Store a security descriptor given an fsp.
+*********************************************************************/
+
 static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
-        uint32 security_info_sent, const SEC_DESC *psd)
+        uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -460,7 +553,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(SEC_DESC *,psd));
+			CONST_DISCARD(struct security_descriptor *,psd));
 	}
 
 	status = SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
@@ -473,7 +566,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		int ret;
 		SMB_STRUCT_STAT sbuf;
 		DOM_SID owner_sid, group_sid;
-		SEC_DESC *nc_psd = dup_sec_desc(talloc_tos(), psd);
+		struct security_descriptor *nc_psd = dup_sec_desc(talloc_tos(), psd);
 
 		if (!nc_psd) {
 			return NT_STATUS_OK;
@@ -502,7 +595,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 				SE_DESC_DACL_AUTO_INHERIT_REQ))==
 				(SE_DESC_DACL_AUTO_INHERITED|
 				SE_DESC_DACL_AUTO_INHERIT_REQ) ) {
-		SEC_DESC *new_psd = NULL;
+		struct security_descriptor *new_psd = NULL;
 		status = append_parent_acl(fsp, psd, &new_psd);
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Lower level acl set succeeded,
@@ -516,10 +609,10 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
-			CONST_DISCARD(SEC_DESC *,psd));
+			CONST_DISCARD(struct security_descriptor *,psd));
 	}
 	create_acl_blob(psd, &blob);
-	store_acl_blob_fsp(fsp, &blob);
+	store_acl_blob_fsp(handle, fsp, &blob);
 
 	return NT_STATUS_OK;
 }
@@ -537,7 +630,7 @@ static vfs_op_tuple skel_op_tuples[] =
 	{SMB_VFS_OP(get_nt_acl_xattr), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(fset_nt_acl_xattr),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
 
-        {SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
+	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
 NTSTATUS vfs_acl_xattr_init(void)

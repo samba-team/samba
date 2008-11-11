@@ -32,12 +32,13 @@
 bool test_opendomain(struct torture_context *tctx, 
 		     struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
-		     struct dom_sid2 *sid)
+		     struct dom_sid2 *sid_p)
 {
 	NTSTATUS status;
 	struct policy_handle h, domain_handle;
 	struct samr_Connect r1;
 	struct samr_LookupDomain r2;
+	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain r3;
 	
 	torture_comment(tctx, "connecting\n");
@@ -51,6 +52,7 @@ bool test_opendomain(struct torture_context *tctx,
 	
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
+	r2.out.sid = &sid;
 
 	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
@@ -59,7 +61,7 @@ bool test_opendomain(struct torture_context *tctx,
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	r3.in.sid = r2.out.sid;
+	r3.in.sid = *r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
 	torture_comment(tctx, "opening domain\n");
@@ -68,7 +70,7 @@ bool test_opendomain(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "OpenDomain failed");
 	*handle = domain_handle;
 
-	*sid = *r2.out.sid;
+	*sid_p = **r2.out.sid;
 	return true;
 }
 
@@ -84,19 +86,22 @@ bool test_user_cleanup(struct torture_context *tctx, struct dcerpc_pipe *p,
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle user_handle;
+	struct samr_Ids rids, types;
 
 	names[0].string = name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
+	r1.out.rids          = &rids;
+	r1.out.types         = &types;
 	
 	torture_comment(tctx, "user account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
 	torture_assert_ntstatus_ok(tctx, status, "LookupNames failed");
 
-	rid = r1.out.rids.ids[0];
+	rid = r1.out.rids->ids[0];
 	
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -174,12 +179,15 @@ bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct lsa_String names[2];
 	uint32_t rid;
 	struct policy_handle group_handle;
+	struct samr_Ids rids, types;
 
 	names[0].string = name;
 
 	r1.in.domain_handle  = domain_handle;
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
+	r1.out.rids          = &rids;
+	r1.out.types         = &types;
 	
 	printf("group account lookup '%s'\n", name);
 
@@ -189,7 +197,7 @@ bool test_group_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	rid = r1.out.rids.ids[0];
+	rid = r1.out.rids->ids[0];
 	
 	r2.in.domain_handle  = domain_handle;
 	r2.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;

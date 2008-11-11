@@ -8,10 +8,13 @@ import "misc.idl", "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 #include "idl_types.h"
 
+cpp_quote("#define netr_DeltaEnum8Bit netr_DeltaEnum")
+
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
+  helper("../librpc/ndr/ndr_netlogon.h"),
   pointer_default(unique)
 ]
 
@@ -19,6 +22,7 @@ interface netlogon
 {
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
 	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
+	typedef enum netr_DeltaEnum8Bit netr_DeltaEnum8Bit;
 
 	/*****************/
 	/* Function 0x00 */
@@ -432,7 +436,7 @@ interface netlogon
 		boolean8 lm_password_present;
 		boolean8 password_expired;
 		lsa_String comment;
-		lsa_String parameters;
+		lsa_BinaryString parameters;
 		uint16 country_code;
 		uint16 code_page;
 		netr_USER_PRIVATE_INFO user_private_info;
@@ -958,14 +962,38 @@ interface netlogon
 
 	/* i'm not at all sure how this call works */
 
+	typedef [bitmap16bit] bitmap {
+		NETR_CHANGELOG_IMMEDIATE_REPL_REQUIRED	= 0x0001,
+		NETR_CHANGELOG_CHANGED_PASSWORD		= 0x0002,
+		NETR_CHANGELOG_SID_INCLUDED		= 0x0004,
+		NETR_CHANGELOG_NAME_INCLUDED		= 0x0008,
+		NETR_CHANGELOG_FIRST_PROMOTION_OBJ	= 0x0010
+	} netr_ChangeLogFlags;
+
+	typedef [nodiscriminant] union {
+		[case(NETR_CHANGELOG_SID_INCLUDED)] dom_sid object_sid;
+		[case(NETR_CHANGELOG_NAME_INCLUDED)] nstring object_name;
+		[default];
+	} netr_ChangeLogObject;
+
+	typedef [public,gensize] struct {
+		uint32 serial_number1;
+		uint32 serial_number2;
+		uint32 object_rid;
+		netr_ChangeLogFlags flags;
+		netr_SamDatabaseID8Bit db_index;
+		netr_DeltaEnum8Bit delta_type;
+		[switch_is(flags & (NETR_CHANGELOG_SID_INCLUDED|NETR_CHANGELOG_NAME_INCLUDED))] netr_ChangeLogObject object;
+	} netr_ChangeLogEntry;
+
 	NTSTATUS netr_DatabaseRedo(
 		[in]     [string,charset(UTF16)] uint16 logon_server[],
 		[in]     [string,charset(UTF16)] uint16 computername[],
-		[in]     netr_Authenticator credential,
+		[in]     netr_Authenticator *credential,
 		[in,out,ref] netr_Authenticator *return_authenticator,
-		[in,unique][size_is(change_log_entry_size)] uint8 *change_log_entry,
-		[in]     uint32 change_log_entry_size,
-		[out,ref]    netr_DELTA_ENUM_ARRAY *delta_enum_array
+		[in]     [subcontext(4),subcontext_size(change_log_entry_size)] netr_ChangeLogEntry change_log_entry,
+		[in]     [value(ndr_size_netr_ChangeLogEntry(&change_log_entry, ndr->flags))] uint32 change_log_entry_size,
+		[out,ref]    netr_DELTA_ENUM_ARRAY **delta_enum_array
 		);
 
 

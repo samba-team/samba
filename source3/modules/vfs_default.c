@@ -596,7 +596,7 @@ static int vfswrap_chown(vfs_handle_struct *handle, const char *path, uid_t uid,
 	int result;
 
 	START_PROFILE(syscall_chown);
-	result = sys_chown(path, uid, gid);
+	result = chown(path, uid, gid);
 	END_PROFILE(syscall_chown);
 	return result;
 }
@@ -621,7 +621,7 @@ static int vfswrap_lchown(vfs_handle_struct *handle, const char *path, uid_t uid
 	int result;
 
 	START_PROFILE(syscall_lchown);
-	result = sys_lchown(path, uid, gid);
+	result = lchown(path, uid, gid);
 	END_PROFILE(syscall_lchown);
 	return result;
 }
@@ -869,7 +869,7 @@ static int vfswrap_symlink(vfs_handle_struct *handle,  const char *oldpath, cons
 	int result;
 
 	START_PROFILE(syscall_symlink);
-	result = sys_symlink(oldpath, newpath);
+	result = symlink(oldpath, newpath);
 	END_PROFILE(syscall_symlink);
 	return result;
 }
@@ -879,7 +879,7 @@ static int vfswrap_readlink(vfs_handle_struct *handle,  const char *path, char *
 	int result;
 
 	START_PROFILE(syscall_readlink);
-	result = sys_readlink(path, buf, bufsiz);
+	result = readlink(path, buf, bufsiz);
 	END_PROFILE(syscall_readlink);
 	return result;
 }
@@ -889,7 +889,7 @@ static int vfswrap_link(vfs_handle_struct *handle,  const char *oldpath, const c
 	int result;
 
 	START_PROFILE(syscall_link);
-	result = sys_link(oldpath, newpath);
+	result = link(oldpath, newpath);
 	END_PROFILE(syscall_link);
 	return result;
 }
@@ -909,7 +909,7 @@ static char *vfswrap_realpath(vfs_handle_struct *handle,  const char *path, char
 	char *result;
 
 	START_PROFILE(syscall_realpath);
-	result = sys_realpath(path, resolved_path);
+	result = realpath(path, resolved_path);
 	END_PROFILE(syscall_realpath);
 	return result;
 }

@@ -227,22 +227,28 @@ static bool connect_servers(struct event_context *ev,
 
 			if (options.smb2) {
 				status = smb2_connect(NULL, servers[i].server_name, 
+									  lp_smb_ports(lp_ctx),
 						      servers[i].share_name,
 						      lp_resolve_context(lp_ctx),
 						      servers[i].credentials,
 						      &servers[i].smb2_tree[j],
-						      ev, &smb_options);
+						      ev, &smb_options,
+							  lp_socket_options(lp_ctx),
+							  lp_gensec_settings(lp_ctx, lp_ctx)
+							  );
 			} else {
 				status = smbcli_tree_full_connection(NULL,
 								     &servers[i].smb_tree[j], 
 								     servers[i].server_name, 
 								     lp_smb_ports(lp_ctx),
 								     servers[i].share_name, "A:",
+									 lp_socket_options(lp_ctx),
 								     servers[i].credentials,
 								     lp_resolve_context(lp_ctx), ev,
 								     &smb_options,
 								     &smb_session_options,
-									 lp_iconv_convenience(lp_ctx));
+									 lp_iconv_convenience(lp_ctx),
+									 lp_gensec_settings(lp_ctx, lp_ctx));
 			}
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
