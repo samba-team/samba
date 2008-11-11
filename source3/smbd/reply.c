@@ -4989,8 +4989,16 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		/* We only have veto files/directories. Recursive delete. */
+		/* We only have veto files/directories.
+		 * Are we allowed to delete them ? */
 
+		if(!lp_recursive_veto_delete(SNUM(conn))) {
+			TALLOC_FREE(dir_hnd);
+			errno = ENOTEMPTY;
+			goto err;
+		}
+
+		/* Do a recursive delete. */
 		RewindDir(dir_hnd,&dirpos);
 		while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 			char *fullname = NULL;
@@ -5016,9 +5024,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 				break;
 			}
 			if(st.st_mode & S_IFDIR) {
-				if(lp_recursive_veto_delete(SNUM(conn))) {
-					if(!recursive_rmdir(ctx, conn, fullname))
-						break;
+				if(!recursive_rmdir(ctx, conn, fullname)) {
+					break;
 				}
 				if(SMB_VFS_RMDIR(conn,fullname) != 0) {
 					break;
