@@ -70,6 +70,16 @@ struct net_context {
 	void *private_data;
 };
 
+struct net_dc_info {
+	bool is_dc;
+	bool is_pdc;
+	bool is_ad;
+	bool is_mixed_mode;
+	const char *netbios_domain_name;
+	const char *dns_domain_name;
+	const char *forest_name;
+};
+
 #define NET_TRANSPORT_LOCAL 0x01
 #define NET_TRANSPORT_RAP   0x02
 #define NET_TRANSPORT_RPC   0x04
