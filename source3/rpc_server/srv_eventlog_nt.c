@@ -79,7 +79,7 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 	/* get the security descriptor for the file */
 	
 	sec_desc = get_nt_acl_no_snum( info, tdbname );
-	SAFE_FREE( tdbname );
+	TALLOC_FREE( tdbname );
 	
 	if ( !sec_desc ) {
 		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s\n", 
