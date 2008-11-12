@@ -1634,14 +1634,16 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	logon.username			= user;
 	logon.password			= pass;
 
-	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
-				     &logon.blobs,
-				     "krb5_cc_type",
-				     0,
-				     (uint8_t *)cctype,
-				     strlen(cctype)+1);
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		goto done;
+	if (cctype) {
+		wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+					     &logon.blobs,
+					     "krb5_cc_type",
+					     0,
+					     (uint8_t *)cctype,
+					     strlen(cctype)+1);
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto done;
+		}
 	}
 
 	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
@@ -1664,14 +1666,16 @@ static int winbind_auth_request(struct pwb_context *ctx,
 		goto done;
 	}
 
-	wbc_status = wbcAddNamedBlob(&logon.num_blobs,
-				     &logon.blobs,
-				     "membership_of",
-				     0,
-				     (uint8_t *)membership_of,
-				     sizeof(membership_of));
-	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		goto done;
+	if (member) {
+		wbc_status = wbcAddNamedBlob(&logon.num_blobs,
+					     &logon.blobs,
+					     "membership_of",
+					     0,
+					     (uint8_t *)membership_of,
+					     sizeof(membership_of));
+		if (!WBC_ERROR_IS_OK(wbc_status)) {
+			goto done;
+		}
 	}
 
 	wbc_status = wbcLogonUser(&logon, &info, &error, &policy);
@@ -2365,14 +2369,16 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 
 		logoff.username		= user;
 
-		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
-					     &logoff.blobs,
-					     "ccfilename",
-					     0,
-					     (uint8_t *)ccname,
-					     strlen(ccname)+1);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			goto out;
+		if (ccname) {
+			wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
+						     &logoff.blobs,
+						     "ccfilename",
+						     0,
+						     (uint8_t *)ccname,
+						     strlen(ccname)+1);
+			if (!WBC_ERROR_IS_OK(wbc_status)) {
+				goto out;
+			}
 		}
 
 		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
