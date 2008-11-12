@@ -83,8 +83,8 @@ static WERROR cmd_ntsvcs_hw_prof_flags(struct rpc_pipe_client *cli,
 	NTSTATUS status;
 	WERROR werr;
 	const char *devicepath = NULL;
-	uint32_t unk3 = 0;
-	uint16_t unk4 = 0;
+	uint32_t profile_flags = 0;
+	uint16_t veto_type = 0;
 	const char *unk5 = NULL;
 	const char *unk5a = NULL;
 
@@ -99,8 +99,8 @@ static WERROR cmd_ntsvcs_hw_prof_flags(struct rpc_pipe_client *cli,
 					0,
 					devicepath,
 					0,
-					&unk3,
-					&unk4,
+					&profile_flags,
+					&veto_type,
 					unk5,
 					&unk5a,
 					0,
