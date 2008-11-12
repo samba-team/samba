@@ -24,7 +24,6 @@
 #include "gpfs_gpl.h"
 #include "vfs_gpfs.h"
 
-static void *libgpfs_handle = NULL;
 static bool gpfs_share_modes;
 static bool gpfs_leases;
 
@@ -135,65 +134,64 @@ int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
 	return gpfs_putacl_fn(pathname, flags, acl);
 }
 
+static bool init_gpfs_function_lib(void *plibhandle_pointer,
+				   const char *libname,
+				   void *pfn_pointer, const char *fn_name)
+{
+	bool did_open_here = false;
+	void **libhandle_pointer = (void **)plibhandle_pointer;
+	void **fn_pointer = (void **)pfn_pointer;
+
+	if (*libhandle_pointer == NULL) {
+		*libhandle_pointer = sys_dlopen(libname, RTLD_LAZY);
+		did_open_here = true;
+	}
+	if (*libhandle_pointer == NULL) {
+		DEBUG(10, ("Could not open lib %s\n", libname));
+		return false;
+	}
+
+	*fn_pointer = sys_dlsym(*libhandle_pointer, fn_name);
+	if (*fn_pointer == NULL) {
+		DEBUG(10, ("Did not find symbol %s in lib %s\n",
+			   fn_name, libname));
+		if (did_open_here) {
+			sys_dlclose(*libhandle_pointer);
+			*libhandle_pointer = NULL;
+		}
+		return false;
+	}
+
+	return true;
+}
+
+static bool init_gpfs_function(void *fn_pointer, const char *fn_name)
+{
+	static void *libgpfs_handle = NULL;
+	static void *libgpfs_gpl_handle = NULL;
+
+	if (init_gpfs_function_lib(&libgpfs_handle, "libgpfs.so",
+				   fn_pointer, fn_name)) {
+		return true;
+	}
+	if (init_gpfs_function_lib(&libgpfs_gpl_handle, "libgpfs_gpl.so",
+				   fn_pointer, fn_name)) {
+		return true;
+	}
+	return false;
+}
+
 void init_gpfs(void)
 {
-	if (libgpfs_handle != NULL) {
-		return;
-	}
-
-	libgpfs_handle = sys_dlopen("libgpfs_gpl.so", RTLD_LAZY);
-
-	if (libgpfs_handle == NULL) {
-		DEBUG(10, ("sys_dlopen for libgpfs_gpl failed: %s\n",
-			   strerror(errno)));
-		return;
-	}
-
-	DEBUG(10, ("libgpfs_gpl.so loaded\n"));
-
-	gpfs_set_share_fn = sys_dlsym(libgpfs_handle, "gpfs_set_share");
-	if (gpfs_set_share_fn == NULL) {
-		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
-			  "'gpfs_set_share'\n"));
-		goto failed;
-	}
-
-	gpfs_set_lease_fn = sys_dlsym(libgpfs_handle, "gpfs_set_lease");
-	if (gpfs_set_lease_fn == NULL) {
-		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
-			  "'gpfs_set_lease'\n"));
-		sys_dlclose(libgpfs_handle);
-
-		goto failed;
-	}
-
-	gpfs_getacl_fn = sys_dlsym(libgpfs_handle, "gpfs_getacl");
-	if (gpfs_getacl_fn == NULL) {
-		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
-			  "'gpfs_getacl'\n"));
-		goto failed;
-	}
-
-	gpfs_putacl_fn = sys_dlsym(libgpfs_handle, "gpfs_putacl");
-	if (gpfs_putacl_fn == NULL) {
-		DEBUG(3, ("libgpfs_gpl.so does not contain the symbol "
-			  "'gpfs_putacl'\n"));
-		goto failed;
-	}
+	init_gpfs_function(&gpfs_set_share_fn, "gpfs_set_share");
+	init_gpfs_function(&gpfs_set_lease_fn, "gpfs_set_lease");
+	init_gpfs_function(&gpfs_getacl_fn, "gpfs_getacl");
+	init_gpfs_function(&gpfs_putacl_fn, "gpfs_putacl");
 
 	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
 	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
 
 	return;
-
-failed:
-	sys_dlclose(libgpfs_handle);
-	/* leave libgpfs_handle != NULL around, no point
-	   in trying twice */
-	gpfs_set_share_fn = NULL;
-	gpfs_set_lease_fn = NULL;
-	gpfs_getacl_fn = NULL;
-	gpfs_putacl_fn = NULL;
 }
 
 #else
