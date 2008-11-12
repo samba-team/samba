@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 64
+Release: 65
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,13 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Nov 13 2008 : Version 1.0.65
+ - Update the sysconfig example: The default debug level is 2 (NOTICE) and not
+   0 (ERROR)
+ - Add support for a CTDB_SOCKET environment variable for the ctdb command
+   line tool. If set, this overrides the default socket the ctdb tool will
+   use.
+ - Add logging of high latency operations.
 * Mon Oct 22 2008 : Version 1.0.64
  - Add a context and a timed event so that once we have been in recovery for
    too long we drop all public addresses.

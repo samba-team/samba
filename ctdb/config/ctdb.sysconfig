@@ -135,8 +135,8 @@
 # CTDB_LOGFILE=/var/log/log.ctdb
 
 # what debug level to run at. Higher means more verbose
-# the default is 0
-# CTDB_DEBUGLEVEL=0
+# the default is 2
+CTDB_DEBUGLEVEL=2
 
 # set any default tuning options for ctdb
 # use CTDB_SET_XXXX=value where XXXX is the name of the tuning
