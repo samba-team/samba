@@ -148,11 +148,11 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 	WERROR werr;
 	const char *devicepath = NULL;
 	uint32_t property = DEV_REGPROP_DESC;
-	uint32_t unknown1 = 0;
+	uint32_t reg_data_type = REG_NONE;
 	uint8_t buffer;
 	uint32_t buffer_size = 0;
-	uint32_t unknown2 = 0;
-	uint32_t unknown3 = 0;
+	uint32_t needed = 0;
+	uint32_t flags = 0;
 
 	if (argc < 2) {
 		printf("usage: %s [devicepath]\n", argv[0]);
@@ -161,14 +161,19 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 
 	devicepath = argv[1];
 
+	if (argc >= 3) {
+		buffer_size = atoi(argv[2]);
+		needed = buffer_size;
+	}
+
 	status = rpccli_PNP_GetDeviceRegProp(cli, mem_ctx,
 					     devicepath,
 					     property,
-					     &unknown1,
+					     &reg_data_type,
 					     &buffer,
 					     &buffer_size,
-					     &unknown2,
-					     unknown3,
+					     &needed,
+					     flags,
 					     &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
