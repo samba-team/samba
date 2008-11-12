@@ -218,6 +218,102 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
 }
 
 /**
+ * @brief Do the smb chaining at a buffer level
+ * @param[in] poutbuf		Pointer to the talloc'ed buffer to be modified
+ * @param[in] smb_command	The command that we want to issue
+ * @param[in] wct		How many words?
+ * @param[in] vwv		The words, already in network order
+ * @param[in] num_bytes		How many bytes?
+ * @param[in] bytes		The data the request ships
+ *
+ * smb_splice_chain() adds the vwv and bytes to the request already present in
+ * *poutbuf.
+ */
+
+bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
+		      uint8_t wct, const uint16_t *vwv,
+		      uint16_t num_bytes, const uint8_t *bytes)
+{
+	char *outbuf;
+	size_t old_size, new_size;
+	size_t ofs;
+	size_t padding = 0;
+	bool first_request;
+
+	old_size = talloc_get_size(*poutbuf);
+
+	/*
+	 * old_size == smb_wct means we're pushing the first request in for
+	 * libsmb/
+	 */
+
+	first_request = (old_size == smb_wct);
+
+	if (!first_request && ((old_size % 4) != 0)) {
+		/*
+		 * Align subsequent requests to a 4-byte boundary
+		 */
+		padding = 4 - (old_size % 4);
+	}
+
+	/*
+	 * We need space for the wct field, the words, the byte count field
+	 * and the bytes themselves.
+	 */
+	new_size = old_size + padding
+		+ 1 + wct * sizeof(uint16_t) + 2 + num_bytes;
+
+	if (new_size > 0xffff) {
+		DEBUG(1, ("splice_chain: %u bytes won't fit\n",
+			  (unsigned)new_size));
+		return false;
+	}
+
+	outbuf = TALLOC_REALLOC_ARRAY(NULL, *poutbuf, char, new_size);
+	if (outbuf == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return false;
+	}
+	*poutbuf = outbuf;
+
+	if (first_request) {
+		SCVAL(outbuf, smb_com, smb_command);
+	} else {
+		size_t andx_cmd_ofs;
+
+		if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
+			DEBUG(1, ("invalid command chain\n"));
+			*poutbuf = TALLOC_REALLOC_ARRAY(
+				NULL, *poutbuf, char, old_size);
+			return false;
+		}
+
+		if (padding != 0) {
+			memset(outbuf + old_size, 0, padding);
+			old_size += padding;
+		}
+
+		SCVAL(outbuf, andx_cmd_ofs, smb_command);
+		SSVAL(outbuf, andx_cmd_ofs + 2, old_size - 4);
+	}
+
+	ofs = old_size;
+
+	SCVAL(outbuf, ofs, wct);
+	ofs += 1;
+
+	memcpy(outbuf + ofs, vwv, sizeof(uint16_t) * wct);
+	ofs += sizeof(uint16_t) * wct;
+
+	SSVAL(outbuf, ofs, num_bytes);
+	ofs += sizeof(uint16_t);
+
+	memcpy(outbuf + ofs, bytes, num_bytes);
+
+	return true;
+}
+
+/**
  * @brief Destroy an async_req that is the visible part of a cli_request
  * @param[in] req	The request to kill
  * @retval Return 0 to make talloc happy
@@ -286,10 +382,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 					   const uint8_t *bytes)
 {
 	struct async_req **tmp_reqs;
-	char *tmp_buf;
 	struct cli_request *req;
-	size_t old_size, new_size;
-	size_t ofs;
 
 	req = cli->chain_accumulator;
 
@@ -313,51 +406,10 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(req->async[req->num_async-1],
 			      cli_async_req_destructor);
 
-	old_size = talloc_get_size(req->outbuf);
-
-	/*
-	 * We need space for the wct field, the words, the byte count field
-	 * and the bytes themselves.
-	 */
-	new_size = old_size + 1 + wct * sizeof(uint16_t) + 2 + num_bytes;
-
-	if (new_size > 0xffff) {
-		DEBUG(1, ("cli_request_chain: %u bytes won't fit\n",
-			  (unsigned)new_size));
+	if (!smb_splice_chain(&req->outbuf, smb_command, wct, vwv,
+			      num_bytes, bytes)) {
 		goto fail;
 	}
-
-	tmp_buf = TALLOC_REALLOC_ARRAY(NULL, req->outbuf, char, new_size);
-	if (tmp_buf == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		goto fail;
-	}
-	req->outbuf = tmp_buf;
-
-	if (old_size == smb_wct) {
-		SCVAL(req->outbuf, smb_com, smb_command);
-	} else {
-		size_t andx_cmd_ofs;
-		if (!find_andx_cmd_ofs(req->outbuf, &andx_cmd_ofs)) {
-			DEBUG(1, ("invalid command chain\n"));
-			goto fail;
-		}
-		SCVAL(req->outbuf, andx_cmd_ofs, smb_command);
-		SSVAL(req->outbuf, andx_cmd_ofs + 2, old_size - 4);
-	}
-
-	ofs = old_size;
-
-	SCVAL(req->outbuf, ofs, wct);
-	ofs += 1;
-
-	memcpy(req->outbuf + ofs, vwv, sizeof(uint16_t) * wct);
-	ofs += sizeof(uint16_t) * wct;
-
-	SSVAL(req->outbuf, ofs, num_bytes);
-	ofs += sizeof(uint16_t);
-
-	memcpy(req->outbuf + ofs, bytes, num_bytes);
 
 	return req->async[req->num_async-1];
 
