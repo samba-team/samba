@@ -64,37 +64,39 @@ _kadm5_init_keys (Key *keys, int len)
 }
 
 /*
- * return 0 iff `keys1, len1' and `keys2, len2' are identical
+ * return 1 if any key in `keys1, len1' exists in `keys2, len2'
  */
 
 int
-_kadm5_cmp_keys(Key *keys1, int len1, Key *keys2, int len2)
+_kadm5_exists_keys(Key *keys1, int len1, Key *keys2, int len2)
 {
-    int i;
-
-    if (len1 != len2)
-	return 1;
+    unsigned int i, j;
 
     for (i = 0; i < len1; ++i) {
-	if ((keys1[i].salt != NULL && keys2[i].salt == NULL)
-	    || (keys1[i].salt == NULL && keys2[i].salt != NULL))
+	for (j = 0; j < len2; j++) {
+	    if ((keys1[i].salt != NULL && keys2[j].salt == NULL)
+		|| (keys1[i].salt == NULL && keys2[j].salt != NULL))
+		continue;
+
+	    if (keys1[i].salt != NULL) {
+		if (keys1[i].salt->type != keys2[j].salt->type)
+		    continue;
+		if (keys1[i].salt->salt.length != keys2[j].salt->salt.length)
+		    continue;
+		if (memcmp (keys1[i].salt->salt.data, keys2[j].salt->salt.data,
+			    keys1[i].salt->salt.length) != 0)
+		    continue;
+	    }
+	    if (keys1[i].key.keytype != keys2[j].key.keytype)
+		continue;
+	    if (keys1[i].key.keyvalue.length != keys2[j].key.keyvalue.length)
+		continue;
+	    if (memcmp (keys1[i].key.keyvalue.data, keys2[j].key.keyvalue.data,
+			keys1[i].key.keyvalue.length) != 0)
+		continue;
+
 	    return 1;
-	if (keys1[i].salt != NULL) {
-	    if (keys1[i].salt->type != keys2[i].salt->type)
-		return 1;
-	    if (keys1[i].salt->salt.length != keys2[i].salt->salt.length)
-		return 1;
-	    if (memcmp (keys1[i].salt->salt.data, keys2[i].salt->salt.data,
-			keys1[i].salt->salt.length) != 0)
-		return 1;
 	}
-	if (keys1[i].key.keytype != keys2[i].key.keytype)
-	    return 1;
-	if (keys1[i].key.keyvalue.length != keys2[i].key.keyvalue.length)
-	    return 1;
-	if (memcmp (keys1[i].key.keyvalue.data, keys2[i].key.keyvalue.data,
-		    keys1[i].key.keyvalue.length) != 0)
-	    return 1;
     }
     return 0;
 }

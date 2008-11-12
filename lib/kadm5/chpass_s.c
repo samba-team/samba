@@ -46,7 +46,7 @@ change(void *server_handle,
     kadm5_ret_t ret;
     Key *keys;
     size_t num_keys;
-    int cmp = 1;
+    int existsp = 0;
 
     memset(&ent, 0, sizeof(ent));
     ret = context->db->hdb_open(context->context, context->db, O_RDWR, 0);
@@ -70,11 +70,11 @@ change(void *server_handle,
     }
     ent.entry.kvno++;
     if (cond)
-	cmp = _kadm5_cmp_keys (ent.entry.keys.val, ent.entry.keys.len,
-			       keys, num_keys);
+	existsp = _kadm5_exists_keys (ent.entry.keys.val, ent.entry.keys.len,
+				      keys, num_keys);
     _kadm5_free_keys (context->context, num_keys, keys);
 
-    if (cmp == 0) {
+    if (existsp) {
 	ret = KADM5_PASS_REUSE;
 	krb5_set_error_message(context->context, ret, "Password reuse forbidden");
 	goto out2;
