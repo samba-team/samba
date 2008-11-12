@@ -55,9 +55,11 @@ static struct hdb_method methods[] = {
 };
 
 #if HAVE_DB1 || HAVE_DB3
-static struct hdb_method dbmetod = {"",	hdb_db_create };
+static struct hdb_method dbmetod =
+    { HDB_INTERFACE_VERSION, "", hdb_db_create };
 #elif defined(HAVE_NDBM)
-static struct hdb_method dbmetod = {"",	hdb_ndbm_create };
+static struct hdb_method dbmetod =
+    { HDB_INTERFACE_VERSION, "", hdb_ndbm_create };
 #endif
 
 
