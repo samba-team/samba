@@ -216,7 +216,6 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS([\
 	arpa/ftp.h				\
 	arpa/telnet.h				\
-	asl.h					\
 	bind/bitypes.h				\
 	bsdsetjmp.h				\
 	curses.h				\
@@ -273,6 +272,13 @@ AC_CHECK_HEADERS([\
 dnl On Solaris 8 there's a compilation warning for term.h because
 dnl it doesn't define `bool'.
 AC_CHECK_HEADERS(term.h, , , -)
+
+dnl aix have asl.h (A/IX screen library) that we don't want
+AC_CHECK_HEADERS(asl.h, , , [
+#include <asl.h>
+#ifndef ASL_STRING_EMERG
+#error ASL_STRING_EMERG missing
+#endif])
 
 AC_CHECK_HEADERS(net/if.h, , , [AC_INCLUDES_DEFAULT
 #if HAVE_SYS_SOCKET_H
