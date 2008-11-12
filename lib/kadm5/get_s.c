@@ -221,6 +221,7 @@ kadm5_s_get_principal(void *server_handle,
     }
     if(mask & KADM5_TL_DATA) {
 	time_t last_pw_expire;
+	const HDB_Ext_PKINIT_acl *acl;
 	const HDB_Ext_Aliases *aliases;
 
 	ret = hdb_entry_get_pw_change_time(&ent.entry, &last_pw_expire);
@@ -248,6 +249,32 @@ kadm5_s_get_principal(void *server_handle,
 	    }
 	    krb5_clear_error_message(context->context);
 	    ret = 0;
+	}
+
+	ret = hdb_entry_get_pkinit_acl(&ent.entry, &acl);
+	if (ret == 0 && acl) {
+	    krb5_data buf;
+	    size_t len;
+
+	    ASN1_MALLOC_ENCODE(HDB_Ext_PKINIT_acl, buf.data, buf.length,
+				acl, &len, ret);
+	    if (ret) {
+		kadm5_free_principal_ent(context, out);
+		goto out;
+	    }
+	    if (len != buf.length)
+		krb5_abortx(context->context,
+			    "internal ASN.1 encoder error");
+	    ret = add_tl_data(out, KRB5_TL_PKINIT_ACL, buf.data, buf.length);
+	    free(buf.data);
+	    if (ret) {
+		kadm5_free_principal_ent(context, out);
+		goto out;
+	    }
+	}
+	if(ret){
+	    kadm5_free_principal_ent(context, out);
+	    goto out;
 	}
 
 	ret = hdb_entry_get_aliases(&ent.entry, &aliases);
