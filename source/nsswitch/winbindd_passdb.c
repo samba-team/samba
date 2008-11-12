@@ -220,6 +220,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	}
 
 	if (!pdb_getsampwsid(user, user_sid ) ) {
+		TALLOC_FREE( user );
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
