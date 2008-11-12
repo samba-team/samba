@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/winreg.h"
 #ifndef _HEADER_ntsvcs
 #define _HEADER_ntsvcs
 
@@ -142,14 +143,14 @@ struct PNP_GetDeviceRegProp {
 		const char *devicepath;/* [ref,charset(UTF16)] */
 		uint32_t property;
 		uint32_t flags;
-		uint32_t *reg_data_type;/* [ref] */
+		enum winreg_Type *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 	} in;
 
 	struct {
 		uint8_t *buffer;/* [ref,length_is(*buffer_size),size_is(*buffer_size)] */
-		uint32_t *reg_data_type;/* [ref] */
+		enum winreg_Type *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;

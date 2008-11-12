@@ -3,6 +3,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_ntsvcs.h"
 
+#include "librpc/gen_ndr/ndr_winreg.h"
 static enum ndr_err_code ndr_push_PNP_HwProfInfo(struct ndr_push *ndr, int ndr_flags, const struct PNP_HwProfInfo *r)
 {
 	uint32_t cntr_unknown2_0;
@@ -818,7 +819,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceRegProp(struct ndr_push *ndr, int
 		if (r->in.reg_data_type == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.reg_data_type));
+		NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, *r->in.reg_data_type));
 		if (r->in.buffer_size == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -833,7 +834,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceRegProp(struct ndr_push *ndr, int
 		if (r->out.reg_data_type == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.reg_data_type));
+		NDR_CHECK(ndr_push_winreg_Type(ndr, NDR_SCALARS, *r->out.reg_data_type));
 		if (r->out.buffer == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -875,7 +876,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 		}
 		_mem_save_reg_data_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.reg_data_type, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.reg_data_type));
+		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->in.reg_data_type));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reg_data_type_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.buffer_size);
@@ -907,7 +908,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 		}
 		_mem_save_reg_data_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.reg_data_type, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.reg_data_type));
+		NDR_CHECK(ndr_pull_winreg_Type(ndr, NDR_SCALARS, r->out.reg_data_type));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reg_data_type_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.buffer));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.buffer));
@@ -960,7 +961,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceRegProp(struct ndr_print *ndr, const char *
 		ndr_print_uint32(ndr, "property", r->in.property);
 		ndr_print_ptr(ndr, "reg_data_type", r->in.reg_data_type);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "reg_data_type", *r->in.reg_data_type);
+		ndr_print_winreg_Type(ndr, "reg_data_type", *r->in.reg_data_type);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "buffer_size", r->in.buffer_size);
 		ndr->depth++;
@@ -978,7 +979,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceRegProp(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_ptr(ndr, "reg_data_type", r->out.reg_data_type);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "reg_data_type", *r->out.reg_data_type);
+		ndr_print_winreg_Type(ndr, "reg_data_type", *r->out.reg_data_type);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "buffer", r->out.buffer);
 		ndr->depth++;
