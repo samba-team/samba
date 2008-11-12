@@ -822,6 +822,11 @@ fcc_get_cache_next(krb5_context context, krb5_cc_cursor cursor, krb5_ccache *id)
     iter->first = 0;
 
     fn = krb5_cc_default_name(context);
+    if (fn == NULL) {
+	krb5_clear_error_message(context);
+	return KRB5_CC_END;
+    }
+
     if (strncasecmp(fn, "FILE:", 5) != 0) {
 	ret = _krb5_expand_default_cc_name(context,
 					   KRB5_DEFAULT_CCNAME_FILE,
