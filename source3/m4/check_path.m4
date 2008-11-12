@@ -276,6 +276,22 @@ AC_ARG_WITH(selftest-prefix,
 ])
 
 #################################################
+# set shrdir for 'make test'
+selftest_shrdir=""
+AC_SUBST(selftest_shrdir)
+AC_ARG_WITH(selftest-shrdir,
+[AS_HELP_STRING([--with-selftest-shrdir=DIR], [The share directory that make test will be run against ($selftest_shrdir)])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-selftest-shrdir called without argument - will use default])
+  ;;
+  * )
+    selftest_shrdir="$withval"
+    ;;
+  esac
+])
+
+#################################################
 # set path of samba4's smbtorture
 smbtorture4_path=""
 AC_SUBST(smbtorture4_path)

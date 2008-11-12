@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ $# != 3 ]; then
-	echo "$0 <directory> <all | quick> <smbtorture4>"
+if [ $# != 3 -a $# != 4 ]; then
+	echo "$0 <directory> <all | quick> <smbtorture4> [<shrdir>]"
 	exit 1
 fi
 
@@ -38,7 +38,6 @@ PASSWORD=test
 SRCDIR="`dirname $0`/../.."
 BINDIR="`pwd`/bin"
 SCRIPTDIR=$SRCDIR/script/tests
-SHRDIR=$PREFIX_ABS/tmp
 LIBDIR=$PREFIX_ABS/lib
 PIDDIR=$PREFIX_ABS/pid
 CONFFILE=$LIBDIR/client.conf
@@ -113,8 +112,23 @@ mkdir -p $PRIVATEDIR $LIBDIR $PIDDIR $LOCKDIR $LOGDIR
 mkdir -p $SOCKET_WRAPPER_DIR
 mkdir -p $WINBINDD_SOCKET_DIR
 chmod 755 $WINBINDD_SOCKET_DIR
-mkdir -p $PREFIX_ABS/tmp
-chmod 777 $PREFIX_ABS/tmp
+
+##
+## Create an alternate shrdir if one was specified.
+##
+if [ $# = 4 ]; then
+    ALT_SHRDIR=`echo $4 | sed s+//+/+`
+    mkdir -p $ALT_SHRDIR || exit $?
+    OLD_PWD=`pwd`
+    cd $ALT_SHRDIR || exit $?
+    SHRDIR=`pwd`
+    cd $OLD_PWD
+    /bin/rm -rf $SHRDIR/*
+else
+    SHRDIR=$PREFIX_ABS/tmp
+    mkdir -p $SHRDIR
+fi
+chmod 777 $SHRDIR
 
 ##
 ## Create the common config include file with the basic settings
@@ -184,7 +198,7 @@ cat >$SERVERCONFFILE<<EOF
 #	min receivefile size = 4000
 
 [tmp]
-	path = $PREFIX_ABS/tmp
+	path = $SHRDIR
 	read only = no
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000
@@ -262,7 +276,7 @@ export SOCKET_WRAPPER_DEFAULT_IFACE
 TORTURE4_OPTIONS="$SAMBA4CONFIGURATION"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$TORTURE_MAXTIME"
 TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=samba3"
-TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:localdir=$PREFIX_ABS/tmp"
+TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:localdir=$SHRDIR"
 export TORTURE4_OPTIONS
 
 if [ x"$RUN_FROM_BUILD_FARM" = x"yes" ];then
