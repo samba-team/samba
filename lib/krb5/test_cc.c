@@ -389,7 +389,7 @@ test_cache_iter_all(krb5_context context)
 	krb5_err(context, 1, ret, "krb5_cccol_cursor_new");
 
 
-    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0) {
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0 && id != NULL) {
 	krb5_principal principal;
 	char *name;
 
