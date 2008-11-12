@@ -86,9 +86,10 @@ rk_TEST_PACKAGE(sqlite3,
 #endif],
 [-lsqlite3],,,SQLITE3)
 
-if test "X$with_sqlite3" != Xyes ; then
+if test "X$with_sqlite3" != Xno ; then
    INCLUDE_sqlite3="-I\$(top_srcdir)/lib/sqlite"
    LIB_sqlite3="\$(top_builddir)/lib/sqlite/libheimsqlite.la"
+   with_sqlite3=yes
 fi
 AM_CONDITIONAL(SQLITE3,  test "X$with_sqlite3" = Xyes)
 
