@@ -1,3 +1,6 @@
+
+We stop writing change logs, see the source code version control systems history log instead
+	
 2008-07-28  Love Hornquist Astrand  <lha@h5l.org>
 
 	* lib/krb5/v4_glue.c: The "kaserver" part of Heimdal occasionally
