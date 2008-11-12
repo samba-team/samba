@@ -7,6 +7,7 @@ import "winreg.idl";
 [
   uuid("8d9f4e40-a03d-11ce-8f69-08003e30051b"),
   version(1.0),
+  endpoint("ncacn_np:[\\pipe\\ntsvcs]","ncacn_np:[\\pipe\\plugplay]"),
   helpstring("Plug and Play services")
 ]
 interface ntsvcs

@@ -3857,10 +3857,11 @@ static const struct ndr_interface_call ntsvcs_calls[] = {
 
 static const char * const ntsvcs_endpoint_strings[] = {
 	"ncacn_np:[\\pipe\\ntsvcs]", 
+	"ncacn_np:[\\pipe\\plugplay]",
 };
 
 static const struct ndr_interface_string_array ntsvcs_endpoints = {
-	.count	= 1,
+	.count	= 2,
 	.names	= ntsvcs_endpoint_strings
 };
 
