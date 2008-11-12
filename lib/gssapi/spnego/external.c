@@ -71,7 +71,7 @@ static gssapi_mech_interface_desc spnego_mech = {
     _gss_spnego_inquire_cred_by_mech,
     _gss_spnego_export_sec_context,
     _gss_spnego_import_sec_context,
-    _gss_spnego_inquire_names_for_mech,
+    NULL /* _gss_spnego_inquire_names_for_mech */,
     _gss_spnego_inquire_mechs_for_name,
     _gss_spnego_canonicalize_name,
     _gss_spnego_duplicate_name,

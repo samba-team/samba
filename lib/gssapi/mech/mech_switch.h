@@ -32,6 +32,7 @@
 struct _gss_mech_switch {
 	SLIST_ENTRY(_gss_mech_switch)	gm_link;
 	gss_OID_desc			gm_mech_oid;
+	gss_OID_set			gm_name_types;
 	void				*gm_so;
 	gssapi_mech_interface_desc	gm_mech;
 };

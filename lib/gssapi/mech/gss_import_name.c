@@ -145,9 +145,12 @@ gss_import_name(OM_uint32 *minor_status,
     const gss_OID input_name_type,
     gss_name_t *output_name)
 {
+        struct _gss_mechanism_name *mn;
 	gss_OID			name_type = input_name_type;
-	OM_uint32		major_status;
+	OM_uint32		major_status, ms;
 	struct _gss_name	*name;
+        struct _gss_mech_switch	*m;
+	gss_name_t		rname;
 
 	*output_name = GSS_C_NO_NAME;
 
@@ -155,6 +158,8 @@ gss_import_name(OM_uint32 *minor_status,
 		*minor_status = 0;
 		return (GSS_S_BAD_NAME);
 	}
+
+	_gss_load_mech();
 
 	/*
 	 * Use GSS_NT_USER_NAME as default name type.
@@ -172,29 +177,15 @@ gss_import_name(OM_uint32 *minor_status,
 		    input_name_buffer, output_name);
 	}
 
-	/*
-	 * Only allow certain name types. This is pretty bogus - we
-	 * should figure out the list of supported name types using
-	 * gss_inquire_names_for_mech.
-	 */
-	if (!gss_oid_equal(name_type, GSS_C_NT_USER_NAME)
-	    && !gss_oid_equal(name_type, GSS_C_NT_MACHINE_UID_NAME)
-	    && !gss_oid_equal(name_type, GSS_C_NT_STRING_UID_NAME)
-	    && !gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE_X)
-	    && !gss_oid_equal(name_type, GSS_C_NT_HOSTBASED_SERVICE)
-	    && !gss_oid_equal(name_type, GSS_C_NT_ANONYMOUS)
-	    && !gss_oid_equal(name_type, GSS_KRB5_NT_PRINCIPAL_NAME)) {
-		*minor_status = 0;
-		return (GSS_S_BAD_NAMETYPE);
-	}
 
 	*minor_status = 0;
-	name = malloc(sizeof(struct _gss_name));
+	name = calloc(1, sizeof(struct _gss_name));
 	if (!name) {
 		*minor_status = ENOMEM;
 		return (GSS_S_FAILURE);
 	}
-	memset(name, 0, sizeof(struct _gss_name));
+
+	SLIST_INIT(&name->gn_mn);
 
 	major_status = _gss_copy_oid(minor_status,
 	    name_type, &name->gn_type);
@@ -205,14 +196,62 @@ gss_import_name(OM_uint32 *minor_status,
 
 	major_status = _gss_copy_buffer(minor_status,
 	    input_name_buffer, &name->gn_value);
-	if (major_status) {
-		gss_name_t rname = (gss_name_t)name;
-		gss_release_name(minor_status, &rname);
-		return (GSS_S_FAILURE);
+	if (major_status)
+		goto out;
+
+	/*
+	 * Walk over the mechs and import the name into a mech name
+	 * for those supported this nametype.
+	 */
+
+	SLIST_FOREACH(m, &_gss_mechs, gm_link) {
+		int present = 0;
+
+		major_status = gss_test_oid_set_member(minor_status, 
+		    name_type, m->gm_name_types, &present);
+
+		if (major_status || present == 0)
+			continue;
+
+		mn = malloc(sizeof(struct _gss_mechanism_name));
+		if (!mn) {
+			*minor_status = ENOMEM;
+			major_status = GSS_S_FAILURE;
+			goto out;
+		}
+
+		major_status = (*m->gm_mech.gm_import_name)(minor_status,
+		    &name->gn_value,
+		    (name->gn_type.elements
+			? &name->gn_type : GSS_C_NO_OID),
+		    &mn->gmn_name);
+		if (major_status != GSS_S_COMPLETE) {
+			_gss_mg_error(&m->gm_mech, major_status, *minor_status);
+			free(mn);
+			goto out;
+		}
+
+		mn->gmn_mech = &m->gm_mech;
+		mn->gmn_mech_oid = &m->gm_mech_oid;
+		SLIST_INSERT_HEAD(&name->gn_mn, mn, gmn_link);
 	}
 
-	SLIST_INIT(&name->gn_mn);
+	/*
+	 * If we can't find a mn for the name, bail out already here.
+	 */
+
+	mn = SLIST_FIRST(&name->gn_mn);
+	if (!mn) {
+		*minor_status = 0;
+		major_status = GSS_S_NAME_NOT_MN;
+		goto out;
+	}
 
 	*output_name = (gss_name_t) name;
 	return (GSS_S_COMPLETE);
+
+ out:
+	rname = (gss_name_t)name;
+	gss_release_name(&ms, &rname);
+	return major_status;
 }
