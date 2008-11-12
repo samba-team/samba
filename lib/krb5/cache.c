@@ -1082,7 +1082,7 @@ krb5_cc_cache_match (krb5_context context,
     if (ret)
 	return ret;
 
-    while ((ret = krb5_cccol_cursor_next (context, cursor, &cache)) == 0) {
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &cache)) == 0 && cache != NULL) {
 	krb5_principal principal;
 
 	ret = krb5_cc_get_principal(context, cache, &principal);
@@ -1345,6 +1345,8 @@ krb5_cccol_cursor_new(krb5_context context, krb5_cccol_cursor *cursor)
  * @param cache the returned cursor, pointer is set to NULL on failure
  *        and a cache on success. The returned cache needs to be freed
  *        with krb5_cc_close() or destroyed with krb5_cc_destroy().
+ *        MIT Kerberos behavies slightly diffrent and sets cache to NULL
+ *        when all caches are iterated over and return 0.
  *
  * @return Return 0 or and error, KRB5_CC_END is returned at the end
  *        of iteration. See krb5_get_error_message().
@@ -1470,7 +1472,7 @@ krb5_cccol_last_change_time(krb5_context context,
     if (ret)
 	return ret;
 
-    while ((ret = krb5_cccol_cursor_next (context, cursor, &id)) == 0) {
+    while ((ret = krb5_cccol_cursor_next (context, cursor, &id) && id) == 0) {
 
 	if (type && strcmp(krb5_cc_get_type(context, id), type) != 0)
 	    continue;
