@@ -2068,7 +2068,7 @@ _PUBLIC_ void ndr_print_PNP_RequestEjectPC(struct ndr_print *ndr, const char *na
 static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flags, const struct PNP_HwProfFlags *r)
 {
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.action));
 		if (r->in.devicepath == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -2076,14 +2076,14 @@ static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flag
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicepath, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.devicepath, ndr_charset_length(r->in.devicepath, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
-		if (r->in.unknown3 == NULL) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.config));
+		if (r->in.profile_flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.unknown3));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.unknown4));
-		if (r->in.unknown4) {
-			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->in.unknown4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.profile_flags));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.veto_type));
+		if (r->in.veto_type) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->in.veto_type));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.unknown5));
 		if (r->in.unknown5) {
@@ -2092,17 +2092,17 @@ static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.unknown5, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.unknown5, ndr_charset_length(r->in.unknown5, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown6));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown7));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.name_length));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.unknown3 == NULL) {
+		if (r->out.profile_flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.unknown3));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.unknown4));
-		if (r->out.unknown4) {
-			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.unknown4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.profile_flags));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.veto_type));
+		if (r->out.veto_type) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.veto_type));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.unknown5a));
 		if (r->out.unknown5a) {
@@ -2121,18 +2121,18 @@ static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flag
 
 static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flags, struct PNP_HwProfFlags *r)
 {
-	uint32_t _ptr_unknown4;
+	uint32_t _ptr_veto_type;
 	uint32_t _ptr_unknown5;
 	uint32_t _ptr_unknown5a;
-	TALLOC_CTX *_mem_save_unknown3_0;
-	TALLOC_CTX *_mem_save_unknown4_0;
+	TALLOC_CTX *_mem_save_profile_flags_0;
+	TALLOC_CTX *_mem_save_veto_type_0;
 	TALLOC_CTX *_mem_save_unknown5_0;
 	TALLOC_CTX *_mem_save_unknown5a_0;
 	TALLOC_CTX *_mem_save_unknown5a_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.action));
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicepath));
 		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicepath));
 		if (ndr_get_array_length(ndr, &r->in.devicepath) > ndr_get_array_size(ndr, &r->in.devicepath)) {
@@ -2140,25 +2140,25 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 		}
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.config));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.unknown3);
+			NDR_PULL_ALLOC(ndr, r->in.profile_flags);
 		}
-		_mem_save_unknown3_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.unknown3, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.unknown3));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown3_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_unknown4));
-		if (_ptr_unknown4) {
-			NDR_PULL_ALLOC(ndr, r->in.unknown4);
+		_mem_save_profile_flags_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.profile_flags, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.profile_flags));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_profile_flags_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_veto_type));
+		if (_ptr_veto_type) {
+			NDR_PULL_ALLOC(ndr, r->in.veto_type);
 		} else {
-			r->in.unknown4 = NULL;
+			r->in.veto_type = NULL;
 		}
-		if (r->in.unknown4) {
-			_mem_save_unknown4_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->in.unknown4, 0);
-			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->in.unknown4));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown4_0, 0);
+		if (r->in.veto_type) {
+			_mem_save_veto_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.veto_type, 0);
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->in.veto_type));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_veto_type_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_unknown5));
 		if (_ptr_unknown5) {
@@ -2178,30 +2178,30 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.unknown5, ndr_get_array_length(ndr, &r->in.unknown5), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown5_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown6));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown7));
-		NDR_PULL_ALLOC(ndr, r->out.unknown3);
-		*r->out.unknown3 = *r->in.unknown3;
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.name_length));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_PULL_ALLOC(ndr, r->out.profile_flags);
+		*r->out.profile_flags = *r->in.profile_flags;
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.unknown3);
+			NDR_PULL_ALLOC(ndr, r->out.profile_flags);
 		}
-		_mem_save_unknown3_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.unknown3, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.unknown3));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown3_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_unknown4));
-		if (_ptr_unknown4) {
-			NDR_PULL_ALLOC(ndr, r->out.unknown4);
+		_mem_save_profile_flags_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.profile_flags, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.profile_flags));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_profile_flags_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_veto_type));
+		if (_ptr_veto_type) {
+			NDR_PULL_ALLOC(ndr, r->out.veto_type);
 		} else {
-			r->out.unknown4 = NULL;
+			r->out.veto_type = NULL;
 		}
-		if (r->out.unknown4) {
-			_mem_save_unknown4_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.unknown4, 0);
-			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->out.unknown4));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown4_0, 0);
+		if (r->out.veto_type) {
+			_mem_save_veto_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.veto_type, 0);
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->out.veto_type));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_veto_type_0, 0);
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_unknown5a));
 		if (_ptr_unknown5a) {
@@ -2247,20 +2247,20 @@ _PUBLIC_ void ndr_print_PNP_HwProfFlags(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "PNP_HwProfFlags");
 		ndr->depth++;
-		ndr_print_uint32(ndr, "unknown1", r->in.unknown1);
+		ndr_print_uint32(ndr, "action", r->in.action);
 		ndr_print_ptr(ndr, "devicepath", r->in.devicepath);
 		ndr->depth++;
 		ndr_print_string(ndr, "devicepath", r->in.devicepath);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
-		ndr_print_ptr(ndr, "unknown3", r->in.unknown3);
+		ndr_print_uint32(ndr, "config", r->in.config);
+		ndr_print_ptr(ndr, "profile_flags", r->in.profile_flags);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "unknown3", *r->in.unknown3);
+		ndr_print_uint32(ndr, "profile_flags", *r->in.profile_flags);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "unknown4", r->in.unknown4);
+		ndr_print_ptr(ndr, "veto_type", r->in.veto_type);
 		ndr->depth++;
-		if (r->in.unknown4) {
-			ndr_print_uint16(ndr, "unknown4", *r->in.unknown4);
+		if (r->in.veto_type) {
+			ndr_print_uint16(ndr, "veto_type", *r->in.veto_type);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "unknown5", r->in.unknown5);
@@ -2269,21 +2269,21 @@ _PUBLIC_ void ndr_print_PNP_HwProfFlags(struct ndr_print *ndr, const char *name,
 			ndr_print_string(ndr, "unknown5", r->in.unknown5);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown6", r->in.unknown6);
-		ndr_print_uint32(ndr, "unknown7", r->in.unknown7);
+		ndr_print_uint32(ndr, "name_length", r->in.name_length);
+		ndr_print_uint32(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_HwProfFlags");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "unknown3", r->out.unknown3);
+		ndr_print_ptr(ndr, "profile_flags", r->out.profile_flags);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "unknown3", *r->out.unknown3);
+		ndr_print_uint32(ndr, "profile_flags", *r->out.profile_flags);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "unknown4", r->out.unknown4);
+		ndr_print_ptr(ndr, "veto_type", r->out.veto_type);
 		ndr->depth++;
-		if (r->out.unknown4) {
-			ndr_print_uint16(ndr, "unknown4", *r->out.unknown4);
+		if (r->out.veto_type) {
+			ndr_print_uint16(ndr, "veto_type", *r->out.veto_type);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "unknown5a", r->out.unknown5a);

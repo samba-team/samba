@@ -2997,8 +2997,8 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.unknown3 = r->in.unknown3;
-	r->out.unknown4 = r->in.unknown4;
+	r->out.profile_flags = r->in.profile_flags;
+	r->out.veto_type = r->in.veto_type;
 	r->out.unknown5a = talloc_zero(r, const char *);
 	if (r->out.unknown5a == NULL) {
 		talloc_free(r);

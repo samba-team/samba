@@ -369,20 +369,20 @@ struct PNP_RequestEjectPC {
 
 struct PNP_HwProfFlags {
 	struct {
-		uint32_t unknown1;
+		uint32_t action;
 		const char *devicepath;/* [ref,charset(UTF16)] */
-		uint32_t unknown2;
+		uint32_t config;
 		const char *unknown5;/* [unique,charset(UTF16)] */
-		uint32_t unknown6;
-		uint32_t unknown7;
-		uint32_t *unknown3;/* [ref] */
-		uint16_t *unknown4;/* [unique] */
+		uint32_t name_length;
+		uint32_t flags;
+		uint32_t *profile_flags;/* [ref] */
+		uint16_t *veto_type;/* [unique] */
 	} in;
 
 	struct {
 		const char **unknown5a;/* [unique,charset(UTF16)] */
-		uint32_t *unknown3;/* [ref] */
-		uint16_t *unknown4;/* [unique] */
+		uint32_t *profile_flags;/* [ref] */
+		uint16_t *veto_type;/* [unique] */
 		WERROR result;
 	} out;
 
