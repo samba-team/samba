@@ -62,7 +62,8 @@ gss_print_errors (int min_stat)
 				  &msg_ctx,
 				  &status_string);
 	if (!GSS_ERROR(ret)) {
-	    fprintf (stderr, "%s\n", (char *)status_string.value);
+	    fprintf (stderr, "%.*s\n", (int)status_string.value,
+					(char *)status_string.value);
 	    gss_release_buffer (&new_stat, &status_string);
 	}
     } while (!GSS_ERROR(ret) && msg_ctx != 0);

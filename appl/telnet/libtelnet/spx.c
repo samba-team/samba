@@ -237,7 +237,9 @@ spx_send(ap)
 					&output_name_buffer,
 					&output_name_type);
 
-	printf("target is '%s'\n", output_name_buffer.value); fflush(stdout);
+	printf("target is '%.*s'\n", (int)output_name_buffer.length,
+					(char*)output_name_buffer.value);
+	fflush(stdout);
 
 	major_status = gss_release_buffer(&status, &output_name_buffer);
 
@@ -290,7 +292,8 @@ spx_send(ap)
 				GSS_C_NULL_OID,
 				&msg_ctx,
 				&status_string);
-	  printf("%s\n", status_string.value);
+	  printf("%.*s\n", (int)status_string.length,
+				(char*)status_string.value);
 	  return(0);
 	}
 
@@ -457,8 +460,9 @@ spx_reply(ap, data, cnt)
 					GSS_C_NULL_OID,
 					&msg_ctx,
 					&status_string);
-		    printf("[ SPX mutual response fails ... '%s' ]\r\n",
-			 status_string.value);
+		    printf("[ SPX mutual response fails ... '%.*s' ]\r\n",
+			 (int)status_string.length,
+			 (char*)status_string.value);
 		    auth_send_retry();
 		    return;
 		  }

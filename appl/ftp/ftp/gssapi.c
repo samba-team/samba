@@ -265,7 +265,8 @@ gss_adat(void *app_data, void *buf, size_t len)
 			   GSS_C_NO_OID,
 			   &msg_ctx,
 			   &status_string);
-	syslog(LOG_ERR, "gss_accept_sec_context: %s",
+	syslog(LOG_ERR, "gss_accept_sec_context: %.*s",
+	       (int)status_string.length,
 	       (char*)status_string.value);
 	gss_release_buffer(&new_stat, &status_string);
 	reply(431, "Security resource unavailable");
@@ -331,8 +332,10 @@ import_name(const char *kname, const char *host, gss_name_t *target_name)
 			   GSS_C_NO_OID,
 			   &msg_ctx,
 			   &status_string);
-	printf("Error importing name %s: %s\n",
+	printf("Error importing name %.*s: %.*s\n",
+	       (int)name.length,
 	       (char *)name.value,
+	       (int)status_string.length,
 	       (char *)status_string.value);
 	free(name.value);
 	gss_release_buffer(&new_stat, &status_string);
@@ -427,7 +430,8 @@ gss_auth(void *app_data, char *host)
 			       GSS_C_NO_OID,
 			       &msg_ctx,
 			       &status_string);
-	    printf("Error initializing security context: %s\n",
+	    printf("Error initializing security context: %.*s\n",
+		   (int)status_string.length,
 		   (char*)status_string.value);
 	    gss_release_buffer(&new_stat, &status_string);
 	    return AUTH_CONTINUE;
@@ -501,7 +505,9 @@ gss_auth(void *app_data, char *host)
 					 &name,
 					 NULL);
 	    if (GSS_ERROR(maj_stat) == 0) {
-		printf("Authenticated to <%s>\n", (char *)name.value);
+		printf("Authenticated to <%.*s>\n",
+			(int)name.length,
+			(char *)name.value);
 		gss_release_buffer(&min_stat, &name);
 	    }
 	    gss_release_name(&min_stat, &targ_name);

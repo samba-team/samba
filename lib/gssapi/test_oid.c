@@ -53,7 +53,7 @@ main(int argc, char **argv)
     if (GSS_ERROR(maj_stat))
 	errx(1, "gss_oid_to_str failed");
 
-    ret = strcmp(data.value, "1 2 840 113554 1 2 2");
+    ret = strncmp(data.value, "1 2 840 113554 1 2 2", data.length);
     gss_release_buffer(&maj_stat, &data);
     if (ret)
 	return 1;
@@ -62,7 +62,7 @@ main(int argc, char **argv)
     if (GSS_ERROR(maj_stat))
 	errx(1, "gss_oid_to_str failed");
 
-    ret = strcmp(data.value, "1 3 6 1 5 6 4");
+    ret = strnncmp(data.value, "1 3 6 1 5 6 4", data.length);
     gss_release_buffer(&maj_stat, &data);
     if (ret)
 	return 1;

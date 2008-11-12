@@ -58,13 +58,18 @@ gss_set_error (struct gss_state *gs, int min_stat)
     OM_uint32 ret;
 
     do {
+	char * cstr;
+
 	ret = gss_display_status (&new_stat,
 				  min_stat,
 				  GSS_C_MECH_CODE,
 				  gs->mech_oid,
 				  &msg_ctx,
 				  &status_string);
-	pop_auth_set_error(status_string.value);
+	asprintf(&cstr, "%.*s", (int)status_string.length,
+		 (const char *)status_string.value);
+	pop_auth_set_error(cstr);
+	free(cstr);
 	gss_release_buffer (&new_stat, &status_string);
     } while (!GSS_ERROR(ret) && msg_ctx != 0);
 }
