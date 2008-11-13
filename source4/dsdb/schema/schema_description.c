@@ -80,14 +80,12 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 char *schema_attribute_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_attribute *attribute) 
 {
 	char *schema_description;
-	const struct dsdb_syntax *map = find_syntax_map_by_ad_oid(attribute->attributeSyntax_oid);
-	const char *syntax = map ? map->ldap_oid : attribute->attributeSyntax_oid;
+	const char *syntax = attribute->syntax->ldap_oid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NULL;
 	}
 
-	
 	schema_description 
 		= schema_attribute_description(mem_ctx, 
 					       TARGET_AD_SCHEMA_SUBENTRY,
