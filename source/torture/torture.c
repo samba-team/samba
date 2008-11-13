@@ -5189,6 +5189,11 @@ static bool run_local_memcache(int dummy)
 	DATA_BLOB d1, d2, d3;
 	DATA_BLOB v1, v2, v3;
 
+	TALLOC_CTX *mem_ctx;
+	char *str1, *str2;
+	size_t size1, size2;
+	bool ret = false;
+
 	cache = memcache_init(NULL, 100);
 
 	if (cache == NULL) {
@@ -5240,7 +5245,33 @@ static bool run_local_memcache(int dummy)
 	}
 
 	TALLOC_FREE(cache);
-	return true;
+
+	cache = memcache_init(NULL, 0);
+
+	mem_ctx = talloc_init("foo");
+
+	str1 = talloc_strdup(mem_ctx, "string1");
+	str2 = talloc_strdup(mem_ctx, "string2");
+
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC,
+			    data_blob_string_const("torture"), str1);
+	size1 = talloc_total_size(cache);
+
+	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC,
+			    data_blob_string_const("torture"), str2);
+	size2 = talloc_total_size(cache);
+
+	printf("size1=%d, size2=%d\n", (int)size1, (int)size2);
+
+	if (size2 > size1) {
+		printf("memcache leaks memory!\n");
+		goto fail;
+	}
+
+	ret = true;
+ fail:
+	TALLOC_FREE(cache);
+	return ret;
 }
 
 static double create_procs(bool (*fn)(int), bool *result)
