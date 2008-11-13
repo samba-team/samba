@@ -491,7 +491,7 @@ int net_rap_printq_usage(int argc, const char **argv)
 	d_printf(
 	 "net rap printq [misc. options] [targets]\n"\
 	 "\tor\n"\
-	 "net rap printq list [<queue_name>] [misc. options] [targets]\n"\
+	 "net rap printq info [<queue_name>] [misc. options] [targets]\n"\
 	 "\tlists the specified queue and jobs on the target server.\n"\
 	 "\tIf the queue name is not specified, all queues are listed.\n\n");
 	d_printf(
