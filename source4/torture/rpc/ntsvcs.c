@@ -108,6 +108,44 @@ static bool test_PNP_GetDeviceList(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_PNP_GetDeviceRegProp(struct torture_context *tctx,
+				      struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct PNP_GetDeviceRegProp r;
+
+	enum winreg_Type reg_data_type = REG_NONE;
+	uint32_t buffer_size = 0;
+	uint32_t needed = 0;
+	uint8_t *buffer;
+
+	buffer = talloc(tctx, uint8_t);
+
+	r.in.devicepath = "ACPI\\ACPI0003\\1";
+	r.in.property = DEV_REGPROP_DESC;
+	r.in.flags = 0;
+	r.in.reg_data_type = &reg_data_type;
+	r.in.buffer_size = &buffer_size;
+	r.in.needed = &needed;
+	r.out.buffer = buffer;
+	r.out.reg_data_type = &reg_data_type;
+	r.out.buffer_size = &buffer_size;
+	r.out.needed = &needed;
+
+	status = dcerpc_PNP_GetDeviceRegProp(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceRegProp");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_CM_BUFFER_SMALL)) {
+
+		buffer = talloc_array(tctx, uint8_t, needed);
+		r.in.buffer_size = &needed;
+
+		status = dcerpc_PNP_GetDeviceRegProp(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "PNP_GetDeviceRegProp");
+	}
+
+	return true;
+}
 
 struct torture_suite *torture_rpc_ntsvcs(TALLOC_CTX *mem_ctx)
 {
@@ -118,6 +156,8 @@ struct torture_suite *torture_rpc_ntsvcs(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_rpc_iface_tcase(suite, "ntsvcs",
 						  &ndr_table_ntsvcs);
 
+	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceRegProp",
+					  test_PNP_GetDeviceRegProp);
 	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceList",
 					  test_PNP_GetDeviceList);
 	test = torture_rpc_tcase_add_test(tcase, "PNP_GetDeviceListSize",
