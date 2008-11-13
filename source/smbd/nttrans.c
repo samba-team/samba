@@ -747,6 +747,11 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	security_acl_map_generic(psd->dacl, &file_generic_mapping);
 	security_acl_map_generic(psd->sacl, &file_generic_mapping);
 
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("set_sd for file %s\n", fsp->fsp_name ));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
+
 	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 
 	TALLOC_FREE(psd);
@@ -1607,6 +1612,11 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name )
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
 
 	SIVAL(params,0,(uint32)sd_size);
 
