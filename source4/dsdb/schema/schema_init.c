@@ -643,6 +643,24 @@ WERROR dsdb_read_prefixes_from_ldb(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	(p)->elem = samdb_result_uint(msg, attr, 0);\
 } while (0)
 
+#define GET_UINT32_PTR_LDB(msg, attr, p, elem) do { \
+	uint64_t _v = samdb_result_uint64(msg, attr, UINT64_MAX);\
+	if (_v == UINT64_MAX) { \
+		(p)->elem = NULL; \
+	} else if (_v > UINT32_MAX) { \
+		d_printf("%s: %s == 0x%llX\n", __location__, \
+			 attr, (unsigned long long)_v); \
+		return WERR_INVALID_PARAM; \
+	} else { \
+		(p)->elem = talloc(mem_ctx, uint32_t); \
+		if (!(p)->elem) { \
+			d_printf("%s: talloc failed for %s\n", __location__, attr); \
+			return WERR_NOMEM; \
+		} \
+		*(p)->elem = (uint32_t)_v; \
+	} \
+} while (0)
+
 #define GET_GUID_LDB(msg, attr, p, elem) do { \
 	(p)->elem = samdb_result_guid(msg, attr);\
 } while (0)
@@ -707,8 +725,8 @@ WERROR dsdb_attribute_from_ldb(const struct dsdb_schema *schema,
 	GET_BLOB_LDB(msg, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
 	GET_BOOL_LDB(msg, "isSingleValued", attr, isSingleValued, true);
-	GET_UINT32_LDB(msg, "rangeLower", attr, rangeLower);
-	GET_UINT32_LDB(msg, "rangeUpper", attr, rangeUpper);
+	GET_UINT32_PTR_LDB(msg, "rangeLower", attr, rangeLower);
+	GET_UINT32_PTR_LDB(msg, "rangeUpper", attr, rangeUpper);
 	GET_BOOL_LDB(msg, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
 	GET_UINT32_LDB(msg, "schemaFlagsEx", attr, schemaFlagsEx);
@@ -1260,6 +1278,23 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 } while (0)
 
+#define GET_UINT32_PTR_DS(s, r, attr, p, elem) do { \
+	struct drsuapi_DsReplicaAttribute *_a; \
+	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
+	if (_a && _a->value_ctr.num_values >= 1 \
+	    && _a->value_ctr.values[0].blob \
+	    && _a->value_ctr.values[0].blob->length == 4) { \
+		(p)->elem = talloc(mem_ctx, uint32_t); \
+		if (!(p)->elem) { \
+			d_printf("%s: talloc failed for %s\n", __location__, attr); \
+			return WERR_NOMEM; \
+		} \
+		*(p)->elem = IVAL(_a->value_ctr.values[0].blob->data,0);\
+	} else { \
+		(p)->elem = NULL; \
+	} \
+} while (0)
+
 #define GET_GUID_DS(s, r, attr, mem_ctx, p, elem) do { \
 	struct drsuapi_DsReplicaAttribute *_a; \
 	_a = dsdb_find_object_attr_name(s, r, attr, NULL); \
@@ -1330,8 +1365,8 @@ WERROR dsdb_attribute_from_drsuapi(struct dsdb_schema *schema,
 	GET_BLOB_DS(schema, r, "oMObjectClass", mem_ctx, attr, oMObjectClass);
 
 	GET_BOOL_DS(schema, r, "isSingleValued", attr, isSingleValued, true);
-	GET_UINT32_DS(schema, r, "rangeLower", attr, rangeLower);
-	GET_UINT32_DS(schema, r, "rangeUpper", attr, rangeUpper);
+	GET_UINT32_PTR_DS(schema, r, "rangeLower", attr, rangeLower);
+	GET_UINT32_PTR_DS(schema, r, "rangeUpper", attr, rangeUpper);
 	GET_BOOL_DS(schema, r, "extendedCharsAllowed", attr, extendedCharsAllowed, false);
 
 	GET_UINT32_DS(schema, r, "schemaFlagsEx", attr, schemaFlagsEx);
