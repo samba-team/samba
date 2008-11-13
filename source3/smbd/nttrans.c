@@ -1607,7 +1607,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name )
+		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor, psd);
 	}
 
