@@ -552,13 +552,13 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_INVALID_LOGON_HOURS",
 		N_("You are not allowed to logon at this time")},
 	{"NT_STATUS_ACCOUNT_EXPIRED",
-		"Your account has expired. "
+		N_("Your account has expired. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_DISABLED",
-		"Your account is disabled. "
+		N_("Your account is disabled. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_LOCKED_OUT",
-		"Your account has been locked. "
+		N_("Your account has been locked. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT",
 		N_("Invalid Trust Account")},
@@ -2400,7 +2400,7 @@ int pam_sm_close_session(pam_handle_t *pamh, int flags,
 		ZERO_STRUCT(request);
 		ZERO_STRUCT(response);
 
-		retval = pam_get_user(pamh, &user, "Username: ");
+		retval = pam_get_user(pamh, &user, _("Username: "));
 		if (retval) {
 			_pam_log(ctx, LOG_ERR,
 				 "could not identify user");
@@ -2549,7 +2549,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	/*
 	 * First get the name of a user
 	 */
-	ret = pam_get_user(pamh, &user, "Username: ");
+	ret = pam_get_user(pamh, &user, _("Username: "));
 	if (ret) {
 		_pam_log(ctx, LOG_ERR,
 			 "password - could not identify user");
