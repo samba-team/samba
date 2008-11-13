@@ -49,7 +49,7 @@ msgstr "Ihr Passwort ist abgelaufen"
 
 #: ../../nsswitch/pam_winbind.c:595
 msgid "You need to change your password now"
-msgstr "Sie müßen Ihr Passwort unmittelbar ändern"
+msgstr "Sie müssen Ihr Passwort unmittelbar ändern"
 
 #: ../../nsswitch/pam_winbind.c:597
 msgid "You are not allowed to logon from this workstation"
