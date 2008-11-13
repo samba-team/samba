@@ -23,6 +23,7 @@
 
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /**
   build a GUID from a string
@@ -34,6 +35,8 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 	uint32_t time_mid, time_hi_and_version;
 	uint32_t clock_seq[2];
 	uint32_t node[6];
+	uint8_t buf16[16];
+	DATA_BLOB blob16 = data_blob_const(buf16, sizeof(buf16));
 	int i;
 
 	if (s->data == NULL) {
@@ -54,6 +57,32 @@ _PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 				   &clock_seq[0], &clock_seq[1],
 				   &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 		status = NT_STATUS_OK;
+	} else if (s->length == 32) {
+		size_t rlen = strhex_to_str((char *)blob16.data, blob16.length,
+					    (const char *)s->data, s->length);
+		if (rlen == blob16.length) {
+			/* goto the ndr_pull_struct_blob() path */
+			status = NT_STATUS_OK;
+			s = &blob16;
+		}
+	}
+
+	if (s->length == 16) {
+		enum ndr_err_code ndr_err;
+		struct GUID guid2;
+		TALLOC_CTX *mem_ctx;
+
+		mem_ctx = talloc_new(NULL);
+		NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+		ndr_err = ndr_pull_struct_blob(s, mem_ctx, NULL, &guid2,
+					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		talloc_free(mem_ctx);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		*guid = guid2;
+		return NT_STATUS_OK;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
