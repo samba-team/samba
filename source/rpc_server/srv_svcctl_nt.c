@@ -690,7 +690,7 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
         if (buffer_size > r->in.buf_size ) {
-		TALLOC_FREE(r->out.query);
+		ZERO_STRUCTP(r->out.query);
                 return WERR_INSUFFICIENT_BUFFER;
 	}
 
