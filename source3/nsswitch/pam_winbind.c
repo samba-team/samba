@@ -2369,14 +2369,16 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 
 		logoff.username		= user;
 
-		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
-					     &logoff.blobs,
-					     "ccfilename",
-					     0,
-					     (uint8_t *)ccname,
-					     strlen(ccname)+1);
-		if (!WBC_ERROR_IS_OK(wbc_status)) {
-			goto out;
+		if (ccname) {
+			wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
+						     &logoff.blobs,
+						     "ccfilename",
+						     0,
+						     (uint8_t *)ccname,
+						     strlen(ccname)+1);
+			if (!WBC_ERROR_IS_OK(wbc_status)) {
+				goto out;
+			}
 		}
 
 		wbc_status = wbcAddNamedBlob(&logoff.num_blobs,
