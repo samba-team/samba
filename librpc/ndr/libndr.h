@@ -519,6 +519,7 @@ bool GUID_all_zero(const struct GUID *u);
 int GUID_compare(const struct GUID *u1, const struct GUID *u2);
 char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid);
+char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
 struct GUID GUID_random(void);
 

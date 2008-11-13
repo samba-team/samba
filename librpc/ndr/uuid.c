@@ -251,6 +251,31 @@ _PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 	return ret;
 }
 
+_PUBLIC_ char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+{
+	char *ret;
+	DATA_BLOB guid_blob;
+	enum ndr_err_code ndr_err;
+	TALLOC_CTX *tmp_mem;
+
+	tmp_mem = talloc_new(mem_ctx);
+	if (!tmp_mem) {
+		return NULL;
+	}
+	ndr_err = ndr_push_struct_blob(&guid_blob, tmp_mem,
+				       NULL,
+				       guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(tmp_mem);
+		return NULL;
+	}
+
+	ret = data_blob_hex_string(mem_ctx, &guid_blob);
+	talloc_free(tmp_mem);
+	return ret;
+}
+
 _PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 
