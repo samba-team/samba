@@ -246,16 +246,16 @@ interface ntsvcs
 	/* Function: 0x29 */
 
 	typedef struct {
-		uint32 unknown1;
-		uint16 unknown2[160];
-		uint32 unknown3;
+		uint32 profile_handle;
+		uint16 friendly_name[80];
+		uint32 flags;
 	} PNP_HwProfInfo;
 
 	WERROR PNP_GetHwProfInfo(
 		[in] uint32 idx,
 		[in,out,ref] PNP_HwProfInfo *info,
-		[in] uint32 unknown1,
-		[in] uint32 unknown2
+		[in] uint32 size,
+		[in] uint32 flags
 		);
 
 	/******************/
