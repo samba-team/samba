@@ -395,7 +395,7 @@ current network.</para>
 <title>RAP PRINTQ</title>
 
 <refsect3>
-<title>RAP PRINTQ LIST <replaceable>QUEUE_NAME</replaceable></title>
+<title>RAP PRINTQ INFO <replaceable>QUEUE_NAME</replaceable></title>
 
 <para>Lists the specified print queue and print jobs on the server.
 If the <replaceable>QUEUE_NAME</replaceable> is omitted, all 
