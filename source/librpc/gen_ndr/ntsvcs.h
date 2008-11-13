@@ -7,9 +7,9 @@
 
 #define DEV_REGPROP_DESC	( 1 )
 struct PNP_HwProfInfo {
-	uint32_t unknown1;
-	uint16_t unknown2[160];
-	uint32_t unknown3;
+	uint32_t profile_handle;
+	uint16_t friendly_name[80];
+	uint32_t flags;
 };
 
 
@@ -383,8 +383,8 @@ struct PNP_HwProfFlags {
 struct PNP_GetHwProfInfo {
 	struct {
 		uint32_t idx;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t size;
+		uint32_t flags;
 		struct PNP_HwProfInfo *info;/* [ref] */
 	} in;
 

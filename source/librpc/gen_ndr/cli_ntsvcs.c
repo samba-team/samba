@@ -1744,8 +1744,8 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t idx /* [in]  */,
 				  struct PNP_HwProfInfo *info /* [in,out] [ref] */,
-				  uint32_t unknown1 /* [in]  */,
-				  uint32_t unknown2 /* [in]  */,
+				  uint32_t size /* [in]  */,
+				  uint32_t flags /* [in]  */,
 				  WERROR *werror)
 {
 	struct PNP_GetHwProfInfo r;
@@ -1754,8 +1754,8 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.idx = idx;
 	r.in.info = info;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.size = size;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &r);
