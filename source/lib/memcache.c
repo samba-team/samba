@@ -40,6 +40,24 @@ struct memcache {
 static void memcache_element_parse(struct memcache_element *e,
 				   DATA_BLOB *key, DATA_BLOB *value);
 
+static bool memcache_is_talloc(enum memcache_number n)
+{
+	bool result;
+
+	switch (n) {
+	case GETPWNAM_CACHE:
+	case PDB_GETPWSID_CACHE:
+	case SINGLETON_CACHE_TALLOC:
+		result = true;
+		break;
+	default:
+		result = false;
+		break;
+	}
+
+	return result;
+}
+
 static int memcache_destructor(struct memcache *cache) {
 	struct memcache_element *e, *next;
 
@@ -188,6 +206,16 @@ static void memcache_delete_element(struct memcache *cache,
 	}
 	DLIST_REMOVE(cache->mru, e);
 
+	if (memcache_is_talloc(e->n)) {
+		DATA_BLOB cache_key, cache_value;
+		void *ptr;
+
+		memcache_element_parse(e, &cache_key, &cache_value);
+		SMB_ASSERT(cache_value.length == sizeof(ptr));
+		memcpy(&ptr, cache_value.data, sizeof(ptr));
+		TALLOC_FREE(ptr);
+	}
+
 	cache->size -= memcache_element_size(e->keylength, e->valuelength);
 
 	SAFE_FREE(e);
@@ -250,6 +278,12 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 		memcache_element_parse(e, &cache_key, &cache_value);
 
 		if (value.length <= cache_value.length) {
+			if (memcache_is_talloc(e->n)) {
+				void *ptr;
+				SMB_ASSERT(cache_value.length == sizeof(ptr));
+				memcpy(&ptr, cache_value.data, sizeof(ptr));
+				TALLOC_FREE(ptr);
+			}
 			/*
 			 * We can reuse the existing record
 			 */
@@ -308,7 +342,8 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 			 DATA_BLOB key, void *ptr)
 {
-	memcache_add(cache, n, key, data_blob_const(&ptr, sizeof(ptr)));
+	void *p = talloc_move(cache, &ptr);
+	memcache_add(cache, n, key, data_blob_const(&p, sizeof(p)));
 }
 
 void memcache_flush(struct memcache *cache, enum memcache_number n)
