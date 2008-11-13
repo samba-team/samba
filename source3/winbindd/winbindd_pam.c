@@ -2117,9 +2117,15 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		got_info = true;
 	}
 
+	/* atm the pidl generated rpccli_samr_ChangePasswordUser3 function will
+	 * return with NT_STATUS_BUFFER_TOO_SMALL for w2k dcs as w2k just
+	 * returns with 4byte error code (NT_STATUS_NOT_SUPPORTED) which is too
+	 * short to comply with the samr_ChangePasswordUser3 idl - gd */
+
 	/* only fallback when the chgpasswd_user3 call is not supported */
 	if ((NT_STATUS_EQUAL(result, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR))) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
+		   (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
 		DEBUG(10,("Password change with chgpasswd_user3 failed with: %s, retrying chgpasswd_user2\n",
