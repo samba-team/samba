@@ -598,13 +598,13 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_INVALID_LOGON_HOURS",
 		N_("You are not allowed to logon at this time")},
 	{"NT_STATUS_ACCOUNT_EXPIRED",
-		"Your account has expired. "
+		N_("Your account has expired. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_DISABLED",
-		"Your account is disabled. "
+		N_("Your account is disabled. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_LOCKED_OUT",
-		"Your account has been locked. "
+		N_("Your account has been locked. ")
 		N_("Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT",
 		N_("Invalid Trust Account")},
@@ -1360,7 +1360,7 @@ static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
 
 	if (i->min_length_password > 0) {
 		str = talloc_asprintf_append(str,
-			       "must be at least %d characters; ",
+			       _("must be at least %d characters; "),
 			       i->min_length_password);
 		if (!str) {
 			goto failed;
@@ -1416,7 +1416,7 @@ static int _pam_create_homedir(struct pwb_context *ctx,
 	if (mkdir(dirname, mode) != 0) {
 
 		_make_remark_format(ctx, PAM_TEXT_INFO,
-				    "Creating directory: %s failed: %s",
+				    _("Creating directory: %s failed: %s"),
 				    dirname, strerror(errno));
 		_pam_log(ctx, LOG_ERR, "could not create dir: %s (%s)",
 		 dirname, strerror(errno));
@@ -2333,7 +2333,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 		const char *ccname = NULL;
 		struct passwd *pwd = NULL;
 
-		retval = pam_get_user(pamh, &user, "Username: ");
+		retval = pam_get_user(pamh, &user, _("Username: "));
 		if (retval) {
 			_pam_log(ctx, LOG_ERR,
 				 "could not identify user");
@@ -2878,7 +2878,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 	/*
 	 * First get the name of a user
 	 */
-	ret = pam_get_user(pamh, &user, "Username: ");
+	ret = pam_get_user(pamh, &user, _("Username: "));
 	if (ret) {
 		_pam_log(ctx, LOG_ERR,
 			 "password - could not identify user");
