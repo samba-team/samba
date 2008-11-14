@@ -30,20 +30,20 @@ interface xattr
 	   stored in "security.NTACL"
 
 	   Version 1. raw SD stored as Samba4 does it.
-	   Version 2. raw SD + last changed timestamp so we
-		      can discard if this doesn't match the POSIX st_ctime.
+	   Version 2. raw SD + last changed hash so we
+		      can discard if this doesn't match the underlying ACL hash.
         */
 
 	const char *XATTR_NTACL_NAME = "security.NTACL";
 
 	typedef [public] struct {
 		security_descriptor *sd;
-		NTTIME last_changed;
-	} security_descriptor_timestamp;
+		uint8 hash[16];
+	} security_descriptor_hash;
 
         typedef [switch_type(uint16)] union {
                 [case(1)] security_descriptor *sd;
-		[case(2)] security_descriptor_timestamp *sd_ts;
+		[case(2)] security_descriptor_hash *sd_hs;
         } xattr_NTACL_Info;
 
         typedef [public] struct {
