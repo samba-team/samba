@@ -546,12 +546,12 @@ _PUBLIC_ void ndr_print_xattr_DosStreams(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_security_descriptor_timestamp(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor_timestamp *r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_descriptor_hash(struct ndr_push *ndr, int ndr_flags, const struct security_descriptor_hash *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
-		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->last_changed));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -561,7 +561,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor_timestamp(struct ndr_pus
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_timestamp(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor_timestamp *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_hash(struct ndr_pull *ndr, int ndr_flags, struct security_descriptor_hash *r)
 {
 	uint32_t _ptr_sd;
 	TALLOC_CTX *_mem_save_sd_0;
@@ -573,7 +573,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_timestamp(struct ndr_pul
 		} else {
 			r->sd = NULL;
 		}
-		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->last_changed));
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->sd) {
@@ -586,9 +586,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor_timestamp(struct ndr_pul
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_security_descriptor_timestamp(struct ndr_print *ndr, const char *name, const struct security_descriptor_timestamp *r)
+_PUBLIC_ void ndr_print_security_descriptor_hash(struct ndr_print *ndr, const char *name, const struct security_descriptor_hash *r)
 {
-	ndr_print_struct(ndr, name, "security_descriptor_timestamp");
+	ndr_print_struct(ndr, name, "security_descriptor_hash");
 	ndr->depth++;
 	ndr_print_ptr(ndr, "sd", r->sd);
 	ndr->depth++;
@@ -596,7 +596,7 @@ _PUBLIC_ void ndr_print_security_descriptor_timestamp(struct ndr_print *ndr, con
 		ndr_print_security_descriptor(ndr, "sd", r->sd);
 	}
 	ndr->depth--;
-	ndr_print_NTTIME(ndr, "last_changed", r->last_changed);
+	ndr_print_array_uint8(ndr, "hash", r->hash, 16);
 	ndr->depth--;
 }
 
@@ -611,7 +611,7 @@ static enum ndr_err_code ndr_push_xattr_NTACL_Info(struct ndr_push *ndr, int ndr
 			break; }
 
 			case 2: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd_ts));
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd_hs));
 			break; }
 
 			default:
@@ -628,8 +628,8 @@ static enum ndr_err_code ndr_push_xattr_NTACL_Info(struct ndr_push *ndr, int ndr
 			break;
 
 			case 2:
-				if (r->sd_ts) {
-					NDR_CHECK(ndr_push_security_descriptor_timestamp(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_ts));
+				if (r->sd_hs) {
+					NDR_CHECK(ndr_push_security_descriptor_hash(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_hs));
 				}
 			break;
 
@@ -645,7 +645,7 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 	int level;
 	uint16_t _level;
 	TALLOC_CTX *_mem_save_sd_0;
-	TALLOC_CTX *_mem_save_sd_ts_0;
+	TALLOC_CTX *_mem_save_sd_hs_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &_level));
@@ -664,12 +664,12 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 			break; }
 
 			case 2: {
-				uint32_t _ptr_sd_ts;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_ts));
-				if (_ptr_sd_ts) {
-					NDR_PULL_ALLOC(ndr, r->sd_ts);
+				uint32_t _ptr_sd_hs;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd_hs));
+				if (_ptr_sd_hs) {
+					NDR_PULL_ALLOC(ndr, r->sd_hs);
 				} else {
-					r->sd_ts = NULL;
+					r->sd_hs = NULL;
 				}
 			break; }
 
@@ -689,11 +689,11 @@ static enum ndr_err_code ndr_pull_xattr_NTACL_Info(struct ndr_pull *ndr, int ndr
 			break;
 
 			case 2:
-				if (r->sd_ts) {
-					_mem_save_sd_ts_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->sd_ts, 0);
-					NDR_CHECK(ndr_pull_security_descriptor_timestamp(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_ts));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_ts_0, 0);
+				if (r->sd_hs) {
+					_mem_save_sd_hs_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->sd_hs, 0);
+					NDR_CHECK(ndr_pull_security_descriptor_hash(ndr, NDR_SCALARS|NDR_BUFFERS, r->sd_hs));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sd_hs_0, 0);
 				}
 			break;
 
@@ -720,10 +720,10 @@ _PUBLIC_ void ndr_print_xattr_NTACL_Info(struct ndr_print *ndr, const char *name
 		break;
 
 		case 2:
-			ndr_print_ptr(ndr, "sd_ts", r->sd_ts);
+			ndr_print_ptr(ndr, "sd_hs", r->sd_hs);
 			ndr->depth++;
-			if (r->sd_ts) {
-				ndr_print_security_descriptor_timestamp(ndr, "sd_ts", r->sd_ts);
+			if (r->sd_hs) {
+				ndr_print_security_descriptor_hash(ndr, "sd_hs", r->sd_hs);
 			}
 			ndr->depth--;
 		break;

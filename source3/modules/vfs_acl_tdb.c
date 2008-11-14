@@ -125,15 +125,15 @@ static NTSTATUS parse_acl_blob(const DATA_BLOB *pblob,
 		return NT_STATUS_REVISION_MISMATCH;
 	}
 
-	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_ts->sd->type | SEC_DESC_SELF_RELATIVE,
+	*ppdesc = make_sec_desc(ctx, SEC_DESC_REVISION, xacl.info.sd_hs->sd->type | SEC_DESC_SELF_RELATIVE,
 			(security_info & OWNER_SECURITY_INFORMATION)
-			? xacl.info.sd_ts->sd->owner_sid : NULL,
+			? xacl.info.sd_hs->sd->owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION)
-			? xacl.info.sd_ts->sd->group_sid : NULL,
+			? xacl.info.sd_hs->sd->group_sid : NULL,
 			(security_info & SACL_SECURITY_INFORMATION)
-			? xacl.info.sd_ts->sd->sacl : NULL,
+			? xacl.info.sd_hs->sd->sacl : NULL,
 			(security_info & DACL_SECURITY_INFORMATION)
-			? xacl.info.sd_ts->sd->dacl : NULL,
+			? xacl.info.sd_hs->sd->dacl : NULL,
 			&sd_size);
 
 	TALLOC_FREE(xacl.info.sd);
@@ -199,27 +199,17 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 static NTSTATUS create_acl_blob(const struct security_descriptor *psd, DATA_BLOB *pblob)
 {
 	struct xattr_NTACL xacl;
-	struct security_descriptor_timestamp sd_ts;
+	struct security_descriptor_hash sd_hs;
 	enum ndr_err_code ndr_err;
 	TALLOC_CTX *ctx = talloc_tos();
-	struct timespec curr = timespec_current();
 
 	ZERO_STRUCT(xacl);
-	ZERO_STRUCT(sd_ts);
-
-	/* Horrid hack as setting an xattr changes the ctime
- 	 * on Linux. This gives a race of 1 second during
- 	 * which we would not see a POSIX ACL set.
- 	 */
-	curr.tv_sec += 1;
+	ZERO_STRUCT(sd_hs);
 
 	xacl.version = 2;
-	xacl.info.sd_ts = &sd_ts;
-	xacl.info.sd_ts->sd = CONST_DISCARD(struct security_descriptor *, psd);
-	unix_timespec_to_nt_time(&xacl.info.sd_ts->last_changed, curr);
-
-	DEBUG(10, ("create_acl_blob: timestamp stored as %s\n",
-		timestring(ctx, curr.tv_sec) ));
+	xacl.info.sd_hs = &sd_hs;
+	xacl.info.sd_hs->sd = CONST_DISCARD(struct security_descriptor *, psd);
+	memset(&xacl.info.sd_hs->hash[0], '\0', 16);
 
 	ndr_err = ndr_push_struct_blob(
 			pblob, ctx, NULL, &xacl,
