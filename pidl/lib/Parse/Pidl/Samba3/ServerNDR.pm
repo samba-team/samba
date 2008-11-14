@@ -205,7 +205,11 @@ sub ParseInterface($)
 
 	pidl_hdr "#ifndef __SRV_$uif\__";
 	pidl_hdr "#define __SRV_$uif\__";
-	ParseFunction($if, $_) foreach (@{$if->{FUNCTIONS}});
+
+	foreach (@{$if->{FUNCTIONS}}) {
+		next if ($_->{PROPERTIES}{noopnum});
+		ParseFunction($if, $_);
+	}
 
 	pidl "";
 	pidl "/* Tables */";
@@ -214,6 +218,7 @@ sub ParseInterface($)
 	indent;
 
 	foreach (@{$if->{FUNCTIONS}}) {
+		next if ($_->{PROPERTIES}{noopnum});
 		pidl "{\"" . uc($_->{NAME}) . "\", NDR_" . uc($_->{NAME}) . ", api_$_->{NAME}},";
 	}
 
