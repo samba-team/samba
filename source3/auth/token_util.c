@@ -77,7 +77,7 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 
 NT_USER_TOKEN *get_root_nt_token( void )
 {
-	struct nt_user_token *token = NULL;
+	struct nt_user_token *token, *for_cache;
 	DOM_SID u_sid, g_sid;
 	struct passwd *pw;
 	void *cache_data;
@@ -107,9 +107,11 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	token->privileges = se_disk_operators;
 
+	for_cache = token;
+
 	memcache_add_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
-		data_blob_string_const_null("root_nt_token"), token);
+		data_blob_string_const_null("root_nt_token"), &for_cache);
 
 	return token;
 }
