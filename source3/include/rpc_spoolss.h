@@ -1506,17 +1506,6 @@ SPOOL_R_SETPRINTER;
 
 typedef struct {
 	POLICY_HND handle;
-} SPOOL_Q_DELETEPRINTER;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SPOOL_R_DELETEPRINTER;
-
-/********************************************/
-
-typedef struct {
-	POLICY_HND handle;
 } SPOOL_Q_ABORTPRINTER;
 
 typedef struct {
