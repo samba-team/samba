@@ -109,7 +109,6 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 {
 	struct winbindd_domain *domain;
 	const char *alternative_name = NULL;
-        const char *param;
         const char **ignored_domains, **dom;
 
         ignored_domains = lp_parm_string_list(-1, "winbind", "ignore domains", NULL);
