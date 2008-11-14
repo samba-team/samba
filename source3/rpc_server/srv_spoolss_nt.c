@@ -5982,15 +5982,17 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 	return errcode;
 }
 
-/********************************************************************
- * api_spoolss_abortprinter
+
+/****************************************************************
+ _spoolss_AbortPrinter
  * From MSDN: "Deletes printer's spool file if printer is configured
  * for spooling"
- ********************************************************************/
+****************************************************************/
 
-WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u)
+WERROR _spoolss_AbortPrinter(pipes_struct *p,
+			     struct spoolss_AbortPrinter *r)
 {
-	POLICY_HND	*handle = &q_u->handle;
+	POLICY_HND	*handle = r->in.handle;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int		snum;
 	WERROR 		errcode = WERR_OK;
@@ -10138,17 +10140,6 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 
 WERROR _spoolss_WritePrinter(pipes_struct *p,
 			     struct spoolss_WritePrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AbortPrinter
-****************************************************************/
-
-WERROR _spoolss_AbortPrinter(pipes_struct *p,
-			     struct spoolss_AbortPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
