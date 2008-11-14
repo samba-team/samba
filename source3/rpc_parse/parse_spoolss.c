@@ -1700,42 +1700,6 @@ bool spoolss_io_r_enddocprinter(const char *desc, SPOOL_R_ENDDOCPRINTER *r_u, pr
 
 /*******************************************************************
  * read a structure.
- * called from spoolss_q_startpageprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_startpageprinter(const char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_startpageprinter");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_startpageprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_startpageprinter(const char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_startpageprinter");
-	depth++;
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * read a structure.
  * called from spoolss_q_endpageprinter (srv_spoolss.c)
  ********************************************************************/
 
@@ -7301,18 +7265,6 @@ bool make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle,
         q_u->level = level;
         q_u->buffer = buffer;
         q_u->offered = offered;
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, 
-				     POLICY_HND *handle)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 
 	return True;
 }
