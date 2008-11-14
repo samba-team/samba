@@ -59,10 +59,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 
 	cached = tcopy_passwd(NULL, temp);
 	if (cached == NULL) {
-		/*
-		 * Just don't add this into the cache, ignore the failure
-		 */
-		return temp;
+		return NULL;
 	}
 
 	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const(name),
