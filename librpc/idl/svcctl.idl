@@ -535,9 +535,9 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_QueryServiceConfig2W(
 		[in,ref] policy_handle *handle,
 		[in] uint32 info_level,
-		[out] uint8 buffer[buf_size],
-		[in] uint32 buf_size,
-		[out,ref] uint32 *bytes_needed
+		[out,ref,size_is(buf_size)] uint8 *buffer,
+		[in] [range(0,8192)] uint32 buf_size,
+		[out,ref] [range(0,8192)] uint32 *bytes_needed
 	);
 
 	/*****************/
