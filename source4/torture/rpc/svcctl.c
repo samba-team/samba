@@ -52,6 +52,72 @@ static bool test_CloseServiceHandle(struct dcerpc_pipe *p, struct torture_contex
 	return true;
 }
 
+static bool test_OpenService(struct dcerpc_pipe *p, struct torture_context *tctx,
+			     struct policy_handle *h, const char *name, struct policy_handle *s)
+{
+	struct svcctl_OpenServiceW r;
+
+	r.in.scmanager_handle = h;
+	r.in.ServiceName = name;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	r.out.handle = s;
+
+	torture_assert_ntstatus_ok(tctx,
+				   dcerpc_svcctl_OpenServiceW(p, tctx, &r),
+				   "OpenServiceW failed!");
+	torture_assert_werr_ok(tctx, r.out.result, "OpenServiceW failed!");
+
+	return true;
+
+}
+
+static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerpc_pipe *p)
+{
+	struct svcctl_QueryServiceStatusEx r;
+	struct policy_handle h, s;
+	NTSTATUS status;
+
+	uint32_t info_level = 0;
+	uint8_t *buffer;
+	uint32_t buf_size = 0;
+	uint32_t bytes_needed = 0;
+
+	if (!test_OpenSCManager(p, tctx, &h))
+		return false;
+
+	if (!test_OpenService(p, tctx, &h, "Netlogon", &s))
+		return false;
+
+	buffer = talloc(tctx, uint8_t);
+
+	r.in.handle = &s;
+	r.in.info_level = 0;
+	r.in.buf_size = buf_size;
+	r.out.buffer = buffer;
+	r.out.bytes_needed = &bytes_needed;
+
+	status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatusEx failed!");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.buf_size = bytes_needed;
+		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.out.buffer = buffer;
+
+		status = dcerpc_svcctl_QueryServiceStatusEx(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "QueryServiceStatusEx failed!");
+		torture_assert_werr_ok(tctx, r.out.result, "QueryServiceStatusEx failed!");
+	}
+
+	if (!test_CloseServiceHandle(p, tctx, &s))
+		return false;
+
+	if (!test_CloseServiceHandle(p, tctx, &h))
+		return false;
+
+	return true;
+}
+
 static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_pipe *p)
 {
 	struct svcctl_EnumServicesStatusW r;
@@ -125,6 +191,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_SCManager);
 	torture_rpc_tcase_add_test(tcase, "EnumServicesStatus",
 				   test_EnumServicesStatus);
+	torture_rpc_tcase_add_test(tcase, "QueryServiceStatusEx",
+				   test_QueryServiceStatusEx);
 
 	return suite;
 }
