@@ -1006,11 +1006,11 @@ static bool get_printer_info(struct rpc_pipe_client *pipe_hnd,
 		return false;
 
 	if (!net_spoolss_getprinter(pipe_hnd, mem_ctx, &hnd, level, ctr)) {
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
 		return false;
 	}
 
-	rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
+	rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
 
 	*num_printers = 1;
 
@@ -1242,7 +1242,7 @@ static NTSTATUS rpc_printer_publish_internals_args(struct rpc_pipe_client *pipe_
 
 done:
 	if (got_hnd)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
 
 	return nt_status;
 }
@@ -1383,7 +1383,7 @@ NTSTATUS rpc_printer_publish_list_internals(struct net_context *c,
 
 done:
 	if (got_hnd)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd, NULL);
 
 	return nt_status;
 }
@@ -1522,12 +1522,12 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 
 		/* close printer handles here */
 		if (got_hnd_src) {
-			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+			rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
-			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+			rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 			got_hnd_dst = false;
 		}
 
@@ -1538,11 +1538,11 @@ NTSTATUS rpc_printer_migrate_security_internals(struct net_context *c,
 done:
 
 	if (got_hnd_src) {
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 	}
 
 	if (got_hnd_dst) {
-		rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+		rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 	}
 
 	if (cli_dst) {
@@ -1711,12 +1711,12 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 
 		/* close printer handles here */
 		if (got_hnd_src) {
-			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+			rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
-			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+			rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 			got_hnd_dst = false;
 		}
 	}
@@ -1726,10 +1726,10 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 done:
 
 	if (got_hnd_src)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 
 	if (got_hnd_dst)
-		rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+		rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 
 	if (cli_dst) {
 		cli_shutdown(cli_dst);
@@ -1933,13 +1933,13 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 
 		/* close dst */
 		if (got_hnd_dst) {
-			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+			rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 			got_hnd_dst = false;
 		}
 
 		/* close src */
 		if (got_hnd_src) {
-			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+			rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 			got_hnd_src = false;
 		}
 	}
@@ -1949,10 +1949,10 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 done:
 
 	if (got_hnd_src)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 
 	if (got_hnd_dst)
-		rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+		rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 
 	if (cli_dst) {
 		cli_shutdown(cli_dst);
@@ -2067,7 +2067,7 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 			DEBUG(1,("printer already exists: %s\n", sharename));
 			/* close printer handle here - dst only, not got src yet. */
 			if (got_hnd_dst) {
-				rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+				rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 				got_hnd_dst = false;
 			}
 			continue;
@@ -2103,12 +2103,12 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 
 		/* close printer handles here */
 		if (got_hnd_src) {
-			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+			rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
-			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+			rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 			got_hnd_dst = false;
 		}
 	}
@@ -2117,10 +2117,10 @@ NTSTATUS rpc_printer_migrate_printers_internals(struct net_context *c,
 
 done:
 	if (got_hnd_src)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 
 	if (got_hnd_dst)
-		rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+		rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 
 	if (cli_dst) {
 		cli_shutdown(cli_dst);
@@ -2486,12 +2486,12 @@ NTSTATUS rpc_printer_migrate_settings_internals(struct net_context *c,
 
 		/* close printer handles here */
 		if (got_hnd_src) {
-			rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+			rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 			got_hnd_src = false;
 		}
 
 		if (got_hnd_dst) {
-			rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+			rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 			got_hnd_dst = false;
 		}
 
@@ -2505,10 +2505,10 @@ done:
 	SAFE_FREE(unc_name);
 
 	if (got_hnd_src)
-		rpccli_spoolss_close_printer(pipe_hnd, mem_ctx, &hnd_src);
+		rpccli_spoolss_ClosePrinter(pipe_hnd, mem_ctx, &hnd_src, NULL);
 
 	if (got_hnd_dst)
-		rpccli_spoolss_close_printer(pipe_hnd_dst, mem_ctx, &hnd_dst);
+		rpccli_spoolss_ClosePrinter(pipe_hnd_dst, mem_ctx, &hnd_dst, NULL);
 
 	if (cli_dst) {
 		cli_shutdown(cli_dst);

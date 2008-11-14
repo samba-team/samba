@@ -122,7 +122,7 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
 
 	if (W_ERROR_IS_OK(werror)) {
 		printf("Printer %s opened successfully\n", printername);
-		werror = rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, &werror);
 
 		if (!W_ERROR_IS_OK(werror)) {
 			printf("Error closing printer handle! (%s)\n", 
@@ -521,7 +521,7 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 
  done:
 	if (opened_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -586,7 +586,7 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 
  done:
 	if (opened_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -665,7 +665,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 
  done: 
 	if (opened_hnd) 
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -791,7 +791,7 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 
  done: 
 	if (opened_hnd) 
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -859,7 +859,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 
  done: 
 	if (opened_hnd) 
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -1055,7 +1055,7 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	/* Cleanup */
 
 	if (opened_hnd)
-		rpccli_spoolss_close_printer (cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 	
 	if ( success )
 		werror = WERR_OK;
@@ -1490,7 +1490,7 @@ done:
 	/* Cleanup */
 
 	if (opened_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -1692,7 +1692,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
  done:
 	if (got_handle)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &handle);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(printername);
@@ -1756,7 +1756,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
  done:
 	if (got_handle)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &handle);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(printername);
@@ -1852,7 +1852,7 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
  done:
 	if (got_handle)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &handle);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(printername);
@@ -1905,7 +1905,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 
  done:
 	if (got_handle)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &handle);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(printername);
@@ -1971,7 +1971,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 
  done:
 	if (got_handle)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &handle);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
 	SAFE_FREE(servername);
 	SAFE_FREE(printername);
@@ -2142,7 +2142,7 @@ done:
 	/* cleanup */
 	TALLOC_FREE(tmp_ctx);
 	if (opened_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
@@ -2260,7 +2260,7 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	
 done:
 	if (got_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
@@ -2326,7 +2326,7 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 
 done:
 	if (got_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
@@ -2397,7 +2397,7 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 
 done:
 	if (got_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
@@ -2477,7 +2477,7 @@ done:
 	SAFE_FREE(keylist);
 
 	if (got_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
@@ -2562,7 +2562,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 
 done:		
 	if (got_hnd)
-		rpccli_spoolss_close_printer(cli, mem_ctx, &hnd);
+		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &hnd, NULL);
 
 	return result;
 }
@@ -2760,8 +2760,8 @@ done:
 	/* cleanup */
 
 	printf("Closing printers...");
-	rpccli_spoolss_close_printer( cli, mem_ctx, &hPrinter1 );
-	rpccli_spoolss_close_printer( cli2, mem_ctx, &hPrinter2 );
+	rpccli_spoolss_ClosePrinter( cli, mem_ctx, &hPrinter1, NULL );
+	rpccli_spoolss_ClosePrinter( cli2, mem_ctx, &hPrinter2, NULL );
 	printf("ok\n");
 
 	/* close the second remote connection */

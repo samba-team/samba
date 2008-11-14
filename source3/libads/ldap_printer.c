@@ -369,7 +369,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	TALLOC_FREE( dsdriver_ctr );
 	TALLOC_FREE( dsspooler_ctr );
 
-	rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+	rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
 
 	return result;
 }
