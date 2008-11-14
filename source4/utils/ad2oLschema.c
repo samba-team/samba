@@ -369,7 +369,8 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 							subClassOf,
 							objectClassCategory,
 							must,
-							may);
+							may,
+							NULL);
 		if (schema_entry == NULL) {
 			ret.failures++;
 			return ret;
