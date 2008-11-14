@@ -126,6 +126,8 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct ENUM_SERVICE_STATUS *service = NULL;
+	uint32_t bytes_needed = 0;
+	uint32_t services_returned = 0;
 
 	if (!test_OpenSCManager(p, tctx, &h))
 		return false;
@@ -137,16 +139,16 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	r.in.resume_handle = &resume_handle;
 	r.out.service = NULL;
 	r.out.resume_handle = &resume_handle;
-	r.out.services_returned = 0;
-	r.out.bytes_needed = 0;
+	r.out.services_returned = &services_returned;
+	r.out.bytes_needed = &bytes_needed;
 
 	status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.buf_size = *r.out.bytes_needed;
-		r.out.service = talloc_array(tctx, uint8_t, *r.out.bytes_needed);
+		r.in.buf_size = bytes_needed;
+		r.out.service = talloc_array(tctx, uint8_t, bytes_needed);
 
 		status = dcerpc_svcctl_EnumServicesStatusW(p, tctx, &r);
 
@@ -156,7 +158,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 		service = (struct ENUM_SERVICE_STATUS *)r.out.service;
 	}
 
-	for(i = 0; i < *r.out.services_returned; i++) {
+	for(i = 0; i < services_returned; i++) {
 		printf("Type: %d, State: %d\n", service[i].status.type, service[i].status.state);
 	}
 
