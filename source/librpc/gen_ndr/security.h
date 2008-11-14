@@ -232,7 +232,7 @@ struct security_ace_object {
 
 union security_ace_object_ctr {
 	struct security_ace_object object;/* [case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] */
-}/* [nodiscriminant] */;
+}/* [public,nodiscriminant] */;
 
 struct security_ace {
 	enum security_ace_type type;

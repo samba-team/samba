@@ -233,7 +233,7 @@ interface security
 		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 24
 	} sec_privilege;
 
-	typedef [bitmap8bit] bitmap {
+	typedef [public,bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
 		SEC_ACE_FLAG_CONTAINER_INHERIT		= 0x02,
 		SEC_ACE_FLAG_NO_PROPAGATE_INHERIT	= 0x04,
@@ -244,7 +244,7 @@ interface security
 		SEC_ACE_FLAG_FAILED_ACCESS		= 0x80
 	} security_ace_flags;
 
-	typedef [enum8bit] enum {
+	typedef [public,enum8bit] enum {
 		SEC_ACE_TYPE_ACCESS_ALLOWED		= 0,
 		SEC_ACE_TYPE_ACCESS_DENIED		= 1,
 		SEC_ACE_TYPE_SYSTEM_AUDIT		= 2,
@@ -281,7 +281,7 @@ interface security
 		[switch_is(flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)] security_ace_object_inherited_type inherited_type;
 	} security_ace_object;
 
-	typedef [nodiscriminant] union {
+	typedef [public,nodiscriminant] union {
 		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] security_ace_object object;
 		[case(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT)] security_ace_object object;
 		[case(SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT)] security_ace_object object;
