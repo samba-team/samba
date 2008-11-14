@@ -9941,3 +9941,1059 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	return WERR_INVALID_PRINT_MONITOR;
 }
+/****************************************************************
+ _spoolss_EnumPrinters
+****************************************************************/
+
+WERROR _spoolss_EnumPrinters(pipes_struct *p,
+			     struct spoolss_EnumPrinters *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_OpenPrinter
+****************************************************************/
+
+WERROR _spoolss_OpenPrinter(pipes_struct *p,
+			    struct spoolss_OpenPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetJob
+****************************************************************/
+
+WERROR _spoolss_SetJob(pipes_struct *p,
+		       struct spoolss_SetJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetJob
+****************************************************************/
+
+WERROR _spoolss_GetJob(pipes_struct *p,
+		       struct spoolss_GetJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumJobs
+****************************************************************/
+
+WERROR _spoolss_EnumJobs(pipes_struct *p,
+			 struct spoolss_EnumJobs *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinter
+****************************************************************/
+
+WERROR _spoolss_AddPrinter(pipes_struct *p,
+			   struct spoolss_AddPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinter
+****************************************************************/
+
+WERROR _spoolss_DeletePrinter(pipes_struct *p,
+			      struct spoolss_DeletePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinter
+****************************************************************/
+
+WERROR _spoolss_SetPrinter(pipes_struct *p,
+			   struct spoolss_SetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinter
+****************************************************************/
+
+WERROR _spoolss_GetPrinter(pipes_struct *p,
+			   struct spoolss_GetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterDriver
+****************************************************************/
+
+WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
+				 struct spoolss_AddPrinterDriver *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterDrivers
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
+				   struct spoolss_EnumPrinterDrivers *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriver
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
+				 struct spoolss_GetPrinterDriver *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriverDirectory
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
+					  struct spoolss_GetPrinterDriverDirectory *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterDriver
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
+				    struct spoolss_DeletePrinterDriver *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrintProcessor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
+				  struct spoolss_AddPrintProcessor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrintProcessors
+****************************************************************/
+
+WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
+				    struct spoolss_EnumPrintProcessors *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrintProcessorDirectory
+****************************************************************/
+
+WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
+					   struct spoolss_GetPrintProcessorDirectory *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_StartDocPrinter
+****************************************************************/
+
+WERROR _spoolss_StartDocPrinter(pipes_struct *p,
+				struct spoolss_StartDocPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_StartPagePrinter
+****************************************************************/
+
+WERROR _spoolss_StartPagePrinter(pipes_struct *p,
+				 struct spoolss_StartPagePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_WritePrinter
+****************************************************************/
+
+WERROR _spoolss_WritePrinter(pipes_struct *p,
+			     struct spoolss_WritePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EndPagePrinter
+****************************************************************/
+
+WERROR _spoolss_EndPagePrinter(pipes_struct *p,
+			       struct spoolss_EndPagePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AbortPrinter
+****************************************************************/
+
+WERROR _spoolss_AbortPrinter(pipes_struct *p,
+			     struct spoolss_AbortPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReadPrinter
+****************************************************************/
+
+WERROR _spoolss_ReadPrinter(pipes_struct *p,
+			    struct spoolss_ReadPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EndDocPrinter
+****************************************************************/
+
+WERROR _spoolss_EndDocPrinter(pipes_struct *p,
+			      struct spoolss_EndDocPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddJob
+****************************************************************/
+
+WERROR _spoolss_AddJob(pipes_struct *p,
+		       struct spoolss_AddJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ScheduleJob
+****************************************************************/
+
+WERROR _spoolss_ScheduleJob(pipes_struct *p,
+			    struct spoolss_ScheduleJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterData
+****************************************************************/
+
+WERROR _spoolss_GetPrinterData(pipes_struct *p,
+			       struct spoolss_GetPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinterData
+****************************************************************/
+
+WERROR _spoolss_SetPrinterData(pipes_struct *p,
+			       struct spoolss_SetPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_WaitForPrinterChange
+****************************************************************/
+
+WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
+				     struct spoolss_WaitForPrinterChange *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ClosePrinter
+****************************************************************/
+
+WERROR _spoolss_ClosePrinter(pipes_struct *p,
+			     struct spoolss_ClosePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddForm
+****************************************************************/
+
+WERROR _spoolss_AddForm(pipes_struct *p,
+			struct spoolss_AddForm *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeleteForm
+****************************************************************/
+
+WERROR _spoolss_DeleteForm(pipes_struct *p,
+			   struct spoolss_DeleteForm *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetForm
+****************************************************************/
+
+WERROR _spoolss_GetForm(pipes_struct *p,
+			struct spoolss_GetForm *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetForm
+****************************************************************/
+
+WERROR _spoolss_SetForm(pipes_struct *p,
+			struct spoolss_SetForm *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumForms
+****************************************************************/
+
+WERROR _spoolss_EnumForms(pipes_struct *p,
+			  struct spoolss_EnumForms *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPorts
+****************************************************************/
+
+WERROR _spoolss_EnumPorts(pipes_struct *p,
+			  struct spoolss_EnumPorts *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumMonitors
+****************************************************************/
+
+WERROR _spoolss_EnumMonitors(pipes_struct *p,
+			     struct spoolss_EnumMonitors *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPort
+****************************************************************/
+
+WERROR _spoolss_AddPort(pipes_struct *p,
+			struct spoolss_AddPort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ConfigurePort
+****************************************************************/
+
+WERROR _spoolss_ConfigurePort(pipes_struct *p,
+			      struct spoolss_ConfigurePort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePort
+****************************************************************/
+
+WERROR _spoolss_DeletePort(pipes_struct *p,
+			   struct spoolss_DeletePort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_CreatePrinterIC
+****************************************************************/
+
+WERROR _spoolss_CreatePrinterIC(pipes_struct *p,
+				struct spoolss_CreatePrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_PlayGDIScriptOnPrinterIC
+****************************************************************/
+
+WERROR _spoolss_PlayGDIScriptOnPrinterIC(pipes_struct *p,
+					 struct spoolss_PlayGDIScriptOnPrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterIC
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterIC(pipes_struct *p,
+				struct spoolss_DeletePrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterConnection
+****************************************************************/
+
+WERROR _spoolss_AddPrinterConnection(pipes_struct *p,
+				     struct spoolss_AddPrinterConnection *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterConnection
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterConnection(pipes_struct *p,
+					struct spoolss_DeletePrinterConnection *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_PrinterMessageBox
+****************************************************************/
+
+WERROR _spoolss_PrinterMessageBox(pipes_struct *p,
+				  struct spoolss_PrinterMessageBox *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddMonitor
+****************************************************************/
+
+WERROR _spoolss_AddMonitor(pipes_struct *p,
+			   struct spoolss_AddMonitor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeleteMonitor
+****************************************************************/
+
+WERROR _spoolss_DeleteMonitor(pipes_struct *p,
+			      struct spoolss_DeleteMonitor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrintProcessor
+****************************************************************/
+
+WERROR _spoolss_DeletePrintProcessor(pipes_struct *p,
+				     struct spoolss_DeletePrintProcessor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrintProvidor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
+				 struct spoolss_AddPrintProvidor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrintProvidor
+****************************************************************/
+
+WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
+				    struct spoolss_DeletePrintProvidor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrintProcDataTypes
+****************************************************************/
+
+WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
+				       struct spoolss_EnumPrintProcDataTypes *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ResetPrinter
+****************************************************************/
+
+WERROR _spoolss_ResetPrinter(pipes_struct *p,
+			     struct spoolss_ResetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriver2
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
+				  struct spoolss_GetPrinterDriver2 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_FindFirstPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_FindFirstPrinterChangeNotification(pipes_struct *p,
+						   struct spoolss_FindFirstPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_FindNextPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_FindNextPrinterChangeNotification(pipes_struct *p,
+						  struct spoolss_FindNextPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_FindClosePrinterNotify
+****************************************************************/
+
+WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
+				       struct spoolss_FindClosePrinterNotify *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterFindFirstPrinterChangeNotificationOld
+****************************************************************/
+
+WERROR _spoolss_RouterFindFirstPrinterChangeNotificationOld(pipes_struct *p,
+							    struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReplyOpenPrinter
+****************************************************************/
+
+WERROR _spoolss_ReplyOpenPrinter(pipes_struct *p,
+				 struct spoolss_ReplyOpenPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterReplyPrinter
+****************************************************************/
+
+WERROR _spoolss_RouterReplyPrinter(pipes_struct *p,
+				   struct spoolss_RouterReplyPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReplyClosePrinter
+****************************************************************/
+
+WERROR _spoolss_ReplyClosePrinter(pipes_struct *p,
+				  struct spoolss_ReplyClosePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPortEx
+****************************************************************/
+
+WERROR _spoolss_AddPortEx(pipes_struct *p,
+			  struct spoolss_AddPortEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterFindFirstPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p,
+							 struct spoolss_RouterFindFirstPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SpoolerInit
+****************************************************************/
+
+WERROR _spoolss_SpoolerInit(pipes_struct *p,
+			    struct spoolss_SpoolerInit *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ResetPrinterEx
+****************************************************************/
+
+WERROR _spoolss_ResetPrinterEx(pipes_struct *p,
+			       struct spoolss_ResetPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RemoteFindFirstPrinterChangeNotifyEx
+****************************************************************/
+
+WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
+						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterRefreshPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p,
+						       struct spoolss_RouterRefreshPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RemoteFindNextPrinterChangeNotifyEx
+****************************************************************/
+
+WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p,
+						    struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_44
+****************************************************************/
+
+WERROR _spoolss_44(pipes_struct *p,
+		   struct spoolss_44 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_OpenPrinterEx
+****************************************************************/
+
+WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
+			      struct spoolss_OpenPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterEx
+****************************************************************/
+
+WERROR _spoolss_AddPrinterEx(pipes_struct *p,
+			     struct spoolss_AddPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_47
+****************************************************************/
+
+WERROR _spoolss_47(pipes_struct *p,
+		   struct spoolss_47 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterData
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterData(pipes_struct *p,
+				struct spoolss_EnumPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterData
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterData(pipes_struct *p,
+				  struct spoolss_DeletePrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4a
+****************************************************************/
+
+WERROR _spoolss_4a(pipes_struct *p,
+		   struct spoolss_4a *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4b
+****************************************************************/
+
+WERROR _spoolss_4b(pipes_struct *p,
+		   struct spoolss_4b *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4c
+****************************************************************/
+
+WERROR _spoolss_4c(pipes_struct *p,
+		   struct spoolss_4c *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_SetPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_GetPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
+				  struct spoolss_EnumPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterKey
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
+			       struct spoolss_EnumPrinterKey *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
+				    struct spoolss_DeletePrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterKey
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
+				 struct spoolss_DeletePrinterKey *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_53
+****************************************************************/
+
+WERROR _spoolss_53(pipes_struct *p,
+		   struct spoolss_53 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterDriverEx
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
+				      struct spoolss_DeletePrinterDriverEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_55
+****************************************************************/
+
+WERROR _spoolss_55(pipes_struct *p,
+		   struct spoolss_55 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_56
+****************************************************************/
+
+WERROR _spoolss_56(pipes_struct *p,
+		   struct spoolss_56 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_57
+****************************************************************/
+
+WERROR _spoolss_57(pipes_struct *p,
+		   struct spoolss_57 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_XcvData
+****************************************************************/
+
+WERROR _spoolss_XcvData(pipes_struct *p,
+			struct spoolss_XcvData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterDriverEx
+****************************************************************/
+
+WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
+				   struct spoolss_AddPrinterDriverEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5a
+****************************************************************/
+
+WERROR _spoolss_5a(pipes_struct *p,
+		   struct spoolss_5a *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5b
+****************************************************************/
+
+WERROR _spoolss_5b(pipes_struct *p,
+		   struct spoolss_5b *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5c
+****************************************************************/
+
+WERROR _spoolss_5c(pipes_struct *p,
+		   struct spoolss_5c *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5d
+****************************************************************/
+
+WERROR _spoolss_5d(pipes_struct *p,
+		   struct spoolss_5d *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5e
+****************************************************************/
+
+WERROR _spoolss_5e(pipes_struct *p,
+		   struct spoolss_5e *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5f
+****************************************************************/
+
+WERROR _spoolss_5f(pipes_struct *p,
+		   struct spoolss_5f *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
