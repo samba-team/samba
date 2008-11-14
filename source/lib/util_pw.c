@@ -63,7 +63,7 @@ struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 	}
 
 	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const(name),
-			    for_cache);
+			    &for_cache);
 
 	return tcopy_passwd(mem_ctx, pw);
 }

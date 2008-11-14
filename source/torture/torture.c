@@ -5254,11 +5254,11 @@ static bool run_local_memcache(int dummy)
 	str2 = talloc_strdup(mem_ctx, "string2");
 
 	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC,
-			    data_blob_string_const("torture"), str1);
+			    data_blob_string_const("torture"), &str1);
 	size1 = talloc_total_size(cache);
 
 	memcache_add_talloc(cache, SINGLETON_CACHE_TALLOC,
-			    data_blob_string_const("torture"), str2);
+			    data_blob_string_const("torture"), &str2);
 	size2 = talloc_total_size(cache);
 
 	printf("size1=%d, size2=%d\n", (int)size1, (int)size2);
