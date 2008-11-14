@@ -23,7 +23,9 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#if (_SAMBA_BUILD_ >= 4)
 #include "param/param.h"
+#endif
 
 #define NDR_SPOOLSS_PUSH_ENUM_IN(fn) do { \
 	if (!r->in.buffer && r->in.offered != 0) {\
