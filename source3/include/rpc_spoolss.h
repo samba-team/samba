@@ -545,19 +545,6 @@ typedef struct spool_r_deleteprinterdata
 }
 SPOOL_R_DELETEPRINTERDATA;
 
-typedef struct spool_q_endpageprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_ENDPAGEPRINTER;
-
-typedef struct spool_r_endpageprinter
-{
-	WERROR status;
-}
-SPOOL_R_ENDPAGEPRINTER;
-
-
 typedef struct spool_q_deleteprinterdriver
 {
 	uint32 server_ptr;

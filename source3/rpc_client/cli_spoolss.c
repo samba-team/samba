@@ -1509,31 +1509,6 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_endpageprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENDPAGEPRINTER in;
-	SPOOL_R_ENDPAGEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_endpageprinter( &in, hnd );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENDPAGEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_endpageprinter,
-	            spoolss_io_r_endpageprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, char *docname, 
 				   char *outputfile, char *datatype, 
