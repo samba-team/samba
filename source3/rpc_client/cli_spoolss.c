@@ -1540,31 +1540,6 @@ WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *m
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_enddocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENDDOCPRINTER in;
-	SPOOL_R_ENDDOCPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_enddocprinter( &in, hnd );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENDDOCPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enddocprinter,
-	            spoolss_io_r_enddocprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *valuename, 
 				  REGISTRY_VALUE *value)

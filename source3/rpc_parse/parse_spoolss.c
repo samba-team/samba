@@ -1627,42 +1627,6 @@ bool spoolss_io_r_startdocprinter(const char *desc, SPOOL_R_STARTDOCPRINTER *r_u
 
 /*******************************************************************
  * read a structure.
- * called from spoolss_q_enddocprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_enddocprinter(const char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_enddocprinter");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_enddocprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_enddocprinter(const char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_enddocprinter");
-	depth++;
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * read a structure.
  * called from spoolss_q_writeprinter (srv_spoolss.c)
  ********************************************************************/
 
@@ -7232,18 +7196,6 @@ bool make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u,
 		DEBUG(3, ("unsupported info level %d\n", level));
 		return False;
 	}
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, 
-				  POLICY_HND *handle)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 
 	return True;
 }

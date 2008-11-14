@@ -617,18 +617,6 @@ typedef struct spool_r_startdocprinter
 }
 SPOOL_R_STARTDOCPRINTER;
 
-typedef struct spool_q_enddocprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_ENDDOCPRINTER;
-
-typedef struct spool_r_enddocprinter
-{
-	WERROR status;
-}
-SPOOL_R_ENDDOCPRINTER;
-
 typedef struct spool_q_writeprinter
 {
 	POLICY_HND handle;
