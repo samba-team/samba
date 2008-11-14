@@ -218,10 +218,10 @@ import "misc.idl", "security.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
 		[in] uint32 state,
-		[in] uint32 buf_size,
-		[out,size_is(buf_size)] uint8 service[*],
-		[out,ref] uint32 *bytes_needed,
-		[out,ref] uint32 *services_returned,
+		[out,ref,size_is(buf_size)] uint8 *service,
+		[in] [range(0,262144)] uint32 buf_size,
+		[out,ref] [range(0,262144)] uint32 *bytes_needed,
+		[out,ref] [range(0,262144)] uint32 *services_returned,
 		[in,out,unique] uint32 *resume_handle
 	);
 
