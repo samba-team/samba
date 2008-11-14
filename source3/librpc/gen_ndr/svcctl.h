@@ -81,11 +81,19 @@ struct ENUM_SERVICE_STATUS {
 enum SERVICE_CONTROL
 #ifndef USE_UINT_ENUMS
  {
-	FIXME=1
+	SVCCTL_CONTROL_STOP=0x00000001,
+	SVCCTL_CONTROL_PAUSE=0x00000002,
+	SVCCTL_CONTROL_CONTINUE=0x00000003,
+	SVCCTL_CONTROL_INTERROGATE=0x00000004,
+	SVCCTL_CONTROL_SHUTDOWN=0x00000005
 }
 #else
  { __donnot_use_enum_SERVICE_CONTROL=0x7FFFFFFF}
-#define FIXME ( 1 )
+#define SVCCTL_CONTROL_STOP ( 0x00000001 )
+#define SVCCTL_CONTROL_PAUSE ( 0x00000002 )
+#define SVCCTL_CONTROL_CONTINUE ( 0x00000003 )
+#define SVCCTL_CONTROL_INTERROGATE ( 0x00000004 )
+#define SVCCTL_CONTROL_SHUTDOWN ( 0x00000005 )
 #endif
 ;
 
@@ -137,7 +145,7 @@ struct svcctl_CloseServiceHandle {
 struct svcctl_ControlService {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t control;
+		enum SERVICE_CONTROL control;
 	} in;
 
 	struct {

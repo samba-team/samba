@@ -53,7 +53,7 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *handle /* [in] [ref] */,
-				      uint32_t control /* [in]  */,
+				      enum SERVICE_CONTROL control /* [in]  */,
 				      struct SERVICE_STATUS *service_status /* [out] [ref] */,
 				      WERROR *werror)
 {

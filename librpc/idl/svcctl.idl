@@ -89,13 +89,19 @@ import "misc.idl", "security.idl";
 	/*****************/
 	/* Function 0x01 */
 
-	typedef enum {
-		FIXME=1
+	/* Service Controls */
+
+	typedef [v1_enum] enum {
+		SVCCTL_CONTROL_STOP		= 0x00000001,
+		SVCCTL_CONTROL_PAUSE		= 0x00000002,
+		SVCCTL_CONTROL_CONTINUE		= 0x00000003,
+		SVCCTL_CONTROL_INTERROGATE	= 0x00000004,
+		SVCCTL_CONTROL_SHUTDOWN		= 0x00000005
 	} SERVICE_CONTROL;
 
 	WERROR svcctl_ControlService(
 		[in,ref] policy_handle *handle,
-		[in] uint32 control,
+		[in] SERVICE_CONTROL control,
 		[out,ref] SERVICE_STATUS *service_status
 	);
 

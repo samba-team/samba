@@ -297,6 +297,34 @@ _PUBLIC_ void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_SERVICE_CONTROL(struct ndr_push *ndr, int ndr_flags, enum SERVICE_CONTROL r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_SERVICE_CONTROL(struct ndr_pull *ndr, int ndr_flags, enum SERVICE_CONTROL *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_SERVICE_CONTROL(struct ndr_print *ndr, const char *name, enum SERVICE_CONTROL r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SVCCTL_CONTROL_STOP: val = "SVCCTL_CONTROL_STOP"; break;
+		case SVCCTL_CONTROL_PAUSE: val = "SVCCTL_CONTROL_PAUSE"; break;
+		case SVCCTL_CONTROL_CONTINUE: val = "SVCCTL_CONTROL_CONTINUE"; break;
+		case SVCCTL_CONTROL_INTERROGATE: val = "SVCCTL_CONTROL_INTERROGATE"; break;
+		case SVCCTL_CONTROL_SHUTDOWN: val = "SVCCTL_CONTROL_SHUTDOWN"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_svcctl_MgrAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -646,7 +674,7 @@ static enum ndr_err_code ndr_push_svcctl_ControlService(struct ndr_push *ndr, in
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.control));
+		NDR_CHECK(ndr_push_SERVICE_CONTROL(ndr, NDR_SCALARS, r->in.control));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.service_status == NULL) {
@@ -672,7 +700,7 @@ static enum ndr_err_code ndr_pull_svcctl_ControlService(struct ndr_pull *ndr, in
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.control));
+		NDR_CHECK(ndr_pull_SERVICE_CONTROL(ndr, NDR_SCALARS, &r->in.control));
 		NDR_PULL_ALLOC(ndr, r->out.service_status);
 		ZERO_STRUCTP(r->out.service_status);
 	}
@@ -703,7 +731,7 @@ _PUBLIC_ void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "control", r->in.control);
+		ndr_print_SERVICE_CONTROL(ndr, "control", r->in.control);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
