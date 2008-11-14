@@ -291,6 +291,9 @@ LIBNDR_GEN_OBJ0 = ../librpc/gen_ndr/ndr_samr.o \
 LIBNDR_GEN_OBJ1 = ../librpc/gen_ndr/ndr_netlogon.o \
 		  ../librpc/ndr/ndr_netlogon.o
 
+LIBNDR_GEN_OBJ2 = ../librpc/gen_ndr/ndr_spoolss.o \
+		  ../librpc/ndr/ndr_spoolss_buf.o
+
 LIBNDR_GEN_OBJ = ../librpc/gen_ndr/ndr_wkssvc.o \
 		 $(LIBNDR_GEN_OBJ0) \
 		 ../librpc/gen_ndr/ndr_dfs.o \

@@ -218,7 +218,6 @@ source4/librpc/gen_ndr
 source4/librpc/idl-deps
 source4/librpc/ndr/libndr_proto.h
 source4/librpc/ndr/ndr_compression.h
-source4/librpc/ndr/ndr_spoolss_buf.h
 source4/librpc/ndr/ndr_table.h
 source4/librpc/rpc/dcerpc_proto.h
 source4/librpc/rpc/dcerpc_table.h

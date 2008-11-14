@@ -10,7 +10,7 @@ import "misc.idl", "security.idl", "winreg.idl";
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
   helpstring("Spooler SubSystem"),
-  helper("librpc/ndr/ndr_spoolss_buf.h")
+  helper("../librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
 	typedef [v1_enum] enum winreg_Type winreg_Type;

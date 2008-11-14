@@ -180,9 +180,7 @@ NDR_SPOOLSS_OBJ_FILES = ../librpc/gen_ndr/ndr_spoolss.o
 
 [SUBSYSTEM::NDR_SPOOLSS_BUF]
 
-NDR_SPOOLSS_BUF_OBJ_FILES = $(ndrsrcdir)/ndr_spoolss_buf.o
-
-$(eval $(call proto_header_template,$(ndrsrcdir)/ndr_spoolss_buf.h,$(NDR_SPOOLSS_BUF_OBJ_FILES:.o=.c)))
+NDR_SPOOLSS_BUF_OBJ_FILES = ../librpc/ndr/ndr_spoolss_buf.o
 
 [SUBSYSTEM::NDR_WKSSVC]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SRVSVC NDR_SECURITY
