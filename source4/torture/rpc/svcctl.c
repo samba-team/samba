@@ -124,7 +124,7 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	struct policy_handle h, s;
 	NTSTATUS status;
 
-	uint32_t info_level = 1;
+	uint32_t info_level = SERVICE_CONFIG_DESCRIPTION;
 	uint8_t *buffer;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;

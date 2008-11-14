@@ -128,6 +128,19 @@ struct QUERY_SERVICE_CONFIG {
 	const char *displayname;/* [unique,range(0,8192),charset(UTF16)] */
 }/* [gensize,public] */;
 
+enum svcctl_ConfigLevel
+#ifndef USE_UINT_ENUMS
+ {
+	SERVICE_CONFIG_DESCRIPTION=0x00000001,
+	SERVICE_CONFIG_FAILURE_ACTIONS=0x00000002
+}
+#else
+ { __donnot_use_enum_svcctl_ConfigLevel=0x7FFFFFFF}
+#define SERVICE_CONFIG_DESCRIPTION ( 0x00000001 )
+#define SERVICE_CONFIG_FAILURE_ACTIONS ( 0x00000002 )
+#endif
+;
+
 enum svcctl_StatusLevel
 #ifndef USE_UINT_ENUMS
  {
@@ -723,7 +736,7 @@ struct svcctl_ChangeServiceConfig2W {
 struct svcctl_QueryServiceConfig2A {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_ConfigLevel info_level;
 		uint32_t buf_size;
 	} in;
 
@@ -739,7 +752,7 @@ struct svcctl_QueryServiceConfig2A {
 struct svcctl_QueryServiceConfig2W {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_ConfigLevel info_level;
 		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 

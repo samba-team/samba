@@ -113,6 +113,7 @@ enum ndr_err_code ndr_push_QUERY_SERVICE_CONFIG(struct ndr_push *ndr, int ndr_fl
 enum ndr_err_code ndr_pull_QUERY_SERVICE_CONFIG(struct ndr_pull *ndr, int ndr_flags, struct QUERY_SERVICE_CONFIG *r);
 void ndr_print_QUERY_SERVICE_CONFIG(struct ndr_print *ndr, const char *name, const struct QUERY_SERVICE_CONFIG *r);
 size_t ndr_size_QUERY_SERVICE_CONFIG(const struct QUERY_SERVICE_CONFIG *r, struct smb_iconv_convenience *ic, int flags);
+void ndr_print_svcctl_ConfigLevel(struct ndr_print *ndr, const char *name, enum svcctl_ConfigLevel r);
 void ndr_print_svcctl_StatusLevel(struct ndr_print *ndr, const char *name, enum svcctl_StatusLevel r);
 void ndr_print_svcctl_CloseServiceHandle(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_CloseServiceHandle *r);
 void ndr_print_svcctl_ControlService(struct ndr_print *ndr, const char *name, int flags, const struct svcctl_ControlService *r);

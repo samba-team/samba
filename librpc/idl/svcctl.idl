@@ -528,9 +528,15 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x26 */
+
+	typedef [v1_enum] enum {
+		SERVICE_CONFIG_DESCRIPTION	= 0x00000001,
+		SERVICE_CONFIG_FAILURE_ACTIONS	= 0x00000002
+	} svcctl_ConfigLevel;
+
 	WERROR svcctl_QueryServiceConfig2A(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_ConfigLevel info_level,
 		[out] uint8 buffer[buf_size],
 		[in] uint32 buf_size,
 		[out,ref] uint32 *bytes_needed
@@ -540,7 +546,7 @@ import "misc.idl", "security.idl";
 	/* Function 0x27 */
 	WERROR svcctl_QueryServiceConfig2W(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_ConfigLevel info_level,
 		[out,ref,size_is(buf_size)] uint8 *buffer,
 		[in] [range(0,8192)] uint32 buf_size,
 		[out,ref] [range(0,8192)] uint32 *bytes_needed

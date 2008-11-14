@@ -83,10 +83,6 @@
 #define SVCCTL_SVC_ERROR_CRITICAL               0x00000002
 #define SVCCTL_SVC_ERROR_SEVERE                 0x00000003
 
-/* QueryServiceConfig2 options */
-#define SERVICE_CONFIG_DESCRIPTION              0x00000001
-#define SERVICE_CONFIG_FAILURE_ACTIONS          0x00000002
-
 
 /* Service Config - values for ServiceType field*/
 

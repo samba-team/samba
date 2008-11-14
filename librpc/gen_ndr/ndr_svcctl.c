@@ -591,6 +591,31 @@ _PUBLIC_ size_t ndr_size_QUERY_SERVICE_CONFIG(const struct QUERY_SERVICE_CONFIG 
 	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_QUERY_SERVICE_CONFIG, ic);
 }
 
+static enum ndr_err_code ndr_push_svcctl_ConfigLevel(struct ndr_push *ndr, int ndr_flags, enum svcctl_ConfigLevel r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_ConfigLevel(struct ndr_pull *ndr, int ndr_flags, enum svcctl_ConfigLevel *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_ConfigLevel(struct ndr_print *ndr, const char *name, enum svcctl_ConfigLevel r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SERVICE_CONFIG_DESCRIPTION: val = "SERVICE_CONFIG_DESCRIPTION"; break;
+		case SERVICE_CONFIG_FAILURE_ACTIONS: val = "SERVICE_CONFIG_FAILURE_ACTIONS"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_svcctl_StatusLevel(struct ndr_push *ndr, int ndr_flags, enum svcctl_StatusLevel r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -5285,7 +5310,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfig2A(struct ndr_push *n
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
+		NDR_CHECK(ndr_push_svcctl_ConfigLevel(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -5313,7 +5338,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2A(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
+		NDR_CHECK(ndr_pull_svcctl_ConfigLevel(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
@@ -5347,7 +5372,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2A(struct ndr_print *ndr, const
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "info_level", r->in.info_level);
+		ndr_print_svcctl_ConfigLevel(ndr, "info_level", r->in.info_level);
 		ndr_print_uint32(ndr, "buf_size", r->in.buf_size);
 		ndr->depth--;
 	}
@@ -5372,7 +5397,7 @@ static enum ndr_err_code ndr_push_svcctl_QueryServiceConfig2W(struct ndr_push *n
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.info_level));
+		NDR_CHECK(ndr_push_svcctl_ConfigLevel(ndr, NDR_SCALARS, r->in.info_level));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buf_size));
 	}
 	if (flags & NDR_OUT) {
@@ -5404,7 +5429,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.info_level));
+		NDR_CHECK(ndr_pull_svcctl_ConfigLevel(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
 		if (r->in.buf_size < 0 || r->in.buf_size > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
@@ -5452,7 +5477,7 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceConfig2W(struct ndr_print *ndr, const
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "info_level", r->in.info_level);
+		ndr_print_svcctl_ConfigLevel(ndr, "info_level", r->in.info_level);
 		ndr_print_uint32(ndr, "buf_size", r->in.buf_size);
 		ndr->depth--;
 	}
