@@ -44,27 +44,28 @@ void flush_pwnam_cache(void)
 
 struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 {
-	struct passwd *temp, *cached;
+	struct passwd *pw, *for_cache;
 
-	temp = (struct passwd *)memcache_lookup_talloc(
+	pw = (struct passwd *)memcache_lookup_talloc(
 		NULL, GETPWNAM_CACHE, data_blob_string_const_null(name));
-	if (temp != NULL) {
-		return tcopy_passwd(mem_ctx, temp);
+	if (pw != NULL) {
+		return tcopy_passwd(mem_ctx, pw);
 	}
 
-	temp = sys_getpwnam(name);
-	if (temp == NULL) {
+	pw = sys_getpwnam(name);
+	if (pw == NULL) {
 		return NULL;
 	}
 
-	cached = tcopy_passwd(talloc_autofree_context(), temp);
-	if (cached == NULL) {
+	for_cache = tcopy_passwd(talloc_autofree_context(), pw);
+	if (for_cache == NULL) {
 		return NULL;
 	}
 
-	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const_null(name),
-			    cached);
-	return tcopy_passwd(mem_ctx, temp);
+	memcache_add_talloc(NULL, GETPWNAM_CACHE,
+			    data_blob_string_const_null(name), for_cache);
+
+	return tcopy_passwd(mem_ctx, pw);
 }
 
 struct passwd *getpwuid_alloc(TALLOC_CTX *mem_ctx, uid_t uid) 
