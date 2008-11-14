@@ -1940,21 +1940,19 @@ WERROR _spoolss_ClosePrinter(pipes_struct *p,
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_deleteprinter
+/****************************************************************
+ _spoolss_DeletePrinter
+****************************************************************/
 
- ********************************************************************/
-
-WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u)
+WERROR _spoolss_DeletePrinter(pipes_struct *p,
+			      struct spoolss_DeletePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	WERROR result;
 
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter_internal(p, handle);  /* print job was not closed */
-
-	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	result = delete_printer_handle(p, handle);
 
@@ -10003,17 +10001,6 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 
 WERROR _spoolss_AddPrinter(pipes_struct *p,
 			   struct spoolss_AddPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeletePrinter
-****************************************************************/
-
-WERROR _spoolss_DeletePrinter(pipes_struct *p,
-			      struct spoolss_DeletePrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
