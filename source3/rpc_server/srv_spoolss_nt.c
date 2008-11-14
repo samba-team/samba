@@ -5800,12 +5800,14 @@ WERROR _spoolss_StartPagePrinter(pipes_struct *p,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EndPagePrinter
+****************************************************************/
 
-WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u)
+WERROR _spoolss_EndPagePrinter(pipes_struct *p,
+			       struct spoolss_EndPagePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	int snum;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
@@ -10136,17 +10138,6 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 
 WERROR _spoolss_WritePrinter(pipes_struct *p,
 			     struct spoolss_WritePrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EndPagePrinter
-****************************************************************/
-
-WERROR _spoolss_EndPagePrinter(pipes_struct *p,
-			       struct spoolss_EndPagePrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
