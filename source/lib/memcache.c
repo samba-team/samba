@@ -348,9 +348,19 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 }
 
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
-			 DATA_BLOB key, void *ptr)
+			 DATA_BLOB key, void *pptr)
 {
-	void *p = talloc_move(cache, &ptr);
+	void **ptr = (void **)pptr;
+	void *p;
+
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
+
+	p = talloc_move(cache, ptr);
 	memcache_add(cache, n, key, data_blob_const(&p, sizeof(p)));
 }
 
