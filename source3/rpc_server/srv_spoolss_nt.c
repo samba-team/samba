@@ -5888,15 +5888,14 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+/****************************************************************
+ _spoolss_EndDocPrinter
+****************************************************************/
 
-WERROR _spoolss_enddocprinter(pipes_struct *p, SPOOL_Q_ENDDOCPRINTER *q_u, SPOOL_R_ENDDOCPRINTER *r_u)
+WERROR _spoolss_EndDocPrinter(pipes_struct *p,
+			      struct spoolss_EndDocPrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	return _spoolss_enddocprinter_internal(p, handle);
 }
@@ -10151,17 +10150,6 @@ WERROR _spoolss_WritePrinter(pipes_struct *p,
 
 WERROR _spoolss_ReadPrinter(pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_EndDocPrinter
-****************************************************************/
-
-WERROR _spoolss_EndDocPrinter(pipes_struct *p,
-			      struct spoolss_EndDocPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
