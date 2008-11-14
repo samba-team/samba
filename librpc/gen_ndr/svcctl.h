@@ -128,6 +128,17 @@ struct QUERY_SERVICE_CONFIG {
 	const char *displayname;/* [unique,range(0,8192),charset(UTF16)] */
 }/* [gensize,public] */;
 
+enum svcctl_StatusLevel
+#ifndef USE_UINT_ENUMS
+ {
+	SVC_STATUS_PROCESS_INFO=0x00000000
+}
+#else
+ { __donnot_use_enum_svcctl_StatusLevel=0x7FFFFFFF}
+#define SVC_STATUS_PROCESS_INFO ( 0x00000000 )
+#endif
+;
+
 
 struct svcctl_CloseServiceHandle {
 	struct {
@@ -744,7 +755,7 @@ struct svcctl_QueryServiceConfig2W {
 struct svcctl_QueryServiceStatusEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_StatusLevel info_level;
 		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 

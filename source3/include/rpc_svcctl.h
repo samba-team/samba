@@ -107,8 +107,6 @@
 #define SVC_HANDLE_IS_SERVICE			0x0000002
 #define SVC_HANDLE_IS_DBLOCK			0x0000003
 
-#define SVC_STATUS_PROCESS_INFO                 0x00000000
-
 /* utility structures for RPCs */
 
 /*

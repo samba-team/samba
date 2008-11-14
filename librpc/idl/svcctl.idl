@@ -548,9 +548,14 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x28 */
+
+	typedef [v1_enum] enum {
+		SVC_STATUS_PROCESS_INFO		= 0x00000000
+	} svcctl_StatusLevel;
+
 	WERROR svcctl_QueryServiceStatusEx(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_StatusLevel info_level,
 		[out,ref,size_is(buf_size)] uint8 *buffer,
 		[in] [range(0,8192)] uint32 buf_size,
 		[out,ref] [range(0,8192)] uint32 *bytes_needed
