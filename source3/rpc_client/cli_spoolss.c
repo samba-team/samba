@@ -482,31 +482,6 @@ WERROR rpccli_spoolss_open_printer_ex(struct rpc_pipe_client *cli, TALLOC_CTX *m
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_CLOSEPRINTER in;
-	SPOOL_R_CLOSEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_closeprinter( &in, pol );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_CLOSEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_closeprinter,
-	            spoolss_io_r_closeprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)

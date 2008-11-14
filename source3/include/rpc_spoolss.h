@@ -545,19 +545,6 @@ typedef struct spool_r_deleteprinterdata
 }
 SPOOL_R_DELETEPRINTERDATA;
 
-typedef struct spool_q_closeprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_CLOSEPRINTER;
-
-typedef struct spool_r_closeprinter
-{
-	POLICY_HND handle;
-	WERROR status;
-}
-SPOOL_R_CLOSEPRINTER;
-
 typedef struct spool_q_startpageprinter
 {
 	POLICY_HND handle;

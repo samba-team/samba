@@ -1477,21 +1477,6 @@ bool spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, 
 }
 
 /*******************************************************************
- * make a structure.
- ********************************************************************/
-
-bool make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd)
-{
-	if (q_u == NULL) return False;
-
-	DEBUG(5,("make_spoolss_q_closeprinter\n"));
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-
-	return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from static spoolss_q_abortprinter (srv_spoolss.c)
  * called from spoolss_abortprinter (cli_spoolss.c)
@@ -1680,51 +1665,6 @@ bool spoolss_io_r_deleteprinterdriverex(const char *desc, SPOOL_R_DELETEPRINTERD
 	return True;
 }
 
-
-
-/*******************************************************************
- * read a structure.
- * called from static spoolss_q_closeprinter (srv_spoolss.c)
- * called from spoolss_closeprinter (cli_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_closeprinter(const char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_closeprinter");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from static spoolss_r_closeprinter (srv_spoolss.c)
- * called from spoolss_closeprinter (cli_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_closeprinter(const char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_closeprinter");
-	depth++;
-	
-	if (!prs_align(ps))
-		return False;
-
-	if (!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
-		return False;
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-	
-	return True;
-}
 
 /*******************************************************************
  * read a structure.
