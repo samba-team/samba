@@ -78,7 +78,7 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 	struct policy_handle h, s;
 	NTSTATUS status;
 
-	uint32_t info_level = 0;
+	uint32_t info_level = SVC_STATUS_PROCESS_INFO;
 	uint8_t *buffer;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;
