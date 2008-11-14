@@ -431,25 +431,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_f
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, struct security_ace *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_security_ace_type(ndr, NDR_SCALARS, &r->type));
-		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, r->type));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_BUFFERS, &r->trustee));
-	}
-	return NDR_ERR_SUCCESS;
-}
-
 _PUBLIC_ void ndr_print_security_ace(struct ndr_print *ndr, const char *name, const struct security_ace *r)
 {
 	ndr_print_struct(ndr, name, "security_ace");
