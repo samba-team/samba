@@ -1913,13 +1913,14 @@ static WERROR _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handl
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_closeprinter
- ********************************************************************/
+/****************************************************************
+ _spoolss_ClosePrinter
+****************************************************************/
 
-WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u)
+WERROR _spoolss_ClosePrinter(pipes_struct *p,
+			     struct spoolss_ClosePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
@@ -1934,7 +1935,7 @@ WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	   Previous code just copied the value of the closed
 	   handle.    --jerry */
 
-	memset(&r_u->handle, '\0', sizeof(r_u->handle));
+	ZERO_STRUCTP(r->out.handle);
 
 	return WERR_OK;
 }
@@ -10255,17 +10256,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_ClosePrinter
-****************************************************************/
-
-WERROR _spoolss_ClosePrinter(pipes_struct *p,
-			     struct spoolss_ClosePrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
