@@ -1480,17 +1480,6 @@ SPOOL_R_SETPRINTER;
 /********************************************/
 
 typedef struct {
-	POLICY_HND handle;
-} SPOOL_Q_ABORTPRINTER;
-
-typedef struct {
-	WERROR status;
-} SPOOL_R_ABORTPRINTER;
-
-
-/********************************************/
-
-typedef struct {
 	UNISTR2 *server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
