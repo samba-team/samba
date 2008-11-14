@@ -27,6 +27,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*******************************************************************
+ ********************************************************************/
+
+static bool proxy_spoolss_call(pipes_struct *p, uint8_t opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	spoolss2_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("SPOOLSS function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /********************************************************************
  * api_spoolss_open_printer_ex (rarely seen - older call)
  ********************************************************************/
@@ -1624,35 +1645,13 @@ static bool api_spoolss_xcvdataport(pipes_struct *p)
  {"SPOOLSS_XCVDATAPORT",               SPOOLSS_XCVDATAPORT,               api_spoolss_xcvdataport               },
 };
 
-void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void spoolss2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_spoolss_cmds;
 	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
 }
 
-static const char * const spoolss_endpoint_strings[] = {
-	"ncacn_np:[\\pipe\\spoolss]",
-};
-
-static const struct ndr_interface_string_array spoolss_endpoints = {
-	.count = 1,
-	.names = spoolss_endpoint_strings
-};
-
-const struct ndr_interface_table ndr_table_spoolss = {
-	.name		= "spoolss",
-	.syntax_id	= {
-		{ 0x12345678, 0x1234, 0xabcd, { 0xef, 0x00 },
-		  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab } }, 0x01
-	},
-	.helpstring	= "Spooler SubSystem",
-	.num_calls	= 0x60,
-	.calls		= NULL,	/* unused in s3 so far */
-	.endpoints	= &spoolss_endpoints,
-	.authservices	= NULL 	/* unused in s3 so far */
-};
-
-NTSTATUS rpc_spoolss_init(void)
+NTSTATUS rpc_spoolss2_init(void)
 {
 	return rpc_srv_register(
 		SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss",

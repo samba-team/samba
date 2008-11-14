@@ -257,6 +257,7 @@ struct id_map {
 #include "librpc/gen_ndr/nbt.h"
 #include "librpc/gen_ndr/drsuapi.h"
 #include "librpc/gen_ndr/drsblobs.h"
+#include "librpc/gen_ndr/spoolss.h"
 
 struct lsa_dom_info {
 	bool valid;

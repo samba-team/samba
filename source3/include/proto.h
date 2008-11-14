@@ -2267,6 +2267,7 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 #include "librpc/gen_ndr/srv_svcctl.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_wkssvc.h"
+#include "librpc/gen_ndr/srv_spoolss.h"
 
 #include "librpc/ndr/libndr.h"
 
@@ -6277,8 +6278,8 @@ void copy_id25_to_sam_passwd(struct samu *to,
 
 /* The following definitions come from rpc_server/srv_spoolss.c  */
 
-void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns );
-NTSTATUS rpc_spoolss_init(void);
+void spoolss2_get_pipe_fns( struct api_struct **fns, int *n_fns );
+NTSTATUS rpc_spoolss2_init(void);
 
 /* The following definitions come from rpc_server/srv_spoolss_nt.c  */
 
