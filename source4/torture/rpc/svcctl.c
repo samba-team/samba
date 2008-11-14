@@ -3,6 +3,7 @@
    test suite for srvsvc rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Guenther Deschner 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
