@@ -340,7 +340,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 }
 
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
-			 DATA_BLOB key, void **pptr)
+			 DATA_BLOB key, void *pptr)
 {
 	void **ptr = (void **)pptr;
 	void *p;
