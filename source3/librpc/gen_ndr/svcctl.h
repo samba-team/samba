@@ -341,14 +341,14 @@ struct svcctl_EnumServicesStatusW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
 		uint32_t state;
-		uint32_t buf_size;
+		uint32_t buf_size;/* [range(0,262144)] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
-		uint8_t *service;/* [size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref] */
-		uint32_t *services_returned;/* [ref] */
+		uint8_t *service;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref,range(0,262144)] */
+		uint32_t *services_returned;/* [ref,range(0,262144)] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -729,12 +729,12 @@ struct svcctl_QueryServiceConfig2W {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t info_level;
-		uint32_t buf_size;
+		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 
 	struct {
-		uint8_t *buffer;
-		uint32_t *bytes_needed;/* [ref] */
+		uint8_t *buffer;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
@@ -745,12 +745,12 @@ struct svcctl_QueryServiceStatusEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t info_level;
-		uint32_t buf_size;
+		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 
 	struct {
-		uint8_t *buffer;
-		uint32_t *bytes_needed;/* [ref] */
+		uint8_t *buffer;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
@@ -785,16 +785,16 @@ struct EnumServicesStatusExW {
 		uint32_t info_level;
 		uint32_t type;
 		uint32_t state;
-		uint32_t buf_size;
-		uint32_t *resume_handle;/* [unique] */
+		uint32_t buf_size;/* [range(0,262144)] */
+		const char *group_name;/* [unique,charset(UTF16)] */
+		uint32_t *resume_handle;/* [unique,range(0,262144)] */
 	} in;
 
 	struct {
-		uint8_t *services;
-		uint32_t *bytes_needed;/* [ref] */
-		uint32_t *service_returned;/* [ref] */
-		const char **group_name;/* [ref,charset(UTF16)] */
-		uint32_t *resume_handle;/* [unique] */
+		uint8_t *services;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref,range(0,262144)] */
+		uint32_t *service_returned;/* [ref,range(0,262144)] */
+		uint32_t *resume_handle;/* [unique,range(0,262144)] */
 		WERROR result;
 	} out;
 

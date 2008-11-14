@@ -3445,12 +3445,6 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 	}
 
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.group_name = talloc_zero(r, const char *);
-	if (r->out.group_name == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.result = _EnumServicesStatusExW(p, r);
 
 	if (p->rng_fault_state) {

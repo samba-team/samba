@@ -702,10 +702,10 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t type /* [in]  */,
 					   uint32_t state /* [in]  */,
-					   uint32_t buf_size /* [in]  */,
-					   uint8_t *service /* [out] [size_is(buf_size)] */,
-					   uint32_t *bytes_needed /* [out] [ref] */,
-					   uint32_t *services_returned /* [out] [ref] */,
+					   uint8_t *service /* [out] [ref,size_is(buf_size)] */,
+					   uint32_t buf_size /* [in] [range(0,262144)] */,
+					   uint32_t *bytes_needed /* [out] [ref,range(0,262144)] */,
+					   uint32_t *services_returned /* [out] [ref,range(0,262144)] */,
 					   uint32_t *resume_handle /* [in,out] [unique] */,
 					   WERROR *werror)
 {
@@ -1976,9 +1976,9 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    uint32_t info_level /* [in]  */,
-					    uint8_t *buffer /* [out]  */,
-					    uint32_t buf_size /* [in]  */,
-					    uint32_t *bytes_needed /* [out] [ref] */,
+					    uint8_t *buffer /* [out] [ref,size_is(buf_size)] */,
+					    uint32_t buf_size /* [in] [range(0,8192)] */,
+					    uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
 					    WERROR *werror)
 {
 	struct svcctl_QueryServiceConfig2W r;
@@ -2027,9 +2027,9 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    uint32_t info_level /* [in]  */,
-					    uint8_t *buffer /* [out]  */,
-					    uint32_t buf_size /* [in]  */,
-					    uint32_t *bytes_needed /* [out] [ref] */,
+					    uint8_t *buffer /* [out] [ref,size_is(buf_size)] */,
+					    uint32_t buf_size /* [in] [range(0,8192)] */,
+					    uint32_t *bytes_needed /* [out] [ref,range(0,8192)] */,
 					    WERROR *werror)
 {
 	struct svcctl_QueryServiceStatusEx r;
@@ -2144,12 +2144,12 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 				      uint32_t info_level /* [in]  */,
 				      uint32_t type /* [in]  */,
 				      uint32_t state /* [in]  */,
-				      uint8_t *services /* [out]  */,
-				      uint32_t buf_size /* [in]  */,
-				      uint32_t *bytes_needed /* [out] [ref] */,
-				      uint32_t *service_returned /* [out] [ref] */,
-				      uint32_t *resume_handle /* [in,out] [unique] */,
-				      const char **group_name /* [out] [ref,charset(UTF16)] */,
+				      uint8_t *services /* [out] [ref,size_is(buf_size)] */,
+				      uint32_t buf_size /* [in] [range(0,262144)] */,
+				      uint32_t *bytes_needed /* [out] [ref,range(0,262144)] */,
+				      uint32_t *service_returned /* [out] [ref,range(0,262144)] */,
+				      uint32_t *resume_handle /* [in,out] [unique,range(0,262144)] */,
+				      const char *group_name /* [in] [unique,charset(UTF16)] */,
 				      WERROR *werror)
 {
 	struct EnumServicesStatusExW r;
@@ -2162,6 +2162,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 	r.in.state = state;
 	r.in.buf_size = buf_size;
 	r.in.resume_handle = resume_handle;
+	r.in.group_name = group_name;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExW, &r);
@@ -2192,7 +2193,6 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli,
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
-	*group_name = *r.out.group_name;
 
 	/* Return result */
 	if (werror) {
