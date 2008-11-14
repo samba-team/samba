@@ -241,7 +241,7 @@ struct security_ace {
 	uint32_t access_mask;
 	union security_ace_object_ctr object;/* [switch_is(type)] */
 	struct dom_sid trustee;
-}/* [gensize,public,nosize] */;
+}/* [gensize,public,nopull,nosize] */;
 
 enum security_acl_revision
 #ifndef USE_UINT_ENUMS
