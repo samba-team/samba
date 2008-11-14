@@ -7,12 +7,18 @@
 #define _HEADER_NDR_security
 
 #define NDR_SECURITY_CALL_COUNT (0)
+enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r);
+enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r);
 void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *name, uint8_t r);
+enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r);
+enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r);
 void ndr_print_security_ace_type(struct ndr_print *ndr, const char *name, enum security_ace_type r);
 void ndr_print_security_ace_object_flags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_security_ace_object_type(struct ndr_print *ndr, const char *name, const union security_ace_object_type *r);
 void ndr_print_security_ace_object_inherited_type(struct ndr_print *ndr, const char *name, const union security_ace_object_inherited_type *r);
 void ndr_print_security_ace_object(struct ndr_print *ndr, const char *name, const struct security_ace_object *r);
+enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, int ndr_flags, const union security_ace_object_ctr *r);
+enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr, int ndr_flags, union security_ace_object_ctr *r);
 void ndr_print_security_ace_object_ctr(struct ndr_print *ndr, const char *name, const union security_ace_object_ctr *r);
 enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_flags, const struct security_ace *r);
 enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, struct security_ace *r);

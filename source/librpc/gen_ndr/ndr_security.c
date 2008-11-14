@@ -4,13 +4,13 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
-static enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r)
 {
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
@@ -33,13 +33,13 @@ _PUBLIC_ void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r)
 {
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
@@ -278,7 +278,7 @@ _PUBLIC_ void ndr_print_security_ace_object(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, int ndr_flags, const union security_ace_object_ctr *r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, int ndr_flags, const union security_ace_object_ctr *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -331,7 +331,7 @@ static enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, 
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr, int ndr_flags, union security_ace_object_ctr *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr, int ndr_flags, union security_ace_object_ctr *r)
 {
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
