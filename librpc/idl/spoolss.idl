@@ -393,7 +393,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x06 */
-	[todo] WERROR spoolss_DeletePrinter(
+	WERROR spoolss_DeletePrinter(
+		[in] policy_handle *handle
 	);
 
 	/******************/
