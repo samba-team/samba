@@ -5779,12 +5779,15 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	return WERR_UNKNOWN_LEVEL;
 }
 
-/****************************************************************************
-****************************************************************************/
 
-WERROR _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u, SPOOL_R_STARTPAGEPRINTER *r_u)
+/****************************************************************
+ _spoolss_StartPagePrinter
+****************************************************************/
+
+WERROR _spoolss_StartPagePrinter(pipes_struct *p,
+				 struct spoolss_StartPagePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
@@ -10122,17 +10125,6 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 
 WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 				struct spoolss_StartDocPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_StartPagePrinter
-****************************************************************/
-
-WERROR _spoolss_StartPagePrinter(pipes_struct *p,
-				 struct spoolss_StartPagePrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
