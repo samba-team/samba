@@ -643,7 +643,8 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 					   TALLOC_CTX *mem_ctx,
 					   const char *user_dn,
 					   DOM_SID *primary_group,
-					   size_t *p_num_groups, DOM_SID **user_sids)
+					   size_t *p_num_groups,
+					   DOM_SID **user_sids)
 {
 	ADS_STATUS rc;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -652,8 +653,8 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	size_t num_groups = 0;
 	DOM_SID *group_sids = NULL;
 	int i;
-	char **strings;
-	size_t num_strings = 0;
+	char **strings = NULL;
+	size_t num_strings = 0, num_sids = 0;
 
 
 	DEBUG(3,("ads: lookup_usergroups_memberof\n"));
@@ -668,7 +669,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 
 	if (!ads) {
 		domain->last_status = NT_STATUS_SERVER_DISABLED;
-		goto done;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	rc = ads_search_retry_extended_dn_ranged(ads, mem_ctx, user_dn, attrs,
@@ -693,21 +694,26 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 
 	group_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_strings + 1);
 	if (!group_sids) {
-		TALLOC_FREE(strings);
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
 	for (i=0; i<num_strings; i++) {
-
-		if (!ads_get_sid_from_extended_dn(mem_ctx, strings[i],
+		rc = ads_get_sid_from_extended_dn(mem_ctx, strings[i],
 						  ADS_EXTENDED_DN_HEX_STRING,
-						  &(group_sids)[i])) {
-			TALLOC_FREE(group_sids);
-			TALLOC_FREE(strings);
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
+						  &(group_sids)[i]);
+		if (!ADS_ERR_OK(rc)) {
+			/* ignore members without SIDs */
+			if (NT_STATUS_EQUAL(ads_ntstatus(rc),
+			    NT_STATUS_NOT_FOUND)) {
+				continue;
+			}
+			else {
+				status = ads_ntstatus(rc);
+				goto done;
+			}
 		}
+		num_sids++;
 	}
 
 	if (i == 0) {
@@ -716,7 +722,7 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	for (i=0; i<num_strings; i++) {
+	for (i=0; i<num_sids; i++) {
 
 		/* ignore Builtin groups from ADS - Guenther */
 		if (sid_check_is_in_builtin(&group_sids[i])) {
@@ -734,8 +740,11 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	*p_num_groups = num_groups;
 	status = (*user_sids != NULL) ? NT_STATUS_OK : NT_STATUS_NO_MEMORY;
 
-	DEBUG(3,("ads lookup_usergroups (memberof) succeeded for dn=%s\n", user_dn));
+	DEBUG(3,("ads lookup_usergroups (memberof) succeeded for dn=%s\n",
+		user_dn));
+
 done:
+	TALLOC_FREE(strings);
 	TALLOC_FREE(group_sids);
 
 	return status;
@@ -1015,10 +1024,20 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		char *name, *domain_name;
 		DOM_SID sid;
 
-	        if (!ads_get_sid_from_extended_dn(tmp_ctx, members[i], args.val,
-		    &sid)) {
-			status = NT_STATUS_INVALID_PARAMETER;
-	                goto done;
+	        rc = ads_get_sid_from_extended_dn(tmp_ctx, members[i], args.val,
+		    &sid);
+		if (!ADS_ERR_OK(rc)) {
+			if (NT_STATUS_EQUAL(ads_ntstatus(rc),
+			    NT_STATUS_NOT_FOUND)) {
+				/* Group members can be objects, like Exchange
+				 * Public Folders, that don't have a SID.  Skip
+				 * them. */
+				continue;
+			}
+			else {
+				status = ads_ntstatus(rc);
+				goto done;
+			}
 		}
 		if (lookup_cached_sid(mem_ctx, &sid, &domain_name, &name,
 		    &name_type)) {
