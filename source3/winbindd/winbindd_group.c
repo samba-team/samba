@@ -585,7 +585,7 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 	}
 
 	/* Real work goes here.  Create a list of group names to
-	   expand startign with the initial one.  Pass that to
+	   expand starting with the initial one.  Pass that to
 	   expand_groups() which returns a list of more group names
 	   to expand.  Do this up to the max search depth. */
 
@@ -922,7 +922,7 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 	nt_status = normalize_name_unmap(s->state->mem_ctx, raw_name,
 					 &mapped_name);
 
-	/* basiuc whitespace reversal */
+	/* basic whitespace reversal */
 	if (NT_STATUS_IS_OK(nt_status)) {
 		s->group_name = talloc_asprintf(s->state->mem_ctx,
 						"%s%c%s",
