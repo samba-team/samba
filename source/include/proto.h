@@ -2102,10 +2102,10 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				char ***ous,
 				size_t *num_ous);
-bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				  const char *extended_dn, 
-				  enum ads_extended_dn_flags flags, 
-				  DOM_SID *sid);
+ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
+					const char *extended_dn,
+					enum ads_extended_dn_flags flags,
+					DOM_SID *sid);
 char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
