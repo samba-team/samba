@@ -463,27 +463,7 @@ static bool api_spoolss_enddocprinter(pipes_struct *p)
 
 static bool api_spoolss_writeprinter(pipes_struct *p)
 {
-	SPOOL_Q_WRITEPRINTER q_u;
-	SPOOL_R_WRITEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_writeprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_writeprinter: unable to unmarshall SPOOL_Q_WRITEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_writeprinter(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_writeprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_writeprinter: unable to marshall SPOOL_R_WRITEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_WRITEPRINTER);
 }
 
 /****************************************************************************

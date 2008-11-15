@@ -5902,21 +5902,24 @@ WERROR _spoolss_EndDocPrinter(pipes_struct *p,
 	return _spoolss_enddocprinter_internal(p, handle);
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_WritePrinter
+****************************************************************/
 
-WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R_WRITEPRINTER *r_u)
+WERROR _spoolss_WritePrinter(pipes_struct *p,
+			     struct spoolss_WritePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 buffer_size = q_u->buffer_size;
-	uint8 *buffer = q_u->buffer;
-	uint32 *buffer_written = &q_u->buffer_size2;
+	POLICY_HND *handle = r->in.handle;
+	uint32 buffer_size = r->in._data_size;
+	uint8 *buffer = r->in.data.data;
+	uint32 *buffer_written = &r->in._data_size;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_writeprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
-		r_u->buffer_written = q_u->buffer_size2;
+		DEBUG(2,("_spoolss_WritePrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(handle)));
+		*r->out.num_written = r->in._data_size;
 		return WERR_BADFID;
 	}
 
@@ -5926,14 +5929,14 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 	(*buffer_written) = (uint32)print_job_write(snum, Printer->jobid, (const char *)buffer,
 					(SMB_OFF_T)-1, (size_t)buffer_size);
 	if (*buffer_written == (uint32)-1) {
-		r_u->buffer_written = 0;
+		*r->out.num_written = 0;
 		if (errno == ENOSPC)
 			return WERR_NO_SPOOL_SPACE;
 		else
 			return WERR_ACCESS_DENIED;
 	}
 
-	r_u->buffer_written = q_u->buffer_size2;
+	*r->out.num_written = r->in._data_size;
 
 	return WERR_OK;
 }
@@ -10134,17 +10137,6 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 
 WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 				struct spoolss_StartDocPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_WritePrinter
-****************************************************************/
-
-WERROR _spoolss_WritePrinter(pipes_struct *p,
-			     struct spoolss_WritePrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
