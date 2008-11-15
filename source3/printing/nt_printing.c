@@ -773,11 +773,9 @@ int get_builtin_ntforms(nt_forms_struct **list)
  get a builtin form struct
 ****************************************************************************/
 
-bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
+bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form)
 {
 	int i,count;
-	fstring form_name;
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
 	DEBUGADD(6,("Looking for builtin form %s \n", form_name));
 	count = sizeof(default_forms) / sizeof(default_forms[0]);
 	for (i=0;i<count;i++) {
@@ -789,6 +787,13 @@ bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
 	}
 
 	return (i !=count);
+}
+
+bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form)
+{
+	fstring form_name;
+	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
+	return get_a_builtin_ntform_by_string(form_name, form);
 }
 
 /****************************************************************************
@@ -937,25 +942,22 @@ bool add_a_form(nt_forms_struct **list, const FORM *form, int *count)
  Delete a named form struct.
 ****************************************************************************/
 
-bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
+bool delete_a_form_by_string(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret)
 {
 	char *key = NULL;
 	int n=0;
-	fstring form_name;
 
 	*ret = WERR_OK;
 
-	unistr2_to_ascii(form_name, del_name, sizeof(form_name));
-
 	for (n=0; n<*count; n++) {
-		if (!strncmp((*list)[n].name, form_name, strlen(form_name))) {
-			DEBUG(103, ("delete_a_form, [%s] in list\n", form_name));
+		if (!strncmp((*list)[n].name, del_name, strlen(del_name))) {
+			DEBUG(103, ("delete_a_form, [%s] in list\n", del_name));
 			break;
 		}
 	}
 
 	if (n == *count) {
-		DEBUG(10,("delete_a_form, [%s] not found\n", form_name));
+		DEBUG(10,("delete_a_form, [%s] not found\n", del_name));
 		*ret = WERR_INVALID_PARAM;
 		return False;
 	}
@@ -971,6 +973,15 @@ bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 	}
 	SAFE_FREE(key);
 	return true;
+}
+
+bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
+{
+	fstring form_name;
+
+	unistr2_to_ascii(form_name, del_name, sizeof(form_name));
+
+	return delete_a_form_by_string(list, form_name, count, ret);
 }
 
 /****************************************************************************
