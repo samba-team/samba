@@ -2922,15 +2922,15 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 
 /**
  * pull a DOM_SID from an extended dn string
- * @param mem_ctx TALLOC_CTX 
+ * @param mem_ctx TALLOC_CTX
  * @param extended_dn string
  * @param flags string type of extended_dn
  * @param sid pointer to a DOM_SID
  * @return boolean inidicating success
  **/
-bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				  const char *extended_dn, 
-				  enum ads_extended_dn_flags flags, 
+bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
+				  const char *extended_dn,
+				  enum ads_extended_dn_flags flags,
 				  DOM_SID *sid)
 {
 	char *p, *q, *dn;
@@ -2943,7 +2943,7 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 	if ((dn = talloc_strdup(mem_ctx, extended_dn)) == NULL) {
 		return False;
 	}
-	/* 
+	/*
 	 * ADS_EXTENDED_DN_HEX_STRING:
 	 * <GUID=238e1963cb390f4bb032ba0105525a29>;<SID=010500000000000515000000bb68c8fd6b61b427572eb04556040000>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
 	 *
@@ -2966,13 +2966,13 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 	if (!q) {
 		return False;
 	}
-	
+
 	*q = '\0';
 
 	DEBUG(100,("ads_get_sid_from_extended_dn: sid string is %s\n", p));
 
 	switch (flags) {
-	
+
 	case ADS_EXTENDED_DN_STRING:
 		if (!string_to_sid(sid, p)) {
 			return False;
@@ -3011,9 +3011,9 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
  * @param sids pointer to sid array to allocate
  * @return the count of SIDs pulled
  **/
- int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads, 
-				   TALLOC_CTX *mem_ctx, 
-				   LDAPMessage *msg, 
+ int ads_pull_sids_from_extendeddn(ADS_STRUCT *ads,
+				   TALLOC_CTX *mem_ctx,
+				   LDAPMessage *msg,
 				   const char *field,
 				   enum ads_extended_dn_flags flags,
 				   DOM_SID **sids)
@@ -3022,7 +3022,7 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 	size_t dn_count;
 	char **dn_strings;
 
-	if ((dn_strings = ads_pull_strings(ads, mem_ctx, msg, field, 
+	if ((dn_strings = ads_pull_strings(ads, mem_ctx, msg, field,
 					   &dn_count)) == NULL) {
 		return 0;
 	}
@@ -3035,7 +3035,7 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 
 	for (i=0; i<dn_count; i++) {
 
-		if (!ads_get_sid_from_extended_dn(mem_ctx, dn_strings[i], 
+		if (!ads_get_sid_from_extended_dn(mem_ctx, dn_strings[i],
 						  flags, &(*sids)[i])) {
 			TALLOC_FREE(*sids);
 			TALLOC_FREE(dn_strings);
