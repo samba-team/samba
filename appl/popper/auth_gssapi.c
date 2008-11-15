@@ -66,10 +66,13 @@ gss_set_error (struct gss_state *gs, int min_stat)
 				  gs->mech_oid,
 				  &msg_ctx,
 				  &status_string);
-	asprintf(&cstr, "%.*s", (int)status_string.length,
-		 (const char *)status_string.value);
-	pop_auth_set_error(cstr);
-	free(cstr);
+	if (asprintf(&cstr, "%.*s", (int)status_string.length,
+		 (const char *)status_string.value) >= 0) {
+	    pop_auth_set_error(cstr);
+	    free(cstr);
+	} else {
+	    pop_auth_set_error("unknown error");
+	}
 	gss_release_buffer (&new_stat, &status_string);
     } while (!GSS_ERROR(ret) && msg_ctx != 0);
 }
