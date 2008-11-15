@@ -2926,45 +2926,51 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
  * @param extended_dn string
  * @param flags string type of extended_dn
  * @param sid pointer to a DOM_SID
- * @return boolean inidicating success
+ * @return NT_STATUS_OK on success,
+ *	   NT_INVALID_PARAMETER on error,
+ *	   NT_STATUS_NOT_FOUND if no SID present
  **/
-bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
-				  const char *extended_dn,
-				  enum ads_extended_dn_flags flags,
-				  DOM_SID *sid)
+ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
+					const char *extended_dn,
+					enum ads_extended_dn_flags flags,
+					DOM_SID *sid)
 {
 	char *p, *q, *dn;
 
 	if (!extended_dn) {
-		return False;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	/* otherwise extended_dn gets stripped off */
 	if ((dn = talloc_strdup(mem_ctx, extended_dn)) == NULL) {
-		return False;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 	/*
 	 * ADS_EXTENDED_DN_HEX_STRING:
 	 * <GUID=238e1963cb390f4bb032ba0105525a29>;<SID=010500000000000515000000bb68c8fd6b61b427572eb04556040000>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
 	 *
 	 * ADS_EXTENDED_DN_STRING (only with w2k3):
-	<GUID=63198e23-39cb-4b0f-b032-ba0105525a29>;<SID=S-1-5-21-4257769659-666132843-1169174103-1110>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
+	 * <GUID=63198e23-39cb-4b0f-b032-ba0105525a29>;<SID=S-1-5-21-4257769659-666132843-1169174103-1110>;CN=gd,OU=berlin,OU=suse,DC=ber,DC=suse,DC=de
+	 *
+	 * Object with no SID, such as an Exchange Public Folder
+	 * <GUID=28907fb4bdf6854993e7f0a10b504e7c>;CN=public,CN=Microsoft Exchange System Objects,DC=sd2k3ms,DC=west,DC=isilon,DC=com
 	 */
 
 	p = strchr(dn, ';');
 	if (!p) {
-		return False;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	if (strncmp(p, ";<SID=", strlen(";<SID=")) != 0) {
-		return False;
+		DEBUG(5,("No SID present in extended dn\n"));
+		return ADS_ERROR_NT(NT_STATUS_NOT_FOUND);
 	}
 
 	p += strlen(";<SID=");
 
 	q = strchr(p, '>');
 	if (!q) {
-		return False;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
 	*q = '\0';
@@ -2975,7 +2981,7 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 
 	case ADS_EXTENDED_DN_STRING:
 		if (!string_to_sid(sid, p)) {
-			return False;
+			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 		break;
 	case ADS_EXTENDED_DN_HEX_STRING: {
@@ -2984,21 +2990,21 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 
 		buf_len = strhex_to_str(buf, sizeof(buf), p, strlen(p));
 		if (buf_len == 0) {
-			return False;
+			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
 		if (!sid_parse(buf, buf_len, sid)) {
 			DEBUG(10,("failed to parse sid\n"));
-			return False;
+			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 		break;
 		}
 	default:
 		DEBUG(10,("unknown extended dn format\n"));
-		return False;
+		return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 	}
 
-	return True;
+	return ADS_ERROR_NT(NT_STATUS_OK);
 }
 
 /**
@@ -3019,7 +3025,8 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 				   DOM_SID **sids)
 {
 	int i;
-	size_t dn_count;
+	ADS_STATUS rc;
+	size_t dn_count, ret_count = 0;
 	char **dn_strings;
 
 	if ((dn_strings = ads_pull_strings(ads, mem_ctx, msg, field,
@@ -3034,18 +3041,25 @@ bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i=0; i<dn_count; i++) {
-
-		if (!ads_get_sid_from_extended_dn(mem_ctx, dn_strings[i],
-						  flags, &(*sids)[i])) {
-			TALLOC_FREE(*sids);
-			TALLOC_FREE(dn_strings);
-			return 0;
+		rc = ads_get_sid_from_extended_dn(mem_ctx, dn_strings[i],
+						  flags, &(*sids)[i]);
+		if (!ADS_ERR_OK(rc)) {
+			if (NT_STATUS_EQUAL(ads_ntstatus(rc),
+			    NT_STATUS_NOT_FOUND)) {
+				continue;
+			}
+			else {
+				TALLOC_FREE(*sids);
+				TALLOC_FREE(dn_strings);
+				return 0;
+			}
 		}
+		ret_count++;
 	}
 
 	TALLOC_FREE(dn_strings);
 
-	return dn_count;
+	return ret_count;
 }
 
 /********************************************************************
