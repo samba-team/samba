@@ -532,7 +532,7 @@ static bool fill_grent_mem(struct winbindd_domain *domain,
 	}
 
 	/* Real work goes here.  Create a list of group names to
-	   expand startign with the initial one.  Pass that to 
+	   expand starting with the initial one.  Pass that to
 	   expand_groups() which returns a list of more group names
 	   to expand.  Do this up to the max search depth. */
 
