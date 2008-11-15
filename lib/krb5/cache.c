@@ -1057,9 +1057,13 @@ krb5_cc_cache_end_seq_get (krb5_context context,
 }
 
 /**
- * Search for a matching credential cache of type `type' that have the
+ * Search for a matching credential cache that have the
  * `principal' as the default principal. On success, `id' needs to be
  * freed with krb5_cc_close() or krb5_cc_destroy().
+ *
+ * @param context A Kerberos 5 context
+ * @param client The principal to search for
+ * @param id the returned credential cache
  *
  * @return On failure, error code is returned and `id' is set to NULL.
  *
