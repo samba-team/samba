@@ -21,14 +21,13 @@
 #ifndef __TORTURE_RPC_H__
 #define __TORTURE_RPC_H__
 
-#include "torture/torture.h"
+#include "lib/torture/torture.h"
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/drsuapi.h"
 #include "libnet/libnet_join.h"
 #include "librpc/rpc/dcerpc.h"
 #include "libcli/raw/libcliraw.h"
 #include "torture/rpc/proto.h"
-#include "torture/torture.h"
 
 struct torture_rpc_tcase {
 	struct torture_tcase tcase;

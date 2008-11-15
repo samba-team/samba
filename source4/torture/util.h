@@ -20,7 +20,7 @@
 #ifndef _TORTURE_UTIL_H_
 #define _TORTURE_UTIL_H_
 
-#include "torture/torture.h"
+#include "lib/torture/torture.h"
 
 struct smbcli_state;
 struct smbcli_tree;

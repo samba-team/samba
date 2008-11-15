@@ -105,8 +105,6 @@ struct torture_results
 	bool quiet;
 
 	bool returncode;
-
-
 };
 
 /* 
