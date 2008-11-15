@@ -1059,6 +1059,8 @@ AC_CHECK_FUNCS(gettext dgettext)
 
 # Find a method of generating a stack trace
 AC_CHECK_HEADERS(execinfo.h libexc.h libunwind.h)
+# libexecinfo provides backtrace_symbols on FreeBSD
+AC_SEARCH_LIBS(backtrace_symbols, [execinfo])
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_LIB(exc, trace_back_stack)
 
