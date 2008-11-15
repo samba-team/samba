@@ -5475,8 +5475,6 @@ WERROR rpccli_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, const char *formname, 
 			   uint32 level, FORM_1 *form);
-WERROR rpccli_spoolss_deleteform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *handle, const char *form_name);
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms);
@@ -6116,8 +6114,6 @@ bool make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle,
 			    int level, FORM *form);
 bool make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
 			    int level, const char *form_name, FORM *form);
-bool make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, 
-			       const char *form);
 bool make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
                             const char *formname, uint32 level, 
 			    RPC_BUFFER *buffer, uint32 offered);

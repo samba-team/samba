@@ -7083,18 +7083,6 @@ bool make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle,
  * init a structure.
  ********************************************************************/
 
-bool make_spoolss_q_deleteform(SPOOL_Q_DELETEFORM *q_u, POLICY_HND *handle, 
-			       const char *form)
-{
-	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	init_unistr2(&q_u->name, form, UNI_STR_TERMINATE);
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
 bool make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
                             const char *formname, uint32 level, 
 			    RPC_BUFFER *buffer, uint32 offered)

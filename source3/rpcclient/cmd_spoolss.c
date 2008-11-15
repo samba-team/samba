@@ -1869,6 +1869,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 {
 	POLICY_HND handle;
 	WERROR werror;
+	NTSTATUS status;
 	char *servername = NULL, *printername = NULL;
 	bool got_handle = False;
 	
@@ -1901,7 +1902,13 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 
 	/* Delete the form */
 
-	werror = rpccli_spoolss_deleteform(cli, mem_ctx, &handle, argv[2]);
+	status = rpccli_spoolss_DeleteForm(cli, mem_ctx,
+					   &handle,
+					   argv[2],
+					   &werror);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
  done:
 	if (got_handle)
