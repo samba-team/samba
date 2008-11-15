@@ -617,22 +617,6 @@ typedef struct spool_r_startdocprinter
 }
 SPOOL_R_STARTDOCPRINTER;
 
-typedef struct spool_q_writeprinter
-{
-	POLICY_HND handle;
-	uint32 buffer_size;
-	uint8 *buffer;
-	uint32 buffer_size2;
-}
-SPOOL_Q_WRITEPRINTER;
-
-typedef struct spool_r_writeprinter
-{
-	uint32 buffer_written;
-	WERROR status;
-}
-SPOOL_R_WRITEPRINTER;
-
 typedef struct spool_notify_option
 {
 	uint32 version;

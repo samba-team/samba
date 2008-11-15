@@ -1788,35 +1788,6 @@ WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX 
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_writeprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				POLICY_HND *hnd, uint32 data_size, char *data,
-				uint32 *num_written)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_WRITEPRINTER in;
-	SPOOL_R_WRITEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_writeprinter( &in, hnd, data_size, data );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_WRITEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_writeprinter,
-	            spoolss_io_r_writeprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if (num_written)
-		*num_written = out.buffer_written;
-		
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_deleteprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				     POLICY_HND *hnd, char *valuename)
 {
