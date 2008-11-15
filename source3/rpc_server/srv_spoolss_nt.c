@@ -7482,11 +7482,11 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
 	/* if no hook then just fill in the default port */
 
 	if ( !*cmd ) {
-		if (!(qlines = SMB_MALLOC_ARRAY( char*, 2 ))) {
+		if (!(qlines = TALLOC_ARRAY( NULL, char*, 2 ))) {
 			return WERR_NOMEM;
 		}
-		if (!(qlines[0] = SMB_STRDUP( SAMBA_PRINTER_PORT_NAME ))) {
-			SAFE_FREE(qlines);
+		if (!(qlines[0] = talloc_strdup(qlines, SAMBA_PRINTER_PORT_NAME ))) {
+			TALLOC_FREE(qlines);
 			return WERR_NOMEM;
 		}
 		qlines[1] = NULL;
