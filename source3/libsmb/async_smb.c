@@ -223,6 +223,7 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
  * @param[in] smb_command	The command that we want to issue
  * @param[in] wct		How many words?
  * @param[in] vwv		The words, already in network order
+ * @param[in] bytes_alignment	How shall we align "bytes"?
  * @param[in] num_bytes		How many bytes?
  * @param[in] bytes		The data the request ships
  *
@@ -232,12 +233,14 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
 
 bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 		      uint8_t wct, const uint16_t *vwv,
+		      size_t bytes_alignment,
 		      uint16_t num_bytes, const uint8_t *bytes)
 {
 	char *outbuf;
 	size_t old_size, new_size;
 	size_t ofs;
-	size_t padding = 0;
+	size_t chain_padding = 0;
+	size_t bytes_padding = 0;
 	bool first_request;
 
 	old_size = talloc_get_size(*poutbuf);
@@ -251,17 +254,25 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 
 	if (!first_request && ((old_size % 4) != 0)) {
 		/*
-		 * Align subsequent requests to a 4-byte boundary
+		 * Align the wct field of subsequent requests to a 4-byte
+		 * boundary
 		 */
-		padding = 4 - (old_size % 4);
+		chain_padding = 4 - (old_size % 4);
 	}
 
 	/*
-	 * We need space for the wct field, the words, the byte count field
-	 * and the bytes themselves.
+	 * After the old request comes the new wct field (1 byte), the vwv's
+	 * and the num_bytes field. After at we might need to align the bytes
+	 * given to us to "bytes_alignment", increasing the num_bytes value.
 	 */
-	new_size = old_size + padding
-		+ 1 + wct * sizeof(uint16_t) + 2 + num_bytes;
+
+	new_size = old_size + chain_padding + 1 + wct * sizeof(uint16_t) + 2;
+
+	if ((bytes_alignment != 0) && ((new_size % bytes_alignment) != 0)) {
+		bytes_padding = bytes_alignment + (new_size % bytes_alignment);
+	}
+
+	new_size += bytes_padding + num_bytes;
 
 	if (new_size > 0xffff) {
 		DEBUG(1, ("splice_chain: %u bytes won't fit\n",
@@ -288,9 +299,9 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 			return false;
 		}
 
-		if (padding != 0) {
-			memset(outbuf + old_size, 0, padding);
-			old_size += padding;
+		if (chain_padding != 0) {
+			memset(outbuf + old_size, 0, chain_padding);
+			old_size += chain_padding;
 		}
 
 		SCVAL(outbuf, andx_cmd_ofs, smb_command);
@@ -305,8 +316,13 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 	memcpy(outbuf + ofs, vwv, sizeof(uint16_t) * wct);
 	ofs += sizeof(uint16_t) * wct;
 
-	SSVAL(outbuf, ofs, num_bytes);
+	SSVAL(outbuf, ofs, num_bytes + bytes_padding);
 	ofs += sizeof(uint16_t);
+
+	if (bytes_padding != 0) {
+		memset(outbuf + ofs, 0, bytes_padding);
+		ofs += bytes_padding;
+	}
 
 	memcpy(outbuf + ofs, bytes, num_bytes);
 
@@ -407,7 +423,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 			      cli_async_req_destructor);
 
 	if (!smb_splice_chain(&req->outbuf, smb_command, wct, vwv,
-			      num_bytes, bytes)) {
+			      0, num_bytes, bytes)) {
 		goto fail;
 	}
 

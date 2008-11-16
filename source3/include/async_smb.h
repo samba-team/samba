@@ -127,6 +127,7 @@ void cli_chain_uncork(struct cli_state *cli);
 bool cli_in_chain(struct cli_state *cli);
 bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 		      uint8_t wct, const uint16_t *vwv,
+		      size_t bytes_alignment,
 		      uint16_t num_bytes, const uint8_t *bytes);
 
 NTSTATUS cli_pull_reply(struct async_req *req,
