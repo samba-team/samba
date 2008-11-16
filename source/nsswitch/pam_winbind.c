@@ -552,14 +552,14 @@ static const struct ntstatus_errors {
 	{"NT_STATUS_INVALID_LOGON_HOURS",
 		N_("You are not allowed to logon at this time")},
 	{"NT_STATUS_ACCOUNT_EXPIRED",
-		N_("Your account has expired. ")
-		N_("Please contact your System administrator")}, /* SCNR */
+		N_("Your account has expired. "
+		   "Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_DISABLED",
-		N_("Your account is disabled. ")
-		N_("Please contact your System administrator")}, /* SCNR */
+		N_("Your account is disabled. "
+		   "Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_ACCOUNT_LOCKED_OUT",
-		N_("Your account has been locked. ")
-		N_("Please contact your System administrator")}, /* SCNR */
+		N_("Your account has been locked. "
+		   "Please contact your System administrator")}, /* SCNR */
 	{"NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT",
 		N_("Invalid Trust Account")},
 	{"NT_STATUS_NOLOGON_SERVER_TRUST_ACCOUNT",
