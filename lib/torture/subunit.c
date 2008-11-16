@@ -20,11 +20,6 @@
 #include "includes.h"
 #include "lib/torture/torture.h"
 
-static void subunit_init(struct torture_results *results) 
-{
-	/* FIXME: register segv and bus handler */
-}
-
 static void subunit_suite_start(struct torture_context *ctx,
 				struct torture_suite *suite)
 {
@@ -87,7 +82,6 @@ static void subunit_warning(struct torture_context *test,
 }
 
 const struct torture_ui_ops torture_subunit_ui_ops = {
-	.init = subunit_init,
 	.comment = subunit_comment,
 	.warning = subunit_warning,
 	.test_start = subunit_test_start,
