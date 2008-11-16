@@ -117,9 +117,17 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	struct file_id id;
 	uint8 id_buf[16];
 
+	tmp = talloc_asprintf(talloc_tos(), "%s/.streams", handle->conn->connectpath);
+
+	if (tmp == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
 	const char *rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
-		handle->conn->connectpath);
+		tmp);
+	TALLOC_FREE(tmp);
 
 	if (base_sbuf == NULL) {
 		if (SMB_VFS_NEXT_STAT(handle, base_path, &sbuf) == -1) {
