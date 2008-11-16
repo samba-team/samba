@@ -5,7 +5,7 @@
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_winbind_init
 PRIVATE_DEPENDENCIES = \
-		LIBWINBIND-CLIENT
+		LIBWINBIND-CLIENT torture
 # End SUBSYSTEM TORTURE_WINBIND
 #################################
 

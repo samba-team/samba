@@ -1,6 +1,6 @@
 [SUBSYSTEM::TORTURE_UTIL]
 PRIVATE_DEPENDENCIES = LIBCLI_RAW
-PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
+PUBLIC_DEPENDENCIES = torture POPT_CREDENTIALS
 
 TORTURE_UTIL_OBJ_FILES = $(addprefix $(torturesrcdir)/, util_smb.o)
 
@@ -89,6 +89,7 @@ mkinclude smb2/config.mk
 mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
+PRIVATE_DEPENDENCIES = torture
 
 TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
 
@@ -139,7 +140,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_O
 SUBSYSTEM = smbtorture
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB gensec auth KERBEROS \
-		POPT_CREDENTIALS SMBPASSWD
+		POPT_CREDENTIALS SMBPASSWD torture
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
@@ -181,7 +182,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/unix/proto.h,$(TORTURE_UNIX
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_ldap_init
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS
+		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS torture
 # End SUBSYSTEM TORTURE_LDAP
 #################################
 
