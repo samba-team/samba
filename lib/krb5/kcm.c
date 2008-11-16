@@ -648,7 +648,7 @@ kcm_get_first (krb5_context context,
 
     while (1) {
 	ssize_t sret;
-	uuid_t uuid;
+	kcmuuid_t uuid;
 	void *ptr;
 
 	sret = krb5_storage_read(response, &uuid, sizeof(uuid));
