@@ -196,12 +196,10 @@ static void async_request_fail(struct winbindd_async_request *state)
 
 	TALLOC_FREE(state->reply_timeout_event);
 
-	/* If child exists and is not already reaped,
-	   send kill signal to child. */
+	SMB_ASSERT(state->child_pid != (pid_t)0);
 
-	if ((state->child->pid != (pid_t)0) &&
-			(state->child->pid != (pid_t)-1) &&
-			(state->child->pid == state->child_pid)) {
+	/* If not already reaped, send kill signal to child. */
+	if (state->child->pid == state->child_pid) {
 		kill(state->child_pid, SIGTERM);
 
 		/* 
@@ -297,14 +295,12 @@ static void schedule_async_request(struct winbindd_child *child)
 	}
 
 	if ((child->pid == 0) && (!fork_domain_child(child))) {
-		/* fork_domain_child failed.
-		   Cancel all outstanding requests */
+		/* Cancel all outstanding requests */
 
 		while (request != NULL) {
 			/* request might be free'd in the continuation */
 			struct winbindd_async_request *next = request->next;
-
-			async_request_fail(request);
+			request->continuation(request->private_data, False);
 			request = next;
 		}
 		return;
