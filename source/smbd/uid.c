@@ -102,7 +102,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 	readonly_share = is_share_read_only_for_token(vuser->user.unix_name,
 						      vuser->nt_user_token,
-						      SNUM(conn));
+						      conn);
 
 	token = conn->nt_user_token ?
 		conn->nt_user_token : vuser->nt_user_token;
