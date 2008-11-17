@@ -79,15 +79,6 @@
 #define MOUNT_PASSWD_SIZE 64
 #define DOMAIN_SIZE 64
 
-/* exit status - bits below are ORed */
-#define EX_USAGE        1       /* incorrect invocation or permission */
-#define EX_SYSERR       2       /* out of memory, cannot fork, ... */
-#define EX_SOFTWARE     4       /* internal mount bug or wrong version */
-#define EX_USER         8       /* user interrupt */
-#define EX_FILEIO      16       /* problems writing, locking, ... mtab/fstab */
-#define EX_FAIL        32       /* mount failure */
-#define EX_SOMEOK      64       /* some mount succeeded */
-
 const char *thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
@@ -183,7 +174,7 @@ static void mount_cifs_usage(void)
 	printf("\n\t%s -V\n",thisprogram);
 
 	SAFE_FREE(mountpassword);
-	exit(EX_USAGE);
+	exit(1);
 }
 
 /* caller frees username if necessary */
@@ -242,7 +233,7 @@ static int open_cred_file(char * file_name)
 				if(length > 4086) {
 					printf("mount.cifs failed due to malformed username in credentials file");
 					memset(line_buf,0,4096);
-					exit(EX_USAGE);
+					exit(1);
 				} else {
 					got_user = 1;
 					user_name = (char *)calloc(1 + length,1);
@@ -266,7 +257,7 @@ static int open_cred_file(char * file_name)
 				if(length > MOUNT_PASSWD_SIZE) {
 					printf("mount.cifs failed: password in credentials file too long\n");
 					memset(line_buf,0, 4096);
-					exit(EX_USAGE);
+					exit(1);
 				} else {
 					if(mountpassword == NULL) {
 						mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
@@ -294,7 +285,7 @@ static int open_cred_file(char * file_name)
                                 }
                                 if(length > DOMAIN_SIZE) {
                                         printf("mount.cifs failed: domain in credentials file too long\n");
-                                        exit(EX_USAGE);
+                                        exit(1);
                                 } else {
                                         if(domain_name == NULL) {
                                                 domain_name = (char *)calloc(DOMAIN_SIZE+1,1);
@@ -327,7 +318,7 @@ static int get_password_from_file(int file_descript, char * filename)
 
 	if (mountpassword == NULL) {
 		printf("malloc failed\n");
-		exit(EX_SYSERR);
+		exit(1);
 	}
 
 	if(filename != NULL) {
@@ -335,7 +326,7 @@ static int get_password_from_file(int file_descript, char * filename)
 		if(file_descript < 0) {
 			printf("mount.cifs failed. %s attempting to open password file %s\n",
 				   strerror(errno),filename);
-			exit(EX_SYSERR);
+			exit(1);
 		}
 	}
 	/* else file already open and fd provided */
@@ -346,7 +337,7 @@ static int get_password_from_file(int file_descript, char * filename)
 			printf("mount.cifs failed. Error %s reading password file\n",strerror(errno));
 			if(filename != NULL)
 				close(file_descript);
-			exit(EX_SYSERR);
+			exit(1);
 		} else if(rc == 0) {
 			if(mountpassword[0] == 0) {
 				if(verboseflag)
@@ -568,7 +559,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 
 					if (!(pw = getpwnam(value))) {
 						printf("bad user name \"%s\"\n", value);
-						exit(EX_USAGE);
+						exit(1);
 					}
 					snprintf(user, sizeof(user), "%u", pw->pw_uid);
 				} else {
@@ -584,7 +575,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 
 					if (!(gr = getgrnam(value))) {
 						printf("bad group name \"%s\"\n", value);
-						exit(EX_USAGE);
+						exit(1);
 					}
 					snprintf(group, sizeof(group), "%u", gr->gr_gid);
 				} else {
@@ -679,7 +670,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		out = (char *)realloc(out, out_len + word_len + 2);
 		if (out == NULL) {
 			perror("malloc");
-			exit(EX_SYSERR);
+			exit(1);
 		}
 
 		if (out_len) {
@@ -704,7 +695,7 @@ nocopy:
 		out = (char *)realloc(out, out_len + word_len + 6);
 		if (out == NULL) {
 			perror("malloc");
-			exit(EX_SYSERR);
+			exit(1);
 		}
 
 		if (out_len) {
@@ -720,7 +711,7 @@ nocopy:
 		out = (char *)realloc(out, out_len + 1 + word_len + 6);
 		if (out == NULL) {
 		perror("malloc");
-			exit(EX_SYSERR);
+			exit(1);
 		}
 
 		if (out_len) {
@@ -1055,7 +1046,7 @@ int main(int argc, char ** argv)
 		thisprogram = argv[0];
 	} else {
 		mount_cifs_usage();
-		exit(EX_USAGE);
+		exit(1);
 	}
 
 	if(thisprogram == NULL)
@@ -1072,12 +1063,12 @@ int main(int argc, char ** argv)
 		share_name = strndup(argv[1], MAX_UNC_LEN);
 		if (share_name == NULL) {
 			fprintf(stderr, "%s: %s", argv[0], strerror(ENOMEM));
-			exit(EX_SYSERR);
+			exit(1);
 		}
 		mountpoint = argv[2];
 	} else {
 		mount_cifs_usage();
-		exit(EX_USAGE);
+		exit(1);
 	}
 
 	/* add sharename in opts string as unc= parm */
@@ -1099,7 +1090,7 @@ int main(int argc, char ** argv)
 		case '?':
 		case 'h':	 /* help */
 			mount_cifs_usage ();
-			exit(EX_USAGE);
+			exit(1);
 		case 'n':
 		    ++nomtab;
 		    break;
@@ -1153,14 +1144,14 @@ int main(int argc, char ** argv)
 				uid = strtoul(optarg, &ep, 10);
 				if (*ep) {
 					printf("bad uid value \"%s\"\n", optarg);
-					exit(EX_USAGE);
+					exit(1);
 				}
 			} else {
 				struct passwd *pw;
 
 				if (!(pw = getpwnam(optarg))) {
 					printf("bad user name \"%s\"\n", optarg);
-					exit(EX_USAGE);
+					exit(1);
 				}
 				uid = pw->pw_uid;
 				endpwent();
@@ -1173,14 +1164,14 @@ int main(int argc, char ** argv)
 				gid = strtoul(optarg, &ep, 10);
 				if (*ep) {
 					printf("bad gid value \"%s\"\n", optarg);
-					exit(EX_USAGE);
+					exit(1);
 				}
 			} else {
 				struct group *gr;
 
 				if (!(gr = getgrnam(optarg))) {
 					printf("bad user name \"%s\"\n", optarg);
-					exit(EX_USAGE);
+					exit(1);
 				}
 				gid = gr->gr_gid;
 				endpwent();
@@ -1210,13 +1201,13 @@ int main(int argc, char ** argv)
 		default:
 			printf("unknown mount option %c\n",c);
 			mount_cifs_usage();
-			exit(EX_USAGE);
+			exit(1);
 		}
 	}
 
 	if((argc < 3) || (dev_name == NULL) || (mountpoint == NULL)) {
 		mount_cifs_usage();
-		exit(EX_USAGE);
+		exit(1);
 	}
 
 	if (getenv("PASSWD")) {
@@ -1233,13 +1224,13 @@ int main(int argc, char ** argv)
 	}
 
         if (orgoptions && parse_options(&orgoptions, &flags)) {
-                rc = EX_USAGE;
+                rc = -1;
 		goto mount_exit;
 	}
 	ipaddr = parse_server(&share_name);
 	if((ipaddr == NULL) && (got_ip == 0)) {
 		printf("No ip address specified and hostname not found\n");
-		rc = EX_USAGE;
+		rc = -1;
 		goto mount_exit;
 	}
 	
@@ -1254,19 +1245,19 @@ int main(int argc, char ** argv)
 	}
 	if(chdir(mountpoint)) {
 		printf("mount error: can not change directory into mount target %s\n",mountpoint);
-		rc = EX_USAGE;
+		rc = -1;
 		goto mount_exit;
 	}
 
 	if(stat (".", &statbuf)) {
 		printf("mount error: mount point %s does not exist\n",mountpoint);
-		rc = EX_USAGE;
+		rc = -1;
 		goto mount_exit;
 	}
 
 	if (S_ISDIR(statbuf.st_mode) == 0) {
 		printf("mount error: mount point %s is not a directory\n",mountpoint);
-		rc = EX_USAGE;
+		rc = -1;
 		goto mount_exit;
 	}
 
@@ -1279,7 +1270,7 @@ int main(int argc, char ** argv)
 #endif						
 		} else {
 			printf("mount error: permission denied or not superuser and mount.cifs not installed SUID\n"); 
-			exit(EX_USAGE);
+			return -1;
 		}
 	}
 
@@ -1294,7 +1285,7 @@ int main(int argc, char ** argv)
 		mountpassword = (char *)calloc(MOUNT_PASSWD_SIZE+1,1);
 		if (!tmp_pass || !mountpassword) {
 			printf("Password not entered, exiting\n");
-			exit(EX_USAGE);
+			return -1;
 		}
 		strlcpy(mountpassword, tmp_pass, MOUNT_PASSWD_SIZE+1);
 		got_password = 1;
@@ -1312,7 +1303,7 @@ mount_retry:
 	else {
 		printf("No server share name specified\n");
 		printf("\nMounting the DFS root for server not implemented yet\n");
-                exit(EX_USAGE);
+                exit(1);
 	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
@@ -1326,7 +1317,7 @@ mount_retry:
 
 	if(options == NULL) {
 		printf("Could not allocate memory for mount options\n");
-		exit(EX_SYSERR);
+		return -1;
 	}
 
 	options[0] = 0;
@@ -1405,7 +1396,8 @@ mount_retry:
 			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
-		rc = EX_FAIL;
+		rc = -1;
+		goto mount_exit;
 	} else {
 		pmntfile = setmntent(MOUNTED, "a+");
 		if(pmntfile) {
@@ -1443,13 +1435,11 @@ mount_retry:
 			rc = addmntent(pmntfile,&mountent);
 			endmntent(pmntfile);
 			SAFE_FREE(mountent.mnt_opts);
-			if (rc)
-				rc = EX_FILEIO;
 		} else {
-			printf("could not update mount table\n");
-			rc = EX_FILEIO;
+		    printf("could not update mount table\n");
 		}
 	}
+	rc = 0;
 mount_exit:
 	if(mountpassword) {
 		int len = strlen(mountpassword);
@@ -1461,5 +1451,5 @@ mount_exit:
 	SAFE_FREE(orgoptions);
 	SAFE_FREE(resolved_path);
 	SAFE_FREE(share_name);
-	exit(rc);
+	return rc;
 }
