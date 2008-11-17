@@ -105,8 +105,7 @@
 		<para>The module will send the data using the TCP port given
 		in STRING.
 		</para>
-		</listitem>
-		</varlistentry>
+
 		<varlistentry>
 		<term>smb_traffic_analyzer:anonymize_prefix = STRING</term>
 		<listitem>
@@ -132,27 +131,16 @@
 	<smbconfoption name="smb_traffic_analyzer:mode">unix_domain_socket</smbconfoption>
 	</programlisting>
 
-	<para>The module running on share "example_share", using an internet socket,
+	<para>The module running on share "example_share", using an internet domain socket,
 	connecting to host "examplehost" on port 3491.</para>
 	<programlisting>
 	<smbconfsection name="[example_share]"/>
 	<smbconfoption name="path">/data/example</smbconfoption>
 	<smbconfoption name="vfs objects">smb_traffic_analyzer</smbconfoption>
 	<smbconfoption name="smb_traffic_analyzer:host">examplehost</smbconfoption>
-	<smbconfoption name="smb_traffic_analyzer:port">3491</smbconfoption>
+	<smbconfoption name="smb_traffic_analyzer:port">3490</smbconfoption>
 	</programlisting>
 
-	<para>The module running on share "example_share", using an internet socket,
-	connecting to host "examplehost" on port 3491, anonymizing user names with
-	the prefix "User".</para>
-	<programlisting>
-	<smbconfsection name="[example_share]"/>
-	<smbconfoption name="path">/data/example</smbconfoption>
-	<smbconfoption name="vfs objects">smb_traffic_analyzer</smbconfoption>
-	<smbconfoption name="smb_traffic_analyzer:host">examplehost</smbconfoption>
-	<smbconfoption name="smb_traffic_analyzer:port">3491</smbconfoption>
-	<smbconfoption name="smb_traffic_analyzer:anonymize_prefix">User</smbconfoption>
-	</programlisting>
 </refsect1>
 
 <refsect1>
