@@ -78,6 +78,7 @@ static int readonly_connect(vfs_handle_struct *handle,
       for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
         conn->vuid_cache.array[i].vuid = UID_FIELD_INVALID;
       }
+      conn->vuid_cache.entries = 0;
     }
 
     return SMB_VFS_NEXT_CONNECT(handle, service, user);
