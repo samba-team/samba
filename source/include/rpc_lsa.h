@@ -39,7 +39,6 @@
 
 
 #define LSA_POLICY_READ       ( STANDARD_RIGHTS_READ_ACCESS      |\
-                            LSA_POLICY_VIEW_LOCAL_INFORMATION    |\
                             LSA_POLICY_VIEW_AUDIT_INFORMATION    |\
                             LSA_POLICY_GET_PRIVATE_INFORMATION)
 
