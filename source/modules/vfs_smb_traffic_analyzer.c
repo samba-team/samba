@@ -36,7 +36,7 @@ extern userdom_struct current_user_info;
 
 static int vfs_smb_traffic_analyzer_debug_level = DBGC_VFS;
 
-NTSTATUS vfs_smb_traffic_analyzer_init(void);
+NTSTATUS init_samba_module(void);
 
 static ssize_t smb_traffic_analyzer_write(vfs_handle_struct *handle,
 		files_struct *fsp, const void *data, size_t n);
@@ -71,7 +71,7 @@ static vfs_op_tuple smb_traffic_analyzer_tuples[] = {
 
 /* Module initialization */
 
-NTSTATUS vfs_smb_traffic_analyzer_init(void)
+NTSTATUS init_samba_module(void)
 {
 	NTSTATUS ret = smb_register_vfs(SMB_VFS_INTERFACE_VERSION, \
 		"smb_traffic_analyzer",	smb_traffic_analyzer_tuples);
