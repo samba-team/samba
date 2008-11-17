@@ -4382,6 +4382,22 @@ AC_ARG_WITH(syslog,
 )
 
 #################################################
+# check for custom syslog facility
+AC_MSG_CHECKING(whether to use a custom syslog facility)
+AC_ARG_WITH(syslog-facility,
+[AS_HELP_STRING([--with-syslog-facility], [Use a custom syslog facility (default=none)])],
+[
+  if test "$withval" = "no" ; then
+    AC_MSG_ERROR([argument to --with-syslog-facility must be a string])
+  else
+     if test "$withval" != "yes" ; then
+        syslog_facility="$withval"
+	AC_DEFINE_UNQUOTED(SYSLOG_FACILITY,$syslog_facility, [syslog facility to log to])
+     fi
+  fi
+])
+
+#################################################
 # check for experimental disk-quotas support
 
 samba_cv_WITH_QUOTAS=auto
