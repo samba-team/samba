@@ -775,7 +775,6 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
 				  struct samsync_context *ctx)
 {
 	int i;
