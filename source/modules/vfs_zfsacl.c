@@ -220,9 +220,92 @@ static NTSTATUS zfsacl_set_nt_acl(vfs_handle_struct *handle,
 	return zfs_set_nt_acl(handle, fsp, security_info_sent, psd);
 }
 
+/* nils.goroll@hamburg.de 2008-06-16 :
+
+   See also
+   - https://bugzilla.samba.org/show_bug.cgi?id=5446
+   - http://bugs.opensolaris.org/view_bug.do?bug_id=6688240
+
+   Solaris supports NFSv4 and ZFS ACLs through a common system call, acl(2)
+   with ACE_SETACL / ACE_GETACL / ACE_GETACLCNT, which is being wrapped for
+   use by samba in this module.
+
+   As the acl(2) interface is identical for ZFS and for NFS, this module,
+   vfs_zfsacl, can not only be used for ZFS, but also for sharing NFSv4
+   mounts on Solaris.
+
+   But while "traditional" POSIX DRAFT ACLs (using acl(2) with SETACL
+   / GETACL / GETACLCNT) fail for ZFS, the Solaris NFS client
+   implemets a compatibility wrapper, which will make calls to
+   traditional ACL calls though vfs_solarisacl succeed. As the
+   compatibility wrapper's implementation is (by design) incomplete,
+   we want to make sure that it is never being called.
+
+   As long as Samba does not support an exiplicit method for a module
+   to define conflicting vfs methods, we should override all conflicting
+   methods here.
+
+   For this to work, we need to make sure that this module is initialised
+   *after* vfs_solarisacl
+
+   Function declarations taken from vfs_solarisacl
+*/
+
+SMB_ACL_T zfsacl_fail__sys_acl_get_file(vfs_handle_struct *handle,
+					const char *path_p,
+					SMB_ACL_TYPE_T type)
+{
+	return (SMB_ACL_T)NULL;
+}
+SMB_ACL_T zfsacl_fail__sys_acl_get_fd(vfs_handle_struct *handle,
+				      files_struct *fsp,
+				      int fd)
+{
+	return (SMB_ACL_T)NULL;
+}
+
+int zfsacl_fail__sys_acl_set_file(vfs_handle_struct *handle,
+				  const char *name,
+				  SMB_ACL_TYPE_T type,
+				  SMB_ACL_T theacl)
+{
+	return(-1);
+}
+
+int zfsacl_fail__sys_acl_set_fd(vfs_handle_struct *handle,
+				files_struct *fsp,
+				int fd, SMB_ACL_T theacl)
+{
+	return(-1);
+}
+
+int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
+					 const char *path)
+{
+	return(-1);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple zfsacl_ops[] = {
+	/* invalidate conflicting VFS methods */
+	{SMB_VFS_OP(zfsacl_fail__sys_acl_get_file),
+	 SMB_VFS_OP_SYS_ACL_GET_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(zfsacl_fail__sys_acl_get_fd),
+	 SMB_VFS_OP_SYS_ACL_GET_FD,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(zfsacl_fail__sys_acl_set_file),
+	 SMB_VFS_OP_SYS_ACL_SET_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(zfsacl_fail__sys_acl_set_fd),
+	 SMB_VFS_OP_SYS_ACL_SET_FD,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(zfsacl_fail__sys_acl_delete_def_file),
+	 SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
+
+	/* actual methods */
 	{SMB_VFS_OP(zfsacl_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(zfsacl_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
