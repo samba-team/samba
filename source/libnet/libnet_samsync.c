@@ -336,6 +336,7 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 				     struct netr_ChangeLogEntry *e)
 {
 	NTSTATUS result;
+	NTSTATUS callback_status;
 	TALLOC_CTX *mem_ctx;
 	const char *logon_server = ctx->cli->desthost;
 	const char *computername = global_myname();
@@ -345,11 +346,24 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 	uint32_t sync_context = 0;
 	const char *debug_str;
 	DATA_BLOB session_key;
+	uint64_t sequence_num = 0;
 
 	ZERO_STRUCT(return_authenticator);
 
+	if (!ctx->ops) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (!(mem_ctx = talloc_init("libnet_samsync"))) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (ctx->ops->startup) {
+		result = ctx->ops->startup(mem_ctx, ctx,
+					   database_id, &sequence_num);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto out;
+		}
 	}
 
 	debug_str = samsync_debug_str(mem_ctx, ctx->mode, database_id);
@@ -359,7 +373,6 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
-		NTSTATUS callback_status;
 
 		netlogon_creds_client_step(ctx->cli->dc, &credential);
 
@@ -425,6 +438,15 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  out:
+
+	if (NT_STATUS_IS_OK(result) && ctx->ops->finish) {
+		callback_status = ctx->ops->finish(mem_ctx, ctx,
+						   database_id, sequence_num);
+		if (!NT_STATUS_IS_OK(callback_status)) {
+			result = callback_status;
+		}
+	}
+
 	if (NT_STATUS_IS_ERR(result) && !ctx->error_message) {
 
 		ctx->error_message = talloc_asprintf(ctx,
