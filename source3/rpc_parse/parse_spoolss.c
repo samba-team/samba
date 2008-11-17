@@ -5875,40 +5875,6 @@ static bool spoolss_io_addform(const char *desc, FORM *f, uint32 ptr, prs_struct
 /*******************************************************************
 ********************************************************************/  
 
-bool spoolss_io_q_deleteform(const char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_deleteform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if(!smb_io_unistr2("form name", &q_u->name, True, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_deleteform(const char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_deleteform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_werror("status",	ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool spoolss_io_q_addform(const char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=1;

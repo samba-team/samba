@@ -6060,8 +6060,6 @@ bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, 
 bool spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_resetprinter(const char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_resetprinter(const char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_deleteform(const char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_deleteform(const char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_addform(const char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_addform(const char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_setform(const char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
@@ -6371,7 +6369,6 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u);
 WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
 WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u);
-WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u);
 WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u);
 WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u);
 WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u);

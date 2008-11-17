@@ -1755,19 +1755,6 @@ typedef struct spool_r_setform
 }
 SPOOL_R_SETFORM;
 
-typedef struct spool_q_deleteform
-{
-	POLICY_HND handle;
-	UNISTR2 name;
-}
-SPOOL_Q_DELETEFORM;
-
-typedef struct spool_r_deleteform
-{
-	WERROR status;
-}
-SPOOL_R_DELETEFORM;
-
 typedef struct spool_q_getjob
 {
 	POLICY_HND handle;
