@@ -179,7 +179,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 			   "who: %d\n", gace->aceType, gace->aceIFlags,
 			   gace->aceFlags, gace->aceMask, gace->aceWho));
 
-		ZERO_STRUCT(smbace);
+		memset(&smbace, 0, sizeof(SMB4ACE_T));
 		if (gace->aceIFlags & ACE4_IFLAG_SPECIAL_ID) {
 			smbace.flags |= SMB_ACE4_ID_SPECIAL;
 			switch (gace->aceWho) {
@@ -744,7 +744,7 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 		if (haveAllowEntry[i]==True)
 			continue;
 		
-		ZERO_STRUCT(ace);
+		memset(&ace, 0, sizeof(SMB_ACE4PROP_T));
 		ace.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
 		ace.flags |= SMB_ACE4_ID_SPECIAL;
 		ace.who.special_id = i;
@@ -766,7 +766,7 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	}
 	
 	/* don't add complementary DENY ACEs here */
-	ZERO_STRUCT(fake_fsp);
+	memset(&fake_fsp, 0, sizeof(struct files_struct));
 	fake_fsp.fsp_name = (char *)path; /* no file_new is needed here */
 	
 	/* put the acl */
