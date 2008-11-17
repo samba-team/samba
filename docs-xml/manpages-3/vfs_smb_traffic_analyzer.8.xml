@@ -103,14 +103,7 @@
 		<term>smb_traffic_analyzer:port = STRING</term>
 		<listitem>
 		<para>The module will send the data using the TCP port given
-		in STRING.
-		</para>
-
-		<varlistentry>
-		<term>smb_traffic_analyzer:anonymize_prefix = STRING</term>
-		<listitem>
-		<para>The module will replace the user names with a prefix
-		given by STRING and a simple hash number.
+		in STRING
 		</para>
 
 		</listitem>
