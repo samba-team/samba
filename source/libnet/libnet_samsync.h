@@ -32,6 +32,21 @@ typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
 				       struct netr_DELTA_ENUM_ARRAY *,
 				       bool,
 				       struct samsync_context *);
+struct samsync_ops {
+	NTSTATUS (*startup)(TALLOC_CTX *mem_ctx,
+			    struct samsync_context *ctx,
+			    enum netr_SamDatabaseID id,
+			    uint64_t *sequence_num);
+	NTSTATUS (*process_objects)(TALLOC_CTX *mem_ctx,
+				    enum netr_SamDatabaseID id,
+				    struct netr_DELTA_ENUM_ARRAY *array,
+				    bool last_query,
+				    struct samsync_context *ctx);
+	NTSTATUS (*finish)(TALLOC_CTX *mem_ctx,
+			   struct samsync_context *ctx,
+			   enum netr_SamDatabaseID id,
+			   uint64_t sequence_num);
+};
 
 struct samsync_object {
 	uint16_t database_id;
@@ -64,6 +79,9 @@ struct samsync_context {
 	struct samsync_object *objects;
 
 	struct rpc_pipe_client *cli;
+
+	const struct samsync_ops *ops;
+
 	samsync_delta_fn_t delta_fn;
 	void *private_data;
 };
