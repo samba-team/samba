@@ -1183,10 +1183,6 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 
 	*ppdest = NULL;
 
-	if (!src_len) {
-		return 0;
-	}
-
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
 			src_len = strlen((const char *)src) + 1;
@@ -1204,22 +1200,11 @@ static size_t pull_ascii_base_talloc(TALLOC_CTX *ctx,
 					(unsigned int)src_len);
 			smb_panic(msg);
 		}
-	} else {
-		/* Can't have an unlimited length
-		 * non STR_TERMINATE'd.
-		 */
-		if (src_len == (size_t)-1) {
-			errno = EINVAL;
-			return 0;
-		}
 	}
-
-	/* src_len != -1 here. */
 
 	if (!convert_string_allocate(ctx, CH_DOS, CH_UNIX, src, src_len, &dest,
-		&dest_len, True)) {
+		&dest_len, True))
 		dest_len = 0;
-	}
 
 	if (dest_len && dest) {
 		/* Did we already process the terminating zero ? */
@@ -1586,20 +1571,12 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 		if (src_len >= 1024*1024) {
 			smb_panic("Bad src length in pull_ucs2_base_talloc\n");
 		}
-	} else {
-		/* Can't have an unlimited length
-		 * non STR_TERMINATE'd.
-		 */
-		if (src_len == (size_t)-1) {
-			errno = EINVAL;
-			return 0;
-		}
 	}
 
-	/* src_len != -1 here. */
-
 	/* ucs2 is always a multiple of 2 bytes */
-	src_len &= ~1;
+	if (src_len != (size_t)-1) {
+		src_len &= ~1;
+	}
 
 	dest_len = convert_string_talloc(ctx,
 					CH_UTF16LE,
@@ -1611,6 +1588,9 @@ size_t pull_ucs2_base_talloc(TALLOC_CTX *ctx,
 	if (dest_len == (size_t)-1) {
 		dest_len = 0;
 	}
+
+	if (src_len == (size_t)-1)
+		src_len = dest_len*2;
 
 	if (dest_len) {
 		/* Did we already process the terminating zero ? */
