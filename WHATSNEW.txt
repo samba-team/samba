@@ -56,8 +56,7 @@ o   Jeff Layton <jlayton@redhat.com>
 
 
 o   Volker Lendecke <vl@samba.org>
-    * BUG 5691: Fig smbd panic on Solaris.
-    * BUG 5778: Check if strlcpy and strlcat are already defined.
+    * BUG 5691: SIGBUS und Solaris.
     * Fix a potential NULL deref in found by the IBM Checker.
     * Fix an uninitialized variable found by the IBM Checker.
     * Fix an unlikely memleak found by the IBM Checker.
