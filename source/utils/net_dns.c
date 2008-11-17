@@ -145,6 +145,7 @@ error:
 int get_my_ip_address( struct sockaddr_storage **pp_ss )
 
 {
+	struct iface_struct nics[MAX_INTERFACES];
 	int i, n;
 	struct sockaddr_storage *list = NULL;
 	int count = 0;
