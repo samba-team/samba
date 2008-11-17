@@ -282,5 +282,5 @@ void pcap_printer_fn_specific(const struct pcap_cache *pc,
 
 void pcap_printer_fn(void (*fn)(const char *, const char *, void *), void *pdata)
 {
-	pcap_printer_fn_specific(pcap_cache, fn, pdata);
+	return pcap_printer_fn_specific(pcap_cache, fn, pdata);
 }
