@@ -285,11 +285,11 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
-			     enum netr_SamDatabaseID database_id,
-			     struct netr_DELTA_ENUM_ARRAY *r,
-			     bool last_query,
-			     struct samsync_context *ctx)
+static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
+				    enum netr_SamDatabaseID database_id,
+				    struct netr_DELTA_ENUM_ARRAY *r,
+				    bool last_query,
+				    struct samsync_context *ctx)
 {
 	int i;
 
