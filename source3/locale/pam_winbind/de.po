@@ -62,7 +62,7 @@ msgstr "Sie können sich zum jetzigen Zeitpunkt nicht anmelden"
 #: ../../nsswitch/pam_winbind.c:601
 #, fuzzy
 msgid "Your account has expired. "
-msgstr "Ihr Passwort ist abgelaufen"
+msgstr "Ihr Benutzerkonto ist abgelaufen"
 
 #: ../../nsswitch/pam_winbind.c:602 ../../nsswitch/pam_winbind.c:605 ../../nsswitch/pam_winbind.c:608
 msgid "Please contact your System administrator"
@@ -70,15 +70,15 @@ msgstr "Bitte kontaktieren Sie ihren System-Administrator"
 
 #: ../../nsswitch/pam_winbind.c:604
 msgid "Your account is disabled. "
-msgstr "Ihr Account ist deaktiviert. "
+msgstr "Ihr Benutzerkonto ist deaktiviert. "
 
 #: ../../nsswitch/pam_winbind.c:607
 msgid "Your account has been locked. "
-msgstr "Ihr Account wurde gesperrt. "
+msgstr "Ihr Benutzerkonto wurde gesperrt. "
 
 #: ../../nsswitch/pam_winbind.c:610 ../../nsswitch/pam_winbind.c:612 ../../nsswitch/pam_winbind.c:614
 msgid "Invalid Trust Account"
-msgstr "Ungültiger Maschinen-Account"
+msgstr "Ungültiges Maschinen-Konto"
 
 #: ../../nsswitch/pam_winbind.c:616
 msgid "Access is denied"
@@ -103,7 +103,7 @@ msgstr "Tag"
 
 #: ../../nsswitch/pam_winbind.c:1253
 msgid "Grace login. Please change your password as soon you're online again"
-msgstr ""
+msgstr "Kulanzanmeldung. Bitte ändern sie ihr Passwort sobald sie wieder online sind"
 
 #: ../../nsswitch/pam_winbind.c:1263
 msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
@@ -115,7 +115,7 @@ msgid ""
 "with the domain controller.  Please verify the system time.\n"
 msgstr ""
 "Anforderung eines Kerberos Tickets aufgrund Zeitunterscheid zum \n"
-"Domänen-Controller fehlgeschlagen. Bitte überprüfen Sie die System Zeit.\n"
+"Domänen-Controller fehlgeschlagen. Bitte überprüfen Sie die Systemzeit.\n"
 
 #: ../../nsswitch/pam_winbind.c:1356
 msgid "Your password "
@@ -133,7 +133,7 @@ msgstr "kann keines der %d vorherigen Passwörter enthalten; "
 
 #: ../../nsswitch/pam_winbind.c:1382
 msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
-msgstr "muß Großbuchstaben, Ziffern oder Punktzeichen enthalten; kann nicht den Anmelde- oder Vollnamen enthalten; "
+msgstr "muß Großbuchstaben, Ziffern oder Punktzeichen enthalten; kann nicht den Benutzer- oder vollen Namen enthalten; "
 
 #: ../../nsswitch/pam_winbind.c:1392
 msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
