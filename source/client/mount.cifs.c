@@ -992,12 +992,12 @@ static struct option longopts[] = {
 };
 
 /* convert a string to uppercase. return false if the string
- * wasn't ASCII. Return success on a NULL ptr */
+ * wasn't ASCII or was a NULL ptr */
 static int
 uppercase_string(char *string)
 {
 	if (!string)
-		return 1;
+		return 0;
 
 	while (*string) {
 		/* check for unicode */
