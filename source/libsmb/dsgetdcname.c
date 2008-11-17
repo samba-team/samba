@@ -356,8 +356,6 @@ static NTSTATUS store_cldap_reply(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	status = NT_STATUS_OK;
-
  done:
 	data_blob_free(&blob);
 
