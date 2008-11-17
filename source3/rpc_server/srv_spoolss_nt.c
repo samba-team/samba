@@ -8519,13 +8519,15 @@ done:
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_DeleteForm
+****************************************************************/
 
-WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u)
+WERROR _spoolss_DeleteForm(pipes_struct *p,
+			   struct spoolss_DeleteForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *form_name = &q_u->name;
+	POLICY_HND *handle = r->in.handle;
+	const char *form_name = r->in.form_name;
 	nt_forms_struct tmpForm;
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -8534,10 +8536,11 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	DEBUG(5,("spoolss_deleteform\n"));
+	DEBUG(5,("_spoolss_DeleteForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeleteForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8554,21 +8557,21 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	}
 
 	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_deleteform: denied by handle permissions.\n"));
+		DEBUG(2,("_spoolss_DeleteForm: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
 	/* can't delete if builtin */
 
-	if (get_a_builtin_ntform(form_name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form_name,&tmpForm)) {
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
 
 	count = get_ntforms(&list);
 
-	if ( !delete_a_form(&list, form_name, &count, &status ))
+	if ( !delete_a_form_by_string(&list, form_name, &count, &status ))
 		goto done;
 
 	/*
@@ -10216,17 +10219,6 @@ WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 
 WERROR _spoolss_AddForm(pipes_struct *p,
 			struct spoolss_AddForm *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeleteForm
-****************************************************************/
-
-WERROR _spoolss_DeleteForm(pipes_struct *p,
-			   struct spoolss_DeleteForm *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
