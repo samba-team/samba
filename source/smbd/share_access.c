@@ -252,9 +252,11 @@ bool user_ok_token(const char *username, const char *domain,
 
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  struct nt_user_token *token, int snum)
+				  struct nt_user_token *token,
+				  connection_struct *conn)
 {
-	bool result = lp_readonly(snum);
+	int snum = SNUM(conn);
+	bool result = conn->read_only;
 
 	if (lp_readlist(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
