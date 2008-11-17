@@ -86,6 +86,11 @@ struct samsync_context {
 	void *private_data;
 };
 
+extern const struct samsync_ops libnet_samsync_ldif_ops;
+extern const struct samsync_ops libnet_samsync_keytab_ops;
+extern const struct samsync_ops libnet_samsync_display_ops;
+extern const struct samsync_ops libnet_samsync_passdb_ops;
+
 NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				enum netr_SamDatabaseID database_id,
 				struct netr_DELTA_ENUM_ARRAY *r,

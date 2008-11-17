@@ -188,3 +188,7 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 }
 
 #endif /* defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC) */
+
+const struct samsync_ops libnet_samsync_keytab_ops = {
+	.process_objects	= fetch_sam_entries_keytab,
+};
