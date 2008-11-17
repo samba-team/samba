@@ -95,6 +95,8 @@ HEIMDAL_HDB_1.0 {
 		free_HDB_Ext_Aliases;
 		length_HDB_extension;
 		encode_HDB_extension;
+		length_HDB_Ext_PKINIT_acl;
+		encode_HDB_Ext_PKINIT_acl;
 
 	local:
 		*;
