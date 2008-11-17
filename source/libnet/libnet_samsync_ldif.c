@@ -1156,11 +1156,11 @@ static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
-				enum netr_SamDatabaseID database_id,
-				struct netr_DELTA_ENUM_ARRAY *r,
-				bool last_query,
-				struct samsync_context *ctx)
+static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				       enum netr_SamDatabaseID database_id,
+				       struct netr_DELTA_ENUM_ARRAY *r,
+				       bool last_query,
+				       struct samsync_context *ctx)
 {
 	NTSTATUS status;
 	int i;
@@ -1216,11 +1216,11 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 
 #else /* HAVE_LDAP */
 
-NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
-				enum netr_SamDatabaseID database_id,
-				struct netr_DELTA_ENUM_ARRAY *r,
-				bool last_query,
-				struct samsync_context *ctx)
+static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				       enum netr_SamDatabaseID database_id,
+				       struct netr_DELTA_ENUM_ARRAY *r,
+				       bool last_query,
+				       struct samsync_context *ctx)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }

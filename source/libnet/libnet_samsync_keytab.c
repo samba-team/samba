@@ -105,11 +105,11 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx)
+static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
+					 enum netr_SamDatabaseID database_id,
+					 struct netr_DELTA_ENUM_ARRAY *r,
+					 bool last_query,
+					 struct samsync_context *ctx)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
@@ -178,11 +178,11 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 
 #else
 
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx)
+static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
+					 enum netr_SamDatabaseID database_id,
+					 struct netr_DELTA_ENUM_ARRAY *r,
+					 bool last_query,
+					 struct samsync_context *ctx)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
