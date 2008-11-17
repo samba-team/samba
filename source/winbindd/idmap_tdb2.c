@@ -235,9 +235,7 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 	NTSTATUS status;
 
 	status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -299,12 +297,6 @@ static NTSTATUS idmap_tdb2_get_hwm(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t hwm;
 	uint32_t high_hwm;
-	NTSTATUS status;
-
-	status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -560,12 +552,6 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 	NTSTATUS ret;
 	TDB_DATA data;
 	char *keystr;
-	NTSTATUS status;
-
-	status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	if (!ctx || !map) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -661,12 +647,6 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
-	NTSTATUS status;
-
-	status = idmap_tdb2_open_perm_db();
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	if ((keystr = sid_string_talloc(ctx, map->sid)) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
