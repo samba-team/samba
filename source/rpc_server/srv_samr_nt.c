@@ -2910,10 +2910,6 @@ static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
 			unix_to_nt_time_abs(&nt_expire, u_expire);
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
-			if (lp_check_password_script() && *lp_check_password_script()) {
-				password_properties |= DOMAIN_PASSWORD_COMPLEX;
-			}
-
 			init_samr_DomInfo1(&dom_info->info1,
 					   (uint16)min_pass_len,
 					   (uint16)pass_hist,
