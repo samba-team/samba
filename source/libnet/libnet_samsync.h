@@ -27,11 +27,6 @@ enum net_samsync_mode {
 
 struct samsync_context;
 
-typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
-				       enum netr_SamDatabaseID,
-				       struct netr_DELTA_ENUM_ARRAY *,
-				       bool,
-				       struct samsync_context *);
 struct samsync_ops {
 	NTSTATUS (*startup)(TALLOC_CTX *mem_ctx,
 			    struct samsync_context *ctx,
@@ -82,7 +77,6 @@ struct samsync_context {
 
 	const struct samsync_ops *ops;
 
-	samsync_delta_fn_t delta_fn;
 	void *private_data;
 };
 
@@ -90,24 +84,3 @@ extern const struct samsync_ops libnet_samsync_ldif_ops;
 extern const struct samsync_ops libnet_samsync_keytab_ops;
 extern const struct samsync_ops libnet_samsync_display_ops;
 extern const struct samsync_ops libnet_samsync_passdb_ops;
-
-NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
-				enum netr_SamDatabaseID database_id,
-				struct netr_DELTA_ENUM_ARRAY *r,
-				bool last_query,
-				struct samsync_context *ctx);
-NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
-			   enum netr_SamDatabaseID database_id,
-			   struct netr_DELTA_ENUM_ARRAY *r,
-			   bool last_query,
-			   struct samsync_context *ctx);
-NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
-			     enum netr_SamDatabaseID database_id,
-			     struct netr_DELTA_ENUM_ARRAY *r,
-			     bool last_query,
-			     struct samsync_context *ctx);
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx);

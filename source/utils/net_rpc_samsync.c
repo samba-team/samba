@@ -123,7 +123,7 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_DUMP;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= display_sam_entries;
+	ctx->ops		= &libnet_samsync_display_ops;
 	ctx->domain_name	= domain_name;
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
@@ -206,7 +206,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_PASSDB;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries;
+	ctx->ops		= &libnet_samsync_passdb_ops;
 	ctx->domain_name	= domain_name;
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
@@ -292,7 +292,7 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_LDIF;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries_ldif;
+	ctx->ops		= &libnet_samsync_ldif_ops;
 	ctx->domain_name	= domain_name;
 
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
@@ -377,7 +377,7 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_KEYTAB;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries_keytab;
+	ctx->ops		= &libnet_samsync_keytab_ops;
 	ctx->domain_name	= domain_name;
 	ctx->username		= c->opt_user_name;
 	ctx->password		= c->opt_password;
