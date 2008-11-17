@@ -7048,11 +7048,10 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return;
 		}
+	} else if (IVAL(pdata,0) != 4) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
 	}
-	/* If total_data == 4 Windows doesn't care what values
-	 * are placed in that field, it just ignores them.
-	 * The System i QNTC IBM SMB client puts bad values here,
-	 * so ignore them. */
 
 	status = create_directory(conn, req, directory);
 
