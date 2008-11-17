@@ -300,3 +300,7 @@ NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+const struct samsync_ops libnet_samsync_display_ops = {
+	.process_objects	= display_sam_entries,
+};

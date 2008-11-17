@@ -786,3 +786,7 @@ NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+const struct samsync_ops libnet_samsync_passdb_ops = {
+	.process_objects	= fetch_sam_entries,
+};

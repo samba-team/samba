@@ -1226,3 +1226,7 @@ NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 }
 
 #endif
+
+const struct samsync_ops libnet_samsync_ldif_ops = {
+	.process_objects	= fetch_sam_entries_ldif,
+};
