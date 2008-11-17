@@ -8459,7 +8459,8 @@ bool user_ok_token(const char *username, const char *domain,
 		   struct nt_user_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  struct nt_user_token *token, int snum);
+				  struct nt_user_token *token,
+				  connection_struct *conn);
 
 /* The following definitions come from smbd/srvstr.c  */
 
