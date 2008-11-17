@@ -120,10 +120,6 @@ void async_request(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 
 	SMB_ASSERT(continuation != NULL);
 
-	DEBUG(10, ("Sending request to child pid %d (domain=%s)\n",
-		(int)child->pid,
-		(child->domain != NULL) ? child->domain->name : "''"));
-
 	state = TALLOC_P(mem_ctx, struct winbindd_async_request);
 
 	if (state == NULL) {
