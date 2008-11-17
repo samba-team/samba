@@ -101,7 +101,8 @@ get any fatal errors that should immediately terminate the calling
 SMB processing whilst resolving.
 
 If the saved_last_component != 0, then the unmodified last component
-of the pathname is returned there. If saved_last_component == 0 then nothing
+of the pathname is returned there. This is used in an exceptional
+case in reply_mv (so far). If saved_last_component == 0 then nothing
 is returned there.
 
 If last_component_wcard is true then a MS wildcard was detected and
