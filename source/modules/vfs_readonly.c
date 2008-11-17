@@ -64,12 +64,20 @@ static int readonly_connect(vfs_handle_struct *handle,
 					     "period", period_def); 
 
   if (period && period[0] && period[1]) {
+    int i;
     time_t current_time = time(NULL);
     time_t begin_period = get_date(period[0], &current_time);
     time_t end_period   = get_date(period[1], &current_time);
 
     if ((current_time >= begin_period) && (current_time <= end_period)) {
+      connection_struct *conn = handle->conn;
+
       handle->conn->read_only = True;
+
+      /* Wipe out the VUID cache. */
+      for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
+        conn->vuid_cache.array[i].vuid = UID_FIELD_INVALID;
+      }
     }
 
     return SMB_VFS_NEXT_CONNECT(handle, service, user);
