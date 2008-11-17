@@ -32,6 +32,10 @@
 static uint32 ldif_gid = 999;
 static uint32 ldif_uid = 999;
 
+/* global counters */
+static uint32_t g_index = 0;
+static uint32_t a_index = 0;
+
 /* Structure for mapping accounts to groups */
 /* Array element is the group rid */
 typedef struct _groupmap {
@@ -1046,8 +1050,8 @@ static NTSTATUS fetch_sam_entry_ldif(TALLOC_CTX *mem_ctx,
 				     enum netr_SamDatabaseID database_id,
 				     struct netr_DELTA_ENUM *r,
 				     struct samsync_context *ctx,
-				     uint32_t *a_index,
-				     uint32_t *g_index)
+				     uint32_t *a_index_p,
+				     uint32_t *g_index_p)
 {
 	union netr_DELTA_UNION u = r->delta_union;
 	union netr_DELTA_ID_UNION id = r->delta_id_union;
@@ -1061,34 +1065,34 @@ static NTSTATUS fetch_sam_entry_ldif(TALLOC_CTX *mem_ctx,
 		case NETR_DELTA_GROUP:
 			fetch_group_info_to_ldif(mem_ctx,
 						 u.group,
-						 &l->groupmap[*g_index],
+						 &l->groupmap[*g_index_p],
 						 l->add_file,
 						 ctx->domain_sid_str,
 						 l->suffix);
-			(*g_index)++;
+			(*g_index_p)++;
 			break;
 
 		case NETR_DELTA_USER:
 			fetch_account_info_to_ldif(mem_ctx,
 						   u.user,
 						   l->groupmap,
-						   &l->accountmap[*a_index],
+						   &l->accountmap[*a_index_p],
 						   l->add_file,
 						   ctx->domain_sid_str,
 						   l->suffix,
 						   l->num_alloced);
-			(*a_index)++;
+			(*a_index_p)++;
 			break;
 
 		case NETR_DELTA_ALIAS:
 			fetch_alias_info_to_ldif(mem_ctx,
 						 u.alias,
-						 &l->groupmap[*g_index],
+						 &l->groupmap[*g_index_p],
 						 l->add_file,
 						 ctx->domain_sid_str,
 						 l->suffix,
 						 database_id);
-			(*g_index)++;
+			(*g_index_p)++;
 			break;
 
 		case NETR_DELTA_GROUP_MEMBER:
@@ -1156,15 +1160,12 @@ static NTSTATUS ldif_realloc_maps(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
-				       enum netr_SamDatabaseID database_id,
-				       struct netr_DELTA_ENUM_ARRAY *r,
-				       bool last_query,
-				       struct samsync_context *ctx)
+static NTSTATUS init_ldif(TALLOC_CTX *mem_ctx,
+			  struct samsync_context *ctx,
+			  enum netr_SamDatabaseID database_id,
+			  uint64_t *sequence_num)
 {
 	NTSTATUS status;
-	int i;
-	uint32_t g_index = 0, a_index = 0;
 	struct samsync_ldif_context *ldif_ctx =
 		(struct samsync_ldif_context *)ctx->private_data;
 
@@ -1174,10 +1175,26 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				   ctx->domain_sid_str,
 				   &ldif_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto failed;
+		return status;
 	}
 
 	ctx->private_data = ldif_ctx;
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
+				       enum netr_SamDatabaseID database_id,
+				       struct netr_DELTA_ENUM_ARRAY *r,
+				       struct samsync_context *ctx)
+{
+	NTSTATUS status;
+	int i;
+	struct samsync_ldif_context *ldif_ctx =
+		(struct samsync_ldif_context *)ctx->private_data;
 
 	status = ldif_realloc_maps(mem_ctx, ldif_ctx, r->num_deltas);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1193,18 +1210,6 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* This was the last query */
-	if (last_query) {
-		ldif_write_output(database_id, ldif_ctx);
-		if (ldif_ctx->ldif_file != stdout) {
-			ctx->result_message = talloc_asprintf(mem_ctx,
-				"Vampired %d accounts and %d groups to %s",
-				a_index, g_index, ctx->output_filename);
-		}
-		ldif_free_context(ldif_ctx);
-		ctx->private_data = NULL;
-	}
-
 	return NT_STATUS_OK;
 
  failed:
@@ -1214,13 +1219,53 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS close_ldif(TALLOC_CTX *mem_ctx,
+			   struct samsync_context *ctx,
+			   enum netr_SamDatabaseID database_id,
+			   uint64_t sequence_num)
+{
+	struct samsync_ldif_context *ldif_ctx =
+		(struct samsync_ldif_context *)ctx->private_data;
+
+	/* This was the last query */
+	ldif_write_output(database_id, ldif_ctx);
+	if (ldif_ctx->ldif_file != stdout) {
+		ctx->result_message = talloc_asprintf(ctx,
+			"Vampired %d accounts and %d groups to %s",
+			a_index, g_index, ctx->output_filename);
+	}
+
+	ldif_free_context(ldif_ctx);
+	ctx->private_data = NULL;
+
+	return NT_STATUS_OK;
+}
+
 #else /* HAVE_LDAP */
+
+static NTSTATUS init_ldif(TALLOC_CTX *mem_ctx,
+			  struct samsync_context *ctx,
+			  enum netr_SamDatabaseID database_id,
+			  uint64_t *sequence_num)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
 
 static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 				       enum netr_SamDatabaseID database_id,
 				       struct netr_DELTA_ENUM_ARRAY *r,
-				       bool last_query,
 				       struct samsync_context *ctx)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS close_ldif(TALLOC_CTX *mem_ctx,
+			   struct samsync_context *ctx,
+			   enum netr_SamDatabaseID database_id,
+			   uint64_t sequence_num)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -1228,5 +1273,7 @@ static NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
 #endif
 
 const struct samsync_ops libnet_samsync_ldif_ops = {
+	.startup		= init_ldif,
 	.process_objects	= fetch_sam_entries_ldif,
+	.finish			= close_ldif,
 };

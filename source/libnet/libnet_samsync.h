@@ -35,7 +35,6 @@ struct samsync_ops {
 	NTSTATUS (*process_objects)(TALLOC_CTX *mem_ctx,
 				    enum netr_SamDatabaseID id,
 				    struct netr_DELTA_ENUM_ARRAY *array,
-				    bool last_query,
 				    struct samsync_context *ctx);
 	NTSTATUS (*finish)(TALLOC_CTX *mem_ctx,
 			   struct samsync_context *ctx,
