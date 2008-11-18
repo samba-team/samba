@@ -78,27 +78,26 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 				       bool last_query,
 				       struct libnet_keytab_context *ctx)
 {
-	struct libnet_keytab_entry entry;
+	NTSTATUS status;
+	uint32_t kvno = 0;
+	DATA_BLOB blob;
 
 	if (memcmp(r->ntpassword.hash, ctx->zero_buf, 16) == 0) {
 		return NT_STATUS_OK;
 	}
 
-	entry.name = talloc_strdup(mem_ctx, r->account_name.string);
-	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
-					  r->account_name.string,
-					  ctx->dns_domain_name);
-	entry.password = data_blob_talloc(mem_ctx, r->ntpassword.hash, 16);
-	entry.kvno = ads_get_kvno(ctx->ads, entry.name);
-	entry.enctype = ENCTYPE_ARCFOUR_HMAC;
+	kvno = ads_get_kvno(ctx->ads, r->account_name.string);
+	blob = data_blob_const(r->ntpassword.hash, 16);
 
-	NT_STATUS_HAVE_NO_MEMORY(entry.name);
-	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
-	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
-
-
-	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
-		     &ctx->entries, &ctx->count);
+	status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx,
+						     kvno,
+						     r->account_name.string,
+						     NULL,
+						     ENCTYPE_ARCFOUR_HMAC,
+						     blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
