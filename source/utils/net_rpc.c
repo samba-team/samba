@@ -5201,7 +5201,7 @@ NTSTATUS rpc_init_shutdown_internals(const DOM_SID *domain_sid,
 	struct initshutdown_String msg_string;
 	struct initshutdown_String_sub s;
 
-	if (opt_comment) {
+	if (opt_comment && strlen(opt_comment)) {
 		msg = opt_comment;
 	}
 	if (opt_timeout) {
@@ -5255,7 +5255,7 @@ NTSTATUS rpc_reg_shutdown_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	WERROR werr;
 
-	if (opt_comment) {
+	if (opt_comment && strlen(opt_comment)) {
 		msg = opt_comment;
 	}
 	s.name = msg;
