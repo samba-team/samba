@@ -1,0 +1,181 @@
+# pam_winbind message translations (german)
+# Copyright (C) 2008 Guenther Deschner <gd@samba.org>
+# This file is distributed under the same license as the pam_winbind package.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: @PACKAGE@\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2008-11-17 12:00+0100\n"
+"PO-Revision-Date: 2008-11-13 14:29+0100\n"
+"Last-Translator: Guenther Deschner <gd@samba.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ../../nsswitch/pam_winbind.c:579
+msgid "Success"
+msgstr "Erfolgreich"
+
+#: ../../nsswitch/pam_winbind.c:581
+msgid "No primary Domain Controler available"
+msgstr "Kein primärer Domänen-Controller verfügbar"
+
+#: ../../nsswitch/pam_winbind.c:583
+msgid "No domain controllers found"
+msgstr "Keine Domänen-Controller gefunden"
+
+#: ../../nsswitch/pam_winbind.c:585
+msgid "No logon servers"
+msgstr "Keine Anmeldeserver verfügbar"
+
+#: ../../nsswitch/pam_winbind.c:587
+msgid "Password too short"
+msgstr "Passwort ist zu kurz"
+
+#: ../../nsswitch/pam_winbind.c:589
+msgid "The password of this user is too recent to change"
+msgstr "Das Passwort des Benutzers kann noch nicht erneut geändert werden"
+
+#: ../../nsswitch/pam_winbind.c:591
+msgid "Password is already in password history"
+msgstr "Das neue Passwort ist bereits in der Passwort-Historie enthalten"
+
+#: ../../nsswitch/pam_winbind.c:593
+msgid "Your password has expired"
+msgstr "Ihr Passwort ist abgelaufen"
+
+#: ../../nsswitch/pam_winbind.c:595
+msgid "You need to change your password now"
+msgstr "Sie müssen Ihr Passwort unmittelbar ändern"
+
+#: ../../nsswitch/pam_winbind.c:597
+msgid "You are not allowed to logon from this workstation"
+msgstr "Sie können sich nicht von diesem Arbeitsplatz aus anmelden"
+
+#: ../../nsswitch/pam_winbind.c:599
+msgid "You are not allowed to logon at this time"
+msgstr "Sie können sich zum jetzigen Zeitpunkt nicht anmelden"
+
+#: ../../nsswitch/pam_winbind.c:601
+msgid "Your account has expired. Please contact your System administrator"
+msgstr "Ihr Benutzerkonto ist abgelaufen. Bitte kontaktieren Sie ihren System-Administrator"
+
+#: ../../nsswitch/pam_winbind.c:604
+msgid "Your account is disabled. Please contact your System administrator"
+msgstr "Ihr Benutzerkonto ist deaktiviert. Bitte kontaktieren Sie ihren System-Administrator"
+
+#: ../../nsswitch/pam_winbind.c:607
+msgid "Your account has been locked. Please contact your System administrator"
+msgstr "Ihr Benutzerkonto wurde gesperrt. Bitte kontaktieren Sie ihren System-Administrator"
+
+#: ../../nsswitch/pam_winbind.c:610 ../../nsswitch/pam_winbind.c:612 ../../nsswitch/pam_winbind.c:614
+msgid "Invalid Trust Account"
+msgstr "Ungültiges Maschinen-Konto"
+
+#: ../../nsswitch/pam_winbind.c:616
+msgid "Access is denied"
+msgstr "Zugriff verweigert"
+
+#: ../../nsswitch/pam_winbind.c:854
+msgid "Your password expires today"
+msgstr "Ihr Passwort läuft heute ab"
+
+#: ../../nsswitch/pam_winbind.c:860
+#, c-format
+msgid "Your password will expire in %d %s"
+msgstr "Ihr Passwort wird in %d %s ungültig"
+
+#: ../../nsswitch/pam_winbind.c:861
+msgid "days"
+msgstr "Tagen"
+
+#: ../../nsswitch/pam_winbind.c:861
+msgid "day"
+msgstr "Tag"
+
+#: ../../nsswitch/pam_winbind.c:1253
+msgid "Grace login. Please change your password as soon you're online again"
+msgstr "Kulanzanmeldung. Bitte ändern sie ihr Passwort sobald sie wieder online sind"
+
+#: ../../nsswitch/pam_winbind.c:1263
+msgid "Domain Controller unreachable, using cached credentials instead. Network resources may be unavailable"
+msgstr "Domänen-Controller unerreichbar. Anmeldung erfolgte mit gespeicherten Anmeldedaten. Netzwerk Ressourcen können momentan nicht verfügbar sein"
+
+#: ../../nsswitch/pam_winbind.c:1288
+msgid ""
+"Failed to establish your Kerberos Ticket cache due time differences\n"
+"with the domain controller.  Please verify the system time.\n"
+msgstr ""
+"Anforderung eines Kerberos Tickets aufgrund Zeitunterscheid zum \n"
+"Domänen-Controller fehlgeschlagen. Bitte überprüfen Sie die Systemzeit.\n"
+
+#: ../../nsswitch/pam_winbind.c:1356
+msgid "Your password "
+msgstr "Ihr Passwort "
+
+#: ../../nsswitch/pam_winbind.c:1363
+#, c-format
+msgid "must be at least %d characters; "
+msgstr "muß mindestens %d Zeichen lang sein; "
+
+#: ../../nsswitch/pam_winbind.c:1372
+#, c-format
+msgid "cannot repeat any of your previous %d passwords; "
+msgstr "kann keines der %d vorherigen Passwörter enthalten; "
+
+#: ../../nsswitch/pam_winbind.c:1382
+msgid "must contain capitals, numerals or punctuation; and cannot contain your account or full name; "
+msgstr "muß Großbuchstaben, Ziffern oder Punktzeichen enthalten; kann nicht den Benutzer- oder vollen Namen enthalten; "
+
+#: ../../nsswitch/pam_winbind.c:1392
+msgid "Please type a different password. Type a password which meets these requirements in both text boxes."
+msgstr "Bitte wählen Sie ein anderes Passwort. Geben Sie ein geeignetes Passwort in beide Textfelder ein."
+
+#: ../../nsswitch/pam_winbind.c:1419
+#, c-format
+msgid "Creating directory: %s failed: %s"
+msgstr "Anlegen des Verzeichnis: %s fehlgeschlagen: %s"
+
+#: ../../nsswitch/pam_winbind.c:1877
+msgid "Password does not meet complexity requirements"
+msgstr "Passwort genügt nicht den Komplexitätsanforderungen"
+
+#.
+#. * First get the name of a user
+#.
+#: ../../nsswitch/pam_winbind.c:2336 ../../nsswitch/pam_winbind.c:2883
+msgid "Username: "
+msgstr "Benuzername: "
+
+#: ../../nsswitch/pam_winbind.c:2513
+msgid "Password: "
+msgstr "Passwort: "
+
+#. instruct user what is happening
+#: ../../nsswitch/pam_winbind.c:2921
+#, fuzzy
+msgid "Changing password for"
+msgstr "Ändere Passwort für"
+
+#: ../../nsswitch/pam_winbind.c:2934
+msgid "(current) NT password: "
+msgstr "(aktuelles) NT Passwort: "
+
+#: ../../nsswitch/pam_winbind.c:3004
+msgid "Enter new NT password: "
+msgstr "Neues NT Passwort eingeben: "
+
+#: ../../nsswitch/pam_winbind.c:3005
+msgid "Retype new NT password: "
+msgstr "Neues NT Passwort wiederholen: "
+
+#.
+#. * here is the string to inform the user that the new passwords they
+#. * typed were not the same.
+#.
+#: ../../nsswitch/pam_winbind.h:122
+msgid "Sorry, passwords do not match"
+msgstr "Passwörter stimmen leider nicht überein"
