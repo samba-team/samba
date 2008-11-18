@@ -331,45 +331,23 @@ void libnet_init_netr_ChangeLogEntry(struct samsync_object *o,
  * libnet_samsync_delta
  */
 
-static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
+static NTSTATUS libnet_samsync_delta(TALLOC_CTX *mem_ctx,
+				     enum netr_SamDatabaseID database_id,
+				     uint64_t *sequence_num,
 				     struct samsync_context *ctx,
 				     struct netr_ChangeLogEntry *e)
 {
 	NTSTATUS result;
 	NTSTATUS callback_status;
-	TALLOC_CTX *mem_ctx;
 	const char *logon_server = ctx->cli->desthost;
 	const char *computername = global_myname();
 	struct netr_Authenticator credential;
 	struct netr_Authenticator return_authenticator;
 	uint16_t restart_state = 0;
 	uint32_t sync_context = 0;
-	const char *debug_str;
 	DATA_BLOB session_key;
-	uint64_t sequence_num = 0;
 
 	ZERO_STRUCT(return_authenticator);
-
-	if (!ctx->ops) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!(mem_ctx = talloc_init("libnet_samsync"))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (ctx->ops->startup) {
-		result = ctx->ops->startup(mem_ctx, ctx,
-					   database_id, &sequence_num);
-		if (!NT_STATUS_IS_OK(result)) {
-			goto out;
-		}
-	}
-
-	debug_str = samsync_debug_str(mem_ctx, ctx->mode, database_id);
-	if (debug_str) {
-		d_fprintf(stderr, "%s\n", debug_str);
-	}
 
 	do {
 		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
@@ -386,14 +364,15 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 							  *e,
 							  0,
 							  &delta_enum_array);
-		} else if (!ctx->force_full_replication && (sequence_num > 0)) {
+		} else if (!ctx->force_full_replication &&
+		           sequence_num && (*sequence_num > 0)) {
 			result = rpccli_netr_DatabaseDeltas(ctx->cli, mem_ctx,
 							    logon_server,
 							    computername,
 							    &credential,
 							    &return_authenticator,
 							    database_id,
-							    &sequence_num,
+							    sequence_num,
 							    &delta_enum_array,
 							    0xffff);
 		} else {
@@ -434,7 +413,7 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 		/* Process results */
 		callback_status = ctx->ops->process_objects(mem_ctx, database_id,
 							    delta_enum_array,
-							    &sequence_num,
+							    sequence_num,
 							    ctx);
 		if (!NT_STATUS_IS_OK(callback_status)) {
 			result = callback_status;
@@ -450,32 +429,6 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 
  out:
 
-	if (NT_STATUS_IS_OK(result) && ctx->ops->finish) {
-		callback_status = ctx->ops->finish(mem_ctx, ctx,
-						   database_id, sequence_num);
-		if (!NT_STATUS_IS_OK(callback_status)) {
-			result = callback_status;
-		}
-	}
-
-	if (NT_STATUS_IS_ERR(result) && !ctx->error_message) {
-
-		ctx->error_message = talloc_asprintf(ctx,
-			"Failed to fetch %s database: %s",
-			samsync_database_str(database_id),
-			nt_errstr(result));
-
-		if (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) {
-
-			ctx->error_message =
-				talloc_asprintf_append(ctx->error_message,
-					"\nPerhaps %s is a Windows native mode domain?",
-					ctx->domain_name);
-		}
-	}
-
-	talloc_destroy(mem_ctx);
-
 	return result;
 }
 
@@ -487,10 +440,37 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 			struct samsync_context *ctx)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS callback_status;
+	TALLOC_CTX *mem_ctx;
+	const char *debug_str;
+	uint64_t sequence_num = 0;
 	int i = 0;
 
+	if (!(mem_ctx = talloc_new(ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!ctx->ops) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (ctx->ops->startup) {
+		status = ctx->ops->startup(mem_ctx, ctx,
+					   database_id, &sequence_num);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	debug_str = samsync_debug_str(mem_ctx, ctx->mode, database_id);
+	if (debug_str) {
+		d_fprintf(stderr, "%s\n", debug_str);
+	}
+
 	if (!ctx->single_object_replication) {
-		return libnet_samsync_delta(database_id, ctx, NULL);
+		status = libnet_samsync_delta(mem_ctx, database_id,
+					      &sequence_num, ctx, NULL);
+		goto done;
 	}
 
 	for (i=0; i<ctx->num_objects; i++) {
@@ -503,11 +483,40 @@ NTSTATUS libnet_samsync(enum netr_SamDatabaseID database_id,
 
 		libnet_init_netr_ChangeLogEntry(&ctx->objects[i], &e);
 
-		status = libnet_samsync_delta(database_id, ctx, &e);
+		status = libnet_samsync_delta(mem_ctx, database_id,
+					      &sequence_num, ctx, &e);
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	}
+
+ done:
+
+	if (NT_STATUS_IS_OK(status) && ctx->ops->finish) {
+		callback_status = ctx->ops->finish(mem_ctx, ctx,
+						   database_id, sequence_num);
+		if (!NT_STATUS_IS_OK(callback_status)) {
+			status = callback_status;
+		}
+	}
+
+	if (NT_STATUS_IS_ERR(status) && !ctx->error_message) {
+
+		ctx->error_message = talloc_asprintf(ctx,
+			"Failed to fetch %s database: %s",
+			samsync_database_str(database_id),
+			nt_errstr(status));
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+
+			ctx->error_message =
+				talloc_asprintf_append(ctx->error_message,
+					"\nPerhaps %s is a Windows native mode domain?",
+					ctx->domain_name);
+		}
+	}
+
+	talloc_destroy(mem_ctx);
 
 	return status;
 }
