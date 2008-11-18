@@ -2,12 +2,15 @@
   miscellaneous IDL structures
 */
 
+cpp_quote("#define netr_SamDatabaseID8Bit netr_SamDatabaseID")
 
 [
 	pointer_default(unique)
 ]
 interface misc
 {
+	typedef enum netr_SamDatabaseID8Bit netr_SamDatabaseID8Bit;
+
 	typedef [public,noprint,gensize,noejs] struct {
 		uint32 time_low;
 		uint16 time_mid;
