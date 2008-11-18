@@ -98,6 +98,18 @@ enum SERVICE_CONTROL
 #define SC_RIGHT_SVC_INTERROGATE ( 0x0080 )
 #define SC_RIGHT_SVC_USER_DEFINED_CONTROL ( 0x0100 )
 
+struct QUERY_SERVICE_CONFIG {
+	uint32_t service_type;
+	uint32_t start_type;
+	uint32_t error_control;
+	const char *executablepath;/* [unique,range(0,8192),charset(UTF16)] */
+	const char *loadordergroup;/* [unique,range(0,8192),charset(UTF16)] */
+	uint32_t tag_id;
+	const char *dependencies;/* [unique,range(0,8192),charset(UTF16)] */
+	const char *startname;/* [unique,range(0,8192),charset(UTF16)] */
+	const char *displayname;/* [unique,range(0,8192),charset(UTF16)] */
+}/* [gensize,public] */;
+
 
 struct svcctl_CloseServiceHandle {
 	struct {
@@ -359,12 +371,12 @@ struct svcctl_OpenServiceW {
 struct svcctl_QueryServiceConfigW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t buf_size;
+		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 
 	struct {
-		uint8_t *query;
-		uint32_t *bytes_needed;/* [ref] */
+		struct QUERY_SERVICE_CONFIG *query;/* [ref] */
+		uint32_t *bytes_needed;/* [ref,range(0,8192)] */
 		WERROR result;
 	} out;
 
