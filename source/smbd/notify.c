@@ -349,6 +349,9 @@ void notify_fname(connection_struct *conn, uint32 action, uint32 filter,
 {
 	char *fullpath;
 
+	if (path[0] == '.' && path[1] == '/') {
+		path += 2;
+	}
 	if (asprintf(&fullpath, "%s/%s", conn->connectpath, path) == -1) {
 		DEBUG(0, ("asprintf failed\n"));
 		return;
