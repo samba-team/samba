@@ -155,23 +155,7 @@ static bool api_svcctl_control_service(pipes_struct *p)
 
 static bool api_svcctl_query_service_config(pipes_struct *p)
 {
-	SVCCTL_Q_QUERY_SERVICE_CONFIG q_u;
-	SVCCTL_R_QUERY_SERVICE_CONFIG r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_query_service_config("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_query_service_config(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_query_service_config("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, SVCCTL_QUERY_SERVICE_CONFIG_W);
 }
 
 /*******************************************************************
