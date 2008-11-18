@@ -1,14 +1,19 @@
                    ==============================
                    Release Notes for Samba 3.2.5
-
+			 November, 27 2008
                    ==============================
 
 
-This is a bug fix release of the Samba 3.2 series.
+This is a security release in order to address CVE-2008-4314 ("Potential leak of
+arbitrary memory contents").
 
-Major bug fixes included in Samba 3.2.5 are:
+   o CVE-2008-4314
+     Samba 3.0.29 to 3.2.4 can potentially leak
+     arbitrary memory contents to malicious
+     clients.
 
-  o 
+The original security announcement for this and past advisories can
+be found http://www.samba.org/samba/security/
 
 ######################################################################
 Changes
@@ -18,6 +23,8 @@ Changes since 3.2.4
 -------------------
 
 
+o   Volker Lendecke <vl@samba.org>
+    * Fix for CVE-2008-4314.
 
 
 ######################################################################
