@@ -6370,6 +6370,14 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 			"net rpc vampire keytab\n"
 			"    Dump remote SAM database to Kerberos keytab file"
 		},
+		{
+			"passdb",
+			rpc_vampire_passdb,
+			NET_TRANSPORT_RPC,
+			"Dump remote SAM database to passdb",
+			"net rpc vampire passdb\n"
+			"    Dump remote SAM database to passdb"
+		},
 
 		{NULL, NULL, 0, NULL, NULL}
 	};

@@ -359,6 +359,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 				TALLOC_CTX *mem_ctx,
 				int argc,
 				const char **argv);
+int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv);
 int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 				    const DOM_SID *domain_sid,
