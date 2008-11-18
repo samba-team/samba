@@ -140,6 +140,7 @@ static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
 static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 					 enum netr_SamDatabaseID database_id,
 					 struct netr_DELTA_ENUM_ARRAY *r,
+					 uint64_t *sequence_num,
 					 struct samsync_context *ctx)
 {
 	struct libnet_keytab_context *keytab_ctx =
@@ -212,6 +213,7 @@ static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
 static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 					 enum netr_SamDatabaseID database_id,
 					 struct netr_DELTA_ENUM_ARRAY *r,
+					 uint64_t *sequence_num,
 					 struct samsync_context *ctx)
 {
 	return NT_STATUS_NOT_SUPPORTED;
