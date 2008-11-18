@@ -1,6 +1,6 @@
                    ================================
                    Release Notes for Samba 3.3.0rc1
-                           
+			  November, 19 2008
                    ================================
 
 This is the first release candidate of Samba 3.3.0.  This is *not*
@@ -171,12 +171,20 @@ smb.conf changes
 Changes since 3.3.0pre2:
 ------------------------
 
+o   Michael Adam <obnox@samba.org>
+    * Make keytab filename argument mandatory to "net rpc vampire keytab".
+
 
 o   Jeremy Allison <jra@samba.org>
     * BUG 5080: Fix access to cups-printers with cups 1.3.4.
     * BUG 5814: Fix Winbind crash bug while doing "rescan_trusted_domain".
     * BUG 5818: Sort ACEs in smbcacl output properly and honor inheritance.
+    * BUG 5825: Fix account locking with an LDAP backend.
     * BUG 5826: Fix truncated filenames when accessing old servers.
+    * BUG 5889: Fix "delete veto files = no".
+    * BUG 5891: Fix smbd crash when viewing the eventlog exported by "eventlog
+      list".
+    * BUG 5900: Fix vfs_readonly.
     * Correctly fix smbclient to terminate on eof from server.
     * Fix client timeout when searching for a large number of cups printers.
     * Unify access checks for lsa server functions.
@@ -184,6 +192,12 @@ o   Jeremy Allison <jra@samba.org>
     * Cope with MAXIMUM_ALLOWED_ACCESS requests when opening handles.
     * Fix net rpc vampire, based on an *amazing* piece of debugging work by
       "Cooper S. Blake" <the_analogkid@yahoo.com>.
+    * Fix memory leak in error path, spotted by Martin Zielinski <mz@seh.de>.
+    * Add vfs_acl_tdb.c module to do ACLs completely in userspace.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 5892: Fix net rap printq info documentation.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -192,11 +206,13 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 
 o   Günther Deschner <gd@samba.org>
+    * BUG 5888: Fix PNP_GetHwProfInfo().
     * Ensure consistency when reporting password complexity.
     * Fix _lsa_GetUserName.
     * Fix access check in _samr_QuerySecurity().
     * _samr_DeleteUser needs to wipe out the user_handle on success.
     * NetGroupEnum_r needs to handle servers with no groups.
+    * Fix numerous netapi issues.
 
 
 o   Jeff Layton <jlayton@redhat.com>
@@ -207,6 +223,7 @@ o   Jeff Layton <jlayton@redhat.com>
 o   Volker Lendecke <vl@samba.org>
     * BUG 5691: Fig smbd panic on Solaris.
     * BUG 5840: Fix segfault in "rpcclient lsaaddacctrights".
+    * BUG 5860: safe_strcpy gives a nasty error message for overlong strings.
     * Fix a potential NULL deref in found by the IBM Checker.
     * Fix an uninitialized variable found by the IBM Checker.
     * Fix an unlikely memleak found by the IBM Checker.
@@ -214,10 +231,20 @@ o   Volker Lendecke <vl@samba.org>
     * Add workaround for domain joins using a netbios name which is different
       from the hostname.
     * Fix a valgrind error in idmap_ad_sids_to_unixids().
+    * Make memcache_add_talloc NULL out the source pointer.
+    * Fix memleak in memcache_add_talloc found by Martin Zielinski <mz@seh.de>.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * mount.cifs: use lock/unlock_mtab scheme from util-linux-ng mount prog.
 
 
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
     * BUG 5805: Don't close stdout when calling setup_logging multiple times.
+
+
+o   TAKAHASHI Motonobu <monyo@samba.gr.jp>
+    * 5901: Fix default value for streams_depot location.
 
 
 o   Tim Prouty <tim.prouty@isilon.com>
@@ -226,6 +253,25 @@ o   Tim Prouty <tim.prouty@isilon.com>
 
 o   Andreas Schneider <mail@cynapses.org>
     * Delete the krb5 ccname variable from the PAM environment if set.
+
+
+o   Davide Sfriso <sfriso@virgilio.it>
+    * BUG 5906: Fix Winbind crash bug during 'getent group' on PDC.
+
+
+o   Joe Smith <yasumoto7@gmail.com>
+    * Fix typo in source/utils/net_rap.c.
+
+
+o   Martin Schwenke <martin@meltin.net>
+    * Prevent make errors for picky makes when $(EXTRA_ALL_TARGETS) is empty.
+    * Add @CIFSUPCALL_PROGS@ to "all" target so cifs.upcall gets built at
+      compile time rather than install time.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Fix broken msgids in ntstatus_errors.
+    * i18n/l10n pam_winbind
 
 
 Commit Highlights:
