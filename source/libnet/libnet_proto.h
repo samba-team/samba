@@ -55,6 +55,13 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 						 const char *principal, int kvno,
 						 const krb5_enctype enctype,
 						 TALLOC_CTX *mem_ctx);
+NTSTATUS libnet_keytab_add_to_keytab_entries(TALLOC_CTX *mem_ctx,
+					     struct libnet_keytab_context *ctx,
+					     uint32_t kvno,
+					     const char *name,
+					     const char *prefix,
+					     const krb5_enctype enctype,
+					     DATA_BLOB blob);
 #endif
 
 /* The following definitions come from libnet/libnet_samsync.c  */
