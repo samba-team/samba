@@ -287,6 +287,7 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
 				    enum netr_SamDatabaseID database_id,
 				    struct netr_DELTA_ENUM_ARRAY *r,
+				    uint64_t *sequence_num,
 				    struct samsync_context *ctx)
 {
 	int i;

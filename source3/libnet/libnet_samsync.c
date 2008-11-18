@@ -423,6 +423,7 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 		/* Process results */
 		callback_status = ctx->ops->process_objects(mem_ctx, database_id,
 							    delta_enum_array,
+							    &sequence_num,
 							    ctx);
 		if (!NT_STATUS_IS_OK(callback_status)) {
 			result = callback_status;
