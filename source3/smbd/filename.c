@@ -206,6 +206,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			*pp_saved_last_component = talloc_strdup(ctx,
 							orig_path);
 		}
+		if (conn->case_sensitive && !conn->case_preserve &&
+		    !conn->short_case_preserve) {
+			strnorm(*pp_saved_last_component,
+				lp_defaultcase(SNUM(conn)));
+		}
 	}
 
 	if (!(name = talloc_strdup(ctx, orig_path))) {
