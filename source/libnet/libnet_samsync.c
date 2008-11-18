@@ -376,7 +376,8 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 
 		netlogon_creds_client_step(ctx->cli->dc, &credential);
 
-		if (ctx->single_object_replication) {
+		if (ctx->single_object_replication &&
+		    !ctx->force_full_replication) {
 			result = rpccli_netr_DatabaseRedo(ctx->cli, mem_ctx,
 							  logon_server,
 							  computername,
@@ -385,6 +386,16 @@ static NTSTATUS libnet_samsync_delta(enum netr_SamDatabaseID database_id,
 							  *e,
 							  0,
 							  &delta_enum_array);
+		} else if (!ctx->force_full_replication && (sequence_num > 0)) {
+			result = rpccli_netr_DatabaseDeltas(ctx->cli, mem_ctx,
+							    logon_server,
+							    computername,
+							    &credential,
+							    &return_authenticator,
+							    database_id,
+							    &sequence_num,
+							    &delta_enum_array,
+							    0xffff);
 		} else {
 			result = rpccli_netr_DatabaseSync2(ctx->cli, mem_ctx,
 							   logon_server,
