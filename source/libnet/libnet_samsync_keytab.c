@@ -112,6 +112,9 @@ static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
 	krb5_error_code ret = 0;
 	NTSTATUS status;
 	struct libnet_keytab_context *keytab_ctx;
+	struct libnet_keytab_entry *entry;
+	uint64_t old_sequence_num = 0;
+	const char *principal = NULL;
 
 	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
 	if (ret) {
@@ -129,6 +132,20 @@ static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(keytab_ctx);
 		return status;
+	}
+
+	principal = talloc_asprintf(mem_ctx, "SEQUENCE_NUM@%s",
+				    keytab_ctx->dns_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
+
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, ENCTYPE_NULL,
+				     mem_ctx);
+	if (entry && (entry->password.length == 8)) {
+		old_sequence_num = BVAL(entry->password.data, 0);
+	}
+
+	if (sequence_num) {
+		*sequence_num = old_sequence_num;
 	}
 
 	return status;
@@ -194,6 +211,37 @@ static NTSTATUS close_keytab(TALLOC_CTX *mem_ctx,
 		(struct libnet_keytab_context *)ctx->private_data;
 	krb5_error_code ret;
 	NTSTATUS status;
+	struct libnet_keytab_entry *entry;
+	uint64_t old_sequence_num = 0;
+	const char *principal = NULL;
+
+	principal = talloc_asprintf(mem_ctx, "SEQUENCE_NUM@%s",
+				    keytab_ctx->dns_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
+
+
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, ENCTYPE_NULL,
+				     mem_ctx);
+	if (entry && (entry->password.length == 8)) {
+		old_sequence_num = BVAL(entry->password.data, 0);
+	}
+
+
+	if (sequence_num > old_sequence_num) {
+		DATA_BLOB blob;
+		blob = data_blob_talloc_zero(mem_ctx, 8);
+		SBVAL(blob.data, 0, sequence_num);
+
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, keytab_ctx,
+							     0,
+							     "SEQUENCE_NUM",
+							     NULL,
+							     ENCTYPE_NULL,
+							     blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
 
 	ret = libnet_keytab_add(keytab_ctx);
 	if (ret) {
@@ -210,9 +258,12 @@ static NTSTATUS close_keytab(TALLOC_CTX *mem_ctx,
 		keytab_ctx->count,
 		keytab_ctx->keytab_name);
 
+	status = NT_STATUS_OK;
+
+ done:
 	TALLOC_FREE(keytab_ctx);
 
-	return NT_STATUS_OK;
+	return status;
 }
 
 #else
