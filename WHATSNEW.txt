@@ -1,18 +1,19 @@
                    ==============================
                    Release Notes for Samba 3.2.5
-
+			 November, 27 2008
                    ==============================
 
 
-This is a bug fix release of the Samba 3.2 series.
+This is a security release in order to address CVE-2008-4314 ("Potential leak of
+arbitrary memory contents").
 
-Major enhancements included in Samba 3.2.5 are:
+   o CVE-2008-4314
+     Samba 3.0.29 to 3.2.4 can potentially leak
+     arbitrary memory contents to malicious
+     clients.
 
-  o Fix Winbind crash bugs.
-  o Fix moving of readonly files.
-  o Fix access to cups-printers with cups 1.3.4.
-  o Add new SMB traffic analyzer VFS module.
-
+The original security announcement for this and past advisories can
+be found http://www.samba.org/samba/security/
 
 ######################################################################
 Changes
@@ -22,85 +23,8 @@ Changes since 3.2.4
 -------------------
 
 
-o   Jeremy Allison <jra@samba.org>
-    * BUG 5080: Fix access to cups-printers with cups 1.3.4.
-    * BUG 5737: Fix Winbind crash in an unusual failure mode.
-    * BUG 5783: Fix FindFirst where search pattern equals the mangled filename.
-    * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
-      disposition.
-    * BUG 5797: Fix moving of readonly files.
-    * BUG 5814: Fix Winbind crash bug while doing "rescan_trusted_domain".
-    * BUG 5818: Sort ACEs in smbcacl output properly and honor inheritance.
-    * BUG 5826: Fix truncated filenames when accessing old servers.
-    * Fix rename_open_files.
-    * Restructure VFS SMB traffic analyzer VFS module.
-    * Correctly fix smbclient to terminate on eof from server.
-    * Unify access checks for lsa server functions.
-    * Remove the requirement for ldap call made as root.
-    * Cope with MAXIMUM_ALLOWED_ACCESS requests when opening handles.
-    * Fix net rpc vampire, based on an *amazing* piece of debugging work by
-      "Cooper S. Blake" <the_analogkid@yahoo.com>.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Use the same prerequisite for DDNS update as Windows XP.
-    * Make "lwinet ads dns register" honor the "interfaces" parameter.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * Fix duplicate installation of cifs.upcall.
-    * Fix _srvsvc_NetShareAdd segfault.
-    * Ensure consistency when reporting password complexity.
-    * Fix _lsa_GetUserName.
-    * Fix access check in _samr_QuerySecurity().
-    * _samr_DeleteUser needs to wipe out the user_handle on success.
-    * NetGroupEnum_r needs to handle servers with no groups.
-
-
-o   Holger Hetterich <hhetter@novell.com>
-    * Add new VFS module to analyze SMB traffic
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Have uppercase_string return success on NULL pointer in mount.cifs.
-    * Make mount.cifs return codes match the return codes for /bin/mount.
-
-
 o   Volker Lendecke <vl@samba.org>
-    * BUG 5691: Fig smbd panic on Solaris.
-    * BUG 5778: Check if strlcpy and strlcat are already defined.
-    * BUG 5840: Fix segfault in "rpcclient lsaaddacctrights".
-    * Fix a potential NULL deref in found by the IBM Checker.
-    * Fix an uninitialized variable found by the IBM Checker.
-    * Fix an unlikely memleak found by the IBM Checker.
-    * Fix some missing error handlings.
-    * Add workaround for domain joins using a netbios name which is different
-      from the hostname.
-
-
-o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
-    * BUG 5805: Don't close stdout when calling setup_logging multiple times.
-
-
-o   Jim McDonough <jmcd@samba.org>
-    * Fix the new vfs_smb_traffic_analyzer build for static links.
-
-
-o   Tim Prouty <tim.prouty@isilon.com>
-    * Fix several build warnings.
-
-
-o   Andreas Schneider <mail@cynapses.org>
-    * Delete the krb5 ccname variable from the PAM environment if set.
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix segfault on startup with trusted domains.
-    * Re-add "winbind:ignore domains" parameter.
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Avoid freeing fsp twice when opening new_file fails (Debian #431696).
+    * Fix for CVE-2008-4314.
 
 
 ######################################################################
