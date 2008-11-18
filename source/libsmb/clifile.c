@@ -66,7 +66,7 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 			-1, 0,                          /* fid, flags */
 			&setup, 1, 0,                   /* setup, length, max */
 			param, param_len, 2,            /* param, length, max */
-			(char *)&data,  data_len, cli->max_xmit /* data, length, max */
+			data,  data_len, cli->max_xmit  /* data, length, max */
 			)) {
 		SAFE_FREE(data);
 		SAFE_FREE(param);
