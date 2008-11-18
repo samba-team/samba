@@ -18,7 +18,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "source4/include/includes.h"
 #include "../torture/torture.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
