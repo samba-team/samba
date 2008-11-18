@@ -1,3 +1,37 @@
+                   ==============================
+                   Release Notes for Samba 3.0.33
+                         November, 27 2008
+                   ==============================
+
+
+This is a security release in order to address CVE-2008-4314 ("Potential leak of
+arbitrary memory contents").
+
+   o CVE-2008-4314
+     Samba 3.0.29 to 3.2.4 can potentially leak
+     arbitrary memory contents to malicious
+     clients.
+
+The original security announcement for this and past advisories can
+be found http://www.samba.org/samba/security/
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.32
+--------------------
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Fix for CVE-2008-4314.
+
+
+
+
+Release notes for older releases follow:
+
+      --------------------------------------------------
                    ===============================
                    Release Notes for Samba 3.0.32
                              Aug 25, 2008
@@ -60,10 +94,6 @@ o   Bo Yang <boyang@novell.com>
 o   Christoph Zauner <christoph.zauner@sernet.de>
     * Corrections to various man pages.
 
-
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================
@@ -547,9 +577,6 @@ o   Bo Yang <boyang@novell.com>
 
 
 
-Release notes for older releases follow:
-
-      --------------------------------------------------
 
                    ==============================
                    Release Notes for Samba 3.0.28
