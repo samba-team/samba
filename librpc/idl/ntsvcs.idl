@@ -70,7 +70,7 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0a */
 
-	[todo] WERROR PNP_GetDeviceList(
+	WERROR PNP_GetDeviceList(
 		[in,unique] [string,charset(UTF16)] uint16 *filter,
 		[out,ref] [size_is(*length),length_is(*length)] uint16 *buffer,
 		[in,out,ref] uint32 *length,

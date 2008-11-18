@@ -701,10 +701,14 @@ _PUBLIC_ char *hex_encode_talloc(TALLOC_CTX *mem_ctx, const unsigned char *buff_
 	char *hex_buffer;
 
 	hex_buffer = talloc_array(mem_ctx, char, (len*2)+1);
+	if (!hex_buffer) {
+		return NULL;
+	}
 
 	for (i = 0; i < len; i++)
 		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
 
+	talloc_set_name_const(hex_buffer, hex_buffer);
 	return hex_buffer;
 }
 

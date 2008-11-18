@@ -106,6 +106,7 @@ void ndr_print_ENUM_SERVICE_STATUS(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_svcctl_ServerType(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_svcctl_ServerType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_SERVICE_CONTROL(struct ndr_print *ndr, const char *name, enum SERVICE_CONTROL r);
 void ndr_print_svcctl_MgrAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_svcctl_ServiceAccessMask(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_QUERY_SERVICE_CONFIG(struct ndr_push *ndr, int ndr_flags, const struct QUERY_SERVICE_CONFIG *r);

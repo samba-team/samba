@@ -88,7 +88,8 @@ static bool check_user_ok(connection_struct *conn, uint16_t vuid,
 	readonly_share = is_share_read_only_for_token(
 		server_info->unix_name,
 		pdb_get_domain(server_info->sam_account),
-		server_info->ptok, snum);
+		server_info->ptok,
+		conn);
 
 	if (!readonly_share &&
 	    !share_access_check(server_info->ptok, lp_servicename(snum),

@@ -517,11 +517,9 @@ WERROR _svcctl_ControlService(pipes_struct *p,
 
 		return info->ops->service_status( info->name,
 						  r->out.service_status );
+	default:
+		return WERR_ACCESS_DENIED;
 	}
-
-	/* default control action */
-
-	return WERR_ACCESS_DENIED;
 }
 
 /********************************************************************

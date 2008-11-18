@@ -20,6 +20,7 @@
 */
 #include "includes.h"
 #include "dsdb/samdb/samdb.h"
+#include "librpc/ndr/libndr.h"
 
 #define IF_NULL_FAIL_RET(x) do {     \
 		if (!x) {		\
@@ -36,7 +37,12 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 					  const char *equality, 
 					  const char *substring, 
 					  const char *syntax,
-					  bool single_value, bool operational)
+					  bool single_value, bool operational,
+					  uint32_t *range_lower,
+					  uint32_t *range_upper,
+					  const char *property_guid,
+					  const char *property_set_guid,
+					  bool indexed, bool system_only)
 {
 	char *schema_entry = talloc_asprintf(mem_ctx, 
 					     "(%s%s%s", seperator, oid, seperator);
@@ -55,11 +61,13 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 						      "SUBSTR %s%s", substring, seperator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
-	
-	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "SYNTAX %s%s", syntax, seperator);
-	IF_NULL_FAIL_RET(schema_entry);
-	
+
+	if (syntax) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "SYNTAX %s%s", syntax, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
 	if (single_value) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
 						      "SINGLE-VALUE%s", seperator);
@@ -71,7 +79,47 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 						      "NO-USER-MODIFICATION%s", seperator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
-	
+
+	if (range_lower) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "RANGE-LOWER '%u'%s",
+						      *range_lower, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
+	if (range_upper) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "RANGE-UPPER '%u'%s",
+						      *range_upper, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
+	if (property_guid) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "PROPERTY-GUID '%s'%s",
+						      property_guid, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
+	if (property_set_guid) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "PROPERTY-SET-GUID '%s'%s",
+						      property_set_guid, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
+	if (indexed) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "INDEXED%s", seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
+	if (system_only) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "SYSTEM-ONLY%s", seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
 	schema_entry = talloc_asprintf_append(schema_entry, 
 					      ")");
 	return schema_entry;
@@ -80,14 +128,12 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 char *schema_attribute_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_attribute *attribute) 
 {
 	char *schema_description;
-	const struct dsdb_syntax *map = find_syntax_map_by_ad_oid(attribute->attributeSyntax_oid);
-	const char *syntax = map ? map->ldap_oid : attribute->attributeSyntax_oid;
+	const char *syntax = attribute->syntax->ldap_oid;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NULL;
 	}
 
-	
 	schema_description 
 		= schema_attribute_description(mem_ctx, 
 					       TARGET_AD_SCHEMA_SUBENTRY,
@@ -96,6 +142,34 @@ char *schema_attribute_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_att
 					       attribute->lDAPDisplayName,
 					       NULL, NULL, talloc_asprintf(tmp_ctx, "'%s'", syntax),
 					       attribute->isSingleValued,
+					       attribute->systemOnly,/* TODO: is this correct? */
+					       NULL, NULL, NULL, NULL,
+					       false, false);
+	talloc_free(tmp_ctx);
+	return schema_description;
+}
+
+char *schema_attribute_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_attribute *attribute)
+{
+	char *schema_description;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NULL;
+	}
+
+	schema_description
+		= schema_attribute_description(mem_ctx,
+					       TARGET_AD_SCHEMA_SUBENTRY,
+					       " ",
+					       attribute->attributeID_oid,
+					       attribute->lDAPDisplayName,
+					       NULL, NULL, NULL,
+					       false, false,
+					       attribute->rangeLower,
+					       attribute->rangeUpper,
+					       GUID_hexstring(tmp_ctx, &attribute->schemaIDGUID),
+					       GUID_hexstring(tmp_ctx, &attribute->attributeSecurityGUID),
+					       (attribute->searchFlags & SEARCH_FLAG_ATTINDEX),
 					       attribute->systemOnly);
 	talloc_free(tmp_ctx);
 	return schema_description;
@@ -142,7 +216,8 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 			       const char *subClassOf,
 			       int objectClassCategory,
 			       char **must,
-			       char **may)
+			       char **may,
+			       const char *schemaHexGUID)
 {
 	char *schema_entry = talloc_asprintf(mem_ctx, 
 					     "(%s%s%s", seperator, oid, seperator);
@@ -225,7 +300,14 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 						      ")%s", seperator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
-	
+
+	if (schemaHexGUID) {
+		schema_entry = talloc_asprintf_append(schema_entry,
+						      "CLASS-GUID '%s'%s",
+						      schemaHexGUID, seperator);
+		IF_NULL_FAIL_RET(schema_entry);
+	}
+
 	schema_entry = talloc_asprintf_append(schema_entry, 
 					      ")");
 	return schema_entry;
@@ -251,7 +333,8 @@ char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *
 					   dsdb_attribute_list(tmp_ctx, 
 							       class, DSDB_SCHEMA_ALL_MUST),
 					   dsdb_attribute_list(tmp_ctx, 
-							       class, DSDB_SCHEMA_ALL_MAY));
+							       class, DSDB_SCHEMA_ALL_MAY),
+					   NULL);
 	talloc_free(tmp_ctx);
 	return schema_description;
 }
@@ -295,7 +378,38 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 						  * ditContentRules
 						  * per MS-ADTS
 						  * 3.1.1.3.1.1.1 */
-					   -1, must_attr_list, may_attr_list);
+					   -1, must_attr_list, may_attr_list,
+					   NULL);
 	talloc_free(tmp_ctx);
 	return schema_description;
 }
+
+char *schema_class_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass)
+{
+	char *schema_description = NULL;
+	DATA_BLOB guid_blob;
+	char *guid_hex;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NULL;
+	}
+
+	schema_description
+		= schema_class_description(mem_ctx,
+					   TARGET_AD_SCHEMA_SUBENTRY,
+					   " ",
+					   sclass->governsID_oid,
+					   sclass->lDAPDisplayName,
+					   NULL,
+					   NULL, /* Must not specify a
+						  * SUP (subclass) in
+						  * ditContentRules
+						  * per MS-ADTS
+						  * 3.1.1.3.1.1.1 */
+					   -1, NULL, NULL,
+					   GUID_hexstring(tmp_ctx, &sclass->schemaIDGUID));
+	talloc_free(tmp_ctx);
+	return schema_description;
+}
+
+

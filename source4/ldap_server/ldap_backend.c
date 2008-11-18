@@ -29,16 +29,12 @@
 #include "lib/ldb/include/ldb_errors.h"
 #include "lib/ldb_wrap.h"
 
-#define VALID_DN_SYNTAX(dn,i) do {\
+#define VALID_DN_SYNTAX(dn) do {\
 	if (!(dn)) {\
 		return NT_STATUS_NO_MEMORY;\
 	} else if ( ! ldb_dn_validate(dn)) {\
 		result = LDAP_INVALID_DN_SYNTAX;\
 		errstr = "Invalid DN format";\
-		goto reply;\
-	} else if (ldb_dn_get_comp_num(dn) < (i)) {\
-		result = LDAP_INVALID_DN_SYNTAX;\
-		errstr = "Invalid DN (" #i " components needed for '" #dn "')";\
 		goto reply;\
 	}\
 } while(0)
@@ -179,7 +175,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	basedn = ldb_dn_new(local_ctx, samdb, req->basedn);
-	VALID_DN_SYNTAX(basedn, 0);
+	VALID_DN_SYNTAX(basedn);
 
 	DEBUG(10, ("SearchRequest: basedn: [%s]\n", req->basedn));
 	DEBUG(10, ("SearchRequest: filter: [%s]\n", ldb_filter_from_tree(call, req->tree)));
@@ -349,7 +345,7 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(dn, 0);
+	VALID_DN_SYNTAX(dn);
 
 	DEBUG(10, ("ModifyRequest: dn: [%s]\n", req->dn));
 
@@ -452,7 +448,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(dn,1);
+	VALID_DN_SYNTAX(dn);
 
 	DEBUG(10, ("AddRequest: dn: [%s]\n", req->dn));
 
@@ -542,7 +538,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(dn,1);
+	VALID_DN_SYNTAX(dn);
 
 	DEBUG(10, ("DelRequest: dn: [%s]\n", req->dn));
 
@@ -588,10 +584,10 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	olddn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(olddn, 2);
+	VALID_DN_SYNTAX(olddn);
 
 	newrdn = ldb_dn_new(local_ctx, samdb, req->newrdn);
-	VALID_DN_SYNTAX(newrdn, 1);
+	VALID_DN_SYNTAX(newrdn);
 
 	DEBUG(10, ("ModifyDNRequest: olddn: [%s]\n", req->dn));
 	DEBUG(10, ("ModifyDNRequest: newrdn: [%s]\n", req->newrdn));
@@ -605,7 +601,7 @@ static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 
 	if (req->newsuperior) {
 		parentdn = ldb_dn_new(local_ctx, samdb, req->newsuperior);
-		VALID_DN_SYNTAX(parentdn, 0);
+		VALID_DN_SYNTAX(parentdn);
 		DEBUG(10, ("ModifyDNRequest: newsuperior: [%s]\n", req->newsuperior));
 		
 		if (ldb_dn_get_comp_num(parentdn) < 1) {
@@ -672,7 +668,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	NT_STATUS_HAVE_NO_MEMORY(local_ctx);
 
 	dn = ldb_dn_new(local_ctx, samdb, req->dn);
-	VALID_DN_SYNTAX(dn, 1);
+	VALID_DN_SYNTAX(dn);
 
 	DEBUG(10, ("CompareRequest: dn: [%s]\n", req->dn));
 	filter = talloc_asprintf(local_ctx, "(%s=%*s)", req->attribute, 

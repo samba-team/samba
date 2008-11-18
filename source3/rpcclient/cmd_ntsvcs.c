@@ -122,15 +122,15 @@ static WERROR cmd_ntsvcs_get_hw_prof_info(struct rpc_pipe_client *cli,
 	WERROR werr;
 	uint32_t idx = 0;
 	struct PNP_HwProfInfo info;
-	uint32_t unknown1 = 0, unknown2 = 0;
+	uint32_t size = 0, flags = 0;
 
 	ZERO_STRUCT(info);
 
 	status = rpccli_PNP_GetHwProfInfo(cli, mem_ctx,
 					  idx,
 					  &info,
-					  unknown1,
-					  unknown2,
+					  size,
+					  flags,
 					  &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);

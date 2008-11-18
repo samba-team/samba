@@ -38,6 +38,10 @@ static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *
 				   const struct dsdb_schema *schema);
 static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message *msg,
 				    const struct dsdb_schema *schema);
+static int generate_extendedAttributeInfo(struct ldb_context *ldb, struct ldb_message *msg,
+					  const struct dsdb_schema *schema);
+static int generate_extendedClassInfo(struct ldb_context *ldb, struct ldb_message *msg,
+				      const struct dsdb_schema *schema);
 
 static const struct {
 	const char *attr;
@@ -54,6 +58,14 @@ static const struct {
 	{
 		.attr = "dITContentRules",
 		.fn = generate_dITContentRules
+	},
+	{
+		.attr = "extendedAttributeInfo",
+		.fn = generate_extendedAttributeInfo
+	},
+	{
+		.attr = "extendedClassInfo",
+		.fn = generate_extendedClassInfo
 	}
 };
 
@@ -322,7 +334,51 @@ static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message 
 	return LDB_SUCCESS;
 }
 
+static int generate_extendedAttributeInfo(struct ldb_context *ldb,
+					  struct ldb_message *msg,
+					  const struct dsdb_schema *schema)
+{
+	const struct dsdb_attribute *attribute;
+	int ret;
 
+	for (attribute = schema->attributes; attribute; attribute = attribute->next) {
+		char *val = schema_attribute_to_extendedInfo(msg, attribute);
+		if (!val) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_msg_add_string(msg, "extendedAttributeInfo", val);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
+
+static int generate_extendedClassInfo(struct ldb_context *ldb,
+				      struct ldb_message *msg,
+				      const struct dsdb_schema *schema)
+{
+	const struct dsdb_class *sclass;
+	int ret;
+
+	for (sclass = schema->classes; sclass; sclass = sclass->next) {
+		char *val = schema_class_to_extendedInfo(msg, sclass);
+		if (!val) {
+			ldb_oom(ldb);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		ret = ldb_msg_add_string(msg, "extendedClassInfo", val);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
+	return LDB_SUCCESS;
+}
 
 /* Add objectClasses, attributeTypes and dITContentRules from the
    schema object (they are not stored in the database)

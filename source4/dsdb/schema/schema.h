@@ -72,8 +72,8 @@ struct dsdb_attribute {
 	struct ldb_val oMObjectClass;
 
 	bool isSingleValued;
-	uint32_t rangeLower;
-	uint32_t rangeUpper;
+	uint32_t *rangeLower;
+	uint32_t *rangeUpper;
 	bool extendedCharsAllowed;
 
 	uint32_t schemaFlagsEx;
