@@ -151,7 +151,22 @@ static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < r->num_deltas; i++) {
 
-		if (r->delta_enum[i].delta_type != NETR_DELTA_USER) {
+		switch (r->delta_enum[i].delta_type) {
+		case NETR_DELTA_USER:
+			break;
+		case NETR_DELTA_DOMAIN:
+			if (sequence_num) {
+				*sequence_num =
+					r->delta_enum[i].delta_union.domain->sequence_num;
+			}
+			continue;
+		case NETR_DELTA_MODIFY_COUNT:
+			if (sequence_num) {
+				*sequence_num =
+					*r->delta_enum[i].delta_union.modified_count;
+			}
+			continue;
+		default:
 			continue;
 		}
 
