@@ -9238,7 +9238,6 @@ WERROR _svcctl_ControlService(pipes_struct *p,
 WERROR _svcctl_EnumDependentServicesW(pipes_struct *p,
 				      struct svcctl_EnumDependentServicesW *r);
 WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u );
-WERROR _svcctl_query_service_config( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG *r_u );
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u );
 WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
 				   struct svcctl_LockServiceDatabase *r);
