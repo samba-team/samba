@@ -1392,7 +1392,7 @@ static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.query = talloc_zero_array(r, uint8_t, r->in.buf_size);
+	r->out.query = talloc_zero(r, struct QUERY_SERVICE_CONFIG);
 	if (r->out.query == NULL) {
 		talloc_free(r);
 		return false;
