@@ -194,37 +194,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		return result;
 	}
 
-	/*
-	 * Ensure saved_last_component is valid even if file exists.
-	 */
-
-	if(pp_saved_last_component) {
-		end = strrchr_m(orig_path, '/');
-		if (end) {
-			*pp_saved_last_component = talloc_strdup(ctx, end + 1);
-		} else {
-			*pp_saved_last_component = talloc_strdup(ctx,
-							orig_path);
-		}
-	}
-
 	if (!(name = talloc_strdup(ctx, orig_path))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!lp_posix_pathnames()) {
-		stream = strchr_m(name, ':');
-
-		if (stream != NULL) {
-			char *tmp = talloc_strdup(ctx, stream);
-			if (tmp == NULL) {
-				TALLOC_FREE(name);
-				return NT_STATUS_NO_MEMORY;
-			}
-			*stream = '\0';
-			stream = tmp;
-		}
 	}
 
 	/*
@@ -239,6 +211,34 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	if (conn->case_sensitive && !conn->case_preserve &&
 			!conn->short_case_preserve) {
 		strnorm(name, lp_defaultcase(SNUM(conn)));
+	}
+
+	/*
+	 * Ensure saved_last_component is valid even if file exists.
+	 */
+
+	if(pp_saved_last_component) {
+		end = strrchr_m(name, '/');
+		if (end) {
+			*pp_saved_last_component = talloc_strdup(ctx, end + 1);
+		} else {
+			*pp_saved_last_component = talloc_strdup(ctx,
+							name);
+		}
+	}
+
+	if (!lp_posix_pathnames()) {
+		stream = strchr_m(name, ':');
+
+		if (stream != NULL) {
+			char *tmp = talloc_strdup(ctx, stream);
+			if (tmp == NULL) {
+				TALLOC_FREE(name);
+				return NT_STATUS_NO_MEMORY;
+			}
+			*stream = '\0';
+			stream = tmp;
+		}
 	}
 
 	start = name;
