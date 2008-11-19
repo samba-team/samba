@@ -409,7 +409,7 @@ interface netlogon
 		boolean8 lm_password_present;
 		boolean8 password_expired;
 		lsa_String comment;
-		lsa_String parameters;
+		lsa_BinaryString parameters;
 		uint16 country_code;
 		uint16 code_page;
 		netr_USER_PRIVATE_INFO user_private_info;
