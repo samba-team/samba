@@ -1,5 +1,5 @@
 /*
- * Store Windows ACLs in xattrs, or a tdb if configured that way.
+ * Store Windows ACLs in a tdb.
  *
  * Copyright (C) Volker Lendecke, 2008
  * Copyright (C) Jeremy Allison, 2008
@@ -72,7 +72,7 @@ static bool acl_tdb_init(struct db_context **pp_db)
  Lower ref count and close acl_db if zero.
 *******************************************************************/
 
-static void free_acl_xattr_data(void **pptr)
+static void free_acl_tdb_data(void **pptr)
 {
 	struct db_context **pp_db = (struct db_context **)pptr;
 
@@ -87,7 +87,7 @@ static void free_acl_xattr_data(void **pptr)
  Fetch_lock the tdb acl record for a file
 *******************************************************************/
 
-static struct db_record *acl_xattr_tdb_lock(TALLOC_CTX *mem_ctx,
+static struct db_record *acl_tdb_lock(TALLOC_CTX *mem_ctx,
 					struct db_context *db,
 					const struct file_id *id)
 {
@@ -97,6 +97,33 @@ static struct db_record *acl_xattr_tdb_lock(TALLOC_CTX *mem_ctx,
 				mem_ctx,
 				make_tdb_data(id_buf,
 					sizeof(id_buf)));
+}
+
+/*******************************************************************
+ Delete the tdb acl record for a file
+*******************************************************************/
+
+static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
+				struct db_context *db,
+				SMB_STRUCT_STAT *psbuf)
+{
+	NTSTATUS status;
+	struct file_id id = vfs_file_id_from_sbuf(handle->conn, psbuf);
+	struct db_record *rec = acl_tdb_lock(talloc_tos(), db, &id);
+
+	/*
+	 * If rec == NULL there's not much we can do about it
+	 */
+
+	if (rec == NULL) {
+		DEBUG(10,("acl_tdb_delete: rec == NULL\n"));
+		TALLOC_FREE(rec);
+		return NT_STATUS_OK;
+	}
+
+	status = rec->delete_rec(rec);
+	TALLOC_FREE(rec);
+	return status;
 }
 
 /*******************************************************************
@@ -311,10 +338,10 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 }
 
 /*******************************************************************
- Store a DATA_BLOB into an xattr given a pathname.
+ Store a DATA_BLOB into an tdb given a pathname.
 *******************************************************************/
 
-static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
+static NTSTATUS get_nt_acl_tdb_internal(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *name,
 				        uint32 security_info,
@@ -328,7 +355,7 @@ static NTSTATUS get_nt_acl_xattr_internal(vfs_handle_struct *handle,
 		name = fsp->fsp_name;
 	}
 
-	DEBUG(10, ("get_nt_acl_xattr_internal: name=%s\n", name));
+	DEBUG(10, ("get_nt_acl_tdb_internal: name=%s\n", name));
 
 	status = get_acl_blob(ctx, handle, fsp, name, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -416,7 +443,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	DEBUG(10,("inherit_new_acl: check directory %s\n",
 			parent_name));
 
-	status = get_nt_acl_xattr_internal(handle,
+	status = get_nt_acl_tdb_internal(handle,
 					NULL,
 					parent_name,
 					(OWNER_SECURITY_INFORMATION |
@@ -493,7 +520,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
  Check ACL on open. For new files inherit from parent directory.
 *********************************************************************/
 
-static int open_acl_xattr(vfs_handle_struct *handle,
+static int open_acl_tdb(vfs_handle_struct *handle,
 					const char *fname,
 					files_struct *fsp,
 					int flags,
@@ -502,7 +529,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 	uint32_t access_granted = 0;
 	struct security_descriptor *pdesc = NULL;
 	bool file_existed = true;
-	NTSTATUS status = get_nt_acl_xattr_internal(handle,
+	NTSTATUS status = get_nt_acl_tdb_internal(handle,
 					NULL,
 					fname,
 					(OWNER_SECURITY_INFORMATION |
@@ -516,7 +543,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 					fsp->access_mask,
 					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10,("open_acl_xattr: file %s open "
+			DEBUG(10,("open_acl_tdb: file %s open "
 				"refused with error %s\n",
 				fname,
 				nt_errstr(status) ));
@@ -527,7 +554,7 @@ static int open_acl_xattr(vfs_handle_struct *handle,
 		file_existed = false;
 	}
 
-	DEBUG(10,("open_acl_xattr: get_nt_acl_attr_internal for "
+	DEBUG(10,("open_acl_tdb: get_nt_acl_attr_internal for "
 		"file %s returned %s\n",
 		fname,
 		nt_errstr(status) ));
@@ -547,12 +574,10 @@ static int open_acl_xattr(vfs_handle_struct *handle,
  On unlink we need to delete the tdb record (if using tdb).
 *********************************************************************/
 
-static int unlink_acl_xattr(vfs_handle_struct *handle, const char *path)
+static int unlink_acl_tdb(vfs_handle_struct *handle, const char *path)
 {
 	SMB_STRUCT_STAT sbuf;
-	struct file_id id;
 	struct db_context *db;
-	struct db_record *rec;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
@@ -567,24 +592,7 @@ static int unlink_acl_xattr(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
-
-	rec = acl_xattr_tdb_lock(talloc_tos(), db, &id);
-
-	/*
-	 * If rec == NULL there's not much we can do about it
-	 */
-
-	if (rec == NULL) {
-		DEBUG(10,("unlink_acl_xattr: path %s rec == NULL\n",
-			path ));
-		TALLOC_FREE(rec);
-		return 0;
-	}
-
-	rec->delete_rec(rec);
-	TALLOC_FREE(rec);
-
+	acl_tdb_delete(handle, db, &sbuf);
 	return 0;
 }
 
@@ -592,7 +600,7 @@ static int unlink_acl_xattr(vfs_handle_struct *handle, const char *path)
  Store an inherited SD on mkdir.
 *********************************************************************/
 
-static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t mode)
+static int mkdir_acl_tdb(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int ret = SMB_VFS_NEXT_MKDIR(handle, path, mode);
 
@@ -608,12 +616,11 @@ static int mkdir_acl_xattr(vfs_handle_struct *handle, const char *path, mode_t m
  On rmdir we need to delete the tdb record (if using tdb).
 *********************************************************************/
 
-static int rmdir_acl_xattr(vfs_handle_struct *handle, const char *path)
+static int rmdir_acl_tdb(vfs_handle_struct *handle, const char *path)
 {
+
 	SMB_STRUCT_STAT sbuf;
-	struct file_id id;
 	struct db_context *db;
-	struct db_record *rec;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
@@ -623,29 +630,11 @@ static int rmdir_acl_xattr(vfs_handle_struct *handle, const char *path)
 	}
 
 	ret = SMB_VFS_NEXT_RMDIR(handle, path);
-
 	if (ret == -1) {
 		return -1;
 	}
 
-	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
-
-	rec = acl_xattr_tdb_lock(talloc_tos(), db, &id);
-
-	/*
-	 * If rec == NULL there's not much we can do about it
-	 */
-
-	if (rec == NULL) {
-		DEBUG(10,("rmdir_acl_xattr: path %s rec == NULL\n",
-			path ));
-		TALLOC_FREE(rec);
-		return 0;
-	}
-
-	rec->delete_rec(rec);
-	TALLOC_FREE(rec);
-
+	acl_tdb_delete(handle, db, &sbuf);
 	return 0;
 }
 
@@ -653,21 +642,21 @@ static int rmdir_acl_xattr(vfs_handle_struct *handle, const char *path)
  Fetch a security descriptor given an fsp.
 *********************************************************************/
 
-static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS fget_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
         uint32 security_info, struct security_descriptor **ppdesc)
 {
-	NTSTATUS status = get_nt_acl_xattr_internal(handle, fsp,
+	NTSTATUS status = get_nt_acl_tdb_internal(handle, fsp,
 				NULL, security_info, ppdesc);
 	if (NT_STATUS_IS_OK(status)) {
 		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("fget_nt_acl_xattr: returning xattr sd for file %s\n",
+			DEBUG(10,("fget_nt_acl_tdb: returning tdb sd for file %s\n",
 				fsp->fsp_name));
 			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
 		}
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10,("fget_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
+	DEBUG(10,("fget_nt_acl_tdb: failed to get tdb sd for file %s, Error %s\n",
 			fsp->fsp_name,
 			nt_errstr(status) ));
 
@@ -679,21 +668,21 @@ static NTSTATUS fget_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
  Fetch a security descriptor given a pathname.
 *********************************************************************/
 
-static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
+static NTSTATUS get_nt_acl_tdb(vfs_handle_struct *handle,
         const char *name, uint32 security_info, struct security_descriptor **ppdesc)
 {
-	NTSTATUS status = get_nt_acl_xattr_internal(handle, NULL,
+	NTSTATUS status = get_nt_acl_tdb_internal(handle, NULL,
 				name, security_info, ppdesc);
 	if (NT_STATUS_IS_OK(status)) {
 		if (DEBUGLEVEL >= 10) {
-			DEBUG(10,("get_nt_acl_xattr: returning xattr sd for file %s\n",
+			DEBUG(10,("get_nt_acl_tdb: returning tdb sd for file %s\n",
 				name));
 			NDR_PRINT_DEBUG(security_descriptor, *ppdesc);
 		}
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10,("get_nt_acl_xattr: failed to get xattr sd for file %s, Error %s\n",
+	DEBUG(10,("get_nt_acl_tdb: failed to get tdb sd for file %s, Error %s\n",
 			name,
 			nt_errstr(status) ));
 
@@ -705,14 +694,14 @@ static NTSTATUS get_nt_acl_xattr(vfs_handle_struct *handle,
  Store a security descriptor given an fsp.
 *********************************************************************/
 
-static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
         uint32 security_info_sent, const struct security_descriptor *psd)
 {
 	NTSTATUS status;
 	DATA_BLOB blob;
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("fset_nt_acl_xattr: incoming sd for file %s\n",
+		DEBUG(10,("fset_nt_acl_tdb: incoming sd for file %s\n",
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
@@ -768,7 +757,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		DEBUG(10,("fset_nt_acl_xattr: storing xattr sd for file %s\n",
+		DEBUG(10,("fset_nt_acl_tdb: storing tdb sd for file %s\n",
 			fsp->fsp_name));
 		NDR_PRINT_DEBUG(security_descriptor,
 			CONST_DISCARD(struct security_descriptor *,psd));
@@ -783,7 +772,7 @@ static NTSTATUS fset_nt_acl_xattr(vfs_handle_struct *handle, files_struct *fsp,
  Handle opening the storage tdb if so configured.
 *******************************************************************/
 
-static int connect_acl_xattr(struct vfs_handle_struct *handle,
+static int connect_acl_tdb(struct vfs_handle_struct *handle,
 				const char *service,
 				const char *user)
 {
@@ -800,9 +789,74 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	SMB_VFS_HANDLE_SET_DATA(handle, db, free_acl_xattr_data,
+	SMB_VFS_HANDLE_SET_DATA(handle, db, free_acl_tdb_data,
 				struct db_context, return -1);
 
+	return 0;
+}
+
+/*********************************************************************
+ Remove a Windows ACL - we're setting the underlying POSIX ACL.
+*********************************************************************/
+
+static int sys_acl_set_file_tdb(vfs_handle_struct *handle,
+                              const char *path,
+                              SMB_ACL_TYPE_T type,
+                              SMB_ACL_T theacl)
+{
+	SMB_STRUCT_STAT sbuf;
+	struct db_context *db;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+
+	if (SMB_VFS_STAT(handle->conn, path, &sbuf) == -1) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle,
+						path,
+						type,
+						theacl);
+	if (ret == -1) {
+		return -1;
+	}
+
+	acl_tdb_delete(handle, db, &sbuf);
+	return 0;
+}
+
+/*********************************************************************
+ Remove a Windows ACL - we're setting the underlying POSIX ACL.
+*********************************************************************/
+
+static int sys_acl_set_fd_tdb(vfs_handle_struct *handle,
+                            files_struct *fsp,
+                            SMB_ACL_T theacl)
+{
+	SMB_STRUCT_STAT sbuf;
+	struct db_context *db;
+	int ret;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context, return -1);
+
+	if (fsp->is_directory || fsp->fh->fd == -1) {
+		ret = SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf);
+	} else {
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
+	}
+	if (ret == -1) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle,
+						fsp,
+						theacl);
+	if (ret == -1) {
+		return -1;
+	}
+
+	acl_tdb_delete(handle, db, &sbuf);
 	return 0;
 }
 
@@ -810,24 +864,28 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 
 static vfs_op_tuple skel_op_tuples[] =
 {
-	{SMB_VFS_OP(connect_acl_xattr), SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(connect_acl_tdb), SMB_VFS_OP_CONNECT,  SMB_VFS_LAYER_TRANSPARENT},
 
-	{SMB_VFS_OP(mkdir_acl_xattr), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(rmdir_acl_xattr), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(mkdir_acl_tdb), SMB_VFS_OP_MKDIR, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(rmdir_acl_tdb), SMB_VFS_OP_RMDIR, SMB_VFS_LAYER_TRANSPARENT},
 
-	{SMB_VFS_OP(open_acl_xattr),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(unlink_acl_xattr), SMB_VFS_OP_UNLINK, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(open_acl_tdb),  SMB_VFS_OP_OPEN,  SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(unlink_acl_tdb), SMB_VFS_OP_UNLINK, SMB_VFS_LAYER_TRANSPARENT},
 
         /* NT File ACL operations */
 
-	{SMB_VFS_OP(fget_nt_acl_xattr),SMB_VFS_OP_FGET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(get_nt_acl_xattr), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(fset_nt_acl_xattr),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(fget_nt_acl_tdb),SMB_VFS_OP_FGET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(get_nt_acl_tdb), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(fset_nt_acl_tdb),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
+
+	/* POSIX ACL operations. */
+	{SMB_VFS_OP(sys_acl_set_file_tdb), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(sys_acl_set_fd_tdb), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
 
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
-NTSTATUS vfs_acl_xattr_init(void)
+NTSTATUS vfs_acl_tdb_init(void)
 {
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "acl_tdb", skel_op_tuples);
 }
