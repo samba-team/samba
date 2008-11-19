@@ -149,13 +149,13 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 	const char *devicepath = NULL;
 	uint32_t property = DEV_REGPROP_DESC;
 	uint32_t reg_data_type = REG_NONE;
-	uint8_t buffer;
+	uint8_t *buffer;
 	uint32_t buffer_size = 0;
 	uint32_t needed = 0;
 	uint32_t flags = 0;
 
 	if (argc < 2) {
-		printf("usage: %s [devicepath]\n", argv[0]);
+		printf("usage: %s [devicepath] [buffersize]\n", argv[0]);
 		return WERR_OK;
 	}
 
@@ -166,11 +166,14 @@ static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
 		needed = buffer_size;
 	}
 
+	buffer = talloc_array(mem_ctx, uint8_t, buffer_size);
+	W_ERROR_HAVE_NO_MEMORY(buffer);
+
 	status = rpccli_PNP_GetDeviceRegProp(cli, mem_ctx,
 					     devicepath,
 					     property,
 					     &reg_data_type,
-					     &buffer,
+					     buffer,
 					     &buffer_size,
 					     &needed,
 					     flags,

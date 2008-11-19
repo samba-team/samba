@@ -47,23 +47,4 @@ typedef struct {
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_LIST;
 
-/**************************/
-
-typedef struct {
-	UNISTR2 devicepath;
-	uint32 property;
-	uint32 unknown2;
-	uint32 buffer_size1;
-	uint32 buffer_size2;
-	uint32 unknown5;
-} NTSVCS_Q_GET_DEVICE_REG_PROPERTY;
-
-typedef struct {
-	uint32 unknown1;
-	REGVAL_BUFFER value;
-	uint32 size;
-	uint32 needed;
-	WERROR status;
-} NTSVCS_R_GET_DEVICE_REG_PROPERTY;
-
 #endif /* _RPC_NTSVCS_H */

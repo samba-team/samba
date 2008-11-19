@@ -782,13 +782,13 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.length = r->in.length;
 	r->out.buffer = talloc_zero_array(r, uint16_t, *r->out.length);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.length = r->in.length;
 	r->out.result = _PNP_GetDeviceList(p, r);
 
 	if (p->rng_fault_state) {
@@ -1017,14 +1017,14 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.reg_data_type = r->in.reg_data_type;
+	r->out.buffer_size = r->in.buffer_size;
+	r->out.needed = r->in.needed;
 	r->out.buffer = talloc_zero_array(r, uint8_t, *r->out.buffer_size);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.buffer_size = r->in.buffer_size;
-	r->out.needed = r->in.needed;
 	r->out.result = _PNP_GetDeviceRegProp(p, r);
 
 	if (p->rng_fault_state) {

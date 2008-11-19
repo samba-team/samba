@@ -520,13 +520,13 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.action_taken = r->in.action_taken;
 	r->out.new_handle = talloc_zero(r, struct policy_handle);
 	if (r->out.new_handle == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.action_taken = r->in.action_taken;
 	r->out.result = _winreg_CreateKey(p, r);
 
 	if (p->rng_fault_state) {

@@ -60,20 +60,3 @@ NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_INVALID_PARAMETER;
 }
-
-/*******************************************************************
- Fill in a REGVAL_BUFFER for the data given a REGISTRY_VALUE
- *******************************************************************/
-
-uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val )
-{
-	uint32		real_size = 0;
-	
-	if ( !buf2 || !val )
-		return 0;
-		
-	real_size = regval_size(val);
-	init_regval_buffer( buf2, (unsigned char*)regval_data_p(val), real_size );
-
-	return real_size;
-}
