@@ -142,6 +142,13 @@ sub ParseFunction($$)
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
 			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
+		}
+	}
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			# noop
 		} elsif (grep(/out/, @dir) and not
 				 has_property($_, "represent_as")) {
 			AllocOutVar($_, "r", "r->out.$_->{NAME}", $env);
