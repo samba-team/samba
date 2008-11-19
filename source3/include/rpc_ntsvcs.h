@@ -33,18 +33,4 @@
 #define NTSVCS_GET_VERSION_INTERNAL	0x3e
 
 
-/**************************/
-
-typedef struct {
-	UNISTR2 *devicename;
-	uint32 buffer_size;
-	uint32 flags;
-} NTSVCS_Q_GET_DEVICE_LIST;
-
-typedef struct {
-	UNISTR2 devicepath;
-	uint32 needed;
-	WERROR status;
-} NTSVCS_R_GET_DEVICE_LIST;
-
 #endif /* _RPC_NTSVCS_H */

@@ -6025,9 +6025,6 @@ bool policy_handle_is_valid(const POLICY_HND *hnd);
 
 /* The following definitions come from rpc_parse/parse_ntsvcs.c  */
 
-bool ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth);
-bool ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth);
-
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
 void prs_dump(const char *name, int v, prs_struct *ps);
