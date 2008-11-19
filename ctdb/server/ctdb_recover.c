@@ -529,6 +529,19 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 	return;
 }
 
+static void
+ctdb_drop_all_ips_event(struct event_context *ev, struct timed_event *te, 
+			       struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	DEBUG(DEBUG_INFO,(__location__ " Been in recovery mode for too long. Dropping all IPS\n"));
+	talloc_free(ctdb->release_ips_ctx);
+	ctdb->release_ips_ctx = NULL;
+
+	ctdb_release_all_ips(ctdb);
+}
+
 /*
   set the recovery mode
  */
@@ -541,6 +554,21 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	int ret;
 	struct ctdb_set_recmode_state *state;
 	pid_t parent = getpid();
+
+	/* if we enter recovery but stay in recovery for too long
+	   we will eventually drop all our ip addresses
+	*/
+	if (recmode == CTDB_RECOVERY_NORMAL) {
+		talloc_free(ctdb->release_ips_ctx);
+		ctdb->release_ips_ctx = NULL;
+	} else {
+		talloc_free(ctdb->release_ips_ctx);
+		ctdb->release_ips_ctx = talloc_new(ctdb);
+		CTDB_NO_MEMORY(ctdb, ctdb->release_ips_ctx);
+
+		event_add_timed(ctdb->ev, ctdb->release_ips_ctx, timeval_current_ofs(5,0), ctdb_drop_all_ips_event, ctdb);
+	}
+
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(DEBUG_ERR,("Attempt to change recovery mode to %u when not frozen\n", 
@@ -1045,3 +1073,15 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 	return 0;
 }
 
+
+
+int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata)
+{
+	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(DEBUG_NOTICE,("Attempt to set recmaster when not frozen\n"));
+		return -1;
+	}
+	ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
+	return 0;
+}

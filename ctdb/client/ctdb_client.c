@@ -26,6 +26,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include <stdlib.h>
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 

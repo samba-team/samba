@@ -441,8 +441,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 static int control_recmaster(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t recmode, recmaster;
-	int mypnn;
+	uint32_t recmaster;
 
 	ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), options.pnn, &recmaster);
 	if (ret != 0) {

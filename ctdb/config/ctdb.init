@@ -75,6 +75,9 @@ CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 [ -z "$CTDB_LVS_PUBLIC_IP" ] || {
 	CTDB_OPTIONS="$CTDB_OPTIONS --lvs"
 }
+[ -z "$CTDB_SCRIPT_LOG_LEVEL" ] || {
+	CTDB_OPTIONS="$CTDB_OPTIONS --script-log-level=$CTDB_SCRIPT_LOG_LEVEL"
+}
 
 if [ "$CTDB_VALGRIND" = "yes" ]; then
     init_style="valgrind"

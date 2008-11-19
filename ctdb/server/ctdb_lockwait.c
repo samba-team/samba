@@ -53,7 +53,7 @@ static void lockwait_handler(struct event_context *ev, struct fd_event *fde,
 	key.dptr = talloc_memdup(tmp_ctx, key.dptr, key.dsize);
 
 	talloc_set_destructor(h, NULL);
-	ctdb_latency(&h->ctdb->statistics.max_lockwait_latency, h->start_time);
+	ctdb_latency(h->ctdb_db, "lockwait", &h->ctdb->statistics.max_lockwait_latency, h->start_time);
 	h->ctdb->statistics.pending_lockwait_calls--;
 
 	/* the handle needs to go away when the context is gone - when

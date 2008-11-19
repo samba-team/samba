@@ -67,17 +67,18 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 	DIR *dir;
 	struct dirent *de;
 	char *script;
+	int count;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
 		/* we guarantee that only some specifically allowed event scripts are run
 		   while in recovery */
-		const char *allowed_scripts[] = {"startrecovery", "shutdown" };
+		const char *allowed_scripts[] = {"startrecovery", "shutdown", "releaseip" };
 		int i;
 		for (i=0;i<ARRAY_SIZE(allowed_scripts);i++) {
-			if (strcmp(options, allowed_scripts[i]) == 0) break;
+			if (strncmp(options, allowed_scripts[i], strlen(allowed_scripts[i])) == 0) break;
 		}
 		if (i == ARRAY_SIZE(allowed_scripts)) {
-			DEBUG(0,("Refusing to run event scripts with option '%s' while in recovery\n",
+			DEBUG(DEBUG_ERR,("Refusing to run event scripts with option '%s' while in recovery\n",
 				 options));
 			return -1;
 		}
@@ -118,6 +119,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		return -1;
 	}
 
+	count = 0;
 	while ((de=readdir(dir)) != NULL) {
 		int namlen;
 		unsigned num;
@@ -154,14 +156,8 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *options)
 		}
 		
 		
-		/* store the event script in the tree */		
-		script = trbt_insert32(tree, num, talloc_strdup(tree, de->d_name));
-		if (script != NULL) {
-			DEBUG(DEBUG_CRIT,("CONFIG ERROR: Multiple event scripts with the same prefix : '%s' and '%s'. Each event script MUST have a unique prefix\n", script, de->d_name));
-			talloc_free(tmp_ctx);
-			closedir(dir);
-			return -1;
-		}
+		/* store the event script in the tree */
+		trbt_insert32(tree, (num<<16)|count++, talloc_strdup(tree, de->d_name));
 	}
 	closedir(dir);
 
