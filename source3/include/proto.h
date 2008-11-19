@@ -6023,8 +6023,6 @@ bool make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
-/* The following definitions come from rpc_parse/parse_ntsvcs.c  */
-
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
 void prs_dump(const char *name, int v, prs_struct *ps);
@@ -6550,15 +6548,6 @@ bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
-
-/* The following definitions come from rpc_server/srv_ntsvcs.c  */
-
-void ntsvcs2_get_pipe_fns( struct api_struct **fns, int *n_fns );
-NTSTATUS rpc_ntsvcs2_init(void);
-
-/* The following definitions come from rpc_server/srv_ntsvcs_nt.c  */
-
-WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u );
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
