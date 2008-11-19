@@ -624,3 +624,24 @@ _PUBLIC_ void ndr_print_wrepl_nbt_name(struct ndr_print *ndr, const char *name, 
 	ndr_print_string(ndr, name, s);
 	talloc_free(s);
 }
+
+_PUBLIC_ enum ndr_err_code ndr_push_nbt_res_rec(struct ndr_push *ndr, int ndr_flags, const struct nbt_res_rec *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_nbt_name(ndr, NDR_SCALARS, &r->name));
+			NDR_CHECK(ndr_push_nbt_qtype(ndr, NDR_SCALARS, r->rr_type));
+			NDR_CHECK(ndr_push_nbt_qclass(ndr, NDR_SCALARS, r->rr_class));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ttl));
+			NDR_CHECK(ndr_push_set_switch_value(ndr, &r->rdata, ((((r->rr_type) == NBT_QTYPE_NETBIOS) && ((r->rdata).data.length == 2))?0:r->rr_type)));
+			NDR_CHECK(ndr_push_nbt_rdata(ndr, NDR_SCALARS, &r->rdata));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
