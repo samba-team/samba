@@ -435,10 +435,6 @@ _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
 {
 	NSS_STATUS nss_status;
 
-#if HAVE_PTHREAD
-	pthread_mutex_lock(&wins_nss_mutex);
-#endif
-
 	if(af!=AF_INET) {
 		*h_errnop = NO_DATA;
 		nss_status = NSS_STATUS_UNAVAIL;
@@ -446,9 +442,6 @@ _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
 		nss_status = _nss_wins_gethostbyname_r(
 				name, he, buffer, buflen, h_errnop);
 	}
-#if HAVE_PTHREAD
-	pthread_mutex_unlock(&wins_nss_mutex);
-#endif
 	return nss_status;
 }
 #endif
