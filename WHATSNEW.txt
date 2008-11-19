@@ -206,13 +206,17 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
 
 
 o   Günther Deschner <gd@samba.org>
-    * BUG 5888: Fix PNP_GetHwProfInfo().
+    * BUG 5888: Fix remote rpc service management.
     * Ensure consistency when reporting password complexity.
     * Fix _lsa_GetUserName.
     * Fix access check in _samr_QuerySecurity().
     * _samr_DeleteUser needs to wipe out the user_handle on success.
     * NetGroupEnum_r needs to handle servers with no groups.
     * Fix numerous netapi issues.
+
+
+o   Dina Fine <dina@exanet.com>
+    * BUG 5908: Fix internal change notify on share directories.
 
 
 o   Jeff Layton <jlayton@redhat.com>
