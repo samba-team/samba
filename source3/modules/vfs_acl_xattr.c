@@ -714,7 +714,7 @@ static vfs_op_tuple skel_op_tuples[] =
 
 	/* POSIX ACL operations. */
 	{SMB_VFS_OP(sys_acl_set_file_xattr), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(sys__acl_set_fd_xattr), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(sys_acl_set_fd_xattr), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations. */
 	{SMB_VFS_OP(sys_acl_set_file_xattr), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
