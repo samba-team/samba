@@ -81,9 +81,9 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	data.dptr = (uint8_t *)&c;
 	data.dsize = sizeof(c);
 
-	/* tell the other nodes that something has changed */
-	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+	/* ask the recovery daemon to push these changes out to all nodes */
+	ctdb_daemon_send_message(ctdb, ctdb->pnn,
+				 CTDB_SRVID_PUSH_NODE_FLAGS, data);
 
 }
 
@@ -212,35 +212,33 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 {
-	struct ctdb_node_modflags *m = (struct ctdb_node_modflags *)indata.dptr;
-	TDB_DATA data;
-	struct ctdb_node_flag_change c;
-	struct ctdb_node *node = ctdb->nodes[ctdb->pnn];
-	uint32_t old_flags = node->flags;
+	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)indata.dptr;
+	struct ctdb_node *node;
+	
+	if (c->pnn >= ctdb->num_nodes) {
+		DEBUG(DEBUG_ERR,(__location__ " Node %d is invalid, num_nodes :%d\n", c->pnn, ctdb->num_nodes));
+		return -1;
+	}
 
-	node->flags |= m->set;
-	node->flags &= ~m->clear;
+	node         = ctdb->nodes[c->pnn];
+	c->old_flags  = node->flags;
+	node->flags   = c->new_flags & ~NODE_FLAGS_DISCONNECTED;
+	node->flags  |= (c->old_flags & NODE_FLAGS_DISCONNECTED);
 
-	if (node->flags == old_flags) {
-		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", ctdb->pnn, node->flags));
+	if (node->flags == c->old_flags) {
+		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", c->pnn, node->flags));
 		return 0;
 	}
 
-	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", ctdb->pnn, node->flags));
+	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", c->pnn, node->flags));
 
-	/* if we have been banned, go into recovery mode */
-	c.pnn = ctdb->pnn;
-	c.old_flags = old_flags;
-	c.new_flags = node->flags;
 
-	data.dptr = (uint8_t *)&c;
-	data.dsize = sizeof(c);
+	/* tell the recovery daemon something has changed */
+	ctdb_daemon_send_message(ctdb, ctdb->pnn,
+				 CTDB_SRVID_SET_NODE_FLAGS, indata);
 
-	/* tell the other nodes that something has changed */
-	ctdb_daemon_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-				 CTDB_SRVID_NODE_FLAGS_CHANGED, data);
-
-	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
+	/* if we have become banned, we should go into recovery mode */
+	if ((node->flags & NODE_FLAGS_BANNED) && !(c->old_flags & NODE_FLAGS_BANNED)) {
 		/* make sure we are frozen */
 		DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
 		/* Reset the generation id to 1 to make us ignore any
