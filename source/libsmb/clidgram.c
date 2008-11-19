@@ -279,8 +279,8 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 	/* do we still need this ? */
 	*nt_version = r.ntver;
 
-	returned_domain = r.nt5_ex.domain;
-	returned_dc = r.nt5_ex.pdc_name;
+	returned_domain = r.data.nt5_ex.domain;
+	returned_dc = r.data.nt5_ex.pdc_name;
 
 	if (!strequal(returned_domain, domain_name)) {
 		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",

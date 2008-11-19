@@ -36,7 +36,7 @@ struct netlogon_samlogon_response
 		struct NETLOGON_SAM_LOGON_RESPONSE_NT40 nt4;
 		struct NETLOGON_SAM_LOGON_RESPONSE nt5;
 		struct NETLOGON_SAM_LOGON_RESPONSE_EX nt5_ex;
-	};
+	} data;
 
 };
 
@@ -46,7 +46,7 @@ struct nbt_netlogon_response
 	union {
 		struct nbt_netlogon_response_from_pdc get_pdc;
 		struct netlogon_samlogon_response samlogon;
-	};
+	} data;
 };
 
 #include "libcli/netlogon_proto.h"
