@@ -109,6 +109,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	uint16_t *vwv;
 	uint16_t num_bytes;
 	uint8_t *bytes;
+	uint8_t *buf;
 	NTSTATUS status;
 	size_t size;
 
@@ -134,6 +135,24 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	if (size > cli_req->data.read.size) {
 		DEBUG(5,("server returned more than we wanted!\n"));
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
+
+	/*
+	 * bcc field must be valid for small reads, for large reads the 16-bit
+	 * bcc field can't be correct.
+	 */
+
+	if ((size < 0xffff) && (size > num_bytes)) {
+		DEBUG(5, ("server announced more bytes than sent\n"));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	buf = (uint8_t *)smb_base(cli_req->inbuf) + SVAL(vwv+6, 0);
+
+	if (trans_oob(smb_len(cli_req->inbuf), SVAL(vwv+6, 0), size)
+	    || (buf < bytes)) {
+		DEBUG(5, ("server returned invalid read&x data offset\n"));
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
 	*rcvbuf = (uint8_t *)(smb_base(cli_req->inbuf) + SVAL(vwv + 6, 0));
