@@ -39,10 +39,14 @@
 		<arg choice="opt">--own-domain</arg>
 		<arg choice="opt">-p</arg>
 		<arg choice="opt">-r user</arg>
+		<arg choice="opt">--remove-uid-mapping uid,sid</arg>
+		<arg choice="opt">--remove-gid-mapping gid,sid</arg>
 		<arg choice="opt">-s sid</arg>
 		<arg choice="opt">--separator</arg>
 		<arg choice="opt">--sequence</arg>
 		<arg choice="opt">--set-auth-user user%password</arg>
+		<arg choice="opt">--set-uid-mapping uid,sid</arg>
+		<arg choice="opt">--set-gid-mapping gid,sid</arg>
 		<arg choice="opt">-S sid</arg>
 		<arg choice="opt">-t</arg>
 		<arg choice="opt">-u</arg>
@@ -328,6 +332,29 @@
 		the operation will fail. </para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--remove-uid-mapping uid,sid</term>
+		<listitem><para>Remove an existing uid to sid mapping
+		entry from the IDmap backend.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--remove-gid-mapping gid,sid</term>
+		<listitem><para>Remove an existing gid to sid
+		mapping entry from the IDmap backend.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--set-uid-mapping uid,sid</term>
+		<listitem><para>Create a new or modify an existing uid to sid
+		mapping in the IDmap backend.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--set-gid-mapping gid,sid</term>
+		<listitem><para>Create a new or modify an existing gid to sid
+		mapping in the IDmap backend.</para></listitem>
+		</varlistentry>
 
 		&stdarg.version;
 		&stdarg.help;
