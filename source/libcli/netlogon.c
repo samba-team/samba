@@ -28,15 +28,15 @@ NTSTATUS push_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	if (response->ntver == NETLOGON_NT_VERSION_1) {
 		ndr_err = ndr_push_struct_blob(data, mem_ctx,
-					       &response->nt4,
+					       &response->data.nt4,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_NT40);
 	} else if (response->ntver & NETLOGON_NT_VERSION_5EX) {
 		ndr_err = ndr_push_struct_blob(data, mem_ctx,
-					       &response->nt5_ex,
+					       &response->data.nt5_ex,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags);
 	} else if (response->ntver & NETLOGON_NT_VERSION_5) {
 		ndr_err = ndr_push_struct_blob(data, mem_ctx,
-					       &response->nt5,
+					       &response->data.nt5,
 					       (ndr_push_flags_fn_t)ndr_push_NETLOGON_SAM_LOGON_RESPONSE);
 	} else {
 		DEBUG(0, ("Asked to push unknown netlogon response type 0x%02x\n", response->ntver));
@@ -73,11 +73,12 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 
 	if (ntver == NETLOGON_NT_VERSION_1) {
 		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
-						   &response->nt4,
+						   &response->data.nt4,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_NT40);
 		response->ntver = NETLOGON_NT_VERSION_1;
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
-			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_NT40, &response->nt4);
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_NT40,
+					&response->data.nt4);
 		}
 
 	} else if (ntver & NETLOGON_NT_VERSION_5EX) {
@@ -86,7 +87,9 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		if (!ndr) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ndr_err = ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(ndr, NDR_SCALARS|NDR_BUFFERS, &response->nt5_ex, ntver);
+		ndr_err = ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(
+			ndr, NDR_SCALARS|NDR_BUFFERS, &response->data.nt5_ex,
+			ntver);
 		if (ndr->offset < ndr->data_size) {
 			ndr_err = ndr_pull_error(ndr, NDR_ERR_UNREAD_BYTES,
 						 "not all bytes consumed ofs[%u] size[%u]",
@@ -94,16 +97,18 @@ NTSTATUS pull_netlogon_samlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		}
 		response->ntver = NETLOGON_NT_VERSION_5EX;
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
-			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX, &response->nt5_ex);
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE_EX,
+					&response->data.nt5_ex);
 		}
 
 	} else if (ntver & NETLOGON_NT_VERSION_5) {
 		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
-						   &response->nt5,
+						   &response->data.nt5,
 						   (ndr_pull_flags_fn_t)ndr_pull_NETLOGON_SAM_LOGON_RESPONSE);
 		response->ntver = NETLOGON_NT_VERSION_5;
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && DEBUGLEVEL >= 10) {
-			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE, &response->nt5);
+			NDR_PRINT_DEBUG(NETLOGON_SAM_LOGON_RESPONSE,
+					&response->data.nt5);
 		}
 	} else {
 		DEBUG(2,("failed to parse netlogon response of type 0x%02x - unknown response type\n",
@@ -130,34 +135,34 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 		break;
 	case NETLOGON_NT_VERSION_5:
 		ZERO_STRUCT(response_5_ex);
-		response_5_ex.command = response->nt5.command;
-		response_5_ex.pdc_name = response->nt5.pdc_name;
-		response_5_ex.user_name = response->nt5.user_name;
-		response_5_ex.domain = response->nt5.domain_name;
-		response_5_ex.domain_uuid = response->nt5.domain_uuid;
-		response_5_ex.forest = response->nt5.forest;
-		response_5_ex.dns_domain = response->nt5.dns_domain;
-		response_5_ex.pdc_dns_name = response->nt5.pdc_dns_name;
-		response_5_ex.sockaddr.pdc_ip = response->nt5.pdc_ip;
-		response_5_ex.server_type = response->nt5.server_type;
-		response_5_ex.nt_version = response->nt5.nt_version;
-		response_5_ex.lmnt_token = response->nt5.lmnt_token;
-		response_5_ex.lm20_token = response->nt5.lm20_token;
+		response_5_ex.command = response->data.nt5.command;
+		response_5_ex.pdc_name = response->data.nt5.pdc_name;
+		response_5_ex.user_name = response->data.nt5.user_name;
+		response_5_ex.domain = response->data.nt5.domain_name;
+		response_5_ex.domain_uuid = response->data.nt5.domain_uuid;
+		response_5_ex.forest = response->data.nt5.forest;
+		response_5_ex.dns_domain = response->data.nt5.dns_domain;
+		response_5_ex.pdc_dns_name = response->data.nt5.pdc_dns_name;
+		response_5_ex.sockaddr.pdc_ip = response->data.nt5.pdc_ip;
+		response_5_ex.server_type = response->data.nt5.server_type;
+		response_5_ex.nt_version = response->data.nt5.nt_version;
+		response_5_ex.lmnt_token = response->data.nt5.lmnt_token;
+		response_5_ex.lm20_token = response->data.nt5.lm20_token;
 		response->ntver = NETLOGON_NT_VERSION_5EX;
-		response->nt5_ex = response_5_ex;
+		response->data.nt5_ex = response_5_ex;
 		break;
 
 	case NETLOGON_NT_VERSION_1:
 		ZERO_STRUCT(response_5_ex);
-		response_5_ex.command = response->nt4.command;
-		response_5_ex.pdc_name = response->nt4.server;
-		response_5_ex.user_name = response->nt4.user_name;
-		response_5_ex.domain = response->nt4.domain;
-		response_5_ex.nt_version = response->nt4.nt_version;
-		response_5_ex.lmnt_token = response->nt4.lmnt_token;
-		response_5_ex.lm20_token = response->nt4.lm20_token;
+		response_5_ex.command = response->data.nt4.command;
+		response_5_ex.pdc_name = response->data.nt4.server;
+		response_5_ex.user_name = response->data.nt4.user_name;
+		response_5_ex.domain = response->data.nt4.domain;
+		response_5_ex.nt_version = response->data.nt4.nt_version;
+		response_5_ex.lmnt_token = response->data.nt4.lmnt_token;
+		response_5_ex.lm20_token = response->data.nt4.lm20_token;
 		response->ntver = NETLOGON_NT_VERSION_5EX;
-		response->nt5_ex = response_5_ex;
+		response->data.nt5_ex = response_5_ex;
 		break;
 	}
 	return;
@@ -170,7 +175,8 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	switch (response->response_type) {
 	case NETLOGON_GET_PDC:
-		ndr_err = ndr_push_struct_blob(data, mem_ctx, &response->get_pdc,
+		ndr_err = ndr_push_struct_blob(data, mem_ctx,
+					       &response->data.get_pdc,
 					       (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_response_from_pdc);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -184,7 +190,8 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_OK;
 		break;
 	case NETLOGON_SAMLOGON:
-		status = push_netlogon_samlogon_response(data, mem_ctx, &response->samlogon);
+		status = push_netlogon_samlogon_response(data, mem_ctx,
+							 &response->data.samlogon);
 		break;
 	}
 	return status;
@@ -205,7 +212,8 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 
 	switch (command) {
 	case NETLOGON_RESPONSE_FROM_PDC:
-		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx, &response->get_pdc,
+		ndr_err = ndr_pull_struct_blob_all(data, mem_ctx,
+						   &response->data.get_pdc,
 						   (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_response_from_pdc);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -225,7 +233,9 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	case LOGON_SAM_LOGON_RESPONSE_EX:
 	case LOGON_SAM_LOGON_PAUSE_RESPONSE_EX:
 	case LOGON_SAM_LOGON_USER_UNKNOWN_EX:
-		status = pull_netlogon_samlogon_response(data, mem_ctx, &response->samlogon);
+		status = pull_netlogon_samlogon_response(
+			data, mem_ctx,
+			&response->data.samlogon);
 		response->response_type = NETLOGON_SAMLOGON;
 		break;
 
