@@ -46,13 +46,13 @@ static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetCharDevEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -281,13 +281,13 @@ static bool api_srvsvc_NetCharDevQEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetCharDevQEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -664,13 +664,13 @@ static bool api_srvsvc_NetConnEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetConnEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -746,13 +746,13 @@ static bool api_srvsvc_NetFileEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetFileEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -981,13 +981,13 @@ static bool api_srvsvc_NetSessEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetSessEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -1211,13 +1211,13 @@ static bool api_srvsvc_NetShareEnumAll(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetShareEnumAll(p, r);
 
 	if (p->rng_fault_state) {
@@ -1829,13 +1829,13 @@ static bool api_srvsvc_NetDiskEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info = r->in.info;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetDiskEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -2064,13 +2064,13 @@ static bool api_srvsvc_NetTransportEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.transports = r->in.transports;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetTransportEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -2451,13 +2451,13 @@ static bool api_srvsvc_NetPathCanonicalize(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.pathtype = r->in.pathtype;
 	r->out.can_path = talloc_zero_array(r, uint8_t, r->in.maxbuf);
 	if (r->out.can_path == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.pathtype = r->in.pathtype;
 	r->out.result = _srvsvc_NetPathCanonicalize(p, r);
 
 	if (p->rng_fault_state) {
@@ -2825,13 +2825,13 @@ static bool api_srvsvc_NetShareEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info_ctr = r->in.info_ctr;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.totalentries = talloc_zero(r, uint32_t);
 	if (r->out.totalentries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _srvsvc_NetShareEnum(p, r);
 
 	if (p->rng_fault_state) {

@@ -871,6 +871,7 @@ static bool api_netr_AccountSync(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.return_authenticator = r->in.return_authenticator;
+	r->out.recordid = r->in.recordid;
 	r->out.buffer = talloc_zero(r, struct netr_AccountBuffer);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
@@ -895,7 +896,6 @@ static bool api_netr_AccountSync(pipes_struct *p)
 		return false;
 	}
 
-	r->out.recordid = r->in.recordid;
 	r->out.result = _netr_AccountSync(p, r);
 
 	if (p->rng_fault_state) {
@@ -1290,13 +1290,13 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.negotiate_flags = r->in.negotiate_flags;
 	r->out.return_credentials = talloc_zero(r, struct netr_Credential);
 	if (r->out.return_credentials == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.negotiate_flags = r->in.negotiate_flags;
 	r->out.result = _netr_ServerAuthenticate2(p, r);
 
 	if (p->rng_fault_state) {
@@ -2146,13 +2146,13 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.negotiate_flags = r->in.negotiate_flags;
 	r->out.return_credentials = talloc_zero(r, struct netr_Credential);
 	if (r->out.return_credentials == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.negotiate_flags = r->in.negotiate_flags;
 	r->out.rid = talloc_zero(r, uint32_t);
 	if (r->out.rid == NULL) {
 		talloc_free(r);
@@ -3186,6 +3186,7 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.flags = r->in.flags;
 	r->out.validation = talloc_zero(r, union netr_Validation);
 	if (r->out.validation == NULL) {
 		talloc_free(r);
@@ -3198,7 +3199,6 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 		return false;
 	}
 
-	r->out.flags = r->in.flags;
 	r->out.result = _netr_LogonSamLogonEx(p, r);
 
 	if (p->rng_fault_state) {
@@ -3685,6 +3685,7 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.return_authenticator = r->in.return_authenticator;
+	r->out.flags = r->in.flags;
 	r->out.validation = talloc_zero(r, union netr_Validation);
 	if (r->out.validation == NULL) {
 		talloc_free(r);
@@ -3697,7 +3698,6 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 		return false;
 	}
 
-	r->out.flags = r->in.flags;
 	r->out.result = _netr_LogonSamLogonWithFlags(p, r);
 
 	if (p->rng_fault_state) {

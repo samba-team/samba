@@ -1128,14 +1128,14 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.sids = r->in.sids;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.sids = r->in.sids;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupNames(p, r);
 
 	if (p->rng_fault_state) {
@@ -1210,14 +1210,14 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.names = r->in.names;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.names = r->in.names;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupSids(p, r);
 
 	if (p->rng_fault_state) {
@@ -4444,14 +4444,14 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.names = r->in.names;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.names = r->in.names;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupSids2(p, r);
 
 	if (p->rng_fault_state) {
@@ -4526,14 +4526,14 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.sids = r->in.sids;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.sids = r->in.sids;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupNames2(p, r);
 
 	if (p->rng_fault_state) {
@@ -5272,14 +5272,14 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.sids = r->in.sids;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.sids = r->in.sids;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupNames3(p, r);
 
 	if (p->rng_fault_state) {
@@ -5872,14 +5872,14 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.names = r->in.names;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.names = r->in.names;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupSids3(p, r);
 
 	if (p->rng_fault_state) {
@@ -5954,14 +5954,14 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.sids = r->in.sids;
+	r->out.count = r->in.count;
 	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.sids = r->in.sids;
-	r->out.count = r->in.count;
 	r->out.result = _lsa_LookupNames4(p, r);
 
 	if (p->rng_fault_state) {

@@ -1139,6 +1139,7 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.service == NULL) {
 		talloc_free(r);
@@ -1157,7 +1158,6 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _svcctl_EnumServicesStatusW(p, r);
 
 	if (p->rng_fault_state) {
@@ -1637,13 +1637,13 @@ static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.display_name_length = r->in.display_name_length;
 	r->out.display_name = talloc_zero(r, const char *);
 	if (r->out.display_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceDisplayNameW(p, r);
 
 	if (p->rng_fault_state) {
@@ -1718,13 +1718,13 @@ static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.display_name_length = r->in.display_name_length;
 	r->out.key_name = talloc_zero(r, const char *);
 	if (r->out.key_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceKeyNameW(p, r);
 
 	if (p->rng_fault_state) {
@@ -2124,6 +2124,7 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.service == NULL) {
 		talloc_free(r);
@@ -2142,7 +2143,6 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _svcctl_EnumServicesStatusA(p, r);
 
 	if (p->rng_fault_state) {
@@ -2615,13 +2615,13 @@ static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.display_name_length = r->in.display_name_length;
 	r->out.display_name = talloc_zero(r, const char *);
 	if (r->out.display_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceDisplayNameA(p, r);
 
 	if (p->rng_fault_state) {
@@ -2696,13 +2696,13 @@ static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.display_name_length = r->in.display_name_length;
 	r->out.key_name = talloc_zero(r, const char *);
 	if (r->out.key_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceKeyNameA(p, r);
 
 	if (p->rng_fault_state) {
@@ -3327,6 +3327,7 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.services == NULL) {
 		talloc_free(r);
@@ -3345,7 +3346,6 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.group_name = talloc_zero(r, const char *);
 	if (r->out.group_name == NULL) {
 		talloc_free(r);
@@ -3426,6 +3426,7 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.services == NULL) {
 		talloc_free(r);
@@ -3444,7 +3445,6 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _EnumServicesStatusExW(p, r);
 
 	if (p->rng_fault_state) {
