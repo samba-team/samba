@@ -434,7 +434,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 
 	if ( !info->etdb ) {
 		DEBUG( 4, ( "No open tdb! (%s)\n", info->logname ) );
-		return False;
+		goto done;
 	}
 	/* set resonable defaults.  512Kb on size and 1 week on time */
 
@@ -448,7 +448,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 
 	path = talloc_asprintf(ctx, "%s/%s", KEY_EVENTLOG, elogname );
 	if (!path) {
-		return false;
+		goto done;
 	}
 
 	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_root_nt_token(),
@@ -458,14 +458,13 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 		DEBUG( 4,
 		       ( "sync_eventlog_params: Failed to open key [%s] (%s)\n",
 			 path, dos_errstr( wresult ) ) );
-		return false;
+		goto done;
 	}
 
 	wresult = reg_queryvalue(key, key, "Retention", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
 			  dos_errstr(wresult)));
-		ret = false;
 		goto done;
 	}
 	uiRetention = value->v.dword;
@@ -474,7 +473,6 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"MaxSize\": %s\n",
 			  dos_errstr(wresult)));
-		ret = false;
 		goto done;
 	}
 	uiMaxSize = value->v.dword;
