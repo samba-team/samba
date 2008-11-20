@@ -46,8 +46,8 @@ static bool get_policy_handle(struct torture_context *tctx,
 	unknown0.unknown1 = 0x0001;
 
 	r.in.unknown0 = &unknown0;
-	init_lsa_String(r.in.logname, "dns server");
-	init_lsa_String(r.in.servername, NULL);
+	init_lsa_String(&logname, "dns server");
+	init_lsa_String(&servername, NULL);
 	r.in.logname = &logname;
 	r.in.servername = &servername;
 	r.in.unknown2 = 0x00000001;
