@@ -2315,10 +2315,12 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
-	status = create_file_unixpath
+	status = SMB_VFS_CREATE_FILE
 		(conn,			/* conn */
 		 req,			/* req */
+		 0,			/* root_dir_fid */
 		 fname,			/* fname */
+		 false,			/* is_dos_path */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
@@ -2333,7 +2335,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 &sbuf);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("create_file_unixpath failed: %s\n",
+		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
 			   nt_errstr(status)));
 		return status;
 	}

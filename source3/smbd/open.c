@@ -29,6 +29,23 @@ struct deferred_open_record {
 	struct file_id id;
 };
 
+static NTSTATUS create_file_unixpath(connection_struct *conn,
+				     struct smb_request *req,
+				     const char *fname,
+				     uint32_t access_mask,
+				     uint32_t share_access,
+				     uint32_t create_disposition,
+				     uint32_t create_options,
+				     uint32_t file_attributes,
+				     uint32_t oplock_request,
+				     uint64_t allocation_size,
+				     struct security_descriptor *sd,
+				     struct ea_list *ea_list,
+
+				     files_struct **result,
+				     int *pinfo,
+				     SMB_STRUCT_STAT *psbuf);
+
 /****************************************************************************
  SMB1 file varient of se_access_check. Never test FILE_READ_ATTRIBUTES.
 ****************************************************************************/
@@ -2708,22 +2725,22 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
  * Wrapper around open_file_ntcreate and open_directory
  */
 
-NTSTATUS create_file_unixpath(connection_struct *conn,
-			      struct smb_request *req,
-			      const char *fname,
-			      uint32_t access_mask,
-			      uint32_t share_access,
-			      uint32_t create_disposition,
-			      uint32_t create_options,
-			      uint32_t file_attributes,
-			      uint32_t oplock_request,
-			      uint64_t allocation_size,
-			      struct security_descriptor *sd,
-			      struct ea_list *ea_list,
+static NTSTATUS create_file_unixpath(connection_struct *conn,
+				     struct smb_request *req,
+				     const char *fname,
+				     uint32_t access_mask,
+				     uint32_t share_access,
+				     uint32_t create_disposition,
+				     uint32_t create_options,
+				     uint32_t file_attributes,
+				     uint32_t oplock_request,
+				     uint64_t allocation_size,
+				     struct security_descriptor *sd,
+				     struct ea_list *ea_list,
 
-			      files_struct **result,
-			      int *pinfo,
-			      SMB_STRUCT_STAT *psbuf)
+				     files_struct **result,
+				     int *pinfo,
+				     SMB_STRUCT_STAT *psbuf)
 {
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
@@ -3287,6 +3304,15 @@ NTSTATUS create_file_default(connection_struct *conn,
 			goto fail;
 		}
 		fname = converted_fname;
+	} else {
+		if (psbuf != NULL) {
+			sbuf = *psbuf;
+		} else {
+			if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
+				SET_STAT_INVALID(sbuf);
+			}
+		}
+
 	}
 
 	TALLOC_FREE(case_state);
