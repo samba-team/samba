@@ -283,7 +283,7 @@ static int elog_size( EVENTLOG_INFO *info )
   Eventlog_entry.  returns NULL if it can't get the record for some reason.
  ********************************************************************/
 
-static Eventlog_entry *get_eventlog_record(prs_struct *ps,
+static Eventlog_entry *get_eventlog_record(TALLOC_CTX *mem_ctx,
 				TDB_CONTEXT *tdb,
 				int recno)
 {
@@ -321,7 +321,7 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	if ( !len )
 		return NULL;
 
-	ee = TALLOC_ARRAY(ps->mem_ctx, Eventlog_entry, 1);
+	ee = TALLOC_ARRAY(mem_ctx, Eventlog_entry, 1);
 	if (!ee) {
 		return NULL;
 	}
@@ -491,13 +491,13 @@ done:
 /********************************************************************
  ********************************************************************/
 
-static Eventlog_entry *read_package_entry( prs_struct * ps,
+static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 					   Eventlog_entry * entry )
 {
 	uint8 *offset;
 	Eventlog_entry *ee_new = NULL;
 
-	ee_new = PRS_ALLOC_MEM( ps, Eventlog_entry, 1 );
+	ee_new = TALLOC_ZERO_ARRAY(mem_ctx, Eventlog_entry, 1 );
 	if ( ee_new == NULL ) {
 		return NULL;
 	}
@@ -536,10 +536,10 @@ static Eventlog_entry *read_package_entry( prs_struct * ps,
 	DEBUG( 10,
 	       ( "entry->record.length is [%d].\n", entry->record.length ) );
 	entry->data =
-		PRS_ALLOC_MEM( ps, uint8,
-			       entry->record.length -
-			       sizeof( Eventlog_record ) -
-			       sizeof( entry->record.length ) );
+		TALLOC_ZERO_ARRAY(mem_ctx, uint8_t,
+				  entry->record.length -
+				  sizeof( Eventlog_record ) -
+				  sizeof( entry->record.length ));
 	if ( entry->data == NULL ) {
 		return NULL;
 	}
@@ -761,7 +761,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* assume that when the record fetch fails, that we are done */
 
-		entry = get_eventlog_record (ps, ELOG_TDB_CTX(info->etdb), record_number);
+		entry = get_eventlog_record (ps->mem_ctx, ELOG_TDB_CTX(info->etdb), record_number);
 		if (!entry) {
 			break;
 		}
@@ -770,7 +770,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* Now see if there is enough room to add */
 
-		if ( !(ee_new = read_package_entry( ps, entry )) )
+		if ( !(ee_new = read_package_entry( ps->mem_ctx, entry )) )
 			return NT_STATUS_NO_MEMORY;
 
 		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
