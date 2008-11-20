@@ -8163,6 +8163,10 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     files_struct **result,
 			     int *pinfo,
 			     SMB_STRUCT_STAT *psbuf);
+NTSTATUS get_relative_fid_filename(connection_struct *conn,
+				   struct smb_request *req,
+				   uint16_t root_dir_fid,
+				   const char *fname, char **new_fname);
 
 /* The following definitions come from smbd/oplock.c  */
 

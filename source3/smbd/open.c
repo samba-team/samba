@@ -3059,6 +3059,96 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	return status;
 }
 
+/*
+ * Calculate the full path name given a relative fid.
+ */
+NTSTATUS get_relative_fid_filename(connection_struct *conn,
+				   struct smb_request *req,
+				   uint16_t root_dir_fid,
+				   const char *fname, char **new_fname)
+{
+	files_struct *dir_fsp;
+	char *parent_fname = NULL;
+
+	if (root_dir_fid == 0 || !fname || !new_fname || !*new_fname) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	dir_fsp = file_fsp(req, root_dir_fid);
+
+	if (dir_fsp == NULL) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (!dir_fsp->is_directory) {
+
+		/*
+		 * Check to see if this is a mac fork of some kind.
+		 */
+
+		if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+		    is_ntfs_stream_name(fname)) {
+			return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		}
+
+		/*
+		  we need to handle the case when we get a
+		  relative open relative to a file and the
+		  pathname is blank - this is a reopen!
+		  (hint from demyn plantenberg)
+		*/
+
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (ISDOT(dir_fsp->fsp_name)) {
+		/*
+		 * We're at the toplevel dir, the final file name
+		 * must not contain ./, as this is filtered out
+		 * normally by srvstr_get_path and unix_convert
+		 * explicitly rejects paths containing ./.
+		 */
+		parent_fname = talloc_strdup(talloc_tos(), "");
+		if (parent_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		size_t dir_name_len = strlen(dir_fsp->fsp_name);
+
+		/*
+		 * Copy in the base directory name.
+		 */
+
+		parent_fname = TALLOC_ARRAY(talloc_tos(), char,
+		    dir_name_len+2);
+		if (parent_fname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		memcpy(parent_fname, dir_fsp->fsp_name,
+		    dir_name_len+1);
+
+		/*
+		 * Ensure it ends in a '/'.
+		 * We used TALLOC_SIZE +2 to add space for the '/'.
+		 */
+
+		if(dir_name_len
+		    && (parent_fname[dir_name_len-1] != '\\')
+		    && (parent_fname[dir_name_len-1] != '/')) {
+			parent_fname[dir_name_len] = '/';
+			parent_fname[dir_name_len+1] = '\0';
+		}
+	}
+
+	*new_fname = talloc_asprintf(talloc_tos(), "%s%s", parent_fname,
+	    fname);
+	if (*new_fname == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
@@ -3100,91 +3190,19 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  ea_list, sd, create_file_flags, fname));
 
 	/*
-	 * Get the file name.
+	 * Calculate the filename from the root_dir_if if necessary.
 	 */
 
 	if (root_dir_fid != 0) {
-		/*
-		 * This filename is relative to a directory fid.
-		 */
-		char *parent_fname = NULL;
-		files_struct *dir_fsp = file_fsp(req, root_dir_fid);
+		char *new_fname;
 
-		if (dir_fsp == NULL) {
-			status = NT_STATUS_INVALID_HANDLE;
+		status = get_relative_fid_filename(conn, req, root_dir_fid,
+						   fname, &new_fname);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
 
-		if (!dir_fsp->is_directory) {
-
-			/*
-			 * Check to see if this is a mac fork of some kind.
-			 */
-
-			if ((conn->fs_capabilities & FILE_NAMED_STREAMS) &&
-					is_ntfs_stream_name(fname)) {
-				status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-				goto fail;
-			}
-
-			/*
-			  we need to handle the case when we get a
-			  relative open relative to a file and the
-			  pathname is blank - this is a reopen!
-			  (hint from demyn plantenberg)
-			*/
-
-			status = NT_STATUS_INVALID_HANDLE;
-			goto fail;
-		}
-
-		if (ISDOT(dir_fsp->fsp_name)) {
-			/*
-			 * We're at the toplevel dir, the final file name
-			 * must not contain ./, as this is filtered out
-			 * normally by srvstr_get_path and unix_convert
-			 * explicitly rejects paths containing ./.
-			 */
-			parent_fname = talloc_strdup(talloc_tos(), "");
-			if (parent_fname == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-		} else {
-			size_t dir_name_len = strlen(dir_fsp->fsp_name);
-
-			/*
-			 * Copy in the base directory name.
-			 */
-
-			parent_fname = TALLOC_ARRAY(talloc_tos(), char,
-						    dir_name_len+2);
-			if (parent_fname == NULL) {
-				status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-			memcpy(parent_fname, dir_fsp->fsp_name,
-			       dir_name_len+1);
-
-			/*
-			 * Ensure it ends in a '/'.
-			 * We used TALLOC_SIZE +2 to add space for the '/'.
-			 */
-
-			if(dir_name_len
-			   && (parent_fname[dir_name_len-1] != '\\')
-			   && (parent_fname[dir_name_len-1] != '/')) {
-				parent_fname[dir_name_len] = '/';
-				parent_fname[dir_name_len+1] = '\0';
-			}
-		}
-
-		fname = talloc_asprintf(talloc_tos(), "%s%s", parent_fname,
-					fname);
-		if (fname == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto fail;
-		}
+		fname = new_fname;
 	}
 
 	/*
