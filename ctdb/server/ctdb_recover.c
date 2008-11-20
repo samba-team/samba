@@ -477,7 +477,14 @@ static void ctdb_set_recmode_timeout(struct event_context *ev, struct timed_even
 	struct ctdb_set_recmode_state *state = talloc_get_type(private_data, 
 					   struct ctdb_set_recmode_state);
 
-	ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "timeout in ctdb_set_recmode");
+	/* we consider this a success, not a failure, as we failed to
+	   set the recovery lock which is what we wanted.  This can be
+	   caused by the cluster filesystem being very slow to
+	   arbitrate locks immediately after a node failure.	   
+	 */
+	DEBUG(DEBUG_NOTICE,(__location__ " set_recmode timeout - allowing recmode set\n"));
+	state->ctdb->recovery_mode = state->recmode;
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
 	talloc_free(state);
 }
 
@@ -643,7 +650,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	talloc_set_destructor(state, set_recmode_destructor);
 
 	state->te = event_add_timed(ctdb->ev, state, timeval_current_ofs(3, 0),
-			ctdb_set_recmode_timeout, state);
+				    ctdb_set_recmode_timeout, state);
 
 	state->fde = event_add_fd(ctdb->ev, state, state->fd[0],
 				EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
