@@ -1635,6 +1635,7 @@ void reply_open(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1780,6 +1781,7 @@ void reply_open_and_X(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1979,6 +1981,7 @@ void reply_mknew(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/

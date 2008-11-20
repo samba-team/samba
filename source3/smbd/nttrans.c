@@ -479,6 +479,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -950,6 +951,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/

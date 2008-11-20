@@ -1011,6 +1011,7 @@ static void call_trans2open(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
+		true,					/* is_dos_path */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/

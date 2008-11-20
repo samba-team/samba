@@ -3086,6 +3086,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
 			     const char *fname,
+			     bool is_dos_path,
 			     uint32_t access_mask,
 			     uint32_t share_access,
 			     uint32_t create_disposition,
@@ -3111,7 +3112,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
-		  "fname = %s\n",
+		  "is_dos_path = %s, fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
 		  (unsigned int)share_access,
@@ -3119,7 +3120,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)root_dir_fid,
-		  ea_list, sd, fname));
+		  ea_list, sd, fname, is_dos_path ? "true" : "false"));
 
 	/*
 	 * Get the file name.
@@ -3275,7 +3276,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	{
+	if (is_dos_path) {
 		char *converted_fname;
 
 		SET_STAT_INVALID(sbuf);
