@@ -28,6 +28,7 @@ Major enhancements in Samba 3.3.0 include:
    daemons including nmbd and winbindd.
  o New 'net rpc vampire keytab' and 'net rpc vampire ldif' commands.
  o The 'net' utility can now use kerberos for joining and authentication.
+ o The 'wbinfo' utility can now add, modify and remove identity mapping entries.
 
  Libraries:
  o NetApi library implements various new calls for User- and Group
@@ -185,6 +186,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5891: Fix smbd crash when viewing the eventlog exported by "eventlog
       list".
     * BUG 5900: Fix vfs_readonly.
+    * BUG 5904: Fix SIGABRT while servicing getaddrinfo() request caused by
+      libnss_wins.
     * Correctly fix smbclient to terminate on eof from server.
     * Fix client timeout when searching for a large number of cups printers.
     * Unify access checks for lsa server functions.
@@ -203,6 +206,10 @@ o   Kai Blin <kai@samba.org>
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Use the same prerequisite for DDNS update as Windows XP.
     * Make "lwinet ads dns register" honor the "interfaces" parameter.
+
+
+o   Steven Danneman <steven.danneman@isilon.com>
+    * Add options to manage identity mapping entries to wbinfo and Winbind.
 
 
 o   Günther Deschner <gd@samba.org>
