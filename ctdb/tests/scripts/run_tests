@@ -1,0 +1,46 @@
+#!/bin/bash
+
+export CTDB_DIR=$(cd $(dirname $(dirname $(dirname $0))) ; pwd)
+
+ctdb_bin_dir="${CTDB_DIR}/bin"
+ctdb_tools_dir="${CTDB_DIR}/tools"
+ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
+
+PATH="${ctdb_test_scripts_dir}:${ctdb_bin_dir}:${ctdb_tools_dir}:${PATH}"
+
+export TEST_WRAP="${ctdb_test_scripts_dir}/test_wrap"
+
+. ctdb_test_functions.bash
+
+usage() {
+    cat <<EOF
+Usage: run_tests [OPTIONS] [TESTS]
+
+EOF
+    exit 1
+}
+
+######################################################################
+
+temp=$(getopt -n "$prog" -o "xh" -l help -- "$@")
+
+[ $? != 0 ] && usage
+
+eval set -- "$temp"
+
+while true ; do
+    case "$1" in
+	-x) set -x; shift ;;
+	--) shift ; break ;;
+	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+    esac
+done
+
+######################################################################
+
+for f; do
+    [ -x $f ] || fail "test $f is not executable"
+    test_run "$f"
+done
+
+test_exit

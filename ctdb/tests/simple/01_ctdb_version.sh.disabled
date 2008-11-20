@@ -1,0 +1,24 @@
+#!/bin/bash
+
+. /root/SOFS/autosofs/scripts/functions
+
+set -e
+
+onnode 0 /root/SOFS/autosofs/scripts/cluster_is_healthy.sh
+
+rpm_ver_cmd="rpm -q ctdb"
+ctdb_ver_cmd="ctdb version"
+
+rpm_ver=$($rpm_ver_cmd)
+echo "$rpm_ver_cmd"
+echo "  $rpm_ver"
+
+ctdb_ver=$(onnode 0 $ctdb_ver_cmd)
+echo "$ctdb_ver_cmd"
+echo "  $ctdb_ver"
+
+set -x  
+
+[ "${ctdb_ver#CTDB version: }" = "${rpm_ver#ctdb-}" ]
+
+test_exit
