@@ -50,8 +50,8 @@ static bool get_policy_handle(struct torture_context *tctx,
 	init_lsa_String(&servername, NULL);
 	r.in.logname = &logname;
 	r.in.servername = &servername;
-	r.in.unknown2 = 0x00000001;
-	r.in.unknown3 = 0x00000001;
+	r.in.major_version = 0x00000001;
+	r.in.minor_version = 0x00000001;
 	r.out.handle = handle;
 
 	torture_assert_ntstatus_ok(tctx, 
