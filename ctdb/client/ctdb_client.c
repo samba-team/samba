@@ -26,6 +26,7 @@
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/locale.h"
+#include <stdlib.h>
 #include "../include/ctdb_private.h"
 #include "lib/util/dlinklist.h"
 
@@ -2352,23 +2353,59 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 {
 	int ret;
 	TDB_DATA data;
-	struct ctdb_node_modflags m;
-	int32_t res;
+	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_node_flag_change c;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	uint32_t recmaster;
+	uint32_t *nodes;
 
-	m.set = set;
-	m.clear = clear;
 
-	data.dsize = sizeof(m);
-	data.dptr = (unsigned char *)&m;
+	/* find the recovery master */
+	ret = ctdb_ctrl_getrecmaster(ctdb, tmp_ctx, timeout, CTDB_CURRENT_NODE, &recmaster);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get recmaster from local node\n"));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
 
-	ret = ctdb_control(ctdb, destnode, 0, 
-			   CTDB_CONTROL_MODIFY_FLAGS, 0, data, 
-			   NULL, NULL, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for modflags failed\n"));
+
+	/* read the node flags from the recmaster */
+	ret = ctdb_ctrl_getnodemap(ctdb, timeout, recmaster, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", destnode));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	if (destnode >= nodemap->num) {
+		DEBUG(DEBUG_ERR,(__location__ " Nodemap from recmaster does not contain node %d\n", destnode));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	c.pnn       = destnode;
+	c.old_flags = nodemap->nodes[destnode].flags;
+	c.new_flags = c.old_flags;
+	c.new_flags |= set;
+	c.new_flags &= ~clear;
+
+	data.dsize = sizeof(c);
+	data.dptr = (unsigned char *)&c;
+
+	/* send the flags update to all connected nodes */
+	nodes = list_of_connected_nodes(ctdb, nodemap, tmp_ctx, true);
+
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_MODIFY_FLAGS,
+					nodes,
+					timeout, false, data,
+					NULL, NULL,
+					NULL) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb_control to disable node failed\n"));
+
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -2947,6 +2984,40 @@ uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 
 	for (i=j=0;i<node_map->num;i++) {
 		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
+			continue;
+		}
+		nodes[j++] = node_map->nodes[i].pnn;
+	} 
+
+	return nodes;
+}
+
+uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
+				struct ctdb_node_map *node_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self)
+{
+	int i, j, num_nodes;
+	uint32_t *nodes;
+
+	for (i=num_nodes=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
+			continue;
+		}
+		num_nodes++;
+	} 
+
+	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
+	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
+
+	for (i=j=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {

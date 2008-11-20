@@ -291,7 +291,9 @@ static void async_getcap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, 
 		DEBUG(DEBUG_ERR, (__location__ " Invalid lenght/pointer for getcap callback : %u %p\n",  (unsigned)outdata.dsize, outdata.dptr));
 		return;
 	}
-	ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+	if (node_pnn < ctdb->num_nodes) {
+		ctdb->nodes[node_pnn]->capabilities = *((uint32_t *)outdata.dptr);
+	}
 }
 
 /*
@@ -641,37 +643,26 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 {
 	int i;
 	for (i=0;i<nodemap->num;i++) {
-		struct ctdb_node_flag_change c;
-		TDB_DATA data;
+		int ret;
 
-		c.pnn = nodemap->nodes[i].pnn;
-		c.old_flags = nodemap->nodes[i].flags;
-		c.new_flags = nodemap->nodes[i].flags;
-
-		data.dptr = (uint8_t *)&c;
-		data.dsize = sizeof(c);
-
-		ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-				  CTDB_SRVID_NODE_FLAGS_CHANGED, data);
-
+		ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn, nodemap->nodes[i].flags, ~nodemap->nodes[i].flags);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
+			return -1;
+		}
 	}
 	return 0;
 }
 
 static int update_our_flags_on_all_nodes(struct ctdb_context *ctdb, uint32_t pnn, struct ctdb_node_map *nodemap)
 {
-	struct ctdb_node_flag_change c;
-	TDB_DATA data;
+	int ret;
 
-	c.pnn = nodemap->nodes[pnn].pnn;
-	c.old_flags = nodemap->nodes[pnn].flags;
-	c.new_flags = nodemap->nodes[pnn].flags;
-
-	data.dptr = (uint8_t *)&c;
-	data.dsize = sizeof(c);
-
-	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED,
-			  CTDB_SRVID_NODE_FLAGS_CHANGED, data);
+	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[pnn].pnn, nodemap->nodes[pnn].flags, ~nodemap->nodes[pnn].flags);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
+		return -1;
+	}
 
 	return 0;
 }
@@ -1036,8 +1027,14 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			return MONITOR_FAILED;
 		}
 		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
-			struct ctdb_node_flag_change c;
-			TDB_DATA data;
+			int ban_changed = (nodemap->nodes[j].flags ^ remote_nodemap->nodes[j].flags) & NODE_FLAGS_BANNED;
+
+			if (ban_changed) {
+				DEBUG(DEBUG_NOTICE,("Remote node %u had different BANNED flags 0x%x, local had 0x%x - trigger a re-election\n",
+				nodemap->nodes[j].pnn,
+				remote_nodemap->nodes[j].flags,
+				nodemap->nodes[j].flags));
+			}
 
 			/* We should tell our daemon about this so it
 			   updates its flags or else we will log the same 
@@ -1045,16 +1042,11 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			   Since we are the recovery master we can just as
 			   well update the flags on all nodes.
 			*/
-			c.pnn = nodemap->nodes[j].pnn;
-			c.old_flags = nodemap->nodes[j].flags;
-			c.new_flags = remote_nodemap->nodes[j].flags;
-
-			data.dptr = (uint8_t *)&c;
-			data.dsize = sizeof(c);
-
-			ctdb_send_message(ctdb, ctdb->pnn,
-					CTDB_SRVID_NODE_FLAGS_CHANGED, 
-					data);
+			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, nodemap->nodes[j].flags, ~nodemap->nodes[j].flags);
+			if (ret != 0) {
+				DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
+				return -1;
+			}
 
 			/* Update our local copy of the flags in the recovery
 			   daemon.
@@ -1067,10 +1059,7 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map *n
 			/* If the BANNED flag has changed for the node
 			   this is a good reason to do a new election.
 			 */
-			if ((c.old_flags ^ c.new_flags) & NODE_FLAGS_BANNED) {
-				DEBUG(DEBUG_NOTICE,("Remote node %u had different BANNED flags 0x%x, local had 0x%x - trigger a re-election\n",
-				 nodemap->nodes[j].pnn, c.new_flags,
-				 c.old_flags));
+			if (ban_changed) {
 				talloc_free(mem_ctx);
 				return MONITOR_ELECTION_NEEDED;
 			}
@@ -1310,7 +1299,16 @@ static int recover_database(struct ctdb_recoverd *rec,
 	return 0;
 }
 
-		
+/*
+  reload the nodes file 
+*/
+static void reload_nodes_file(struct ctdb_context *ctdb)
+{
+	ctdb->nodes = NULL;
+	ctdb_load_nodes_file(ctdb);
+}
+
+	
 /*
   we are the recmaster, and recovery is needed - start a recovery run
  */
@@ -1327,6 +1325,12 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	uint32_t *nodes;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
+
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
+		reload_nodes_file(ctdb);
+		return -1;
+	}
 
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
@@ -1923,15 +1927,6 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 	changed_flags = c->old_flags ^ c->new_flags;
 
-	/* Dont let messages from remote nodes change the DISCONNECTED flag. 
-	   This flag is handled locally based on whether the local node
-	   can communicate with the node or not.
-	*/
-	c->new_flags &= ~NODE_FLAGS_DISCONNECTED;
-	if (nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED) {
-		c->new_flags |= NODE_FLAGS_DISCONNECTED;
-	}
-
 	if (nodemap->nodes[i].flags != c->new_flags) {
 		DEBUG(DEBUG_NOTICE,("Node %u has changed flags - now 0x%x  was 0x%x\n", c->pnn, c->new_flags, c->old_flags));
 	}
@@ -1964,6 +1959,20 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(tmp_ctx);
 }
 
+/*
+  handler for when we need to push out flag changes ot all other nodes
+*/
+static void push_flags_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+			    TDB_DATA data, void *private_data)
+{
+	int ret;
+	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
+
+	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), c->pnn, c->new_flags, ~c->new_flags);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
+	}
+}
 
 
 struct verify_recmode_normal_data {
@@ -2295,10 +2304,13 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	/* register a message port for recovery elections */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);
 
-	/* and one for when nodes are disabled/enabled */
-	ctdb_set_message_handler(ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, monitor_handler, rec);
+	/* when nodes are disabled/enabled */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_SET_NODE_FLAGS, monitor_handler, rec);
 
-	/* and one for when nodes are banned */
+	/* when we are asked to puch out a flag change */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_PUSH_NODE_FLAGS, push_flags_handler, rec);
+
+	/* when nodes are banned */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_BAN_NODE, ban_handler, rec);
 
 	/* and one for when nodes are unbanned */
@@ -2527,6 +2539,11 @@ again:
 	/* update the list of public ips that a node can handle for
 	   all connected nodes
 	*/
+	if (ctdb->num_nodes != nodemap->num) {
+		DEBUG(DEBUG_ERR, (__location__ " ctdb->num_nodes (%d) != nodemap->num (%d) reloading nodes file\n", ctdb->num_nodes, nodemap->num));
+		reload_nodes_file(ctdb);
+		goto again;
+	}
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
@@ -2771,16 +2788,6 @@ again:
 #endif
 	}
 
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Update flags on all nodes\n"));
-	/*
-	  update all nodes to have the same flags that we have
-	 */
-	ret = update_flags_on_all_nodes(ctdb, nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes\n"));
-		goto again;
-	}
 
 	goto again;
 

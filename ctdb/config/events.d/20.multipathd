@@ -1,0 +1,99 @@
+#!/bin/sh
+# ctdb event script for monitoring the multipath daemon
+#
+# Configure monitporing of multipath devices by listing the device serials
+# in /etc/ctdb/multipathd :
+#   CTDB_MONITOR_MPDEVICES="device1 device2 ..."
+#
+
+PATH=/bin:/usr/bin:$PATH
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+loadconfig multipathd
+
+cmd="$1"
+shift
+
+[ -z "$CTDB_MONITOR_MPDEVICES" ] && {
+	exit 0
+}
+
+MPFAILURE=$CTDB_BASE/state/multipathd/failure
+
+multipathd_check_background()
+{
+	for DEVICE in $CTDB_MONITOR_MPDEVICES; do
+		# check that we can see all devices
+		if [ -z "`multipath -ll $DEVICE`" ]; then
+			echo Device $DEVICE not known to multipathd
+			exit 1
+		fi
+
+		# check that all devices are active
+		if [ -z "`multipath -ll $DEVICE|grep prio|grep active`" ]; then
+			echo Device $DEVICE has no active paths
+			exit 1
+		fi
+	done
+	exit 0
+}
+
+multipathd_check()
+{
+	# run the actual check in the background since the call to 
+	# multipath may block.
+	(
+	multipathd_check_background &
+	pid="$!"
+	timeleft=10
+
+	while [ $timeleft -gt 0 ]; do
+		timeleft=$(($timeleft - 1))
+
+		# see if the process still exists
+		kill -0 $pid > /dev/null 2>&1 || {
+			# it doesn't exist, grab its exit status
+			wait $pid
+			[ $? = 0 ] || {
+				echo "20.multipathd: multipath background update exited with status $?"
+				touch $MPFAILURE
+				exit 1
+			}
+			rm $MPFAILURE 2>/dev/null
+			exit 0
+		}
+		sleep 1
+	done
+	echo "20.multipathd: Callout to multipath checks hung."
+	touch $MPFAILURE
+	exit 1
+	) &
+
+	if [ -f $MPFAILURE ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+case $cmd in
+     startup)
+	# create a state directory to keep/track the multipath device
+	# state
+	/bin/mkdir -p $CTDB_BASE/state/multipathd
+	exit 0
+	;;
+
+     monitor)
+	multipathd_check
+	[ "$?" == "0" ] || {
+		echo 20.multipathd: monitoring of multipathing failed
+		exit 1
+	}
+	exit 0
+	;;
+esac
+
+# ignore unknown commands
+exit 0

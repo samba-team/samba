@@ -116,6 +116,7 @@ struct ctdb_tunable {
 	uint32_t verbose_memory_names;
 	uint32_t recd_ping_timeout;
 	uint32_t recd_ping_failcount;
+	uint32_t log_latency_ms;
 };
 
 /*
@@ -420,6 +421,7 @@ struct ctdb_context {
 	uint32_t event_script_timeouts; /* counting how many consecutive times an eventscript has timedout */
 	TALLOC_CTX *eventscripts_ctx; /* a context to hold data for the RUN_EVENTSCRIPTS control */
 	uint32_t *recd_ping_count;
+	TALLOC_CTX *release_ips_ctx; /* a context used to automatically drop all IPs if we fail to recover the node */
 };
 
 struct ctdb_db_context {
@@ -632,14 +634,6 @@ struct ctdb_node_flag_change {
 	uint32_t pnn;
 	uint32_t new_flags;
 	uint32_t old_flags;
-};
-
-/*
-  structure to change flags on a node
- */
-struct ctdb_node_modflags {
-	uint32_t set;
-	uint32_t clear;
 };
 
 /*
@@ -966,7 +960,7 @@ void ctdb_recv_raw_pkt(void *p, uint8_t *data, uint32_t length);
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);
 
-void ctdb_latency(double *latency, struct timeval t);
+void ctdb_latency(struct ctdb_db_context *ctdb_db, const char *name, double *latency, struct timeval t);
 
 uint32_t ctdb_reqid_new(struct ctdb_context *ctdb, void *state);
 void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *type, const char *location);
@@ -1422,5 +1416,8 @@ char *ctdb_addr_to_str(ctdb_sock_addr *addr);
 void ctdb_canonicalize_ip(const ctdb_sock_addr *ip, ctdb_sock_addr *cip);
 
 int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
+int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata);
+
+extern int script_log_level;
 
 #endif

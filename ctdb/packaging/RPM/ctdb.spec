@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 60
+Release: 65
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -96,6 +96,7 @@ fi
 %{_docdir}/ctdb/README.eventscripts
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
+%{_sysconfdir}/ctdb/events.d/20.multipathd
 %{_sysconfdir}/ctdb/events.d/40.vsftpd
 %{_sysconfdir}/ctdb/events.d/41.httpd
 %{_sysconfdir}/ctdb/events.d/50.samba
@@ -119,6 +120,29 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Nov 13 2008 : Version 1.0.65
+ - Update the sysconfig example: The default debug level is 2 (NOTICE) and not
+   0 (ERROR)
+ - Add support for a CTDB_SOCKET environment variable for the ctdb command
+   line tool. If set, this overrides the default socket the ctdb tool will
+   use.
+ - Add logging of high latency operations.
+* Mon Oct 22 2008 : Version 1.0.64
+ - Add a context and a timed event so that once we have been in recovery for
+   too long we drop all public addresses.
+* Mon Oct 20 2008 : Version 1.0.63
+ - Remove logging of "periodic cleanup ..." in 50.samba
+ - When we reload a nodes file, we must detect this and reload the file also
+   in the recovery daemon before we try to dereference somethoung beyond the end
+   of the nodes array.
+* Thu Oct 16 2008 : Version 1.0.62
+ - Allow multiple eventscritps using the same prefix number.
+   It is undefined which order scripts with the same prefix will execute in.
+* Wed Oct 15 2008 : Version 1.0.61
+ - Use "route add -net" instead of "ip route add" when adding routes in 99.routing
+ - lower the loglevel os several debug statements
+ - check the status returned from ctdb_ctrl_get_tickles() before we try to print them out to the screen.
+ - install a new eventscript 20.multipathd whoich can be used to monitor that multipath devices are healthy
 * Wed Oct 15 2008 : Version 1.0.60
  - Verify that nodes we try to ban/unban are reachable and print an error othervise.
  - Update the client and server sides of TAKEIP/RELEASEIP/GETPUBLICIPS and GETNODEMAP to fall back to the old style ipv4-only controls if the new ipv4/ipv6 controls fail. This allows an ipv4/v6 enabled ctdb daemon to interoperate with earlier ipv4-only versions of the daemons.

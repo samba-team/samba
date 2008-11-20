@@ -330,7 +330,7 @@ static void childwrite_handler(struct event_context *ev, struct fd_event *fde,
 	int ret;
 	char c;
 
-	ctdb_latency(&h->ctdb->statistics.max_childwrite_latency, h->start_time);
+	ctdb_latency(h->ctdb_db, "persistent", &h->ctdb->statistics.max_childwrite_latency, h->start_time);
 	h->ctdb->statistics.pending_childwrite_calls--;
 
 	/* the handle needs to go away when the context is gone - when

@@ -46,6 +46,7 @@ static struct {
 	int         no_lmaster;
 	int         no_recmaster;
 	int         lvs;
+	int	    script_log_level;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -53,8 +54,10 @@ static struct {
 	.logfile = VARDIR "/log/log.ctdb",
 	.db_dir = VARDIR "/ctdb",
 	.db_dir_persistent = VARDIR "/ctdb/persistent",
+	.script_log_level = DEBUG_ERR,
 };
 
+int script_log_level;
 
 /*
   called by the transport layer when a packet comes in
@@ -126,6 +129,7 @@ int main(int argc, const char *argv[])
 		{ "no-lmaster", 0, POPT_ARG_NONE, &options.no_lmaster, 0, "disable lmaster role on this node", NULL },
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
+		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, DEBUG_ERR, "log level of event script output", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -166,6 +170,8 @@ int main(int argc, const char *argv[])
 	ctdb = ctdb_cmdline_init(ev);
 
 	ctdb->start_as_disabled = options.start_as_disabled;
+
+	script_log_level = options.script_log_level;
 
 	ret = ctdb_set_logfile(ctdb, options.logfile, options.use_syslog);
 	if (ret == -1) {
@@ -294,9 +300,11 @@ int main(int argc, const char *argv[])
 
 	ctdb->do_setsched = !options.no_setsched;
 
-	/* setup a environment variable for the event scripts to use to find the
-	   installation directory */
-	setenv("CTDB_BASE", ETCDIR "/ctdb", 1);
+	if (getenv("CTDB_BASE") == NULL) {
+		/* setup a environment variable for the event scripts to use
+		   to find the installation directory */
+		setenv("CTDB_BASE", ETCDIR "/ctdb", 1);
+	}
 
 	/* start the protocol running (as a child) */
 	return ctdb_start_daemon(ctdb, interactive?False:True);

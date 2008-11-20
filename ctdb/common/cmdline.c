@@ -33,7 +33,6 @@ static struct {
 	int torture;
 	const char *events;
 } ctdb_cmdline = {
-	.socketname = CTDB_PATH,
 	.torture = 0,
 };
 
@@ -81,11 +80,14 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 		ctdb_set_flags(ctdb, CTDB_FLAG_TORTURE);
 	}
 
-	/* tell ctdb the socket address */
-	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
-	if (ret == -1) {
-		printf("ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	/* command line specified a socket name */
+	if (ctdb_cmdline.socketname != NULL) {
+		ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
+		if (ret == -1) {
+			printf("ctdb_set_socketname failed - %s\n",
+						    ctdb_errstr(ctdb));
+			exit(1);
+		}
 	}
 
 	/* set up the tree to store server ids */
@@ -101,6 +103,7 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 {
 	struct ctdb_context *ctdb;
+	char *socket_name;
 	int ret;
 
 	/* initialise ctdb */
@@ -111,10 +114,18 @@ struct ctdb_context *ctdb_cmdline_client(struct event_context *ev)
 	}
 
 	/* tell ctdb the socket address */
-	ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
-	if (ret == -1) {
-		fprintf(stderr, "ctdb_set_socketname failed - %s\n", ctdb_errstr(ctdb));
-		exit(1);
+	socket_name = getenv("CTDB_SOCKET");
+	if (socket_name != NULL) {
+		ctdb_set_socketname(ctdb, socket_name);
+	}
+
+	if (ctdb_cmdline.socketname != NULL) {
+		ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
+		if (ret == -1) {
+			fprintf(stderr, "ctdb_set_socketname failed - %s\n",
+					ctdb_errstr(ctdb));
+			exit(1);
+		}
 	}
 
 	ret = ctdb_socket_connect(ctdb);

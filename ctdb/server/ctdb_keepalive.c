@@ -68,10 +68,8 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 			continue;
 		}
 		
-		if (node->tx_cnt == 0) {
-			DEBUG(DEBUG_DEBUG,("sending keepalive to %u\n", node->pnn));
-			ctdb_send_keepalive(ctdb, node->pnn);
-		}
+		DEBUG(DEBUG_DEBUG,("sending keepalive to %u\n", node->pnn));
+		ctdb_send_keepalive(ctdb, node->pnn);
 
 		node->tx_cnt = 0;
 	}

@@ -31,36 +31,6 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
-/*
-  handler for when a node changes its flags
-*/
-static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				TDB_DATA data, void *private_data)
-{
-	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
-
-	if (data.dsize != sizeof(*c) || !ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(DEBUG_CRIT,(__location__ "Invalid data in ctdb_node_flag_change\n"));
-		return;
-	}
-
-	if (!ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(DEBUG_CRIT,("Bad pnn %u in flag_change_handler\n", c->pnn));
-		return;
-	}
-
-	/* don't get the disconnected flag from the other node */
-	ctdb->nodes[c->pnn]->flags = 
-		(ctdb->nodes[c->pnn]->flags&NODE_FLAGS_DISCONNECTED) 
-		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
-	DEBUG(DEBUG_DEBUG,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
-
-	/* make sure we don't hold any IPs when we shouldn't */
-	if (c->pnn == ctdb->pnn &&
-	    (ctdb->nodes[c->pnn]->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_BANNED))) {
-		ctdb_release_all_ips(ctdb);
-	}
-}
 
 static void print_exit_message(void)
 {
@@ -90,10 +60,6 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 
 	/* Make sure we log something when the daemon terminates */
 	atexit(print_exit_message);
-
-	/* a handler for when nodes are disabled/enabled */
-	ctdb_register_message_handler(ctdb, ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, 
-				      flag_change_handler, NULL);
 
 	/* start monitoring for connected/disconnected nodes */
 	ctdb_start_keepalive(ctdb);
@@ -269,6 +235,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	int res;
 	uint32_t length;
 	struct ctdb_client *client = dstate->client;
+	struct ctdb_db_context *ctdb_db = state->ctdb_db;
 
 	talloc_steal(client, dstate);
 	talloc_steal(dstate, dstate->call);
@@ -277,7 +244,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " ctdbd_call_recv() returned error\n"));
 		client->ctdb->statistics.pending_calls--;
-		ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
+		ctdb_latency(ctdb_db, "call_from_client_cb 1", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -287,7 +254,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (r == NULL) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		client->ctdb->statistics.pending_calls--;
-		ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
+		ctdb_latency(ctdb_db, "call_from_client_cb 2", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
 	r->hdr.reqid        = dstate->reqid;
@@ -298,7 +265,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	if (res != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
-	ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
+	ctdb_latency(ctdb_db, "call_from_client_cb 3", &client->ctdb->statistics.max_call_latency, dstate->start_time);
 	talloc_free(dstate);
 	client->ctdb->statistics.pending_calls--;
 }
@@ -406,7 +373,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 		ctdb_ltdb_unlock(ctdb_db, key);
 		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
 		ctdb->statistics.pending_calls--;
-		ctdb_latency(&ctdb->statistics.max_call_latency, dstate->start_time);
+		ctdb_latency(ctdb_db, "call_from_client 1", &ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
 
@@ -427,7 +394,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	if (state == NULL) {
 		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));
 		ctdb->statistics.pending_calls--;
-		ctdb_latency(&ctdb->statistics.max_call_latency, dstate->start_time);
+		ctdb_latency(ctdb_db, "call_from_client 2", &ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
 	}
 	talloc_steal(state, dstate);

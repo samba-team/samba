@@ -160,13 +160,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	}
 
 	case CTDB_CONTROL_SET_RECMASTER: {
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-			DEBUG(DEBUG_NOTICE,("Attempt to set recmaster when not frozen\n"));
-			return -1;
-		}
-		ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
-		return 0;
+		return ctdb_control_set_recmaster(ctdb, opcode, indata);
 	}
 
 	case CTDB_CONTROL_GET_RECMASTER:
@@ -332,7 +326,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_list_tunables(ctdb, outdata);
 
 	case CTDB_CONTROL_MODIFY_FLAGS:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_modflags));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_flag_change));
 		return ctdb_control_modflags(ctdb, indata);
 
 	case CTDB_CONTROL_KILL_TCP: 
