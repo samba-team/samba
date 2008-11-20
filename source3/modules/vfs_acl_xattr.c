@@ -625,52 +625,6 @@ static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
 	}
 
 	become_root();
-	SMB_VFS_REMOVEXATTR(handle, name, XATTR_NTACL_NAME);
-	unbecome_root();
-
-	return ret;
-}
-
-/*********************************************************************
- Remove a Windows ACL - we're setting the underlying POSIX ACL.
-*********************************************************************/
-
-static int sys_acl_set_fd_xattr(vfs_handle_struct *handle,
-                            files_struct *fsp,
-                            SMB_ACL_T theacl)
-{
-	int ret = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle,
-						fsp,
-						theacl);
-	if (ret == -1) {
-		return -1;
-	}
-
-	become_root();
-	SMB_VFS_FREMOVEXATTR(handle, fsp, XATTR_NTACL_NAME);
-	unbecome_root();
-
-	return ret;
-}
-
-/*********************************************************************
- Remove a Windows ACL - we're setting the underlying POSIX ACL.
-*********************************************************************/
-
-static int sys_acl_set_file_xattr(vfs_handle_struct *handle,
-                              const char *name,
-                              SMB_ACL_TYPE_T type,
-                              SMB_ACL_T theacl)
-{
-	int ret = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle,
-						name,
-						type,
-						theacl);
-	if (ret == -1) {
-		return -1;
-	}
-
-	become_root();
 	SMB_VFS_REMOVEXATTR(handle->conn, name, XATTR_NTACL_NAME);
 	unbecome_root();
 
@@ -711,10 +665,6 @@ static vfs_op_tuple skel_op_tuples[] =
 	{SMB_VFS_OP(fget_nt_acl_xattr),SMB_VFS_OP_FGET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(get_nt_acl_xattr), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(fset_nt_acl_xattr),SMB_VFS_OP_FSET_NT_ACL,SMB_VFS_LAYER_TRANSPARENT},
-
-	/* POSIX ACL operations. */
-	{SMB_VFS_OP(sys_acl_set_file_xattr), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(sys_acl_set_fd_xattr), SMB_VFS_OP_SYS_ACL_SET_FD, SMB_VFS_LAYER_TRANSPARENT},
 
 	/* POSIX ACL operations. */
 	{SMB_VFS_OP(sys_acl_set_file_xattr), SMB_VFS_OP_SYS_ACL_SET_FILE, SMB_VFS_LAYER_TRANSPARENT},
