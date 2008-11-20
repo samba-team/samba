@@ -427,7 +427,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	struct registry_value *value;
 	WERROR wresult;
 	char *elogname = info->logname;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	bool ret = false;
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
