@@ -1080,6 +1080,29 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 						&names_nocache,
 						&name_types_nocache);
 
+		if (!(NT_STATUS_IS_OK(status) ||
+		      NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED) ||
+		      NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)))
+		{
+			DEBUG(1, ("lsa_lookupsids call failed with %s "
+				  "- retrying...\n", nt_errstr(status)));
+
+			status = cm_connect_lsa(domain, tmp_ctx, &cli,
+						&lsa_policy);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				goto done;
+			}
+
+			status = rpccli_lsa_lookup_sids(cli, tmp_ctx,
+							&lsa_policy,
+							num_nocache,
+							sid_mem_nocache,
+							&domains_nocache,
+							&names_nocache,
+							&name_types_nocache);
+		}
+
 		if (NT_STATUS_IS_OK(status) ||
 		    NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED))
 		{
