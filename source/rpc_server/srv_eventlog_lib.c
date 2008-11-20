@@ -140,13 +140,13 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
  return True if we made enough room to accommodate needed bytes
 ********************************************************************/
 
-static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
+static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 				    bool whack_by_date )
 {
-	int start_record, i, new_start;
-	int end_record;
-	int nbytes, reclen, len, Retention, MaxSize;
-	int tresv1, trecnum, timegen, timewr;
+	int32_t start_record, i, new_start;
+	int32_t end_record;
+	int32_t reclen, tresv1, trecnum, timegen, timewr;
+	int nbytes, len, Retention, MaxSize;
 	TDB_DATA key, ret;
 	time_t current_time, exp_time;
 
@@ -173,16 +173,17 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	nbytes = 0;
 
 	DEBUG( 3,
-	       ( "MaxSize [%d] Retention [%d] Current Time [%d]  exp_time [%d]\n",
-		 MaxSize, Retention, (uint32)current_time, (uint32)exp_time ) );
+	       ( "MaxSize [%d] Retention [%d] Current Time [%u]  exp_time [%u]\n",
+		 MaxSize, Retention, (unsigned int)current_time, (unsigned int)exp_time ) );
 	DEBUG( 3,
-	       ( "Start Record [%d] End Record [%d]\n", start_record,
-		 end_record ) );
+	       ( "Start Record [%u] End Record [%u]\n",
+		(unsigned int)start_record,
+		(unsigned int)end_record ));
 
 	for ( i = start_record; i < end_record; i++ ) {
 		/* read a record, add the amt to nbytes */
-		key.dsize = sizeof( int32 );
-		key.dptr = ( uint8 * ) ( int32 * ) & i;
+		key.dsize = sizeof(int32_t);
+		key.dptr = (unsigned char *)&i;
 		ret = tdb_fetch( the_tdb, key );
 		if ( ret.dsize == 0 ) {
 			DEBUG( 8,
@@ -198,12 +199,13 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 		if (len == -1) {
 			DEBUG( 10,("make_way_for_eventlogs: tdb_unpack failed.\n"));
 			tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
+			SAFE_FREE( ret.dptr );
 			return False;
 		}
 
 		DEBUG( 8,
-		       ( "read record %d, record size is [%d], total so far [%d]\n",
-			 i, reclen, nbytes ) );
+		       ( "read record %u, record size is [%d], total so far [%d]\n",
+			 (unsigned int)i, reclen, nbytes ) );
 
 		SAFE_FREE( ret.dptr );
 
@@ -220,14 +222,14 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	}
 
 	DEBUG( 3,
-	       ( "nbytes [%d] needed [%d] start_record is [%d], should be set to [%d]\n",
-		 nbytes, needed, start_record, i ) );
+	       ( "nbytes [%d] needed [%d] start_record is [%u], should be set to [%u]\n",
+		 nbytes, needed, (unsigned int)start_record, (unsigned int)i ) );
 	/* todo - remove eventlog entries here and set starting record to start_record... */
 	new_start = i;
 	if ( start_record != new_start ) {
 		for ( i = start_record; i < new_start; i++ ) {
-			key.dsize = sizeof( int32 );
-			key.dptr = ( uint8 * ) ( int32 * ) & i;
+			key.dsize = sizeof(int32_t);
+			key.dptr = (unsigned char *)&i;
 			tdb_delete( the_tdb, key );
 		}
 
@@ -267,7 +269,7 @@ bool prune_eventlog( TDB_CONTEXT * tdb )
 /********************************************************************
 ********************************************************************/
 
-bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
+bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 {
 	int calcd_size;
 	int MaxSize, Retention;
@@ -313,7 +315,7 @@ bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed )
 ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 {
 	TDB_CONTEXT *tdb = NULL;
-	uint32 vers_id;
+	uint32_t vers_id;
 	ELOG_TDB *ptr;
 	char *tdbpath = NULL;
 	ELOG_TDB *tdb_node = NULL;
@@ -454,7 +456,7 @@ int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
 	uint8 *packed_ee;
 	TALLOC_CTX *mem_ctx = NULL;
 	TDB_DATA kbuf, ebuf;
-	uint32 n_packed;
+	uint32_t n_packed;
 
 	if ( !ee )
 		return 0;

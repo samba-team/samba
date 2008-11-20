@@ -291,8 +291,8 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	Eventlog_entry *ee = NULL;
 	TDB_DATA ret, key;
 
-	int srecno;
-	int reclen;
+	int32_t srecno;
+	int32_t reclen;
 	int len;
 
 	char *wpsource = NULL;
@@ -301,10 +301,10 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	char *wpstrs = NULL;
 	char *puserdata = NULL;
 
-	key.dsize = sizeof(int32);
+	key.dsize = sizeof(int32_t);
 
 	srecno = recno;
-	key.dptr = ( uint8 * ) &srecno;
+	key.dptr = (unsigned char *)&srecno;
 
 	ret = tdb_fetch( tdb, key );
 
