@@ -193,6 +193,14 @@
 
 		<varlistentry>
 		<term>
+		<option>check</option>
+		</term>
+		<listitem><para>Check the integrity of the current database.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>
 		<option>quit</option>
 		</term>
 		<listitem><para>Exit <command>tdbtool</command>.
