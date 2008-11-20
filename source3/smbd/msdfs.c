@@ -923,7 +923,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 static int setup_ver2_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
-				int consumedcnt,
 				bool self_referral)
 {
 	char* pdata = *ppdata;
@@ -988,7 +987,8 @@ static int setup_ver2_dfs_referral(const char *pathname,
 	memcpy(pdata+uni_reqpathoffset2,uni_requestedpath,requestedpathlen);
 
 	/* create the header */
-	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
+	SSVAL(pdata,0,requestedpathlen - 2); /* UCS2 of path consumed minus
+						2 byte null */
 	/* number of referral in this pkt */
 	SSVAL(pdata,2,junction->referral_count);
 	if(self_referral) {
@@ -1037,7 +1037,6 @@ static int setup_ver2_dfs_referral(const char *pathname,
 static int setup_ver3_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
-				int consumedcnt,
 				bool self_referral)
 {
 	char *pdata = *ppdata;
@@ -1084,7 +1083,8 @@ static int setup_ver3_dfs_referral(const char *pathname,
 	*ppdata = pdata;
 
 	/* create the header */
-	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
+	SSVAL(pdata,0,reqpathlen - 2); /* UCS2 of path consumed minus
+					  2 byte null */
 	SSVAL(pdata,2,junction->referral_count); /* number of referral */
 	if(self_referral) {
 		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER);
@@ -1224,11 +1224,11 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	case 2:
 		reply_size = setup_ver2_dfs_referral(pathnamep,
 					ppdata, junction,
-					consumedcnt, self_referral);
+					self_referral);
 		break;
 	case 3:
 		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata,
-					junction, consumedcnt, self_referral);
+					junction, self_referral);
 		break;
 	default:
 		DEBUG(0,("setup_dfs_referral: Invalid dfs referral "
