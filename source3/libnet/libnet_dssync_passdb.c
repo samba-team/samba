@@ -50,7 +50,12 @@ static NTSTATUS passdb_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 static NTSTATUS passdb_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			      struct replUpToDateVectorBlob *new_utdv)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	struct pdb_methods *methods =
+		(struct pdb_methods *)ctx->private_data;
+
+	TALLOC_FREE(methods);
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
