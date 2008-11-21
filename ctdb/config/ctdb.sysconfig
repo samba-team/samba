@@ -42,14 +42,6 @@
 # default is to not manage Samba
 # CTDB_MANAGES_SAMBA=yes
 
-# should we skip the check of whether the shares that samba is exporting
-# is available or not. This may be useful if there are a huge number of shares
-# since checking each one of them might take a long time.
-# CTDB_SAMBA_SKIP_SHARE_CHECK="yes"
-
-# should we skip checking smb.conf for consistency
-# CTDB_SAMBA_SKIP_CONF_CHECK="yes"
-
 # specify which ports we should check that there is a daemon listening to
 # by default we use testparm and look in smb.conf to figure out.
 # CTDB_SAMBA_CHECK_PORTS="445"
