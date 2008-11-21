@@ -195,14 +195,6 @@ do {                             \
 	};\
 };
 
-/* from samr.idl */
-#define DOMAIN_PASSWORD_COMPLEX		0x00000001
-
-#define SAMR_REJECT_OTHER		0x00000000
-#define SAMR_REJECT_TOO_SHORT		0x00000001
-#define SAMR_REJECT_IN_HISTORY		0x00000002
-#define SAMR_REJECT_COMPLEXITY		0x00000005
-
 #define ACB_PWNOEXP			0x00000200
 
 /* from netlogon.idl */
