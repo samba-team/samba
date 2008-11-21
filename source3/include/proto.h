@@ -7120,6 +7120,7 @@ const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
+size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
 void check_reload(time_t t);
 void smbd_process(void);

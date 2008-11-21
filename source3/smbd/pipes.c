@@ -278,8 +278,12 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	srv_set_message((char *)req->outbuf, 12, nread, False);
   
 	SSVAL(req->outbuf,smb_vwv5,nread);
-	SSVAL(req->outbuf,smb_vwv6,smb_offset(data,req->outbuf));
-	SSVAL(smb_buf(req->outbuf),-2,nread);
+	SSVAL(req->outbuf,smb_vwv6,
+	      req_wct_ofs(req)
+	      + 1 		/* the wct field */
+	      + 12 * sizeof(uint16_t) /* vwv */
+	      + 2);		/* the buflen field */
+	SSVAL(req->outbuf,smb_vwv11,smb_maxcnt);
   
 	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
 		 fsp->fnum, smb_mincnt, smb_maxcnt, (int)nread));

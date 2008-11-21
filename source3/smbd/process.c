@@ -1823,6 +1823,25 @@ void chain_reply(struct smb_request *req)
 #else
 
 /*
+ * How many bytes have we already accumulated up to the current wct field
+ * offset?
+ */
+
+size_t req_wct_ofs(struct smb_request *req)
+{
+	size_t buf_size;
+
+	if (req->chain_outbuf == NULL) {
+		return smb_wct - 4;
+	}
+	buf_size = talloc_get_size(req->chain_outbuf);
+	if ((buf_size % 4) != 0) {
+		buf_size += (4 - (buf_size % 4));
+	}
+	return buf_size - 4;
+}
+
+/*
  * Hack around reply_nterror & friends not being aware of chained requests,
  * generating illegal (i.e. wct==0) chain replies.
  */

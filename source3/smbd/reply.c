@@ -3169,7 +3169,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
+static int setup_readX_header(struct smb_request *req, char *outbuf,
+			      size_t smb_maxcnt)
 {
 	int outsize;
 	char *data;
@@ -3182,9 +3183,13 @@ static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 	SCVAL(outbuf,smb_vwv0,0xFF);
 	SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be -1. */
 	SSVAL(outbuf,smb_vwv5,smb_maxcnt);
-	SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
+	SSVAL(outbuf,smb_vwv6,
+	      req_wct_ofs(req)
+	      + 1 		/* the wct field */
+	      + 12 * sizeof(uint16_t) /* vwv */
+	      + 2);		/* the buflen field */
 	SSVAL(outbuf,smb_vwv7,(smb_maxcnt >> 16));
-	SSVAL(smb_buf(outbuf),-2,smb_maxcnt);
+	SSVAL(outbuf,smb_vwv11,smb_maxcnt);
 	/* Reset the outgoing length, set_message truncates at 0x1FFFF. */
 	_smb_setlen_large(outbuf,(smb_size + 12*2 + smb_maxcnt - 4));
 	return outsize;
@@ -3238,7 +3243,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
 		construct_reply_common_req(req, (char *)headerbuf);
-		setup_readX_header((char *)headerbuf, smb_maxcnt);
+		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
@@ -3296,7 +3301,7 @@ normal_read:
 		uint8 headerbuf[smb_size + 2*12];
 
 		construct_reply_common_req(req, (char *)headerbuf);
-		setup_readX_header((char *)headerbuf, smb_maxcnt);
+		setup_readX_header(req, (char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
 		if (write_data(smbd_server_fd(), (char *)headerbuf,
@@ -3323,7 +3328,7 @@ normal_read:
 		return;
 	}
 
-	setup_readX_header((char *)req->outbuf, nread);
+	setup_readX_header(req, (char *)req->outbuf, nread);
 
 	DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 		    fsp->fnum, (int)smb_maxcnt, (int)nread ) );
