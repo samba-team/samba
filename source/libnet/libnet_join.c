@@ -1660,6 +1660,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     r->in.domain_name,
 				     NULL,
 				     NULL,
+				     DS_FORCE_REDISCOVERY |
 				     DS_DIRECTORY_SERVICE_REQUIRED |
 				     DS_WRITABLE_REQUIRED |
 				     DS_RETURN_DNS_NAME,
