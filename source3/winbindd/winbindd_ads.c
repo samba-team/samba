@@ -401,6 +401,47 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+/* convert a single name to a sid in a domain - use rpc methods */
+static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    enum winbindd_cmd orig_cmd,
+			    const char *domain_name,
+			    const char *name,
+			    DOM_SID *sid,
+			    enum lsa_SidType *type)
+{
+	return reconnect_methods.name_to_sid(domain, mem_ctx, orig_cmd,
+					     domain_name, name,
+					     sid, type);
+}
+
+/* convert a domain SID to a user or group name - use rpc methods */
+static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    const DOM_SID *sid,
+			    char **domain_name,
+			    char **name,
+			    enum lsa_SidType *type)
+{
+	return reconnect_methods.sid_to_name(domain, mem_ctx, sid,
+					     domain_name, name, type);
+}
+
+/* convert a list of rids to names - use rpc methods */
+static NTSTATUS rids_to_names(struct winbindd_domain *domain,
+			      TALLOC_CTX *mem_ctx,
+			      const DOM_SID *sid,
+			      uint32 *rids,
+			      size_t num_rids,
+			      char **domain_name,
+			      char ***names,
+			      enum lsa_SidType **types)
+{
+	return reconnect_methods.rids_to_names(domain, mem_ctx, sid,
+					       rids, num_rids,
+					       domain_name, names, types);
+}
+
 /* If you are looking for "dn_lookup": Yes, it used to be here!
  * It has gone now since it was a major speed bottleneck in
  * lookup_groupmem (its only use). It has been replaced by
@@ -903,6 +944,18 @@ done:
 	return status;
 }
 
+/* Lookup aliases a user is member of - use rpc methods */
+static NTSTATUS lookup_useraliases(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 num_sids, const DOM_SID *sids,
+				   uint32 *num_aliases, uint32 **alias_rids)
+{
+	return reconnect_methods.lookup_useraliases(domain, mem_ctx,
+						    num_sids, sids,
+						    num_aliases,
+						    alias_rids);
+}
+
 /*
   find the members of a group, given a group rid and domain
  */
@@ -1194,6 +1247,22 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 	return ads_ntstatus(rc);
 }
 
+/* find the lockout policy of a domain - use rpc methods */
+static NTSTATUS lockout_policy(struct winbindd_domain *domain,
+			       TALLOC_CTX *mem_ctx,
+			       struct samr_DomInfo12 *policy)
+{
+	return reconnect_methods.lockout_policy(domain, mem_ctx, policy);
+}
+
+/* find the password policy of a domain - use rpc methods */
+static NTSTATUS password_policy(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				struct samr_DomInfo1 *policy)
+{
+	return reconnect_methods.password_policy(domain, mem_ctx, policy);
+}
+
 /* get a list of trusted domains */
 static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
@@ -1384,16 +1453,16 @@ struct winbindd_methods ads_methods = {
 	query_user_list,
 	enum_dom_groups,
 	enum_local_groups,
-	msrpc_name_to_sid,
-	msrpc_sid_to_name,
-	msrpc_rids_to_names,
+	name_to_sid,
+	sid_to_name,
+	rids_to_names,
 	query_user,
 	lookup_usergroups,
-	msrpc_lookup_useraliases,
+	lookup_useraliases,
 	lookup_groupmem,
 	sequence_number,
-	msrpc_lockout_policy,
-	msrpc_password_policy,
+	lockout_policy,
+	password_policy,
 	trusted_domains,
 };
 
