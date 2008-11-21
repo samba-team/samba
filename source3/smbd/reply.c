@@ -4558,8 +4558,15 @@ void reply_printopen(struct smb_request *req)
 		return;
 	}
 
+	status = file_new(req, conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBsplopen);
+		return;
+	}
+
 	/* Open for exclusive use, write only. */
-	status = print_fsp_open(req, conn, NULL, req->vuid, &fsp);
+	status = print_fsp_open(req, conn, NULL, req->vuid, fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);

@@ -106,8 +106,7 @@ static void check_magic(struct files_struct *fsp)
 static NTSTATUS close_filestruct(files_struct *fsp)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	connection_struct *conn = fsp->conn;
-    
+
 	if (fsp->fh->fd != -1) {
 		if(flush_write_cache(fsp, CLOSE_FLUSH) == -1) {
 			status = map_nt_error_from_unix(errno);
@@ -115,9 +114,8 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 		delete_write_cache(fsp);
 	}
 
-	conn->num_files_open--;
 	return status;
-}    
+}
 
 /****************************************************************************
  If any deferred opens are waiting on this close, notify them.
@@ -583,7 +581,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
 		conn->server_info->unix_name,fsp->fsp_name,
-		conn->num_files_open,
+		conn->num_files_open - 1,
 		nt_errstr(status) ));
 
 	file_free(req, fsp);
