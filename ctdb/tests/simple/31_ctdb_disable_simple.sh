@@ -36,4 +36,6 @@ else
     testfailures=1
 fi
 
+echo "Expect a restart here..."
+
 ctdb_test_exit

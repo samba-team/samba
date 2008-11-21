@@ -7,26 +7,24 @@ fi
 shift
 
 NODES="./tests/nodes.txt"
-rm -f $NODES
 PUBLIC_ADDRESSES=./tests/public_addresses.txt
-rm -f $PUBLIC_ADDRESSES
+rm -f $NODES $PUBLIC_ADDRESSES
 for i in `seq 1 $NUMNODES`; do
   if [ "${CTDB_USE_IPV6}x" != "x" ]; then
     echo ::$i >> $NODES
     ip addr add ::$i/128 dev lo
   else
     echo 127.0.0.$i >> $NODES
-    #echo "127.0.1.$i/24 lo" >> $PUBLIC_ADDRESSES
-    #echo "127.0.1.$(($i + $NUMNODES))/24 lo" >> $PUBLIC_ADDRESSES
+    # 2 public addresses per node, just to make things interesting.
     echo "192.0.2.$i/24 lo" >> $PUBLIC_ADDRESSES
     echo "192.0.2.$(($i + $NUMNODES))/24 lo" >> $PUBLIC_ADDRESSES
   fi
 done
 
-killall -q ctdbd
+killall -q $PWD/bin/ctdbd
 rm -rf test.db/persistent/*
  
-CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --public-addresses $PUBLIC_ADDRESSES --event-script-dir=tests/events.d --logfile=- -d 0 --dbdir=test.db --dbdir-persistent=test.db/persistent $*"
+CTDB_OPTIONS="--reclock=rec.lock --nlist $NODES --public-addresses $PUBLIC_ADDRESSES --nopublicipcheck --event-script-dir=tests/events.d --logfile=- -d 0 --dbdir=test.db --dbdir-persistent=test.db/persistent $*"
 
 echo "Starting $NUMNODES ctdb daemons"
 for i in `seq 1 $NUMNODES`; do

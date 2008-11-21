@@ -1,15 +1,5 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-numnodes=3
-
-export CTDB_NODES_SOCKETS=""
-for i in $(seq 1 $numnodes) ; do
-    CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${PWD}/sock.${i}"
-done
-
-
-######################################################################
-
 fail ()
 {
     echo "$*"
@@ -55,7 +45,7 @@ test_end ()
     testduration=$(($(date +%s)-$teststarttime))
 
     echo "=========================================================================="
-    echo "TEST ${interp}: ${name}${statstr}, duration: $testduration sec."
+    echo "TEST ${interp}: ${name}${statstr} (duration: ${testduration}s)"
     echo "=========================================================================="
 
 }
@@ -258,7 +248,7 @@ ips_are_on_nodeglob ()
 
     local out
 
-    try_command_on_node 1 ctdb ip
+    try_command_on_node 1 ctdb ip -n all
 
     while read ip pnn ; do
 	for check in $ips ; do
@@ -283,10 +273,68 @@ wait_until_ips_are_on_nodeglob ()
     wait_until 60 ips_are_on_nodeglob "$@"
 }
 
+stop_daemons ()
+{
+    echo "Attempting to politely shutdown daemons..."
+    onnode 1 ctdb shutdown -n all || true
+
+    echo "Sleeping for a while..."
+    sleep_for 1
+
+    if pidof $CTDB_DIR/bin/ctdbd >/dev/null ; then
+	echo "Killing remaining daemons..."
+	killall $CTDB_DIR/bin/ctdbd
+
+	if pidof $CTDB_DIR/bin/ctdbd >/dev/null ; then
+	    echo "Once more with feeling.."
+	    killall -9 $CTDB_DIR/bin/ctdbd
+	fi
+    fi
+
+    var_dir=$CTDB_DIR/tests/var
+    rm -rf $var_dir/test.db
+}
 
 start_daemons ()
 {
-    $CTDB_DIR/tests/start_daemons.sh $numnodes >$CTDB_DIR/var/daemons.log
+    local num_nodes="${1:-2}" # default is 2 nodes
+    shift # "$@" gets passed to ctdbd
+
+    local var_dir=$CTDB_DIR/tests/var
+
+    mkdir -p $var_dir/test.db/persistent
+
+    local nodes=$var_dir/nodes.txt
+    local public_addresses=$var_dir/public_addresses.txt
+    rm -f $nodes $public_addresses
+
+    local i
+    for i in $(seq 1 $num_nodes) ; do
+	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
+	    echo ::$i >> $nodes
+	    ip addr add ::$i/128 dev lo
+	else
+	    echo 127.0.0.$i >> $nodes
+	    # 2 public addresses per node, just to make things interesting.
+	    echo "192.0.2.$i/24 lo" >> $public_addresses
+	    echo "192.0.2.$(($i + $num_nodes))/24 lo" >> $public_addresses
+	fi
+    done
+
+    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --public-addresses $public_addresses --nopublicipcheck --event-script-dir=tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
+
+    echo "Starting $num_nodes ctdb daemons..."
+    for i in $(seq 1 $num_nodes) ; do
+	if [ $(id -u) -eq 0 ]; then
+            ctdb_options="$ctdb_options --public-interface=lo"
+	fi
+
+	$VALGRIND bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" || return 1
+    done
+
+    if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 
+	ln -sf $var_dir/sock.1 /tmp/ctdb.socket || return 1
+    fi
 }
 
 _restart_ctdb ()
@@ -301,8 +349,8 @@ _restart_ctdb ()
 restart_ctdb ()
 {
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	onnode all ctdb shutdown
-	start_daemons
+	stop_daemons
+	start_daemons $CTDB_NUM_NODES
     else
 	onnode -pq all $TEST_WRAP _restart_ctdb 
     fi || return 1
@@ -327,7 +375,3 @@ ctdb_test_exit ()
 
     test_exit
 }
-
-########################################
-
-export PATH=/usr/local/autocluster:$PATH

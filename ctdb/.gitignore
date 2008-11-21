@@ -18,4 +18,4 @@ nodes.txt
 public_addresses.txt
 rec.lock
 test.db
-var
+tests/var
