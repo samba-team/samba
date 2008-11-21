@@ -104,6 +104,7 @@ do {                             \
 #define WINBIND_SILENT			0x00000800
 #define WINBIND_DEBUG_STATE		0x00001000
 #define WINBIND_WARN_PWD_EXPIRE		0x00002000
+#define WINBIND_MKHOMEDIR		0x00004000
 
 #if defined(HAVE_GETTEXT) && !defined(__LCLINT__)
 #define _(string) dgettext(MODULE_NAME, string)
