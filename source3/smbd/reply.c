@@ -2123,14 +2123,24 @@ void reply_ctemp(struct smb_request *req)
 	SMB_VFS_STAT(conn,fname,&sbuf);
 
 	/* We should fail if file does not exist. */
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				FILE_GENERIC_READ | FILE_GENERIC_WRITE,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				fattr,
-				oplock_request,
-				NULL, &fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_READ | FILE_GENERIC_WRITE, /* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		fattr,					/* file_attributes */
+		oplock_request,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	/* close fd from smb_mkstemp() */
 	close(tmpfd);
@@ -5631,6 +5641,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname;
 	long offset = 0;
+	int create_options = 0;
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
@@ -5744,17 +5755,29 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		ZERO_STRUCT(sbuf1);
 		SMB_VFS_STAT(conn, directory, &sbuf1);
 
-		status = S_ISDIR(sbuf1.st_mode) ?
-			open_directory(conn, req, directory, &sbuf1,
-				       access_mask,
-				       FILE_SHARE_READ|FILE_SHARE_WRITE,
-				       FILE_OPEN, 0, 0, NULL,
-				       &fsp)
-			: open_file_ntcreate(conn, req, directory, &sbuf1,
-					     access_mask,
-					     FILE_SHARE_READ|FILE_SHARE_WRITE,
-					     FILE_OPEN, 0, 0, 0, NULL,
-					     &fsp);
+		if (S_ISDIR(sbuf1.st_mode)) {
+			create_options |= FILE_DIRECTORY_FILE;
+		}
+
+		status = SMB_VFS_CREATE_FILE(
+			conn,				/* conn */
+			req,				/* req */
+			0,				/* root_dir_fid */
+			directory,			/* fname */
+			false,				/* is_dos_path */
+			access_mask,			/* access_mask */
+			(FILE_SHARE_READ |		/* share_access */
+			    FILE_SHARE_WRITE),
+			FILE_OPEN,			/* create_disposition*/
+			create_options,			/* create_options */
+			0,				/* file_attributes */
+			0,				/* oplock_request */
+			0,				/* allocation_size */
+			NULL,				/* sd */
+			NULL,				/* ea_list */
+			&fsp,				/* result */
+			NULL,				/* pinfo */
+			&sbuf1);			/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
@@ -5848,20 +5871,34 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		ZERO_STRUCT(sbuf1);
 		SMB_VFS_STAT(conn, fname, &sbuf1);
 
-		status = S_ISDIR(sbuf1.st_mode) ?
-			open_directory(conn, req, fname, &sbuf1,
-				       access_mask,
-				       FILE_SHARE_READ|FILE_SHARE_WRITE,
-				       FILE_OPEN, 0, 0, NULL,
-				       &fsp)
-			: open_file_ntcreate(conn, req, fname, &sbuf1,
-					     access_mask,
-					     FILE_SHARE_READ|FILE_SHARE_WRITE,
-					     FILE_OPEN, 0, 0, 0, NULL,
-					     &fsp);
+		create_options = 0;
+
+		if (S_ISDIR(sbuf1.st_mode)) {
+			create_options |= FILE_DIRECTORY_FILE;
+		}
+
+		status = SMB_VFS_CREATE_FILE(
+			conn,				/* conn */
+			req,				/* req */
+			0,				/* root_dir_fid */
+			fname,				/* fname */
+			false,				/* is_dos_path */
+			access_mask,			/* access_mask */
+			(FILE_SHARE_READ |		/* share_access */
+			    FILE_SHARE_WRITE),
+			FILE_OPEN,			/* create_disposition*/
+			create_options,			/* create_options */
+			0,				/* file_attributes */
+			0,				/* oplock_request */
+			0,				/* allocation_size */
+			NULL,				/* sd */
+			NULL,				/* ea_list */
+			&fsp,				/* result */
+			NULL,				/* pinfo */
+			&sbuf1);			/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("rename_internals: open_file_ntcreate "
+			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
 				 "returned %s rename %s -> %s\n",
 				 nt_errstr(status), directory, newname));
 			break;
@@ -6052,14 +6089,24 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		}
 	}
 
-	status = open_file_ntcreate(conn, NULL, src, &src_sbuf,
-			FILE_GENERIC_READ,
-			FILE_SHARE_READ|FILE_SHARE_WRITE,
-			FILE_OPEN,
-			0,
-			FILE_ATTRIBUTE_NORMAL,
-			INTERNAL_OPEN_ONLY,
-			NULL, &fsp1);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		src,					/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_READ,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp1,					/* result */
+		NULL,					/* pinfo */
+		&src_sbuf);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(dest);
@@ -6071,14 +6118,24 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		ZERO_STRUCTP(&sbuf2);
 	}
 
-	status = open_file_ntcreate(conn, NULL, dest, &sbuf2,
-			FILE_GENERIC_WRITE,
-			FILE_SHARE_READ|FILE_SHARE_WRITE,
-			new_create_disposition,
-			0,
-			dosattrs,
-			INTERNAL_OPEN_ONLY,
-			NULL, &fsp2);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		dest,					/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_WRITE,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		new_create_disposition,			/* create_disposition*/
+		0,					/* create_options */
+		dosattrs,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp2,					/* result */
+		NULL,					/* pinfo */
+		&sbuf2);				/* psbuf */
 
 	TALLOC_FREE(dest);
 

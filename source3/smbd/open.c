@@ -2493,14 +2493,24 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, req, directory, &sbuf,
-				FILE_READ_ATTRIBUTES, /* Just a stat open */
-				FILE_SHARE_NONE, /* Ignored for stat opens */
-				FILE_CREATE,
-				0,
-				FILE_ATTRIBUTE_DIRECTORY,
-				NULL,
-				&fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		directory,				/* fname */
+		false,					/* is_dos_path */
+		FILE_READ_ATTRIBUTES,			/* access_mask */
+		FILE_SHARE_NONE,			/* share_access */
+		FILE_CREATE,				/* create_disposition*/
+		FILE_DIRECTORY_FILE,			/* create_options */
+		FILE_ATTRIBUTE_DIRECTORY,		/* file_attributes */
+		0,					/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (NT_STATUS_IS_OK(status)) {
 		close_file(req, fsp, NORMAL_CLOSE);

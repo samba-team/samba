@@ -1186,27 +1186,49 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 	DEBUG(10,("copy_internals: doing file copy %s to %s\n",
 				oldname, newname));
 
-        status = open_file_ntcreate(conn, req, oldname, &sbuf1,
-			FILE_READ_DATA, /* Read-only. */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-			FILE_OPEN,
-			0, /* No create options. */
-			FILE_ATTRIBUTE_NORMAL,
-			NO_OPLOCK,
-			&info, &fsp1);
+        status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		oldname,				/* fname */
+		false,					/* is_dos_path */
+		FILE_READ_DATA,				/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		NO_OPLOCK,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp1,					/* result */
+		&info,					/* pinfo */
+		&sbuf1);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-        status = open_file_ntcreate(conn, req, newname, &sbuf2,
-			FILE_WRITE_DATA, /* Read-only. */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-			FILE_CREATE,
-			0, /* No create options. */
-			fattr,
-			NO_OPLOCK,
-			&info, &fsp2);
+        status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		newname,				/* fname */
+		false,					/* is_dos_path */
+		FILE_WRITE_DATA,			/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_CREATE,				/* create_disposition*/
+		0,					/* create_options */
+		fattr,					/* file_attributes */
+		NO_OPLOCK,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp2,					/* result */
+		&info,					/* pinfo */
+		&sbuf2);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		close_file(NULL, fsp1, ERROR_CLOSE);

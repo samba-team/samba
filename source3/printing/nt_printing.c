@@ -1344,14 +1344,24 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
-	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
-				FILE_GENERIC_READ,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				INTERNAL_OPEN_ONLY,
-				NULL, &fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		filepath,				/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_READ,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&stat_buf);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Old file not found, so by definition new file is in fact newer */
@@ -1385,14 +1395,24 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		goto error_exit;
 	}
 
-	status = open_file_ntcreate(conn, NULL, filepath, &stat_buf,
-				FILE_GENERIC_READ,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				INTERNAL_OPEN_ONLY,
-				NULL, &fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		filepath,				/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_READ,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&stat_buf);				/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* New file not found, this shouldn't occur if the caller did its job */
@@ -1528,14 +1548,24 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		goto error_exit;
 	}
 
-	status = open_file_ntcreate(conn, NULL, driverpath, &st,
-				FILE_GENERIC_READ,
-				FILE_SHARE_READ|FILE_SHARE_WRITE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				INTERNAL_OPEN_ONLY,
-				NULL, &fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		driverpath,				/* fname */
+		false,					/* is_dos_path */
+		FILE_GENERIC_READ,			/* access_mask */
+		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		&st);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
