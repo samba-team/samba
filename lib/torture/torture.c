@@ -310,7 +310,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 					  bool already_setup)
 {
 	bool success;
-	char *old_testname;
+	char *old_testname = NULL;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		old_testname = context->active_testname;
