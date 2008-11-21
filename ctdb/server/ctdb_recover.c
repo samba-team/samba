@@ -1085,10 +1085,7 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata)
 {
 	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_NOTICE,("Attempt to set recmaster when not frozen\n"));
-		return -1;
-	}
+
 	ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
 	return 0;
 }
