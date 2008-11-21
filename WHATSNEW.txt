@@ -231,6 +231,8 @@ o   Günther Deschner <gd@samba.org>
       parsing
     * Fix winbind password change code for Windows 2000 DCs
     * Fix PNP_HwProfInfo NDR parsing
+    * Added wbclient wbcLogonUser and wbcLogoffUserEx functions
+    * Automatic home directory creation for pam_winbind
 
 
 o   Dina Fine <dina@exanet.com>
