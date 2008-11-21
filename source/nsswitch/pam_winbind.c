@@ -467,13 +467,17 @@ config_from_pam:
 	return ctrl;
 };
 
-static void _pam_winbind_free_context(struct pwb_context *ctx)
+static int _pam_winbind_free_context(struct pwb_context *ctx)
 {
+	if (!ctx) {
+		return 0;
+	}
+
 	if (ctx->dict) {
 		iniparser_freedict(ctx->dict);
 	}
 
-	SAFE_FREE(ctx);
+	return 0;
 }
 
 static int _pam_winbind_init_context(pam_handle_t *pamh,
@@ -488,12 +492,12 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	textdomain_init();
 #endif
 
-	r = (struct pwb_context *)malloc(sizeof(struct pwb_context));
+	r = TALLOC_ZERO_P(NULL, struct pwb_context);
 	if (!r) {
 		return PAM_BUF_ERR;
 	}
 
-	ZERO_STRUCTP(r);
+	talloc_set_destructor(r, _pam_winbind_free_context);
 
 	r->pamh = pamh;
 	r->flags = flags;
@@ -501,7 +505,7 @@ static int _pam_winbind_init_context(pam_handle_t *pamh,
 	r->argv = argv;
 	r->ctrl = _pam_parse(pamh, flags, argc, argv, &r->dict);
 	if (r->ctrl == -1) {
-		_pam_winbind_free_context(r);
+		TALLOC_FREE(r);
 		return PAM_SYSTEM_ERR;
 	}
 
@@ -521,7 +525,7 @@ static void _pam_winbind_cleanup_func(pam_handle_t *pamh,
 			       "(error_status = %d)", pamh, data,
 			       error_status);
 	}
-	SAFE_FREE(data);
+	TALLOC_FREE(data);
 }
 
 
@@ -1123,14 +1127,13 @@ static void _pam_set_data_string(struct pwb_context *ctx,
 		return;
 	}
 
-	ret = pam_set_data(ctx->pamh, data_name, (void *)strdup(value),
+	ret = pam_set_data(ctx->pamh, data_name, talloc_strdup(NULL, value),
 			   _pam_winbind_cleanup_func);
 	if (ret) {
 		_pam_log_debug(ctx, LOG_DEBUG,
 			       "Could not set data %s: %s\n",
 			       data_name, pam_strerror(ctx->pamh, ret));
 	}
-
 }
 
 /**
@@ -1242,70 +1245,59 @@ static void _pam_warn_krb5_failure(struct pwb_context *ctx,
  *
  * @return string (caller needs to free).
  */
-
-static char *_pam_compose_pwd_restriction_string(struct winbindd_response *response)
+static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
+						 struct winbindd_response *response)
 {
 	char *str = NULL;
-	size_t offset = 0, ret = 0, str_size = 1024;
 
-	str = (char *)malloc(str_size);
+	str = talloc_asprintf(ctx, _("Your password "));
 	if (!str) {
-		return NULL;
-	}
-
-	memset(str, '\0', str_size);
-
-	offset = snprintf(str, str_size, _("Your password "));
-	if (offset == -1) {
 		goto failed;
 	}
 
 	if (response->data.auth.policy.min_length_password > 0) {
-		ret = snprintf(str+offset, str_size-offset,
+		str = talloc_asprintf_append(str,
 			       _("must be at least %d characters; "),
 			       response->data.auth.policy.min_length_password);
-		if (ret == -1) {
+		if (!str) {
 			goto failed;
 		}
-		offset += ret;
 	}
 
 	if (response->data.auth.policy.password_history > 0) {
-		ret = snprintf(str+offset, str_size-offset,
+		str = talloc_asprintf_append(str,
 			       _("cannot repeat any of your previous %d "
 			         "passwords; "),
 			       response->data.auth.policy.password_history);
-		if (ret == -1) {
+		if (!str) {
 			goto failed;
 		}
-		offset += ret;
 	}
 
 	if (response->data.auth.policy.password_properties &
 	    DOMAIN_PASSWORD_COMPLEX) {
-		ret = snprintf(str+offset, str_size-offset,
+		str = talloc_asprintf_append(str,
 			       _("must contain capitals, numerals "
 			         "or punctuation; "
 			         "and cannot contain your account "
 			         "or full name; "));
-		if (ret == -1) {
+		if (!str) {
 			goto failed;
 		}
-		offset += ret;
 	}
 
-	ret = snprintf(str+offset, str_size-offset,
+	str = talloc_asprintf_append(str,
 		       _("Please type a different password. "
 		         "Type a password which meets these requirements in "
 		         "both text boxes."));
-	if (ret == -1) {
+	if (!str) {
 		goto failed;
 	}
 
 	return str;
 
  failed:
- 	SAFE_FREE(str);
+	TALLOC_FREE(str);
 	return NULL;
 }
 
@@ -1609,11 +1601,11 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 		}
 
 		pwd_restriction_string =
-			_pam_compose_pwd_restriction_string(&response);
+			_pam_compose_pwd_restriction_string(ctx, &response);
 		if (pwd_restriction_string) {
 			_make_remark(ctx, PAM_ERROR_MSG,
 				     pwd_restriction_string);
-			SAFE_FREE(pwd_restriction_string);
+			TALLOC_FREE(pwd_restriction_string);
 		}
 	}
 
@@ -1865,12 +1857,13 @@ static const char *get_conf_item_string(struct pwb_context *ctx,
 	if (ctx->dict) {
 		char *key = NULL;
 
-		if (!asprintf(&key, "global:%s", item)) {
+		key = talloc_asprintf(ctx, "global:%s", item);
+		if (!key) {
 			goto out;
 		}
 
 		parm_opt = iniparser_getstr(ctx->dict, key);
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 
 		_pam_log_debug(ctx, LOG_INFO, "CONFIG file: %s '%s'\n",
 			       item, parm_opt);
@@ -1912,12 +1905,13 @@ static int get_config_item_int(struct pwb_context *ctx,
 	if (ctx->dict) {
 		char *key = NULL;
 
-		if (!asprintf(&key, "global:%s", item)) {
+		key = talloc_asprintf(ctx, "global:%s", item);
+		if (!key) {
 			goto out;
 		}
 
 		parm_opt = iniparser_getint(ctx->dict, key, -1);
-		SAFE_FREE(key);
+		TALLOC_FREE(key);
 
 		_pam_log_debug(ctx, LOG_INFO,
 			       "CONFIG file: %s '%d'\n",
@@ -1996,8 +1990,6 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 	struct winbindd_request req;
 	struct winbindd_response resp;
 	int retval;
-	char *account_name;
-	int account_name_len;
 	char sep;
 
 	/* This cannot work when the winbind separator = @ */
@@ -2033,11 +2025,9 @@ static char* winbind_upn_to_username(struct pwb_context *ctx,
 		return NULL;
 	}
 
-	account_name_len = asprintf(&account_name, "%s\\%s",
-				    resp.data.name.dom_name,
-				    resp.data.name.name);
-
-	return account_name;
+	return talloc_asprintf(ctx, "%s\\%s",
+			       resp.data.name.dom_name,
+			       resp.data.name.name);
 }
 
 PAM_EXTERN
@@ -2106,7 +2096,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 							 real_username);
 		if (samaccountname) {
 			free(real_username);
-			real_username = samaccountname;
+			real_username = strdup(samaccountname);
 		}
 	}
 
@@ -2146,7 +2136,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 		char *new_authtok_required_during_auth = NULL;
 
-		if (!asprintf(&new_authtok_required, "%d", retval)) {
+		new_authtok_required = talloc_asprintf(NULL, "%d", retval);
+		if (!new_authtok_required) {
 			retval = PAM_BUF_ERR;
 			goto out;
 		}
@@ -2157,7 +2148,8 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 		retval = PAM_SUCCESS;
 
-		if (!asprintf(&new_authtok_required_during_auth, "%d", true)) {
+		new_authtok_required_during_auth = talloc_asprintf(NULL, "%d", true);
+		if (!new_authtok_required_during_auth) {
 			retval = PAM_BUF_ERR;
 			goto out;
 		}
@@ -2191,7 +2183,7 @@ out:
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_authenticate", ctx, retval);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return retval;
 }
@@ -2239,7 +2231,7 @@ int pam_sm_setcred(pam_handle_t *pamh, int flags,
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_setcred", ctx, ret);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return ret;
 }
@@ -2340,7 +2332,7 @@ int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags,
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_acct_mgmt", ctx, ret);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return ret;
 }
@@ -2364,7 +2356,7 @@ int pam_sm_open_session(pam_handle_t *pamh, int flags,
  out:
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_open_session", ctx, ret);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return ret;
 }
@@ -2457,7 +2449,7 @@ out:
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_close_session", ctx, retval);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return retval;
 }
@@ -2604,6 +2596,7 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 						_("(current) NT password: "),
 						NULL,
 						(const char **) &pass_old);
+		TALLOC_FREE(Announce);
 		if (ret != PAM_SUCCESS) {
 			_pam_log(ctx, LOG_NOTICE,
 				 "password - (old) token not obtained");
@@ -2786,7 +2779,7 @@ out:
 
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_chauthtok", ctx, ret);
 
-	_pam_winbind_free_context(ctx);
+	TALLOC_FREE(ctx);
 
 	return ret;
 }
