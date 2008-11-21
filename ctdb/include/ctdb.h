@@ -71,9 +71,9 @@ struct ctdb_call_info {
 #define CTDB_SRVID_RELEASE_IP 0xF300000000000000LL
 
 /* 
-   a message ID meaning that a nodes flags have changed
+   a message ID to set the node flags in the recovery daemon
  */
-#define CTDB_SRVID_NODE_FLAGS_CHANGED 0xF400000000000000LL
+#define CTDB_SRVID_SET_NODE_FLAGS 0xF400000000000000LL
 
 /* 
    a message ID meaning that a node should be banned
@@ -95,6 +95,12 @@ struct ctdb_call_info {
   to the log
  */
 #define CTDB_SRVID_MEM_DUMP 0xF800000000000000LL
+
+/* 
+   a message ID to get the recovery daemon to push the node flags out
+ */
+#define CTDB_SRVID_PUSH_NODE_FLAGS 0xF900000000000000LL
+
 
 
 /* used on the domain socket, send a pdu to the local daemon */
@@ -532,6 +538,11 @@ int ctdb_ctrl_getreclock(struct ctdb_context *ctdb,
 	struct timeval timeout, uint32_t destnode, 
 	TALLOC_CTX *mem_ctx, const char **reclock);
 
+
+uint32_t *list_of_connected_nodes(struct ctdb_context *ctdb,
+				struct ctdb_node_map *node_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self);
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 				struct ctdb_node_map *node_map,
 				TALLOC_CTX *mem_ctx,

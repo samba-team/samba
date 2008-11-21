@@ -31,36 +31,6 @@
 
 static void daemon_incoming_packet(void *, struct ctdb_req_header *);
 
-/*
-  handler for when a node changes its flags
-*/
-static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				TDB_DATA data, void *private_data)
-{
-	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
-
-	if (data.dsize != sizeof(*c) || !ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(DEBUG_CRIT,(__location__ "Invalid data in ctdb_node_flag_change\n"));
-		return;
-	}
-
-	if (!ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(DEBUG_CRIT,("Bad pnn %u in flag_change_handler\n", c->pnn));
-		return;
-	}
-
-	/* don't get the disconnected flag from the other node */
-	ctdb->nodes[c->pnn]->flags = 
-		(ctdb->nodes[c->pnn]->flags&NODE_FLAGS_DISCONNECTED) 
-		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
-	DEBUG(DEBUG_DEBUG,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
-
-	/* make sure we don't hold any IPs when we shouldn't */
-	if (c->pnn == ctdb->pnn &&
-	    (ctdb->nodes[c->pnn]->flags & (NODE_FLAGS_INACTIVE|NODE_FLAGS_BANNED))) {
-		ctdb_release_all_ips(ctdb);
-	}
-}
 
 static void print_exit_message(void)
 {
@@ -90,10 +60,6 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 
 	/* Make sure we log something when the daemon terminates */
 	atexit(print_exit_message);
-
-	/* a handler for when nodes are disabled/enabled */
-	ctdb_register_message_handler(ctdb, ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, 
-				      flag_change_handler, NULL);
 
 	/* start monitoring for connected/disconnected nodes */
 	ctdb_start_keepalive(ctdb);

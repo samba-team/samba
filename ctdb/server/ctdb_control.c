@@ -326,7 +326,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_list_tunables(ctdb, outdata);
 
 	case CTDB_CONTROL_MODIFY_FLAGS:
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_modflags));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_node_flag_change));
 		return ctdb_control_modflags(ctdb, indata);
 
 	case CTDB_CONTROL_KILL_TCP: 

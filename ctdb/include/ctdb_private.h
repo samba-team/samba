@@ -637,14 +637,6 @@ struct ctdb_node_flag_change {
 };
 
 /*
-  structure to change flags on a node
- */
-struct ctdb_node_modflags {
-	uint32_t set;
-	uint32_t clear;
-};
-
-/*
   struct for admin setting a ban
  */
 struct ctdb_ban_info {
