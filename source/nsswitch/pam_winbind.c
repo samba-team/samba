@@ -2757,6 +2757,11 @@ out:
 		pam_putenv(pamh, "KRB5CCNAME");
 	}
 
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		retval = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
+		     user, "wbcLogoffUser");
+	}
+
 	_PAM_LOG_FUNCTION_LEAVE("pam_sm_close_session", ctx, retval);
 
 	TALLOC_FREE(ctx);
