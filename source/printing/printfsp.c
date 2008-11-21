@@ -26,18 +26,12 @@ print_job_start().
 ***************************************************************************/
 
 NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
-			uint16_t current_vuid, files_struct **result)
+			uint16_t current_vuid, files_struct *fsp)
 {
 	int jobid;
 	SMB_STRUCT_STAT sbuf;
-	files_struct *fsp;
 	fstring name;
 	NTSTATUS status;
-
-	status = file_new(conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	fstrcpy( name, "Remote Downlevel Document");
 	if (fname) {
@@ -52,7 +46,6 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	jobid = print_job_start(conn->server_info, SNUM(conn), name, NULL);
 	if (jobid == -1) {
 		status = map_nt_error_from_unix(errno);
-		file_free(fsp);
 		return status;
 	}
 
@@ -61,7 +54,6 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	if (fsp->rap_print_jobid == 0) {
 		/* We need to delete the entry in the tdb. */
 		pjob_delete(lp_const_servicename(SNUM(conn)), jobid);
-		file_free(fsp);
 		return NT_STATUS_ACCESS_DENIED;	/* No errno around here */
 	}
 
@@ -80,14 +72,11 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
-	fsp->wcp = NULL; 
+	fsp->wcp = NULL;
 	SMB_VFS_FSTAT(fsp, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &sbuf);
 
-	conn->num_files_open++;
-
-	*result = fsp;
 	return NT_STATUS_OK;
 }
 

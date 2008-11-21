@@ -6623,7 +6623,7 @@ bool sysv_cache_reload(void);
 /* The following definitions come from printing/printfsp.c  */
 
 NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
-			uint16_t current_vuid, files_struct **result);
+			uint16_t current_vuid, files_struct *fsp);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
 /* The following definitions come from printing/printing.c  */
@@ -9633,11 +9633,11 @@ void file_free(files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(uint16 fid);
 void file_chain_reset(void);
-NTSTATUS dup_file_fsp(files_struct *fsp,
+void dup_file_fsp(files_struct *from,
 				uint32 access_mask,
 				uint32 share_access,
 				uint32 create_options,
-		      		files_struct **result);
+		      		files_struct *to);
 
 /* The following definitions come from smbd/ipc.c  */
 
