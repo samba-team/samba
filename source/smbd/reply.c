@@ -4625,7 +4625,7 @@ void reply_printopen(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	NTSTATUS status;
-	
+
 	START_PROFILE(SMBsplopen);
 
 	if (req->wct < 2) {
@@ -4640,10 +4640,17 @@ void reply_printopen(struct smb_request *req)
 		return;
 	}
 
+	status = file_new(conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBsplopen);
+		return;
+	}
+
 	/* Open for exclusive use, write only. */
 	status = print_fsp_open(conn, NULL, req->vuid, &fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
+		file_free(fsp);
 		reply_nterror(req, status);
 		END_PROFILE(SMBsplopen);
 		return;
@@ -4651,7 +4658,7 @@ void reply_printopen(struct smb_request *req)
 
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
-  
+
 	DEBUG(3,("openprint fd=%d fnum=%d\n",
 		 fsp->fh->fd, fsp->fnum));
 
