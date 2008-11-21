@@ -407,6 +407,7 @@ struct ctdb_context {
 	struct ctdb_call_state *pending_calls;
 	struct ctdb_client_ip *client_ip_list;
 	bool do_setsched;
+	bool do_checkpublicip;
 	void *saved_scheduler_param;
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;

@@ -2510,9 +2510,11 @@ again:
 	/* verify that we have all ip addresses we should have and we dont
 	 * have addresses we shouldnt have.
 	 */ 
-	if (verify_ip_allocation(ctdb, pnn) != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
-		goto again;
+	if (ctdb->do_checkpublicip) {
+		if (verify_ip_allocation(ctdb, pnn) != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Public IPs were inconsistent.\n"));
+			goto again;
+		}
 	}
 
 
