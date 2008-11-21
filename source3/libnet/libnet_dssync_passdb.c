@@ -26,7 +26,22 @@
 static NTSTATUS passdb_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			       struct replUpToDateVectorBlob **pold_utdv)
 {
-	return NT_STATUS_NOT_SUPPORTED;
+	NTSTATUS status;
+	struct pdb_methods *methods = NULL;
+
+	if (ctx->output_filename) {
+		status = make_pdb_method_name(&methods, ctx->output_filename);
+	} else {
+		status = make_pdb_method_name(&methods, lp_passdb_backend());
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ctx->private_data = methods;
+
+	return status;
 }
 
 /****************************************************************
