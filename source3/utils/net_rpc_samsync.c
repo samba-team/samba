@@ -174,6 +174,58 @@ int rpc_vampire_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
+static NTSTATUS rpc_vampire_ds_internals(struct net_context *c,
+					 const struct dom_sid *domain_sid,
+					 const char *domain_name,
+					 struct cli_state *cli,
+					 struct rpc_pipe_client *pipe_hnd,
+					 TALLOC_CTX *mem_ctx,
+					 int argc,
+					 const char **argv)
+{
+	NTSTATUS status;
+	struct dssync_context *ctx = NULL;
+
+	if (!dom_sid_equal(domain_sid, get_global_sam_sid())) {
+		d_printf(_("Cannot import users from %s at this time, "
+			   "as the current domain:\n\t%s: %s\nconflicts "
+			   "with the remote domain\n\t%s: %s\n"
+			   "Perhaps you need to set: \n\n\tsecurity=user\n\t"
+			   "workgroup=%s\n\n in your smb.conf?\n"),
+			 domain_name,
+			 get_global_sam_name(),
+			 sid_string_dbg(get_global_sam_sid()),
+			 domain_name,
+			 sid_string_dbg(domain_sid),
+			 domain_name);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	status = libnet_dssync_init_context(mem_ctx,
+					    &ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ctx->cli		= pipe_hnd;
+	ctx->domain_name	= domain_name;
+	ctx->ops		= &libnet_dssync_passdb_ops;
+
+	status = libnet_dssync(mem_ctx, ctx);
+	if (!NT_STATUS_IS_OK(status) && ctx->error_message) {
+		d_fprintf(stderr, "%s\n", ctx->error_message);
+		goto out;
+	}
+
+	if (ctx->result_message) {
+		d_fprintf(stdout, "%s\n", ctx->result_message);
+	}
+
+ out:
+	TALLOC_FREE(ctx);
+
+	return status;
+}
 
 /* dump sam database via samsync rpc calls */
 static NTSTATUS rpc_vampire_internals(struct net_context *c,
@@ -256,6 +308,11 @@ static NTSTATUS rpc_vampire_internals(struct net_context *c,
 
 int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 {
+	int ret = 0;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct net_dc_info dc_info;
+
 	if (c->display_usage) {
 		d_printf(  "%s\n"
 			   "net rpc vampire passdb\n"
@@ -265,8 +322,45 @@ int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
 		return 0;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
-			       rpc_vampire_internals, argc, argv);
+	status = net_make_ipc_connection(c, 0, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	status = net_scan_dc(c, cli, &dc_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	if (!dc_info.is_ad) {
+		printf(_("DC is not running Active Directory\n"));
+		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+				      0,
+				      rpc_vampire_internals, argc, argv);
+		return ret;
+	}
+
+	if (!c->opt_force) {
+		d_printf(  "%s\n"
+			   "net rpc vampire passdb\n"
+			   "    %s\n",
+			 _("Usage:"),
+			 _("Should not be used against Active Directory, maybe use --force"));
+		return -1;
+	}
+
+	ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
+			      NET_FLAGS_SEAL | NET_FLAGS_TCP,
+			      rpc_vampire_ds_internals, argc, argv);
+	if (ret != 0 && dc_info.is_mixed_mode) {
+		printf(_("Fallback to NT4 vampire on Mixed-Mode AD "
+			 "Domain\n"));
+		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+				      0,
+				      rpc_vampire_internals, argc, argv);
+	}
+
+	return ret;
 }
 
 static NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,

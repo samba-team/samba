@@ -63,6 +63,7 @@ struct dssync_context {
 };
 
 extern const struct dssync_ops libnet_dssync_keytab_ops;
+extern const struct dssync_ops libnet_dssync_passdb_ops;
 
 /* The following definitions come from libnet/libnet_dssync.c  */
 

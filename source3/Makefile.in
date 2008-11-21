@@ -1123,6 +1123,7 @@ LIBNET_OBJ = libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
 LIBNET_DSSYNC_OBJ = libnet/libnet_dssync.o \
+		    libnet/libnet_dssync_passdb.o \
 		    libnet/libnet_dssync_keytab.o \
 		    ../libcli/drsuapi/repl_decrypt.o
 
