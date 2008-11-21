@@ -791,10 +791,6 @@ static int pam_winbind_request_log(struct pwb_context *ctx,
 				_pam_log(ctx, LOG_NOTICE,
 					 "user '%s' granted access", user);
 				break;
-			case WINBINDD_PAM_CHAUTHTOK:
-				_pam_log(ctx, LOG_NOTICE,
-					 "user '%s' password changed", user);
-				break;
 			default:
 				_pam_log(ctx, LOG_NOTICE,
 					 "user '%s' OK", user);
@@ -1336,41 +1332,45 @@ static bool _pam_check_remark_auth_err(struct pwb_context *ctx,
 /**
  * Compose Password Restriction String for a PAM_ERROR_MSG conversation.
  *
- * @param response The struct winbindd_response.
+ * @param i The wbcUserPasswordPolicyInfo struct.
  *
- * @return string (caller needs to free).
+ * @return string (caller needs to talloc_free).
  */
+
 static char *_pam_compose_pwd_restriction_string(struct pwb_context *ctx,
-						 struct winbindd_response *response)
+						 struct wbcUserPasswordPolicyInfo *i)
 {
 	char *str = NULL;
+
+	if (!i) {
+		goto failed;
+	}
 
 	str = talloc_asprintf(ctx, _("Your password "));
 	if (!str) {
 		goto failed;
 	}
 
-	if (response->data.auth.policy.min_length_password > 0) {
+	if (i->min_length_password > 0) {
 		str = talloc_asprintf_append(str,
 			       _("must be at least %d characters; "),
-			       response->data.auth.policy.min_length_password);
+			       i->min_length_password);
 		if (!str) {
 			goto failed;
 		}
 	}
 
-	if (response->data.auth.policy.password_history > 0) {
+	if (i->password_history > 0) {
 		str = talloc_asprintf_append(str,
 			       _("cannot repeat any of your previous %d "
 			         "passwords; "),
-			       response->data.auth.policy.password_history);
+			       i->password_history);
 		if (!str) {
 			goto failed;
 		}
 	}
 
-	if (response->data.auth.policy.password_properties &
-	    DOMAIN_PASSWORD_COMPLEX) {
+	if (i->password_properties & WBC_DOMAIN_PASSWORD_COMPLEX) {
 		str = talloc_asprintf_append(str,
 			       _("must contain capitals, numerals "
 			         "or punctuation; "
@@ -1590,99 +1590,95 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 				     const char *newpass,
 				     time_t pwd_last_set)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	int ret;
+	wbcErr wbc_status;
+	struct wbcChangePasswordParams params;
+	struct wbcAuthErrorInfo *error = NULL;
+	struct wbcUserPasswordPolicyInfo *policy = NULL;
+	enum wbcPasswordChangeRejectReason reject_reason = -1;
+	uint32_t flags = 0;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	int i;
+	const char *codes[] = {
+		"NT_STATUS_BACKUP_CONTROLLER",
+		"NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND",
+		"NT_STATUS_NO_LOGON_SERVERS",
+		"NT_STATUS_ACCESS_DENIED",
+		"NT_STATUS_PWD_TOO_SHORT", /* TODO: tell the min pwd length ? */
+		"NT_STATUS_PWD_TOO_RECENT", /* TODO: tell the minage ? */
+		"NT_STATUS_PWD_HISTORY_CONFLICT" /* TODO: tell the history length ? */
+	};
+	int ret = PAM_AUTH_ERR;
 
-	if (request.data.chauthtok.user == NULL) {
-		return -2;
-	}
-
-	strncpy(request.data.chauthtok.user, user,
-		sizeof(request.data.chauthtok.user) - 1);
-
-	if (oldpass != NULL) {
-		strncpy(request.data.chauthtok.oldpass, oldpass,
-			sizeof(request.data.chauthtok.oldpass) - 1);
-	} else {
-		request.data.chauthtok.oldpass[0] = '\0';
-	}
-
-	if (newpass != NULL) {
-		strncpy(request.data.chauthtok.newpass, newpass,
-			sizeof(request.data.chauthtok.newpass) - 1);
-	} else {
-		request.data.chauthtok.newpass[0] = '\0';
-	}
+	ZERO_STRUCT(params);
 
 	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
-		request.flags = WBFLAG_PAM_KRB5 |
-				WBFLAG_PAM_CONTACT_TRUSTDOM;
+		flags |= WBFLAG_PAM_KRB5 |
+			 WBFLAG_PAM_CONTACT_TRUSTDOM;
 	}
 
 	if (ctx->ctrl & WINBIND_CACHED_LOGIN) {
-		request.flags |= WBFLAG_PAM_CACHED_LOGIN;
+		flags |= WBFLAG_PAM_CACHED_LOGIN;
 	}
 
-	ret = pam_winbind_request_log(ctx, WINBINDD_PAM_CHAUTHTOK,
-				      &request, &response, user);
+	params.account_name		= user;
+	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
+	params.old_password.plaintext	= oldpass;
+	params.new_password.plaintext	= newpass;
+	params.flags			= flags;
 
-	if (ret == PAM_SUCCESS) {
+	wbc_status = wbcChangeUserPasswordEx(&params, &error, &reject_reason, &policy);
+	ret = wbc_auth_error_to_pam_error(ctx, error, wbc_status,
+					  user, "wbcChangeUserPasswordEx");
+
+	if (WBC_ERROR_IS_OK(wbc_status)) {
+		_pam_log(ctx, LOG_NOTICE,
+			 "user '%s' password changed", user);
+		return PAM_SUCCESS;
+	}
+
+	if (!error) {
+		wbcFreeMemory(policy);
 		return ret;
 	}
 
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_BACKUP_CONTROLLER");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_NO_LOGON_SERVERS");
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_ACCESS_DENIED");
+	for (i=0; i<ARRAY_SIZE(codes); i++) {
+		int _ret = ret;
+		if (_pam_check_remark_auth_err(ctx, error, codes[i], &_ret)) {
+			ret = _ret;
+			goto done;
+		}
+	}
 
-	/* TODO: tell the min pwd length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_PWD_TOO_SHORT");
-
-	/* TODO: tell the minage ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_PWD_TOO_RECENT");
-
-	/* TODO: tell the history length ? */
-	PAM_WB_REMARK_CHECK_RESPONSE_RET(ctx, response,
-					 "NT_STATUS_PWD_HISTORY_CONFLICT");
-
-	if (!strcasecmp(response.data.auth.nt_status_string,
+	if (!strcasecmp(error->nt_string,
 			"NT_STATUS_PASSWORD_RESTRICTION")) {
 
 		char *pwd_restriction_string = NULL;
-		SMB_TIME_T min_pwd_age;
-		uint32_t reject_reason = response.data.auth.reject_reason;
-		min_pwd_age = response.data.auth.policy.min_passwordage;
+		SMB_TIME_T min_pwd_age = 0;
+
+		if (policy) {
+			min_pwd_age	= policy->min_passwordage;
+		}
 
 		/* FIXME: avoid to send multiple PAM messages after another */
 		switch (reject_reason) {
 			case -1:
 				break;
-			case SAMR_REJECT_OTHER:
+			case WBC_PWD_CHANGE_REJECT_OTHER:
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
 					PAM_WB_REMARK_DIRECT(ctx,
 					     "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
-			case SAMR_REJECT_TOO_SHORT:
+			case WBC_PWD_CHANGE_REJECT_TOO_SHORT:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_TOO_SHORT");
 				break;
-			case SAMR_REJECT_IN_HISTORY:
+			case WBC_PWD_CHANGE_REJECT_IN_HISTORY:
 				PAM_WB_REMARK_DIRECT(ctx,
 					"NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
-			case SAMR_REJECT_COMPLEXITY:
+			case WBC_PWD_CHANGE_REJECT_COMPLEXITY:
 				_make_remark(ctx, PAM_ERROR_MSG,
 					     _("Password does not meet "
 					       "complexity requirements"));
@@ -1696,13 +1692,16 @@ static int winbind_chauthtok_request(struct pwb_context *ctx,
 		}
 
 		pwd_restriction_string =
-			_pam_compose_pwd_restriction_string(ctx, &response);
+			_pam_compose_pwd_restriction_string(ctx, policy);
 		if (pwd_restriction_string) {
 			_make_remark(ctx, PAM_ERROR_MSG,
 				     pwd_restriction_string);
 			TALLOC_FREE(pwd_restriction_string);
 		}
 	}
+ done:
+	wbcFreeMemory(error);
+	wbcFreeMemory(policy);
 
 	return ret;
 }
@@ -2663,16 +2662,15 @@ int pam_sm_chauthtok(pam_handle_t * pamh, int flags,
 		time_t pwdlastset_prelim = 0;
 
 		/* instruct user what is happening */
+
 #define greeting _("Changing password for ")
-		Announce = (char *) malloc(sizeof(greeting) + strlen(user));
-		if (Announce == NULL) {
+		Announce = talloc_asprintf(ctx, "%s %s", greeting, user);
+		if (!Announce) {
 			_pam_log(ctx, LOG_CRIT,
 				 "password - out of memory");
 			ret = PAM_BUF_ERR;
 			goto out;
 		}
-		(void) strcpy(Announce, greeting);
-		(void) strcpy(Announce + sizeof(greeting) - 1, user);
 #undef greeting
 
 		lctrl = ctx->ctrl | WINBIND__OLD_PASSWORD;
