@@ -1651,7 +1651,7 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 							share_access,
 							create_options);
 
-				if (!NT_STATUS_IS_OK(status)) {
+				if (NT_STATUS_IS_OK(status)) {
 					TALLOC_FREE(lck);
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
@@ -2878,10 +2878,42 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * Ordinary file case.
 		 */
 
-		status = open_file_ntcreate(
-			conn, req, fname, &sbuf, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			oplock_request, &info, &fsp);
+		if (base_fsp) {
+			/*
+			 * We're opening the stream element of a base_fsp
+			 * we already opened. We need to initialize
+			 * the fsp first, and set up the base_fsp pointer.
+			 */
+			status = file_new(req, conn, &fsp);
+			if(!NT_STATUS_IS_OK(status)) {
+				goto fail;
+			}
+
+			fsp->base_fsp = base_fsp;
+
+			status = open_file_ntcreate_internal(conn,
+						req,
+						fname,
+						&sbuf,
+						access_mask,
+						share_access,
+						create_disposition,
+						create_options,
+						file_attributes,
+						oplock_request,
+						&info,
+						fsp);
+
+			if(!NT_STATUS_IS_OK(status)) {
+				file_free(req, fsp);
+				fsp = NULL;
+			}
+		} else {
+			status = open_file_ntcreate(
+				conn, req, fname, &sbuf, access_mask, share_access,
+				create_disposition, create_options, file_attributes,
+				oplock_request, &info, &fsp);
+		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
@@ -2907,6 +2939,8 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
+
+	fsp->base_fsp = base_fsp;
 
 	/*
 	 * According to the MS documentation, the only time the security
@@ -2994,16 +3028,6 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	DEBUG(10, ("create_file_unixpath: info=%d\n", info));
 
-	/*
-	 * Set fsp->base_fsp late enough that we can't "goto fail" anymore. In
-	 * the fail: branch we call close_file(fsp, ERROR_CLOSE) which would
-	 * also close fsp->base_fsp which we have to also do explicitly in
-	 * this routine here, as not in all "goto fail:" we have the fsp set
-	 * up already to be initialized with the base_fsp.
-	 */
-
-	fsp->base_fsp = base_fsp;
-
 	*result = fsp;
 	if (pinfo != NULL) {
 		*pinfo = info;
@@ -3022,6 +3046,13 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
+		if (base_fsp && fsp->base_fsp == base_fsp) {
+			/*
+			 * The close_file below will close
+			 * fsp->base_fsp.
+			 */
+			base_fsp = NULL;
+		}
 		close_file(req, fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}

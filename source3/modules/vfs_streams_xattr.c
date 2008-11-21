@@ -624,7 +624,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
 	struct ea_struct ea;
 	NTSTATUS status;
-        size_t length, overlap;
+	size_t length, overlap;
 
 	if (sio == NULL) {
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
@@ -651,6 +651,63 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
         return overlap;
 }
 
+static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					SMB_OFF_T offset)
+{
+	int ret;
+	uint8 *tmp;
+	struct ea_struct ea;
+	NTSTATUS status;
+        struct stream_io *sio =
+		(struct stream_io *)VFS_FETCH_FSP_EXTENSION(handle, fsp);
+
+	DEBUG(10, ("streams_xattr_ftruncate called for file %s offset %.0f\n",
+		fsp->fsp_name,
+		(double)offset ));
+
+	if (sio == NULL) {
+		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
+	}
+
+	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+			      sio->base, sio->xattr_name, &ea);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	tmp = TALLOC_REALLOC_ARRAY(talloc_tos(), ea.value.data, uint8,
+				   offset + 1);
+
+	if (tmp == NULL) {
+		TALLOC_FREE(ea.value.data);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	/* Did we expand ? */
+	if (ea.value.length < offset + 1) {
+		memset(&tmp[ea.value.length], '\0',
+			offset + 1 - ea.value.length);
+	}
+
+	ea.value.data = tmp;
+	ea.value.length = offset + 1;
+	ea.value.data[offset] = 0;
+
+	ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+				sio->xattr_name,
+				ea.value.data, ea.value.length, 0);
+
+	TALLOC_FREE(ea.value.data);
+
+	if (ret == -1) {
+		return -1;
+	}
+
+	return 0;
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple streams_xattr_ops[] = {
@@ -672,6 +729,8 @@ static vfs_op_tuple streams_xattr_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_xattr_unlink), SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
+        {SMB_VFS_OP(streams_xattr_ftruncate),  SMB_VFS_OP_FTRUNCATE,
+         SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_xattr_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
