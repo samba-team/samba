@@ -21,7 +21,7 @@
 #ifndef __SMBTORTURE_H__
 #define __SMBTORTURE_H__
 
-#include "lib/torture/torture.h"
+#include "../lib/torture/torture.h"
 
 struct smbcli_state;
 
