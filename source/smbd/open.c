@@ -2827,7 +2827,13 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			break;
 		}
 
-		status = create_file_unixpath(conn, NULL, base, 0,
+		DEBUG(10, ("Recursing into create_file_unixpath for "
+			"base %s\n", base));
+
+		/* This call will break any oplock on the base file,
+		 * but will not actually open an underlying fd. */
+
+		status = create_file_unixpath(conn, req, base, 0,
 					      FILE_SHARE_READ
 					      | FILE_SHARE_WRITE
 					      | FILE_SHARE_DELETE,
