@@ -64,14 +64,16 @@ static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 	return result;
 }
 
-static ssize_t get_xattr_size(connection_struct *conn, const char *fname,
-			      const char *xattr_name)
+static ssize_t get_xattr_size(connection_struct *conn,
+				files_struct *fsp,
+				const char *fname,
+				const char *xattr_name)
 {
 	NTSTATUS status;
 	struct ea_struct ea;
 	ssize_t result;
 
-	status = get_ea_value(talloc_tos(), conn, NULL, fname,
+	status = get_ea_value(talloc_tos(), conn, fsp, fname,
 			      xattr_name, &ea);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -100,7 +102,8 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, io->base, io->xattr_name);
+	sbuf->st_size = get_xattr_size(handle->conn, fsp->base_fsp,
+					io->base, io->xattr_name);
 	if (sbuf->st_size == -1) {
 		return -1;
 	}
@@ -144,7 +147,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, base, xattr_name);
+	sbuf->st_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
 	if (sbuf->st_size == -1) {
 		errno = ENOENT;
 		goto fail;
@@ -191,7 +194,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, base, xattr_name);
+	sbuf->st_size = get_xattr_size(handle->conn, NULL, base, xattr_name);
 	if (sbuf->st_size == -1) {
 		errno = ENOENT;
 		goto fail;
@@ -300,22 +303,40 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 			DEBUG(10, ("creating attribute %s on file %s\n",
 				   xattr_name, base));
 
-                        if (SMB_VFS_SETXATTR(
-				handle->conn, base, xattr_name,
-				&null, sizeof(null),
-				flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
-				goto fail;
+			if (fsp->base_fsp->fh->fd != -1) {
+                        	if (SMB_VFS_FSETXATTR(
+					fsp->base_fsp, xattr_name,
+					&null, sizeof(null),
+					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
+					goto fail;
+				}
+			} else {
+	                        if (SMB_VFS_SETXATTR(
+					handle->conn, base, xattr_name,
+					&null, sizeof(null),
+					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
+					goto fail;
+				}
 			}
 		}
 	}
 
 	if (flags & O_TRUNC) {
 		char null = '\0';
-		if (SMB_VFS_SETXATTR(
-			    handle->conn, base, xattr_name,
-			    &null, sizeof(null),
-			    flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
-			goto fail;
+		if (fsp->base_fsp->fh->fd != -1) {
+			if (SMB_VFS_FSETXATTR(
+					fsp->base_fsp, xattr_name,
+					&null, sizeof(null),
+					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
+				goto fail;
+			}
+		} else {
+			if (SMB_VFS_SETXATTR(
+					handle->conn, base, xattr_name,
+					&null, sizeof(null),
+					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
+				goto fail;
+			}
 		}
 	}
 
@@ -603,10 +624,15 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+	if (fsp->base_fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
-
+	} else {
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+				sio->xattr_name,
+				ea.value.data, ea.value.length, 0);
+	}
 	TALLOC_FREE(ea.value.data);
 
 	if (ret == -1) {
@@ -695,9 +721,15 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ea.value.length = offset + 1;
 	ea.value.data[offset] = 0;
 
-	ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+	if (fsp->base_fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
+	} else {
+		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+				sio->xattr_name,
+				ea.value.data, ea.value.length, 0);
+	}
 
 	TALLOC_FREE(ea.value.data);
 
