@@ -102,7 +102,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	sbuf->st_size = get_xattr_size(handle->conn, fsp->base_fsp,
+	sbuf->st_size = get_xattr_size(handle->conn, fsp,
 					io->base, io->xattr_name);
 	if (sbuf->st_size == -1) {
 		return -1;
@@ -249,29 +249,29 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 	/*
 	 * We use baseflags to turn off nasty side-effects when opening the
 	 * underlying file.
-         */
-        baseflags = flags;
-        baseflags &= ~O_TRUNC;
-        baseflags &= ~O_EXCL;
-        baseflags &= ~O_CREAT;
+	 */
+	baseflags = flags;
+	baseflags &= ~O_TRUNC;
+	baseflags &= ~O_EXCL;
+	baseflags &= ~O_CREAT;
 
-        hostfd = SMB_VFS_OPEN(handle->conn, base, fsp, baseflags, mode);
+	hostfd = SMB_VFS_OPEN(handle->conn, base, fsp, baseflags, mode);
 
-        /* It is legit to open a stream on a directory, but the base
-         * fd has to be read-only.
-         */
-        if ((hostfd == -1) && (errno == EISDIR)) {
-                baseflags &= ~O_ACCMODE;
-                baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_OPEN(handle->conn, fname, fsp, baseflags,
-				      mode);
-        }
+	/* It is legit to open a stream on a directory, but the base
+	 * fd has to be read-only.
+	 */
+	if ((hostfd == -1) && (errno == EISDIR)) {
+		baseflags &= ~O_ACCMODE;
+		baseflags |= O_RDONLY;
+		hostfd = SMB_VFS_OPEN(handle->conn, fname, fsp, baseflags,
+				mode);
+	}
 
-        if (hostfd == -1) {
+	if (hostfd == -1) {
 		goto fail;
-        }
+	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, NULL, base,
+	status = get_ea_value(talloc_tos(), handle->conn, fsp, base,
 			      xattr_name, &ea);
 
 	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
@@ -303,9 +303,9 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 			DEBUG(10, ("creating attribute %s on file %s\n",
 				   xattr_name, base));
 
-			if (fsp->base_fsp->fh->fd != -1) {
+			if (fsp->fh->fd != -1) {
                         	if (SMB_VFS_FSETXATTR(
-					fsp->base_fsp, xattr_name,
+					fsp, xattr_name,
 					&null, sizeof(null),
 					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 					goto fail;
@@ -323,9 +323,9 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 
 	if (flags & O_TRUNC) {
 		char null = '\0';
-		if (fsp->base_fsp->fh->fd != -1) {
+		if (fsp->fh->fd != -1) {
 			if (SMB_VFS_FSETXATTR(
-					fsp->base_fsp, xattr_name,
+					fsp, xattr_name,
 					&null, sizeof(null),
 					flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 				goto fail;
@@ -600,7 +600,7 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, fsp,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -624,12 +624,12 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	if (fsp->base_fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
+	if (fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+		ret = SMB_VFS_SETXATTR(fsp->conn, sio->base,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	}
@@ -656,7 +656,7 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, fsp,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -696,7 +696,7 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+	status = get_ea_value(talloc_tos(), handle->conn, fsp,
 			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
@@ -721,12 +721,12 @@ static int streams_xattr_ftruncate(struct vfs_handle_struct *handle,
 	ea.value.length = offset + 1;
 	ea.value.data[offset] = 0;
 
-	if (fsp->base_fsp->fh->fd != -1) {
-		ret = SMB_VFS_FSETXATTR(fsp->base_fsp,
+	if (fsp->fh->fd != -1) {
+		ret = SMB_VFS_FSETXATTR(fsp,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	} else {
-		ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+		ret = SMB_VFS_SETXATTR(fsp->conn, sio->base,
 				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 	}
