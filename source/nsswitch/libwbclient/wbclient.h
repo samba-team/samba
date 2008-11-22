@@ -541,14 +541,26 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid,
 		   uid_t *puid);
 
+wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
+			uid_t *puid);
+
 wbcErr wbcUidToSid(uid_t uid,
 		   struct wbcDomainSid *sid);
+
+wbcErr wbcQueryUidToSid(uid_t uid,
+			struct wbcDomainSid *sid);
 
 wbcErr wbcSidToGid(const struct wbcDomainSid *sid,
 		   gid_t *pgid);
 
+wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
+			gid_t *pgid);
+
 wbcErr wbcGidToSid(gid_t gid,
 		   struct wbcDomainSid *sid);
+
+wbcErr wbcQueryGidToSid(gid_t gid,
+			struct wbcDomainSid *sid);
 
 wbcErr wbcAllocateUid(uid_t *puid);
 
