@@ -116,6 +116,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	char *id_hex;
 	struct file_id id;
 	uint8 id_buf[16];
+	const char *rootdir;
 
 	tmp = talloc_asprintf(talloc_tos(), "%s/.streams", handle->conn->connectpath);
 
@@ -124,7 +125,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 		goto fail;
 	}
 
-	const char *rootdir = lp_parm_const_string(
+	rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
 	TALLOC_FREE(tmp);
