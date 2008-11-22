@@ -16,6 +16,7 @@ PRIVATE_DEPENDENCIES = \
 
 net_OBJ_FILES = $(addprefix $(utilssrcdir)/net/,  \
 		net.o \
+		net_machinepw.o \
 		net_password.o \
 		net_time.o \
 		net_join.o \
