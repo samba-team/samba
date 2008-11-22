@@ -265,13 +265,13 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 }
 
 /* convert a single name to a sid in a domain */
-NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   enum winbindd_cmd original_cmd,
-			   const char *domain_name,
-			   const char *name,
-			   DOM_SID *sid,
-			   enum lsa_SidType *type)
+static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  enum winbindd_cmd original_cmd,
+				  const char *domain_name,
+				  const char *name,
+				  DOM_SID *sid,
+				  enum lsa_SidType *type)
 {
 	NTSTATUS result;
 	DOM_SID *sids = NULL;
@@ -331,12 +331,12 @@ NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 /*
   convert a domain SID to a user or group name
 */
-NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
-			    char **domain_name,
-			    char **name,
-			    enum lsa_SidType *type)
+static NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  const DOM_SID *sid,
+				  char **domain_name,
+				  char **name,
+				  enum lsa_SidType *type)
 {
 	char **domains;
 	char **names;
@@ -384,14 +384,14 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
-			     TALLOC_CTX *mem_ctx,
-			     const DOM_SID *sid,
-			     uint32 *rids,
-			     size_t num_rids,
-			     char **domain_name,
-			     char ***names,
-			     enum lsa_SidType **types)
+static NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    const DOM_SID *sid,
+				    uint32 *rids,
+				    size_t num_rids,
+				    char **domain_name,
+				    char ***names,
+				    enum lsa_SidType **types)
 {
 	char **domains;
 	NTSTATUS result;
@@ -636,10 +636,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  uint32 num_sids, const DOM_SID *sids,
-				  uint32 *num_aliases, uint32 **alias_rids)
+static NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
+					 TALLOC_CTX *mem_ctx,
+					 uint32 num_sids, const DOM_SID *sids,
+					 uint32 *num_aliases,
+					 uint32 **alias_rids)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol;
@@ -854,7 +855,10 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 		}
 
 		for (r=0; r<tmp_names.count; r++) {
-			(*names)[i+r] = CONST_DISCARD(char *, tmp_names.names[r].string);
+			(*names)[i+r] = fill_domain_username_talloc(mem_ctx,
+						domain->name,
+						tmp_names.names[r].string,
+						true);
 			(*name_types)[i+r] = tmp_types.ids[r];
 		}
 
@@ -1099,9 +1103,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 }
 
 /* find the lockout policy for a domain */
-NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
-			      TALLOC_CTX *mem_ctx,
-			      struct samr_DomInfo12 *lockout_policy)
+static NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
+				     TALLOC_CTX *mem_ctx,
+				     struct samr_DomInfo12 *lockout_policy)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
@@ -1140,9 +1144,9 @@ NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 }
 
 /* find the password policy for a domain */
-NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       struct samr_DomInfo1 *password_policy)
+static NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      struct samr_DomInfo1 *password_policy)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;

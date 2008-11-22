@@ -469,40 +469,6 @@ enum winbindd_result winbindd_dual_pam_chng_pswd_auth_crap(struct winbindd_domai
 /* The following definitions come from winbindd/winbindd_reconnect.c  */
 
 
-/* The following definitions come from winbindd/winbindd_rpc.c  */
-
-NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
-			   TALLOC_CTX *mem_ctx,
-			   enum winbindd_cmd original_cmd,
-			   const char *domain_name,
-			   const char *name,
-			   DOM_SID *sid,
-			   enum lsa_SidType *type);
-NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
-			    TALLOC_CTX *mem_ctx,
-			    const DOM_SID *sid,
-			    char **domain_name,
-			    char **name,
-			    enum lsa_SidType *type);
-NTSTATUS msrpc_rids_to_names(struct winbindd_domain *domain,
-			     TALLOC_CTX *mem_ctx,
-			     const DOM_SID *sid,
-			     uint32 *rids,
-			     size_t num_rids,
-			     char **domain_name,
-			     char ***names,
-			     enum lsa_SidType **types);
-NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
-				  TALLOC_CTX *mem_ctx,
-				  uint32 num_sids, const DOM_SID *sids,
-				  uint32 *num_aliases, uint32 **alias_rids);
-NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
-			      TALLOC_CTX *mem_ctx,
-			      struct samr_DomInfo12 *lockout_policy);
-NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
-			       TALLOC_CTX *mem_ctx,
-			       struct samr_DomInfo1 *password_policy);
-
 /* The following definitions come from winbindd/winbindd_sid.c  */
 
 void winbindd_lookupsid(struct winbindd_cli_state *state);
@@ -575,6 +541,10 @@ bool parse_domain_user_talloc(TALLOC_CTX *mem_ctx, const char *domuser,
 void parse_add_domuser(void *buf, char *domuser, int *len);
 bool canonicalize_username(fstring username_inout, fstring domain, fstring user);
 void fill_domain_username(fstring name, const char *domain, const char *user, bool can_assume);
+char *fill_domain_username_talloc(TALLOC_CTX *ctx,
+				  const char *domain,
+				  const char *user,
+				  bool can_assume);
 const char *get_winbind_pipe_dir(void) ;
 char *get_winbind_priv_pipe_dir(void) ;
 int open_winbindd_socket(void);
