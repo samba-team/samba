@@ -206,7 +206,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 
 	if (pipe_session_key && pipe_session_key_len != 16) {
 		DEBUG(0,("serverinfo_to_SamInfo3: invalid "
-			 "pipe_session_key_len[%u] != 16\n",
+			 "pipe_session_key_len[%d] != 16\n",
 			 pipe_session_key_len));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
