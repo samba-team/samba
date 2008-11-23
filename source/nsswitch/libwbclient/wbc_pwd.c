@@ -29,6 +29,11 @@
  */
 #define MAX_GETPWENT_USERS 500
 
+/** @brief The maximum number of grent structs to get from winbindd
+ *
+ */
+#define MAX_GETGRENT_GROUPS 500
+
 /**
  *
  **/
@@ -405,6 +410,21 @@ done:
 	return wbc_status;
 }
 
+/** @brief Number of cached group structs
+ *
+ */
+static uint32_t gr_cache_size;
+
+/** @brief Position of the grent context
+ *
+ */
+static uint32_t gr_cache_idx;
+
+/** @brief Winbindd response containing the group structs
+ *
+ */
+static struct winbindd_response gr_response;
+
 /** @brief Reset the group iterator
  *
  * @return #wbcErr
@@ -413,6 +433,15 @@ done:
 wbcErr wbcSetgrent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+
+	if (gr_cache_size > 0) {
+		gr_cache_idx = gr_cache_size = 0;
+		if (gr_response.extra_data.data) {
+			free(gr_response.extra_data.data);
+		}
+	}
+
+	ZERO_STRUCT(gr_response);
 
 	wbc_status = wbcRequestResponse(WINBINDD_SETGRENT,
 					NULL, NULL);
@@ -431,6 +460,13 @@ wbcErr wbcEndgrent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
+	if (gr_cache_size > 0) {
+		gr_cache_idx = gr_cache_size = 0;
+		if (gr_response.extra_data.data) {
+			free(gr_response.extra_data.data);
+		}
+	}
+
 	wbc_status = wbcRequestResponse(WINBINDD_ENDGRENT,
 					NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -448,7 +484,51 @@ wbcErr wbcEndgrent(void)
 
 wbcErr wbcGetgrent(struct group **grp)
 {
-	return WBC_ERR_NOT_IMPLEMENTED;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_gr *wb_gr;
+	uint32_t mem_ofs;
+
+	/* If there's a cached result, return that. */
+	if (gr_cache_idx < gr_cache_size) {
+		goto return_result;
+	}
+
+	/* Otherwise, query winbindd for some entries. */
+
+	gr_cache_idx = 0;
+
+	if (gr_response.extra_data.data) {
+		free(gr_response.extra_data.data);
+		ZERO_STRUCT(gr_response);
+	}
+
+	ZERO_STRUCT(request);
+	request.data.num_entries = MAX_GETGRENT_GROUPS;
+
+	wbc_status = wbcRequestResponse(WINBINDD_GETGRENT, &request,
+					&gr_response);
+
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	gr_cache_size = gr_response.data.num_entries;
+
+return_result:
+
+	wb_gr = (struct winbindd_gr *) gr_response.extra_data.data;
+
+	mem_ofs = wb_gr[gr_cache_idx].gr_mem_ofs +
+		  gr_cache_size * sizeof(struct winbindd_gr);
+
+	*grp = copy_group_entry(&wb_gr[gr_cache_idx],
+				((char *)gr_response.extra_data.data)+mem_ofs);
+
+	BAIL_ON_PTR_ERROR(*grp, wbc_status);
+
+	gr_cache_idx++;
+
+done:
+	return wbc_status;
 }
 
 /** @brief Return the next struct group* entry from the pwent iterator
@@ -462,7 +542,46 @@ wbcErr wbcGetgrent(struct group **grp)
 
 wbcErr wbcGetgrlist(struct group **grp)
 {
-	return WBC_ERR_NOT_IMPLEMENTED;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct winbindd_request request;
+	struct winbindd_gr *wb_gr;
+
+	/* If there's a cached result, return that. */
+	if (gr_cache_idx < gr_cache_size) {
+		goto return_result;
+	}
+
+	/* Otherwise, query winbindd for some entries. */
+
+	gr_cache_idx = 0;
+
+	if (gr_response.extra_data.data) {
+		free(gr_response.extra_data.data);
+		ZERO_STRUCT(gr_response);
+	}
+
+	ZERO_STRUCT(request);
+	request.data.num_entries = MAX_GETGRENT_GROUPS;
+
+	wbc_status = wbcRequestResponse(WINBINDD_GETGRLST, &request,
+					&gr_response);
+
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	gr_cache_size = gr_response.data.num_entries;
+
+return_result:
+
+	wb_gr = (struct winbindd_gr *) gr_response.extra_data.data;
+
+	*grp = copy_group_entry(&wb_gr[gr_cache_idx], NULL);
+
+	BAIL_ON_PTR_ERROR(*grp, wbc_status);
+
+	gr_cache_idx++;
+
+done:
+	return wbc_status;
 }
 
 /** @brief Return the unix group array belonging to the given user
