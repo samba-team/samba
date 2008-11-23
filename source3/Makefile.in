@@ -1235,10 +1235,13 @@ samba3-idl::
 		../librpc/idl/ntsvcs.idl librpc/idl/libnetapi.idl ../librpc/idl/drsuapi.idl \
 		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl \
 		../librpc/idl/named_pipe_auth.idl librpc/idl/dom_sid.idl
+	@$(MAKE) ndr-tables
 
-librpc/gen_ndr/tables.c:: librpc/gen_ndr/*.h
-	@echo "Generating $@"
-	@$(PERL) ../librpc/tables.pl $^ > $@
+NDR_TABLES = librpc/gen_ndr/tables.c
+
+ndr-tables:: librpc/gen_ndr/*.h
+	@echo "Generating $(NDR_TABLES)"
+	@$(PERL) ../librpc/tables.pl $^ > $(NDR_TABLES)
 
 #####################################################################
 
