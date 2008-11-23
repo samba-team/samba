@@ -1095,3 +1095,18 @@ done:
 
 	return wbc_status;
 }
+
+/** @brief Authenticate a user with cached credentials
+ *
+ * @param *params    Pointer to a wbcCredentialCacheParams structure
+ * @param **info     Pointer to a pointer to a wbcCredentialCacheInfo structure
+ * @param **error    Pointer to a pointer to a wbcAuthErrorInfo structure
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
+                          struct wbcCredentialCacheInfo **info,
+                          struct wbcAuthErrorInfo **error)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
