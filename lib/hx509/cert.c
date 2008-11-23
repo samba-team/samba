@@ -3348,6 +3348,40 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
 	}
     }
 
+    {
+	hx509_env envhash = NULL;
+        heim_octet_string os, sig;
+	char *buf;
+	Certificate *c = _hx509_get_cert(cert);
+
+	os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
+	os.length =
+	  c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.length / 8;
+
+	ret = _hx509_create_signature(context,
+				      NULL,
+				      hx509_signature_sha1(),
+				      &os,
+				      NULL,
+				      &sig);
+	if (ret != 0)
+	    goto out;
+
+	hex_encode(sig.data, sig.length, &buf);
+	der_free_octet_string(&sig);
+	
+	ret = hx509_env_add(context, &envhash, "sha1", buf);
+	free(buf);
+	if (ret) 
+	    goto out;
+
+	ret = hx509_env_add_binding(context, &envcert, "hash", envhash);
+	if (ret) {
+	  hx509_env_free(&envhash);
+	  goto out;
+	}
+    }
+
     ret = hx509_env_add_binding(context, env, "certificate", envcert);
     if (ret)
 	goto out;

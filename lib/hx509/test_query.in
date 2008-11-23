@@ -194,4 +194,10 @@ ${hxtool} query \
 	--expr='"1.3.6.1.5.2.3.5" IN %{certificate.eku} AND %{certificate.subject} TAILMATCH "C=SE"'  \
 	FILE:$srcdir/data/kdc.crt > /dev/null || exit 1
 
+echo "make sure entry match with hash.sha1"
+${hxtool} query \
+	--expr='"%{certificate.hash.sha1}EQ "412120212A2CBFD777DE5499ECB4724345F33F16"' \
+	FILE:$srcdir/data/kdc.crt > /dev/null || exit 1
+
+
 exit 0
