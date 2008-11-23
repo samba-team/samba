@@ -8100,34 +8100,10 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 				 uint32 *pshare_mode,
 				 uint32 *pcreate_disposition,
 				 uint32 *pcreate_options);
-NTSTATUS open_file_ntcreate(connection_struct *conn,
-			    struct smb_request *req,
-			    const char *fname,
-			    SMB_STRUCT_STAT *psbuf,
-			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
-			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
-			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
-			    uint32 create_options,	/* options such as delete on close. */
-			    uint32 new_dos_attributes,	/* attributes used for new file. */
-			    int oplock_request, 	/* internal Samba oplock codes. */
-				 			/* Information (FILE_EXISTS etc.) */
-			    int *pinfo,
-			    files_struct **result);
 NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 			  const char *fname,
 			  SMB_STRUCT_STAT *psbuf, files_struct **result);
 NTSTATUS close_file_fchmod(struct smb_request *req, files_struct *fsp);
-NTSTATUS open_directory(connection_struct *conn,
-			struct smb_request *req,
-			const char *fname,
-			SMB_STRUCT_STAT *psbuf,
-			uint32 access_mask,
-			uint32 share_access,
-			uint32 create_disposition,
-			uint32 create_options,
-			uint32 file_attributes,
-			int *pinfo,
-			files_struct **result);
 NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory);
 void msg_file_was_renamed(struct messaging_context *msg,
 			  void *private_data,

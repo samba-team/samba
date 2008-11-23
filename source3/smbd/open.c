@@ -1277,7 +1277,7 @@ static NTSTATUS calculate_access_mask(connection_struct *conn,
  Open a file with a share mode. Passed in an already created files_struct *.
 ****************************************************************************/
 
-static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
+static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    struct smb_request *req,
 			    const char *fname,
 			    SMB_STRUCT_STAT *psbuf,
@@ -2073,55 +2073,6 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- Open a file with a share mode.
-****************************************************************************/
-
-NTSTATUS open_file_ntcreate(connection_struct *conn,
-			    struct smb_request *req,
-			    const char *fname,
-			    SMB_STRUCT_STAT *psbuf,
-			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
-			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
-			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
-			    uint32 create_options,	/* options such as delete on close. */
-			    uint32 new_dos_attributes,	/* attributes used for new file. */
-			    int oplock_request, 	/* internal Samba oplock codes. */
-				 			/* Information (FILE_EXISTS etc.) */
-			    int *pinfo,
-			    files_struct **result)
-{
-	NTSTATUS status;
-	files_struct *fsp = NULL;
-
-	*result = NULL;
-
-	status = file_new(req, conn, &fsp);
-	if(!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = open_file_ntcreate_internal(conn,
-					req,
-					fname,
-					psbuf,
-					access_mask,
-					share_access,
-					create_disposition,
-					create_options,
-					new_dos_attributes,
-					oplock_request,
-					pinfo,
-					fsp);
-
-	if(!NT_STATUS_IS_OK(status)) {
-		file_free(req, fsp);
-		return status;
-	}
-
-	*result = fsp;
-	return status;
-}
 
 /****************************************************************************
  Open a file for for write to ensure that we can fchmod it.
@@ -2282,17 +2233,17 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-NTSTATUS open_directory(connection_struct *conn,
-			struct smb_request *req,
-			const char *fname,
-			SMB_STRUCT_STAT *psbuf,
-			uint32 access_mask,
-			uint32 share_access,
-			uint32 create_disposition,
-			uint32 create_options,
-			uint32 file_attributes,
-			int *pinfo,
-			files_struct **result)
+static NTSTATUS open_directory(connection_struct *conn,
+			       struct smb_request *req,
+			       const char *fname,
+			       SMB_STRUCT_STAT *psbuf,
+			       uint32 access_mask,
+			       uint32 share_access,
+			       uint32 create_disposition,
+			       uint32 create_options,
+			       uint32 file_attributes,
+			       int *pinfo,
+			       files_struct **result)
 {
 	files_struct *fsp = NULL;
 	bool dir_existed = VALID_STAT(*psbuf) ? True : False;
@@ -2932,41 +2883,35 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * Ordinary file case.
 		 */
 
+		status = file_new(req, conn, &fsp);
+		if(!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+
+		/*
+		 * We're opening the stream element of a base_fsp
+		 * we already opened. Set up the base_fsp pointer.
+		 */
 		if (base_fsp) {
-			/*
-			 * We're opening the stream element of a base_fsp
-			 * we already opened. We need to initialize
-			 * the fsp first, and set up the base_fsp pointer.
-			 */
-			status = file_new(req, conn, &fsp);
-			if(!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-
 			fsp->base_fsp = base_fsp;
+		}
 
-			status = open_file_ntcreate_internal(conn,
-						req,
-						fname,
-						&sbuf,
-						access_mask,
-						share_access,
-						create_disposition,
-						create_options,
-						file_attributes,
-						oplock_request,
-						&info,
-						fsp);
+		status = open_file_ntcreate(conn,
+					    req,
+					    fname,
+					    &sbuf,
+					    access_mask,
+					    share_access,
+					    create_disposition,
+					    create_options,
+					    file_attributes,
+					    oplock_request,
+					    &info,
+					    fsp);
 
-			if(!NT_STATUS_IS_OK(status)) {
-				file_free(req, fsp);
-				fsp = NULL;
-			}
-		} else {
-			status = open_file_ntcreate(
-				conn, req, fname, &sbuf, access_mask, share_access,
-				create_disposition, create_options, file_attributes,
-				oplock_request, &info, &fsp);
+		if(!NT_STATUS_IS_OK(status)) {
+			file_free(req, fsp);
+			fsp = NULL;
 		}
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
