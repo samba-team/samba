@@ -364,7 +364,7 @@ wbcErr wbcEndgrent(void)
 	return wbc_status;
 }
 
-/** @brief Return the next struct passwd* entry from the pwent iterator
+/** @brief Return the next struct group* entry from the pwent iterator
  *
  * @param **grp       Pointer to resulting struct group* from the query.
  *
