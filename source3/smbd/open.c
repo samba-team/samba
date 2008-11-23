@@ -2143,10 +2143,25 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		return status;
 	}
 
-	/* note! we must use a non-zero desired access or we don't get
-           a real file descriptor. Oh what a twisted web we weave. */
-	status = open_file(fsp, conn, NULL, NULL, NULL, fname, psbuf, O_WRONLY,
-			   0, FILE_WRITE_DATA, FILE_WRITE_DATA);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		false,					/* is_dos_path */
+		FILE_WRITE_DATA,			/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		0,					/* file_attributes */
+		0,					/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		psbuf);					/* psbuf */
 
 	/*
 	 * This is not a user visible file open.
