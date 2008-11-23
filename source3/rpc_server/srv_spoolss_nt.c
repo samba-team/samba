@@ -7860,7 +7860,8 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(driver, level, &p->pipe_user, &err)) ) {
+	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(p, driver, level,
+							      &err)) ) {
 		goto done;
 	}
 

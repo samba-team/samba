@@ -1796,8 +1796,9 @@ static char* ffmt(unsigned char *c){
 
 /****************************************************************************
 ****************************************************************************/
-WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
-				  struct current_user *user, WERROR *perr)
+WERROR move_driver_to_download_area(struct pipes_struct *p,
+				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+				    uint32 level, WERROR *perr)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 converted_driver;
@@ -1805,14 +1806,15 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 	char *new_dir = NULL;
 	char *old_name = NULL;
 	char *new_name = NULL;
-	DATA_BLOB null_pw;
-	connection_struct *conn;
+	connection_struct *conn = NULL;
 	NTSTATUS nt_status;
-	fstring res_type;
 	SMB_STRUCT_STAT st;
 	int i;
 	TALLOC_CTX *ctx = talloc_tos();
 	int ver = 0;
+	char *oldcwd;
+	fstring printdollar;
+	int printdollar_snum;
 
 	*perr = WERR_OK;
 
@@ -1831,38 +1833,24 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		return WERR_UNKNOWN_PRINTER_DRIVER;
 	}
 
-	/*
-	 * Connect to the print$ share under the same account as the user connected to the rpc pipe.
-	 * Note we must be root to do this.
-	 */
+	fstrcpy(printdollar, "print$");
 
-	null_pw = data_blob_null;
-	fstrcpy(res_type, "A:");
-	become_root();
-	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
-	unbecome_root();
-
-	if (conn == NULL) {
-		DEBUG(0,("move_driver_to_download_area: Unable to connect\n"));
-		*perr = ntstatus_to_werror(nt_status);
+	printdollar_snum = find_service(printdollar);
+	if (printdollar_snum == -1) {
+		*perr = WERR_NO_SUCH_SHARE;
 		return WERR_NO_SUCH_SHARE;
 	}
 
-	/*
-	 * Save who we are - we are temporarily becoming the connection user.
-	 */
-
-	if (!become_user(conn, conn->vuid)) {
-		DEBUG(0,("move_driver_to_download_area: Can't become user!\n"));
-		return WERR_ACCESS_DENIED;
+	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+				       lp_pathname(printdollar_snum),
+				       p->server_info, &oldcwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0,("move_driver_to_download_area: create_conn_struct "
+			 "returned %s\n", nt_errstr(nt_status)));
+		*perr = ntstatus_to_werror(nt_status);
+		return *perr;
 	}
 
-	/* WE ARE NOW RUNNING AS USER conn->vuid !!!!! */
-
-	/*
-	 * make the directories version and version\driver_name
-	 * under the architecture directory.
-	 */
 	DEBUG(5,("Creating first directory\n"));
 	new_dir = talloc_asprintf(ctx,
 				"%s/%d",
@@ -2092,8 +2080,10 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 
   err_exit:
 
-	close_cnum(conn, user->vuid);
-	unbecome_user();
+	if (conn != NULL) {
+		vfs_ChDir(conn, oldcwd);
+		conn_free_internal(conn);
+	}
 
 	if (W_ERROR_EQUAL(*perr, WERR_OK)) {
 		return WERR_OK;
