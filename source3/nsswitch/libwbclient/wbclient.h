@@ -602,6 +602,8 @@ wbcErr wbcEndgrent(void);
 
 wbcErr wbcGetgrent(struct group **grp);
 
+wbcErr wbcGetgrlist(struct group **grp);
+
 wbcErr wbcGetGroups(const char *account,
 		    uint32_t *num_groups,
 		    gid_t **_groups);
