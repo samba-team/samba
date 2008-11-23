@@ -440,6 +440,30 @@ struct wbcLogoffUserParams {
 	struct wbcNamedBlob *blobs;
 };
 
+/** @brief Credential cache log-on parameters
+ *
+ */
+
+struct wbcCredentialCacheParams {
+        const char *account_name;
+        const char *domain_name;
+        enum wbcCredentialCacheLevel {
+                WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP = 1
+        } level;
+        size_t num_blobs;
+        struct wbcNamedBlob *blobs;
+};
+
+
+/** @brief Info returned by credential cache auth
+ *
+ */
+
+struct wbcCredentialCacheInfo {
+        size_t num_blobs;
+        struct wbcNamedBlob *blobs;
+};
+
 /*
  * DomainControllerInfo struct
  */
@@ -682,6 +706,10 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 			       struct wbcAuthErrorInfo **error,
 			       enum wbcPasswordChangeRejectReason *reject_reason,
 			       struct wbcUserPasswordPolicyInfo **policy);
+
+wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
+                          struct wbcCredentialCacheInfo **info,
+                          struct wbcAuthErrorInfo **error);
 
 /*
  * Resolve functions
