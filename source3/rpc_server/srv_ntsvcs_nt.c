@@ -116,7 +116,8 @@ WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
 			return WERR_GENERAL_FAILURE;
 		ptr++;
 
-		if ( !(values = svcctl_fetch_regvalues( ptr, p->pipe_user.nt_user_token )) )
+		if ( !(values = svcctl_fetch_regvalues(
+			       ptr, p->server_info->ptok)))
 			return WERR_GENERAL_FAILURE;
 
 		if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) ) {

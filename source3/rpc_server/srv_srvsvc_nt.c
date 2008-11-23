@@ -262,7 +262,7 @@ static void init_srv_share_info_1(pipes_struct *p, struct srvsvc_NetShareInfo1 *
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->pipe_user.ut.uid, get_current_username(),
+			p->server_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -289,7 +289,7 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->pipe_user.ut.uid, get_current_username(),
+			p->server_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(p->mem_ctx,
@@ -355,7 +355,7 @@ static void init_srv_share_info_501(pipes_struct *p, struct srvsvc_NetShareInfo5
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->pipe_user.ut.uid, get_current_username(),
+			p->server_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -383,7 +383,7 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->pipe_user.ut.uid, get_current_username(),
+			p->server_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 	path = talloc_asprintf(ctx, "C:%s", lp_pathname(snum));
@@ -422,7 +422,7 @@ static void init_srv_share_info_1004(pipes_struct *p, struct srvsvc_NetShareInfo
 		remark = talloc_sub_advanced(
 			p->mem_ctx, lp_servicename(snum),
 			get_current_username(), lp_pathname(snum),
-			p->pipe_user.ut.uid, get_current_username(),
+			p->server_info->utok.uid, get_current_username(),
 			"", remark);
 	}
 
@@ -1225,7 +1225,6 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p,
 			  struct srvsvc_NetSessDel *r)
 {
 	struct sessionid *session_list;
-	struct current_user user;
 	int num_sessions, snum;
 	const char *username;
 	const char *machine;
@@ -1246,12 +1245,11 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p,
 
 	werr = WERR_ACCESS_DENIED;
 
-	get_current_user(&user, p);
-
 	/* fail out now if you are not root or not a domain admin */
 
-	if ((user.ut.uid != sec_initial_uid()) &&
-		( ! nt_token_check_domain_rid(p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS))) {
+	if ((p->server_info->utok.uid != sec_initial_uid()) &&
+		( ! nt_token_check_domain_rid(p->server_info->ptok,
+					      DOMAIN_GROUP_RID_ADMINS))) {
 
 		goto done;
 	}
@@ -1263,7 +1261,7 @@ WERROR _srvsvc_NetSessDel(pipes_struct *p,
 
 			NTSTATUS ntstat;
 
-			if (user.ut.uid != sec_initial_uid()) {
+			if (p->server_info->utok.uid != sec_initial_uid()) {
 				not_root = True;
 				become_root();
 			}
@@ -1466,7 +1464,6 @@ char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname)
 WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 			       struct srvsvc_NetShareSetInfo *r)
 {
-	struct current_user user;
 	char *command = NULL;
 	char *share_name = NULL;
 	char *comment = NULL;
@@ -1510,13 +1507,11 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
-
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
+	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
 
 	/* fail out now if you are not root and not a disk op */
 
-	if ( user.ut.uid != sec_initial_uid() && !is_disk_op )
+	if ( p->server_info->utok.uid != sec_initial_uid() && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	switch (r->in.level) {
@@ -1683,7 +1678,6 @@ WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
 WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 			   struct srvsvc_NetShareAdd *r)
 {
-	struct current_user user;
 	char *command = NULL;
 	char *share_name = NULL;
 	char *comment = NULL;
@@ -1704,11 +1698,9 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 		*r->out.parm_error = 0;
 	}
 
-	get_current_user(&user,p);
+	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
-
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
@@ -1868,7 +1860,6 @@ WERROR _srvsvc_NetShareAdd(pipes_struct *p,
 WERROR _srvsvc_NetShareDel(pipes_struct *p,
 			   struct srvsvc_NetShareDel *r)
 {
-	struct current_user user;
 	char *command = NULL;
 	char *share_name = NULL;
 	int ret;
@@ -1901,11 +1892,9 @@ WERROR _srvsvc_NetShareDel(pipes_struct *p,
 	if (lp_print_ok(snum))
 		return WERR_ACCESS_DENIED;
 
-	get_current_user(&user,p);
+	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
-
-	if (user.ut.uid != sec_initial_uid()  && !is_disk_op )
+	if (p->server_info->utok.uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd()) {
@@ -2409,17 +2398,14 @@ static void enum_file_close_fn( const struct share_mode_entry *e,
 
 WERROR _srvsvc_NetFileClose(pipes_struct *p, struct srvsvc_NetFileClose *r)
 {
-	struct current_user user;
 	SE_PRIV se_diskop = SE_DISK_OPERATOR;
 	bool is_disk_op;
 
 	DEBUG(5,("_srvsvc_NetFileClose: %d\n", __LINE__));
 
-	get_current_user(&user,p);
+	is_disk_op = user_has_privileges( p->server_info->ptok, &se_diskop );
 
-	is_disk_op = user_has_privileges( p->pipe_user.nt_user_token, &se_diskop );
-
-	if (user.ut.uid != sec_initial_uid() && !is_disk_op) {
+	if (p->server_info->utok.uid != sec_initial_uid() && !is_disk_op) {
 		return WERR_ACCESS_DENIED;
 	}
 

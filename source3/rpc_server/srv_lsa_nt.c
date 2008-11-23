@@ -381,9 +381,10 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	status = se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted);
+	status = se_access_check(psd, p->server_info->ptok, des_access,
+				 &acc_granted);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (p->pipe_user.ut.uid != sec_initial_uid()) {
+		if (p->server_info->utok.uid != sec_initial_uid()) {
 			return status;
 		}
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
@@ -393,7 +394,7 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 
 	/* This is needed for lsa_open_account and rpcclient .... :-) */
 
-	if (p->pipe_user.ut.uid == sec_initial_uid())
+	if (p->server_info->utok.uid == sec_initial_uid())
 		acc_granted = LSA_POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
@@ -432,9 +433,10 @@ NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 	/* get the generic lsa policy SD until we store it */
 	lsa_get_generic_sd(p->mem_ctx, &psd, &sd_size);
 
-	status = se_access_check(psd, p->pipe_user.nt_user_token, des_access, &acc_granted);
+	status = se_access_check(psd, p->server_info->ptok, des_access,
+				 &acc_granted);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (p->pipe_user.ut.uid != sec_initial_uid()) {
+		if (p->server_info->utok.uid != sec_initial_uid()) {
 			return status;
 		}
 		DEBUG(4,("ACCESS should be DENIED (granted: %#010x;  required: %#010x)\n",
@@ -1539,8 +1541,9 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if ( is_privileged_sid( r->in.sid ) )
@@ -1726,8 +1729,9 @@ NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!pdb_getgrsid(&map, info->sid))
@@ -1755,8 +1759,9 @@ NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p,
 	/* check to see if the pipe_user is root or a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1795,8 +1800,9 @@ NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p,
 	/* check to see if the pipe_user is root or a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -1952,8 +1958,9 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2001,8 +2008,9 @@ NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
 	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
 
-	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
+	if ( p->server_info->utok.uid != sec_initial_uid()
+		&& !nt_token_check_domain_rid( p->server_info->ptok,
+					       DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}

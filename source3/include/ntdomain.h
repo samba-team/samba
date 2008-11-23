@@ -231,12 +231,6 @@ typedef struct pipes_struct {
 	struct dcinfo *dc; /* Keeps the creds data from netlogon. */
 
 	/*
-	 * Unix user name and credentials used when a pipe is authenticated.
-	 */
-
-	struct current_user pipe_user;
- 
-	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
 	

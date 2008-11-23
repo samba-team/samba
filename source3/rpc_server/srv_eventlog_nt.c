@@ -209,7 +209,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 			elog->logname = talloc_strdup( elog, ELOG_APPL );
 
 			/* do the access check */
-			if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
+			if ( !elog_check_access( elog, p->server_info->ptok ) ) {
 				TALLOC_FREE( elog );
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -227,7 +227,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 
 	/* now do the access check.  Close the tdb if we fail here */
 
-	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
+	if ( !elog_check_access( elog, p->server_info->ptok ) ) {
 		elog_close_tdb( elog->etdb, False );
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;

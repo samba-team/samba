@@ -388,7 +388,8 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	return delete_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, Printer->sharename );
+	return delete_printer_hook(p->mem_ctx, p->server_info->ptok,
+				   Printer->sharename );
 }
 
 /****************************************************************************
@@ -1656,13 +1657,13 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 
-			if ((p->pipe_user.ut.uid != 0) &&
-			    !user_has_privileges(p->pipe_user.nt_user_token,
+			if ((p->server_info->utok.uid != 0) &&
+			    !user_has_privileges(p->server_info->ptok,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
-				    uidtoname(p->pipe_user.ut.uid),
+				    uidtoname(p->server_info->utok.uid),
 				    NULL, NULL,
-				    p->pipe_user.nt_user_token,
+				    p->server_info->ptok,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1715,8 +1716,8 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid), NULL,
-				   p->pipe_user.nt_user_token, snum) ||
+		if (!user_ok_token(uidtoname(p->server_info->utok.uid), NULL,
+				   p->server_info->ptok, snum) ||
 		    !print_access_check(p->server_info, snum,
 					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
@@ -2018,11 +2019,11 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->pipe_user.ut.uid != 0)
-		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
+	if ( (p->server_info->utok.uid != 0)
+		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->pipe_user.ut.uid), NULL,
-			NULL, p->pipe_user.nt_user_token,
+			uidtoname(p->server_info->utok.uid), NULL,
+			NULL, p->server_info->ptok,
 			lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
@@ -2116,11 +2117,11 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->pipe_user.ut.uid != 0)
-		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
+	if ( (p->server_info->utok.uid != 0)
+		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->pipe_user.ut.uid), NULL, NULL,
-			p->pipe_user.nt_user_token, lp_printer_admin(-1)) )
+			uidtoname(p->server_info->utok.uid), NULL, NULL,
+			p->server_info->ptok, lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -6390,7 +6391,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	{
 		/* add_printer_hook() will call reload_services() */
 
-		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
+				       printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7730,7 +7732,8 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
-		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
+				       printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
 		}
@@ -9938,10 +9941,10 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
-		return process_xcvtcp_command( p->pipe_user.nt_user_token, command,
+		return process_xcvtcp_command( p->server_info->ptok, command,
 			&q_u->indata, &r_u->outdata, &r_u->needed );
 	case SPLHND_PORTMON_LOCAL:
-		return process_xcvlocal_command( p->pipe_user.nt_user_token, command,
+		return process_xcvlocal_command( p->server_info->ptok, command,
 			&q_u->indata, &r_u->outdata, &r_u->needed );
 	}
 

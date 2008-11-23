@@ -272,7 +272,8 @@ WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
 		return WERR_NOMEM;
 
 	se_map_generic( &r->in.access_mask, &scm_generic_map );
-	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, r->in.access_mask, &access_granted );
+	status = svcctl_access_check( sec_desc, p->server_info->ptok,
+				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 
@@ -309,7 +310,8 @@ WERROR _svcctl_OpenServiceW(pipes_struct *p,
 		return WERR_NOMEM;
 
 	se_map_generic( &r->in.access_mask, &svc_generic_map );
-	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, r->in.access_mask, &access_granted );
+	status = svcctl_access_check( sec_desc, p->server_info->ptok,
+				      r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 
@@ -347,7 +349,8 @@ WERROR _svcctl_GetServiceDisplayNameW(pipes_struct *p,
 
 	service = r->in.service_name;
 
-	display_name = svcctl_lookup_dispname(p->mem_ctx, service, p->pipe_user.nt_user_token );
+	display_name = svcctl_lookup_dispname(p->mem_ctx, service,
+					      p->server_info->ptok);
 	if (!display_name) {
 		display_name = "";
 	}
@@ -424,7 +427,7 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
 	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
-	NT_USER_TOKEN *token = p->pipe_user.nt_user_token;
+	NT_USER_TOKEN *token = p->server_info->ptok;
 
 	/* perform access checks */
 
@@ -680,7 +683,8 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 
 	*r->out.bytes_needed = r->in.buf_size;
 
-	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query, p->pipe_user.nt_user_token );
+	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query,
+				   p->server_info->ptok);
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 
@@ -723,7 +727,8 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 			SERVICE_DESCRIPTION desc_buf;
 			const char *description;
 
-			description = svcctl_lookup_description(p->mem_ctx, info->name, p->pipe_user.nt_user_token );
+			description = svcctl_lookup_description(
+				p->mem_ctx, info->name, p->server_info->ptok);
 
 			ZERO_STRUCTP( &desc_buf );
 
@@ -903,7 +908,8 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
 
 	/* store the new SD */
 
-	if ( !svcctl_set_secdesc( p->mem_ctx, info->name, sec_desc, p->pipe_user.nt_user_token ) )
+	if ( !svcctl_set_secdesc( p->mem_ctx, info->name, sec_desc,
+				  p->server_info->ptok) )
 		return WERR_ACCESS_DENIED;
 
 	return WERR_OK;

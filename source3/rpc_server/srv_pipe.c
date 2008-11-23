@@ -614,11 +614,6 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 
 	ZERO_STRUCT(reply);
 
-	/* Set up for non-authenticated user. */
-	TALLOC_FREE(p->pipe_user.nt_user_token);
-	p->pipe_user.ut.ngroups = 0;
-	SAFE_FREE( p->pipe_user.ut.groups);
-
 	/* this has to be done as root in order to verify the password */
 	become_root();
 	status = auth_ntlmssp_update(a, *p_resp_blob, &reply);
@@ -656,29 +651,8 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		  "workstation: %s\n", a->ntlmssp_state->user,
 		  a->ntlmssp_state->domain, a->ntlmssp_state->workstation));
 
-	/*
-	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
-	 */
-
-	p->pipe_user.ut.uid = a->server_info->utok.uid;
-	p->pipe_user.ut.gid = a->server_info->utok.gid;
-	
-	p->pipe_user.ut.ngroups = a->server_info->utok.ngroups;
-	if (p->pipe_user.ut.ngroups) {
-		if (!(p->pipe_user.ut.groups = (gid_t *)memdup(
-			      a->server_info->utok.groups,
-			      sizeof(gid_t) * p->pipe_user.ut.ngroups))) {
-			DEBUG(0,("failed to memdup group list to p->pipe_user.groups\n"));
-			return False;
-		}
-	}
-
-	if (a->server_info->ptok) {
-		p->pipe_user.nt_user_token =
-			dup_nt_token(NULL, a->server_info->ptok);
-	} else {
+	if (a->server_info->ptok == NULL) {
 		DEBUG(1,("Error: Authmodule failed to provide nt_user_token\n"));
-		p->pipe_user.nt_user_token = NULL;
 		return False;
 	}
 
@@ -1711,11 +1685,6 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 		case RPC_ANONYMOUS_AUTH_TYPE:
 			/* Unauthenticated bind request. */
-			/* Get the authenticated pipe user from current_user */
-			if (!copy_current_user(&p->pipe_user, &current_user)) {
-				DEBUG(10, ("Could not copy current user\n"));
-				goto err_exit;
-			}
 			/* We're finished - no more packets. */
 			p->auth.auth_type = PIPE_AUTH_TYPE_NONE;
 			/* We must set the pipe auth_level here also. */
@@ -2223,23 +2192,6 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 	*p_ss_padding_len = auth_info.auth_pad_len;
 
 	return True;
-}
-
-/****************************************************************************
- Return a user struct for a pipe user.
-****************************************************************************/
-
-struct current_user *get_current_user(struct current_user *user, pipes_struct *p)
-{
-	if (p->pipe_bound &&
-			(p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP ||
-			(p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
-		memcpy(user, &p->pipe_user, sizeof(struct current_user));
-	} else {
-		memcpy(user, &current_user, sizeof(struct current_user));
-	}
-
-	return user;
 }
 
 /****************************************************************************

@@ -48,7 +48,7 @@ WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r)
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (p->pipe_user.ut.uid != sec_initial_uid()) {
+	if (p->server_info->utok.uid != sec_initial_uid()) {
 		DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}
@@ -113,7 +113,7 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *altpath = NULL;
 
-	if (p->pipe_user.ut.uid != sec_initial_uid()) {
+	if (p->server_info->utok.uid != sec_initial_uid()) {
 		DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
 		return WERR_ACCESS_DENIED;
 	}

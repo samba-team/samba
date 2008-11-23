@@ -162,13 +162,6 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	p->endian = RPC_LITTLE_ENDIAN;
 
-	ZERO_STRUCT(p->pipe_user);
-
-	p->pipe_user.vuid = vuid;
-	p->pipe_user.ut.uid = (uid_t)-1;
-	p->pipe_user.ut.gid = (gid_t)-1;
-	p->pipe_user.nt_user_token = dup_nt_token(NULL, server_info->ptok);
-
 	/*
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
@@ -899,9 +892,6 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
-
-	TALLOC_FREE(p->pipe_user.nt_user_token);
-	SAFE_FREE(p->pipe_user.ut.groups);
 
 	DLIST_REMOVE(InternalPipes, p);
 
