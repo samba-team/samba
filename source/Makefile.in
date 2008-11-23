@@ -2703,10 +2703,10 @@ proto::
 .PHONY: proto
 
 etags:
-	etags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
+	etags `find $(srcdir) -name "*.[ch]" | grep -v include/proto\.h`
 
 ctags:
-	ctags `find $(srcdir) -name "*.[ch]" | grep -v /.svn/`
+	ctags `find $(srcdir) -name "*.[ch]" | grep -v include/proto\.h`
 
 realclean:: clean
 	-rm -f config.log bin/.dummy script/findsmb script/gen-8bit-gap.sh
