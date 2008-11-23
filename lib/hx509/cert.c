@@ -3369,8 +3369,12 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
 
 	ret = hex_encode(sig.data, sig.length, &buf);
 	der_free_octet_string(&sig);
-	if (ret < 0)
+	if (ret < 0) {
+	    ret = ENOMEM;
+	    hx509_set_error_string(context, 0, ret,
+				   "Out of memory");
 	    goto out;
+	}
 	
 	ret = hx509_env_add(context, &envhash, "sha1", buf);
 	free(buf);
