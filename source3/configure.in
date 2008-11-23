@@ -6256,7 +6256,7 @@ AC_ZLIB([ZLIB_OBJS=""], [
 	do
 		ZLIB_OBJS="$ZLIB_OBJS ../lib/zlib/$o"
 	done
-	CFLAGS="$CFLAGS -I../lib/zlib"
+	CFLAGS="-I../lib/zlib $CFLAGS"
 ])
 
 dnl Remove -L/usr/lib/? from LDFLAGS and LIBS
