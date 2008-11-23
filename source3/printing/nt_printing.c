@@ -5196,49 +5196,44 @@ bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info )
   this.
 ****************************************************************************/
 
-static bool delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user )
+static bool delete_driver_files(struct pipes_struct *rpc_pipe,
+				NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3)
 {
 	int i = 0;
 	char *s;
 	const char *file;
 	connection_struct *conn;
-	DATA_BLOB null_pw;
 	NTSTATUS nt_status;
-	fstring res_type;
 	SMB_STRUCT_STAT  st;
+	char *oldcwd;
+	fstring printdollar;
+	int printdollar_snum;
+	bool ret = false;
 
 	if ( !info_3 )
 		return False;
 
 	DEBUG(6,("delete_driver_files: deleting driver [%s] - version [%d]\n", info_3->name, info_3->cversion));
 
-	/*
-	 * Connect to the print$ share under the same account as the
-	 * user connected to the rpc pipe. Note we must be root to
-	 * do this.
-	 */
+	fstrcpy(printdollar, "print$");
 
-	null_pw = data_blob_null;
-	fstrcpy(res_type, "A:");
-	become_root();
-        conn = make_connection_with_chdir( "print$", null_pw, res_type, user->vuid, &nt_status );
-	unbecome_root();
+	printdollar_snum = find_service(printdollar);
+	if (printdollar_snum == -1) {
+		return false;
+	}
 
-	if ( !conn ) {
-		DEBUG(0,("delete_driver_files: Unable to connect\n"));
-		return False;
+	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+				       lp_pathname(printdollar_snum),
+				       rpc_pipe->server_info, &oldcwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0,("delete_driver_files: create_conn_struct "
+			 "returned %s\n", nt_errstr(nt_status)));
+		return false;
 	}
 
 	if ( !CAN_WRITE(conn) ) {
 		DEBUG(3,("delete_driver_files: Cannot delete print driver when [print$] is read-only\n"));
-		return False;
-	}
-
-        /* Save who we are - we are temporarily becoming the connection user. */
-
-	if ( !become_user(conn, conn->vuid) ) {
-		DEBUG(0,("delete_driver_files: Can't become user!\n"));
-		return False;
+		goto fail;
 	}
 
 	/* now delete the files; must strip the '\print$' string from
@@ -5299,9 +5294,15 @@ static bool delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
 		}
 	}
 
-	unbecome_user();
-
-	return true;
+	goto done;
+ fail:
+	ret = false;
+ done:
+	if (conn != NULL) {
+		vfs_ChDir(conn, oldcwd);
+		conn_free_internal(conn);
+	}
+	return ret;
 }
 
 /****************************************************************************
@@ -5309,8 +5310,9 @@ static bool delete_driver_files( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct 
  previously looked up.
  ***************************************************************************/
 
-WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
-                              uint32 version, bool delete_files )
+WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
+			     NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3,
+			     uint32 version, bool delete_files )
 {
 	char *key = NULL;
 	const char     *arch;
@@ -5360,7 +5362,7 @@ WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct cur
 	 */
 
 	if ( delete_files )
-		delete_driver_files( info_3, user );
+		delete_driver_files(rpc_pipe, info_3);
 
 	DEBUG(5,("delete_printer_driver: driver delete successful [%s]\n", key));
 	SAFE_FREE(key);

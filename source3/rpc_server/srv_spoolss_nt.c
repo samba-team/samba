@@ -2070,7 +2070,8 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, False );
+			status_win2k = delete_printer_driver(
+				p, info_win2k.info_3, 3, False );
 			free_a_printer_driver( info_win2k, 3 );
 
 			/* this should not have failed---if it did, report to client */
@@ -2082,7 +2083,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		}
 	}
 
-	status = delete_printer_driver(info.info_3, &p->pipe_user, version, False);
+	status = delete_printer_driver(p, info.info_3, version, False);
 
 	/* if at least one of the deletes succeeded return OK */
 
@@ -2205,7 +2206,8 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, delete_files);
+			status_win2k = delete_printer_driver(
+				p, info_win2k.info_3, 3, delete_files);
 			free_a_printer_driver( info_win2k, 3 );
 
 			/* this should not have failed---if it did, report to client */
@@ -2215,7 +2217,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		}
 	}
 
-	status = delete_printer_driver(info.info_3, &p->pipe_user, version, delete_files);
+	status = delete_printer_driver(p, info.info_3, version, delete_files);
 
 	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
 		status = WERR_OK;
