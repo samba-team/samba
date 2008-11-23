@@ -7957,7 +7957,8 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-			    char **poldcwd);
+				struct auth_serversupplied_info *server_info,
+				char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
 

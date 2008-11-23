@@ -219,6 +219,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
+				struct auth_serversupplied_info *server_info,
 				char **poldcwd)
 {
 	connection_struct *conn;
@@ -253,6 +254,15 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	conn->params->service = snum;
+
+	if (server_info != NULL) {
+		conn->server_info = copy_serverinfo(conn, server_info);
+		if (conn->server_info == NULL) {
+			DEBUG(0, ("copy_serverinfo failed\n"));
+			TALLOC_FREE(conn);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	set_conn_connectpath(conn, connpath);
 
@@ -881,7 +891,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	status = create_conn_struct(ctx, &conn, snum, lp_pathname(snum),
-				    &oldpath);
+				    NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -1321,7 +1331,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 		return False;
 	}
 	status = create_conn_struct(talloc_tos(), conn_out, snum,
-				    lp_pathname(snum), oldpath);
+				    lp_pathname(snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1455,7 +1465,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 */
 
 	status = create_conn_struct(talloc_tos(), &conn, snum, connect_path,
-				    &cwd);
+				    NULL, &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1523,7 +1533,8 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(ctx, &conn, snum, connect_path, &cwd);
+	status = create_conn_struct(ctx, &conn, snum, connect_path, NULL,
+				    &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
