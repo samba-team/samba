@@ -109,6 +109,23 @@ static int smb_full_audit_closedir(vfs_handle_struct *handle,
 			  SMB_STRUCT_DIR *dirp);
 static int smb_full_audit_open(vfs_handle_struct *handle,
 		      const char *fname, files_struct *fsp, int flags, mode_t mode);
+static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
+				      struct smb_request *req,
+				      uint16_t root_dir_fid,
+				      const char *fname,
+				      bool is_dos_path,
+				      uint32_t access_mask,
+				      uint32_t share_access,
+				      uint32_t create_disposition,
+				      uint32_t create_options,
+				      uint32_t file_attributes,
+				      uint32_t oplock_request,
+				      uint64_t allocation_size,
+				      struct security_descriptor *sd,
+				      struct ea_list *ea_list,
+				      files_struct **result,
+				      int *pinfo,
+				      SMB_STRUCT_STAT *psbuf);
 static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp);
 static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
 			  void *data, size_t n);
@@ -352,6 +369,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	/* File operations */
 
 	{SMB_VFS_OP(smb_full_audit_open),	SMB_VFS_OP_OPEN,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_create_file),SMB_VFS_OP_CREATE_FILE,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_close),	SMB_VFS_OP_CLOSE,
 	 SMB_VFS_LAYER_LOGGER},
@@ -1083,6 +1102,51 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_OPEN, (result >= 0), handle, "%s|%s",
 	       ((flags & O_WRONLY) || (flags & O_RDWR))?"w":"r",
 	       fname);
+
+	return result;
+}
+
+static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
+				      struct smb_request *req,
+				      uint16_t root_dir_fid,
+				      const char *fname,
+				      bool is_dos_path,
+				      uint32_t access_mask,
+				      uint32_t share_access,
+				      uint32_t create_disposition,
+				      uint32_t create_options,
+				      uint32_t file_attributes,
+				      uint32_t oplock_request,
+				      uint64_t allocation_size,
+				      struct security_descriptor *sd,
+				      struct ea_list *ea_list,
+				      files_struct **result_fsp,
+				      int *pinfo,
+				      SMB_STRUCT_STAT *psbuf)
+{
+	NTSTATUS result;
+
+	result = SMB_VFS_NEXT_CREATE_FILE(
+		handle,					/* handle */
+		req,					/* req */
+		root_dir_fid,				/* root_dir_fid */
+		fname,					/* fname */
+		is_dos_path,				/* is_dos_path */
+		access_mask,				/* access_mask */
+		share_access,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		file_attributes,			/* file_attributes */
+		oplock_request,				/* oplock_request */
+		allocation_size,			/* allocation_size */
+		sd,					/* sd */
+		ea_list,				/* ea_list */
+		result_fsp,				/* result */
+		pinfo,					/* pinfo */
+		psbuf);					/* psbuf */
+
+	do_log(SMB_VFS_OP_CREATE_FILE, (NT_STATUS_IS_OK(result)), handle, "0x%x|%s",
+	       access_mask, fname);
 
 	return result;
 }
