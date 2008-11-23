@@ -25,6 +25,7 @@
 #include "param/secrets.h"
 #include "param/param.h"
 #include "lib/events/events.h"
+#include "lib/util/util_ldb.h"
 
 int net_machinepw_usage(struct net_context *ctx, int argc, const char **argv)
 {
@@ -38,7 +39,6 @@ int net_machinepw(struct net_context *ctx, int argc, const char **argv)
 	TALLOC_CTX *mem_ctx;
 	struct event_context *ev;
 	struct ldb_message **msgs;
-	int res;
 	int num_records;
 	const char *attrs[] = { "secret", NULL };
 	const char *secret;
