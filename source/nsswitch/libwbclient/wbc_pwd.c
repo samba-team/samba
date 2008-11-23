@@ -376,6 +376,20 @@ wbcErr wbcGetgrent(struct group **grp)
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
+/** @brief Return the next struct group* entry from the pwent iterator
+ *
+ * This is similar to #wbcGetgrent, just that the member list is empty
+ *
+ * @param **grp       Pointer to resulting struct group* from the query.
+ *
+ * @return #wbcErr
+ **/
+
+wbcErr wbcGetgrlist(struct group **grp)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
 /** @brief Return the unix group array belonging to the given user
  *
  * @param *account       The given user name
