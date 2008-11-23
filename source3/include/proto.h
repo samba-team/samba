@@ -4773,8 +4773,9 @@ bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
-WERROR clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-							  uint32 level, struct current_user *user);
+WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
+			      NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+			      uint32 level);
 WERROR move_driver_to_download_area(struct pipes_struct *p,
 				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
 				    uint32 level, WERROR *perr);

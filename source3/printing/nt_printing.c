@@ -1454,18 +1454,21 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 /****************************************************************************
 Determine the correct cVersion associated with an architecture and driver
 ****************************************************************************/
-static uint32 get_correct_cversion(const char *architecture, fstring driverpath_in,
-				   struct current_user *user, WERROR *perr)
+static uint32 get_correct_cversion(struct pipes_struct *p,
+				   const char *architecture,
+				   fstring driverpath_in,
+				   WERROR *perr)
 {
 	int               cversion;
 	NTSTATUS          nt_status;
  	char *driverpath = NULL;
-	DATA_BLOB         null_pw;
-	fstring           res_type;
 	files_struct      *fsp = NULL;
 	SMB_STRUCT_STAT   st;
-	connection_struct *conn;
+	connection_struct *conn = NULL;
 	NTSTATUS status;
+	char *oldcwd;
+	fstring printdollar;
+	int printdollar_snum;
 
 	SET_STAT_INVALID(st);
 
@@ -1485,28 +1488,21 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 		return 3;
 	}
 
-	/*
-	 * Connect to the print$ share under the same account as the user connected
-	 * to the rpc pipe. Note we must still be root to do this.
-	 */
+	fstrcpy(printdollar, "print$");
 
-	/* Null password is ok - we are already an authenticated user... */
-	null_pw = data_blob_null;
-	fstrcpy(res_type, "A:");
- 	become_root();
-	conn = make_connection_with_chdir("print$", null_pw, res_type, user->vuid, &nt_status);
-	unbecome_root();
-
-	if (conn == NULL) {
-		DEBUG(0,("get_correct_cversion: Unable to connect\n"));
-		*perr = ntstatus_to_werror(nt_status);
+	printdollar_snum = find_service(printdollar);
+	if (printdollar_snum == -1) {
+		*perr = WERR_NO_SUCH_SHARE;
 		return -1;
 	}
 
-	/* We are temporarily becoming the connection user. */
-	if (!become_user(conn, user->vuid)) {
-		DEBUG(0,("get_correct_cversion: Can't become user!\n"));
-		*perr = WERR_ACCESS_DENIED;
+	nt_status = create_conn_struct(talloc_tos(), &conn, printdollar_snum,
+				       lp_pathname(printdollar_snum),
+				       p->server_info, &oldcwd);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0,("get_correct_cversion: create_conn_struct "
+			 "returned %s\n", nt_errstr(nt_status)));
+		*perr = ntstatus_to_werror(nt_status);
 		return -1;
 	}
 
@@ -1583,27 +1579,28 @@ static uint32 get_correct_cversion(const char *architecture, fstring driverpath_
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 		driverpath, cversion));
 
-	close_file(NULL, fsp, NORMAL_CLOSE);
-	close_cnum(conn, user->vuid);
-	unbecome_user();
-	*perr = WERR_OK;
-	return cversion;
+	goto done;
 
-
-  error_exit:
-
-	if(fsp)
+ error_exit:
+	cversion = -1;
+ done:
+	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
-
-	close_cnum(conn, user->vuid);
-	unbecome_user();
-	return -1;
+	}
+	if (conn != NULL) {
+		vfs_ChDir(conn, oldcwd);
+		conn_free_internal(conn);
+	}
+	if (cversion != -1) {
+		*perr = WERR_OK;
+	}
+	return cversion;
 }
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver,
-											 struct current_user *user)
+static WERROR clean_up_driver_struct_level_3(struct pipes_struct *rpc_pipe,
+					     NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 {
 	const char *architecture;
 	fstring new_name;
@@ -1661,7 +1658,9 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	 *	NT 4: cversion=2
 	 *	NT2K: cversion=3
 	 */
-	if ((driver->cversion = get_correct_cversion( architecture, driver->driverpath, user, &err)) == -1)
+	if ((driver->cversion = get_correct_cversion(rpc_pipe, architecture,
+						     driver->driverpath,
+						     &err)) == -1)
 		return err;
 
 	return WERR_OK;
@@ -1669,7 +1668,8 @@ static WERROR clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dri
 	
 /****************************************************************************
 ****************************************************************************/
-static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver, struct current_user *user)
+static WERROR clean_up_driver_struct_level_6(struct pipes_struct *rpc_pipe,
+					     NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 {
 	const char *architecture;
 	fstring new_name;
@@ -1728,7 +1728,9 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 	 *	NT2K: cversion=3
 	 */
 
-	if ((driver->version = get_correct_cversion(architecture, driver->driverpath, user, &err)) == -1)
+	if ((driver->version = get_correct_cversion(rpc_pipe, architecture,
+						    driver->driverpath,
+						    &err)) == -1)
 			return err;
 
 	return WERR_OK;
@@ -1736,21 +1738,24 @@ static WERROR clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *dri
 
 /****************************************************************************
 ****************************************************************************/
-WERROR clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-							  uint32 level, struct current_user *user)
+WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
+			      NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+			      uint32 level)
 {
 	switch (level) {
 		case 3:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
 			driver=driver_abstract.info_3;
-			return clean_up_driver_struct_level_3(driver, user);
+			return clean_up_driver_struct_level_3(rpc_pipe,
+							      driver);
 		}
 		case 6:
 		{
 			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
 			driver=driver_abstract.info_6;
-			return clean_up_driver_struct_level_6(driver, user);
+			return clean_up_driver_struct_level_6(rpc_pipe,
+							      driver);
 		}
 		default:
 			return WERR_INVALID_PARAM;

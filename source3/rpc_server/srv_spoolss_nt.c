@@ -7855,7 +7855,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(driver, level, &p->pipe_user);
+	err = clean_up_driver_struct(p, driver, level);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
