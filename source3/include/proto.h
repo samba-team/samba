@@ -8422,10 +8422,6 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
 int find_service(fstring service);
-connection_struct *make_connection_with_chdir(const char *service_in,
-					      DATA_BLOB password, 
-					      const char *dev, uint16 vuid,
-					      NTSTATUS *status);
 connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
