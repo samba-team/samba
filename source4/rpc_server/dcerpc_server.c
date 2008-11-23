@@ -251,8 +251,8 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
-					      DATA_BLOB *session_key)
+NTSTATUS dcesrv_inherited_session_key(struct dcesrv_connection *p,
+				      DATA_BLOB *session_key)
 {
 	if (p->auth_state.session_info->session_key.length) {
 		*session_key = p->auth_state.session_info->session_key;

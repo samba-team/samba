@@ -27,6 +27,7 @@
 #include "auth/gensec/gensec.h"
 #include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/dcerpc_server_proto.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
@@ -138,6 +139,10 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
 	dcesrv_conn->transport.get_my_addr		= dcesrv_sock_get_my_addr;
 	dcesrv_conn->transport.get_peer_addr		= dcesrv_sock_get_peer_addr;
+
+	if (dcesrv_sock->endpoint->ep_description->transport == NCACN_NP) {
+		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
+	}
 
 	srv_conn->private = dcesrv_conn;
 
