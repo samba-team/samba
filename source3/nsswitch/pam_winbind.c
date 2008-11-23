@@ -2316,7 +2316,7 @@ static int _pam_delete_cred(pam_handle_t *pamh, int flags,
 	struct wbcLogoffUserParams logoff;
 	struct wbcAuthErrorInfo *error = NULL;
 	const char *user;
-	wbcErr wbc_status;
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
 
 	retval = _pam_winbind_init_context(pamh, flags, argc, argv, &ctx);
 	if (retval) {
