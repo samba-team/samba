@@ -3349,10 +3349,10 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
     }
 
     {
-	hx509_env envhash = NULL;
-        heim_octet_string os, sig;
-	char *buf;
 	Certificate *c = _hx509_get_cert(cert);
+        heim_octet_string os, sig;
+	hx509_env envhash = NULL;
+	char *buf;
 
 	os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
 	os.length =
@@ -3367,8 +3367,10 @@ _hx509_cert_to_env(hx509_context context, hx509_cert cert, hx509_env *env)
 	if (ret != 0)
 	    goto out;
 
-	hex_encode(sig.data, sig.length, &buf);
+	ret = hex_encode(sig.data, sig.length, &buf);
 	der_free_octet_string(&sig);
+	if (ret < 0)
+	    goto out;
 	
 	ret = hx509_env_add(context, &envhash, "sha1", buf);
 	free(buf);
