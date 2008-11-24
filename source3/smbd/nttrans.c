@@ -721,20 +721,11 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		return status;
 	}
 
-	if (psd->owner_sid==0) {
+	if (psd->owner_sid == NULL) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	}
-	if (psd->group_sid==0) {
+	if (psd->group_sid == NULL) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
-	}
-	if (psd->sacl==0) {
-		security_info_sent &= ~SACL_SECURITY_INFORMATION;
-	}
-	if (security_info_sent & DACL_SECURITY_INFORMATION) {
-		psd->type |= SEC_DESC_DACL_PRESENT;
-	}
-	if (psd->dacl==0) {
-		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
 	/* Convert all the generic bits. */
