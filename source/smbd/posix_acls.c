@@ -3211,6 +3211,9 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 	return ret;
 }
 
+#if 0
+/* Disable this - prevents ACL inheritance from the ACL editor. JRA. */
+
 /****************************************************************************
  Take care of parent ACL inheritance.
 ****************************************************************************/
@@ -3398,6 +3401,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 	*pp_new_sd = psd;
 	return status;
 }
+#endif
 
 /****************************************************************************
  Reply to set a security descriptor on an fsp. security_info_sent is the
@@ -3510,6 +3514,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
 
+#if 0
+	/* Disable this - prevents ACL inheritance from the ACL editor. JRA. */
+
 	/* See here: http://www.codeproject.com/KB/winsdk/accessctrl2.aspx
  	 * for details and also the log trace in bug #4308. JRA.
  	 */
@@ -3527,6 +3534,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, const SEC_DESC
 		}
 		psd = new_sd;
 	}
+#endif
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
 					&file_ace_list, &dir_ace_list, security_info_sent, psd);
