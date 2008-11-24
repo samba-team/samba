@@ -941,7 +941,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					&cli->user_session_key,
 					&crypt_pwd);
 
-		init_samr_user_info24(&user_info.info24, crypt_pwd.data, 24);
+		init_samr_user_info24(&user_info.info24, &crypt_pwd,
+				      PASS_DONT_CHANGE_AT_NEXT_LOGON);
 
 		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,
