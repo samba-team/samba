@@ -5733,11 +5733,10 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
 			   uint8_t password_expired,
-			   uint8_t data[516],
-			   uint8_t pw_len);
+			   struct samr_CryptPassword *pwd_buf);
 void init_samr_user_info24(struct samr_UserInfo24 *r,
-			   uint8_t data[516],
-			   uint8_t pw_len);
+			   struct samr_CryptPassword *pwd_buf,
+			   uint8_t password_expired);
 void init_samr_CryptPasswordEx(const char *pwd,
 			       DATA_BLOB *session_key,
 			       struct samr_CryptPasswordEx *pwd_buf);

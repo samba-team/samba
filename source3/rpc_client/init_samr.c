@@ -457,8 +457,7 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
 			   uint8_t password_expired,
-			   uint8_t data[516],
-			   uint8_t pw_len)
+			   struct samr_CryptPassword *pwd_buf)
 {
 	memset(r, '\0', sizeof(*r));
 	init_samr_user_info21(&r->info,
@@ -491,7 +490,7 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			      lm_password_set,
 			      password_expired);
 
-	memcpy(r->password.data, data, sizeof(r->password.data));
+	r->password = *pwd_buf;
 }
 
 /*************************************************************************
@@ -499,13 +498,13 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
  *************************************************************************/
 
 void init_samr_user_info24(struct samr_UserInfo24 *r,
-			   uint8_t data[516],
-			   uint8_t pw_len)
+			   struct samr_CryptPassword *pwd_buf,
+			   uint8_t password_expired)
 {
 	DEBUG(10, ("init_samr_user_info24:\n"));
 
-	memcpy(r->password.data, data, sizeof(r->password.data));
-	r->pw_len = pw_len;
+	r->password = *pwd_buf;
+	r->password_expired = password_expired;
 }
 
 /*************************************************************************
