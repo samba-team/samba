@@ -2961,7 +2961,7 @@ static enum ndr_err_code ndr_push_samr_UserInfo24(struct ndr_push *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
 		NDR_CHECK(ndr_push_samr_CryptPassword(ndr, NDR_SCALARS, &r->password));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->pw_len));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2973,7 +2973,7 @@ static enum ndr_err_code ndr_pull_samr_UserInfo24(struct ndr_pull *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
 		NDR_CHECK(ndr_pull_samr_CryptPassword(ndr, NDR_SCALARS, &r->password));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->pw_len));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2985,7 +2985,7 @@ _PUBLIC_ void ndr_print_samr_UserInfo24(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "samr_UserInfo24");
 	ndr->depth++;
 	ndr_print_samr_CryptPassword(ndr, "password", &r->password);
-	ndr_print_uint8(ndr, "pw_len", r->pw_len);
+	ndr_print_uint8(ndr, "password_expired", r->password_expired);
 	ndr->depth--;
 }
 
@@ -3074,7 +3074,7 @@ static enum ndr_err_code ndr_push_samr_UserInfo26(struct ndr_push *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
 		NDR_CHECK(ndr_push_samr_CryptPasswordEx(ndr, NDR_SCALARS, &r->password));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->pw_len));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -3086,7 +3086,7 @@ static enum ndr_err_code ndr_pull_samr_UserInfo26(struct ndr_pull *ndr, int ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
 		NDR_CHECK(ndr_pull_samr_CryptPasswordEx(ndr, NDR_SCALARS, &r->password));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->pw_len));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -3098,7 +3098,7 @@ _PUBLIC_ void ndr_print_samr_UserInfo26(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "samr_UserInfo26");
 	ndr->depth++;
 	ndr_print_samr_CryptPasswordEx(ndr, "password", &r->password);
-	ndr_print_uint8(ndr, "pw_len", r->pw_len);
+	ndr_print_uint8(ndr, "password_expired", r->password_expired);
 	ndr->depth--;
 }
 
