@@ -882,7 +882,8 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 				&cli->user_session_key,
 				&crypt_pwd);
 
-	init_samr_user_info24(&info.info24, crypt_pwd.data, 24);
+	init_samr_user_info24(&info.info24, &crypt_pwd,
+			      PASS_DONT_CHANGE_AT_NEXT_LOGON);
 
 	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 					  &user_pol,
@@ -5444,7 +5445,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
-				      crypt_pwd.data, 24);
+				      &crypt_pwd);
 
 		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,
