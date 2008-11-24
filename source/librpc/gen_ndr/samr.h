@@ -499,7 +499,7 @@ struct samr_UserInfo23 {
 
 struct samr_UserInfo24 {
 	struct samr_CryptPassword password;
-	uint8_t pw_len;
+	uint8_t password_expired;
 };
 
 struct samr_CryptPasswordEx {
@@ -513,7 +513,7 @@ struct samr_UserInfo25 {
 
 struct samr_UserInfo26 {
 	struct samr_CryptPasswordEx password;
-	uint8_t pw_len;
+	uint8_t password_expired;
 };
 
 union samr_UserInfo {
