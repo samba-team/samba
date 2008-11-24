@@ -5,17 +5,17 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
    Copyright (C) Paul Ashton 1997
    Copyright (C) Jeremy Allison 2000-2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -27,7 +27,7 @@
  * A bunch of stuff that was put into smb.h
  * in the NTDOM branch - it didn't belong there.
  */
- 
+
 typedef struct _prs_struct {
 	bool io; /* parsing in or out of data stream */
 	/* 
@@ -138,7 +138,7 @@ struct dcinfo {
 	struct netr_Credential seed_chal;
 	struct netr_Credential clnt_chal; /* Client credential */
 	struct netr_Credential srv_chal;  /* Server credential */
- 
+
 	unsigned char  sess_key[16]; /* Session key - 8 bytes followed by 8 zero bytes */
 	unsigned char  mach_pw[16];   /* md4(machine password) */
 
@@ -154,13 +154,13 @@ struct dcinfo {
 typedef struct pipe_rpc_fns {
 
 	struct pipe_rpc_fns *next, *prev;
-	
+
 	/* RPC function table associated with the current rpc_bind (associated by context) */
-	
+
 	const struct api_struct *cmds;
 	int n_cmds;
 	uint32 context_id;
-	
+
 } PIPE_RPC_FNS;
 
 /*
@@ -217,12 +217,12 @@ typedef struct pipes_struct {
 
 	fstring name;
 	fstring pipe_srv_name;
-	
+
 	/* linked list of rpc dispatch tables associated 
 	   with the open rpc contexts */
-	   
+
 	PIPE_RPC_FNS *contexts;
-	
+
 	RPC_HDR hdr; /* Incoming RPC header. */
 	RPC_HDR_REQ hdr_req; /* Incoming request header. */
 
@@ -233,13 +233,13 @@ typedef struct pipes_struct {
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
-	
+
 	bool pipe_bound;
-	
+
 	/*
 	 * Set to true when we should return fault PDU's for everything.
 	 */
-	
+
 	bool fault_state;
 
 	/*
@@ -253,13 +253,13 @@ typedef struct pipes_struct {
 	 */
 
 	bool rng_fault_state;
-	
+
 	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
 	 */
-	
+
 	bool endian;
-	
+
 	/*
 	 * Struct to deal with multiple pdu inputs.
 	 */
