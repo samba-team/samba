@@ -261,20 +261,20 @@ int zfsacl_fail__sys_acl_set_file(vfs_handle_struct *handle,
 				  SMB_ACL_TYPE_T type,
 				  SMB_ACL_T theacl)
 {
-	return(-1);
+	return -1;
 }
 
 int zfsacl_fail__sys_acl_set_fd(vfs_handle_struct *handle,
 				files_struct *fsp,
 				int fd, SMB_ACL_T theacl)
 {
-	return(-1);
+	return -1;
 }
 
 int zfsacl_fail__sys_acl_delete_def_file(vfs_handle_struct *handle,
 					 const char *path)
 {
-	return(-1);
+	return -1;
 }
 
 /* VFS operations structure */
