@@ -959,7 +959,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		samr_CryptPassword password;
-		uint8 pw_len;
+		uint8 password_expired;
 	} samr_UserInfo24;
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -973,7 +973,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		samr_CryptPasswordEx password;
-		uint8 pw_len;
+		uint8 password_expired;
 	} samr_UserInfo26;
 
 	typedef [switch_type(uint16)] union {
