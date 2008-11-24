@@ -47,6 +47,7 @@ static struct {
 	int         no_recmaster;
 	int         lvs;
 	int	    script_log_level;
+	int         no_publicipcheck;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -130,6 +131,7 @@ int main(int argc, const char *argv[])
 		{ "no-recmaster", 0, POPT_ARG_NONE, &options.no_recmaster, 0, "disable recmaster role on this node", NULL },
 		{ "lvs", 0, POPT_ARG_NONE, &options.lvs, 0, "lvs is enabled on this node", NULL },
 		{ "script-log-level", 0, POPT_ARG_INT, &options.script_log_level, DEBUG_ERR, "log level of event script output", NULL },
+		{ "nopublicipcheck", 0, POPT_ARG_NONE, &options.no_publicipcheck, 0, "dont check we have/dont have the correct public ip addresses", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -299,6 +301,8 @@ int main(int argc, const char *argv[])
 	}
 
 	ctdb->do_setsched = !options.no_setsched;
+
+	ctdb->do_checkpublicip = !options.no_publicipcheck;
 
 	if (getenv("CTDB_BASE") == NULL) {
 		/* setup a environment variable for the event scripts to use

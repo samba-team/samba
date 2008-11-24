@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 65
+Release: 66
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,17 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Nov 24 2008 : Version 1.0.66
+ - Allow to change the recmaster even when we are not frozen.
+ - Remove two redundant SAMBA_CHECK variables from the sysconf example
+ - After a node failure it can take very long before some lock operations
+   ctdb needs to perform are allowed/works with gpfs again. Workaround this
+   by treating a hang/timeout as success.
+ - Dont override CTDB_BASE is fet in the shell already
+ - Always send keepalive packets regardless of whether the link is idle or not.
+ - Rewrite the disable/enable flag update logic to prevent a race between 
+   "ctdb disable/enable" and the recovery daemon when updating the flags to 
+   all nodes.
 * Thu Nov 13 2008 : Version 1.0.65
  - Update the sysconfig example: The default debug level is 2 (NOTICE) and not
    0 (ERROR)
