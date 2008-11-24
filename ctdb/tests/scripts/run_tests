@@ -1,28 +1,9 @@
 #!/bin/bash
 
-export CTDB_DIR=$(cd $(dirname $(dirname $(dirname $0))) ; pwd)
-var_dir=$CTDB_DIR/tests/var
-
-export CTDB_NUM_NODES=3
-
-######################################################################
-
-if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
-    export CTDB_NODES_SOCKETS=""
-    for i in $(seq 1 $CTDB_NUM_NODES) ; do
-	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
-    done
-fi
-
-######################################################################
-
-ctdb_bin_dir=$CTDB_DIR/bin
-ctdb_tools_dir=$CTDB_DIR/tools
-ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
-
-PATH="${ctdb_test_scripts_dir}:${ctdb_bin_dir}:${ctdb_tools_dir}:${PATH}"
-
-export TEST_WRAP="${ctdb_test_scripts_dir}/test_wrap"
+# The ability of ctdb_test_env to take tests on the command-line is
+# nice, but here we need to hack around it with that colon to reset
+# the arguments that it sees.
+. $(dirname $0)/ctdb_test_env :
 
 . ctdb_test_functions.bash
 
@@ -53,8 +34,8 @@ done
 ######################################################################
 
 for f; do
-    [ -x $f ] || fail "test $f is not executable"
-    test_run "$f"
+    [ -x $f ] || fail "test \"$f\" is not executable"
+    ctdb_test_run "$f"
 done
 
 test_exit

@@ -1,6 +1,32 @@
 #!/bin/bash
 
+test_info()
+{
+    cat <<EOF
+Verify that 'ctdb getpid' works as expected.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Run 'ctdb getpid -n <number>' on the nodes to check the PID of the
+   ctdbd process.
+3. Verify that the output is valid.
+4. Verify that with the '-n all' option the command shows the PIDs on
+   all the nodes
+
+Expected results:
+
+* 'ctdb getpid' shows valid output.
+EOF
+}
+
 . ctdb_test_functions.bash
+
+ctdb_test_init "$@"
 
 set -e
 

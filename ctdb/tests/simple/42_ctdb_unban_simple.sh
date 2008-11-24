@@ -1,10 +1,8 @@
 #!/bin/bash
 
-CATEGORY="CTDB"
-
 test_info()
 {
-cat <<EOF
+    cat <<EOF
 Verify the operation of the 'ctdb unban' command.
 
 This is a superficial test of the 'ctdb uban' command.  It trusts
@@ -32,11 +30,12 @@ Steps:
 Expected results:
 
 * The 'ctdb unban' command successfully unbans a banned node.
-
 EOF
 }
 
 . ctdb_test_functions.bash
+
+ctdb_test_init "$@"
 
 set -e
 

@@ -1,15 +1,42 @@
 #!/bin/bash
 
-. /root/SOFS/autosofs/scripts/functions
+test_info()
+{
+    cat <<EOF
+Verify the output of the 'ctdb version' command.
+
+This test assumes an RPM-based installation and needs to be skipped on
+non-RPM systems.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Run the 'ctdb version' command on one of the cluster nodes.
+3. Compare the version displayed with that listed by the rpm command
+   for the ctdb package.
+
+Expected results:
+
+* The 'ctdb version' command displays the ctdb version number.
+EOF
+}
+
+. ctdb_test_functions.bash
+
+ctdb_test_init "$@"
 
 set -e
 
-onnode 0 /root/SOFS/autosofs/scripts/cluster_is_healthy.sh
+onnode 0 $TEST_WRAP cluster_is_healthy
 
 rpm_ver_cmd="rpm -q ctdb"
-ctdb_ver_cmd="ctdb version"
+ctdb_ver_cmd="ctdb version" ||true
 
-rpm_ver=$($rpm_ver_cmd)
+rpm_ver=$($rpm_ver_cmd) || true
 echo "$rpm_ver_cmd"
 echo "  $rpm_ver"
 
@@ -17,8 +44,8 @@ ctdb_ver=$(onnode 0 $ctdb_ver_cmd)
 echo "$ctdb_ver_cmd"
 echo "  $ctdb_ver"
 
-set -x  
+set -x
 
 [ "${ctdb_ver#CTDB version: }" = "${rpm_ver#ctdb-}" ]
 
-test_exit
+ctdb_test_exit

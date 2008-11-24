@@ -1,10 +1,8 @@
 #!/bin/bash
 
-CATEGORY="CTDB"
-
 test_info()
 {
-cat <<EOF
+    cat <<EOF
 Verify the operation of the 'ctdb ban' command.
 
 This is a superficial test of the 'ctdb ban' command.  It trusts
@@ -32,11 +30,12 @@ Expected results:
 
 * The status of the banned nodes changes as expected and IP addresses
   failover as expected.
-
 EOF
 }
 
 . ctdb_test_functions.bash
+
+ctdb_test_init "$@"
 
 set -e
 

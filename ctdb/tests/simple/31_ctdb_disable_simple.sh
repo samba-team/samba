@@ -1,11 +1,37 @@
 #!/bin/bash
 
-# From node 1, disable node 2.  Make sure that according to "ctdb ip"
-# the public addresses are taken over and according to "ctdb status"
-# the node appears to be disabled.  Don't actually check if the
-# address has been correctly taken over.
+test_info()
+{
+    cat <<EOF
+Verify the operation of 'ctdb disable'.
+
+This is a superficial test of the 'ctdb disable' command.  It trusts
+information from CTDB that indicates that the IP failover has happened
+correctly.  Another test should check that the failover has actually
+happened at the networking level.
+
+Prerequisites:
+
+* An active CTDB cluster with at least 2 active nodes.
+
+Steps:
+
+1. Verify that the status on all of the ctdb nodes is 'OK'.
+2. Disable one of the nodes using 'ctdb disable -n <node>'.
+3. Verify that the status of the node changes to 'disabled'.
+4. Verify that the IP addreses served by the disabled node are failed
+   over to other nodes.
+
+Expected results:
+
+* The status of the disabled node changes as expected and IP addresses
+  failover as expected.
+EOF
+}
 
 . ctdb_test_functions.bash
+
+ctdb_test_init "$@"
 
 set -e
 
@@ -36,6 +62,6 @@ else
     testfailures=1
 fi
 
-echo "Expect a restart here..."
+echo "Expect a restart..."
 
 ctdb_test_exit
