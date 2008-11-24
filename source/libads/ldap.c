@@ -284,11 +284,11 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 			if ( use_own_domain )
 				c_realm = lp_workgroup();
 		}
-		
-		if ( !c_realm || !*c_realm ) {
-			DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
-			return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
-		}
+	}
+
+	if ( !c_realm || !*c_realm ) {
+		DEBUG(0,("ads_find_dc: no realm or workgroup!  Don't know what to do\n"));
+		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
 
 	if ( use_own_domain ) {
