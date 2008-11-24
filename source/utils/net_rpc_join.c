@@ -343,7 +343,8 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 				&cli->user_session_key,
 				&crypt_pwd);
 
-	init_samr_user_info24(&set_info.info24, crypt_pwd.data, 24);
+	init_samr_user_info24(&set_info.info24, &crypt_pwd,
+			      PASS_DONT_CHANGE_AT_NEXT_LOGON);
 
 	CHECK_RPC_ERR(rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 					       &user_pol,
