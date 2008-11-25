@@ -2894,6 +2894,21 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	return status;
 }
 
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
+			      struct samr_QueryUserInfo2 *r)
+{
+	struct samr_QueryUserInfo u;
+
+	u.in.user_handle	= r->in.user_handle;
+	u.in.level		= r->in.level;
+	u.out.info		= r->out.info;
+
+	return _samr_QueryUserInfo(p, &u);
+}
+
 /*******************************************************************
  _samr_GetGroupsForUser
  ********************************************************************/
@@ -6033,16 +6048,6 @@ NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 
 NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 					struct samr_TestPrivateFunctionsUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
-			      struct samr_QueryUserInfo2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
