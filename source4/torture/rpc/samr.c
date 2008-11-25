@@ -29,6 +29,8 @@
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
 
+#include <unistd.h>
+
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ALIASNAME "samrtorturetestalias"
 #define TEST_GROUPNAME "samrtorturetestgroup"
@@ -2270,6 +2272,399 @@ static bool test_TestPrivateFunctionsUser(struct dcerpc_pipe *p, struct torture_
 	return true;
 }
 
+static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
+					  struct torture_context *tctx,
+					  struct policy_handle *handle,
+					  bool use_info2,
+					  NTTIME *pwdlastset)
+{
+	NTSTATUS status;
+	uint16_t levels[] = { /* 3, */ 5, 21 };
+	int i;
+	NTTIME pwdlastset3 = 0;
+	NTTIME pwdlastset5 = 0;
+	NTTIME pwdlastset21 = 0;
+
+	torture_comment(tctx, "Testing QueryUserInfo%s level 5 and 21 call ",
+			use_info2 ? "2":"");
+
+	for (i=0; i<ARRAY_SIZE(levels); i++) {
+
+		struct samr_QueryUserInfo r;
+		struct samr_QueryUserInfo2 r2;
+		union samr_UserInfo *info;
+
+		if (use_info2) {
+			r2.in.user_handle = handle;
+			r2.in.level = levels[i];
+			r2.out.info = &info;
+			status = dcerpc_samr_QueryUserInfo2(p, tctx, &r2);
+
+		} else {
+			r.in.user_handle = handle;
+			r.in.level = levels[i];
+			r.out.info = &info;
+			status = dcerpc_samr_QueryUserInfo(p, tctx, &r);
+		}
+
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_INVALID_INFO_CLASS)) {
+			printf("QueryUserInfo%s level %u failed - %s\n",
+			       use_info2 ? "2":"", levels[i], nt_errstr(status));
+			return false;
+		}
+
+		switch (levels[i]) {
+		case 3:
+			pwdlastset3 = info->info3.last_password_change;
+			break;
+		case 5:
+			pwdlastset5 = info->info5.last_password_change;
+			break;
+		case 21:
+			pwdlastset21 = info->info21.last_password_change;
+			break;
+		default:
+			return false;
+		}
+	}
+	/* torture_assert_int_equal(tctx, pwdlastset3, pwdlastset5,
+				    "pwdlastset mixup"); */
+	torture_assert_int_equal(tctx, pwdlastset5, pwdlastset21,
+				 "pwdlastset mixup");
+
+	*pwdlastset = pwdlastset21;
+
+	torture_comment(tctx, "(pwdlastset: %lld)\n", *pwdlastset);
+
+	return true;
+}
+
+static bool test_SetPassword_level(struct dcerpc_pipe *p,
+				   struct torture_context *tctx,
+				   struct policy_handle *handle,
+				   uint16_t level,
+				   uint32_t fields_present,
+				   uint8_t password_expired,
+				   NTSTATUS expected_error,
+				   bool use_setinfo2,
+				   char **password,
+				   bool use_queryinfo2,
+				   NTTIME *pwdlastset)
+{
+	const char *fields = NULL;
+	bool ret = true;
+
+	switch (level) {
+	case 21:
+	case 23:
+	case 25:
+		fields = talloc_asprintf(tctx, "(fields_present: 0x%08x)",
+					 fields_present);
+		break;
+	default:
+		break;
+	}
+
+	torture_comment(tctx, "Testing SetUserInfo%s level %d call "
+		"(password_expired: %d) %s\n",
+		use_setinfo2 ? "2":"", level, password_expired,
+		fields ? fields : "");
+
+	switch (level) {
+		case 21:
+		case 23:
+		case 24:
+		case 25:
+		case 26:
+			if (!test_SetUserPass_level_ex(p, tctx, handle, level,
+						       fields_present,
+						       password,
+						       password_expired,
+						       use_setinfo2,
+						       expected_error)) {
+				ret = false;
+			}
+			break;
+		default:
+			return false;
+	}
+
+	if (!test_QueryUserInfo_pwdlastset(p, tctx, handle,
+					   use_queryinfo2,
+					   pwdlastset)) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
+					struct torture_context *tctx,
+					uint32_t acct_flags,
+					struct policy_handle *handle,
+					char **password)
+{
+	int i, s, q;
+	bool ret = true;
+	int delay = 500000;
+	bool set_levels[] = { false, true };
+	bool query_levels[] = { false, true };
+
+	struct {
+		uint16_t level;
+		uint8_t password_expired_nonzero;
+		uint32_t fields_present;
+		bool query_info2;
+		bool set_info2;
+		NTSTATUS set_error;
+	} pwd_tests[] = {
+
+		/* level 21 */
+		{
+			.level				= 21,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_EXPIRED_FLAG
+		},{
+			.level				= 21,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+#if 0
+	/* FIXME */
+		},{
+			.level				= 21,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2 |
+							  SAMR_FIELD_LAST_PWD_CHANGE,
+			.query_info2			= false,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+#endif
+
+		/* level 23 */
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_EXPIRED_FLAG
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE |
+							  SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE |
+							  SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2 |
+							  SAMR_FIELD_EXPIRED_FLAG,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2 |
+							  SAMR_FIELD_EXPIRED_FLAG
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2
+		},{
+
+		/* level 24 */
+
+			.level				= 24,
+			.password_expired_nonzero	= 1
+		},{
+			.level				= 24,
+			.password_expired_nonzero	= 24
+		},{
+
+		/* level 25 */
+
+			.level				= 25,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE,
+			.set_error			= NT_STATUS_ACCESS_DENIED
+		},{
+			.level				= 25,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_EXPIRED_FLAG,
+		},{
+			.level				= 25,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2 |
+							  SAMR_FIELD_EXPIRED_FLAG
+		},{
+			.level				= 25,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_PASSWORD |
+							  SAMR_FIELD_PASSWORD2
+		},{
+
+		/* level 26 */
+
+			.level				= 26,
+			.password_expired_nonzero	= 1
+		},{
+			.level				= 26,
+			.password_expired_nonzero	= 24
+		}
+	};
+
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		delay = 1000000;
+		printf("Samba3 has second granularity, setting delay to: %d\n",
+			delay);
+		return ret;
+	}
+
+	for (i=0; i<ARRAY_SIZE(pwd_tests); i++) {
+	for (s=0; s<ARRAY_SIZE(set_levels); s++) {
+	for (q=0; q<ARRAY_SIZE(query_levels); q++) {
+
+		NTTIME pwdlastset_old = 0;
+		NTTIME pwdlastset_new = 0;
+
+		/* set #1 */
+
+		torture_comment(tctx, "------------------------------\n"
+				"Testing pwdLastSet attribute for flags: 0x%08x "
+				"(s: %d (l: %d), q: %d)\n",
+				acct_flags, s, pwd_tests[i].level, q);
+
+		if (!test_SetPassword_level(p, tctx, handle,
+					    pwd_tests[i].level,
+					    pwd_tests[i].fields_present,
+					    pwd_tests[i].password_expired_nonzero, /* will set pwdlast to 0 */
+					    pwd_tests[i].set_error,
+					    set_levels[s],
+					    password,
+					    query_levels[q],
+					    &pwdlastset_old)) {
+			ret = false;
+		}
+
+		if (!NT_STATUS_IS_OK(pwd_tests[i].set_error)) {
+			/* skipping on expected failure */
+			continue;
+		}
+
+		/* pwdlastset must be 0 afterwards, except for a level 23 and 25
+		 * set without the SAMR_FIELD_EXPIRED_FLAG */
+
+		switch (pwd_tests[i].level) {
+		case 23:
+		case 25:
+			if ((pwdlastset_new != 0) &&
+			    !(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG)) {
+				torture_comment(tctx, "not considering a non-0 "
+					"pwdLastSet as a an error as the "
+					"SAMR_FIELD_EXPIRED_FLAG has not "
+					"been set\n");
+				break;
+			}
+		default:
+			if (pwdlastset_new != 0) {
+				torture_warning(tctx, "pwdLastSet test failed: "
+					"expected pwdLastSet 0 but got %lld\n",
+					pwdlastset_old);
+				ret = false;
+			}
+			break;
+		}
+
+		usleep(delay);
+
+		/* set #2 */
+
+		if (!test_SetPassword_level(p, tctx, handle, pwd_tests[i].level,
+					    pwd_tests[i].fields_present,
+					    0,
+					    /* will normally update (increase) the pwdlast */
+					    pwd_tests[i].set_error,
+					    set_levels[s],
+					    password,
+					    query_levels[q],
+					    &pwdlastset_new)) {
+
+			ret = false;
+		}
+
+		/* pwdlastset must not be 0 afterwards and must be larger then
+		 * the old value */
+
+		if (pwdlastset_old >= pwdlastset_new) {
+			torture_warning(tctx, "pwdLastSet test failed: "
+				"expected last pwdlastset (%lld) < new pwdlastset (%lld)\n",
+				pwdlastset_old, pwdlastset_new);
+			ret = false;
+		}
+		if (pwdlastset_new == 0) {
+			torture_warning(tctx, "pwdLastSet test failed: "
+				"expected non-0 pwdlastset, got: %lld\n",
+				pwdlastset_new);
+			ret = false;
+		}
+		pwdlastset_old = pwdlastset_new;
+
+		usleep(delay);
+
+		/* set #3 */
+
+		if (!test_SetPassword_level(p, tctx, handle, pwd_tests[i].level,
+					    pwd_tests[i].fields_present,
+					    pwd_tests[i].password_expired_nonzero,
+					    pwd_tests[i].set_error,
+					    set_levels[s],
+					    password,
+					    query_levels[q],
+					    &pwdlastset_new)) {
+			ret = false;
+		}
+
+		if (pwdlastset_old == pwdlastset_new) {
+			torture_warning(tctx, "pwdLastSet test failed: "
+				"expected last pwdlastset (%lld) != new pwdlastset (%lld)\n",
+				pwdlastset_old, pwdlastset_new);
+			ret = false;
+		}
+
+		/* pwdlastset must be 0 afterwards, except for a level 23 and 25
+		 * set without the SAMR_FIELD_EXPIRED_FLAG */
+
+		switch (pwd_tests[i].level) {
+		case 23:
+		case 25:
+			if ((pwdlastset_new != 0) &&
+			    !(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG)) {
+				break;
+			}
+		default:
+			if (pwdlastset_new != 0) {
+				torture_warning(tctx, "pwdLastSet test failed: "
+					"expected pwdLastSet 0, got %lld\n",
+					pwdlastset_old);
+				ret = false;
+			}
+			break;
+		}
+	}
+	}
+	}
+
+	return ret;
+}
 
 static bool test_user_ops(struct dcerpc_pipe *p, 
 			  struct torture_context *tctx,
@@ -2363,7 +2758,12 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 				ret = false;
 			}
 		}
-		
+
+		/* test last password change timestamp behaviour */
+		if (!test_SetPassword_pwdlastset(p, tctx, user_handle, &password)) {
+			ret = false;
+		}
+
 		for (i = 0; password_fields[i]; i++) {
 			if (!test_SetUserPass_23(p, tctx, user_handle, password_fields[i], &password)) {
 				ret = false;
