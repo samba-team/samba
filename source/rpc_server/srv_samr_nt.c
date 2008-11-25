@@ -3453,6 +3453,26 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	return NT_STATUS_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_CreateUser(pipes_struct *p,
+			  struct samr_CreateUser *r)
+{
+	struct samr_CreateUser2 c;
+	uint32_t access_granted;
+
+	c.in.domain_handle	= r->in.domain_handle;
+	c.in.account_name	= r->in.account_name;
+	c.in.acct_flags		= ACB_NORMAL;
+	c.in.access_mask	= r->in.access_mask;
+	c.out.user_handle	= r->out.user_handle;
+	c.out.access_granted	= &access_granted;
+	c.out.rid		= r->out.rid;
+
+	return _samr_CreateUser2(p, &c);
+}
+
 /*******************************************************************
  _samr_Connect
  ********************************************************************/
@@ -5998,16 +6018,6 @@ NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
 
 NTSTATUS _samr_Shutdown(pipes_struct *p,
 			struct samr_Shutdown *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_CreateUser(pipes_struct *p,
-			  struct samr_CreateUser *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
