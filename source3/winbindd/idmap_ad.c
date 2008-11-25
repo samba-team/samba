@@ -43,33 +43,31 @@
 struct idmap_ad_context {
 	uint32_t filter_low_id;
 	uint32_t filter_high_id;
-	ADS_STRUCT *ad_idmap_ads;
-	struct posix_schema *ad_schema;
-	enum wb_posix_mapping ad_map_type = WB_POSIX_MAP_UNKNOWN;
 };
 
 NTSTATUS init_module(void);
 
+static ADS_STRUCT *ad_idmap_ads = NULL;
+static struct posix_schema *ad_schema = NULL;
+static enum wb_posix_mapping ad_map_type = WB_POSIX_MAP_UNKNOWN;
+
 /************************************************************************
  ***********************************************************************/
 
-static ADS_STRUCT *ad_idmap_cached_connection_internal(struct idmap_domain *dom)
+static ADS_STRUCT *ad_idmap_cached_connection_internal(void)
 {
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 	bool local = False;
 	fstring dc_name;
 	struct sockaddr_storage dc_ip;
-	struct idmap_ad_context *ctx;
 
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
-	if (ctx->ad_idmap_ads != NULL) {
+	if (ad_idmap_ads != NULL) {
 
 		time_t expire;
 		time_t now = time(NULL);
 
-		ads = ctx->ad_idmap_ads;
+		ads = ad_idmap_ads;
 
 		expire = MIN(ads->auth.tgt_expire, ads->auth.tgs_expire);
 
@@ -85,8 +83,8 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 			ads->is_mine = True;
 			ads_destroy( &ads );
 			ads_kdestroy(WINBIND_CCACHE_NAME);
-			ctx->ad_idmap_ads = NULL;
-			TALLOC_FREE(ctx->ad_schema);
+			ad_idmap_ads = NULL;
+			TALLOC_FREE( ad_schema );			
 		}
 	}
 
@@ -120,7 +118,7 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 
 	ads->is_mine = False;
 
-	ctx->ad_idmap_ads = ads;
+	ad_idmap_ads = ads;
 
 	return ads;
 }
@@ -128,31 +126,28 @@ static ADS_STRUCT *ad_idmap_cached_connection_internal(struct idmap_domain *dom)
 /************************************************************************
  ***********************************************************************/
 
-static ADS_STRUCT *ad_idmap_cached_connection(struct idmap_domain *dom)
+static ADS_STRUCT *ad_idmap_cached_connection(void)
 {
-	ADS_STRUCT *ads = ad_idmap_cached_connection_internal(dom);
-	struct idmap_ad_context *ctx;
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_ad_context);
-
+	ADS_STRUCT *ads = ad_idmap_cached_connection_internal();
+	
 	if ( !ads )
 		return NULL;
 
 	/* if we have a valid ADS_STRUCT and the schema model is
 	   defined, then we can return here. */
 
-	if ( ctx->ad_schema )
+	if ( ad_schema )
 		return ads;
 
 	/* Otherwise, set the schema model */
 
-	if ( (ctx->ad_map_type ==  WB_POSIX_MAP_SFU) ||
-	     (ctx->ad_map_type ==  WB_POSIX_MAP_SFU20) ||
-	     (ctx->ad_map_type ==  WB_POSIX_MAP_RFC2307) )
+	if ( (ad_map_type ==  WB_POSIX_MAP_SFU) ||
+	     (ad_map_type ==  WB_POSIX_MAP_SFU20) || 
+	     (ad_map_type ==  WB_POSIX_MAP_RFC2307) ) 
 	{
 		ADS_STATUS schema_status;
 		
-		schema_status = ads_check_posix_schema_mapping( NULL, ads, ctx->ad_map_type, &ctx->ad_schema);
+		schema_status = ads_check_posix_schema_mapping( NULL, ads, ad_map_type, &ad_schema);
 		if ( !ADS_ERR_OK(schema_status) ) {
 			DEBUG(2,("ad_idmap_cached_connection: Failed to obtain schema details!\n"));
 			return NULL;			
@@ -196,16 +191,16 @@ static NTSTATUS idmap_ad_initialize(struct idmap_domain *dom,
 	}
 
 	/* schema mode */
-	if ( ctx->ad_map_type == WB_POSIX_MAP_UNKNOWN )
-		ctx->ad_map_type = WB_POSIX_MAP_RFC2307;
+	if ( ad_map_type == WB_POSIX_MAP_UNKNOWN )
+		ad_map_type = WB_POSIX_MAP_RFC2307;
 	schema_mode = lp_parm_const_string(-1, config_option, "schema_mode", NULL);
 	if ( schema_mode && schema_mode[0] ) {
 		if ( strequal(schema_mode, "sfu") )
-			ctx->ad_map_type = WB_POSIX_MAP_SFU;
+			ad_map_type = WB_POSIX_MAP_SFU;
 		else if ( strequal(schema_mode, "sfu20" ) )
-			ctx->ad_map_type = WB_POSIX_MAP_SFU20;
+			ad_map_type = WB_POSIX_MAP_SFU20;
 		else if ( strequal(schema_mode, "rfc2307" ) )
-			ctx->ad_map_type = WB_POSIX_MAP_RFC2307;
+			ad_map_type = WB_POSIX_MAP_RFC2307;
 		else
 			DEBUG(0,("idmap_ad_initialize: Unknown schema_mode (%s)\n",
 				 schema_mode));
@@ -289,14 +284,14 @@ static NTSTATUS idmap_ad_unixids_to_sids(struct idmap_domain *dom, struct id_map
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( (ads = ad_idmap_cached_connection(dom)) == NULL ) {
+	if ( (ads = ad_idmap_cached_connection()) == NULL ) {
 		DEBUG(1, ("ADS uninitialized\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	attrs[2] = ctx->ad_schema->posix_uidnumber_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
+	attrs[2] = ad_schema->posix_uidnumber_attr;
+	attrs[3] = ad_schema->posix_gidnumber_attr;
 
 again:
 	bidx = idx;
@@ -313,7 +308,7 @@ again:
 							   ATYPE_INTERDOMAIN_TRUST);
 			}
 			u_filter = talloc_asprintf_append_buffer(u_filter, "(%s=%lu)",
-							  ctx->ad_schema->posix_uidnumber_attr,
+							  ad_schema->posix_uidnumber_attr,
 							  (unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(u_filter);
 			break;
@@ -327,7 +322,7 @@ again:
 							   ATYPE_SECURITY_LOCAL_GROUP);
 			}
 			g_filter = talloc_asprintf_append_buffer(g_filter, "(%s=%lu)",
-							  ctx->ad_schema->posix_gidnumber_attr,
+							  ad_schema->posix_gidnumber_attr,
 							  (unsigned long)ids[idx]->xid.id);
 			CHECK_ALLOC_DONE(g_filter);
 			break;
@@ -410,10 +405,10 @@ again:
 			continue;
 		}
 
-		if (!ads_pull_uint32(ads, entry, (type==ID_TYPE_UID) ?
-				                 ctx->ad_schema->posix_uidnumber_attr : 
-				                 ctx->ad_schema->posix_gidnumber_attr, 
-				     &id))
+		if (!ads_pull_uint32(ads, entry, (type==ID_TYPE_UID) ? 
+				                 ad_schema->posix_uidnumber_attr : 
+				                 ad_schema->posix_gidnumber_attr, 
+				     &id)) 
 		{
 			DEBUG(1, ("Could not get unix ID\n"));
 			continue;
@@ -500,14 +495,14 @@ static NTSTATUS idmap_ad_sids_to_unixids(struct idmap_domain *dom, struct id_map
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ( (ads = ad_idmap_cached_connection(dom)) == NULL ) {
+	if ( (ads = ad_idmap_cached_connection()) == NULL ) {
 		DEBUG(1, ("ADS uninitialized\n"));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	attrs[2] = ctx->ad_schema->posix_uidnumber_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
+	attrs[2] = ad_schema->posix_uidnumber_attr;
+	attrs[3] = ad_schema->posix_gidnumber_attr;
 
 again:
 	filter = talloc_asprintf(memctx, "(&(|"
@@ -597,10 +592,10 @@ again:
 			continue;
 		}
 
-		if (!ads_pull_uint32(ads, entry, (type==ID_TYPE_UID) ?
-				                 ctx->ad_schema->posix_uidnumber_attr : 
-				                 ctx->ad_schema->posix_gidnumber_attr, 
-				     &id))
+		if (!ads_pull_uint32(ads, entry, (type==ID_TYPE_UID) ? 
+				                 ad_schema->posix_uidnumber_attr : 
+				                 ad_schema->posix_gidnumber_attr, 
+				     &id)) 
 		{
 			DEBUG(1, ("Could not get unix ID\n"));
 			continue;
@@ -658,7 +653,7 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
 		ad_idmap_ads = NULL;
 	}
 
-	TALLOC_FREE( ctx->ad_schema );
+	TALLOC_FREE( ad_schema );
 	
 	return NT_STATUS_OK;
 }
@@ -676,15 +671,15 @@ static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
 	/* Sanity check if we have previously been called with a
 	   different schema model */
 
-	if ( (ctx->ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ctx->ad_map_type != WB_POSIX_MAP_SFU) )
+	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
+	     (ad_map_type != WB_POSIX_MAP_SFU) ) 
 	{
 		DEBUG(0,("nss_sfu_init: Posix Map type has already been set.  "
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	
-	ctx->ad_map_type = WB_POSIX_MAP_SFU;
+	ad_map_type = WB_POSIX_MAP_SFU;	
 
 	return NT_STATUS_OK;
 }
@@ -694,15 +689,15 @@ static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
 	/* Sanity check if we have previously been called with a
 	   different schema model */
 
-	if ( (ctx->ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ctx->ad_map_type != WB_POSIX_MAP_SFU20) )
+	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
+	     (ad_map_type != WB_POSIX_MAP_SFU20) )
 	{
 		DEBUG(0,("nss_sfu20_init: Posix Map type has already been set.  "
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	
-	ctx->ad_map_type = WB_POSIX_MAP_SFU20;
+	ad_map_type = WB_POSIX_MAP_SFU20;	
 
 	return NT_STATUS_OK;
 }
@@ -712,15 +707,15 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 	/* Sanity check if we have previously been called with a
 	   different schema model */
 	 
-	if ( (ctx->ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ctx->ad_map_type != WB_POSIX_MAP_RFC2307) )
+	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
+	     (ad_map_type != WB_POSIX_MAP_RFC2307) ) 
 	{
 		DEBUG(0,("nss_rfc2307_init: Posix Map type has already been set.  "
 			 "Mixed schema models not supported!\n"));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 	
-	ctx->ad_map_type = WB_POSIX_MAP_RFC2307;
+	ad_map_type = WB_POSIX_MAP_RFC2307;
 
 	return NT_STATUS_OK;
 }
@@ -730,7 +725,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
  ***********************************************************************/
 static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e, 
 				  const DOM_SID *sid, 
-				  TALLOC_CTX *mem_ctx,
+				  TALLOC_CTX *ctx,
 				  ADS_STRUCT *ads, 
 				  LDAPMessage *msg,
 				  char **homedir,
@@ -749,9 +744,6 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	char *sidstr = NULL;
-	struct idmap_ad_context *ctx;
-
-	ctx = talloc_get_type(e->state, struct idmap_ad_context);
 
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
@@ -763,7 +755,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 
 	ads_internal = ad_idmap_cached_connection();
 
-	if ( !ads_internal || !ctx->ad_schema ) {
+	if ( !ads_internal || !ad_schema ) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -774,12 +766,12 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	/* See if we can use the ADS connection struct swe were given */
 
 	if (ads) {
-		*homedir = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_homedir_attr );
-		*shell   = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_shell_attr );
-		*gecos   = ads_pull_string( ads, mem_ctx, msg, ctx->ad_schema->posix_gecos_attr );
+		*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
+		*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
+		*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
 
 		if (gid) {
-			if ( !ads_pull_uint32(ads, msg, ctx->ad_schema->posix_gidnumber_attr, gid ) )
+			if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
 				*gid = (uint32)-1;
 		}
 
@@ -789,13 +781,13 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 
 	/* Have to do our own query */
 
-	attrs[0] = ctx->ad_schema->posix_homedir_attr;
-	attrs[1] = ctx->ad_schema->posix_shell_attr;
-	attrs[2] = ctx->ad_schema->posix_gecos_attr;
-	attrs[3] = ctx->ad_schema->posix_gidnumber_attr;
+	attrs[0] = ad_schema->posix_homedir_attr;
+	attrs[1] = ad_schema->posix_shell_attr;
+	attrs[2] = ad_schema->posix_gecos_attr;
+	attrs[3] = ad_schema->posix_gidnumber_attr;
 
 	sidstr = sid_binstring(sid);
-	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr);
+	filter = talloc_asprintf(ctx, "(objectSid=%s)", sidstr);
 	SAFE_FREE(sidstr);
 
 	if (!filter) {
@@ -809,12 +801,12 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 		goto done;
 	}
 
-	*homedir = ads_pull_string(ads_internal, mem_ctx, msg_internal, ctx->ad_schema->posix_homedir_attr);
-	*shell   = ads_pull_string(ads_internal, mem_ctx, msg_internal, ctx->ad_schema->posix_shell_attr);
-	*gecos   = ads_pull_string(ads_internal, mem_ctx, msg_internal, ctx->ad_schema->posix_gecos_attr);
+	*homedir = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_homedir_attr);
+	*shell   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_shell_attr);
+	*gecos   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_gecos_attr);
 
 	if (gid) {
-		if (!ads_pull_uint32(ads_internal, msg_internal, ctx->ad_schema->posix_gidnumber_attr, gid))
+		if (!ads_pull_uint32(ads_internal, msg_internal, ad_schema->posix_gidnumber_attr, gid))
 			*gid = (uint32)-1;
 	}
 
@@ -843,9 +835,6 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 	LDAPMessage *msg = NULL;
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct idmap_ad_context *ctx;
-
-	ctx = talloc_get_type(e->state, struct idmap_ad_context);
 
 	/* Check incoming parameters */
 
@@ -863,12 +852,12 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 
 	ads_internal = ad_idmap_cached_connection();
 
-	if (!ads_internal || !ctx->ad_schema) {
+	if (!ads_internal || !ad_schema) {
 		nt_status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		goto done;
 	}
 
-	attrs[0] = ctx->ad_schema->posix_uid_attr;
+	attrs[0] = ad_schema->posix_uid_attr;
 
 	filter = talloc_asprintf(mem_ctx,
 				 "(sAMAccountName=%s)",
@@ -884,7 +873,7 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*alias = ads_pull_string(ads_internal, mem_ctx, msg, ctx->ad_schema->posix_uid_attr );
+	*alias = ads_pull_string(ads_internal, mem_ctx, msg, ad_schema->posix_uid_attr );
 
 	if (!*alias) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -919,9 +908,6 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	char *username;
-	struct idmap_ad_context *ctx;
-
-	ctx = talloc_get_type(e->state, struct idmap_ad_context);
 
 	/* Check incoming parameters */
 
@@ -939,14 +925,14 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 
 	ads_internal = ad_idmap_cached_connection();
 
-	if (!ads_internal || !ctx->ad_schema) {
+	if (!ads_internal || !ad_schema) {
 		nt_status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
 		goto done;
 	}
 
 	filter = talloc_asprintf(mem_ctx,
 				 "(%s=%s)",
-				 ctx->ad_schema->posix_uid_attr,
+				 ad_schema->posix_uid_attr,
 				 alias);
 	if (!filter) {
 		nt_status = NT_STATUS_NO_MEMORY;
