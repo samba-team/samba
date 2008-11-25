@@ -2305,6 +2305,108 @@ static NTSTATUS init_samr_parameters_string(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
+				struct samr_UserInfo5 *r,
+				DOM_SID *user_sid,
+				DOM_SID *domain_sid)
+{
+	struct samu *pw = NULL;
+	bool ret;
+	const DOM_SID *sid_user, *sid_group;
+	uint32_t rid, primary_gid;
+	NTTIME last_logon, last_logoff, last_password_change,
+	       acct_expiry;
+	const char *account_name, *full_name, *home_directory, *home_drive,
+		   *logon_script, *profile_path, *description,
+		   *workstations, *comment;
+	struct samr_LogonHours logon_hours;
+
+	ZERO_STRUCTP(r);
+
+	if (!(pw = samu_new(mem_ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(pw, user_sid);
+	unbecome_root();
+
+	if (ret == False) {
+		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
+		TALLOC_FREE(pw);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	samr_clear_sam_passwd(pw);
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(pw)));
+
+	sid_user = pdb_get_user_sid(pw);
+
+	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
+		DEBUG(0, ("get_user_info_5: User %s has SID %s, \nwhich conflicts with "
+			  "the domain sid %s.  Failing operation.\n",
+			  pdb_get_username(pw), sid_string_dbg(sid_user),
+			  sid_string_dbg(domain_sid)));
+		TALLOC_FREE(pw);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	become_root();
+	sid_group = pdb_get_group_sid(pw);
+	unbecome_root();
+
+	if (!sid_peek_check_rid(domain_sid, sid_group, &primary_gid)) {
+		DEBUG(0, ("get_user_info_5: User %s has Primary Group SID %s, \n"
+			  "which conflicts with the domain sid %s.  Failing operation.\n",
+			  pdb_get_username(pw), sid_string_dbg(sid_group),
+			  sid_string_dbg(domain_sid)));
+		TALLOC_FREE(pw);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	unix_to_nt_time(&last_logon, pdb_get_logon_time(pw));
+	unix_to_nt_time(&last_logoff, pdb_get_logoff_time(pw));
+	unix_to_nt_time(&acct_expiry, pdb_get_kickoff_time(pw));
+	unix_to_nt_time(&last_password_change, pdb_get_pass_last_set_time(pw));
+
+	account_name = talloc_strdup(mem_ctx, pdb_get_username(pw));
+	full_name = talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+	home_directory = talloc_strdup(mem_ctx, pdb_get_homedir(pw));
+	home_drive = talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
+	logon_script = talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
+	profile_path = talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
+	description = talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
+	workstations = talloc_strdup(mem_ctx, pdb_get_workstations(pw));
+	comment = talloc_strdup(mem_ctx, pdb_get_comment(pw));
+
+	logon_hours = get_logon_hours_from_pdb(mem_ctx, pw);
+
+	init_samr_user_info5(r,
+			     account_name,
+			     full_name,
+			     rid,
+			     primary_gid,
+			     home_directory,
+			     home_drive,
+			     logon_script,
+			     profile_path,
+			     description,
+			     workstations,
+			     last_logon,
+			     last_logoff,
+			     logon_hours,
+			     pdb_get_bad_password_count(pw),
+			     pdb_get_logon_count(pw),
+			     last_password_change,
+			     acct_expiry,
+			     pdb_get_acct_ctrl(pw));
+
+	TALLOC_FREE(pw);
+
+	return NT_STATUS_OK;
+}
+
 /*************************************************************************
  get_user_info_7. Safe. Only gives out account_name.
  *************************************************************************/
@@ -2734,6 +2836,12 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	DEBUG(5,("_samr_QueryUserInfo: user info level: %d\n", r->in.level));
 
 	switch (r->in.level) {
+	case 5:
+		status = get_user_info_5(p->mem_ctx, &user_info->info5, &info->sid, &domain_sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		break;
 	case 7:
 		status = get_user_info_7(p->mem_ctx, &user_info->info7, &info->sid);
 		if (!NT_STATUS_IS_OK(status)) {
