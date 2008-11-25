@@ -31,15 +31,15 @@ static enum tree_level level = LEV_SHARE;
 
 /* Holds a list of workgroups or servers */
 
-struct name_list {
-        struct name_list *prev, *next;
+struct smb_name_list {
+        struct smb_name_list *prev, *next;
         pstring name, comment;
         uint32 server_type;
 };
 
-static struct name_list *workgroups, *servers, *shares;
+static struct smb_name_list *workgroups, *servers, *shares;
 
-static void free_name_list(struct name_list *list)
+static void free_name_list(struct smb_name_list *list)
 {
         while(list)
                 DLIST_REMOVE(list, list);
@@ -48,10 +48,10 @@ static void free_name_list(struct name_list *list)
 static void add_name(const char *machine_name, uint32 server_type,
                      const char *comment, void *state)
 {
-        struct name_list **name_list = (struct name_list **)state;
-        struct name_list *new_name;
+        struct smb_name_list **name_list = (struct smb_name_list **)state;
+        struct smb_name_list *new_name;
 
-        new_name = SMB_MALLOC_P(struct name_list);
+        new_name = SMB_MALLOC_P(struct smb_name_list);
 
         if (!new_name)
                 return;
@@ -199,7 +199,7 @@ static BOOL get_shares(char *server_name, struct user_auth_info *user_info)
 
 static BOOL print_tree(struct user_auth_info *user_info)
 {
-        struct name_list *wg, *sv, *sh;
+        struct smb_name_list *wg, *sv, *sh;
 
         /* List workgroups */
 
