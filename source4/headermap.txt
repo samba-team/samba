@@ -43,6 +43,7 @@ librpc/gen_ndr/samr.h: gen_ndr/samr.h
 librpc/gen_ndr/ndr_samr.h: gen_ndr/ndr_samr.h
 librpc/gen_ndr/ndr_samr_c.h: gen_ndr/ndr_samr_c.h
 librpc/gen_ndr/security.h: gen_ndr/security.h
+librpc/gen_ndr/dom_sid.h: gen_ndr/dom_sid.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_krb5.h: credentials/krb5.h
 rpc_server/dcerpc_server.h: dcerpc_server.h
