@@ -1850,6 +1850,7 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 	DOM_SID pol_sid;
 	uint32  acc_granted;
 	struct samr_Ids rids, types;
+	uint32_t num_mapped = 0;
 
 	DEBUG(5,("_samr_LookupNames: %d\n", __LINE__));
 
@@ -1897,8 +1898,16 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 		}
 
 		if (type[i] != SID_NAME_UNKNOWN) {
-			status = NT_STATUS_OK;
+			num_mapped++;
 		}
+	}
+
+	if (num_mapped == num_rids) {
+		status = NT_STATUS_OK;
+	} else if (num_mapped == 0) {
+		status = NT_STATUS_NONE_MAPPED;
+	} else {
+		status = STATUS_SOME_UNMAPPED;
 	}
 
 	rids.count = num_rids;
