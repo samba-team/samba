@@ -42,17 +42,11 @@ echo "There are $num_nodes nodes..."
 
 # Call getpid a few different ways and make sure the answer is always the same.
 
-cmd="onnode -q all ctdb getpid"
-try_command_on_node 1 "$cmd"
+try_command_on_node -v 1 "onnode -q all ctdb getpid"
 pids_onnode="$out"
-echo "Results from \"$cmd\":"
-echo "$pids_onnode"
 
-cmd="onnode -q 1 ctdb getpid -n all"
-try_command_on_node 1 "$cmd"
+try_command_on_node -v 1 "onnode -q 1 ctdb getpid -n all"
 pids_getpid_all="$out"
-echo "Results from \"$cmd\":"
-echo "$pids_getpid_all"
 
 cmd=""
 n=0
@@ -60,10 +54,8 @@ while [ $n -lt $num_nodes ] ; do
     cmd="${cmd}${cmd:+; }ctdb getpid -n $n"
     n=$(($n + 1))
 done
-try_command_on_node 1 "$cmd"
+try_command_on_node -v 1 "$cmd"
 pids_getpid_n="$out"
-echo "Results from \"$cmd\":"
-echo "$pids_getpid_n"
 
 if [ "$pids_onnode" = "$pids_getpid_all" -a \
     "$pids_getpid_all" = "$pids_getpid_n" ] ; then

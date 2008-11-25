@@ -11,16 +11,16 @@ echo "Testing status"
 $VALGRIND bin/ctdb status || exit 1 # Done: implied
 
 echo "Testing statistics"
-$VALGRIND bin/ctdb -n all statistics || exit 1
+$VALGRIND bin/ctdb -n all statistics || exit 1 # Done
 
 echo "Testing statisticsreset"
-$VALGRIND bin/ctdb -n all statisticsreset || exit 1
+$VALGRIND bin/ctdb -n all statisticsreset || exit 1  # Done
 
 echo "Testing debug"
-$VALGRIND bin/ctdb -n all setdebug 3 || exit 1
-$VALGRIND bin/ctdb -n all getdebug || exit 1
-$VALGRIND bin/ctdb -n all setdebug 0 || exit 1
-$VALGRIND bin/ctdb -n all getdebug || exit 1
+$VALGRIND bin/ctdb -n all setdebug 3 || exit 1 # Done
+$VALGRIND bin/ctdb -n all getdebug || exit 1   # Done
+$VALGRIND bin/ctdb -n all setdebug 0 || exit 1 # Done
+$VALGRIND bin/ctdb -n all getdebug || exit 1   # Done
 
 echo "Attaching to some databases"
 $VALGRIND bin/ctdb attach test1.tdb || exit 1
