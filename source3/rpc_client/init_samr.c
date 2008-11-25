@@ -252,6 +252,53 @@ void init_samr_alias_info3(struct lsa_String *r,
 }
 
 /*******************************************************************
+ inits a samr_UserInfo5 structure.
+********************************************************************/
+
+void init_samr_user_info5(struct samr_UserInfo5 *r,
+			  const char *account_name,
+			  const char *full_name,
+			  uint32_t rid,
+			  uint32_t primary_gid,
+			  const char *home_directory,
+			  const char *home_drive,
+			  const char *logon_script,
+			  const char *profile_path,
+			  const char *description,
+			  const char *workstations,
+			  NTTIME last_logon,
+			  NTTIME last_logoff,
+			  struct samr_LogonHours logon_hours,
+			  uint16_t bad_password_count,
+			  uint16_t logon_count,
+			  NTTIME last_password_change,
+			  NTTIME acct_expiry,
+			  uint32_t acct_flags)
+{
+	DEBUG(5, ("init_samr_user_info5\n"));
+
+	init_lsa_String(&r->account_name, account_name);
+	init_lsa_String(&r->full_name, full_name);
+	r->rid = rid;
+	r->primary_gid = primary_gid;
+	init_lsa_String(&r->home_directory, home_directory);
+	init_lsa_String(&r->home_drive, home_drive);
+	init_lsa_String(&r->logon_script, logon_script);
+	init_lsa_String(&r->profile_path, profile_path);
+	init_lsa_String(&r->description, description);
+	init_lsa_String(&r->workstations, workstations);
+	r->last_logon = last_logon;
+	r->last_logoff = last_logoff;
+	r->logon_hours = logon_hours;
+	r->bad_password_count = bad_password_count;
+	r->logon_count = logon_count;
+	r->last_password_change = last_password_change;
+	r->acct_expiry = acct_expiry;
+	r->acct_flags = acct_flags;
+}
+
+
+/*******************************************************************
  inits a samr_UserInfo7 structure.
 ********************************************************************/
 
