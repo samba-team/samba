@@ -197,6 +197,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5903: Fix breaking of file contents in vfs_streams_xattr.
     * BUG 5904: Fix SIGABRT while servicing getaddrinfo() request caused by
       libnss_wins.
+    * BUG 5914: Fix redefinition of struct name_list.
     * Correctly fix smbclient to terminate on eof from server.
     * Fix client timeout when searching for a large number of cups printers.
     * Unify access checks for lsa server functions.
