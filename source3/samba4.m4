@@ -131,6 +131,7 @@ builddir="$builddir/../source4"
 oldsrcdir="$srcdir"
 srcdir="$srcdir/../source4"
 AC_SUBST(srcdir)
+AC_SUBST(builddir)
 SMB_WRITE_PERLVARS(../source4/build/smb_build/config.pm)
 builddir="$oldbuilddir"
 srcdir="$oldsrcdir"

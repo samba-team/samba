@@ -194,9 +194,7 @@ CEOF
 for ac_var in $ac_subst_vars
 do
     eval ac_val=\$$ac_var
-	if echo "$skip_vars" | grep -v " $ac_var " >/dev/null 2>/dev/null; then
-		echo "$ac_var => '$ac_val'," >> $1
-	fi
+	echo "$ac_var => '$ac_val'," >> $1
 done
 
 cat >>$1<<CEOF
