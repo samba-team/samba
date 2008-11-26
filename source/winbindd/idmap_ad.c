@@ -725,7 +725,7 @@ static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
  ***********************************************************************/
 static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e, 
 				  const DOM_SID *sid, 
-				  TALLOC_CTX *ctx,
+				  TALLOC_CTX *mem_ctx,
 				  ADS_STRUCT *ads, 
 				  LDAPMessage *msg,
 				  char **homedir,
@@ -766,9 +766,9 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	/* See if we can use the ADS connection struct swe were given */
 
 	if (ads) {
-		*homedir = ads_pull_string( ads, ctx, msg, ad_schema->posix_homedir_attr );
-		*shell   = ads_pull_string( ads, ctx, msg, ad_schema->posix_shell_attr );
-		*gecos   = ads_pull_string( ads, ctx, msg, ad_schema->posix_gecos_attr );
+		*homedir = ads_pull_string( ads, mem_ctx, msg, ad_schema->posix_homedir_attr );
+		*shell   = ads_pull_string( ads, mem_ctx, msg, ad_schema->posix_shell_attr );
+		*gecos   = ads_pull_string( ads, mem_ctx, msg, ad_schema->posix_gecos_attr );
 
 		if (gid) {
 			if ( !ads_pull_uint32(ads, msg, ad_schema->posix_gidnumber_attr, gid ) )
@@ -787,7 +787,7 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	attrs[3] = ad_schema->posix_gidnumber_attr;
 
 	sidstr = sid_binstring(sid);
-	filter = talloc_asprintf(ctx, "(objectSid=%s)", sidstr);
+	filter = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr);
 	SAFE_FREE(sidstr);
 
 	if (!filter) {
@@ -801,9 +801,9 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 		goto done;
 	}
 
-	*homedir = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_homedir_attr);
-	*shell   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_shell_attr);
-	*gecos   = ads_pull_string(ads_internal, ctx, msg_internal, ad_schema->posix_gecos_attr);
+	*homedir = ads_pull_string(ads_internal, mem_ctx, msg_internal, ad_schema->posix_homedir_attr);
+	*shell   = ads_pull_string(ads_internal, mem_ctx, msg_internal, ad_schema->posix_shell_attr);
+	*gecos   = ads_pull_string(ads_internal, mem_ctx, msg_internal, ad_schema->posix_gecos_attr);
 
 	if (gid) {
 		if (!ads_pull_uint32(ads_internal, msg_internal, ad_schema->posix_gidnumber_attr, gid))
