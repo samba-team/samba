@@ -335,7 +335,7 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 	uint32_t tmp;
 	TDB_DATA 		ret;
 	struct tdb_print_db 	*pdb = get_print_db_byname(sharename);
-	
+
 	DEBUG(10,("print_job_find: looking up job %u for share %s\n",
 			(unsigned int)jobid, sharename ));
 
@@ -350,19 +350,19 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 		DEBUG(10,("print_job_find: failed to find jobid %u.\n", (unsigned int)jobid ));
 		return NULL;
 	}
-	
+
 	if ( pjob.nt_devmode ) {
 		free_nt_devicemode( &pjob.nt_devmode );
 	}
-		
+
 	ZERO_STRUCT( pjob );
-	
+
 	if ( unpack_pjob( ret.dptr, ret.dsize, &pjob ) == -1 ) {
 		DEBUG(10,("print_job_find: failed to unpack jobid %u.\n", (unsigned int)jobid ));
 		SAFE_FREE(ret.dptr);
 		return NULL;
 	}
-	
+
 	SAFE_FREE(ret.dptr);
 
 	DEBUG(10,("print_job_find: returning system job %d for jobid %u.\n",
