@@ -2,11 +2,8 @@
 
 #include <stdint.h>
 
-#define netr_SamDatabaseID8Bit netr_SamDatabaseID
 #ifndef _HEADER_misc
 #define _HEADER_misc
-
-enum netr_SamDatabaseID8Bit;
 
 struct GUID {
 	uint32_t time_low;
@@ -42,38 +39,6 @@ enum netr_SchannelType
 #define SEC_CHAN_DNS_DOMAIN ( 3 )
 #define SEC_CHAN_DOMAIN ( 4 )
 #define SEC_CHAN_BDC ( 6 )
-#endif
-;
-
-enum netr_SamDatabaseID
-#ifndef USE_UINT_ENUMS
- {
-	SAM_DATABASE_DOMAIN=0,
-	SAM_DATABASE_BUILTIN=1,
-	SAM_DATABASE_PRIVS=2
-}
-#else
- { __donnot_use_enum_netr_SamDatabaseID=0x7FFFFFFF}
-#define SAM_DATABASE_DOMAIN ( 0 )
-#define SAM_DATABASE_BUILTIN ( 1 )
-#define SAM_DATABASE_PRIVS ( 2 )
-#endif
-;
-
-enum samr_RejectReason
-#ifndef USE_UINT_ENUMS
- {
-	SAMR_REJECT_OTHER=0,
-	SAMR_REJECT_TOO_SHORT=1,
-	SAMR_REJECT_IN_HISTORY=2,
-	SAMR_REJECT_COMPLEXITY=5
-}
-#else
- { __donnot_use_enum_samr_RejectReason=0x7FFFFFFF}
-#define SAMR_REJECT_OTHER ( 0 )
-#define SAMR_REJECT_TOO_SHORT ( 1 )
-#define SAMR_REJECT_IN_HISTORY ( 2 )
-#define SAMR_REJECT_COMPLEXITY ( 5 )
 #endif
 ;
 

@@ -363,8 +363,6 @@ static enum ndr_err_code ndr_push_netr_PasswordInfo(struct ndr_push *ndr, int nd
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_netr_IdentityInfo(ndr, NDR_BUFFERS, &r->identity_info));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -379,8 +377,6 @@ static enum ndr_err_code ndr_pull_netr_PasswordInfo(struct ndr_pull *ndr, int nd
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_netr_IdentityInfo(ndr, NDR_BUFFERS, &r->identity_info));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2212,7 +2208,6 @@ static enum ndr_err_code ndr_push_netr_USER_KEY16(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->pwd));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->pwd));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2227,7 +2222,6 @@ static enum ndr_err_code ndr_pull_netr_USER_KEY16(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->pwd));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->pwd));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2305,8 +2299,6 @@ static enum ndr_err_code ndr_push_netr_USER_KEYS2(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_netr_PasswordHistory(ndr, NDR_SCALARS, &r->history));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_netr_USER_KEY16(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_push_netr_USER_KEY16(ndr, NDR_BUFFERS, &r->ntpassword));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2320,8 +2312,6 @@ static enum ndr_err_code ndr_pull_netr_USER_KEYS2(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_netr_PasswordHistory(ndr, NDR_SCALARS, &r->history));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_netr_USER_KEY16(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_pull_netr_USER_KEY16(ndr, NDR_BUFFERS, &r->ntpassword));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2343,7 +2333,6 @@ static enum ndr_err_code ndr_push_netr_USER_KEY_UNION(struct ndr_push *ndr, int 
 		NDR_CHECK(ndr_push_netr_USER_KEYS2(ndr, NDR_SCALARS, &r->keys2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_netr_USER_KEYS2(ndr, NDR_BUFFERS, &r->keys2));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2355,7 +2344,6 @@ static enum ndr_err_code ndr_pull_netr_USER_KEY_UNION(struct ndr_pull *ndr, int 
 		NDR_CHECK(ndr_pull_netr_USER_KEYS2(ndr, NDR_SCALARS, &r->keys2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_netr_USER_KEYS2(ndr, NDR_BUFFERS, &r->keys2));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2376,7 +2364,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_USER_KEYS(struct ndr_push *ndr, int ndr
 		NDR_CHECK(ndr_push_netr_USER_KEY_UNION(ndr, NDR_SCALARS, &r->keys));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_netr_USER_KEY_UNION(ndr, NDR_BUFFERS, &r->keys));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2389,7 +2376,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netr_USER_KEYS(struct ndr_pull *ndr, int ndr
 		NDR_CHECK(ndr_pull_netr_USER_KEY_UNION(ndr, NDR_SCALARS, &r->keys));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_netr_USER_KEY_UNION(ndr, NDR_BUFFERS, &r->keys));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2537,8 +2523,6 @@ static enum ndr_err_code ndr_push_netr_DELTA_USER(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->description));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->workstations));
 		NDR_CHECK(ndr_push_samr_LogonHours(ndr, NDR_BUFFERS, &r->logon_hours));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
 		NDR_CHECK(ndr_push_netr_USER_PRIVATE_INFO(ndr, NDR_BUFFERS, &r->user_private_info));
@@ -2602,8 +2586,6 @@ static enum ndr_err_code ndr_pull_netr_DELTA_USER(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->description));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->workstations));
 		NDR_CHECK(ndr_pull_samr_LogonHours(ndr, NDR_BUFFERS, &r->logon_hours));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->lmpassword));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->ntpassword));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
 		NDR_CHECK(ndr_pull_netr_USER_PRIVATE_INFO(ndr, NDR_BUFFERS, &r->user_private_info));
@@ -9608,7 +9590,7 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordSet(struct ndr_push *ndr, i
 		if (r->in.new_password == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.new_password));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->in.new_password));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.return_authenticator == NULL) {
@@ -9675,7 +9657,7 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordSet(struct ndr_pull *ndr, i
 		}
 		_mem_save_new_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.new_password, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.new_password));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->in.new_password));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_new_password_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.return_authenticator);
 		ZERO_STRUCTP(r->out.return_authenticator);
@@ -13210,7 +13192,7 @@ static enum ndr_err_code ndr_push_netr_ServerPasswordGet(struct ndr_push *ndr, i
 		if (r->out.password == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->out.password));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -13284,7 +13266,7 @@ static enum ndr_err_code ndr_pull_netr_ServerPasswordGet(struct ndr_pull *ndr, i
 		}
 		_mem_save_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.password, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->out.password));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_password_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -14704,11 +14686,11 @@ static enum ndr_err_code ndr_push_netr_ServerTrustPasswordsGet(struct ndr_push *
 		if (r->out.password == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->out.password));
 		if (r->out.password2 == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password2));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->out.password2));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -14785,14 +14767,14 @@ static enum ndr_err_code ndr_pull_netr_ServerTrustPasswordsGet(struct ndr_pull *
 		}
 		_mem_save_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.password, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->out.password));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_password_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.password2);
 		}
 		_mem_save_password2_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.password2, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.password2));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->out.password2));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_password2_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}

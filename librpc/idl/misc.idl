@@ -2,15 +2,11 @@
   miscellaneous IDL structures
 */
 
-cpp_quote("#define netr_SamDatabaseID8Bit netr_SamDatabaseID")
-
 [
 	pointer_default(unique)
 ]
 interface misc
 {
-	typedef enum netr_SamDatabaseID8Bit netr_SamDatabaseID8Bit;
-
 	typedef [public,noprint,gensize,noejs] struct {
 		uint32 time_low;
 		uint16 time_mid;
@@ -39,19 +35,4 @@ interface misc
 		SEC_CHAN_DOMAIN      = 4,
 		SEC_CHAN_BDC         = 6
 	} netr_SchannelType;
-
-	/* SAM database types */
-	typedef [public,v1_enum] enum {
-		SAM_DATABASE_DOMAIN  = 0, /* Domain users and groups */
-		SAM_DATABASE_BUILTIN = 1, /* BUILTIN users and groups */
-		SAM_DATABASE_PRIVS   = 2 /* Privileges */
-	} netr_SamDatabaseID;
-
-	typedef [public,v1_enum] enum {
-		SAMR_REJECT_OTHER      = 0,
-		SAMR_REJECT_TOO_SHORT  = 1,
-		SAMR_REJECT_IN_HISTORY = 2,
-		SAMR_REJECT_COMPLEXITY = 5
-	} samr_RejectReason;
-
 }

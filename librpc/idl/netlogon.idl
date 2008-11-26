@@ -9,6 +9,7 @@ import "misc.idl", "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 #include "idl_types.h"
 
 cpp_quote("#define netr_DeltaEnum8Bit netr_DeltaEnum")
+cpp_quote("#define netr_SamDatabaseID8Bit netr_SamDatabaseID")
 
 [
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
@@ -23,6 +24,7 @@ interface netlogon
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
 	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
 	typedef enum netr_DeltaEnum8Bit netr_DeltaEnum8Bit;
+	typedef enum netr_SamDatabaseID8Bit netr_SamDatabaseID8Bit;
 
 	/*****************/
 	/* Function 0x00 */

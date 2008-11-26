@@ -8,12 +8,15 @@
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/nbt.h"
 #define netr_DeltaEnum8Bit netr_DeltaEnum
+#define netr_SamDatabaseID8Bit netr_SamDatabaseID
 #ifndef _HEADER_netlogon
 #define _HEADER_netlogon
 
 #define DSGETDC_VALID_FLAGS	( (DS_FORCE_REDISCOVERY|DS_DIRECTORY_SERVICE_REQUIRED|DS_DIRECTORY_SERVICE_PREFERRED|DS_GC_SERVER_REQUIRED|DS_PDC_REQUIRED|DS_BACKGROUND_ONLY|DS_IP_REQUIRED|DS_KDC_REQUIRED|DS_TIMESERV_REQUIRED|DS_WRITABLE_REQUIRED|DS_GOOD_TIMESERV_PREFERRED|DS_AVOID_SELF|DS_ONLY_LDAP_NEEDED|DS_IS_FLAT_NAME|DS_IS_DNS_NAME|DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME) )
 #define DS_GFTI_UPDATE_TDO	( 0x1 )
 enum netr_DeltaEnum8Bit;
+
+enum netr_SamDatabaseID8Bit;
 
 struct netr_UasInfo {
 	const char *account_name;/* [unique,charset(UTF16)] */

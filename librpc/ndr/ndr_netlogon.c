@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 _PUBLIC_ enum ndr_err_code ndr_push_netr_SamDatabaseID8Bit(struct ndr_push *ndr, int ndr_flags, enum netr_SamDatabaseID8Bit r)
 {

@@ -36,6 +36,38 @@
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
 #define PASS_MUST_CHANGE_AT_NEXT_LOGON	( 0x01 )
 #define PASS_DONT_CHANGE_AT_NEXT_LOGON	( 0x00 )
+enum netr_SamDatabaseID
+#ifndef USE_UINT_ENUMS
+ {
+	SAM_DATABASE_DOMAIN=0,
+	SAM_DATABASE_BUILTIN=1,
+	SAM_DATABASE_PRIVS=2
+}
+#else
+ { __donnot_use_enum_netr_SamDatabaseID=0x7FFFFFFF}
+#define SAM_DATABASE_DOMAIN ( 0 )
+#define SAM_DATABASE_BUILTIN ( 1 )
+#define SAM_DATABASE_PRIVS ( 2 )
+#endif
+;
+
+enum samr_RejectReason
+#ifndef USE_UINT_ENUMS
+ {
+	SAMR_REJECT_OTHER=0,
+	SAMR_REJECT_TOO_SHORT=1,
+	SAMR_REJECT_IN_HISTORY=2,
+	SAMR_REJECT_COMPLEXITY=5
+}
+#else
+ { __donnot_use_enum_samr_RejectReason=0x7FFFFFFF}
+#define SAMR_REJECT_OTHER ( 0 )
+#define SAMR_REJECT_TOO_SHORT ( 1 )
+#define SAMR_REJECT_IN_HISTORY ( 2 )
+#define SAMR_REJECT_COMPLEXITY ( 5 )
+#endif
+;
+
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
