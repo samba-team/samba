@@ -1,5 +1,5 @@
 AC_ARG_ENABLE(socket-wrapper, 
-[  --enable-socket-wrapper         Turn on socket wrapper library (default=no)])
+AS_HELP_STRING([--enable-socket-wrapper], [Turn on socket wrapper library (default=no)]))
 
 DEFAULT_TEST_OPTIONS=
 HAVE_SOCKET_WRAPPER=no

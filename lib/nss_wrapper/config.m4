@@ -1,5 +1,5 @@
 AC_ARG_ENABLE(nss-wrapper,
-[  --enable-nss-wrapper         Turn on nss wrapper library (default=no)])
+AS_HELP_STRING([--enable-nss-wrapper], [Turn on nss wrapper library (default=no)]))
 
 HAVE_NSS_WRAPPER=no
 

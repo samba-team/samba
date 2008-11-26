@@ -4,7 +4,7 @@
 
 use_gnutls=auto
 AC_ARG_ENABLE(gnutls,
-[  --enable-gnutls          Turn on gnutls support (default=yes)],
+AS_HELP_STRING([--enable-gnutls],[Turn on gnutls support (default=yes)]),
     [if test x$enable_gnutls = xno; then
         use_gnutls=no
     fi])
