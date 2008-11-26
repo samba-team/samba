@@ -666,58 +666,72 @@ static NTSTATUS idmap_ad_close(struct idmap_domain *dom)
  Initialize the {sfu,sfu20,rfc2307} state
  ***********************************************************************/
 
-static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
+static const char *wb_posix_map_unknown_string = "WB_POSIX_MAP_UNKNOWN";
+static const char *wb_posix_map_template_string = "WB_POSIX_MAP_TEMPLATE";
+static const char *wb_posix_map_sfu_string = "WB_POSIX_MAP_SFU";
+static const char *wb_posix_map_sfu20_string = "WB_POSIX_MAP_SFU20";
+static const char *wb_posix_map_rfc2307_string = "WB_POSIX_MAP_RFC2307";
+static const char *wb_posix_map_unixinfo_string = "WB_POSIX_MAP_UNIXINFO";
+
+static const char *ad_map_type_string(enum wb_posix_mapping map_type)
+{
+	switch (map_type) {
+		case WB_POSIX_MAP_TEMPLATE:
+			return wb_posix_map_template_string;
+			break;
+		case WB_POSIX_MAP_SFU:
+			return wb_posix_map_sfu_string;
+			break;
+		case WB_POSIX_MAP_SFU20:
+			return wb_posix_map_sfu20_string;
+			break;
+		case WB_POSIX_MAP_RFC2307:
+			return wb_posix_map_rfc2307_string;
+			break;
+		case WB_POSIX_MAP_UNIXINFO:
+			return wb_posix_map_unixinfo_string;
+			break;
+		default:
+			return WB_POSIX_MAP_UNKNOWN;
+	}
+}
+
+static NTSTATUS nss_ad_generic_init(struct nss_domain_entry *e,
+				    enum wb_posix_mapping new_ad_map_type)
 {
 	/* Sanity check if we have previously been called with a
 	   different schema model */
 
 	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ad_map_type != WB_POSIX_MAP_SFU) ) 
+	     (ad_map_type != new_ad_map_type))
 	{
-		DEBUG(0,("nss_sfu_init: Posix Map type has already been set.  "
-			 "Mixed schema models not supported!\n"));
+		DEBUG(0,("nss_ad_generic_init: "
+			 "Cannot set Posix map type to %s. "
+			 "Map type has already been set to %s."
+			 "Mixed schema models not supported!\n",
+			 ad_map_type_string(new_ad_map_type),
+			 ad_map_type_string(ad_map_type)));
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-	
-	ad_map_type = WB_POSIX_MAP_SFU;	
+
+	ad_map_type = new_ad_map_type;
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS nss_sfu_init( struct nss_domain_entry *e )
+{
+	return nss_ad_generic_init(e, WB_POSIX_MAP_SFU);
 }
 
 static NTSTATUS nss_sfu20_init( struct nss_domain_entry *e )
 {
-	/* Sanity check if we have previously been called with a
-	   different schema model */
-
-	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ad_map_type != WB_POSIX_MAP_SFU20) )
-	{
-		DEBUG(0,("nss_sfu20_init: Posix Map type has already been set.  "
-			 "Mixed schema models not supported!\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-	
-	ad_map_type = WB_POSIX_MAP_SFU20;	
-
-	return NT_STATUS_OK;
+	return nss_ad_generic_init(e, WB_POSIX_MAP_SFU20);
 }
 
 static NTSTATUS nss_rfc2307_init( struct nss_domain_entry *e )
 {
-	/* Sanity check if we have previously been called with a
-	   different schema model */
-	 
-	if ( (ad_map_type != WB_POSIX_MAP_UNKNOWN) &&
-	     (ad_map_type != WB_POSIX_MAP_RFC2307) ) 
-	{
-		DEBUG(0,("nss_rfc2307_init: Posix Map type has already been set.  "
-			 "Mixed schema models not supported!\n"));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-	
-	ad_map_type = WB_POSIX_MAP_RFC2307;
-
-	return NT_STATUS_OK;
+	return nss_ad_generic_init(e, WB_POSIX_MAP_RFC2307);
 }
 
 
