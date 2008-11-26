@@ -188,10 +188,19 @@ use strict;
 
 use vars qw(%enabled %config);
 
-%config = (AC_FOREACH([AC_Var], m4_defn([_AC_SUBST_VARS]), [
-	AC_Var => '$AC_Var',])
-);
+%config = (
+CEOF
 
+for ac_var in $ac_subst_vars
+do
+    eval ac_val=\$$ac_var
+	if echo "$skip_vars" | grep -v " $ac_var " >/dev/null 2>/dev/null; then
+		echo "$ac_var => '$ac_val'," >> $1
+	fi
+done
+
+cat >>$1<<CEOF
+);
 $SMB_INFO_ENABLES
 1;
 CEOF
