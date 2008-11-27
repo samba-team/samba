@@ -4053,7 +4053,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				&len,
 				STR_UNICODE)) {
 		TALLOC_FREE(pwd);
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_WRONG_PASSWORD;
  	}
 
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
@@ -4410,7 +4410,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 			if (!set_user_info_pw(info->info24.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
@@ -4431,7 +4431,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			}
 			if (!set_user_info_pw(info->info25.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
@@ -4447,7 +4447,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 			if (!set_user_info_pw(info->info26.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
