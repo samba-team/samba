@@ -1481,6 +1481,11 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
+	if (info->builtin_domain) {
+		DEBUG(5,("_samr_QueryDisplayInfo: Nothing in BUILTIN\n"));
+		return NT_STATUS_OK;
+	}
+
 	status = access_check_samr_function(info->acc_granted,
 					    SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
 					    "_samr_QueryDisplayInfo");
@@ -3337,6 +3342,11 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, &dom_pol, &sid, &acc_granted,
 				     &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
+
+	if (disp_info->builtin_domain) {
+		DEBUG(5,("_samr_CreateUser2: Refusing user create in BUILTIN\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	nt_status = access_check_samr_function(acc_granted,
 					       SAMR_DOMAIN_ACCESS_CREATE_USER,
