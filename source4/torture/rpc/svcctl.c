@@ -91,7 +91,7 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 	buffer = talloc(tctx, uint8_t);
 
 	r.in.handle = &s;
-	r.in.info_level = 0;
+	r.in.info_level = info_level;
 	r.in.buf_size = buf_size;
 	r.out.buffer = buffer;
 	r.out.bytes_needed = &bytes_needed;
@@ -124,7 +124,7 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	struct policy_handle h, s;
 	NTSTATUS status;
 
-	uint32_t info_level = 0;
+	uint32_t info_level = 1;
 	uint8_t *buffer;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;
@@ -138,7 +138,7 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	buffer = talloc(tctx, uint8_t);
 
 	r.in.handle = &s;
-	r.in.info_level = 1;
+	r.in.info_level = info_level;
 	r.in.buf_size = buf_size;
 	r.out.buffer = buffer;
 	r.out.bytes_needed = &bytes_needed;
