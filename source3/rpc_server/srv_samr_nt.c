@@ -3959,6 +3959,11 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (id21->fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		TALLOC_FREE(pwd);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	/* we need to separately check for an account rename first */
 
 	if (id21->account_name.string &&
@@ -4041,6 +4046,12 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("set_user_info_23: NULL id23\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+
+	if (id23->info.fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		TALLOC_FREE(pwd);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 
 	DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
 		  pdb_get_username(pwd)));
@@ -4218,6 +4229,11 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 	if (id25 == NULL) {
 		DEBUG(5, ("set_user_info_25: NULL id25\n"));
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id25->info.fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		TALLOC_FREE(pwd);
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	copy_id25_to_sam_passwd(pwd, id25);
