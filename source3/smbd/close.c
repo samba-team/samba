@@ -694,6 +694,13 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 			fsp, NT_STATUS_OK);
 	}
 
+	status = fd_close(fsp);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not close dir! fname=%s, fd=%d, err=%d=%s\n",
+			  fsp->fsp_name, fsp->fh->fd, errno, strerror(errno)));
+	}
+
 	/*
 	 * Do the code common to files and directories.
 	 */
