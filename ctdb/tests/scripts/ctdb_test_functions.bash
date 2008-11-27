@@ -270,7 +270,7 @@ node_has_status ()
     local pnn="$1"
     local status="$2"
 
-    local bits
+    local bits fpat
     case "$status" in
 	(disconnected) bits="1:?:?:?" ;;
 	(connected)    bits="0:?:?:?" ;;
@@ -278,22 +278,31 @@ node_has_status ()
 	(unbanned)     bits="?:0:?:?" ;;
 	(disabled)     bits="?:?:1:?" ;;
 	(enabled)      bits="?:?:0:?" ;;
+	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
+	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
 	    return 1
     esac
 
-    local out x line
+    if [ -n "$bits" ] ; then
+	local out x line
 
-    out=$(ctdb -Y status 2>&1) || return 1
+	out=$(ctdb -Y status 2>&1) || return 1
 
-    {
-        read x
-        while read line ; do
-	    [ "${line#:${pnn}:*:${bits}:}" = "" ] && return 0
-        done
+	{
+            read x
+            while read line ; do
+		[ "${line#:${pnn}:*:${bits}:}" = "" ] && return 0
+            done
+	    return 1
+	} <<<"$out" # Yay bash!
+    elif [ -n "$fpat" ] ; then
+	ctdb statistics -n "$pnn" | egrep -q "$fpat"
+    else
+	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
 	return 1
-    } <<<"$out" # Yay bash!
+    fi
 }
 
 wait_until_node_has_status ()
