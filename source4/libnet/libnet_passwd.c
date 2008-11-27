@@ -307,7 +307,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 26 */
 	ZERO_STRUCT(u_info);
 	encode_pw_buffer(u_info.info26.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
-	u_info.info26.pw_len = strlen(r->samr_handle.in.newpassword);
+	u_info.info26.password_expired = 0;
 	
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -410,8 +410,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 24 */
 	ZERO_STRUCT(u_info);
 	encode_pw_buffer(u_info.info24.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
-	/* w2k3 ignores this length */
-	u_info.info24.pw_len = strlen_m(r->samr_handle.in.newpassword)*2;
+	u_info.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {

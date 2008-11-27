@@ -247,7 +247,7 @@ again:
 	s.in.level = 24;
 
 	encode_pw_buffer(u.info24.password.data, random_pw, STR_UNICODE);
-	u.info24.pw_len = strlen(random_pw);
+	u.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(join->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {

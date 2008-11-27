@@ -570,8 +570,7 @@ static bool test_SetUserPass(struct dcerpc_pipe *p, struct torture_context *tctx
 	s.in.level = 24;
 
 	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
-	/* w2k3 ignores this length */
-	u.info24.pw_len = strlen_m(newpass) * 2;
+	u.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -709,7 +708,7 @@ static bool test_SetUserPassEx(struct dcerpc_pipe *p, struct torture_context *tc
 	s.in.level = 26;
 
 	encode_pw_buffer(u.info26.password.data, newpass, STR_UNICODE);
-	u.info26.pw_len = strlen(newpass);
+	u.info26.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
