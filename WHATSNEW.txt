@@ -213,6 +213,7 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Kai Blin <kai@samba.org>
     * BUG 5892: Fix net rap printq info documentation.
+    * Add placeholder functions to libwbclient.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -271,6 +272,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5691: Fig smbd panic on Solaris.
     * BUG 5840: Fix segfault in "rpcclient lsaaddacctrights".
     * BUG 5860: safe_strcpy gives a nasty error message for overlong strings.
+    * Fix the offset checks in the trans routines (CVE-2008-4314).
     * Fix a potential NULL deref in found by the IBM Checker.
     * Fix an uninitialized variable found by the IBM Checker.
     * Fix an unlikely memleak found by the IBM Checker.
@@ -306,6 +308,7 @@ o   Tim Prouty <tim.prouty@isilon.com>
 o   Andreas Schneider <mail@cynapses.org>
     * Delete the krb5 ccname variable from the PAM environment if set.
     * Add a function out of pam_sm_close_session to delete the credentials.
+    * Fix circular dependency error with autoconf 2.6.3.
 
 
 o   Davide Sfriso <sfriso@virgilio.it>
