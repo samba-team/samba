@@ -39,6 +39,7 @@
 
 enum torture_samr_choice {
 	TORTURE_SAMR_PASSWORDS,
+	TORTURE_SAMR_PASSWORDS_PWDLASTSET,
 	TORTURE_SAMR_USER_ATTRIBUTES,
 	TORTURE_SAMR_OTHER
 };
@@ -2759,11 +2760,6 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			}
 		}
 
-		/* test last password change timestamp behaviour */
-		if (!test_SetPassword_pwdlastset(p, tctx, user_handle, &password)) {
-			ret = false;
-		}
-
 		for (i = 0; password_fields[i]; i++) {
 			if (!test_SetUserPass_23(p, tctx, user_handle, password_fields[i], &password)) {
 				ret = false;
@@ -2819,6 +2815,23 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		}
 
 		break;
+
+	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
+
+		/* test last password change timestamp behaviour */
+		if (!test_SetPassword_pwdlastset(p, tctx, base_acct_flags,
+						 user_handle, &password)) {
+			ret = false;
+		}
+
+		if (ret == true) {
+			torture_comment(tctx, "pwdLastSet test succeeded\n");
+		} else {
+			torture_warning(tctx, "pwdLastSet test failed\n");
+		}
+
+		break;
+
 	case TORTURE_SAMR_OTHER:
 		/* We just need the account to exist */
 		break;
@@ -5036,6 +5049,7 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
+	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
 		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops);
 		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
 		/* This test needs 'complex' users to validate */
@@ -5377,6 +5391,28 @@ bool torture_rpc_samr_passwords(struct torture_context *torture)
 	ret &= test_Connect(p, torture, &handle);
 
 	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS);
+
+	ret &= test_samr_handle_Close(p, torture, &handle);
+
+	return ret;
+}
+
+bool torture_rpc_samr_passwords_pwdlastset(struct torture_context *torture)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p;
+	bool ret = true;
+	struct policy_handle handle;
+
+	status = torture_rpc_connection(torture, &p, &ndr_table_samr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	ret &= test_Connect(p, torture, &handle);
+
+	ret &= test_EnumDomains(p, torture, &handle,
+				TORTURE_SAMR_PASSWORDS_PWDLASTSET);
 
 	ret &= test_samr_handle_Close(p, torture, &handle);
 
