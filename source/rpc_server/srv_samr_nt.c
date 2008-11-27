@@ -3707,6 +3707,9 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 	}
 
 	domain_name = r->in.domain_name->string;
+	if (!domain_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	sid = TALLOC_ZERO_P(p->mem_ctx, struct dom_sid2);
 	if (!sid) {
