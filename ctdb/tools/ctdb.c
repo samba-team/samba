@@ -1845,7 +1845,7 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t level;
+	int32_t level;
 
 	if (argc < 1) {
 		usage();
@@ -1854,7 +1854,7 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	if (isalpha(argv[0][0])) { 
 		level = get_debug_by_desc(argv[0]);
 	} else {
-		level = strtoul(argv[0], NULL, 0);
+		level = strtol(argv[0], NULL, 0);
 	}
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
