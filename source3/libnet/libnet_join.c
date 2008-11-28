@@ -897,10 +897,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	init_samr_CryptPasswordEx(r->in.machine_password,
-				  &cli->user_session_key,
-				  &crypt_pwd_ex);
-
 	/* Fill in the additional account flags now */
 
 	acct_flags |= ACB_PWNOEXP;
@@ -911,22 +907,39 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		;;
 	}
 
-	/* Set password and account flags on machine account */
-
-	ZERO_STRUCT(user_info.info25);
-
-	user_info.info25.info.fields_present = ACCT_NT_PWD_SET |
-					       ACCT_LM_PWD_SET |
-					       SAMR_FIELD_ACCT_FLAGS;
-
-	user_info.info25.info.acct_flags = acct_flags;
-	memcpy(&user_info.info25.password.data, crypt_pwd_ex.data,
-	       sizeof(crypt_pwd_ex.data));
+	/* Set account flags on machine account */
+	ZERO_STRUCT(user_info.info16);
+	user_info.info16.acct_flags = acct_flags;
 
 	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
 					 &user_pol,
-					 25,
+					 16,
 					 &user_info);
+
+	if (!NT_STATUS_IS_OK(status)) {
+
+		rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+				       &user_pol);
+
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to set account flags for machine account (%s)\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	/* Set password on machine account - first try level 26 */
+
+	init_samr_CryptPasswordEx(r->in.machine_password,
+				  &cli->user_session_key,
+				  &crypt_pwd_ex);
+
+	init_samr_user_info26(&user_info.info26, &crypt_pwd_ex,
+			      PASS_DONT_CHANGE_AT_NEXT_LOGON);
+
+	status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  26,
+					  &user_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
 
