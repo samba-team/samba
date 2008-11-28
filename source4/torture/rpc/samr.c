@@ -846,6 +846,137 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	return ret;
 }
 
+static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
+				      struct torture_context *tctx,
+				      struct policy_handle *handle,
+				      uint16_t level,
+				      uint32_t fields_present,
+				      char **password, uint8_t password_expired,
+				      bool use_setinfo2, NTSTATUS expected_error)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	struct samr_SetUserInfo2 s2;
+	union samr_UserInfo u;
+	bool ret = true;
+	DATA_BLOB session_key;
+	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
+	struct MD5Context ctx;
+	uint8_t confounder[16];
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
+	int policy_min_pw_len = 0;
+	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
+
+	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info->min_password_length;
+	}
+	newpass = samr_rand_pass_silent(tctx, policy_min_pw_len);
+
+	if (use_setinfo2) {
+		s2.in.user_handle = handle;
+		s2.in.info = &u;
+		s2.in.level = level;
+	} else {
+		s.in.user_handle = handle;
+		s.in.info = &u;
+		s.in.level = level;
+	}
+
+	ZERO_STRUCT(u);
+
+	switch (level) {
+	case 21:
+		u.info21.fields_present = fields_present;
+		u.info21.password_expired = password_expired;
+
+		break;
+	case 23:
+		u.info23.info.fields_present = fields_present;
+		u.info23.info.password_expired = password_expired;
+
+		encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
+
+		break;
+	case 24:
+		u.info24.password_expired = password_expired;
+
+		encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
+
+		break;
+	case 25:
+		u.info25.info.fields_present = fields_present;
+		u.info25.info.password_expired = password_expired;
+
+		encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
+
+		break;
+	case 26:
+		u.info26.password_expired = password_expired;
+
+		encode_pw_buffer(u.info26.password.data, newpass, STR_UNICODE);
+
+		break;
+	}
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return false;
+	}
+
+	generate_random_buffer((uint8_t *)confounder, 16);
+
+	MD5Init(&ctx);
+	MD5Update(&ctx, confounder, 16);
+	MD5Update(&ctx, session_key.data, session_key.length);
+	MD5Final(confounded_session_key.data, &ctx);
+
+	switch (level) {
+	case 23:
+		arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
+		break;
+	case 24:
+		arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
+		break;
+	case 25:
+		arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
+		memcpy(&u.info25.password.data[516], confounder, 16);
+		break;
+	case 26:
+		arcfour_crypt_blob(u.info26.password.data, 516, &confounded_session_key);
+		memcpy(&u.info26.password.data[516], confounder, 16);
+		break;
+	}
+
+	if (use_setinfo2) {
+		status = dcerpc_samr_SetUserInfo2(p, tctx, &s2);
+	} else {
+		status = dcerpc_samr_SetUserInfo(p, tctx, &s);
+	}
+
+	if (NT_STATUS_IS_ERR(expected_error)) {
+		torture_assert_ntstatus_equal(tctx, status, expected_error, "");
+		return true;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo%s level %u failed - %s\n",
+		       use_setinfo2 ? "2":"", level, nt_errstr(status));
+		ret = false;
+	} else {
+		if (level != 21) {
+			*password = newpass;
+		}
+	}
+
+	return ret;
+}
+
 static bool test_SetAliasInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
 			       struct policy_handle *handle)
 {
