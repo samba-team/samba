@@ -177,18 +177,13 @@ static struct async_req *async_fde_syscall_new(
  * @retval The return value from the asynchronously called syscall
  */
 
-ssize_t async_syscall_result_ssize_t(struct async_req **req, int *perrno)
+ssize_t async_syscall_result_ssize_t(struct async_req *req, int *perrno)
 {
 	struct async_syscall_state *state = talloc_get_type_abort(
-		(*req)->private_data, struct async_syscall_state);
+		req->private_data, struct async_syscall_state);
 
-	int sys_errno = state->sys_errno;
-	ssize_t result = state->result.result_ssize_t;
-
-	TALLOC_FREE(*req);
-
-	*perrno = sys_errno;
-	return result;
+	*perrno = state->sys_errno;
+	return state->result.result_ssize_t;
 }
 
 /**
@@ -198,18 +193,13 @@ ssize_t async_syscall_result_ssize_t(struct async_req **req, int *perrno)
  * @retval The return value from the asynchronously called syscall
  */
 
-size_t async_syscall_result_size_t(struct async_req **req, int *perrno)
+size_t async_syscall_result_size_t(struct async_req *req, int *perrno)
 {
 	struct async_syscall_state *state = talloc_get_type_abort(
-		(*req)->private_data, struct async_syscall_state);
+		req->private_data, struct async_syscall_state);
 
-	int sys_errno = state->sys_errno;
-	size_t result = state->result.result_ssize_t;
-
-	TALLOC_FREE(*req);
-
-	*perrno = sys_errno;
-	return result;
+	*perrno = state->sys_errno;
+	return state->result.result_size_t;
 }
 
 /**
@@ -219,18 +209,13 @@ size_t async_syscall_result_size_t(struct async_req **req, int *perrno)
  * @retval The return value from the asynchronously called syscall
  */
 
-ssize_t async_syscall_result_int(struct async_req **req, int *perrno)
+ssize_t async_syscall_result_int(struct async_req *req, int *perrno)
 {
 	struct async_syscall_state *state = talloc_get_type_abort(
-		(*req)->private_data, struct async_syscall_state);
+		req->private_data, struct async_syscall_state);
 
-	int sys_errno = state->sys_errno;
-	int result = state->result.result_ssize_t;
-
-	TALLOC_FREE(*req);
-
-	*perrno = sys_errno;
-	return result;
+	*perrno = state->sys_errno;
+	return state->result.result_int;
 }
 
 /**
@@ -353,9 +338,9 @@ static void async_sendall_callback(struct event_context *ev,
  * "length" bytes
  */
 
-struct async_req *async_sendall(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				int fd, const void *buffer, size_t length,
-				int flags)
+struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+			       int fd, const void *buffer, size_t length,
+			       int flags)
 {
 	struct async_req *result;
 	struct async_syscall_state *state;
@@ -375,6 +360,15 @@ struct async_req *async_sendall(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->param.param_sendall.sent = 0;
 
 	return result;
+}
+
+NTSTATUS sendall_recv(struct async_req *req)
+{
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+	return NT_STATUS_OK;
 }
 
 /**
@@ -498,9 +492,9 @@ static void async_recvall_callback(struct event_context *ev,
  * async_recvall will call recv(2) until "length" bytes are received
  */
 
-struct async_req *async_recvall(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				int fd, void *buffer, size_t length,
-				int flags)
+struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+			       int fd, void *buffer, size_t length,
+			       int flags)
 {
 	struct async_req *result;
 	struct async_syscall_state *state;
@@ -520,6 +514,15 @@ struct async_req *async_recvall(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	state->param.param_recvall.received = 0;
 
 	return result;
+}
+
+NTSTATUS recvall_recv(struct async_req *req)
+{
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+	return NT_STATUS_OK;
 }
 
 /**
