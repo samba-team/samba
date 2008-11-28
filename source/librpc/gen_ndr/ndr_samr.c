@@ -774,8 +774,7 @@ static enum ndr_err_code ndr_push_samr_DomInfo13(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->sequence_num));
 		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->domain_create_time));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->modified_count_at_last_promotion));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -788,8 +787,7 @@ static enum ndr_err_code ndr_pull_samr_DomInfo13(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->sequence_num));
 		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->domain_create_time));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->modified_count_at_last_promotion));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -802,8 +800,7 @@ _PUBLIC_ void ndr_print_samr_DomInfo13(struct ndr_print *ndr, const char *name, 
 	ndr->depth++;
 	ndr_print_hyper(ndr, "sequence_num", r->sequence_num);
 	ndr_print_NTTIME(ndr, "domain_create_time", r->domain_create_time);
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_hyper(ndr, "modified_count_at_last_promotion", r->modified_count_at_last_promotion);
 	ndr->depth--;
 }
 
@@ -2574,10 +2571,11 @@ static enum ndr_err_code ndr_push_samr_UserInfo18(struct ndr_push *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 1));
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
 		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->nt_pwd));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->lm_pwd_active));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->nt_pwd_active));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->lm_pwd_active));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2588,10 +2586,11 @@ static enum ndr_err_code ndr_pull_samr_UserInfo18(struct ndr_pull *ndr, int ndr_
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 1));
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
 		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->nt_pwd));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->lm_pwd_active));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->nt_pwd_active));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->lm_pwd_active));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->password_expired));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2602,10 +2601,11 @@ _PUBLIC_ void ndr_print_samr_UserInfo18(struct ndr_print *ndr, const char *name,
 {
 	ndr_print_struct(ndr, name, "samr_UserInfo18");
 	ndr->depth++;
-	ndr_print_samr_Password(ndr, "lm_pwd", &r->lm_pwd);
 	ndr_print_samr_Password(ndr, "nt_pwd", &r->nt_pwd);
-	ndr_print_uint8(ndr, "lm_pwd_active", r->lm_pwd_active);
+	ndr_print_samr_Password(ndr, "lm_pwd", &r->lm_pwd);
 	ndr_print_uint8(ndr, "nt_pwd_active", r->nt_pwd_active);
+	ndr_print_uint8(ndr, "lm_pwd_active", r->lm_pwd_active);
+	ndr_print_uint8(ndr, "password_expired", r->password_expired);
 	ndr->depth--;
 }
 
@@ -2683,8 +2683,8 @@ _PUBLIC_ void ndr_print_samr_FieldsPresent(struct ndr_print *ndr, const char *na
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_PARAMETERS", SAMR_FIELD_PARAMETERS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_COUNTRY_CODE", SAMR_FIELD_COUNTRY_CODE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_CODE_PAGE", SAMR_FIELD_CODE_PAGE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_PASSWORD", SAMR_FIELD_PASSWORD, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_PASSWORD2", SAMR_FIELD_PASSWORD2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_NT_PASSWORD_PRESENT", SAMR_FIELD_NT_PASSWORD_PRESENT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_LM_PASSWORD_PRESENT", SAMR_FIELD_LM_PASSWORD_PRESENT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_PRIVATE_DATA", SAMR_FIELD_PRIVATE_DATA, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_EXPIRED_FLAG", SAMR_FIELD_EXPIRED_FLAG, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_FIELD_SEC_DESC", SAMR_FIELD_SEC_DESC, r);
@@ -2712,8 +2712,8 @@ static enum ndr_err_code ndr_push_samr_UserInfo21(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->workstations));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->comment));
 		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_SCALARS, &r->parameters));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_SCALARS, &r->lm_owf_password));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_SCALARS, &r->nt_owf_password));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->buf_count));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->buffer));
@@ -2726,8 +2726,8 @@ static enum ndr_err_code ndr_push_samr_UserInfo21(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->logon_count));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->country_code));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->code_page));
-		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->nt_password_set));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->lm_password_set));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->nt_password_set));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->password_expired));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->unknown4));
 	}
@@ -2742,8 +2742,8 @@ static enum ndr_err_code ndr_push_samr_UserInfo21(struct ndr_push *ndr, int ndr_
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->workstations));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown1));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown2));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->lm_owf_password));
+		NDR_CHECK(ndr_push_lsa_BinaryString(ndr, NDR_BUFFERS, &r->nt_owf_password));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->unknown3));
 		if (r->buffer) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->buf_count));
@@ -2776,8 +2776,8 @@ static enum ndr_err_code ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->workstations));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->comment));
 		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_SCALARS, &r->parameters));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown1));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_SCALARS, &r->lm_owf_password));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_SCALARS, &r->nt_owf_password));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->buf_count));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_buffer));
@@ -2795,8 +2795,8 @@ static enum ndr_err_code ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->logon_count));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->country_code));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->code_page));
-		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->nt_password_set));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->lm_password_set));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->nt_password_set));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->password_expired));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown4));
 	}
@@ -2811,8 +2811,8 @@ static enum ndr_err_code ndr_pull_samr_UserInfo21(struct ndr_pull *ndr, int ndr_
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->workstations));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->comment));
 		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->parameters));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown1));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown2));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->lm_owf_password));
+		NDR_CHECK(ndr_pull_lsa_BinaryString(ndr, NDR_BUFFERS, &r->nt_owf_password));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->unknown3));
 		if (r->buffer) {
 			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -2850,8 +2850,8 @@ _PUBLIC_ void ndr_print_samr_UserInfo21(struct ndr_print *ndr, const char *name,
 	ndr_print_lsa_String(ndr, "workstations", &r->workstations);
 	ndr_print_lsa_String(ndr, "comment", &r->comment);
 	ndr_print_lsa_BinaryString(ndr, "parameters", &r->parameters);
-	ndr_print_lsa_String(ndr, "unknown1", &r->unknown1);
-	ndr_print_lsa_String(ndr, "unknown2", &r->unknown2);
+	ndr_print_lsa_BinaryString(ndr, "lm_owf_password", &r->lm_owf_password);
+	ndr_print_lsa_BinaryString(ndr, "nt_owf_password", &r->nt_owf_password);
 	ndr_print_lsa_String(ndr, "unknown3", &r->unknown3);
 	ndr_print_uint32(ndr, "buf_count", r->buf_count);
 	ndr_print_ptr(ndr, "buffer", r->buffer);
@@ -2869,8 +2869,8 @@ _PUBLIC_ void ndr_print_samr_UserInfo21(struct ndr_print *ndr, const char *name,
 	ndr_print_uint16(ndr, "logon_count", r->logon_count);
 	ndr_print_uint16(ndr, "country_code", r->country_code);
 	ndr_print_uint16(ndr, "code_page", r->code_page);
-	ndr_print_uint8(ndr, "nt_password_set", r->nt_password_set);
 	ndr_print_uint8(ndr, "lm_password_set", r->lm_password_set);
+	ndr_print_uint8(ndr, "nt_password_set", r->nt_password_set);
 	ndr_print_uint8(ndr, "password_expired", r->password_expired);
 	ndr_print_uint8(ndr, "unknown4", r->unknown4);
 	ndr->depth--;
