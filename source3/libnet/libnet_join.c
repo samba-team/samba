@@ -762,7 +762,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct lsa_String lsa_acct_name;
 	uint32_t user_rid;
 	uint32_t acct_flags = ACB_WSTRUST;
-	uchar md4_trust_password[16];
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo user_info;
@@ -897,10 +896,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
-
-	/* Create a random machine account password and generate the hash */
-
-	E_md4hash(r->in.machine_password, md4_trust_password);
 
 	init_samr_CryptPasswordEx(r->in.machine_password,
 				  &cli->user_session_key,
