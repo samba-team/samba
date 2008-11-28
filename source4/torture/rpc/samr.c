@@ -870,6 +870,8 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	struct samr_GetUserPwInfo pwp;
 	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
+	const char *comment = NULL;
+
 	pwp.in.user_handle = handle;
 	pwp.out.info = &info;
 
@@ -889,17 +891,23 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		s.in.level = level;
 	}
 
+	if (fields_present & SAMR_FIELD_COMMENT) {
+		comment = talloc_asprintf(tctx, "comment: %d\n", time(NULL));
+	}
+
 	ZERO_STRUCT(u);
 
 	switch (level) {
 	case 21:
 		u.info21.fields_present = fields_present;
 		u.info21.password_expired = password_expired;
+		u.info21.comment.string = comment;
 
 		break;
 	case 23:
 		u.info23.info.fields_present = fields_present;
 		u.info23.info.password_expired = password_expired;
+		u.info23.info.comment.string = comment;
 
 		encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
 
@@ -913,6 +921,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	case 25:
 		u.info25.info.fields_present = fields_present;
 		u.info25.info.password_expired = password_expired;
+		u.info25.info.comment.string = comment;
 
 		encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
 
@@ -962,8 +971,16 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		status = dcerpc_samr_SetUserInfo(p, tctx, &s);
 	}
 
-	if (NT_STATUS_IS_ERR(expected_error)) {
-		torture_assert_ntstatus_equal(tctx, status, expected_error, "");
+	if (!NT_STATUS_IS_OK(expected_error)) {
+		if (use_setinfo2) {
+			torture_assert_ntstatus_equal(tctx,
+				s2.out.result,
+				expected_error, "SetUserInfo2 failed");
+		} else {
+			torture_assert_ntstatus_equal(tctx,
+				s.out.result,
+				expected_error, "SetUserInfo failed");
+		}
 		return true;
 	}
 
@@ -2431,6 +2448,16 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			.password_expired_nonzero	= 1,
 			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE,
 			.set_error			= NT_STATUS_ACCESS_DENIED
+		},{
+			.level				= 21,
+			.password_expired_nonzero	= 1,
+			.fields_present			= 0,
+			.set_error			= NT_STATUS_INVALID_PARAMETER
+		},{
+			.level				= 21,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_COMMENT,
+
 #if 0
 	/* FIXME */
 		},{
@@ -2478,7 +2505,16 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			.level				= 23,
 			.password_expired_nonzero	= 1,
 			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2
+							  SAMR_FIELD_PASSWORD2,
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_COMMENT,
+		},{
+			.level				= 23,
+			.password_expired_nonzero	= 1,
+			.fields_present			= 0,
+			.set_error			= NT_STATUS_INVALID_PARAMETER
 		},{
 
 		/* level 24 */
@@ -2510,7 +2546,11 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			.level				= 25,
 			.password_expired_nonzero	= 1,
 			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2
+							  SAMR_FIELD_PASSWORD2,
+		},{
+			.level				= 25,
+			.password_expired_nonzero	= 1,
+			.fields_present			= SAMR_FIELD_COMMENT,
 		},{
 
 		/* level 26 */
@@ -2546,17 +2586,20 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		NTTIME pwdlastset_old = 0;
 		NTTIME pwdlastset_new = 0;
 
-		/* set #1 */
-
 		torture_comment(tctx, "------------------------------\n"
 				"Testing pwdLastSet attribute for flags: 0x%08x "
 				"(s: %d (l: %d), q: %d)\n",
 				acct_flags, s, pwd_tests[i].level, q);
 
+		/* set #1 */
+
+		/* set a password and force password change (pwdlastset 0) by
+		 * setting the password expired flag to a non-0 value */
+
 		if (!test_SetPassword_level(p, tctx, handle,
 					    pwd_tests[i].level,
 					    pwd_tests[i].fields_present,
-					    pwd_tests[i].password_expired_nonzero, /* will set pwdlast to 0 */
+					    pwd_tests[i].password_expired_nonzero,
 					    pwd_tests[i].set_error,
 					    set_levels[s],
 					    password,
@@ -2570,10 +2613,11 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			continue;
 		}
 
-		/* pwdlastset must be 0 afterwards, except for a level 23 and 25
+		/* pwdlastset must be 0 afterwards, except for a level 21, 23 and 25
 		 * set without the SAMR_FIELD_EXPIRED_FLAG */
 
 		switch (pwd_tests[i].level) {
+		case 21:
 		case 23:
 		case 25:
 			if ((pwdlastset_new != 0) &&
@@ -2598,10 +2642,12 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 
 		/* set #2 */
 
+		/* set a password, pwdlastset needs to get updated (increased
+		 * value), password_expired value used here is 0 */
+
 		if (!test_SetPassword_level(p, tctx, handle, pwd_tests[i].level,
 					    pwd_tests[i].fields_present,
 					    0,
-					    /* will normally update (increase) the pwdlast */
 					    pwd_tests[i].set_error,
 					    set_levels[s],
 					    password,
@@ -2611,26 +2657,49 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			ret = false;
 		}
 
-		/* pwdlastset must not be 0 afterwards and must be larger then
-		 * the old value */
+		/* when a password has been changed, pwdlastset must not be 0 afterwards
+		 * and must be larger then the old value */
 
-		if (pwdlastset_old >= pwdlastset_new) {
-			torture_warning(tctx, "pwdLastSet test failed: "
-				"expected last pwdlastset (%lld) < new pwdlastset (%lld)\n",
-				pwdlastset_old, pwdlastset_new);
-			ret = false;
+		switch (pwd_tests[i].level) {
+		case 21:
+		case 23:
+		case 25:
+
+			/* SAMR_FIELD_EXPIRED_FLAG has not been set and no
+			 * password has been changed, old and new pwdlastset
+			 * need to be the same value */
+
+			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD) ||
+			      (pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD2)))
+			{
+				torture_assert_int_equal(tctx, pwdlastset_old,
+					pwdlastset_new, "pwdlastset must be equal");
+				break;
+			}
+		default:
+			if (pwdlastset_old >= pwdlastset_new) {
+				torture_warning(tctx, "pwdLastSet test failed: "
+					"expected last pwdlastset (%lld) < new pwdlastset (%lld)\n",
+					pwdlastset_old, pwdlastset_new);
+				ret = false;
+			}
+			if (pwdlastset_new == 0) {
+				torture_warning(tctx, "pwdLastSet test failed: "
+					"expected non-0 pwdlastset, got: %lld\n",
+					pwdlastset_new);
+				ret = false;
+			}
 		}
-		if (pwdlastset_new == 0) {
-			torture_warning(tctx, "pwdLastSet test failed: "
-				"expected non-0 pwdlastset, got: %lld\n",
-				pwdlastset_new);
-			ret = false;
-		}
+
 		pwdlastset_old = pwdlastset_new;
 
 		usleep(delay);
 
 		/* set #3 */
+
+		/* set a password and force password change (pwdlastset 0) by
+		 * setting the password expired flag to a non-0 value */
 
 		if (!test_SetPassword_level(p, tctx, handle, pwd_tests[i].level,
 					    pwd_tests[i].fields_present,
@@ -2643,24 +2712,43 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			ret = false;
 		}
 
-		if (pwdlastset_old == pwdlastset_new) {
-			torture_warning(tctx, "pwdLastSet test failed: "
-				"expected last pwdlastset (%lld) != new pwdlastset (%lld)\n",
-				pwdlastset_old, pwdlastset_new);
-			ret = false;
-		}
-
-		/* pwdlastset must be 0 afterwards, except for a level 23 and 25
+		/* pwdlastset must be 0 afterwards, except for a level 21, 23 and 25
 		 * set without the SAMR_FIELD_EXPIRED_FLAG */
 
 		switch (pwd_tests[i].level) {
+		case 21:
 		case 23:
 		case 25:
 			if ((pwdlastset_new != 0) &&
 			    !(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG)) {
+				torture_comment(tctx, "not considering a non-0 "
+					"pwdLastSet as a an error as the "
+					"SAMR_FIELD_EXPIRED_FLAG has not "
+					"been set\n");
+				break;
+			}
+
+			/* SAMR_FIELD_EXPIRED_FLAG has not been set and no
+			 * password has been changed, old and new pwdlastset
+			 * need to be the same value */
+
+			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD) ||
+			      (pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD2)))
+			{
+				torture_assert_int_equal(tctx, pwdlastset_old,
+					pwdlastset_new, "pwdlastset must be equal");
 				break;
 			}
 		default:
+
+			if (pwdlastset_old == pwdlastset_new) {
+				torture_warning(tctx, "pwdLastSet test failed: "
+					"expected last pwdlastset (%lld) != new pwdlastset (%lld)\n",
+					pwdlastset_old, pwdlastset_new);
+				ret = false;
+			}
+
 			if (pwdlastset_new != 0) {
 				torture_warning(tctx, "pwdLastSet test failed: "
 					"expected pwdLastSet 0, got %lld\n",
