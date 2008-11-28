@@ -33,7 +33,8 @@ NTSTATUS idmap_uid_to_sid(const char *domname, DOM_SID *sid, uid_t uid)
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("uid = [%lu]\n", (unsigned long)uid));
+	DEBUG(10,("idmap_uid_to_sid: uid = [%lu], domain = '%s'\n",
+		  (unsigned long)uid, domname?domname:"NULL"));
 
 	if (idmap_cache_find_uid2sid(uid, sid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_uid2sid found %d%s\n", uid,
@@ -85,7 +86,8 @@ NTSTATUS idmap_gid_to_sid(const char *domname, DOM_SID *sid, gid_t gid)
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("gid = [%lu]\n", (unsigned long)gid));
+	DEBUG(10,("idmap_gid_to_si: gid = [%lu], domain = '%s'\n",
+		  (unsigned long)gid, domname?domname:"NULL"));
 
 	if (idmap_cache_find_gid2sid(gid, sid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_gid2sid found %d%s\n", gid,
@@ -137,7 +139,8 @@ NTSTATUS idmap_sid_to_uid(const char *dom_name, DOM_SID *sid, uid_t *uid)
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("idmap_sid_to_uid: sid = [%s]\n", sid_string_dbg(sid)));
+	DEBUG(10,("idmap_sid_to_uid: sid = [%s], domain = '%s'\n",
+		  sid_string_dbg(sid), dom_name));
 
 	if (idmap_cache_find_sid2uid(sid, uid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_sid2uid found %d%s\n",
@@ -209,7 +212,8 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid)
 	struct id_map map;
 	bool expired;
 
-	DEBUG(10,("idmap_sid_to_gid: sid = [%s]\n", sid_string_dbg(sid)));
+	DEBUG(10,("idmap_sid_to_gid: sid = [%s], domain = '%s'\n",
+		  sid_string_dbg(sid), domname));
 
 	if (idmap_cache_find_sid2gid(sid, gid, &expired)) {
 		DEBUG(10, ("idmap_cache_find_sid2gid found %d%s\n",
