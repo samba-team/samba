@@ -728,6 +728,10 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 	struct idmap_domain *dom;
 	struct id_map *maps[2];
 
+	 DEBUG(10, ("idmap_backend_unixid_to_sid: domain = '%s', xid = %d "
+		    "(type %d)\n",
+		    domname?domname:"NULL", id->xid.id, id->xid.type));
+
 	maps[0] = id;
 	maps[1] = NULL;
 
