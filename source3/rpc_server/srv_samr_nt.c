@@ -3891,6 +3891,10 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (id21->fields_present == 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (id21->fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -3971,6 +3975,10 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 
 	if (id23 == NULL) {
 		DEBUG(5, ("set_user_info_23: NULL id23\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id23->info.fields_present == 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -4139,6 +4147,10 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 
 	if (id25 == NULL) {
 		DEBUG(5, ("set_user_info_25: NULL id25\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id25->info.fields_present == 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
