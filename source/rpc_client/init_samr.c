@@ -461,6 +461,91 @@ void init_samr_user_info24(struct samr_UserInfo24 *r,
 }
 
 /*************************************************************************
+ init_samr_user_info25
+ *************************************************************************/
+
+void init_samr_user_info25(struct samr_UserInfo25 *r,
+			   NTTIME last_logon,
+			   NTTIME last_logoff,
+			   NTTIME last_password_change,
+			   NTTIME acct_expiry,
+			   NTTIME allow_password_change,
+			   NTTIME force_password_change,
+			   const char *account_name,
+			   const char *full_name,
+			   const char *home_directory,
+			   const char *home_drive,
+			   const char *logon_script,
+			   const char *profile_path,
+			   const char *description,
+			   const char *workstations,
+			   const char *comment,
+			   struct lsa_BinaryString *parameters,
+			   uint32_t rid,
+			   uint32_t primary_gid,
+			   uint32_t acct_flags,
+			   uint32_t fields_present,
+			   struct samr_LogonHours logon_hours,
+			   uint16_t bad_password_count,
+			   uint16_t logon_count,
+			   uint16_t country_code,
+			   uint16_t code_page,
+			   uint8_t nt_password_set,
+			   uint8_t lm_password_set,
+			   uint8_t password_expired,
+			   struct samr_CryptPasswordEx *pwd_buf)
+{
+	DEBUG(10, ("init_samr_user_info25:\n"));
+
+	memset(r, '\0', sizeof(*r));
+	init_samr_user_info21(&r->info,
+			      last_logon,
+			      last_logoff,
+			      last_password_change,
+			      acct_expiry,
+			      allow_password_change,
+			      force_password_change,
+			      account_name,
+			      full_name,
+			      home_directory,
+			      home_drive,
+			      logon_script,
+			      profile_path,
+			      description,
+			      workstations,
+			      comment,
+			      parameters,
+			      rid,
+			      primary_gid,
+			      acct_flags,
+			      fields_present,
+			      logon_hours,
+			      bad_password_count,
+			      logon_count,
+			      country_code,
+			      code_page,
+			      nt_password_set,
+			      lm_password_set,
+			      password_expired);
+
+	r->password = *pwd_buf;
+}
+
+/*************************************************************************
+ init_samr_user_info26
+ *************************************************************************/
+
+void init_samr_user_info26(struct samr_UserInfo26 *r,
+			   struct samr_CryptPasswordEx *pwd_buf,
+			   uint8_t password_expired)
+{
+	DEBUG(10, ("init_samr_user_info26:\n"));
+
+	r->password = *pwd_buf;
+	r->password_expired = password_expired;
+}
+
+/*************************************************************************
  inits a samr_CryptPasswordEx structure
  *************************************************************************/
 
