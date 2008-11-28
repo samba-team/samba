@@ -264,6 +264,35 @@ static void display_sam_info_5(struct samr_DispEntryAscii *r)
 	printf("Account: %s\n", r->account_name.string);
 }
 
+/****************************************************************************
+ ****************************************************************************/
+
+static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  const char *sam,
+				  struct policy_handle *connect_pol,
+				  uint32_t access_mask,
+				  struct dom_sid *_domain_sid,
+				  struct policy_handle *domain_pol)
+{
+
+	if (StrCaseCmp(sam, "domain") == 0) {
+		return rpccli_samr_OpenDomain(cli, mem_ctx,
+					      connect_pol,
+					      access_mask,
+					      _domain_sid,
+					      domain_pol);
+	} else if (StrCaseCmp(sam, "builtin") == 0) {
+		return rpccli_samr_OpenDomain(cli, mem_ctx,
+					      connect_pol,
+					      access_mask,
+					      CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					      domain_pol);
+	}
+
+	return NT_STATUS_INVALID_PARAMETER;
+}
+
 /**********************************************************************
  * Query user information
  */
@@ -649,21 +678,11 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						&domain_sid, &domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else {
-		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -955,20 +974,11 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
 	/* Get domain policy handle */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1107,20 +1117,11 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1197,25 +1198,11 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (strequal(argv[1], "domain")) {
-
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						SEC_FLAG_MAXIMUM_ALLOWED,
-						&domain_sid,
-						&domain_pol);
-
-	} else if (strequal(argv[1], "builtin")) {
-
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						SEC_FLAG_MAXIMUM_ALLOWED,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-
-	} else {
-		return NT_STATUS_OK;
-	}
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   SEC_FLAG_MAXIMUM_ALLOWED,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1294,20 +1281,11 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_INVALID_PARAMETER;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1890,20 +1868,11 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1973,20 +1942,11 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
