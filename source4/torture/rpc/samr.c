@@ -508,12 +508,19 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 /*
   generate a random password for password change tests
 */
-static char *samr_rand_pass(TALLOC_CTX *mem_ctx, int min_len)
+static char *samr_rand_pass_silent(TALLOC_CTX *mem_ctx, int min_len)
 {
 	size_t len = MAX(8, min_len) + (random() % 6);
 	char *s = generate_random_str(mem_ctx, len);
+	return s;
+}
+
+static char *samr_rand_pass(TALLOC_CTX *mem_ctx, int min_len)
+{
+	char *s = samr_rand_pass_silent(mem_ctx, min_len);
 	printf("Generated password '%s'\n", s);
 	return s;
+
 }
 
 /*
