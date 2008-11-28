@@ -391,8 +391,8 @@ void init_samr_user_info21(struct samr_UserInfo21 *r,
 			   uint16_t logon_count,
 			   uint16_t country_code,
 			   uint16_t code_page,
-			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
+			   uint8_t nt_password_set,
 			   uint8_t password_expired)
 {
 	r->last_logon = last_logon;
@@ -420,8 +420,8 @@ void init_samr_user_info21(struct samr_UserInfo21 *r,
 	r->logon_count = logon_count;
 	r->country_code = country_code;
 	r->code_page = code_page;
-	r->nt_password_set = nt_password_set;
 	r->lm_password_set = lm_password_set;
+	r->nt_password_set = nt_password_set;
 	r->password_expired = password_expired;
 }
 
@@ -455,8 +455,8 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   uint16_t logon_count,
 			   uint16_t country_code,
 			   uint16_t code_page,
-			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
+			   uint8_t nt_password_set,
 			   uint8_t password_expired,
 			   struct samr_CryptPassword *pwd_buf)
 {
@@ -487,8 +487,8 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			      logon_count,
 			      country_code,
 			      code_page,
-			      nt_password_set,
 			      lm_password_set,
+			      nt_password_set,
 			      password_expired);
 
 	r->password = *pwd_buf;
@@ -538,8 +538,8 @@ void init_samr_user_info25(struct samr_UserInfo25 *r,
 			   uint16_t logon_count,
 			   uint16_t country_code,
 			   uint16_t code_page,
-			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
+			   uint8_t nt_password_set,
 			   uint8_t password_expired,
 			   struct samr_CryptPasswordEx *pwd_buf)
 {
@@ -572,8 +572,8 @@ void init_samr_user_info25(struct samr_UserInfo25 *r,
 			      logon_count,
 			      country_code,
 			      code_page,
-			      nt_password_set,
 			      lm_password_set,
+			      nt_password_set,
 			      password_expired);
 
 	r->password = *pwd_buf;

@@ -2607,8 +2607,8 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			      pdb_get_logon_count(pw),
 			      0, /* country_code */
 			      0, /* code_page */
-			      0, /* nt_password_set */
 			      0, /* lm_password_set */
+			      0, /* nt_password_set */
 			      password_expired);
 
 	return NT_STATUS_OK;
