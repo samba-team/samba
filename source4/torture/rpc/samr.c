@@ -2406,7 +2406,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct policy_handle *handle,
 					char **password)
 {
-	int i, s, q;
+	int i, s = 0, q = 0;
 	bool ret = true;
 	int delay = 500000;
 	bool set_levels[] = { false, true };
@@ -2530,10 +2530,20 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		return ret;
 	}
 
+	/* set to 1 to enable testing for all possible opcode
+	   (SetUserInfo, SetUserInfo2, QueryUserInfo, QueryUserInfo2)
+	   combinations */
+#if 0
+#define TEST_SET_LEVELS 1
+#define TEST_QUERY_LEVELS 1
+#endif
 	for (i=0; i<ARRAY_SIZE(pwd_tests); i++) {
+#ifdef TEST_SET_LEVELS
 	for (s=0; s<ARRAY_SIZE(set_levels); s++) {
+#endif
+#ifdef TEST_QUERY_LEVELS
 	for (q=0; q<ARRAY_SIZE(query_levels); q++) {
-
+#endif
 		NTTIME pwdlastset_old = 0;
 		NTTIME pwdlastset_new = 0;
 
@@ -2660,9 +2670,16 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			}
 			break;
 		}
+#ifdef TEST_QUERY_LEVELS
 	}
+#endif
+#ifdef TEST_SET_LEVELS
 	}
+#endif
 	}
+
+#undef TEST_SET_LEVELS
+#undef TEST_QUERY_LEVELS
 
 	return ret;
 }
