@@ -2527,7 +2527,6 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		delay = 1000000;
 		printf("Samba3 has second granularity, setting delay to: %d\n",
 			delay);
-		return ret;
 	}
 
 	/* set to 1 to enable testing for all possible opcode
