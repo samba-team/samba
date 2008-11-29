@@ -23,16 +23,6 @@
 #ifndef _PASSDB_H
 #define _PASSDB_H
 
-
-/*
- * in samba4 idl
- * ACCT_NT_PWD_SET == SAMR_FIELD_PASSWORD and
- * ACCT_LM_PWD_SET == SAMR_FIELD_PASSWORD2
- */
-
-#define ACCT_NT_PWD_SET		0x01000000
-#define ACCT_LM_PWD_SET		0x02000000
-
 /*
  * bit flags representing initialized fields in struct samu
  */
