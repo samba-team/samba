@@ -139,7 +139,7 @@ find_cert(krb5_context context, struct krb5_pk_identity *id,
     struct certfind cf[3] = {
 	{ "PKINIT EKU" },
 	{ "MS EKU" },
-	{ "no" }
+	{ "any (or no)" }
     };
     int i, ret;
 
@@ -159,7 +159,7 @@ find_cert(krb5_context context, struct krb5_pk_identity *id,
 	if (ret == 0)
 	    break;
 	pk_copy_error(context, id->hx509ctx, ret,
-		      "Failed cert for finding %s OID", cf[i].type);
+		      "Failed finding certificate with %s OID", cf[i].type);
     }
     return ret;
 }
@@ -385,7 +385,7 @@ build_auth_pack(krb5_context context,
 		krb5_clear_error_message(context);
 		return ret;
 	    }
-	    memset(a->clientDHNonce->data, 0, a->clientDHNonce->length);
+	    RAND_bytes(a->clientDHNonce->data, a->clientDHNonce->length);
 	    ret = krb5_copy_data(context, a->clientDHNonce,
 				 &ctx->clientDHNonce);
 	    if (ret)
