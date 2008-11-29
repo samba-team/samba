@@ -1244,7 +1244,7 @@ init_cred_loop(krb5_context context,
 
     /* Set a new nonce. */
     krb5_generate_random_block (&ctx->nonce, sizeof(ctx->nonce));
-    ctx->nonce &= 0xffffffff;
+    ctx->nonce &= 0x7fffffff;
     /* XXX these just needs to be the same when using Windows PK-INIT */
     ctx->pk_nonce = ctx->nonce;
 
