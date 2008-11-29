@@ -82,13 +82,11 @@ krb5_rd_rep(krb5_context context,
 	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
 	goto out;
     }
-    ret = krb5_decode_EncAPRepPart(context,
-				   data.data,
-				   data.length,
-				   *repl,
-				   &len);
-    if (ret)
+    ret = decode_EncAPRepPart(data.data, data.length, *repl, &len);
+    if (ret) {
+	krb5_set_error_message(context, ret, N_("Failed to decode EncAPRepPart", ""));
 	return ret;
+    }
 
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
 	if ((*repl)->ctime != auth_context->authenticator->ctime ||
