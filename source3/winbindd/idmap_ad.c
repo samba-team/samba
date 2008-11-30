@@ -830,6 +830,9 @@ static NTSTATUS nss_ad_get_info( struct nss_domain_entry *e,
 	struct idmap_domain *dom;
 	struct idmap_ad_context *ctx;
 
+	DEBUG(10, ("nss_ad_get_info called for sid [%s] in domain '%s'\n",
+		   sid_string_dbg(sid), e->domain?e->domain:"NULL"));
+
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
 		return NT_STATUS_FILE_IS_OFFLINE;
