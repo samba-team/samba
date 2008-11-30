@@ -4222,7 +4222,14 @@ do_query:
 	nt_status = nss_get_info( domain->name, user_sid, ctx, ads, msg, 
 				  homedir, shell, gecos, p_gid );
 
+	DEBUG(10, ("nss_get_info returned %s\n", nt_errstr(nt_status)));
+
 	if ( NT_STATUS_IS_OK(nt_status) ) {
+		DEBUG(10, ("result:\n\thomedir = '%s'\n", *homedir));
+                DEBUGADD(10, ("\tshell = '%s'\n", *shell));
+                DEBUGADD(10, ("\tgecos = '%s'\n", *gecos));
+                DEBUGADD(10, ("\tgid = '%u'\n", *p_gid));
+
 		wcache_save_user_pwinfo( domain, nt_status, user_sid,
 					 *homedir, *shell, *gecos, *p_gid );
 	}	
