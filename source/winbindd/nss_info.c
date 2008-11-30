@@ -273,6 +273,9 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 	struct nss_domain_entry *p;
 	struct nss_info_methods *m;
 
+	DEBUG(10, ("nss_get_info called for sid [%s] in domain '%s'\n",
+		   sid_string_dbg(user_sid), domain?domain:"NULL"));
+
 	if ( (p = find_nss_domain( domain )) == NULL ) {
 		DEBUG(4,("nss_get_info: Failed to find nss domain pointer for %s\n",
 			 domain ));
