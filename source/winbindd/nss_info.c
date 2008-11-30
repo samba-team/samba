@@ -158,6 +158,9 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			continue;			
 		}
 
+		DEBUG(10, ("parsed backend = '%s', domain = '%s'\n",
+			   backend, domain));
+
 		/* validate the backend */
 
 		if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
@@ -196,6 +199,10 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			DEBUG(0,("nss_init: Failed to init backend for %s domain!\n", 
 				 nss_domain->domain));
 		}
+
+		DEBUG(10, ("nss_init: nss domain initialized: "
+			   "domain = '%s', backend = '%s'\n",
+			   domain, backend));
 
 		/* cleanup */
 
