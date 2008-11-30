@@ -1397,6 +1397,10 @@ bool cli_session_request(struct cli_state *cli,
 	char *p;
 	int len = 4;
 
+	/* 445 doesn't have session request */
+	if (cli->port == 445)
+		return True;
+
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
 
@@ -1409,10 +1413,6 @@ bool cli_session_request(struct cli_state *cli,
 	p = cli->outbuf+len;
 	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
-
-	/* 445 doesn't have session request */
-	if (cli->port == 445)
-		return True;
 
 	/* send a session request (RFC 1002) */
 	/* setup the packet length
