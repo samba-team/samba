@@ -77,7 +77,6 @@ enum NTLM_MESSAGE_TYPE
 
 typedef struct ntlmssp_state 
 {
-	TALLOC_CTX *mem_ctx;
 	unsigned int ref_count;
 	enum NTLMSSP_ROLE role;
 	enum server_types server_role;

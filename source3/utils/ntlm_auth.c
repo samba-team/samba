@@ -547,7 +547,8 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
 			*user_session_key = data_blob(user_sess_key, 16);
 		}
-		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state->mem_ctx, unix_name);
+		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state,
+							    unix_name);
 		SAFE_FREE(unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
@@ -567,7 +568,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 
 	nt_lm_owf_gen (opt_password, nt_pw, lm_pw);
 	
-	nt_status = ntlm_password_check(ntlmssp_state->mem_ctx, 
+	nt_status = ntlm_password_check(ntlmssp_state,
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,
 					&ntlmssp_state->nt_resp, 
@@ -578,7 +579,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 					lm_pw, nt_pw, user_session_key, lm_session_key);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, 
+		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state,
 							      "%s%c%s", ntlmssp_state->domain, 
 							      *lp_winbind_separator(), 
 							      ntlmssp_state->user);
