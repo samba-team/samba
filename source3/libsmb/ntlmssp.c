@@ -11,12 +11,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -60,7 +60,7 @@ static const struct ntlmssp_callbacks {
 void debug_ntlmssp_flags(uint32 neg_flags)
 {
 	DEBUG(3,("Got NTLMSSP neg_flags=0x%08x\n", neg_flags));
-	
+
 	if (neg_flags & NTLMSSP_NEGOTIATE_UNICODE) 
 		DEBUGADD(4, ("  NTLMSSP_NEGOTIATE_UNICODE\n"));
 	if (neg_flags & NTLMSSP_NEGOTIATE_OEM) 
@@ -109,7 +109,7 @@ void debug_ntlmssp_flags(uint32 neg_flags)
  * Default challenge generation code.
  *
  */
-   
+
 static const uint8 *get_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	static uchar chal[8];
@@ -122,7 +122,7 @@ static const uint8 *get_challenge(const struct ntlmssp_state *ntlmssp_state)
  * Default 'we can set the challenge to anything we like' implementation
  *
  */
-   
+
 static bool may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
 {
 	return True;
@@ -134,7 +134,7 @@ static bool may_set_challenge(const struct ntlmssp_state *ntlmssp_state)
  * Does not actually do anything, as the value is always in the structure anyway.
  *
  */
-   
+
 static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
 {
 	SMB_ASSERT(challenge->length == 8);
@@ -277,7 +277,7 @@ void ntlmssp_want_feature(NTLMSSP_STATE *ntlmssp_state, uint32 feature)
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
 	}
 }
- 
+
 /**
  * Next state function for the NTLMSSP state machine
  * 
@@ -304,7 +304,7 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
 
 	if (!in.length && ntlmssp_state->stored_response.length) {
 		input = ntlmssp_state->stored_response;
-		
+
 		/* we only want to read the stored response once - overwrite it */
 		ntlmssp_state->stored_response = data_blob_null;
 	} else {
@@ -685,7 +685,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		SAFE_FREE(workstation);
 		data_blob_free(&encrypted_session_key);
 		auth_flags = 0;
-		
+
 		/* Try again with a shorter string (Win9X truncates this packet) */
 		if (ntlmssp_state->unicode) {
 			parse_string = "CdBBUUU";
@@ -753,23 +753,23 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 
 	/* NTLM2 uses a 'challenge' that is made of up both the server challenge, and a 
 	   client challenge 
-	
+
 	   However, the NTLM2 flag may still be set for the real NTLMv2 logins, be careful.
 	*/
 	if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (ntlmssp_state->nt_resp.length == 24 && ntlmssp_state->lm_resp.length == 24) {
 			struct MD5Context md5_session_nonce_ctx;
 			SMB_ASSERT(ntlmssp_state->internal_chal.data && ntlmssp_state->internal_chal.length == 8);
-			
+
 			doing_ntlm2 = True;
 
 			memcpy(session_nonce, ntlmssp_state->internal_chal.data, 8);
 			memcpy(&session_nonce[8], ntlmssp_state->lm_resp.data, 8);
-			
+
 			MD5Init(&md5_session_nonce_ctx);
 			MD5Update(&md5_session_nonce_ctx, session_nonce, 16);
 			MD5Final(session_nonce_hash, &md5_session_nonce_ctx);
-			
+
 			ntlmssp_state->chal = data_blob_talloc(ntlmssp_state->mem_ctx, session_nonce_hash, 8);
 
 			/* LM response is no longer useful */
@@ -812,7 +812,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 sizeof(session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
-			
+
 		} else {
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
 			session_key = data_blob_null;
@@ -892,7 +892,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 	}
 
 	data_blob_free(&encrypted_session_key);
-	
+
 	/* Only one authentication allowed per server state. */
 	ntlmssp_state->expected_state = NTLMSSP_DONE;
 
@@ -910,7 +910,7 @@ NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("NTLMSSP context");
-	
+
 	*ntlmssp_state = TALLOC_ZERO_P(mem_ctx, NTLMSSP_STATE);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_server_start: talloc failed!\n"));
@@ -968,7 +968,7 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 	} else {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_OEM;
 	}
-	
+
 	if (ntlmssp_state->use_ntlmv2) {
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
@@ -1021,7 +1021,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	
+
 	data_blob_free(&server_domain_blob);
 
 	DEBUG(3, ("Got challenge flags:\n"));
@@ -1079,7 +1079,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		/* session key is all zeros */
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, zeros, 16);
-		
+
 		/* not doing NLTM2 without a password */
 		ntlmssp_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 	} else if (ntlmssp_state->use_ntlmv2) {
@@ -1092,7 +1092,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 
 		/* TODO: if the remote server is standalone, then we should replace 'domain'
 		   with the server name as supplied above */
-		
+
 		if (!SMBNTLMv2encrypt_hash(ntlmssp_state->user, 
 				      ntlmssp_state->domain, 
 				      ntlmssp_state->nt_hash, &challenge_blob, 
@@ -1107,14 +1107,14 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		uchar session_nonce[16];
 		uchar session_nonce_hash[16];
 		uchar user_session_key[16];
-		
+
 		lm_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
 		generate_random_buffer(lm_response.data, 8);
 		memset(lm_response.data+8, 0, 16);
 
 		memcpy(session_nonce, challenge_blob.data, 8);
 		memcpy(&session_nonce[8], lm_response.data, 8);
-	
+
 		MD5Init(&md5_session_nonce_ctx);
 		MD5Update(&md5_session_nonce_ctx, challenge_blob.data, 8);
 		MD5Update(&md5_session_nonce_ctx, lm_response.data, 8);
@@ -1123,7 +1123,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
 		DEBUG(5, ("challenge is: \n"));
 		dump_data(5, session_nonce_hash, 8);
-		
+
 		nt_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
 		SMBNTencrypt_hash(ntlmssp_state->nt_hash,
 			     session_nonce_hash,
@@ -1141,11 +1141,11 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 			SMBencrypt_hash(ntlmssp_state->lm_hash,challenge_blob.data,
 				   lm_response.data);
 		}
-		
+
 		nt_response = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 24);
 		SMBNTencrypt_hash(ntlmssp_state->nt_hash,challenge_blob.data,
 			     nt_response.data);
-		
+
 		session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
 		if ((ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) 
 		    && lp_client_lanman_auth()) {
@@ -1188,7 +1188,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 		       ntlmssp_state->get_global_myname(), 
 		       encrypted_session_key.data, encrypted_session_key.length,
 		       ntlmssp_state->neg_flags)) {
-		
+
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1216,7 +1216,7 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("NTLMSSP Client context");
-	
+
 	*ntlmssp_state = TALLOC_ZERO_P(mem_ctx, NTLMSSP_STATE);
 	if (!*ntlmssp_state) {
 		DEBUG(0,("ntlmssp_client_start: talloc failed!\n"));
