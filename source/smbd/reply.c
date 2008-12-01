@@ -5581,6 +5581,12 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
+	if(replace_if_exists && dst_exists) {
+		if (is_ntfs_stream_name(newname)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+	}
+
 	if (dst_exists) {
 		struct file_id fileid = vfs_file_id_from_sbuf(conn, &sbuf1);
 		files_struct *dst_fsp = file_find_di_first(fileid);
