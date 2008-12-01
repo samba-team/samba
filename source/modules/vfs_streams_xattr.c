@@ -148,7 +148,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		return -1;
 	}
 
-	if (SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf) == -1) {
+	if (SMB_VFS_STAT(handle->conn, io->base, sbuf) == -1) {
 		return -1;
 	}
 
