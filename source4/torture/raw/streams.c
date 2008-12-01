@@ -620,6 +620,106 @@ done:
 	return ret;
 }
 
+/*
+  test stream names
+*/
+static bool test_stream_names(struct torture_context *tctx,
+			      struct smbcli_state *cli,
+			      TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_names.txt";
+	const char *sname1, *sname1b, *sname1c, *sname1d;
+	const char *sname2, *snamew, *snamew2;
+	bool ret = true;
+	int fnum1 = -1;
+	int fnum2 = -1;
+	const char *four[4] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
+
+	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "\x05Stream\n One");
+	sname1b = talloc_asprintf(mem_ctx, "%s:", sname1);
+	sname1c = talloc_asprintf(mem_ctx, "%s:$FOO", sname1);
+	sname1d = talloc_asprintf(mem_ctx, "%s:?D*a", sname1);
+	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname, "MStream Two");
+	snamew = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "?Stream*");
+	snamew2 = talloc_asprintf(mem_ctx, "%s\\stream*:%s:$DATA", BASEDIR, "?Stream*");
+
+	printf("(%s) testing stream names\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = sname1;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * A different stream does not give a sharing violation
+	 */
+
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * ... whereas the same stream does with unchanged access/share_access
+	 * flags
+	 */
+
+	io.ntcreatex.in.fname = sname1;
+	io.ntcreatex.in.open_disposition = 0;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	io.ntcreatex.in.fname = sname1b;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.ntcreatex.in.fname = sname1c;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	io.ntcreatex.in.fname = sname1d;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	io.ntcreatex.in.fname = snamew;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.ntcreatex.in.fname = snamew2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	ret &= check_stream_list(cli, fname, 4, four);
+
+done:
+	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
+	if (fnum2 != -1) smbcli_close(cli->tree, fnum2);
+	status = smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -637,6 +737,8 @@ bool torture_raw_streams(struct torture_context *torture,
 	ret &= test_stream_io(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_sharemodes(torture, cli, torture);
+	smb_raw_exit(cli->session);
+	ret &= test_stream_names(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	if (!torture_setting_bool(torture, "samba4", false)) {
 		ret &= test_stream_delete(torture, cli, torture);
