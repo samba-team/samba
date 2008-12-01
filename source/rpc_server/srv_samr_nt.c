@@ -1009,6 +1009,7 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 	if (!samr_array) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	*r->out.sam = samr_array;
 
 	become_root();
 
@@ -1068,7 +1069,6 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 	samr_array->entries = samr_entries;
 
 	*r->out.resume_handle = *r->in.resume_handle + num_account;
-	*r->out.sam = samr_array;
 	*r->out.num_entries = num_account;
 
 	DEBUG(5,("_samr_EnumDomainUsers: %d\n", __LINE__));
