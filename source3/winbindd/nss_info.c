@@ -3,6 +3,7 @@
    Idmap NSS headers
 
    Copyright (C) Gerald Carter             2006
+   Copyright (C) Michael Adam 2008
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -22,6 +23,7 @@
 #include "nss_info.h"
 
 static struct nss_function_entry *backends = NULL;
+static struct nss_function_entry *default_backend = NULL;
 static struct nss_domain_entry *nss_domain_list = NULL;
 
 /**********************************************************************
@@ -121,6 +123,42 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	return True;
 }
 
+NTSTATUS nss_domain_list_add_domain(const char *domain,
+				    struct nss_function_entry *nss_backend)
+{
+	struct nss_domain_entry *nss_domain;
+
+	nss_domain = TALLOC_ZERO_P(nss_domain_list, struct nss_domain_entry);
+	if (!nss_domain) {
+		DEBUG(0, ("nss_domain_list_add_domain: talloc() failure!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nss_domain->backend = nss_backend;
+	if (domain) {
+		nss_domain->domain  = talloc_strdup(nss_domain, domain);
+		if (!nss_domain->domain) {
+			DEBUG(0, ("nss_domain_list_add_domain: talloc() "
+				  "failure!\n"));
+			TALLOC_FREE(nss_domain);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	nss_domain->init_status = nss_domain->backend->methods->init(nss_domain);
+	if (!NT_STATUS_IS_OK(nss_domain->init_status))  {
+		DEBUG(0, ("nss_init: Failed to init backend '%s' for domain "
+			  "'%s'!\n", nss_backend->name, nss_domain->domain));
+	}
+
+	DLIST_ADD(nss_domain_list, nss_domain);
+
+	DEBUG(10, ("Added domain '%s' with backend '%s' to nss_domain_list.\n",
+		   domain, nss_backend->name));
+
+	return NT_STATUS_OK;
+}
+
 /********************************************************************
  Each nss backend must not store global state, but rather be able
  to initialize the state on a per domain basis.
@@ -178,30 +216,20 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			}
 		}
 
-		/* fill in the nss_domain_entry and add it to the
-		   list of domains */
-
-		nss_domain = TALLOC_ZERO_P( nss_domain_list, struct nss_domain_entry );
-		if ( !nss_domain ) {
-			DEBUG(0,("nss_init: talloc() failure!\n"));
-			return NT_STATUS_NO_MEMORY;
+		/*
+		 * The first config item of the list without an explicit domain
+		 * is treated as the default nss info backend.
+		 */
+		if ((domain == NULL) && (default_backend == NULL)) {
+			DEBUG(10, ("nss_init: using '%s' as default backend.\n",
+				   backend));
+			default_backend = nss_backend;
 		}
 
-		nss_domain->backend = nss_backend;
-		nss_domain->domain  = talloc_strdup( nss_domain, domain );
-
-		/* Try to init and ave the result */
-
-		nss_domain->init_status = nss_domain->backend->methods->init( nss_domain );
-		DLIST_ADD( nss_domain_list, nss_domain );
-		if ( !NT_STATUS_IS_OK(nss_domain->init_status) ) {
-			DEBUG(0,("nss_init: Failed to init backend for %s domain!\n", 
-				 nss_domain->domain));
+		status = nss_domain_list_add_domain(domain, nss_backend);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-
-		DEBUG(10, ("nss_init: nss domain initialized: "
-			   "domain = '%s', backend = '%s'\n",
-			   domain, backend));
 
 		/* cleanup */
 
@@ -242,13 +270,23 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			break;
 	}
 
-	/* If we didn't find a match, then use the default nss info */
+	/* If we didn't find a match, then use the default nss backend */
 
 	if ( !p ) {
-		if ( !nss_domain_list ) {
+		if (!default_backend) {
 			return NULL;
 		}
 
+		status = nss_domain_list_add_domain(domain, default_backend);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		/*
+		 * HACK ALERT:
+		 * Here, we use the fact that the new domain was added at
+		 * the beginning of the list...
+		 */
 		p = nss_domain_list;
 	}
 
