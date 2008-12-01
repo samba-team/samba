@@ -337,6 +337,11 @@ import "misc.idl", "lsa.idl", "security.idl";
 		DOMAIN_REFUSE_PASSWORD_CHANGE   = 0x00000020
 	} samr_PasswordProperties;
 
+	typedef [v1_enum] enum {
+		DOMAIN_SERVER_ENABLED = 1,
+		DOMAIN_SERVER_DISABLED = 2
+	} samr_DomainServerState;
+
 	typedef struct {
 		uint16 min_password_length;
 		uint16 password_history_length;
@@ -352,7 +357,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		lsa_String domain_name;
 		lsa_String primary; /* PDC name if this is a BDC */
 		udlong sequence_num;
-		uint32 unknown2;
+		samr_DomainServerState domain_server_state;
 		samr_Role role;
 		uint32 unknown3;
 		uint32 num_users;
@@ -386,7 +391,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_DomInfo8;
 
 	typedef struct {
-		uint32 unknown; /* w2k3 returns 1 */
+		samr_DomainServerState domain_server_state;
 	} samr_DomInfo9;
 
 	typedef struct {
