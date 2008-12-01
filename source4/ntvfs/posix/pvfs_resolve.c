@@ -186,7 +186,9 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 /*
   parse a alternate data stream name
 */
-static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
+static NTSTATUS parse_stream_name(struct smb_iconv_convenience *ic,
+				  struct pvfs_filename *name,
+				  const char *s)
 {
 	char *p;
 	if (s[1] == '\0') {
@@ -196,19 +198,37 @@ static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
 	if (name->stream_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	p = strchr_m(name->stream_name, ':');
-	if (p == NULL) {
-		name->stream_id = pvfs_name_hash(name->stream_name, 
-						 strlen(name->stream_name));
-		return NT_STATUS_OK;
+
+	p = name->stream_name;
+
+	while (*p) {
+		size_t c_size;
+		codepoint_t c = next_codepoint_convenience(ic, p, &c_size);
+
+		switch (c) {
+		case '/':
+		case '\\':
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		case ':':
+			*p= 0;
+			p++;
+			if (*p == '\0') {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+			if (strcasecmp_m(p, "$DATA") != 0) {
+				if (strchr_m(p, ':')) {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+			c_size = 0;
+			p--;
+			break;
+		}
+
+		p += c_size;
 	}
-	if (p[1] == '\0') {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-	if (strcasecmp_m(p, ":$DATA") != 0) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-	*p = 0;
+
 	if (strcmp(name->stream_name, "") == 0) {
 		/*
 		 * we don't set stream_name to NULL, here
@@ -239,6 +259,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			       uint_t flags, struct pvfs_filename *name)
 {
 	char *ret, *p, *p_start;
+	struct smb_iconv_convenience *ic = NULL;
 	NTSTATUS status;
 
 	name->original_name = talloc_strdup(name, cifs_name);
@@ -269,9 +290,10 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	   for legal characters */
 	p_start = p;
 
+	ic = lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx);
 	while (*p) {
 		size_t c_size;
-		codepoint_t c = next_codepoint_convenience(lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, &c_size);
+		codepoint_t c = next_codepoint_convenience(ic, p, &c_size);
 
 		if (c <= 0x1F) {
 			return NT_STATUS_OBJECT_NAME_INVALID;
@@ -304,7 +326,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			if (name->has_wildcard) {
 				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
-			status = parse_stream_name(name, p);
+			status = parse_stream_name(ic, name, p);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
