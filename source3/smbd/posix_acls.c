@@ -3253,7 +3253,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		parent_name,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_OPEN,				/* create_disposition*/

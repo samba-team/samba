@@ -1011,7 +1011,7 @@ static void call_trans2open(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -5064,7 +5064,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -5844,7 +5844,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -6286,7 +6286,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_CREATE,				/* create_disposition*/
@@ -6460,7 +6460,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		access_mask,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -6590,7 +6590,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		DELETE_ACCESS,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),

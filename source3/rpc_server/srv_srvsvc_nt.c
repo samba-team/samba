@@ -2053,7 +2053,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		r->in.file,				/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2168,7 +2168,7 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		r->in.file,				/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/

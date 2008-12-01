@@ -1349,7 +1349,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		filepath,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -1400,7 +1400,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		filepath,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -1553,7 +1553,7 @@ static uint32 get_correct_cversion(struct pipes_struct *p,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		driverpath,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/

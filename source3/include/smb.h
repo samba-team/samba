@@ -1895,4 +1895,9 @@ struct smb_extended_info {
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
 
+/*
+ * create_file_flags
+ */
+#define CFF_DOS_PATH		0x00000001
+
 #endif /* _SMB_H */

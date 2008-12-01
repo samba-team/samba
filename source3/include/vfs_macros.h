@@ -48,7 +48,7 @@
 
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
-#define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, fname, is_dos_path, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs.ops.create_file)((conn)->vfs.handles.create_file, (req), (root_dir_fid), (fname), (is_dos_path), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
+#define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs.ops.create_file)((conn)->vfs.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_CLOSE(fsp) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp)))
 #define SMB_VFS_READ(fsp, data, n) ((fsp)->conn->vfs.ops.vfs_read((fsp)->conn->vfs.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_PREAD(fsp, data, n, off) ((fsp)->conn->vfs.ops.pread((fsp)->conn->vfs.handles.pread, (fsp), (data), (n), (off)))
@@ -174,7 +174,7 @@
 
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
-#define SMB_VFS_OPAQUE_CREATE_FILE(conn, req, root_dir_fid, fname, is_dos_path, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs_opaque.ops.create_file)((conn)->vfs_opaque.handles.create_file, (req), (root_dir_fid), (fname), (is_dos_path), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
+#define SMB_VFS_OPAQUE_CREATE_FILE(conn, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs_opaque.ops.create_file)((conn)->vfs_opaque.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_OPAQUE_CLOSE(fsp) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp)))
 #define SMB_VFS_OPAQUE_READ(fsp, data, n) ((fsp)->conn->vfs_opaque.ops.vfs_read((fsp)->conn->vfs_opaque.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_OPAQUE_PREAD(fsp, data, n, off) ((fsp)->conn->vfs_opaque.ops.pread((fsp)->conn->vfs_opaque.handles.pread, (fsp), (data), (n), (off)))
@@ -301,7 +301,7 @@
 
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))
-#define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, fname, is_dos_path, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((handle)->vfs_next.ops.create_file)((handle)->vfs_next.handles.create_file, (req), (root_dir_fid), (fname), (is_dos_path), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
+#define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((handle)->vfs_next.ops.create_file)((handle)->vfs_next.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp)))
 #define SMB_VFS_NEXT_READ(handle, fsp, data, n) ((handle)->vfs_next.ops.vfs_read((handle)->vfs_next.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_NEXT_PREAD(handle, fsp, data, n, off) ((handle)->vfs_next.ops.pread((handle)->vfs_next.handles.pread, (fsp), (data), (n), (off)))

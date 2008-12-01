@@ -113,7 +113,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct smb_request *req,
 				      uint16_t root_dir_fid,
 				      const char *fname,
-				      bool is_dos_path,
+				      uint32_t create_file_flags,
 				      uint32_t access_mask,
 				      uint32_t share_access,
 				      uint32_t create_disposition,
@@ -1110,7 +1110,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 				      struct smb_request *req,
 				      uint16_t root_dir_fid,
 				      const char *fname,
-				      bool is_dos_path,
+				      uint32_t create_file_flags,
 				      uint32_t access_mask,
 				      uint32_t share_access,
 				      uint32_t create_disposition,
@@ -1131,7 +1131,7 @@ static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
-		is_dos_path,				/* is_dos_path */
+		create_file_flags,			/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/

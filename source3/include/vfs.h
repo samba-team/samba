@@ -313,7 +313,7 @@ struct vfs_ops {
 					struct smb_request *req,
 					uint16_t root_dir_fid,
 					const char *fname,
-					bool is_dos_path,
+					uint32_t create_file_flags,
 					uint32_t access_mask,
 					uint32_t share_access,
 					uint32_t create_disposition,

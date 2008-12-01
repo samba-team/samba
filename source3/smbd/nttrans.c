@@ -479,7 +479,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -951,7 +951,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		req,					/* req */
 		root_dir_fid,				/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_access,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1191,7 +1191,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		oldname,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_READ_DATA,				/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -1215,7 +1215,7 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
 		req,					/* req */
 		0,					/* root_dir_fid */
 		newname,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),

@@ -2099,7 +2099,7 @@ NTSTATUS open_file_fchmod(struct smb_request *req, connection_struct *conn,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_WRITE_DATA,			/* access_mask */
 		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
 		    FILE_SHARE_DELETE),
@@ -2464,7 +2464,7 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, cons
 		req,					/* req */
 		0,					/* root_dir_fid */
 		directory,				/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_CREATE,				/* create_disposition*/
@@ -3073,7 +3073,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     struct smb_request *req,
 			     uint16_t root_dir_fid,
 			     const char *fname,
-			     bool is_dos_path,
+			     uint32_t create_file_flags,
 			     uint32_t access_mask,
 			     uint32_t share_access,
 			     uint32_t create_disposition,
@@ -3099,7 +3099,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
 		  "root_dir_fid = 0x%x, ea_list = 0x%p, sd = 0x%p, "
-		  "is_dos_path = %s, fname = %s\n",
+		  "create_file_flags = 0x%x, fname = %s\n",
 		  (unsigned int)access_mask,
 		  (unsigned int)file_attributes,
 		  (unsigned int)share_access,
@@ -3107,7 +3107,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)create_options,
 		  (unsigned int)oplock_request,
 		  (unsigned int)root_dir_fid,
-		  ea_list, sd, fname, is_dos_path ? "true" : "false"));
+		  ea_list, sd, create_file_flags, fname));
 
 	/*
 	 * Get the file name.
@@ -3263,7 +3263,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
-	if (is_dos_path) {
+	if (create_file_flags & CFF_DOS_PATH) {
 		char *converted_fname;
 
 		SET_STAT_INVALID(sbuf);

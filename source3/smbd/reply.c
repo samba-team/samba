@@ -1635,7 +1635,7 @@ void reply_open(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1781,7 +1781,7 @@ void reply_open_and_X(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -1981,7 +1981,7 @@ void reply_mknew(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		true,					/* is_dos_path */
+		CFF_DOS_PATH,				/* create_file_flags */
 		access_mask,				/* access_mask */
 		share_mode,				/* share_access */
 		create_disposition,			/* create_disposition*/
@@ -2128,7 +2128,7 @@ void reply_ctemp(struct smb_request *req)
 		req,					/* req */
 		0,					/* root_dir_fid */
 		fname,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_READ | FILE_GENERIC_WRITE, /* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2330,7 +2330,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 req,			/* req */
 		 0,			/* root_dir_fid */
 		 fname,			/* fname */
-		 false,			/* is_dos_path */
+		 0,			/* create_file_flags */
 		 DELETE_ACCESS,		/* access_mask */
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
@@ -5764,7 +5764,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			req,				/* req */
 			0,				/* root_dir_fid */
 			directory,			/* fname */
-			false,				/* is_dos_path */
+			0,				/* create_file_flags */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
 			    FILE_SHARE_WRITE),
@@ -5882,7 +5882,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			req,				/* req */
 			0,				/* root_dir_fid */
 			fname,				/* fname */
-			false,				/* is_dos_path */
+			0,				/* create_file_flags */
 			access_mask,			/* access_mask */
 			(FILE_SHARE_READ |		/* share_access */
 			    FILE_SHARE_WRITE),
@@ -6094,7 +6094,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		src,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_READ,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -6123,7 +6123,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		dest,					/* fname */
-		false,					/* is_dos_path */
+		0,					/* create_file_flags */
 		FILE_GENERIC_WRITE,			/* access_mask */
 		FILE_SHARE_READ | FILE_SHARE_WRITE,	/* share_access */
 		new_create_disposition,			/* create_disposition*/
