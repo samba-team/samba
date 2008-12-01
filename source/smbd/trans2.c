@@ -3993,6 +3993,46 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+		    && is_ntfs_stream_name(fname)) {
+			char *base;
+			SMB_STRUCT_STAT bsbuf;
+
+			status = split_ntfs_stream_name(talloc_tos(), fname,
+							&base, NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("create_file_unixpath: "
+					"split_ntfs_stream_name failed: %s\n",
+					nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			SMB_ASSERT(!is_ntfs_stream_name(base));	/* paranoia.. */
+
+			if (INFO_LEVEL_IS_UNIX(info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (SMB_VFS_LSTAT(conn,base,&bsbuf)) {
+					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",base,strerror(errno)));
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
+				}
+			} else {
+				if (SMB_VFS_STAT(conn,base,&bsbuf) != 0) {
+					DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",base,strerror(errno)));
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
+				}
+			}
+
+			fileid = vfs_file_id_from_sbuf(conn, &bsbuf);
+			get_file_infos(fileid, &delete_pending, NULL);
+			if (delete_pending) {
+				reply_nterror(req, NT_STATUS_DELETE_PENDING);
+				return;
+			}
+		}
+
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
