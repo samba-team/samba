@@ -271,6 +271,11 @@ static char *stream_name(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
+	/* if it's the ::$DATA stream just return the base file name */
+	if (!sname) {
+		return base;
+	}
+
 	dirname = stream_dir(handle, base, NULL, create_dir);
 
 	if (dirname == NULL) {
@@ -410,6 +415,7 @@ static int streams_depot_open(vfs_handle_struct *handle,  const char *fname,
 {
 	TALLOC_CTX *frame;
 	char *base = NULL;
+	char *sname = NULL;
 	SMB_STRUCT_STAT base_sbuf;
 	char *stream_fname;
 	int ret = -1;
@@ -421,8 +427,13 @@ static int streams_depot_open(vfs_handle_struct *handle,  const char *fname,
 	frame = talloc_stackframe();
 
 	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), fname,
-						    &base, NULL))) {
+						    &base, &sname))) {
 		errno = ENOMEM;
+		goto done;
+	}
+
+	if (!sname) {
+		ret = SMB_VFS_NEXT_OPEN(handle, base, fsp, flags, mode);
 		goto done;
 	}
 
