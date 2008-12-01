@@ -2849,6 +2849,8 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 				   "%s\n", base, nt_errstr(status)));
 			goto fail;
 		}
+		/* we don't need to low level fd */
+		fd_close(base_fsp);
 	}
 
 	/*
