@@ -171,7 +171,6 @@ static NTSTATUS nss_domain_list_add_domain(const char *domain,
 	int i;
 	char *backend, *domain;
 	struct nss_function_entry *nss_backend;
-	struct nss_domain_entry *nss_domain;
 
 	/* check for previous successful initializations */
 
