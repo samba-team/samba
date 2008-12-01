@@ -870,7 +870,7 @@ static void merge_aces( canon_ace **pp_list_head )
  Check if we need to return NT4.x compatible ACL entries.
 ****************************************************************************/
 
-static bool nt4_compatible_acls(void)
+bool nt4_compatible_acls(void)
 {
 	int compat = lp_acl_compatibility();
 
