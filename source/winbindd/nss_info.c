@@ -123,8 +123,8 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	return True;
 }
 
-NTSTATUS nss_domain_list_add_domain(const char *domain,
-				    struct nss_function_entry *nss_backend)
+static NTSTATUS nss_domain_list_add_domain(const char *domain,
+					   struct nss_function_entry *nss_backend)
 {
 	struct nss_domain_entry *nss_domain;
 
