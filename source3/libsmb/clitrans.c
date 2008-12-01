@@ -1316,10 +1316,10 @@ NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct cli_request);
 	struct cli_trans_state *state = talloc_get_type_abort(
 		cli_req->recv_helper.priv, struct cli_trans_state);
+	NTSTATUS status;
 
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
 	if (setup != NULL) {

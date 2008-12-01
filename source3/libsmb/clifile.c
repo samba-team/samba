@@ -908,9 +908,8 @@ NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
 	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
@@ -985,10 +984,10 @@ NTSTATUS cli_close_recv(struct async_req *req)
 	uint16_t *vwv;
 	uint16_t num_bytes;
 	uint8_t *bytes;
+	NTSTATUS status;
 
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
 	return cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);

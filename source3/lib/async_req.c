@@ -172,3 +172,26 @@ bool async_req_nomem(const void *p, struct async_req *req)
 	async_req_error(req, NT_STATUS_NO_MEMORY);
 	return true;
 }
+
+bool async_req_is_error(struct async_req *req, NTSTATUS *status)
+{
+	if (req->state < ASYNC_REQ_DONE) {
+		*status = NT_STATUS_INTERNAL_ERROR;
+		return true;
+	}
+	if (req->state == ASYNC_REQ_ERROR) {
+		*status = req->status;
+		return true;
+	}
+	return false;
+}
+
+NTSTATUS async_req_simple_recv(struct async_req *req)
+{
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}

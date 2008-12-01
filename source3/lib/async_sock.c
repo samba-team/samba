@@ -364,11 +364,7 @@ struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS sendall_recv(struct async_req *req)
 {
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
-	}
-	return NT_STATUS_OK;
+	return async_req_simple_recv(req);
 }
 
 /**
@@ -518,11 +514,7 @@ struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS recvall_recv(struct async_req *req)
 {
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
-	}
-	return NT_STATUS_OK;
+	return async_req_simple_recv(req);
 }
 
 /**

@@ -112,9 +112,8 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	NTSTATUS status;
 	size_t size;
 
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
 	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
@@ -405,10 +404,10 @@ NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received)
 {
 	struct cli_pull_state *state = talloc_get_type_abort(
 		req->private_data, struct cli_pull_state);
+	NTSTATUS status;
 
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 	*received = state->pushed;
 	return NT_STATUS_OK;

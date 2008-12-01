@@ -134,4 +134,8 @@ bool async_post_status(struct async_req *req, NTSTATUS status);
 
 bool async_req_nomem(const void *p, struct async_req *req);
 
+bool async_req_is_error(struct async_req *req, NTSTATUS *status);
+
+NTSTATUS async_req_simple_recv(struct async_req *req);
+
 #endif
