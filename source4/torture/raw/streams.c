@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
@@ -720,6 +721,72 @@ done:
 	return ret;
 }
 
+/*
+  test stream names
+*/
+static bool test_stream_names2(struct torture_context *tctx,
+			       struct smbcli_state *cli,
+			       TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_names2.txt";
+	bool ret = true;
+	int fnum1 = -1;
+	uint8_t i;
+
+	printf("(%s) testing stream names\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	for (i=0x01; i < 0x7F; i++) {
+		char *path = talloc_asprintf(tctx, "%s:Stream%c0x%02X:$DATA",
+					     fname, i, i);
+		NTSTATUS expected;
+
+		switch (i) {
+		case '/':/*0x2F*/
+		case ':':/*0x3A*/
+		case '\\':/*0x5C*/
+			expected = NT_STATUS_OBJECT_NAME_INVALID;
+			break;
+		default:
+			expected = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			break;
+		}
+
+		printf("(%s) %s:Stream%c0x%02X:$DATA%s => expected[%s]\n",
+		       __location__, fname, isprint(i)?(char)i:' ', i,
+		       isprint(i)?"":" (not printable)",
+		       nt_errstr(expected));
+
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		io.ntcreatex.in.fname = path;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, expected);
+
+		talloc_free(path);
+	}
+
+done:
+	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
+	status = smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -739,6 +806,8 @@ bool torture_raw_streams(struct torture_context *torture,
 	ret &= test_stream_sharemodes(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_names(torture, cli, torture);
+	smb_raw_exit(cli->session);
+	ret &= test_stream_names2(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	if (!torture_setting_bool(torture, "samba4", false)) {
 		ret &= test_stream_delete(torture, cli, torture);
