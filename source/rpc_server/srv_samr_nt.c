@@ -3726,13 +3726,11 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 
 	if (id7 == NULL) {
 		DEBUG(5, ("set_user_info_7: NULL id7\n"));
-		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!id7->account_name.string) {
 	        DEBUG(5, ("set_user_info_7: failed to get new username\n"));
-		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3752,7 +3750,6 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 
 	rc = pdb_rename_sam_account(pwd, id7->account_name.string);
 
-	TALLOC_FREE(pwd);
 	return rc;
 }
 
@@ -3765,22 +3762,17 @@ static bool set_user_info_16(struct samr_UserInfo16 *id16,
 {
 	if (id16 == NULL) {
 		DEBUG(5, ("set_user_info_16: NULL id16\n"));
-		TALLOC_FREE(pwd);
 		return False;
 	}
 
 	/* FIX ME: check if the value is really changed --metze */
 	if (!pdb_set_acct_ctrl(pwd, id16->acct_flags, PDB_CHANGED)) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
 
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
-
-	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -3794,29 +3786,23 @@ static bool set_user_info_18(struct samr_UserInfo18 *id18,
 {
 	if (id18 == NULL) {
 		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
-		TALLOC_FREE(pwd);
 		return False;
 	}
 
 	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd.hash, PDB_CHANGED)) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
 	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd.hash, PDB_CHANGED)) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
  	if (!pdb_set_pass_last_set_time (pwd, time(NULL), PDB_CHANGED)) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
 
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return False;
  	}
 
-	TALLOC_FREE(pwd);
 	return True;
 }
 
@@ -3836,11 +3822,8 @@ static bool set_user_info_20(struct samr_UserInfo20 *id20,
 
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return False;
  	}
-
-	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -3858,6 +3841,10 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 	if (id21 == NULL) {
 		DEBUG(5, ("set_user_info_21: NULL id21\n"));
 		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (id21->fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* we need to separately check for an account rename first */
@@ -3885,7 +3872,6 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("set_user_info_21: failed to rename account: %s\n",
 				nt_errstr(status)));
-			TALLOC_FREE(pwd);
 			return status;
 		}
 
@@ -3916,11 +3902,8 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return status;
  	}
-
-	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
 }
@@ -3943,6 +3926,11 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (id23->info.fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+
 	DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
 		  pdb_get_username(pwd)));
 
@@ -3953,12 +3941,10 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 				&plaintext_buf,
 				&len,
 				STR_UNICODE)) {
-		TALLOC_FREE(pwd);
-		return NT_STATUS_INVALID_PARAMETER;
+		return NT_STATUS_WRONG_PASSWORD;
  	}
 
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
-		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3975,7 +3961,6 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 			struct passwd *passwd;
 			if (pdb_get_username(pwd) == NULL) {
 				DEBUG(1, ("chgpasswd: User without name???\n"));
-				TALLOC_FREE(pwd);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
@@ -3985,7 +3970,6 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 			}
 
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
-				TALLOC_FREE(pwd);
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			TALLOC_FREE(passwd);
@@ -3997,16 +3981,12 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
 	    (!NT_STATUS_IS_OK(status =  pdb_set_unix_primary_group(mem_ctx,
 								   pwd)))) {
-		TALLOC_FREE(pwd);
 		return status;
 	}
 
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return status;
 	}
-
-	TALLOC_FREE(pwd);
 
 	return NT_STATUS_OK;
 }
@@ -4038,12 +4018,10 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd,
 				&plaintext_buf,
 				&len,
 				STR_UNICODE)) {
-		TALLOC_FREE(pwd);
 		return False;
  	}
 
 	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
-		TALLOC_FREE(pwd);
 		return False;
 	}
 
@@ -4059,7 +4037,6 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd,
 
 			if (pdb_get_username(pwd) == NULL) {
 				DEBUG(1, ("chgpasswd: User without name???\n"));
-				TALLOC_FREE(pwd);
 				return False;
 			}
 
@@ -4069,7 +4046,6 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd,
 			}
 
 			if(!chgpasswd(pdb_get_username(pwd), passwd, "", plaintext_buf, True)) {
-				TALLOC_FREE(pwd);
 				return False;
 			}
 			TALLOC_FREE(passwd);
@@ -4097,11 +4073,8 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd,
 
 	/* update the SAMBA password */
 	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return False;
  	}
-
-	TALLOC_FREE(pwd);
 
 	return True;
 }
@@ -4121,11 +4094,14 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	if (id25->info.fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	copy_id25_to_sam_passwd(pwd, id25);
 
 	/* write the change out */
 	if(!NT_STATUS_IS_OK(status = pdb_update_sam_account(pwd))) {
-		TALLOC_FREE(pwd);
 		return status;
  	}
 
@@ -4143,9 +4119,6 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 			return status;
 		}
 	}
-
-	/* WARNING: No TALLOC_FREE(pwd), we are about to set the password
-	 * hereafter! */
 
 	return NT_STATUS_OK;
 }
@@ -4311,7 +4284,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 			if (!set_user_info_pw(info->info24.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
@@ -4332,7 +4305,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			}
 			if (!set_user_info_pw(info->info25.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
@@ -4348,7 +4321,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 			if (!set_user_info_pw(info->info26.password.data, pwd,
 					      switch_value)) {
-				status = NT_STATUS_ACCESS_DENIED;
+				status = NT_STATUS_WRONG_PASSWORD;
 			}
 			break;
 
@@ -4357,6 +4330,8 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	}
 
  done:
+
+	TALLOC_FREE(pwd);
 
 	if (has_enough_rights) {
 		unbecome_root();
