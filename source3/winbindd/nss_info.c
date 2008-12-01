@@ -295,7 +295,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	m = p->backend->methods;
 
-	return m->map_to_alias( mem_ctx, domain, name, alias );
+	return m->map_to_alias(mem_ctx, p, name, alias);
 }
 
 
@@ -316,7 +316,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	m = p->backend->methods;
 
-	return m->map_from_alias( mem_ctx, domain, alias, name );
+	return m->map_from_alias( mem_ctx, p, alias, name );
 }
 
 /********************************************************************

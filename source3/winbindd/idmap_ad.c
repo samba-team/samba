@@ -824,7 +824,7 @@ done:
  *********************************************************************/
 
 static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
-				    const char *domain,
+				    struct nss_domain_entry *e,
 				    const char *name,
 				    char **alias)
 {
@@ -838,7 +838,7 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 
 	/* Check incoming parameters */
 
-	if ( !domain || !name || !*alias) {
+	if ( !e || !e->domain || !name || !*alias) {
 		nt_status = NT_STATUS_INVALID_PARAMETER;
 		goto done;
 	}
@@ -896,7 +896,7 @@ done:
  *********************************************************************/
 
 static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
-					     const char *domain,
+					     struct nss_domain_entry *e,
 					     const char *alias,
 					     char **name )
 {

@@ -62,7 +62,7 @@ static NTSTATUS nss_template_get_info( struct nss_domain_entry *e,
  *********************************************************************/
 
 static NTSTATUS nss_template_map_to_alias( TALLOC_CTX *mem_ctx,
-					   const char *domain,
+					   struct nss_domain_entry *e,
 					   const char *name,
 					   char **alias )
 {
@@ -73,7 +73,7 @@ static NTSTATUS nss_template_map_to_alias( TALLOC_CTX *mem_ctx,
  *********************************************************************/
 
 static NTSTATUS nss_template_map_from_alias( TALLOC_CTX *mem_ctx,
-					     const char *domain,
+					     struct nss_domain_entry *e,
 					     const char *alias,
 					     char **name )
 {
