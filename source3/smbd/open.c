@@ -2927,6 +2927,13 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_IS_A_DIRECTORY)) {
 
+			/* A stream open never opens a directory */
+
+			if (base_fsp) {
+				status = NT_STATUS_FILE_IS_A_DIRECTORY;
+				goto fail;
+			}
+
 			/*
 			 * Fail the open if it was explicitly a non-directory
 			 * file.
