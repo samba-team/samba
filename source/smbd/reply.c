@@ -54,11 +54,45 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	const char *s = path;
 	NTSTATUS ret = NT_STATUS_OK;
 	bool start_of_name_component = True;
+	bool stream_started = false;
 
 	*p_last_component_contains_wcard = False;
 
 	while (*s) {
-		if (IS_PATH_SEP(*s,posix_path)) {
+		if (stream_started) {
+			switch (*s) {
+			case '/':
+			case '\\':
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			case ':':
+				if (s[1] == '\0') {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
+				if (strchr_m(&s[1], ':')) {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
+				if (StrCaseCmp(s, ":$DATA") != 0) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				break;
+			}
+		}
+
+		if (!stream_started && *s == ':') {
+			if (*p_last_component_contains_wcard) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+			/* stream names allow more characters than file names */
+			stream_started = true;
+			start_of_name_component = false;
+			posix_path = true;
+
+			if (s[1] == '\0') {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+		}
+
+		if (!stream_started && IS_PATH_SEP(*s,posix_path)) {
 			/*
 			 * Safe to assume is not the second part of a mb char
 			 * as this is handled below.
