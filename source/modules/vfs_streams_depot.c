@@ -128,7 +128,6 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
-	TALLOC_FREE(tmp);
 
 	if (base_sbuf == NULL) {
 		if (SMB_VFS_NEXT_STAT(handle, base_path, &sbuf) == -1) {
