@@ -67,9 +67,14 @@ static uint32_t hash_fn(DATA_BLOB key)
 
 #define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
 
-static bool file_is_valid(vfs_handle_struct *handle, const char *path)
+static bool file_is_valid(vfs_handle_struct *handle, const char *path,
+			  bool check_valid)
 {
 	char buf;
+
+	if (!check_valid) {
+		return true;
+	}
 
 	DEBUG(10, ("file_is_valid (%s) called\n", path));
 
@@ -87,10 +92,15 @@ static bool file_is_valid(vfs_handle_struct *handle, const char *path)
 	return true;
 }
 
-static bool mark_file_valid(vfs_handle_struct *handle, const char *path)
+static bool mark_file_valid(vfs_handle_struct *handle, const char *path,
+			    bool check_valid)
 {
 	char buf = '1';
 	int ret;
+
+	if (!check_valid) {
+		return true;
+	}
 
 	DEBUG(10, ("marking file %s as valid\n", path));
 
@@ -116,6 +126,11 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	char *id_hex;
 	struct file_id id;
 	uint8 id_buf[16];
+	bool check_valid;
+	const char *rootdir;
+
+	check_valid = lp_parm_bool(SNUM(handle->conn),
+			"streams_depot", "check_valid", true);
 
 	tmp = talloc_asprintf(talloc_tos(), "%s/.streams", handle->conn->connectpath);
 
@@ -124,7 +139,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 		goto fail;
 	}
 
-	const char *rootdir = lp_parm_const_string(
+	rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
 
@@ -173,7 +188,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 			goto fail;
 		}
 
-		if (file_is_valid(handle, base_path)) {
+		if (file_is_valid(handle, base_path, check_valid)) {
 			return result;
 		}
 
@@ -243,7 +258,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 		goto fail;
 	}
 
-	if (!mark_file_valid(handle, base_path)) {
+	if (!mark_file_valid(handle, base_path, check_valid)) {
 		goto fail;
 	}
 
