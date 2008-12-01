@@ -658,6 +658,7 @@ static bool test_stream_names(struct torture_context *tctx,
 	const char *fname = BASEDIR "\\stream_names.txt";
 	const char *sname1, *sname1b, *sname1c, *sname1d;
 	const char *sname2, *snamew, *snamew2;
+	const char *snamer1, *snamer2;
 	bool ret = true;
 	int fnum1 = -1;
 	int fnum2 = -1;
@@ -669,6 +670,20 @@ static bool test_stream_names(struct torture_context *tctx,
 		":MStream Two:$DATA",
 		":?Stream*:$DATA"
 	};
+	const char *five1[5] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":BeforeRename:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
+	const char *five2[5] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":AfterRename:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
 
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "\x05Stream\n One");
 	sname1b = talloc_asprintf(mem_ctx, "%s:", sname1);
@@ -677,6 +692,8 @@ static bool test_stream_names(struct torture_context *tctx,
 	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname, "MStream Two");
 	snamew = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "?Stream*");
 	snamew2 = talloc_asprintf(mem_ctx, "%s\\stream*:%s:$DATA", BASEDIR, "?Stream*");
+	snamer1 = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "BeforeRename");
+	snamer2 = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "AfterRename");
 
 	printf("(%s) testing stream names\n", __location__);
 	io.generic.level = RAW_OPEN_NTCREATEX;
@@ -801,14 +818,16 @@ static bool test_stream_names(struct torture_context *tctx,
 		stinfo.generic.in.file.fnum = fnum1;
 		status = smb_raw_fileinfo(cli->tree, mem_ctx, &stinfo);
 		CHECK_STATUS(status, NT_STATUS_OK);
-		CHECK_NTTIME(stinfo.all_info.out.create_time,
-			     finfo.all_info.out.create_time);
-		CHECK_NTTIME(stinfo.all_info.out.access_time,
-			     finfo.all_info.out.access_time);
-		CHECK_NTTIME(stinfo.all_info.out.write_time,
-			     finfo.all_info.out.write_time);
-		CHECK_NTTIME(stinfo.all_info.out.change_time,
-			     finfo.all_info.out.change_time);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			CHECK_NTTIME(stinfo.all_info.out.create_time,
+				     finfo.all_info.out.create_time);
+			CHECK_NTTIME(stinfo.all_info.out.access_time,
+				     finfo.all_info.out.access_time);
+			CHECK_NTTIME(stinfo.all_info.out.write_time,
+				     finfo.all_info.out.write_time);
+			CHECK_NTTIME(stinfo.all_info.out.change_time,
+				     finfo.all_info.out.change_time);
+		}
 		CHECK_VALUE(stinfo.all_info.out.attrib,
 			    finfo.all_info.out.attrib);
 		CHECK_VALUE(stinfo.all_info.out.size,
@@ -874,6 +893,53 @@ static bool test_stream_names(struct torture_context *tctx,
 		smbcli_close(cli->tree, fnum1);
 		talloc_free(path);
 	}
+
+	printf("(%s): testing stream renames\n", __location__);
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE |
+				      SEC_FILE_WRITE_ATTRIBUTE |
+				    SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.fname = snamer1;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	ret &= check_stream_list(cli, fname, 5, five1);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":AfterRename:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = false;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	/* TODO: we need to test more rename combinations */
 
 done:
 	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
