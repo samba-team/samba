@@ -5347,26 +5347,42 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* Create the base directory. */
-	base_name = talloc_strdup(ctx, fname);
-	if (!base_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = strrchr_m(base_name, '/');
-	if (p) {
-		p[1] = '\0';
-	} else {
-		base_name = talloc_strdup(ctx, "./");
+	if (fsp && fsp->base_fsp) {
+		if (newname[0] != ':') {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+		base_name = talloc_asprintf(ctx, "%s%s",
+					   fsp->base_fsp->fsp_name,
+					   newname);
 		if (!base_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-	}
-	/* Append the new name. */
-	base_name = talloc_asprintf_append(base_name,
-			"%s",
-			newname);
-	if (!base_name) {
-		return NT_STATUS_NO_MEMORY;
+	} else {
+		if (is_ntfs_stream_name(newname)) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
+		/* Create the base directory. */
+		base_name = talloc_strdup(ctx, fname);
+		if (!base_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		p = strrchr_m(base_name, '/');
+		if (p) {
+			p[1] = '\0';
+		} else {
+			base_name = talloc_strdup(ctx, "./");
+			if (!base_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		/* Append the new name. */
+		base_name = talloc_asprintf_append(base_name,
+				"%s",
+				newname);
+		if (!base_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (fsp) {
