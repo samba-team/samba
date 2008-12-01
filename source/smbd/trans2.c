@@ -4951,7 +4951,11 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			  time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
 		if (fsp != NULL) {
-			set_sticky_write_time_fsp(fsp, ts[1]);
+			if (fsp->base_fsp) {
+				set_sticky_write_time_fsp(fsp->base_fsp, ts[1]);
+			} else {
+				set_sticky_write_time_fsp(fsp, ts[1]);
+			}
 		} else {
 			set_sticky_write_time_path(conn, fname,
 					    vfs_file_id_from_sbuf(conn, psbuf),
@@ -4960,6 +4964,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+
+	if (fsp && fsp->base_fsp) {
+		fname = fsp->base_fsp->fsp_name;
+	}
 
 	if(file_ntimes(conn, fname, ts)!=0) {
 		return map_nt_error_from_unix(errno);
