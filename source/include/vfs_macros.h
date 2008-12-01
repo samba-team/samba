@@ -92,7 +92,7 @@
 
 /* POSIX ACL operations. */
 #define SMB_VFS_CHMOD_ACL(conn, name, mode) ((conn)->vfs.ops.chmod_acl((conn)->vfs.handles.chmod_acl, (name), (mode)))
-#define SMB_VFS_FCHMOD_ACL(fsp, mode) ((fsp)->conn->vfs.ops.fchmod_acl((fsp)->conn->vfs.handles.chmod_acl, (fsp), (mode)))
+#define SMB_VFS_FCHMOD_ACL(fsp, mode) ((fsp)->conn->vfs.ops.fchmod_acl((fsp)->conn->vfs.handles.fchmod_acl, (fsp), (mode)))
 
 #define SMB_VFS_SYS_ACL_GET_ENTRY(conn, theacl, entry_id, entry_p) ((conn)->vfs.ops.sys_acl_get_entry((conn)->vfs.handles.sys_acl_get_entry, (theacl), (entry_id), (entry_p)))
 #define SMB_VFS_SYS_ACL_GET_TAG_TYPE(conn, entry_d, tag_type_p) ((conn)->vfs.ops.sys_acl_get_tag_type((conn)->vfs.handles.sys_acl_get_tag_type, (entry_d), (tag_type_p)))
@@ -217,7 +217,7 @@
 
 /* POSIX ACL operations. */
 #define SMB_VFS_OPAQUE_CHMOD_ACL(conn, name, mode) ((conn)->vfs_opaque.ops.chmod_acl((conn)->vfs_opaque.handles.chmod_acl, (name), (mode)))
-#define SMB_VFS_OPAQUE_FCHMOD_ACL(fsp, mode) ((fsp)->conn->vfs_opaque.ops.fchmod_acl((fsp)->conn->vfs_opaque.handles.chmod_acl, (fsp), (mode)))
+#define SMB_VFS_OPAQUE_FCHMOD_ACL(fsp, mode) ((fsp)->conn->vfs_opaque.ops.fchmod_acl((fsp)->conn->vfs_opaque.handles.fchmod_acl, (fsp), (mode)))
 
 #define SMB_VFS_OPAQUE_SYS_ACL_GET_ENTRY(conn, theacl, entry_id, entry_p) ((conn)->vfs_opaque.ops.sys_acl_get_entry((conn)->vfs_opaque.handles.sys_acl_get_entry, (theacl), (entry_id), (entry_p)))
 #define SMB_VFS_OPAQUE_SYS_ACL_GET_TAG_TYPE(conn, entry_d, tag_type_p) ((conn)->vfs_opaque.ops.sys_acl_get_tag_type((conn)->vfs_opaque.handles.sys_acl_get_tag_type, (entry_d), (tag_type_p)))
@@ -343,7 +343,7 @@
 
 /* POSIX ACL operations. */
 #define SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode) ((handle)->vfs_next.ops.chmod_acl((handle)->vfs_next.handles.chmod_acl, (name), (mode)))
-#define SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode) ((handle)->vfs_next.ops.fchmod_acl((handle)->vfs_next.handles.chmod_acl, (fsp), (mode)))
+#define SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode) ((handle)->vfs_next.ops.fchmod_acl((handle)->vfs_next.handles.fchmod_acl, (fsp), (mode)))
 
 #define SMB_VFS_NEXT_SYS_ACL_GET_ENTRY(handle, theacl, entry_id, entry_p) ((handle)->vfs_next.ops.sys_acl_get_entry((handle)->vfs_next.handles.sys_acl_get_entry, (theacl), (entry_id), (entry_p)))
 #define SMB_VFS_NEXT_SYS_ACL_GET_TAG_TYPE(handle, entry_d, tag_type_p) ((handle)->vfs_next.ops.sys_acl_get_tag_type((handle)->vfs_next.handles.sys_acl_get_tag_type, (entry_d), (tag_type_p)))
