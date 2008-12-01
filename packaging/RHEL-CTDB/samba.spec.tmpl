@@ -133,7 +133,7 @@ cd source
 # RPM_OPT_FLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
 
 ## check for ccache
-if ccache -h 2>&1 > /dev/null ; then
+if ccache -h >/dev/null 2>&1 ; then
 	CC="ccache gcc"
 else
 	CC="gcc"
