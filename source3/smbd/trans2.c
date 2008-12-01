@@ -1135,7 +1135,7 @@ static uint32 unix_filetype(mode_t mode)
 		return UNIX_TYPE_SOCKET;
 #endif
 
-	DEBUG(0,("unix_filetype: unknown filetype %u", (unsigned)mode));
+	DEBUG(0,("unix_filetype: unknown filetype %u\n", (unsigned)mode));
 	return UNIX_TYPE_UNKNOWN;
 }
 
