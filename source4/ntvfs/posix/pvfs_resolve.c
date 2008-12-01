@@ -189,6 +189,9 @@ static NTSTATUS pvfs_case_search(struct pvfs_state *pvfs,
 static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
 {
 	char *p;
+	if (s[1] == '\0') {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
 	name->stream_name = talloc_strdup(name, s+1);
 	if (name->stream_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -199,8 +202,11 @@ static NTSTATUS parse_stream_name(struct pvfs_filename *name, const char *s)
 						 strlen(name->stream_name));
 		return NT_STATUS_OK;
 	}
-	if (strcasecmp_m(p, ":$DATA") != 0) {
+	if (p[1] == '\0') {
 		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+	if (strcasecmp_m(p, ":$DATA") != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*p = 0;
 	if (strcmp(name->stream_name, "") == 0) {
@@ -266,12 +272,17 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 	while (*p) {
 		size_t c_size;
 		codepoint_t c = next_codepoint_convenience(lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), p, &c_size);
+
+		if (c <= 0x1F) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+
 		switch (c) {
 		case '\\':
 			if (name->has_wildcard) {
 				/* wildcards are only allowed in the last part
 				   of a name */
-				return NT_STATUS_ILLEGAL_CHARACTER;
+				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			if (p > p_start && (p[1] == '\\' || p[1] == '\0')) {
 				/* see if it is definately a "\\" or
@@ -288,10 +299,10 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			break;
 		case ':':
 			if (!(flags & PVFS_RESOLVE_STREAMS)) {
-				return NT_STATUS_ILLEGAL_CHARACTER;
+				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			if (name->has_wildcard) {
-				return NT_STATUS_ILLEGAL_CHARACTER;
+				return NT_STATUS_OBJECT_NAME_INVALID;
 			}
 			status = parse_stream_name(name, p);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -311,7 +322,7 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 			break;
 		case '/':
 		case '|':
-			return NT_STATUS_ILLEGAL_CHARACTER;
+			return NT_STATUS_OBJECT_NAME_INVALID;
 		case '.':
 			/* see if it is definately a .. or
 			   . component. If it is then fail here, and
