@@ -2861,7 +2861,8 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 
 		/* Can't open a temp directory. IFS kit test. */
-		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
+		if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
+		     (file_attributes & FILE_ATTRIBUTE_TEMPORARY)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto fail;
 		}
@@ -3260,7 +3261,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		case_state = set_posix_case_semantics(talloc_tos(), conn);
-		file_attributes &= ~FILE_FLAG_POSIX_SEMANTICS;
 	}
 
 	if (create_file_flags & CFF_DOS_PATH) {
