@@ -704,7 +704,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo9 *info)
 {
-	info->unknown = 1;
+	info->domain_server_state = DOMAIN_SERVER_ENABLED;
 
 	return NT_STATUS_OK;
 }
