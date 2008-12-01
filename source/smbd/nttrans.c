@@ -1594,11 +1594,19 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		status = SMB_VFS_FGET_NT_ACL(
 			fsp, security_info_wanted, &psd);
 	}
-
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
 	}
+
+	/* If the SACL/DACL is NULL, but was requested, we mark that it is
+	 * present in the reply to match Windows behavior */
+	if (psd->sacl == NULL &&
+	    security_info_wanted & SACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_SACL_PRESENT;
+	if (psd->dacl == NULL &&
+	    security_info_wanted & DACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_DACL_PRESENT;
 
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
