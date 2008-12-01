@@ -47,7 +47,7 @@ void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
 				     const char *domain_name,
 				     const char *primary,
 				     uint64_t sequence_num,
-				     uint32_t unknown2,
+				     enum samr_DomainServerState domain_server_state,
 				     enum samr_Role role,
 				     uint32_t unknown3,
 				     uint32_t num_users,
@@ -59,7 +59,7 @@ void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
 	init_lsa_String(&r->domain_name, domain_name);
 	init_lsa_String(&r->primary, primary);
 	r->sequence_num = sequence_num;
-	r->unknown2 = unknown2;
+	r->domain_server_state = domain_server_state;
 	r->role = role;
 	r->unknown3 = unknown3;
 	r->num_users = num_users;
@@ -134,10 +134,11 @@ void init_samr_DomInfo8(struct samr_DomInfo8 *r,
 ********************************************************************/
 
 void init_samr_DomInfo9(struct samr_DomInfo9 *r,
-			uint32_t unknown)
+			enum samr_DomainServerState domain_server_state)
 {
-	r->unknown = unknown;
+	r->domain_server_state = domain_server_state;
 }
+
 
 /*******************************************************************
  inits a structure.
