@@ -172,6 +172,19 @@ enum samr_Role
 #define DOMAIN_PASSWORD_STORE_CLEARTEXT ( 0x00000010 )
 #define DOMAIN_REFUSE_PASSWORD_CHANGE ( 0x00000020 )
 
+enum samr_DomainServerState
+#ifndef USE_UINT_ENUMS
+ {
+	DOMAIN_SERVER_ENABLED=1,
+	DOMAIN_SERVER_DISABLED=2
+}
+#else
+ { __donnot_use_enum_samr_DomainServerState=0x7FFFFFFF}
+#define DOMAIN_SERVER_ENABLED ( 1 )
+#define DOMAIN_SERVER_DISABLED ( 2 )
+#endif
+;
+
 struct samr_DomInfo1 {
 	uint16_t min_password_length;
 	uint16_t password_history_length;
@@ -186,7 +199,7 @@ struct samr_DomGeneralInformation {
 	struct lsa_String domain_name;
 	struct lsa_String primary;
 	uint64_t sequence_num;
-	uint32_t unknown2;
+	enum samr_DomainServerState domain_server_state;
 	enum samr_Role role;
 	uint32_t unknown3;
 	uint32_t num_users;
@@ -220,7 +233,7 @@ struct samr_DomInfo8 {
 };
 
 struct samr_DomInfo9 {
-	uint32_t unknown;
+	enum samr_DomainServerState domain_server_state;
 };
 
 struct samr_DomGeneralInformation2 {

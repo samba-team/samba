@@ -168,6 +168,7 @@ void ndr_print_samr_Role(struct ndr_print *ndr, const char *name, enum samr_Role
 enum ndr_err_code ndr_push_samr_PasswordProperties(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_samr_PasswordProperties(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_samr_PasswordProperties(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_samr_DomainServerState(struct ndr_print *ndr, const char *name, enum samr_DomainServerState r);
 void ndr_print_samr_DomInfo1(struct ndr_print *ndr, const char *name, const struct samr_DomInfo1 *r);
 void ndr_print_samr_DomGeneralInformation(struct ndr_print *ndr, const char *name, const struct samr_DomGeneralInformation *r);
 void ndr_print_samr_DomInfo3(struct ndr_print *ndr, const char *name, const struct samr_DomInfo3 *r);

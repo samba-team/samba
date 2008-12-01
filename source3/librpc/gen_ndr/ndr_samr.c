@@ -417,6 +417,31 @@ _PUBLIC_ void ndr_print_samr_PasswordProperties(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_samr_DomainServerState(struct ndr_push *ndr, int ndr_flags, enum samr_DomainServerState r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_samr_DomainServerState(struct ndr_pull *ndr, int ndr_flags, enum samr_DomainServerState *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_DomainServerState(struct ndr_print *ndr, const char *name, enum samr_DomainServerState r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case DOMAIN_SERVER_ENABLED: val = "DOMAIN_SERVER_ENABLED"; break;
+		case DOMAIN_SERVER_DISABLED: val = "DOMAIN_SERVER_DISABLED"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_samr_DomInfo1(struct ndr_push *ndr, int ndr_flags, const struct samr_DomInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -468,7 +493,7 @@ static enum ndr_err_code ndr_push_samr_DomGeneralInformation(struct ndr_push *nd
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->domain_name));
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->primary));
 		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS, r->sequence_num));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+		NDR_CHECK(ndr_push_samr_DomainServerState(ndr, NDR_SCALARS, r->domain_server_state));
 		NDR_CHECK(ndr_push_samr_Role(ndr, NDR_SCALARS, r->role));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_users));
@@ -492,7 +517,7 @@ static enum ndr_err_code ndr_pull_samr_DomGeneralInformation(struct ndr_pull *nd
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->domain_name));
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->primary));
 		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->sequence_num));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+		NDR_CHECK(ndr_pull_samr_DomainServerState(ndr, NDR_SCALARS, &r->domain_server_state));
 		NDR_CHECK(ndr_pull_samr_Role(ndr, NDR_SCALARS, &r->role));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_users));
@@ -516,7 +541,7 @@ _PUBLIC_ void ndr_print_samr_DomGeneralInformation(struct ndr_print *ndr, const 
 	ndr_print_lsa_String(ndr, "domain_name", &r->domain_name);
 	ndr_print_lsa_String(ndr, "primary", &r->primary);
 	ndr_print_udlong(ndr, "sequence_num", r->sequence_num);
-	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr_print_samr_DomainServerState(ndr, "domain_server_state", r->domain_server_state);
 	ndr_print_samr_Role(ndr, "role", r->role);
 	ndr_print_uint32(ndr, "unknown3", r->unknown3);
 	ndr_print_uint32(ndr, "num_users", r->num_users);
@@ -718,7 +743,7 @@ static enum ndr_err_code ndr_push_samr_DomInfo9(struct ndr_push *ndr, int ndr_fl
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_samr_DomainServerState(ndr, NDR_SCALARS, r->domain_server_state));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -729,7 +754,7 @@ static enum ndr_err_code ndr_pull_samr_DomInfo9(struct ndr_pull *ndr, int ndr_fl
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_samr_DomainServerState(ndr, NDR_SCALARS, &r->domain_server_state));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -740,7 +765,7 @@ _PUBLIC_ void ndr_print_samr_DomInfo9(struct ndr_print *ndr, const char *name, c
 {
 	ndr_print_struct(ndr, name, "samr_DomInfo9");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "unknown", r->unknown);
+	ndr_print_samr_DomainServerState(ndr, "domain_server_state", r->domain_server_state);
 	ndr->depth--;
 }
 
