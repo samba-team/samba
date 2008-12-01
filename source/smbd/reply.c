@@ -121,7 +121,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 		if (!(*s & 0x80)) {
 			if (!posix_path) {
-				if (*s <= 0x1f) {
+				if (*s <= 0x1f || *s == '|') {
 					return NT_STATUS_OBJECT_NAME_INVALID;
 				}
 				switch (*s) {
