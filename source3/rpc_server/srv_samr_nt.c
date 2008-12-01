@@ -3970,7 +3970,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 {
 	char *plaintext_buf = NULL;
 	uint32 len = 0;
-	uint16 acct_ctrl;
+	uint32_t acct_ctrl;
 	NTSTATUS status;
 
 	if (id23 == NULL) {
@@ -3986,32 +3986,35 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if ((id23->info.fields_present & SAMR_FIELD_PASSWORD) ||
+	    (id23->info.fields_present & SAMR_FIELD_PASSWORD2)) {
 
-	DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
-		  pdb_get_username(pwd)));
+		DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
+			  pdb_get_username(pwd)));
 
-	acct_ctrl = pdb_get_acct_ctrl(pwd);
+		if (!decode_pw_buffer(mem_ctx,
+				      id23->password.data,
+				      &plaintext_buf,
+				      &len,
+				      STR_UNICODE)) {
+			return NT_STATUS_WRONG_PASSWORD;
+		}
 
-	if (!decode_pw_buffer(mem_ctx,
-				id23->password.data,
-				&plaintext_buf,
-				&len,
-				STR_UNICODE)) {
-		return NT_STATUS_WRONG_PASSWORD;
- 	}
-
-	if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
-		return NT_STATUS_ACCESS_DENIED;
+		if (!pdb_set_plaintext_passwd (pwd, plaintext_buf)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	copy_id23_to_sam_passwd(pwd, id23);
+
+	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	/* if it's a trust account, don't update /etc/passwd */
 	if (    ( (acct_ctrl &  ACB_DOMTRUST) == ACB_DOMTRUST ) ||
 		( (acct_ctrl &  ACB_WSTRUST) ==  ACB_WSTRUST) ||
 		( (acct_ctrl &  ACB_SVRTRUST) ==  ACB_SVRTRUST) ) {
 		DEBUG(5, ("Changing trust account.  Not updating /etc/passwd\n"));
-	} else  {
+	} else if (plaintext_buf) {
 		/* update the UNIX password */
 		if (lp_unix_password_sync() ) {
 			struct passwd *passwd;
@@ -4032,7 +4035,9 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	memset(plaintext_buf, '\0', strlen(plaintext_buf));
+	if (plaintext_buf) {
+		memset(plaintext_buf, '\0', strlen(plaintext_buf));
+	}
 
 	if (IS_SAM_CHANGED(pwd, PDB_GROUPSID) &&
 	    (!NT_STATUS_IS_OK(status =  pdb_set_unix_primary_group(mem_ctx,
