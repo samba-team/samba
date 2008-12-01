@@ -284,6 +284,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
 	    (!file_existed && (local_flags & O_CREAT)) ||
 	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
+		const char *wild;
 
 		/*
 		 * We can't actually truncate here as the file may be locked.
@@ -305,8 +306,17 @@ static NTSTATUS open_file(files_struct *fsp,
 #endif
 
 		/* Don't create files with Microsoft wildcard characters. */
+		if (fsp->base_fsp) {
+			/*
+			 * wildcard characters are allowed in stream names
+			 * only test the basefilename
+			 */
+			wild = fsp->base_fsp->fsp_name;
+		} else {
+			wild = path;
+		}
 		if ((local_flags & O_CREAT) && !file_existed &&
-		    ms_has_wild(path))  {
+		    ms_has_wild(wild))  {
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
