@@ -498,6 +498,78 @@ static int streams_depot_unlink(vfs_handle_struct *handle,  const char *fname)
 	return SMB_VFS_NEXT_UNLINK(handle, fname);
 }
 
+static int streams_depot_rename(vfs_handle_struct *handle,
+				const char *oldname,
+				const char *newname)
+{
+	TALLOC_CTX *frame = NULL;
+	int ret = -1;
+	bool old_is_stream;
+	bool new_is_stream;
+	char *obase = NULL;
+	char *osname = NULL;
+	char *nbase = NULL;
+	char *nsname = NULL;
+	char *ostream_fname = NULL;
+	char *nstream_fname = NULL;
+
+	DEBUG(10, ("streams_depot_rename called for %s => %s\n",
+		   oldname, newname));
+
+	old_is_stream = is_ntfs_stream_name(oldname);
+	new_is_stream = is_ntfs_stream_name(newname);
+
+	if (!old_is_stream && !new_is_stream) {
+		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+	}
+
+	if (!(old_is_stream && new_is_stream)) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	frame = talloc_stackframe();
+
+	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
+						    &obase, &osname))) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
+						    &nbase, &nsname))) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	/* for now don't allow renames from or to the default stream */
+	if (!osname || !nsname) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	if (StrCaseCmp(obase, nbase) != 0) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	ostream_fname = stream_name(handle, oldname, false);
+	if (ostream_fname == NULL) {
+		return -1;
+	}
+
+	nstream_fname = stream_name(handle, newname, false);
+	if (nstream_fname == NULL) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_RENAME(handle, ostream_fname, nstream_fname);
+
+done:
+	TALLOC_FREE(frame);
+	return ret;
+}
+
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			   struct stream_struct **streams,
 			   const char *name, SMB_OFF_T size,
@@ -647,6 +719,8 @@ static vfs_op_tuple streams_depot_ops[] = {
 	{SMB_VFS_OP(streams_depot_lstat), SMB_VFS_OP_LSTAT,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_depot_unlink), SMB_VFS_OP_UNLINK,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(streams_depot_rename), SMB_VFS_OP_RENAME,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_depot_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
