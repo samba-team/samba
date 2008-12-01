@@ -329,9 +329,9 @@ static NTSTATUS _nss_adex_get_info(struct
 /**********************************************************************
  *********************************************************************/
 
-static NTSTATUS _nss_adex_map_to_alias(TALLOC_CTX * mem_ctx, const char
-					  *domain, const char
-					  *name, char **alias)
+static NTSTATUS _nss_adex_map_to_alias(TALLOC_CTX * mem_ctx,
+				       struct nss_domain_entry *e,
+				       const char *name, char **alias)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
         struct likewise_cell *cell = NULL;
@@ -344,7 +344,7 @@ static NTSTATUS _nss_adex_map_to_alias(TALLOC_CTX * mem_ctx, const char
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
 	}
 
-	nt_status = cell->provider->map_to_alias(mem_ctx, domain,
+	nt_status = cell->provider->map_to_alias(mem_ctx, e->domain,
 						 name, alias);
 
 	/* go ahead and allow the cache mgr to mark this in
@@ -360,9 +360,9 @@ done:
 /**********************************************************************
  *********************************************************************/
 
-static NTSTATUS _nss_adex_map_from_alias(TALLOC_CTX * mem_ctx, const char
-					    *domain, const char
-					    *alias, char **name)
+static NTSTATUS _nss_adex_map_from_alias(TALLOC_CTX * mem_ctx,
+					 struct nss_domain_entry *e,
+					 const char *alias, char **name)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
         struct likewise_cell *cell = NULL;
@@ -376,7 +376,7 @@ static NTSTATUS _nss_adex_map_from_alias(TALLOC_CTX * mem_ctx, const char
 	}
 
 
-	nt_status = cell->provider->map_from_alias(mem_ctx, domain,
+	nt_status = cell->provider->map_from_alias(mem_ctx, e->domain,
 						   alias, name);
 
 	/* go ahead and allow the cache mgr to mark this in

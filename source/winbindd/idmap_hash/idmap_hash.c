@@ -304,14 +304,14 @@ done:
  *********************************************************************/
 
 static NTSTATUS nss_hash_map_to_alias(TALLOC_CTX *mem_ctx,
-					const char *domain,
+					struct nss_domain_entry *e,
 					const char *name,
 					char **alias)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *value;
 
-	value = talloc_asprintf(mem_ctx, "%s\\%s", domain, name);
+	value = talloc_asprintf(mem_ctx, "%s\\%s", e->domain, name);
 	BAIL_ON_PTR_NT_ERROR(value, nt_status);
 
 	nt_status = mapfile_lookup_key(mem_ctx, value, alias);
@@ -325,7 +325,7 @@ done:
  *********************************************************************/
 
 static NTSTATUS nss_hash_map_from_alias(TALLOC_CTX *mem_ctx,
-					  const char *domain,
+					  struct nss_domain_entry *e,
 					  const char *alias,
 					  char **name)
 {
