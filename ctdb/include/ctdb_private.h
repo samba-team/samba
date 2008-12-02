@@ -236,8 +236,9 @@ struct ctdb_node {
 */
 struct ctdb_methods {
 	int (*initialise)(struct ctdb_context *); /* initialise transport structures */	
-	int (*start)(struct ctdb_context *); /* start protocol processing */	
+	int (*start)(struct ctdb_context *); /* start the transport */
 	int (*add_node)(struct ctdb_node *); /* setup a new node */	
+	int (*connect_node)(struct ctdb_node *); /* connect to node */
 	int (*queue_pkt)(struct ctdb_node *, uint8_t *data, uint32_t length);
 	void *(*allocate_pkt)(TALLOC_CTX *mem_ctx, size_t );
 	void (*shutdown)(struct ctdb_context *); /* shutdown transport */

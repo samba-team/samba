@@ -47,6 +47,7 @@ void ctdb_tcp_stop_connection(struct ctdb_node *node)
 
 /*
   called when a complete packet has come in - should not happen on this socket
+  unless the other side closes the connection with RST or FIN
  */
 void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 {
@@ -59,7 +60,8 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	}
 
 	ctdb_tcp_stop_connection(node);
-	tnode->connect_te = event_add_timed(node->ctdb->ev, tnode, timeval_zero(),
+	tnode->connect_te = event_add_timed(node->ctdb->ev, tnode,
+					    timeval_current_ofs(3, 0),
 					    ctdb_tcp_node_connect, node);
 }
 
@@ -149,6 +151,7 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
+DEBUG(DEBUG_ERR,("create socket...\n"));
 	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	set_nonblocking(tnode->fd);
 	set_close_on_exec(tnode->fd);

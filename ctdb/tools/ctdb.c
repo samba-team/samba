@@ -2406,6 +2406,9 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", mypnn));
 	}
 
+	/* initiate a recovery */
+	control_recover(ctdb, argc, argv);
+
 	return 0;
 }
 
