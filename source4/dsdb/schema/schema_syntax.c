@@ -1278,9 +1278,9 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.attributeSyntax_oid	= "2.5.5.7",
 		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
 		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
-		.equality               = "distinguishedNameMatch",
+		.equality               = "octetStringMatch",
 		.comment                = "OctetString: Binary+DN",
-		.ldb_syntax             = LDB_SYNTAX_DN,
+		.ldb_syntax             = LDB_SYNTAX_OCTET_STRING,
 	},{
 	/* not used in w2k3 schema */
 		.name			= "Object(OR-Name)",
