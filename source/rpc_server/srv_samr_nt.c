@@ -2312,11 +2312,9 @@ static NTSTATUS init_samr_parameters_string(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo5 *r,
-				DOM_SID *user_sid,
+				struct samu *pw,
 				DOM_SID *domain_sid)
 {
-	struct samu *pw = NULL;
-	bool ret;
 	const DOM_SID *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
 	NTTIME last_logon, last_logoff, last_password_change,
@@ -2328,24 +2326,6 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(r);
 
-	if (!(pw = samu_new(mem_ctx))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(pw, user_sid);
-	unbecome_root();
-
-	if (ret == False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		TALLOC_FREE(pw);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	samr_clear_sam_passwd(pw);
-
-	DEBUG(3,("User:[%s]\n", pdb_get_username(pw)));
-
 	sid_user = pdb_get_user_sid(pw);
 
 	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
@@ -2353,7 +2333,6 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 			  "the domain sid %s.  Failing operation.\n",
 			  pdb_get_username(pw), sid_string_dbg(sid_user),
 			  sid_string_dbg(domain_sid)));
-		TALLOC_FREE(pw);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2366,7 +2345,6 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
 			  pdb_get_username(pw), sid_string_dbg(sid_group),
 			  sid_string_dbg(domain_sid)));
-		TALLOC_FREE(pw);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2407,8 +2385,6 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 			     acct_expiry,
 			     pdb_get_acct_ctrl(pw));
 
-	TALLOC_FREE(pw);
-
 	return NT_STATUS_OK;
 }
 
@@ -2418,35 +2394,16 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo7 *r,
-				DOM_SID *user_sid)
+				struct samu *smbpass)
 {
-	struct samu *smbpass=NULL;
-	bool ret;
 	const char *account_name = NULL;
 
 	ZERO_STRUCTP(r);
 
-	if ( !(smbpass = samu_new( mem_ctx )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(smbpass, user_sid);
-	unbecome_root();
-
-	if ( !ret ) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
 	account_name = talloc_strdup(mem_ctx, pdb_get_username(smbpass));
 	if (!account_name) {
-		TALLOC_FREE(smbpass);
 		return NT_STATUS_NO_MEMORY;
 	}
-	TALLOC_FREE(smbpass);
-
-	DEBUG(3,("User:[%s]\n", account_name));
 
 	init_samr_user_info7(r, account_name);
 
@@ -2459,32 +2416,11 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo9 *r,
-				DOM_SID *user_sid)
+				struct samu *smbpass)
 {
-	struct samu *smbpass=NULL;
-	bool ret;
-
 	ZERO_STRUCTP(r);
 
-	if ( !(smbpass = samu_new( mem_ctx )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(smbpass, user_sid);
-	unbecome_root();
-
-	if (ret==False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		TALLOC_FREE(smbpass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
-
 	init_samr_user_info9(r, pdb_get_group_rid(smbpass));
-
-	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -2495,32 +2431,11 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo16 *r,
-				 DOM_SID *user_sid)
+				 struct samu *smbpass)
 {
-	struct samu *smbpass=NULL;
-	bool ret;
-
 	ZERO_STRUCTP(r);
 
-	if ( !(smbpass = samu_new( mem_ctx )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(smbpass, user_sid);
-	unbecome_root();
-
-	if (ret==False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		TALLOC_FREE(smbpass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	DEBUG(3,("User:[%s]\n", pdb_get_username(smbpass) ));
-
 	init_samr_user_info16(r, pdb_get_acct_ctrl(smbpass));
-
-	TALLOC_FREE(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -2586,10 +2501,8 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 
 static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo20 *r,
-				 DOM_SID *user_sid)
+				 struct samu *sampass)
 {
-	struct samu *sampass=NULL;
-	bool ret;
 	const char *munged_dial = NULL;
 	DATA_BLOB blob;
 	NTSTATUS status;
@@ -2597,23 +2510,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(r);
 
-	if ( !(sampass = samu_new( mem_ctx )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(sampass, user_sid);
-	unbecome_root();
-
-	if (ret == False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		TALLOC_FREE(sampass);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
 	munged_dial = pdb_get_munged_dial(sampass);
-
-	samr_clear_sam_passwd(sampass);
 
 	DEBUG(3,("User:[%s] has [%s] (length: %d)\n", pdb_get_username(sampass),
 		munged_dial, (int)strlen(munged_dial)));
@@ -2626,7 +2523,6 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 
 	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);
 	data_blob_free(&blob);
-	TALLOC_FREE(sampass);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2643,12 +2539,10 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo21 *r,
-				 DOM_SID *user_sid,
+				 struct samu *pw,
 				 DOM_SID *domain_sid)
 {
 	NTSTATUS status;
-	struct samu *pw = NULL;
-	bool ret;
 	const DOM_SID *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
 	NTTIME last_logon, last_logoff, last_password_change,
@@ -2665,24 +2559,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(r);
 
-	if (!(pw = samu_new(mem_ctx))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(pw, user_sid);
-	unbecome_root();
-
-	if (ret == False) {
-		DEBUG(4,("User %s not found\n", sid_string_dbg(user_sid)));
-		TALLOC_FREE(pw);
-		return NT_STATUS_NO_SUCH_USER;
-	}
-
-	samr_clear_sam_passwd(pw);
-
-	DEBUG(3,("User:[%s]\n", pdb_get_username(pw)));
-
 	sid_user = pdb_get_user_sid(pw);
 
 	if (!sid_peek_check_rid(domain_sid, sid_user, &rid)) {
@@ -2690,7 +2566,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			  "the domain sid %s.  Failing operation.\n",
 			  pdb_get_username(pw), sid_string_dbg(sid_user),
 			  sid_string_dbg(domain_sid)));
-		TALLOC_FREE(pw);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2703,7 +2578,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			  "which conflicts with the domain sid %s.  Failing operation.\n",
 			  pdb_get_username(pw), sid_string_dbg(sid_group),
 			  sid_string_dbg(domain_sid)));
-		TALLOC_FREE(pw);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -2736,7 +2610,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	status = init_samr_parameters_string(mem_ctx, &blob, &parameters);
 	data_blob_free(&blob);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(pw);
 		return status;
 	}
 
@@ -2794,7 +2667,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			      0, /* nt_password_set */
 			      0, /* lm_password_set */
 			      password_expired);
-	TALLOC_FREE(pw);
 
 	return NT_STATUS_OK;
 }
@@ -2811,6 +2683,8 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 	struct samr_info *info = NULL;
 	DOM_SID domain_sid;
 	uint32 rid;
+	bool ret = false;
+	struct samu *pwd = NULL;
 
 	/* search for the handle */
 	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info))
@@ -2840,57 +2714,53 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 
 	DEBUG(5,("_samr_QueryUserInfo: user info level: %d\n", r->in.level));
 
+	if (!(pwd = samu_new(p->mem_ctx))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	become_root();
+	ret = pdb_getsampwsid(pwd, &info->sid);
+	unbecome_root();
+
+	if (ret == false) {
+		DEBUG(4,("User %s not found\n", sid_string_dbg(&info->sid)));
+		TALLOC_FREE(pwd);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	DEBUG(3,("User:[%s]\n", pdb_get_username(pwd)));
+
+	samr_clear_sam_passwd(pwd);
+
 	switch (r->in.level) {
 	case 5:
-		status = get_user_info_5(p->mem_ctx, &user_info->info5, &info->sid, &domain_sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_5(p->mem_ctx, &user_info->info5, pwd, &domain_sid);
 		break;
 	case 7:
-		status = get_user_info_7(p->mem_ctx, &user_info->info7, &info->sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_7(p->mem_ctx, &user_info->info7, pwd);
 		break;
 	case 9:
-		status = get_user_info_9(p->mem_ctx, &user_info->info9, &info->sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_9(p->mem_ctx, &user_info->info9, pwd);
 		break;
 	case 16:
-		status = get_user_info_16(p->mem_ctx, &user_info->info16, &info->sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_16(p->mem_ctx, &user_info->info16, pwd);
 		break;
-
 	case 18:
+		/* level 18 is special */
 		status = get_user_info_18(p, p->mem_ctx, &user_info->info18, &info->sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 		break;
-
 	case 20:
-		status = get_user_info_20(p->mem_ctx, &user_info->info20, &info->sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_20(p->mem_ctx, &user_info->info20, pwd);
 		break;
-
 	case 21:
-		status = get_user_info_21(p->mem_ctx, &user_info->info21,
-					  &info->sid, &domain_sid);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+		status = get_user_info_21(p->mem_ctx, &user_info->info21, pwd, &domain_sid);
 		break;
-
 	default:
-		return NT_STATUS_INVALID_INFO_CLASS;
+		status = NT_STATUS_INVALID_INFO_CLASS;
+		break;
 	}
+
+	TALLOC_FREE(pwd);
 
 	*r->out.info = user_info;
 
