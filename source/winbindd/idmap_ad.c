@@ -933,7 +933,7 @@ static NTSTATUS nss_ad_map_to_alias(TALLOC_CTX *mem_ctx,
 	ADS_STATUS ads_status = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct idmap_domain *dom;
-	struct idmap_ad_context *ctx;
+	struct idmap_ad_context *ctx = NULL;
 
 	/* Check incoming parameters */
 
@@ -1013,7 +1013,7 @@ static NTSTATUS nss_ad_map_from_alias( TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	char *username;
 	struct idmap_domain *dom;
-	struct idmap_ad_context *ctx;
+	struct idmap_ad_context *ctx = NULL;
 
 	/* Check incoming parameters */
 
