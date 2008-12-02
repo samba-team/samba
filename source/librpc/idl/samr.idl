@@ -389,8 +389,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		hyper sequence_num;
 		NTTIME domain_create_time;
-		uint32 unknown1;
-		uint32 unknown2;
+		hyper modified_count_at_last_promotion;
 	} samr_DomInfo13;
 
 	typedef [switch_type(uint16)] union {
