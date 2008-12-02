@@ -763,8 +763,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo13(struct samr_domain_state *state,
 	info->domain_create_time = ldb_msg_find_attr_as_uint(dom_msgs[0], "creationTime",
 						     0x0LL);
 
-	info->unknown1 = 0;
-	info->unknown2 = 0;
+	info->modified_count_at_last_promotion = 0;
 
 	return NT_STATUS_OK;
 }
