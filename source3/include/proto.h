@@ -5620,7 +5620,7 @@ void init_samr_DomInfo8(struct samr_DomInfo8 *r,
 			uint64_t sequence_num,
 			NTTIME domain_create_time);
 void init_samr_DomInfo9(struct samr_DomInfo9 *r,
-			uint32_t unknown);
+                        enum samr_DomainServerState domain_server_state);
 void init_samr_DomInfo12(struct samr_DomInfo12 *r,
 			 uint64_t lockout_duration,
 			 uint64_t lockout_window,
