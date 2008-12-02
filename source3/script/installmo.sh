@@ -24,6 +24,10 @@ for dir in $SRCDIR/locale/*; do
 	for f in $SRCDIR/locale/$MODULE/*.po; do
 		BASE=`basename $f`
 		LANGUAGE=`echo $BASE | sed 's/\.po//g'`
+		if test "$LANGUAGE" = '*'; then
+			echo "No .po file exists!"
+			exit 0
+		fi
 		FNAME="$DESTDIR/$LOCALEDIR/$LANGUAGE/LC_MESSAGES/$MODULE.mo"
 		if test ! -d "$DESTDIR/$LOCALEDIR/$LANGUAGE/LC_MESSAGES/"; then
 			mkdir -p "$DESTDIR/$LOCALEDIR/$LANGUAGE/LC_MESSAGES/"
