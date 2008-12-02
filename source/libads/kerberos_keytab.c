@@ -725,8 +725,11 @@ int ads_keytab_list(const char *keytab_name)
 
 		ret = smb_krb5_enctype_to_string(context, enctype, &etype_s);
 		if (ret) {
-			SAFE_FREE(princ_s);
-			goto out;
+			if (asprintf(&etype_s, "UNKNOWN: %d\n", enctype) == -1)
+			{
+				SAFE_FREE(princ_s);
+				goto out;
+			}
 		}
 
 		printf("%3d  %s\t\t %s\n", kt_entry.vno, etype_s, princ_s);
