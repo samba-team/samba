@@ -1812,7 +1812,13 @@ static int32_t get_debug_by_desc(const char *desc)
 			return debug_levels[i].level;
 		}
 	}
-	return DEBUG_ERR;
+
+	fprintf(stderr, "Invalid debug level '%s'\nMust be one of\n", desc);
+	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+		fprintf(stderr, "    %s\n", debug_levels[i].description);
+	}
+
+	exit(10);
 }
 
 /*
