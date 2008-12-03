@@ -57,6 +57,12 @@ test_exit ()
 
 ctdb_test_exit ()
 {
+    local status=$?
+
+    trap - 0
+
+    [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
+
     if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
 	echo "Restarting ctdb on all nodes to get back into known state..."
 	restart_ctdb
@@ -132,6 +138,8 @@ ctdb_test_init ()
     testfailures=0
 
     ctdb_test_cmd_options $@
+
+    trap "ctdb_test_exit" 0
 }
 
 ########################################
