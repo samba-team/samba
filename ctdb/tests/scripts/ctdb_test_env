@@ -7,21 +7,30 @@ export CTDB_NUM_NODES=3
 
 ######################################################################
 
+ctdb_bin_dir=$CTDB_DIR/bin
+ctdb_tools_dir=$CTDB_DIR/tools
+ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
+
+PATH="${ctdb_test_scripts_dir}:${ctdb_tools_dir}:${PATH}"
+
+######################################################################
+
+if [ -n "$CTDB_TEST_REMOTE_SCRIPTS_DIR" ] ; then
+    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_SCRIPTS_DIR}/test_wrap"
+else
+    CTDB_TEST_WRAPPER="${ctdb_test_scripts_dir}/test_wrap"
+fi
+export CTDB_TEST_WRAPPER
+
 if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     export CTDB_NODES_SOCKETS=""
     for i in $(seq 1 $CTDB_NUM_NODES) ; do
 	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
     done
+
+
+    PATH="${ctdb_bin_dir}:${PATH}"
 fi
 
-######################################################################
-
-ctdb_bin_dir=$CTDB_DIR/bin
-ctdb_tools_dir=$CTDB_DIR/tools
-ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
-
-PATH="${ctdb_test_scripts_dir}:${ctdb_bin_dir}:${ctdb_tools_dir}:${PATH}"
-
-export TEST_WRAP="${ctdb_test_scripts_dir}/test_wrap"
 
 "$@"

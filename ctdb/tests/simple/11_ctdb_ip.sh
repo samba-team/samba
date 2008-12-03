@@ -29,7 +29,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 echo "Getting list of public IPs..."
 try_command_on_node 1 ctdb ip -n all

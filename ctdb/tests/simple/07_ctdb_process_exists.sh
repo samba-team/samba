@@ -34,7 +34,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 # Create a background process on node 2 that will last for 60 seconds.
 # It should still be there when we check.

@@ -33,7 +33,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 try_command_on_node -v 1 'ctdb ping -n 2'
 
@@ -44,7 +44,7 @@ sanity_check_output \
 
 try_command_on_node -v 0 'ctdb shutdown -n 2'
 
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 disconnected
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 disconnected
 
 try_command_on_node 1 'ctdb ping -n 2'
 

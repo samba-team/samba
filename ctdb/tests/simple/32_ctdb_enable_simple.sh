@@ -60,7 +60,7 @@ wait_until_recovered_triggered ()
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 try_command_on_node 1 ctdb ip -n all
 
@@ -79,7 +79,7 @@ echo "Disabling node 2"
 try_command_on_node 1 ctdb disable -n 2
 
 # Avoid a potential race condition...
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 disabled
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 disabled
 
 if wait_until_ips_are_on_nodeglob '[!2]' $ips ; then
     echo "All IPs moved."
@@ -88,16 +88,10 @@ else
     testfailures=1
 fi
 
-#echo "Waiting until cluster has recovered..."
-#wait_until_recovered_triggered
-
-#echo "Sleeping to avoid potential race..."
-#sleep_for 3
-
 echo "Reenabling node 2"
 try_command_on_node 1 ctdb enable -n 2
 
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 enabled
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 enabled
 
 # BUG: this is only guaranteed if DeterministicIPs is 1 and
 #      NoIPFailback is 0.
@@ -112,9 +106,6 @@ fi
 # Depend even more on the sleep below...
 echo "Waiting until cluster has recovered..."
 wait_until_recovered_triggered
-
-#echo "Sleeping to avoid potential race..."
-#sleep_for 10
 
 echo "All done!"
 

@@ -35,7 +35,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 try_command_on_node 1 ctdb ip -n all
 
@@ -53,7 +53,7 @@ echo "Disabling node 2"
 try_command_on_node 1 ctdb disable -n 2
 
 # Avoid a potential race condition...
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 disabled
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 disabled
 
 if wait_until_ips_are_on_nodeglob '[!2]' $ips ; then
     echo "All IPs moved."

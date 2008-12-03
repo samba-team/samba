@@ -38,7 +38,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 test_node=1
 
@@ -46,12 +46,12 @@ echo "Freezing node $test_node"
 
 try_command_on_node 0 ctdb freeze -n $test_node
 
-onnode 0 $TEST_WRAP wait_until_node_has_status $test_node frozen
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node frozen
 
 echo "That worked!  Now thawing node $test_node"
 
 try_command_on_node 0 ctdb thaw -n $test_node
 
-onnode 0 $TEST_WRAP wait_until_node_has_status $test_node unfrozen
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unfrozen
 
 ctdb_test_exit

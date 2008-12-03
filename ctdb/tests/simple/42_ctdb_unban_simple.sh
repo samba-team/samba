@@ -39,7 +39,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 try_command_on_node 1 ctdb ip -n all
 
@@ -58,7 +58,7 @@ echo "Banning node 2 for $ban_time seconds"
 try_command_on_node 1 ctdb ban $ban_time -n 2
 
 # Avoid a potential race condition...
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 banned
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 banned
 
 if wait_until_ips_are_on_nodeglob '[!2]' $ips ; then
     echo "All IPs moved."
@@ -73,7 +73,7 @@ sleep_for 3
 echo "Unbanning node 2"
 try_command_on_node 1 ctdb unban -n 2
 
-onnode 0 $TEST_WRAP wait_until_node_has_status 2 unbanned
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 unbanned
 
 # BUG: this is only guaranteed if DeterministicIPs is 1 and
 #      NoIPFailback is 0.

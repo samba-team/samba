@@ -30,7 +30,7 @@ ctdb_test_init "$@"
 
 set -e
 
-onnode 0 $TEST_WRAP cluster_is_healthy
+onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 cmd='ctdb isnotrecmaster || true'
 try_command_on_node all "$cmd"

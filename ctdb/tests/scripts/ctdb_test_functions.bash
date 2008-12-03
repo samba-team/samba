@@ -57,7 +57,7 @@ test_exit ()
 
 ctdb_test_exit ()
 {
-    if ! onnode 0 $TEST_WRAP cluster_is_healthy ; then
+    if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
 	echo "Restarting ctdb on all nodes to get back into known state..."
 	restart_ctdb
     fi
@@ -429,10 +429,10 @@ restart_ctdb ()
 	stop_daemons
 	start_daemons $CTDB_NUM_NODES
     else
-	onnode -pq all $TEST_WRAP _restart_ctdb 
+	onnode -pq all $CTDB_TEST_WRAPPER _restart_ctdb 
     fi || return 1
 	
-    onnode -q 1  $TEST_WRAP wait_until_healthy || return 1
+    onnode -q 1  $CTDB_TEST_WRAPPER wait_until_healthy || return 1
 
     echo "Setting RerecoveryTimeout to 1"
     onnode -pq all "ctdb setvar RerecoveryTimeout 1"
