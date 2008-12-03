@@ -772,7 +772,7 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		get_kdc_list(realm, sitename, &ip_srv_site, &count_site);
 
 		for (i = 0; i < count_site; i++) {
-			if (addr_equal(&ip_srv_site[i].ss, pss)) {
+			if (sockaddr_equal(&ip_srv_site[i].ss, pss)) {
 				continue;
 			}
 			/* Append to the string - inefficient
@@ -794,13 +794,13 @@ static char *get_kdc_ip_string(char *mem_ctx,
 	for (i = 0; i < count_nonsite; i++) {
 		int j;
 
-		if (addr_equal(&ip_srv_nonsite[i].ss, pss)) {
+		if (sockaddr_equal(&ip_srv_nonsite[i].ss, pss)) {
 			continue;
 		}
 
 		/* Ensure this isn't an IP already seen (YUK! this is n*n....) */
 		for (j = 0; j < count_site; j++) {
-			if (addr_equal(&ip_srv_nonsite[i].ss,
+			if (sockaddr_equal(&ip_srv_nonsite[i].ss,
 						&ip_srv_site[j].ss)) {
 				break;
 			}

@@ -144,13 +144,13 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	server_n = server;
 
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 
 	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 	if (have_ip)
 		ss = dest_ss;
 

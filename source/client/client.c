@@ -4615,7 +4615,7 @@ static int do_message_op(void)
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
 	fstrcat(server_name, name_type_hex);
 
-        zero_addr(&ss);
+        zero_sockaddr(&ss);
 	if (have_ip)
 		ss = dest_ss;
 

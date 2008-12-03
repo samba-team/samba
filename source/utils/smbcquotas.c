@@ -375,7 +375,7 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 
 	if (get_cmdline_auth_info_use_machine_account() &&
 	    !set_cmdline_auth_info_machine_account_creds()) {
