@@ -52,7 +52,7 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 	}
 #endif
 
-	zero_addr(pss);
+	zero_sockaddr(pss);
 
 	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
 		return false;
@@ -81,7 +81,7 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
  Set an address to INADDR_ANY.
 ******************************************************************/
 
-void zero_addr(struct sockaddr_storage *pss)
+void zero_sockaddr(struct sockaddr_storage *pss)
 {
 	memset(pss, '\0', sizeof(*pss));
 	/* Ensure we're at least a valid sockaddr-storage. */
@@ -1254,7 +1254,7 @@ static bool matchname(const char *remotehost,
 		if (!res->ai_addr) {
 			continue;
 		}
-		if (addr_equal((const struct sockaddr *)res->ai_addr,
+		if (sockaddr_equal((const struct sockaddr *)res->ai_addr,
 					(struct sockaddr *)pss)) {
 			freeaddrinfo(ailist);
 			return true;
@@ -1367,7 +1367,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), (struct sockaddr *)&ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (addr_equal((struct sockaddr *)&ss, (struct sockaddr *)&nc.ss)) {
+	if (sockaddr_equal((struct sockaddr *)&ss, (struct sockaddr *)&nc.ss)) {
 		return nc.name ? nc.name : "UNKNOWN";
 	}
 
@@ -1687,7 +1687,7 @@ bool is_myname_or_ipaddr(const char *s)
 		}
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
-			if (addr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
+			if (sockaddr_equal((struct sockaddr *)&nics[i].ip, (struct sockaddr *)&ss)) {
 				TALLOC_FREE(nics);
 				return true;
 			}

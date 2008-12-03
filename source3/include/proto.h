@@ -1396,13 +1396,13 @@ bool is_loopback_ip_v4(struct in_addr ip);
 bool is_loopback_addr(const struct sockaddr *pss);
 bool is_zero_addr(const struct sockaddr *pss);
 void zero_ip_v4(struct in_addr *ip);
-void zero_addr(struct sockaddr_storage *pss);
+void zero_sockaddr(struct sockaddr_storage *pss);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
 bool same_net(const struct sockaddr *ip1,
 		const struct sockaddr *ip2,
 		const struct sockaddr *mask);
-bool addr_equal(const struct sockaddr *ip1,
+bool sockaddr_equal(const struct sockaddr *ip1,
 		const struct sockaddr *ip2);
 bool is_address_any(const struct sockaddr *psa);
 uint16_t get_sockaddr_port(const struct sockaddr_storage *pss);

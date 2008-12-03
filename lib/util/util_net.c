@@ -360,7 +360,7 @@ bool same_net(const struct sockaddr *ip1,
  * Are two sockaddr 's the same family and address ? Ignore port etc.
  */
 
-bool addr_equal(const struct sockaddr *ip1,
+bool sockaddr_equal(const struct sockaddr *ip1,
 		const struct sockaddr *ip2)
 {
 	if (ip1->sa_family != ip2->sa_family) {
