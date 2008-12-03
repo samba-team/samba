@@ -752,7 +752,7 @@ out_free:
 
 	load_case_tables();
 
-	zero_addr(&server_ss);
+	zero_sockaddr(&server_ss);
 
 	setlinebuf(stdout);
 

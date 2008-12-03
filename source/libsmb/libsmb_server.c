@@ -248,7 +248,7 @@ SMBC_server(TALLOC_CTX *ctx,
         const char *username_used;
  	NTSTATUS status;
         
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 	ZERO_STRUCT(c);
         
 	if (server[0] == 0) {
@@ -348,7 +348,7 @@ SMBC_server(TALLOC_CTX *ctx,
         
 again:
         
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
         
 	/* have to open a new connection */
 	if ((c = cli_initialise()) == NULL) {
@@ -595,7 +595,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
                 
-                zero_addr(&ss);
+                zero_sockaddr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
 						global_myname(), server,
 						&ss, 0, "IPC$", "?????",

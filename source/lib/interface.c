@@ -33,7 +33,7 @@ bool ismyaddr(const struct sockaddr_storage *ip)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if (addr_equal(&i->ip,ip)) {
+		if (sockaddr_equal(&i->ip,ip)) {
 			return true;
 		}
 	}
@@ -65,7 +65,7 @@ static struct interface *iface_find(const struct sockaddr_storage *ip,
 			if (same_net(ip, &i->ip, &i->netmask)) {
 				return i;
 			}
-		} else if (addr_equal(&i->ip, ip)) {
+		} else if (sockaddr_equal(&i->ip, ip)) {
 			return i;
 		}
 	}
@@ -93,7 +93,7 @@ void setup_linklocal_scope_id(struct sockaddr_storage *pss)
 {
 	struct interface *i;
 	for (i=local_interfaces;i;i=i->next) {
-		if (addr_equal(&i->ip,pss)) {
+		if (sockaddr_equal(&i->ip,pss)) {
 			struct sockaddr_in6 *psa6 =
 				(struct sockaddr_in6 *)pss;
 			psa6->sin6_scope_id = if_nametoindex(i->name);
@@ -388,7 +388,7 @@ static void interpret_interface(char *token)
 		}
 
 		for (i=0;i<total_probed;i++) {
-			if (addr_equal(&ss, &probed_ifaces[i].ip)) {
+			if (sockaddr_equal(&ss, &probed_ifaces[i].ip)) {
 				add_interface(&probed_ifaces[i]);
 				return;
 			}
@@ -441,7 +441,7 @@ static void interpret_interface(char *token)
 	make_net(&ss_net, &ss, &ss_mask);
 
 	/* Maybe the first component was a broadcast address. */
-	if (addr_equal(&ss_bcast, &ss) || addr_equal(&ss_net, &ss)) {
+	if (sockaddr_equal(&ss_bcast, &ss) || sockaddr_equal(&ss_net, &ss)) {
 		for (i=0;i<total_probed;i++) {
 			if (same_net(&ss, &probed_ifaces[i].ip, &ss_mask)) {
 				/* Temporarily replace netmask on
