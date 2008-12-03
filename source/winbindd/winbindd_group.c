@@ -707,7 +707,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get info for the domain */
 
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+	if ((domain = find_domain_from_name_noinit(name_domain)) == NULL) {
 		DEBUG(3, ("could not get domain sid for domain %s\n",
 			  name_domain));
 		request_error(state);
