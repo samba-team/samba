@@ -576,7 +576,7 @@ static bool user_ok(const char *user, int snum)
 	TALLOC_FREE(valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char **user_list = str_list_make(
+		char **user_list = str_list_make_v3(
 			talloc_tos(), lp_username(snum), NULL);
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",

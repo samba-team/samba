@@ -5,7 +5,7 @@
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_smb2_init
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_SMB2 POPT_CREDENTIALS
+		LIBCLI_SMB2 POPT_CREDENTIALS torture
 # End SUBSYSTEM TORTURE_SMB2
 #################################
 

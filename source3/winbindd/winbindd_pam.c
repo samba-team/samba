@@ -1854,17 +1854,28 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 
 	if (state->request.data.auth_crap.lm_resp_len > sizeof(state->request.data.auth_crap.lm_resp)
 		|| state->request.data.auth_crap.nt_resp_len > sizeof(state->request.data.auth_crap.nt_resp)) {
-		DEBUG(0, ("winbindd_pam_auth_crap: invalid password length %u/%u\n",
-			  state->request.data.auth_crap.lm_resp_len,
-			  state->request.data.auth_crap.nt_resp_len));
-		result = NT_STATUS_INVALID_PARAMETER;
-		goto done;
+		if (!state->request.flags & WBFLAG_BIG_NTLMV2_BLOB ||
+		     state->request.extra_len != state->request.data.auth_crap.nt_resp_len) {
+			DEBUG(0, ("winbindd_pam_auth_crap: invalid password length %u/%u\n",
+				  state->request.data.auth_crap.lm_resp_len,
+				  state->request.data.auth_crap.nt_resp_len));
+			result = NT_STATUS_INVALID_PARAMETER;
+			goto done;
+		}
 	}
 
 	lm_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.lm_resp,
 					state->request.data.auth_crap.lm_resp_len);
-	nt_resp = data_blob_talloc(state->mem_ctx, state->request.data.auth_crap.nt_resp,
-					state->request.data.auth_crap.nt_resp_len);
+
+	if (state->request.flags & WBFLAG_BIG_NTLMV2_BLOB) {
+		nt_resp = data_blob_talloc(state->mem_ctx,
+					   state->request.extra_data.data,
+					   state->request.data.auth_crap.nt_resp_len);
+	} else {
+		nt_resp = data_blob_talloc(state->mem_ctx,
+					   state->request.data.auth_crap.nt_resp,
+					   state->request.data.auth_crap.nt_resp_len);
+	}
 
 	/* what domain should we contact? */
 
@@ -2106,9 +2117,15 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		got_info = true;
 	}
 
+	/* atm the pidl generated rpccli_samr_ChangePasswordUser3 function will
+	 * return with NT_STATUS_BUFFER_TOO_SMALL for w2k dcs as w2k just
+	 * returns with 4byte error code (NT_STATUS_NOT_SUPPORTED) which is too
+	 * short to comply with the samr_ChangePasswordUser3 idl - gd */
+
 	/* only fallback when the chgpasswd_user3 call is not supported */
 	if ((NT_STATUS_EQUAL(result, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR))) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED)) ||
+		   (NT_STATUS_EQUAL(result, NT_STATUS_BUFFER_TOO_SMALL)) ||
 		   (NT_STATUS_EQUAL(result, NT_STATUS_NOT_IMPLEMENTED))) {
 
 		DEBUG(10,("Password change with chgpasswd_user3 failed with: %s, retrying chgpasswd_user2\n",

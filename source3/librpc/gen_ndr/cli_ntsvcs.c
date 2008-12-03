@@ -564,7 +564,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *devicepath /* [in] [ref,charset(UTF16)] */,
 				     uint32_t property /* [in]  */,
-				     uint32_t *reg_data_type /* [in,out] [ref] */,
+				     enum winreg_Type *reg_data_type /* [in,out] [ref] */,
 				     uint8_t *buffer /* [out] [ref,length_is(*buffer_size),size_is(*buffer_size)] */,
 				     uint32_t *buffer_size /* [in,out] [ref] */,
 				     uint32_t *needed /* [in,out] [ref] */,
@@ -1686,29 +1686,29 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
-				uint32_t unknown1 /* [in]  */,
+				uint32_t action /* [in]  */,
 				const char *devicepath /* [in] [ref,charset(UTF16)] */,
-				uint32_t unknown2 /* [in]  */,
-				uint32_t *unknown3 /* [in,out] [ref] */,
-				uint16_t *unknown4 /* [in,out] [unique] */,
+				uint32_t config /* [in]  */,
+				uint32_t *profile_flags /* [in,out] [ref] */,
+				uint16_t *veto_type /* [in,out] [unique] */,
 				const char *unknown5 /* [in] [unique,charset(UTF16)] */,
 				const char **unknown5a /* [out] [unique,charset(UTF16)] */,
-				uint32_t unknown6 /* [in]  */,
-				uint32_t unknown7 /* [in]  */,
+				uint32_t name_length /* [in]  */,
+				uint32_t flags /* [in]  */,
 				WERROR *werror)
 {
 	struct PNP_HwProfFlags r;
 	NTSTATUS status;
 
 	/* In parameters */
-	r.in.unknown1 = unknown1;
+	r.in.action = action;
 	r.in.devicepath = devicepath;
-	r.in.unknown2 = unknown2;
-	r.in.unknown3 = unknown3;
-	r.in.unknown4 = unknown4;
+	r.in.config = config;
+	r.in.profile_flags = profile_flags;
+	r.in.veto_type = veto_type;
 	r.in.unknown5 = unknown5;
-	r.in.unknown6 = unknown6;
-	r.in.unknown7 = unknown7;
+	r.in.name_length = name_length;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, &r);
@@ -1733,9 +1733,9 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*unknown3 = *r.out.unknown3;
-	if (unknown4 && r.out.unknown4) {
-		*unknown4 = *r.out.unknown4;
+	*profile_flags = *r.out.profile_flags;
+	if (veto_type && r.out.veto_type) {
+		*veto_type = *r.out.veto_type;
 	}
 	if (unknown5a && r.out.unknown5a) {
 		*unknown5a = *r.out.unknown5a;
@@ -1753,8 +1753,8 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  uint32_t idx /* [in]  */,
 				  struct PNP_HwProfInfo *info /* [in,out] [ref] */,
-				  uint32_t unknown1 /* [in]  */,
-				  uint32_t unknown2 /* [in]  */,
+				  uint32_t size /* [in]  */,
+				  uint32_t flags /* [in]  */,
 				  WERROR *werror)
 {
 	struct PNP_GetHwProfInfo r;
@@ -1763,8 +1763,8 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.idx = idx;
 	r.in.info = info;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.size = size;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &r);

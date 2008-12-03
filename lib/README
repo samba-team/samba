@@ -8,3 +8,4 @@ socket_wrapper - Wrapper library allowing TCP/IP traffic to be redirected
                  over Unix domain sockets.
 talloc - Hierarchical pool based memory allocator 
 tdb - Simple but fast key/value database library, supporting multiple writers
+torture - Simple unit testing helper library

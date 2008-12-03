@@ -52,8 +52,8 @@
 				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
 			} while(0)
 
-#define CHECK_READ(fsp,inbuf) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
-			((SVAL((inbuf),smb_flg2) & FLAGS2_READ_PERMIT_EXECUTE) && \
+#define CHECK_READ(fsp,req) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
+			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
 			 (fsp->access_mask & FILE_EXECUTE))))
 
 #define CHECK_WRITE(fsp) ((fsp)->can_write && ((fsp)->fh->fd != -1))

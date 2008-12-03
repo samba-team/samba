@@ -314,7 +314,7 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 	if ((need_priv != 0) && (is_privileged == 0)) {
 		winbind_close_sock();
 	}
-	
+
 	if (winbindd_fd != -1) {
 		return winbindd_fd;
 	}

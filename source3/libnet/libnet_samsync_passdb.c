@@ -118,12 +118,12 @@ static NTSTATUS sam_account_from_delta(struct samu *account,
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
-	if (r->parameters.string) {
+	if (r->parameters.array) {
 		DATA_BLOB mung;
 		char *newstr;
 		old_string = pdb_get_munged_dial(account);
-		mung.length = r->parameters.length;
-		mung.data = (uint8 *) r->parameters.string;
+		mung.length = r->parameters.length * 2;
+		mung.data = (uint8_t *) r->parameters.array;
 		newstr = (mung.length == 0) ? NULL :
 			base64_encode_data_blob(talloc_tos(), mung);
 
@@ -772,11 +772,11 @@ static NTSTATUS fetch_sam_entry(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
-			   enum netr_SamDatabaseID database_id,
-			   struct netr_DELTA_ENUM_ARRAY *r,
-			   bool last_query,
-			   struct samsync_context *ctx)
+static NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
+				  enum netr_SamDatabaseID database_id,
+				  struct netr_DELTA_ENUM_ARRAY *r,
+				  uint64_t *sequence_num,
+				  struct samsync_context *ctx)
 {
 	int i;
 
@@ -786,3 +786,7 @@ NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+const struct samsync_ops libnet_samsync_passdb_ops = {
+	.process_objects	= fetch_sam_entries,
+};

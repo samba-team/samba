@@ -4899,7 +4899,7 @@ static void init_globals(bool first_time_only)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make(NULL, "template", NULL);
+	Globals.szWinbindNssInfo = str_list_make_v3(talloc_autofree_context(), "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
@@ -5615,7 +5615,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		return (const char **)def;
 		
 	if (data->list==NULL) {
-		data->list = str_list_make(NULL, data->value, NULL);
+		data->list = str_list_make_v3(talloc_autofree_context(), data->value, NULL);
 	}
 
 	return (const char **)data->list;
@@ -6859,7 +6859,7 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	TALLOC_FREE(Globals.szNetbiosAliases);
-	Globals.szNetbiosAliases = str_list_make(NULL, pszParmValue, NULL);
+	Globals.szNetbiosAliases = str_list_make_v3(talloc_autofree_context(), pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
 
@@ -7261,8 +7261,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_LIST:
 			TALLOC_FREE(*((char ***)parm_ptr));
-			*(char ***)parm_ptr = str_list_make(
-				NULL, pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make_v3(
+				talloc_autofree_context(), pszParmValue, NULL);
 			break;
 
 		case P_STRING:

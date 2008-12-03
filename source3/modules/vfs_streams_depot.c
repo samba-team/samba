@@ -67,9 +67,14 @@ static uint32_t hash_fn(DATA_BLOB key)
 
 #define SAMBA_XATTR_MARKER "user.SAMBA_STREAMS"
 
-static bool file_is_valid(vfs_handle_struct *handle, const char *path)
+static bool file_is_valid(vfs_handle_struct *handle, const char *path,
+			  bool check_valid)
 {
 	char buf;
+
+	if (!check_valid) {
+		return true;
+	}
 
 	DEBUG(10, ("file_is_valid (%s) called\n", path));
 
@@ -87,10 +92,15 @@ static bool file_is_valid(vfs_handle_struct *handle, const char *path)
 	return true;
 }
 
-static bool mark_file_valid(vfs_handle_struct *handle, const char *path)
+static bool mark_file_valid(vfs_handle_struct *handle, const char *path,
+			    bool check_valid)
 {
 	char buf = '1';
 	int ret;
+
+	if (!check_valid) {
+		return true;
+	}
 
 	DEBUG(10, ("marking file %s as valid\n", path));
 
@@ -116,10 +126,22 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	char *id_hex;
 	struct file_id id;
 	uint8 id_buf[16];
+	bool check_valid;
+	const char *rootdir;
 
-	const char *rootdir = lp_parm_const_string(
+	check_valid = lp_parm_bool(SNUM(handle->conn),
+		      "streams_depot", "check_valid", true);
+
+	tmp = talloc_asprintf(talloc_tos(), "%s/.streams", handle->conn->connectpath);
+
+	if (tmp == NULL) {
+		errno = ENOMEM;
+		goto fail;
+	}
+
+	rootdir = lp_parm_const_string(
 		SNUM(handle->conn), "streams_depot", "directory",
-		handle->conn->connectpath);
+		tmp);
 
 	if (base_sbuf == NULL) {
 		if (SMB_VFS_NEXT_STAT(handle, base_path, &sbuf) == -1) {
@@ -141,7 +163,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 	first = hash & 0xff;
 	second = (hash >> 8) & 0xff;
 
-	id_hex = hex_encode(talloc_tos(), id_buf, sizeof(id_buf));
+	id_hex = hex_encode_talloc(talloc_tos(), id_buf, sizeof(id_buf));
 
 	if (id_hex == NULL) {
 		errno = ENOMEM;
@@ -166,7 +188,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 			goto fail;
 		}
 
-		if (file_is_valid(handle, base_path)) {
+		if (file_is_valid(handle, base_path, check_valid)) {
 			return result;
 		}
 
@@ -236,7 +258,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 		goto fail;
 	}
 
-	if (!mark_file_valid(handle, base_path)) {
+	if (!mark_file_valid(handle, base_path, check_valid)) {
 		goto fail;
 	}
 
@@ -260,6 +282,11 @@ static char *stream_name(vfs_handle_struct *handle, const char *fname,
 		DEBUG(10, ("split_ntfs_stream_name failed\n"));
 		errno = ENOMEM;
 		goto fail;
+	}
+
+	/* if it's the ::$DATA stream just return the base file name */
+	if (!sname) {
+		return base;
 	}
 
 	dirname = stream_dir(handle, base, NULL, create_dir);
@@ -401,6 +428,7 @@ static int streams_depot_open(vfs_handle_struct *handle,  const char *fname,
 {
 	TALLOC_CTX *frame;
 	char *base = NULL;
+	char *sname = NULL;
 	SMB_STRUCT_STAT base_sbuf;
 	char *stream_fname;
 	int ret = -1;
@@ -412,8 +440,13 @@ static int streams_depot_open(vfs_handle_struct *handle,  const char *fname,
 	frame = talloc_stackframe();
 
 	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), fname,
-						    &base, NULL))) {
+						    &base, &sname))) {
 		errno = ENOMEM;
+		goto done;
+	}
+
+	if (!sname) {
+		ret = SMB_VFS_NEXT_OPEN(handle, base, fsp, flags, mode);
 		goto done;
 	}
 
@@ -476,6 +509,78 @@ static int streams_depot_unlink(vfs_handle_struct *handle,  const char *fname)
 	}
 
 	return SMB_VFS_NEXT_UNLINK(handle, fname);
+}
+
+static int streams_depot_rename(vfs_handle_struct *handle,
+				const char *oldname,
+				const char *newname)
+{
+	TALLOC_CTX *frame = NULL;
+	int ret = -1;
+	bool old_is_stream;
+	bool new_is_stream;
+	char *obase = NULL;
+	char *osname = NULL;
+	char *nbase = NULL;
+	char *nsname = NULL;
+	char *ostream_fname = NULL;
+	char *nstream_fname = NULL;
+
+	DEBUG(10, ("streams_depot_rename called for %s => %s\n",
+		   oldname, newname));
+
+	old_is_stream = is_ntfs_stream_name(oldname);
+	new_is_stream = is_ntfs_stream_name(newname);
+
+	if (!old_is_stream && !new_is_stream) {
+		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
+	}
+
+	if (!(old_is_stream && new_is_stream)) {
+		errno = ENOSYS;
+		return -1;
+	}
+
+	frame = talloc_stackframe();
+
+	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
+						    &obase, &osname))) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
+						    &nbase, &nsname))) {
+		errno = ENOMEM;
+		goto done;
+	}
+
+	/* for now don't allow renames from or to the default stream */
+	if (!osname || !nsname) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	if (StrCaseCmp(obase, nbase) != 0) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	ostream_fname = stream_name(handle, oldname, false);
+	if (ostream_fname == NULL) {
+		return -1;
+	}
+
+	nstream_fname = stream_name(handle, newname, false);
+	if (nstream_fname == NULL) {
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_RENAME(handle, ostream_fname, nstream_fname);
+
+done:
+	TALLOC_FREE(frame);
+	return ret;
 }
 
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
@@ -627,6 +732,8 @@ static vfs_op_tuple streams_depot_ops[] = {
 	{SMB_VFS_OP(streams_depot_lstat), SMB_VFS_OP_LSTAT,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_depot_unlink), SMB_VFS_OP_UNLINK,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(streams_depot_rename), SMB_VFS_OP_RENAME,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_depot_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},

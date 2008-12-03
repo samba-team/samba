@@ -1,6 +1,6 @@
 [SUBSYSTEM::TORTURE_UTIL]
 PRIVATE_DEPENDENCIES = LIBCLI_RAW
-PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
+PUBLIC_DEPENDENCIES = torture POPT_CREDENTIALS
 
 TORTURE_UTIL_OBJ_FILES = $(addprefix $(torturesrcdir)/, util_smb.o)
 
@@ -89,6 +89,7 @@ mkinclude smb2/config.mk
 mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
+PRIVATE_DEPENDENCIES = torture
 
 TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
 
@@ -105,7 +106,7 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_NETLOGON dcerpc_atsvc dcerpc_mgmt RPC_NDR_DRSUAPI \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
-		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER WB_HELPER LIBSAMBA-NET \
+		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER LIBSAMBA-NET \
 		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
 		dcerpc_server service process_model ntvfs SERVICE_SMB
 
@@ -116,7 +117,7 @@ torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
 		eventlog.o epmapper.o winreg.o initshutdown.o oxidresolve.o remact.o mgmt.o \
 		scanner.o autoidl.o countcalls.o testjoin.o schannel.o netlogon.o remote_pac.o samlogon.o \
 		samsync.o bind.o dssetup.o alter_context.o bench.o samba3rpc.o rpc.o async_bind.o \
-		handles.o frsapi.o object_uuid.o)
+		handles.o frsapi.o object_uuid.o ntsvcs.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_OBJ_FILES:.o=.c)))
 
@@ -139,7 +140,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_O
 SUBSYSTEM = smbtorture
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB gensec auth KERBEROS \
-		POPT_CREDENTIALS SMBPASSWD
+		POPT_CREDENTIALS SMBPASSWD torture
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
@@ -181,7 +182,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/unix/proto.h,$(TORTURE_UNIX
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_ldap_init
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS
+		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS torture
 # End SUBSYSTEM TORTURE_LDAP
 #################################
 

@@ -60,6 +60,7 @@ extern const struct ndr_interface_table ndr_table_eventlog;
 #define NDR_EVENTLOG_FLUSHEVENTLOG (0x17)
 
 #define NDR_EVENTLOG_CALL_COUNT (24)
+void ndr_print_eventlogReadFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char *name, const struct eventlog_OpenUnknown0 *r);
 enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r);
 enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r);

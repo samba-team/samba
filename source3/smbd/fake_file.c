@@ -141,7 +141,6 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	conn->num_files_open++;
 	*result = fsp;
 	return NT_STATUS_OK;
 }

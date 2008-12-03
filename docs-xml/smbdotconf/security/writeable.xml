@@ -6,4 +6,6 @@
 <description>
     <para>Inverted synonym for <smbconfoption name="read only"/>.</para>
 </description>
+
+<value type="default">no</value>
 </samba:parameter>

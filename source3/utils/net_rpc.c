@@ -5253,7 +5253,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 				      0, 0, ACB_DOMTRUST, SAMR_FIELD_ACCT_FLAGS,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
-				      crypt_pwd.data, 24);
+				      &crypt_pwd);
 
 		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,
@@ -6369,6 +6369,14 @@ static int rpc_vampire(struct net_context *c, int argc, const char **argv)
 			"Dump remote SAM database to Kerberos Keytab",
 			"net rpc vampire keytab\n"
 			"    Dump remote SAM database to Kerberos keytab file"
+		},
+		{
+			"passdb",
+			rpc_vampire_passdb,
+			NET_TRANSPORT_RPC,
+			"Dump remote SAM database to passdb",
+			"net rpc vampire passdb\n"
+			"    Dump remote SAM database to passdb"
 		},
 
 		{NULL, NULL, 0, NULL, NULL}

@@ -388,7 +388,8 @@ static WERROR delete_printer_handle(pipes_struct *p, POLICY_HND *hnd)
 		return WERR_BADFID;
 	}
 
-	return delete_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, Printer->sharename );
+	return delete_printer_hook(p->mem_ctx, p->server_info->ptok,
+				   Printer->sharename );
 }
 
 /****************************************************************************
@@ -1656,13 +1657,13 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 			   and not a printer admin, then fail */
 
-			if ((p->pipe_user.ut.uid != 0) &&
-			    !user_has_privileges(p->pipe_user.nt_user_token,
+			if ((p->server_info->utok.uid != 0) &&
+			    !user_has_privileges(p->server_info->ptok,
 						 &se_printop ) &&
 			    !token_contains_name_in_list(
-				    uidtoname(p->pipe_user.ut.uid),
+				    uidtoname(p->server_info->utok.uid),
 				    NULL, NULL,
-				    p->pipe_user.nt_user_token,
+				    p->server_info->ptok,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
 				return WERR_ACCESS_DENIED;
@@ -1715,8 +1716,8 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (!user_ok_token(uidtoname(p->pipe_user.ut.uid), NULL,
-				   p->pipe_user.nt_user_token, snum) ||
+		if (!user_ok_token(uidtoname(p->server_info->utok.uid), NULL,
+				   p->server_info->ptok, snum) ||
 		    !print_access_check(p->server_info, snum,
 					printer_default->access_required)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
@@ -2018,11 +2019,11 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->pipe_user.ut.uid != 0)
-		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
+	if ( (p->server_info->utok.uid != 0)
+		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->pipe_user.ut.uid), NULL,
-			NULL, p->pipe_user.nt_user_token,
+			uidtoname(p->server_info->utok.uid), NULL,
+			NULL, p->server_info->ptok,
 			lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
@@ -2070,7 +2071,8 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, False );
+			status_win2k = delete_printer_driver(
+				p, info_win2k.info_3, 3, False );
 			free_a_printer_driver( info_win2k, 3 );
 
 			/* this should not have failed---if it did, report to client */
@@ -2082,7 +2084,7 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		}
 	}
 
-	status = delete_printer_driver(info.info_3, &p->pipe_user, version, False);
+	status = delete_printer_driver(p, info.info_3, version, False);
 
 	/* if at least one of the deletes succeeded return OK */
 
@@ -2115,11 +2117,11 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	/* if the user is not root, doesn't have SE_PRINT_OPERATOR privilege,
 	   and not a printer admin, then fail */
 
-	if ( (p->pipe_user.ut.uid != 0)
-		&& !user_has_privileges(p->pipe_user.nt_user_token, &se_printop )
+	if ( (p->server_info->utok.uid != 0)
+		&& !user_has_privileges(p->server_info->ptok, &se_printop )
 		&& !token_contains_name_in_list(
-			uidtoname(p->pipe_user.ut.uid), NULL, NULL,
-			p->pipe_user.nt_user_token, lp_printer_admin(-1)) )
+			uidtoname(p->server_info->utok.uid), NULL, NULL,
+			p->server_info->ptok, lp_printer_admin(-1)) )
 	{
 		return WERR_ACCESS_DENIED;
 	}
@@ -2205,7 +2207,8 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 
-			status_win2k = delete_printer_driver(info_win2k.info_3, &p->pipe_user, 3, delete_files);
+			status_win2k = delete_printer_driver(
+				p, info_win2k.info_3, 3, delete_files);
 			free_a_printer_driver( info_win2k, 3 );
 
 			/* this should not have failed---if it did, report to client */
@@ -2215,7 +2218,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		}
 	}
 
-	status = delete_printer_driver(info.info_3, &p->pipe_user, version, delete_files);
+	status = delete_printer_driver(p, info.info_3, version, delete_files);
 
 	if ( W_ERROR_IS_OK(status) || W_ERROR_IS_OK(status_win2k) )
 		status = WERR_OK;
@@ -6388,7 +6391,8 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	{
 		/* add_printer_hook() will call reload_services() */
 
-		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
+				       printer) ) {
 			result = WERR_ACCESS_DENIED;
 			goto done;
 		}
@@ -7482,11 +7486,11 @@ WERROR enumports_hook(TALLOC_CTX *ctx, int *count, char ***lines )
 	/* if no hook then just fill in the default port */
 
 	if ( !*cmd ) {
-		if (!(qlines = SMB_MALLOC_ARRAY( char*, 2 ))) {
+		if (!(qlines = TALLOC_ARRAY( NULL, char*, 2 ))) {
 			return WERR_NOMEM;
 		}
-		if (!(qlines[0] = SMB_STRDUP( SAMBA_PRINTER_PORT_NAME ))) {
-			SAFE_FREE(qlines);
+		if (!(qlines[0] = talloc_strdup(qlines, SAMBA_PRINTER_PORT_NAME ))) {
+			TALLOC_FREE(qlines);
 			return WERR_NOMEM;
 		}
 		qlines[1] = NULL;
@@ -7728,7 +7732,8 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
-		if ( !add_printer_hook(p->mem_ctx, p->pipe_user.nt_user_token, printer) ) {
+		if ( !add_printer_hook(p->mem_ctx, p->server_info->ptok,
+				       printer) ) {
 			free_a_printer(&printer,2);
 			return WERR_ACCESS_DENIED;
 		}
@@ -7855,12 +7860,13 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	}
 
 	DEBUG(5,("Cleaning driver's information\n"));
-	err = clean_up_driver_struct(driver, level, &p->pipe_user);
+	err = clean_up_driver_struct(p, driver, level);
 	if (!W_ERROR_IS_OK(err))
 		goto done;
 
 	DEBUG(5,("Moving driver to final destination\n"));
-	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(driver, level, &p->pipe_user, &err)) ) {
+	if( !W_ERROR_IS_OK(err = move_driver_to_download_area(p, driver, level,
+							      &err)) ) {
 		goto done;
 	}
 
@@ -9935,10 +9941,10 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
-		return process_xcvtcp_command( p->pipe_user.nt_user_token, command,
+		return process_xcvtcp_command( p->server_info->ptok, command,
 			&q_u->indata, &r_u->outdata, &r_u->needed );
 	case SPLHND_PORTMON_LOCAL:
-		return process_xcvlocal_command( p->pipe_user.nt_user_token, command,
+		return process_xcvlocal_command( p->server_info->ptok, command,
 			&q_u->indata, &r_u->outdata, &r_u->needed );
 	}
 

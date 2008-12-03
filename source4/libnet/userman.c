@@ -236,12 +236,12 @@ static void continue_userdel_name_found(struct rpc_request *req)
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids.count) {
+	if (!s->lookupname.out.rids->count) {
 		c->status = NT_STATUS_NO_SUCH_USER;
 		composite_error(c, c->status);
 		return;
 
-	} else if (!s->lookupname.out.rids.count > 1) {
+	} else if (!s->lookupname.out.rids->count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
 		composite_error(c, c->status);
 		return;
@@ -251,8 +251,8 @@ static void continue_userdel_name_found(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct msg_rpc_lookup_name msg_lookup;
 
-		msg_lookup.rid   = s->lookupname.out.rids.ids;
-		msg_lookup.count = s->lookupname.out.rids.count;
+		msg_lookup.rid   = s->lookupname.out.rids->ids;
+		msg_lookup.count = s->lookupname.out.rids->count;
 
 		msg.type      = mon_SamrLookupName;
 		msg.data      = (void*)&msg_lookup;
@@ -262,7 +262,7 @@ static void continue_userdel_name_found(struct rpc_request *req)
 
 	/* prepare the arguments for rpc call */
 	s->openuser.in.domain_handle = &s->domain_handle;
-	s->openuser.in.rid           = s->lookupname.out.rids.ids[0];
+	s->openuser.in.rid           = s->lookupname.out.rids->ids[0];
 	s->openuser.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	s->openuser.out.user_handle  = &s->user_handle;
 
@@ -393,6 +393,10 @@ struct composite_context *libnet_rpc_userdel_send(struct dcerpc_pipe *p,
 	s->lookupname.in.num_names     = 1;
 	s->lookupname.in.names         = talloc_zero(s, struct lsa_String);
 	s->lookupname.in.names->string = io->in.username;
+	s->lookupname.out.rids         = talloc_zero(s, struct samr_Ids);
+	s->lookupname.out.types        = talloc_zero(s, struct samr_Ids);
+	if (composite_nomem(s->lookupname.out.rids, c)) return c;
+	if (composite_nomem(s->lookupname.out.types, c)) return c;
 
 	/* send the request */
 	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
@@ -500,12 +504,12 @@ static void continue_usermod_name_found(struct rpc_request *req)
 
 	/* what to do when there's no user account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids.count) {
+	if (!s->lookupname.out.rids->count) {
 		c->status = NT_STATUS_NO_SUCH_USER;
 		composite_error(c, c->status);
 		return;
 
-	} else if (!s->lookupname.out.rids.count > 1) {
+	} else if (!s->lookupname.out.rids->count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
 		composite_error(c, c->status);
 		return;
@@ -515,8 +519,8 @@ static void continue_usermod_name_found(struct rpc_request *req)
 	if (s->monitor_fn) {
 		struct msg_rpc_lookup_name msg_lookup;
 
-		msg_lookup.rid   = s->lookupname.out.rids.ids;
-		msg_lookup.count = s->lookupname.out.rids.count;
+		msg_lookup.rid   = s->lookupname.out.rids->ids;
+		msg_lookup.count = s->lookupname.out.rids->count;
 
 		msg.type      = mon_SamrLookupName;
 		msg.data      = (void*)&msg_lookup;
@@ -526,7 +530,7 @@ static void continue_usermod_name_found(struct rpc_request *req)
 
 	/* prepare the next rpc call */
 	s->openuser.in.domain_handle = &s->domain_handle;
-	s->openuser.in.rid           = s->lookupname.out.rids.ids[0];
+	s->openuser.in.rid           = s->lookupname.out.rids->ids[0];
 	s->openuser.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	s->openuser.out.user_handle  = &s->user_handle;
 
@@ -679,6 +683,9 @@ static NTSTATUS usermod_change(struct composite_context *c,
 	if (!do_set) {
 		s->queryuser.in.user_handle = &s->user_handle;
 		s->queryuser.in.level       = level;
+		s->queryuser.out.info       = talloc(s, union samr_UserInfo *);
+		if (composite_nomem(s->queryuser.out.info, c)) return;
+
 
 		/* send query user info request to retrieve complete data of
 		   a particular info level */
@@ -751,7 +758,7 @@ static void continue_usermod_user_queried(struct rpc_request *req)
 
 	/* get returned user data and make a change (potentially one
 	   of many) */
-	s->info = *s->queryuser.out.info;
+	s->info = *(*s->queryuser.out.info);
 
 	usermod_setfields(s, &level, i, true);
 
@@ -834,6 +841,10 @@ struct composite_context *libnet_rpc_usermod_send(struct dcerpc_pipe *p,
 	s->lookupname.in.num_names     = 1;
 	s->lookupname.in.names         = talloc_zero(s, struct lsa_String);
 	s->lookupname.in.names->string = io->in.username;
+	s->lookupname.out.rids         = talloc_zero(s, struct samr_Ids);
+	s->lookupname.out.types        = talloc_zero(s, struct samr_Ids);
+	if (composite_nomem(s->lookupname.out.rids, c)) return c;
+	if (composite_nomem(s->lookupname.out.types, c)) return c;
 
 	/* send the rpc request */
 	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);

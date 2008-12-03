@@ -30,6 +30,17 @@ static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 	return 0;
 }
 
+static int set_link_read_only_flag(const SMB_STRUCT_STAT *const sbuf)
+{
+#ifdef S_ISLNK
+#if LINKS_READ_ONLY
+	if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
+		return aRONLY;
+#endif
+#endif
+	return 0;
+}
+
 /****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
@@ -159,13 +170,7 @@ static uint32 dos_mode_from_sbuf(connection_struct *conn, const char *path, SMB_
 		result = aDIR | (result & aRONLY);
 
 	result |= set_sparse_flag(sbuf);
- 
-#ifdef S_ISLNK
-#if LINKS_READ_ONLY
-	if (S_ISLNK(sbuf->st_mode) && S_ISDIR(sbuf->st_mode))
-		result |= aRONLY;
-#endif
-#endif
+	result |= set_link_read_only_flag(sbuf);
 
 	DEBUG(8,("dos_mode_from_sbuf returning "));
 
@@ -343,6 +348,113 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 	return(result);
 }
 
+#ifdef HAVE_STAT_DOS_FLAGS
+/****************************************************************************
+ Convert dos attributes (FILE_ATTRIBUTE_*) to dos stat flags (UF_*)
+****************************************************************************/
+
+static int dos_attributes_to_stat_dos_flags(uint32_t dosmode)
+{
+	uint32_t dos_stat_flags = 0;
+
+	if (dosmode & aARCH)
+		dos_stat_flags |= UF_DOS_ARCHIVE;
+	if (dosmode & aHIDDEN)
+		dos_stat_flags |= UF_DOS_HIDDEN;
+	if (dosmode & aRONLY)
+		dos_stat_flags |= UF_DOS_RO;
+	if (dosmode & aSYSTEM)
+		dos_stat_flags |= UF_DOS_SYSTEM;
+	if (dosmode & FILE_ATTRIBUTE_NONINDEXED)
+		dos_stat_flags |= UF_DOS_NOINDEX;
+
+	return dos_stat_flags;
+}
+
+/****************************************************************************
+ Gets DOS attributes, accessed via st_flags in the stat struct.
+****************************************************************************/
+
+static bool get_stat_dos_flags(connection_struct *conn,
+			       const char *fname,
+			       const SMB_STRUCT_STAT *sbuf,
+			       uint32_t *dosmode)
+{
+	SMB_ASSERT(sbuf && VALID_STAT(*sbuf));
+	SMB_ASSERT(dosmode);
+
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return false;
+	}
+
+	DEBUG(5, ("Getting stat dos attributes for %s.\n", fname));
+
+	if (sbuf->st_flags & UF_DOS_ARCHIVE)
+		*dosmode |= aARCH;
+	if (sbuf->st_flags & UF_DOS_HIDDEN)
+		*dosmode |= aHIDDEN;
+	if (sbuf->st_flags & UF_DOS_RO)
+		*dosmode |= aRONLY;
+	if (sbuf->st_flags & UF_DOS_SYSTEM)
+		*dosmode |= aSYSTEM;
+	if (sbuf->st_flags & UF_DOS_NOINDEX)
+		*dosmode |= FILE_ATTRIBUTE_NONINDEXED;
+	if (S_ISDIR(sbuf->st_mode))
+		*dosmode |= aDIR;
+
+	*dosmode |= set_sparse_flag(sbuf);
+	*dosmode |= set_link_read_only_flag(sbuf);
+
+	return true;
+}
+
+/****************************************************************************
+ Sets DOS attributes, stored in st_flags of the inode.
+****************************************************************************/
+
+static bool set_stat_dos_flags(connection_struct *conn,
+				const char *fname,
+				SMB_STRUCT_STAT *sbuf,
+				uint32_t dosmode,
+				bool *attributes_changed)
+{
+	uint32_t new_flags = 0;
+	int error = 0;
+
+	SMB_ASSERT(sbuf && VALID_STAT(*sbuf));
+	SMB_ASSERT(attributes_changed);
+
+	*attributes_changed = false;
+
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return false;
+	}
+
+	DEBUG(5, ("Setting stat dos attributes for %s.\n", fname));
+
+	new_flags = (sbuf->st_flags & ~UF_DOS_FLAGS) |
+		     dos_attributes_to_stat_dos_flags(dosmode);
+
+	/* Return early if no flags changed. */
+	if (new_flags == sbuf->st_flags)
+		return true;
+
+	DEBUG(5, ("Setting stat dos attributes=0x%x, prev=0x%x\n", new_flags,
+		  sbuf->st_flags));
+
+	/* Set new flags with chflags. */
+	error = SMB_VFS_CHFLAGS(conn, fname, new_flags);
+	if (error) {
+		DEBUG(0, ("Failed setting new stat dos attributes (0x%x) on "
+			  "file %s! errno=%d\n", new_flags, fname, errno));
+		return false;
+	}
+
+	*attributes_changed = true;
+	return true;
+}
+#endif /* HAVE_STAT_DOS_FLAGS */
+
 /****************************************************************************
  Change a unix mode to a dos mode.
 ****************************************************************************/
@@ -350,7 +462,7 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 {
 	uint32 result = 0;
-	bool offline;
+	bool offline, used_stat_dos_flags = false;
 
 	DEBUG(8,("dos_mode: %s\n", path));
 
@@ -373,11 +485,16 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		}
 	}
 	
-	/* Get the DOS attributes from an EA by preference. */
-	if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
-		result |= set_sparse_flag(sbuf);
-	} else {
-		result |= dos_mode_from_sbuf(conn, path, sbuf);
+#ifdef HAVE_STAT_DOS_FLAGS
+	used_stat_dos_flags = get_stat_dos_flags(conn, path, sbuf, &result);
+#endif
+	if (!used_stat_dos_flags) {
+		/* Get the DOS attributes from an EA by preference. */
+		if (get_ea_dos_attribute(conn, path, sbuf, &result)) {
+			result |= set_sparse_flag(sbuf);
+		} else {
+			result |= dos_mode_from_sbuf(conn, path, sbuf);
+		}
 	}
 
 	
@@ -467,6 +584,23 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		st->st_mode = unixmode;
 		return(0);
 	}
+
+#ifdef HAVE_STAT_DOS_FLAGS
+	{
+		bool attributes_changed;
+
+		if (set_stat_dos_flags(conn, fname, st, dosmode,
+				       &attributes_changed))
+		{
+			if (!newfile && attributes_changed) {
+				notify_fname(conn, NOTIFY_ACTION_MODIFIED,
+				    FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+			}
+			st->st_mode = unixmode;
+			return 0;
+		}
+	}
+#endif
 
 	/* Store the DOS attributes in an EA by preference. */
 	if (set_ea_dos_attribute(conn, fname, st, dosmode)) {

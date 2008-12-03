@@ -77,7 +77,6 @@ enum NTLM_MESSAGE_TYPE
 
 typedef struct ntlmssp_state 
 {
-	TALLOC_CTX *mem_ctx;
 	unsigned int ref_count;
 	enum NTLMSSP_ROLE role;
 	enum server_types server_role;
@@ -98,9 +97,9 @@ typedef struct ntlmssp_state
  	DATA_BLOB lm_resp;
 	DATA_BLOB nt_resp;
 	DATA_BLOB session_key;
-	
+
 	uint32 neg_flags; /* the current state of negotiation with the NTLMSSP partner */
-	
+
 	void *auth_context;
 
 	/**
@@ -171,5 +170,4 @@ typedef struct ntlmssp_state
 	   response in at the time we want to process it.
 	   Store it here, until we need it */
 	DATA_BLOB stored_response; 
-	
 } NTLMSSP_STATE;

@@ -343,6 +343,7 @@ static struct winbindd_dispatch_table {
 	{ WINBINDD_ALLOCATE_UID, winbindd_allocate_uid, "ALLOCATE_UID" },
 	{ WINBINDD_ALLOCATE_GID, winbindd_allocate_gid, "ALLOCATE_GID" },
 	{ WINBINDD_SET_MAPPING, winbindd_set_mapping, "SET_MAPPING" },
+	{ WINBINDD_REMOVE_MAPPING, winbindd_remove_mapping, "REMOVE_MAPPING" },
 	{ WINBINDD_SET_HWM, winbindd_set_hwm, "SET_HWMS" },
 
 	/* Miscellaneous */
@@ -367,7 +368,7 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_WINS_BYNAME, winbindd_wins_byname, "WINS_BYNAME" },
 	{ WINBINDD_WINS_BYIP, winbindd_wins_byip, "WINS_BYIP" },
-	
+
 	/* End of list */
 
 	{ WINBINDD_NUM_CMDS, NULL, "NONE" }

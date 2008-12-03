@@ -43,7 +43,7 @@ librpc/gen_ndr/dcom_p.c: idl
 #######################
 # Start LIBRARY swig_dcerpc
 [PYTHON::pywmi]
-PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG WMI
+PUBLIC_DEPENDENCIES = LIBCLI_SMB LIBNDR LIBSAMBA-UTIL LIBSAMBA-CONFIG WMI
 
 $(eval $(call python_py_module_template,wmi.py,$(wmisrcdir)/wmi.py))
 

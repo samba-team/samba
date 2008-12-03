@@ -219,6 +219,7 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
+				struct auth_serversupplied_info *server_info,
 				char **poldcwd)
 {
 	connection_struct *conn;
@@ -253,6 +254,15 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 	}
 
 	conn->params->service = snum;
+
+	if (server_info != NULL) {
+		conn->server_info = copy_serverinfo(conn, server_info);
+		if (conn->server_info == NULL) {
+			DEBUG(0, ("copy_serverinfo failed\n"));
+			TALLOC_FREE(conn);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
 
 	set_conn_connectpath(conn, connpath);
 
@@ -881,7 +891,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	status = create_conn_struct(ctx, &conn, snum, lp_pathname(snum),
-				    &oldpath);
+				    NULL, &oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pdp);
 		return status;
@@ -923,7 +933,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 static int setup_ver2_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
-				int consumedcnt,
 				bool self_referral)
 {
 	char* pdata = *ppdata;
@@ -988,7 +997,8 @@ static int setup_ver2_dfs_referral(const char *pathname,
 	memcpy(pdata+uni_reqpathoffset2,uni_requestedpath,requestedpathlen);
 
 	/* create the header */
-	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
+	SSVAL(pdata,0,requestedpathlen - 2); /* UCS2 of path consumed minus
+						2 byte null */
 	/* number of referral in this pkt */
 	SSVAL(pdata,2,junction->referral_count);
 	if(self_referral) {
@@ -1037,7 +1047,6 @@ static int setup_ver2_dfs_referral(const char *pathname,
 static int setup_ver3_dfs_referral(const char *pathname,
 				char **ppdata,
 				struct junction_map *junction,
-				int consumedcnt,
 				bool self_referral)
 {
 	char *pdata = *ppdata;
@@ -1084,7 +1093,8 @@ static int setup_ver3_dfs_referral(const char *pathname,
 	*ppdata = pdata;
 
 	/* create the header */
-	SSVAL(pdata,0,consumedcnt * 2); /* path consumed */
+	SSVAL(pdata,0,reqpathlen - 2); /* UCS2 of path consumed minus
+					  2 byte null */
 	SSVAL(pdata,2,junction->referral_count); /* number of referral */
 	if(self_referral) {
 		SIVAL(pdata,4,DFSREF_REFERRAL_SERVER | DFSREF_STORAGE_SERVER);
@@ -1224,11 +1234,11 @@ int setup_dfs_referral(connection_struct *orig_conn,
 	case 2:
 		reply_size = setup_ver2_dfs_referral(pathnamep,
 					ppdata, junction,
-					consumedcnt, self_referral);
+					self_referral);
 		break;
 	case 3:
 		reply_size = setup_ver3_dfs_referral(pathnamep, ppdata,
-					junction, consumedcnt, self_referral);
+					junction, self_referral);
 		break;
 	default:
 		DEBUG(0,("setup_dfs_referral: Invalid dfs referral "
@@ -1321,7 +1331,7 @@ static bool junction_to_local_path(const struct junction_map *jucn,
 		return False;
 	}
 	status = create_conn_struct(talloc_tos(), conn_out, snum,
-				    lp_pathname(snum), oldpath);
+				    lp_pathname(snum), NULL, oldpath);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -1455,7 +1465,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	 */
 
 	status = create_conn_struct(talloc_tos(), &conn, snum, connect_path,
-				    &cwd);
+				    NULL, &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));
@@ -1523,7 +1533,8 @@ static int form_junctions(TALLOC_CTX *ctx,
 	 * Fake up a connection struct for the VFS layer.
 	 */
 
-	status = create_conn_struct(ctx, &conn, snum, connect_path, &cwd);
+	status = create_conn_struct(ctx, &conn, snum, connect_path, NULL,
+				    &cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
 			  nt_errstr(status)));

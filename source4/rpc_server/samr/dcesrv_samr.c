@@ -37,26 +37,28 @@
 #include "../lib/util/util_ldb.h"
 #include "param/param.h"
 
-/* these query macros make samr_Query[User|Group]Info a bit easier to read */
+/* these query macros make samr_Query[User|Group|Alias]Info a bit easier to read */
 
 #define QUERY_STRING(msg, field, attr) \
-	r->out.info->field.string = samdb_result_string(msg, attr, "");
+	info->field.string = samdb_result_string(msg, attr, "");
 #define QUERY_UINT(msg, field, attr) \
-	r->out.info->field = samdb_result_uint(msg, attr, 0);
+	info->field = samdb_result_uint(msg, attr, 0);
 #define QUERY_RID(msg, field, attr) \
-	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
+	info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
 #define QUERY_UINT64(msg, field, attr) \
-	r->out.info->field = samdb_result_uint64(msg, attr, 0);
+	info->field = samdb_result_uint64(msg, attr, 0);
 #define QUERY_APASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
-							   a_state->domain_state->domain_dn, msg, attr);
+	info->field = samdb_result_allow_password_change(sam_ctx, mem_ctx, \
+							 a_state->domain_state->domain_dn, msg, attr);
 #define QUERY_FPASSC(msg, field, attr) \
-	r->out.info->field = samdb_result_force_password_change(sam_ctx, mem_ctx, \
-							   a_state->domain_state->domain_dn, msg);
+	info->field = samdb_result_force_password_change(sam_ctx, mem_ctx, \
+							 a_state->domain_state->domain_dn, msg);
 #define QUERY_LHOURS(msg, field, attr) \
-	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
+	info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
-	r->out.info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
+	info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
+#define QUERY_PARAMETERS(msg, field, attr) \
+	info->field = samdb_result_parameters(mem_ctx, msg, attr);
 
 
 /* these are used to make the Set[User|Group]Info code easier to follow */
@@ -135,6 +137,16 @@
         set_el = ldb_msg_find_element(msg, attr);			\
  	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)
+
+#define SET_PARAMETERS(msg, field, attr) do {				\
+	struct ldb_message_element *set_el;				\
+	if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY;				\
+	}								\
+	set_el = ldb_msg_find_element(msg, attr);			\
+	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
+} while (0)
+
 
 
 /* 
@@ -217,7 +229,7 @@ static NTSTATUS dcesrv_samr_QuerySecurity(struct dcesrv_call_state *dce_call, TA
 	struct dcesrv_handle *h;
 	struct sec_desc_buf *sd;
 
-	r->out.sdbuf = NULL;
+	*r->out.sdbuf = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, DCESRV_HANDLE_ANY);
 
@@ -228,7 +240,7 @@ static NTSTATUS dcesrv_samr_QuerySecurity(struct dcesrv_call_state *dce_call, TA
 
 	sd->sd = samdb_default_security_descriptor(mem_ctx);
 
-	r->out.sdbuf = sd;
+	*r->out.sdbuf = sd;
 
 	return NT_STATUS_OK;
 }
@@ -265,7 +277,7 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 	int ret;
 	struct ldb_dn *partitions_basedn;
 
-	r->out.sid = NULL;
+	*r->out.sid = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
 
@@ -307,7 +319,7 @@ static NTSTATUS dcesrv_samr_LookupDomain(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	r->out.sid = sid;
+	*r->out.sid = sid;
 
 	return NT_STATUS_OK;
 }
@@ -332,8 +344,8 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 	struct ldb_dn *partitions_basedn;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.connect_handle, SAMR_HANDLE_CONNECT);
 
@@ -389,9 +401,9 @@ static NTSTATUS dcesrv_samr_EnumDomains(struct dcesrv_call_state *dce_call, TALL
 		}
 	}
 
-	r->out.sam = array;
-	r->out.num_entries = i;
-	array->count = r->out.num_entries;
+	*r->out.sam = array;
+	*r->out.num_entries = i;
+	array->count = *r->out.num_entries;
 
 	return NT_STATUS_OK;
 }
@@ -692,7 +704,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo9(struct samr_domain_state *state,
 				    struct ldb_message **dom_msgs,
 				   struct samr_DomInfo9 *info)
 {
-	info->unknown = 1;
+	info->domain_server_state = DOMAIN_SERVER_ENABLED;
 
 	return NT_STATUS_OK;
 }
@@ -765,18 +777,19 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 {
 	struct dcesrv_handle *h;
 	struct samr_domain_state *d_state;
+	union samr_DomainInfo *info;
 
 	struct ldb_message **dom_msgs;
 	const char * const *attrs = NULL;
 	
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
 	d_state = h->data;
 
-	r->out.info = talloc(mem_ctx, union samr_DomainInfo);
-	if (!r->out.info) {
+	info = talloc(mem_ctx, union samr_DomainInfo);
+	if (!info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -881,47 +894,49 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		}
 	}
 
-	ZERO_STRUCTP(r->out.info);
+	*r->out.info = info;
+
+	ZERO_STRUCTP(info);
 
 	switch (r->in.level) {
 	case 1:
 		return dcesrv_samr_info_DomInfo1(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info1);
+						 &info->info1);
 	case 2:
 		return dcesrv_samr_info_DomGeneralInformation(d_state, mem_ctx, dom_msgs, 
-							      &r->out.info->general);
+							      &info->general);
 	case 3:
 		return dcesrv_samr_info_DomInfo3(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info3);
+						 &info->info3);
 	case 4:
 		return dcesrv_samr_info_DomOEMInformation(d_state, mem_ctx, dom_msgs, 
-							  &r->out.info->oem);
+							  &info->oem);
 	case 5:
 		return dcesrv_samr_info_DomInfo5(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info5);
+						 &info->info5);
 	case 6:
 		return dcesrv_samr_info_DomInfo6(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info6);
+						 &info->info6);
 	case 7:
 		return dcesrv_samr_info_DomInfo7(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info7);
+						 &info->info7);
 	case 8:
 		return dcesrv_samr_info_DomInfo8(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info8);
+						 &info->info8);
 	case 9:
 		return dcesrv_samr_info_DomInfo9(d_state, mem_ctx, dom_msgs, 
-						 &r->out.info->info9);
+						 &info->info9);
 	case 11:
 		return dcesrv_samr_info_DomGeneralInformation2(d_state, mem_ctx, dom_msgs, 
-							       &r->out.info->general2);
+							       &info->general2);
 	case 12:
 		return dcesrv_samr_info_DomInfo12(d_state, mem_ctx, dom_msgs, 
-						  &r->out.info->info12);
+						  &info->info12);
 	case 13:
 		return dcesrv_samr_info_DomInfo13(d_state, mem_ctx, dom_msgs, 
-						  &r->out.info->info13);
+						  &info->info13);
 	}
-	
+
 	return NT_STATUS_INVALID_INFO_CLASS;
 }
 
@@ -1135,10 +1150,11 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 	int ldb_cnt, count, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1189,20 +1205,22 @@ static NTSTATUS dcesrv_samr_EnumDomainGroups(struct dcesrv_call_state *dce_call,
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
-	r->out.num_entries = count - first;
-	r->out.num_entries = MIN(r->out.num_entries, 
+	*r->out.num_entries = count - first;
+	*r->out.num_entries = MIN(*r->out.num_entries,
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
-	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
-	if (!r->out.sam) {
+	sam = talloc(mem_ctx, struct samr_SamArray);
+	if (!sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sam->entries = entries+first;
-	r->out.sam->count = r->out.num_entries;
+	sam->entries = entries+first;
+	sam->count = *r->out.num_entries;
 
-	if (r->out.num_entries < count - first) {
-		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
+	*r->out.sam = sam;
+
+	if (*r->out.num_entries < count - first) {
+		*r->out.resume_handle = entries[first+*r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
 
@@ -1492,10 +1510,11 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	int ret, num_filtered_entries, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[] = { "objectSid", "sAMAccountName", "userAccountControl", NULL };
+	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1539,24 +1558,26 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 
 	/* return the rest, limit by max_size. Note that we 
 	   use the w2k3 element size value of 54 */
-	r->out.num_entries = num_filtered_entries - first;
-	r->out.num_entries = MIN(r->out.num_entries, 
+	*r->out.num_entries = num_filtered_entries - first;
+	*r->out.num_entries = MIN(*r->out.num_entries,
 				 1+(r->in.max_size/SAMR_ENUM_USERS_MULTIPLIER));
 
-	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
-	if (!r->out.sam) {
+	sam = talloc(mem_ctx, struct samr_SamArray);
+	if (!sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sam->entries = entries+first;
-	r->out.sam->count = r->out.num_entries;
+	sam->entries = entries+first;
+	sam->count = *r->out.num_entries;
+
+	*r->out.sam = sam;
 
 	if (first == num_filtered_entries) {
 		return NT_STATUS_OK;
 	}
 
-	if (r->out.num_entries < num_filtered_entries - first) {
-		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
+	if (*r->out.num_entries < num_filtered_entries - first) {
+		*r->out.resume_handle = entries[first+*r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
 
@@ -1685,10 +1706,11 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 	int ldb_cnt, count, i, first;
 	struct samr_SamEntry *entries;
 	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+	struct samr_SamArray *sam;
 
 	*r->out.resume_handle = 0;
-	r->out.sam = NULL;
-	r->out.num_entries = 0;
+	*r->out.sam = NULL;
+	*r->out.num_entries = 0;
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1748,20 +1770,22 @@ static NTSTATUS dcesrv_samr_EnumDomainAliases(struct dcesrv_call_state *dce_call
 		return NT_STATUS_OK;
 	}
 
-	r->out.num_entries = count - first;
-	r->out.num_entries = MIN(r->out.num_entries, 1000);
+	*r->out.num_entries = count - first;
+	*r->out.num_entries = MIN(*r->out.num_entries, 1000);
 
-	r->out.sam = talloc(mem_ctx, struct samr_SamArray);
-	if (!r->out.sam) {
+	sam = talloc(mem_ctx, struct samr_SamArray);
+	if (!sam) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r->out.sam->entries = entries+first;
-	r->out.sam->count = r->out.num_entries;
+	sam->entries = entries+first;
+	sam->count = *r->out.num_entries;
 
-	if (r->out.num_entries < count - first) {
+	*r->out.sam = sam;
+
+	if (*r->out.num_entries < count - first) {
 		*r->out.resume_handle =
-			entries[first+r->out.num_entries-1].idx;
+			entries[first+*r->out.num_entries-1].idx;
 		return STATUS_MORE_ENTRIES;
 	}
 
@@ -1859,8 +1883,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 	const char * const attrs[] = { "sAMAccountType", "objectSid", NULL };
 	int count;
 
-	ZERO_STRUCT(r->out.rids);
-	ZERO_STRUCT(r->out.types);
+	ZERO_STRUCTP(r->out.rids);
+	ZERO_STRUCTP(r->out.types);
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -1870,13 +1894,13 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_OK;
 	}
 
-	r->out.rids.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
-	r->out.types.ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
-	if (!r->out.rids.ids || !r->out.types.ids) {
+	r->out.rids->ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
+	r->out.types->ids = talloc_array(mem_ctx, uint32_t, r->in.num_names);
+	if (!r->out.rids->ids || !r->out.types->ids) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	r->out.rids.count = r->in.num_names;
-	r->out.types.count = r->in.num_names;
+	r->out.rids->count = r->in.num_names;
+	r->out.types->count = r->in.num_names;
 
 	num_mapped = 0;
 
@@ -1885,8 +1909,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 		struct dom_sid *sid;
 		uint32_t atype, rtype;
 
-		r->out.rids.ids[i] = 0;
-		r->out.types.ids[i] = SID_NAME_UNKNOWN;
+		r->out.rids->ids[i] = 0;
+		r->out.types->ids[i] = SID_NAME_UNKNOWN;
 
 		count = gendb_search(d_state->sam_ctx, mem_ctx, d_state->domain_dn, &res, attrs, 
 				     "sAMAccountName=%s", 
@@ -1915,8 +1939,8 @@ static NTSTATUS dcesrv_samr_LookupNames(struct dcesrv_call_state *dce_call, TALL
 			continue;
 		}
 
-		r->out.rids.ids[i] = sid->sub_auths[sid->num_auths-1];
-		r->out.types.ids[i] = rtype;
+		r->out.rids->ids[i] = sid->sub_auths[sid->num_auths-1];
+		r->out.types->ids[i] = rtype;
 		num_mapped++;
 	}
 	
@@ -1940,8 +1964,8 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 	struct lsa_String *names;
 	uint32_t *ids;
 
-	ZERO_STRUCT(r->out.names);
-	ZERO_STRUCT(r->out.types);
+	ZERO_STRUCTP(r->out.names);
+	ZERO_STRUCTP(r->out.types);
 
 	DCESRV_PULL_HANDLE(h, r->in.domain_handle, SAMR_HANDLE_DOMAIN);
 
@@ -2002,11 +2026,11 @@ static NTSTATUS dcesrv_samr_LookupRids(struct dcesrv_call_state *dce_call, TALLO
 		}
 	}
 
-	r->out.names.names = names;
-	r->out.names.count = r->in.num_rids;
+	r->out.names->names = names;
+	r->out.names->count = r->in.num_rids;
 
-	r->out.types.ids = ids;
-	r->out.types.count = r->in.num_rids;
+	r->out.types->ids = ids;
+	r->out.types->count = r->in.num_rids;
 
 	return status;
 }
@@ -2103,8 +2127,9 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
+	union samr_GroupInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.group_handle, SAMR_HANDLE_GROUP);
 
@@ -2127,17 +2152,16 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 	msg = res->msgs[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_GroupInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_GroupInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	/* Fill in the level */
 	switch (r->in.level) {
 	case GROUPINFOALL:
 		QUERY_STRING(msg, all.name,        "sAMAccountName");
-		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		QUERY_UINT  (msg, all.num_members,      "numMembers")
 		QUERY_STRING(msg, all.description, "description");
 		break;
@@ -2145,22 +2169,24 @@ static NTSTATUS dcesrv_samr_QueryGroupInfo(struct dcesrv_call_state *dce_call, T
 		QUERY_STRING(msg, name,            "sAMAccountName");
 		break;
 	case GROUPINFOATTRIBUTES:
-		r->out.info->attributes.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->attributes.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		break;
 	case GROUPINFODESCRIPTION:
 		QUERY_STRING(msg, description, "description");
 		break;
 	case GROUPINFOALL2:
 		QUERY_STRING(msg, all2.name,        "sAMAccountName");
-		r->out.info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
+		info->all.attributes = SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED; /* Do like w2k3 */
 		QUERY_UINT  (msg, all2.num_members,      "numMembers")
 		QUERY_STRING(msg, all2.description, "description");
 		break;
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	*r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
@@ -2467,7 +2493,7 @@ static NTSTATUS dcesrv_samr_QueryGroupMember(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	r->out.rids = array;
+	*r->out.rids = array;
 
 	return NT_STATUS_OK;
 }
@@ -2574,8 +2600,9 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 	const char * const attrs[4] = { "sAMAccountName", "description",
 					"numMembers", NULL };
 	int ret;
+	union samr_AliasInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.alias_handle, SAMR_HANDLE_ALIAS);
 
@@ -2590,11 +2617,10 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_AliasInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_AliasInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	switch(r->in.level) {
 	case ALIASINFOALL:
@@ -2609,10 +2635,12 @@ static NTSTATUS dcesrv_samr_QueryAliasInfo(struct dcesrv_call_state *dce_call, T
 		QUERY_STRING(msg, description, "description");
 		break;
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	*r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
@@ -2989,8 +3017,9 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	struct ldb_context *sam_ctx;
 
 	const char * const *attrs = NULL;
+	union samr_UserInfo *info;
 
-	r->out.info = NULL;
+	*r->out.info = NULL;
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
@@ -3175,11 +3204,10 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	msg = res[0];
 
 	/* allocate the info structure */
-	r->out.info = talloc(mem_ctx, union samr_UserInfo);
-	if (r->out.info == NULL) {
+	info = talloc_zero(mem_ctx, union samr_UserInfo);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	ZERO_STRUCTP(r->out.info);
 
 	/* fill in the reply */
 	switch (r->in.level) {
@@ -3290,7 +3318,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		break;
 
 	case 20:
-		QUERY_STRING(msg, info20.parameters,    "userParameters");
+		QUERY_PARAMETERS(msg, info20.parameters,    "userParameters");
 		break;
 
 	case 21:
@@ -3309,11 +3337,11 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		QUERY_STRING(msg, info21.description,          "description");
 		QUERY_STRING(msg, info21.workstations,         "userWorkstations");
 		QUERY_STRING(msg, info21.comment,              "comment");
-		QUERY_STRING(msg, info21.parameters,           "userParameters");
+		QUERY_PARAMETERS(msg, info21.parameters,       "userParameters");
 		QUERY_RID   (msg, info21.rid,                  "objectSid");
 		QUERY_UINT  (msg, info21.primary_gid,          "primaryGroupID");
 		QUERY_AFLAGS(msg, info21.acct_flags,           "userAccountControl");
-		r->out.info->info21.fields_present = 0x00FFFFFF;
+		info->info21.fields_present = 0x00FFFFFF;
 		QUERY_LHOURS(msg, info21.logon_hours,          "logonHours");
 		QUERY_UINT  (msg, info21.bad_password_count,   "badPwdCount");
 		QUERY_UINT  (msg, info21.logon_count,          "logonCount");
@@ -3323,10 +3351,12 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 		
 
 	default:
-		r->out.info = NULL;
+		talloc_free(info);
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-	
+
+	*r->out.info = info;
+
 	return NT_STATUS_OK;
 }
 
@@ -3416,7 +3446,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		break;
 
 	case 20:
-		SET_STRING(msg, info20.parameters,      "userParameters");
+		SET_PARAMETERS(msg, info20.parameters,      "userParameters");
 		break;
 
 	case 21:
@@ -3446,7 +3476,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)
 			SET_AFLAGS(msg, info21.acct_flags,     "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)   
-			SET_STRING(msg, info21.parameters,     "userParameters");
+			SET_PARAMETERS(msg, info21.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE)
 			SET_UINT  (msg, info21.country_code,   "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)
@@ -3477,7 +3507,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)     
 			SET_AFLAGS(msg, info23.info.acct_flags,   "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)     
-			SET_STRING(msg, info23.info.parameters,   "userParameters");
+			SET_PARAMETERS(msg, info23.info.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
 			SET_UINT  (msg, info23.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
@@ -3533,7 +3563,7 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 		IFSET(SAMR_FIELD_ACCT_FLAGS)     
 			SET_AFLAGS(msg, info25.info.acct_flags,   "userAccountControl");
 		IFSET(SAMR_FIELD_PARAMETERS)     
-			SET_STRING(msg, info25.info.parameters,   "userParameters");
+			SET_PARAMETERS(msg, info25.info.parameters, "userParameters");
 		IFSET(SAMR_FIELD_COUNTRY_CODE) 
 			SET_UINT  (msg, info25.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
@@ -3650,7 +3680,7 @@ static NTSTATUS dcesrv_samr_GetGroupsForUser(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	r->out.rids = array;
+	*r->out.rids = array;
 
 	return NT_STATUS_OK;
 }
@@ -3808,65 +3838,65 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 		count += 1;
 	}
 
-	r->out.total_size = count;
+	*r->out.total_size = count;
 
 	if (r->in.start_idx >= count) {
-		r->out.returned_size = 0;
+		*r->out.returned_size = 0;
 		switch(r->in.level) {
 		case 1:
-			r->out.info.info1.count = r->out.returned_size;
-			r->out.info.info1.entries = NULL;
+			r->out.info->info1.count = *r->out.returned_size;
+			r->out.info->info1.entries = NULL;
 			break;
 		case 2:
-			r->out.info.info2.count = r->out.returned_size;
-			r->out.info.info2.entries = NULL;
+			r->out.info->info2.count = *r->out.returned_size;
+			r->out.info->info2.entries = NULL;
 			break;
 		case 3:
-			r->out.info.info3.count = r->out.returned_size;
-			r->out.info.info3.entries = NULL;
+			r->out.info->info3.count = *r->out.returned_size;
+			r->out.info->info3.entries = NULL;
 			break;
 		case 4:
-			r->out.info.info4.count = r->out.returned_size;
-			r->out.info.info4.entries = NULL;
+			r->out.info->info4.count = *r->out.returned_size;
+			r->out.info->info4.entries = NULL;
 			break;
 		case 5:
-			r->out.info.info5.count = r->out.returned_size;
-			r->out.info.info5.entries = NULL;
+			r->out.info->info5.count = *r->out.returned_size;
+			r->out.info->info5.entries = NULL;
 			break;
 		}
 	} else {
-		r->out.returned_size = MIN(count - r->in.start_idx,
+		*r->out.returned_size = MIN(count - r->in.start_idx,
 					   r->in.max_entries);
 		switch(r->in.level) {
 		case 1:
-			r->out.info.info1.count = r->out.returned_size;
-			r->out.info.info1.entries =
+			r->out.info->info1.count = *r->out.returned_size;
+			r->out.info->info1.entries =
 				&(entriesGeneral[r->in.start_idx]);
 			break;
 		case 2:
-			r->out.info.info2.count = r->out.returned_size;
-			r->out.info.info2.entries =
+			r->out.info->info2.count = *r->out.returned_size;
+			r->out.info->info2.entries =
 				&(entriesFull[r->in.start_idx]);
 			break;
 		case 3:
-			r->out.info.info3.count = r->out.returned_size;
-			r->out.info.info3.entries =
+			r->out.info->info3.count = *r->out.returned_size;
+			r->out.info->info3.entries =
 				&(entriesFullGroup[r->in.start_idx]);
 			break;
 		case 4:
-			r->out.info.info4.count = r->out.returned_size;
-			r->out.info.info4.entries =
+			r->out.info->info4.count = *r->out.returned_size;
+			r->out.info->info4.entries =
 				&(entriesAscii[r->in.start_idx]);
 			break;
 		case 5:
-			r->out.info.info5.count = r->out.returned_size;
-			r->out.info.info5.entries =
+			r->out.info->info5.count = *r->out.returned_size;
+			r->out.info->info5.entries =
 				&(entriesAscii[r->in.start_idx]);
 			break;
 		}
 	}
 
-	return (r->out.returned_size < (count - r->in.start_idx)) ?
+	return (*r->out.returned_size < (count - r->in.start_idx)) ?
 		STATUS_MORE_ENTRIES : NT_STATUS_OK;
 }
 
@@ -3910,18 +3940,18 @@ static NTSTATUS dcesrv_samr_GetUserPwInfo(struct dcesrv_call_state *dce_call, TA
 	struct dcesrv_handle *h;
 	struct samr_account_state *a_state;
 
-	ZERO_STRUCT(r->out.info);
+	ZERO_STRUCTP(r->out.info);
 
 	DCESRV_PULL_HANDLE(h, r->in.user_handle, SAMR_HANDLE_USER);
 
 	a_state = h->data;
 
-	r->out.info.min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->domain_state->domain_dn, "minPwdLength", 
-							    NULL);
-	r->out.info.password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
-							    a_state->account_dn, 
-							    "pwdProperties", NULL);
+	r->out.info->min_password_length = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							     a_state->domain_state->domain_dn, "minPwdLength",
+							     NULL);
+	r->out.info->password_properties = samdb_search_uint(a_state->sam_ctx, mem_ctx, 0,
+							     a_state->account_dn,
+							     "pwdProperties", NULL);
 	return NT_STATUS_OK;
 }
 
@@ -4008,11 +4038,10 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo2(struct dcesrv_call_state *dce_call,
 	ZERO_STRUCT(r1.out);
 	r1.in.domain_handle = r->in.domain_handle;
 	r1.in.level  = r->in.level;
-	
+	r1.out.info  = r->out.info;
+
 	status = dcesrv_samr_QueryDomainInfo(dce_call, mem_ctx, &r1);
 	
-	r->out.info = r1.out.info;
-
 	return status;
 }
 
@@ -4028,13 +4057,11 @@ static NTSTATUS dcesrv_samr_QueryUserInfo2(struct dcesrv_call_state *dce_call, T
 	struct samr_QueryUserInfo r1;
 	NTSTATUS status;
 
-	ZERO_STRUCT(r1.out);
 	r1.in.user_handle = r->in.user_handle;
 	r1.in.level  = r->in.level;
+	r1.out.info  = r->out.info;
 	
 	status = dcesrv_samr_QueryUserInfo(dce_call, mem_ctx, &r1);
-	
-	r->out.info = r1.out.info;
 
 	return status;
 }
@@ -4054,13 +4081,11 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo2(struct dcesrv_call_state *dce_call
 	q.in.start_idx = r->in.start_idx;
 	q.in.max_entries = r->in.max_entries;
 	q.in.buf_size = r->in.buf_size;
-	ZERO_STRUCT(q.out);
+	q.out.total_size = r->out.total_size;
+	q.out.returned_size = r->out.returned_size;
+	q.out.info = r->out.info;
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
-
-	r->out.total_size = q.out.total_size;
-	r->out.returned_size = q.out.returned_size;
-	r->out.info = q.out.info;
 
 	return result;
 }
@@ -4090,13 +4115,11 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo3(struct dcesrv_call_state *dce_call
 	q.in.start_idx = r->in.start_idx;
 	q.in.max_entries = r->in.max_entries;
 	q.in.buf_size = r->in.buf_size;
-	ZERO_STRUCT(q.out);
+	q.out.total_size = r->out.total_size;
+	q.out.returned_size = r->out.returned_size;
+	q.out.info = r->out.info;
 
 	result = dcesrv_samr_QueryDisplayInfo(dce_call, mem_ctx, &q);
-
-	r->out.total_size = q.out.total_size;
-	r->out.returned_size = q.out.returned_size;
-	r->out.info = q.out.info;
 
 	return result;
 }
@@ -4138,7 +4161,7 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 	struct ldb_context *sam_ctx;
 
-	ZERO_STRUCT(r->out.info);
+	ZERO_STRUCTP(r->out.info);
 
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info); 
 	if (sam_ctx == NULL) {
@@ -4156,8 +4179,8 @@ static NTSTATUS dcesrv_samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	r->out.info.min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
-	r->out.info.password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
+	r->out.info->min_password_length = samdb_result_uint(msgs[0], "minPwdLength", 0);
+	r->out.info->password_properties = samdb_result_uint(msgs[0], "pwdProperties", 1);
 
 	talloc_free(msgs);
 
@@ -4267,9 +4290,9 @@ static NTSTATUS dcesrv_samr_Connect5(struct dcesrv_call_state *dce_call, TALLOC_
 
 	status = dcesrv_samr_Connect(dce_call, mem_ctx, &c);
 
-	r->out.info->info1.client_version = SAMR_CONNECT_AFTER_W2K;
-	r->out.info->info1.unknown2 = 0;
-	r->out.level = r->in.level;
+	r->out.info_out->info1.client_version = SAMR_CONNECT_AFTER_W2K;
+	r->out.info_out->info1.unknown2 = 0;
+	*r->out.level_out = r->in.level_in;
 
 	return status;
 }
@@ -4289,8 +4312,8 @@ static NTSTATUS dcesrv_samr_RidToSid(struct dcesrv_call_state *dce_call, TALLOC_
 	d_state = h->data;
 
 	/* form the users SID */
-	r->out.sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
-	if (!r->out.sid) {
+	*r->out.sid = dom_sid_add_rid(mem_ctx, d_state->domain_sid, r->in.rid);
+	if (!*r->out.sid) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

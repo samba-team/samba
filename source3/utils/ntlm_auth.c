@@ -380,13 +380,25 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (nt_response && nt_response->length) {
-		memcpy(request.data.auth_crap.nt_resp, 
-		       nt_response->data, 
-		       MIN(nt_response->length, sizeof(request.data.auth_crap.nt_resp)));
+		if (nt_response->length > sizeof(request.data.auth_crap.nt_resp)) {
+			request.flags = request.flags | WBFLAG_BIG_NTLMV2_BLOB;
+			request.extra_len = nt_response->length;
+			request.extra_data.data = SMB_MALLOC_ARRAY(char, request.extra_len);
+			if (request.extra_data.data == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+			memcpy(request.extra_data.data, nt_response->data,
+			       nt_response->length);
+
+		} else {
+			memcpy(request.data.auth_crap.nt_resp,
+			       nt_response->data, nt_response->length);
+		}
                 request.data.auth_crap.nt_resp_len = nt_response->length;
 	}
 	
 	result = winbindd_request_response(WINBINDD_PAM_AUTH_CRAP, &request, &response);
+	SAFE_FREE(request.extra_data.data);
 
 	/* Display response */
 
@@ -535,7 +547,8 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		if (memcmp(user_sess_key, zeros, 16) != 0) {
 			*user_session_key = data_blob(user_sess_key, 16);
 		}
-		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state->mem_ctx, unix_name);
+		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state,
+							    unix_name);
 		SAFE_FREE(unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
@@ -555,7 +568,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 
 	nt_lm_owf_gen (opt_password, nt_pw, lm_pw);
 	
-	nt_status = ntlm_password_check(ntlmssp_state->mem_ctx, 
+	nt_status = ntlm_password_check(ntlmssp_state,
 					&ntlmssp_state->chal,
 					&ntlmssp_state->lm_resp,
 					&ntlmssp_state->nt_resp, 
@@ -566,7 +579,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *u
 					lm_pw, nt_pw, user_session_key, lm_session_key);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
-		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, 
+		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state,
 							      "%s%c%s", ntlmssp_state->domain, 
 							      *lp_winbind_separator(), 
 							      ntlmssp_state->user);

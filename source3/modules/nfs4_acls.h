@@ -144,7 +144,7 @@ typedef bool (*set_nfs4acl_native_fn_t)(files_struct *, SMB4ACL_T *);
 
 NTSTATUS smb_set_nt_acl_nfs4(files_struct *fsp,
 	uint32 security_info_sent,
-	SEC_DESC *psd,
+	const SEC_DESC *psd,
 	set_nfs4acl_native_fn_t set_nfs4_native);
 
 #endif /* __NFS4_ACLS_H__ */

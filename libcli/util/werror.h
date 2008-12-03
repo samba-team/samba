@@ -136,6 +136,7 @@ typedef uint32_t WERROR;
 #define WERR_TIME_SKEW W_ERROR(1398)
 #define WERR_EVENTLOG_FILE_CORRUPT W_ERROR(1500)
 #define WERR_SERVER_UNAVAILABLE W_ERROR(1722)
+#define WERR_NO_TRUST_SAM_ACCOUNT W_ERROR(1787)
 #define WERR_INVALID_FORM_NAME W_ERROR(1902)
 #define WERR_INVALID_FORM_SIZE W_ERROR(1903)
 #define WERR_PASSWORD_MUST_CHANGE W_ERROR(1907)
@@ -180,6 +181,7 @@ typedef uint32_t WERROR;
 /* Configuration Manager Errors */
 /* Basically Win32 errors meanings are specific to the \ntsvcs pipe */
 
+#define WERR_CM_BUFFER_SMALL W_ERROR(26)
 #define WERR_CM_NO_MORE_HW_PROFILES W_ERROR(35)
 #define WERR_CM_NO_SUCH_VALUE W_ERROR(37)
 

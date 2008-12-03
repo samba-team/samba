@@ -27,8 +27,8 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 				       struct eventlog_OpenUnknown0 *unknown0 /* [in] [unique] */,
 				       struct lsa_String *logname /* [in] [ref] */,
 				       struct lsa_String *servername /* [in] [ref] */,
-				       uint32_t unknown2 /* [in]  */,
-				       uint32_t unknown3 /* [in]  */,
+				       uint32_t major_version /* [in]  */,
+				       uint32_t minor_version /* [in]  */,
 				       struct policy_handle *handle /* [out] [ref] */);
 NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx);

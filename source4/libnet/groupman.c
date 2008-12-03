@@ -174,6 +174,10 @@ struct composite_context* libnet_rpc_groupdel_send(struct dcerpc_pipe *p,
 	s->lookupname.in.num_names     = 1;
 	s->lookupname.in.names         = talloc_zero(s, struct lsa_String);
 	s->lookupname.in.names->string = io->in.groupname;
+	s->lookupname.out.rids         = talloc_zero(s, struct samr_Ids);
+	s->lookupname.out.types        = talloc_zero(s, struct samr_Ids);
+	if (composite_nomem(s->lookupname.out.rids, c)) return c;
+	if (composite_nomem(s->lookupname.out.types, c)) return c;
 
 	/* send the request */
 	lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookupname);
@@ -205,12 +209,12 @@ static void continue_groupdel_name_found(struct rpc_request *req)
 
 	/* what to do when there's no group account to delete
 	   and what if there's more than one rid resolved */
-	if (!s->lookupname.out.rids.count) {
+	if (!s->lookupname.out.rids->count) {
 		c->status = NT_STATUS_NO_SUCH_GROUP;
 		composite_error(c, c->status);
 		return;
 
-	} else if (!s->lookupname.out.rids.count > 1) {
+	} else if (!s->lookupname.out.rids->count > 1) {
 		c->status = NT_STATUS_INVALID_ACCOUNT_NAME;
 		composite_error(c, c->status);
 		return;
@@ -218,7 +222,7 @@ static void continue_groupdel_name_found(struct rpc_request *req)
 
 	/* prepare the arguments for rpc call */
 	s->opengroup.in.domain_handle = &s->domain_handle;
-	s->opengroup.in.rid           = s->lookupname.out.rids.ids[0];
+	s->opengroup.in.rid           = s->lookupname.out.rids->ids[0];
 	s->opengroup.in.access_mask   = SEC_FLAG_MAXIMUM_ALLOWED;
 	s->opengroup.out.group_handle  = &s->group_handle;
 

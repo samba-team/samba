@@ -506,7 +506,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		ERROR_BOTH(map_nt_error_from_unix(ret), ERRHRD, ERRdiskfull);
 		srv_set_message(outbuf,0,0,true);
         } else {
-		bool write_through = BITSETW(aio_ex->req->inbuf+smb_vwv7,0);
+		bool write_through = BITSETW(aio_ex->req->vwv+7,0);
 		NTSTATUS status;
 
         	SSVAL(outbuf,smb_vwv2,nwritten);

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
@@ -267,6 +268,85 @@ done:
 	return ret;
 }
 
+static bool test_chkpath_names(struct smbcli_state *cli, struct torture_context *tctx)
+{
+	union smb_chkpath io;
+	union smb_fileinfo finfo;
+	NTSTATUS status;
+	bool ret = true;
+	uint8_t i;
+
+	/*
+	 * we don't test characters >= 0x80 yet,
+	 * as somehow our client libraries can't do that
+	 */
+	for (i=0x01; i <= 0x7F; i++) {
+		/*
+		 * it's important that we test the last character
+		 * because of the error code with ':' 0x3A
+		 * and servers without stream support
+		 */
+		char *path = talloc_asprintf(tctx, "%s\\File0x%02X%c",
+					     BASEDIR, i, i);
+		NTSTATUS expected;
+		NTSTATUS expected_dos1;
+		NTSTATUS expected_dos2;
+
+		expected = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		expected_dos1 = NT_STATUS_DOS(ERRDOS,ERRbadpath);
+		expected_dos2 = NT_STATUS_DOS(ERRDOS,ERRbadfile);
+
+		switch (i) {
+		case '"':/*0x22*/
+		case '*':/*0x2A*/
+		case '/':/*0x2F*/
+		case ':':/*0x3A*/
+		case '<':/*0x3C*/
+		case '>':/*0x3E*/
+		case '?':/*0x3F*/
+		case '|':/*0x7C*/
+			if (i == '/' &&
+			    torture_setting_bool(tctx, "samba3", true)) {
+				/* samba 3 handles '/' as '\\' */
+				break;
+			}
+			expected = NT_STATUS_OBJECT_NAME_INVALID;
+			expected_dos1 = NT_STATUS_DOS(ERRDOS,ERRbadpath);
+			expected_dos2 = NT_STATUS_DOS(ERRDOS,ERRinvalidname);
+			break;
+		default:
+			if (i <= 0x1F) {
+				expected = NT_STATUS_OBJECT_NAME_INVALID;
+				expected_dos1 = NT_STATUS_DOS(ERRDOS,ERRbadpath);
+				expected_dos2 = NT_STATUS_DOS(ERRDOS,ERRinvalidname);
+			}
+			break;
+		}
+
+		printf("Checking File0x%02X%c%s expected[%s|%s|%s]\n",
+		       i, isprint(i)?(char)i:' ',
+		       isprint(i)?"":"(not printable)",
+		       nt_errstr(expected),
+		       nt_errstr(expected_dos1),
+		       nt_errstr(expected_dos2));
+
+		io.chkpath.in.path = path;
+		status = smb_raw_chkpath(cli->tree, &io);
+		CHECK_STATUS(status, expected, expected_dos1);
+
+		ZERO_STRUCT(finfo);
+		finfo.generic.level = RAW_FILEINFO_NAME_INFO;
+		finfo.generic.in.file.path = path;
+		status = smb_raw_pathinfo(cli->tree, cli, &finfo);
+		CHECK_STATUS(status, expected, expected_dos2);
+
+		talloc_free(path);
+	}
+
+done:
+	return ret;
+}
+
 /* 
    basic testing of chkpath calls 
 */
@@ -303,6 +383,7 @@ bool torture_raw_chkpath(struct torture_context *torture,
 	}
 
 	ret &= test_chkpath(cli, torture);
+	ret &= test_chkpath_names(cli, torture);
 
  done:
 

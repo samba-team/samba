@@ -21,6 +21,8 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#include <netinet/in.h>
+
 #if _SAMBA_BUILD_ == 4
 #include "../lib/util/charset/charset.h"
 #endif
@@ -123,9 +125,6 @@ void CatchChild(void);
 void CatchChildLeaveStatus(void);
 
 /* The following definitions come from lib/util/system.c  */
-
-
-struct in_addr;
 
 /**************************************************************************
 A wrapper for gethostbyname() that tries avoids looking up hostnames 

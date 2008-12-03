@@ -505,7 +505,6 @@ static bool process_trans2(blocking_lock_record *blr)
 
 	/* We finally got the lock, return success. */
 
-	SCVAL(blr->req->inbuf, smb_com, SMBtrans2);
 	SSVAL(params,0,0);
 	/* Fake up max_data_bytes here - we know it fits. */
 	send_trans2_replies(blr->fsp->conn, blr->req, params, 2, NULL, 0, 0xffff);
@@ -666,77 +665,8 @@ static void process_blocking_lock_queue(void)
 	 */
 
 	for (blr = blocking_lock_queue; blr; blr = next) {
-		connection_struct *conn = NULL;
-		uint16 vuid;
-		files_struct *fsp = NULL;
 
 		next = blr->next;
-
-		/*
-		 * Ensure we don't have any old chain_fsp values
-		 * sitting around....
-		 */
-		chain_size = 0;
-		fsp = blr->fsp;
-
-		conn = conn_find(blr->req->tid);
-		vuid = (lp_security() == SEC_SHARE)
-			? UID_FIELD_INVALID : blr->req->vuid;
-
-		DEBUG(5,("process_blocking_lock_queue: examining pending lock fnum = %d for file %s\n",
-			fsp->fnum, fsp->fsp_name ));
-
-		if(!change_to_user(conn,vuid)) {
-			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
-
-			/*
-			 * Remove the entry and return an error to the client.
-			 */
-
-			if (br_lck) {
-				brl_lock_cancel(br_lck,
-					blr->lock_pid,
-					procid_self(),
-					blr->offset,
-					blr->count,
-					blr->lock_flav);
-				TALLOC_FREE(br_lck);
-			}
-
-			DEBUG(0,("process_blocking_lock_queue: Unable to become user vuid=%d.\n",
-				vuid ));
-			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
-			DLIST_REMOVE(blocking_lock_queue, blr);
-			TALLOC_FREE(blr);
-			recalc_timeout = True;
-			continue;
-		}
-
-		if(!set_current_service(conn,SVAL(blr->req->inbuf,smb_flg),True)) {
-			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
-
-			/*
-			 * Remove the entry and return an error to the client.
-			 */
-
-			if (br_lck) {
-				brl_lock_cancel(br_lck,
-					blr->lock_pid,
-					procid_self(),
-					blr->offset,
-					blr->count,
-					blr->lock_flav);
-				TALLOC_FREE(br_lck);
-			}
-
-			DEBUG(0,("process_blocking_lock_queue: Unable to become service Error was %s.\n", strerror(errno) ));
-			blocking_lock_reply_error(blr,NT_STATUS_ACCESS_DENIED);
-			DLIST_REMOVE(blocking_lock_queue, blr);
-			TALLOC_FREE(blr);
-			recalc_timeout = True;
-			change_to_root_user();
-			continue;
-		}
 
 		/*
 		 * Go through the remaining locks and try and obtain them.
@@ -745,7 +675,8 @@ static void process_blocking_lock_queue(void)
 		 */
 
 		if(blocking_lock_record_process(blr)) {
-			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(
+				talloc_tos(), blr->fsp);
 
 			if (br_lck) {
 				brl_lock_cancel(br_lck,
@@ -760,11 +691,8 @@ static void process_blocking_lock_queue(void)
 			DLIST_REMOVE(blocking_lock_queue, blr);
 			TALLOC_FREE(blr);
 			recalc_timeout = True;
-			change_to_root_user();
 			continue;
 		}
-
-		change_to_root_user();
 
 		/*
 		 * We couldn't get the locks for this record on the list.
@@ -772,7 +700,8 @@ static void process_blocking_lock_queue(void)
 		 */
 
 		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
-			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(
+				talloc_tos(), blr->fsp);
 
 			/*
 			 * Lock expired - throw away all previously
@@ -780,8 +709,10 @@ static void process_blocking_lock_queue(void)
 			 */
 
 			if (br_lck) {
-				DEBUG(5,("process_blocking_lock_queue: pending lock fnum = %d for file %s timed out.\n",
-					fsp->fnum, fsp->fsp_name ));
+				DEBUG(5,("process_blocking_lock_queue: "
+					 "pending lock fnum = %d for file %s "
+					 "timed out.\n", blr->fsp->fnum,
+					 blr->fsp->fsp_name ));
 
 				brl_lock_cancel(br_lck,
 					blr->lock_pid,

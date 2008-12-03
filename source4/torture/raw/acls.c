@@ -1410,7 +1410,9 @@ static bool test_inheritance(struct torture_context *tctx,
 
 		if (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
-				printf("Expected default sd at %d - got:\n", i);
+				printf("Expected default sd:\n");
+				NDR_PRINT_DEBUG(security_descriptor, sd_def);
+				printf("at %d - got:\n", i);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			}
 			goto check_dir;
@@ -1455,7 +1457,9 @@ static bool test_inheritance(struct torture_context *tctx,
 		    (!(test_flags[i].parent_flags & SEC_ACE_FLAG_OBJECT_INHERIT) ||
 		     (test_flags[i].parent_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT))) {
 			if (!security_descriptor_equal(q.query_secdesc.out.sd, sd_def)) {
-				printf("Expected default sd for dir at %d - got:\n", i);
+				printf("Expected default sd for dir at %d:\n", i);
+				NDR_PRINT_DEBUG(security_descriptor, sd_def);
+				printf("got:\n");
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 			}
 			continue;
@@ -1469,7 +1473,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 					   sd_orig->owner_sid) ||
 			    q.query_secdesc.out.sd->dacl->aces[0].flags != test_flags[i].dir_flags) {
-				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+				printf("(CI & NP) Bad sd in child dir at %d (parent 0x%x)\n", 
 				       i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 				ret = false;
@@ -1487,7 +1491,7 @@ static bool test_inheritance(struct torture_context *tctx,
 			    q.query_secdesc.out.sd->dacl->aces[0].flags != 0 ||
 			    q.query_secdesc.out.sd->dacl->aces[1].flags != 
 			    (test_flags[i].dir_flags | SEC_ACE_FLAG_INHERIT_ONLY)) {
-				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+				printf("(CI) Bad sd in child dir at %d (parent 0x%x)\n", 
 				       i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 				ret = false;
@@ -1500,8 +1504,8 @@ static bool test_inheritance(struct torture_context *tctx,
 			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
 					   creator_owner) ||
 			    q.query_secdesc.out.sd->dacl->aces[0].flags != test_flags[i].dir_flags) {
-				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
-				       i, test_flags[i].parent_flags);
+				printf("(0) Bad sd in child dir at %d (parent 0x%x)\n", 
+					i, test_flags[i].parent_flags);
 				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
 				ret = false;
 				continue;

@@ -1,19 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Idmap NSS headers
 
    Copyright (C) Gerald Carter             2006
+   Copyright (C) Michael Adam 2008
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -22,6 +23,7 @@
 #include "nss_info.h"
 
 static struct nss_function_entry *backends = NULL;
+static struct nss_function_entry *default_backend = NULL;
 static struct nss_domain_entry *nss_domain_list = NULL;
 
 /**********************************************************************
@@ -48,14 +50,14 @@ static struct nss_function_entry *nss_get_backend(const char *name )
 {
 	struct nss_function_entry *entry;
 
- 	if ((version != SMB_NSS_INFO_INTERFACE_VERSION)) {
+	if ((version != SMB_NSS_INFO_INTERFACE_VERSION)) {
 		DEBUG(0, ("smb_register_idmap_nss: Failed to register idmap_nss module.\n"
-		          "The module was compiled against SMB_NSS_INFO_INTERFACE_VERSION %d,\n"
-		          "current SMB_NSS_INFO_INTERFACE_VERSION is %d.\n"
-		          "Please recompile against the current version of samba!\n",  
+			  "The module was compiled against SMB_NSS_INFO_INTERFACE_VERSION %d,\n"
+			  "current SMB_NSS_INFO_INTERFACE_VERSION is %d.\n"
+			  "Please recompile against the current version of samba!\n",
 			  version, SMB_NSS_INFO_INTERFACE_VERSION));
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
-  	}
+	}
 
 	if (!name || !name[0] || !methods) {
 		DEBUG(0,("smb_register_idmap_nss: called with NULL pointer or empty name!\n"));
@@ -89,12 +91,12 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	int len;
 
 	*backend = *domain = NULL;
-	
+
 	if ( !config )
 		return False;
-	
+
 	p = strchr( config, ':' );
-	
+
 	/* if no : then the string must be the backend name only */
 
 	if ( !p ) {
@@ -107,13 +109,13 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	if ( strlen(p+1) > 0 ) {
 		*domain = SMB_STRDUP( p+1 );
 	}
-	
+
 	len = PTR_DIFF(p,config)+1;
 	if ( (q = SMB_MALLOC_ARRAY( char, len )) == NULL ) {
 		SAFE_FREE( *backend );
 		return False;
 	}
-	
+
 	StrnCpy( q, config, len-1);
 	q[len-1] = '\0';
 	*backend = q;
@@ -121,8 +123,44 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	return True;
 }
 
+static NTSTATUS nss_domain_list_add_domain(const char *domain,
+					   struct nss_function_entry *nss_backend)
+{
+	struct nss_domain_entry *nss_domain;
+
+	nss_domain = TALLOC_ZERO_P(nss_domain_list, struct nss_domain_entry);
+	if (!nss_domain) {
+		DEBUG(0, ("nss_domain_list_add_domain: talloc() failure!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nss_domain->backend = nss_backend;
+	if (domain) {
+		nss_domain->domain  = talloc_strdup(nss_domain, domain);
+		if (!nss_domain->domain) {
+			DEBUG(0, ("nss_domain_list_add_domain: talloc() "
+				  "failure!\n"));
+			TALLOC_FREE(nss_domain);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	nss_domain->init_status = nss_domain->backend->methods->init(nss_domain);
+	if (!NT_STATUS_IS_OK(nss_domain->init_status))  {
+		DEBUG(0, ("nss_init: Failed to init backend '%s' for domain "
+			  "'%s'!\n", nss_backend->name, nss_domain->domain));
+	}
+
+	DLIST_ADD(nss_domain_list, nss_domain);
+
+	DEBUG(10, ("Added domain '%s' with backend '%s' to nss_domain_list.\n",
+		   domain, nss_backend->name));
+
+	return NT_STATUS_OK;
+}
+
 /********************************************************************
- Each nss backend must not store global state, but rather be able 
+ Each nss backend must not store global state, but rather be able
  to initialize the state on a per domain basis.
  *******************************************************************/
 
@@ -133,18 +171,17 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 	int i;
 	char *backend, *domain;
 	struct nss_function_entry *nss_backend;
-	struct nss_domain_entry *nss_domain;
 
 	/* check for previous successful initializations */
 
 	if ( NT_STATUS_IS_OK(nss_initialized) )
 		return NT_STATUS_OK;
-	
+
 	/* The "template" backend should alqays be registered as it
 	   is a static module */
 
 	if ( (nss_backend = nss_get_backend( "template" )) == NULL ) {
-		static_init_nss_info;	       
+		static_init_nss_info;
 	}
 
 	/* Create the list of nss_domains (loading any shared plugins
@@ -152,11 +189,14 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 
 	for ( i=0; nss_list && nss_list[i]; i++ ) {
 
-		if ( !parse_nss_parm(nss_list[i], &backend, &domain) ) 	{
+		if ( !parse_nss_parm(nss_list[i], &backend, &domain) ) {
 			DEBUG(0,("nss_init: failed to parse \"%s\"!\n",
 				 nss_list[i]));
-			continue;			
+			continue;
 		}
+
+		DEBUG(10, ("parsed backend = '%s', domain = '%s'\n",
+			   backend, domain));
 
 		/* validate the backend */
 
@@ -166,41 +206,34 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 			if ( !NT_STATUS_IS_OK(status) ) {
 				continue;
 			}
-			
+
 			/* try again */
 			if ( (nss_backend = nss_get_backend( backend )) == NULL ) {
 				DEBUG(0,("nss_init: unregistered backend %s!.  Skipping\n",
 					 backend));
 				continue;
 			}
-
 		}
 
-     		/* fill in the nss_domain_entry and add it to the 
-		   list of domains */
-
-		nss_domain = TALLOC_ZERO_P( nss_domain_list, struct nss_domain_entry );
-		if ( !nss_domain ) {
-			DEBUG(0,("nss_init: talloc() failure!\n"));
-			return NT_STATUS_NO_MEMORY;
+		/*
+		 * The first config item of the list without an explicit domain
+		 * is treated as the default nss info backend.
+		 */
+		if ((domain == NULL) && (default_backend == NULL)) {
+			DEBUG(10, ("nss_init: using '%s' as default backend.\n",
+				   backend));
+			default_backend = nss_backend;
 		}
-		
-		nss_domain->backend = nss_backend;
-		nss_domain->domain  = talloc_strdup( nss_domain, domain );
 
-		/* Try to init and ave the result */
-
-		nss_domain->init_status = nss_domain->backend->methods->init( nss_domain );
-			DLIST_ADD( nss_domain_list, nss_domain );
-		if ( !NT_STATUS_IS_OK(nss_domain->init_status) ) {			
-			DEBUG(0,("nss_init: Failed to init backend for %s domain!\n", 
-				 nss_domain->domain));
+		status = nss_domain_list_add_domain(domain, nss_backend);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		/* cleanup */
 
 		SAFE_FREE( backend );
-		SAFE_FREE( domain );		
+		SAFE_FREE( domain );
 	}
 
 	if ( !nss_domain_list ) {
@@ -210,10 +243,9 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 
 		/* we shouild default to use template here */
 	}
-	
-		
+
 	nss_initialized = NT_STATUS_OK;
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -222,7 +254,7 @@ static bool parse_nss_parm( const char *config, char **backend, char **domain )
 
 static struct nss_domain_entry *find_nss_domain( const char *domain )
 {
-	NTSTATUS status;	
+	NTSTATUS status;
 	struct nss_domain_entry *p;
 
 	status = nss_init( lp_winbind_nss_info() );
@@ -231,20 +263,30 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			 nt_errstr(status)));
 		return NULL;
 	}
-	
+
 	for ( p=nss_domain_list; p; p=p->next ) {
 		if ( strequal( p->domain, domain ) )
 			break;
 	}
-	
-	/* If we didn't find a match, then use the default nss info */
+
+	/* If we didn't find a match, then use the default nss backend */
 
 	if ( !p ) {
-		if ( !nss_domain_list ) {
+		if (!default_backend) {
 			return NULL;
 		}
-		
-		p = nss_domain_list;		
+
+		status = nss_domain_list_add_domain(domain, default_backend);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		/*
+		 * HACK ALERT:
+		 * Here, we use the fact that the new domain was added at
+		 * the beginning of the list...
+		 */
+		p = nss_domain_list;
 	}
 
 	if ( !NT_STATUS_IS_OK( p->init_status ) ) {
@@ -266,15 +308,18 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 	struct nss_domain_entry *p;
 	struct nss_info_methods *m;
 
+	DEBUG(10, ("nss_get_info called for sid [%s] in domain '%s'\n",
+		   sid_string_dbg(user_sid), domain?domain:"NULL"));
+
 	if ( (p = find_nss_domain( domain )) == NULL ) {
 		DEBUG(4,("nss_get_info: Failed to find nss domain pointer for %s\n",
 			 domain ));
 		return NT_STATUS_NOT_FOUND;
 	}
-		
+
 	m = p->backend->methods;
 
-	return m->get_nss_info( p, user_sid, ctx, ads, msg, 
+	return m->get_nss_info( p, user_sid, ctx, ads, msg,
 				homedir, shell, gecos, p_gid );
 }
 
@@ -295,7 +340,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	m = p->backend->methods;
 
-	return m->map_to_alias( mem_ctx, domain, name, alias );
+	return m->map_to_alias(mem_ctx, p, name, alias);
 }
 
 
@@ -316,7 +361,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 
 	m = p->backend->methods;
 
-	return m->map_from_alias( mem_ctx, domain, alias, name );
+	return m->map_from_alias( mem_ctx, p, alias, name );
 }
 
 /********************************************************************

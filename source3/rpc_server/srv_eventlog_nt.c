@@ -1,20 +1,20 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Marcin Krzysztof Porwit    2005,
  *  Copyright (C) Brian Moran                2005,
  *  Copyright (C) Gerald (Jerry) Carter      2005.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -40,10 +40,10 @@ typedef struct {
 static void free_eventlog_info( void *ptr )
 {
 	EVENTLOG_INFO *elog = (EVENTLOG_INFO *)ptr;
-	
+
 	if ( elog->etdb )
 		elog_close_tdb( elog->etdb, False );
-	
+
 	TALLOC_FREE( elog );
 }
 
@@ -72,21 +72,21 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 	char *tdbname = elog_tdbname(talloc_tos(), info->logname );
 	SEC_DESC *sec_desc;
 	NTSTATUS status;
-	
-	if ( !tdbname ) 
+
+	if ( !tdbname )
 		return False;
-	
+
 	/* get the security descriptor for the file */
-	
+
 	sec_desc = get_nt_acl_no_snum( info, tdbname );
-	SAFE_FREE( tdbname );
-	
+	TALLOC_FREE( tdbname );
+
 	if ( !sec_desc ) {
-		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s\n", 
+		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s\n",
 			tdbname));
 		return False;
 	}
-	
+
 	/* root free pass */
 
 	if ( geteuid() == sec_initial_uid() ) {
@@ -95,21 +95,21 @@ static bool elog_check_access( EVENTLOG_INFO *info, NT_USER_TOKEN *token )
 	}
 
 	/* run the check, try for the max allowed */
-	
+
 	status = se_access_check( sec_desc, token, MAXIMUM_ALLOWED_ACCESS,
 		&info->access_granted);
-		
+
 	if ( sec_desc )
 		TALLOC_FREE( sec_desc );
-		
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(8,("elog_check_access: se_access_check() return %s\n",
 			nt_errstr(status)));
 		return False;
 	}
-	
+
 	/* we have to have READ permission for a successful open */
-	
+
 	return ( info->access_granted & SA_RIGHT_FILE_READ_DATA );
 }
 
@@ -120,7 +120,7 @@ static bool elog_validate_logname( const char *name )
 {
 	int i;
 	const char **elogs = lp_eventlog_list();
-	
+
 	if (!elogs) {
 		return False;
 	}
@@ -129,7 +129,7 @@ static bool elog_validate_logname( const char *name )
 		if ( strequal( name, elogs[i] ) )
 			return True;
 	}
-	
+
 	return False;
 }
 
@@ -178,19 +178,19 @@ static bool get_oldest_entry_hook( EVENTLOG_INFO * info )
 static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hnd )
 {
 	EVENTLOG_INFO *elog;
-	
+
 	/* first thing is to validate the eventlog name */
 	
 	if ( !elog_validate_logname( logname ) )
 		return NT_STATUS_OBJECT_PATH_INVALID;
-	
+
 	if ( !(elog = TALLOC_ZERO_P( NULL, EVENTLOG_INFO )) )
 		return NT_STATUS_NO_MEMORY;
-		
+
 	elog->logname = talloc_strdup( elog, logname );
-	
+
 	/* Open the tdb first (so that we can create any new tdbs if necessary).
-	   We have to do this as root and then use an internal access check 
+	   We have to do this as root and then use an internal access check
 	   on the file permissions since you can only have a tdb open once
 	   in a single process */
 
@@ -201,40 +201,40 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	if ( !elog->etdb ) {
 		/* according to MSDN, if the logfile cannot be found, we should
 		  default to the "Application" log */
-	
+
 		if ( !strequal( logname, ELOG_APPL ) ) {
-		
+
 			TALLOC_FREE( elog->logname );
-			
-			elog->logname = talloc_strdup( elog, ELOG_APPL );			
+
+			elog->logname = talloc_strdup( elog, ELOG_APPL );
 
 			/* do the access check */
-			if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
+			if ( !elog_check_access( elog, p->server_info->ptok ) ) {
 				TALLOC_FREE( elog );
 				return NT_STATUS_ACCESS_DENIED;
 			}
-	
+
 			become_root();
 			elog->etdb = elog_open_tdb( elog->logname, False );
 			unbecome_root();
-		}	
-		
+		}
+
 		if ( !elog->etdb ) {
 			TALLOC_FREE( elog );
-			return NT_STATUS_ACCESS_DENIED;	/* ??? */		
+			return NT_STATUS_ACCESS_DENIED;	/* ??? */
 		}
 	}
-	
+
 	/* now do the access check.  Close the tdb if we fail here */
 
-	if ( !elog_check_access( elog, p->pipe_user.nt_user_token ) ) {
+	if ( !elog_check_access( elog, p->server_info->ptok ) ) {
 		elog_close_tdb( elog->etdb, False );
 		TALLOC_FREE( elog );
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	
+
 	/* create the policy handle */
-	
+
 	if ( !create_policy_hnd
 	     ( p, hnd, free_eventlog_info, ( void * ) elog ) ) {
 		free_eventlog_info( elog );
@@ -246,7 +246,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	if ( !get_oldest_entry_hook( elog ) ) {
 		DEBUG(3,("elog_open: Successfully opened eventlog but can't "
 			"get any information on internal records!\n"));
-	}	
+	}
 
 	elog->current_record = elog->oldest_entry;
 
@@ -283,15 +283,15 @@ static int elog_size( EVENTLOG_INFO *info )
   Eventlog_entry.  returns NULL if it can't get the record for some reason.
  ********************************************************************/
 
-static Eventlog_entry *get_eventlog_record(prs_struct *ps,
+static Eventlog_entry *get_eventlog_record(TALLOC_CTX *mem_ctx,
 				TDB_CONTEXT *tdb,
 				int recno)
 {
 	Eventlog_entry *ee = NULL;
 	TDB_DATA ret, key;
 
-	int srecno;
-	int reclen;
+	int32_t srecno;
+	int32_t reclen;
 	int len;
 
 	char *wpsource = NULL;
@@ -300,10 +300,10 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	char *wpstrs = NULL;
 	char *puserdata = NULL;
 
-	key.dsize = sizeof(int32);
+	key.dsize = sizeof(int32_t);
 
 	srecno = recno;
-	key.dptr = ( uint8 * ) &srecno;
+	key.dptr = (unsigned char *)&srecno;
 
 	ret = tdb_fetch( tdb, key );
 
@@ -321,7 +321,7 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 	if ( !len )
 		return NULL;
 
-	ee = TALLOC_ARRAY(ps->mem_ctx, Eventlog_entry, 1);
+	ee = TALLOC_ARRAY(mem_ctx, Eventlog_entry, 1);
 	if (!ee) {
 		return NULL;
 	}
@@ -413,7 +413,7 @@ static Eventlog_entry *get_eventlog_record(prs_struct *ps,
 }
 
 /********************************************************************
- note that this can only be called AFTER the table is constructed, 
+ note that this can only be called AFTER the table is constructed,
  since it uses the table to find the tdb handle
  ********************************************************************/
 
@@ -426,28 +426,28 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	struct registry_value *value;
 	WERROR wresult;
 	char *elogname = info->logname;
-	TALLOC_CTX *ctx = talloc_tos();
+	TALLOC_CTX *ctx = talloc_stackframe();
 	bool ret = false;
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
 
 	if ( !info->etdb ) {
 		DEBUG( 4, ( "No open tdb! (%s)\n", info->logname ) );
-		return False;
+		goto done;
 	}
 	/* set resonable defaults.  512Kb on size and 1 week on time */
 
 	uiMaxSize = 0x80000;
 	uiRetention = 604800;
 
-	/* the general idea is to internally open the registry 
-	   key and retrieve the values.  That way we can continue 
-	   to use the same fetch/store api that we use in 
+	/* the general idea is to internally open the registry
+	   key and retrieve the values.  That way we can continue
+	   to use the same fetch/store api that we use in
 	   srv_reg_nt.c */
 
 	path = talloc_asprintf(ctx, "%s/%s", KEY_EVENTLOG, elogname );
 	if (!path) {
-		return false;
+		goto done;
 	}
 
 	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_root_nt_token(),
@@ -457,14 +457,13 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 		DEBUG( 4,
 		       ( "sync_eventlog_params: Failed to open key [%s] (%s)\n",
 			 path, win_errstr( wresult ) ) );
-		return false;
+		goto done;
 	}
 
 	wresult = reg_queryvalue(key, key, "Retention", &value);
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
 			  win_errstr(wresult)));
-		ret = false;
 		goto done;
 	}
 	uiRetention = value->v.dword;
@@ -473,7 +472,6 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(4, ("Failed to query value \"MaxSize\": %s\n",
 			  win_errstr(wresult)));
-		ret = false;
 		goto done;
 	}
 	uiMaxSize = value->v.dword;
@@ -491,13 +489,13 @@ done:
 /********************************************************************
  ********************************************************************/
 
-static Eventlog_entry *read_package_entry( prs_struct * ps,
+static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 					   Eventlog_entry * entry )
 {
 	uint8 *offset;
 	Eventlog_entry *ee_new = NULL;
 
-	ee_new = PRS_ALLOC_MEM( ps, Eventlog_entry, 1 );
+	ee_new = TALLOC_ZERO_ARRAY(mem_ctx, Eventlog_entry, 1 );
 	if ( ee_new == NULL ) {
 		return NULL;
 	}
@@ -536,10 +534,10 @@ static Eventlog_entry *read_package_entry( prs_struct * ps,
 	DEBUG( 10,
 	       ( "entry->record.length is [%d].\n", entry->record.length ) );
 	entry->data =
-		PRS_ALLOC_MEM( ps, uint8,
-			       entry->record.length -
-			       sizeof( Eventlog_record ) -
-			       sizeof( entry->record.length ) );
+		TALLOC_ZERO_ARRAY(mem_ctx, uint8_t,
+				  entry->record.length -
+				  sizeof( Eventlog_record ) -
+				  sizeof( entry->record.length ));
 	if ( entry->data == NULL ) {
 		return NULL;
 	}
@@ -625,13 +623,13 @@ NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
 	if (r->in.logname->string) {
 		logname = r->in.logname->string;
 	}
-	
+
 	DEBUG( 10,("_eventlog_open_eventlog: Server [%s], Log [%s]\n",
 		servername, logname ));
-		
+
 	/* according to MSDN, if the logfile cannot be found, we should
 	  default to the "Application" log */
-	  
+
 	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, r->out.handle )) )
 		return result;
 
@@ -761,7 +759,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* assume that when the record fetch fails, that we are done */
 
-		entry = get_eventlog_record (ps, ELOG_TDB_CTX(info->etdb), record_number);
+		entry = get_eventlog_record (ps->mem_ctx, ELOG_TDB_CTX(info->etdb), record_number);
 		if (!entry) {
 			break;
 		}
@@ -770,7 +768,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* Now see if there is enough room to add */
 
-		if ( !(ee_new = read_package_entry( ps, entry )) )
+		if ( !(ee_new = read_package_entry( ps->mem_ctx, entry )) )
 			return NT_STATUS_NO_MEMORY;
 
 		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {

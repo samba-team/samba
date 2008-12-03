@@ -52,11 +52,45 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	const char *s = path;
 	NTSTATUS ret = NT_STATUS_OK;
 	bool start_of_name_component = True;
+	bool stream_started = false;
 
 	*p_last_component_contains_wcard = False;
 
 	while (*s) {
-		if (IS_PATH_SEP(*s,posix_path)) {
+		if (stream_started) {
+			switch (*s) {
+			case '/':
+			case '\\':
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			case ':':
+				if (s[1] == '\0') {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
+				if (strchr_m(&s[1], ':')) {
+					return NT_STATUS_OBJECT_NAME_INVALID;
+				}
+				if (StrCaseCmp(s, ":$DATA") != 0) {
+					return NT_STATUS_INVALID_PARAMETER;
+				}
+				break;
+			}
+		}
+
+		if (!stream_started && *s == ':') {
+			if (*p_last_component_contains_wcard) {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+			/* stream names allow more characters than file names */
+			stream_started = true;
+			start_of_name_component = false;
+			posix_path = true;
+
+			if (s[1] == '\0') {
+				return NT_STATUS_OBJECT_NAME_INVALID;
+			}
+		}
+
+		if (!stream_started && IS_PATH_SEP(*s,posix_path)) {
 			/*
 			 * Safe to assume is not the second part of a mb char
 			 * as this is handled below.
@@ -119,7 +153,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 		if (!(*s & 0x80)) {
 			if (!posix_path) {
-				if (*s <= 0x1f) {
+				if (*s <= 0x1f || *s == '|') {
 					return NT_STATUS_OBJECT_NAME_INVALID;
 				}
 				switch (*s) {
@@ -2894,7 +2928,7 @@ void reply_lockread(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBlockread);
 		return;
@@ -3002,7 +3036,7 @@ void reply_read(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS, ERRbadaccess);
 		END_PROFILE(SMBread);
 		return;
@@ -3255,7 +3289,7 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (!CHECK_READ(fsp,req->inbuf)) {
+	if (!CHECK_READ(fsp,req)) {
 		reply_doserror(req, ERRDOS,ERRbadaccess);
 		END_PROFILE(SMBreadX);
 		return;
@@ -4558,8 +4592,15 @@ void reply_printopen(struct smb_request *req)
 		return;
 	}
 
+	status = file_new(req, conn, &fsp);
+	if(!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		END_PROFILE(SMBsplopen);
+		return;
+	}
+
 	/* Open for exclusive use, write only. */
-	status = print_fsp_open(req, conn, NULL, req->vuid, &fsp);
+	status = print_fsp_open(req, conn, NULL, req->vuid, fsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -4989,8 +5030,16 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			}
 		}
 
-		/* We only have veto files/directories. Recursive delete. */
+		/* We only have veto files/directories.
+		 * Are we allowed to delete them ? */
 
+		if(!lp_recursive_veto_delete(SNUM(conn))) {
+			TALLOC_FREE(dir_hnd);
+			errno = ENOTEMPTY;
+			goto err;
+		}
+
+		/* Do a recursive delete. */
 		RewindDir(dir_hnd,&dirpos);
 		while ((dname = ReadDirName(dir_hnd,&dirpos))) {
 			char *fullname = NULL;
@@ -5016,9 +5065,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 				break;
 			}
 			if(st.st_mode & S_IFDIR) {
-				if(lp_recursive_veto_delete(SNUM(conn))) {
-					if(!recursive_rmdir(ctx, conn, fullname))
-						break;
+				if(!recursive_rmdir(ctx, conn, fullname)) {
+					break;
 				}
 				if(SMB_VFS_RMDIR(conn,fullname) != 0) {
 					break;
@@ -5446,6 +5494,12 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		DEBUG(3,("rename_internals_fsp: dest exists doing rename %s -> %s\n",
 			fsp->fsp_name,newname));
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	if(replace_if_exists && dst_exists) {
+		if (is_ntfs_stream_name(newname)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	if (dst_exists) {

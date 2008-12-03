@@ -93,30 +93,31 @@ WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, 
 }
 
 /********************************************************************
+_PNP_GetDeviceRegProp
 ********************************************************************/
 
-WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u )
+WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
+			     struct PNP_GetDeviceRegProp *r)
 {
-	fstring devicepath;
 	char *ptr;
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
 
-	rpcstr_pull(devicepath, q_u->devicepath.buffer, sizeof(devicepath), q_u->devicepath.uni_str_len*2, 0);
-
-	switch( q_u->property ) {
+	switch( r->in.property ) {
 	case DEV_REGPROP_DESC:
+
 		/* just parse the service name from the device path and then
 		   lookup the display name */
-		if ( !(ptr = strrchr_m( devicepath, '\\' )) )
+		if ( !(ptr = strrchr_m( r->in.devicepath, '\\' )) )
 			return WERR_GENERAL_FAILURE;
 		*ptr = '\0';
 
-		if ( !(ptr = strrchr_m( devicepath, '_' )) )
+		if ( !(ptr = strrchr_m( r->in.devicepath, '_' )) )
 			return WERR_GENERAL_FAILURE;
 		ptr++;
 
-		if ( !(values = svcctl_fetch_regvalues( ptr, p->pipe_user.nt_user_token )) )
+		if ( !(values = svcctl_fetch_regvalues(
+			       ptr, p->server_info->ptok)))
 			return WERR_GENERAL_FAILURE;
 
 		if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) ) {
@@ -124,16 +125,27 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 			return WERR_GENERAL_FAILURE;
 		}
 
-		r_u->unknown1 = 0x1;	/* always 1...tested using a remove device manager connection */
-		r_u->size = reg_init_regval_buffer( &r_u->value, val );
-		r_u->needed = r_u->size;
+		if (*r->in.buffer_size < val->size) {
+			*r->out.needed = val->size;
+			*r->out.buffer_size = 0;
+			TALLOC_FREE( values );
+			return WERR_CM_BUFFER_SMALL;
+		}
 
+		r->out.buffer = (uint8_t *)talloc_memdup(p->mem_ctx, val->data_p, val->size);
 		TALLOC_FREE(values);
+		if (!r->out.buffer) {
+			return WERR_NOMEM;
+		}
+
+		*r->out.reg_data_type = REG_SZ;	/* always 1...tested using a remove device manager connection */
+		*r->out.buffer_size = val->size;
+		*r->out.needed = val->size;
 
 		break;
 
 	default:
-		r_u->unknown1 = 0x00437c98;
+		*r->out.reg_data_type = 0x00437c98; /* ??? */
 		return WERR_CM_NO_SUCH_VALUE;
 	}
 
@@ -271,16 +283,6 @@ WERROR _PNP_GetDeviceList(pipes_struct *p,
 
 WERROR _PNP_GetDepth(pipes_struct *p,
 		     struct PNP_GetDepth *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
-			     struct PNP_GetDeviceRegProp *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

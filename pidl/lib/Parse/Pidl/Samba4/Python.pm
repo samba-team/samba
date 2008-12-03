@@ -702,7 +702,7 @@ sub Interface($$$)
 		$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
 		$self->indent;
 		$self->pidl("PyErr_SetNTSTATUS(status);");
-		$self->pidl("return;");
+		$self->pidl("return NULL;");
 		$self->deindent;
 		$self->pidl("}");
 
@@ -1181,7 +1181,6 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
-	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
 
 	foreach (@{$self->{ready_types}}) {

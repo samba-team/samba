@@ -129,6 +129,8 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 
 	ZERO_STRUCT(fsp_fi_cache);
 
+	conn->num_files_open++;
+
 	*result = fsp;
 	return NT_STATUS_OK;
 }
@@ -420,9 +422,7 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	DEBUG(5,("freed files structure %d (%d used)\n",
 		 fsp->fnum, files_used));
 
-	/* this is paranoia, just in case someone tries to reuse the 
-	   information */
-	ZERO_STRUCTP(fsp);
+	fsp->conn->num_files_open--;
 
 	if ((req != NULL) && (fsp == req->chain_fsp)) {
 		req->chain_fsp = NULL;
@@ -437,6 +437,10 @@ void file_free(struct smb_request *req, files_struct *fsp)
 	while (fsp->vfs_extension) {
 		vfs_remove_fsp_extension(fsp->vfs_extension->owner, fsp);
 	}
+
+	/* this is paranoia, just in case someone tries to reuse the
+	   information */
+	ZERO_STRUCTP(fsp);
 
 	SAFE_FREE(fsp);
 }
@@ -484,46 +488,34 @@ files_struct *file_fsp(struct smb_request *req, uint16 fid)
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+void dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
-		      uint32 create_options, files_struct **result)
+		      uint32 create_options, files_struct *to)
 {
-	NTSTATUS status;
-	files_struct *dup_fsp;
+	SAFE_FREE(to->fh);
 
-	status = file_new(NULL, fsp->conn, &dup_fsp);
+	to->fh = from->fh;
+	to->fh->ref_count++;
 
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	SAFE_FREE(dup_fsp->fh);
-
-	dup_fsp->fh = fsp->fh;
-	dup_fsp->fh->ref_count++;
-
-	dup_fsp->file_id = fsp->file_id;
-	dup_fsp->initial_allocation_size = fsp->initial_allocation_size;
-	dup_fsp->mode = fsp->mode;
-	dup_fsp->file_pid = fsp->file_pid;
-	dup_fsp->vuid = fsp->vuid;
-	dup_fsp->open_time = fsp->open_time;
-	dup_fsp->access_mask = access_mask;
-	dup_fsp->share_access = share_access;
-	dup_fsp->oplock_type = fsp->oplock_type;
-	dup_fsp->can_lock = fsp->can_lock;
-	dup_fsp->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
-	if (!CAN_WRITE(fsp->conn)) {
-		dup_fsp->can_write = False;
+	to->file_id = from->file_id;
+	to->initial_allocation_size = from->initial_allocation_size;
+	to->mode = from->mode;
+	to->file_pid = from->file_pid;
+	to->vuid = from->vuid;
+	to->open_time = from->open_time;
+	to->access_mask = access_mask;
+	to->share_access = share_access;
+	to->oplock_type = from->oplock_type;
+	to->can_lock = from->can_lock;
+	to->can_read = (access_mask & (FILE_READ_DATA)) ? True : False;
+	if (!CAN_WRITE(from->conn)) {
+		to->can_write = False;
 	} else {
-		dup_fsp->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
+		to->can_write = (access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ? True : False;
 	}
-	dup_fsp->print_file = fsp->print_file;
-	dup_fsp->modified = fsp->modified;
-	dup_fsp->is_directory = fsp->is_directory;
-	dup_fsp->aio_write_behind = fsp->aio_write_behind;
-        string_set(&dup_fsp->fsp_name,fsp->fsp_name);
-
-	*result = dup_fsp;
-	return NT_STATUS_OK;
+	to->print_file = from->print_file;
+	to->modified = from->modified;
+	to->is_directory = from->is_directory;
+	to->aio_write_behind = from->aio_write_behind;
+        string_set(&to->fsp_name,from->fsp_name);
 }

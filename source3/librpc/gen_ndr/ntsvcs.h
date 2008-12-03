@@ -2,14 +2,15 @@
 
 #include <stdint.h>
 
+#include "librpc/gen_ndr/winreg.h"
 #ifndef _HEADER_ntsvcs
 #define _HEADER_ntsvcs
 
 #define DEV_REGPROP_DESC	( 1 )
 struct PNP_HwProfInfo {
-	uint32_t unknown1;
-	uint16_t unknown2[160];
-	uint32_t unknown3;
+	uint32_t profile_handle;
+	uint16_t friendly_name[80];
+	uint32_t flags;
 };
 
 
@@ -142,14 +143,14 @@ struct PNP_GetDeviceRegProp {
 		const char *devicepath;/* [ref,charset(UTF16)] */
 		uint32_t property;
 		uint32_t flags;
-		uint32_t *reg_data_type;/* [ref] */
+		enum winreg_Type *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 	} in;
 
 	struct {
 		uint8_t *buffer;/* [ref,length_is(*buffer_size),size_is(*buffer_size)] */
-		uint32_t *reg_data_type;/* [ref] */
+		enum winreg_Type *reg_data_type;/* [ref] */
 		uint32_t *buffer_size;/* [ref] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
@@ -368,20 +369,20 @@ struct PNP_RequestEjectPC {
 
 struct PNP_HwProfFlags {
 	struct {
-		uint32_t unknown1;
+		uint32_t action;
 		const char *devicepath;/* [ref,charset(UTF16)] */
-		uint32_t unknown2;
+		uint32_t config;
 		const char *unknown5;/* [unique,charset(UTF16)] */
-		uint32_t unknown6;
-		uint32_t unknown7;
-		uint32_t *unknown3;/* [ref] */
-		uint16_t *unknown4;/* [unique] */
+		uint32_t name_length;
+		uint32_t flags;
+		uint32_t *profile_flags;/* [ref] */
+		uint16_t *veto_type;/* [unique] */
 	} in;
 
 	struct {
 		const char **unknown5a;/* [unique,charset(UTF16)] */
-		uint32_t *unknown3;/* [ref] */
-		uint16_t *unknown4;/* [unique] */
+		uint32_t *profile_flags;/* [ref] */
+		uint16_t *veto_type;/* [unique] */
 		WERROR result;
 	} out;
 
@@ -391,8 +392,8 @@ struct PNP_HwProfFlags {
 struct PNP_GetHwProfInfo {
 	struct {
 		uint32_t idx;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t size;
+		uint32_t flags;
 		struct PNP_HwProfInfo *info;/* [ref] */
 	} in;
 

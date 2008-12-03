@@ -1171,7 +1171,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	const char *p2;
 	uint16 data_blob_len = SVAL(req->vwv+7, 0);
 	enum remote_arch_types ra_type = get_remote_arch();
-	int vuid = SVAL(req->inbuf,smb_uid);
+	int vuid = req->vuid;
 	user_struct *vuser = NULL;
 	NTSTATUS status = NT_STATUS_OK;
 	uint16 smbpid = req->smbpid;
@@ -1203,7 +1203,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
 
-	p2 = (char *)req->inbuf + smb_vwv13 + data_blob_len;
+	p2 = (char *)req->buf + data_blob_len;
 
 	p2 += srvstr_pull_req_talloc(talloc_tos(), req, &tmp, p2,
 				     STR_TERMINATE);

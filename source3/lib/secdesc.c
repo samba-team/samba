@@ -546,6 +546,9 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 
 			ptrustee = creator;
 			new_flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+		} else if (container &&
+				!(ace->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
+			ptrustee = &ace->trustee;
 		}
 
 		init_sec_ace(new_ace, ptrustee, ace->type,
@@ -563,19 +566,20 @@ NTSTATUS se_create_child_secdesc(TALLOC_CTX *ctx,
 	}
 
 	/* Create child security descriptor to return */
-
-	new_dacl = make_sec_acl(ctx,
+	if (new_ace_list_ndx) {
+		new_dacl = make_sec_acl(ctx,
 				NT4_ACL_REVISION,
 				new_ace_list_ndx,
 				new_ace_list);
 
-	if (!new_dacl) {
-		return NT_STATUS_NO_MEMORY;
+		if (!new_dacl) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+
 	*ppsd = make_sec_desc(ctx,
 			SECURITY_DESCRIPTOR_REVISION_1,
-			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT|
-				SEC_DESC_DACL_DEFAULTED,
+			SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
 			owner_sid,
 			group_sid,
 			NULL,

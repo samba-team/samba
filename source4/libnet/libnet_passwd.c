@@ -50,6 +50,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	struct samr_Password nt_verifier, lm_verifier;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	/* prepare connect to the SAMR pipe of the users domain PDC */
 	c.level                    = LIBNET_RPC_CONNECT_PDC;
@@ -92,6 +94,8 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	pw3.in.lm_password = &lm_pass;
 	pw3.in.lm_verifier = &lm_verifier;
 	pw3.in.password3 = NULL;
+	pw3.out.dominfo = &dominfo;
+	pw3.out.reject = &reject;
 
 	/* 2. try samr_ChangePasswordUser3 */
 	status = dcerpc_samr_ChangePasswordUser3(c.out.dcerpc_pipe, mem_ctx, &pw3);
@@ -303,7 +307,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 26 */
 	ZERO_STRUCT(u_info);
 	encode_pw_buffer(u_info.info26.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
-	u_info.info26.pw_len = strlen(r->samr_handle.in.newpassword);
+	u_info.info26.password_expired = 0;
 	
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -406,8 +410,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 24 */
 	ZERO_STRUCT(u_info);
 	encode_pw_buffer(u_info.info24.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
-	/* w2k3 ignores this length */
-	u_info.info24.pw_len = strlen_m(r->samr_handle.in.newpassword)*2;
+	u_info.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -527,10 +530,12 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	struct samr_Connect sc;
 	struct policy_handle p_handle;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct lsa_String d_name;
 	struct samr_OpenDomain od;
 	struct policy_handle d_handle;
 	struct samr_LookupNames ln;
+	struct samr_Ids rids, types;
 	struct samr_OpenUser ou;
 	struct policy_handle u_handle;
 	union libnet_SetPassword r2;
@@ -568,6 +573,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	d_name.string = r->samr.in.domain_name;
 	ld.in.connect_handle = &p_handle;
 	ld.in.domain_name = &d_name;
+	ld.out.sid = &sid;
 
 	/* 3. do a samr_LookupDomain to get the domain sid */
 	status = dcerpc_samr_LookupDomain(c.out.dcerpc_pipe, mem_ctx, &ld);
@@ -582,7 +588,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ZERO_STRUCT(d_handle);
 	od.in.connect_handle = &p_handle;
 	od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	od.in.sid = ld.out.sid;
+	od.in.sid = *ld.out.sid;
 	od.out.domain_handle = &d_handle;
 
 	/* 4. do a samr_OpenDomain to get a domain handle */
@@ -598,6 +604,8 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ln.in.domain_handle = &d_handle;
 	ln.in.num_names = 1;
 	ln.in.names = talloc_array(mem_ctx, struct lsa_String, 1);
+	ln.out.rids = &rids;
+	ln.out.types = &types;
 	if (!ln.in.names) {
 		r->samr.out.error_string = "Out of Memory";
 		return NT_STATUS_NO_MEMORY;
@@ -614,10 +622,10 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	}
 
 	/* check if we got one RID for the user */
-	if (ln.out.rids.count != 1) {
+	if (ln.out.rids->count != 1) {
 		r->samr.out.error_string = talloc_asprintf(mem_ctx,
 						"samr_LookupNames for [%s] returns %d RIDs",
-						r->samr.in.account_name, ln.out.rids.count);
+						r->samr.in.account_name, ln.out.rids->count);
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto disconnect;	
 	}
@@ -626,7 +634,7 @@ static NTSTATUS libnet_SetPassword_samr(struct libnet_context *ctx, TALLOC_CTX *
 	ZERO_STRUCT(u_handle);
 	ou.in.domain_handle = &d_handle;
 	ou.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	ou.in.rid = ln.out.rids.ids[0];
+	ou.in.rid = ln.out.rids->ids[0];
 	ou.out.user_handle = &u_handle;
 
 	/* 6. do a samr_OpenUser to get a user handle */

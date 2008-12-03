@@ -468,7 +468,7 @@ static bool cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 
 	cli_setup_packet(cli);
-			
+
 	SCVAL(cli->outbuf,smb_vwv0,0xFF);
 	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
 	SSVAL(cli->outbuf,smb_vwv3,2);
@@ -504,10 +504,10 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 						  NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return blob2;
 	}
-	
+
 	/* use the returned vuid from now on */
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
-	
+
 	p = smb_buf(cli->inbuf);
 
 	blob2 = data_blob(p, SVAL(cli->inbuf, smb_vwv3));
@@ -696,14 +696,14 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 				/* wrap it in SPNEGO */
 				msg1 = spnego_gen_auth(blob_out);
 			}
-		
+
 			/* now send that blob on its way */
 			if (!cli_session_setup_blob_send(cli, msg1)) {
 				DEBUG(3, ("Failed to send NTLMSSP/SPNEGO blob to server!\n"));
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 			} else {
 				blob = cli_session_setup_blob_receive(cli);
-				
+
 				nt_status = cli_nt_error(cli);
 				if (cli_is_error(cli) && NT_STATUS_IS_OK(nt_status)) {
 					if (cli->smb_rw_error == SMB_READ_BAD_SIG) {
@@ -715,7 +715,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			}
 			data_blob_free(&msg1);
 		}
-		
+
 		if (!blob.length) {
 			if (NT_STATUS_IS_OK(nt_status)) {
 				nt_status = NT_STATUS_UNSUCCESSFUL;
@@ -761,11 +761,11 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 		data_blob_free(&key);
 
 		if (res) {
-			
+
 			/* 'resign' the last message, so we get the right sequence numbers
 			   for checking the first reply from the server */
 			cli_calculate_sign_mac(cli, cli->outbuf);
-			
+
 			if (!cli_check_sign_mac(cli, cli->inbuf)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
@@ -849,10 +849,10 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 		if (pass && *pass) {
 			int ret;
-			
+
 			use_in_memory_ccache();
 			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
-			
+
 			if (ret){
 				TALLOC_FREE(principal);
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
@@ -861,7 +861,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 				return ADS_ERROR_KRB5(ret);
 			}
 		}
-		
+
 		/* If we get a bad principal, try to guess it if
 		   we have a valid host NetBIOS name.
 		 */
@@ -1132,7 +1132,7 @@ bool cli_send_tconX(struct cli_state *cli,
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
 			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
-			
+
 		} else {
 			if (passlen) {
 				memcpy(pword, pass, passlen);
@@ -1175,7 +1175,7 @@ bool cli_send_tconX(struct cli_state *cli,
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
-	
+
 	/* Make sure that we have the optional support 16-bit field.  WCT > 2 */
 	/* Avoids issues when connecting to Win9x boxes sharing files */
 
@@ -1198,11 +1198,11 @@ bool cli_tdis(struct cli_state *cli)
 	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
-	
+
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
-	
+
 	if (cli_is_error(cli)) {
 		return False;
 	}
@@ -1265,7 +1265,7 @@ bool cli_negprot(struct cli_state *cli)
 	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
-    
+
 	cli_set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
@@ -1397,9 +1397,13 @@ bool cli_session_request(struct cli_state *cli,
 	char *p;
 	int len = 4;
 
+	/* 445 doesn't have session request */
+	if (cli->port == 445)
+		return True;
+
 	memcpy(&(cli->calling), calling, sizeof(*calling));
 	memcpy(&(cli->called ), called , sizeof(*called ));
-  
+
 	/* put in the destination name */
 	p = cli->outbuf+len;
 	name_mangle(cli->called .name, p, cli->called .name_type);
@@ -1409,10 +1413,6 @@ bool cli_session_request(struct cli_state *cli,
 	p = cli->outbuf+len;
 	name_mangle(cli->calling.name, p, cli->calling.name_type);
 	len += name_len(p);
-
-	/* 445 doesn't have session request */
-	if (cli->port == 445)
-		return True;
 
 	/* send a session request (RFC 1002) */
 	/* setup the packet length
@@ -1605,11 +1605,11 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 
 	if (!my_name) 
 		my_name = global_myname();
-	
+
 	if (!(cli = cli_initialise())) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
 

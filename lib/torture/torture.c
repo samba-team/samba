@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    SMB torture UI functions
 
-   Copyright (C) Jelmer Vernooij 2006
+   Copyright (C) Jelmer Vernooij 2006-2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "torture/torture.h"
+#include "source4/include/includes.h"
+#include "../torture/torture.h"
 #include "../lib/util/dlinklist.h"
 #include "param/param.h"
 #include "system/filesys.h"
@@ -310,7 +310,7 @@ static bool internal_torture_run_test(struct torture_context *context,
 					  bool already_setup)
 {
 	bool success;
-	char *old_testname;
+	char *old_testname = NULL;
 
 	if (tcase == NULL || strcmp(test->name, tcase->name) != 0) { 
 		old_testname = context->active_testname;

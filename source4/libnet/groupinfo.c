@@ -83,8 +83,8 @@ static void continue_groupinfo_lookup(struct rpc_request *req)
 	if (s->monitor_fn) {
 		msg.type = mon_SamrLookupName;
 		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
-		msg_lookup->rid = s->lookup.out.rids.ids;
-		msg_lookup->count = s->lookup.out.rids.count;
+		msg_lookup->rid = s->lookup.out.rids->ids;
+		msg_lookup->count = s->lookup.out.rids->count;
 		msg.data = (void*)msg_lookup;
 		msg.data_size = sizeof(*msg_lookup);
 		
@@ -94,7 +94,7 @@ static void continue_groupinfo_lookup(struct rpc_request *req)
 
 	/* have we actually got name resolved
 	   - we're looking for only one at the moment */
-	if (s->lookup.out.rids.count == 0) {
+	if (s->lookup.out.rids->count == 0) {
 		composite_error(c, NT_STATUS_NO_SUCH_USER);
 	}
 
@@ -103,7 +103,7 @@ static void continue_groupinfo_lookup(struct rpc_request *req)
 	/* prepare parameters for LookupNames */
 	s->opengroup.in.domain_handle   = &s->domain_handle;
 	s->opengroup.in.access_mask     = SEC_FLAG_MAXIMUM_ALLOWED;
-	s->opengroup.in.rid             = s->lookup.out.rids.ids[0];
+	s->opengroup.in.rid             = s->lookup.out.rids->ids[0];
 	s->opengroup.out.group_handle   = &s->group_handle;
 
 	/* send request */
@@ -152,6 +152,8 @@ static void continue_groupinfo_opengroup(struct rpc_request *req)
 	/* prepare parameters for QueryGroupInfo call */
 	s->querygroupinfo.in.group_handle = &s->group_handle;
 	s->querygroupinfo.in.level        = s->level;
+	s->querygroupinfo.out.info        = talloc(s, union samr_GroupInfo *);
+	if (composite_nomem(s->querygroupinfo.out.info, c)) return;
 	
 	/* queue rpc call, set event handling and new state */
 	querygroup_req = dcerpc_samr_QueryGroupInfo_send(s->pipe, c, &s->querygroupinfo);
@@ -185,7 +187,7 @@ static void continue_groupinfo_getgroup(struct rpc_request *req)
 		return;
 	}
 
-	s->info = talloc_steal(s, s->querygroupinfo.out.info);
+	s->info = talloc_steal(s, *s->querygroupinfo.out.info);
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
@@ -301,7 +303,11 @@ struct composite_context *libnet_rpc_groupinfo_send(struct dcerpc_pipe *p,
 
 		s->lookup.in.names[0].string  = talloc_strdup(s, io->in.groupname);
 		if (composite_nomem(s->lookup.in.names[0].string, c)) return c;
-		
+		s->lookup.out.rids         = talloc_zero(s, struct samr_Ids);
+		s->lookup.out.types        = talloc_zero(s, struct samr_Ids);
+		if (composite_nomem(s->lookup.out.rids, c)) return c;
+		if (composite_nomem(s->lookup.out.types, c)) return c;
+
 		/* send request */
 		lookup_req = dcerpc_samr_LookupNames_send(p, c, &s->lookup);
 		if (composite_nomem(lookup_req, c)) return c;

@@ -3,9 +3,7 @@
 #include <stdint.h>
 
 #include "librpc/gen_ndr/misc.h"
-#define dom_sid2 dom_sid
-#define dom_sid28 dom_sid
-#define dom_sid0 dom_sid
+#include "librpc/gen_ndr/dom_sid.h"
 #ifndef _HEADER_security
 #define _HEADER_security
 
@@ -245,7 +243,7 @@ struct security_ace_object {
 
 union security_ace_object_ctr {
 	struct security_ace_object object;/* [case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] */
-}/* [nodiscriminant] */;
+}/* [public,nodiscriminant] */;
 
 struct security_ace {
 	enum security_ace_type type;
@@ -254,7 +252,7 @@ struct security_ace {
 	uint32_t access_mask;
 	union security_ace_object_ctr object;/* [switch_is(type)] */
 	struct dom_sid trustee;
-}/* [gensize,public,nosize] */;
+}/* [gensize,public,nopull,nosize] */;
 
 enum security_acl_revision
 #ifndef USE_UINT_ENUMS

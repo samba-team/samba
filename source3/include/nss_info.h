@@ -66,10 +66,12 @@ struct nss_info_methods {
 				  TALLOC_CTX *ctx, 
 				  ADS_STRUCT *ads, LDAPMessage *msg,
 				  char **homedir, char **shell, char **gecos, gid_t *p_gid);
-	NTSTATUS (*map_to_alias)( TALLOC_CTX *mem_ctx, const char *domain,
-				  const char *name, char **alias );
-	NTSTATUS (*map_from_alias)( TALLOC_CTX *mem_ctx, const char *domain,
-				    const char *alias, char **name );
+	NTSTATUS (*map_to_alias)(TALLOC_CTX *mem_ctx,
+				 struct nss_domain_entry *e,
+				 const char *name, char **alias);
+	NTSTATUS (*map_from_alias)(TALLOC_CTX *mem_ctx,
+				   struct nss_domain_entry *e,
+				   const char *alias, char **name);
 	NTSTATUS (*close_fn)( void );
 };
 

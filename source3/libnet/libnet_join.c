@@ -762,7 +762,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct lsa_String lsa_acct_name;
 	uint32_t user_rid;
 	uint32_t acct_flags = ACB_WSTRUST;
-	uchar md4_trust_password[16];
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
 	union samr_UserInfo user_info;
@@ -898,14 +897,6 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* Create a random machine account password and generate the hash */
-
-	E_md4hash(r->in.machine_password, md4_trust_password);
-
-	init_samr_CryptPasswordEx(r->in.machine_password,
-				  &cli->user_session_key,
-				  &crypt_pwd_ex);
-
 	/* Fill in the additional account flags now */
 
 	acct_flags |= ACB_PWNOEXP;
@@ -916,22 +907,39 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		;;
 	}
 
-	/* Set password and account flags on machine account */
-
-	ZERO_STRUCT(user_info.info25);
-
-	user_info.info25.info.fields_present = ACCT_NT_PWD_SET |
-					       ACCT_LM_PWD_SET |
-					       SAMR_FIELD_ACCT_FLAGS;
-
-	user_info.info25.info.acct_flags = acct_flags;
-	memcpy(&user_info.info25.password.data, crypt_pwd_ex.data,
-	       sizeof(crypt_pwd_ex.data));
+	/* Set account flags on machine account */
+	ZERO_STRUCT(user_info.info16);
+	user_info.info16.acct_flags = acct_flags;
 
 	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
 					 &user_pol,
-					 25,
+					 16,
 					 &user_info);
+
+	if (!NT_STATUS_IS_OK(status)) {
+
+		rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+				       &user_pol);
+
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to set account flags for machine account (%s)\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	/* Set password on machine account - first try level 26 */
+
+	init_samr_CryptPasswordEx(r->in.machine_password,
+				  &cli->user_session_key,
+				  &crypt_pwd_ex);
+
+	init_samr_user_info26(&user_info.info26, &crypt_pwd_ex,
+			      PASS_DONT_CHANGE_AT_NEXT_LOGON);
+
+	status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  26,
+					  &user_info);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
 
@@ -941,7 +949,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					&cli->user_session_key,
 					&crypt_pwd);
 
-		init_samr_user_info24(&user_info.info24, crypt_pwd.data, 24);
+		init_samr_user_info24(&user_info.info24, &crypt_pwd,
+				      PASS_DONT_CHANGE_AT_NEXT_LOGON);
 
 		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,
@@ -1638,24 +1647,31 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 				       struct libnet_JoinCtx *r)
 {
+	bool valid_security = false;
+	bool valid_workgroup = false;
+	bool valid_realm = false;
+
 	/* check if configuration is already set correctly */
+
+	valid_workgroup = strequal(lp_workgroup(), r->out.netbios_domain_name);
 
 	switch (r->out.domain_is_ad) {
 		case false:
-			if ((strequal(lp_workgroup(),
-				      r->out.netbios_domain_name)) &&
-			    (lp_security() == SEC_DOMAIN)) {
+			valid_security = (lp_security() == SEC_DOMAIN);
+			if (valid_workgroup && valid_security) {
 				/* nothing to be done */
 				return WERR_OK;
 			}
 			break;
 		case true:
-			if ((strequal(lp_workgroup(),
-				      r->out.netbios_domain_name)) &&
-			    (strequal(lp_realm(),
-				      r->out.dns_domain_name)) &&
-			    ((lp_security() == SEC_ADS) ||
-			     (lp_security() == SEC_DOMAIN))) {
+			valid_realm = strequal(lp_realm(), r->out.dns_domain_name);
+			switch (lp_security()) {
+			case SEC_DOMAIN:
+			case SEC_ADS:
+				valid_security = true;
+			}
+
+			if (valid_workgroup && valid_realm && valid_security) {
 				/* nothing to be done */
 				return WERR_OK;
 			}
@@ -1665,9 +1681,41 @@ static WERROR libnet_join_check_config(TALLOC_CTX *mem_ctx,
 	/* check if we are supposed to manipulate configuration */
 
 	if (!r->in.modify_config) {
+
+		char *wrong_conf = talloc_strdup(mem_ctx, "");
+
+		if (!valid_workgroup) {
+			wrong_conf = talloc_asprintf_append(wrong_conf,
+				"\"workgroup\" set to '%s', should be '%s'",
+				lp_workgroup(), r->out.netbios_domain_name);
+			W_ERROR_HAVE_NO_MEMORY(wrong_conf);
+		}
+
+		if (!valid_realm) {
+			wrong_conf = talloc_asprintf_append(wrong_conf,
+				"\"realm\" set to '%s', should be '%s'",
+				lp_realm(), r->out.dns_domain_name);
+			W_ERROR_HAVE_NO_MEMORY(wrong_conf);
+		}
+
+		if (!valid_security) {
+			const char *sec = NULL;
+			switch (lp_security()) {
+			case SEC_SHARE: sec = "share"; break;
+			case SEC_USER:  sec = "user"; break;
+			case SEC_DOMAIN: sec = "domain"; break;
+			case SEC_ADS: sec = "ads"; break;
+			}
+			wrong_conf = talloc_asprintf_append(wrong_conf,
+				"\"security\" set to '%s', should be %s",
+				sec, r->out.domain_is_ad ?
+				"either 'domain' or 'ads'" : "'domain'");
+			W_ERROR_HAVE_NO_MEMORY(wrong_conf);
+		}
+
 		libnet_join_set_error_string(mem_ctx, r,
-			"Invalid configuration and configuration modification "
-			"was not requested");
+			"Invalid configuration (%s) and configuration modification "
+			"was not requested", wrong_conf);
 		return WERR_CAN_NOT_COMPLETE;
 	}
 

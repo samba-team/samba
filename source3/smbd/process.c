@@ -37,6 +37,8 @@ SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
 extern int max_send;
 
+static void construct_reply_common(const char *inbuf, char *outbuf);
+
 /* Accessor function for smb_read_error for smbd functions. */
 
 /****************************************************************************
@@ -1590,7 +1592,7 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-void construct_reply_common(const char *inbuf, char *outbuf)
+static void construct_reply_common(const char *inbuf, char *outbuf)
 {
 	srv_set_message(outbuf,0,0,false);
 	

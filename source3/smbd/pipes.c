@@ -78,7 +78,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	}
 #endif
 
-	status = np_open(req, conn, fname, &fsp);
+	status = np_open(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,

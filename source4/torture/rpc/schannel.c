@@ -128,6 +128,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
+	struct samr_PwInfo info;
 	struct samr_Connect connect;
 	struct samr_OpenDomain opendom;
 	int i;
@@ -137,6 +138,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 
 	name.string = lp_workgroup(tctx->lp_ctx);
 	r.in.domain_name = &name;
+	r.out.info = &info;
 
 	connect.in.system_name = 0;
 	connect.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;

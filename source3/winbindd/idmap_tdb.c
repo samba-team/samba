@@ -820,10 +820,11 @@ done:
 }
 
 /**********************************
- set a mapping. 
+ set a mapping.
 **********************************/
 
-static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_map *map)
+static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom,
+				      const struct id_map *map)
 {
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
@@ -839,17 +840,19 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	data.dptr = NULL;
 
 	/* TODO: should we filter a set_mapping using low/high filters ? */
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	switch (map->xid.type) {
 
 	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		kidstr = talloc_asprintf(ctx, "UID %lu",
+					 (unsigned long)map->xid.id);
 		break;
-		
+
 	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		kidstr = talloc_asprintf(ctx, "GID %lu",
+					 (unsigned long)map->xid.id);
 		break;
 
 	default:
@@ -875,8 +878,13 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 	ksid = string_term_tdb_data(ksidstr);
 
 	/* *DELETE* previous mappings if any.
-	 * This is done both SID and [U|G]ID passed in */
-	
+	 * This is done for both the SID and [U|G]ID passed in */
+
+	/* NOTE: We should lock both the ksid and kid records here, before
+	 * making modifications.  However, because tdb_chainlock() is a
+	 * blocking call we could create an unrecoverable deadlock, so for now
+	 * we only lock the ksid record. */
+
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
 		DEBUG(10,("Failed to lock record %s. Error %s\n",
@@ -886,7 +894,8 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 
 	data = tdb_fetch(ctx->tdb, ksid);
 	if (data.dptr) {
-		DEBUG(10, ("Deleting existing mapping %s <-> %s\n", (const char *)data.dptr, ksidstr ));
+		DEBUG(10, ("Deleting existing mapping %s <-> %s\n",
+		           (const char *)data.dptr, ksidstr ));
 		tdb_delete(ctx->tdb, data);
 		tdb_delete(ctx->tdb, ksid);
 		SAFE_FREE(data.dptr);
@@ -894,20 +903,23 @@ static NTSTATUS idmap_tdb_set_mapping(struct idmap_domain *dom, const struct id_
 
 	data = tdb_fetch(ctx->tdb, kid);
 	if (data.dptr) {
-		DEBUG(10,("Deleting existing mapping %s <-> %s\n", (const char *)data.dptr, kidstr ));
+		DEBUG(10,("Deleting existing mapping %s <-> %s\n",
+			  (const char *)data.dptr, kidstr ));
 		tdb_delete(ctx->tdb, data);
 		tdb_delete(ctx->tdb, kid);
 		SAFE_FREE(data.dptr);
 	}
 
 	if (tdb_store(ctx->tdb, ksid, kid, TDB_INSERT) == -1) {
-		DEBUG(0, ("Error storing SID -> ID: %s\n", tdb_errorstr(ctx->tdb)));
+		DEBUG(0, ("Error storing SID -> ID: %s\n",
+			  tdb_errorstr(ctx->tdb)));
 		tdb_chainunlock(ctx->tdb, ksid);
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 	if (tdb_store(ctx->tdb, kid, ksid, TDB_INSERT) == -1) {
-		DEBUG(0, ("Error stroing ID -> SID: %s\n", tdb_errorstr(ctx->tdb)));
+		DEBUG(0, ("Error storing ID -> SID: %s\n",
+			  tdb_errorstr(ctx->tdb)));
 		/* try to remove the previous stored SID -> ID map */
 		tdb_delete(ctx->tdb, ksid);
 		tdb_chainunlock(ctx->tdb, ksid);
@@ -927,10 +939,11 @@ done:
 }
 
 /**********************************
- remove a mapping. 
+ remove a mapping.
 **********************************/
 
-static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct id_map *map)
+static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom,
+					 const struct id_map *map)
 {
 	struct idmap_tdb_context *ctx;
 	NTSTATUS ret;
@@ -946,17 +959,19 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	data.dptr = NULL;
 
 	/* TODO: should we filter a remove_mapping using low/high filters ? */
-	
+
 	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
 
 	switch (map->xid.type) {
 
 	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu", (unsigned long)map->xid.id);
+		kidstr = talloc_asprintf(ctx, "UID %lu",
+					 (unsigned long)map->xid.id);
 		break;
-		
+
 	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu", (unsigned long)map->xid.id);
+		kidstr = talloc_asprintf(ctx, "GID %lu",
+					 (unsigned long)map->xid.id);
 		break;
 
 	default:
@@ -981,6 +996,11 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	ksid = string_term_tdb_data(ksidstr);
 	kid = string_term_tdb_data(kidstr);
 
+	/* NOTE: We should lock both the ksid and kid records here, before
+	 * making modifications.  However, because tdb_chainlock() is a
+	 * blocking call we could create an unrecoverable deadlock, so for now
+	 * we only lock the ksid record. */
+
 	/* Lock the record for this SID. */
 	if (tdb_chainlock(ctx->tdb, ksid) != 0) {
 		DEBUG(10,("Failed to lock record %s. Error %s\n",
@@ -1001,16 +1021,17 @@ static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom, const struct 
 	if ((data.dsize != kid.dsize) ||
 	    (memcmp(data.dptr, kid.dptr, data.dsize) != 0)) {
 		DEBUG(10,("Specified SID does not map to specified ID\n"));
-		DEBUGADD(10,("Actual mapping is %s -> %s\n", ksidstr, (const char *)data.dptr));
+		DEBUGADD(10,("Actual mapping is %s -> %s\n", ksidstr,
+			 (const char *)data.dptr));
 		tdb_chainunlock(ctx->tdb, ksid);
 		ret = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
-	
+
 	DEBUG(10, ("Removing %s <-> %s map\n", ksidstr, kidstr));
 
 	/* Delete previous mappings. */
-	
+
 	DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksidstr, kidstr ));
 	tdb_delete(ctx->tdb, ksid);
 

@@ -27,11 +27,31 @@ enum net_samsync_mode {
 
 struct samsync_context;
 
-typedef NTSTATUS (*samsync_delta_fn_t)(TALLOC_CTX *,
-				       enum netr_SamDatabaseID,
-				       struct netr_DELTA_ENUM_ARRAY *,
-				       bool,
-				       struct samsync_context *);
+struct samsync_ops {
+	NTSTATUS (*startup)(TALLOC_CTX *mem_ctx,
+			    struct samsync_context *ctx,
+			    enum netr_SamDatabaseID id,
+			    uint64_t *sequence_num);
+	NTSTATUS (*process_objects)(TALLOC_CTX *mem_ctx,
+				    enum netr_SamDatabaseID id,
+				    struct netr_DELTA_ENUM_ARRAY *array,
+				    uint64_t *sequence_num,
+				    struct samsync_context *ctx);
+	NTSTATUS (*finish)(TALLOC_CTX *mem_ctx,
+			   struct samsync_context *ctx,
+			   enum netr_SamDatabaseID id,
+			   uint64_t sequence_num);
+};
+
+struct samsync_object {
+	uint16_t database_id;
+	uint16_t object_type;
+	union {
+		uint32_t rid;
+		const char *name;
+		struct dom_sid sid;
+	} object_identifier;
+};
 
 struct samsync_context {
 	enum net_samsync_mode mode;
@@ -46,28 +66,21 @@ struct samsync_context {
 	char *result_message;
 	char *error_message;
 
+	bool single_object_replication;
+	bool force_full_replication;
+	bool clean_old_entries;
+
+	uint32_t num_objects;
+	struct samsync_object *objects;
+
 	struct rpc_pipe_client *cli;
-	samsync_delta_fn_t delta_fn;
+
+	const struct samsync_ops *ops;
+
 	void *private_data;
 };
 
-NTSTATUS fetch_sam_entries_ldif(TALLOC_CTX *mem_ctx,
-				enum netr_SamDatabaseID database_id,
-				struct netr_DELTA_ENUM_ARRAY *r,
-				bool last_query,
-				struct samsync_context *ctx);
-NTSTATUS fetch_sam_entries(TALLOC_CTX *mem_ctx,
-			   enum netr_SamDatabaseID database_id,
-			   struct netr_DELTA_ENUM_ARRAY *r,
-			   bool last_query,
-			   struct samsync_context *ctx);
-NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
-			     enum netr_SamDatabaseID database_id,
-			     struct netr_DELTA_ENUM_ARRAY *r,
-			     bool last_query,
-			     struct samsync_context *ctx);
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx);
+extern const struct samsync_ops libnet_samsync_ldif_ops;
+extern const struct samsync_ops libnet_samsync_keytab_ops;
+extern const struct samsync_ops libnet_samsync_display_ops;
+extern const struct samsync_ops libnet_samsync_passdb_ops;

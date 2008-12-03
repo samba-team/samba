@@ -328,8 +328,10 @@ int ldb_ldif_write(struct ldb_context *ldb,
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			struct ldb_val v;
 			ret = a->syntax->ldif_write_fn(ldb, mem_ctx, &msg->elements[i].values[j], &v);
-			CHECK_RET;
-			if (ldb_should_b64_encode(&v)) {
+			if (ret != LDB_SUCCESS) {
+				v = msg->elements[i].values[j];
+			}
+			if (ret != LDB_SUCCESS || ldb_should_b64_encode(&v)) {
 				ret = fprintf_fn(private_data, "%s:: ", 
 						 msg->elements[i].name);
 				CHECK_RET;

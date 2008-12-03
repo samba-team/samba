@@ -82,8 +82,8 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 	if (s->monitor_fn) {
 		msg.type = mon_SamrLookupName;
 		msg_lookup = talloc(s, struct msg_rpc_lookup_name);
-		msg_lookup->rid = s->lookup.out.rids.ids;
-		msg_lookup->count = s->lookup.out.rids.count;
+		msg_lookup->rid = s->lookup.out.rids->ids;
+		msg_lookup->count = s->lookup.out.rids->count;
 		msg.data = (void*)msg_lookup;
 		msg.data_size = sizeof(*msg_lookup);
 		
@@ -93,7 +93,7 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 
 	/* have we actually got name resolved
 	   - we're looking for only one at the moment */
-	if (s->lookup.out.rids.count == 0) {
+	if (s->lookup.out.rids->count == 0) {
 		composite_error(c, NT_STATUS_NO_SUCH_USER);
 	}
 
@@ -102,7 +102,7 @@ static void continue_userinfo_lookup(struct rpc_request *req)
 	/* prepare parameters for LookupNames */
 	s->openuser.in.domain_handle  = &s->domain_handle;
 	s->openuser.in.access_mask    = SEC_FLAG_MAXIMUM_ALLOWED;
-	s->openuser.in.rid            = s->lookup.out.rids.ids[0];
+	s->openuser.in.rid            = s->lookup.out.rids->ids[0];
 	s->openuser.out.user_handle   = &s->user_handle;
 
 	/* send request */
@@ -151,6 +151,8 @@ static void continue_userinfo_openuser(struct rpc_request *req)
 	/* prepare parameters for QueryUserInfo call */
 	s->queryuserinfo.in.user_handle = &s->user_handle;
 	s->queryuserinfo.in.level       = s->level;
+	s->queryuserinfo.out.info       = talloc(s, union samr_UserInfo *);
+	if (composite_nomem(s->queryuserinfo.out.info, c)) return;
 	
 	/* queue rpc call, set event handling and new state */
 	queryuser_req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &s->queryuserinfo);
@@ -184,7 +186,7 @@ static void continue_userinfo_getuser(struct rpc_request *req)
 		return;
 	}
 
-	s->info = talloc_steal(s, s->queryuserinfo.out.info);
+	s->info = talloc_steal(s, *(s->queryuserinfo.out.info));
 
 	/* issue a monitor message */
 	if (s->monitor_fn) {
@@ -297,6 +299,10 @@ struct composite_context *libnet_rpc_userinfo_send(struct dcerpc_pipe *p,
 		s->lookup.in.num_names        = 1;
 		s->lookup.in.names            = talloc_array(s, struct lsa_String, 1);
 		if (composite_nomem(s->lookup.in.names, c)) return c;
+		s->lookup.out.rids         = talloc_zero(s, struct samr_Ids);
+		s->lookup.out.types        = talloc_zero(s, struct samr_Ids);
+		if (composite_nomem(s->lookup.out.rids, c)) return c;
+		if (composite_nomem(s->lookup.out.types, c)) return c;
 
 		s->lookup.in.names[0].string  = talloc_strdup(s, io->in.username);
 		if (composite_nomem(s->lookup.in.names[0].string, c)) return c;

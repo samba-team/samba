@@ -201,13 +201,13 @@ static bool api_wkssvc_NetWkstaEnumUsers(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info = r->in.info;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.entries_read = talloc_zero(r, uint32_t);
 	if (r->out.entries_read == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _wkssvc_NetWkstaEnumUsers(p, r);
 
 	if (p->rng_fault_state) {
@@ -438,13 +438,13 @@ static bool api_wkssvc_NetWkstaTransportEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info = r->in.info;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.total_entries = talloc_zero(r, uint32_t);
 	if (r->out.total_entries == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _wkssvc_NetWkstaTransportEnum(p, r);
 
 	if (p->rng_fault_state) {
@@ -896,13 +896,13 @@ static bool api_wkssvc_NetrUseEnum(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.info = r->in.info;
+	r->out.resume_handle = r->in.resume_handle;
 	r->out.entries_read = talloc_zero(r, uint32_t);
 	if (r->out.entries_read == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _wkssvc_NetrUseEnum(p, r);
 
 	if (p->rng_fault_state) {

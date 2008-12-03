@@ -978,19 +978,6 @@ static void cli_trans_ship_rest(struct async_req *req,
 	}
 }
 
-static bool cli_trans_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
-{
-	if ((offset + length < offset) || (offset + length < length)) {
-		/* wrap */
-		return true;
-	}
-	if ((offset > bufsize) || (offset + length > bufsize)) {
-		/* overflow */
-		return true;
-	}
-	return false;
-}
-
 static NTSTATUS cli_pull_trans(struct async_req *req,
 			       struct cli_request *cli_req,
 			       uint8_t smb_cmd, bool expect_first_reply,
@@ -1072,10 +1059,10 @@ static NTSTATUS cli_pull_trans(struct async_req *req,
 	 * length. Likewise for param_ofs/param_disp.
 	 */
 
-	if (cli_trans_oob(smb_len(cli_req->inbuf), param_ofs, *pnum_param)
-	    || cli_trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
-	    || cli_trans_oob(smb_len(cli_req->inbuf), data_ofs, *pnum_data)
-	    || cli_trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
+	if (trans_oob(smb_len(cli_req->inbuf), param_ofs, *pnum_param)
+	    || trans_oob(*ptotal_param, *pparam_disp, *pnum_param)
+	    || trans_oob(smb_len(cli_req->inbuf), data_ofs, *pnum_data)
+	    || trans_oob(*ptotal_data, *pdata_disp, *pnum_data)) {
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 

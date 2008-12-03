@@ -30,6 +30,7 @@ swatdir="\${prefix}/swat"
 codepagedir="\${MODULESDIR}"
 statedir="\${LOCKDIR}"
 cachedir="\${LOCKDIR}"
+localedir="\${prefix}/share/locale"
 
 AC_ARG_WITH(fhs,
 [AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
@@ -242,6 +243,23 @@ AC_ARG_WITH(mandir,
     ;;
   esac])
 
+################################################
+# set locale directory location
+AC_ARG_WITH(localedir,
+[  --with-localedir=DIR    Where to put po files ($ac_default_prefix/share/locale)],
+[ case "$withval" in
+  yes|no)
+    #
+    # Just in case anybody does it
+    #
+    AC_MSG_WARN([--with-localedir called without argument - will use default])
+  ;;
+  *)
+  localedir="$withval"
+  ;;
+  esac])
+
+
 AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
@@ -258,6 +276,7 @@ AC_SUBST(cachedir)
 AC_SUBST(rootsbindir)
 AC_SUBST(pammodulesdir)
 AC_SUBST(modulesdir)
+AC_SUBST(localedir)
 
 #################################################
 # set prefix for 'make test'
@@ -271,6 +290,22 @@ AC_ARG_WITH(selftest-prefix,
   ;;
   * )
     selftest_prefix="$withval"
+    ;;
+  esac
+])
+
+#################################################
+# set shrdir for 'make test'
+selftest_shrdir=""
+AC_SUBST(selftest_shrdir)
+AC_ARG_WITH(selftest-shrdir,
+[AS_HELP_STRING([--with-selftest-shrdir=DIR], [The share directory that make test will be run against ($selftest_shrdir)])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-selftest-shrdir called without argument - will use default])
+  ;;
+  * )
+    selftest_shrdir="$withval"
     ;;
   esac
 ])

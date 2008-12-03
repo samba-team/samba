@@ -654,6 +654,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "async_smb.h"
 #include "async_sock.h"
 #include "services.h"
+#include "eventlog.h"
 
 #include "lib/smbconf/smbconf.h"
 

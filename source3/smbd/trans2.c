@@ -768,6 +768,12 @@ void send_trans2_replies(connection_struct *conn,
 		reply_outbuf(req, 10, total_sent_thistime + alignment_offset
 			     + data_alignment_offset);
 
+		/*
+		 * We might have SMBtrans2s in req which was transferred to
+		 * the outbuf, fix that.
+		 */
+		SCVAL(req->outbuf, smb_com, SMBtrans2);
+
 		/* Set total params and data to be sent */
 		SSVAL(req->outbuf,smb_tprcnt,paramsize);
 		SSVAL(req->outbuf,smb_tdrcnt,datasize);
@@ -1129,7 +1135,7 @@ static uint32 unix_filetype(mode_t mode)
 		return UNIX_TYPE_SOCKET;
 #endif
 
-	DEBUG(0,("unix_filetype: unknown filetype %u", (unsigned)mode));
+	DEBUG(0,("unix_filetype: unknown filetype %u\n", (unsigned)mode));
 	return UNIX_TYPE_UNKNOWN;
 }
 
@@ -3993,6 +3999,46 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 			return;
 		}
 
+		if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+		    && is_ntfs_stream_name(fname)) {
+			char *base;
+			SMB_STRUCT_STAT bsbuf;
+
+			status = split_ntfs_stream_name(talloc_tos(), fname,
+							&base, NULL);
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("create_file_unixpath: "
+					"split_ntfs_stream_name failed: %s\n",
+					nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			SMB_ASSERT(!is_ntfs_stream_name(base));	/* paranoia.. */
+
+			if (INFO_LEVEL_IS_UNIX(info_level)) {
+				/* Always do lstat for UNIX calls. */
+				if (SMB_VFS_LSTAT(conn,base,&bsbuf)) {
+					DEBUG(3,("call_trans2qfilepathinfo: SMB_VFS_LSTAT of %s failed (%s)\n",base,strerror(errno)));
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
+				}
+			} else {
+				if (SMB_VFS_STAT(conn,base,&bsbuf) != 0) {
+					DEBUG(3,("call_trans2qfilepathinfo: fileinfo of %s failed (%s)\n",base,strerror(errno)));
+					reply_unixerror(req,ERRDOS,ERRbadpath);
+					return;
+				}
+			}
+
+			fileid = vfs_file_id_from_sbuf(conn, &bsbuf);
+			get_file_infos(fileid, &delete_pending, NULL);
+			if (delete_pending) {
+				reply_nterror(req, NT_STATUS_DELETE_PENDING);
+				return;
+			}
+		}
+
 		if (INFO_LEVEL_IS_UNIX(info_level)) {
 			/* Always do lstat for UNIX calls. */
 			if (SMB_VFS_LSTAT(conn,fname,&sbuf)) {
@@ -4911,7 +4957,11 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			  time_to_asc(convert_timespec_to_time_t(ts[1])) ));
 
 		if (fsp != NULL) {
-			set_sticky_write_time_fsp(fsp, ts[1]);
+			if (fsp->base_fsp) {
+				set_sticky_write_time_fsp(fsp->base_fsp, ts[1]);
+			} else {
+				set_sticky_write_time_fsp(fsp, ts[1]);
+			}
 		} else {
 			set_sticky_write_time_path(conn, fname,
 					    vfs_file_id_from_sbuf(conn, psbuf),
@@ -4920,6 +4970,10 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	DEBUG(10,("smb_set_file_time: setting utimes to modified values.\n"));
+
+	if (fsp && fsp->base_fsp) {
+		fname = fsp->base_fsp->fsp_name;
+	}
 
 	if(file_ntimes(conn, fname, ts)!=0) {
 		return map_nt_error_from_unix(errno);
@@ -5347,26 +5401,42 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* Create the base directory. */
-	base_name = talloc_strdup(ctx, fname);
-	if (!base_name) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = strrchr_m(base_name, '/');
-	if (p) {
-		p[1] = '\0';
-	} else {
-		base_name = talloc_strdup(ctx, "./");
+	if (fsp && fsp->base_fsp) {
+		if (newname[0] != ':') {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+		base_name = talloc_asprintf(ctx, "%s%s",
+					   fsp->base_fsp->fsp_name,
+					   newname);
 		if (!base_name) {
 			return NT_STATUS_NO_MEMORY;
 		}
-	}
-	/* Append the new name. */
-	base_name = talloc_asprintf_append(base_name,
-			"%s",
-			newname);
-	if (!base_name) {
-		return NT_STATUS_NO_MEMORY;
+	} else {
+		if (is_ntfs_stream_name(newname)) {
+			return NT_STATUS_NOT_SUPPORTED;
+		}
+
+		/* Create the base directory. */
+		base_name = talloc_strdup(ctx, fname);
+		if (!base_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		p = strrchr_m(base_name, '/');
+		if (p) {
+			p[1] = '\0';
+		} else {
+			base_name = talloc_strdup(ctx, "./");
+			if (!base_name) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		/* Append the new name. */
+		base_name = talloc_asprintf_append(base_name,
+				"%s",
+				newname);
+		if (!base_name) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
 	if (fsp) {
@@ -7263,8 +7333,8 @@ static void call_trans2ioctl(connection_struct *conn,
 		return;
 	}
 
-	if ((SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
-	    && (SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+	if ((SVAL(req->vwv+16, 0) == LMCAT_SPL)
+	    && (SVAL(req->vwv+17, 0) == LMFUNC_GETJOBID)) {
 		*ppdata = (char *)SMB_REALLOC(*ppdata, 32);
 		if (*ppdata == NULL) {
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -7527,8 +7597,6 @@ void reply_trans2(struct smb_request *req)
 	unsigned int psoff;
 	unsigned int pscnt;
 	unsigned int tran_call;
-	unsigned int size;
-	unsigned int av_size;
 	struct trans_state *state;
 	NTSTATUS result;
 
@@ -7545,8 +7613,6 @@ void reply_trans2(struct smb_request *req)
 	psoff = SVAL(req->vwv+10, 0);
 	pscnt = SVAL(req->vwv+9, 0);
 	tran_call = SVAL(req->vwv+14, 0);
-	size = smb_len(req->inbuf) + 4;
-	av_size = smb_len(req->inbuf);
 
 	result = allow_new_trans(conn->pending_trans, req->mid);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -7611,8 +7677,8 @@ void reply_trans2(struct smb_request *req)
 		 */
 		if ( (state->setup_count == 4)
 		     && (tran_call == TRANSACT2_IOCTL)
-		     && (SVAL(req->inbuf,(smb_setup+4)) == LMCAT_SPL)
-		     &&	(SVAL(req->inbuf,(smb_setup+6)) == LMFUNC_GETJOBID)) {
+		     && (SVAL(req->vwv+16, 0) == LMCAT_SPL)
+		     &&	(SVAL(req->vwv+17, 0) == LMFUNC_GETJOBID)) {
 			DEBUG(2,("Got Trans2 DevIOctl jobid\n"));
 		} else {
 			DEBUG(2,("Invalid smb_sucnt in trans2 call(%u)\n",state->setup_count));
@@ -7628,6 +7694,12 @@ void reply_trans2(struct smb_request *req)
 		goto bad_param;
 
 	if (state->total_data) {
+
+		if (trans_oob(state->total_data, 0, dscnt)
+		    || trans_oob(smb_len(req->inbuf), dsoff, dscnt)) {
+			goto bad_param;
+		}
+
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
 		state->data = (char *)SMB_MALLOC(state->total_data);
@@ -7640,21 +7712,16 @@ void reply_trans2(struct smb_request *req)
 			return;
 		}
 
-		if (dscnt > state->total_data ||
-				dsoff+dscnt < dsoff) {
-			goto bad_param;
-		}
-
-		if (dsoff > av_size ||
-				dscnt > av_size ||
-				dsoff+dscnt > av_size) {
-			goto bad_param;
-		}
-
 		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
 
 	if (state->total_param) {
+
+		if (trans_oob(state->total_param, 0, pscnt)
+		    || trans_oob(smb_len(req->inbuf), psoff, pscnt)) {
+			goto bad_param;
+		}
+
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
 		state->param = (char *)SMB_MALLOC(state->total_param);
@@ -7667,17 +7734,6 @@ void reply_trans2(struct smb_request *req)
 			END_PROFILE(SMBtrans2);
 			return;
 		} 
-
-		if (pscnt > state->total_param ||
-				psoff+pscnt < psoff) {
-			goto bad_param;
-		}
-
-		if (psoff > av_size ||
-				pscnt > av_size ||
-				psoff+pscnt > av_size) {
-			goto bad_param;
-		}
 
 		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
@@ -7726,8 +7782,6 @@ void reply_transs2(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	unsigned int size;
-	unsigned int av_size;
 
 	START_PROFILE(SMBtranss2);
 
@@ -7738,9 +7792,6 @@ void reply_transs2(struct smb_request *req)
 		END_PROFILE(SMBtranss2);
 		return;
 	}
-
-	size = smb_len(req->inbuf)+4;
-	av_size = smb_len(req->inbuf);
 
 	for (state = conn->pending_trans; state != NULL;
 	     state = state->next) {
@@ -7779,41 +7830,19 @@ void reply_transs2(struct smb_request *req)
 		goto bad_param;
 
 	if (pcnt) {
-		if (pdisp > state->total_param ||
-				pcnt > state->total_param ||
-				pdisp+pcnt > state->total_param ||
-				pdisp+pcnt < pdisp) {
+		if (trans_oob(state->total_param, pdisp, pcnt)
+		    || trans_oob(smb_len(req->inbuf), poff, pcnt)) {
 			goto bad_param;
 		}
-
-		if (poff > av_size ||
-				pcnt > av_size ||
-				poff+pcnt > av_size ||
-				poff+pcnt < poff) {
-			goto bad_param;
-		}
-
-		memcpy(state->param+pdisp,smb_base(req->inbuf)+poff,
-		       pcnt);
+		memcpy(state->param+pdisp,smb_base(req->inbuf)+poff,pcnt);
 	}
 
 	if (dcnt) {
-		if (ddisp > state->total_data ||
-				dcnt > state->total_data ||
-				ddisp+dcnt > state->total_data ||
-				ddisp+dcnt < ddisp) {
+		if (trans_oob(state->total_data, ddisp, dcnt)
+		    || trans_oob(smb_len(req->inbuf), doff, dcnt)) {
 			goto bad_param;
 		}
-
-		if (ddisp > av_size ||
-				dcnt > av_size ||
-				ddisp+dcnt > av_size ||
-				ddisp+dcnt < ddisp) {
-			goto bad_param;
-		}
-
-		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
-		       dcnt);      
+		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,dcnt);
 	}
 
 	if ((state->received_param < state->total_param) ||
@@ -7821,12 +7850,6 @@ void reply_transs2(struct smb_request *req)
 		END_PROFILE(SMBtranss2);
 		return;
 	}
-
-	/*
-	 * construct_reply_common will copy smb_com from inbuf to
-	 * outbuf. SMBtranss2 is wrong here.
-	 */
-	SCVAL(req->inbuf,smb_com,SMBtrans2);
 
 	handle_trans2(conn, req, state);
 

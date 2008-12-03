@@ -52,13 +52,15 @@ static NTSTATUS torture_samr_Connect5(struct torture_context *tctx,
 	NTSTATUS status;
 	struct samr_Connect5 r5;
 	union samr_ConnectInfo info;
+	uint32_t level_out = 0;
 
 	info.info1.client_version = 0;
 	info.info1.unknown2 = 0;
 	r5.in.system_name = "";
-	r5.in.level = 1;
-	r5.in.info = &info;
-	r5.out.info = &info;
+	r5.in.level_in = 1;
+	r5.in.info_in = &info;
+	r5.out.info_out = &info;
+	r5.out.level_out = &level_out;
 	r5.out.connect_handle = h;
 	r5.in.access_mask = mask;
 
@@ -147,6 +149,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 	int i;
 	uint32_t mask;
 	uint32_t resume_handle = 0;
+	struct samr_SamArray *sam = NULL;
+	uint32_t num_entries = 0;
 
 	printf("testing which bits in Connect5 accessmask allows us to EnumDomains\n");
 	mask = 1;
@@ -170,6 +174,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 			ed.in.resume_handle = &resume_handle;
 			ed.in.buf_size = (uint32_t)-1;
 			ed.out.resume_handle = &resume_handle;
+			ed.out.num_entries = &num_entries;
+			ed.out.sam = &sam;
 
 			status = dcerpc_samr_EnumDomains(p, tctx, &ed);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -195,6 +201,8 @@ static bool test_samr_accessmask_EnumDomains(struct torture_context *tctx,
 			ed.in.resume_handle = &resume_handle;
 			ed.in.buf_size = (uint32_t)-1;
 			ed.out.resume_handle = &resume_handle;
+			ed.out.num_entries = &num_entries;
+			ed.out.sam = &sam;
 
 			status = dcerpc_samr_EnumDomains(p, tctx, &ed);
 			if(!NT_STATUS_EQUAL(NT_STATUS_ACCESS_DENIED, status)) {
@@ -236,7 +244,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	struct samr_SetSecurity ss;
 	struct security_ace ace;
 	struct security_descriptor *sd;
-	struct sec_desc_buf sdb;
+	struct sec_desc_buf sdb, *sdbuf = NULL;
 	bool ret = true;
 	int sd_size;
 	struct dcerpc_pipe *test_p;
@@ -255,6 +263,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	/* get the current ACL for the SAMR policy handle */
 	qs.in.handle = &ch;
 	qs.in.sec_info = SECINFO_DACL;
+	qs.out.sdbuf = &sdbuf;
 	status = dcerpc_samr_QuerySecurity(p, tctx, &qs);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("QuerySecurity failed - %s\n", nt_errstr(status));
@@ -262,13 +271,13 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 	}
 
 	/* how big is the security descriptor? */
-	sd_size = qs.out.sdbuf->sd_size;
+	sd_size = sdbuf->sd_size;
 
 
 	/* add an ACE to the security descriptor to deny the user the
 	 * 'connect to server' right
 	 */
-	sd = qs.out.sdbuf->sd;
+	sd = sdbuf->sd;
 	ace.type = SEC_ACE_TYPE_ACCESS_DENIED;
 	ace.flags = 0;
 	ace.access_mask = SAMR_ACCESS_CONNECT_TO_SERVER;
@@ -314,7 +323,7 @@ static bool test_samr_connect_user_acl(struct torture_context *tctx,
 		printf("QuerySecurity failed - %s\n", nt_errstr(status));
 		ret = false;
 	}
-	if (sd_size != qs.out.sdbuf->sd_size) {
+	if (sd_size != sdbuf->sd_size) {
 		printf("security descriptor changed\n");
 		ret = false;
 	}
@@ -387,6 +396,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct policy_handle ch;
 	struct lsa_String dn;
 	int i;
@@ -412,6 +422,7 @@ static bool test_samr_accessmask_LookupDomain(struct torture_context *tctx,
 
 			ld.in.connect_handle = &ch;
 			ld.in.domain_name    = &dn;
+			ld.out.sid           = &sid;
 			dn.string            = lp_workgroup(tctx->lp_ctx);
 
 			status = dcerpc_samr_LookupDomain(p, tctx, &ld);
@@ -471,6 +482,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct samr_LookupDomain ld;
+	struct dom_sid2 *sid = NULL;
 	struct samr_OpenDomain od;
 	struct policy_handle ch;
 	struct policy_handle dh;
@@ -488,6 +500,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 	ld.in.connect_handle = &ch;
 	ld.in.domain_name    = &dn;
+	ld.out.sid           = &sid;
 	dn.string            = lp_workgroup(tctx->lp_ctx);
 	status = dcerpc_samr_LookupDomain(p, tctx, &ld);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -517,7 +530,7 @@ static bool test_samr_accessmask_OpenDomain(struct torture_context *tctx,
 
 			od.in.connect_handle = &ch;
 			od.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-			od.in.sid = ld.out.sid;
+			od.in.sid = *ld.out.sid;
 			od.out.domain_handle = &dh;
 
 			status = dcerpc_samr_OpenDomain(p, tctx, &od);

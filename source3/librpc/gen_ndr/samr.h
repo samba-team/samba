@@ -33,11 +33,41 @@
 #define GENERIC_RIGHTS_ALIAS_READ	( (STANDARD_RIGHTS_READ_ACCESS|SAMR_ALIAS_ACCESS_GET_MEMBERS) )
 #define GENERIC_RIGHTS_ALIAS_WRITE	( (STANDARD_RIGHTS_WRITE_ACCESS|SAMR_ALIAS_ACCESS_REMOVE_MEMBER|SAMR_ALIAS_ACCESS_ADD_MEMBER|SAMR_ALIAS_ACCESS_SET_INFO) )
 #define GENERIC_RIGHTS_ALIAS_EXECUTE	( (STANDARD_RIGHTS_EXECUTE_ACCESS|SAMR_ALIAS_ACCESS_LOOKUP_INFO) )
-#define MAX_SAM_ENTRIES_W2K	( 0x400 )
-#define MAX_SAM_ENTRIES_W95	( 50 )
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
 #define PASS_MUST_CHANGE_AT_NEXT_LOGON	( 0x01 )
 #define PASS_DONT_CHANGE_AT_NEXT_LOGON	( 0x00 )
+enum netr_SamDatabaseID
+#ifndef USE_UINT_ENUMS
+ {
+	SAM_DATABASE_DOMAIN=0,
+	SAM_DATABASE_BUILTIN=1,
+	SAM_DATABASE_PRIVS=2
+}
+#else
+ { __donnot_use_enum_netr_SamDatabaseID=0x7FFFFFFF}
+#define SAM_DATABASE_DOMAIN ( 0 )
+#define SAM_DATABASE_BUILTIN ( 1 )
+#define SAM_DATABASE_PRIVS ( 2 )
+#endif
+;
+
+enum samr_RejectReason
+#ifndef USE_UINT_ENUMS
+ {
+	SAMR_REJECT_OTHER=0,
+	SAMR_REJECT_TOO_SHORT=1,
+	SAMR_REJECT_IN_HISTORY=2,
+	SAMR_REJECT_COMPLEXITY=5
+}
+#else
+ { __donnot_use_enum_samr_RejectReason=0x7FFFFFFF}
+#define SAMR_REJECT_OTHER ( 0 )
+#define SAMR_REJECT_TOO_SHORT ( 1 )
+#define SAMR_REJECT_IN_HISTORY ( 2 )
+#define SAMR_REJECT_COMPLEXITY ( 5 )
+#endif
+;
+
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
@@ -142,6 +172,19 @@ enum samr_Role
 #define DOMAIN_PASSWORD_STORE_CLEARTEXT ( 0x00000010 )
 #define DOMAIN_REFUSE_PASSWORD_CHANGE ( 0x00000020 )
 
+enum samr_DomainServerState
+#ifndef USE_UINT_ENUMS
+ {
+	DOMAIN_SERVER_ENABLED=1,
+	DOMAIN_SERVER_DISABLED=2
+}
+#else
+ { __donnot_use_enum_samr_DomainServerState=0x7FFFFFFF}
+#define DOMAIN_SERVER_ENABLED ( 1 )
+#define DOMAIN_SERVER_DISABLED ( 2 )
+#endif
+;
+
 struct samr_DomInfo1 {
 	uint16_t min_password_length;
 	uint16_t password_history_length;
@@ -156,7 +199,7 @@ struct samr_DomGeneralInformation {
 	struct lsa_String domain_name;
 	struct lsa_String primary;
 	uint64_t sequence_num;
-	uint32_t unknown2;
+	enum samr_DomainServerState domain_server_state;
 	enum samr_Role role;
 	uint32_t unknown3;
 	uint32_t num_users;
@@ -190,7 +233,7 @@ struct samr_DomInfo8 {
 };
 
 struct samr_DomInfo9 {
-	uint32_t unknown;
+	enum samr_DomainServerState domain_server_state;
 };
 
 struct samr_DomGeneralInformation2 {
@@ -524,7 +567,7 @@ struct samr_UserInfo23 {
 
 struct samr_UserInfo24 {
 	struct samr_CryptPassword password;
-	uint8_t pw_len;
+	uint8_t password_expired;
 };
 
 struct samr_CryptPasswordEx {
@@ -538,7 +581,7 @@ struct samr_UserInfo25 {
 
 struct samr_UserInfo26 {
 	struct samr_CryptPasswordEx password;
-	uint8_t pw_len;
+	uint8_t password_expired;
 };
 
 union samr_UserInfo {
@@ -1747,7 +1790,7 @@ struct samr_RidToSid {
 	} in;
 
 	struct {
-		struct dom_sid2 *sid;/* [ref] */
+		struct dom_sid2 **sid;/* [ref] */
 		NTSTATUS result;
 	} out;
 

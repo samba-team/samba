@@ -1076,12 +1076,14 @@ static void ltdb_callback(struct event_context *ev,
 	}
 
 	if (!ctx->callback_failed) {
+		/* Once we are done, we do not need timeout events */
+		talloc_free(ctx->timeout_event);
 		ltdb_request_done(ctx->req, ret);
 	}
 }
 
 static int ltdb_handle_request(struct ldb_module *module,
-				struct ldb_request *req)
+			       struct ldb_request *req)
 {
 	struct event_context *ev;
 	struct ltdb_context *ac;
@@ -1115,10 +1117,9 @@ static int ltdb_handle_request(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-
 	tv.tv_sec = req->starttime + req->timeout;
-	te = event_add_timed(ev, ac, tv, ltdb_timeout, ac);
-	if (NULL == te) {
+	ac->timeout_event = event_add_timed(ev, ac, tv, ltdb_timeout, ac);
+	if (NULL == ac->timeout_event) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 

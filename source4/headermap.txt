@@ -43,6 +43,7 @@ librpc/gen_ndr/samr.h: gen_ndr/samr.h
 librpc/gen_ndr/ndr_samr.h: gen_ndr/ndr_samr.h
 librpc/gen_ndr/ndr_samr_c.h: gen_ndr/ndr_samr_c.h
 librpc/gen_ndr/security.h: gen_ndr/security.h
+librpc/gen_ndr/dom_sid.h: gen_ndr/dom_sid.h
 auth/credentials/credentials.h: credentials.h
 auth/credentials/credentials_krb5.h: credentials/krb5.h
 rpc_server/dcerpc_server.h: dcerpc_server.h
@@ -50,7 +51,7 @@ rpc_server/common/common.h: dcerpc_server/common.h
 libcli/auth/credentials.h: domain_credentials.h
 ../lib/util/charset/charset.h: charset.h
 libcli/ldap/ldap.h: ldap.h
-lib/torture/torture.h: torture.h
+../lib/torture/torture.h: torture.h
 libcli/libcli.h: client.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/ntp_signd.h: gen_ndr/ntp_signd.h

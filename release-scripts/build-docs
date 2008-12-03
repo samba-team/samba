@@ -4,7 +4,7 @@ DOCSRCDIR=`dirname $0`/../docs-xml
 
 cd $DOCSRCDIR || exit 1
 
-git-clean -d -x -f
+git clean -d -x -f
 autoconf && \
 	./configure --with-papersize=letter && \
 	make smbdotconf/parameters.all.xml && \

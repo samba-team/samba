@@ -215,7 +215,10 @@ sub ParseInterface($$)
 
 	$self->pidl_hdr("#ifndef __CLI_$uif\__");
 	$self->pidl_hdr("#define __CLI_$uif\__");
-	$self->ParseFunction($if->{NAME}, $_) foreach (@{$if->{FUNCTIONS}});
+	foreach (@{$if->{FUNCTIONS}}) {
+		next if ($_->{PROPERTIES}{noopnum});
+		$self->ParseFunction($if->{NAME}, $_);
+	}
 	$self->pidl_hdr("#endif /* __CLI_$uif\__ */");
 }
 

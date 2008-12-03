@@ -278,8 +278,8 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 				       struct eventlog_OpenUnknown0 *unknown0 /* [in] [unique] */,
 				       struct lsa_String *logname /* [in] [ref] */,
 				       struct lsa_String *servername /* [in] [ref] */,
-				       uint32_t unknown2 /* [in]  */,
-				       uint32_t unknown3 /* [in]  */,
+				       uint32_t major_version /* [in]  */,
+				       uint32_t minor_version /* [in]  */,
 				       struct policy_handle *handle /* [out] [ref] */)
 {
 	struct eventlog_OpenEventLogW r;
@@ -289,8 +289,8 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 	r.in.unknown0 = unknown0;
 	r.in.logname = logname;
 	r.in.servername = servername;
-	r.in.unknown2 = unknown2;
-	r.in.unknown3 = unknown3;
+	r.in.major_version = major_version;
+	r.in.minor_version = minor_version;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);

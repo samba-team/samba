@@ -27,7 +27,7 @@ import ldb
 from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
 from samba import Ldb, substitute_var
 from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
-import samba.dcerpc.security
+import samba.dcerpc.dom_sid
 import samba.security
 import samba.ndr
 
@@ -50,7 +50,7 @@ class MapBaseTestCase(TestCaseInTempDir):
                  "@TO": "sambaDomainName=TESTS," + s3.basedn})
 
         ldb.add({"dn": "@MODULES",
-                 "@LIST": "rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
+                 "@LIST": "rootdse,paged_results,server_sort,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
 
         ldb.add({"dn": "@PARTITION",
             "partition": ["%s:%s" % (s4.basedn, s4.url), 
@@ -116,7 +116,7 @@ class MapBaseTestCase(TestCaseInTempDir):
         super(MapBaseTestCase, self).tearDown()
 
     def assertSidEquals(self, text, ndr_sid):
-        sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.security.dom_sid, 
+        sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.dom_sid.dom_sid,
                                         str(ndr_sid[0]))
         sid_obj2 = samba.security.Sid(text)
         # For now, this is the only way we can compare these since the 

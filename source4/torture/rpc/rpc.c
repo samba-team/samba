@@ -395,6 +395,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "SAMR", torture_rpc_samr);
 	torture_suite_add_simple_test(suite, "SAMR-USERS", torture_rpc_samr_users);
 	torture_suite_add_simple_test(suite, "SAMR-PASSWORDS", torture_rpc_samr_passwords);
+	torture_suite_add_simple_test(suite, "SAMR-PASSWORDS-PWDLASTSET", torture_rpc_samr_passwords_pwdlastset);
 	torture_suite_add_suite(suite, torture_rpc_netlogon(suite));
 	torture_suite_add_suite(suite, torture_rpc_remote_pac(suite));
 	torture_suite_add_simple_test(suite, "SAMLOGON", torture_rpc_samlogon);
@@ -438,6 +439,7 @@ NTSTATUS torture_rpc_init(void)
 	torture_suite_add_simple_test(suite, "DSSYNC", torture_rpc_dssync);
 	torture_suite_add_simple_test(suite, "BENCH-RPC", torture_bench_rpc);
 	torture_suite_add_simple_test(suite, "ASYNCBIND", torture_async_bind);
+	torture_suite_add_suite(suite, torture_rpc_ntsvcs(suite));
 
 	suite->description = talloc_strdup(suite, "DCE/RPC protocol and interface tests");
 

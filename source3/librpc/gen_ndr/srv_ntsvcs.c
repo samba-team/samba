@@ -782,13 +782,13 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
+	r->out.length = r->in.length;
 	r->out.buffer = talloc_zero_array(r, uint16_t, *r->out.length);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.length = r->in.length;
 	r->out.result = _PNP_GetDeviceList(p, r);
 
 	if (p->rng_fault_state) {
@@ -1017,14 +1017,14 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.reg_data_type = r->in.reg_data_type;
+	r->out.buffer_size = r->in.buffer_size;
+	r->out.needed = r->in.needed;
 	r->out.buffer = talloc_zero_array(r, uint8_t, *r->out.buffer_size);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.buffer_size = r->in.buffer_size;
-	r->out.needed = r->in.needed;
 	r->out.result = _PNP_GetDeviceRegProp(p, r);
 
 	if (p->rng_fault_state) {
@@ -2997,8 +2997,8 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.unknown3 = r->in.unknown3;
-	r->out.unknown4 = r->in.unknown4;
+	r->out.profile_flags = r->in.profile_flags;
+	r->out.veto_type = r->in.veto_type;
 	r->out.unknown5a = talloc_zero(r, const char *);
 	if (r->out.unknown5a == NULL) {
 		talloc_free(r);

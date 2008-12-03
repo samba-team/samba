@@ -286,7 +286,7 @@ _PUBLIC_ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	search = &sasl_mechs_msgs[0]->r.SearchResultEntry;
 	if (search->num_attributes != 1) {
-		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d\n",
+		DEBUG(1, ("Failed to inquire of target's available sasl mechs in rootdse search: wrong number of attributes: %d != 1\n",
 			  search->num_attributes));
 		goto failed;
 	}

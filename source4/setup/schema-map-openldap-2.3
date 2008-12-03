@@ -35,10 +35,10 @@ modifyTimeStamp:samba4ModifyTimestamp
 1.2.840.113556.1.4.906:1.3.6.1.4.1.1466.115.121.1.27
 #This case insensitive string isn't available
 1.2.840.113556.1.4.905:1.3.6.1.4.1.1466.115.121.1.44
-#This type of DN isn't in OpenLDAP
-1.2.840.113556.1.4.903:1.3.6.1.4.1.1466.115.121.1.12
 #Treat Security Descriptors as binary
 1.2.840.113556.1.4.907:1.3.6.1.4.1.1466.115.121.1.40
 #Treat OIDs as case insensitive strings (as otherwise ldap class and
 #attribute names, declared at OIDs fail 
 1.3.6.1.4.1.1466.115.121.1.38:1.3.6.1.4.1.1466.115.121.1.44
+#Treat Object(DN-Binary) as a binary blob
+1.2.840.113556.1.4.903:1.3.6.1.4.1.1466.115.121.1.40

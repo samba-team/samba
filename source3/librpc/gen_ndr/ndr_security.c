@@ -4,13 +4,14 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
-static enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r)
+#include "librpc/gen_ndr/ndr_dom_sid.h"
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r)
 {
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
@@ -33,13 +34,13 @@ _PUBLIC_ void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_type(struct ndr_push *ndr, int ndr_flags, enum security_ace_type r)
 {
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_type(struct ndr_pull *ndr, int ndr_flags, enum security_ace_type *r)
 {
 	uint8_t v;
 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &v));
@@ -278,7 +279,7 @@ _PUBLIC_ void ndr_print_security_ace_object(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, int ndr_flags, const union security_ace_object_ctr *r)
+_PUBLIC_ enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, int ndr_flags, const union security_ace_object_ctr *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
@@ -331,7 +332,7 @@ static enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, 
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr, int ndr_flags, union security_ace_object_ctr *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_security_ace_object_ctr(struct ndr_pull *ndr, int ndr_flags, union security_ace_object_ctr *r)
 {
 	int level;
 	level = ndr_pull_get_switch_value(ndr, r);
@@ -427,25 +428,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
 		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_BUFFERS, &r->trustee));
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, struct security_ace *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_security_ace_type(ndr, NDR_SCALARS, &r->type));
-		NDR_CHECK(ndr_pull_security_ace_flags(ndr, NDR_SCALARS, &r->flags));
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->access_mask));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, r->type));
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, &r->trustee));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
-		NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_BUFFERS, &r->trustee));
 	}
 	return NDR_ERR_SUCCESS;
 }

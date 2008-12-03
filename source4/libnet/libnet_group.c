@@ -518,6 +518,10 @@ static void continue_domain_queried(struct rpc_request *req)
 	s->group_list.in.max_size       = s->page_size;
 	s->group_list.in.resume_handle  = &s->resume_index;
 	s->group_list.out.resume_handle = &s->resume_index;
+	s->group_list.out.num_entries   = talloc(s, uint32_t);
+	if (composite_nomem(s->group_list.out.num_entries, c)) return;
+	s->group_list.out.sam           = talloc(s, struct samr_SamArray *);
+	if (composite_nomem(s->group_list.out.sam, c)) return;
 
 	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainGroups_send(s->ctx->samr.pipe, c, &s->group_list);
@@ -549,6 +553,10 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	s->group_list.in.max_size       = s->page_size;
 	s->group_list.in.resume_handle  = &s->resume_index;
 	s->group_list.out.resume_handle = &s->resume_index;
+	s->group_list.out.num_entries   = talloc(s, uint32_t);
+	if (composite_nomem(s->group_list.out.num_entries, c)) return;
+	s->group_list.out.sam           = talloc(s, struct samr_SamArray *);
+	if (composite_nomem(s->group_list.out.sam, c)) return;
 
 	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainGroups_send(s->ctx->samr.pipe, c, &s->group_list);
@@ -587,15 +595,15 @@ static void continue_groups_enumerated(struct rpc_request *req)
 		/* get enumerated accounts counter and resume handle (the latter allows
 		   making subsequent call to continue enumeration) */
 		s->resume_index = *s->group_list.out.resume_handle;
-		s->count        = s->group_list.out.num_entries;
+		s->count        = *s->group_list.out.num_entries;
 
 		/* prepare returned group accounts array */
-		s->groups       = talloc_array(c, struct grouplist, s->group_list.out.sam->count);
+		s->groups       = talloc_array(c, struct grouplist, (*s->group_list.out.sam)->count);
 		if (composite_nomem(s->groups, c)) return;
 
-		for (i = 0; i < s->group_list.out.sam->count; i++) {
+		for (i = 0; i < (*s->group_list.out.sam)->count; i++) {
 			struct dom_sid *group_sid;
-			struct samr_SamEntry *entry = &s->group_list.out.sam->entries[i];
+			struct samr_SamEntry *entry = &(*s->group_list.out.sam)->entries[i];
 			struct dom_sid *domain_sid = (*s->query_domain.out.info)->domain.sid;
 			
 			/* construct group sid from returned rid and queried domain sid */

@@ -1251,6 +1251,7 @@ char *procid_str_static(const struct server_id *pid);
 bool procid_valid(const struct server_id *pid);
 bool procid_is_local(const struct server_id *pid);
 int this_is_smp(void);
+bool trans_oob(uint32_t bufsize, uint32_t offset, uint32_t length);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_str_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);
@@ -1582,6 +1583,7 @@ bool validate_net_name( const char *name,
 		const char *invalid_chars,
 		int max_len);
 char *escape_shell_string(const char *src);
+char **str_list_make_v3(TALLOC_CTX *mem_ctx, const char *string, const char *sep);
 
 /* The following definitions come from lib/util_unistr.c  */
 
@@ -1919,10 +1921,10 @@ ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
 				TALLOC_CTX *mem_ctx,
 				char ***ous,
 				size_t *num_ous);
-bool ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx, 
-				  const char *extended_dn, 
-				  enum ads_extended_dn_flags flags, 
-				  DOM_SID *sid);
+ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
+					const char *extended_dn,
+					enum ads_extended_dn_flags flags,
+					DOM_SID *sid);
 char* ads_get_dnshostname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
 char* ads_get_samaccountname( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name );
@@ -4772,10 +4774,12 @@ bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
-WERROR clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
-							  uint32 level, struct current_user *user);
-WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level, 
-				  struct current_user *user, WERROR *perr);
+WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,
+			      NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+			      uint32 level);
+WERROR move_driver_to_download_area(struct pipes_struct *p,
+				    NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,
+				    uint32 level, WERROR *perr);
 int pack_devicemode(NT_DEVICEMODE *nt_devmode, uint8 *buf, int buflen);
 uint32 del_a_printer(const char *sharename);
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename);
@@ -4818,8 +4822,9 @@ WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level);
 bool printer_driver_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3 );
 bool printer_driver_files_in_use ( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info );
-WERROR delete_printer_driver( NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3, struct current_user *user,
-                              uint32 version, bool delete_files );
+WERROR delete_printer_driver(struct pipes_struct *rpc_pipe,
+			     NT_PRINTER_DRIVER_INFO_LEVEL_3 *info_3,
+			     uint32 version, bool delete_files );
 WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr);
 bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **secdesc_ctr);
 void map_printer_permissions(SEC_DESC *sd);
@@ -4865,7 +4870,7 @@ bool sysv_cache_reload(void);
 
 NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
-			uint16_t current_vuid, files_struct **result);
+			uint16_t current_vuid, files_struct *fsp);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
 /* The following definitions come from printing/printing.c  */
@@ -5295,7 +5300,6 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                          uint32 reg_type, uint32 access_mask,
                          POLICY_HND *reg_hnd);
-uint32 reg_init_regval_buffer( REGVAL_BUFFER *buf2, REGISTRY_VALUE *val );
 
 /* The following definitions come from rpc_client/cli_samr.c  */
 
@@ -5549,7 +5553,8 @@ void init_netr_SamInfo3(struct netr_SamInfo3 *r,
 			uint32_t sidcount,
 			struct netr_SidAttr *sids);
 NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
-				uint8_t pipe_session_key[16],
+				uint8_t *pipe_session_key,
+				size_t pipe_session_key_len,
 				struct netr_SamInfo3 *sam3);
 void init_netr_IdentityInfo(struct netr_IdentityInfo *r,
 			    const char *domain_name,
@@ -5595,7 +5600,7 @@ void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
 				     const char *domain_name,
 				     const char *primary,
 				     uint64_t sequence_num,
-				     uint32_t unknown2,
+				     enum samr_DomainServerState domain_server_state,
 				     enum samr_Role role,
 				     uint32_t unknown3,
 				     uint32_t num_users,
@@ -5615,7 +5620,7 @@ void init_samr_DomInfo8(struct samr_DomInfo8 *r,
 			uint64_t sequence_num,
 			NTTIME domain_create_time);
 void init_samr_DomInfo9(struct samr_DomInfo9 *r,
-			uint32_t unknown);
+                        enum samr_DomainServerState domain_server_state);
 void init_samr_DomInfo12(struct samr_DomInfo12 *r,
 			 uint64_t lockout_duration,
 			 uint64_t lockout_window,
@@ -5640,6 +5645,25 @@ void init_samr_alias_info1(struct samr_AliasInfoAll *r,
 			   const char *description);
 void init_samr_alias_info3(struct lsa_String *r,
 			   const char *description);
+void init_samr_user_info5(struct samr_UserInfo5 *r,
+			  const char *account_name,
+			  const char *full_name,
+			  uint32_t rid,
+			  uint32_t primary_gid,
+			  const char *home_directory,
+			  const char *home_drive,
+			  const char *logon_script,
+			  const char *profile_path,
+			  const char *description,
+			  const char *workstations,
+			  NTTIME last_logon,
+			  NTTIME last_logoff,
+			  struct samr_LogonHours logon_hours,
+			  uint16_t bad_password_count,
+			  uint16_t logon_count,
+			  NTTIME last_password_change,
+			  NTTIME acct_expiry,
+			  uint32_t acct_flags);
 void init_samr_user_info7(struct samr_UserInfo7 *r,
 			  const char *account_name);
 void init_samr_user_info9(struct samr_UserInfo9 *r,
@@ -5709,11 +5733,43 @@ void init_samr_user_info23(struct samr_UserInfo23 *r,
 			   uint8_t nt_password_set,
 			   uint8_t lm_password_set,
 			   uint8_t password_expired,
-			   uint8_t data[516],
-			   uint8_t pw_len);
+			   struct samr_CryptPassword *pwd_buf);
 void init_samr_user_info24(struct samr_UserInfo24 *r,
-			   uint8_t data[516],
-			   uint8_t pw_len);
+			   struct samr_CryptPassword *pwd_buf,
+			   uint8_t password_expired);
+void init_samr_user_info25(struct samr_UserInfo25 *r,
+			   NTTIME last_logon,
+			   NTTIME last_logoff,
+			   NTTIME last_password_change,
+			   NTTIME acct_expiry,
+			   NTTIME allow_password_change,
+			   NTTIME force_password_change,
+			   const char *account_name,
+			   const char *full_name,
+			   const char *home_directory,
+			   const char *home_drive,
+			   const char *logon_script,
+			   const char *profile_path,
+			   const char *description,
+			   const char *workstations,
+			   const char *comment,
+			   struct lsa_BinaryString *parameters,
+			   uint32_t rid,
+			   uint32_t primary_gid,
+			   uint32_t acct_flags,
+			   uint32_t fields_present,
+			   struct samr_LogonHours logon_hours,
+			   uint16_t bad_password_count,
+			   uint16_t logon_count,
+			   uint16_t country_code,
+			   uint16_t code_page,
+			   uint8_t nt_password_set,
+			   uint8_t lm_password_set,
+			   uint8_t password_expired,
+			   struct samr_CryptPasswordEx *pwd_buf);
+void init_samr_user_info26(struct samr_UserInfo26 *r,
+			   struct samr_CryptPasswordEx *pwd_buf,
+			   uint8_t password_expired);
 void init_samr_CryptPasswordEx(const char *pwd,
 			       DATA_BLOB *session_key,
 			       struct samr_CryptPasswordEx *pwd_buf);
@@ -5908,8 +5964,6 @@ void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len);
 void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf);
 void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len);
 bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
-void init_regval_buffer(REGVAL_BUFFER *str, const uint8 *buf, size_t len);
-bool smb_io_regval_buffer(const char *desc, prs_struct *ps, int depth, REGVAL_BUFFER *buf2);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
 void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len);
@@ -5972,8 +6026,6 @@ bool policy_handle_is_valid(const POLICY_HND *hnd);
 
 bool ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth);
 bool ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth);
-bool ntsvcs_io_q_get_device_reg_property(const char *desc, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, prs_struct *ps, int depth);
-bool ntsvcs_io_r_get_device_reg_property(const char *desc, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u, prs_struct *ps, int depth);
 
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
@@ -6029,7 +6081,6 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str);
-bool prs_regval_buffer(bool charmode, const char *name, prs_struct *ps, int depth, REGVAL_BUFFER *buf);
 bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STRING2 *str);
 bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
 bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth);
@@ -6822,7 +6873,6 @@ WERROR _PNP_GetVersion(pipes_struct *p,
 WERROR _PNP_GetDeviceListSize(pipes_struct *p,
 			      struct PNP_GetDeviceListSize *r);
 WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u );
-WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u );
 WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
 				   struct PNP_ValidateDeviceInstance *r);
 WERROR _PNP_GetHwProfInfo(pipes_struct *p,
@@ -6968,7 +7018,6 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p);
 bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 					uint32 *p_ss_padding_len, NTSTATUS *pstatus);
 bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss_padding_len);
-struct current_user *get_current_user(struct current_user *user, pipes_struct *p);
 void free_pipe_rpc_context( PIPE_RPC_FNS *list );
 bool api_pipe_request(pipes_struct *p);
 
@@ -6979,8 +7028,8 @@ pipes_struct *get_next_internal_pipe(pipes_struct *p);
 void init_rpc_pipe_hnd(void);
 
 bool fsp_is_np(struct files_struct *fsp);
-NTSTATUS np_open(struct smb_request *smb_req, struct connection_struct *conn,
-		 const char *name, struct files_struct **pfsp);
+NTSTATUS np_open(struct smb_request *smb_req, const char *name,
+		 struct files_struct **pfsp);
 NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		  ssize_t *nwritten);
 NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
@@ -7865,9 +7914,9 @@ void file_sync_all(connection_struct *conn);
 void file_free(struct smb_request *req, files_struct *fsp);
 files_struct *file_fnum(uint16 fnum);
 files_struct *file_fsp(struct smb_request *req, uint16 fid);
-NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *fsp,
+void dup_file_fsp(struct smb_request *req, files_struct *from,
 		      uint32 access_mask, uint32 share_access,
-		      uint32 create_options, files_struct **result);
+		      uint32 create_options, files_struct *to);
 
 /* The following definitions come from smbd/ipc.c  */
 
@@ -7962,7 +8011,8 @@ NTSTATUS create_conn_struct(TALLOC_CTX *ctx,
 				connection_struct **pconn,
 				int snum,
 				const char *path,
-			    char **poldcwd);
+				struct auth_serversupplied_info *server_info,
+				char **poldcwd);
 
 /* The following definitions come from smbd/negprot.c  */
 
@@ -7971,11 +8021,11 @@ void reply_negprot(struct smb_request *req);
 /* The following definitions come from smbd/notify.c  */
 
 void change_notify_reply(connection_struct *conn,
-			const uint8 *request_buf, uint32 max_param,
+			 struct smb_request *req, uint32 max_param,
 			 struct notify_change_buf *notify_buf);
 NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 			      bool recursive);
-NTSTATUS change_notify_add_request(const struct smb_request *req,
+NTSTATUS change_notify_add_request(struct smb_request *req,
 				uint32 max_param,
 				uint32 filter, bool recursive,
 				struct files_struct *fsp);
@@ -8176,6 +8226,7 @@ void reply_pipe_close(connection_struct *conn, struct smb_request *req);
 /* The following definitions come from smbd/posix_acls.c  */
 
 void create_file_sids(const SMB_STRUCT_STAT *psbuf, DOM_SID *powner_sid, DOM_SID *pgroup_sid);
+bool nt4_compatible_acls(void);
 NTSTATUS unpack_nt_owners(int snum, uid_t *puser, gid_t *pgrp, uint32 security_info_sent, const SEC_DESC *psd);
 SMB_ACL_T free_empty_sys_acl(connection_struct *conn, SMB_ACL_T the_acl);
 NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
@@ -8231,7 +8282,6 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
 void remove_from_common_flags2(uint32 v);
-void construct_reply_common(const char *inbuf, char *outbuf);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
 void chain_reply(struct smb_request *req);
 void check_reload(time_t t);
@@ -8424,10 +8474,6 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir);
 void load_registry_shares(void);
 int add_home_service(const char *service, const char *username, const char *homedir);
 int find_service(fstring service);
-connection_struct *make_connection_with_chdir(const char *service_in,
-					      DATA_BLOB password, 
-					      const char *dev, uint16 vuid,
-					      NTSTATUS *status);
 connection_struct *make_connection(const char *service_in, DATA_BLOB password, 
 				   const char *pdev, uint16 vuid,
 				   NTSTATUS *status);
@@ -8458,7 +8504,8 @@ bool user_ok_token(const char *username, const char *domain,
 		   struct nt_user_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  struct nt_user_token *token, int snum);
+				  struct nt_user_token *token,
+				  connection_struct *conn);
 
 /* The following definitions come from smbd/srvstr.c  */
 
@@ -8663,6 +8710,7 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domname,
 NTSTATUS idmap_new_mapping(const struct dom_sid *psid, enum id_type type,
 			   struct unixid *pxid);
 NTSTATUS idmap_set_mapping(const struct id_map *map);
+NTSTATUS idmap_remove_mapping(const struct id_map *map);
 
 /* The following definitions come from winbindd/idmap_cache.c  */
 

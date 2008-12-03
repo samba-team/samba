@@ -11,7 +11,7 @@ include mkconfig.mk
 pidldir := $(srcdir)/../pidl
 
 basedir = $(prefix)
-torturedir = $(libdir)/torture
+torturedir = ../lib/torture
 swatdir = $(datadir)/swat
 setupdir = $(datadir)/setup
 ncalrpcdir = $(localstatedir)/ncalrpc
@@ -78,7 +78,7 @@ libutilsrcdir := ../lib/util
 libtdrsrcdir := lib/tdr
 libdbwrapsrcdir := lib/dbwrap
 libcryptosrcdir := ../lib/crypto
-libtorturesrcdir := lib/torture
+libtorturesrcdir := ../lib/torture
 smb_serversrcdir := smb_server
 libcompressionsrcdir := ../lib/compression
 libgencachesrcdir := lib

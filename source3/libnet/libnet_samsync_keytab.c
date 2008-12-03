@@ -75,30 +75,28 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 				       enum netr_SamDatabaseID database_id,
 				       uint32_t rid,
 				       struct netr_DELTA_USER *r,
-				       bool last_query,
 				       struct libnet_keytab_context *ctx)
 {
-	struct libnet_keytab_entry entry;
+	NTSTATUS status;
+	uint32_t kvno = 0;
+	DATA_BLOB blob;
 
 	if (memcmp(r->ntpassword.hash, ctx->zero_buf, 16) == 0) {
 		return NT_STATUS_OK;
 	}
 
-	entry.name = talloc_strdup(mem_ctx, r->account_name.string);
-	entry.principal = talloc_asprintf(mem_ctx, "%s@%s",
-					  r->account_name.string,
-					  ctx->dns_domain_name);
-	entry.password = data_blob_talloc(mem_ctx, r->ntpassword.hash, 16);
-	entry.kvno = ads_get_kvno(ctx->ads, entry.name);
-	entry.enctype = ENCTYPE_NULL;
+	kvno = ads_get_kvno(ctx->ads, r->account_name.string);
+	blob = data_blob_const(r->ntpassword.hash, 16);
 
-	NT_STATUS_HAVE_NO_MEMORY(entry.name);
-	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
-	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
-
-
-	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
-		     &ctx->entries, &ctx->count);
+	status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx,
+						     kvno,
+						     r->account_name.string,
+						     NULL,
+						     ENCTYPE_ARCFOUR_HMAC,
+						     blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
@@ -106,25 +104,25 @@ static NTSTATUS fetch_sam_entry_keytab(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx)
+static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
+			    struct samsync_context *ctx,
+			    enum netr_SamDatabaseID database_id,
+			    uint64_t *sequence_num)
 {
-	NTSTATUS status = NT_STATUS_OK;
 	krb5_error_code ret = 0;
-	static struct libnet_keytab_context *keytab_ctx = NULL;
-	int i;
+	NTSTATUS status;
+	struct libnet_keytab_context *keytab_ctx;
+	struct libnet_keytab_entry *entry;
+	uint64_t old_sequence_num = 0;
+	const char *principal = NULL;
 
-	if (!keytab_ctx) {
-		ret = libnet_keytab_init(mem_ctx, ctx->output_filename,
-					 &keytab_ctx);
-		if (ret) {
-			status = krb5_to_nt_status(ret);
-			goto out;
-		}
+	ret = libnet_keytab_init(mem_ctx, ctx->output_filename, &keytab_ctx);
+	if (ret) {
+		return krb5_to_nt_status(ret);
 	}
+
+	keytab_ctx->clean_old_entries = ctx->clean_old_entries;
+	ctx->private_data = keytab_ctx;
 
 	status = keytab_ad_connect(mem_ctx,
 				   ctx->domain_name,
@@ -132,46 +130,137 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 				   ctx->password,
 				   keytab_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
+		TALLOC_FREE(keytab_ctx);
+		return status;
 	}
+
+	principal = talloc_asprintf(mem_ctx, "SEQUENCE_NUM@%s",
+				    keytab_ctx->dns_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
+
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, ENCTYPE_NULL,
+				     mem_ctx);
+	if (entry && (entry->password.length == 8)) {
+		old_sequence_num = BVAL(entry->password.data, 0);
+	}
+
+	if (sequence_num) {
+		*sequence_num = old_sequence_num;
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
+					 enum netr_SamDatabaseID database_id,
+					 struct netr_DELTA_ENUM_ARRAY *r,
+					 uint64_t *sequence_num,
+					 struct samsync_context *ctx)
+{
+	struct libnet_keytab_context *keytab_ctx =
+		(struct libnet_keytab_context *)ctx->private_data;
+
+	NTSTATUS status = NT_STATUS_OK;
+	int i;
 
 	for (i = 0; i < r->num_deltas; i++) {
 
-		if (r->delta_enum[i].delta_type != NETR_DELTA_USER) {
+		switch (r->delta_enum[i].delta_type) {
+		case NETR_DELTA_USER:
+			break;
+		case NETR_DELTA_DOMAIN:
+			if (sequence_num) {
+				*sequence_num =
+					r->delta_enum[i].delta_union.domain->sequence_num;
+			}
+			continue;
+		case NETR_DELTA_MODIFY_COUNT:
+			if (sequence_num) {
+				*sequence_num =
+					*r->delta_enum[i].delta_union.modified_count;
+			}
+			continue;
+		default:
 			continue;
 		}
 
 		status = fetch_sam_entry_keytab(mem_ctx, database_id,
 						r->delta_enum[i].delta_id_union.rid,
 						r->delta_enum[i].delta_union.user,
-						last_query,
 						keytab_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto out;
 		}
 	}
+ out:
+	return status;
+}
 
-	if (last_query) {
+/****************************************************************
+****************************************************************/
 
-		ret = libnet_keytab_add(keytab_ctx);
-		if (ret) {
-			status = krb5_to_nt_status(ret);
-			ctx->error_message = talloc_asprintf(mem_ctx,
-				"Failed to add entries to keytab %s: %s",
-				keytab_ctx->keytab_name, error_message(ret));
-			goto out;
-		}
+static NTSTATUS close_keytab(TALLOC_CTX *mem_ctx,
+			     struct samsync_context *ctx,
+			     enum netr_SamDatabaseID database_id,
+			     uint64_t sequence_num)
+{
+	struct libnet_keytab_context *keytab_ctx =
+		(struct libnet_keytab_context *)ctx->private_data;
+	krb5_error_code ret;
+	NTSTATUS status;
+	struct libnet_keytab_entry *entry;
+	uint64_t old_sequence_num = 0;
+	const char *principal = NULL;
 
-		ctx->result_message = talloc_asprintf(mem_ctx,
-			"Vampired %d accounts to keytab %s",
-			keytab_ctx->count,
-			keytab_ctx->keytab_name);
+	principal = talloc_asprintf(mem_ctx, "SEQUENCE_NUM@%s",
+				    keytab_ctx->dns_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(principal);
 
-		TALLOC_FREE(keytab_ctx);
+
+	entry = libnet_keytab_search(keytab_ctx, principal, 0, ENCTYPE_NULL,
+				     mem_ctx);
+	if (entry && (entry->password.length == 8)) {
+		old_sequence_num = BVAL(entry->password.data, 0);
 	}
 
-	return NT_STATUS_OK;
- out:
+
+	if (sequence_num > old_sequence_num) {
+		DATA_BLOB blob;
+		blob = data_blob_talloc_zero(mem_ctx, 8);
+		SBVAL(blob.data, 0, sequence_num);
+
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, keytab_ctx,
+							     0,
+							     "SEQUENCE_NUM",
+							     NULL,
+							     ENCTYPE_NULL,
+							     blob);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
+
+	ret = libnet_keytab_add(keytab_ctx);
+	if (ret) {
+		status = krb5_to_nt_status(ret);
+		ctx->error_message = talloc_asprintf(ctx,
+			"Failed to add entries to keytab %s: %s",
+			keytab_ctx->keytab_name, error_message(ret));
+		TALLOC_FREE(keytab_ctx);
+		return status;
+	}
+
+	ctx->result_message = talloc_asprintf(ctx,
+		"Vampired %d accounts to keytab %s",
+		keytab_ctx->count,
+		keytab_ctx->keytab_name);
+
+	status = NT_STATUS_OK;
+
+ done:
 	TALLOC_FREE(keytab_ctx);
 
 	return status;
@@ -179,13 +268,35 @@ NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
 
 #else
 
-NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
-				  enum netr_SamDatabaseID database_id,
-				  struct netr_DELTA_ENUM_ARRAY *r,
-				  bool last_query,
-				  struct samsync_context *ctx)
+static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
+			    struct samsync_context *ctx,
+			    enum netr_SamDatabaseID database_id,
+			    uint64_t *sequence_num)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS fetch_sam_entries_keytab(TALLOC_CTX *mem_ctx,
+					 enum netr_SamDatabaseID database_id,
+					 struct netr_DELTA_ENUM_ARRAY *r,
+					 uint64_t *sequence_num,
+					 struct samsync_context *ctx)
+{
+	return NT_STATUS_NOT_SUPPORTED;
+}
+
+static NTSTATUS close_keytab(TALLOC_CTX *mem_ctx,
+			     struct samsync_context *ctx,
+			     enum netr_SamDatabaseID database_id,
+			     uint64_t sequence_num)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
 #endif /* defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC) */
+
+const struct samsync_ops libnet_samsync_keytab_ops = {
+	.startup		= init_keytab,
+	.process_objects	= fetch_sam_entries_keytab,
+	.finish			= close_keytab
+};

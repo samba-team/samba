@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "system/locale.h"
 #include "torture/torture.h"
 #include "libcli/raw/libcliraw.h"
 #include "system/filesys.h"
@@ -40,6 +41,34 @@
 	if ((v) != (correct)) { \
 		printf("(%s) Incorrect value %s=%d - should be %d\n", \
 		       __location__, #v, (int)v, (int)correct); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_NTTIME(v, correct) do { \
+	if ((v) != (correct)) { \
+		printf("(%s) Incorrect value %s=%llu - should be %llu\n", \
+		       __location__, #v, (unsigned long long)v, \
+		       (unsigned long long)correct); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_STR(v, correct) do { \
+	bool ok; \
+	if ((v) && !(correct)) { \
+		ok = false; \
+	} else if (!(v) && (correct)) { \
+		ok = false; \
+	} else if (!(v) && !(correct)) { \
+		ok = true; \
+	} else if (strcmp((v), (correct)) == 0) { \
+		ok = true; \
+	} else { \
+		ok = false; \
+	} \
+	if (!ok) { \
+		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
+		       __location__, #v, (v)?(v):"NULL", \
+		       (correct)?(correct):"NULL"); \
 		ret = false; \
 	}} while (0)
 
@@ -236,11 +265,7 @@ static bool test_stream_dir(struct torture_context *tctx,
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = basedir_data;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
-	} else {
-		CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
-	}
+	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
 	printf("(%s) list the streams on the basedir\n", __location__);
 	ret &= check_stream_list(cli, BASEDIR, 0, NULL);
@@ -565,16 +590,12 @@ static bool test_stream_delete(struct torture_context *tctx,
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
 
-	if (!torture_setting_bool(tctx, "samba3", false)) {
-
-		/*
-		 * S3 doesn't do this yet
-		 */
-
-		finfo.generic.in.file.path = sname1;
-		status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
-		CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
-	}
+	/*
+	 * older S3 doesn't do this
+	 */
+	finfo.generic.in.file.path = sname1;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
 
 	/*
 	 * fd-based qfileinfo on the stream still works, the stream does not
@@ -587,7 +608,9 @@ static bool test_stream_delete(struct torture_context *tctx,
 
 	status = smb_raw_fileinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_OK);
+	/* w2k and w2k3 return 0 and w2k8 returns 1
 	CHECK_VALUE(finfo.all_info.out.delete_pending, 0);
+	*/
 
 	smbcli_close(cli->tree, fnum);
 
@@ -620,6 +643,378 @@ done:
 	return ret;
 }
 
+/*
+  test stream names
+*/
+static bool test_stream_names(struct torture_context *tctx,
+			      struct smbcli_state *cli,
+			      TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	union smb_fileinfo finfo;
+	union smb_fileinfo stinfo;
+	union smb_setfileinfo sinfo;
+	const char *fname = BASEDIR "\\stream_names.txt";
+	const char *sname1, *sname1b, *sname1c, *sname1d;
+	const char *sname2, *snamew, *snamew2;
+	const char *snamer1, *snamer2;
+	bool ret = true;
+	int fnum1 = -1;
+	int fnum2 = -1;
+	int fnum3 = -1;
+	int i;
+	const char *four[4] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
+	const char *five1[5] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":BeforeRename:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
+	const char *five2[5] = {
+		"::$DATA",
+		":\x05Stream\n One:$DATA",
+		":AfterRename:$DATA",
+		":MStream Two:$DATA",
+		":?Stream*:$DATA"
+	};
+
+	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "\x05Stream\n One");
+	sname1b = talloc_asprintf(mem_ctx, "%s:", sname1);
+	sname1c = talloc_asprintf(mem_ctx, "%s:$FOO", sname1);
+	sname1d = talloc_asprintf(mem_ctx, "%s:?D*a", sname1);
+	sname2 = talloc_asprintf(mem_ctx, "%s:%s:$DaTa", fname, "MStream Two");
+	snamew = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "?Stream*");
+	snamew2 = talloc_asprintf(mem_ctx, "%s\\stream*:%s:$DATA", BASEDIR, "?Stream*");
+	snamer1 = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "BeforeRename");
+	snamer2 = talloc_asprintf(mem_ctx, "%s:%s:$DATA", fname, "AfterRename");
+
+	printf("(%s) testing stream names\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = sname1;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * A different stream does not give a sharing violation
+	 */
+
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * ... whereas the same stream does with unchanged access/share_access
+	 * flags
+	 */
+
+	io.ntcreatex.in.fname = sname1;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_SUPERSEDE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	io.ntcreatex.in.fname = sname1b;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	io.ntcreatex.in.fname = sname1c;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/* w2k returns INVALID_PARAMETER */
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	}
+
+	io.ntcreatex.in.fname = sname1d;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+		/* w2k returns INVALID_PARAMETER */
+		CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+	} else {
+		CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+	}
+
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
+
+	io.ntcreatex.in.fname = snamew;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum3 = io.ntcreatex.out.file.fnum;
+
+	io.ntcreatex.in.fname = snamew2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	ret &= check_stream_list(cli, fname, 4, four);
+
+	smbcli_close(cli->tree, fnum1);
+	smbcli_close(cli->tree, fnum2);
+	smbcli_close(cli->tree, fnum3);
+
+	if (torture_setting_bool(tctx, "samba4", true)) {
+		goto done;
+	}
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.generic.in.file.path = fname;
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret &= check_stream_list(cli, fname, 4, four);
+
+	for (i=0; i < 4; i++) {
+		NTTIME write_time;
+		uint64_t stream_size;
+		char *path = talloc_asprintf(tctx, "%s%s",
+					     fname, four[i]);
+
+		char *rpath = talloc_strdup(path, path);
+		char *p = strrchr(rpath, ':');
+		/* eat :$DATA */
+		*p = 0;
+		p--;
+		if (*p == ':') {
+			/* eat ::$DATA */
+			*p = 0;
+		}
+		printf("(%s): i[%u][%s]\n", __location__, i, path);
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE |
+					      SEC_FILE_WRITE_ATTRIBUTE |
+					    SEC_RIGHTS_FILE_ALL;
+		io.ntcreatex.in.fname = path;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		fnum1 = io.ntcreatex.out.file.fnum;
+
+		finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+		finfo.generic.in.file.path = fname;
+		status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		stinfo.generic.level = RAW_FILEINFO_ALL_INFO;
+		stinfo.generic.in.file.fnum = fnum1;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &stinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			CHECK_NTTIME(stinfo.all_info.out.create_time,
+				     finfo.all_info.out.create_time);
+			CHECK_NTTIME(stinfo.all_info.out.access_time,
+				     finfo.all_info.out.access_time);
+			CHECK_NTTIME(stinfo.all_info.out.write_time,
+				     finfo.all_info.out.write_time);
+			CHECK_NTTIME(stinfo.all_info.out.change_time,
+				     finfo.all_info.out.change_time);
+		}
+		CHECK_VALUE(stinfo.all_info.out.attrib,
+			    finfo.all_info.out.attrib);
+		CHECK_VALUE(stinfo.all_info.out.size,
+			    finfo.all_info.out.size);
+		CHECK_VALUE(stinfo.all_info.out.delete_pending,
+			    finfo.all_info.out.delete_pending);
+		CHECK_VALUE(stinfo.all_info.out.directory,
+			    finfo.all_info.out.directory);
+		CHECK_VALUE(stinfo.all_info.out.ea_size,
+			    finfo.all_info.out.ea_size);
+
+		stinfo.generic.level = RAW_FILEINFO_NAME_INFO;
+		stinfo.generic.in.file.fnum = fnum1;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &stinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			CHECK_STR(rpath, stinfo.name_info.out.fname.s);
+		}
+
+		write_time = finfo.all_info.out.write_time;
+		write_time += i*1000000;
+		write_time /= 1000000;
+		write_time *= 1000000;
+
+		ZERO_STRUCT(sinfo);
+		sinfo.basic_info.level = RAW_SFILEINFO_BASIC_INFO;
+		sinfo.basic_info.in.file.fnum = fnum1;
+		sinfo.basic_info.in.write_time = write_time;
+		sinfo.basic_info.in.attrib = stinfo.all_info.out.attrib;
+		status = smb_raw_setfileinfo(cli->tree, &sinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		stream_size = i*8192;
+
+		ZERO_STRUCT(sinfo);
+		sinfo.end_of_file_info.level = RAW_SFILEINFO_END_OF_FILE_INFO;
+		sinfo.end_of_file_info.in.file.fnum = fnum1;
+		sinfo.end_of_file_info.in.size = stream_size;
+		status = smb_raw_setfileinfo(cli->tree, &sinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		stinfo.generic.level = RAW_FILEINFO_ALL_INFO;
+		stinfo.generic.in.file.fnum = fnum1;
+		status = smb_raw_fileinfo(cli->tree, mem_ctx, &stinfo);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (!torture_setting_bool(tctx, "samba3", false)) {
+			CHECK_NTTIME(stinfo.all_info.out.write_time,
+				     write_time);
+			CHECK_VALUE(stinfo.all_info.out.attrib,
+				    finfo.all_info.out.attrib);
+		}
+		CHECK_VALUE(stinfo.all_info.out.size,
+			    stream_size);
+		CHECK_VALUE(stinfo.all_info.out.delete_pending,
+			    finfo.all_info.out.delete_pending);
+		CHECK_VALUE(stinfo.all_info.out.directory,
+			    finfo.all_info.out.directory);
+		CHECK_VALUE(stinfo.all_info.out.ea_size,
+			    finfo.all_info.out.ea_size);
+
+		ret &= check_stream_list(cli, fname, 4, four);
+
+		smbcli_close(cli->tree, fnum1);
+		talloc_free(path);
+	}
+
+	printf("(%s): testing stream renames\n", __location__);
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE |
+				      SEC_FILE_WRITE_ATTRIBUTE |
+				    SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.fname = snamer1;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	ret &= check_stream_list(cli, fname, 5, five1);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":AfterRename:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = false;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum1;
+	sinfo.rename_information.in.overwrite = true;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = ":MStream Two:$DATA";
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	ret &= check_stream_list(cli, fname, 5, five2);
+
+	/* TODO: we need to test more rename combinations */
+
+done:
+	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
+	if (fnum2 != -1) smbcli_close(cli->tree, fnum2);
+	if (fnum3 != -1) smbcli_close(cli->tree, fnum3);
+	status = smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
+/*
+  test stream names
+*/
+static bool test_stream_names2(struct torture_context *tctx,
+			       struct smbcli_state *cli,
+			       TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream_names2.txt";
+	bool ret = true;
+	int fnum1 = -1;
+	uint8_t i;
+
+	printf("(%s) testing stream names\n", __location__);
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = SEC_FILE_WRITE_DATA;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum1 = io.ntcreatex.out.file.fnum;
+
+	for (i=0x01; i < 0x7F; i++) {
+		char *path = talloc_asprintf(tctx, "%s:Stream%c0x%02X:$DATA",
+					     fname, i, i);
+		NTSTATUS expected;
+
+		switch (i) {
+		case '/':/*0x2F*/
+		case ':':/*0x3A*/
+		case '\\':/*0x5C*/
+			expected = NT_STATUS_OBJECT_NAME_INVALID;
+			break;
+		default:
+			expected = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+			break;
+		}
+
+		printf("(%s) %s:Stream%c0x%02X:$DATA%s => expected[%s]\n",
+		       __location__, fname, isprint(i)?(char)i:' ', i,
+		       isprint(i)?"":" (not printable)",
+		       nt_errstr(expected));
+
+		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+		io.ntcreatex.in.fname = path;
+		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		CHECK_STATUS(status, expected);
+
+		talloc_free(path);
+	}
+
+done:
+	if (fnum1 != -1) smbcli_close(cli->tree, fnum1);
+	status = smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -637,6 +1032,10 @@ bool torture_raw_streams(struct torture_context *torture,
 	ret &= test_stream_io(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_sharemodes(torture, cli, torture);
+	smb_raw_exit(cli->session);
+	ret &= test_stream_names(torture, cli, torture);
+	smb_raw_exit(cli->session);
+	ret &= test_stream_names2(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	if (!torture_setting_bool(torture, "samba4", false)) {
 		ret &= test_stream_delete(torture, cli, torture);

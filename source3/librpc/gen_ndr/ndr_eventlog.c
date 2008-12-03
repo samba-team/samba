@@ -5,6 +5,31 @@
 
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "librpc/gen_ndr/ndr_security.h"
+static enum ndr_err_code ndr_push_eventlogReadFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_eventlogReadFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_eventlogReadFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "EVENTLOG_SEQUENTIAL_READ", EVENTLOG_SEQUENTIAL_READ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "EVENTLOG_SEEK_READ", EVENTLOG_SEEK_READ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "EVENTLOG_FORWARDS_READ", EVENTLOG_FORWARDS_READ, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "EVENTLOG_BACKWARDS_READ", EVENTLOG_BACKWARDS_READ, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_eventlog_OpenUnknown0(struct ndr_push *ndr, int ndr_flags, const struct eventlog_OpenUnknown0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -635,8 +660,8 @@ static enum ndr_err_code ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, i
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown3));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.major_version));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.minor_version));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -684,8 +709,8 @@ static enum ndr_err_code ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown3));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.major_version));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.minor_version));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -726,8 +751,8 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_lsa_String(ndr, "servername", r->in.servername);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
-		ndr_print_uint32(ndr, "unknown3", r->in.unknown3);
+		ndr_print_uint32(ndr, "major_version", r->in.major_version);
+		ndr_print_uint32(ndr, "minor_version", r->in.minor_version);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -832,7 +857,7 @@ static enum ndr_err_code ndr_push_eventlog_ReadEventLogW(struct ndr_push *ndr, i
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
+		NDR_CHECK(ndr_push_eventlogReadFlags(ndr, NDR_SCALARS, r->in.flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offset));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.number_of_bytes));
 	}
@@ -870,7 +895,7 @@ static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, i
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_CHECK(ndr_pull_eventlogReadFlags(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.number_of_bytes));
 		if (r->in.number_of_bytes < 0 || r->in.number_of_bytes > 0x7FFFF) {
@@ -925,7 +950,7 @@ _PUBLIC_ void ndr_print_eventlog_ReadEventLogW(struct ndr_print *ndr, const char
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr_print_eventlogReadFlags(ndr, "flags", r->in.flags);
 		ndr_print_uint32(ndr, "offset", r->in.offset);
 		ndr_print_uint32(ndr, "number_of_bytes", r->in.number_of_bytes);
 		ndr->depth--;

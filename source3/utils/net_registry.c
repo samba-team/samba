@@ -339,6 +339,10 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 		value.type = REG_SZ;
 		value.v.sz.len = strlen(argv[3])+1;
 		value.v.sz.str = CONST_DISCARD(char *, argv[3]);
+	} else if (strequal(argv[2], "multi_sz")) {
+		value.type = REG_MULTI_SZ;
+		value.v.multi_sz.num_strings = argc - 3;
+		value.v.multi_sz.strings = (char **)(argv + 3);
 	} else {
 		d_fprintf(stderr, "type \"%s\" not implemented\n", argv[2]);
 		goto done;

@@ -607,3 +607,41 @@ const char *net_share_type_str(int num_type)
 		default: return "Unknown";
 	}
 }
+
+NTSTATUS net_scan_dc(struct net_context *c,
+		     struct cli_state *cli,
+		     struct net_dc_info *dc_info)
+{
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	struct rpc_pipe_client *dssetup_pipe = NULL;
+	union dssetup_DsRoleInfo info;
+	NTSTATUS status;
+
+	ZERO_STRUCTP(dc_info);
+
+	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_dssetup.syntax_id,
+					  &dssetup_pipe);
+        if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(dssetup_pipe, mem_ctx,
+								  DS_ROLE_BASIC_INFORMATION,
+								  &info,
+								  NULL);
+	TALLOC_FREE(dssetup_pipe);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	dc_info->is_dc	= (info.basic.role & (DS_ROLE_PRIMARY_DC|DS_ROLE_BACKUP_DC));
+	dc_info->is_pdc	= (info.basic.role & DS_ROLE_PRIMARY_DC);
+	dc_info->is_ad	= (info.basic.flags & DS_ROLE_PRIMARY_DS_RUNNING);
+	dc_info->is_mixed_mode = (info.basic.flags & DS_ROLE_PRIMARY_DS_MIXED_MODE);
+	dc_info->netbios_domain_name = talloc_strdup(mem_ctx, info.basic.domain);
+	dc_info->dns_domain_name = talloc_strdup(mem_ctx, info.basic.dns_domain);
+	dc_info->forest_name = talloc_strdup(mem_ctx, info.basic.forest);
+
+	return NT_STATUS_OK;
+}

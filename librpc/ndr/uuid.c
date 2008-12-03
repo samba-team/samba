@@ -23,33 +23,66 @@
 
 #include "includes.h"
 #include "librpc/ndr/libndr.h"
+#include "librpc/gen_ndr/ndr_misc.h"
 
 /**
   build a GUID from a string
 */
-_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+_PUBLIC_ NTSTATUS GUID_from_data_blob(const DATA_BLOB *s, struct GUID *guid)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	uint32_t time_low;
 	uint32_t time_mid, time_hi_and_version;
 	uint32_t clock_seq[2];
 	uint32_t node[6];
+	uint8_t buf16[16];
+	DATA_BLOB blob16 = data_blob_const(buf16, sizeof(buf16));
 	int i;
 
-	if (s == NULL) {
+	if (s->data == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (11 == sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+	if (s->length == 36 && 
+	    11 == sscanf((const char *)s->data, 
+			 "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 			 &time_low, &time_mid, &time_hi_and_version, 
 			 &clock_seq[0], &clock_seq[1],
 			 &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 	        status = NT_STATUS_OK;
-	} else if (11 == sscanf(s, "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-				&time_low, &time_mid, &time_hi_and_version, 
-				&clock_seq[0], &clock_seq[1],
-				&node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
+	} else if (s->length == 38
+		   && 11 == sscanf((const char *)s->data, 
+				   "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+				   &time_low, &time_mid, &time_hi_and_version, 
+				   &clock_seq[0], &clock_seq[1],
+				   &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
 		status = NT_STATUS_OK;
+	} else if (s->length == 32) {
+		size_t rlen = strhex_to_str((char *)blob16.data, blob16.length,
+					    (const char *)s->data, s->length);
+		if (rlen == blob16.length) {
+			/* goto the ndr_pull_struct_blob() path */
+			status = NT_STATUS_OK;
+			s = &blob16;
+		}
+	}
+
+	if (s->length == 16) {
+		enum ndr_err_code ndr_err;
+		struct GUID guid2;
+		TALLOC_CTX *mem_ctx;
+
+		mem_ctx = talloc_new(NULL);
+		NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
+		ndr_err = ndr_pull_struct_blob(s, mem_ctx, NULL, &guid2,
+					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+		talloc_free(mem_ctx);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		*guid = guid2;
+		return NT_STATUS_OK;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -65,6 +98,16 @@ _PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
 		guid->node[i] = node[i];
 	}
 
+	return NT_STATUS_OK;
+}
+
+/**
+  build a GUID from a string
+*/
+_PUBLIC_ NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+{
+	DATA_BLOB blob = data_blob_string_const(s);
+	return GUID_from_data_blob(&blob, guid);
 	return NT_STATUS_OK;
 }
 
@@ -205,6 +248,31 @@ _PUBLIC_ char *GUID_string2(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 	char *ret, *s = GUID_string(mem_ctx, guid);
 	ret = talloc_asprintf(mem_ctx, "{%s}", s);
 	talloc_free(s);
+	return ret;
+}
+
+_PUBLIC_ char *GUID_hexstring(TALLOC_CTX *mem_ctx, const struct GUID *guid)
+{
+	char *ret;
+	DATA_BLOB guid_blob;
+	enum ndr_err_code ndr_err;
+	TALLOC_CTX *tmp_mem;
+
+	tmp_mem = talloc_new(mem_ctx);
+	if (!tmp_mem) {
+		return NULL;
+	}
+	ndr_err = ndr_push_struct_blob(&guid_blob, tmp_mem,
+				       NULL,
+				       guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(tmp_mem);
+		return NULL;
+	}
+
+	ret = data_blob_hex_string(mem_ctx, &guid_blob);
+	talloc_free(tmp_mem);
 	return ret;
 }
 

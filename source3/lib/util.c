@@ -1497,7 +1497,7 @@ uid_t nametouid(const char *name)
 	char *p;
 	uid_t u;
 
-	pass = getpwnam_alloc(NULL, name);
+	pass = getpwnam_alloc(talloc_autofree_context(), name);
 	if (pass) {
 		u = pass->pw_uid;
 		TALLOC_FREE(pass);
@@ -2255,8 +2255,8 @@ char *myhostname(void)
 	static char *ret;
 	if (ret == NULL) {
 		/* This is cached forever so
-		 * use NULL talloc ctx. */
-		ret = talloc_get_myname(NULL);
+		 * use talloc_autofree_context() ctx. */
+		ret = talloc_get_myname(talloc_autofree_context());
 	}
 	return ret;
 }
@@ -2876,6 +2876,25 @@ int this_is_smp(void)
 #else
 	return 0;
 #endif
+}
+
+/****************************************************************
+ Check if offset/length fit into bufsize. Should probably be
+ merged with is_offset_safe, but this would require a rewrite
+ of lanman.c. Later :-)
+****************************************************************/
+
+bool trans_oob(uint32_t bufsize, uint32_t offset, uint32_t length)
+{
+	if ((offset + length < offset) || (offset + length < length)) {
+		/* wrap */
+		return true;
+	}
+	if ((offset > bufsize) || (offset + length > bufsize)) {
+		/* overflow */
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************

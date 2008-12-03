@@ -161,7 +161,7 @@ static void display_sam_dom_info_2(struct samr_DomGeneralInformation *general)
 	printf("Force Logoff:\t%d\n",
 		(int)nt_time_to_unix_abs(&general->force_logoff_time));
 
-	printf("Unknown 2:\t0x%x\n", general->unknown2);
+	printf("Domain Server State:\t0x%x\n", general->domain_server_state);
 	printf("Server Role:\t%s\n", server_role_str(general->role));
 	printf("Unknown 3:\t0x%x\n", general->unknown3);
 }
@@ -201,7 +201,7 @@ static void display_sam_dom_info_8(struct samr_DomInfo8 *info8)
 
 static void display_sam_dom_info_9(struct samr_DomInfo9 *info9)
 {
-	printf("unknown:\t%d (0x%08x)\n", info9->unknown, info9->unknown);
+	printf("Domain Server State:\t0x%x\n", info9->domain_server_state);
 }
 
 static void display_sam_dom_info_12(struct samr_DomInfo12 *info12)

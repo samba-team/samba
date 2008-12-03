@@ -74,7 +74,7 @@ void web_set_lang(const char *lang_string)
 	int lang_num, i;
 
 	/* build the lang list */
-	lang_list = str_list_make(talloc_tos(), lang_string, ", \t\r\n");
+	lang_list = str_list_make_v3(talloc_tos(), lang_string, ", \t\r\n");
 	if (!lang_list) return;
 	
 	/* sort the list by priority */

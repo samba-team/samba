@@ -32,8 +32,10 @@
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "param/param.h"
+#include "libcli/security/security.h"
 
 #define TEST_MACHINE_NAME "torturetest"
 
@@ -831,6 +833,538 @@ static bool test_DatabaseDeltas(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_DatabaseRedo(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct netr_DatabaseRedo r;
+	struct creds_CredentialState *creds;
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+	struct netr_ChangeLogEntry e;
+	struct dom_sid null_sid, *sid;
+	int i,d;
+
+	ZERO_STRUCT(null_sid);
+
+	sid = dom_sid_parse_talloc(tctx, "S-1-5-21-1111111111-2222222222-333333333-500");
+
+	{
+
+	struct {
+		uint32_t rid;
+		uint16_t flags;
+		uint8_t db_index;
+		uint8_t delta_type;
+		struct dom_sid sid;
+		const char *name;
+		NTSTATUS expected_error;
+		uint32_t expected_num_results;
+		uint8_t expected_delta_type_1;
+		uint8_t expected_delta_type_2;
+		const char *comment;
+	} changes[] = {
+
+		/* SAM_DATABASE_DOMAIN */
+
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_MODIFY_COUNT,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_SYNCHRONIZATION_REQUIRED,
+			.expected_num_results   = 0,
+			.comment		= "NETR_DELTA_MODIFY_COUNT"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= 0,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results	= 1,
+			.expected_delta_type_1	= NETR_DELTA_DOMAIN,
+			.comment		= "NULL DELTA"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_DOMAIN,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results	= 1,
+			.expected_delta_type_1	= NETR_DELTA_DOMAIN,
+			.comment		= "NETR_DELTA_DOMAIN"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINISTRATOR,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_USER,
+			.comment		= "NETR_DELTA_USER by rid 500"
+		},
+		{
+			.rid			= DOMAIN_RID_GUEST,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_USER,
+			.comment		= "NETR_DELTA_USER by rid 501"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= *sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_USER,
+			.comment		= "NETR_DELTA_USER by sid and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_USER,
+			.comment		= "NETR_DELTA_USER by null_sid and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_NAME_INCLUDED,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= "administrator",
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_USER,
+			.comment		= "NETR_DELTA_USER by name 'administrator'"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINS,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_GROUP,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 2,
+			.expected_delta_type_1	= NETR_DELTA_GROUP,
+			.expected_delta_type_2	= NETR_DELTA_GROUP_MEMBER,
+			.comment		= "NETR_DELTA_GROUP by rid 512"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINS,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_DOMAIN,
+			.delta_type		= NETR_DELTA_GROUP_MEMBER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 2,
+			.expected_delta_type_1	= NETR_DELTA_GROUP,
+			.expected_delta_type_2	= NETR_DELTA_GROUP_MEMBER,
+			.comment		= "NETR_DELTA_GROUP_MEMBER by rid 512"
+		},
+
+
+		/* SAM_DATABASE_BUILTIN */
+
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_MODIFY_COUNT,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_SYNCHRONIZATION_REQUIRED,
+			.expected_num_results   = 0,
+			.comment		= "NETR_DELTA_MODIFY_COUNT"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_DOMAIN,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DOMAIN,
+			.comment		= "NETR_DELTA_DOMAIN"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINISTRATOR,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_USER,
+			.comment		= "NETR_DELTA_USER by rid 500"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_USER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_USER,
+			.comment		= "NETR_DELTA_USER"
+		},
+		{
+			.rid			= 544,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_ALIAS,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 2,
+			.expected_delta_type_1	= NETR_DELTA_ALIAS,
+			.expected_delta_type_2	= NETR_DELTA_ALIAS_MEMBER,
+			.comment		= "NETR_DELTA_ALIAS by rid 544"
+		},
+		{
+			.rid			= 544,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_ALIAS_MEMBER,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 2,
+			.expected_delta_type_1	= NETR_DELTA_ALIAS,
+			.expected_delta_type_2	= NETR_DELTA_ALIAS_MEMBER,
+			.comment		= "NETR_DELTA_ALIAS_MEMBER by rid 544"
+		},
+		{
+			.rid			= 544,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= 0,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DOMAIN,
+			.comment		= "NULL DELTA by rid 544"
+		},
+		{
+			.rid			= 544,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= 0,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-5-32-544"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DOMAIN,
+			.comment		= "NULL DELTA by rid 544 sid S-1-5-32-544 and flags"
+		},
+		{
+			.rid			= 544,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_ALIAS,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-5-32-544"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 2,
+			.expected_delta_type_1	= NETR_DELTA_ALIAS,
+			.expected_delta_type_2	= NETR_DELTA_ALIAS_MEMBER,
+			.comment		= "NETR_DELTA_ALIAS by rid 544 and sid S-1-5-32-544 and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_BUILTIN,
+			.delta_type		= NETR_DELTA_ALIAS,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-5-32-544"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_ALIAS,
+			.comment		= "NETR_DELTA_ALIAS by sid S-1-5-32-544 and flags"
+		},
+
+		/* SAM_DATABASE_PRIVS */
+
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= 0,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_ACCESS_DENIED,
+			.expected_num_results   = 0,
+			.comment		= "NULL DELTA"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_MODIFY_COUNT,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_SYNCHRONIZATION_REQUIRED,
+			.expected_num_results   = 0,
+			.comment		= "NETR_DELTA_MODIFY_COUNT"
+		},
+		{
+			.rid			= 0,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_POLICY,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_POLICY,
+			.comment		= "NETR_DELTA_POLICY"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_POLICY,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_POLICY,
+			.comment		= "NETR_DELTA_POLICY by null sid and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_POLICY,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-5-32"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_POLICY,
+			.comment		= "NETR_DELTA_POLICY by sid S-1-5-32 and flags"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINISTRATOR,
+			.flags			= 0,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_ACCOUNT,
+			.sid			= null_sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_SYNCHRONIZATION_REQUIRED, /* strange */
+			.expected_num_results   = 0,
+			.comment		= "NETR_DELTA_ACCOUNT by rid 500"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_ACCOUNT,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-1-0"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_ACCOUNT,
+			.comment		= "NETR_DELTA_ACCOUNT by sid S-1-1-0 and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED |
+						  NETR_CHANGELOG_IMMEDIATE_REPL_REQUIRED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_ACCOUNT,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-1-0"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_ACCOUNT,
+			.comment		= "NETR_DELTA_ACCOUNT by sid S-1-1-0 and 2 flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED |
+						  NETR_CHANGELOG_NAME_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_ACCOUNT,
+			.sid			= *dom_sid_parse_talloc(tctx, "S-1-1-0"),
+			.name			= NULL,
+			.expected_error		= NT_STATUS_INVALID_PARAMETER,
+			.expected_num_results   = 0,
+			.comment		= "NETR_DELTA_ACCOUNT by sid S-1-1-0 and invalid flags"
+		},
+		{
+			.rid			= DOMAIN_RID_ADMINISTRATOR,
+			.flags			= NETR_CHANGELOG_SID_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_ACCOUNT,
+			.sid			= *sid,
+			.name			= NULL,
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_ACCOUNT,
+			.comment		= "NETR_DELTA_ACCOUNT by rid 500, sid and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_NAME_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_SECRET,
+			.sid			= null_sid,
+			.name			= "IsurelydontexistIhope",
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_DELETE_SECRET,
+			.comment		= "NETR_DELTA_SECRET by name 'IsurelydontexistIhope' and flags"
+		},
+		{
+			.rid			= 0,
+			.flags			= NETR_CHANGELOG_NAME_INCLUDED,
+			.db_index		= SAM_DATABASE_PRIVS,
+			.delta_type		= NETR_DELTA_SECRET,
+			.sid			= null_sid,
+			.name			= "G$BCKUPKEY_P",
+			.expected_error		= NT_STATUS_OK,
+			.expected_num_results   = 1,
+			.expected_delta_type_1	= NETR_DELTA_SECRET,
+			.comment		= "NETR_DELTA_SECRET by name 'G$BCKUPKEY_P' and flags"
+		}
+	};
+
+	ZERO_STRUCT(return_authenticator);
+
+	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computername = TEST_MACHINE_NAME;
+	r.in.return_authenticator = &return_authenticator;
+	r.out.return_authenticator = &return_authenticator;
+	r.out.delta_enum_array = &delta_enum_array;
+
+	for (d=0; d<3; d++) {
+
+		const char *database;
+
+		switch (d) {
+		case 0:
+			database = "SAM";
+			break;
+		case 1:
+			database = "BUILTIN";
+			break;
+		case 2:
+			database = "LSA";
+			break;
+		default:
+			break;
+		}
+
+		torture_comment(tctx, "Testing DatabaseRedo\n");
+
+		if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+			return false;
+		}
+
+		for (i=0;i<ARRAY_SIZE(changes);i++) {
+
+			if (d != changes[i].db_index) {
+				continue;
+			}
+
+			creds_client_authenticator(creds, &credential);
+
+			r.in.credential = &credential;
+
+			e.serial_number1	= 0;
+			e.serial_number2	= 0;
+			e.object_rid		= changes[i].rid;
+			e.flags			= changes[i].flags;
+			e.db_index		= changes[i].db_index;
+			e.delta_type		= changes[i].delta_type;
+
+			switch (changes[i].flags & (NETR_CHANGELOG_NAME_INCLUDED | NETR_CHANGELOG_SID_INCLUDED)) {
+			case NETR_CHANGELOG_SID_INCLUDED:
+				e.object.object_sid		= changes[i].sid;
+				break;
+			case NETR_CHANGELOG_NAME_INCLUDED:
+				e.object.object_name		= changes[i].name;
+				break;
+			default:
+				break;
+			}
+
+			r.in.change_log_entry = e;
+
+			torture_comment(tctx, "Testing DatabaseRedo with database %s and %s\n",
+				database, changes[i].comment);
+
+			status = dcerpc_netr_DatabaseRedo(p, tctx, &r);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				return true;
+			}
+
+			torture_assert_ntstatus_equal(tctx, status, changes[i].expected_error, changes[i].comment);
+			if (delta_enum_array) {
+				torture_assert_int_equal(tctx,
+					delta_enum_array->num_deltas,
+					changes[i].expected_num_results,
+					changes[i].comment);
+				if (delta_enum_array->num_deltas > 0) {
+					torture_assert_int_equal(tctx,
+						delta_enum_array->delta_enum[0].delta_type,
+						changes[i].expected_delta_type_1,
+						changes[i].comment);
+				}
+				if (delta_enum_array->num_deltas > 1) {
+					torture_assert_int_equal(tctx,
+						delta_enum_array->delta_enum[1].delta_type,
+						changes[i].expected_delta_type_2,
+						changes[i].comment);
+				}
+			}
+
+			if (!creds_client_check(creds, &return_authenticator.cred)) {
+				torture_comment(tctx, "Credential chaining failed\n");
+				if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+					return false;
+				}
+			}
+		}
+	}
+	}
+
+	return true;
+}
 
 /*
   try a netlogon AccountDeltas
@@ -1761,6 +2295,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test_creds(tcase, "GetDomainInfo", test_GetDomainInfo);
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseSync", test_DatabaseSync);
 	torture_rpc_tcase_add_test_creds(tcase, "DatabaseDeltas", test_DatabaseDeltas);
+	torture_rpc_tcase_add_test_creds(tcase, "DatabaseRedo", test_DatabaseRedo);
 	torture_rpc_tcase_add_test_creds(tcase, "AccountDeltas", test_AccountDeltas);
 	torture_rpc_tcase_add_test_creds(tcase, "AccountSync", test_AccountSync);
 	torture_rpc_tcase_add_test(tcase, "GetDcName", test_GetDcName);

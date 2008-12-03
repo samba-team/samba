@@ -35,29 +35,6 @@
 /* Event types */
 /* defined in librpc/gen_ndr/eventlog.h */
 
-/* Defines for TDB keys */
-#define  EVT_OLDEST_ENTRY  "INFO/oldest_entry"
-#define  EVT_NEXT_RECORD   "INFO/next_record"
-#define  EVT_VERSION       "INFO/version"
-#define  EVT_MAXSIZE       "INFO/maxsize"
-#define  EVT_RETENTION     "INFO/retention"
-
-#define ELOG_APPL	"Application"
-#define ELOG_SYS	"System"
-#define ELOG_SEC	"Security"
-
-typedef struct elog_tdb {
-	struct elog_tdb *prev, *next;
-	char *name;
-	TDB_CONTEXT *tdb;
-	int ref_count;
-} ELOG_TDB;
-
-#define ELOG_TDB_CTX(x) ((x)->tdb)
-
-
-#define  EVENTLOG_DATABASE_VERSION_V1    1
-
 /***********************************/
 
 typedef struct 

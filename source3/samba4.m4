@@ -47,7 +47,7 @@ SMB_INCLUDE_MK(lib/zlib.mk)
 AC_CONFIG_FILES(../source4/lib/registry/registry.pc)
 AC_CONFIG_FILES(../source4/librpc/dcerpc.pc)
 AC_CONFIG_FILES(../librpc/ndr.pc)
-AC_CONFIG_FILES(../source4/lib/torture/torture.pc)
+AC_CONFIG_FILES(../lib/torture/torture.pc)
 AC_CONFIG_FILES(../source4/auth/gensec/gensec.pc)
 AC_CONFIG_FILES(../source4/param/samba-hostconfig.pc)
 AC_CONFIG_FILES(../source4/librpc/dcerpc_samr.pc)
@@ -131,6 +131,7 @@ builddir="$builddir/../source4"
 oldsrcdir="$srcdir"
 srcdir="$srcdir/../source4"
 AC_SUBST(srcdir)
+AC_SUBST(builddir)
 SMB_WRITE_PERLVARS(../source4/build/smb_build/config.pm)
 builddir="$oldbuilddir"
 srcdir="$oldsrcdir"

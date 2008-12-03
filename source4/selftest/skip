@@ -23,6 +23,7 @@ base.scan.maxfid
 raw.hold.oplock		# Not a test, but a way to block other clients for a test
 raw.ping.pong		# Needs second server to test
 rpc.samr_accessmask
+samba4.rpc.samr.passwords.pwdlastset # Not provided by Samba 4 yet
 raw.scan.eamax
 samba4.ntvfs.cifs.raw.qfileinfo.ipc
 smb2.notify
@@ -49,6 +50,7 @@ rpc.initshutdown					# Not provided by Samba 4
 rpc.svcctl							# Not provided by Samba 4
 rpc.atsvc							# Not provided by Samba 4
 rpc.frsapi							# Not provided by Samba 4
+rpc.ntsvcs							# Not provided by Samba 4
 ^samba4.base.samba3.*						# Samba3-specific test
 ^samba4.ntvfs.cifs.base.samba3.*				# Samba3-specific test
 ^samba4.raw.samba3.*						# Samba3-specific test

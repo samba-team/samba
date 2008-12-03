@@ -163,7 +163,6 @@ static void display_rename_alias(uint32_t rid, struct netr_DELTA_RENAME *r)
 static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 				  enum netr_SamDatabaseID database_id,
 				  struct netr_DELTA_ENUM *r,
-				  bool last_query,
 				  struct samsync_context *ctx)
 {
 	union netr_DELTA_UNION u = r->delta_union;
@@ -285,18 +284,22 @@ static NTSTATUS display_sam_entry(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
-			     enum netr_SamDatabaseID database_id,
-			     struct netr_DELTA_ENUM_ARRAY *r,
-			     bool last_query,
-			     struct samsync_context *ctx)
+static NTSTATUS display_sam_entries(TALLOC_CTX *mem_ctx,
+				    enum netr_SamDatabaseID database_id,
+				    struct netr_DELTA_ENUM_ARRAY *r,
+				    uint64_t *sequence_num,
+				    struct samsync_context *ctx)
 {
 	int i;
 
 	for (i = 0; i < r->num_deltas; i++) {
 		display_sam_entry(mem_ctx, database_id, &r->delta_enum[i],
-				  last_query, ctx);
+				  ctx);
 	}
 
 	return NT_STATUS_OK;
 }
+
+const struct samsync_ops libnet_samsync_display_ops = {
+	.process_objects	= display_sam_entries,
+};

@@ -53,10 +53,15 @@ struct host_state {
 */
 static int host_destructor(struct host_state *state)
 {
+	int status;
+
+	kill(state->child, SIGTERM);
 	close(state->child_fd);
-	if (state->child != (pid_t)-1) {
-		kill(state->child, SIGTERM);
+	if (waitpid(state->child, &status, WNOHANG) == 0) {
+		kill(state->child, SIGKILL);
+		waitpid(state->child, &status, 0);
 	}
+
 	return 0;
 }
 
@@ -90,16 +95,23 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	struct host_state *state = talloc_get_type(c->private_data, struct host_state);
 	char address[128];
 	int ret;
+	pid_t child = state->child;
+	int status;
 
 	/* if we get any event from the child then we know that we
 	   won't need to kill it off */
-	state->child = (pid_t)-1;
+	talloc_set_destructor(state, NULL);
 
 	/* yes, we don't care about EAGAIN or other niceities
 	   here. They just can't happen with this parent/child
 	   relationship, and even if they did then giving an error is
 	   the right thing to do */
 	ret = read(state->child_fd, address, sizeof(address)-1);
+	close(state->child_fd);
+	if (waitpid(state->child, &status, WNOHANG) == 0) {
+		kill(state->child, SIGKILL);
+		waitpid(state->child, &status, 0);
+	}
 	if (ret <= 0) {
 		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
@@ -163,10 +175,6 @@ struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 		close(fd[1]);
 		return c;
 	}
-
-	/* signal handling in posix really sucks - doing this in a library
-	   affects the whole app, but what else to do?? */
-	signal(SIGCHLD, SIG_IGN);
 
 	state->child = fork();
 	if (state->child == (pid_t)-1) {

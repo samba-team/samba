@@ -251,8 +251,8 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 
 	if (p && PTR_DIFF(p, s) == 36) { /* 36 is the length of a UUID */
 		NTSTATUS status;
-
-		status = GUID_from_string(s, &b->object.uuid);
+		DATA_BLOB blob = data_blob(s, 36);
+		status = GUID_from_data_blob(&blob, &b->object.uuid);
 
 		if (NT_STATUS_IS_ERR(status)) {
 			DEBUG(0, ("Failed parsing UUID\n"));

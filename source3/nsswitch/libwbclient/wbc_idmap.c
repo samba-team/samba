@@ -24,7 +24,7 @@
 
 #include "libwbclient.h"
 
-/** @brief Convert a Windows SID to a Unix uid
+/** @brief Convert a Windows SID to a Unix uid, allocating an uid if needed
  *
  * @param *sid        Pointer to the domain SID to be resolved
  * @param *puid       Pointer to the resolved uid_t value
@@ -71,7 +71,22 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 	return wbc_status;
 }
 
-/** @brief Convert a Unix uid to a Windows SID
+/** @brief Convert a Windows SID to a Unix uid if there already is a mapping
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *puid       Pointer to the resolved uid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
+			uid_t *puid)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
+/** @brief Convert a Unix uid to a Windows SID, allocating a SID if needed
  *
  * @param uid         Unix uid to be resolved
  * @param *sid        Pointer to the resolved domain SID
@@ -112,7 +127,22 @@ done:
 	return wbc_status;
 }
 
-/** @brief Convert a Windows SID to a Unix gid
+/** @brief Convert a Unix uid to a Windows SID if there already is a mapping
+ *
+ * @param uid         Unix uid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcQueryUidToSid(uid_t uid,
+			struct wbcDomainSid *sid)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
+/** @brief Convert a Windows SID to a Unix gid, allocating a gid if needed
  *
  * @param *sid        Pointer to the domain SID to be resolved
  * @param *pgid       Pointer to the resolved gid_t value
@@ -159,7 +189,22 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 	return wbc_status;
 }
 
-/** @brief Convert a Unix uid to a Windows SID
+/** @brief Convert a Windows SID to a Unix gid if there already is a mapping
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *pgid       Pointer to the resolved gid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
+			gid_t *pgid)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
+}
+
+/** @brief Convert a Unix gid to a Windows SID, allocating a SID if needed
  *
  * @param gid         Unix gid to be resolved
  * @param *sid        Pointer to the resolved domain SID
@@ -198,6 +243,21 @@ wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
 
 done:
 	return wbc_status;
+}
+
+/** @brief Convert a Unix gid to a Windows SID if there already is a mapping
+ *
+ * @param gid         Unix gid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
+
+wbcErr wbcQueryGidToSid(gid_t gid,
+			struct wbcDomainSid *sid)
+{
+	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /** @brief Obtain a new uid from Winbind
@@ -355,6 +415,92 @@ wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 	wbcFreeMemory(sid_string);
 
 	wbc_status = wbcRequestResponse(WINBINDD_SET_MAPPING,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Remove a user id mapping
+ *
+ * @param uid       Uid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *sid_string = NULL;
+
+	if (!sid) {
+		return WBC_ERR_INVALID_PARAM;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = uid;
+	request.data.dual_idmapset.type = _ID_TYPE_UID;
+
+	wbc_status = wbcSidToString(sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.dual_idmapset.sid, sid_string,
+		sizeof(request.data.dual_idmapset.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	wbc_status = wbcRequestResponse(WINBINDD_REMOVE_MAPPING,
+					&request, &response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+ done:
+	return wbc_status;
+}
+
+/** @brief Remove a group id mapping
+ *
+ * @param gid       Gid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *sid_string = NULL;
+
+	if (!sid) {
+		return WBC_ERR_INVALID_PARAM;
+	}
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Make request */
+
+	request.data.dual_idmapset.id = gid;
+	request.data.dual_idmapset.type = _ID_TYPE_GID;
+
+	wbc_status = wbcSidToString(sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.dual_idmapset.sid, sid_string,
+		sizeof(request.data.dual_idmapset.sid)-1);
+	wbcFreeMemory(sid_string);
+
+	wbc_status = wbcRequestResponse(WINBINDD_REMOVE_MAPPING,
 					&request, &response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 

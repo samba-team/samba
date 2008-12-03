@@ -24,39 +24,6 @@
 
 #if defined(HAVE_ADS) && defined(ENCTYPE_ARCFOUR_HMAC)
 
-/**
- * Internal helper function to add data to the list
- * of keytab entries. It builds the prefix from the input.
- */
-static NTSTATUS add_to_keytab_entries(TALLOC_CTX *mem_ctx,
-				      struct libnet_keytab_context *ctx,
-				      uint32_t kvno,
-				      const char *name,
-				      const char *prefix,
-				      const krb5_enctype enctype,
-				      DATA_BLOB blob)
-{
-	struct libnet_keytab_entry entry;
-
-	entry.kvno = kvno;
-	entry.name = talloc_strdup(mem_ctx, name);
-	entry.principal = talloc_asprintf(mem_ctx, "%s%s%s@%s",
-					  prefix ? prefix : "",
-					  prefix ? "/" : "",
-					  name, ctx->dns_domain_name);
-	entry.enctype = enctype;
-	entry.password = blob;
-	NT_STATUS_HAVE_NO_MEMORY(entry.name);
-	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
-	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
-
-	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
-		     &ctx->entries, &ctx->count);
-	NT_STATUS_HAVE_NO_MEMORY(ctx->entries);
-
-	return NT_STATUS_OK;
-}
-
 static NTSTATUS keytab_startup(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			       struct replUpToDateVectorBlob **pold_utdv)
 {
@@ -134,10 +101,10 @@ static NTSTATUS keytab_finish(struct dssync_context *ctx, TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		status = add_to_keytab_entries(mem_ctx, keytab_ctx, 0,
-					       ctx->nc_dn, "UTDV",
-					       ENCTYPE_NULL,
-					       blob);
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, keytab_ctx, 0,
+							     ctx->nc_dn, "UTDV",
+							     ENCTYPE_NULL,
+							     blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
@@ -391,11 +358,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name) {
-		status = add_to_keytab_entries(mem_ctx, ctx, 0, object_dn,
-					       "SAMACCOUNTNAME",
-					       ENCTYPE_NULL,
-					       data_blob_talloc(mem_ctx, name,
-							strlen(name) + 1));
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, 0, object_dn,
+							     "SAMACCOUNTNAME",
+							     ENCTYPE_NULL,
+							     data_blob_talloc(mem_ctx, name,
+							     strlen(name) + 1));
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -454,9 +421,9 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 	DEBUGADD(1,("\n"));
 
-	status = add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
-				       ENCTYPE_ARCFOUR_HMAC,
-				       data_blob_talloc(mem_ctx, nt_passwd, 16));
+	status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno, name, NULL,
+						     ENCTYPE_ARCFOUR_HMAC,
+						     data_blob_talloc(mem_ctx, nt_passwd, 16));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -469,11 +436,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			if (!pkb4->keys[i].value) {
 				continue;
 			}
-			status = add_to_keytab_entries(mem_ctx, ctx, kvno,
-						       name,
-						       NULL,
-						       pkb4->keys[i].keytype,
-						       *pkb4->keys[i].value);
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno,
+								     name,
+								     NULL,
+								     pkb4->keys[i].keytype,
+								     *pkb4->keys[i].value);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -482,11 +449,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			if (!pkb4->old_keys[i].value) {
 				continue;
 			}
-			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
-						       name,
-						       NULL,
-						       pkb4->old_keys[i].keytype,
-						       *pkb4->old_keys[i].value);
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
+								     name,
+								     NULL,
+								     pkb4->old_keys[i].keytype,
+								     *pkb4->old_keys[i].value);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -495,11 +462,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			if (!pkb4->older_keys[i].value) {
 				continue;
 			}
-			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 2,
-						       name,
-						       NULL,
-						       pkb4->older_keys[i].keytype,
-						       *pkb4->older_keys[i].value);
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno - 2,
+								     name,
+								     NULL,
+								     pkb4->older_keys[i].keytype,
+								     *pkb4->older_keys[i].value);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -511,10 +478,10 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			if (!pkb3->keys[i].value) {
 				continue;
 			}
-			status = add_to_keytab_entries(mem_ctx, ctx, kvno, name,
-						       NULL,
-						       pkb3->keys[i].keytype,
-						       *pkb3->keys[i].value);
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno, name,
+								     NULL,
+								     pkb3->keys[i].keytype,
+								     *pkb3->keys[i].value);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -523,11 +490,11 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 			if (!pkb3->old_keys[i].value) {
 				continue;
 			}
-			status = add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
-						       name,
-						       NULL,
-						       pkb3->old_keys[i].keytype,
-						       *pkb3->old_keys[i].value);
+			status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno - 1,
+								     name,
+								     NULL,
+								     pkb3->old_keys[i].keytype,
+								     *pkb3->old_keys[i].value);
 			if (!NT_STATUS_IS_OK(status)) {
 				return status;
 			}
@@ -549,9 +516,9 @@ static NTSTATUS parse_object(TALLOC_CTX *mem_ctx,
 	}
 
 	for (; i<pwd_history_len; i++) {
-		status = add_to_keytab_entries(mem_ctx, ctx, kvno--, name, NULL,
-				ENCTYPE_ARCFOUR_HMAC,
-				data_blob_talloc(mem_ctx, &pwd_history[i*16], 16));
+		status = libnet_keytab_add_to_keytab_entries(mem_ctx, ctx, kvno--, name, NULL,
+							     ENCTYPE_ARCFOUR_HMAC,
+							     data_blob_talloc(mem_ctx, &pwd_history[i*16], 16));
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
 		}

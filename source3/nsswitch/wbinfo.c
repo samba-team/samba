@@ -75,7 +75,7 @@ static char winbind_separator_int(bool strict)
 		/* HACK: (this module should not call lp_ funtions) */
 		sep = *lp_winbind_separator();
 	}
-	
+
 	return sep;
 }
 
@@ -126,6 +126,31 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
 	fstrcpy(domain, domuser);
 	domain[PTR_DIFF(p, domuser)] = 0;
 	strupper_m(domain);
+
+	return true;
+}
+
+/* Parse string of "uid,sid" or "gid,sid" into separate int and string values.
+ * Return true if input was valid, false otherwise. */
+static bool parse_mapping_arg(char *arg, int *id, char **sid)
+{
+	char *tmp, *endptr;
+
+	if (!arg || !*arg)
+		return false;
+
+	tmp = strtok(arg, ",");
+	*sid = strtok(NULL, ",");
+
+	if (!tmp || !*tmp || !*sid || !**sid)
+		return false;
+
+	/* Because atoi() can return 0 on invalid input, which would be a valid
+	 * UID/GID we must use strtol() and do error checking */
+	*id = strtol(tmp, &endptr, 10);
+
+	if (endptr[0] != '\0')
+		return false;
 
 	return true;
 }
@@ -734,6 +759,102 @@ static bool wbinfo_allocate_gid(void)
 	/* Display response */
 
 	d_printf("New gid: %d\n", gid);
+
+	return true;
+}
+
+static bool wbinfo_set_uid_mapping(uid_t uid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcSetUidMapping(uid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("uid %d now mapped to sid %s\n", uid, sid_str);
+
+	return true;
+}
+
+static bool wbinfo_set_gid_mapping(gid_t gid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcSetGidMapping(gid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("gid %d now mapped to sid %s\n", gid, sid_str);
+
+	return true;
+}
+
+static bool wbinfo_remove_uid_mapping(uid_t uid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcRemoveUidMapping(uid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("Removed uid %d to sid %s mapping\n", uid, sid_str);
+
+	return true;
+}
+
+static bool wbinfo_remove_gid_mapping(gid_t gid, const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct wbcDomainSid sid;
+
+	/* Send request */
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	wbc_status = wbcRemoveGidMapping(gid, &sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	/* Display response */
+
+	d_printf("Removed gid %d to sid %s mapping\n", gid, sid_str);
 
 	return true;
 }
@@ -1414,6 +1535,10 @@ enum {
 	OPT_USERSIDS,
 	OPT_ALLOCATE_UID,
 	OPT_ALLOCATE_GID,
+	OPT_SET_UID_MAPPING,
+	OPT_SET_GID_MAPPING,
+	OPT_REMOVE_UID_MAPPING,
+	OPT_REMOVE_GID_MAPPING,
 	OPT_SEPARATOR,
 	OPT_LIST_ALL_DOMAINS,
 	OPT_LIST_OWN_DOMAIN,
@@ -1431,8 +1556,10 @@ int main(int argc, char **argv, char **envp)
 	TALLOC_CTX *frame = talloc_stackframe();
 	poptContext pc;
 	static char *string_arg;
+	char *string_subarg = NULL;
 	static char *opt_domain_name;
 	static int int_arg;
+	int int_subarg = -1;
 	int result = 1;
 	bool verbose = false;
 
@@ -1459,6 +1586,10 @@ int main(int argc, char **argv, char **envp)
 		  "Get a new UID out of idmap" },
 		{ "allocate-gid", 0, POPT_ARG_NONE, 0, OPT_ALLOCATE_GID,
 		  "Get a new GID out of idmap" },
+		{ "set-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_SET_UID_MAPPING, "Create or modify uid to sid mapping in idmap", "UID,SID" },
+		{ "set-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_SET_GID_MAPPING, "Create or modify gid to sid mapping in idmap", "GID,SID" },
+		{ "remove-uid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_UID_MAPPING, "Remove uid to sid mapping in idmap", "UID,SID" },
+		{ "remove-gid-mapping", 0, POPT_ARG_STRING, &string_arg, OPT_REMOVE_GID_MAPPING, "Remove gid to sid mapping in idmap", "GID,SID" },
 		{ "check-secret", 't', POPT_ARG_NONE, 0, 't', "Check shared secret" },
 		{ "trusted-domains", 'm', POPT_ARG_NONE, 0, 'm', "List trusted domains" },
 		{ "all-domains", 0, POPT_ARG_NONE, 0, OPT_LIST_ALL_DOMAINS, "List all domains (trusted and own domain)" },
@@ -1473,7 +1604,7 @@ int main(int argc, char **argv, char **envp)
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
 		{ "user-sids", 0, POPT_ARG_STRING, &string_arg, OPT_USERSIDS, "Get user group sids for user SID", "SID" },
- 		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
+		{ "authenticate", 'a', POPT_ARG_STRING, &string_arg, 'a', "authenticate user", "user%password" },
 		{ "set-auth-user", 0, POPT_ARG_STRING, &string_arg, OPT_SET_AUTH_USER, "Store user and password used by winbindd (root only)", "user%password" },
 		{ "getdcname", 0, POPT_ARG_STRING, &string_arg, OPT_GETDCNAME,
 		  "Get a DC name for a foreign domain", "domainname" },
@@ -1482,7 +1613,7 @@ int main(int argc, char **argv, char **envp)
 		{ "ping", 'p', POPT_ARG_NONE, 0, 'p', "Ping winbindd to see if it is alive" },
 		{ "domain", 0, POPT_ARG_STRING, &opt_domain_name, OPT_DOMAIN_NAME, "Define to the domain to restrict operation", "domain" },
 #ifdef WITH_FAKE_KASERVER
- 		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
+		{ "klog", 'k', POPT_ARG_STRING, &string_arg, 'k', "set an AFS token from winbind", "user%password" },
 #endif
 #ifdef HAVE_KRB5
 		{ "krb5auth", 'K', POPT_ARG_STRING, &string_arg, 'K', "authenticate user using Kerberos", "user%password" },
@@ -1534,7 +1665,7 @@ int main(int argc, char **argv, char **envp)
 
 	load_interfaces();
 
-	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
+	pc = poptGetContext(NULL, argc, (const char **)argv, long_options,
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	while((opt = poptGetNextOpt(pc)) != -1) {
@@ -1624,6 +1755,48 @@ int main(int argc, char **argv, char **envp)
 		case OPT_ALLOCATE_GID:
 			if (!wbinfo_allocate_gid()) {
 				d_fprintf(stderr, "Could not allocate a gid\n");
+				goto done;
+			}
+			break;
+		case OPT_SET_UID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+				&string_subarg) ||
+			    !wbinfo_set_uid_mapping(int_subarg, string_subarg))
+			{
+				d_fprintf(stderr, "Could not create or modify "
+					  "uid to sid mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_SET_GID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+			        &string_subarg) ||
+			    !wbinfo_set_gid_mapping(int_subarg, string_subarg))
+			{
+				d_fprintf(stderr, "Could not create or modify "
+					  "gid to sid mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_REMOVE_UID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+				&string_subarg) ||
+			    !wbinfo_remove_uid_mapping(int_subarg,
+				string_subarg))
+			{
+				d_fprintf(stderr, "Could not remove uid to sid "
+				    "mapping\n");
+				goto done;
+			}
+			break;
+		case OPT_REMOVE_GID_MAPPING:
+			if (!parse_mapping_arg(string_arg, &int_subarg,
+			        &string_subarg) ||
+			    !wbinfo_remove_gid_mapping(int_subarg,
+			        string_subarg))
+			{
+				d_fprintf(stderr, "Could not remove gid to sid "
+				    "mapping\n");
 				goto done;
 			}
 			break;

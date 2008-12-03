@@ -26,6 +26,81 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static void parse_samsync_partial_replication_objects(TALLOC_CTX *mem_ctx,
+						      int argc,
+						      const char **argv,
+						      bool *do_single_object_replication,
+						      struct samsync_object **objects,
+						      uint32_t *num_objects)
+{
+	int i;
+
+	if (argc > 0) {
+		*do_single_object_replication = true;
+	}
+
+	for (i=0; i<argc; i++) {
+
+		struct samsync_object o;
+
+		ZERO_STRUCT(o);
+
+		if (!StrnCaseCmp(argv[i], "user_rid=", strlen("user_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_USER;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "group_rid=", strlen("group_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_GROUP;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "group_member_rid=", strlen("group_member_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_GROUP_MEMBER;
+			o.database_id			= SAM_DATABASE_DOMAIN;
+		}
+		if (!StrnCaseCmp(argv[i], "alias_rid=", strlen("alias_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_ALIAS;
+			o.database_id			= SAM_DATABASE_BUILTIN;
+		}
+		if (!StrnCaseCmp(argv[i], "alias_member_rid=", strlen("alias_member_rid="))) {
+			o.object_identifier.rid		= get_int_param(argv[i]);
+			o.object_type			= NETR_DELTA_ALIAS_MEMBER;
+			o.database_id			= SAM_DATABASE_BUILTIN;
+		}
+		if (!StrnCaseCmp(argv[i], "account_sid=", strlen("account_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_ACCOUNT;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "policy_sid=", strlen("policy_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_POLICY;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "trustdom_sid=", strlen("trustdom_sid="))) {
+			const char *sid_str = get_string_param(argv[i]);
+			string_to_sid(&o.object_identifier.sid, sid_str);
+			o.object_type			= NETR_DELTA_TRUSTED_DOMAIN;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+		if (!StrnCaseCmp(argv[i], "secret_name=", strlen("secret_name="))) {
+			o.object_identifier.name	= get_string_param(argv[i]);
+			o.object_type			= NETR_DELTA_SECRET;
+			o.database_id			= SAM_DATABASE_PRIVS;
+		}
+
+		if (o.object_type > 0) {
+			ADD_TO_ARRAY(mem_ctx, struct samsync_object, o,
+				     objects, num_objects);
+		}
+	}
+}
+
 /* dump sam database via samsync rpc calls */
 NTSTATUS rpc_samdump_internals(struct net_context *c,
 				const DOM_SID *domain_sid,
@@ -48,8 +123,16 @@ NTSTATUS rpc_samdump_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_DUMP;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= display_sam_entries;
+	ctx->ops		= &libnet_samsync_display_ops;
 	ctx->domain_name	= domain_name;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
+
+	parse_samsync_partial_replication_objects(ctx, argc, argv,
+						  &ctx->single_object_replication,
+						  &ctx->objects,
+						  &ctx->num_objects);
 
 	libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
 
@@ -123,8 +206,16 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_PASSDB;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries;
+	ctx->ops		= &libnet_samsync_passdb_ops;
 	ctx->domain_name	= domain_name;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
+
+	parse_samsync_partial_replication_objects(ctx, argc, argv,
+						  &ctx->single_object_replication,
+						  &ctx->objects,
+						  &ctx->num_objects);
 
 	/* fetch domain */
 	result = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
@@ -157,6 +248,19 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 	return result;
 }
 
+int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv)
+{
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc vampire passdb\n"
+			 "    Dump remote SAM database to passdb\n");
+		return 0;
+	}
+
+	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
+			       rpc_vampire_internals, argc, argv);
+}
+
 NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 				    const DOM_SID *domain_sid,
 				    const char *domain_name,
@@ -179,11 +283,20 @@ NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 	if (argc >= 1) {
 		ctx->output_filename = argv[0];
 	}
+	if (argc >= 2) {
+		parse_samsync_partial_replication_objects(ctx, argc-1, argv+1,
+							  &ctx->single_object_replication,
+							  &ctx->objects,
+							  &ctx->num_objects);
+	}
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_LDIF;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries_ldif;
+	ctx->ops		= &libnet_samsync_ldif_ops;
 	ctx->domain_name	= domain_name;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
 	/* fetch domain */
 	status = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
@@ -249,16 +362,28 @@ NTSTATUS rpc_vampire_keytab_internals(struct net_context *c,
 		return status;
 	}
 
-	if (argc >= 1) {
+	if (argc < 1) {
+		/* the caller should ensure that a filename is provided */
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		ctx->output_filename = argv[0];
+	}
+	if (argc >= 2) {
+		parse_samsync_partial_replication_objects(ctx, argc-1, argv+1,
+							  &ctx->single_object_replication,
+							  &ctx->objects,
+							  &ctx->num_objects);
 	}
 
 	ctx->mode		= NET_SAMSYNC_MODE_FETCH_KEYTAB;
 	ctx->cli		= pipe_hnd;
-	ctx->delta_fn		= fetch_sam_entries_keytab;
+	ctx->ops		= &libnet_samsync_keytab_ops;
 	ctx->domain_name	= domain_name;
 	ctx->username		= c->opt_user_name;
 	ctx->password		= c->opt_password;
+
+	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
+	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
 	/* fetch domain */
 	status = libnet_samsync(SAM_DATABASE_DOMAIN, ctx);
@@ -299,9 +424,13 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 	ctx->force_full_replication = c->opt_force_full_repl ? true : false;
 	ctx->clean_old_entries = c->opt_clean_old_entries ? true : false;
 
-	if (argc >= 1) {
+	if (argc < 1) {
+		/* the caller should ensure that a filename is provided */
+		return NT_STATUS_INVALID_PARAMETER;
+	} else {
 		ctx->output_filename = argv[0];
 	}
+
 	if (argc >= 2) {
 		ctx->object_dns = &argv[1];
 		ctx->object_count = argc - 1;
@@ -341,22 +470,41 @@ static NTSTATUS rpc_vampire_keytab_ds_internals(struct net_context *c,
 int rpc_vampire_keytab(struct net_context *c, int argc, const char **argv)
 {
 	int ret = 0;
+	NTSTATUS status;
+	struct cli_state *cli = NULL;
+	struct net_dc_info dc_info;
 
-	if (c->display_usage) {
+	if (c->display_usage || (argc < 1)) {
 		d_printf("Usage:\n"
-			 "net rpc vampire keytab\n"
+			 "net rpc vampire keytab <keytabfile>\n"
 			 "    Dump remote SAM database to Kerberos keytab file\n");
 		return 0;
 	}
 
-	ret = run_rpc_command(c, NULL, &ndr_table_drsuapi.syntax_id,
-			      NET_FLAGS_SEAL,
-			      rpc_vampire_keytab_ds_internals, argc, argv);
-	if (ret == 0) {
-		return 0;
+	status = net_make_ipc_connection(c, 0, &cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
 	}
 
-	return run_rpc_command(c, NULL, &ndr_table_netlogon.syntax_id, 0,
-			       rpc_vampire_keytab_internals,
-			       argc, argv);
+	status = net_scan_dc(c, cli, &dc_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return -1;
+	}
+
+	if (!dc_info.is_ad) {
+		printf("DC is not running Active Directory\n");
+		return -1;
+	}
+
+	if (dc_info.is_mixed_mode) {
+		ret = run_rpc_command(c, cli, &ndr_table_netlogon.syntax_id,
+				      0,
+				      rpc_vampire_keytab_internals, argc, argv);
+	} else {
+		ret = run_rpc_command(c, cli, &ndr_table_drsuapi.syntax_id,
+				      NET_FLAGS_SEAL,
+				      rpc_vampire_keytab_ds_internals, argc, argv);
+	}
+
+	return ret;
 }

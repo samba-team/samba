@@ -32,7 +32,7 @@ bool change_to_guest(void)
 
 	if (!pass) {
 		/* Don't need to free() this as its stored in a static */
-		pass = getpwnam_alloc(NULL, lp_guestaccount());
+		pass = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
 		if (!pass)
 			return(False);
 	}
@@ -88,7 +88,8 @@ static bool check_user_ok(connection_struct *conn, uint16_t vuid,
 	readonly_share = is_share_read_only_for_token(
 		server_info->unix_name,
 		pdb_get_domain(server_info->sam_account),
-		server_info->ptok, snum);
+		server_info->ptok,
+		conn);
 
 	if (!readonly_share &&
 	    !share_access_check(server_info->ptok, lp_servicename(snum),
@@ -317,9 +318,9 @@ bool become_authenticated_pipe_user(pipes_struct *p)
 	if (!push_sec_ctx())
 		return False;
 
-	set_sec_ctx(p->pipe_user.ut.uid, p->pipe_user.ut.gid, 
-		    p->pipe_user.ut.ngroups, p->pipe_user.ut.groups,
-		    p->pipe_user.nt_user_token);
+	set_sec_ctx(p->server_info->utok.uid, p->server_info->utok.gid,
+		    p->server_info->utok.ngroups, p->server_info->utok.groups,
+		    p->server_info->ptok);
 
 	return True;
 }

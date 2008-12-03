@@ -120,6 +120,11 @@ void send_nt_replies(connection_struct *conn,
 			     + data_alignment_offset);
 
 		/*
+		 * We might have had SMBnttranss in req->inbuf, fix that.
+		 */
+		SCVAL(req->outbuf, smb_com, SMBnttrans);
+
+		/*
 		 * Set total params and data to be sent.
 		 */
 
@@ -279,7 +284,7 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 	/* Strip \\ off the name. */
 	fname++;
 
-	status = np_open(req, conn, fname, &fsp);
+	status = np_open(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
@@ -716,22 +721,21 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 		return status;
 	}
 
-	if (psd->owner_sid==0) {
+	if (psd->owner_sid == NULL) {
 		security_info_sent &= ~OWNER_SECURITY_INFORMATION;
 	}
-	if (psd->group_sid==0) {
+	if (psd->group_sid == NULL) {
 		security_info_sent &= ~GROUP_SECURITY_INFORMATION;
-	}
-	if (psd->sacl==0) {
-		security_info_sent &= ~SACL_SECURITY_INFORMATION;
-	}
-	if (psd->dacl==0) {
-		security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
 	/* Convert all the generic bits. */
 	security_acl_map_generic(psd->dacl, &file_generic_mapping);
 	security_acl_map_generic(psd->sacl, &file_generic_mapping);
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("set_sd for file %s\n", fsp->fsp_name ));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
 
 	status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 
@@ -1440,7 +1444,8 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		 * here.
 		 */
 
-		change_notify_reply(fsp->conn, req->inbuf, max_param_count, fsp->notify);
+		change_notify_reply(fsp->conn, req, max_param_count,
+				    fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1582,15 +1587,28 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		status = SMB_VFS_FGET_NT_ACL(
 			fsp, security_info_wanted, &psd);
 	}
-
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		return;
 	}
 
+	/* If the SACL/DACL is NULL, but was requested, we mark that it is
+	 * present in the reply to match Windows behavior */
+	if (psd->sacl == NULL &&
+	    security_info_wanted & SACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_SACL_PRESENT;
+	if (psd->dacl == NULL &&
+	    security_info_wanted & DACL_SECURITY_INFORMATION)
+		psd->type |= SEC_DESC_DACL_PRESENT;
+
 	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
+
+	if (DEBUGLEVEL >= 10) {
+		DEBUG(10,("call_nt_transact_query_security_desc for file %s\n", fsp->fsp_name));
+		NDR_PRINT_DEBUG(security_descriptor, psd);
+	}
 
 	SIVAL(params,0,(uint32)sd_size);
 
@@ -2519,8 +2537,6 @@ void reply_nttrans(struct smb_request *req)
 	uint16 function_code;
 	NTSTATUS result;
 	struct trans_state *state;
-	uint32_t size;
-	uint32_t av_size;
 
 	START_PROFILE(SMBnttrans);
 
@@ -2530,8 +2546,6 @@ void reply_nttrans(struct smb_request *req)
 		return;
 	}
 
-	size = smb_len(req->inbuf) + 4;
-	av_size = smb_len(req->inbuf);
 	pscnt = IVAL(req->vwv+9, 1);
 	psoff = IVAL(req->vwv+11, 1);
 	dscnt = IVAL(req->vwv+13, 1);
@@ -2608,6 +2622,12 @@ void reply_nttrans(struct smb_request *req)
 		goto bad_param;
 
 	if (state->total_data)  {
+
+		if (trans_oob(state->total_data, 0, dscnt)
+		    || trans_oob(smb_len(req->inbuf), dsoff, dscnt)) {
+			goto bad_param;
+		}
+
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
 		if ((state->data = (char *)SMB_MALLOC(state->total_data)) == NULL) {
@@ -2619,21 +2639,16 @@ void reply_nttrans(struct smb_request *req)
 			return;
 		}
 
-		if (dscnt > state->total_data ||
-				dsoff+dscnt < dsoff) {
-			goto bad_param;
-		}
-
-		if (dsoff > av_size ||
-				dscnt > av_size ||
-				dsoff+dscnt > av_size) {
-			goto bad_param;
-		}
-
 		memcpy(state->data,smb_base(req->inbuf)+dsoff,dscnt);
 	}
 
 	if (state->total_param) {
+
+		if (trans_oob(state->total_param, 0, pscnt)
+		    || trans_oob(smb_len(req->inbuf), psoff, pscnt)) {
+			goto bad_param;
+		}
+
 		/* Can't use talloc here, the core routines do realloc on the
 		 * params and data. */
 		if ((state->param = (char *)SMB_MALLOC(state->total_param)) == NULL) {
@@ -2646,17 +2661,6 @@ void reply_nttrans(struct smb_request *req)
 			return;
 		}
 
-		if (pscnt > state->total_param ||
-				psoff+pscnt < psoff) {
-			goto bad_param;
-		}
-
-		if (psoff > av_size ||
-				pscnt > av_size ||
-				psoff+pscnt > av_size) {
-			goto bad_param;
-		}
-
 		memcpy(state->param,smb_base(req->inbuf)+psoff,pscnt);
 	}
 
@@ -2666,6 +2670,19 @@ void reply_nttrans(struct smb_request *req)
 	if(state->setup_count > 0) {
 		DEBUG(10,("reply_nttrans: state->setup_count = %d\n",
 			  state->setup_count));
+
+		/*
+		 * No overflow possible here, state->setup_count is an
+		 * unsigned int, being filled by a single byte from
+		 * CVAL(req->vwv+13, 0) above. The cast in the comparison
+		 * below is not necessary, it's here to clarify things. The
+		 * validity of req->vwv and req->wct has been checked in
+		 * init_smb_request already.
+		 */
+		if ((state->setup_count/2) + 19 > (unsigned int)req->wct) {
+			goto bad_param;
+		}
+
 		state->setup = (uint16 *)TALLOC(state, state->setup_count);
 		if (state->setup == NULL) {
 			DEBUG(0,("reply_nttrans : Out of memory\n"));
@@ -2677,16 +2694,7 @@ void reply_nttrans(struct smb_request *req)
 			return;
 		}
 
-		if ((smb_nt_SetupStart + state->setup_count < smb_nt_SetupStart) ||
-		    (smb_nt_SetupStart + state->setup_count < state->setup_count)) {
-			goto bad_param;
-		}
-		if (smb_nt_SetupStart + state->setup_count > size) {
-			goto bad_param;
-		}
-
-		memcpy( state->setup, &req->inbuf[smb_nt_SetupStart],
-			state->setup_count);
+		memcpy(state->setup, req->vwv+19, state->setup_count);
 		dump_data(10, (uint8 *)state->setup, state->setup_count);
 	}
 
@@ -2729,8 +2737,6 @@ void reply_nttranss(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	uint32_t pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
-	uint32_t av_size;
-	uint32_t size;
 
 	START_PROFILE(SMBnttranss);
 
@@ -2764,9 +2770,6 @@ void reply_nttranss(struct smb_request *req)
 		state->total_data = IVAL(req->vwv+3, 1);
 	}
 
-	size = smb_len(req->inbuf) + 4;
-	av_size = smb_len(req->inbuf);
-
 	pcnt = IVAL(req->vwv+5, 1);
 	poff = IVAL(req->vwv+7, 1);
 	pdisp = IVAL(req->vwv+9, 1);
@@ -2783,41 +2786,19 @@ void reply_nttranss(struct smb_request *req)
 		goto bad_param;
 
 	if (pcnt) {
-		if (pdisp > state->total_param ||
-				pcnt > state->total_param ||
-				pdisp+pcnt > state->total_param ||
-				pdisp+pcnt < pdisp) {
+		if (trans_oob(state->total_param, pdisp, pcnt)
+		    || trans_oob(smb_len(req->inbuf), poff, pcnt)) {
 			goto bad_param;
 		}
-
-		if (poff > av_size ||
-				pcnt > av_size ||
-				poff+pcnt > av_size ||
-				poff+pcnt < poff) {
-			goto bad_param;
-		}
-
-		memcpy(state->param+pdisp, smb_base(req->inbuf)+poff,
-		       pcnt);
+		memcpy(state->param+pdisp, smb_base(req->inbuf)+poff,pcnt);
 	}
 
 	if (dcnt) {
-		if (ddisp > state->total_data ||
-				dcnt > state->total_data ||
-				ddisp+dcnt > state->total_data ||
-				ddisp+dcnt < ddisp) {
+		if (trans_oob(state->total_data, ddisp, dcnt)
+		    || trans_oob(smb_len(req->inbuf), doff, dcnt)) {
 			goto bad_param;
 		}
-
-		if (ddisp > av_size ||
-				dcnt > av_size ||
-				ddisp+dcnt > av_size ||
-				ddisp+dcnt < ddisp) {
-			goto bad_param;
-		}
-
-		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,
-		       dcnt);
+		memcpy(state->data+ddisp, smb_base(req->inbuf)+doff,dcnt);
 	}
 
 	if ((state->received_param < state->total_param) ||
@@ -2825,12 +2806,6 @@ void reply_nttranss(struct smb_request *req)
 		END_PROFILE(SMBnttranss);
 		return;
 	}
-
-	/*
-	 * construct_reply_common will copy smb_com from inbuf to
-	 * outbuf. SMBnttranss is wrong here.
-	 */
-	SCVAL(req->inbuf,smb_com,SMBnttrans);
 
 	handle_nttrans(conn, state, req);
 

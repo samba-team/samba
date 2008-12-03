@@ -97,7 +97,8 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 	}
 	if (NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_OBJECT_NAME_NOT_FOUND) ||
 	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_OBJECT_PATH_NOT_FOUND) ||
-	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_NO_SUCH_FILE)) {
+	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_NO_SUCH_FILE) ||
+	    NT_STATUS_EQUAL(smbcli_nt_error(tree), NT_STATUS_DOS(ERRDOS, ERRbadfile))) {
 		return 0;
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {

@@ -97,7 +97,7 @@ regtree_OBJ_FILES = $(libregistrysrcdir)/tools/regtree.o
 MANPAGES += $(libregistrysrcdir)/man/regtree.1
 
 [SUBSYSTEM::torture_registry]
-PRIVATE_DEPENDENCIES = registry
+PRIVATE_DEPENDENCIES = torture registry
 
 torture_registry_OBJ_FILES = $(addprefix $(libregistrysrcdir)/tests/, generic.o hive.o diff.o registry.o)
 

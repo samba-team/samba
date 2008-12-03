@@ -1,5 +1,5 @@
 [SUBSYSTEM::LIBSECURITY]
-PUBLIC_DEPENDENCIES = NDR_MISC LIBNDR
+PUBLIC_DEPENDENCIES = LIBNDR
 
 LIBSECURITY_OBJ_FILES = $(addprefix $(libclisrcdir)/security/, \
 					   security_token.o security_descriptor.o \

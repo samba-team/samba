@@ -359,6 +359,7 @@ NTSTATUS rpc_vampire_internals(struct net_context *c,
 				TALLOC_CTX *mem_ctx,
 				int argc,
 				const char **argv);
+int rpc_vampire_passdb(struct net_context *c, int argc, const char **argv);
 int rpc_vampire_ldif(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_vampire_ldif_internals(struct net_context *c,
 				    const DOM_SID *domain_sid,
@@ -472,6 +473,10 @@ int net_run_function(struct net_context *c, int argc, const char **argv,
 void net_display_usage_from_functable(struct functable *table);
 
 const char *net_share_type_str(int num_type);
+
+NTSTATUS net_scan_dc(struct net_context *c,
+		     struct cli_state *cli,
+		     struct net_dc_info *dc_info);
 
 /* The following definitions come from utils/netlookup.c  */
 

@@ -401,4 +401,37 @@ cont:
 	return entry;
 }
 
+/**
+ * Helper function to add data to the list
+ * of keytab entries. It builds the prefix from the input.
+ */
+NTSTATUS libnet_keytab_add_to_keytab_entries(TALLOC_CTX *mem_ctx,
+					     struct libnet_keytab_context *ctx,
+					     uint32_t kvno,
+					     const char *name,
+					     const char *prefix,
+					     const krb5_enctype enctype,
+					     DATA_BLOB blob)
+{
+	struct libnet_keytab_entry entry;
+
+	entry.kvno = kvno;
+	entry.name = talloc_strdup(mem_ctx, name);
+	entry.principal = talloc_asprintf(mem_ctx, "%s%s%s@%s",
+					  prefix ? prefix : "",
+					  prefix ? "/" : "",
+					  name, ctx->dns_domain_name);
+	entry.enctype = enctype;
+	entry.password = blob;
+	NT_STATUS_HAVE_NO_MEMORY(entry.name);
+	NT_STATUS_HAVE_NO_MEMORY(entry.principal);
+	NT_STATUS_HAVE_NO_MEMORY(entry.password.data);
+
+	ADD_TO_ARRAY(mem_ctx, struct libnet_keytab_entry, entry,
+		     &ctx->entries, &ctx->count);
+	NT_STATUS_HAVE_NO_MEMORY(ctx->entries);
+
+	return NT_STATUS_OK;
+}
+
 #endif /* HAVE_KRB5 */

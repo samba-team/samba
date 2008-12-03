@@ -7,11 +7,17 @@
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/security.h"
 #include "librpc/gen_ndr/nbt.h"
+#define netr_DeltaEnum8Bit netr_DeltaEnum
+#define netr_SamDatabaseID8Bit netr_SamDatabaseID
 #ifndef _HEADER_netlogon
 #define _HEADER_netlogon
 
 #define DSGETDC_VALID_FLAGS	( (DS_FORCE_REDISCOVERY|DS_DIRECTORY_SERVICE_REQUIRED|DS_DIRECTORY_SERVICE_PREFERRED|DS_GC_SERVER_REQUIRED|DS_PDC_REQUIRED|DS_BACKGROUND_ONLY|DS_IP_REQUIRED|DS_KDC_REQUIRED|DS_TIMESERV_REQUIRED|DS_WRITABLE_REQUIRED|DS_GOOD_TIMESERV_PREFERRED|DS_AVOID_SELF|DS_ONLY_LDAP_NEEDED|DS_IS_FLAT_NAME|DS_IS_DNS_NAME|DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME) )
 #define DS_GFTI_UPDATE_TDO	( 0x1 )
+enum netr_DeltaEnum8Bit;
+
+enum netr_SamDatabaseID8Bit;
+
 struct netr_UasInfo {
 	const char *account_name;/* [unique,charset(UTF16)] */
 	uint32_t priv;
@@ -324,7 +330,7 @@ struct netr_DELTA_USER {
 	uint8_t lm_password_present;
 	uint8_t password_expired;
 	struct lsa_String comment;
-	struct lsa_String parameters;
+	struct lsa_BinaryString parameters;
 	uint16_t country_code;
 	uint16_t code_page;
 	struct netr_USER_PRIVATE_INFO user_private_info;
@@ -711,6 +717,28 @@ union netr_CONTROL_DATA_INFORMATION {
 #define NETLOGON_NEG_RODC_PASSTHROUGH ( 0x00200000 )
 #define NETLOGON_NEG_AUTHENTICATED_RPC_LSASS ( 0x20000000 )
 #define NETLOGON_NEG_SCHANNEL ( 0x40000000 )
+
+/* bitmap netr_ChangeLogFlags */
+#define NETR_CHANGELOG_IMMEDIATE_REPL_REQUIRED ( 0x0001 )
+#define NETR_CHANGELOG_CHANGED_PASSWORD ( 0x0002 )
+#define NETR_CHANGELOG_SID_INCLUDED ( 0x0004 )
+#define NETR_CHANGELOG_NAME_INCLUDED ( 0x0008 )
+#define NETR_CHANGELOG_FIRST_PROMOTION_OBJ ( 0x0010 )
+
+union netr_ChangeLogObject {
+	struct dom_sid object_sid;/* [case(NETR_CHANGELOG_SID_INCLUDED)] */
+	const char * object_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(NETR_CHANGELOG_NAME_INCLUDED)] */
+}/* [nodiscriminant] */;
+
+struct netr_ChangeLogEntry {
+	uint32_t serial_number1;
+	uint32_t serial_number2;
+	uint32_t object_rid;
+	uint16_t flags;
+	enum netr_SamDatabaseID8Bit db_index;
+	enum netr_DeltaEnum8Bit delta_type;
+	union netr_ChangeLogObject object;/* [switch_is(flags&(NETR_CHANGELOG_SID_INCLUDED|NETR_CHANGELOG_NAME_INCLUDED))] */
+}/* [gensize,public] */;
 
 struct netr_Blob {
 	uint32_t length;
@@ -1252,8 +1280,8 @@ struct netr_DatabaseRedo {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [ref] */
-		uint8_t *change_log_entry;/* [ref,size_is(change_log_entry_size)] */
-		uint32_t change_log_entry_size;
+		struct netr_ChangeLogEntry change_log_entry;/* [subcontext_size(change_log_entry_size),subcontext(4)] */
+		uint32_t change_log_entry_size;/* [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->flags))] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 	} in;
 

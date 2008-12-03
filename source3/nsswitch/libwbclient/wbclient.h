@@ -57,9 +57,12 @@ const char *wbcErrorString(wbcErr error);
 /**
  *  @brief Some useful details about the wbclient library
  *
+ *  0.1: Initial version
+ *  0.2: Added wbcRemoveUidMapping()
+ *       Added wbcRemoveGidMapping()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 1
+#define WBCLIENT_MINOR_VERSION 2
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -358,7 +361,7 @@ struct wbcLogonUserInfo {
 #define WBC_AUTH_USER_INFO_NOENCRYPTION			0x00000002
 #define WBC_AUTH_USER_INFO_CACHED_ACCOUNT		0x00000004
 #define WBC_AUTH_USER_INFO_USED_LM_PASSWORD		0x00000008
-#define WBC_AUTH_USER_INFO_EXTRA_SIDS 			0x00000020
+#define WBC_AUTH_USER_INFO_EXTRA_SIDS			0x00000020
 #define WBC_AUTH_USER_INFO_SUBAUTH_SESSION_KEY		0x00000040
 #define WBC_AUTH_USER_INFO_SERVER_TRUST_ACCOUNT		0x00000080
 #define WBC_AUTH_USER_INFO_NTLMV2_ENABLED		0x00000100
@@ -385,7 +388,7 @@ struct wbcLogonUserInfo {
 #define WBC_ACB_NOT_DELEGATED			0x00004000 /* 1 Not delegated */
 #define WBC_ACB_USE_DES_KEY_ONLY		0x00008000 /* 1 Use DES key only */
 #define WBC_ACB_DONT_REQUIRE_PREAUTH		0x00010000 /* 1 Preauth not required */
-#define WBC_ACB_PW_EXPIRED              	0x00020000 /* 1 Password Expired */
+#define WBC_ACB_PW_EXPIRED			0x00020000 /* 1 Password Expired */
 #define WBC_ACB_NO_AUTH_DATA_REQD		0x00080000   /* 1 = No authorization data required */
 
 struct wbcAuthErrorInfo {
@@ -435,6 +438,30 @@ struct wbcLogoffUserParams {
 	const char *username;
 	size_t num_blobs;
 	struct wbcNamedBlob *blobs;
+};
+
+/** @brief Credential cache log-on parameters
+ *
+ */
+
+struct wbcCredentialCacheParams {
+        const char *account_name;
+        const char *domain_name;
+        enum wbcCredentialCacheLevel {
+                WBC_CREDENTIAL_CACHE_LEVEL_NTLMSSP = 1
+        } level;
+        size_t num_blobs;
+        struct wbcNamedBlob *blobs;
+};
+
+
+/** @brief Info returned by credential cache auth
+ *
+ */
+
+struct wbcCredentialCacheInfo {
+        size_t num_blobs;
+        struct wbcNamedBlob *blobs;
 };
 
 /*
@@ -538,14 +565,26 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid,
 		   uid_t *puid);
 
+wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
+			uid_t *puid);
+
 wbcErr wbcUidToSid(uid_t uid,
 		   struct wbcDomainSid *sid);
+
+wbcErr wbcQueryUidToSid(uid_t uid,
+			struct wbcDomainSid *sid);
 
 wbcErr wbcSidToGid(const struct wbcDomainSid *sid,
 		   gid_t *pgid);
 
+wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
+			gid_t *pgid);
+
 wbcErr wbcGidToSid(gid_t gid,
 		   struct wbcDomainSid *sid);
+
+wbcErr wbcQueryGidToSid(gid_t gid,
+			struct wbcDomainSid *sid);
 
 wbcErr wbcAllocateUid(uid_t *puid);
 
@@ -554,6 +593,10 @@ wbcErr wbcAllocateGid(gid_t *pgid);
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
 
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
+
+wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
+
+wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
 
 wbcErr wbcSetUidHwm(uid_t uid_hwm);
 
@@ -582,6 +625,8 @@ wbcErr wbcSetgrent(void);
 wbcErr wbcEndgrent(void);
 
 wbcErr wbcGetgrent(struct group **grp);
+
+wbcErr wbcGetgrlist(struct group **grp);
 
 wbcErr wbcGetGroups(const char *account,
 		    uint32_t *num_groups,
@@ -661,6 +706,10 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 			       struct wbcAuthErrorInfo **error,
 			       enum wbcPasswordChangeRejectReason *reject_reason,
 			       struct wbcUserPasswordPolicyInfo **policy);
+
+wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
+                          struct wbcCredentialCacheInfo **info,
+                          struct wbcAuthErrorInfo **error);
 
 /*
  * Resolve functions

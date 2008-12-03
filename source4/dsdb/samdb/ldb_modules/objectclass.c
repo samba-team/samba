@@ -414,10 +414,10 @@ static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	/* Need to object to this, but cn=rootdse doesn't have an objectClass... */
+	/* the objectClass must be specified on add */
 	if (ldb_msg_find_element(req->op.add.message, 
 				 "objectClass") == NULL) {
-		return ldb_next_request(module, req);
+		return LDB_ERR_OBJECT_CLASS_VIOLATION;
 	}
 
 	ac = oc_init_context(module, req);

@@ -27,6 +27,7 @@
 #include "auth/gensec/gensec.h"
 #include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/dcerpc_server_proto.h"
 #include "lib/events/events.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
@@ -138,6 +139,10 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
 	dcesrv_conn->transport.get_my_addr		= dcesrv_sock_get_my_addr;
 	dcesrv_conn->transport.get_peer_addr		= dcesrv_sock_get_peer_addr;
+
+	if (dcesrv_sock->endpoint->ep_description->transport == NCACN_NP) {
+		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
+	}
 
 	srv_conn->private = dcesrv_conn;
 
@@ -287,12 +292,10 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	return status;
 }
 
-
-/*
-  add a socket address to the list of events, one event per dcerpc endpoint
-*/
-static NTSTATUS add_socket_rpc_pipe_iface(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-					 struct event_context *event_ctx, const struct model_ops *model_ops)
+static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
+				 struct loadparm_context *lp_ctx,
+				 struct dcesrv_endpoint *e,
+				 struct event_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	NTSTATUS status;
@@ -309,30 +312,16 @@ static NTSTATUS add_socket_rpc_pipe_iface(struct dcesrv_context *dce_ctx, struct
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
-	status = NT_STATUS_OK;
-#if 0
-
-	status = stream_setup_smb_pipe(event_ctx, model_ops, &dcesrv_stream_ops, 
-				     e->ep_description->endpoint, dcesrv_sock);
+	status = stream_setup_named_pipe(event_ctx, lp_ctx,
+					 model_ops, &dcesrv_stream_ops,
+					 e->ep_description->endpoint, dcesrv_sock);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("service_setup_stream_socket(path=%s) failed - %s\n", 
+		DEBUG(0,("stream_setup_named_pipe(pipe=%s) failed - %s\n",
 			 e->ep_description->endpoint, nt_errstr(status)));
+		return status;
 	}
-#endif
-	return status;
-}
 
-static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx, 
-				 struct loadparm_context *lp_ctx,
-				 struct dcesrv_endpoint *e,
-				 struct event_context *event_ctx, const struct model_ops *model_ops)
-{
-	NTSTATUS status;
-
-	status = add_socket_rpc_pipe_iface(dce_ctx, e, event_ctx, model_ops);
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*

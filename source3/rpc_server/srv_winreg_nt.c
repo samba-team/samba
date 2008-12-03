@@ -70,7 +70,7 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 
 	if (parent == NULL) {
 		result = reg_openhive(NULL, subkeyname, access_desired,
-				      p->pipe_user.nt_user_token, &key);
+				      p->server_info->ptok, &key);
 	}
 	else {
 		result = reg_openkey(NULL, parent, subkeyname, access_desired,
@@ -556,7 +556,8 @@ WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateS
 		return WERR_NOMEM;
 	}
 
-	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
+	can_shutdown = user_has_privileges( p->server_info->ptok,
+					    &se_remote_shutdown );
 
 	/* IF someone has privs, run the shutdown script as root. OTHERWISE run it as not root
 	   Take the error return from the script and provide it as the Windows return code. */
@@ -594,7 +595,8 @@ WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShu
 	if (!*abort_shutdown_script)
 		return WERR_ACCESS_DENIED;
 
-	can_shutdown = user_has_privileges( p->pipe_user.nt_user_token, &se_remote_shutdown );
+	can_shutdown = user_has_privileges( p->server_info->ptok,
+					    &se_remote_shutdown );
 
 	/********** BEGIN SeRemoteShutdownPrivilege BLOCK **********/
 
@@ -682,7 +684,7 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 
 	/* user must posses SeRestorePrivilege for this this proceed */
 
-	if ( !user_has_privileges( p->pipe_user.nt_user_token, &se_restore ) )
+	if ( !user_has_privileges( p->server_info->ptok, &se_restore ) )
 		return WERR_ACCESS_DENIED;
 
 	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n",

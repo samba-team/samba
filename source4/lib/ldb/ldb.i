@@ -217,7 +217,7 @@ typedef struct ldb_dn {
                we do it this way... */
             talloc_steal(NULL, ret);
 
-            if (ret == NULL)
+            if (ret == NULL || !ldb_dn_validate(ret))
                 SWIG_exception(SWIG_ValueError, 
                                 "unable to parse dn string");
 fail:
@@ -263,7 +263,6 @@ fail:
         {
             char *dn = ldb_dn_get_linearized($self), *ret;
             asprintf(&ret, "Dn('%s')", dn);
-            talloc_free(dn);
             return ret;
         }
 

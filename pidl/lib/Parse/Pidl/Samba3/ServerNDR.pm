@@ -142,6 +142,13 @@ sub ParseFunction($$)
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
 			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
+		}
+	}
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			# noop
 		} elsif (grep(/out/, @dir) and not
 				 has_property($_, "represent_as")) {
 			AllocOutVar($_, "r", "r->out.$_->{NAME}", $env);
@@ -205,7 +212,11 @@ sub ParseInterface($)
 
 	pidl_hdr "#ifndef __SRV_$uif\__";
 	pidl_hdr "#define __SRV_$uif\__";
-	ParseFunction($if, $_) foreach (@{$if->{FUNCTIONS}});
+
+	foreach (@{$if->{FUNCTIONS}}) {
+		next if ($_->{PROPERTIES}{noopnum});
+		ParseFunction($if, $_);
+	}
 
 	pidl "";
 	pidl "/* Tables */";
@@ -214,6 +225,7 @@ sub ParseInterface($)
 	indent;
 
 	foreach (@{$if->{FUNCTIONS}}) {
+		next if ($_->{PROPERTIES}{noopnum});
 		pidl "{\"" . uc($_->{NAME}) . "\", NDR_" . uc($_->{NAME}) . ", api_$_->{NAME}},";
 	}
 
