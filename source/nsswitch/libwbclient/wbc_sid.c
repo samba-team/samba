@@ -40,22 +40,18 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 	uint32_t id_auth;
 	int i;
 	char *tmp = NULL;
-	TALLOC_CTX *ctx = NULL;
 
 	if (!sid) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	ctx = talloc_init("wbcSidToString");
-	BAIL_ON_PTR_ERROR(ctx, wbc_status);
-
 	id_auth = sid->id_auth[5] +
 		(sid->id_auth[4] << 8) +
 		(sid->id_auth[3] << 16) +
 		(sid->id_auth[2] << 24);
 
-	tmp = talloc_asprintf(ctx, "S-%d-%d", sid->sid_rev_num, id_auth);
+	tmp = talloc_asprintf(NULL, "S-%d-%d", sid->sid_rev_num, id_auth);
 	BAIL_ON_PTR_ERROR(tmp, wbc_status);
 
 	for (i=0; i<sid->num_auths; i++) {
@@ -66,13 +62,13 @@ wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		tmp = tmp2;
 	}
 
-	*sid_string=talloc_strdup(NULL, tmp);
-	BAIL_ON_PTR_ERROR((*sid_string), wbc_status);
+	*sid_string = tmp;
+	tmp = NULL;
 
 	wbc_status = WBC_ERR_SUCCESS;
 
 done:
-	talloc_free(ctx);
+	talloc_free(tmp);
 
 	return wbc_status;
 }
