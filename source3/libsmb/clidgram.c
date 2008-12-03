@@ -201,13 +201,13 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 			    const char *domain_name,
 			    uint32_t *nt_version,
 			    const char **dc_name,
-			    struct netlogon_samlogon_response **_r)
+			    struct netlogon_samlogon_response **samlogon_response)
 {
 	struct packet_struct *packet;
 	const char *my_mailslot = NULL;
 	struct in_addr dc_ip;
 	DATA_BLOB blob;
-	struct netlogon_samlogon_response r;
+	struct netlogon_samlogon_response *r;
 	union dgram_message_body p;
 	enum ndr_err_code ndr_err;
 	NTSTATUS status;
@@ -269,41 +269,45 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 	blob = p.smb.body.trans.data;
 
-	ZERO_STRUCT(r);
-
-	status = pull_netlogon_samlogon_response(&blob, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	r = TALLOC_ZERO_P(mem_ctx, struct netlogon_samlogon_response);
+	if (!r) {
 		return false;
 	}
 
-	map_netlogon_samlogon_response(&r);
+	status = pull_netlogon_samlogon_response(&blob, mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(r);
+		return false;
+	}
+
+	map_netlogon_samlogon_response(r);
 
 	/* do we still need this ? */
-	*nt_version = r.ntver;
+	*nt_version = r->ntver;
 
-	returned_domain = r.data.nt5_ex.domain_name;
-	returned_dc = r.data.nt5_ex.pdc_name;
+	returned_domain = r->data.nt5_ex.domain_name;
+	returned_dc = r->data.nt5_ex.pdc_name;
 
 	if (!strequal(returned_domain, domain_name)) {
 		DEBUG(3, ("GetDC: Expected domain %s, got %s\n",
 			  domain_name, returned_domain));
+		TALLOC_FREE(r);
 		return false;
 	}
 
 	*dc_name = talloc_strdup(mem_ctx, returned_dc);
 	if (!*dc_name) {
+		TALLOC_FREE(r);
 		return false;
 	}
 
 	if (**dc_name == '\\')	*dc_name += 1;
 	if (**dc_name == '\\')	*dc_name += 1;
 
-	if (_r) {
-		*_r = (struct netlogon_samlogon_response *)talloc_memdup(
-			mem_ctx, &r, sizeof(struct netlogon_samlogon_response));
-		if (!*_r) {
-			return false;
-		}
+	if (samlogon_response) {
+		*samlogon_response = r;
+	} else {
+		TALLOC_FREE(r);
 	}
 
 	DEBUG(10, ("GetDC gave name %s for domain %s\n",
