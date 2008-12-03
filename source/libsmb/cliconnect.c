@@ -1622,7 +1622,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	if (dest_ss) {
 		ss = *dest_ss;
 	} else {
-		zero_addr(&ss);
+		zero_sockaddr(&ss);
 	}
 
 again:

@@ -1038,7 +1038,7 @@ static bool add_one_dc_unique(TALLOC_CTX *mem_ctx, const char *domain_name,
 
 	/* Make sure there's no duplicates in the list */
 	for (i=0; i<*num; i++)
-		if (addr_equal(&(*dcs)[i].ss, pss))
+		if (sockaddr_equal(&(*dcs)[i].ss, pss))
 			return False;
 
 	*dcs = TALLOC_REALLOC_ARRAY(mem_ctx, *dcs, struct dc_name_ip, (*num)+1);

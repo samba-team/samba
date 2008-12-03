@@ -234,7 +234,7 @@ bool interpret_string_addr(struct sockaddr_storage *pss,
 	}
 #endif
 
-	zero_addr(pss);
+	zero_sockaddr(pss);
 
 	if (!interpret_string_addr_internal(&res, str, flags|AI_ADDRCONFIG)) {
 		return false;
@@ -334,7 +334,7 @@ void zero_ip_v4(struct in_addr *ip)
  Set an address to INADDR_ANY.
 ******************************************************************/
 
-void zero_addr(struct sockaddr_storage *pss)
+void zero_sockaddr(struct sockaddr_storage *pss)
 {
 	memset(pss, '\0', sizeof(*pss));
 	/* Ensure we're at least a valid sockaddr-storage. */
@@ -429,8 +429,8 @@ bool same_net(const struct sockaddr_storage *ip1,
  Are two sockaddr_storage's the same family and address ? Ignore port etc.
 ********************************************************************/
 
-bool addr_equal(const struct sockaddr_storage *ip1,
-		const struct sockaddr_storage *ip2)
+bool sockaddr_equal(const struct sockaddr_storage *ip1,
+		    const struct sockaddr_storage *ip2)
 {
 	if (ip1->ss_family != ip2->ss_family) {
 		/* Never the same. */
@@ -1659,7 +1659,7 @@ static bool matchname(const char *remotehost,
 		if (!res->ai_addr) {
 			continue;
 		}
-		if (addr_equal((const struct sockaddr_storage *)res->ai_addr,
+		if (sockaddr_equal((const struct sockaddr_storage *)res->ai_addr,
 					pss)) {
 			freeaddrinfo(ailist);
 			return true;
@@ -1772,7 +1772,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
 
 	/* it might be the same as the last one - save some DNS work */
-	if (addr_equal(&ss, &nc.ss)) {
+	if (sockaddr_equal(&ss, &nc.ss)) {
 		return nc.name ? nc.name : "UNKNOWN";
 	}
 
@@ -2091,7 +2091,7 @@ bool is_myname_or_ipaddr(const char *s)
 		}
 		n = get_interfaces(nics, MAX_INTERFACES);
 		for (i=0; i<n; i++) {
-			if (addr_equal(&nics[i].ip, &ss)) {
+			if (sockaddr_equal(&nics[i].ip, &ss)) {
 				TALLOC_FREE(nics);
 				return true;
 			}

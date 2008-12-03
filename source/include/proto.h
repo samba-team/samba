@@ -1538,14 +1538,14 @@ bool is_loopback_addr(const struct sockaddr_storage *pss);
 bool is_zero_ip_v4(struct in_addr ip);
 bool is_zero_addr(const struct sockaddr_storage *pss);
 void zero_ip_v4(struct in_addr *ip);
-void zero_addr(struct sockaddr_storage *pss);
+void zero_sockaddr(struct sockaddr_storage *pss);
 bool same_net_v4(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in_addr ip);
 bool same_net(const struct sockaddr_storage *ip1,
 		const struct sockaddr_storage *ip2,
 		const struct sockaddr_storage *mask);
-bool addr_equal(const struct sockaddr_storage *ip1,
+bool sockaddr_equal(const struct sockaddr_storage *ip1,
 		const struct sockaddr_storage *ip2);
 bool is_address_any(const struct sockaddr_storage *psa);
 uint16_t get_sockaddr_port(const struct sockaddr_storage *pss);
