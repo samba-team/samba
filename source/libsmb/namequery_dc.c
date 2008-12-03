@@ -134,7 +134,7 @@ static bool ads_dc_name(const char *domain,
 #ifdef HAVE_ADS
 	*dc_ss = ads->ldap.ss;
 #else
-	zero_addr(dc_ss);
+	zero_sockaddr(dc_ss);
 #endif
 	ads_destroy(&ads);
 
@@ -217,7 +217,7 @@ bool get_dc_name(const char *domain,
 	bool ret;
 	bool our_domain = False;
 
-	zero_addr(&dc_ss);
+	zero_sockaddr(&dc_ss);
 
 	ret = False;
 
