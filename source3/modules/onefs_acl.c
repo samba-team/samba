@@ -1,0 +1,807 @@
+/*
+ * Unix SMB/CIFS implementation.
+ *
+ * Support for OneFS native NTFS ACLs
+ *
+ * Copyright (C) Steven Danneman, 2008
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "includes.h"
+
+#include <sys/isi_acl.h>
+#include <isi_acl/isi_acl_util.h>
+#include <sys/isi_oplock.h>
+#include <ifs/ifs_syscalls.h>
+
+#include "onefs.h"
+
+/**
+ * Turn SID into UID/GID and setup a struct ifs_identity
+ */
+static bool
+onefs_sid_to_identity(DOM_SID *sid, struct ifs_identity *id, bool is_group)
+{
+	enum ifs_identity_type type = IFS_ID_TYPE_LAST+1;
+	uid_t uid = 0;
+	gid_t gid = 0;
+
+	if (!sid || sid_equal(sid, &global_sid_NULL))
+		type = IFS_ID_TYPE_NULL;
+	else if (sid_equal(sid, &global_sid_World))
+		type = IFS_ID_TYPE_EVERYONE;
+	else if (sid_equal(sid, &global_sid_Creator_Owner))
+		type = IFS_ID_TYPE_CREATOR_OWNER;
+	else if (sid_equal(sid, &global_sid_Creator_Group))
+		type = IFS_ID_TYPE_CREATOR_GROUP;
+	else if (is_group) {
+		if (!sid_to_gid(sid, &gid))
+			return false;
+		type = IFS_ID_TYPE_GID;
+	} else {
+		if (sid_to_uid(sid, &uid))
+			type = IFS_ID_TYPE_UID;
+		else if (sid_to_gid(sid, &gid))
+			type = IFS_ID_TYPE_GID;
+		else
+			return false;
+	}
+
+	if (aclu_initialize_identity(id, type, uid, gid, is_group)) {
+		DEBUG(3, ("Call to aclu_initialize_identity failed! id=%x, "
+		    "type=%d, uid=%u, gid=%u, is_group=%d\n",
+		    (unsigned int)id, type, uid, gid, is_group));
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Turn struct ifs_identity into SID
+ */
+static bool
+onefs_identity_to_sid(struct ifs_identity *id, DOM_SID *sid)
+{
+	if (!id || !sid)
+		return false;
+
+	if (id->type >= IFS_ID_TYPE_LAST)
+		return false;
+
+	switch (id->type) {
+	    case IFS_ID_TYPE_UID:
+	        uid_to_sid(sid, id->id.uid);
+		break;
+	    case IFS_ID_TYPE_GID:
+		gid_to_sid(sid, id->id.gid);
+		break;
+	    case IFS_ID_TYPE_EVERYONE:
+		sid_copy(sid, &global_sid_World);
+		break;
+	    case IFS_ID_TYPE_NULL:
+		sid_copy(sid, &global_sid_NULL);
+		break;
+	    case IFS_ID_TYPE_CREATOR_OWNER:
+		sid_copy(sid, &global_sid_Creator_Owner);
+		break;
+	    case IFS_ID_TYPE_CREATOR_GROUP:
+		sid_copy(sid, &global_sid_Creator_Group);
+		break;
+	    default:
+		DEBUG(0, ("Unknown identity type: %d\n", id->type));
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Convert a SEC_ACL to a struct ifs_security_acl
+ */
+static bool
+onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl)
+{
+	int num_aces = 0;
+	struct ifs_ace *aces = NULL;
+	struct ifs_identity temp;
+	SEC_ACE *samba_aces;
+	int i, j;
+
+	if ((!acl) || (!samba_acl))
+		return false;
+
+	samba_aces = samba_acl->aces;
+
+	if (samba_acl->num_aces > 0 && samba_aces) {
+		/* Setup ACES */
+		num_aces = samba_acl->num_aces;
+		aces = SMB_MALLOC_ARRAY(struct ifs_ace, num_aces);
+
+		for (i = 0, j = 0; j < num_aces; i++, j++) {
+			if (!onefs_sid_to_identity(&samba_aces[j].trustee,
+			    &temp, false))
+				goto err_free;
+
+			/*
+			 * XXX Act like we did pre-Thai: Silently fail setting
+			 * ACEs for BUILTIN accounts.
+			 */
+			if (temp.id.uid == -1) {
+				DEBUG(3, ("Silently failing to set ACE "
+				    "because our id was == -1.\n"));
+				i--;
+				continue;
+			}
+
+			if (aclu_initialize_ace(&aces[i], samba_aces[i].type,
+			    samba_aces[i].access_mask, samba_aces[i].flags,
+			    0, &temp))
+				goto err_free;
+
+			if ((aces[i].trustee.type == IFS_ID_TYPE_CREATOR_OWNER ||
+			    aces[i].trustee.type == IFS_ID_TYPE_CREATOR_GROUP) &&
+			    nt4_compatible_acls())
+				aces[i].flags |= IFS_ACE_FLAG_INHERIT_ONLY;
+		}
+		num_aces = i;
+	}
+
+	if (aclu_initialize_acl(acl, aces, num_aces))
+		goto err_free;
+
+	/* Currently aclu_initialize_acl should copy the aces over, allowing us
+	 * to immediately free */
+	free(aces);
+	return true;
+
+err_free:
+	free(aces);
+	return false;
+}
+
+/**
+ * Convert a struct ifs_security_acl to a SEC_ACL
+ */
+static bool
+onefs_acl_to_samba_acl(struct ifs_security_acl *acl, SEC_ACL **samba_acl)
+{
+	SEC_ACE *samba_aces = NULL;
+	SEC_ACL *tmp_samba_acl = NULL;
+	int i, num_aces = 0;
+
+	if (!samba_acl)
+		return false;
+
+	/* NULL ACL */
+	if (!acl) {
+		*samba_acl = NULL;
+		return true;
+	}
+
+	/* Determine number of aces in ACL */
+	if (!acl->aces)
+		num_aces = 0;
+	else
+		num_aces = acl->num_aces;
+
+	/* Allocate the ace list. */
+	if (num_aces > 0) {
+		if ((samba_aces = SMB_MALLOC_ARRAY(SEC_ACE, num_aces)) == NULL)
+		{
+			DEBUG(0, ("Unable to malloc space for %d aces.\n",
+			    num_aces));
+			return false;
+		}
+		memset(samba_aces, '\0', (num_aces) * sizeof(SEC_ACE));
+	}
+
+	for (i = 0; i < num_aces; i++) {
+		DOM_SID sid;
+
+		if (!onefs_identity_to_sid(&acl->aces[i].trustee, &sid))
+			goto err_free;
+
+		init_sec_ace(&samba_aces[i], &sid, acl->aces[i].type,
+		    acl->aces[i].access_mask, acl->aces[i].flags);
+	}
+
+	if ((tmp_samba_acl = make_sec_acl(talloc_tos(), acl->revision, num_aces,
+	    samba_aces)) == NULL) {
+	       DEBUG(0, ("Unable to malloc space for acl.\n"));
+	       goto err_free;
+	}
+
+	*samba_acl = tmp_samba_acl;
+	SAFE_FREE(samba_aces);
+	return true;
+err_free:
+	SAFE_FREE(samba_aces);
+	return false;
+}
+
+/**
+ * @brief Reorder ACLs into the "correct" order for Windows Explorer.
+ *
+ * Windows Explorer expects ACLs to be in a standard order (inherited first,
+ * then deny, then permit.)  When ACLs are composed from POSIX file permissions
+ * bits, they may not match these expectations, generating an annoying warning
+ * dialog for the user.  This function will, if configured appropriately,
+ * reorder the ACLs for these "synthetic" (POSIX-derived) descriptors to prevent
+ * this.  The list is changed within the security descriptor passed in.
+ *
+ * @param fsp files_struct with service configs; must not be NULL
+ * @param sd security descriptor being normalized;
+ *           sd->dacl->aces is rewritten in-place, so must not be NULL
+ * @return true on success, errno will be set on error
+ *
+ * @bug Although Windows Explorer likes the reordering, they seem to cause
+ *  problems with Excel and Word sending back the reordered ACLs to us and
+ *  changing policy; see Isilon bug 30165.
+ */
+static bool
+onefs_canon_acl(files_struct *fsp, struct ifs_security_descriptor *sd)
+{
+	int error = 0;
+	int cur;
+	struct ifs_ace *new_aces = NULL;
+	int new_aces_count = 0;
+	SMB_STRUCT_STAT sbuf;
+
+	if (sd == NULL || sd->dacl == NULL || sd->dacl->num_aces == 0)
+		return true;
+
+	/*
+	 * Find out if this is a windows bit, and if the smb policy wants us to
+	 * lie about the sd.
+	 */
+	SMB_ASSERT(fsp != NULL);
+	switch (lp_parm_enum(SNUM(fsp->conn), PARM_ONEFS_TYPE,
+		PARM_ACL_WIRE_FORMAT, enum_onefs_acl_wire_format,
+		PARM_ACL_WIRE_FORMAT_DEFAULT))  {
+	case ACL_FORMAT_RAW:
+		return true;
+
+	case ACL_FORMAT_WINDOWS_SD:
+		error = SMB_VFS_FSTAT(fsp, &sbuf);
+		if (error)
+			return false;
+
+		if ((sbuf.st_flags & SF_HASNTFSACL) != 0) {
+			DEBUG(10, ("Did not canonicalize ACLs because a "
+			    "Windows ACL set was found for file %s\n",
+			    fsp->fsp_name));
+			return true;
+		}
+		break;
+
+	case ACL_FORMAT_ALWAYS:
+		break;
+
+	default:
+		SMB_ASSERT(false);
+		return false;
+	}
+
+	new_aces = SMB_MALLOC_ARRAY(struct ifs_ace, sd->dacl->num_aces);
+	if (new_aces == NULL)
+		return false;
+
+	/*
+	 * By walking down the list 3 separate times, we can avoid the need
+	 * to create multiple temp buffers and extra copies.
+	 */
+	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
+		if (sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE)
+			new_aces[new_aces_count++] = sd->dacl->aces[cur];
+	}
+
+	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
+		if (!(sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE) &&
+		    (sd->dacl->aces[cur].type == IFS_ACE_TYPE_ACCESS_DENIED))
+			new_aces[new_aces_count++] = sd->dacl->aces[cur];
+	}
+
+	for (cur = 0; cur < sd->dacl->num_aces; cur++)  {
+		if (!(sd->dacl->aces[cur].flags & IFS_ACE_FLAG_INHERITED_ACE) &&
+		    !(sd->dacl->aces[cur].type == IFS_ACE_TYPE_ACCESS_DENIED))
+			new_aces[new_aces_count++] = sd->dacl->aces[cur];
+	}
+
+	SMB_ASSERT(new_aces_count == sd->dacl->num_aces);
+	DEBUG(10, ("Performed canonicalization of ACLs for file %s\n",
+	    fsp->fsp_name));
+
+	/*
+	 * At this point you would think we could just do this:
+	 *   SAFE_FREE(sd->dacl->aces);
+	 *   sd->dacl->aces = new_aces;
+	 * However, in some cases the existing aces pointer does not point
+	 * to the beginning of an allocated block.  So we have to do a more
+	 * expensive memcpy()
+	 */
+	memcpy(sd->dacl->aces, new_aces,
+	    sizeof(struct ifs_ace) * new_aces_count);
+
+	SAFE_FREE(new_aces);
+	return true;
+}
+
+
+/**
+ * This enum is a helper for onefs_fget_nt_acl() to communicate with
+ * onefs_init_ace().
+ */
+enum mode_ident { USR, GRP, OTH };
+
+/**
+ * Initializes an ACE for addition to a synthetic ACL.
+ */
+static struct ifs_ace onefs_init_ace(struct connection_struct *conn,
+				     mode_t mode,
+				     bool isdir,
+				     enum mode_ident ident)
+{
+	struct ifs_ace result;
+	enum ifs_ace_rights r,w,x;
+
+	r = isdir ? UNIX_DIRECTORY_ACCESS_R : UNIX_ACCESS_R;
+	w = isdir ? UNIX_DIRECTORY_ACCESS_W : UNIX_ACCESS_W;
+	x = isdir ? UNIX_DIRECTORY_ACCESS_X : UNIX_ACCESS_X;
+
+	result.type = IFS_ACE_TYPE_ACCESS_ALLOWED;
+	result.ifs_flags = 0;
+	result.flags = isdir ? IFS_ACE_FLAG_CONTAINER_INHERIT :
+	    IFS_ACE_FLAG_OBJECT_INHERIT;
+	result.flags |= IFS_ACE_FLAG_INHERIT_ONLY;
+
+	switch (ident) {
+	case USR:
+		result.access_mask =
+		    ((mode & S_IRUSR) ? r : 0 ) |
+		    ((mode & S_IWUSR) ? w : 0 ) |
+		    ((mode & S_IXUSR) ? x : 0 );
+		if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+		    PARM_CREATOR_OWNER_GETS_FULL_CONTROL,
+		    PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT))
+			result.access_mask |= GENERIC_ALL_ACCESS;
+		result.trustee.type = IFS_ID_TYPE_CREATOR_OWNER;
+		break;
+	case GRP:
+		result.access_mask =
+		    ((mode & S_IRGRP) ? r : 0 ) |
+		    ((mode & S_IWGRP) ? w : 0 ) |
+		    ((mode & S_IXGRP) ? x : 0 );
+		result.trustee.type = IFS_ID_TYPE_CREATOR_GROUP;
+		break;
+	case OTH:
+		result.access_mask =
+		    ((mode & S_IROTH) ? r : 0 ) |
+		    ((mode & S_IWOTH) ? w : 0 ) |
+		    ((mode & S_IXOTH) ? x : 0 );
+		result.trustee.type = IFS_ID_TYPE_EVERYONE;
+		break;
+	}
+
+	return result;
+}
+
+/**
+ * This adds inheritable ACEs to the end of the DACL, with the ACEs
+ * being derived from the mode bits.  This is useful for clients that have the
+ * MoveSecurityAttributes regkey set to 0 or are in Simple File Sharing Mode.
+ *
+ * On these clients, when copying files from one folder to another inside the
+ * same volume/share, the DACL is explicitely cleared.  Without inheritable
+ * aces on the target folder the mode bits of the copied file are set to 000.
+ *
+ * See Isilon Bug 27990
+ *
+ * Note: This function allocates additional memory onto sd->dacl->aces, that
+ * must be freed by the caller.
+ */
+static bool add_sfs_aces(files_struct *fsp, struct ifs_security_descriptor *sd)
+{
+	int error;
+	SMB_STRUCT_STAT sbuf;
+
+	error = SMB_VFS_FSTAT(fsp, &sbuf);
+	if (error) {
+		DEBUG(0, ("Failed to stat %s in simple files sharing "
+			  "compatibility mode. errno=%d\n",
+			  fsp->fsp_name, errno));
+		return false;
+	}
+
+	/* Only continue if this is a synthetic ACL and a directory. */
+	if (S_ISDIR(sbuf.st_mode) && (sbuf.st_flags & SF_HASNTFSACL) == 0) {
+		struct ifs_ace new_aces[6];
+		struct ifs_ace *old_aces;
+		int i, num_aces_to_add = 0;
+		mode_t file_mode = 0, dir_mode = 0;
+
+		/* Use existing samba logic to derive the mode bits. */
+		file_mode = unix_mode(fsp->conn, 0, fsp->fsp_name, false);
+		dir_mode = unix_mode(fsp->conn, aDIR, fsp->fsp_name, false);
+
+		/* Initialize ACEs. */
+		new_aces[0] = onefs_init_ace(fsp->conn, file_mode, false, USR);
+		new_aces[1] = onefs_init_ace(fsp->conn, file_mode, false, GRP);
+		new_aces[2] = onefs_init_ace(fsp->conn, file_mode, false, OTH);
+		new_aces[3] = onefs_init_ace(fsp->conn, dir_mode, true, USR);
+		new_aces[4] = onefs_init_ace(fsp->conn, dir_mode, true, GRP);
+		new_aces[5] = onefs_init_ace(fsp->conn, dir_mode, true, OTH);
+
+		for (i = 0; i < 6; i++)
+			if (new_aces[i].access_mask != 0)
+				num_aces_to_add++;
+
+		/* Expand the ACEs array */
+		if (num_aces_to_add != 0) {
+			old_aces = sd->dacl->aces;
+
+			sd->dacl->aces = SMB_MALLOC_ARRAY(struct ifs_ace,
+			    sd->dacl->num_aces + num_aces_to_add);
+			if (!sd->dacl->aces) {
+				DEBUG(0, ("Unable to malloc space for "
+				    "new_aces: %d.\n",
+				     sd->dacl->num_aces + num_aces_to_add));
+				return false;
+			}
+			memcpy(sd->dacl->aces, old_aces,
+			    sizeof(struct ifs_ace) * sd->dacl->num_aces);
+
+			/* Add the new ACEs to the DACL. */
+			for (i = 0; i < 6; i++) {
+				if (new_aces[i].access_mask != 0) {
+					sd->dacl->aces[sd->dacl->num_aces] =
+					    new_aces[i];
+					sd->dacl->num_aces++;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+/**
+ * Isilon-specific function for getting an NTFS ACL from an open file.
+ *
+ * @param[out] ppdesc SecDesc to allocate and fill in
+ *
+ * @return NTSTATUS based off errno on error
+ */
+NTSTATUS
+onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+		  uint32 security_info, SEC_DESC **ppdesc)
+{
+	int error;
+	uint32_t sd_size = 0;
+	size_t size = 0;
+	struct ifs_security_descriptor *sd = NULL;
+	DOM_SID owner_sid, group_sid;
+	DOM_SID *ownerp, *groupp;
+	SEC_ACL *dacl, *sacl;
+	SEC_DESC *pdesc;
+	bool alloced = false;
+	bool new_aces_alloced = false;
+	bool fopened = false;
+	NTSTATUS status = NT_STATUS_OK;
+
+	*ppdesc = NULL;
+
+	DEBUG(5, ("Getting sd for file %s. security_info=%u\n",
+	    fsp->fsp_name, security_info));
+
+	if (fsp->fh->fd == -1) {
+		enum ifs_ace_rights desired_access = 0;
+
+		if (security_info & (OWNER_SECURITY_INFORMATION |
+		     GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION))
+			desired_access |= IFS_RTS_STD_READ_CONTROL;
+		if (security_info & SACL_SECURITY_INFORMATION)
+			desired_access |= IFS_RTS_SACL_ACCESS;
+
+		if ((fsp->fh->fd = ifs_createfile(-1,
+						  fsp->fsp_name,
+						  desired_access,
+						  0, 0,
+						  OPLOCK_NONE,
+						  0, NULL, 0,
+						  NULL, 0, NULL)) == -1) {
+			DEBUG(0, ("Error opening file %s. errno=%d\n",
+			    fsp->fsp_name, errno));
+			status = map_nt_error_from_unix(errno);
+			goto out;
+		}
+		fopened = true;
+	}
+
+        /* Get security descriptor */
+        sd_size = 0;
+        do {
+                /* Allocate memory for get_security_descriptor */
+		if (sd_size > 0) {
+	                sd = SMB_REALLOC(sd, sd_size);
+			if (!sd) {
+				DEBUG(0, ("Unable to malloc %u bytes of space "
+				    "for security descriptor.\n", sd_size));
+				status = map_nt_error_from_unix(errno);
+				goto out;
+			}
+
+			alloced = true;
+		}
+
+                error = ifs_get_security_descriptor(fsp->fh->fd, security_info,
+		    &sd_size, sd);
+                if (error && (errno != EMSGSIZE)) {
+			DEBUG(0, ("Failed getting size of security descriptor! "
+			    "errno=%d\n", errno));
+			status = map_nt_error_from_unix(errno);
+			goto out;
+                }
+        } while (error);
+
+	DEBUG(5, ("Got sd, size=%u:\n", sd_size));
+
+	if (lp_parm_bool(SNUM(fsp->conn),
+	    PARM_ONEFS_TYPE,
+	    PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE,
+	    PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT) &&
+	    sd->dacl) {
+		if(!(new_aces_alloced = add_sfs_aces(fsp, sd)))
+			goto out;
+	}
+
+	if (!(onefs_canon_acl(fsp, sd))) {
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	DEBUG(5, ("Finished canonicalizing ACL\n"));
+
+	ownerp = NULL;
+	groupp = NULL;
+	dacl = NULL;
+	sacl = NULL;
+
+	/* Copy owner into ppdesc */
+	if (security_info & OWNER_SECURITY_INFORMATION) {
+		if (!onefs_identity_to_sid(sd->owner, &owner_sid)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+
+		ownerp = &owner_sid;
+	}
+
+	/* Copy group into ppdesc */
+	if (security_info & GROUP_SECURITY_INFORMATION) {
+		if (!onefs_identity_to_sid(sd->group, &group_sid)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+
+		groupp = &group_sid;
+	}
+
+	/* Copy DACL into ppdesc */
+	if (security_info & DACL_SECURITY_INFORMATION) {
+		if (!onefs_acl_to_samba_acl(sd->dacl, &dacl)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+	}
+
+	/* Copy SACL into ppdesc */
+	if (security_info & SACL_SECURITY_INFORMATION) {
+		if (!onefs_acl_to_samba_acl(sd->sacl, &sacl)) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto out;
+		}
+	}
+
+	/* AUTO_INHERIT_REQ bits are not returned over the wire so strip them
+	 * off.  Eventually we should stop storing these in the kernel
+	 * all together. See Isilon bug 40364 */
+	sd->control &= ~(IFS_SD_CTRL_DACL_AUTO_INHERIT_REQ |
+			 IFS_SD_CTRL_SACL_AUTO_INHERIT_REQ);
+
+	pdesc = make_sec_desc(talloc_tos(), sd->revision, sd->control,
+	    ownerp, groupp, sacl, dacl, &size);
+
+	if (!pdesc) {
+		DEBUG(0, ("Problem with make_sec_desc. Memory?\n"));
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
+	*ppdesc = pdesc;
+
+	DEBUG(5, ("Finished retrieving/canonicalizing SD!\n"));
+	/* FALLTHROUGH */
+out:
+	if (alloced && sd) {
+		if (new_aces_alloced && sd->dacl->aces)
+			SAFE_FREE(sd->dacl->aces);
+
+		SAFE_FREE(sd);
+	}
+
+	if (fopened) {
+		close(fsp->fh->fd);
+		fsp->fh->fd = -1;
+	}
+
+	return status;
+}
+
+/**
+ * Isilon-specific function for getting an NTFS ACL from a file path.
+ *
+ * Since onefs_fget_nt_acl() needs to open a filepath if the fd is invalid,
+ * we just mock up a files_struct with the path and bad fd and call into it.
+ *
+ * @param[out] ppdesc SecDesc to allocate and fill in
+ *
+ * @return NTSTATUS based off errno on error
+ */
+NTSTATUS
+onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
+		 uint32 security_info, SEC_DESC **ppdesc)
+{
+	files_struct finfo;
+	struct fd_handle fh;
+
+	ZERO_STRUCT(finfo);
+	ZERO_STRUCT(fh);
+
+	finfo.fnum = -1;
+	finfo.conn = handle->conn;
+	finfo.fh = &fh;
+	finfo.fh->fd = -1;
+	finfo.fsp_name = CONST_DISCARD(char *, name);
+
+	return onefs_fget_nt_acl(handle, &finfo, security_info, ppdesc);
+}
+
+/**
+ * Isilon-specific function for setting an NTFS ACL on an open file.
+ *
+ * @return NT_STATUS_UNSUCCESSFUL for userspace errors, NTSTATUS based off
+ * errno on syscall errors
+ */
+NTSTATUS
+onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+		  uint32 security_info_sent, SEC_DESC *psd)
+{
+	struct ifs_security_descriptor sd = {};
+	struct ifs_security_acl dacl, sacl, *daclp, *saclp;
+	struct ifs_identity owner, group, *ownerp, *groupp;
+	int fd;
+	bool fopened = false;
+
+	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
+
+	ownerp = NULL;
+	groupp = NULL;
+	daclp = NULL;
+	saclp = NULL;
+
+	/* Setup owner */
+	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
+		if (!onefs_sid_to_identity(psd->owner_sid, &owner, false))
+			return NT_STATUS_UNSUCCESSFUL;
+
+		/*
+		 * XXX Act like we did pre-Thai: Silently fail setting the
+		 * owner to a BUILTIN account.
+		 */
+		if (owner.id.uid == -1) {
+			DEBUG(3, ("Silently failing to set owner because our "
+			    "id was == -1.\n"));
+			security_info_sent &= ~OWNER_SECURITY_INFORMATION;
+			if (!security_info_sent)
+				return NT_STATUS_OK;
+		}
+		else
+			ownerp = &owner;
+	}
+
+	/* Setup group */
+	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
+		if (!onefs_sid_to_identity(psd->group_sid, &group, true))
+			return NT_STATUS_UNSUCCESSFUL;
+
+		/*
+		 * XXX Act like we did pre-Thai: Silently fail setting the
+		 * group to a BUILTIN account.
+		 */
+		if (group.id.gid == -1) {
+			DEBUG(3, ("Silently failing to set group because our "
+			    "id was == -1.\n"));
+			security_info_sent &= ~GROUP_SECURITY_INFORMATION;
+			if (!security_info_sent)
+				return NT_STATUS_OK;
+		}
+		else
+			groupp = &group;
+	}
+
+	/* Setup DACL */
+	if ((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl)) {
+		daclp = &dacl;
+
+		if (!onefs_samba_acl_to_acl(psd->dacl, &daclp))
+			return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Setup SACL */
+	if ((security_info_sent & SACL_SECURITY_INFORMATION) && (psd->sacl)) {
+		saclp = &sacl;
+
+		if (!onefs_samba_acl_to_acl(psd->sacl, &saclp))
+			return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Setup ifs_security_descriptor */
+	DEBUG(5,("Setting up SD\n"));
+	if (aclu_initialize_sd(&sd, psd->type, ownerp, groupp,
+	    (daclp ? &daclp : NULL), (saclp ? &saclp : NULL), false))
+		return NT_STATUS_UNSUCCESSFUL;
+
+	fd = fsp->fh->fd;
+	if (fd == -1) {
+		enum ifs_ace_rights desired_access = 0;
+
+		if (security_info_sent &
+		    (OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION))
+			desired_access |= IFS_RTS_STD_WRITE_OWNER;
+		if (security_info_sent & DACL_SECURITY_INFORMATION)
+			desired_access |= IFS_RTS_STD_WRITE_DAC;
+		if (security_info_sent & SACL_SECURITY_INFORMATION)
+			desired_access |= IFS_RTS_SACL_ACCESS;
+
+		if ((fd = ifs_createfile(-1,
+					 fsp->fsp_name,
+					 desired_access,
+					 0, 0,
+					 OPLOCK_NONE,
+					 0, NULL, 0,
+					 NULL, 0, NULL)) == -1) {
+			DEBUG(0, ("Error opening file %s. errno=%d\n",
+			    fsp->fsp_name, errno));
+			return map_nt_error_from_unix(errno);
+		}
+		fopened = true;
+	}
+
+        errno = 0;
+	if (ifs_set_security_descriptor(fd, security_info_sent, &sd)) {
+		DEBUG(0, ("Error setting security descriptor = %d\n", errno));
+		goto out;
+	}
+
+	DEBUG(5, ("Security descriptor set correctly!\n"));
+
+	/* FALLTHROUGH */
+out:
+	if (fopened)
+		close(fd);
+
+	aclu_free_sd(&sd, false);
+	return errno ? map_nt_error_from_unix(errno) : NT_STATUS_OK;
+}

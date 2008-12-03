@@ -1052,6 +1052,8 @@ if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
 fi
 LIBS="$save_LIBS"
 
+#############################################
+# check if building on Isilon OneFS
 printf "%s" "checking for Isilon OneFS... "
 save_LIBS="$LIBS"
 LIBS="$LIBS -lisi_version"
@@ -1063,7 +1065,9 @@ echo $samba_cv_HAVE_ONEFS
 if test x"$samba_cv_HAVE_ONEFS" = x"yes"; then
     AC_DEFINE(HAVE_ONEFS,1,[Whether building on Isilon OneFS])
     default_shared_modules="$default_shared_modules vfs_onefs"
+    ONEFS_LIBS="-lisi_acl"
 fi
+AC_SUBST(ONEFS_LIBS)
 LIBS="$save_LIBS"
 
 # Note that all the libunwind symbols in the API are defined to internal

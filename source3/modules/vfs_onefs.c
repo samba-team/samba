@@ -22,7 +22,22 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
+NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+			   uint32 security_info, SEC_DESC **ppdesc);
+
+NTSTATUS onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
+			  uint32 security_info, SEC_DESC **ppdesc);
+
+NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+			   uint32 security_info_sent, SEC_DESC *psd);
+
 static vfs_op_tuple onefs_ops[] = {
+	{SMB_VFS_OP(onefs_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
