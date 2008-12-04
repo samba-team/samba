@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 66
+Release: 67
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -121,6 +121,16 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Dec 3 2008 : Version 1.0.67
+ - Add a document describing the recovery process.
+ - Fix a bug in "ctdb setdebug" where it would refuse to set a negative
+   debug level.
+ - Print the list of literals for debug names if an invalid one was given
+   to "ctdb setdebug"
+ - Redesign how "ctdb reloadnodes" works and reduce the amont of tcp teardowns
+   used during this event.
+ - Make it possible to delete a public ip from all nodes at once using
+   "ctdb delip -n all"
 * Mon Nov 24 2008 : Version 1.0.66
  - Allow to change the recmaster even when we are not frozen.
  - Remove two redundant SAMBA_CHECK variables from the sysconf example
