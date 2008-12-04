@@ -61,22 +61,27 @@ bool change_to_guest(void)
  later code can then mess with.
 ********************************************************************/
 
-static bool check_user_ok(connection_struct *conn, uint16_t vuid,
-			  struct auth_serversupplied_info *server_info,
-			  int snum)
+static bool check_user_ok(connection_struct *conn,
+			uint16_t vuid,
+			const struct auth_serversupplied_info *server_info,
+			int snum)
 {
+	bool valid_vuid = (vuid != UID_FIELD_INVALID);
 	unsigned int i;
-	struct vuid_cache_entry *ent = NULL;
 	bool readonly_share;
 	bool admin_user;
 
-	for (i=0; i<VUID_CACHE_SIZE; i++) {
-		ent = &conn->vuid_cache.array[i];
-		if (ent->vuid == vuid) {
-			conn->server_info = ent->server_info;
-			conn->read_only = ent->read_only;
-			conn->admin_user = ent->admin_user;
-			return(True);
+	if (valid_vuid) {
+		struct vuid_cache_entry *ent;
+
+		for (i=0; i<VUID_CACHE_SIZE; i++) {
+			ent = &conn->vuid_cache.array[i];
+			if (ent->vuid == vuid) {
+				conn->server_info = ent->server_info;
+				conn->read_only = ent->read_only;
+				conn->admin_user = ent->admin_user;
+				return(True);
+			}
 		}
 	}
 
@@ -112,33 +117,36 @@ static bool check_user_ok(connection_struct *conn, uint16_t vuid,
 		pdb_get_domain(server_info->sam_account),
 		NULL, server_info->ptok, lp_admin_users(snum));
 
-	ent = &conn->vuid_cache.array[conn->vuid_cache.next_entry];
+	if (valid_vuid) {
+		struct vuid_cache_entry *ent =
+			&conn->vuid_cache.array[conn->vuid_cache.next_entry];
 
-	conn->vuid_cache.next_entry =
-		(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
+		conn->vuid_cache.next_entry =
+			(conn->vuid_cache.next_entry + 1) % VUID_CACHE_SIZE;
 
-	TALLOC_FREE(ent->server_info);
+		TALLOC_FREE(ent->server_info);
 
-	/*
-	 * If force_user was set, all server_info's are based on the same
-	 * username-based faked one.
-	 */
+		/*
+		 * If force_user was set, all server_info's are based on the same
+		 * username-based faked one.
+		 */
 
-	ent->server_info = copy_serverinfo(
-		conn, conn->force_user ? conn->server_info : server_info);
+		ent->server_info = copy_serverinfo(
+			conn, conn->force_user ? conn->server_info : server_info);
 
-	if (ent->server_info == NULL) {
-		ent->vuid = UID_FIELD_INVALID;
-		return false;
+		if (ent->server_info == NULL) {
+			ent->vuid = UID_FIELD_INVALID;
+			return false;
+		}
+
+		ent->vuid = vuid;
+		ent->read_only = readonly_share;
+		ent->admin_user = admin_user;
+		conn->server_info = ent->server_info;
 	}
 
-	ent->vuid = vuid;
-	ent->read_only = readonly_share;
-	ent->admin_user = admin_user;
-
-	conn->read_only = ent->read_only;
-	conn->admin_user = ent->admin_user;
-	conn->server_info = ent->server_info;
+	conn->read_only = readonly_share;
+	conn->admin_user = admin_user;
 
 	return(True);
 }
@@ -172,6 +180,7 @@ void conn_clear_vuid_cache(connection_struct *conn, uint16_t vuid)
 
 bool change_to_user(connection_struct *conn, uint16 vuid)
 {
+	const struct auth_serversupplied_info *server_info = NULL;
 	user_struct *vuser = get_valid_user_struct(vuid);
 	int snum;
 	gid_t gid;
@@ -207,13 +216,15 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
-	if ((vuser) && !check_user_ok(conn, vuid, vuser->server_info, snum)) {
+	server_info = vuser ? vuser->server_info : conn->server_info;
+
+	if (!check_user_ok(conn, vuid, server_info, snum)) {
 		DEBUG(2,("change_to_user: SMB user %s (unix user %s, vuid %d) "
 			 "not permitted access to share %s.\n",
-			 vuser->server_info->sanitized_username,
-			 vuser->server_info->unix_name, vuid,
+			 server_info->sanitized_username,
+			 server_info->unix_name, vuid,
 			 lp_servicename(snum)));
-		return False;
+		return false;
 	}
 
 	/*

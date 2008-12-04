@@ -121,7 +121,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 				       bool is_guest,
 				       struct auth_serversupplied_info **presult);
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 auth_serversupplied_info *src);
+						 const auth_serversupplied_info *src);
 bool init_guest_info(void);
 bool server_info_set_session_key(struct auth_serversupplied_info *info,
 				 DATA_BLOB session_key);
@@ -10246,10 +10246,10 @@ bool token_contains_name_in_list(const char *username,
 				 const struct nt_user_token *token,
 				 const char **list);
 bool user_ok_token(const char *username, const char *domain,
-		   struct nt_user_token *token, int snum);
+		   const struct nt_user_token *token, int snum);
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  struct nt_user_token *token,
+				  const struct nt_user_token *token,
 				  connection_struct *conn);
 
 /* The following definitions come from smbd/srvstr.c  */
