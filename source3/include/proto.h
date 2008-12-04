@@ -5672,7 +5672,8 @@ void init_samr_user_info16(struct samr_UserInfo16 *r,
 			   uint32_t acct_flags);
 void init_samr_user_info18(struct samr_UserInfo18 *r,
 			   const uint8 lm_pwd[16],
-			   const uint8 nt_pwd[16]);
+			   const uint8 nt_pwd[16],
+			   uint8_t password_expired);
 void init_samr_user_info20(struct samr_UserInfo20 *r,
 			   struct lsa_BinaryString *parameters);
 void init_samr_user_info21(struct samr_UserInfo21 *r,

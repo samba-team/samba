@@ -2430,8 +2430,10 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	init_samr_user_info18(r, pdb_get_lanman_passwd(smbpass),
-			      pdb_get_nt_passwd(smbpass));
+	init_samr_user_info18(r,
+			      pdb_get_lanman_passwd(smbpass),
+			      pdb_get_nt_passwd(smbpass),
+			      0 /* FIXME */);
 
 	TALLOC_FREE(smbpass);
 

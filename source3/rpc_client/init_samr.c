@@ -341,7 +341,8 @@ void init_samr_user_info16(struct samr_UserInfo16 *r,
 
 void init_samr_user_info18(struct samr_UserInfo18 *r,
 			   const uint8 lm_pwd[16],
-			   const uint8 nt_pwd[16])
+			   const uint8 nt_pwd[16],
+			   uint8_t password_expired)
 {
 	DEBUG(5, ("init_samr_user_info18\n"));
 
@@ -349,6 +350,7 @@ void init_samr_user_info18(struct samr_UserInfo18 *r,
 		memcpy(r->lm_pwd.hash, lm_pwd, sizeof(r->lm_pwd.hash)) ? true : false;
 	r->nt_pwd_active =
 		memcpy(r->nt_pwd.hash, nt_pwd, sizeof(r->nt_pwd.hash)) ? true : false;
+	r->password_expired = password_expired;
 }
 
 /*******************************************************************
