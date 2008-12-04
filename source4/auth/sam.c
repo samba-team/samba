@@ -144,7 +144,8 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_message *msg,
 			    struct ldb_message *msg_domain_ref,
 			    const char *logon_workstation,
-			    const char *name_for_logs)
+			    const char *name_for_logs,
+			    bool allow_domain_trust)
 {
 	uint16_t acct_flags;
 	const char *workstation_list;
@@ -231,11 +232,12 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LOGON_HOURS;
 	}
 	
-	if (acct_flags & ACB_DOMTRUST) {
-		DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", name_for_logs));
-		return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+	if (!allow_domain_trust) {
+		if (acct_flags & ACB_DOMTRUST) {
+			DEBUG(2,("sam_account_ok: Domain trust account %s denied by server\n", name_for_logs));
+			return NT_STATUS_NOLOGON_INTERDOMAIN_TRUST_ACCOUNT;
+		}
 	}
-	
 	if (!(logon_parameters & MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT)) {
 		if (acct_flags & ACB_SVRTRUST) {
 			DEBUG(2,("sam_account_ok: Server trust account %s denied by server\n", name_for_logs));
