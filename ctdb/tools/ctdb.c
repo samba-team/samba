@@ -828,6 +828,76 @@ static int control_addip(struct ctdb_context *ctdb, int argc, const char **argv)
 	return 0;
 }
 
+static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv);
+
+static int control_delip_all(struct ctdb_context *ctdb, int argc, const char **argv, ctdb_sock_addr *addr)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	struct ctdb_node_map *nodemap=NULL;
+	struct ctdb_all_public_ips *ips;
+	int ret, i, j;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from current node\n"));
+		return ret;
+	}
+
+	/* remove it from the nodes that are not hosting the ip currently */
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %d\n", nodemap->nodes[i].pnn));
+			continue;
+		}
+
+		for (j=0;j<ips->num;j++) {
+			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
+				break;
+			}
+		}
+		if (j==ips->num) {
+			continue;
+		}
+
+		if (ips->ips[j].pnn == nodemap->nodes[i].pnn) {
+			continue;
+		}
+
+		options.pnn = nodemap->nodes[i].pnn;
+		control_delip(ctdb, argc, argv);
+	}
+
+
+	/* remove it from every node (also the one hosting it) */
+	for(i=0;i<nodemap->num;i++){
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+		if (ctdb_ctrl_get_public_ips(ctdb, TIMELIMIT(), nodemap->nodes[i].pnn, tmp_ctx, &ips) != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get public ip list from node %d\n", nodemap->nodes[i].pnn));
+			continue;
+		}
+
+		for (j=0;j<ips->num;j++) {
+			if (ctdb_same_ip(addr, &ips->ips[j].addr)) {
+				break;
+			}
+		}
+		if (j==ips->num) {
+			continue;
+		}
+
+		options.pnn = nodemap->nodes[i].pnn;
+		control_delip(ctdb, argc, argv);
+	}
+
+	talloc_free(tmp_ctx);
+	return 0;
+}
+	
 /*
   delete a public ip address from a node
  */
@@ -847,6 +917,10 @@ static int control_delip(struct ctdb_context *ctdb, int argc, const char **argv)
 	if (parse_ip(argv[0], &addr) == 0) {
 		DEBUG(DEBUG_ERR,("Wrongly formed ip address '%s'\n", argv[0]));
 		return -1;
+	}
+
+	if (options.pnn == CTDB_BROADCAST_ALL) {
+		return control_delip_all(ctdb, argc, argv, &addr);
 	}
 
 	pub.addr  = addr;
@@ -1738,7 +1812,13 @@ static int32_t get_debug_by_desc(const char *desc)
 			return debug_levels[i].level;
 		}
 	}
-	return DEBUG_ERR;
+
+	fprintf(stderr, "Invalid debug level '%s'\nMust be one of\n", desc);
+	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
+		fprintf(stderr, "    %s\n", debug_levels[i].description);
+	}
+
+	exit(10);
 }
 
 /*
@@ -1771,7 +1851,7 @@ static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **ar
 static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t level;
+	int32_t level;
 
 	if (argc < 1) {
 		usage();
@@ -1780,7 +1860,7 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 	if (isalpha(argv[0][0])) { 
 		level = get_debug_by_desc(argv[0]);
 	} else {
-		level = strtoul(argv[0], NULL, 0);
+		level = strtol(argv[0], NULL, 0);
 	}
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
@@ -2331,6 +2411,9 @@ static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const 
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", mypnn));
 	}
+
+	/* initiate a recovery */
+	control_recover(ctdb, argc, argv);
 
 	return 0;
 }

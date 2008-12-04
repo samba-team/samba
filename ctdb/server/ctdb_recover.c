@@ -213,20 +213,43 @@ static void
 ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
 			       struct timeval t, void *private_data)
 {
-	int i;
-
+	int i, num_nodes;
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	TALLOC_CTX *tmp_ctx;
+	struct ctdb_node **nodes;	
 
+	tmp_ctx = talloc_new(ctdb);
+
+	/* steal the old nodes file for a while */
+	talloc_steal(tmp_ctx, ctdb->nodes);
+	nodes = ctdb->nodes;
+	ctdb->nodes = NULL;
+	num_nodes = ctdb->num_nodes;
+	ctdb->num_nodes = 0;
+
+	/* load the new nodes file */
 	ctdb_load_nodes_file(ctdb);
 
 	for (i=0; i<ctdb->num_nodes; i++) {
+		/* keep any identical pre-existing nodes and connections */
+		if ((i < num_nodes) && ctdb_same_address(&ctdb->nodes[i]->address, &nodes[i]->address)) {
+			talloc_free(ctdb->nodes[i]);
+			ctdb->nodes[i] = talloc_steal(ctdb->nodes, nodes[i]);
+			continue;
+		}
+
+		/* any new or different nodes must be added */
 		if (ctdb->methods->add_node(ctdb->nodes[i]) != 0) {
 			DEBUG(DEBUG_CRIT, (__location__ " methods->add_node failed at %d\n", i));
 			ctdb_fatal(ctdb, "failed to add node. shutting down\n");
 		}
+		if (ctdb->methods->connect_node(ctdb->nodes[i]) != 0) {
+			DEBUG(DEBUG_CRIT, (__location__ " methods->add_connect failed at %d\n", i));
+			ctdb_fatal(ctdb, "failed to connect to node. shutting down\n");
+		}
 	}
-	ctdb->methods->start(ctdb);
 
+	talloc_free(tmp_ctx);
 	return;
 }
 
@@ -1085,10 +1108,7 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb)
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indata)
 {
 	CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(DEBUG_NOTICE,("Attempt to set recmaster when not frozen\n"));
-		return -1;
-	}
+
 	ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
 	return 0;
 }

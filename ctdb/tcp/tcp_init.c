@@ -25,6 +25,17 @@
 #include "../include/ctdb_private.h"
 #include "ctdb_tcp.h"
 
+static int tnode_destructor(struct ctdb_tcp_node *tnode)
+{
+	struct ctdb_node *node = talloc_find_parent_bytype(tnode, struct ctdb_node);
+
+	if (tnode->fd != -1) {
+		close(tnode->fd);
+		tnode->fd = -1;
+	}
+
+	return 0;
+}
 
 /*
   initialise tcp portion of a ctdb node 
@@ -37,6 +48,7 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 
 	tnode->fd = -1;
 	node->private_data = tnode;
+	talloc_set_destructor(tnode, tnode_destructor);
 
 	tnode->out_queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
 					ctdb_tcp_tnode_cb, node);
@@ -70,21 +82,18 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 /*
   start the protocol going
 */
-static int ctdb_tcp_start(struct ctdb_context *ctdb)
+static int ctdb_tcp_connect_node(struct ctdb_node *node)
 {
-	int i;
+	struct ctdb_context *ctdb = node->ctdb;
+	struct ctdb_tcp_node *tnode = talloc_get_type(
+		node->private_data, struct ctdb_tcp_node);
 
-	/* startup connections to the other servers - will happen on
+	/* startup connection to the other server - will happen on
 	   next event loop */
-	for (i=0;i<ctdb->num_nodes;i++) {
-		struct ctdb_node *node = *(ctdb->nodes + i);
-		struct ctdb_tcp_node *tnode = talloc_get_type(
-			node->private_data, struct ctdb_tcp_node);
-		if (!ctdb_same_address(&ctdb->address, &node->address)) {
-			tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
-							    timeval_zero(), 
-							    ctdb_tcp_node_connect, node);
-		}
+	if (!ctdb_same_address(&ctdb->address, &node->address)) {
+		tnode->connect_te = event_add_timed(ctdb->ev, tnode, 
+						    timeval_zero(), 
+						    ctdb_tcp_node_connect, node);
 	}
 
 	return 0;
@@ -119,6 +128,20 @@ static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 	ctdb->private_data = NULL;
 }
 
+/*
+  start the transport
+*/
+static int ctdb_tcp_start(struct ctdb_context *ctdb)
+{
+	int i;
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		ctdb_tcp_connect_node(ctdb->nodes[i]);
+	}
+
+	return 0;
+}
+
 
 /*
   transport packet allocator - allows transport to control memory for packets
@@ -138,6 +161,7 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 	.start        = ctdb_tcp_start,
 	.queue_pkt    = ctdb_tcp_queue_pkt,
 	.add_node     = ctdb_tcp_add_node,
+	.connect_node = ctdb_tcp_connect_node,
 	.allocate_pkt = ctdb_tcp_allocate_pkt,
 	.shutdown     = ctdb_tcp_shutdown,
 	.restart      = ctdb_tcp_restart,
