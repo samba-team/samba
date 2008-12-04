@@ -883,6 +883,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		samr_Password nt_pwd;
 		boolean8 lm_pwd_active;
 		boolean8 nt_pwd_active;
+		uint8 password_expired;
 	} samr_UserInfo18;
 
 	typedef struct {
