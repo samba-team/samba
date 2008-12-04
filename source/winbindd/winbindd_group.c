@@ -740,7 +740,7 @@ struct getgrsid_state {
 };
 
 static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
-	{
+{
 	struct getgrsid_state *s =
 		(struct getgrsid_state *)private_data;
 	struct winbindd_domain *domain;
@@ -790,7 +790,7 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	s->state->response.extra_data.data = gr_mem;
 
 	request_ok(s->state);	
-	}
+}
 
 static void getgrsid_lookupsid_recv( void *private_data, bool success,
 				     const char *dom_name, const char *name,
