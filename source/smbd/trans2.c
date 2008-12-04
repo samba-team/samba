@@ -966,15 +966,13 @@ static BOOL exact_match(connection_struct *conn, char *str, char *mask)
 {
 	if (mask[0] == '.' && mask[1] == 0)
 		return False;
-	if (conn->case_sensitive)
-		return strcmp(str,mask)==0;
-	if (StrCaseCmp(str,mask) != 0) {
-		return False;
-	}
 	if (dptr_has_wild(conn->dirptr)) {
 		return False;
 	}
-	return True;
+	if (conn->case_sensitive)
+		return strcmp(str,mask)==0;
+	else
+		return StrCaseCmp(str,mask) == 0;
 }
 
 /****************************************************************************
