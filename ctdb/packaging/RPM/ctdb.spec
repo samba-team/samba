@@ -94,6 +94,7 @@ fi
 %attr(755,root,root) %{initdir}/ctdb
 
 %{_docdir}/ctdb/README.eventscripts
+%{_docdir}/ctdb/recovery-process.txt
 %{_sysconfdir}/ctdb/events.d/00.ctdb
 %{_sysconfdir}/ctdb/events.d/10.interface
 %{_sysconfdir}/ctdb/events.d/20.multipathd
