@@ -23,10 +23,8 @@ rpc.netlogon.*.LogonUasLogon
 rpc.netlogon.*.LogonUasLogoff
 rpc.netlogon.*.DatabaseSync
 rpc.netlogon.*.DatabaseSync2
-rpc.netlogon.*.GetDcName
 rpc.netlogon.*.LogonControl
 rpc.netlogon.*.LogonControl2
-rpc.netlogon.*.GetAnyDCName
 rpc.netlogon.*.DsrEnumerateDomainTrusts
 rpc.netlogon.*.NetrEnumerateTrustedDomains
 rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
