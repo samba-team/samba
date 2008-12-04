@@ -1294,7 +1294,7 @@ NTSTATUS make_serverinfo_from_username(TALLOC_CTX *mem_ctx,
 
 
 struct auth_serversupplied_info *copy_serverinfo(TALLOC_CTX *mem_ctx,
-						 auth_serversupplied_info *src)
+						 const auth_serversupplied_info *src)
 {
 	auth_serversupplied_info *dst;
 

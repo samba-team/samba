@@ -192,7 +192,7 @@ bool token_contains_name_in_list(const char *username,
  */
 
 bool user_ok_token(const char *username, const char *domain,
-		   struct nt_user_token *token, int snum)
+		   const struct nt_user_token *token, int snum)
 {
 	if (lp_invalid_users(snum) != NULL) {
 		if (token_contains_name_in_list(username, domain,
@@ -252,7 +252,7 @@ bool user_ok_token(const char *username, const char *domain,
 
 bool is_share_read_only_for_token(const char *username,
 				  const char *domain,
-				  struct nt_user_token *token,
+				  const struct nt_user_token *token,
 				  connection_struct *conn)
 {
 	int snum = SNUM(conn);
