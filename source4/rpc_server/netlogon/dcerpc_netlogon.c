@@ -856,7 +856,18 @@ static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLO
 static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_GetDcName r2;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.logon_server	= r->in.logon_server;
+	r2.in.domainname	= r->in.domainname;
+	r2.out.dcname		= r->out.dcname;
+
+	werr = dcesrv_netr_GetDcName(dce_call, mem_ctx, &r2);
+
+	return werr;
 }
 
 
