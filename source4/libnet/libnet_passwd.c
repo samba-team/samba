@@ -360,7 +360,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 25 */
 	ZERO_STRUCT(u_info);
 	u_info.info25.info = *r->samr_handle.in.info21;
-	u_info.info25.info.fields_present |= SAMR_FIELD_PASSWORD;
+	u_info.info25.info.fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
 	encode_pw_buffer(u_info.info25.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
 
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
@@ -451,7 +451,7 @@ static NTSTATUS libnet_SetPassword_samr_handle_23(struct libnet_context *ctx, TA
 	/* prepare samr_SetUserInfo2 level 23 */
 	ZERO_STRUCT(u_info);
 	u_info.info23.info = *r->samr_handle.in.info21;
-	u_info.info23.info.fields_present |= SAMR_FIELD_PASSWORD;
+	u_info.info23.info.fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
 	encode_pw_buffer(u_info.info23.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
 
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);

@@ -2074,7 +2074,7 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 
 	ZERO_STRUCT(u);
 
-	u.info25.info.fields_present = SAMR_FIELD_PASSWORD;
+	u.info25.info.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT;
 
 	set_pw_in_buffer(u.info25.password.data, &new_random_pass);
 
@@ -2669,9 +2669,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD) ||
-			      (pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD2)))
+			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
@@ -2732,9 +2732,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD) ||
-			      (pwd_tests[i].fields_present & SAMR_FIELD_PASSWORD2)))
+			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
@@ -2787,9 +2787,9 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 	int i;
 	uint32_t rid;
 	const uint32_t password_fields[] = {
-		SAMR_FIELD_PASSWORD,
-		SAMR_FIELD_PASSWORD2,
-		SAMR_FIELD_PASSWORD | SAMR_FIELD_PASSWORD2,
+		SAMR_FIELD_NT_PASSWORD_PRESENT,
+		SAMR_FIELD_LM_PASSWORD_PRESENT,
+		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT,
 		0
 	};
 	
