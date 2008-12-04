@@ -2979,6 +2979,9 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 	auth->user_name = talloc_strdup(auth, cli->user_name);
 	auth->domain = talloc_strdup(auth, cli->domain);
+	auth->user_session_key = data_blob_talloc(auth,
+		cli->user_session_key.data,
+		cli->user_session_key.length);
 
 	if ((auth->user_name == NULL) || (auth->domain == NULL)) {
 		TALLOC_FREE(result);
@@ -3443,6 +3446,10 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 				cli->auth->a_u.kerberos_auth->session_key.length);
 			break;
 		case PIPE_AUTH_TYPE_NONE:
+			*session_key = data_blob_talloc(mem_ctx,
+				cli->auth->user_session_key.data,
+				cli->auth->user_session_key.length);
+			break;
 		default:
 			return NT_STATUS_NO_USER_SESSION_KEY;
 	}
