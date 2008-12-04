@@ -192,7 +192,7 @@ BOOL token_contains_name_in_list(const char *username,
  * The other use is the netgroup check when using @group or &group.
  */
 
-BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
+BOOL user_ok_token(const char *username, const struct nt_user_token *token, int snum)
 {
 	if (lp_invalid_users(snum) != NULL) {
 		if (token_contains_name_in_list(username, lp_servicename(snum),
@@ -249,7 +249,7 @@ BOOL user_ok_token(const char *username, struct nt_user_token *token, int snum)
  */
 
 BOOL is_share_read_only_for_token(const char *username,
-				  struct nt_user_token *token, int snum)
+				  const struct nt_user_token *token, int snum)
 {
 	BOOL result = lp_readonly(snum);
 
