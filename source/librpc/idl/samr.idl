@@ -899,8 +899,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_FIELD_PARAMETERS       = 0x00200000,
 		SAMR_FIELD_COUNTRY_CODE     = 0x00400000,
 		SAMR_FIELD_CODE_PAGE        = 0x00800000,
-		SAMR_FIELD_PASSWORD         = 0x01000000, /* either of these */
-		SAMR_FIELD_PASSWORD2        = 0x02000000, /* two bits seems to work */
+		SAMR_FIELD_NT_PASSWORD_PRESENT = 0x01000000, /* either of these */
+		SAMR_FIELD_LM_PASSWORD_PRESENT = 0x02000000, /* two bits seems to work */
 		SAMR_FIELD_PRIVATE_DATA     = 0x04000000,
 		SAMR_FIELD_EXPIRED_FLAG     = 0x08000000,
 		SAMR_FIELD_SEC_DESC         = 0x10000000,
