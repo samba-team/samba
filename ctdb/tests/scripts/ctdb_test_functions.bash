@@ -272,13 +272,13 @@ wait_until_healthy ()
     wait_until 120 _cluster_is_healthy
 }
 
-# Incomplete! Do not use!
+# This function is becoming nicely overloaded.  Soon it will collapse!  :-)
 node_has_status ()
 {
     local pnn="$1"
     local status="$2"
 
-    local bits fpat
+    local bits fpat mpat
     case "$status" in
 	(disconnected) bits="1:?:?:?" ;;
 	(connected)    bits="0:?:?:?" ;;
@@ -288,6 +288,8 @@ node_has_status ()
 	(enabled)      bits="?:?:0:?" ;;
 	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
 	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
+	(monon)        mpat='^Monitoring mode:ACTIVE \(0\)$' ;;
+	(monoff)       mpat='^Monitoring mode:DISABLED \(1\)$' ;;
 	*)
 	    echo "node_has_status: unknown status \"$status\""
 	    return 1
@@ -307,6 +309,8 @@ node_has_status ()
 	} <<<"$out" # Yay bash!
     elif [ -n "$fpat" ] ; then
 	ctdb statistics -n "$pnn" | egrep -q "$fpat"
+    elif [ -n "$mpat" ] ; then
+	ctdb getmonmode -n "$pnn" | egrep -q "$mpat"
     else
 	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
 	return 1
