@@ -141,6 +141,48 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 	return(True);
 }
 
+/*******************************************************************
+ Check if a username is OK in share level security.
+********************************************************************/
+
+static bool check_user_ok_sharelevel_security(connection_struct *conn,
+					const char *unix_name,
+					int snum)
+{
+	NT_USER_TOKEN *token = conn->nt_user_token;
+
+	if (!user_ok_token(unix_name, token, snum)) {
+		return false;
+	}
+
+	conn->read_only = is_share_read_only_for_token(unix_name,
+						      token,
+						      conn);
+
+	if (!conn->read_only &&
+	    !share_access_check(token, lp_servicename(snum),
+				FILE_WRITE_DATA)) {
+		/* smb.conf allows r/w, but the security descriptor denies
+		 * write. Fall back to looking at readonly. */
+		conn->read_only = true;
+		DEBUG(5,("falling back to read-only access-evaluation due to "
+			 "security descriptor\n"));
+	}
+
+	if (!share_access_check(token, lp_servicename(snum),
+				conn->read_only ?
+				FILE_READ_DATA : FILE_WRITE_DATA)) {
+		return false;
+	}
+
+	conn->admin_user = token_contains_name_in_list(
+				unix_name, NULL, token,
+				lp_admin_users(SNUM(conn)));
+
+	return true;
+}
+
+
 /****************************************************************************
  Become the user of a connection number without changing the security context
  stack, but modify the current_user entries.
@@ -148,6 +190,7 @@ static bool check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 
 bool change_to_user(connection_struct *conn, uint16 vuid)
 {
+	enum security_types sec = (enum security_types)lp_security();
 	user_struct *vuser = get_valid_user_struct(vuid);
 	int snum;
 	gid_t gid;
@@ -170,7 +213,7 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 	 * SMB's - this hurts performance - Badly.
 	 */
 
-	if((lp_security() == SEC_SHARE) && (current_user.conn == conn) &&
+	if((sec == SEC_SHARE) && (current_user.conn == conn) &&
 	   (current_user.ut.uid == conn->uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already "
 			 "user\n"));
@@ -191,6 +234,13 @@ bool change_to_user(connection_struct *conn, uint16 vuid)
 			 vuser->user.smb_name, vuser->user.unix_name, vuid,
 			 lp_servicename(snum)));
 		return False;
+	} else if ((sec == SEC_SHARE) && !check_user_ok_sharelevel_security(conn,
+			conn->user, snum)) {
+		DEBUG(2,("change_to_user: unix user %s "
+			 "not permitted access to share %s.\n",
+			 conn->user,
+			 lp_servicename(snum)));
+		return false;
 	}
 
 	if (conn->force_user) /* security = share sets this too */ {
