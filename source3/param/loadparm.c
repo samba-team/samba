@@ -425,6 +425,7 @@ struct service {
 	bool bHideUnReadable;
 	bool bHideUnWriteableFiles;
 	bool bBrowseable;
+       bool bAccessBasedShareEnum;
 	bool bAvailable;
 	bool bRead_only;
 	bool bNo_set_dir;
@@ -568,6 +569,7 @@ static struct service sDefault = {
 	False,			/* bHideUnReadable */
 	False,			/* bHideUnWriteableFiles */
 	True,			/* bBrowseable */
+       False,                  /* bAccessBasedShareEnum */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
@@ -3304,6 +3306,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT,
 	},
 	{
+		.label		= "access based share enum",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.ptr		= &sDefault.bAccessBasedShareEnum,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE
+	},
+	{
 		.label		= "browsable",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -5331,6 +5342,7 @@ FN_LOCAL_BOOL(lp_hide_special_files, bHideSpecialFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
 FN_LOCAL_BOOL(lp_hideunwriteable_files, bHideUnWriteableFiles)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)
+FN_LOCAL_BOOL(lp_access_based_share_enum, bAccessBasedShareEnum)
 FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
@@ -5925,6 +5937,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	/* set the browseable flag from the global default */
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->bAccessBasedShareEnum = sDefault.bAccessBasedShareEnum;
 
 	ServicePtrs[i]->autoloaded = True;
 

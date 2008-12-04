@@ -4136,6 +4136,7 @@ bool lp_hide_special_files(int );
 bool lp_hideunreadable(int );
 bool lp_hideunwriteable_files(int );
 bool lp_browseable(int );
+bool lp_access_based_share_enum(int );
 bool lp_readonly(int );
 bool lp_no_set_dir(int );
 bool lp_guest_ok(int );
