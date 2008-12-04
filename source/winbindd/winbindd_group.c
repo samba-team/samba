@@ -832,10 +832,10 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 
 	winbindd_sid2gid_async(s->state->mem_ctx, &s->group_sid,
 			       getgrsid_sid2gid_recv, s);
-	}
+}
 
 static void winbindd_getgrsid( struct winbindd_cli_state *state, const DOM_SID group_sid )
-	{
+{
 	struct getgrsid_state *s;
 
 	if ( (s = TALLOC_ZERO_P(state->mem_ctx, struct getgrsid_state)) == NULL ) {
