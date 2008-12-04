@@ -3966,8 +3966,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ((id23->info.fields_present & SAMR_FIELD_PASSWORD) ||
-	    (id23->info.fields_present & SAMR_FIELD_PASSWORD2)) {
+	if ((id23->info.fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+	    (id23->info.fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)) {
 
 		DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
 			  pdb_get_username(pwd)));

@@ -5255,7 +5255,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 				      NULL, NULL, NULL, NULL, NULL,
 				      NULL, NULL, NULL, NULL, &parameters,
 				      0, 0, ACB_DOMTRUST,
-				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD,
+				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_NT_PASSWORD_PRESENT,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
 				      &crypt_pwd);
