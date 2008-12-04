@@ -815,14 +815,14 @@ static void getgrsid_lookupsid_recv( void *private_data, bool success,
 			  dom_name, name, name_type));
 		request_error(s->state);
 		return;
-}
+	}
 
 	if ( (s->group_name = talloc_asprintf( s->state->mem_ctx, 
                                                "%s%c%s",
                                                dom_name,
 					       *lp_winbind_separator(),
                                                name)) == NULL )
-{
+	{
 		DEBUG(1, ("getgrsid_lookupsid_recv: talloc_asprintf() Failed!\n"));
 		request_error(s->state);
 		return;
