@@ -508,8 +508,6 @@ void dup_file_fsp(files_struct *from,
 				uint32 create_options,
 		      		files_struct *to)
 {
-	NTSTATUS status;
-
 	SAFE_FREE(to->fh);
 
 	to->fh = from->fh;
