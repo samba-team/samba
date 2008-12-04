@@ -56,9 +56,9 @@ static int module_debug;
 
 static int preallocate_space(int fd, SMB_OFF_T size)
 {
+	int err;
 #ifndef HAVE_GPFS
 	lock_type fl = {0};
-	int err;
 
 	if (size <= 0) {
 		return 0;
