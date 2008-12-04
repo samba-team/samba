@@ -1523,6 +1523,7 @@ static bool test_GetAnyDCName(struct torture_context *tctx,
 
 	status = dcerpc_netr_GetAnyDCName(p, tctx, &r);
 	torture_assert_ntstatus_ok(tctx, status, "GetAnyDCName");
+	torture_assert_werr_ok(tctx, r.out.result, "GetAnyDCName");
 
 	if (dcname) {
 	    torture_comment(tctx, "\tDC is at '%s'\n", dcname);
