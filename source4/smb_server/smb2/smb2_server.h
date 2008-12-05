@@ -153,6 +153,11 @@ struct smbsrv_request;
 /* check req->ntvfs->async_states->status and if not OK then send an error reply */
 #define SMB2SRV_CHECK_ASYNC_STATUS_ERR_SIMPLE do { \
 	req = talloc_get_type(ntvfs->async_states->private_data, struct smb2srv_request); \
+	if (ntvfs->async_states->state & NTVFS_ASYNC_STATE_CLOSE || NT_STATUS_EQUAL(ntvfs->async_states->status, NT_STATUS_NET_WRITE_FAULT)) { \
+		smbsrv_terminate_connection(req->smb_conn, get_friendly_nt_error_msg (ntvfs->async_states->status)); \
+		talloc_free(req); \
+		return; \
+	} \
 	req->status = ntvfs->async_states->status; \
 	if (NT_STATUS_IS_ERR(ntvfs->async_states->status)) { \
 		smb2srv_send_error(req, ntvfs->async_states->status); \
@@ -165,6 +170,11 @@ struct smbsrv_request;
 } while (0)
 #define SMB2SRV_CHECK_ASYNC_STATUS_SIMPLE do { \
 	req = talloc_get_type(ntvfs->async_states->private_data, struct smb2srv_request); \
+	if (ntvfs->async_states->state & NTVFS_ASYNC_STATE_CLOSE || NT_STATUS_EQUAL(ntvfs->async_states->status, NT_STATUS_NET_WRITE_FAULT)) { \
+		smbsrv_terminate_connection(req->smb_conn, get_friendly_nt_error_msg (ntvfs->async_states->status)); \
+		talloc_free(req); \
+		return; \
+	} \
 	req->status = ntvfs->async_states->status; \
 	if (!NT_STATUS_IS_OK(ntvfs->async_states->status)) { \
 		smb2srv_send_error(req, ntvfs->async_states->status); \
