@@ -2463,8 +2463,8 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		},{
 			.level				= 21,
 			.password_expired_nonzero	= 1,
-			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2 |
+			.fields_present			= SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT |
 							  SAMR_FIELD_LAST_PWD_CHANGE,
 			.query_info2			= false,
 			.set_error			= NT_STATUS_ACCESS_DENIED
@@ -2484,28 +2484,28 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			.level				= 23,
 			.password_expired_nonzero	= 1,
 			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE |
-							  SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2,
+							  SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT,
 			.set_error			= NT_STATUS_ACCESS_DENIED
 		},{
 			.level				= 23,
 			.password_expired_nonzero	= 1,
 			.fields_present			= SAMR_FIELD_LAST_PWD_CHANGE |
-							  SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2 |
+							  SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT |
 							  SAMR_FIELD_EXPIRED_FLAG,
 			.set_error			= NT_STATUS_ACCESS_DENIED
 		},{
 			.level				= 23,
 			.password_expired_nonzero	= 1,
-			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2 |
+			.fields_present			= SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT |
 							  SAMR_FIELD_EXPIRED_FLAG
 		},{
 			.level				= 23,
 			.password_expired_nonzero	= 1,
-			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2,
+			.fields_present			= SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT,
 		},{
 			.level				= 23,
 			.password_expired_nonzero	= 1,
@@ -2539,14 +2539,14 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		},{
 			.level				= 25,
 			.password_expired_nonzero	= 1,
-			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2 |
+			.fields_present			= SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT |
 							  SAMR_FIELD_EXPIRED_FLAG
 		},{
 			.level				= 25,
 			.password_expired_nonzero	= 1,
-			.fields_present			= SAMR_FIELD_PASSWORD |
-							  SAMR_FIELD_PASSWORD2,
+			.fields_present			= SAMR_FIELD_NT_PASSWORD_PRESENT |
+							  SAMR_FIELD_LM_PASSWORD_PRESENT,
 		},{
 			.level				= 25,
 			.password_expired_nonzero	= 1,
@@ -2669,9 +2669,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
-			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
+			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((pwd_tests[i].fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (pwd_tests[i].fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
@@ -2732,9 +2732,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
-			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
+			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((pwd_tests[i].fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (pwd_tests[i].fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
