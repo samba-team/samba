@@ -849,6 +849,77 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	return ret;
 }
 
+static bool test_SetUserPass_18(struct dcerpc_pipe *p, struct torture_context *tctx,
+				struct policy_handle *handle, char **password)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	bool ret = true;
+	DATA_BLOB session_key;
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
+	int policy_min_pw_len = 0;
+	uint8_t lm_hash[16], nt_hash[16];
+
+	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
+
+	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info->min_password_length;
+	}
+	newpass = samr_rand_pass(tctx, policy_min_pw_len);
+
+	s.in.user_handle = handle;
+	s.in.info = &u;
+	s.in.level = 18;
+
+	ZERO_STRUCT(u);
+
+	u.info18.nt_pwd_active = true;
+	u.info18.lm_pwd_active = true;
+
+	E_md4hash(newpass, nt_hash);
+	E_deshash(newpass, lm_hash);
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return false;
+	}
+
+	{
+		DATA_BLOB in,out;
+		in = data_blob_const(nt_hash, 16);
+		out = data_blob_talloc_zero(tctx, 16);
+		sess_crypt_blob(&out, &in, &session_key, true);
+		memcpy(u.info18.nt_pwd.hash, out.data, out.length);
+	}
+	{
+		DATA_BLOB in,out;
+		in = data_blob_const(lm_hash, 16);
+		out = data_blob_talloc_zero(tctx, 16);
+		sess_crypt_blob(&out, &in, &session_key, true);
+		memcpy(u.info18.lm_pwd.hash, out.data, out.length);
+	}
+
+	torture_comment(tctx, "Testing SetUserInfo level 18 (set password hash)\n");
+
+	status = dcerpc_samr_SetUserInfo(p, tctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = false;
+	} else {
+		*password = newpass;
+	}
+
+	return ret;
+}
+
 static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 				      struct torture_context *tctx,
 				      struct policy_handle *handle,
@@ -2893,6 +2964,19 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		if (!test_ChangePassword(p, tctx, base_acct_name, domain_handle, &password)) {
 			ret = false;
 		}	
+
+		if (torture_setting_bool(tctx, "samba4", false)) {
+			printf("skipping Set Password level 18 against Samba4\n");
+		} else {
+
+			if (!test_SetUserPass_18(p, tctx, user_handle, &password)) {
+				ret = false;
+			}
+
+			if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
+				ret = false;
+			}
+		}
 
 		q.in.user_handle = user_handle;
 		q.in.level = 5;
