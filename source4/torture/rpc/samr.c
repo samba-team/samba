@@ -920,6 +920,121 @@ static bool test_SetUserPass_18(struct dcerpc_pipe *p, struct torture_context *t
 	return ret;
 }
 
+static bool test_SetUserPass_21(struct dcerpc_pipe *p, struct torture_context *tctx,
+				struct policy_handle *handle, uint32_t fields_present,
+				char **password)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	bool ret = true;
+	DATA_BLOB session_key;
+	char *newpass;
+	struct samr_GetUserPwInfo pwp;
+	struct samr_PwInfo info;
+	int policy_min_pw_len = 0;
+	uint8_t lm_hash[16], nt_hash[16];
+
+	pwp.in.user_handle = handle;
+	pwp.out.info = &info;
+
+	status = dcerpc_samr_GetUserPwInfo(p, tctx, &pwp);
+	if (NT_STATUS_IS_OK(status)) {
+		policy_min_pw_len = pwp.out.info->min_password_length;
+	}
+	newpass = samr_rand_pass(tctx, policy_min_pw_len);
+
+	s.in.user_handle = handle;
+	s.in.info = &u;
+	s.in.level = 21;
+
+	E_md4hash(newpass, nt_hash);
+	E_deshash(newpass, lm_hash);
+
+	ZERO_STRUCT(u);
+
+	u.info21.fields_present = fields_present;
+
+	if (fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+		u.info21.lm_owf_password.length = 16;
+		u.info21.lm_owf_password.size = 16;
+		u.info21.lm_owf_password.array = (uint16_t *)lm_hash;
+		u.info21.lm_password_set = true;
+	}
+
+	if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+		u.info21.nt_owf_password.length = 16;
+		u.info21.nt_owf_password.size = 16;
+		u.info21.nt_owf_password.array = (uint16_t *)nt_hash;
+		u.info21.nt_password_set = true;
+	}
+
+	status = dcerpc_fetch_session_key(p, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return false;
+	}
+
+	if (fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+		DATA_BLOB in,out;
+		in = data_blob_const(u.info21.lm_owf_password.array,
+				     u.info21.lm_owf_password.length);
+		out = data_blob_talloc_zero(tctx, 16);
+		sess_crypt_blob(&out, &in, &session_key, true);
+		u.info21.lm_owf_password.array = (uint16_t *)out.data;
+	}
+
+	if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+		DATA_BLOB in,out;
+		in = data_blob_const(u.info21.nt_owf_password.array,
+				     u.info21.nt_owf_password.length);
+		out = data_blob_talloc_zero(tctx, 16);
+		sess_crypt_blob(&out, &in, &session_key, true);
+		u.info21.nt_owf_password.array = (uint16_t *)out.data;
+	}
+
+	torture_comment(tctx, "Testing SetUserInfo level 21 (set password hash)\n");
+
+	status = dcerpc_samr_SetUserInfo(p, tctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = false;
+	} else {
+		*password = newpass;
+	}
+
+	/* try invalid length */
+	if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+
+		u.info21.nt_owf_password.length++;
+
+		status = dcerpc_samr_SetUserInfo(p, tctx, &s);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("SetUserInfo level %u should have failed with NT_STATUS_INVALID_PARAMETER - %s\n",
+			       s.in.level, nt_errstr(status));
+			ret = false;
+		}
+	}
+
+	if (fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+
+		u.info21.lm_owf_password.length++;
+
+		status = dcerpc_samr_SetUserInfo(p, tctx, &s);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_INVALID_PARAMETER)) {
+			printf("SetUserInfo level %u should have failed with NT_STATUS_INVALID_PARAMETER - %s\n",
+			       s.in.level, nt_errstr(status));
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+
 static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 				      struct torture_context *tctx,
 				      struct policy_handle *handle,
@@ -2966,7 +3081,7 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 		}	
 
 		if (torture_setting_bool(tctx, "samba4", false)) {
-			printf("skipping Set Password level 18 against Samba4\n");
+			printf("skipping Set Password level 18 and 21 against Samba4\n");
 		} else {
 
 			if (!test_SetUserPass_18(p, tctx, user_handle, &password)) {
@@ -2975,6 +3090,24 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 
 			if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
 				ret = false;
+			}
+
+			for (i = 0; password_fields[i]; i++) {
+
+				if (password_fields[i] == SAMR_FIELD_LM_PASSWORD_PRESENT) {
+					/* we need to skip as that would break
+					 * the ChangePasswordUser3 verify */
+					continue;
+				}
+
+				if (!test_SetUserPass_21(p, tctx, user_handle, password_fields[i], &password)) {
+					ret = false;
+				}
+
+				/* check it was set right */
+				if (!test_ChangePasswordUser3(p, tctx, base_acct_name, 0, &password, NULL, 0, false)) {
+					ret = false;
+				}
 			}
 		}
 
