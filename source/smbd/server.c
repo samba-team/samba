@@ -469,9 +469,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		char *sock_tok;
 		const char *sock_ptr;
 
-		if (sock_addr[0] == '\0' ||
-				strequal(sock_addr, "0.0.0.0") ||
-				strequal(sock_addr, "::")) {
+		if (strequal(sock_addr, "0.0.0.0") ||
+		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
 			sock_addr = "::,0.0.0.0";
 #else

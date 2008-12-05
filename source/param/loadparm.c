@@ -5022,7 +5022,6 @@ FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
-FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
@@ -9508,4 +9507,19 @@ int lp_min_receive_file_size(void)
 		return 0;
 	}
 	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
+}
+
+/*******************************************************************
+ If socket address is an empty character string, it is necessary to 
+ define it as "0.0.0.0". 
+********************************************************************/
+
+const char *lp_socket_address(void)
+{
+	char *sock_addr = Globals.szSocketAddress;
+	
+	if (sock_addr[0] == '\0'){
+		string_set(&Globals.szSocketAddress, "0.0.0.0");
+	}
+	return  Globals.szSocketAddress;
 }
