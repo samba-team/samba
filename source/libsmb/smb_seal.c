@@ -388,7 +388,14 @@ void common_free_encryption_state(struct smb_trans_enc_state **pp_es)
 
 void common_free_enc_buffer(struct smb_trans_enc_state *es, char *buf)
 {
+	uint16_t enc_ctx_num;
+
 	if (!common_encryption_on(es)) {
+		return;
+	}
+
+	if (!NT_STATUS_IS_OK(get_enc_ctx_num((const uint8_t *)buf,
+			&enc_ctx_num))) {
 		return;
 	}
 
