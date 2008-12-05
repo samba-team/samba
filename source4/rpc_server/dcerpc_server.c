@@ -36,7 +36,7 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
-#define SAMBA_ACCOC_GROUP 0x12345678
+#define SAMBA_ASSOC_GROUP 0x12345678
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
@@ -558,7 +558,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 * assoc_group_id back to the clients
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0 &&
-	    call->pkt.u.bind.assoc_group_id != SAMBA_ACCOC_GROUP) {
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    call->pkt.u.bind.assoc_group_id != SAMBA_ASSOC_GROUP) {
 		return dcesrv_bind_nak(call, 0);	
 	}
 
@@ -609,6 +610,11 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->conn = call->conn;
 		context->iface = iface;
 		context->context_id = context_id;
+		/*
+		 * we need to send a non zero assoc_group_id here to make longhorn happy,
+		 * it also matches samba3
+		 */
+		context->assoc_group_id = SAMBA_ASSOC_GROUP;
 		context->private = NULL;
 		context->handles = NULL;
 		DLIST_ADD(call->conn->contexts, context);
@@ -638,8 +644,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
-	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
-	pkt.u.bind_ack.assoc_group_id = SAMBA_ACCOC_GROUP;
+	pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
@@ -671,6 +676,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 			return dcesrv_bind_nak(call, 0);
 		}
 	}
+
+	/* the iface->bind() might change the assoc_group_id */
+	pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
@@ -747,6 +755,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->conn = call->conn;
 	context->iface = iface;
 	context->context_id = context_id;
+	context->assoc_group_id = SAMBA_ASSOC_GROUP;
 	context->private = NULL;
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
@@ -793,6 +802,15 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		}
 	}
 
+	if (result == 0 &&
+	    call->pkt.u.alter.assoc_group_id != 0 &&
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group_id) {
+		/* TODO: work out what to return here */
+		result = DCERPC_BIND_PROVIDER_REJECT;
+		reason = DCERPC_BIND_REASON_ASYNTAX;
+	}
+
 	/* setup a alter_resp */
 	dcesrv_init_hdr(&pkt, lp_rpc_big_endian(call->conn->dce_ctx->lp_ctx));
 	pkt.auth_length = 0;
@@ -801,7 +819,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
-	pkt.u.alter_resp.assoc_group_id = call->pkt.u.alter.assoc_group_id;
+	pkt.u.alter_resp.assoc_group_id = call->context->assoc_group_id;
 	pkt.u.alter_resp.num_results = 1;
 	pkt.u.alter_resp.ctx_list = talloc_array(call, struct dcerpc_ack_ctx, 1);
 	if (!pkt.u.alter_resp.ctx_list) {
