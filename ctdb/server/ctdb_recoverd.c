@@ -639,27 +639,12 @@ static int pull_remote_database(struct ctdb_context *ctdb, struct ctdb_node_map 
 /*
   update flags on all active nodes
  */
-static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
-{
-	int i;
-	for (i=0;i<nodemap->num;i++) {
-		int ret;
-
-		ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn, nodemap->nodes[i].flags, ~nodemap->nodes[i].flags);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
-			return -1;
-		}
-	}
-	return 0;
-}
-
-static int update_our_flags_on_all_nodes(struct ctdb_context *ctdb, uint32_t pnn, struct ctdb_node_map *nodemap)
+static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn, uint32_t flags)
 {
 	int ret;
 
-	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[pnn].pnn, nodemap->nodes[pnn].flags, ~nodemap->nodes[pnn].flags);
-	if (ret != 0) {
+	ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), pnn, flags, ~flags);
+		if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
 		return -1;
 	}
@@ -1513,12 +1498,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	/*
 	  update all nodes to have the same flags that we have
 	 */
-	ret = update_flags_on_all_nodes(ctdb, nodemap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes\n"));
-		return -1;
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+			continue;
+		}
+
+		ret = update_flags_on_all_nodes(ctdb, nodemap, i, nodemap->nodes[i].flags);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, (__location__ " Unable to update flags on all nodes for node %d\n", i));
+			return -1;
+		}
 	}
-	
+
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	/* disable recovery mode */
@@ -2271,6 +2262,51 @@ static int verify_ip_allocation(struct ctdb_context *ctdb, uint32_t pnn)
 	return 0;
 }
 
+
+static void async_getnodemap_callback(struct ctdb_context *ctdb, uint32_t node_pnn, int32_t res, TDB_DATA outdata, void *callback_data)
+{
+	struct ctdb_node_map **remote_nodemaps = callback_data;
+
+	if (node_pnn >= ctdb->num_nodes) {
+		DEBUG(DEBUG_ERR,(__location__ " pnn from invalid node\n"));
+		return;
+	}
+
+	remote_nodemaps[node_pnn] = (struct ctdb_node_map *)talloc_steal(remote_nodemaps, outdata.dptr);
+
+}
+
+static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+	struct ctdb_node_map *nodemap,
+	struct ctdb_node_map ***remote_nodemaps)
+{
+	uint32_t *nodes;
+	int i;
+
+	*remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	if (*remote_nodemaps == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
+		return -1;
+	}
+	for(i=0; i<nodemap->num; i++) {
+		(*remote_nodemaps)[i] = NULL;
+	}
+
+	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
+	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_NODEMAP,
+					nodes,
+					CONTROL_TIMEOUT(), false, tdb_null,
+					async_getnodemap_callback,
+					NULL,
+					*remote_nodemaps) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " Unable to pull all remote nodemaps\n"));
+
+		return -1;
+	}
+
+	return 0;
+}
+
 /*
   the main monitoring loop
  */
@@ -2279,7 +2315,8 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	uint32_t pnn;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
-	struct ctdb_node_map *remote_nodemap=NULL;
+	struct ctdb_node_map *recmaster_nodemap=NULL;
+	struct ctdb_node_map **remote_nodemaps=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	int32_t debug_level;
@@ -2484,7 +2521,7 @@ again:
 
 	/* grap the nodemap from the recovery master to check if it is banned */
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-				   mem_ctx, &remote_nodemap);
+				   mem_ctx, &recmaster_nodemap);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from recovery master %u\n", 
 			  nodemap->nodes[j].pnn));
@@ -2492,18 +2529,10 @@ again:
 	}
 
 
-	if (remote_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+	if (recmaster_nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 		DEBUG(DEBUG_NOTICE, ("Recmaster node %u no longer available. Force reelection\n", nodemap->nodes[j].pnn));
 		force_election(rec, pnn, nodemap);
 		goto again;
-	}
-
-
-	/* verify that we and the recmaster agrees on our flags */
-	if (nodemap->nodes[pnn].flags != remote_nodemap->nodes[pnn].flags) {
-		DEBUG(DEBUG_ERR, (__location__ " Recmaster disagrees on our flags flags:0x%x recmaster_flags:0x%x  Broadcasting out flags.\n", nodemap->nodes[pnn].flags, remote_nodemap->nodes[pnn].flags));
-
-		update_our_flags_on_all_nodes(ctdb, pnn, nodemap);
 	}
 
 
@@ -2619,31 +2648,27 @@ again:
 		goto again;
 	}
 
-	/* get the nodemap for all active remote nodes and verify
-	   they are the same as for this node
+
+	/* get the nodemap for all active remote nodes
 	 */
+	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, &remote_nodemaps) != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " Failed to read remote nodemaps\n"));
+		goto again;
+	} 
+
+	/* verify that all other nodes have the same nodemap as we have
+	*/
 	for (j=0; j<nodemap->num; j++) {
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		if (nodemap->nodes[j].pnn == pnn) {
+		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 
-		ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					   mem_ctx, &remote_nodemap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from remote node %u\n", 
-				  nodemap->nodes[j].pnn));
-			goto again;
-		}
-
-		/* if the nodes disagree on how many nodes there are
+ 		/* if the nodes disagree on how many nodes there are
 		   then this is a good reason to try recovery
 		 */
-		if (remote_nodemap->num != nodemap->num) {
+		if (remote_nodemaps[j]->num != nodemap->num) {
 			DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
-				  nodemap->nodes[j].pnn, remote_nodemap->num, nodemap->num));
+				  nodemap->nodes[j].pnn, remote_nodemaps[j]->num, nodemap->num));
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
@@ -2652,25 +2677,44 @@ again:
 		   active, then that is also a good reason to do recovery
 		 */
 		for (i=0;i<nodemap->num;i++) {
-			if (remote_nodemap->nodes[i].pnn != nodemap->nodes[i].pnn) {
+			if (remote_nodemaps[j]->nodes[i].pnn != nodemap->nodes[i].pnn) {
 				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap pnn for %d (%u vs %u).\n", 
 					  nodemap->nodes[j].pnn, i, 
-					  remote_nodemap->nodes[i].pnn, nodemap->nodes[i].pnn));
-				do_recovery(rec, mem_ctx, pnn, nodemap, 
-					    vnnmap, nodemap->nodes[j].pnn);
-				goto again;
-			}
-			if ((remote_nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) != 
-			    (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-				DEBUG(DEBUG_WARNING, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
-					  nodemap->nodes[j].pnn, i,
-					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
+					  remote_nodemaps[j]->nodes[i].pnn, nodemap->nodes[i].pnn));
 				do_recovery(rec, mem_ctx, pnn, nodemap, 
 					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
 		}
 
+		/* verify the flags are consistent
+		*/
+		for (i=0; i<nodemap->num; i++) {
+			if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
+				continue;
+			}
+			
+			if (nodemap->nodes[i].flags != remote_nodemaps[j]->nodes[i].flags) {
+				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different flags for node %u. It has 0x%02x vs our 0x%02x\n", 
+				  nodemap->nodes[j].pnn, 
+				  nodemap->nodes[i].pnn, 
+				  remote_nodemaps[j]->nodes[i].flags,
+				  nodemap->nodes[j].flags));
+				if (i == j) {
+					DEBUG(DEBUG_ERR,("Use flags 0x%02x from remote node %d for cluster update of its own flags\n", remote_nodemaps[j]->nodes[i].flags, j));
+					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, remote_nodemaps[j]->nodes[i].flags);
+					do_recovery(rec, mem_ctx, pnn, nodemap, 
+						    vnnmap, nodemap->nodes[j].pnn);
+					goto again;
+				} else {
+					DEBUG(DEBUG_ERR,("Use flags 0x%02x from local recmaster node for cluster update of node %d flags\n", nodemap->nodes[i].flags, i));
+					update_flags_on_all_nodes(ctdb, nodemap, nodemap->nodes[i].pnn, nodemap->nodes[i].flags);
+					do_recovery(rec, mem_ctx, pnn, nodemap, 
+						    vnnmap, nodemap->nodes[j].pnn);
+					goto again;
+				}
+			}
+		}
 	}
 
 

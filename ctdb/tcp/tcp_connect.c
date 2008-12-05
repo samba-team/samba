@@ -153,7 +153,6 @@ void ctdb_tcp_node_connect(struct event_context *ev, struct timed_event *te,
 		return;
 	}
 
-	DEBUG(DEBUG_ERR,("create socket...\n"));
 	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	set_nonblocking(tnode->fd);
 	set_close_on_exec(tnode->fd);
