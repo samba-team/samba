@@ -1293,7 +1293,13 @@ int main(int argc, char ** argv)
 	}
 
 	if(got_user == 0) {
-		user_name = getusername();
+		/* Note that the password will not be retrieved from the
+		   USER env variable (ie user%password form) as there is
+		   already a PASSWD environment varaible */
+		if (getenv("USER"))
+			user_name = strdup(getenv("USER"));
+		if (user_name == NULL)
+			user_name = getusername();
 		got_user = 1;
 	}
        
