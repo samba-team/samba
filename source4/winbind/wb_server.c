@@ -147,13 +147,9 @@ static void winbind_task_init(struct task_server *task)
 	if (!service) goto nomem;
 	service->task	= task;
 
-	service->primary_sid = secrets_get_domain_sid(service,
-						      task->event_ctx,
-						      task->lp_ctx,
-						      lp_workgroup(task->lp_ctx));
-	if (service->primary_sid == NULL) {
-		task_server_terminate(
-			task, nt_errstr(NT_STATUS_CANT_ACCESS_DOMAIN_INFO));
+	status = wbsrv_setup_domains(service);
+	if (!NT_STATUS_IS_OK(status)) {
+		task_server_terminate(task, nt_errstr(status));
 		return;
 	}
 
