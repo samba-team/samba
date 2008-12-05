@@ -2259,14 +2259,6 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 {
 	const DOM_SID *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
-	NTTIME last_logon, last_logoff, last_password_change,
-	       acct_expiry;
-	const char *account_name, *full_name, *home_directory, *home_drive,
-		   *logon_script, *profile_path, *description,
-		   *workstations, *comment;
-	struct samr_LogonHours logon_hours;
-
-	ZERO_STRUCTP(r);
 
 	sid_user = pdb_get_user_sid(pw);
 
@@ -2290,42 +2282,26 @@ static NTSTATUS get_user_info_5(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	unix_to_nt_time(&last_logon, pdb_get_logon_time(pw));
-	unix_to_nt_time(&last_logoff, pdb_get_logoff_time(pw));
-	unix_to_nt_time(&acct_expiry, pdb_get_kickoff_time(pw));
-	unix_to_nt_time(&last_password_change, pdb_get_pass_last_set_time(pw));
+	unix_to_nt_time(&r->last_logon, pdb_get_logon_time(pw));
+	unix_to_nt_time(&r->last_logoff, pdb_get_logoff_time(pw));
+	unix_to_nt_time(&r->acct_expiry, pdb_get_kickoff_time(pw));
+	unix_to_nt_time(&r->last_password_change, pdb_get_pass_last_set_time(pw));
 
-	account_name = talloc_strdup(mem_ctx, pdb_get_username(pw));
-	full_name = talloc_strdup(mem_ctx, pdb_get_fullname(pw));
-	home_directory = talloc_strdup(mem_ctx, pdb_get_homedir(pw));
-	home_drive = talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
-	logon_script = talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
-	profile_path = talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
-	description = talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
-	workstations = talloc_strdup(mem_ctx, pdb_get_workstations(pw));
-	comment = talloc_strdup(mem_ctx, pdb_get_comment(pw));
+	r->account_name.string	= talloc_strdup(mem_ctx, pdb_get_username(pw));
+	r->full_name.string	= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+	r->home_directory.string= talloc_strdup(mem_ctx, pdb_get_homedir(pw));
+	r->home_drive.string	= talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
+	r->logon_script.string	= talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
+	r->profile_path.string	= talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
+	r->description.string	= talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
+	r->workstations.string	= talloc_strdup(mem_ctx, pdb_get_workstations(pw));
 
-	logon_hours = get_logon_hours_from_pdb(mem_ctx, pw);
-
-	init_samr_user_info5(r,
-			     account_name,
-			     full_name,
-			     rid,
-			     primary_gid,
-			     home_directory,
-			     home_drive,
-			     logon_script,
-			     profile_path,
-			     description,
-			     workstations,
-			     last_logon,
-			     last_logoff,
-			     logon_hours,
-			     pdb_get_bad_password_count(pw),
-			     pdb_get_logon_count(pw),
-			     last_password_change,
-			     acct_expiry,
-			     pdb_get_acct_ctrl(pw));
+	r->logon_hours		= get_logon_hours_from_pdb(mem_ctx, pw);
+	r->rid			= rid;
+	r->primary_gid		= primary_gid;
+	r->acct_flags		= pdb_get_acct_ctrl(pw);
+	r->bad_password_count	= pdb_get_bad_password_count(pw);
+	r->logon_count		= pdb_get_logon_count(pw);
 
 	return NT_STATUS_OK;
 }
@@ -2338,16 +2314,10 @@ static NTSTATUS get_user_info_7(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo7 *r,
 				struct samu *smbpass)
 {
-	const char *account_name = NULL;
-
-	ZERO_STRUCTP(r);
-
-	account_name = talloc_strdup(mem_ctx, pdb_get_username(smbpass));
-	if (!account_name) {
+	r->account_name.string = talloc_strdup(mem_ctx, pdb_get_username(smbpass));
+	if (!r->account_name.string) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	init_samr_user_info7(r, account_name);
 
 	return NT_STATUS_OK;
 }
@@ -2360,9 +2330,7 @@ static NTSTATUS get_user_info_9(TALLOC_CTX *mem_ctx,
 				struct samr_UserInfo9 *r,
 				struct samu *smbpass)
 {
-	ZERO_STRUCTP(r);
-
-	init_samr_user_info9(r, pdb_get_group_rid(smbpass));
+	r->primary_gid = pdb_get_group_rid(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -2375,9 +2343,7 @@ static NTSTATUS get_user_info_16(TALLOC_CTX *mem_ctx,
 				 struct samr_UserInfo16 *r,
 				 struct samu *smbpass)
 {
-	ZERO_STRUCTP(r);
-
-	init_samr_user_info16(r, pdb_get_acct_ctrl(smbpass));
+	r->acct_flags = pdb_get_acct_ctrl(smbpass);
 
 	return NT_STATUS_OK;
 }
@@ -2429,10 +2395,11 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	init_samr_user_info18(r,
-			      pdb_get_lanman_passwd(smbpass),
-			      pdb_get_nt_passwd(smbpass),
-			      0 /* FIXME */);
+	r->lm_pwd_active = true;
+	r->nt_pwd_active = true;
+	memcpy(r->lm_pwd.hash, pdb_get_lanman_passwd(smbpass), 16);
+	memcpy(r->nt_pwd.hash, pdb_get_nt_passwd(smbpass), 16);
+	r->password_expired = 0; /* FIXME */
 
 	TALLOC_FREE(smbpass);
 
@@ -2471,7 +2438,7 @@ static NTSTATUS get_user_info_20(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	init_samr_user_info20(r, parameters);
+	r->parameters = *parameters;
 
 	return NT_STATUS_OK;
 }
@@ -2489,14 +2456,8 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	const DOM_SID *sid_user, *sid_group;
 	uint32_t rid, primary_gid;
-	NTTIME last_logon, last_logoff, last_password_change,
-	       acct_expiry, allow_password_change, force_password_change;
+	NTTIME force_password_change;
 	time_t must_change_time;
-	uint8_t password_expired;
-	const char *account_name, *full_name, *home_directory, *home_drive,
-		   *logon_script, *profile_path, *description,
-		   *workstations, *comment;
-	struct samr_LogonHours logon_hours;
 	struct lsa_BinaryString *parameters = NULL;
 	const char *munged_dial = NULL;
 	DATA_BLOB blob;
@@ -2525,23 +2486,17 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	unix_to_nt_time(&last_logon, pdb_get_logon_time(pw));
-	unix_to_nt_time(&last_logoff, pdb_get_logoff_time(pw));
-	unix_to_nt_time(&acct_expiry, pdb_get_kickoff_time(pw));
-	unix_to_nt_time(&last_password_change, pdb_get_pass_last_set_time(pw));
-	unix_to_nt_time(&allow_password_change, pdb_get_pass_can_change_time(pw));
+	unix_to_nt_time(&r->last_logon, pdb_get_logon_time(pw));
+	unix_to_nt_time(&r->last_logoff, pdb_get_logoff_time(pw));
+	unix_to_nt_time(&r->acct_expiry, pdb_get_kickoff_time(pw));
+	unix_to_nt_time(&r->last_password_change, pdb_get_pass_last_set_time(pw));
+	unix_to_nt_time(&r->allow_password_change, pdb_get_pass_can_change_time(pw));
 
 	must_change_time = pdb_get_pass_must_change_time(pw);
 	if (must_change_time == get_time_t_max()) {
 		unix_to_nt_time_abs(&force_password_change, must_change_time);
 	} else {
 		unix_to_nt_time(&force_password_change, must_change_time);
-	}
-
-	if (pdb_get_pass_must_change_time(pw) == 0) {
-		password_expired = PASS_MUST_CHANGE_AT_NEXT_LOGON;
-	} else {
-		password_expired = 0;
 	}
 
 	munged_dial = pdb_get_munged_dial(pw);
@@ -2557,17 +2512,33 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	account_name = talloc_strdup(mem_ctx, pdb_get_username(pw));
-	full_name = talloc_strdup(mem_ctx, pdb_get_fullname(pw));
-	home_directory = talloc_strdup(mem_ctx, pdb_get_homedir(pw));
-	home_drive = talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
-	logon_script = talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
-	profile_path = talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
-	description = talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
-	workstations = talloc_strdup(mem_ctx, pdb_get_workstations(pw));
-	comment = talloc_strdup(mem_ctx, pdb_get_comment(pw));
+	r->force_password_change	= force_password_change;
 
-	logon_hours = get_logon_hours_from_pdb(mem_ctx, pw);
+	r->account_name.string		= talloc_strdup(mem_ctx, pdb_get_username(pw));
+	r->full_name.string		= talloc_strdup(mem_ctx, pdb_get_fullname(pw));
+	r->home_directory.string	= talloc_strdup(mem_ctx, pdb_get_homedir(pw));
+	r->home_drive.string		= talloc_strdup(mem_ctx, pdb_get_dir_drive(pw));
+	r->logon_script.string		= talloc_strdup(mem_ctx, pdb_get_logon_script(pw));
+	r->profile_path.string		= talloc_strdup(mem_ctx, pdb_get_profile_path(pw));
+	r->description.string		= talloc_strdup(mem_ctx, pdb_get_acct_desc(pw));
+	r->workstations.string		= talloc_strdup(mem_ctx, pdb_get_workstations(pw));
+	r->comment.string		= talloc_strdup(mem_ctx, pdb_get_comment(pw));
+
+	r->logon_hours			= get_logon_hours_from_pdb(mem_ctx, pw);
+	r->parameters			= *parameters;
+	r->rid				= rid;
+	r->primary_gid			= primary_gid;
+	r->acct_flags			= pdb_get_acct_ctrl(pw);
+	r->bad_password_count		= pdb_get_bad_password_count(pw);
+	r->logon_count			= pdb_get_logon_count(pw);
+	r->fields_present		= pdb_build_fields_present(pw);
+	r->password_expired		= (pdb_get_pass_must_change_time(pw) == 0) ?
+						PASS_MUST_CHANGE_AT_NEXT_LOGON : 0;
+	r->country_code			= 0;
+	r->code_page			= 0;
+	r->lm_password_set		= 0;
+	r->nt_password_set		= 0;
+
 #if 0
 
 	/*
@@ -2582,35 +2553,6 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 
 #endif
 
-	init_samr_user_info21(r,
-			      last_logon,
-			      last_logoff,
-			      last_password_change,
-			      acct_expiry,
-			      allow_password_change,
-			      force_password_change,
-			      account_name,
-			      full_name,
-			      home_directory,
-			      home_drive,
-			      logon_script,
-			      profile_path,
-			      description,
-			      workstations,
-			      comment,
-			      parameters,
-			      rid,
-			      primary_gid,
-			      pdb_get_acct_ctrl(pw),
-			      pdb_build_fields_present(pw),
-			      logon_hours,
-			      pdb_get_bad_password_count(pw),
-			      pdb_get_logon_count(pw),
-			      0, /* country_code */
-			      0, /* code_page */
-			      0, /* lm_password_set */
-			      0, /* nt_password_set */
-			      password_expired);
 
 	return NT_STATUS_OK;
 }

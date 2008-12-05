@@ -5225,38 +5225,18 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	}
 
 	{
-		NTTIME notime;
-		struct samr_LogonHours hours;
-		struct lsa_BinaryString parameters;
-		const int units_per_week = 168;
 		struct samr_CryptPassword crypt_pwd;
 
-		ZERO_STRUCT(notime);
-		ZERO_STRUCT(hours);
-		ZERO_STRUCT(parameters);
-
-		hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
-		if (!hours.bits) {
-			result = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		hours.units_per_week = units_per_week;
-		memset(hours.bits, 0xFF, units_per_week);
+		ZERO_STRUCT(info.info23);
 
 		init_samr_CryptPassword(argv[1],
 					&cli->user_session_key,
 					&crypt_pwd);
 
-		init_samr_user_info23(&info.info23,
-				      notime, notime, notime,
-				      notime, notime, notime,
-				      NULL, NULL, NULL, NULL, NULL,
-				      NULL, NULL, NULL, NULL, &parameters,
-				      0, 0, ACB_DOMTRUST,
-				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_NT_PASSWORD_PRESENT,
-				      hours,
-				      0, 0, 0, 0, 0, 0, 0,
-				      &crypt_pwd);
+		info.info23.info.fields_present = SAMR_FIELD_ACCT_FLAGS |
+						  SAMR_FIELD_NT_PASSWORD_PRESENT;
+		info.info23.info.acct_flags = ACB_DOMTRUST;
+		info.info23.password = crypt_pwd;
 
 		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,

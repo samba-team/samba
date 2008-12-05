@@ -91,35 +91,41 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 	unix_to_nt_time_abs(&password_age, infoX->usriX_password_age);
 
 	/* TODO: infoX->usriX_priv */
-	init_samr_user_info21(info21,
-			      0,
-			      0,
-			      0,
-			      0,
-			      0,
-			      password_age,
-			      infoX->usriX_name,
-			      infoX->usriX_full_name,
-			      infoX->usriX_home_dir,
-			      infoX->usriX_home_dir_drive,
-			      infoX->usriX_script_path,
-			      infoX->usriX_profile,
-			      infoX->usriX_comment,
-			      infoX->usriX_workstations,
-			      infoX->usriX_usr_comment,
-			      &zero_parameters,
-			      infoX->usriX_user_id,
-			      infoX->usriX_primary_group_id,
-			      infoX->usriX_flags,
-			      fields_present,
-			      zero_logon_hours,
-			      infoX->usriX_bad_pw_count,
-			      infoX->usriX_num_logons,
-			      infoX->usriX_country_code,
-			      infoX->usriX_code_page,
-			      0,
-			      0,
-			      infoX->usriX_password_expired);
+
+	info21->last_logon		= 0;
+	info21->last_logoff		= 0;
+	info21->last_password_change	= 0;
+	info21->acct_expiry		= 0;
+	info21->allow_password_change	= 0;
+	info21->force_password_change	= 0;
+	info21->account_name.string	= infoX->usriX_name;
+	info21->full_name.string	= infoX->usriX_full_name;
+	info21->home_directory.string	= infoX->usriX_home_dir;
+	info21->home_drive.string	= infoX->usriX_home_dir_drive;
+	info21->logon_script.string	= infoX->usriX_script_path;
+	info21->profile_path.string	= infoX->usriX_profile;
+	info21->description.string	= infoX->usriX_comment;
+	info21->workstations.string	= infoX->usriX_workstations;
+	info21->comment.string		= infoX->usriX_usr_comment;
+	info21->parameters		= zero_parameters;
+	info21->lm_owf_password		= zero_parameters;
+	info21->nt_owf_password		= zero_parameters;
+	info21->unknown3.string		= NULL;
+	info21->buf_count		= 0;
+	info21->buffer			= NULL;
+	info21->rid			= infoX->usriX_user_id;
+	info21->primary_gid		= infoX->usriX_primary_group_id;
+	info21->acct_flags		= infoX->usriX_flags;
+	info21->fields_present		= fields_present;
+	info21->logon_hours		= zero_logon_hours;
+	info21->bad_password_count	= infoX->usriX_bad_pw_count;
+	info21->logon_count		= infoX->usriX_num_logons;
+	info21->country_code		= infoX->usriX_country_code;
+	info21->code_page		= infoX->usriX_code_page;
+	info21->lm_password_set		= 0;
+	info21->nt_password_set		= 0;
+	info21->password_expired	= infoX->usriX_password_expired;
+	info21->unknown4		= 0;
 }
 
 /****************************************************************

@@ -933,8 +933,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 				  &cli->user_session_key,
 				  &crypt_pwd_ex);
 
-	init_samr_user_info26(&user_info.info26, &crypt_pwd_ex,
-			      PASS_DONT_CHANGE_AT_NEXT_LOGON);
+	user_info.info26.password = crypt_pwd_ex;
+	user_info.info26.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 
 	status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 					  &user_pol,
@@ -949,8 +949,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					&cli->user_session_key,
 					&crypt_pwd);
 
-		init_samr_user_info24(&user_info.info24, &crypt_pwd,
-				      PASS_DONT_CHANGE_AT_NEXT_LOGON);
+		user_info.info24.password = crypt_pwd;
+		user_info.info24.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 
 		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
 						  &user_pol,

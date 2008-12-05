@@ -2676,10 +2676,12 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 			memcpy(lm_hash, out.data, out.length);
 		}
 
-		init_samr_user_info18(&info.info18,
-				      lm_hash,
-				      nt_hash,
-				      password_expired);
+		memcpy(info.info18.nt_pwd.hash, nt_hash, 16);
+		memcpy(info.info18.lm_pwd.hash, lm_hash, 16);
+		info.info18.nt_pwd_active	= true;
+		info.info18.lm_pwd_active	= true;
+		info.info18.password_expired	= password_expired;
+
 		break;
 	case 21:
 		ZERO_STRUCT(info.info21);
@@ -2731,9 +2733,9 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 
 		break;
 	case 24:
-		init_samr_user_info24(&info.info24,
-				      &pwd_buf,
-				      password_expired);
+		info.info24.password		= pwd_buf;
+		info.info24.password_expired	= password_expired;
+
 		break;
 	case 25:
 		ZERO_STRUCT(info.info25);
@@ -2749,9 +2751,9 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 
 		break;
 	case 26:
-		init_samr_user_info26(&info.info26,
-				      &pwd_buf_ex,
-				      password_expired);
+		info.info26.password		= pwd_buf_ex;
+		info.info26.password_expired	= password_expired;
+
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
