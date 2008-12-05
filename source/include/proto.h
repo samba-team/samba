@@ -5681,7 +5681,7 @@ char *lp_remote_announce(void);
 char *lp_remote_browse_sync(void);
 const char **lp_wins_server_list(void);
 const char **lp_interfaces(void);
-char *lp_socket_address(void);
+const char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
 const char **lp_netbios_aliases(void);
 const char *lp_passdb_backend(void);
