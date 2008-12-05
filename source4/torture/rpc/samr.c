@@ -1059,6 +1059,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
 	const char *comment = NULL;
+	uint8_t lm_hash[16], nt_hash[16];
 
 	pwp.in.user_handle = handle;
 	pwp.out.info = &info;
@@ -1086,10 +1087,39 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	ZERO_STRUCT(u);
 
 	switch (level) {
+	case 18:
+		E_md4hash(newpass, nt_hash);
+		E_deshash(newpass, lm_hash);
+
+		u.info18.nt_pwd_active = true;
+		u.info18.lm_pwd_active = true;
+		u.info18.password_expired = password_expired;
+
+		memcpy(u.info18.lm_pwd.hash, lm_hash, 16);
+		memcpy(u.info18.nt_pwd.hash, nt_hash, 16);
+
+		break;
 	case 21:
+		E_md4hash(newpass, nt_hash);
+		E_deshash(newpass, lm_hash);
+
 		u.info21.fields_present = fields_present;
 		u.info21.password_expired = password_expired;
 		u.info21.comment.string = comment;
+
+		if (fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+			u.info21.lm_owf_password.length = 16;
+			u.info21.lm_owf_password.size = 16;
+			u.info21.lm_owf_password.array = (uint16_t *)lm_hash;
+			u.info21.lm_password_set = true;
+		}
+
+		if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+			u.info21.nt_owf_password.length = 16;
+			u.info21.nt_owf_password.size = 16;
+			u.info21.nt_owf_password.array = (uint16_t *)nt_hash;
+			u.info21.nt_password_set = true;
+		}
 
 		break;
 	case 23:
@@ -1137,6 +1167,41 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	MD5Final(confounded_session_key.data, &ctx);
 
 	switch (level) {
+	case 18:
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(u.info18.nt_pwd.hash, 16);
+			out = data_blob_talloc_zero(tctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			memcpy(u.info18.nt_pwd.hash, out.data, out.length);
+		}
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(u.info18.lm_pwd.hash, 16);
+			out = data_blob_talloc_zero(tctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			memcpy(u.info18.lm_pwd.hash, out.data, out.length);
+		}
+
+		break;
+	case 21:
+		if (fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+			DATA_BLOB in,out;
+			in = data_blob_const(u.info21.lm_owf_password.array,
+					     u.info21.lm_owf_password.length);
+			out = data_blob_talloc_zero(tctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			u.info21.lm_owf_password.array = (uint16_t *)out.data;
+		}
+		if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+			DATA_BLOB in,out;
+			in = data_blob_const(u.info21.nt_owf_password.array,
+					     u.info21.nt_owf_password.length);
+			out = data_blob_talloc_zero(tctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			u.info21.nt_owf_password.array = (uint16_t *)out.data;
+		}
+		break;
 	case 23:
 		arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
 		break;
@@ -1187,9 +1252,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		       use_setinfo2 ? "2":"", level, nt_errstr(status));
 		ret = false;
 	} else {
-		if (level != 21) {
-			*password = newpass;
-		}
+		*password = newpass;
 	}
 
 	return ret;
@@ -2587,23 +2650,13 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 		use_setinfo2 ? "2":"", level, password_expired,
 		fields ? fields : "");
 
-	switch (level) {
-		case 21:
-		case 23:
-		case 24:
-		case 25:
-		case 26:
-			if (!test_SetUserPass_level_ex(p, tctx, handle, level,
-						       fields_present,
-						       password,
-						       password_expired,
-						       use_setinfo2,
-						       matched_expected_error)) {
-				ret = false;
-			}
-			break;
-		default:
-			return false;
+	if (!test_SetUserPass_level_ex(p, tctx, handle, level,
+				       fields_present,
+				       password,
+				       password_expired,
+				       use_setinfo2,
+				       matched_expected_error)) {
+		ret = false;
 	}
 
 	if (!test_QueryUserInfo_pwdlastset(p, tctx, handle,
