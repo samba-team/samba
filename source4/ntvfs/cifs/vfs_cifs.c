@@ -63,7 +63,17 @@ struct async_info {
 	void *parms;
 };
 
-#define SETUP_PID private->tree->session->pid = req->smbpid
+#define CHECK_UPSTREAM_OPEN do { \
+	if (! private->transport->socket->sock) { \
+		req->async_states->state|=NTVFS_ASYNC_STATE_CLOSE; \
+		return NT_STATUS_CONNECTION_DISCONNECTED; \
+	} \
+} while(0)
+
+#define SETUP_PID do { \
+	private->tree->session->pid = req->smbpid; \
+	CHECK_UPSTREAM_OPEN; \
+} while(0)
 
 #define SETUP_FILE_HERE(f) do { \
 	f = ntvfs_handle_get_backend_data(io->generic.in.file.ntvfs, ntvfs); \
