@@ -2674,11 +2674,13 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct policy_handle *handle,
 					char **password)
 {
-	int i, s = 0, q = 0, f = 0;
+	int i, s = 0, q = 0, f = 0, l = 0, z = 0;
 	bool ret = true;
 	int delay = 500000;
 	bool set_levels[] = { false, true };
 	bool query_levels[] = { false, true };
+	uint32_t levels[] = { 18, 21, 23, 24, 25, 26 };
+	uint32_t nonzeros[] = { 1, 24 };
 	uint32_t fields_present[] = {
 		0,
 		SAMR_FIELD_EXPIRED_FLAG,
@@ -2694,56 +2696,6 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT | SAMR_FIELD_LAST_PWD_CHANGE | SAMR_FIELD_EXPIRED_FLAG
 	};
 
-	struct {
-		uint16_t level;
-		uint8_t password_expired_nonzero;
-	} pwd_tests[] = {
-
-		/* level 21 */
-		{
-			.level				= 21,
-			.password_expired_nonzero	= 1,
-		},{
-			.level				= 21,
-			.password_expired_nonzero	= 24,
-
-		/* level 23 */
-		},{
-			.level				= 23,
-			.password_expired_nonzero	= 1,
-		},{
-			.level				= 23,
-			.password_expired_nonzero	= 24,
-		},{
-
-		/* level 24 */
-
-			.level				= 24,
-			.password_expired_nonzero	= 1,
-		},{
-			.level				= 24,
-			.password_expired_nonzero	= 24,
-		},{
-
-		/* level 25 */
-
-			.level				= 25,
-			.password_expired_nonzero	= 1,
-		},{
-			.level				= 25,
-			.password_expired_nonzero	= 24
-		},{
-
-		/* level 26 */
-
-			.level				= 26,
-			.password_expired_nonzero	= 1,
-		},{
-			.level				= 26,
-			.password_expired_nonzero	= 24,
-		}
-	};
-
 	if (torture_setting_bool(tctx, "samba3", false)) {
 		delay = 1000000;
 		printf("Samba3 has second granularity, setting delay to: %d\n",
@@ -2757,7 +2709,8 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 #define TEST_SET_LEVELS 1
 #define TEST_QUERY_LEVELS 1
 #endif
-	for (i=0; i<ARRAY_SIZE(pwd_tests); i++) {
+	for (l=0; l<ARRAY_SIZE(levels); l++) {
+	for (z=0; z<ARRAY_SIZE(nonzeros); z++) {
 	for (f=0; f<ARRAY_SIZE(fields_present); f++) {
 #ifdef TEST_SET_LEVELS
 	for (s=0; s<ARRAY_SIZE(set_levels); s++) {
@@ -2772,7 +2725,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		torture_comment(tctx, "------------------------------\n"
 				"Testing pwdLastSet attribute for flags: 0x%08x "
 				"(s: %d (l: %d), q: %d)\n",
-				acct_flags, s, pwd_tests[i].level, q);
+				acct_flags, s, levels[l], q);
 
 		/* set #1 */
 
@@ -2780,9 +2733,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		 * setting the password expired flag to a non-0 value */
 
 		if (!test_SetPassword_level(p, tctx, handle,
-					    pwd_tests[i].level,
+					    levels[l],
 					    fields_present[f],
-					    pwd_tests[i].password_expired_nonzero,
+					    nonzeros[z],
 					    &matched_expected_error,
 					    set_levels[s],
 					    password,
@@ -2799,7 +2752,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* pwdlastset must be 0 afterwards, except for a level 21, 23 and 25
 		 * set without the SAMR_FIELD_EXPIRED_FLAG */
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -2821,7 +2774,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			break;
 		}
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -2850,7 +2803,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		 * value), password_expired value used here is 0 */
 
 		if (!test_SetPassword_level(p, tctx, handle,
-					    pwd_tests[i].level,
+					    levels[l],
 					    fields_present[f],
 					    0,
 					    &matched_expected_error,
@@ -2864,7 +2817,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* when a password has been changed, pwdlastset must not be 0 afterwards
 		 * and must be larger then the old value */
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -2873,9 +2826,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((pwd_tests[i].fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
-			      (pwd_tests[i].fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)))
+			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
@@ -2896,7 +2849,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			}
 		}
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -2927,7 +2880,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		 * value), password_expired value used here is 0 */
 
 		if (!test_SetPassword_level(p, tctx, handle,
-					    pwd_tests[i].level,
+					    levels[l],
 					    fields_present[f],
 					    0,
 					    &matched_expected_error,
@@ -2941,7 +2894,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* when a password has been changed, pwdlastset must not be 0 afterwards
 		 * and must be larger then the old value */
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -2977,9 +2930,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		 * setting the password expired flag to a non-0 value */
 
 		if (!test_SetPassword_level(p, tctx, handle,
-					    pwd_tests[i].level,
+					    levels[l],
 					    fields_present[f],
-					    pwd_tests[i].password_expired_nonzero,
+					    nonzeros[z],
 					    &matched_expected_error,
 					    set_levels[s],
 					    password,
@@ -2991,7 +2944,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* pwdlastset must be 0 afterwards, except for a level 21, 23 and 25
 		 * set without the SAMR_FIELD_EXPIRED_FLAG */
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -3008,9 +2961,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			 * password has been changed, old and new pwdlastset
 			 * need to be the same value */
 
-			if (!(pwd_tests[i].fields_present & SAMR_FIELD_EXPIRED_FLAG) &&
-			    !((pwd_tests[i].fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
-			      (pwd_tests[i].fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)))
+			if (!(fields_present[f] & SAMR_FIELD_EXPIRED_FLAG) &&
+			    !((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT)))
 			{
 				torture_assert_int_equal(tctx, pwdlastset_old,
 					pwdlastset_new, "pwdlastset must be equal");
@@ -3034,7 +2987,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			break;
 		}
 
-		switch (pwd_tests[i].level) {
+		switch (levels[l]) {
 		case 21:
 		case 23:
 		case 25:
@@ -3055,7 +3008,11 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 			break;
 		}
 
-		switch (pwd_tests[i].level) {
+		/* if the level we are testing does not have a fields_present
+		 * field, skip all fields present tests by setting f to to
+		 * arraysize */
+		switch (levels[l]) {
+		case 18:
 		case 24:
 		case 26:
 			f = ARRAY_SIZE(fields_present);
@@ -3068,8 +3025,9 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 #ifdef TEST_SET_LEVELS
 	}
 #endif
-	}
-	}
+	} /* fields present */
+	} /* nonzeros */
+	} /* levels */
 
 #undef TEST_SET_LEVELS
 #undef TEST_QUERY_LEVELS
