@@ -2296,7 +2296,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "ntvfs handler", "unixuid default");
 	lp_do_global_parameter(lp_ctx, "max connections", "-1");
 
-	lp_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo");
+	lp_do_global_parameter(lp_ctx, "dcerpc endpoint servers", "epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup unixinfo browser");
 	lp_do_global_parameter(lp_ctx, "server services", "smb rpc nbt wrepl ldap cldap kdc drepl winbind ntp_signd");
 	lp_do_global_parameter(lp_ctx, "ntptr providor", "simple_ldb");
 	lp_do_global_parameter(lp_ctx, "auth methods:domain controller", "anonymous sam_ignoredomain");
