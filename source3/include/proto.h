@@ -5572,43 +5572,6 @@ void init_netr_CryptPassword(const char *pwd,
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
-void init_samr_DomInfo1(struct samr_DomInfo1 *r,
-			uint16_t min_password_length,
-			uint16_t password_history_length,
-			uint32_t password_properties,
-			int64_t max_password_age,
-			int64_t min_password_age);
-void init_samr_DomGeneralInformation(struct samr_DomGeneralInformation *r,
-				     NTTIME force_logoff_time,
-				     const char *oem_information,
-				     const char *domain_name,
-				     const char *primary,
-				     uint64_t sequence_num,
-				     enum samr_DomainServerState domain_server_state,
-				     enum samr_Role role,
-				     uint32_t unknown3,
-				     uint32_t num_users,
-				     uint32_t num_groups,
-				     uint32_t num_aliases);
-void init_samr_DomInfo3(struct samr_DomInfo3 *r,
-			NTTIME force_logoff_time);
-void init_samr_DomOEMInformation(struct samr_DomOEMInformation *r,
-				 const char *oem_information);
-void init_samr_DomInfo5(struct samr_DomInfo5 *r,
-			const char *domain_name);
-void init_samr_DomInfo6(struct samr_DomInfo6 *r,
-			const char *primary);
-void init_samr_DomInfo7(struct samr_DomInfo7 *r,
-			enum samr_Role role);
-void init_samr_DomInfo8(struct samr_DomInfo8 *r,
-			uint64_t sequence_num,
-			NTTIME domain_create_time);
-void init_samr_DomInfo9(struct samr_DomInfo9 *r,
-                        enum samr_DomainServerState domain_server_state);
-void init_samr_DomInfo12(struct samr_DomInfo12 *r,
-			 uint64_t lockout_duration,
-			 uint64_t lockout_window,
-			 uint16_t lockout_threshold);
 void init_samr_group_info1(struct samr_GroupInfoAll *r,
 			   const char *name,
 			   uint32_t attributes,
