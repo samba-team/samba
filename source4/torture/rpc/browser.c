@@ -59,6 +59,7 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, r.out.result, "BrowserrQueryOtherDomains failed");
 	torture_assert_int_equal(tctx, *r.out.total_entries, 0, "BrowserrQueryOtherDomains");
 
+	info.info.info100 = &ctr100;
 	ctr100.entries_read = ARRAY_SIZE(entries100);
 	ctr100.entries = entries100;
 
@@ -81,6 +82,7 @@ bool test_BrowserrQueryOtherDomains(struct torture_context *tctx,
 	torture_assert_werr_equal(tctx, WERR_UNKNOWN_LEVEL, r.out.result,
 				  "BrowserrQueryOtherDomains");
 
+	info.info.info101 = &ctr101;
 	ctr101.entries_read = ARRAY_SIZE(entries101);
 	ctr101.entries = entries101;
 
