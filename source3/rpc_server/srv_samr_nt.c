@@ -1763,14 +1763,12 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 
 	switch (r->in.level) {
 	case ALIASINFOALL:
-		init_samr_alias_info1(&alias_info->all,
-				      alias_name,
-				      1,
-				      alias_description);
+		alias_info->all.name.string		= alias_name;
+		alias_info->all.num_members		= 1; /* ??? */
+		alias_info->all.description.string	= alias_description;
 		break;
 	case ALIASINFODESCRIPTION:
-		init_samr_alias_info3(&alias_info->description,
-				      alias_description);
+		alias_info->description.string		= alias_description;
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
