@@ -1959,9 +1959,7 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_RESTRICTION)) {
 
-		uint32 min_pass_len,pass_hist,password_properties;
 		time_t u_expire, u_min_age;
-		NTTIME nt_expire, nt_min_age;
 		uint32 account_policy_temp;
 
 		dominfo = TALLOC_ZERO_P(p->mem_ctx, struct samr_DomInfo1);
@@ -1978,14 +1976,14 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 
 		/* AS ROOT !!! */
 
-		pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
-		min_pass_len = account_policy_temp;
+		pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+				       (uint32_t *)&dominfo->min_password_length);
 
-		pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
-		pass_hist = account_policy_temp;
+		pdb_get_account_policy(AP_PASSWORD_HISTORY,
+				       (uint32_t *)&dominfo->password_history_length);
 
-		pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
-		password_properties = account_policy_temp;
+		pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+				       &dominfo->password_properties);
 
 		pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 		u_expire = account_policy_temp;
@@ -1997,19 +1995,12 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 
 		unbecome_root();
 
-		unix_to_nt_time_abs(&nt_expire, u_expire);
-		unix_to_nt_time_abs(&nt_min_age, u_min_age);
+		unix_to_nt_time_abs((NTTIME *)&dominfo->max_password_age, u_expire);
+		unix_to_nt_time_abs((NTTIME *)&dominfo->min_password_age, u_min_age);
 
 		if (lp_check_password_script() && *lp_check_password_script()) {
-			password_properties |= DOMAIN_PASSWORD_COMPLEX;
+			dominfo->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 		}
-
-		init_samr_DomInfo1(dominfo,
-				   min_pass_len,
-				   pass_hist,
-				   password_properties,
-				   u_expire,
-				   u_min_age);
 
 		reject->reason = reject_reason;
 
@@ -2814,22 +2805,15 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 	NTSTATUS status = NT_STATUS_OK;
 	struct samr_info *info = NULL;
 	union samr_DomainInfo *dom_info;
-	uint32 min_pass_len,pass_hist,password_properties;
 	time_t u_expire, u_min_age;
-	NTTIME nt_expire, nt_min_age;
 
 	time_t u_lock_duration, u_reset_time;
-	NTTIME nt_lock_duration, nt_reset_time;
-	uint32 lockout;
-	time_t u_logout;
-	NTTIME nt_logout;
+	uint32_t u_logout;
 
 	uint32 account_policy_temp;
 
 	time_t seq_num;
 	uint32 server_role;
-
-	uint32 num_users=0, num_groups=0, num_aliases=0;
 
 	DEBUG(5,("_samr_QueryDomainInfo: %d\n", __LINE__));
 
@@ -2857,14 +2841,14 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 			/* AS ROOT !!! */
 
-			pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp);
-			min_pass_len = account_policy_temp;
+			pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+			       (uint32_t *)&dom_info->info1.min_password_length);
 
-			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
-			pass_hist = account_policy_temp;
+			pdb_get_account_policy(AP_PASSWORD_HISTORY,
+				(uint32_t *)&dom_info->info1.password_history_length);
 
-			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp);
-			password_properties = account_policy_temp;
+			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+				&dom_info->info1.password_properties);
 
 			pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp);
 			u_expire = account_policy_temp;
@@ -2876,19 +2860,13 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 			unbecome_root();
 
-			unix_to_nt_time_abs(&nt_expire, u_expire);
-			unix_to_nt_time_abs(&nt_min_age, u_min_age);
+			unix_to_nt_time_abs((NTTIME *)&dom_info->info1.max_password_age, u_expire);
+			unix_to_nt_time_abs((NTTIME *)&dom_info->info1.min_password_age, u_min_age);
 
 			if (lp_check_password_script() && *lp_check_password_script()) {
-				password_properties |= DOMAIN_PASSWORD_COMPLEX;
+				dom_info->info1.password_properties |= DOMAIN_PASSWORD_COMPLEX;
 			}
 
-			init_samr_DomInfo1(&dom_info->info1,
-					   (uint16)min_pass_len,
-					   (uint16)pass_hist,
-					   password_properties,
-					   nt_expire,
-					   nt_min_age);
 			break;
 		case 0x02:
 
@@ -2896,14 +2874,13 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 			/* AS ROOT !!! */
 
-			num_users = count_sam_users(info->disp_info, ACB_NORMAL);
-			num_groups = count_sam_groups(info->disp_info);
-			num_aliases = count_sam_aliases(info->disp_info);
+			dom_info->general.num_users	= count_sam_users(info->disp_info, ACB_NORMAL);
+			dom_info->general.num_groups	= count_sam_groups(info->disp_info);
+			dom_info->general.num_aliases	= count_sam_aliases(info->disp_info);
 
-			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &account_policy_temp);
-			u_logout = account_policy_temp;
+			pdb_get_account_policy(AP_TIME_TO_LOGOUT, &u_logout);
 
-			unix_to_nt_time_abs(&nt_logout, u_logout);
+			unix_to_nt_time_abs(&dom_info->general.force_logoff_time, u_logout);
 
 			if (!pdb_get_seq_num(&seq_num))
 				seq_num = time(NULL);
@@ -2916,18 +2893,14 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			init_samr_DomGeneralInformation(&dom_info->general,
-							nt_logout,
-							lp_serverstring(),
-							lp_workgroup(),
-							global_myname(),
-							seq_num,
-							DOMAIN_SERVER_ENABLED,
-							server_role,
-							1,
-							num_users,
-							num_groups,
-							num_aliases);
+			dom_info->general.oem_information.string	= lp_serverstring();
+			dom_info->general.domain_name.string		= lp_workgroup();
+			dom_info->general.primary.string		= global_myname();
+			dom_info->general.sequence_num			= seq_num;
+			dom_info->general.domain_server_state		= DOMAIN_SERVER_ENABLED;
+			dom_info->general.role				= server_role;
+			dom_info->general.unknown3			= 1;
+
 			break;
 		case 0x03:
 
@@ -2945,34 +2918,27 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 			unbecome_root();
 
-			unix_to_nt_time_abs(&nt_logout, u_logout);
-
-			init_samr_DomInfo3(&dom_info->info3,
-					   nt_logout);
+			unix_to_nt_time_abs(&dom_info->info3.force_logoff_time, u_logout);
 
 			break;
 		case 0x04:
-			init_samr_DomOEMInformation(&dom_info->oem,
-						    lp_serverstring());
+			dom_info->oem.oem_information.string = lp_serverstring();
 			break;
 		case 0x05:
-			init_samr_DomInfo5(&dom_info->info5,
-					   get_global_sam_name());
+			dom_info->info5.domain_name.string = get_global_sam_name();
 			break;
 		case 0x06:
 			/* NT returns its own name when a PDC. win2k and later
 			 * only the name of the PDC if itself is a BDC (samba4
 			 * idl) */
-			init_samr_DomInfo6(&dom_info->info6,
-					   global_myname());
+			dom_info->info6.primary.string = global_myname();
 			break;
 		case 0x07:
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			init_samr_DomInfo7(&dom_info->info7,
-					   server_role);
+			dom_info->info7.role = server_role;
 			break;
 		case 0x08:
 
@@ -2988,9 +2954,9 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 			unbecome_root();
 
-			init_samr_DomInfo8(&dom_info->info8,
-					   seq_num,
-					   0);
+			dom_info->info8.sequence_num = seq_num;
+			dom_info->info8.domain_create_time = 0;
+
 			break;
 		case 0x0c:
 
@@ -3007,21 +2973,19 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			pdb_get_account_policy(AP_RESET_COUNT_TIME, &account_policy_temp);
 			u_reset_time = account_policy_temp * 60;
 
-			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT, &account_policy_temp);
-			lockout = account_policy_temp;
+			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
+				(uint32_t *)&dom_info->info12.lockout_threshold);
 
 			/* !AS ROOT */
 
 			unbecome_root();
 
-			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
-			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
+			unix_to_nt_time_abs(&dom_info->info12.lockout_duration,
+					    u_lock_duration);
+			unix_to_nt_time_abs(&dom_info->info12.lockout_window,
+					    u_reset_time);
 
-			init_samr_DomInfo12(&dom_info->info12,
-					    nt_lock_duration,
-					    nt_reset_time,
-					    (uint16)lockout);
-            		break;
+			break;
         	default:
             		return NT_STATUS_INVALID_INFO_CLASS;
 	}

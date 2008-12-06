@@ -324,30 +324,29 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
 				struct samr_DomInfo1 *policy)
 {
-	uint32 min_pass_len,pass_hist,password_properties;
+	struct samr_DomInfo1 *p;
 	time_t u_expire, u_min_age;
-	NTTIME nt_expire, nt_min_age;
 	uint32 account_policy_temp;
 
-	if ((policy = TALLOC_ZERO_P(mem_ctx, struct samr_DomInfo1)) == NULL) {
+	if ((p = TALLOC_ZERO_P(mem_ctx, struct samr_DomInfo1)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &account_policy_temp)) {
+	if (!pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
+				    (uint32_t *)&p->min_password_length)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	min_pass_len = account_policy_temp;
 
-	if (!pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp)) {
+	if (!pdb_get_account_policy(AP_PASSWORD_HISTORY,
+				    (uint32_t *)&p->password_history_length)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	pass_hist = account_policy_temp;
 
-	if (!pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, &account_policy_temp)) {
+	if (!pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+				    &p->password_properties)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	password_properties = account_policy_temp;
-	
+
 	if (!pdb_get_account_policy(AP_MAX_PASSWORD_AGE, &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -358,15 +357,10 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	}
 	u_min_age = account_policy_temp;
 
-	unix_to_nt_time_abs(&nt_expire, u_expire);
-	unix_to_nt_time_abs(&nt_min_age, u_min_age);
+	unix_to_nt_time_abs((NTTIME *)&p->max_password_age, u_expire);
+	unix_to_nt_time_abs((NTTIME *)&p->min_password_age, u_min_age);
 
-	init_samr_DomInfo1(policy,
-			   (uint16)min_pass_len,
-			   (uint16)pass_hist,
-			   password_properties,
-			   nt_expire,
-			   nt_min_age);
+	policy = p;
 
 	return NT_STATUS_OK;
 }
