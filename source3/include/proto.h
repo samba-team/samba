@@ -5572,12 +5572,6 @@ void init_netr_CryptPassword(const char *pwd,
 
 /* The following definitions come from rpc_client/init_samr.c  */
 
-void init_samr_alias_info1(struct samr_AliasInfoAll *r,
-			   const char *name,
-			   uint32_t num_members,
-			   const char *description);
-void init_samr_alias_info3(struct lsa_String *r,
-			   const char *description);
 void init_samr_CryptPasswordEx(const char *pwd,
 			       DATA_BLOB *session_key,
 			       struct samr_CryptPasswordEx *pwd_buf);

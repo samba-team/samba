@@ -19,34 +19,6 @@
 
 #include "includes.h"
 
-/*******************************************************************
- inits a samr_AliasInfoAll structure.
-********************************************************************/
-
-void init_samr_alias_info1(struct samr_AliasInfoAll *r,
-			   const char *name,
-			   uint32_t num_members,
-			   const char *description)
-{
-	DEBUG(5, ("init_samr_alias_info1\n"));
-
-	init_lsa_String(&r->name, name);
-	r->num_members = num_members;
-	init_lsa_String(&r->description, description);
-}
-
-/*******************************************************************
-inits a lsa_String structure.
-********************************************************************/
-
-void init_samr_alias_info3(struct lsa_String *r,
-			   const char *description)
-{
-	DEBUG(5, ("init_samr_alias_info3\n"));
-
-	init_lsa_String(r, description);
-}
-
 /*************************************************************************
  inits a samr_CryptPasswordEx structure
  *************************************************************************/
