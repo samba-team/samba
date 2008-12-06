@@ -184,6 +184,19 @@ PRIVATE_DEPENDENCIES = \
 dcerpc_drsuapi_OBJ_FILES = $(rpc_serversrcdir)/drsuapi/dcesrv_drsuapi.o
 
 ################################################
+# Start MODULE dcerpc_browser
+[MODULE::dcerpc_browser]
+INIT_FUNCTION = dcerpc_server_browser_init
+SUBSYSTEM = DCESRV
+PRIVATE_DEPENDENCIES = \
+		DCERPC_COMMON \
+		NDR_BROWSER
+# End MODULE dcerpc_browser
+################################################
+
+dcerpc_browser_OBJ_FILES = $(rpc_serversrcdir)/browser/dcesrv_browser.o
+
+################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
 PRIVATE_DEPENDENCIES = \

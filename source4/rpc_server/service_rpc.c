@@ -437,6 +437,7 @@ static void dcesrv_task_init(struct task_server *task)
 	extern NTSTATUS dcerpc_server_samr_init(void);
 	extern NTSTATUS dcerpc_server_remote_init(void);
 	extern NTSTATUS dcerpc_server_lsa_init(void);
+	extern NTSTATUS dcerpc_server_browser_init(void);
 	init_module_fn static_init[] = { STATIC_DCESRV_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, task->lp_ctx, "dcerpc_server");
 
