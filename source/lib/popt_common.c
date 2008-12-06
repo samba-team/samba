@@ -166,7 +166,7 @@ struct poptOption popt_common_configfile[] = {
 };
 
 struct poptOption popt_common_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_common_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_POST, (void *)popt_common_callback },
 	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	POPT_TABLEEND
 };
