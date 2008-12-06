@@ -638,12 +638,12 @@ import "security.idl", "svcctl.idl";
 		PLATFORM_ID_VMS = 700
 	} srvsvc_PlatformId;
 
-	typedef struct {
+	typedef [public] struct {
 		srvsvc_PlatformId platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
 	} srvsvc_NetSrvInfo100;
 
-	typedef struct {
+	typedef [public] struct {
 		srvsvc_PlatformId platform_id;
 		[string,charset(UTF16)] uint16 *server_name;
 		uint32 version_major;
