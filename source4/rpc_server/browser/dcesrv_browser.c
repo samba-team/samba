@@ -51,7 +51,30 @@ static void dcesrv_BrowserrDebugCall(struct dcesrv_call_state *dce_call, TALLOC_
 static WERROR dcesrv_BrowserrQueryOtherDomains(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct BrowserrQueryOtherDomains *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct BrowserrSrvInfo100Ctr *ctr100;
+
+	switch (r->in.info->level) {
+	case 100:
+		if (!r->in.info->info.info100) {
+			return WERR_INVALID_PARAM;
+		}
+
+		ctr100 = talloc(mem_ctx, struct BrowserrSrvInfo100Ctr);
+		W_ERROR_HAVE_NO_MEMORY(ctr100);
+
+		ctr100->entries_read = 0;
+		ctr100->entries = talloc_zero_array(ctr100, struct srvsvc_NetSrvInfo100,
+						    ctr100->entries_read);
+		W_ERROR_HAVE_NO_MEMORY(ctr100->entries);
+
+		r->out.info->info.info100 = ctr100;
+		*r->out.total_entries = ctr100->entries_read;
+		return WERR_OK;
+	default:
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_INVALID_PARAM;
 }
 
 
