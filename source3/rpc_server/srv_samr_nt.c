@@ -5114,24 +5114,20 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 				return status;
 			}
 
-			init_samr_group_info1(&info->all,
-					      group_name,
-					      attributes,
-					      num_members,
-					      group_description);
+			info->all.name.string		= group_name;
+			info->all.attributes		= attributes;
+			info->all.num_members		= num_members;
+			info->all.description.string	= group_description;
 			break;
 		}
 		case 2:
-			init_samr_group_info2(&info->name,
-					      group_name);
+			info->name.string = group_name;
 			break;
 		case 3:
-			init_samr_group_info3(&info->attributes,
-					      attributes);
+			info->attributes.attributes = attributes;
 			break;
 		case 4:
-			init_samr_group_info4(&info->description,
-					      group_description);
+			info->description.string = group_description;
 			break;
 		case 5: {
 			/*
@@ -5149,11 +5145,10 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 				return status;
 			}
 			*/
-			init_samr_group_info5(&info->all2,
-					      group_name,
-					      attributes,
-					      0, /* num_members - in w2k3 this is always 0 */
-					      group_description);
+			info->all2.name.string		= group_name;
+			info->all2.attributes		= attributes;
+			info->all2.num_members		= 0; /* num_members - in w2k3 this is always 0 */
+			info->all2.description.string	= group_description;
 
 			break;
 		}
