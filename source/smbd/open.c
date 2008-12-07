@@ -1871,10 +1871,8 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
 
 	/* Handle strange delete on close create semantics. */
-	if ((create_options & FILE_DELETE_ON_CLOSE)
-	    && (((conn->fs_capabilities & FILE_NAMED_STREAMS)
-			&& is_ntfs_stream_name(fname))
-		|| can_set_initial_delete_on_close(lck))) {
+	if (create_options & FILE_DELETE_ON_CLOSE) {
+
 		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
 		if (!NT_STATUS_IS_OK(status)) {
