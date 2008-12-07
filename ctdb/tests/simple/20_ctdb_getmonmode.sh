@@ -62,8 +62,8 @@ try_command_on_node -v 0 ctdb disablemonitor -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monoff
 
-echo "That worked!  Disabling node $test_node to force a restart..."
+echo "That worked!  Restarting cluster to restore configuration..."
 
-try_command_on_node $test_node ctdb disable
+restart_ctdb
 
 ctdb_test_exit

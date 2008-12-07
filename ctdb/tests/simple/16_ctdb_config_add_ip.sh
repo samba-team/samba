@@ -104,11 +104,13 @@ if [ -n "$add_ip" ] ; then
     echo "Waiting for IP to be added..."
     wait_until 60 ips_are_on_nodeglob $test_node $test_node_ips ${add_ip%/*}
 
-    echo "That worked!  Disabling node $test_node to force a restart..."
-    try_command_on_node $test_node ctdb disable
+    echo "That worked!"
 else
     echo "BAD: Unable to find IP address to add."
     testfailures=1
 fi
+
+echo "Restarting cluster to restore configuration..."
+restart_ctdb
 
 ctdb_test_exit

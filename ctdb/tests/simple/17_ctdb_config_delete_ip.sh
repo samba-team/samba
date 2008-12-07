@@ -38,28 +38,19 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-test_node=1
+echo "Getting list of public IPs..."
+try_command_on_node -v 0 'ctdb ip -n all | sed -e "1d"'
 
-echo "Getting list of public IPs on node ${test_node}..."
-try_command_on_node $test_node 'ctdb ip -n all | sed -e "1d"'
-
-test_node_ips=""
-num_ips=0
-while read ip pnn ; do
-    if [ "$pnn" = "$test_node" ] ; then
-	test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
-	num_ips=$(($num_ips + 1))
-    fi
-done <<<"$out" # bashism to avoid problem setting variable in pipeline.
-
-echo "Node ${test_node} has IPs: $test_node_ips"
-
+# Select an IP/node to remove.
+num_ips=$(echo "$out" | wc -l)
 num_to_remove=$(($RANDOM % $num_ips))
-ips=$test_node_ips
-for i in $(seq 1 $num_to_remove) ; do
-    ips="${ips#* }"
-done
-ip_to_remove="${ips%% *}"
+
+# Find the details in the list.
+i=0
+while [ $i -lt $num_to_remove ] ; do
+    read ip_to_remove test_node
+    i=$(($i + 1))
+done <<<"$out"
 
 echo "Attempting to remove ${ip_to_remove} from node ${test_node}."
 try_command_on_node $test_node ctdb delip $ip_to_remove
@@ -74,8 +65,8 @@ while read ip pnn ; do
 done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
 if [ "${test_node_ips/${ip_to_remove}}" = "$test_node_ips" ] ; then
-    echo "That worked!  Disabling node $test_node to force a restart..."
-    try_command_on_node $test_node ctdb disable
+    echo "That worked!  Restarting cluster to restore configuration..."
+    restart_ctdb
 else
     echo "BAD: The remove IP address is still there!"
     testfailures=1

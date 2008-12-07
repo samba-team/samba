@@ -397,6 +397,11 @@ start_daemons ()
     local public_addresses=$var_dir/public_addresses.txt
     rm -f $nodes $public_addresses
 
+    # If there are (strictly) greater than 2 nodes then we'll randomly
+    # choose a node to have no public addresses.
+    local no_public_ips=-1
+    [ $num_nodes -gt 2 ] && no_public_ips=$(($RANDOM % $num_nodes + 1))
+
     local i
     for i in $(seq 1 $num_nodes) ; do
 	if [ "${CTDB_USE_IPV6}x" != "x" ]; then
@@ -404,9 +409,11 @@ start_daemons ()
 	    ip addr add ::$i/128 dev lo
 	else
 	    echo 127.0.0.$i >> $nodes
-	    # 2 public addresses per node, just to make things interesting.
-	    echo "192.0.2.$i/24 lo" >> $public_addresses
-	    echo "192.0.2.$(($i + $num_nodes))/24 lo" >> $public_addresses
+	    # 2 public addresses on most nodes, just to make things interesting.
+	    if [ $i -ne $no_public_ips ] ; then
+		echo "192.0.2.$i/24 lo" >> $public_addresses
+		echo "192.0.2.$(($i + $num_nodes))/24 lo" >> $public_addresses
+	    fi
 	fi
     done
 
