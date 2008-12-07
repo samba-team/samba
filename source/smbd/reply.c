@@ -5631,8 +5631,6 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		 * depends on these semantics. JRA.
 		 */
 
-		set_allow_initial_delete_on_close(lck, fsp, True);
-
 		if (create_options & FILE_DELETE_ON_CLOSE) {
 			status = can_set_delete_on_close(fsp, True, 0);
 

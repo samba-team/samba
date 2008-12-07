@@ -1868,7 +1868,8 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 		new_file_created = True;
 	}
 
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0,
+		       fsp->oplock_type);
 
 	/* Handle strange delete on close create semantics. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
@@ -2314,7 +2315,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		return status;
 	}
 
-	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK, True);
+	set_share_mode(lck, fsp, current_user.ut.uid, 0, NO_OPLOCK);
 
 	/* For directories the delete on close bit at open time seems
 	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
