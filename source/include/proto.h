@@ -5213,7 +5213,7 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool is_deferred_open_entry(const struct share_mode_entry *e);
 bool is_unused_share_mode_entry(const struct share_mode_entry *e);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-			uid_t uid, uint16 mid, uint16 op_type, bool initial_delete_on_close_allowed);
+		    uid_t uid, uint16 mid, uint16 op_type);
 void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
 		       struct timeval request_time,
 		       struct file_id id);
@@ -5223,11 +5223,9 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 				 uint32 dosmode);
-bool can_set_initial_delete_on_close(const struct share_mode_lock *lck);
 void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok);
 void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok);
-bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct *fsp, bool delete_on_close);
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
 int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
