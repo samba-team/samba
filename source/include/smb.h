@@ -764,7 +764,6 @@ struct pending_message_list {
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
-#define SHARE_MODE_ALLOW_INITIAL_DELETE_ON_CLOSE      0x2
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
