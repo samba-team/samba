@@ -88,12 +88,13 @@ static int pipe_enum_fn( struct db_record *rec, void *p)
 	}
 	fenum->ctr3->array = f;
 
-	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
-				 (((uint32_t)(procid_to_pid(&prec.pid))<<16) | prec.pnum),
-				 (FILE_READ_DATA|FILE_WRITE_DATA),
-				 0,
-				 fullpath,
-				 username);
+	fenum->ctr3->array[i].fid		=
+		(((uint32_t)(procid_to_pid(&prec.pid))<<16) | prec.pnum);
+	fenum->ctr3->array[i].permissions	=
+		(FILE_READ_DATA|FILE_WRITE_DATA);
+	fenum->ctr3->array[i].num_locks		= 0;
+	fenum->ctr3->array[i].path		= fullpath;
+	fenum->ctr3->array[i].user		= username;
 
 	fenum->ctr3->count++;
 
@@ -244,9 +245,7 @@ static uint32 get_share_type(int snum)
 
 static void init_srv_share_info_0(pipes_struct *p, struct srvsvc_NetShareInfo0 *r, int snum)
 {
-	const char *net_name = lp_servicename(snum);
-
-	init_srvsvc_NetShareInfo0(r, net_name);
+	r->name		= lp_servicename(snum);
 }
 
 /*******************************************************************
@@ -266,9 +265,9 @@ static void init_srv_share_info_1(pipes_struct *p, struct srvsvc_NetShareInfo1 *
 			"", remark);
 	}
 
-	init_srvsvc_NetShareInfo1(r, net_name,
-				  get_share_type(snum),
-				  remark ? remark : "");
+	r->name		= net_name;
+	r->type		= get_share_type(snum);
+	r->comment	= remark ? remark : "";
 }
 
 /*******************************************************************
@@ -281,7 +280,6 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 	char *path = NULL;
 	int max_connections = lp_max_connections(snum);
 	uint32_t max_uses = max_connections!=0 ? max_connections : (uint32_t)-1;
-	int count = 0;
 	char *net_name = lp_servicename(snum);
 
 	remark = talloc_strdup(p->mem_ctx, lp_comment(snum));
@@ -305,16 +303,14 @@ static void init_srv_share_info_2(pipes_struct *p, struct srvsvc_NetShareInfo2 *
 		string_replace(path, '/', '\\');
 	}
 
-	count = count_current_connections(net_name, false);
-
-	init_srvsvc_NetShareInfo2(r, net_name,
-				  get_share_type(snum),
-				  remark ? remark : "",
-				  0,
-				  max_uses,
-				  count,
-				  path ? path : "",
-				  "");
+	r->name			= net_name;
+	r->type			= get_share_type(snum);
+	r->comment		= remark ? remark : "";
+	r->permissions		= 0;
+	r->max_users		= max_uses;
+	r->current_users	= count_current_connections(net_name, false);
+	r->path			= path ? path : "";
+	r->password		= "";
 }
 
 /*******************************************************************
@@ -359,10 +355,10 @@ static void init_srv_share_info_501(pipes_struct *p, struct srvsvc_NetShareInfo5
 			"", remark);
 	}
 
-	init_srvsvc_NetShareInfo501(r, net_name,
-				    get_share_type(snum),
-				    remark ? remark : "",
-				    (lp_csc_policy(snum) << 4));
+	r->name		= net_name;
+	r->type		= get_share_type(snum);
+	r->comment	= remark ? remark : "";
+	r->csc_policy	= (lp_csc_policy(snum) << 4);
 }
 
 /*******************************************************************
@@ -399,15 +395,15 @@ static void init_srv_share_info_502(pipes_struct *p, struct srvsvc_NetShareInfo5
 
 	sd_buf = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 
-	init_srvsvc_NetShareInfo502(r, net_name,
-				    get_share_type(snum),
-				    remark ? remark : "",
-				    0,
-				    (uint32_t)-1,
-				    1,
-				    path ? path : "",
-				    "",
-				    sd_buf);
+	r->name			= net_name;
+	r->type			= get_share_type(snum);
+	r->comment		= remark ? remark : "";
+	r->permissions		= 0;
+	r->max_users		= (uint32_t)-1;
+	r->current_users	= 1; /* ??? */
+	r->path			= path ? path : "";
+	r->password		= "";
+	r->sd_buf		= *sd_buf;
 }
 
 /***************************************************************************
@@ -426,7 +422,7 @@ static void init_srv_share_info_1004(pipes_struct *p, struct srvsvc_NetShareInfo
 			"", remark);
 	}
 
-	init_srvsvc_NetShareInfo1004(r, remark ? remark : "");
+	r->comment	= remark ? remark : "";
 }
 
 /***************************************************************************
@@ -443,7 +439,7 @@ static void init_srv_share_info_1005(pipes_struct *p, struct srvsvc_NetShareInfo
 
 	dfs_flags |= lp_csc_policy(snum) << SHARE_1005_CSC_POLICY_SHIFT;
 
-	init_srvsvc_NetShareInfo1005(r, dfs_flags);
+	r->dfs_flags	= dfs_flags;
 }
 
 /***************************************************************************
@@ -452,7 +448,7 @@ static void init_srv_share_info_1005(pipes_struct *p, struct srvsvc_NetShareInfo
 
 static void init_srv_share_info_1006(pipes_struct *p, struct srvsvc_NetShareInfo1006 *r, int snum)
 {
-	init_srvsvc_NetShareInfo1006(r, (uint32_t)-1);
+	r->max_users	= (uint32_t)-1;
 }
 
 /***************************************************************************
@@ -461,9 +457,8 @@ static void init_srv_share_info_1006(pipes_struct *p, struct srvsvc_NetShareInfo
 
 static void init_srv_share_info_1007(pipes_struct *p, struct srvsvc_NetShareInfo1007 *r, int snum)
 {
-	uint32 flags = 0;
-
-	init_srvsvc_NetShareInfo1007(r, flags, "");
+	r->flags			= 0;
+	r->alternate_directory_name	= "";
 }
 
 /*******************************************************************
@@ -779,8 +774,9 @@ static WERROR init_srv_sess_info_0(pipes_struct *p,
 						   num_entries+1);
 		W_ERROR_HAVE_NO_MEMORY(ctr0->array);
 
-		init_srvsvc_NetSessInfo0(&ctr0->array[num_entries],
-					 session_list[resume_handle].remote_machine);
+		ctr0->array[num_entries].client =
+			session_list[resume_handle].remote_machine;
+
 		num_entries++;
 	}
 
@@ -876,13 +872,13 @@ static WERROR init_srv_sess_info_1(pipes_struct *p,
 						   num_entries+1);
 		W_ERROR_HAVE_NO_MEMORY(ctr1->array);
 
-		init_srvsvc_NetSessInfo1(&ctr1->array[num_entries],
-					 session_list[resume_handle].remote_machine,
-					 session_list[resume_handle].username,
-					 num_files,
-					 connect_time,
-					 0,
-					 guest);
+		ctr1->array[num_entries].client		= session_list[resume_handle].remote_machine;
+		ctr1->array[num_entries].user		= session_list[resume_handle].username;
+		ctr1->array[num_entries].num_open	= num_files;
+		ctr1->array[num_entries].time		= connect_time;
+		ctr1->array[num_entries].idle_time	= 0;
+		ctr1->array[num_entries].user_flags	= guest;
+
 		num_entries++;
 	}
 
@@ -933,8 +929,7 @@ static WERROR init_srv_conn_info_0(struct srvsvc_NetConnCtr0 *ctr0,
 			return WERR_NOMEM;
 		}
 
-		init_srvsvc_NetConnInfo0(&ctr0->array[num_entries],
-					 (*total_entries));
+		ctr0->array[num_entries].conn_id = *total_entries;
 
 		/* move on to creating next connection */
 		num_entries++;
@@ -988,14 +983,13 @@ static WERROR init_srv_conn_info_1(struct srvsvc_NetConnCtr1 *ctr1,
 			return WERR_NOMEM;
 		}
 
-		init_srvsvc_NetConnInfo1(&ctr1->array[num_entries],
-					 (*total_entries),
-					 0x3,
-					 1,
-					 1,
-					 3,
-					 "dummy_user",
-					 "IPC$");
+		ctr1->array[num_entries].conn_id	= *total_entries;
+		ctr1->array[num_entries].conn_type	= 0x3;
+		ctr1->array[num_entries].num_open	= 1;
+		ctr1->array[num_entries].num_users	= 1;
+		ctr1->array[num_entries].conn_time	= 3;
+		ctr1->array[num_entries].user		= "dummy_user";
+		ctr1->array[num_entries].share		= "IPC$";
 
 		/* move on to creating next connection */
 		num_entries++;
@@ -1095,20 +1089,21 @@ WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
 			return WERR_NOMEM;
 		}
 
-		init_srvsvc_NetSrvInfo102(info102,
-					  PLATFORM_ID_NT,
-					  global_myname(),
-					  lp_major_announce_version(),
-					  lp_minor_announce_version(),
-					  lp_default_server_announce(),
-					  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH),
-					  0xffffffff, /* users */
-					  0xf, /* disc */
-					  0, /* hidden */
-					  240, /* announce */
-					  3000, /* announce delta */
-					  100000, /* licenses */
-					  "c:\\"); /* user path */
+		info102->platform_id	= PLATFORM_ID_NT;
+		info102->server_name	= global_myname();
+		info102->version_major	= lp_major_announce_version();
+		info102->version_minor	= lp_minor_announce_version();
+		info102->server_type	= lp_default_server_announce();
+		info102->comment	= string_truncate(lp_serverstring(),
+						MAX_SERVER_STRING_LENGTH);
+		info102->users		= 0xffffffff;
+		info102->disc		= 0xf;
+		info102->hidden		= 0;
+		info102->announce	= 240;
+		info102->anndelta	= 3000;
+		info102->licenses	= 100000;
+		info102->userpath	= "C:\\";
+
 		r->out.info->info102 = info102;
 		break;
 	}
@@ -1120,13 +1115,14 @@ WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
 			return WERR_NOMEM;
 		}
 
-		init_srvsvc_NetSrvInfo101(info101,
-					  PLATFORM_ID_NT,
-					  global_myname(),
-					  lp_major_announce_version(),
-					  lp_minor_announce_version(),
-					  lp_default_server_announce(),
-					  string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
+		info101->platform_id	= PLATFORM_ID_NT;
+		info101->server_name	= global_myname();
+		info101->version_major	= lp_major_announce_version();
+		info101->version_minor	= lp_minor_announce_version();
+		info101->server_type	= lp_default_server_announce();
+		info101->comment	= string_truncate(lp_serverstring(),
+						MAX_SERVER_STRING_LENGTH);
+
 		r->out.info->info101 = info101;
 		break;
 	}
@@ -1138,9 +1134,9 @@ WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
 			return WERR_NOMEM;
 		}
 
-		init_srvsvc_NetSrvInfo100(info100,
-					  PLATFORM_ID_NT,
-					  global_myname());
+		info100->platform_id	= PLATFORM_ID_NT;
+		info100->server_name	= global_myname();
+
 		r->out.info->info100 = info100;
 
 		break;
@@ -2008,19 +2004,18 @@ WERROR _srvsvc_NetRemoteTOD(pipes_struct *p,
 	t = gmtime(&unixdate);
 
 	/* set up the */
-	init_srvsvc_NetRemoteTODInfo(tod,
-				     unixdate,
-				     0,
-				     t->tm_hour,
-				     t->tm_min,
-				     t->tm_sec,
-				     0,
-				     zone,
-				     10000,
-				     t->tm_mday,
-				     t->tm_mon + 1,
-				     1900+t->tm_year,
-				     t->tm_wday);
+	tod->elapsed	= unixdate;
+	tod->msecs	= 0;
+	tod->hours	= t->tm_hour;
+	tod->mins	= t->tm_min;
+	tod->secs	= t->tm_sec;
+	tod->hunds	= 0;
+	tod->timezone	= zone;
+	tod->tinterval	= 10000;
+	tod->day	= t->tm_mday;
+	tod->month	= t->tm_mon + 1;
+	tod->year	= 1900+t->tm_year;
+	tod->weekday	= t->tm_wday;
 
 	DEBUG(5,("_srvsvc_NetRemoteTOD: %d\n", __LINE__));
 
