@@ -624,6 +624,9 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 
+#ifdef HAVE_POSIX_FALLOCATE
+	set_filelen_write_cache(fsp, len);
+#else
 	if (!sparse_buf) {
 		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
 		if (!sparse_buf) {
@@ -652,8 +655,11 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		total += pwrite_ret;
 	}
 
+	ret = 0;
+#endif
+
 	set_filelen_write_cache(fsp, len);
-	return 0;
+	return ret;
 }
 
 /****************************************************************************
