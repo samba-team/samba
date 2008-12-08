@@ -82,6 +82,7 @@ struct ctdb_context *ctdb_cmdline_init(struct event_context *ev)
 
 	/* command line specified a socket name */
 	if (ctdb_cmdline.socketname != NULL) {
+		setenv("CTDB_SOCKET", ctdb_cmdline.socketname, 1);
 		ret = ctdb_set_socketname(ctdb, ctdb_cmdline.socketname);
 		if (ret == -1) {
 			printf("ctdb_set_socketname failed - %s\n",
