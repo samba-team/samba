@@ -75,7 +75,7 @@ static bool test_LogonUasLogoff(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
+bool test_SetupCredentials(struct dcerpc_pipe *p, struct torture_context *tctx,
 				  struct cli_credentials *credentials,
 				  struct creds_CredentialState **creds_out)
 {

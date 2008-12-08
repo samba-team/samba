@@ -23,6 +23,8 @@
 #include "torture/torture.h"
 #include "system/time.h"
 #include "librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
@@ -32,6 +34,7 @@
 #include <unistd.h>
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
+#define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"
 #define TEST_ALIASNAME "samrtorturetestalias"
 #define TEST_GROUPNAME "samrtorturetestgroup"
 #define TEST_MACHINENAME "samrtestmach$"
@@ -2625,7 +2628,148 @@ static bool test_QueryUserInfo_pwdlastset(struct dcerpc_pipe *p,
 	return true;
 }
 
+static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *tctx,
+				struct cli_credentials *machine_credentials,
+				struct cli_credentials *test_credentials,
+				struct creds_CredentialState *creds,
+				NTSTATUS expected_result)
+{
+	NTSTATUS status;
+	struct netr_LogonSamLogon r;
+	struct netr_Authenticator auth, auth2;
+	union netr_LogonLevel logon;
+	union netr_Validation validation;
+	uint8_t authoritative;
+	struct netr_NetworkInfo ninfo;
+	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
+	int i;
+	int flags = CLI_CRED_NTLM_AUTH;
+
+	if (lp_client_lanman_auth(tctx->lp_ctx)) {
+		flags |= CLI_CRED_LANMAN_AUTH;
+	}
+
+	if (lp_client_ntlmv2_auth(tctx->lp_ctx)) {
+		flags |= CLI_CRED_NTLMv2_AUTH;
+	}
+
+	cli_credentials_get_ntlm_username_domain(test_credentials, tctx,
+						 &ninfo.identity_info.account_name.string,
+						 &ninfo.identity_info.domain_name.string);
+
+	generate_random_buffer(ninfo.challenge,
+			       sizeof(ninfo.challenge));
+	chal = data_blob_const(ninfo.challenge,
+			       sizeof(ninfo.challenge));
+
+	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(machine_credentials),
+						cli_credentials_get_domain(machine_credentials));
+
+	status = cli_credentials_get_ntlm_response(test_credentials, tctx,
+						   &flags,
+						   chal,
+						   names_blob,
+						   &lm_resp, &nt_resp,
+						   NULL, NULL);
+	torture_assert_ntstatus_ok(tctx, status, "cli_credentials_get_ntlm_response failed");
+
+	ninfo.lm.data = lm_resp.data;
+	ninfo.lm.length = lm_resp.length;
+
+	ninfo.nt.data = nt_resp.data;
+	ninfo.nt.length = nt_resp.length;
+
+	ninfo.identity_info.parameter_control =
+		MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT |
+		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT;
+	ninfo.identity_info.logon_id_low = 0;
+	ninfo.identity_info.logon_id_high = 0;
+	ninfo.identity_info.workstation.string = cli_credentials_get_workstation(machine_credentials);
+
+	logon.network = &ninfo;
+
+	r.in.server_name = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.computer_name = cli_credentials_get_workstation(machine_credentials);
+	r.in.credential = &auth;
+	r.in.return_authenticator = &auth2;
+	r.in.logon_level = 2;
+	r.in.logon = &logon;
+	r.out.validation = &validation;
+	r.out.authoritative = &authoritative;
+
+	d_printf("Testing LogonSamLogon with name %s\n", ninfo.identity_info.account_name.string);
+
+	ZERO_STRUCT(auth2);
+	creds_client_authenticator(creds, &auth);
+
+	r.in.validation_level = 2;
+
+	status = dcerpc_netr_LogonSamLogon(p, tctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		torture_assert_ntstatus_equal(tctx, status, expected_result, "LogonSamLogon failed");
+		return true;
+	} else {
+		torture_assert_ntstatus_ok(tctx, status, "LogonSamLogon failed");
+	}
+
+	torture_assert(tctx, creds_client_check(creds, &r.out.return_authenticator->cred),
+			"Credential chaining failed");
+
+	return true;
+}
+
+static bool test_SamLogon(struct torture_context *tctx,
+			  struct dcerpc_pipe *p,
+			  struct cli_credentials *machine_credentials,
+			  struct cli_credentials *test_credentials,
+			  NTSTATUS expected_result)
+{
+	struct creds_CredentialState *creds;
+
+	if (!test_SetupCredentials(p, tctx, machine_credentials, &creds)) {
+		return false;
+	}
+
+	return test_SamLogon_Creds(p, tctx, machine_credentials, test_credentials,
+				   creds, expected_result);
+}
+
+static bool test_SamLogon_with_creds(struct torture_context *tctx,
+				     struct dcerpc_pipe *p,
+				     struct cli_credentials *machine_creds,
+				     const char *acct_name,
+				     char *password,
+				     NTSTATUS expected_samlogon_result)
+{
+	bool ret = true;
+	struct cli_credentials *test_credentials;
+
+	test_credentials = cli_credentials_init(tctx);
+
+	cli_credentials_set_workstation(test_credentials,
+					TEST_ACCOUNT_NAME_PWD, CRED_SPECIFIED);
+	cli_credentials_set_domain(test_credentials,
+				   lp_workgroup(tctx->lp_ctx), CRED_SPECIFIED);
+	cli_credentials_set_username(test_credentials,
+				     acct_name, CRED_SPECIFIED);
+	cli_credentials_set_password(test_credentials,
+				     password, CRED_SPECIFIED);
+	cli_credentials_set_secure_channel_type(test_credentials, SEC_CHAN_BDC);
+
+	printf("testing samlogon as %s@%s password: %s\n",
+		acct_name, TEST_ACCOUNT_NAME_PWD, password);
+
+	if (!test_SamLogon(tctx, p, machine_creds, test_credentials,
+			   expected_samlogon_result)) {
+		torture_warning(tctx, "new password did not work\n");
+		ret = false;
+	}
+
+	return ret;
+}
+
 static bool test_SetPassword_level(struct dcerpc_pipe *p,
+				   struct dcerpc_pipe *np,
 				   struct torture_context *tctx,
 				   struct policy_handle *handle,
 				   uint16_t level,
@@ -2633,12 +2777,16 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 				   uint8_t password_expired,
 				   bool *matched_expected_error,
 				   bool use_setinfo2,
+				   const char *acct_name,
 				   char **password,
+				   struct cli_credentials *machine_creds,
 				   bool use_queryinfo2,
-				   NTTIME *pwdlastset)
+				   NTTIME *pwdlastset,
+				   NTSTATUS expected_samlogon_result)
 {
 	const char *fields = NULL;
 	bool ret = true;
+	struct cli_credentials *test_credentials;
 
 	switch (level) {
 	case 21:
@@ -2671,14 +2819,28 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 		ret = false;
 	}
 
+	if (*matched_expected_error == true) {
+		return ret;
+	}
+
+	if (!test_SamLogon_with_creds(tctx, np,
+				      machine_creds,
+				      acct_name,
+				      *password,
+				      expected_samlogon_result)) {
+		ret = false;
+	}
+
 	return ret;
 }
 
 static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct torture_context *tctx,
 					uint32_t acct_flags,
+					const char *acct_name,
 					struct policy_handle *handle,
-					char **password)
+					char **password,
+					struct cli_credentials *machine_credentials)
 {
 	int s = 0, q = 0, f = 0, l = 0, z = 0;
 	bool ret = true;
@@ -2701,11 +2863,18 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT | SAMR_FIELD_EXPIRED_FLAG,
 		SAMR_FIELD_NT_PASSWORD_PRESENT | SAMR_FIELD_LM_PASSWORD_PRESENT | SAMR_FIELD_LAST_PWD_CHANGE | SAMR_FIELD_EXPIRED_FLAG
 	};
+	NTSTATUS status;
+	struct dcerpc_pipe *np = NULL;
 
 	if (torture_setting_bool(tctx, "samba3", false)) {
 		delay = 1000000;
 		printf("Samba3 has second granularity, setting delay to: %d\n",
 			delay);
+	}
+
+	status = torture_rpc_connection(tctx, &np, &ndr_table_netlogon);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
 	}
 
 	/* set to 1 to enable testing for all possible opcode
@@ -2727,26 +2896,42 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		NTTIME pwdlastset_old = 0;
 		NTTIME pwdlastset_new = 0;
 		bool matched_expected_error = false;
+		NTSTATUS expected_samlogon_result = NT_STATUS_ACCOUNT_DISABLED;
 
 		torture_comment(tctx, "------------------------------\n"
 				"Testing pwdLastSet attribute for flags: 0x%08x "
 				"(s: %d (l: %d), q: %d)\n",
 				acct_flags, s, levels[l], q);
 
+		switch (levels[l]) {
+		case 21:
+		case 23:
+		case 25:
+			if (!((fields_present[f] & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+			      (fields_present[f] & SAMR_FIELD_LM_PASSWORD_PRESENT))) {
+				expected_samlogon_result = NT_STATUS_WRONG_PASSWORD;
+			}
+			break;
+		}
+
+
 		/* set #1 */
 
 		/* set a password and force password change (pwdlastset 0) by
 		 * setting the password expired flag to a non-0 value */
 
-		if (!test_SetPassword_level(p, tctx, handle,
+		if (!test_SetPassword_level(p, np, tctx, handle,
 					    levels[l],
 					    fields_present[f],
 					    nonzeros[z],
 					    &matched_expected_error,
 					    set_levels[s],
+					    acct_name,
 					    password,
+					    machine_credentials,
 					    query_levels[q],
-					    &pwdlastset_old)) {
+					    &pwdlastset_old,
+					    expected_samlogon_result)) {
 			ret = false;
 		}
 
@@ -2808,15 +2993,18 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* set a password, pwdlastset needs to get updated (increased
 		 * value), password_expired value used here is 0 */
 
-		if (!test_SetPassword_level(p, tctx, handle,
+		if (!test_SetPassword_level(p, np, tctx, handle,
 					    levels[l],
 					    fields_present[f],
 					    0,
 					    &matched_expected_error,
 					    set_levels[s],
+					    acct_name,
 					    password,
+					    machine_credentials,
 					    query_levels[q],
-					    &pwdlastset_new)) {
+					    &pwdlastset_new,
+					    expected_samlogon_result)) {
 			ret = false;
 		}
 
@@ -2885,15 +3073,18 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* set a password, pwdlastset needs to get updated (increased
 		 * value), password_expired value used here is 0 */
 
-		if (!test_SetPassword_level(p, tctx, handle,
+		if (!test_SetPassword_level(p, np, tctx, handle,
 					    levels[l],
 					    fields_present[f],
 					    0,
 					    &matched_expected_error,
 					    set_levels[s],
+					    acct_name,
 					    password,
+					    machine_credentials,
 					    query_levels[q],
-					    &pwdlastset_new)) {
+					    &pwdlastset_new,
+					    expected_samlogon_result)) {
 			ret = false;
 		}
 
@@ -2935,15 +3126,18 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 		/* set a password and force password change (pwdlastset 0) by
 		 * setting the password expired flag to a non-0 value */
 
-		if (!test_SetPassword_level(p, tctx, handle,
+		if (!test_SetPassword_level(p, np, tctx, handle,
 					    levels[l],
 					    fields_present[f],
 					    nonzeros[z],
 					    &matched_expected_error,
 					    set_levels[s],
+					    acct_name,
 					    password,
+					    machine_credentials,
 					    query_levels[q],
-					    &pwdlastset_new)) {
+					    &pwdlastset_new,
+					    expected_samlogon_result)) {
 			ret = false;
 		}
 
@@ -3046,7 +3240,8 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 			  struct policy_handle *user_handle, 
 			  struct policy_handle *domain_handle, 
 			  uint32_t base_acct_flags, 
-			  const char *base_acct_name, enum torture_samr_choice which_ops)
+			  const char *base_acct_name, enum torture_samr_choice which_ops,
+			  struct cli_credentials *machine_credentials)
 {
 	char *password = NULL;
 	struct samr_QueryUserInfo q;
@@ -3225,7 +3420,9 @@ static bool test_user_ops(struct dcerpc_pipe *p,
 
 		/* test last password change timestamp behaviour */
 		if (!test_SetPassword_pwdlastset(p, tctx, base_acct_flags,
-						 user_handle, &password)) {
+						 base_acct_name,
+						 user_handle, &password,
+						 machine_credentials)) {
 			ret = false;
 		}
 
@@ -3645,7 +3842,8 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 			    struct policy_handle *domain_handle, 
 			    struct policy_handle *user_handle_out,
 			    struct dom_sid *domain_sid, 
-			    enum torture_samr_choice which_ops)
+			    enum torture_samr_choice which_ops,
+			    struct cli_credentials *machine_credentials)
 {
 
 	TALLOC_CTX *user_ctx;
@@ -3718,7 +3916,8 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		
 		if (!test_user_ops(p, tctx, &user_handle, domain_handle, 
-				   acct_flags, name.string, which_ops)) {
+				   acct_flags, name.string, which_ops,
+				   machine_credentials)) {
 			ret = false;
 		}
 		
@@ -3748,7 +3947,8 @@ static bool test_CreateUser(struct dcerpc_pipe *p, struct torture_context *tctx,
 static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx,
 			     struct policy_handle *domain_handle,
 			     struct dom_sid *domain_sid,
-			     enum torture_samr_choice which_ops)
+			     enum torture_samr_choice which_ops,
+			     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct samr_CreateUser2 r;
@@ -3876,7 +4076,8 @@ static bool test_CreateUser2(struct dcerpc_pipe *p, struct torture_context *tctx
 			}
 		
 			if (!test_user_ops(p, tctx, &user_handle, domain_handle, 
-					   acct_flags, name.string, which_ops)) {
+					   acct_flags, name.string, which_ops,
+					   machine_credentials)) {
 				ret = false;
 			}
 
@@ -5422,7 +5623,8 @@ static bool test_Connect(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx, 
 			    struct policy_handle *handle, struct dom_sid *sid,
-			    enum torture_samr_choice which_ops)
+			    enum torture_samr_choice which_ops,
+			    struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct samr_OpenDomain r;
@@ -5454,8 +5656,8 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 	switch (which_ops) {
 	case TORTURE_SAMR_USER_ATTRIBUTES:
 	case TORTURE_SAMR_PASSWORDS:
-		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops);
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
+		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, NULL);
+		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, NULL);
 		/* This test needs 'complex' users to validate */
 		ret &= test_QueryDisplayInfo(p, tctx, &domain_handle);
 		if (!ret) {
@@ -5463,14 +5665,14 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 		}
 		break;
 	case TORTURE_SAMR_PASSWORDS_PWDLASTSET:
-		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops);
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
+		ret &= test_CreateUser2(p, tctx, &domain_handle, sid, which_ops, machine_credentials);
+		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, machine_credentials);
 		if (!ret) {
 			printf("Testing PASSWORDS PWDLASTSET on domain %s failed!\n", dom_sid_string(tctx, sid));
 		}
 		break;
 	case TORTURE_SAMR_OTHER:
-		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops);
+		ret &= test_CreateUser(p, tctx, &domain_handle, &user_handle, sid, which_ops, NULL);
 		if (!ret) {
 			printf("Failed to CreateUser in SAMR-OTHER on domain %s!\n", dom_sid_string(tctx, sid));
 		}
@@ -5533,7 +5735,8 @@ static bool test_OpenDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tctx,
 			      struct policy_handle *handle, const char *domain,
-			      enum torture_samr_choice which_ops)
+			      enum torture_samr_choice which_ops,
+			      struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct samr_LookupDomain r;
@@ -5570,7 +5773,8 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 		ret = false;
 	}
 
-	if (!test_OpenDomain(p, tctx, handle, *r.out.sid, which_ops)) {
+	if (!test_OpenDomain(p, tctx, handle, *r.out.sid, which_ops,
+			     machine_credentials)) {
 		ret = false;
 	}
 
@@ -5579,7 +5783,8 @@ static bool test_LookupDomain(struct dcerpc_pipe *p, struct torture_context *tct
 
 
 static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx,
-			     struct policy_handle *handle, enum torture_samr_choice which_ops)
+			     struct policy_handle *handle, enum torture_samr_choice which_ops,
+			     struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct samr_EnumDomains r;
@@ -5605,7 +5810,8 @@ static bool test_EnumDomains(struct dcerpc_pipe *p, struct torture_context *tctx
 
 	for (i=0;i<sam->count;i++) {
 		if (!test_LookupDomain(p, tctx, handle, 
-				       sam->entries[i].name.string, which_ops)) {
+				       sam->entries[i].name.string, which_ops,
+				       machine_credentials)) {
 			ret = false;
 		}
 	}
@@ -5747,7 +5953,7 @@ bool torture_rpc_samr(struct torture_context *torture)
 
 	ret &= test_QuerySecurity(p, torture, &handle);
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_OTHER);
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_OTHER, NULL);
 
 	ret &= test_SetDsrmPassword(p, torture, &handle);
 
@@ -5775,7 +5981,7 @@ bool torture_rpc_samr_users(struct torture_context *torture)
 
 	ret &= test_QuerySecurity(p, torture, &handle);
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_USER_ATTRIBUTES);
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_USER_ATTRIBUTES, NULL);
 
 	ret &= test_SetDsrmPassword(p, torture, &handle);
 
@@ -5801,14 +6007,16 @@ bool torture_rpc_samr_passwords(struct torture_context *torture)
 
 	ret &= test_Connect(p, torture, &handle);
 
-	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS);
+	ret &= test_EnumDomains(p, torture, &handle, TORTURE_SAMR_PASSWORDS, NULL);
 
 	ret &= test_samr_handle_Close(p, torture, &handle);
 
 	return ret;
 }
 
-bool torture_rpc_samr_passwords_pwdlastset(struct torture_context *torture)
+static bool torture_rpc_samr_pwdlastset(struct torture_context *torture,
+					struct dcerpc_pipe *p2,
+					struct cli_credentials *machine_credentials)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;
@@ -5823,10 +6031,25 @@ bool torture_rpc_samr_passwords_pwdlastset(struct torture_context *torture)
 	ret &= test_Connect(p, torture, &handle);
 
 	ret &= test_EnumDomains(p, torture, &handle,
-				TORTURE_SAMR_PASSWORDS_PWDLASTSET);
+				TORTURE_SAMR_PASSWORDS_PWDLASTSET,
+				machine_credentials);
 
 	ret &= test_samr_handle_Close(p, torture, &handle);
 
 	return ret;
 }
 
+struct torture_suite *torture_rpc_samr_passwords_pwdlastset(TALLOC_CTX *mem_ctx)
+{
+	struct torture_suite *suite = torture_suite_create(mem_ctx, "SAMR-PASSWORDS-PWDLASTSET");
+	struct torture_rpc_tcase *tcase;
+
+	tcase = torture_suite_add_machine_rpc_iface_tcase(suite, "samr",
+							  &ndr_table_samr,
+							  TEST_ACCOUNT_NAME_PWD);
+
+	torture_rpc_tcase_add_test_creds(tcase, "pwdLastSet",
+					 torture_rpc_samr_pwdlastset);
+
+	return suite;
+}
