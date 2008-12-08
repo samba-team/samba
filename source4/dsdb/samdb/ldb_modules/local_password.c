@@ -47,7 +47,8 @@
 
    Each incoming add/modify is split into a remote, and a local request, done in that order.
 
-   We maintain a list of attributes that are kept locally:
+   We maintain a list of attributes that are kept locally - perhaps
+   this should use the @KLUDGE_ACL list of passwordAttribute
  */
 
 static const char * const password_attrs[] = {
