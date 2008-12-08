@@ -5460,27 +5460,6 @@ void init_lsa_String(struct lsa_String *name, const char *s);
 void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s);
 void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s);
 void init_lsa_AsciiStringLarge(struct lsa_AsciiStringLarge *name, const char *s);
-void init_lsa_sec_qos(struct lsa_QosInfo *r,
-		      uint32_t len,
-		      uint16_t impersonation_level,
-		      uint8_t context_mode,
-		      uint8_t effective_only);
-void init_lsa_obj_attr(struct lsa_ObjectAttribute *r,
-		       uint32_t len,
-		       uint8_t *root_dir,
-		       const char *object_name,
-		       uint32_t attributes,
-		       struct security_descriptor *sec_desc,
-		       struct lsa_QosInfo *sec_qos);
-void init_lsa_translated_sid(struct lsa_TranslatedSid *r,
-			     enum lsa_SidType sid_type,
-			     uint32_t rid,
-			     uint32_t sid_index);
-void init_lsa_translated_name2(struct lsa_TranslatedName2 *r,
-			       enum lsa_SidType sid_type,
-			       const char *name,
-			       uint32_t sid_index,
-			       uint32_t unknown);
 
 /* The following definitions come from rpc_client/init_netlogon.c  */
 
