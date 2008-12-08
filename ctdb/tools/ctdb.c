@@ -1697,6 +1697,7 @@ static int control_ping(struct ctdb_context *ctdb, int argc, const char **argv)
 	ret = ctdb_ctrl_ping(ctdb, options.pnn);
 	if (ret == -1) {
 		printf("Unable to get ping response from node %u\n", options.pnn);
+		return -1;
 	} else {
 		printf("response from %u time=%.6f sec  (%d clients)\n", 
 		       options.pnn, timeval_elapsed(&tv), ret);
