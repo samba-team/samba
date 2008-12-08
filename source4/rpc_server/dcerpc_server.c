@@ -793,12 +793,14 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	context_id = call->pkt.u.alter.ctx_list[0].context_id;
 
 	/* see if they are asking for a new interface */
-	if (result == 0 &&
-	    dcesrv_find_context(call->conn, context_id) == NULL) {
-		status = dcesrv_alter_new_context(call, context_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			result = DCERPC_BIND_PROVIDER_REJECT;
-			reason = DCERPC_BIND_REASON_ASYNTAX;		
+	if (result == 0) {
+		call->context = dcesrv_find_context(call->conn, context_id);
+		if (!call->context) {
+			status = dcesrv_alter_new_context(call, context_id);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = DCERPC_BIND_PROVIDER_REJECT;
+				reason = DCERPC_BIND_REASON_ASYNTAX;
+			}
 		}
 	}
 
@@ -819,7 +821,11 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
-	pkt.u.alter_resp.assoc_group_id = call->context->assoc_group_id;
+	if (result == 0) {
+		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group_id;
+	} else {
+		pkt.u.alter_resp.assoc_group_id = 0;
+	}
 	pkt.u.alter_resp.num_results = 1;
 	pkt.u.alter_resp.ctx_list = talloc_array(call, struct dcerpc_ack_ctx, 1);
 	if (!pkt.u.alter_resp.ctx_list) {
