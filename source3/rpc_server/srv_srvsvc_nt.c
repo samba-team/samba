@@ -191,12 +191,14 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	permissions = e->access_mask & (FILE_READ_DATA|FILE_WRITE_DATA);
 
 	/* now fill in the srvsvc_NetFileInfo3 struct */
-	init_srvsvc_NetFileInfo3(&fenum->ctr3->array[i],
-				 (((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id),
-				 permissions,
-				 num_locks,
-				 fullpath,
-				 username);
+
+	fenum->ctr3->array[i].fid		=
+		(((uint32_t)(procid_to_pid(&e->pid))<<16) | e->share_file_id);
+	fenum->ctr3->array[i].permissions	= permissions;
+	fenum->ctr3->array[i].num_locks		= num_locks;
+	fenum->ctr3->array[i].path		= fullpath;
+	fenum->ctr3->array[i].user		= username;
+
 	fenum->ctr3->count++;
 }
 

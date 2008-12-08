@@ -313,8 +313,7 @@ RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
 RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o \
 		 rpc_client/init_netlogon.o \
-		 rpc_client/init_lsa.o \
-		 rpc_client/init_srvsvc.o
+		 rpc_client/init_lsa.o
 
 LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 
