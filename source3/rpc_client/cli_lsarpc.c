@@ -50,23 +50,17 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 	struct lsa_QosInfo qos;
 	uint16_t system_name = '\\';
 
+	ZERO_STRUCT(attr);
+
+	attr.len	= 0x18;
+
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 0xc, 2, 1, 0);
-		init_lsa_obj_attr(&attr,
-				  0x18,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  &qos);
-	} else {
-		init_lsa_obj_attr(&attr,
-				  0x18,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  NULL);
+		qos.len			= 0xc;
+		qos.impersonation_level	= 2;
+		qos.context_mode	= 1;
+		qos.effective_only	= 0;
+
+		attr.sec_qos		= &qos;
 	}
 
 	return rpccli_lsa_OpenPolicy(cli, mem_ctx,
@@ -88,23 +82,17 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 
+	ZERO_STRUCT(attr);
+
+	attr.len	= 0x18;
+
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 0xc, 2, 1, 0);
-		init_lsa_obj_attr(&attr,
-				  0x18,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  &qos);
-	} else {
-		init_lsa_obj_attr(&attr,
-				  0x18,
-				  NULL,
-				  NULL,
-				  0,
-				  NULL,
-				  NULL);
+		qos.len			= 0xc;
+		qos.impersonation_level	= 2;
+		qos.context_mode	= 1;
+		qos.effective_only	= 0;
+
+		attr.sec_qos		= &qos;
 	}
 
 	return rpccli_lsa_OpenPolicy2(cli, mem_ctx,

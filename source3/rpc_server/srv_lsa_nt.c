@@ -198,7 +198,9 @@ static NTSTATUS lookup_lsa_rids(TALLOC_CTX *mem_ctx,
 			mapped_count++;
 		}
 
-		init_lsa_translated_sid(&prid[i], type, rid, dom_idx);
+		prid[i].sid_type	= type;
+		prid[i].rid		= rid;
+		prid[i].sid_index	= dom_idx;
 	}
 
 	*pmapped_count = mapped_count;
@@ -768,8 +770,10 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 			mapped_count += 1;
 		}
 
-		init_lsa_translated_name2(&names[i], name->type,
-					  name->name, name->dom_idx, 0);
+		names[i].sid_type	= name->type;
+		names[i].name.string	= name->name;
+		names[i].sid_index	= name->dom_idx;
+		names[i].unknown	= 0;
 	}
 
 	status = NT_STATUS_NONE_MAPPED;
