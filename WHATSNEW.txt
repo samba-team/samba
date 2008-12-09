@@ -119,6 +119,7 @@ o   Tomasz Krasuski <kr0tki@poczta.onet.pl>
 o   Jeff Layton <jlayton@redhat.com>
     * Have uppercase_string return success on NULL pointer in mount.cifs.
     * Make mount.cifs return codes match the return codes for /bin/mount.
+    * Use lock/unlock_mtab scheme from util-linux-ng mount prog in mount.cifs.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -137,10 +138,6 @@ o   Volker Lendecke <vl@samba.org>
     * Fix trans2findfirst for the large directory optimization.
     * Fix checking for presence of cups-devel and correct cups-devel test for
       HAVE_IPRINT.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Use lock/unlock_mtab scheme from util-linux-ng mount prog in mount.cifs.
 
 
 o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
