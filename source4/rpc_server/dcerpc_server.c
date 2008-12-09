@@ -288,26 +288,6 @@ _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 	return NT_STATUS_OK;
 }
 
-
-/*
-  destroy a link to an endpoint
-*/
-static int dcesrv_endpoint_destructor(struct dcesrv_connection *p)
-{
-	while (p->contexts) {
-		struct dcesrv_connection_context *c = p->contexts;
-
-		DLIST_REMOVE(p->contexts, c);
-
-		if (c->iface) {
-			c->iface->unbind(c, c->iface);
-		}
-	}
-
-	return 0;
-}
-
-
 /*
   connect to a dcerpc endpoint
 */
@@ -354,8 +334,6 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->processing = false;
 	p->state_flags = state_flags;
 	ZERO_STRUCT(p->transport);
-
-	talloc_set_destructor(p, dcesrv_endpoint_destructor);
 
 	*_p = p;
 	return NT_STATUS_OK;
@@ -531,6 +509,16 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	return NT_STATUS_OK;	
 }
 
+static int dcesrv_connection_context_destructor(struct dcesrv_connection_context *c)
+{
+	DLIST_REMOVE(c->conn->contexts, c);
+
+	if (c->iface) {
+		c->iface->unbind(c, c->iface);
+	}
+
+	return 0;
+}
 
 /*
   handle a bind request
@@ -619,6 +607,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->handles = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
+		talloc_set_destructor(context, dcesrv_connection_context_destructor);
+
+		status = iface->bind(call, iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			char *uuid_str = GUID_string(call, &uuid);
+			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n",
+				 uuid_str, if_version, nt_errstr(status)));
+			talloc_free(uuid_str);
+			/* we don't want to trigger the iface->unbind() hook */
+			context->iface = NULL;
+			talloc_free(call->context);
+			call->context = NULL;
+			return dcesrv_bind_nak(call, 0);
+		}
 	}
 
 	if (call->conn->cli_max_recv_frag == 0) {
@@ -633,6 +635,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 
@@ -654,6 +658,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.num_results = 1;
 	pkt.u.bind_ack.ctx_list = talloc(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt.u.bind_ack.ctx_list[0].result = result;
@@ -663,30 +669,22 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	status = dcesrv_auth_bind_ack(call, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	if (iface) {
-		status = iface->bind(call, iface);
-		if (!NT_STATUS_IS_OK(status)) {
-			char *uuid_str = GUID_string(call, &uuid);
-			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", 
-				 uuid_str, if_version, nt_errstr(status)));
-			talloc_free(uuid_str);
-			return dcesrv_bind_nak(call, 0);
-		}
-	}
-
-	/* the iface->bind() might change the assoc_group_id */
-	pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
-
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return status;
 	}
 
@@ -760,12 +758,15 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
+	talloc_set_destructor(context, dcesrv_connection_context_destructor);
 
-	if (iface) {
-		status = iface->bind(call, iface);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	status = iface->bind(call, iface);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* we don't want to trigger the iface->unbind() hook */
+		context->iface = NULL;
+		talloc_free(context);
+		call->context = NULL;
+		return status;
 	}
 
 	return NT_STATUS_OK;
