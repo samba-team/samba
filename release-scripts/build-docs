@@ -25,7 +25,7 @@ cd ../docs || exit 1
 mv manpages-3 manpages
 mv htmldocs/manpages-3 htmldocs/manpages
 
-cd $DOCSRCDIR || exit 1
+cd ../docs-xml || exit 1
 make clean
 
 exit
