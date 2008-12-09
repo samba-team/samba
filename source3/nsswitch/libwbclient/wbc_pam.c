@@ -24,14 +24,7 @@
 
 #include "libwbclient.h"
 
-/** @brief Authenticate a username/password pair
- *
- * @param username     Name of user to authenticate
- * @param password     Clear text password os user
- *
- * @return #wbcErr
- **/
-
+/* Authenticate a username/password pair */
 wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password)
 {
@@ -305,16 +298,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Authenticate with more detailed information
- *
- * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
- *                     is not supported yet
- * @param info         Output details on WBC_ERR_SUCCESS
- * @param error        Output details on WBC_ERR_AUTH_ERROR
- *
- * @return #wbcErr
- **/
-
+/* Authenticate with more detailed information */
 wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error)
@@ -496,16 +480,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Trigger a verification of the trust credentials of a specific domain
- *
- * @param *domain      The name of the domain, only NULL for the default domain is
- *                     supported yet. Other values than NULL will result in
- *                     WBC_ERR_NOT_IMPLEMENTED.
- * @param error        Output details on WBC_ERR_AUTH_ERROR
- *
- * @return #wbcErr
- *
- **/
+/* Trigger a verification of the trust credentials of a specific domain */
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error)
 {
@@ -547,15 +522,7 @@ wbcErr wbcCheckTrustCredentials(const char *domain,
 	return wbc_status;
 }
 
-/** @brief Trigger an extended logoff notification to Winbind for a specific user
- *
- * @param params      A wbcLogoffUserParams structure
- * @param error       User output details on error
- *
- * @return #wbcErr
- *
- **/
-
+/* Trigger an extended logoff notification to Winbind for a specific user */
 wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 		       struct wbcAuthErrorInfo **error)
 {
@@ -642,18 +609,7 @@ wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 	return wbc_status;
 }
 
-/** @brief Trigger a logoff notification to Winbind for a specific user
- *
- * @param username    Name of user to remove from Winbind's list of
- *                    logged on users.
- * @param uid         Uid assigned to the username
- * @param ccfilename  Absolute path to the Krb5 credentials cache to
- *                    be removed
- *
- * @return #wbcErr
- *
- **/
-
+/* Trigger a logoff notification to Winbind for a specific user */
 wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
 		     const char *ccfilename)
@@ -693,16 +649,7 @@ wbcErr wbcLogoffUser(const char *username,
 	return wbc_status;
 }
 
-/** @brief Change a password for a user with more detailed information upon
- * 	   failure
- * @param params                Input parameters
- * @param error                 User output details on WBC_ERR_PWD_CHANGE_FAILED
- * @param reject_reason         New password reject reason on WBC_ERR_PWD_CHANGE_FAILED
- * @param policy                Password policy output details on WBC_ERR_PWD_CHANGE_FAILED
- *
- * @return #wbcErr
- **/
-
+/* Change a password for a user with more detailed information upon failure */
 wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 			       struct wbcAuthErrorInfo **error,
 			       enum wbcPasswordChangeRejectReason *reject_reason,
@@ -907,15 +854,7 @@ wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 	return wbc_status;
 }
 
-/** @brief Change a password for a user
- *
- * @param username		Name of user to authenticate
- * @param old_password		Old clear text password of user
- * @param new_password		New clear text password of user
- *
- * @return #wbcErr
- **/
-
+/* Change a password for a user */
 wbcErr wbcChangeUserPassword(const char *username,
 			     const char *old_password,
 			     const char *new_password)
@@ -940,17 +879,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Logon a User
- *
- * @param[in]  params      Pointer to a wbcLogonUserParams structure
- * @param[out] info        Pointer to a pointer to a wbcLogonUserInfo structure
- * @param[out] error       Pointer to a pointer to a wbcAuthErrorInfo structure
- * @param[out] policy      Pointer to a pointer to a wbcUserPasswordPolicyInfo structure
- *
- * @return #wbcErr
- *
- **/
-
+/* Logon a User */
 wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 		    struct wbcLogonUserInfo **info,
 		    struct wbcAuthErrorInfo **error,
@@ -1096,14 +1025,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Authenticate a user with cached credentials
- *
- * @param *params    Pointer to a wbcCredentialCacheParams structure
- * @param **info     Pointer to a pointer to a wbcCredentialCacheInfo structure
- * @param **error    Pointer to a pointer to a wbcAuthErrorInfo structure
- *
- * @return #wbcErr
- **/
+/* Authenticate a user with cached credentials */
 wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
                           struct wbcCredentialCacheInfo **info,
                           struct wbcAuthErrorInfo **error)

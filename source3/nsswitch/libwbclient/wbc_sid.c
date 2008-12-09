@@ -25,14 +25,7 @@
 #include "libwbclient.h"
 
 
-/** @brief Convert a binary SID to a character string
- *
- * @param sid           Binary Security Identifier
- * @param **sid_string  Resulting character string
- *
- * @return #wbcErr
- **/
-
+/* Convert a binary SID to a character string */
 wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		      char **sid_string)
 {
@@ -73,14 +66,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Convert a character string to a binary SID
- *
- * @param *str          Character string in the form of S-...
- * @param sid           Resulting binary SID
- *
- * @return #wbcErr
- **/
-
+/* Convert a character string to a binary SID */
 wbcErr wbcStringToSid(const char *str,
 		      struct wbcDomainSid *sid)
 {
@@ -163,17 +149,7 @@ done:
 
 }
 
-/** @brief Convert a domain and name to SID
- *
- * @param domain      Domain name (possibly "")
- * @param name        User or group name
- * @param *sid        Pointer to the resolved domain SID
- * @param *name_type  Pointer to the SID type
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a domain and name to SID */
 wbcErr wbcLookupName(const char *domain,
 		     const char *name,
 		     struct wbcDomainSid *sid,
@@ -216,17 +192,7 @@ wbcErr wbcLookupName(const char *domain,
 	return wbc_status;
 }
 
-/** @brief Convert a SID to a domain and name
- *
- * @param *sid        Pointer to the domain SID to be resolved
- * @param pdomain     Resolved Domain name (possibly "")
- * @param pname       Resolved User or group name
- * @param *pname_type Pointer to the resolved SID type
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a SID to a domain and name */
 wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		    char **pdomain,
 		    char **pname,
@@ -310,9 +276,7 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	return wbc_status;
 }
 
-/** @brief Translate a collection of RIDs within a domain to names
- *
- **/
+/* Translate a collection of RIDs within a domain to names */
 
 wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     int num_rids,
@@ -448,10 +412,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	return wbc_status;
 }
 
-/** @brief Get the groups a user belongs to
- *
- **/
-
+/* Get the groups a user belongs to */
 wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 bool domain_groups_only,
 			 uint32_t *num_sids,
@@ -530,10 +491,7 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 	return wbc_status;
 }
 
-/** @brief Lists Users
- *
- **/
-
+/* Lists Users */
 wbcErr wbcListUsers(const char *domain_name,
 		    uint32_t *_num_users,
 		    const char ***_users)
@@ -601,10 +559,7 @@ wbcErr wbcListUsers(const char *domain_name,
 	return wbc_status;
 }
 
-/** @brief Lists Groups
- *
- **/
-
+/* Lists Groups */
 wbcErr wbcListGroups(const char *domain_name,
 		     uint32_t *_num_groups,
 		     const char ***_groups)

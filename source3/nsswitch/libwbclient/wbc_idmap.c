@@ -24,15 +24,7 @@
 
 #include "libwbclient.h"
 
-/** @brief Convert a Windows SID to a Unix uid, allocating an uid if needed
- *
- * @param *sid        Pointer to the domain SID to be resolved
- * @param *puid       Pointer to the resolved uid_t value
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Windows SID to a Unix uid, allocating an uid if needed */
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 {
 	struct winbindd_request request;
@@ -71,30 +63,14 @@ wbcErr wbcSidToUid(const struct wbcDomainSid *sid, uid_t *puid)
 	return wbc_status;
 }
 
-/** @brief Convert a Windows SID to a Unix uid if there already is a mapping
- *
- * @param *sid        Pointer to the domain SID to be resolved
- * @param *puid       Pointer to the resolved uid_t value
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Windows SID to a Unix uid if there already is a mapping */
 wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 			uid_t *puid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
-/** @brief Convert a Unix uid to a Windows SID, allocating a SID if needed
- *
- * @param uid         Unix uid to be resolved
- * @param *sid        Pointer to the resolved domain SID
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Unix uid to a Windows SID, allocating a SID if needed */
 wbcErr wbcUidToSid(uid_t uid, struct wbcDomainSid *sid)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -127,15 +103,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Convert a Unix uid to a Windows SID if there already is a mapping
- *
- * @param uid         Unix uid to be resolved
- * @param *sid        Pointer to the resolved domain SID
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Unix uid to a Windows SID if there already is a mapping */
 wbcErr wbcQueryUidToSid(uid_t uid,
 			struct wbcDomainSid *sid)
 {
@@ -189,14 +157,7 @@ wbcErr wbcSidToGid(const struct wbcDomainSid *sid, gid_t *pgid)
 	return wbc_status;
 }
 
-/** @brief Convert a Windows SID to a Unix gid if there already is a mapping
- *
- * @param *sid        Pointer to the domain SID to be resolved
- * @param *pgid       Pointer to the resolved gid_t value
- *
- * @return #wbcErr
- *
- **/
+/* Convert a Windows SID to a Unix gid if there already is a mapping */
 
 wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 			gid_t *pgid)
@@ -204,15 +165,7 @@ wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
-/** @brief Convert a Unix gid to a Windows SID, allocating a SID if needed
- *
- * @param gid         Unix gid to be resolved
- * @param *sid        Pointer to the resolved domain SID
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Unix gid to a Windows SID, allocating a SID if needed */
 wbcErr wbcGidToSid(gid_t gid, struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
@@ -245,28 +198,14 @@ done:
 	return wbc_status;
 }
 
-/** @brief Convert a Unix gid to a Windows SID if there already is a mapping
- *
- * @param gid         Unix gid to be resolved
- * @param *sid        Pointer to the resolved domain SID
- *
- * @return #wbcErr
- *
- **/
-
+/* Convert a Unix gid to a Windows SID if there already is a mapping */
 wbcErr wbcQueryGidToSid(gid_t gid,
 			struct wbcDomainSid *sid)
 {
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
-/** @brief Obtain a new uid from Winbind
- *
- * @param *puid      *pointer to the allocated uid
- *
- * @return #wbcErr
- **/
-
+/* Obtain a new uid from Winbind */
 wbcErr wbcAllocateUid(uid_t *puid)
 {
 	struct winbindd_request request;
@@ -296,13 +235,7 @@ wbcErr wbcAllocateUid(uid_t *puid)
 	return wbc_status;
 }
 
-/** @brief Obtain a new gid from Winbind
- *
- * @param *pgid      Pointer to the allocated gid
- *
- * @return #wbcErr
- **/
-
+/* Obtain a new gid from Winbind */
 wbcErr wbcAllocateGid(gid_t *pgid)
 {
 	struct winbindd_request request;
@@ -336,13 +269,7 @@ wbcErr wbcAllocateGid(gid_t *pgid)
 #define _ID_TYPE_UID 1
 #define _ID_TYPE_GID 2
 
-/** @brief Set an user id mapping
- *
- * @param uid       Uid of the desired mapping.
- * @param *sid      Pointer to the sid of the diresired mapping.
- *
- * @return #wbcErr
- **/
+/* Set an user id mapping */
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
@@ -379,13 +306,7 @@ wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 	return wbc_status;
 }
 
-/** @brief Set a group id mapping
- *
- * @param gid       Gid of the desired mapping.
- * @param *sid      Pointer to the sid of the diresired mapping.
- *
- * @return #wbcErr
- **/
+/* Set a group id mapping */
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
@@ -422,13 +343,7 @@ wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 	return wbc_status;
 }
 
-/** @brief Remove a user id mapping
- *
- * @param uid       Uid of the mapping to remove.
- * @param *sid      Pointer to the sid of the mapping to remove.
- *
- * @return #wbcErr
- **/
+/* Remove a user id mapping */
 wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
@@ -465,13 +380,7 @@ wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 	return wbc_status;
 }
 
-/** @brief Remove a group id mapping
- *
- * @param gid       Gid of the mapping to remove.
- * @param *sid      Pointer to the sid of the mapping to remove.
- *
- * @return #wbcErr
- **/
+/* Remove a group id mapping */
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
 	struct winbindd_request request;
@@ -508,12 +417,7 @@ wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 	return wbc_status;
 }
 
-/** @brief Set the highwater mark for allocated uids.
- *
- * @param uid_hwm      The new uid highwater mark value
- *
- * @return #wbcErr
- **/
+/* Set the highwater mark for allocated uids. */
 wbcErr wbcSetUidHwm(uid_t uid_hwm)
 {
 	struct winbindd_request request;
@@ -538,12 +442,7 @@ wbcErr wbcSetUidHwm(uid_t uid_hwm)
 	return wbc_status;
 }
 
-/** @brief Set the highwater mark for allocated gids.
- *
- * @param gid_hwm      The new gid highwater mark value
- *
- * @return #wbcErr
- **/
+/* Set the highwater mark for allocated gids. */
 wbcErr wbcSetGidHwm(gid_t gid_hwm)
 {
 	struct winbindd_request request;

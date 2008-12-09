@@ -123,13 +123,7 @@ const char *wbcErrorString(wbcErr error)
 	return "unknown wbcErr value";
 }
 
-/** @brief Free library allocated memory
- *
- * @param *p Pointer to free
- *
- * @return void
- **/
-
+/* Free library allocated memory */
 void wbcFreeMemory(void *p)
 {
 	if (p)
