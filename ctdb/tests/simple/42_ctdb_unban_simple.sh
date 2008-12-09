@@ -67,9 +67,6 @@ else
     testfailures=1
 fi
 
-echo "Sleeping to avoid a potential race condition..."
-sleep_for 3
-
 echo "Unbanning node 2"
 try_command_on_node 1 ctdb unban -n 2
 
@@ -83,8 +80,5 @@ else
     echo "Some IPs didn't move."
     testfailures=1
 fi
-
-echo "Sleeping to avoid potential race..."
-sleep_for 3
 
 ctdb_test_exit

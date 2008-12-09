@@ -63,6 +63,8 @@ ctdb_test_exit ()
 
     [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
 
+    eval "$ctdb_test_exit_hook"
+
     if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
 	echo "Restarting ctdb on all nodes to get back into known state..."
 	restart_ctdb
@@ -280,6 +282,8 @@ node_has_status ()
 
     local bits fpat mpat
     case "$status" in
+	(unhealthy)    bits="?:?:?:1" ;;
+	(healthy)      bits="?:?:?:0" ;;
 	(disconnected) bits="1:?:?:?" ;;
 	(connected)    bits="0:?:?:?" ;;
 	(banned)       bits="?:1:?:?" ;;
@@ -462,3 +466,31 @@ restart_ctdb ()
     echo "ctdb is ready"
 }
 
+install_eventscript ()
+{
+    local script_name="$1"
+    local script_contents="$2"
+
+    if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+	# The quoting here is *very* fragile.  However, we do
+	# experience the joy of installing a short script using
+	# onnode, and without needing to know the IP addresses of the
+	# nodes.
+	onnode all "f=\"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\" ; echo \"Installing \$f\" ; echo '${script_contents}' > \"\$f\" ; chmod 755 \"\$f\""
+    else
+	f="${CTDB_DIR}/tests/events.d/${script_name}"
+	echo "$script_contents" >"$f"
+	chmod 755 "$f"
+    fi
+}
+
+uninstall_eventscript ()
+{
+    local script_name="$1"
+
+    if [ -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+	onnode all "rm -vf \"\${CTDB_BASE:-/etc/ctdb}/events.d/${script_name}\""
+    else
+	rm -vf "${CTDB_DIR}/tests/events.d/${script_name}"
+    fi
+}

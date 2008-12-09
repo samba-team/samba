@@ -81,7 +81,4 @@ else
     testfailures=1
 fi
 
-echo "Sleeping to avoid potential race..."
-sleep_for 3
-
 ctdb_test_exit
