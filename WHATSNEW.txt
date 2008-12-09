@@ -81,6 +81,7 @@ o   Steven Danneman <steven.danneman@isilon.com>
 
 o   Guenther Deschner <gd@samba.org>
     * BUG 5888: Fix PNP_GetHwProfInfo().
+    * BUG 5957: Do not abort rename process on valid rename script.
     * BUG 5898: Fix 'net rpc shutdown'.
     * Fix duplicate installation of cifs.upcall.
     * Fix _srvsvc_NetShareAdd segfault.
