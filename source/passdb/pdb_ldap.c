@@ -2014,7 +2014,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 					newname_lower,
 					true,
 					true);
-	if (rename_script) {
+	if (!rename_script) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	rename_script = realloc_string_sub2(rename_script,
