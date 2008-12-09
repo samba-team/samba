@@ -1422,6 +1422,38 @@ const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name)
 	return NULL;
 }
 
+void dcerpc_server_init(struct loadparm_context *lp_ctx)
+{
+	static bool initialized;
+	extern NTSTATUS dcerpc_server_wkssvc_init(void);
+	extern NTSTATUS dcerpc_server_drsuapi_init(void);
+	extern NTSTATUS dcerpc_server_winreg_init(void);
+	extern NTSTATUS dcerpc_server_spoolss_init(void);
+	extern NTSTATUS dcerpc_server_epmapper_init(void);
+	extern NTSTATUS dcerpc_server_srvsvc_init(void);
+	extern NTSTATUS dcerpc_server_netlogon_init(void);
+	extern NTSTATUS dcerpc_server_rpcecho_init(void);
+	extern NTSTATUS dcerpc_server_unixinfo_init(void);
+	extern NTSTATUS dcerpc_server_samr_init(void);
+	extern NTSTATUS dcerpc_server_remote_init(void);
+	extern NTSTATUS dcerpc_server_lsa_init(void);
+	extern NTSTATUS dcerpc_server_browser_init(void);
+	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
+	init_module_fn *shared_init;
+
+	if (initialized) {
+		return;
+	}
+	initialized = true;
+
+	shared_init = load_samba_modules(NULL, lp_ctx, "dcerpc_server");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+}
+
 /*
   return the DCERPC module version, and the size of some critical types
   This can be used by endpoint server modules to either detect compilation errors, or provide
@@ -1453,6 +1485,8 @@ _PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct loadparm_c
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
+
+	dcerpc_server_init(lp_ctx);
 
 	status = dcesrv_init_context(mem_ctx, lp_ctx, lp_dcerpc_endpoint_servers(lp_ctx), &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);
