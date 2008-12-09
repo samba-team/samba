@@ -140,11 +140,13 @@
 
 #define SET_PARAMETERS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY;				\
+	if (r->in.info->field.length != 0) {				\
+		if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+			return NT_STATUS_NO_MEMORY;			\
+		}							\
+		set_el = ldb_msg_find_element(msg, attr);		\
+		set_el->flags = LDB_FLAG_MOD_REPLACE;			\
 	}								\
-	set_el = ldb_msg_find_element(msg, attr);			\
-	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)
 
 
