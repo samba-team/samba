@@ -1,4 +1,5 @@
 /*
+ * Unix SMB/CIFS implementation.
  * Support for OneFS
  *
  * Copyright (C) Tim Prouty, 2008
@@ -18,20 +19,32 @@
  */
 
 #include "includes.h"
+#include "onefs.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info, SEC_DESC **ppdesc);
+static int onefs_mkdir(vfs_handle_struct *handle, const char *path,
+		       mode_t mode)
+{
+	DEBUG(0, ("SMB_VFS_MKDIR should never be called in vfs_onefs"));
+	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
+}
 
-NTSTATUS onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
-			  uint32 security_info, SEC_DESC **ppdesc);
-
-NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-			   uint32 security_info_sent, SEC_DESC *psd);
+static int onefs_open(vfs_handle_struct *handle, const char *fname,
+		      files_struct *fsp, int flags, mode_t mode)
+{
+	DEBUG(0, ("SMB_VFS_OPEN should never be called in vfs_onefs"));
+	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
+}
 
 static vfs_op_tuple onefs_ops[] = {
+	{SMB_VFS_OP(onefs_mkdir), SMB_VFS_OP_MKDIR,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_open), SMB_VFS_OP_OPEN,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_create_file), SMB_VFS_OP_CREATE_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,

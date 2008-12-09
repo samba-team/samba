@@ -1,71 +1,93 @@
 /*
-   Unix SMB/CIFS implementation.
-   file opening and share modes
-   Copyright (C) Andrew Tridgell 1992-1998
-   Copyright (C) Jeremy Allison 2001-2004
-   Copyright (C) Volker Lendecke 2005
+ * Unix SMB/CIFS implementation.
+ *
+ * This file began with some code from source3/smbd/open.c and modified it to
+ * work with ifs_createfile.
+ *
+ * ifs_createfile is a CIFS-specific syscall for opening/files and
+ * directories.  It adds support for:
+ *    - Full in-kernel access checks using a windows access_mask
+ *    - Cluster-coherent share mode locks
+ *    - Cluster-coherent oplocks
+ *    - Streams
+ *    - Setting security descriptors at create time
+ *    - Setting dos_attributes at create time
+ *
+ * Copyright (C) Andrew Tridgell 1992-1998
+ * Copyright (C) Jeremy Allison 2001-2004
+ * Copyright (C) Volker Lendecke 2005
+ * Copyright (C) Tim Prouty, 2008
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
+ */
 
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 3 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-#include "includes.h"
+#include "onefs.h"
 
 extern const struct generic_mapping file_generic_mapping;
 extern bool global_client_failed_oplock_break;
 
 struct deferred_open_record {
 	bool delayed_for_oplocks;
+	bool failed; /* added for onefs_oplocks */
 	struct file_id id;
 };
 
-static NTSTATUS create_file_unixpath(connection_struct *conn,
-				     struct smb_request *req,
-				     const char *fname,
-				     uint32_t access_mask,
-				     uint32_t share_access,
-				     uint32_t create_disposition,
-				     uint32_t create_options,
-				     uint32_t file_attributes,
-				     uint32_t oplock_request,
-				     uint64_t allocation_size,
-				     struct security_descriptor *sd,
-				     struct ea_list *ea_list,
+static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
+			      struct smb_request *req,
+			      const char *fname,
+			      uint32_t access_mask,
+			      uint32_t share_access,
+			      uint32_t create_disposition,
+			      uint32_t create_options,
+			      uint32_t file_attributes,
+			      uint32_t oplock_request,
+			      uint64_t allocation_size,
+			      struct security_descriptor *sd,
+			      struct ea_list *ea_list,
 
-				     files_struct **result,
-				     int *pinfo,
-				     SMB_STRUCT_STAT *psbuf);
+			      files_struct **result,
+			      int *pinfo,
+			      SMB_STRUCT_STAT *psbuf);
 
 /****************************************************************************
  Open a file.
 ****************************************************************************/
 
-static NTSTATUS open_file(files_struct *fsp,
-			  connection_struct *conn,
-			  struct smb_request *req,
-			  const char *parent_dir,
-			  const char *name,
-			  const char *path,
-			  SMB_STRUCT_STAT *psbuf,
-			  int flags,
-			  mode_t unx_mode,
-			  uint32 access_mask, /* client requested access mask. */
-			  uint32 open_access_mask) /* what we're actually using in the open. */
+static NTSTATUS onefs_open_file(files_struct *fsp,
+				connection_struct *conn,
+				struct smb_request *req,
+				const char *parent_dir,
+				const char *name,
+				const char *path,
+				SMB_STRUCT_STAT *psbuf,
+				int flags,
+				mode_t unx_mode,
+				uint32 access_mask,
+				uint32 open_access_mask,
+				int oplock_request,
+				uint64 id,
+				uint32 share_access,
+				uint32 create_options,
+				uint32_t new_dos_attributes,
+				struct security_descriptor *sd,
+				int *granted_oplock)
 {
 	NTSTATUS status = NT_STATUS_OK;
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(*psbuf);
+	const char *wild;
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -110,90 +132,118 @@ static NTSTATUS open_file(files_struct *fsp,
 	 */
 
 	if ((accmode == O_RDONLY) && ((flags & O_TRUNC) == O_TRUNC)) {
-		DEBUG(10,("open_file: truncate requested on read-only open "
-			  "for file %s\n", path));
+		DEBUG(10,("onefs_open_file: truncate requested on read-only "
+			  "open for file %s\n", path));
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
-	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
-	    (!file_existed && (local_flags & O_CREAT)) ||
-	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
-		const char *wild;
-
-		/*
-		 * We can't actually truncate here as the file may be locked.
-		 * open_file_ntcreate will take care of the truncate later. JRA.
-		 */
-
-		local_flags &= ~O_TRUNC;
-
 #if defined(O_NONBLOCK) && defined(S_ISFIFO)
-		/*
-		 * We would block on opening a FIFO with no one else on the
-		 * other end. Do what we used to do and add O_NONBLOCK to the
-		 * open flags. JRA.
-		 */
+	/*
+	 * We would block on opening a FIFO with no one else on the
+	 * other end. Do what we used to do and add O_NONBLOCK to the
+	 * open flags. JRA.
+	 */
 
-		if (file_existed && S_ISFIFO(psbuf->st_mode)) {
-			local_flags |= O_NONBLOCK;
-		}
+	if (file_existed && S_ISFIFO(psbuf->st_mode)) {
+		local_flags |= O_NONBLOCK;
+	}
 #endif
 
-		/* Don't create files with Microsoft wildcard characters. */
-		if (fsp->base_fsp) {
-			/*
-			 * wildcard characters are allowed in stream names
-			 * only test the basefilename
-			 */
-			wild = fsp->base_fsp->fsp_name;
-		} else {
-			wild = path;
-		}
-		if ((local_flags & O_CREAT) && !file_existed &&
-		    ms_has_wild(wild))  {
-			return NT_STATUS_OBJECT_NAME_INVALID;
-		}
-
-		/* Actually do the open */
-		status = fd_open(conn, path, fsp, local_flags, unx_mode);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
-				 "(flags=%d)\n",
-				 path,nt_errstr(status),local_flags,flags));
-			return status;
-		}
-
-		if ((local_flags & O_CREAT) && !file_existed) {
-
-			/* Inherit the ACL if required */
-			if (lp_inherit_perms(SNUM(conn))) {
-				inherit_access_posix_acl(conn, parent_dir, path,
-						   unx_mode);
-			}
-
-			/* Change the owner if required. */
-			if (lp_inherit_owner(SNUM(conn))) {
-				change_file_owner_to_parent(conn, parent_dir,
-							    fsp);
-			}
-
-			notify_fname(conn, NOTIFY_ACTION_ADDED,
-				     FILE_NOTIFY_CHANGE_FILE_NAME, path);
-		}
-
+	/* Don't create files with Microsoft wildcard characters. */
+	if (fsp->base_fsp) {
+		/*
+		 * wildcard characters are allowed in stream names
+		 * only test the basefilename
+		 */
+		wild = fsp->base_fsp->fsp_name;
 	} else {
-		fsp->fh->fd = -1; /* What we used to call a stat open. */
-		if (file_existed) {
-			status = check_open_rights(conn,
-					path,
-					access_mask);
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("open_file: Access denied on "
-					"file %s\n",
-					path));
-				return status;
+		wild = path;
+	}
+	if ((local_flags & O_CREAT) && !file_existed &&
+	    ms_has_wild(wild))  {
+		/*
+		 * XXX: may need to remvoe this return...
+		 *
+		 * We dont think this check needs to exist. All it does is
+		 * block creating files with Microsoft wildcards, which is
+		 * fine if the creation originated from NFS or locally and
+		 * then was copied via Samba.
+		 */
+		DEBUG(1, ("onefs_open_file: creating file with wildcard: %s\n",
+			  path));
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	/* Actually do the open */
+
+#ifdef O_NOFOLLOW
+	/*
+	 * Never follow symlinks on a POSIX client. The
+	 * client should be doing this.
+	 */
+
+	if (fsp->posix_open || !lp_symlinks(SNUM(conn))) {
+		flags |= O_NOFOLLOW;
+	}
+#endif
+	/* Don't request an oplock if oplocks are turned off for the
+	 * share. */
+	if (!lp_oplocks(SNUM(conn)))
+		oplock_request = 0;
+
+	fsp->fh->fd = onefs_sys_create_file(conn,
+					    -1,
+					    path,
+					    access_mask,
+					    open_access_mask,
+					    share_access,
+					    create_options,
+					    flags,
+					    unx_mode,
+					    oplock_request,
+					    id,
+					    sd,
+					    new_dos_attributes,
+					    granted_oplock);
+
+	if (fsp->fh->fd == -1) {
+		if (errno == EMFILE) {
+			static time_t last_warned = 0L;
+
+			if (time((time_t *) NULL) > last_warned) {
+				DEBUG(0, ("Too many open files, unable "
+					  "to open more!  smbd's max "
+					  "open files = %d, also check "
+					  "sysctl kern.maxfiles and "
+					  "sysctl kern.maxfilesperproc\n",
+					  lp_max_open_files()));
+				last_warned = time((time_t *) NULL);
 			}
 		}
+
+		status = map_nt_error_from_unix(errno);
+		DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
+			  "(flags=%d)\n",
+			  path,nt_errstr(status),local_flags,flags));
+		return status;
+	}
+
+	if ((local_flags & O_CREAT) && !file_existed) {
+
+		/* Inherit the ACL if required */
+		if (lp_inherit_perms(SNUM(conn))) {
+			inherit_access_posix_acl(conn, parent_dir, path,
+			    unx_mode);
+		}
+
+		/* Change the owner if required. */
+		if (lp_inherit_owner(SNUM(conn))) {
+			change_file_owner_to_parent(conn, parent_dir,
+			    fsp);
+		}
+
+		notify_fname(conn, NOTIFY_ACTION_ADDED,
+		    FILE_NOTIFY_CHANGE_FILE_NAME, path);
 	}
 
 	if (!file_existed) {
@@ -346,6 +396,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	   a 1 second delay for share mode conflicts. */
 
 	state.delayed_for_oplocks = True;
+	state.failed = False;
 	state.id = lck->id;
 
 	if (!request_timed_out(request_time, timeout)) {
@@ -354,22 +405,21 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 }
 
 /****************************************************************************
- Open a file with a share mode. Passed in an already created files_struct *.
+ Open a file with a share mode.  Passed in an already created files_struct.
 ****************************************************************************/
-
-static NTSTATUS open_file_ntcreate(connection_struct *conn,
-			    struct smb_request *req,
-			    const char *fname,
-			    SMB_STRUCT_STAT *psbuf,
-			    uint32 access_mask,		/* access bits (FILE_READ_DATA etc.) */
-			    uint32 share_access,	/* share constants (FILE_SHARE_READ etc) */
-			    uint32 create_disposition,	/* FILE_OPEN_IF etc. */
-			    uint32 create_options,	/* options such as delete on close. */
-			    uint32 new_dos_attributes,	/* attributes used for new file. */
-			    int oplock_request, 	/* internal Samba oplock codes. */
-							/* Information (FILE_EXISTS etc.) */
-			    int *pinfo,
-			    files_struct *fsp)
+NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
+				  struct smb_request *req,
+				  const char *fname,
+				  uint32 access_mask,
+				  uint32 share_access,
+				  uint32 create_disposition,
+				  uint32 create_options,
+				  uint32 new_dos_attributes,
+				  int oplock_request,
+				  struct security_descriptor *sd,
+				  files_struct *fsp,
+				  int *pinfo,
+				  SMB_STRUCT_STAT *psbuf)
 {
 	int flags=0;
 	int flags2=0;
@@ -378,7 +428,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	bool posix_open = False;
 	bool new_file_created = False;
 	struct file_id id;
-	NTSTATUS fsp_open = NT_STATUS_ACCESS_DENIED;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
 	int info;
@@ -391,6 +440,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	int ret_flock;
 	char *parent_dir;
 	const char *newname;
+	int granted_oplock;
+	uint64 oplock_waiter;
+	uint32 createfile_attributes = 0;
 
 	ZERO_STRUCT(id);
 
@@ -404,7 +456,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			*pinfo = FILE_WAS_CREATED;
 		}
 
-		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
+		DEBUG(10, ("onefs_open_file_ntcreate: printer open fname=%s\n",
+			  fname));
 
 		return print_fsp_open(req, conn, fname, req->vuid, fsp);
 	}
@@ -425,13 +478,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				     parent_dir);
 	}
 
-	DEBUG(10, ("open_file_ntcreate: fname=%s, dos_attrs=0x%x "
-		   "access_mask=0x%x share_access=0x%x "
-		   "create_disposition = 0x%x create_options=0x%x "
-		   "unix mode=0%o oplock_request=%d\n",
-		   fname, new_dos_attributes, access_mask, share_access,
-		   create_disposition, create_options, unx_mode,
-		   oplock_request));
+	DEBUG(10,("onefs_open_file_ntcreate: fname=%s, dos_attrs=0x%x "
+		  "access_mask=0x%x share_access=0x%x "
+		  "create_disposition = 0x%x create_options=0x%x "
+		  "unix mode=0%o oplock_request=0x%x\n",
+		  fname, new_dos_attributes, access_mask, share_access,
+		  create_disposition, create_options, unx_mode,
+		  oplock_request));
 
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
 		DEBUG(0, ("No smb request but not an internal only open!\n"));
@@ -465,6 +518,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		/* Ensure we don't reprocess this message. */
 		remove_deferred_open_smb_message(req->mid);
+
+		/*
+		 * When receiving a semlock_async_failure message, the
+		 * deferred open will be marked as "failed". Returning
+		 * INTERNAL_ERROR.
+		 */
+		if (state->failed) {
+			DEBUG(0, ("onefs_open_file_ntcreate: "
+				  "semlock_async_failure detected!\n"));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	status = check_name(conn, fname);
@@ -479,7 +543,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	/* ignore any oplock requests if oplocks are disabled */
+	/* Setup dos_attributes to be set by ifs_createfile */
+	if (lp_store_dos_attributes(SNUM(conn))) {
+		createfile_attributes = (new_dos_attributes | aARCH) &
+		    ~(FILE_ATTRIBUTE_NONINDEXED | FILE_ATTRIBUTE_COMPRESSED);
+	}
+
+	/* Ignore oplock requests if oplocks are disabled. */
 	if (!lp_oplocks(SNUM(conn)) || global_client_failed_oplock_break ||
 	    IS_VETO_OPLOCK_PATH(conn, fname)) {
 		/* Mask off everything except the private Samba bits. */
@@ -490,8 +560,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!lp_posix_pathnames() && strstr(fname,".+,;=[].")) {
 		/* OS/2 Workplace shell fix may be main code stream in a later
 		 * release. */
-		DEBUG(5,("open_file_ntcreate: OS/2 long filenames are not "
-			 "supported.\n"));
+		DEBUG(5,("onefs_open_file_ntcreate: OS/2 long filenames are "
+			  "not supported.\n"));
 		if (use_nt_status()) {
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
@@ -508,6 +578,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		case FILE_SUPERSEDE:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
+			/**
+			 * @todo: Clear all file attributes?
+			 * http://www.osronline.com/article.cfm?article=302
+			 * create if not exist, trunc if exist
+			 *
+			 * If file exists replace/overwrite. If file doesn't
+			 * exist create.
+			 */
 			flags2 |= (O_CREAT | O_TRUNC);
 			break;
 
@@ -520,7 +598,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		case FILE_OPEN:
 			/* If file exists open. If file doesn't exist error. */
 			if (!file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_OPEN "
+				DEBUG(5,("onefs_open_file_ntcreate: FILE_OPEN "
 					 "requested for file %s and file "
 					 "doesn't exist.\n", fname ));
 				errno = ENOENT;
@@ -532,9 +610,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If file exists overwrite. If file doesn't exist
 			 * error. */
 			if (!file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_OVERWRITE "
-					 "requested for file %s and file "
-					 "doesn't exist.\n", fname ));
+				DEBUG(5, ("onefs_open_file_ntcreate: "
+					  "FILE_OVERWRITE requested for file "
+					  "%s and file doesn't exist.\n",
+					  fname));
 				errno = ENOENT;
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
@@ -545,9 +624,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* If file exists error. If file doesn't exist
 			 * create. */
 			if (file_existed) {
-				DEBUG(5,("open_file_ntcreate: FILE_CREATE "
-					 "requested for file %s and file "
-					 "already exists.\n", fname ));
+				DEBUG(5, ("onefs_open_file_ntcreate: "
+					  "FILE_CREATE requested for file %s "
+					  "and file already exists.\n",
+					  fname));
 				if (S_ISDIR(psbuf->st_mode)) {
 					errno = EISDIR;
 				} else {
@@ -568,45 +648,47 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* We only care about matching attributes on file exists and
-	 * overwrite. */
-
-	if (!posix_open && file_existed && ((create_disposition == FILE_OVERWRITE) ||
-			     (create_disposition == FILE_OVERWRITE_IF))) {
+	/* Match attributes on file exists and overwrite. */
+	if (!posix_open && file_existed &&
+	    ((create_disposition == FILE_OVERWRITE) ||
+		(create_disposition == FILE_OVERWRITE_IF))) {
 		if (!open_match_attributes(conn, fname,
 					   existing_dos_attributes,
 					   new_dos_attributes, psbuf->st_mode,
 					   unx_mode, &new_unx_mode)) {
-			DEBUG(5,("open_file_ntcreate: attributes missmatch "
-				 "for file %s (%x %x) (0%o, 0%o)\n",
-				 fname, existing_dos_attributes,
-				 new_dos_attributes,
-				 (unsigned int)psbuf->st_mode,
-				 (unsigned int)unx_mode ));
+			DEBUG(5, ("onefs_open_file_ntcreate: attributes "
+				  "missmatch for file %s (%x %x) (0%o, 0%o)\n",
+				  fname, existing_dos_attributes,
+				  new_dos_attributes,
+				  (unsigned int)psbuf->st_mode,
+				  (unsigned int)unx_mode ));
 			errno = EACCES;
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-	status = calculate_access_mask(conn, fname, file_existed,
-					access_mask,
-					&access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_file_ntcreate: calculate_access_mask "
-			"on file %s returned %s\n",
-			fname,
-			nt_errstr(status)));
-		return status;
+	/*
+	 * OneFS understands MAXIMUM_ALLOWED_ACCESS, so only hack the
+	 * access_mask, but leave the MAA for the actual open in
+	 * open_access_mask.
+	 */
+	open_access_mask = access_mask;
+	if (open_access_mask & MAXIMUM_ALLOWED_ACCESS) {
+		access_mask |= FILE_GENERIC_ALL;
 	}
 
-	open_access_mask = access_mask;
+	/* Convert GENERIC bits to specific bits. */
+	se_map_generic(&access_mask, &file_generic_mapping);
+	se_map_generic(&open_access_mask, &file_generic_mapping);
 
 	if ((flags2 & O_TRUNC) || (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
-		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
+		/* This will cause oplock breaks. */
+		open_access_mask |= FILE_WRITE_DATA;
 	}
 
-	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
-		   "access_mask=0x%x\n", fname, access_mask ));
+	DEBUG(10, ("onefs_open_file_ntcreate: fname=%s, after mapping "
+		   "open_access_mask=%#x, access_mask=0x%x\n",
+		   fname, open_access_mask, access_mask));
 
 	/*
 	 * Note that we ignore the append flag as append does not
@@ -614,12 +696,31 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 */
 
 	if ((access_mask & (FILE_WRITE_DATA | FILE_APPEND_DATA)) ||
-			(oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
-		/* DENY_DOS opens are always underlying read-write on the
-		   file handle, no matter what the requested access mask
-		    says. */
-		if ((create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) ||
-			access_mask & (FILE_READ_ATTRIBUTES|FILE_READ_DATA|FILE_READ_EA|FILE_EXECUTE)) {
+	    (oplock_request & FORCE_OPLOCK_BREAK_TO_NONE)) {
+
+		/*
+		 * DENY_DOS opens are always underlying read-write on the
+		 * file handle, no matter what the requested access mask
+		 * says. Stock samba just sets the flags, but since
+		 * ifs_createfile uses the access_mask, it must be updated as
+		 * well.  This allows BASE-DENY* to pass.
+		 */
+		if (create_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS) {
+
+			DEBUG(10,("onefs_open_file_ntcreate: deny_dos: "
+				  "Adding O_RDWR to flags "
+				  "(0x%x) and some READ bits to "
+				  "open_access_mask (0x%x)\n",
+				  flags, open_access_mask));
+
+			flags = O_RDWR;
+			open_access_mask |= (FILE_READ_ATTRIBUTES |
+			    FILE_READ_DATA | FILE_READ_EA | FILE_EXECUTE);
+
+		} else if (access_mask & (FILE_READ_ATTRIBUTES |
+			       FILE_READ_DATA |
+			       FILE_READ_EA |
+			       FILE_EXECUTE)) {
 			flags = O_RDWR;
 		} else {
 			flags = O_WRONLY;
@@ -628,12 +729,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		flags = O_RDONLY;
 	}
 
-	/*
-	 * Currently we only look at FILE_WRITE_THROUGH for create options.
-	 */
-
+	/* Currently we only look at FILE_WRITE_THROUGH for create options. */
 #if defined(O_SYNC)
-	if ((create_options & FILE_WRITE_THROUGH) && lp_strict_sync(SNUM(conn))) {
+	if ((create_options & FILE_WRITE_THROUGH) &&
+	    lp_strict_sync(SNUM(conn))) {
 		flags2 |= O_SYNC;
 	}
 #endif /* O_SYNC */
@@ -649,20 +748,35 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * older versions of Samba we just AND them out.
 		 */
 		flags2 &= ~(O_CREAT|O_TRUNC);
+
+		/**
+		 * XXX: TODO
+		 * Apparently this is necessary because we ship with
+		 * lp_acl_check_permissions = no.  It is set to no because our
+		 * ifs_createfile does the access check correctly.  This check
+		 * was added in the last merge, and the question is why is it
+		 * necessary?  Check out Bug 25547 and Bug 14596.  The key is
+		 * to figure out what case this is covering, and do some
+		 * testing to see if it's actually necessary.  If it is, maybe
+		 * it should go upstream in open.c.
+		 */
+		if (!lp_acl_check_permissions(SNUM(conn)) &&
+		    (access_mask & DELETE_ACCESS)) {
+			return map_nt_error_from_unix(EACCES);
+		}
 	}
 
-	/*
-	 * Ensure we can't write on a read-only share or file.
-	 */
-
+	/* Ensure we can't write on a read-only share or file. */
 	if (flags != O_RDONLY && file_existed &&
 	    (!CAN_WRITE(conn) || IS_DOS_READONLY(existing_dos_attributes))) {
-		DEBUG(5,("open_file_ntcreate: write access requested for "
-			 "file %s on read only %s\n",
-			 fname, !CAN_WRITE(conn) ? "share" : "file" ));
+		DEBUG(5, ("onefs_open_file_ntcreate: write access requested "
+			  "for file %s on read only %s\n",
+			  fname, !CAN_WRITE(conn) ? "share" : "file" ));
 		errno = EACCES;
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	DEBUG(10, ("fsp = %p\n", fsp));
 
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->share_access = share_access;
@@ -692,57 +806,124 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		/* First pass - send break only on batch oplocks. */
-		if ((req != NULL)
-		    && delay_for_oplocks(lck, fsp, req->mid, 1,
-					 oplock_request)) {
-			schedule_defer_open(lck, request_time, req);
-			TALLOC_FREE(lck);
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-
-		/* Use the client requested access mask here, not the one we
-		 * open with. */
-		status = open_mode_check(conn, fname, lck,
-					 access_mask, share_access,
-					 create_options, &file_existed);
-
-		if (NT_STATUS_IS_OK(status)) {
-			/* We might be going to allow this open. Check oplock
-			 * status again. */
-			/* Second pass - send break for both batch or
-			 * exclusive oplocks. */
-			if ((req != NULL)
-			     && delay_for_oplocks(lck, fsp, req->mid, 2,
-						  oplock_request)) {
-				schedule_defer_open(lck, request_time, req);
-				TALLOC_FREE(lck);
-				return NT_STATUS_SHARING_VIOLATION;
-			}
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+		if (lck->delete_on_close) {
 			/* DELETE_PENDING is not deferred for a second */
 			TALLOC_FREE(lck);
-			return status;
+			return NT_STATUS_DELETE_PENDING;
+		}
+	}
+
+	SMB_ASSERT(!file_existed || (lck != NULL));
+
+	/*
+	 * Ensure we pay attention to default ACLs on directories.  May be
+	 * neccessary depending on ACL policies.
+	 */
+        if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
+	    (def_acl = directory_has_default_acl(conn, parent_dir))) {
+		unx_mode = 0777;
+	}
+
+	DEBUG(4,("calling onefs_open_file with flags=0x%X flags2=0x%X "
+		 "mode=0%o, access_mask = 0x%x, open_access_mask = 0x%x\n",
+		 (unsigned int)flags, (unsigned int)flags2,
+		 (unsigned int)unx_mode, (unsigned int)access_mask,
+		 (unsigned int)open_access_mask));
+
+	oplock_waiter = 1; //ifs_oplock_wait_record(mid);
+
+	if (oplock_waiter == 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Do the open. */
+	status = onefs_open_file(fsp,
+				 conn,
+				 req,
+				 parent_dir,
+				 newname,
+				 fname,
+				 psbuf,
+				 flags|flags2,
+				 unx_mode,
+				 access_mask,
+				 open_access_mask,
+				 fsp->oplock_type,
+				 oplock_waiter,
+				 share_access,
+				 create_options,
+				 createfile_attributes,
+				 sd,
+				 &granted_oplock);
+
+	if (!NT_STATUS_IS_OK(status)) {
+
+		/* OneFS Oplock Handling */
+		if (errno == EINPROGRESS) {
+
+			if (lck == NULL) {
+
+				struct deferred_open_record state;
+				struct timespec old_write_time;
+
+				old_write_time = get_mtimespec(psbuf);
+
+				DEBUG(3, ("Someone created file %s with an "
+					  "oplock after we looked: Retrying\n",
+					  fname));
+				/*
+				 * We hit the race that when we did the stat
+				 * on the file it did not exist, and someone
+				 * has created it in between the stat and the
+				 * open_file() call. Just retry immediately.
+				 */
+				id = vfs_file_id_from_sbuf(conn, psbuf);
+				if (!(lck = get_share_mode_lock(talloc_tos(),
+					  id, conn->connectpath, fname,
+					  &old_write_time))) {
+					/*
+					 * Emergency exit
+					 */
+					DEBUG(0, ("onefs_open_file_ntcreate: "
+						  "Could not get share mode "
+						  "lock for %s\n", fname));
+					status = NT_STATUS_SHARING_VIOLATION;
+					goto cleanup_destroy;
+				}
+
+				state.delayed_for_oplocks = False;
+				state.id = id;
+
+				if (req != NULL) {
+					defer_open(lck, request_time,
+					    timeval_zero(), req, &state);
+				}
+				goto cleanup_destroy;
+			}
+			/* Waiting for an oplock */
+			SMB_ASSERT(req);
+			schedule_defer_open(lck, request_time, req);
+			goto cleanup;
 		}
 
-		if (!NT_STATUS_IS_OK(status)) {
+		/* Check for a sharing violation */
+		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
 			uint32 can_access_mask;
 			bool can_access = True;
 
-			SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
-
 			/* Check if this can be done with the deny_dos and fcb
 			 * calls. */
+
+			/* Try to find dup fsp if possible. */
 			if (create_options &
 			    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
 			     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
+
 				if (req == NULL) {
 					DEBUG(0, ("DOS open without an SMB "
 						  "request!\n"));
-					TALLOC_FREE(lck);
-					return NT_STATUS_INTERNAL_ERROR;
+					status = NT_STATUS_INTERNAL_ERROR;
+					goto cleanup_destroy;
 				}
 
 				/* Use the client requested access mask here,
@@ -763,7 +944,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					if (pinfo) {
 						*pinfo = FILE_WAS_OPENED;
 					}
-					return NT_STATUS_OK;
+					status =  NT_STATUS_OK;
+					goto cleanup;
 				}
 			}
 
@@ -794,7 +976,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * If we're returning a share violation, ensure we
 			 * cope with the braindead 1 second delay.
 			 */
-
 			if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
 			    lp_defer_sharing_violations()) {
 				struct timeval timeout;
@@ -804,26 +985,30 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				/* this is a hack to speed up torture tests
 				   in 'make test' */
 				timeout_usecs = lp_parm_int(SNUM(conn),
-							    "smbd","sharedelay",
-							    SHARING_VIOLATION_USEC_WAIT);
+				    "smbd","sharedelay",
+				    SHARING_VIOLATION_USEC_WAIT);
 
-				/* This is a relative time, added to the absolute
-				   request_time value to get the absolute timeout time.
-				   Note that if this is the second or greater time we enter
-				   this codepath for this particular request mid then
-				   request_time is left as the absolute time of the *first*
-				   time this request mid was processed. This is what allows
-				   the request to eventually time out. */
+				/* This is a relative time, added to the
+				   absolute request_time value to get the
+				   absolute timeout time.  Note that if this
+				   is the second or greater time we enter this
+				   codepath for this particular request mid
+				   then request_time is left as the absolute
+				   time of the *first* time this request mid
+				   was processed. This is what allows the
+				   request to eventually time out. */
 
 				timeout = timeval_set(0, timeout_usecs);
 
-				/* Nothing actually uses state.delayed_for_oplocks
-				   but it's handy to differentiate in debug messages
-				   between a 30 second delay due to oplock break, and
-				   a 1 second delay for share mode conflicts. */
+				/* Nothing actually uses
+				   state.delayed_for_oplocks but it's handy to
+				   differentiate in debug messages between a
+				   30 second delay due to oplock break, and a
+				   1 second delay for share mode conflicts. */
 
 				state.delayed_for_oplocks = False;
 				state.id = id;
+				state.failed = false;
 
 				if ((req != NULL)
 				    && !request_timed_out(request_time,
@@ -833,7 +1018,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 				}
 			}
 
-			TALLOC_FREE(lck);
 			if (can_access) {
 				/*
 				 * We have detected a sharing violation here
@@ -843,45 +1027,25 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			} else {
 				status = NT_STATUS_ACCESS_DENIED;
 			}
-			return status;
+
+			goto cleanup_destroy;
 		}
 
 		/*
-		 * We exit this block with the share entry *locked*.....
+		 * Normal error, for example EACCES
 		 */
+	 cleanup_destroy:
+		//destroy_ifs_callback_record(oplock_waiter);
+	 cleanup:
+		TALLOC_FREE(lck);
+		return status;
 	}
 
-	SMB_ASSERT(!file_existed || (lck != NULL));
+	fsp->oplock_type = granted_oplock;
 
-	/*
-	 * Ensure we pay attention to default ACLs on directories if required.
-	 */
-
-        if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-	    (def_acl = directory_has_default_acl(conn, parent_dir))) {
-		unx_mode = 0777;
-	}
-
-	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o, "
-		"access_mask = 0x%x, open_access_mask = 0x%x\n",
-		 (unsigned int)flags, (unsigned int)flags2,
-		 (unsigned int)unx_mode, (unsigned int)access_mask,
-		 (unsigned int)open_access_mask));
-
-	/*
-	 * open_file strips any O_TRUNC flags itself.
-	 */
-
-	fsp_open = open_file(fsp, conn, req, parent_dir, newname, fname, psbuf,
-			     flags|flags2, unx_mode, access_mask,
-			     open_access_mask);
-
-	if (!NT_STATUS_IS_OK(fsp_open)) {
-		if (lck != NULL) {
-			TALLOC_FREE(lck);
-		}
-		return fsp_open;
-	}
+	/* XXX uncomment for oplocks */
+	//ifs_set_oplock_callback(oplock_waiter, fsp);
+	//fsp->oplock_callback_id = oplock_waiter;
 
 	if (!file_existed) {
 		struct timespec old_write_time = get_mtimespec(psbuf);
@@ -907,39 +1071,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					  fname, &old_write_time);
 
 		if (lck == NULL) {
-			DEBUG(0, ("open_file_ntcreate: Could not get share "
-				  "mode lock for %s\n", fname));
+			DEBUG(0, ("onefs_open_file_ntcreate: Could not get "
+				  "share mode lock for %s\n", fname));
 			fd_close(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 
-		/* First pass - send break only on batch oplocks. */
-		if ((req != NULL)
-		    && delay_for_oplocks(lck, fsp, req->mid, 1,
-					 oplock_request)) {
-			schedule_defer_open(lck, request_time, req);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-
-		status = open_mode_check(conn, fname, lck,
-					 access_mask, share_access,
-					 create_options, &file_existed);
-
-		if (NT_STATUS_IS_OK(status)) {
-			/* We might be going to allow this open. Check oplock
-			 * status again. */
-			/* Second pass - send break for both batch or
-			 * exclusive oplocks. */
-			if ((req != NULL)
-			    && delay_for_oplocks(lck, fsp, req->mid, 2,
-						 oplock_request)) {
-				schedule_defer_open(lck, request_time, req);
-				TALLOC_FREE(lck);
-				fd_close(fsp);
-				return NT_STATUS_SHARING_VIOLATION;
-			}
+		if (lck->delete_on_close) {
+			status = NT_STATUS_DELETE_PENDING;
 		}
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -987,7 +1126,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			TALLOC_FREE(lck);
 			fd_close(fsp);
-
 			return NT_STATUS_SHARING_VIOLATION;
 		}
 	}
@@ -997,24 +1135,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * is locked, whether we created the file or not, and that the
 	 * deny mode is compatible with all current opens.
 	 */
-
-	/*
-	 * If requested, truncate the file.
-	 */
-
-	if (flags2&O_TRUNC) {
-		/*
-		 * We are modifing the file after open - update the stat
-		 * struct..
-		 */
-		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp, psbuf)==-1)) {
-			status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return status;
-		}
-	}
 
 	/* Record the options we were opened with. */
 	fsp->share_access = share_access;
@@ -1056,16 +1176,16 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED || info == FILE_WAS_SUPERSEDED) {
+	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
+	    info == FILE_WAS_SUPERSEDED) {
 		new_file_created = True;
 	}
 
 	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0,
-		       fsp->oplock_type);
+		       fsp->oplock_type, true);
 
 	/* Handle strange delete on close create semantics. */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
-
 		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1080,30 +1200,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->initial_delete_on_close = True;
 	}
 
-	if (new_file_created) {
-		/* Files should be initially set as archive */
-		if (lp_map_archive(SNUM(conn)) ||
-		    lp_store_dos_attributes(SNUM(conn))) {
-			if (!posix_open) {
-				SMB_STRUCT_STAT tmp_sbuf;
-				SET_STAT_INVALID(tmp_sbuf);
-				if (file_set_dosmode(
-					    conn, fname,
-					    new_dos_attributes | aARCH,
-					    &tmp_sbuf, parent_dir,
-					    true) == 0) {
-					unx_mode = tmp_sbuf.st_mode;
-				}
-			}
-		}
-	}
-
 	/*
 	 * Take care of inherited ACLs on created files - if default ACL not
 	 * selected.
+	 * May be necessary depending on acl policies.
 	 */
-
-	if (!posix_open && !file_existed && !def_acl) {
+	if (!posix_open && !file_existed && !def_acl && !(VALID_STAT(*psbuf)
+		  && (psbuf->st_flags & SF_HASNTFSACL))) {
 
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
@@ -1127,7 +1230,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
 			} else {
-				DEBUG(5, ("open_file_ntcreate: reset "
+				DEBUG(5, ("onefs_open_file_ntcreate: reset "
 					  "attributes of file %s to 0%o\n",
 					  fname, (unsigned int)new_unx_mode));
 				ret = 0; /* Don't do the fchmod below. */
@@ -1136,7 +1239,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		if ((ret == -1) &&
 		    (SMB_VFS_FCHMOD(fsp, new_unx_mode) == -1))
-			DEBUG(5, ("open_file_ntcreate: failed to reset "
+			DEBUG(5, ("onefs_open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  fname, (unsigned int)new_unx_mode));
 	}
@@ -1151,143 +1254,110 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+
 /****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
-
-static NTSTATUS open_directory(connection_struct *conn,
-			       struct smb_request *req,
-			       const char *fname,
-			       SMB_STRUCT_STAT *psbuf,
-			       uint32 access_mask,
-			       uint32 share_access,
-			       uint32 create_disposition,
-			       uint32 create_options,
-			       uint32 file_attributes,
-			       int *pinfo,
-			       files_struct **result)
+static NTSTATUS onefs_open_directory(connection_struct *conn,
+				     struct smb_request *req,
+				     const char *fname,
+				     uint32 access_mask,
+				     uint32 share_access,
+				     uint32 create_disposition,
+				     uint32 create_options,
+				     uint32 file_attributes,
+				     struct security_descriptor *sd,
+				     files_struct **result,
+				     int *pinfo,
+				     SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
-	bool dir_existed = VALID_STAT(*psbuf) ? True : False;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
+	char *parent_dir;
+	const char *dirname;
+	bool posix_open = false;
+	uint32 create_flags = 0;
+	uint32 mode = lp_dir_mask(SNUM(conn));
 
-	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
-		 "share_access = 0x%x create_options = 0x%x, "
-		 "create_disposition = 0x%x, file_attributes = 0x%x\n",
-		 fname,
-		 (unsigned int)access_mask,
-		 (unsigned int)share_access,
-		 (unsigned int)create_options,
-		 (unsigned int)create_disposition,
-		 (unsigned int)file_attributes));
+	DEBUG(5, ("onefs_open_directory: opening directory %s, "
+		  "access_mask = 0x%x, "
+		  "share_access = 0x%x create_options = 0x%x, "
+		  "create_disposition = 0x%x, file_attributes = 0x%x\n",
+		  fname, (unsigned int)access_mask, (unsigned int)share_access,
+		  (unsigned int)create_options, (unsigned int)create_disposition,
+		  (unsigned int)file_attributes));
 
 	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) &&
-			(conn->fs_capabilities & FILE_NAMED_STREAMS) &&
-			is_ntfs_stream_name(fname)) {
-		DEBUG(2, ("open_directory: %s is a stream name!\n", fname));
+	    (conn->fs_capabilities & FILE_NAMED_STREAMS) &&
+	    is_ntfs_stream_name(fname)) {
+		DEBUG(2, ("onefs_open_directory: %s is a stream name!\n", fname));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
 
-	status = calculate_access_mask(conn, fname, dir_existed,
-					access_mask,
-					&access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_directory: calculate_access_mask "
-			"on file %s returned %s\n",
-			fname,
-			nt_errstr(status)));
-		return status;
-	}
-
-	switch( create_disposition ) {
+	switch (create_disposition) {
 		case FILE_OPEN:
-
+			/* If directory exists open. If directory doesn't
+			 * exist error. */
+			create_flags = 0;
 			info = FILE_WAS_OPENED;
-
-			/*
-			 * We want to follow symlinks here.
-			 */
-
-			if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
-				return map_nt_error_from_unix(errno);
-			}
-
 			break;
-
 		case FILE_CREATE:
-
 			/* If directory exists error. If directory doesn't
 			 * exist create. */
-
-			status = mkdir_internal(conn,
-						fname,
-						file_attributes,
-						psbuf);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(2, ("open_directory: unable to create "
-					  "%s. Error was %s\n", fname,
-					  nt_errstr(status)));
-				return status;
-			}
-
+			create_flags = O_CREAT | O_EXCL;
 			info = FILE_WAS_CREATED;
 			break;
-
 		case FILE_OPEN_IF:
-			/*
-			 * If directory exists open. If directory doesn't
-			 * exist create.
-			 */
+			/* If directory exists open. If directory doesn't
+			 * exist create. */
 
-			status = mkdir_internal(conn,
-						fname,
-						file_attributes,
-						psbuf);
-
-			if (NT_STATUS_IS_OK(status)) {
-				info = FILE_WAS_CREATED;
-			}
-
-			if (NT_STATUS_EQUAL(status,
-					    NT_STATUS_OBJECT_NAME_COLLISION)) {
-				info = FILE_WAS_OPENED;
-				status = NT_STATUS_OK;
-			}
-
+			/* Note: in order to return whether the directory was
+			 * opened or created, we first try to open and then try
+			 * to create. */
+			create_flags = 0;
+			info = FILE_WAS_OPENED;
 			break;
-
 		case FILE_SUPERSEDE:
 		case FILE_OVERWRITE:
 		case FILE_OVERWRITE_IF:
 		default:
-			DEBUG(5,("open_directory: invalid create_disposition "
-				 "0x%x for directory %s\n",
-				 (unsigned int)create_disposition, fname));
+			DEBUG(5, ("onefs_open_directory: invalid "
+				  "create_disposition 0x%x for directory %s\n",
+				  (unsigned int)create_disposition, fname));
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if(!S_ISDIR(psbuf->st_mode)) {
-		DEBUG(5,("open_directory: %s is not a directory !\n",
-			 fname ));
-		return NT_STATUS_NOT_A_DIRECTORY;
+	/*
+	 * Check for write access to the share. Done in mkdir_internal() in
+	 * mainline samba.
+	 */
+	if (!CAN_WRITE(conn) && (create_flags & O_CREAT)) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (info == FILE_WAS_OPENED) {
-		status = check_open_rights(conn,
-					fname,
-					access_mask);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("open_directory: check_open_rights on "
-				"file %s failed with %s\n",
-				fname,
-				nt_errstr(status)));
-			return status;
-		}
+	/* Get parent dirname */
+	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
+				   &dirname)) {
+		return NT_STATUS_NO_MEMORY;
 	}
+
+	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
+		posix_open = true;
+		mode = (mode_t)(file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
+		file_attributes = 0;
+	} else {
+		mode = unix_mode(conn, aDIR, fname, parent_dir);
+	}
+
+	/*
+	 * The NONINDEXED and COMPRESSED bits seem to always be cleared on
+	 * directories, no matter if you specify that they should be set.
+	 */
+	file_attributes &=
+	    ~(FILE_ATTRIBUTE_NONINDEXED | FILE_ATTRIBUTE_COMPRESSED);
 
 	status = file_new(req, conn, &fsp);
 	if(!NT_STATUS_IS_OK(status)) {
@@ -1295,9 +1365,114 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	/*
-	 * Setup the files_struct for it.
+	 * Actual open with retry magic to handle FILE_OPEN_IF which is
+	 * unique because the kernel won't tell us if the file was opened or
+	 * created.
 	 */
+ retry_open:
+	fsp->fh->fd = onefs_sys_create_file(conn,
+					    -1,
+					    fname,
+					    access_mask,
+					    access_mask,
+					    share_access,
+					    create_options,
+					    create_flags | O_DIRECTORY,
+					    mode,
+					    0,
+					    0,
+					    sd,
+					    file_attributes,
+					    NULL);
 
+	if (fsp->fh->fd == -1) {
+		DEBUG(3, ("Error opening %s. Errno=%d (%s).\n", fname, errno,
+			  strerror(errno)));
+		SMB_ASSERT(errno != EINPROGRESS);
+
+		if (create_disposition == FILE_OPEN_IF) {
+			if (errno == ENOENT) {
+				/* Try again, creating it this time. */
+				create_flags = O_CREAT | O_EXCL;
+				info = FILE_WAS_CREATED;
+				goto retry_open;
+			} else if (errno == EEXIST) {
+				/* Uggh. Try again again. */
+				create_flags = 0;
+				info = FILE_WAS_OPENED;
+				goto retry_open;
+			}
+		}
+
+		/* Error cases below: */
+		file_free(req, fsp);
+
+		if ((errno == ENOENT) && (create_disposition == FILE_OPEN)) {
+			DEBUG(5,("onefs_open_directory: FILE_OPEN requested "
+				  "for directory %s and it doesn't "
+				  "exist.\n", fname ));
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		} else if ((errno == EEXIST) &&
+		    (create_disposition == FILE_CREATE)) {
+			DEBUG(5,("onefs_open_directory: FILE_CREATE "
+				  "requested for directory %s and it "
+				  "already exists.\n", fname ));
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		} else if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) {
+			/* Catch sharing violations. */
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (info == FILE_WAS_CREATED) {
+
+		/* Pulled from mkdir_internal() */
+		if (SMB_VFS_LSTAT(conn, fname, psbuf) == -1) {
+			DEBUG(2, ("Could not stat directory '%s' just "
+				  "created: %s\n",fname, strerror(errno)));
+			return map_nt_error_from_unix(errno);
+		}
+
+		if (!S_ISDIR(psbuf->st_mode)) {
+			DEBUG(0, ("Directory just '%s' created is not a "
+				  "directory\n", fname));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (!posix_open) {
+			/*
+			 * Check if high bits should have been set, then (if
+			 * bits are missing): add them.  Consider bits
+			 * automagically set by UNIX, i.e. SGID bit from
+			 * parent dir.
+			 */
+			if (mode & ~(S_IRWXU|S_IRWXG|S_IRWXO) &&
+			    (mode & ~psbuf->st_mode)) {
+				SMB_VFS_CHMOD(conn, fname, (psbuf->st_mode |
+						  (mode & ~psbuf->st_mode)));
+			}
+		}
+
+		/* Change the owner if required. */
+		if (lp_inherit_owner(SNUM(conn))) {
+			change_dir_owner_to_parent(conn, parent_dir, fname,
+						   psbuf);
+		}
+
+		notify_fname(conn, NOTIFY_ACTION_ADDED,
+			     FILE_NOTIFY_CHANGE_DIR_NAME, fname);
+	}
+
+	/* Stat the fd for Samba bookkeeping. */
+	if(SMB_VFS_FSTAT(fsp, psbuf) != 0) {
+		fd_close(fsp);
+		file_free(req, fsp);
+		return map_nt_error_from_unix(errno);
+	}
+
+	/* Setup the files_struct for it. */
 	fsp->mode = psbuf->st_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 	fsp->vuid = req ? req->vuid : UID_FIELD_INVALID;
@@ -1317,40 +1492,48 @@ static NTSTATUS open_directory(connection_struct *conn,
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = True;
-	fsp->posix_open = (file_attributes & FILE_FLAG_POSIX_SEMANTICS) ? True : False;
+	fsp->posix_open = posix_open;
 
 	string_set(&fsp->fsp_name,fname);
 
 	mtimespec = get_mtimespec(psbuf);
 
+	/*
+	 * Still set the samba share mode lock for correct delete-on-close
+	 * semantics and to make smbstatus more useful.
+	 */
 	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  fname, &mtimespec);
 
 	if (lck == NULL) {
-		DEBUG(0, ("open_directory: Could not get share mode lock for %s\n", fname));
+		DEBUG(0, ("onefs_open_directory: Could not get share mode "
+			  "lock for %s\n", fname));
+		fd_close(fsp);
 		file_free(req, fsp);
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	status = open_mode_check(conn, fname, lck,
-				access_mask, share_access,
-				create_options, &dir_existed);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	if (lck->delete_on_close) {
 		TALLOC_FREE(lck);
+		fd_close(fsp);
 		file_free(req, fsp);
-		return status;
+		return NT_STATUS_DELETE_PENDING;
 	}
 
-	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0, NO_OPLOCK);
+	set_share_mode(lck, fsp, conn->server_info->utok.uid, 0, NO_OPLOCK,
+		       true);
 
-	/* For directories the delete on close bit at open time seems
-	   always to be honored on close... See test 19 in Samba4 BASE-DELETE. */
+	/*
+	 * For directories the delete on close bit at open time seems
+	 * always to be honored on close... See test 19 in Samba4 BASE-DELETE.
+	 */
 	if (create_options & FILE_DELETE_ON_CLOSE) {
 		status = can_set_delete_on_close(fsp, True, 0);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_DIRECTORY_NOT_EMPTY)) {
 			TALLOC_FREE(lck);
+			fd_close(fsp);
 			file_free(req, fsp);
 			return status;
 		}
@@ -1436,7 +1619,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			goto fail;
 		}
 
-		status = create_file_unixpath
+		status = onefs_create_file_unixpath
 			(conn,			/* conn */
 			 NULL,			/* req */
 			 streamname,		/* fname */
@@ -1483,25 +1666,23 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 }
 
 /*
- * Wrapper around open_file_ntcreate and open_directory
+ * Wrapper around onefs_open_file_ntcreate and onefs_open_directory.
  */
-
-static NTSTATUS create_file_unixpath(connection_struct *conn,
-				     struct smb_request *req,
-				     const char *fname,
-				     uint32_t access_mask,
-				     uint32_t share_access,
-				     uint32_t create_disposition,
-				     uint32_t create_options,
-				     uint32_t file_attributes,
-				     uint32_t oplock_request,
-				     uint64_t allocation_size,
-				     struct security_descriptor *sd,
-				     struct ea_list *ea_list,
-
-				     files_struct **result,
-				     int *pinfo,
-				     SMB_STRUCT_STAT *psbuf)
+static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
+					   struct smb_request *req,
+					   const char *fname,
+					   uint32_t access_mask,
+					   uint32_t share_access,
+					   uint32_t create_disposition,
+					   uint32_t create_options,
+					   uint32_t file_attributes,
+					   uint32_t oplock_request,
+					   uint64_t allocation_size,
+					   struct security_descriptor *sd,
+					   struct ea_list *ea_list,
+					   files_struct **result,
+					   int *pinfo,
+					   SMB_STRUCT_STAT *psbuf)
 {
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
@@ -1509,7 +1690,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	DEBUG(10,("create_file_unixpath: access_mask = 0x%x "
+	DEBUG(10,("onefs_create_file_unixpath: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x ea_list = 0x%p, sd = 0x%p, "
@@ -1559,34 +1740,6 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	/* This is the correct thing to do (check every time) but can_delete
-	 * is expensive (it may have to read the parent directory
-	 * permissions). So for now we're not doing it unless we have a strong
-	 * hint the client is really going to delete this file. If the client
-	 * is forcing FILE_CREATE let the filesystem take care of the
-	 * permissions. */
-
-	/* Setting FILE_SHARE_DELETE is the hint. */
-
-	if (lp_acl_check_permissions(SNUM(conn))
-	    && (create_disposition != FILE_CREATE)
-	    && (share_access & FILE_SHARE_DELETE)
-	    && (access_mask & DELETE_ACCESS)
-	    && (!can_delete_file_in_directory(conn, fname))) {
-		status = NT_STATUS_ACCESS_DENIED;
-		goto fail;
-	}
-
-#if 0
-	/* We need to support SeSecurityPrivilege for this. */
-	if ((access_mask & SEC_RIGHT_SYSTEM_SECURITY) &&
-	    !user_has_privileges(current_user.nt_user_token,
-				 &se_security)) {
-		status = NT_STATUS_PRIVILEGE_NOT_HELD;
-		goto fail;
-	}
-#endif
-
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
 	    && is_ntfs_stream_name(fname)
 	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
@@ -1601,9 +1754,9 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		status = split_ntfs_stream_name(talloc_tos(), fname,
 						&base, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("create_file_unixpath: "
-				"split_ntfs_stream_name failed: %s\n",
-				nt_errstr(status)));
+			DEBUG(10, ("onefs_create_file_unixpath: "
+				  "split_ntfs_stream_name failed: %s\n",
+				  nt_errstr(status)));
 			goto fail;
 		}
 
@@ -1618,20 +1771,41 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			break;
 		}
 
-		status = create_file_unixpath(conn, NULL, base, 0,
-					      FILE_SHARE_READ
-					      | FILE_SHARE_WRITE
-					      | FILE_SHARE_DELETE,
-					      base_create_disposition,
-					      0, 0, 0, 0, NULL, NULL,
-					      &base_fsp, NULL, NULL);
+		status = onefs_create_file_unixpath(
+			conn,				/* conn */
+			NULL,				/* req */
+			base,				/* fname */
+			0,				/* access_mask */
+			(FILE_SHARE_READ |
+			    FILE_SHARE_WRITE |
+			    FILE_SHARE_DELETE),		/* share_access */
+			base_create_disposition,	/* create_disposition*/
+			0,				/* create_options */
+			0,				/* file_attributes */
+			NO_OPLOCK,			/* oplock_request */
+			0,				/* allocation_size */
+			NULL,				/* sd */
+			NULL,				/* ea_list */
+			&base_fsp,			/* result */
+			NULL,				/* pinfo */
+			NULL);				/* psbuf */
+
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(10, ("create_file_unixpath for base %s failed: "
-				   "%s\n", base, nt_errstr(status)));
+			DEBUG(10, ("onefs_create_file_unixpath for base %s "
+				  "failed: %s\n", base, nt_errstr(status)));
 			goto fail;
 		}
-		/* we don't need to low level fd */
+		/*
+		 * we don't need to low level fd: This might conflict with
+		 * OneFS streams.
+		 */
 		fd_close(base_fsp);
+	}
+
+	/* Covert generic bits in the security descriptor. */
+	if (sd != NULL) {
+		security_acl_map_generic(sd->dacl, &file_generic_mapping);
+		security_acl_map_generic(sd->sacl, &file_generic_mapping);
 	}
 
 	/*
@@ -1658,11 +1832,19 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		 * CreateDirectory() call.
 		 */
 
-		oplock_request = 0;
-		status = open_directory(
-			conn, req, fname, &sbuf, access_mask, share_access,
-			create_disposition, create_options, file_attributes,
-			&info, &fsp);
+		status = onefs_open_directory(
+			conn,				/* conn */
+			req,				/* req */
+			fname,				/* fname */
+			access_mask,			/* access_mask */
+			share_access,			/* share_access */
+			create_disposition,		/* create_disposition*/
+			create_options,			/* create_options */
+			file_attributes,		/* file_attributes */
+			sd,				/* sd */
+			&fsp,				/* result */
+			&info,				/* pinfo */
+			&sbuf);				/* psbuf */
 	} else {
 
 		/*
@@ -1682,18 +1864,20 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 			fsp->base_fsp = base_fsp;
 		}
 
-		status = open_file_ntcreate(conn,
-					    req,
-					    fname,
-					    &sbuf,
-					    access_mask,
-					    share_access,
-					    create_disposition,
-					    create_options,
-					    file_attributes,
-					    oplock_request,
-					    &info,
-					    fsp);
+		status = onefs_open_file_ntcreate(
+			conn,				/* conn */
+			req,				/* req */
+			fname,				/* fname */
+			access_mask,			/* access_mask */
+			share_access,			/* share_access */
+			create_disposition,		/* create_disposition*/
+			create_options,			/* create_options */
+			file_attributes,		/* file_attributes */
+			oplock_request,			/* oplock_request */
+			sd,				/* sd */
+			fsp,				/* result */
+			&info,				/* pinfo */
+			&sbuf);				/* psbuf */
 
 		if(!NT_STATUS_IS_OK(status)) {
 			file_free(req, fsp);
@@ -1719,12 +1903,21 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				goto fail;
 			}
 
-			oplock_request = 0;
-			status = open_directory(
-				conn, req, fname, &sbuf, access_mask,
-				share_access, create_disposition,
-				create_options,	file_attributes,
-				&info, &fsp);
+			create_options |= FILE_DIRECTORY_FILE;
+
+			status = onefs_open_directory(
+				conn,			/* conn */
+				req,			/* req */
+				fname,			/* fname */
+				access_mask,		/* access_mask */
+				share_access,		/* share_access */
+				create_disposition,	/* create_disposition*/
+				create_options,		/* create_options */
+				file_attributes,	/* file_attributes */
+				sd,			/* sd */
+				&fsp,			/* result */
+				&info,			/* pinfo */
+				&sbuf);			/* psbuf */
 		}
 	}
 
@@ -1734,44 +1927,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	fsp->base_fsp = base_fsp;
 
-	/*
-	 * According to the MS documentation, the only time the security
-	 * descriptor is applied to the opened file is iff we *created* the
-	 * file; an existing file stays the same.
-	 *
-	 * Also, it seems (from observation) that you can open the file with
-	 * any access mask but you can still write the sd. We need to override
-	 * the granted access before we call set_sd
-	 * Patch for bug #2242 from Tom Lackemann <cessnatomny@yahoo.com>.
-	 */
-
-	if ((sd != NULL) && (info == FILE_WAS_CREATED)
-	    && lp_nt_acl_support(SNUM(conn))) {
-
-		uint32_t sec_info_sent;
-		uint32_t saved_access_mask = fsp->access_mask;
-
-		sec_info_sent = get_sec_info(sd);
-
-		fsp->access_mask = FILE_GENERIC_ALL;
-
-		/* Convert all the generic bits. */
-		security_acl_map_generic(sd->dacl, &file_generic_mapping);
-		security_acl_map_generic(sd->sacl, &file_generic_mapping);
-
-		if (sec_info_sent & (OWNER_SECURITY_INFORMATION|
-					GROUP_SECURITY_INFORMATION|
-					DACL_SECURITY_INFORMATION|
-					SACL_SECURITY_INFORMATION)) {
-			status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
-		}
-
-		fsp->access_mask = saved_access_mask;
-
-		if (!NT_STATUS_IS_OK(status)) {
-			goto fail;
-		}
-	}
+	SMB_ASSERT(fsp);
 
 	if ((ea_list != NULL) && (info == FILE_WAS_CREATED)) {
 		status = set_ea(conn, fsp, fname, ea_list);
@@ -1807,7 +1963,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10, ("create_file_unixpath: info=%d\n", info));
+	DEBUG(10, ("onefs_create_file_unixpath: info=%d\n", info));
 
 	*result = fsp;
 	if (pinfo != NULL) {
@@ -1824,7 +1980,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
-	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
+	DEBUG(10, ("onefs_create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
 		if (base_fsp && fsp->base_fsp == base_fsp) {
@@ -1843,32 +1999,36 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 	return status;
 }
-NTSTATUS create_file_default(connection_struct *conn,
-			     struct smb_request *req,
-			     uint16_t root_dir_fid,
-			     const char *fname,
-			     uint32_t create_file_flags,
-			     uint32_t access_mask,
-			     uint32_t share_access,
-			     uint32_t create_disposition,
-			     uint32_t create_options,
-			     uint32_t file_attributes,
-			     uint32_t oplock_request,
-			     uint64_t allocation_size,
-			     struct security_descriptor *sd,
-			     struct ea_list *ea_list,
 
-			     files_struct **result,
-			     int *pinfo,
-			     SMB_STRUCT_STAT *psbuf)
+/**
+ * SMB_VFS_CREATE_FILE interface to onefs.
+ */
+NTSTATUS onefs_create_file(vfs_handle_struct *handle,
+			   struct smb_request *req,
+			   uint16_t root_dir_fid,
+			   const char *fname,
+			   uint32_t create_file_flags,
+			   uint32_t access_mask,
+			   uint32_t share_access,
+			   uint32_t create_disposition,
+			   uint32_t create_options,
+			   uint32_t file_attributes,
+			   uint32_t oplock_request,
+			   uint64_t allocation_size,
+			   struct security_descriptor *sd,
+			   struct ea_list *ea_list,
+			   files_struct **result,
+			   int *pinfo,
+			   SMB_STRUCT_STAT *psbuf)
 {
+	connection_struct *conn = handle->conn;
 	struct case_semantics_state *case_state = NULL;
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
-	DEBUG(10,("create_file: access_mask = 0x%x "
+	DEBUG(10,("onefs_create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
 		  "create_disposition = 0x%x create_options = 0x%x "
 		  "oplock_request = 0x%x "
@@ -1883,10 +2043,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, create_file_flags, fname));
 
-	/*
-	 * Calculate the filename from the root_dir_if if necessary.
-	 */
-
+	/* Get the file name if root_dir_fid was specified. */
 	if (root_dir_fid != 0) {
 		char *new_fname;
 
@@ -1899,45 +2056,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 		fname = new_fname;
 	}
 
-	/*
-	 * Check to see if this is a mac fork of some kind.
-	 */
-
-	if (is_ntfs_stream_name(fname)) {
-		enum FAKE_FILE_TYPE fake_file_type;
-
-		fake_file_type = is_fake_file(fname);
-
-		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
-
-			/*
-			 * Here we go! support for changing the disk quotas
-			 * --metze
-			 *
-			 * We need to fake up to open this MAGIC QUOTA file
-			 * and return a valid FID.
-			 *
-			 * w2k close this file directly after openening xp
-			 * also tries a QUERY_FILE_INFO on the file and then
-			 * close it
-			 */
-			status = open_fake_file(req, conn, req->vuid,
-						fake_file_type, fname,
-						access_mask, &fsp);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto fail;
-			}
-
-			ZERO_STRUCT(sbuf);
-			goto done;
-		}
-
-		if (!(conn->fs_capabilities & FILE_NAMED_STREAMS)) {
-			status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			goto fail;
-		}
-	}
-
+	/* Resolve the file name if this was a DFS pathname. */
 	if ((req != NULL) && (req->flags2 & FLAGS2_DFS_PATHNAMES)) {
 		char *resolved_fname;
 
@@ -1956,14 +2075,12 @@ NTSTATUS create_file_default(connection_struct *conn,
 		fname = resolved_fname;
 	}
 
-	/*
-	 * Check if POSIX semantics are wanted.
-	 */
-
+	/* Check if POSIX semantics are wanted. */
 	if (file_attributes & FILE_FLAG_POSIX_SEMANTICS) {
 		case_state = set_posix_case_semantics(talloc_tos(), conn);
 	}
 
+	/* Convert dos path to unix path if it hasn't already been done. */
 	if (create_file_flags & CFF_DOS_PATH) {
 		char *converted_fname;
 
@@ -1989,24 +2106,33 @@ NTSTATUS create_file_default(connection_struct *conn,
 	TALLOC_FREE(case_state);
 
 	/* All file access must go through check_name() */
-
 	status = check_name(conn, fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
-	status = create_file_unixpath(
-		conn, req, fname, access_mask, share_access,
-		create_disposition, create_options, file_attributes,
-		oplock_request, allocation_size, sd, ea_list,
-		&fsp, &info, &sbuf);
+	status = onefs_create_file_unixpath(
+		conn,					/* conn */
+		req,					/* req */
+		fname,					/* fname */
+		access_mask,				/* access_mask */
+		share_access,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		file_attributes,			/* file_attributes */
+		oplock_request,				/* oplock_request */
+		allocation_size,			/* allocation_size */
+		sd,					/* sd */
+		ea_list,				/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
- done:
-	DEBUG(10, ("create_file: info=%d\n", info));
+	DEBUG(10, ("onefs_create_file: info=%d\n", info));
 
 	*result = fsp;
 	if (pinfo != NULL) {
@@ -2018,7 +2144,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
-	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+	DEBUG(10, ("onefs_create_file: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
 		close_file(req, fsp, ERROR_CLOSE);
