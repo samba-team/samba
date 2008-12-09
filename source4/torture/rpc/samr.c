@@ -409,6 +409,12 @@ static bool test_SetUserInfo(struct dcerpc_pipe *p, struct torture_context *tctx
 			   SAMR_FIELD_PARAMETERS);
 	TEST_USERINFO_BINARYSTRING(21, parameters, 20, parameters, "xx21-20 parameters",
 			   SAMR_FIELD_PARAMETERS);
+	/* also empty user parameters are allowed */
+	TEST_USERINFO_BINARYSTRING(20, parameters, 21, parameters, "", 0);
+	TEST_USERINFO_BINARYSTRING(21, parameters, 21, parameters, "",
+			   SAMR_FIELD_PARAMETERS);
+	TEST_USERINFO_BINARYSTRING(21, parameters, 20, parameters, "",
+			   SAMR_FIELD_PARAMETERS);
 
 	TEST_USERINFO_INT(2, country_code, 2, country_code, __LINE__, 0);
 	TEST_USERINFO_INT(2, country_code, 21, country_code, __LINE__, 0);
@@ -2674,7 +2680,7 @@ static bool test_SetPassword_pwdlastset(struct dcerpc_pipe *p,
 					struct policy_handle *handle,
 					char **password)
 {
-	int i, s = 0, q = 0, f = 0, l = 0, z = 0;
+	int s = 0, q = 0, f = 0, l = 0, z = 0;
 	bool ret = true;
 	int delay = 500000;
 	bool set_levels[] = { false, true };
