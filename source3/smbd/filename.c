@@ -27,7 +27,7 @@
 #include "includes.h"
 
 static bool get_real_filename(connection_struct *conn, const char *path,
-			      char *name, TALLOC_CTX *mem_ctx,
+			      const char *name, TALLOC_CTX *mem_ctx,
 			      char **found_name);
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
@@ -770,7 +770,7 @@ static bool fname_equal(const char *name1, const char *name2,
 ****************************************************************************/
 
 static bool get_real_filename(connection_struct *conn, const char *path,
-			      char *name, TALLOC_CTX *mem_ctx,
+			      const char *name, TALLOC_CTX *mem_ctx,
 			      char **found_name)
 {
 	struct smb_Dir *cur_dir;
