@@ -3837,6 +3837,8 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 		if (!pdb_set_nt_passwd(pwd, out.data, PDB_CHANGED)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
 	}
 
 	if (id18->lm_pwd_active) {
@@ -3851,6 +3853,8 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 		if (!pdb_set_lanman_passwd(pwd, out.data, PDB_CHANGED)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
 	}
 
 	if (id18->password_expired) {
