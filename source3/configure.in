@@ -5732,6 +5732,34 @@ AC_MSG_CHECKING(whether to build winbind)
 # Initially, the value of $host_os decides whether winbind is supported
 
 HAVE_WINBIND=yes
+HAVE_WBCLIENT=no
+
+# Define external wbclient library to link against.  This disables winbind.
+# We define this here so --with-winbind can override it.
+AC_ARG_WITH(wbclient,
+[AS_HELP_STRING([--with-wbclient], [Use external wbclient (optional)])],
+[
+  case "$withval" in
+        no)
+		HAVE_WBCLIENT=no
+		;;
+	yes)
+		HAVE_WBCLIENT=yes
+		HAVE_WINBIND=no
+		;;
+        *)
+		HAVE_WBCLIENT=yes
+		HAVE_WINBIND=no
+		WBCLIENT_INCLUDES="-I$withval/include"
+		WBCLIENT_LDFLAGS="-L$withval/lib"
+		;;
+  esac ],
+)
+
+AC_SUBST(WBCLIENT_INCLUDES)
+AC_SUBST(WBCLIENT_LDFLAGS)
+AC_SUBST(WBCLIENT_LIBS)
+
 
 # Define the winbind shared library name and any specific linker flags
 # it needs to be built with.
@@ -5813,6 +5841,7 @@ AC_ARG_WITH(winbind,
   case "$withval" in
 	yes)
 		HAVE_WINBIND=yes
+		HAVE_WBCLIENT=no
 		;;
         no)
 		HAVE_WINBIND=no
@@ -5836,27 +5865,35 @@ if test x"$HAVE_WINBIND" = x"no"; then
 	WINBIND_NSS=""
 	WINBIND_WINS_NSS=""
 fi
-
-if test x"$enable_developer" = x"yes" -a x"$LINK_LIBWBCLIENT" = x"STATIC" ; then
-	BUILD_LIBWBCLIENT_SHARED=no
+if test x"$HAVE_WBCLIENT" = x"yes"; then
+        AC_CHECK_LIB(wbclient, wbcInterfaceDetails,
+		     [WINBIND_LIBS="-lwbclient"], AC_MSG_ERROR([Could not find wbclient]), [$WBCLIENT_LDFLAGS])
+	WINBIND_LIBS="$WINBIND_LIBS $WBCLIENT_LDFLAGS"
+	AC_MSG_RESULT(yes)
+	AC_DEFINE(WITH_WINBIND,1,[Whether to link to wbclient])
+	EXTRA_BIN_PROGS="$EXTRA_BIN_PROGS bin/wbinfo\$(EXEEXT)"
 else
-	BUILD_LIBWBCLIENT_SHARED=yes
-fi
+	if test x"$enable_developer" = x"yes" -a x"$LINK_LIBWBCLIENT" = x"STATIC" ; then
+		BUILD_LIBWBCLIENT_SHARED=no
+	else
+		BUILD_LIBWBCLIENT_SHARED=yes
+	fi
 
-LIBWBCLIENT_SHARED_TARGET=bin/libwbclient.$SHLIBEXT
-LIBWBCLIENT_STATIC_TARGET=bin/libwbclient.a
-LIBWBCLIENT_SOVER=0
-if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
-	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
-	## Only worry about libwbclient if we have shared library support
-	## and winbindd
-        LIBWBCLIENT_SHARED=$LIBWBCLIENT_SHARED_TARGET
-        LIBWBCLIENT=libwbclient
-	INSTALL_LIBWBCLIENT=installlibwbclient
-	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
-	WINBIND_LIBS="-lwbclient"
-else
-	LIBWBCLIENT_STATIC=$LIBWBCLIENT_STATIC_TARGET
+	LIBWBCLIENT_SHARED_TARGET=bin/libwbclient.$SHLIBEXT
+	LIBWBCLIENT_STATIC_TARGET=bin/libwbclient.a
+	LIBWBCLIENT_SOVER=0
+	if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
+		NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
+		## Only worry about libwbclient if we have shared
+		# library support
+		LIBWBCLIENT_SHARED=$LIBWBCLIENT_SHARED_TARGET
+		LIBWBCLIENT=libwbclient
+		INSTALL_LIBWBCLIENT=installlibwbclient
+		UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
+		WINBIND_LIBS="-lwbclient"
+	else
+		LIBWBCLIENT_STATIC=$LIBWBCLIENT_STATIC_TARGET
+	fi
 fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
