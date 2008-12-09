@@ -3667,8 +3667,9 @@ static bool set_user_info_20(struct samr_UserInfo20 *id20,
  set_user_info_21
  ********************************************************************/
 
-static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
-				 struct samr_UserInfo21 *id21,
+static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *session_key,
 				 struct samu *pwd)
 {
 	NTSTATUS status;
@@ -3684,6 +3685,52 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 
 	if (id21->fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (id21->fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
+		if (id21->nt_password_set) {
+			DATA_BLOB in, out;
+
+			if ((id21->nt_owf_password.length != 16) ||
+			    (id21->nt_owf_password.size != 16)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			if (!session_key->length) {
+				return NT_STATUS_NO_USER_SESSION_KEY;
+			}
+
+			in = data_blob_const(id21->nt_owf_password.array, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+
+			sess_crypt_blob(&out, &in, session_key, false);
+
+			pdb_set_nt_passwd(pwd, out.data, PDB_CHANGED);
+			pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
+		}
+	}
+
+	if (id21->fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT) {
+		if (id21->lm_password_set) {
+			DATA_BLOB in, out;
+
+			if ((id21->lm_owf_password.length != 16) ||
+			    (id21->lm_owf_password.size != 16)) {
+				return NT_STATUS_INVALID_PARAMETER;
+			}
+
+			if (!session_key->length) {
+				return NT_STATUS_NO_USER_SESSION_KEY;
+			}
+
+			in = data_blob_const(id21->lm_owf_password.array, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+
+			sess_crypt_blob(&out, &in, session_key, false);
+
+			pdb_set_lanman_passwd(pwd, out.data, PDB_CHANGED);
+			pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
+		}
 	}
 
 	/* we need to separately check for an account rename first */
@@ -4147,8 +4194,10 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			break;
 
 		case 21:
-			status = set_user_info_21(p->mem_ctx,
-						  &info->info21, pwd);
+			status = set_user_info_21(&info->info21,
+						  p->mem_ctx,
+						  &p->server_info->user_session_key,
+						  pwd);
 			break;
 
 		case 23:
