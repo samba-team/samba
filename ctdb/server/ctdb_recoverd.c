@@ -2278,19 +2278,9 @@ static void async_getnodemap_callback(struct ctdb_context *ctdb, uint32_t node_p
 
 static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	struct ctdb_node_map *nodemap,
-	struct ctdb_node_map ***remote_nodemaps)
+	struct ctdb_node_map **remote_nodemaps)
 {
 	uint32_t *nodes;
-	int i;
-
-	*remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
-	if (*remote_nodemaps == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
-		return -1;
-	}
-	for(i=0; i<nodemap->num; i++) {
-		(*remote_nodemaps)[i] = NULL;
-	}
 
 	nodes = list_of_active_nodes(ctdb, nodemap, mem_ctx, true);
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_GET_NODEMAP,
@@ -2298,7 +2288,7 @@ static int get_remote_nodemaps(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 					CONTROL_TIMEOUT(), false, tdb_null,
 					async_getnodemap_callback,
 					NULL,
-					*remote_nodemaps) != 0) {
+					remote_nodemaps) != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to pull all remote nodemaps\n"));
 
 		return -1;
@@ -2651,7 +2641,15 @@ again:
 
 	/* get the nodemap for all active remote nodes
 	 */
-	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, &remote_nodemaps) != 0) {
+	remote_nodemaps = talloc_array(mem_ctx, struct ctdb_node_map *, nodemap->num);
+	if (remote_nodemaps == NULL) {
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate remote nodemap array\n"));
+		goto again;
+	}
+	for(i=0; i<nodemap->num; i++) {
+		remote_nodemaps[i] = NULL;
+	}
+	if (get_remote_nodemaps(ctdb, mem_ctx, nodemap, remote_nodemaps) != 0) {
 		DEBUG(DEBUG_ERR,(__location__ " Failed to read remote nodemaps\n"));
 		goto again;
 	} 
@@ -2661,6 +2659,11 @@ again:
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
+		}
+
+		if (remote_nodemaps[j] == NULL) {
+			DEBUG(DEBUG_ERR,(__location__ " Did not get a remote nodemap for node %d, restarting monitoring\n", j));
+			goto again;
 		}
 
  		/* if the nodes disagree on how many nodes there are
