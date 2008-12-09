@@ -1394,7 +1394,19 @@ main thread of the background lpq updater
 ****************************************************************************/
 void start_background_queue(void)
 {
+	/* Use local variables for this as we don't
+	 * need to save the parent side of this, just
+	 * ensure it closes when the process exits.
+	 */
+	int pause_pipe[2];
+
 	DEBUG(3,("start_background_queue: Starting background LPQ thread\n"));
+
+	if (pipe(pause_pipe) == -1) {
+		DEBUG(5,("start_background_queue: cannot create pipe. %s\n", strerror(errno) ));
+		exit(1);
+	}
+
 	background_lpq_updater_pid = sys_fork();
 
 	if (background_lpq_updater_pid == -1) {
@@ -1405,6 +1417,9 @@ void start_background_queue(void)
 	if(background_lpq_updater_pid == 0) {
 		/* Child. */
 		DEBUG(5,("start_background_queue: background LPQ thread started\n"));
+
+		close(pause_pipe[0]);
+		pause_pipe[0] = -1;
 
 		if (!reinit_after_fork(smbd_messaging_context(), true)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
@@ -1420,13 +1435,23 @@ void start_background_queue(void)
 
 		messaging_register(smbd_messaging_context(), NULL,
 				   MSG_PRINTER_UPDATE, print_queue_receive);
-		
+
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
-			pause();
-			
+			fd_set pause_fds;
+			int pause_select;
+
+			FD_ZERO(&pause_fds);
+			FD_SET(pause_pipe[1], &pause_fds);
+			pause_select = sys_select(pause_pipe[1]+1, &pause_fds, NULL, NULL, NULL);
+			/* If pause_pipe[0] is closed it means the parent smbd
+			 * and children exited or aborted. */
+			if (pause_select == 1) {
+                                exit_server_cleanly(NULL);
+			}
+
 			/* check for some essential signals first */
-			
+
                         if (got_sig_term) {
                                 exit_server_cleanly(NULL);
                         }
@@ -1437,9 +1462,9 @@ void start_background_queue(void)
                                 reload_services(False);
                                 reload_after_sighup = 0;
                         }
-			
+
 			/* now check for messages */
-			
+
 			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
 			message_dispatch(smbd_messaging_context());
 
@@ -1449,6 +1474,8 @@ void start_background_queue(void)
 						   0);
 		}
 	}
+
+	close(pause_pipe[1]);
 }
 
 /****************************************************************************
