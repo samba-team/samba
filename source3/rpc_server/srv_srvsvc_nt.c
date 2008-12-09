@@ -522,7 +522,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	TALLOC_CTX *ctx = p->mem_ctx;
 	int i = 0;
 	int valid_share_count = 0;
-       bool *allowed = 0;
+	bool *allowed = 0;
 	union srvsvc_NetShareCtr ctr;
 	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
 
@@ -535,7 +535,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	num_services = lp_numservices();
 	unbecome_root();
 
-        allowed = TALLOC_ZERO_ARRAY(ctx, int, num_services);
+        allowed = TALLOC_ZERO_ARRAY(ctx, bool, num_services);
         W_ERROR_HAVE_NO_MEMORY(allowed);
 
         /* Count the number of entries. */
