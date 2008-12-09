@@ -1255,6 +1255,49 @@ static int control_enable(struct ctdb_context *ctdb, int argc, const char **argv
 	return 0;
 }
 
+static uint32_t get_generation(struct ctdb_context *ctdb)
+{
+	struct ctdb_vnn_map *vnnmap=NULL;
+	int ret;
+
+	/* wait until the recmaster is not in recovery mode */
+	while (1) {
+		uint32_t recmode, recmaster;
+		
+		if (vnnmap != NULL) {
+			talloc_free(vnnmap);
+			vnnmap = NULL;
+		}
+
+		/* get the recmaster */
+		ret = ctdb_ctrl_getrecmaster(ctdb, ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, &recmaster);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get recmaster from node %u\n", options.pnn));
+			exit(10);
+		}
+
+		/* get recovery mode */
+		ret = ctdb_ctrl_getrecmode(ctdb, ctdb, TIMELIMIT(), recmaster, &recmode);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get recmode from node %u\n", options.pnn));
+			exit(10);
+		}
+
+		/* get the current generation number */
+		ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), recmaster, ctdb, &vnnmap);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("Unable to get vnnmap from recmaster (%u)\n", recmaster));
+			exit(10);
+		}
+
+		if ((recmode == CTDB_RECOVERY_NORMAL)
+		&&  (vnnmap->generation != 1)){
+			return vnnmap->generation;
+		}
+		sleep(1);
+	}
+}
+
 /*
   ban a node from the cluster
  */
@@ -1264,15 +1307,37 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_ban_info b;
 	TDB_DATA data;
 	uint32_t ban_time;
+	struct ctdb_node_map *nodemap=NULL;
+	uint32_t generation, next_generation;
 
 	if (argc < 1) {
 		usage();
+	}
+	
+	/* record the current generation number */
+	generation = get_generation(ctdb);
+
+
+	/* verify the node exists */
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+	if (options.pnn >= nodemap->num) {
+		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
+		return ret;
 	}
 
 	/* verify we can access the node */
 	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (ret == -1) {
 		DEBUG(DEBUG_ERR,("Can not ban node. Node is not operational.\n"));
+		return -1;
+	}
+
+	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED) {
+		DEBUG(DEBUG_ERR,("Node %u is already banned.\n", options.pnn));
 		return -1;
 	}
 
@@ -1289,7 +1354,16 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		DEBUG(DEBUG_ERR,("Failed to ban node %u\n", options.pnn));
 		return -1;
 	}
-	
+
+	/* wait until we are in a new generation */
+	while (1) {
+		next_generation = get_generation(ctdb);
+		if (next_generation != generation) {
+			return 0;
+		}
+		sleep(1);
+	}
+
 	return 0;
 }
 
@@ -1301,6 +1375,10 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
 	TDB_DATA data;
+	uint32_t generation, next_generation;
+
+	/* record the current generation number */
+	generation = get_generation(ctdb);
 
 	/* verify we can access the node */
 	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
@@ -1318,6 +1396,15 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 		return -1;
 	}
 	
+	/* wait until we are in a new generation */
+	while (1) {
+		next_generation = get_generation(ctdb);
+		if (next_generation != generation) {
+			return 0;
+		}
+		sleep(1);
+	}
+
 	return 0;
 }
 
