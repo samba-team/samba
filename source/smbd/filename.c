@@ -26,8 +26,9 @@
 
 #include "includes.h"
 
-static bool scan_directory(connection_struct *conn, const char *path,
-			   char *name, char **found_name);
+static bool get_real_filename(connection_struct *conn, const char *path,
+			      char *name, TALLOC_CTX *mem_ctx,
+			      char **found_name);
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
 				  const char *orig_path,
@@ -433,8 +434,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    !scan_directory(conn, dirpath,
-				    start, &found_name)) {
+			    !get_real_filename(conn, dirpath, start,
+					       talloc_tos(), &found_name)) {
 				char *unmangled;
 
 				if (end) {
@@ -768,15 +769,15 @@ static bool fname_equal(const char *name1, const char *name2,
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static bool scan_directory(connection_struct *conn, const char *path,
-			   char *name, char **found_name)
+static bool get_real_filename(connection_struct *conn, const char *path,
+			      char *name, TALLOC_CTX *mem_ctx,
+			      char **found_name)
 {
 	struct smb_Dir *cur_dir;
 	const char *dname;
 	bool mangled;
 	char *unmangled_name = NULL;
 	long curpos;
-	TALLOC_CTX *ctx = talloc_tos();
 
 	mangled = mangle_is_mangled(name, conn->params);
 
@@ -810,10 +811,9 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	 */
 
 	if (mangled && !conn->case_sensitive) {
-		mangled = !mangle_lookup_name_from_8_3(ctx,
-						name,
-						&unmangled_name,
-						conn->params);
+		mangled = !mangle_lookup_name_from_8_3(talloc_tos(), name,
+						       &unmangled_name,
+						       conn->params);
 		if (!mangled) {
 			/* Name is now unmangled. */
 			name = unmangled_name;
@@ -850,7 +850,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 		if ((mangled && mangled_equal(name,dname,conn->params)) ||
 			fname_equal(name, dname, conn->case_sensitive)) {
 			/* we've found the file, change it's name and return */
-			*found_name = talloc_strdup(ctx,dname);
+			*found_name = talloc_strdup(mem_ctx, dname);
 			TALLOC_FREE(unmangled_name);
 			TALLOC_FREE(cur_dir);
 			if (!*found_name) {
