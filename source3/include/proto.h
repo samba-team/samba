@@ -7896,10 +7896,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			char **pp_saved_last_component,
 			SMB_STRUCT_STAT *pst);
 NTSTATUS check_name(connection_struct *conn, const char *name);
-int get_real_filename(connection_struct *conn, const char *path,
-		      const char *name, TALLOC_CTX *mem_ctx,
-		      char **found_name);
-
 
 /* The following definitions come from smbd/files.c  */
 
