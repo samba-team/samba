@@ -2709,7 +2709,7 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(info->acc_granted,
-					    SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					    SAMR_USER_ACCESS_GET_ATTRIBUTES,
 					    "_samr_QueryUserInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
