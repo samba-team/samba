@@ -2051,6 +2051,47 @@ static bool test_netr_DsRAddressToSitenamesExW(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_netr_ServerGetTrustInfo(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct cli_credentials *machine_credentials)
+{
+	NTSTATUS status;
+	struct netr_ServerGetTrustInfo r;
+
+	struct netr_Authenticator a;
+	struct netr_Authenticator return_authenticator;
+	struct samr_Password new_owf_password;
+	struct samr_Password old_owf_password;
+	struct netr_TrustInfo *trust_info;
+
+	struct creds_CredentialState *creds;
+
+	if (!test_SetupCredentials3(p, tctx, NETLOGON_NEG_AUTH2_ADS_FLAGS,
+				    machine_credentials, &creds)) {
+		return false;
+	}
+
+	creds_client_authenticator(creds, &a);
+
+	r.in.server_name		= talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	r.in.account_name		= talloc_asprintf(tctx, "%s$", TEST_MACHINE_NAME);
+	r.in.secure_channel_type	= SEC_CHAN_BDC;
+	r.in.computer_name		= TEST_MACHINE_NAME;
+	r.in.credential			= &a;
+
+	r.out.return_authenticator	= &return_authenticator;
+	r.out.new_owf_password		= &new_owf_password;
+	r.out.old_owf_password		= &old_owf_password;
+	r.out.trust_info		= &trust_info;
+
+	status = dcerpc_netr_ServerGetTrustInfo(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "failed");
+	torture_assert(tctx, creds_client_check(creds, &return_authenticator.cred), "Credential chaining failed");
+
+	return true;
+}
+
+
 static bool test_GetDomainInfo(struct torture_context *tctx, 
 			       struct dcerpc_pipe *p,
 			       struct cli_credentials *machine_credentials)
@@ -2317,6 +2358,7 @@ struct torture_suite *torture_rpc_netlogon(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "DsrGetDcSiteCoverageW", test_netr_DsrGetDcSiteCoverageW);
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesW", test_netr_DsRAddressToSitenamesW);
 	torture_rpc_tcase_add_test(tcase, "DsRAddressToSitenamesExW", test_netr_DsRAddressToSitenamesExW);
+	torture_rpc_tcase_add_test_creds(tcase, "ServerGetTrustInfo", test_netr_ServerGetTrustInfo);
 
 	return suite;
 }
