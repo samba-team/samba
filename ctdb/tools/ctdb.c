@@ -1433,6 +1433,10 @@ static int control_shutdown(struct ctdb_context *ctdb, int argc, const char **ar
 static int control_recover(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
+	uint32_t generation, next_generation;
+
+	/* record the current generation number */
+	generation = get_generation(ctdb);
 
 	ret = ctdb_ctrl_freeze(ctdb, TIMELIMIT(), options.pnn);
 	if (ret != 0) {
@@ -1444,6 +1448,15 @@ static int control_recover(struct ctdb_context *ctdb, int argc, const char **arg
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, ("Unable to set recovery mode\n"));
 		return ret;
+	}
+
+	/* wait until we are in a new generation */
+	while (1) {
+		next_generation = get_generation(ctdb);
+		if (next_generation != generation) {
+			return 0;
+		}
+		sleep(1);
 	}
 
 	return 0;
