@@ -1500,5 +1500,23 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2e */
-	[todo] WERROR netr_NETRSERVERGETTRUSTINFO();
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] uint32 *data;
+		uint32 entry_count;
+		[size_is(count)] lsa_String *entries;
+	} netr_TrustInfo;
+
+	NTSTATUS netr_ServerGetTrustInfo(
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *account_name,
+		[in] netr_SchannelType secure_channel_type,
+		[in,ref] [string,charset(UTF16)] uint16 *computer_name,
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[out,ref] samr_Password *new_owf_password,
+		[out,ref] samr_Password *old_owf_password,
+		[out,ref] netr_TrustInfo **trust_info
+		);
 }
