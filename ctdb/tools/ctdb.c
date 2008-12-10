@@ -31,6 +31,8 @@
 #include "../common/rb_tree.h"
 #include "db_wrap.h"
 
+#define ERR_TIMEOUT	20
+
 static void usage(void);
 
 static struct {
@@ -2644,7 +2646,7 @@ static void usage(void)
 static void ctdb_alarm(int sig)
 {
 	printf("Maximum runtime exceeded - exiting\n");
-	_exit(0);
+	_exit(ERR_TIMEOUT);
 }
 
 /*
