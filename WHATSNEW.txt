@@ -10,7 +10,10 @@ Major enhancements included in Samba 3.2.6 are:
 
   o Fix Winbind crash bugs.
   o Fix moving of readonly files.
+  o Fix "write list" in setups using "security = share".
   o Fix access to cups-printers with cups 1.3.4.
+  o Fix timeouts in setups with large groups.
+  o Fix several bugs concerning Alternate Data Streams.
   o Add new SMB traffic analyzer VFS module.
 
 
