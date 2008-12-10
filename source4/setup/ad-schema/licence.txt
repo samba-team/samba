@@ -1,0 +1,54 @@
+NOTE:
+
+The licence on these schema files is not GPL, or a standard Open
+Source licence.  Be careful to redistribute thes files as part of
+Samba or 'your implementation', but not alone.
+
+--
+
+Intellectual Property Rights Notice for Protocol Documentation
+
+Copyrights. 
+This protocol documentation is covered by Microsoft
+copyrights. Regardless of any other terms that are contained in the
+terms of use for the Microsoft website that hosts this documentation,
+you may make copies of it in order to develop implementations of the
+protocols, and may distribute portions of it in your implementations
+of the protocols or your documentation as necessary to properly
+document the implementation. You may also distribute in your
+implementation, with or without modification, any schema, IDL's, or
+code samples that are included in the documentation. This permission
+also applies to any documents that are referenced in the protocol
+documentation.
+
+No Trade Secrets. 
+Microsoft does not claim any trade secret rights in this documentation.
+
+Patents. 
+Microsoft has patents that may cover your implementations of the
+protocols.  Neither this notice nor Microsoft's delivery of the
+documentation grants any licenses under those or any other Microsoft
+patents.  However, the protocols may be covered by Microsofts Open
+Specification Promise (available here:
+http://www.microsoft.com/interop/osp).  If you would prefer a written
+license, or if the protocols are not covered by the OSP, patent
+licenses are available by contacting protocol@microsoft.com.
+
+Trademarks. 
+The names of companies and products contained in this documentation
+may be covered by trademarks or similar intellectual property
+rights. This notice does not grant any licenses under those
+rights.Reservation of Rights.  All other rights are reserved, and this
+notice does not grant any rights other than specifically described
+above, whether by implication, estoppel, or otherwise.
+
+Tools. 
+This protocol documentation is intended for use in conjunction with
+publicly available standard specifications and network programming
+art, and assumes that the reader either is familiar with the
+aforementioned material or has immediate access to it.  A protocol
+specification does not require the use of Microsoft programming tools
+or programming environments in order for you to develop an
+implementation.  If you have access to Microsoft programming tools and
+environments you are free to take advantage of them.
+
