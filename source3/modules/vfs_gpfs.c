@@ -72,64 +72,7 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	return ret;
 }
 
-static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
-				      const char *path,
-				      const char *name,
-				      TALLOC_CTX *mem_ctx,
-				      char **found_name)
-{
-	int result;
-	char *full_path;
-	char real_pathname[PATH_MAX+1];
-	int buflen;
 
-	full_path = talloc_asprintf(talloc_tos(), "%s/%s", path, name);
-	if (full_path == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	buflen = sizeof(real_pathname) - 1;
-
-	result = smbd_gpfs_get_realfilename_path(full_path, real_pathname,
-						 &buflen);
-
-	TALLOC_FREE(full_path);
-
-	if (result == -1) {
-		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
-			   strerror(errno)));
-		return -1;
-	}
-
-	/*
-	 * GPFS does not necessarily null-terminate the returned path
-	 * but instead returns the buffer length in buflen.
-	 */
-
-	if (buflen < sizeof(real_pathname)) {
-		real_pathname[buflen] = '\0';
-	} else {
-		real_pathname[sizeof(real_pathname)-1] = '\0';
-	}
-
-	DEBUG(10, ("smbd_gpfs_get_realfilename_path: %s/%s -> %s\n",
-		   path, name, real_pathname));
-
-	name = strrchr_m(real_pathname, '/');
-	if (name == NULL) {
-		errno = ENOENT;
-		return -1;
-	}
-
-	*found_name = talloc_strdup(mem_ctx, name+1);
-	if (*found_name == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	return 0;
-}
 
 static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 {
@@ -877,10 +820,6 @@ static vfs_op_tuple gpfs_op_tuples[] = {
 
         { SMB_VFS_OP(vfs_gpfs_setlease), 
 	  SMB_VFS_OP_LINUX_SETLEASE,
-	  SMB_VFS_LAYER_OPAQUE },
-
-        { SMB_VFS_OP(vfs_gpfs_get_real_filename),
-	  SMB_VFS_OP_GET_REAL_FILENAME,
 	  SMB_VFS_LAYER_OPAQUE },
 
         { SMB_VFS_OP(gpfsacl_fget_nt_acl), 

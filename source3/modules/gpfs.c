@@ -31,8 +31,6 @@ static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
 static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
-static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
-					    int *buflen);
 
 
 bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
@@ -136,17 +134,6 @@ int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
 	return gpfs_putacl_fn(pathname, flags, acl);
 }
 
-int smbd_gpfs_get_realfilename_path(char *pathname, char *filenamep,
-				    int *buflen)
-{
-	if (gpfs_get_realfilename_path_fn == NULL) {
-		errno = ENOSYS;
-		return -1;
-	}
-
-	return gpfs_get_realfilename_path_fn(pathname, filenamep, buflen);
-}
-
 static bool init_gpfs_function_lib(void *plibhandle_pointer,
 				   const char *libname,
 				   void *pfn_pointer, const char *fn_name)
@@ -154,9 +141,6 @@ static bool init_gpfs_function_lib(void *plibhandle_pointer,
 	bool did_open_here = false;
 	void **libhandle_pointer = (void **)plibhandle_pointer;
 	void **fn_pointer = (void **)pfn_pointer;
-
-	DEBUG(10, ("trying to load name %s from %s\n",
-		   fn_name, libname));
 
 	if (*libhandle_pointer == NULL) {
 		*libhandle_pointer = sys_dlopen(libname, RTLD_LAZY);
@@ -203,8 +187,6 @@ void init_gpfs(void)
 	init_gpfs_function(&gpfs_set_lease_fn, "gpfs_set_lease");
 	init_gpfs_function(&gpfs_getacl_fn, "gpfs_getacl");
 	init_gpfs_function(&gpfs_putacl_fn, "gpfs_putacl");
-	init_gpfs_function(&gpfs_get_realfilename_path_fn,
-			   "gpfs_get_realfilename_path");
 
 	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
 	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
@@ -239,13 +221,6 @@ int smbd_gpfs_getacl(char *pathname, int flags, void *acl)
 }
 
 int smbd_gpfs_putacl(char *pathname, int flags, void *acl)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
-int smbd_gpfs_get_realfilename_path(char *pathname, char *fileamep,
-				    int *buflen)
 {
 	errno = ENOSYS;
 	return -1;
