@@ -43,7 +43,7 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 	if (!gpfs_share_modes) {
 		return True;
 	}
-	
+
 	if (gpfs_set_share_fn == NULL) {
 		return False;
 	}
@@ -104,7 +104,7 @@ int set_gpfs_lease(int fd, int leasetype)
 	if (leasetype == F_WRLCK) {
 		gpfs_type = GPFS_LEASE_WRITE;
 	}
-	
+
 	/* we unconditionally set CAP_LEASE, rather than looking for
 	   -1/EACCES as there is a bug in some versions of
 	   libgpfs_gpl.so which results in a leaked fd on /dev/ss0
@@ -143,7 +143,7 @@ static bool init_gpfs_function_lib(void *plibhandle_pointer,
 	void **fn_pointer = (void **)pfn_pointer;
 
 	if (*libhandle_pointer == NULL) {
-		*libhandle_pointer = dlopen(libname, RTLD_LAZY);
+		*libhandle_pointer = sys_dlopen(libname, RTLD_LAZY);
 		did_open_here = true;
 	}
 	if (*libhandle_pointer == NULL) {
@@ -151,12 +151,12 @@ static bool init_gpfs_function_lib(void *plibhandle_pointer,
 		return false;
 	}
 
-	*fn_pointer = dlsym(*libhandle_pointer, fn_name);
+	*fn_pointer = sys_dlsym(*libhandle_pointer, fn_name);
 	if (*fn_pointer == NULL) {
 		DEBUG(10, ("Did not find symbol %s in lib %s\n",
 			   fn_name, libname));
 		if (did_open_here) {
-			dlclose(*libhandle_pointer);
+			sys_dlclose(*libhandle_pointer);
 			*libhandle_pointer = NULL;
 		}
 		return false;
