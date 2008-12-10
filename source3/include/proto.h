@@ -6859,8 +6859,8 @@ WERROR _netr_GetForestTrustInformation(pipes_struct *p,
 				       struct netr_GetForestTrustInformation *r);
 NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
 				      struct netr_LogonSamLogonWithFlags *r);
-WERROR _netr_NETRSERVERGETTRUSTINFO(pipes_struct *p,
-				    struct netr_NETRSERVERGETTRUSTINFO *r);
+WERROR _netr_ServerGetTrustInfo(pipes_struct *p,
+				struct netr_ServerGetTrustInfo *r);
 
 /* The following definitions come from rpc_server/srv_ntsvcs.c  */
 
