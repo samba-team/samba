@@ -1012,6 +1012,16 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
+				     const char *path,
+				     const char *name,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
+{
+	return get_real_filename(handle->conn, path, name, mem_ctx,
+				 found_name);
+}
+
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
@@ -1430,6 +1440,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_get_real_filename),	SMB_VFS_OP_GET_REAL_FILENAME,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */
