@@ -33,19 +33,20 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-rpm_ver_cmd="rpm -q ctdb"
-ctdb_ver_cmd="ctdb version" ||true
+if ! try_command_on_node -v 0 "rpm -q ctdb" ; then
+    echo "No useful output from rpm, SKIPPING rest of test".
+    exit 0
+fi
+rpm_ver="${out#ctdb-}"
 
-rpm_ver=$($rpm_ver_cmd) || true
-echo "$rpm_ver_cmd"
-echo "  $rpm_ver"
+try_command_on_node -v 0 "ctdb version"
+ctdb_ver="${out#CTDB version: }"
 
-ctdb_ver=$(onnode 0 $ctdb_ver_cmd)
-echo "$ctdb_ver_cmd"
-echo "  $ctdb_ver"
-
-set -x
-
-[ "${ctdb_ver#CTDB version: }" = "${rpm_ver#ctdb-}" ]
+if [ "$ctdb_ver" = "$rpm_ver" ] ; then
+    echo "OK: CTDB version = RPM version"
+else
+    echo "BAD: CTDB version != RPM version"
+    testfailures=1
+fi
 
 ctdb_test_exit

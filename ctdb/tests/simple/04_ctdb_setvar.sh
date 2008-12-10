@@ -40,28 +40,21 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 var="RecoverTimeout"
 
-cmd="ctdb getvar $var"
-try_command_on_node 0 $cmd
+try_command_on_node -v 0 ctdb getvar $var
 
-val=$(echo "$out" | sed -e 's@.*[[:space:]]@@')
-
-echo "$out"
+val="${out#*= }"
 
 echo "Going to try incrementing it..."
 
 incr=$(($val + 1))
 
-cmd="ctdb setvar $var $incr"
-try_command_on_node 0 $cmd
+try_command_on_node 0 ctdb setvar $var $incr
 
 echo "That seemed to work, let's check the value..."
 
-cmd="ctdb getvar $var"
-try_command_on_node 0 $cmd
+try_command_on_node -v 0 ctdb getvar $var
 
-newval=$(echo "$out" | sed -e 's@.*[[:space:]]@@')
-
-echo "$out"
+newval="${out#*= }"
 
 if [ "$incr" != "$newval" ] ; then
     echo "Nope, that didn't work..."
@@ -69,16 +62,13 @@ if [ "$incr" != "$newval" ] ; then
 fi
 
 echo "Look's good!  Now verifying with \"ctdb listvars\""
-cmd="ctdb listvars"
-try_command_on_node 0 $cmd
+try_command_on_node -v 0 "ctdb listvars | grep '^$var'"
 
-line=$(echo "$out" | grep "^$var")
-echo "$line"
-
-check=$(echo "$line" | sed -e 's@.*[[:space:]]@@')
+check="${out#*= }"
 
 if [ "$incr" != "$check" ] ; then
-    echo "Nope, that didn't work..."
+    echo "Nope, that didn't work.  Restarting ctdb to get back into known state..."
+    restart_ctdb
     exit 1
 fi
 

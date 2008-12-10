@@ -69,17 +69,17 @@ set_and_check_debug ()
     fi
 }
 
-get_debug 2
+get_debug 1
 initial_debug="$check_debug"
 
 new_debug="EMERG"
 [ "$initial_debug" = "$new_debug" ] && new_debug="ALERT"
 
-set_and_check_debug 2 "$new_debug"
+set_and_check_debug 1 "$new_debug"
 
 if [ "$testfailures" != 1 ] ; then
     echo "Returning the debug level to its initial value..."
-    set_and_check_debug 2 "$initial_debug"
+    set_and_check_debug 1 "$initial_debug"
 fi
 
 ctdb_test_exit

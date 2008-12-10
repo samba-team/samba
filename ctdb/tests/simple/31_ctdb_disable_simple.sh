@@ -37,25 +37,30 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node 1 ctdb ip -n all
+echo "Getting list of public IPs..."
+try_command_on_node 0 'ctdb ip -n all | sed -e "1d"'
+
+# When selecting test_node we just want a node that has public IPs.
+# This will work and is economically semi-randomly.  :-)
+read x test_node <<<"$out"
 
 ips=""
 while read ip pnn ; do
-    if [ "$pnn" = "2" ] ; then
+    if [ "$pnn" = "$test_node" ] ; then
 	ips="${ips}${ips:+ }${ip}"
     fi
 done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
-echo "Node 2 has IPs: $ips"
+echo "Selected node ${test_node} with IPs: $ips"
 
-echo "Disabling node 2"
+echo "Disabling node $test_node"
 
-try_command_on_node 1 ctdb disable -n 2
+try_command_on_node 1 ctdb disable -n $test_node
 
 # Avoid a potential race condition...
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 disabled
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
-if wait_until_ips_are_on_nodeglob '[!2]' $ips ; then
+if wait_until_ips_are_on_nodeglob "[!${test_node}]" $ips ; then
     echo "All IPs moved."
 else
     echo "Some IPs didn't move."

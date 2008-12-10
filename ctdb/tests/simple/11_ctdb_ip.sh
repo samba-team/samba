@@ -32,7 +32,7 @@ set -e
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 echo "Getting list of public IPs..."
-try_command_on_node 1 ctdb ip -n all
+try_command_on_node -v 1 ctdb ip -n all
 ips=$(echo "$out" | sed -e '1d')
 colons=$(echo "$ips" | sed -e 's@^@:@' -e 's@$@:@' -e 's@ @:@')
 

@@ -36,15 +36,17 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-# Create a background process on node 2 that will last for 60 seconds.
+test_node=1
+
+# Create a background process on $test_node that will last for 60 seconds.
 # It should still be there when we check.
-try_command_on_node 2 'sleep 60 >/dev/null 2>&1 & echo $!'
+try_command_on_node $test_node 'sleep 60 >/dev/null 2>&1 & echo $!'
 pid="$out"
 
-echo "Checking for PID $pid on node 2"
+echo "Checking for PID $pid on node $test_node"
 # set -e is good, but avoid it here
 status=0
-onnode 1 "ctdb process-exists 2:$pid" || status=$?
+onnode 0 "ctdb process-exists ${test_node}:${pid}" || status=$?
 echo "$out"
 
 if [ $status -eq 0 ] ; then
@@ -57,13 +59,13 @@ fi
 # Now just echo the PID of the shell from the onnode process on node
 # 2.  This PID will disappear and PIDs shouldn't roll around fast
 # enough to trick the test...  but there is a chance that will happen!
-try_command_on_node 2 'echo $$'
+try_command_on_node $test_node 'echo $$'
 pid="$out"
 
-echo "Checking for PID $pid on node 2"
+echo "Checking for PID $pid on node $test_node"
 # set -e is good, but avoid it here
 status=0
-onnode 1 "ctdb process-exists 2:$pid" || status=$?
+onnode 0 "ctdb process-exists ${test_node}:${pid}" || status=$?
 echo "$out"
 
 if [ $status -ne 0 ] ; then

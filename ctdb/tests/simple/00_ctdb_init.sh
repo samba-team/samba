@@ -29,4 +29,5 @@ ctdb_test_init "$@"
 set -e
 
 echo "Restarting ctdb on all nodes..."
+setup_ctdb
 restart_ctdb

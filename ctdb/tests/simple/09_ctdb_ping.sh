@@ -35,22 +35,22 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node -v 1 'ctdb ping -n 2'
+try_command_on_node -v 0 'ctdb ping -n 1'
 
 sanity_check_output \
     1 \
-    '^response from 2 time=[.0-9]+ sec[[:space:]]+\([[:digit:]]+ clients\)$' \
+    '^response from 1 time=[.0-9]+ sec[[:space:]]+\([[:digit:]]+ clients\)$' \
     "$out"
 
-try_command_on_node -v 0 'ctdb shutdown -n 2'
+try_command_on_node 0 'ctdb shutdown -n 1'
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 disconnected
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 1 disconnected
 
-try_command_on_node -v 1 '! ctdb ping -n 2'
+try_command_on_node -v 0 '! ctdb ping -n 1'
 
 sanity_check_output \
     2 \
-    "(: ctdb_control error: 'ctdb_control to disconnected node'|Unable to get ping response from node 2)" \
+    "(: ctdb_control error: 'ctdb_control to disconnected node'|Unable to get ping response from node 1)" \
     "$out"
 
 echo "Expect a restart..."

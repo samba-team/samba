@@ -41,26 +41,31 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node 1 ctdb ip -n all
+echo "Getting list of public IPs..."
+try_command_on_node 0 'ctdb ip -n all | sed -e "1d"'
+
+# When selecting test_node we just want a node that has public IPs.
+# This will work and is economically semi-randomly.  :-)
+read x test_node <<<"$out"
 
 ips=""
 while read ip pnn ; do
-    if [ "$pnn" = "2" ] ; then
+    if [ "$pnn" = "$test_node" ] ; then
 	ips="${ips}${ips:+ }${ip}"
     fi
 done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
-echo "Node 2 has IPs: $ips"
+echo "Selected node ${test_node} with IPs: $ips"
 
 ban_time=15
 
-echo "Banning node 2 for $ban_time seconds"
-try_command_on_node 1 ctdb ban $ban_time -n 2
+echo "Banning node $test_node for $ban_time seconds"
+try_command_on_node 1 ctdb ban $ban_time -n $test_node
 
 # Avoid a potential race condition...
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 banned
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node banned
 
-if wait_until_ips_are_on_nodeglob '[!2]' $ips ; then
+if wait_until_ips_are_on_nodeglob "[!${test_node}]" $ips ; then
     echo "All IPs moved."
 else
     echo "Some IPs didn't move."
@@ -70,11 +75,11 @@ fi
 echo "Sleeping until ban expires..."
 sleep_for $ban_time
 
-onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 2 unbanned
+onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unbanned
 
 # BUG: this is only guaranteed if DeterministicIPs is 1 and
 #      NoIPFailback is 0.
-if wait_until_ips_are_on_nodeglob '2' $ips ; then
+if wait_until_ips_are_on_nodeglob "$test_node" $ips ; then
     echo "All IPs moved."
 else
     echo "Some IPs didn't move."

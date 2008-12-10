@@ -24,7 +24,7 @@ export CTDB_TEST_WRAPPER
 
 if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     export CTDB_NODES_SOCKETS=""
-    for i in $(seq 1 $CTDB_NUM_NODES) ; do
+    for i in $(seq 0 $(($CTDB_NUM_NODES -1))) ; do
 	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
     done
 

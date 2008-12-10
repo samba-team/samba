@@ -33,10 +33,7 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node 0 "ctdb listvars"
-
-echo "Output from \"ctdb listvars\" on node 0:"
-echo "$out"
+try_command_on_node -v 0 "ctdb listvars"
 
 sanity_check_output \
     5 \

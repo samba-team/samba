@@ -61,15 +61,15 @@ n=0
 while [ $n -lt $num_nodes ] ; do
     echo "Getting initial statistics for node ${n}..."
     
-    try_command_on_node -v 0 "onnode -q ${n} ctdb statistics"
+    try_command_on_node -v $n ctdb statistics
 
     before_req_control=$(get_stat "req_control" "$out")
     before_reply_control=$(get_stat "reply_control" "$out")
     before_node_packets_recv=$(get_stat "node_packets_recv" "$out")
 
-    try_command_on_node 0 "onnode -q ${n} ctdb statisticsreset"
+    try_command_on_node $n ctdb statisticsreset
 
-    try_command_on_node -v 0 "onnode -q ${n} ctdb statistics"
+    try_command_on_node -v $n ctdb statistics
 
     after_req_control=$(get_stat "req_control" "$out")
     after_reply_control=$(get_stat "reply_control" "$out")

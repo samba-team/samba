@@ -42,10 +42,12 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-test_node=1
+echo "Getting list of public IPs..."
+try_command_on_node 0 'ctdb ip -n all | sed -e "1d"'
 
-echo "Getting list of public IPs on node ${test_node}..."
-try_command_on_node $test_node 'ctdb ip -n all | sed -e "1d"'
+# When selecting test_node we just want a node that has public IPs.
+# This will work and is economically semi-randomly.  :-)
+read x test_node <<<"$out"
 
 test_node_ips=""
 all_ips=""
@@ -53,9 +55,9 @@ while read ip pnn ; do
     all_ips="${all_ips}${all_ips:+ }${ip}"
     [ "$pnn" = "$test_node" ] && \
 	test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
-done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+done <<<"$out"
 
-echo "Node ${test_node} has IPs: $test_node_ips"
+echo "Selected node ${test_node} with IPs: $test_node_ips"
 
 # Try to find a free IP adddress.  This is inefficient but should
 # succeed quickly.

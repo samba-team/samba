@@ -30,12 +30,9 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node 0 "ctdb listnodes"
+try_command_on_node -v 0 "ctdb listnodes"
 
 num_nodes=$(echo "$out" | wc -l)
-
-echo "Output for \"ctdb listnodes\" on node 0 (${num_nodes} nodes listed):"
-echo "$out"
 
 # Each line should look like an IP address.
 sanity_check_output \
