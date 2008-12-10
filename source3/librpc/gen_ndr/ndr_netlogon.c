@@ -8617,6 +8617,145 @@ _PUBLIC_ void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_netr_TrustInfo(struct ndr_push *ndr, int ndr_flags, const struct netr_TrustInfo *r)
+{
+	uint32_t cntr_data_1;
+	uint32_t cntr_entries_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->entry_count));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->entries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+			for (cntr_data_1 = 0; cntr_data_1 < r->count; cntr_data_1++) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->data[cntr_data_1]));
+			}
+		}
+		if (r->entries) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->entries[cntr_entries_1]));
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->entries[cntr_entries_1]));
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_netr_TrustInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_TrustInfo *r)
+{
+	uint32_t _ptr_data;
+	uint32_t cntr_data_1;
+	TALLOC_CTX *_mem_save_data_0;
+	TALLOC_CTX *_mem_save_data_1;
+	uint32_t _ptr_entries;
+	uint32_t cntr_entries_1;
+	TALLOC_CTX *_mem_save_entries_0;
+	TALLOC_CTX *_mem_save_entries_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->data);
+		} else {
+			r->data = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->entry_count));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
+		if (_ptr_entries) {
+			NDR_PULL_ALLOC(ndr, r->entries);
+		} else {
+			r->entries = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
+			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
+			_mem_save_data_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			for (cntr_data_1 = 0; cntr_data_1 < r->count; cntr_data_1++) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data[cntr_data_1]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+		}
+		if (r->entries) {
+			_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->entries));
+			NDR_PULL_ALLOC_N(ndr, r->entries, ndr_get_array_size(ndr, &r->entries));
+			_mem_save_entries_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->entries[cntr_entries_1]));
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->entries[cntr_entries_1]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		}
+		if (r->data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->count));
+		}
+		if (r->entries) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->entries, r->count));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_netr_TrustInfo(struct ndr_print *ndr, const char *name, const struct netr_TrustInfo *r)
+{
+	uint32_t cntr_data_1;
+	uint32_t cntr_entries_1;
+	ndr_print_struct(ndr, name, "netr_TrustInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "data", r->data);
+	ndr->depth++;
+	if (r->data) {
+		ndr->print(ndr, "%s: ARRAY(%d)", "data", (int)r->count);
+		ndr->depth++;
+		for (cntr_data_1=0;cntr_data_1<r->count;cntr_data_1++) {
+			char *idx_1=NULL;
+			if (asprintf(&idx_1, "[%d]", cntr_data_1) != -1) {
+				ndr_print_uint32(ndr, "data", r->data[cntr_data_1]);
+				free(idx_1);
+			}
+		}
+		ndr->depth--;
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "entry_count", r->entry_count);
+	ndr_print_ptr(ndr, "entries", r->entries);
+	ndr->depth++;
+	if (r->entries) {
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", (int)r->count);
+		ndr->depth++;
+		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
+			char *idx_1=NULL;
+			if (asprintf(&idx_1, "[%d]", cntr_entries_1) != -1) {
+				ndr_print_lsa_String(ndr, "entries", &r->entries[cntr_entries_1]);
+				free(idx_1);
+			}
+		}
+		ndr->depth--;
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_netr_LogonUasLogon(struct ndr_push *ndr, int flags, const struct netr_LogonUasLogon *r)
 {
 	if (flags & NDR_IN) {
@@ -15424,41 +15563,224 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogonWithFlags(struct ndr_print *ndr, const
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_netr_NETRSERVERGETTRUSTINFO(struct ndr_push *ndr, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r)
+static enum ndr_err_code ndr_push_netr_ServerGetTrustInfo(struct ndr_push *ndr, int flags, const struct netr_ServerGetTrustInfo *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
+		if (r->in.server_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server_name, ndr_charset_length(r->in.server_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->in.account_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.account_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.account_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.account_name, ndr_charset_length(r->in.account_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_netr_SchannelType(ndr, NDR_SCALARS, r->in.secure_channel_type));
+		if (r->in.computer_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.computer_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		if (r->in.credential == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.return_authenticator == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->out.return_authenticator));
+		if (r->out.new_owf_password == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->out.new_owf_password));
+		if (r->out.old_owf_password == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, r->out.old_owf_password));
+		if (r->out.trust_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.trust_info));
+		if (*r->out.trust_info) {
+			NDR_CHECK(ndr_push_netr_TrustInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.trust_info));
+		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_netr_NETRSERVERGETTRUSTINFO(struct ndr_pull *ndr, int flags, struct netr_NETRSERVERGETTRUSTINFO *r)
+static enum ndr_err_code ndr_pull_netr_ServerGetTrustInfo(struct ndr_pull *ndr, int flags, struct netr_ServerGetTrustInfo *r)
 {
+	uint32_t _ptr_server_name;
+	uint32_t _ptr_trust_info;
+	TALLOC_CTX *_mem_save_server_name_0;
+	TALLOC_CTX *_mem_save_credential_0;
+	TALLOC_CTX *_mem_save_return_authenticator_0;
+	TALLOC_CTX *_mem_save_new_owf_password_0;
+	TALLOC_CTX *_mem_save_old_owf_password_0;
+	TALLOC_CTX *_mem_save_trust_info_0;
+	TALLOC_CTX *_mem_save_trust_info_1;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_name));
+		if (_ptr_server_name) {
+			NDR_PULL_ALLOC(ndr, r->in.server_name);
+		} else {
+			r->in.server_name = NULL;
+		}
+		if (r->in.server_name) {
+			_mem_save_server_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
+			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.account_name));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.account_name));
+		if (ndr_get_array_length(ndr, &r->in.account_name) > ndr_get_array_size(ndr, &r->in.account_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.account_name), ndr_get_array_length(ndr, &r->in.account_name));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.account_name, ndr_get_array_length(ndr, &r->in.account_name), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_netr_SchannelType(ndr, NDR_SCALARS, &r->in.secure_channel_type));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.computer_name));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.computer_name));
+		if (ndr_get_array_length(ndr, &r->in.computer_name) > ndr_get_array_size(ndr, &r->in.computer_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.computer_name), ndr_get_array_length(ndr, &r->in.computer_name));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.computer_name, ndr_get_array_length(ndr, &r->in.computer_name), sizeof(uint16_t), CH_UTF16));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.credential);
+		}
+		_mem_save_credential_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.credential, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->in.credential));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credential_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.return_authenticator);
+		ZERO_STRUCTP(r->out.return_authenticator);
+		NDR_PULL_ALLOC(ndr, r->out.new_owf_password);
+		ZERO_STRUCTP(r->out.new_owf_password);
+		NDR_PULL_ALLOC(ndr, r->out.old_owf_password);
+		ZERO_STRUCTP(r->out.old_owf_password);
+		NDR_PULL_ALLOC(ndr, r->out.trust_info);
+		ZERO_STRUCTP(r->out.trust_info);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.return_authenticator);
+		}
+		_mem_save_return_authenticator_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_authenticator, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Authenticator(ndr, NDR_SCALARS, r->out.return_authenticator));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_authenticator_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.new_owf_password);
+		}
+		_mem_save_new_owf_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.new_owf_password, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->out.new_owf_password));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_new_owf_password_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.old_owf_password);
+		}
+		_mem_save_old_owf_password_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.old_owf_password, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, r->out.old_owf_password));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_old_owf_password_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.trust_info);
+		}
+		_mem_save_trust_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.trust_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_trust_info));
+		if (_ptr_trust_info) {
+			NDR_PULL_ALLOC(ndr, *r->out.trust_info);
+		} else {
+			*r->out.trust_info = NULL;
+		}
+		if (*r->out.trust_info) {
+			_mem_save_trust_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.trust_info, 0);
+			NDR_CHECK(ndr_pull_netr_TrustInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.trust_info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trust_info_1, 0);
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trust_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r)
+_PUBLIC_ void ndr_print_netr_ServerGetTrustInfo(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerGetTrustInfo *r)
 {
-	ndr_print_struct(ndr, name, "netr_NETRSERVERGETTRUSTINFO");
+	ndr_print_struct(ndr, name, "netr_ServerGetTrustInfo");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "netr_NETRSERVERGETTRUSTINFO");
+		ndr_print_struct(ndr, "in", "netr_ServerGetTrustInfo");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "account_name", r->in.account_name);
+		ndr->depth++;
+		ndr_print_string(ndr, "account_name", r->in.account_name);
+		ndr->depth--;
+		ndr_print_netr_SchannelType(ndr, "secure_channel_type", r->in.secure_channel_type);
+		ndr_print_ptr(ndr, "computer_name", r->in.computer_name);
+		ndr->depth++;
+		ndr_print_string(ndr, "computer_name", r->in.computer_name);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "credential", r->in.credential);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "credential", r->in.credential);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "netr_NETRSERVERGETTRUSTINFO");
+		ndr_print_struct(ndr, "out", "netr_ServerGetTrustInfo");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "return_authenticator", r->out.return_authenticator);
+		ndr->depth++;
+		ndr_print_netr_Authenticator(ndr, "return_authenticator", r->out.return_authenticator);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "new_owf_password", r->out.new_owf_password);
+		ndr->depth++;
+		ndr_print_samr_Password(ndr, "new_owf_password", r->out.new_owf_password);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "old_owf_password", r->out.old_owf_password);
+		ndr->depth++;
+		ndr_print_samr_Password(ndr, "old_owf_password", r->out.old_owf_password);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "trust_info", r->out.trust_info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "trust_info", *r->out.trust_info);
+		ndr->depth++;
+		if (*r->out.trust_info) {
+			ndr_print_netr_TrustInfo(ndr, "trust_info", *r->out.trust_info);
+		}
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -15835,11 +16157,11 @@ static const struct ndr_interface_call netlogon_calls[] = {
 		false,
 	},
 	{
-		"netr_NETRSERVERGETTRUSTINFO",
-		sizeof(struct netr_NETRSERVERGETTRUSTINFO),
-		(ndr_push_flags_fn_t) ndr_push_netr_NETRSERVERGETTRUSTINFO,
-		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRSERVERGETTRUSTINFO,
-		(ndr_print_function_t) ndr_print_netr_NETRSERVERGETTRUSTINFO,
+		"netr_ServerGetTrustInfo",
+		sizeof(struct netr_ServerGetTrustInfo),
+		(ndr_push_flags_fn_t) ndr_push_netr_ServerGetTrustInfo,
+		(ndr_pull_flags_fn_t) ndr_pull_netr_ServerGetTrustInfo,
+		(ndr_print_function_t) ndr_print_netr_ServerGetTrustInfo,
 		false,
 	},
 	{ NULL, 0, NULL, NULL, NULL, false }

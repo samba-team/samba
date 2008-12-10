@@ -2296,23 +2296,37 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *werror)
+NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_name /* [in] [unique,charset(UTF16)] */,
+					const char *account_name /* [in] [ref,charset(UTF16)] */,
+					enum netr_SchannelType secure_channel_type /* [in]  */,
+					const char *computer_name /* [in] [ref,charset(UTF16)] */,
+					struct netr_Authenticator *credential /* [in] [ref] */,
+					struct netr_Authenticator *return_authenticator /* [out] [ref] */,
+					struct samr_Password *new_owf_password /* [out] [ref] */,
+					struct samr_Password *old_owf_password /* [out] [ref] */,
+					struct netr_TrustInfo **trust_info /* [out] [ref] */,
+					WERROR *werror)
 {
-	struct netr_NETRSERVERGETTRUSTINFO r;
+	struct netr_ServerGetTrustInfo r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.account_name = account_name;
+	r.in.secure_channel_type = secure_channel_type;
+	r.in.computer_name = computer_name;
+	r.in.credential = credential;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
+		NDR_PRINT_IN_DEBUG(netr_ServerGetTrustInfo, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRSERVERGETTRUSTINFO,
+				NDR_NETR_SERVERGETTRUSTINFO,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2320,7 +2334,7 @@ NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERGETTRUSTINFO, &r);
+		NDR_PRINT_OUT_DEBUG(netr_ServerGetTrustInfo, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2328,6 +2342,10 @@ NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*return_authenticator = *r.out.return_authenticator;
+	*new_owf_password = *r.out.new_owf_password;
+	*old_owf_password = *r.out.old_owf_password;
+	*trust_info = *r.out.trust_info;
 
 	/* Return result */
 	if (werror) {

@@ -964,6 +964,13 @@ struct DcSitesCtr {
 	struct lsa_String *sites;/* [unique,size_is(num_sites)] */
 };
 
+struct netr_TrustInfo {
+	uint32_t count;
+	uint32_t *data;/* [unique,size_is(count)] */
+	uint32_t entry_count;
+	struct lsa_String *entries;/* [unique,size_is(count)] */
+};
+
 
 struct netr_LogonUasLogon {
 	struct {
@@ -1706,8 +1713,20 @@ struct netr_LogonSamLogonWithFlags {
 };
 
 
-struct netr_NETRSERVERGETTRUSTINFO {
+struct netr_ServerGetTrustInfo {
 	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *account_name;/* [ref,charset(UTF16)] */
+		enum netr_SchannelType secure_channel_type;
+		const char *computer_name;/* [ref,charset(UTF16)] */
+		struct netr_Authenticator *credential;/* [ref] */
+	} in;
+
+	struct {
+		struct netr_Authenticator *return_authenticator;/* [ref] */
+		struct samr_Password *new_owf_password;/* [ref] */
+		struct samr_Password *old_owf_password;/* [ref] */
+		struct netr_TrustInfo **trust_info;/* [ref] */
 		WERROR result;
 	} out;
 
