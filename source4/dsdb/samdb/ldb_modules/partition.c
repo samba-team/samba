@@ -895,6 +895,14 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 				return ret;
 			}
 
+			ret = ldb_request_add_control(treq,
+						      DSDB_CONTROL_CURRENT_PARTITION_OID,
+						      false, data->partitions[i]);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(res);
+				return ret;
+			}
+
 			ret = partition_request(data->partitions[i]->module, treq);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(res);
