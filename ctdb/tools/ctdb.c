@@ -2702,6 +2702,13 @@ int main(int argc, const char *argv[])
 		usage();
 	}
 
+	if (options.maxruntime == 0) {
+		const char *ctdb_timeout;
+		ctdb_timeout = getenv("CTDB_TIMEOUT");
+		if (ctdb_timeout != NULL) {
+			options.maxruntime = strtoul(ctdb_timeout, NULL, 0);
+		}
+	}
 	if (options.maxruntime != 0) {
 		signal(SIGALRM, ctdb_alarm);
 		alarm(options.maxruntime);
