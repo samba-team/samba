@@ -26,9 +26,6 @@
 
 #include "includes.h"
 
-static int get_real_filename(connection_struct *conn, const char *path,
-			     const char *name, TALLOC_CTX *mem_ctx,
-			     char **found_name);
 static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 				  connection_struct *conn,
 				  const char *orig_path,
@@ -434,7 +431,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			 */
 
 			if (name_has_wildcard ||
-			    (get_real_filename(
+			    (SMB_VFS_GET_REAL_FILENAME(
 				     conn, dirpath, start,
 				     talloc_tos(), &found_name) == -1)) {
 				char *unmangled;
