@@ -109,8 +109,10 @@ _krb5_n_fold(const void *str, size_t len, void *key, size_t size)
     unsigned char *tmp = malloc(maxlen);
     unsigned char *buf = malloc(len);
 
-    if (tmp == NULL || buf == NULL)
-	return ENOMEM;
+    if (tmp == NULL || buf == NULL) {
+        ret = ENOMEM;
+	goto out;
+    }
 
     memcpy(buf, str, len);
     memset(key, 0, size);
@@ -129,9 +131,13 @@ _krb5_n_fold(const void *str, size_t len, void *key, size_t size)
 	}
     } while(l != 0);
 out:
-    memset(buf, 0, len);
-    free(buf);
-    memset(tmp, 0, maxlen);
-    free(tmp);
+    if (buf) {
+        memset(buf, 0, len);
+	free(buf);
+    }
+    if (tmp) {
+        memset(tmp, 0, maxlen);
+	free(tmp);
+    }
     return ret;
 }
