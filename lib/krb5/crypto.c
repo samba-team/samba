@@ -3111,7 +3111,7 @@ decrypt_internal_special(krb5_context context,
 }
 
 static krb5_crypto_iov *
-find_iv(krb5_crypto_iov *data, unsigned int num_data, int type)
+find_iv(krb5_crypto_iov *data, int num_data, int type)
 {
     int i;
     for (i = 0; i < num_data; i++)
@@ -3149,11 +3149,11 @@ krb5_encrypt_iov_ivec(krb5_context context,
 		      krb5_crypto crypto,
 		      unsigned usage,
 		      krb5_crypto_iov *data,
-		      unsigned int num_data,
+		      int num_data,
 		      void *ivec)
 {
     size_t headersz, trailersz, len;
-    unsigned int i;
+    int i;
     size_t sz, block_sz, pad_sz;
     Checksum cksum;
     unsigned char *p, *q;
@@ -3514,7 +3514,7 @@ krb5_create_checksum_iov(krb5_context context,
     Checksum cksum;
     krb5_crypto_iov *civ;
     krb5_error_code ret;
-    unsigned int i;
+    int i;
     size_t len;
     char *p, *q;
 
