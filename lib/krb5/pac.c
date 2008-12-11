@@ -613,6 +613,7 @@ verify_logonname(krb5_context context,
 	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
 	free(ucs2);
 	if (ret) {
+	    free(s);
 	    krb5_set_error_message(context, ret, "Failed to convert to UTF-8");
 	    return ret;
 	}
