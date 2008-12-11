@@ -24,7 +24,8 @@
 
 import getopt
 import optparse
-import os, sys
+import os
+import sys
 
 # Find right directory when running from source tree
 sys.path.insert(0, "bin/python")
@@ -46,6 +47,7 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option("--interactive", help="Ask for names")
 parser.add_option("--setupdir", type="string", metavar="DIR", 
 		help="directory with setup files")
 parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
@@ -108,13 +110,36 @@ def message(text):
 	if not opts.quiet:
 		print text
 
-if opts.realm is None or opts.domain is None:
+if len(sys.argv) == 1:
+	opts.interactive = True
+
+if not opts.interactive and (opts.realm is None or opts.domain is None):
 	if opts.realm is None:
 		print >>sys.stderr, "No realm set"
 	if opts.domain is None:
 		print >>sys.stderr, "No domain set"
 	parser.print_usage()
 	sys.exit(1)
+
+if opts.interactive:
+	from getpass import getpass
+	import readline
+	import socket
+	def ask(prompt, default=None):
+		if default is not None:
+			print "%s [%s]: " % (prompt,default),
+		else:
+			print "%s: " % (prompt,),
+		return sys.stdin.readline().rstrip("\n") or default
+	opts.realm = ask("Realm", socket.gethostname().split(".", 1)[1])
+	opts.domain = ask("Domain", opts.realm)
+	opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
+	for i in range(3):
+		opts.adminpass = getpass("Administrator password: ")
+		if not opts.adminpass:
+			print >>sys.stderr, "Invalid administrator password."
+		else:
+			break
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile()
