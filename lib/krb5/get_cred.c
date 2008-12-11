@@ -562,7 +562,7 @@ get_cred_kdc(krb5_context context,
     } else if(krb5_rd_error(context, &resp, &error) == 0) {
 	ret = krb5_error_from_rd_error(context, &error, in_creds);
 	krb5_free_error_contents(context, &error);
-    } else if(resp.data && ((char*)resp.data)[0] == 4) {
+    } else if(resp.length > 0 && ((char*)resp.data)[0] == 4) {
 	ret = KRB5KRB_AP_ERR_V4_REPLY;
 	krb5_clear_error_message(context);
     } else {
