@@ -470,8 +470,10 @@ _kdc_pk_rd_padata(krb5_context context,
 		}
 		ret = hx509_query_match_issuer_serial(q, &iasn.issuer, &iasn.serialNumber);
 		free_IssuerAndSerialNumber(&iasn);
-		if (ret)
+		if (ret) {
+		    hx509_query_free(kdc_identity->hx509ctx, q);
 		    continue;
+		}
 
 		ret = hx509_certs_find(kdc_identity->hx509ctx,
 				       kdc_identity->certs,
