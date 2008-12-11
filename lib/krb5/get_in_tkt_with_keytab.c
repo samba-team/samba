@@ -35,6 +35,11 @@
 
 RCSID("$Id$");
 
+#ifndef HEIMDAL_SMALLER
+
+#undef __attribute__
+#define __attribute__(x)
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytab_key_proc (krb5_context context,
 		      krb5_enctype enctype,
@@ -78,6 +83,7 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			     krb5_ccache ccache,
 			     krb5_creds *creds,
 			     krb5_kdc_rep *ret_as_reply)
+  __attribute__((deprecated))
 {
     krb5_keytab_key_proc_args a;
 
@@ -97,3 +103,5 @@ krb5_get_in_tkt_with_keytab (krb5_context context,
 			    ccache,
 			    ret_as_reply);
 }
+
+#endif

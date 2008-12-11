@@ -35,6 +35,11 @@
 
 RCSID("$Id$");
 
+#ifndef HEIMDAL_SMALLER
+
+#undef __attribute__
+#define __attribute__(x)
+
 static krb5_error_code
 krb5_skey_key_proc (krb5_context context,
 		    krb5_enctype type,
@@ -55,6 +60,7 @@ krb5_get_in_tkt_with_skey (krb5_context context,
 			   krb5_ccache ccache,
 			   krb5_creds *creds,
 			   krb5_kdc_rep *ret_as_reply)
+  __attribute__((deprecated))
 {
     if(key == NULL)
 	return krb5_get_in_tkt_with_keytab (context,
@@ -80,3 +86,5 @@ krb5_get_in_tkt_with_skey (krb5_context context,
 				ccache,
 				ret_as_reply);
 }
+
+#endif /* HEIMDAL_SMALLER */

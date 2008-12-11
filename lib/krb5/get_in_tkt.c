@@ -35,6 +35,9 @@
 
 RCSID("$Id$");
 
+#undef __attribute__
+#define __attribute__(x)
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_etype (krb5_context context,
 		 unsigned *len,
@@ -299,7 +302,6 @@ noreferral:
 }
 
 
-
 static krb5_error_code
 decrypt_tkt (krb5_context context,
 	     krb5_keyblock *key,
@@ -546,6 +548,7 @@ out:
     return ret;
 }
 
+#ifndef HEIMDAL_SMALLER
 
 static krb5_error_code
 make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
@@ -882,6 +885,7 @@ krb5_get_in_cred(krb5_context context,
 		 krb5_const_pointer decryptarg,
 		 krb5_creds *creds,
 		 krb5_kdc_rep *ret_as_reply)
+  __attribute__((deprecated))
 {
     krb5_error_code ret;
     AS_REQ a;
@@ -1046,6 +1050,7 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_creds *creds,
 		krb5_ccache ccache,
 		krb5_kdc_rep *ret_as_reply)
+  __attribute__((deprecated))
 {
     krb5_error_code ret;
 
@@ -1067,3 +1072,5 @@ krb5_get_in_tkt(krb5_context context,
 	ret = krb5_cc_store_cred (context, ccache, creds);
     return ret;
 }
+
+#endif /* HEIMDAL_SMALLER */
