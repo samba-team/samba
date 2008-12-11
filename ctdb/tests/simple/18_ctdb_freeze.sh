@@ -44,6 +44,8 @@ try_command_on_node 0 ctdb freeze -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node frozen
 
+echo "That worked!  Restarting cluster to restore configuration..."
+
 restart_ctdb
 
 ctdb_test_exit
