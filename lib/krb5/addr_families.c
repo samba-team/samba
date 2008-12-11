@@ -1149,8 +1149,8 @@ krb5_parse_address(krb5_context context,
 	    krb5_free_address(context, &addresses->val[i]);
 	    continue;
 	}
-	addresses->len = i;
 	i++;
+	addresses->len = i;
     }
     freeaddrinfo (ai);
     return 0;
