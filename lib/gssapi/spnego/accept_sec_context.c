@@ -512,7 +512,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	if (verify_mic) {
 	    ret = verify_mechlist_mic(minor_status, ctx, mech_buf, mic);
 	    if (ret) {
-		if (get_mic)
+		if (*get_mic)
 		    send_reject (minor_status, output_token);
 		if (buf.value)
 		    free(buf.value);
