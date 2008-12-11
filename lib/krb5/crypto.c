@@ -3783,18 +3783,6 @@ krb5_generate_random_block(void *buf, size_t len)
 	krb5_abortx(NULL, "Failed to generate random block");
 }
 
-static void
-DES3_postproc(krb5_context context,
-	      unsigned char *k, size_t len, struct key_data *key)
-{
-    DES3_random_to_key(context, key->key, k, len);
-
-    if (key->schedule) {
-	krb5_free_data(context, key->schedule);
-	key->schedule = NULL;
-    }
-}
-
 static krb5_error_code
 derive_key(krb5_context context,
 	   struct encryption_type *et,
@@ -3802,7 +3790,7 @@ derive_key(krb5_context context,
 	   const void *constant,
 	   size_t len)
 {
-    unsigned char *k;
+    unsigned char *k = NULL;
     unsigned int nblocks = 0, i;
     krb5_error_code ret = 0;
     struct key_type *kt = et->keytype;
@@ -3814,15 +3802,16 @@ derive_key(krb5_context context,
 	nblocks = (kt->bits + et->blocksize * 8 - 1) / (et->blocksize * 8);
 	k = malloc(nblocks * et->blocksize);
 	if(k == NULL) {
-	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	    return ENOMEM;
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    goto out;
 	}
 	ret = _krb5_n_fold(constant, len, k, et->blocksize);
 	if (ret) {
-	    free(k);
 	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	    return ret;
+	    goto out;
 	}
+
 	for(i = 0; i < nblocks; i++) {
 	    if(i > 0)
 		memcpy(k + i * et->blocksize,
@@ -3837,30 +3826,31 @@ derive_key(krb5_context context,
 	size_t res_len = (kt->bits + 7) / 8;
 
 	if(len != 0 && c == NULL) {
-	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	    return ENOMEM;
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    goto out;
 	}
 	memcpy(c, constant, len);
 	(*et->encrypt)(context, key, c, len, 1, 0, NULL);
 	k = malloc(res_len);
 	if(res_len != 0 && k == NULL) {
 	    free(c);
-	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	    return ENOMEM;
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    goto out;
 	}
 	ret = _krb5_n_fold(c, len, k, res_len);
-	if (ret) {
-	    free(k);
-	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	    return ret;
-	}
 	free(c);
+	if (ret) {
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    goto out;
+	}
     }
 
     /* XXX keytype dependent post-processing */
     switch(kt->type) {
     case KEYTYPE_DES3:
-	DES3_postproc(context, k, nblocks * et->blocksize, key);
+	DES3_random_to_key(context, key->key, k, nblocks * et->blocksize);
 	break;
     case KEYTYPE_AES128:
     case KEYTYPE_AES256:
@@ -3873,12 +3863,15 @@ derive_key(krb5_context context,
 			       kt->type);
 	break;
     }
+ out:
     if (key->schedule) {
 	free_key_schedule(context, key, et);
 	key->schedule = NULL;
     }
-    memset(k, 0, nblocks * et->blocksize);
-    free(k);
+    if (k) {
+	memset(k, 0, nblocks * et->blocksize);
+	free(k);
+    }
     return ret;
 }
 
@@ -4181,7 +4174,7 @@ krb5_string_to_key_derived(krb5_context context,
 	return ret;
     }
     kd.schedule = NULL;
-    DES3_postproc (context, tmp, keylen, &kd); /* XXX */
+    DES3_random_to_key(context, kd.key, tmp, keylen);
     memset(tmp, 0, keylen);
     free(tmp);
     ret = derive_key(context,
