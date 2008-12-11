@@ -131,7 +131,8 @@ ${kdestroy1}
 ${kdestroy2}
 
 echo "killing kdc uu_server (${kdcpid} ${uuspid})"
-kill $kdcpid $uuspid || exit 1
+sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
+
 
 trap "" EXIT
 

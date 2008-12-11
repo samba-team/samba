@@ -137,7 +137,7 @@ ${klist} -v | grep des-cbc-crc > /dev/null || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
 echo "killing kdc (${kdcpid})"
-kill $kdcpid || exit 1
+sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
 
 trap "" EXIT
 
