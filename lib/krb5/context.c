@@ -637,7 +637,8 @@ krb5_get_default_config_files(char ***pfilenames)
 /**
  * Free a list of configuration files.
  *
- * @param filenames list to be freed.
+ * @param filenames list, terminated with a NULL pointer, to be
+ * freed. NULL is an valid argument.
  *
  * @return Returns 0 to indicate success. Otherwise an kerberos et
  * error code is returned, see krb5_get_error_message().
@@ -649,7 +650,7 @@ void KRB5_LIB_FUNCTION
 krb5_free_config_files(char **filenames)
 {
     char **p;
-    for(p = filenames; *p != NULL; p++)
+    for(p = filenames; p && *p != NULL; p++)
 	free(*p);
     free(filenames);
 }
