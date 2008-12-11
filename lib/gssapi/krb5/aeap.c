@@ -225,10 +225,14 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 	    size += iov[i].buffer.length;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_HEADER:
-	    size += krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER);
+	    iov[i].buffer.length =
+	      krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER);
+	    size += iov[i].buffer.length;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_TRAILER:
-	    size += krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_TRAILER);
+	    iov[i].buffer.length =
+	      krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_TRAILER);
+	    size += iov[i].buffer.length;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_PADDING:
 	    if (padding != NULL) {
