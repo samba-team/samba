@@ -257,7 +257,8 @@ gsskrb5_initiator_ready(
 
     krb5_auth_getremoteseqnumber (context, ctx->auth_context, &seq_number);
 
-    _gsskrb5i_is_cfx(ctx, &is_cfx);
+    _gsskrb5i_is_cfx(ctx, 0);
+    is_cfx = (ctx->more_flags & IS_CFX);
 
     ret = _gssapi_msg_order_create(minor_status,
 				   &ctx->order,
@@ -759,7 +760,8 @@ repl_mutual
     krb5_free_ap_rep_enc_part (context,
 			       repl);
 
-    _gsskrb5i_is_cfx(ctx, &is_cfx);
+    _gsskrb5i_is_cfx(ctx, 0);
+    is_cfx = (ctx->more_flags & IS_CFX);
     if (is_cfx) {
 	krb5_keyblock *key = NULL;
 

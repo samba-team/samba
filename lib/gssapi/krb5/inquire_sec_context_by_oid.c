@@ -242,7 +242,7 @@ static OM_uint32 inquire_sec_context_has_updated_spnego
      * mechanism.
      */
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    _gsskrb5i_is_cfx(context_handle, &is_updated);
+    is_updated = (context_handle->more_flags & IS_CFX);
     if (is_updated == 0) {
 	krb5_keyblock *acceptor_subkey;
 
@@ -282,7 +282,7 @@ export_lucid_sec_context_v1(OM_uint32 *minor_status,
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
 
-    _gsskrb5i_is_cfx(context_handle, &is_cfx);
+    is_cfx = (context_handle->more_flags & IS_CFX);
 
     sp = krb5_storage_emem();
     if (sp == NULL) {

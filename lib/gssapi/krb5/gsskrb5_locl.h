@@ -64,7 +64,8 @@ typedef struct {
          COMPAT_OLD_DES3_SELECTED = 8,
 	 ACCEPTOR_SUBKEY = 16,
 	 RETRIED = 32,
-	 CLOSE_CCACHE = 64
+	 CLOSE_CCACHE = 64,
+	 IS_CFX = 128
   } more_flags;
   enum gss_ctx_id_t_state {
       /* initiator states */

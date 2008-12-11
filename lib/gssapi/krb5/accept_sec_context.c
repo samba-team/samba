@@ -74,12 +74,9 @@ _gsskrb5_register_acceptor_identity (const char *identity)
 }
 
 void
-_gsskrb5i_is_cfx(gsskrb5_ctx ctx, int *is_cfx)
+_gsskrb5i_is_cfx(gsskrb5_ctx ctx, int acceptor)
 {
     krb5_keyblock *key;
-    int acceptor = (ctx->more_flags & LOCAL) == 0;
-
-    *is_cfx = 0;
 
     if (acceptor) {
 	if (ctx->auth_context->local_subkey)
@@ -108,7 +105,8 @@ _gsskrb5i_is_cfx(gsskrb5_ctx ctx, int *is_cfx)
     case ETYPE_ARCFOUR_HMAC_MD5_56:
 	break;
     default :
-	*is_cfx = 1;
+        ctx->more_flags |= IS_CFX;
+
 	if ((acceptor && ctx->auth_context->local_subkey) ||
 	    (!acceptor && ctx->auth_context->remote_subkey))
 	    ctx->more_flags |= ACCEPTOR_SUBKEY;
@@ -210,7 +208,8 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
 				  ctx->auth_context,
 				  &seq_number);
 
-    _gsskrb5i_is_cfx(ctx, &is_cfx);
+    _gsskrb5i_is_cfx(ctx, 1);
+    is_cfx = (ctx->more_flags & IS_CFX);
 
     ret = _gssapi_msg_order_create(minor_status,
 				   &ctx->order,
@@ -526,7 +525,8 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	krb5_data outbuf;
 	int use_subkey = 0;
 	
-	_gsskrb5i_is_cfx(ctx, &is_cfx);
+	_gsskrb5i_is_cfx(ctx, 1);
+	is_cfx = (ctx->more_flags & IS_CFX);
 	
 	if (is_cfx || (ap_options & AP_OPTS_USE_SUBKEY)) {
 	    use_subkey = 1;
