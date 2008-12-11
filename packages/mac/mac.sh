@@ -21,8 +21,8 @@ version=`sh ${config} --help 2>/dev/null | head -1 | sed 's/.*Heimdal \([^ ]*\).
 echo "Building Mac universal binary package for Heimdal ${version}"
 echo "Configure"
 env \
-  CFLAGS="-arch i386 -arch ppc" \
-  LDFLAGS="-arch i386 -arch ppc" \
+  CFLAGS="-arch i386 -arch ppc -arch x86_64" \
+  LDFLAGS="-arch i386 -arch ppc -arch x86_64" \
   ${config} --disable-dependency-tracking > log || exit 1
 echo "Build"
 make all > /dev/null || exit 1
