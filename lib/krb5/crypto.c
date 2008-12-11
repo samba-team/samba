@@ -2737,17 +2737,6 @@ krb5_cksumtype_valid(krb5_context context,
 }
 
 
-/* if two enctypes have compatible keys */
-krb5_boolean KRB5_LIB_FUNCTION
-krb5_enctypes_compatible_keys(krb5_context context,
-			      krb5_enctype etype1,
-			      krb5_enctype etype2)
-{
-    struct encryption_type *e1 = _find_enctype(etype1);
-    struct encryption_type *e2 = _find_enctype(etype2);
-    return e1 != NULL && e2 != NULL && e1->keytype == e2->keytype;
-}
-
 static krb5_boolean
 derived_crypto(krb5_context context,
 	       krb5_crypto crypto)
@@ -4710,6 +4699,18 @@ krb5_keytype_to_enctypes (krb5_context context,
     *len = n;
     *val = ret;
     return 0;
+}
+
+/* if two enctypes have compatible keys */
+krb5_boolean KRB5_LIB_FUNCTION
+krb5_enctypes_compatible_keys(krb5_context context,
+			      krb5_enctype etype1,
+			      krb5_enctype etype2)
+  __attribute__((deprecated))
+{
+    struct encryption_type *e1 = _find_enctype(etype1);
+    struct encryption_type *e2 = _find_enctype(etype2);
+    return e1 != NULL && e2 != NULL && e1->keytype == e2->keytype;
 }
 
 #endif /* HEIMDAL_SMALLER */
