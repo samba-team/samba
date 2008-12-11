@@ -96,49 +96,47 @@ _gsskrb5cfx_wrap_length_cfx(krb5_context context,
     return 0;
 }
 
-krb5_error_code
-_gsskrb5cfx_max_wrap_length_cfx(krb5_context context,
-				krb5_crypto crypto,
+OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
+				const gsskrb5_ctx ctx,
+				krb5_context context,
 				int conf_req_flag,
-				size_t input_length,
-				OM_uint32 *output_length)
+				gss_qop_t qop_req,
+				OM_uint32 req_output_size,
+				OM_uint32 *max_input_size)
 {
     krb5_error_code ret;
 
-    *output_length = 0;
+    *max_input_size = 0;
 
     /* 16-byte header is always first */
-    if (input_length < 16)
+    if (req_output_size < 16)
 	return 0;
-    input_length -= 16;
+    req_output_size -= 16;
 
     if (conf_req_flag) {
 	size_t wrapped_size, sz;
 
-	wrapped_size = input_length + 1;
+	wrapped_size = req_output_size + 1;
 	do {
 	    wrapped_size--;
 	    sz = krb5_get_wrapped_length(context,
-					 crypto, wrapped_size);
-	} while (wrapped_size && sz > input_length);
-	if (wrapped_size == 0) {
-	    *output_length = 0;
+					 ctx->crypto, wrapped_size);
+	} while (wrapped_size && sz > req_output_size);
+	if (wrapped_size == 0)
 	    return 0;
-	}
 
 	/* inner header */
-	if (wrapped_size < 16) {
-	    *output_length = 0;
+	if (wrapped_size < 16)
 	    return 0;
-	}
+
 	wrapped_size -= 16;
 
-	*output_length = wrapped_size;
+	*max_input_size = wrapped_size;
     } else {
 	krb5_cksumtype type;
 	size_t cksumsize;
 
-	ret = krb5_crypto_get_checksum_type(context, crypto, &type);
+	ret = krb5_crypto_get_checksum_type(context, ctx->crypto, &type);
 	if (ret)
 	    return ret;
 
@@ -146,46 +144,14 @@ _gsskrb5cfx_max_wrap_length_cfx(krb5_context context,
 	if (ret)
 	    return ret;
 
-	if (input_length < cksumsize)
+	if (req_output_size < cksumsize)
 	    return 0;
 
 	/* Checksum is concatenated with data */
-	*output_length = input_length - cksumsize;
+	*max_input_size = req_output_size - cksumsize;
     }
 
     return 0;
-}
-
-
-OM_uint32 _gssapi_wrap_size_cfx(OM_uint32 *minor_status,
-				const gsskrb5_ctx context_handle,
-				krb5_context context,
-				int conf_req_flag,
-				gss_qop_t qop_req,
-				OM_uint32 req_output_size,
-				OM_uint32 *max_input_size,
-				krb5_keyblock *key)
-{
-    krb5_error_code ret;
-    krb5_crypto crypto;
-
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret != 0) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
-    ret = _gsskrb5cfx_max_wrap_length_cfx(context, crypto, conf_req_flag,
-					  req_output_size, max_input_size);
-    if (ret != 0) {
-	*minor_status = ret;
-	krb5_crypto_destroy(context, crypto);
-	return GSS_S_FAILURE;
-    }
-
-    krb5_crypto_destroy(context, crypto);
-
-    return GSS_S_COMPLETE;
 }
 
 /*
@@ -233,16 +199,14 @@ rrc_rotate(void *data, size_t len, uint16_t rrc, krb5_boolean unrotate)
 }
 
 OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
-			   const gsskrb5_ctx context_handle,
+			   const gsskrb5_ctx ctx,
 			   krb5_context context,
 			   int conf_req_flag,
 			   gss_qop_t qop_req,
 			   const gss_buffer_t input_message_buffer,
 			   int *conf_state,
-			   gss_buffer_t output_message_buffer,
-			   krb5_keyblock *key)
+			   gss_buffer_t output_message_buffer)
 {
-    krb5_crypto crypto;
     gss_cfx_wrap_token token;
     krb5_error_code ret;
     unsigned usage;
@@ -252,19 +216,12 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     int32_t seq_number;
     u_char *p;
 
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret != 0) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
     ret = _gsskrb5cfx_wrap_length_cfx(context,
-				      crypto, conf_req_flag,
+				      ctx->crypto, conf_req_flag,
 				      input_message_buffer->length,
 				      &wrapped_len, &cksumsize, &padlength);
     if (ret != 0) {
 	*minor_status = ret;
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
@@ -275,7 +232,6 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     output_message_buffer->value = malloc(output_message_buffer->length);
     if (output_message_buffer->value == NULL) {
 	*minor_status = ENOMEM;
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
@@ -285,9 +241,9 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     token->TOK_ID[1] = 0x04;
     token->Flags     = 0;
     token->Filler    = 0xFF;
-    if ((context_handle->more_flags & LOCAL) == 0)
+    if ((ctx->more_flags & LOCAL) == 0)
 	token->Flags |= CFXSentByAcceptor;
-    if (context_handle->more_flags & ACCEPTOR_SUBKEY)
+    if (ctx->more_flags & ACCEPTOR_SUBKEY)
 	token->Flags |= CFXAcceptorSubkey;
     if (conf_req_flag) {
 	/*
@@ -324,16 +280,16 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
     token->RRC[0] = 0;
     token->RRC[1] = 0;
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     krb5_auth_con_getlocalseqnumber(context,
-				    context_handle->auth_context,
+				    ctx->auth_context,
 				    &seq_number);
     _gsskrb5_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
     _gsskrb5_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(context,
-				    context_handle->auth_context,
+				    ctx->auth_context,
 				    ++seq_number);
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
     /*
      * If confidentiality is requested, the token header is
@@ -344,7 +300,7 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
      * calculated over the plaintext concatenated with the
      * token header.
      */
-    if (context_handle->more_flags & LOCAL) {
+    if (ctx->more_flags & LOCAL) {
 	usage = KRB5_KU_USAGE_INITIATOR_SEAL;
     } else {
 	usage = KRB5_KU_USAGE_ACCEPTOR_SEAL;
@@ -365,14 +321,13 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	memcpy(p + input_message_buffer->length + padlength,
 	       token, sizeof(*token));
 
-	ret = krb5_encrypt(context, crypto,
+	ret = krb5_encrypt(context, ctx->crypto,
 			   usage, p,
 			   input_message_buffer->length + padlength +
 				sizeof(*token),
 			   &cipher);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    return GSS_S_FAILURE;
 	}
@@ -383,7 +338,6 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	ret = rrc_rotate(cipher.data, cipher.length, rrc, FALSE);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    return GSS_S_FAILURE;
 	}
@@ -396,21 +350,19 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	buf = malloc(input_message_buffer->length + sizeof(*token));
 	if (buf == NULL) {
 	    *minor_status = ENOMEM;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    return GSS_S_FAILURE;
 	}
 	memcpy(buf, input_message_buffer->value, input_message_buffer->length);
 	memcpy(buf + input_message_buffer->length, token, sizeof(*token));
 
-	ret = krb5_create_checksum(context, crypto,
+	ret = krb5_create_checksum(context, ctx->crypto,
 				   usage, 0, buf,
 				   input_message_buffer->length +
 					sizeof(*token),
 				   &cksum);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    free(buf);
 	    return GSS_S_FAILURE;
@@ -433,15 +385,12 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 	    input_message_buffer->length + cksum.checksum.length, rrc, FALSE);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    free_Checksum(&cksum);
 	    return GSS_S_FAILURE;
 	}
 	free_Checksum(&cksum);
     }
-
-    krb5_crypto_destroy(context, crypto);
 
     if (conf_state != NULL) {
 	*conf_state = conf_req_flag;
@@ -452,15 +401,13 @@ OM_uint32 _gssapi_wrap_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
-			     const gsskrb5_ctx context_handle,
+			     const gsskrb5_ctx ctx,
 			     krb5_context context,
 			     const gss_buffer_t input_message_buffer,
 			     gss_buffer_t output_message_buffer,
 			     int *conf_state,
-			     gss_qop_t *qop_state,
-			     krb5_keyblock *key)
+			     gss_qop_t *qop_state)
 {
-    krb5_crypto crypto;
     gss_cfx_wrap_token token;
     u_char token_flags;
     krb5_error_code ret;
@@ -490,11 +437,11 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	(CFXSentByAcceptor | CFXSealed | CFXAcceptorSubkey);
 
     if (token_flags & CFXSentByAcceptor) {
-	if ((context_handle->more_flags & LOCAL) == 0)
+	if ((ctx->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
 
-    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
+    if (ctx->more_flags & ACCEPTOR_SUBKEY) {
 	if ((token_flags & CFXAcceptorSubkey) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     } else {
@@ -524,26 +471,21 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	return GSS_S_UNSEQ_TOKEN;
     }
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    ret = _gssapi_msg_order_check(context_handle->order, seq_number_lo);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    ret = _gssapi_msg_order_check(ctx->order, seq_number_lo);
     if (ret != 0) {
 	*minor_status = 0;
-	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	_gsskrb5_release_buffer(minor_status, output_message_buffer);
 	return ret;
     }
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
     /*
      * Decrypt and/or verify checksum
      */
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret != 0) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
 
-    if (context_handle->more_flags & LOCAL) {
+    if (ctx->more_flags & LOCAL) {
 	usage = KRB5_KU_USAGE_ACCEPTOR_SEAL;
     } else {
 	usage = KRB5_KU_USAGE_INITIATOR_SEAL;
@@ -556,22 +498,19 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
     /* Rotate by RRC; bogus to do this in-place XXX */
     *minor_status = rrc_rotate(p, len, rrc, TRUE);
     if (*minor_status != 0) {
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
     if (token_flags & CFXSealed) {
-	ret = krb5_decrypt(context, crypto, usage,
+	ret = krb5_decrypt(context, ctx->crypto, usage,
 	    p, len, &data);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    return GSS_S_BAD_MIC;
 	}
 
 	/* Check that there is room for the pad and token header */
 	if (data.length < ec + sizeof(*token)) {
-	    krb5_crypto_destroy(context, crypto);
 	    krb5_data_free(&data);
 	    return GSS_S_DEFECTIVE_TOKEN;
 	}
@@ -584,7 +523,6 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 
 	/* Check the integrity of the header */
 	if (memcmp(p, token, sizeof(*token)) != 0) {
-	    krb5_crypto_destroy(context, crypto);
 	    krb5_data_free(&data);
 	    return GSS_S_BAD_MIC;
 	}
@@ -596,10 +534,10 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 
 	/* Determine checksum type */
 	ret = krb5_crypto_get_checksum_type(context,
-					    crypto, &cksum.cksumtype);
+					    ctx->crypto,
+					    &cksum.cksumtype);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    return GSS_S_FAILURE;
 	}
 
@@ -608,7 +546,6 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	/* Check we have at least as much data as the checksum */
 	if (len < cksum.checksum.length) {
 	    *minor_status = ERANGE;
-	    krb5_crypto_destroy(context, crypto);
 	    return GSS_S_BAD_MIC;
 	}
 
@@ -620,7 +557,6 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	output_message_buffer->value = malloc(len + sizeof(*token));
 	if (output_message_buffer->value == NULL) {
 	    *minor_status = ENOMEM;
-	    krb5_crypto_destroy(context, crypto);
 	    return GSS_S_FAILURE;
 	}
 
@@ -637,20 +573,17 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 	token->RRC[0] = 0;
 	token->RRC[1] = 0;
 
-	ret = krb5_verify_checksum(context, crypto,
+	ret = krb5_verify_checksum(context, ctx->crypto,
 				   usage,
 				   output_message_buffer->value,
 				   len + sizeof(*token),
 				   &cksum);
 	if (ret != 0) {
 	    *minor_status = ret;
-	    krb5_crypto_destroy(context, crypto);
 	    _gsskrb5_release_buffer(minor_status, output_message_buffer);
 	    return GSS_S_BAD_MIC;
 	}
     }
-
-    krb5_crypto_destroy(context, crypto);
 
     if (qop_state != NULL) {
 	*qop_state = GSS_C_QOP_DEFAULT;
@@ -661,14 +594,12 @@ OM_uint32 _gssapi_unwrap_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
-			  const gsskrb5_ctx context_handle,
+			  const gsskrb5_ctx ctx,
 			  krb5_context context,
 			  gss_qop_t qop_req,
 			  const gss_buffer_t message_buffer,
-			  gss_buffer_t message_token,
-			  krb5_keyblock *key)
+			  gss_buffer_t message_token)
 {
-    krb5_crypto crypto;
     gss_cfx_mic_token token;
     krb5_error_code ret;
     unsigned usage;
@@ -677,17 +608,10 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     size_t len;
     int32_t seq_number;
 
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret != 0) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
     len = message_buffer->length + sizeof(*token);
     buf = malloc(len);
     if (buf == NULL) {
 	*minor_status = ENOMEM;
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
@@ -697,38 +621,36 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
     token->TOK_ID[0] = 0x04;
     token->TOK_ID[1] = 0x04;
     token->Flags = 0;
-    if ((context_handle->more_flags & LOCAL) == 0)
+    if ((ctx->more_flags & LOCAL) == 0)
 	token->Flags |= CFXSentByAcceptor;
-    if (context_handle->more_flags & ACCEPTOR_SUBKEY)
+    if (ctx->more_flags & ACCEPTOR_SUBKEY)
 	token->Flags |= CFXAcceptorSubkey;
     memset(token->Filler, 0xFF, 5);
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     krb5_auth_con_getlocalseqnumber(context,
-				    context_handle->auth_context,
+				    ctx->auth_context,
 				    &seq_number);
     _gsskrb5_encode_be_om_uint32(0,          &token->SND_SEQ[0]);
     _gsskrb5_encode_be_om_uint32(seq_number, &token->SND_SEQ[4]);
     krb5_auth_con_setlocalseqnumber(context,
-				    context_handle->auth_context,
+				    ctx->auth_context,
 				    ++seq_number);
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
-    if (context_handle->more_flags & LOCAL) {
+    if (ctx->more_flags & LOCAL) {
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
     } else {
 	usage = KRB5_KU_USAGE_ACCEPTOR_SIGN;
     }
 
-    ret = krb5_create_checksum(context, crypto,
+    ret = krb5_create_checksum(context, ctx->crypto,
 	usage, 0, buf, len, &cksum);
     if (ret != 0) {
 	*minor_status = ret;
-	krb5_crypto_destroy(context, crypto);
 	free(buf);
 	return GSS_S_FAILURE;
     }
-    krb5_crypto_destroy(context, crypto);
 
     /* Determine MIC length */
     message_token->length = sizeof(*token) + cksum.checksum.length;
@@ -753,14 +675,12 @@ OM_uint32 _gssapi_mic_cfx(OM_uint32 *minor_status,
 }
 
 OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
-				 const gsskrb5_ctx context_handle,
+				 const gsskrb5_ctx ctx,
 				 krb5_context context,
 				 const gss_buffer_t message_buffer,
 				 const gss_buffer_t token_buffer,
-				 gss_qop_t *qop_state,
-				 krb5_keyblock *key)
+				 gss_qop_t *qop_state)
 {
-    krb5_crypto crypto;
     gss_cfx_mic_token token;
     u_char token_flags;
     krb5_error_code ret;
@@ -787,10 +707,10 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     token_flags = token->Flags & (CFXSentByAcceptor | CFXAcceptorSubkey);
 
     if (token_flags & CFXSentByAcceptor) {
-	if ((context_handle->more_flags & LOCAL) == 0)
+	if ((ctx->more_flags & LOCAL) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     }
-    if (context_handle->more_flags & ACCEPTOR_SUBKEY) {
+    if (ctx->more_flags & ACCEPTOR_SUBKEY) {
 	if ((token_flags & CFXAcceptorSubkey) == 0)
 	    return GSS_S_DEFECTIVE_TOKEN;
     } else {
@@ -812,36 +732,29 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
 	return GSS_S_UNSEQ_TOKEN;
     }
 
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
-    ret = _gssapi_msg_order_check(context_handle->order, seq_number_lo);
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
+    ret = _gssapi_msg_order_check(ctx->order, seq_number_lo);
     if (ret != 0) {
 	*minor_status = 0;
-	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	return ret;
     }
-    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
     /*
      * Verify checksum
      */
-    ret = krb5_crypto_init(context, key, 0, &crypto);
-    if (ret != 0) {
-	*minor_status = ret;
-	return GSS_S_FAILURE;
-    }
-
-    ret = krb5_crypto_get_checksum_type(context, crypto,
+    ret = krb5_crypto_get_checksum_type(context, ctx->crypto,
 					&cksum.cksumtype);
     if (ret != 0) {
 	*minor_status = ret;
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
 
     cksum.checksum.data = p + sizeof(*token);
     cksum.checksum.length = token_buffer->length - sizeof(*token);
 
-    if (context_handle->more_flags & LOCAL) {
+    if (ctx->more_flags & LOCAL) {
 	usage = KRB5_KU_USAGE_ACCEPTOR_SIGN;
     } else {
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
@@ -850,18 +763,16 @@ OM_uint32 _gssapi_verify_mic_cfx(OM_uint32 *minor_status,
     buf = malloc(message_buffer->length + sizeof(*token));
     if (buf == NULL) {
 	*minor_status = ENOMEM;
-	krb5_crypto_destroy(context, crypto);
 	return GSS_S_FAILURE;
     }
     memcpy(buf, message_buffer->value, message_buffer->length);
     memcpy(buf + message_buffer->length, token, sizeof(*token));
 
-    ret = krb5_verify_checksum(context, crypto,
+    ret = krb5_verify_checksum(context, ctx->crypto,
 			       usage,
 			       buf,
 			       sizeof(*token) + message_buffer->length,
 			       &cksum);
-    krb5_crypto_destroy(context, crypto);
     if (ret != 0) {
 	*minor_status = ret;
 	free(buf);

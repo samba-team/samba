@@ -369,11 +369,16 @@ OM_uint32 _gsskrb5_unwrap
 
   output_message_buffer->value = NULL;
   output_message_buffer->length = 0;
+  if (qop_state != NULL)
+      *qop_state = GSS_C_QOP_DEFAULT;
+
+  if (ctx->more_flags & IS_CFX)
+      return _gssapi_unwrap_cfx (minor_status, ctx, context,
+				 input_message_buffer, output_message_buffer,
+				 conf_state, qop_state);
 
   GSSAPI_KRB5_INIT (&context);
 
-  if (qop_state != NULL)
-      *qop_state = GSS_C_QOP_DEFAULT;
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
   HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
@@ -403,9 +408,7 @@ OM_uint32 _gsskrb5_unwrap
 				    conf_state, qop_state, key);
       break;
   default :
-      ret = _gssapi_unwrap_cfx (minor_status, ctx, context,
-				input_message_buffer, output_message_buffer,
-				conf_state, qop_state, key);
+      abort();
       break;
   }
   krb5_free_keyblock (context, key);

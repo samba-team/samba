@@ -131,6 +131,7 @@ _gsskrb5_create_ctx(
     krb5_data_zero(&ctx->fwd_data);
     ctx->lifetime		= GSS_C_INDEFINITE;
     ctx->order			= NULL;
+    ctx->crypto			= NULL;
     HEIMDAL_MUTEX_init(&ctx->ctx_id_mutex);
 
     kret = krb5_auth_con_init (context, &ctx->auth_context);
@@ -257,7 +258,7 @@ gsskrb5_initiator_ready(
 
     krb5_auth_getremoteseqnumber (context, ctx->auth_context, &seq_number);
 
-    _gsskrb5i_is_cfx(ctx, 0);
+    _gsskrb5i_is_cfx(context, ctx, 0);
     is_cfx = (ctx->more_flags & IS_CFX);
 
     ret = _gssapi_msg_order_create(minor_status,

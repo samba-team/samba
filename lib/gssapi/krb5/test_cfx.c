@@ -54,17 +54,23 @@ test_range(const struct range *r, int integ,
 {
     krb5_error_code ret;
     size_t size, rsize;
+    struct gsskrb5_ctx ctx;
 
     for (size = r->lower; size < r->upper; size++) {
-	OM_uint32 max_wrap_size;
 	size_t cksumsize;
 	uint16_t padsize;
+	OM_uint32 minor;
+	OM_uint32 max_wrap_size;
 
-	ret = _gsskrb5cfx_max_wrap_length_cfx(context,
-					      crypto,
-					      integ,
-					      size,
-					      &max_wrap_size);
+	ctx.crypto = crypto;
+
+	ret = _gssapi_wrap_size_cfx(&minor,
+				    &ctx,
+				    context,
+				    integ,
+				    0,
+				    size,
+				    &max_wrap_size);
 	if (ret)
 	    krb5_errx(context, 1, "_gsskrb5cfx_max_wrap_length_cfx: %d", ret);
 	if (max_wrap_size == 0)
@@ -94,12 +100,20 @@ test_special(krb5_context context, krb5_crypto crypto,
     OM_uint32 max_wrap_size;
     size_t cksumsize;
     uint16_t padsize;
+    struct gsskrb5_ctx ctx;
+    OM_uint32 minor;
 
-    ret = _gsskrb5cfx_max_wrap_length_cfx(context,
-					  crypto,
-					  integ,
-					  testsize,
-					  &max_wrap_size);
+    ctx.crypto = crypto;
+    
+    ret = _gssapi_wrap_size_cfx(&minor,
+				&ctx,
+				context,
+				integ,
+				0,
+				testsize,
+				&max_wrap_size);
+    if (ret)
+      krb5_errx(context, 1, "_gsskrb5cfx_max_wrap_length_cfx: %d", ret);
     if (ret)
 	krb5_errx(context, 1, "_gsskrb5cfx_max_wrap_length_cfx: %d", ret);
 
@@ -145,7 +159,7 @@ main(int argc, char **argv)
 
     test_special(context, crypto, 1, 60);
     test_special(context, crypto, 0, 60);
-
+    
     for (i = 0; i < sizeof(tests)/sizeof(tests[0]); i++) {
 	test_range(&tests[i], 1, context, crypto);
 	test_range(&tests[i], 0, context, crypto);

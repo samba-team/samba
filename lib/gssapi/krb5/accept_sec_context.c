@@ -74,8 +74,9 @@ _gsskrb5_register_acceptor_identity (const char *identity)
 }
 
 void
-_gsskrb5i_is_cfx(gsskrb5_ctx ctx, int acceptor)
+_gsskrb5i_is_cfx(krb5_context context, gsskrb5_ctx ctx, int acceptor)
 {
+    krb5_error_code ret;
     krb5_keyblock *key;
 
     if (acceptor) {
@@ -112,6 +113,9 @@ _gsskrb5i_is_cfx(gsskrb5_ctx ctx, int acceptor)
 	    ctx->more_flags |= ACCEPTOR_SUBKEY;
 	break;
     }
+    if (ctx->crypto)
+        krb5_crypto_destroy(context, ctx->crypto);
+    ret = krb5_crypto_init(context, key, 0, &ctx->crypto);
 }
 
 
@@ -208,7 +212,7 @@ gsskrb5_acceptor_ready(OM_uint32 * minor_status,
 				  ctx->auth_context,
 				  &seq_number);
 
-    _gsskrb5i_is_cfx(ctx, 1);
+    _gsskrb5i_is_cfx(context, ctx, 1);
     is_cfx = (ctx->more_flags & IS_CFX);
 
     ret = _gssapi_msg_order_create(minor_status,
@@ -525,7 +529,7 @@ gsskrb5_acceptor_start(OM_uint32 * minor_status,
 	krb5_data outbuf;
 	int use_subkey = 0;
 	
-	_gsskrb5i_is_cfx(ctx, 1);
+	_gsskrb5i_is_cfx(context, ctx, 1);
 	is_cfx = (ctx->more_flags & IS_CFX);
 	
 	if (is_cfx || (ap_options & AP_OPTS_USE_SUBKEY)) {
