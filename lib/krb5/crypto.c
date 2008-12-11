@@ -164,6 +164,9 @@ static krb5_error_code hmac(krb5_context context,
 static void free_key_data(krb5_context,
 			  struct key_data *,
 			  struct encryption_type *);
+static void free_key_schedule(krb5_context,
+			      struct key_data *,
+			      struct encryption_type *);
 static krb5_error_code usage2arcfour (krb5_context, unsigned *);
 static void xor (DES_cblock *, const unsigned char *);
 
@@ -3871,7 +3874,7 @@ derive_key(krb5_context context,
 	break;
     }
     if (key->schedule) {
-	krb5_free_data(context, key->schedule);
+	free_key_schedule(context, key, et);
 	key->schedule = NULL;
     }
     memset(k, 0, nblocks * et->blocksize);
@@ -3998,15 +4001,24 @@ krb5_crypto_init(krb5_context context,
 }
 
 static void
+free_key_schedule(krb5_context context,
+		  struct key_data *key,
+		  struct encryption_type *et)
+{
+    if (et->keytype->cleanup)
+	(*et->keytype->cleanup)(context, key);
+    memset(key->schedule->data, 0, key->schedule->length);
+    krb5_free_data(context, key->schedule);
+}
+
+static void
 free_key_data(krb5_context context, struct key_data *key,
 	      struct encryption_type *et)
 {
     krb5_free_keyblock(context, key->key);
     if(key->schedule) {
-	if (et->keytype->cleanup)
-	    (*et->keytype->cleanup)(context, key);
-	memset(key->schedule->data, 0, key->schedule->length);
-	krb5_free_data(context, key->schedule);
+	free_key_schedule(context, key, et);
+	key->schedule = NULL;
     }
 }
 
