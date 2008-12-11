@@ -93,6 +93,11 @@ ${kadmin} check ${R} || exit 1
 echo $password > ${objdir}/foopassword
 
 echo Starting kdc
+env \
+MallocStackLogging=1 \
+MallocStackLoggingNoCompact=1 \
+MallocErrorAbort=1 \
+MallocLogFile=${objdir}/malloc-log \
 ${kdc} &
 kdcpid=$!
 
@@ -289,7 +294,7 @@ fi
 trap "" EXIT
 
 echo "killing kdc (${kdcpid})"
-kill $kdcpid || exit 1
+sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
 
 exit $exitcode
 
