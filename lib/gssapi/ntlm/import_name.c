@@ -63,8 +63,10 @@ OM_uint32 _gss_ntlm_import_name
 
     /* find "domain" part of the name and uppercase it */
     p = strchr(name, '@');
-    if (p == NULL)
+    if (p == NULL) {
+        free(name);
 	return GSS_S_BAD_NAME;
+    }
     p[0] = '\0';
     p++;
     p2 = strchr(p, '.');
