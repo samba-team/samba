@@ -52,7 +52,9 @@ krb5_data_zero(krb5_data *p)
 
 /**
  * Free the content of krb5_data structure, its ok to free a zeroed
- * structure. When done, the structure will be zeroed.
+ * structure (with memset() or krb5_data_zero()). When done, the
+ * structure will be zeroed. The same function is called
+ * krb5_free_data_contents() in MIT Kerberos.
  *
  * @param p krb5_data to free.
  *
