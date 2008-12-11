@@ -1041,15 +1041,18 @@ heim_ntlm_build_ntlm1_master(void *key, size_t len,
  * @param target the name of the target, assumed to be in UTF8.
  * @param ntlmv2 the ntlmv2 session key
  *
+ * @return 0 on success, or an error code on failure.
+ *
  * @ingroup ntlm_core
  */
 
-void
+int
 heim_ntlm_ntlmv2_key(const void *key, size_t len,
 		     const char *username,
 		     const char *target,
 		     unsigned char ntlmv2[16])
 {
+    int ret;
     unsigned int hmaclen;
     HMAC_CTX c;
 
@@ -1058,17 +1061,23 @@ heim_ntlm_ntlmv2_key(const void *key, size_t len,
     {
 	struct ntlm_buf buf;
 	/* uppercase username and turn it into ucs2-le */
-	ascii2ucs2le(username, 1, &buf);
+	ret = ascii2ucs2le(username, 1, &buf);
+	if (ret)
+	    goto out;
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
 	/* uppercase target and turn into ucs2-le */
-	ascii2ucs2le(target, 1, &buf);
+	ret = ascii2ucs2le(target, 1, &buf);
+	if (ret)
+	    goto out;
 	HMAC_Update(&c, buf.data, buf.length);
 	free(buf.data);
     }
     HMAC_Final(&c, ntlmv2, &hmaclen);
+ out:
     HMAC_CTX_cleanup(&c);
 
+    return ret;
 }
 
 /*
