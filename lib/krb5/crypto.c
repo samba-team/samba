@@ -4690,6 +4690,7 @@ krb5_keytype_to_enctypes (krb5_context context,
 			  krb5_keytype keytype,
 			  unsigned *len,
 			  krb5_enctype **val)
+    __attribute__((deprecated))
 {
     int i;
     unsigned n = 0;
@@ -4697,18 +4698,26 @@ krb5_keytype_to_enctypes (krb5_context context,
 
     for (i = num_etypes - 1; i >= 0; --i) {
 	if (etypes[i]->keytype->type == keytype
-	    && !(etypes[i]->flags & F_PSEUDO))
+	    && !(etypes[i]->flags & F_PSEUDO)
+	    && krb5_enctype_valid(context, etypes[i]->type) == 0)
 	    ++n;
     }
+    if (n == 0) {
+	krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
+			       "Keytype have no mapping");
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    }
+
     ret = malloc(n * sizeof(*ret));
     if (ret == NULL && n != 0) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
     }
     n = 0;
     for (i = num_etypes - 1; i >= 0; --i) {
 	if (etypes[i]->keytype->type == keytype
-	    && !(etypes[i]->flags & F_PSEUDO))
+	    && !(etypes[i]->flags & F_PSEUDO)
+	    && krb5_enctype_valid(context, etypes[i]->type) == 0)
 	    ret[n++] = etypes[i]->type;
     }
     *len = n;
