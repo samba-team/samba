@@ -539,8 +539,11 @@ der_get_bit_string (const unsigned char *p, size_t len,
     data->data = malloc(len - 1);
     if (data->data == NULL && (len - 1) != 0)
 	return ENOMEM;
-    memcpy (data->data, p + 1, len - 1);
-    data->length -= p[0];
+    /* copy data is there is data to copy */
+    if (len - 1 != 0) {
+      memcpy (data->data, p + 1, len - 1);
+      data->length -= p[0];
+    }
     if(size) *size = len;
     return 0;
 }
