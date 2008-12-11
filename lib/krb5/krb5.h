@@ -92,6 +92,8 @@ typedef Checksum krb5_checksum;
 
 typedef ENCTYPE krb5_enctype;
 
+typedef struct krb5_get_init_creds_ctx *krb5_init_creds_context;
+
 typedef heim_octet_string krb5_data;
 
 /* PKINIT related forward declarations */
@@ -636,7 +638,7 @@ typedef krb5_error_code (*krb5_s2k_proc)(krb5_context /*context*/,
 
 struct _krb5_get_init_creds_opt_private;
 
-typedef struct _krb5_get_init_creds_opt {
+struct _krb5_get_init_creds_opt {
     krb5_flags flags;
     krb5_deltat tkt_life;
     krb5_deltat renew_life;
@@ -652,7 +654,9 @@ typedef struct _krb5_get_init_creds_opt {
     int preauth_list_length;
     krb5_data *salt;
     struct _krb5_get_init_creds_opt_private *opt_private;
-} krb5_get_init_creds_opt;
+};
+
+typedef struct _krb5_get_init_creds_opt krb5_get_init_creds_opt;
 
 #define KRB5_GET_INIT_CREDS_OPT_TKT_LIFE	0x0001
 #define KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE	0x0002
