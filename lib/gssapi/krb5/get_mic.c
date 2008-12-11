@@ -282,11 +282,11 @@ OM_uint32 _gsskrb5_get_mic
   OM_uint32 ret;
   krb5_keytype keytype;
 
+  GSSAPI_KRB5_INIT (&context);
+
   if (ctx->more_flags & IS_CFX)
       return _gssapi_mic_cfx (minor_status, ctx, context, qop_req,
 			      message_buffer, message_token);
-
-  GSSAPI_KRB5_INIT (&context);
 
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
