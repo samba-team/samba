@@ -31,7 +31,6 @@
  * SUCH DAMAGE.
  */
 
-#include "krb5.h"
 #include "krb5_locl.h"
 #include "hdb_locl.h"
 RCSID("$Id$");
