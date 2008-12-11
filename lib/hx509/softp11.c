@@ -296,12 +296,9 @@ add_st_object(void)
     struct st_object *o, **objs;
     int i;
 
-    o = malloc(sizeof(*o));
+    o = calloc(1, sizeof(*o));
     if (o == NULL)
 	return NULL;
-    memset(o, 0, sizeof(*o));
-    o->attrs = NULL;
-    o->num_attributes = 0;
 
     for (i = 0; i < soft_token.object.num_objs; i++) {
 	if (soft_token.object.objs == NULL) {
