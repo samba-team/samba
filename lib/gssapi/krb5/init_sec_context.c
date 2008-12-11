@@ -687,7 +687,6 @@ repl_mutual
     krb5_error_code kret;
     krb5_data indata;
     krb5_ap_rep_enc_part *repl;
-    int is_cfx = 0;
 
     output_token->length = 0;
     output_token->value = NULL;
@@ -759,21 +758,6 @@ repl_mutual
     }
     krb5_free_ap_rep_enc_part (context,
 			       repl);
-
-    _gsskrb5i_is_cfx(ctx, 0);
-    is_cfx = (ctx->more_flags & IS_CFX);
-    if (is_cfx) {
-	krb5_keyblock *key = NULL;
-
-	kret = krb5_auth_con_getremotesubkey(context,
-					     ctx->auth_context,
-					     &key);
-	if (kret == 0 && key != NULL) {
-    	    ctx->more_flags |= ACCEPTOR_SUBKEY;
-	    krb5_free_keyblock (context, key);
-	}
-    }
-
 
     *minor_status = 0;
     if (time_rec) {
