@@ -177,14 +177,16 @@ change_pw(krb5_context context,
     int result_code;
     krb5_data result_code_string;
     krb5_data result_string;
-    krb5_get_init_creds_opt options;
+    krb5_get_init_creds_opt *options;
 
     memset(&cpw_cred, 0, sizeof(cpw_cred));
 
-    krb5_get_init_creds_opt_init(&options);
-    krb5_get_init_creds_opt_set_tkt_life(&options, 60);
-    krb5_get_init_creds_opt_set_forwardable(&options, FALSE);
-    krb5_get_init_creds_opt_set_proxiable(&options, FALSE);
+    ret = krb5_get_init_creds_opt_alloc(context, &options);
+    if (ret)
+        return ret;
+    krb5_get_init_creds_opt_set_tkt_life(options, 60);
+    krb5_get_init_creds_opt_set_forwardable(options, FALSE);
+    krb5_get_init_creds_opt_set_proxiable(options, FALSE);
 
     krb5_data_zero(&result_code_string);
     krb5_data_zero(&result_string);
@@ -195,7 +197,8 @@ change_pw(krb5_context context,
 				     ccache->key.keytab,
 				     0,
 				     "kadmin/changepw",
-				     &options);
+				     options);
+    krb5_get_init_creds_opt_free(context, options);
     if (ret) {
 	kcm_log(0, "Failed to acquire password change credentials "
 		"for principal %s: %s",
