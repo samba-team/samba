@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -263,9 +263,10 @@ find_dynamic_method (krb5_context context,
     len = p - filename;
     *rest = filename + len + 1;
 
-    prefix = strndup(filename, len);
+    prefix = malloc(len + 1);
     if (prefix == NULL)
 	krb5_errx(context, 1, "out of memory");
+    strlcpy(prefix, filename, len + 1);
 
     if (asprintf(&path, LIBDIR "/hdb_%s.so", prefix) == -1)
 	krb5_errx(context, 1, "out of memory");
