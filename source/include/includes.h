@@ -703,6 +703,7 @@ typedef char fstring[FSTRING_LEN];
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/messaging.h"
 #include "librpc/rpc/dcerpc.h"
 #include "nt_printing.h"
 #include "idmap.h"

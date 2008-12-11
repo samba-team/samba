@@ -7,6 +7,9 @@
 #define _HEADER_NDR_messaging
 
 #define NDR_MESSAGING_CALL_COUNT (0)
+enum ndr_err_code ndr_push_messaging_type(struct ndr_push *ndr, int ndr_flags, enum messaging_type r);
+enum ndr_err_code ndr_pull_messaging_type(struct ndr_pull *ndr, int ndr_flags, enum messaging_type *r);
+void ndr_print_messaging_type(struct ndr_print *ndr, const char *name, enum messaging_type r);
 enum ndr_err_code ndr_push_messaging_rec(struct ndr_push *ndr, int ndr_flags, const struct messaging_rec *r);
 enum ndr_err_code ndr_pull_messaging_rec(struct ndr_pull *ndr, int ndr_flags, struct messaging_rec *r);
 void ndr_print_messaging_rec(struct ndr_print *ndr, const char *name, const struct messaging_rec *r);
