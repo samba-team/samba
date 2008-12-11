@@ -15,7 +15,7 @@ gss_wrap_iov(OM_uint32 * minor_status,
 	     gss_iov_buffer_desc *iov)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	gssapi_mech_interface m = ctx->gc_mech;
+	gssapi_mech_interface m;
 
 	if (conf_state)
 	    *conf_state = 0;
@@ -23,6 +23,9 @@ gss_wrap_iov(OM_uint32 * minor_status,
 	    *minor_status = 0;
 	    return GSS_S_NO_CONTEXT;
 	}
+
+	m = ctx->gc_mech;
+
 	if (m->gm_wrap_iov == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
@@ -41,7 +44,7 @@ gss_unwrap_iov(OM_uint32 *minor_status,
 	       gss_iov_buffer_desc *iov)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	gssapi_mech_interface m = ctx->gc_mech;
+	gssapi_mech_interface m;	  
 
 	if (conf_state)
 	    *conf_state = 0;
@@ -51,6 +54,9 @@ gss_unwrap_iov(OM_uint32 *minor_status,
 	    *minor_status = 0;
 	    return GSS_S_NO_CONTEXT;
 	}
+
+	m = ctx->gc_mech;
+
 	if (m->gm_unwrap_iov == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
@@ -69,12 +75,15 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_iov_buffer_desc *iov)
 {
 	struct _gss_context *ctx = (struct _gss_context *) context_handle;
-	gssapi_mech_interface m = ctx->gc_mech;
+	gssapi_mech_interface m;
 
 	if (ctx == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_NO_CONTEXT;
 	}
+
+	m = ctx->gc_mech;
+
 	if (m->gm_wrap_iov == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
