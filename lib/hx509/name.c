@@ -344,8 +344,10 @@ dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 	if (name == NULL)
 	    return ENOMEM;
 	ret = wind_utf8ucs4(ds->u.utf8String, name, &len);
-	if (ret)
+	if (ret) {
+	    free(name);
 	    return ret;
+	}
 	break;
     default:
 	_hx509_abort("unknown directory type: %d", ds->element);
