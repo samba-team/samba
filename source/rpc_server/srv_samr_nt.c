@@ -2130,7 +2130,7 @@ NTSTATUS _samr_LookupRids(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    0, /* Don't know the acc_bits yet */
 					    "_samr__LookupRids");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
