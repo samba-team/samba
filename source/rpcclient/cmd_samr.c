@@ -219,9 +219,8 @@ static void display_sam_dom_info_13(struct samr_DomInfo13 *info13)
 	printf("Sequence No:\t%llu\n", (unsigned long long)info13->sequence_num);
 	printf("Domain Create Time:\t%s\n",
 		http_timestring(nt_time_to_unix(info13->domain_create_time)));
-	printf("Unknown1:\t%d\n", info13->unknown1);
-	printf("Unknown2:\t%d\n", info13->unknown2);
-
+	printf("Sequence No at last promotion:\t%llu\n",
+		(unsigned long long)info13->modified_count_at_last_promotion);
 }
 
 static void display_sam_info_1(struct samr_DispEntryGeneral *r)
