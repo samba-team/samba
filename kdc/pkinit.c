@@ -1080,10 +1080,6 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 		krb5_abortx(context, "Internal ASN.1 encoder error");
 
 	}
-	if (ret) {
-	    free_PA_PK_AS_REP(&rep);
-	    goto out;
-	}
 
 	ASN1_MALLOC_ENCODE(PA_PK_AS_REP, buf, len, &rep, &size, ret);
 	free_PA_PK_AS_REP(&rep);
