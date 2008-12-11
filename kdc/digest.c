@@ -234,6 +234,7 @@ _kdc_do_digest(krb5_context context,
     memset(&ireq, 0, sizeof(ireq));
     memset(&r, 0, sizeof(r));
     memset(&rep, 0, sizeof(rep));
+    memset(&res, 0, sizeof(res));
 
     kdc_log(context, config, 0, "Digest request from %s", from);
 
@@ -585,6 +586,7 @@ _kdc_do_digest(krb5_context context,
 	ret = krb5_verify_checksum(context, crypto,
 				   KRB5_KU_DIGEST_OPAQUE,
 				   buf.data, buf.length, &res);
+	free_Checksum(&res);
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
 	if (ret)
@@ -1453,6 +1455,7 @@ _kdc_do_digest(krb5_context context,
 	free (client_name);
     krb5_data_free(&buf);
     krb5_data_free(&serverNonce);
+    free_Checksum(&res);
     free_DigestREP(&rep);
     free_DigestRepInner(&r);
     free_DigestReqInner(&ireq);
