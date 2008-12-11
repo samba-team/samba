@@ -500,10 +500,9 @@ kcm_ccache_store_cred_internal(krb5_context context,
     for (c = &ccache->creds; *c != NULL; c = &(*c)->next)
 	;
 
-    *c = (struct kcm_creds *)malloc(sizeof(struct kcm_creds));
-    if (*c == NULL) {
+    *c = (struct kcm_creds *)calloc(1, sizeof(**c));
+    if (*c == NULL)
 	return KRB5_CC_NOMEM;
-    }
 
     RAND_bytes((*c)->uuid, sizeof((*c)->uuid));
 
@@ -519,8 +518,6 @@ kcm_ccache_store_cred_internal(krb5_context context,
 	**credp = *creds;
 	ret = 0;
     }
-
-    (*c)->next = NULL;
 
     return ret;
 }
