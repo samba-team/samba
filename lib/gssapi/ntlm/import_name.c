@@ -79,7 +79,7 @@ OM_uint32 _gss_ntlm_import_name
     strupr(p);
 
     n = calloc(1, sizeof(*n));
-    if (name == NULL) {
+    if (n == NULL) {
 	free(name);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
