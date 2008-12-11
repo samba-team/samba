@@ -78,7 +78,7 @@ check_server_referral(krb5_context context,
 		      unsigned flags,
 		      krb5_const_principal requested,
 		      krb5_const_principal returned,
-		      const krb5_keyblock const * key)
+		      krb5_keyblock * key)
 {
     krb5_error_code ret;
     PA_ServerReferralData ref;
