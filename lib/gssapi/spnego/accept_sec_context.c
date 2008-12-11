@@ -494,7 +494,7 @@ acceptor_complete(OM_uint32 * minor_status,
 	    *get_mic = 1;
 	}
 	
-	if (verify_mic || get_mic) {
+	if (verify_mic || *get_mic) {
 	    int eret;
 	    size_t buf_len;
 	
