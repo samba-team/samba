@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Heimdal 1.2.99\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2008-09-14 11:56+0100\n"
+"POT-Creation-Date: 2008-12-06 09:51-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -48,179 +48,179 @@ msgstr ""
 msgid "unrecognized enctype: %s"
 msgstr ""
 
-#: kuser/kinit.c:87
+#: kuser/kinit.c:90
 msgid "obtain version 4 TGT"
 msgstr ""
 
-#: kuser/kinit.c:90
+#: kuser/kinit.c:93
 msgid "only convert ticket to version 4"
 msgstr ""
 
-#: kuser/kinit.c:93
+#: kuser/kinit.c:96
 msgid "obtain afs tokens"
 msgstr ""
 
-#: kuser/kinit.c:96
+#: kuser/kinit.c:99
 msgid "credentials cache"
 msgstr ""
 
-#: kuser/kinit.c:99
+#: kuser/kinit.c:102
 msgid "get forwardable tickets"
 msgstr ""
 
-#: kuser/kinit.c:102
+#: kuser/kinit.c:105
 msgid "keytab to use"
 msgstr ""
 
-#: kuser/kinit.c:105
+#: kuser/kinit.c:108
 msgid "lifetime of tickets"
 msgstr ""
 
-#: kuser/kinit.c:108
+#: kuser/kinit.c:111
 msgid "get proxiable tickets"
 msgstr ""
 
-#: kuser/kinit.c:111
+#: kuser/kinit.c:114
 msgid "renew TGT"
 msgstr ""
 
-#: kuser/kinit.c:114
+#: kuser/kinit.c:117
 msgid "get renewable tickets"
 msgstr ""
 
-#: kuser/kinit.c:117
+#: kuser/kinit.c:120
 msgid "renewable lifetime of tickets"
 msgstr ""
 
-#: kuser/kinit.c:120
+#: kuser/kinit.c:123
 msgid "server to get ticket for"
 msgstr ""
 
-#: kuser/kinit.c:123
+#: kuser/kinit.c:126
 msgid "when ticket gets valid"
 msgstr ""
 
-#: kuser/kinit.c:126
+#: kuser/kinit.c:129
 msgid "get key from keytab"
 msgstr ""
 
-#: kuser/kinit.c:129
+#: kuser/kinit.c:132
 msgid "validate TGT"
 msgstr ""
 
-#: kuser/kinit.c:132
+#: kuser/kinit.c:135
 msgid "encryption types to use"
 msgstr ""
 
-#: kuser/kinit.c:135
+#: kuser/kinit.c:138
 msgid "file cache version to create"
 msgstr ""
 
-#: kuser/kinit.c:138
+#: kuser/kinit.c:141
 msgid "request a ticket with no addresses"
 msgstr ""
 
-#: kuser/kinit.c:141
+#: kuser/kinit.c:144
 msgid "include these extra addresses"
 msgstr ""
 
-#: kuser/kinit.c:144
+#: kuser/kinit.c:147
 msgid "request an anonymous ticket"
 msgstr ""
 
-#: kuser/kinit.c:147
+#: kuser/kinit.c:150
 msgid "request a Windows PAC"
 msgstr ""
 
-#: kuser/kinit.c:150
+#: kuser/kinit.c:153
 msgid "read the password from a file"
 msgstr ""
 
-#: kuser/kinit.c:153
+#: kuser/kinit.c:156
 msgid "canonicalize client principal"
 msgstr ""
 
-#: kuser/kinit.c:156
+#: kuser/kinit.c:159
 msgid "principal's public/private/certificate identifier"
 msgstr ""
 
-#: kuser/kinit.c:159
+#: kuser/kinit.c:162
 msgid "directory with CA certificates"
 msgstr ""
 
-#: kuser/kinit.c:162
+#: kuser/kinit.c:165
 msgid "Use RSA encrypted reply (instead of DH)"
 msgstr ""
 
-#: kuser/kinit.c:165
+#: kuser/kinit.c:168
 msgid "NTLM domain"
 msgstr ""
 
-#: kuser/kinit.c:168
+#: kuser/kinit.c:171
 msgid "honor ok-as-delegate on tickets"
 msgstr ""
 
-#: kuser/kinit.c:171
+#: kuser/kinit.c:174
 msgid "only use referrals, no dns canalisation"
 msgstr ""
 
-#: kuser/kinit.c:174
+#: kuser/kinit.c:177
 msgid "get windows behavior"
 msgstr ""
 
-#: kuser/kinit.c:185
-#: kuser/klist.c:583
+#: kuser/kinit.c:188
+#: kuser/klist.c:581
 msgid "Usage: "
 msgstr ""
 
-#: kuser/kinit.c:401
+#: kuser/kinit.c:410
 #, c-format
 msgid "Failed to read password from file %s"
 msgstr ""
 
-#: kuser/kinit.c:466
-#: kuser/kinit.c:810
+#: kuser/kinit.c:475
+#: kuser/kinit.c:825
 #, c-format
 msgid "unparsable time: %s"
 msgstr ""
 
-#: kuser/kinit.c:524
+#: kuser/kinit.c:533
 #, c-format
 msgid "%s's Password: "
 msgstr ""
 
-#: kuser/kinit.c:558
+#: kuser/kinit.c:567
 msgid "Password incorrect"
 msgstr ""
 
-#: kuser/kinit.c:561
+#: kuser/kinit.c:570
 msgid "Looks like a Kerberos 4 reply"
-msgstr ""
-
-#: kuser/kinit.c:572
-#, c-format
-msgid "NOTICE: ticket lifetime is %s"
 msgstr ""
 
 #: kuser/kinit.c:581
 #, c-format
+msgid "NOTICE: ticket lifetime is %s"
+msgstr ""
+
+#: kuser/kinit.c:590
+#, c-format
 msgid "NOTICE: ticket renewable lifetime is %s"
 msgstr ""
 
-#: kuser/kinit.c:802
+#: kuser/kinit.c:817
 msgid "resolving credentials cache"
 msgstr ""
 
-#: kuser/kinit.c:817
+#: kuser/kinit.c:832
 msgid "specifying both extra addresses and no addresses makes no sense"
 msgstr ""
 
-#: kuser/kinit.c:863
+#: kuser/kinit.c:882
 #, c-format
 msgid "permission denied: %s"
 msgstr ""
 
-#: kuser/kinit.c:865
+#: kuser/kinit.c:884
 #, c-format
 msgid "command not found: %s"
 msgstr ""
@@ -340,52 +340,52 @@ msgstr ""
 msgid "KDC time offset"
 msgstr ""
 
-#: kuser/klist.c:409
-#: kuser/klist.c:521
+#: kuser/klist.c:407
+#: kuser/klist.c:519
 msgid ">>> Expired <<<"
 msgstr ""
 
-#: kuser/klist.c:414
+#: kuser/klist.c:412
 #, c-format
 msgid "User's (AFS ID %d) tokens for %s"
 msgstr ""
 
-#: kuser/klist.c:416
+#: kuser/klist.c:414
 #, c-format
 msgid "Tokens for %s"
 msgstr ""
 
-#: kuser/klist.c:455
+#: kuser/klist.c:453
 #, c-format
 msgid "No ticket file: %s"
 msgstr ""
 
-#: kuser/klist.c:556
+#: kuser/klist.c:554
 msgid "credentials cache to list"
 msgstr ""
 
-#: kuser/klist.c:558
+#: kuser/klist.c:556
 msgid "test for having tickets"
 msgstr ""
 
-#: kuser/klist.c:561
+#: kuser/klist.c:559
 msgid "display AFS tokens"
 msgstr ""
 
-#: kuser/klist.c:563
+#: kuser/klist.c:561
 msgid "display v5 cred cache"
 msgstr ""
 
+#: kuser/klist.c:563
 #: kuser/klist.c:565
-#: kuser/klist.c:567
 msgid "verbose output"
 msgstr ""
 
-#: kuser/klist.c:569
+#: kuser/klist.c:567
 msgid "display hidden credentials"
 msgstr ""
 
-#: kuser/klist.c:573
+#: kuser/klist.c:571
 #: kuser/kswitch.c:56
 msgid "print version"
 msgstr ""
