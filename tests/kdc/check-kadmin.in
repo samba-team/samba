@@ -226,7 +226,6 @@ cmp kadmin.tmp ${srcdir}/donotexists.txt || \
 
 echo "killing kdc (${kdcpid} ${kadmpid})"
 sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
-sh ${srcdir}/leaks-kill.sh kadmind $kadmpid || exit 1
 
 trap "" EXIT
 
