@@ -64,8 +64,10 @@ hex_encode(const void *data, size_t size, char **str)
 	return -1;
 
     p = malloc(size * 2 + 1);
-    if (p == NULL)
+    if (p == NULL) {
+        *str = NULL;
 	return -1;
+    }
 
     for (i = 0; i < size; i++) {
 	p[i * 2] = hexchar[(*q >> 4) & 0xf];
