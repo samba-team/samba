@@ -62,6 +62,7 @@ spnego_supported_mechs(OM_uint32 *minor_status, gss_OID_set *mechs)
 	    return ret;
 	}
     }
+    gss_release_oid_set(&junk, &m);
     return ret;
 }
 
