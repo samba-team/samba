@@ -98,8 +98,8 @@ decrypt_authenticator (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_Authenticator(context, plain.data, plain.length,
-				    authenticator, &len);
+    ret = decode_Authenticator(plain.data, plain.length,
+			       authenticator, &len);
     krb5_data_free (&plain);
     return ret;
 }
