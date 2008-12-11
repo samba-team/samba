@@ -182,27 +182,17 @@ kcm_ccache_alloc(krb5_context context,
 	goto out;
 
     /*
-     * Then try and find an empty slot
-     * XXX we need to recycle slots for this to actually do anything
+     * Create an enpty slot for us.
      */
     if (slot == NULL) {
-	for (; p != NULL; p = p->next) {
-	    if ((p->flags & KCM_FLAGS_VALID) == 0) {
-		slot = p;
-		break;
-	    }
-	}
-
+	slot = (kcm_ccache_data *)malloc(sizeof(*slot));
 	if (slot == NULL) {
-	    slot = (kcm_ccache_data *)malloc(sizeof(*slot));
-	    if (slot == NULL) {
-		ret = KRB5_CC_NOMEM;
-		goto out;
-	    }
-	    slot->next = ccache_head;
-	    HEIMDAL_MUTEX_init(&slot->mutex);
-	    new_slot = 1;
+	    ret = KRB5_CC_NOMEM;
+	    goto out;
 	}
+	slot->next = ccache_head;
+	HEIMDAL_MUTEX_init(&slot->mutex);
+	new_slot = 1;
     }
 
     slot->name = strdup(name);
