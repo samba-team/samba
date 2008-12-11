@@ -217,7 +217,8 @@ SCRIPT_TESTS = 			\
 	test_query
 
 do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
-	-e 's,[@]objdir[@],$(top_builddir)/lib/hx509,g'
+	-e 's,[@]objdir[@],$(top_builddir)/lib/hx509,g' \
+	-e 's,[@]egrep[@],$(EGREP),g'
 
 test_ca: test_ca.in Makefile
 	$(do_subst) < $(srcdir)/test_ca.in > test_ca.tmp
