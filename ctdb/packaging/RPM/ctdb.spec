@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 67
+Release: 68
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -121,6 +121,45 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Dec 12 2008 : Version 1.0.68
+ - Fixes for monitoring of interfaces status from Michael Adam.
+ - Use -q instead of >/dev/null for grep to enhance readability of the
+   scripts from Michael Adam.
+ - Update to the "ctdb recover" command. This command now block until the
+   has completed. This makes it much easier to use in scripts and avoids
+   the common workaround :
+      ctdb recover
+      ... loop while waiting for recovery completes ...
+      continue ...
+ - Add a CTDB_TIMEOUT variable. If set, this variable provides an automatic
+   timeout for "ctdb <command>", similar to using -T <timeout>
+ - Set a unique errorcode for "ctdb <command>" when it terminates due to a 
+   timeout so that scripts can distinguish between a hung command and what was
+   just a failure.
+ - Update "ctdb ban/unban" so that if the cluster is in recovery these commands
+   blocks and waits until after recovery is complete before the perform the
+   ban/unban operation. This is necessary since the recovery process can cause
+   nodes to become automatically unbanned.
+ - Update "ctdb ban/unban" to block until the recovery that will follow shortly
+   after this command has completed.
+   This makes it much easier to use in scripts and avoids the common
+   workaround :
+      ctdb ban/unban
+      ... loop while waiting for recovery completes ...
+      continue ...
+ - Bugfix for the new flags handling in 1.0.67. Abort and restart monitoring
+   if we failed to get proper nodemaps from a remote node instead of
+   dereferencing a null pointer.
+ - If ctdbd was explicitely started with the '--socket' argument, make
+   ctdbd automatically set CTDB_SOCKET to the specified argument.
+   This ensures that eventscripts spawned by the ctdb daemon will default to
+   using the same socket and talk to the correct daemon.
+   This primarily affects running multiple daemons on the same host and where 
+   you want each instance of ctdb daemons have their eventscripts talk to the
+   "correct" daemon.
+ - Update "ctdb ping" to return an error code if the ping fail so that it
+   can be used in scripts.
+ - Update to how to synchronize management of node flags across the cluster.
 * Thu Dec 3 2008 : Version 1.0.67
  - Add a document describing the recovery process.
  - Fix a bug in "ctdb setdebug" where it would refuse to set a negative
