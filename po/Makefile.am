@@ -41,9 +41,10 @@ install-data-hook:
 	    domain=`echo $$x | sed 's@/.*@@'`; \
 	    lang=`echo $$x | sed 's@.*/\(.*\)\\.mo$$@\1@'`; \
 	    echo "installing lang $$domain $$lang" ; \
-	    $(top_srcdir)/install-sh -d "$(localedir)/$$lang/LC_MESSAGES" ; \
+	    $(top_srcdir)/install-sh -d \
+		$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES" ; \
 	    $(top_srcdir)/install-sh $(srcdir)/$$x \
-	        "$(localedir)/$$lang/LC_MESSAGES/$$domain.mo" ; \
+	        "$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$$domain.mo" ; \
 	done
 
 #find . -name '*.po' -or -name '*.pot' -or -name '*.mo' | sed 's/^../    /' | sed 's/$/ \\/'
