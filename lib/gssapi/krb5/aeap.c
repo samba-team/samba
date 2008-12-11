@@ -106,6 +106,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
     krb5_context context;
     OM_uint32 major_status, junk;
     krb5_crypto_iov *data;
+    krb5_error_code ret;
     unsigned usage;
 
     GSSAPI_KRB5_INIT (&context);
@@ -134,12 +135,13 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
     }
 
-    *minor_status = krb5_encrypt_iov_ivec(context, ctx->crypto, usage,
-					  data, iov_count, NULL);
+    ret = krb5_encrypt_iov_ivec(context, ctx->crypto, usage,
+				data, iov_count, NULL);
     free(data);
-    if (major_status != GSS_S_COMPLETE) {
+    if (ret) {
 	gss_release_iov_buffer(&junk, iov_count, iov);
-	return major_status;
+        *minor_status = ret;
+	return GSS_S_FAILURE;
     }
 
     *minor_status = 0;
