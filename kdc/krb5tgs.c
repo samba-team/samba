@@ -1205,9 +1205,7 @@ tgs_parse_request(krb5_context context,
 	krb5_keyblock *subkey;
 	krb5_data ad;
 
-	ret = krb5_auth_con_getremotesubkey(context,
-					    ac,
-					    &subkey);
+	ret = krb5_auth_con_getremotesubkey(context, ac, &subkey);
 	if(ret){
 	    krb5_auth_con_free(context, ac);
 	    kdc_log(context, config, 0, "Failed to get remote subkey: %s",
@@ -1232,6 +1230,7 @@ tgs_parse_request(krb5_context context,
 	    goto out;
 	}
 	ret = krb5_crypto_init(context, subkey, 0, &crypto);
+	krb5_free_keyblock(context, subkey);
 	if (ret) {
 	    krb5_auth_con_free(context, ac);
 	    kdc_log(context, config, 0, "krb5_crypto_init failed: %s",
@@ -1251,7 +1250,6 @@ tgs_parse_request(krb5_context context,
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out;
 	}
-	krb5_free_keyblock(context, subkey);
 	ALLOC(*auth_data);
 	if (*auth_data == NULL) {
 	    krb5_auth_con_free(context, ac);
