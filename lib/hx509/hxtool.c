@@ -1447,11 +1447,13 @@ hxtool_hex(struct hex_options *opt, int argc, char **argv)
 		errx(1, "fwrite failed");
 	}
     } else {
-	char buf[28], *p;
-	size_t len;
+        char buf[28], *p;
+	ssize_t len;
 
 	while((len = fread(buf, 1, sizeof(buf), stdin)) != 0) {
 	    len = hex_encode(buf, len, &p);
+	    if (len < 0)
+	        continue;
 	    fprintf(stdout, "%s\n", p);
 	    free(p);
 	}
