@@ -493,7 +493,7 @@ main(int argc, char **argv)
     krb5_ccache ccache;
     krb5_principal server;
     char **files;
-    int optidx;
+    int optidx = 0;
     time_t reconnect_min;
     time_t backoff;
     time_t reconnect_max;
