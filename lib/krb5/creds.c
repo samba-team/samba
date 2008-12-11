@@ -235,9 +235,7 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
     }
 	
     if (match && (whichfields & KRB5_TC_MATCH_KEYTYPE))
-	match = krb5_enctypes_compatible_keys(context,
-					      mcreds->session.keytype,
-					      creds->session.keytype);
+        match = mcreds->session.keytype == creds->session.keytype;
 
     if (match && (whichfields & KRB5_TC_MATCH_FLAGS_EXACT))
 	match = mcreds->flags.i == creds->flags.i;
