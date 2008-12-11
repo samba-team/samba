@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "system/network.h"
+#include "lib/socket/socket.h"
 #include "lib/socket/netif.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "../libcli/nbt/libnbt.h"
@@ -38,7 +39,7 @@ struct nbtlist_state {
 	int num_queries;
 	struct nbt_name_request **queries;
 	struct nbt_name_query *io_queries;
-	const char *reply_addr;
+	struct socket_address **addrs;
 	struct interface *ifaces;
 };
 
@@ -71,25 +72,23 @@ static void nbtlist_handler(struct nbt_name_request *req)
 	talloc_free(state->nbtsock);
 	if (!composite_is_ok(c)) return;
 
-	if (state->io_queries[i].out.num_addrs < 1) {
+	if (q->out.num_addrs < 1) {
 		composite_error(c, NT_STATUS_UNEXPECTED_NETWORK_ERROR);
 		return;
 	}
 
-	/* favor a local address if possible */
-	state->reply_addr = NULL;
-	for (i=0;i<q->out.num_addrs;i++) {
-		if (iface_is_local(state->ifaces, q->out.reply_addrs[i])) {
-			state->reply_addr = talloc_steal(state, 
-							 q->out.reply_addrs[i]);
-			break;
-		}
-	}
+	state->addrs = talloc_array(state, struct socket_address *,
+				    q->out.num_addrs + 1);
+	if (composite_nomem(state->addrs, c)) return;
 
-	if (state->reply_addr == NULL) {
-		state->reply_addr = talloc_steal(state, 
-						 q->out.reply_addrs[0]);
+	for (i=0;i<q->out.num_addrs;i++) {
+		state->addrs[i] = socket_address_from_strings(state->addrs,
+							      "ipv4",
+							      q->out.reply_addrs[i],
+							      0);
+		if (composite_nomem(state->addrs[i], c)) return;
 	}
+	state->addrs[i] = NULL;
 
 	composite_done(c);
 }
@@ -180,7 +179,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
   nbt list of addresses name resolution method - recv side
  */
 NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c, 
-				   TALLOC_CTX *mem_ctx, const char **reply_addr)
+				   TALLOC_CTX *mem_ctx,
+				   struct socket_address ***addrs)
 {
 	NTSTATUS status;
 
@@ -188,7 +188,7 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
-		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
+		*addrs = talloc_steal(mem_ctx, state->addrs);
 	}
 
 	talloc_free(c);
@@ -205,13 +205,13 @@ NTSTATUS resolve_name_nbtlist(struct nbt_name *name,
 			      uint16_t nbt_port,
 			      int nbt_timeout,
 			      bool broadcast, bool wins_lookup,
-			      const char **reply_addr)
+			      struct socket_address ***addrs)
 {
 	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
 								name, address_list, 
 								ifaces, nbt_port,
 								nbt_timeout,
 							        broadcast, wins_lookup);
-	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
+	return resolve_name_nbtlist_recv(c, mem_ctx, addrs);
 }
 

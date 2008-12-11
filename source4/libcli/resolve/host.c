@@ -32,13 +32,14 @@
 #include "lib/events/events.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "lib/socket/socket.h"
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/resolve/resolve.h"
 
 struct host_state {
 	struct nbt_name name;
-	const char *reply_addr;
+	struct socket_address **addrs;
 	pid_t child;
 	int child_fd;
 	struct fd_event *fde;
@@ -95,7 +96,6 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	struct host_state *state = talloc_get_type(c->private_data, struct host_state);
 	char address[128];
 	int ret;
-	pid_t child = state->child;
 	int status;
 
 	/* if we get any event from the child then we know that we
@@ -125,8 +125,15 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	state->reply_addr = talloc_strdup(state, address);
-	if (composite_nomem(state->reply_addr, c)) return;
+	state->addrs = talloc_array(state, struct socket_address *, 2);
+	if (composite_nomem(state->addrs, c)) return;
+
+	state->addrs[0] = socket_address_from_strings(state->addrs,
+						      "ipv4",
+						      address,
+						      0);
+	if (composite_nomem(state->addrs[0], c)) return;
+	state->addrs[1] = NULL;
 
 	composite_done(c);
 }
@@ -200,7 +207,8 @@ struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
   gethostbyname name resolution method - recv side
 */
 NTSTATUS resolve_name_host_recv(struct composite_context *c, 
-				TALLOC_CTX *mem_ctx, const char **reply_addr)
+				TALLOC_CTX *mem_ctx,
+				struct socket_address ***addrs)
 {
 	NTSTATUS status;
 
@@ -208,7 +216,7 @@ NTSTATUS resolve_name_host_recv(struct composite_context *c,
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct host_state *state = talloc_get_type(c->private_data, struct host_state);
-		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
+		*addrs = talloc_steal(mem_ctx, state->addrs);
 	}
 
 	talloc_free(c);
@@ -220,10 +228,10 @@ NTSTATUS resolve_name_host_recv(struct composite_context *c,
  */
 NTSTATUS resolve_name_host(struct nbt_name *name, 
 			    TALLOC_CTX *mem_ctx,
-			    const char **reply_addr)
+			    struct socket_address ***addrs)
 {
 	struct composite_context *c = resolve_name_host_send(mem_ctx, NULL, NULL, name);
-	return resolve_name_host_recv(c, mem_ctx, reply_addr);
+	return resolve_name_host_recv(c, mem_ctx, addrs);
 }
 
 bool resolve_context_add_host_method(struct resolve_context *ctx)

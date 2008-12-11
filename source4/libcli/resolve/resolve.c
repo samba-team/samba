@@ -26,6 +26,7 @@
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "system/network.h"
+#include "lib/socket/socket.h"
 #include "../lib/util/dlinklist.h"
 
 struct resolve_state {
@@ -33,7 +34,7 @@ struct resolve_state {
 	struct resolve_method *method;
 	struct nbt_name name;
 	struct composite_context *creq;
-	const char *reply_addr;
+	struct socket_address **addrs;
 };
 
 static struct composite_context *setup_next_method(struct composite_context *c);
@@ -83,7 +84,7 @@ static void resolve_handler(struct composite_context *creq)
 	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 	const struct resolve_method *method = state->method;
 
-	c->status = method->recv_fn(creq, state, &state->reply_addr);
+	c->status = method->recv_fn(creq, state, &state->addrs);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
 		state->method = state->method->next;
@@ -128,9 +129,9 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 /*
   general name resolution - async send
  */
-struct composite_context *resolve_name_send(struct resolve_context *ctx,
-					    struct nbt_name *name, 
-					    struct event_context *event_ctx)
+struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
+						struct nbt_name *name,
+						struct event_context *event_ctx)
 {
 	struct composite_context *c;
 	struct resolve_state *state;
@@ -157,8 +158,13 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 	if (is_ipaddress(state->name.name) || 
 	    strcasecmp(state->name.name, "localhost") == 0) {
 		struct in_addr ip = interpret_addr2(state->name.name);
-		state->reply_addr = talloc_strdup(state, inet_ntoa(ip));
-		if (composite_nomem(state->reply_addr, c)) return c;
+
+		state->addrs = talloc_array(state, struct socket_address *, 2);
+		if (composite_nomem(state->addrs, c)) return c;
+		state->addrs[0] = socket_address_from_strings(state->addrs, "ipv4",
+							      inet_ntoa(ip), 0);
+		if (composite_nomem(state->addrs[0], c)) return c;
+		state->addrs[1] = NULL;
 		composite_done(c);
 		return c;
 	}
@@ -177,8 +183,9 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 /*
   general name resolution method - recv side
  */
-NTSTATUS resolve_name_recv(struct composite_context *c, 
-			   TALLOC_CTX *mem_ctx, const char **reply_addr)
+NTSTATUS resolve_name_all_recv(struct composite_context *c,
+			       TALLOC_CTX *mem_ctx,
+			       struct socket_address ***addrs)
 {
 	NTSTATUS status;
 
@@ -186,7 +193,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
-		*reply_addr = talloc_steal(mem_ctx, state->reply_addr);
+		*addrs = talloc_steal(mem_ctx, state->addrs);
 	}
 
 	talloc_free(c);
@@ -196,9 +203,50 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 /*
   general name resolution - sync call
  */
-NTSTATUS resolve_name(struct resolve_context *ctx, struct nbt_name *name, TALLOC_CTX *mem_ctx, const char **reply_addr, struct event_context *ev)
+NTSTATUS resolve_all_name(struct resolve_context *ctx,
+		      struct nbt_name *name,
+		      TALLOC_CTX *mem_ctx,
+		      struct socket_address ***addrs,
+		      struct event_context *ev)
 {
-	struct composite_context *c = resolve_name_send(ctx, name, ev); 
+	struct composite_context *c = resolve_name_all_send(ctx, name, ev);
+	return resolve_name_all_recv(c, mem_ctx, addrs);
+}
+
+struct composite_context *resolve_name_send(struct resolve_context *ctx,
+					    struct nbt_name *name,
+					    struct event_context *event_ctx)
+{
+	return resolve_name_all_send(ctx, name, event_ctx);
+}
+
+NTSTATUS resolve_name_recv(struct composite_context *c,
+			   TALLOC_CTX *mem_ctx,
+			   const char **reply_addr)
+{
+	NTSTATUS status;
+	struct socket_address **addrs = NULL;
+
+	status = resolve_name_all_recv(c, mem_ctx, &addrs);
+
+	if (NT_STATUS_IS_OK(status)) {
+		*reply_addr = talloc_steal(mem_ctx, addrs[0]->addr);
+		talloc_free(addrs);
+	}
+
+	return status;
+}
+
+/*
+  general name resolution - sync call
+ */
+NTSTATUS resolve_name(struct resolve_context *ctx,
+			  struct nbt_name *name,
+			  TALLOC_CTX *mem_ctx,
+			  const char **reply_addr,
+			  struct event_context *ev)
+{
+	struct composite_context *c = resolve_name_send(ctx, name, ev);
 	return resolve_name_recv(c, mem_ctx, reply_addr);
 }
 
