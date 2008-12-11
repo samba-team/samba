@@ -117,6 +117,9 @@ mini_inetd_addrinfo (struct addrinfo *ai)
     for (i = 0; i < n; ++i)
 	if (FD_ISSET (fds[i], &read_set)) {
 	    accept_it (fds[i]);
+	    for (i = 0; i < n; ++i)
+	      close(fds[i]);
+	    free(fds);
 	    return;
 	}
     abort ();
