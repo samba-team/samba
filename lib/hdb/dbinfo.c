@@ -228,10 +228,12 @@ hdb_free_dbinfo(krb5_context context, struct hdb_dbinfo **dbp)
 
     for(di = *dbp; di != NULL; di = ndi) {
 	ndi = di->next;
+	free (di->label);
 	free (di->realm);
 	free (di->dbname);
-	if (di->mkey_file)
-	    free (di->mkey_file);
+	free (di->mkey_file);
+	free (di->acl_file);
+	free (di->log_file);
 	free(di);
     }
     *dbp = NULL;
