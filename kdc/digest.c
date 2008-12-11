@@ -487,6 +487,7 @@ _kdc_do_digest(krb5_context context,
 
 	hex_encode(buf.data, buf.length, &r.u.initReply.opaque);
 	free(buf.data);
+	krb5_data_zero(&buf);
 	if (r.u.initReply.opaque == NULL) {
 	    krb5_clear_error_message(context);
 	    ret = ENOMEM;
@@ -539,8 +540,10 @@ _kdc_do_digest(krb5_context context,
 
 	ret = decode_Checksum(buf.data, buf.length, &res, NULL);
 	free(buf.data);
+	krb5_data_zero(&buf);
 	if (ret) {
-	    krb5_set_error_message(context, ret, "Failed to decode digest Checksum");
+	    krb5_set_error_message(context, ret,
+				   "Failed to decode digest Checksum");
 	    goto out;
 	}
 	
