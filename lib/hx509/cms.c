@@ -739,9 +739,9 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
  *
  * @param context A hx509 context.
  * @param ctx a hx509 version context
- * @param data
+ * @param data pointer to CMS SignedData encoded data
  * @param length length of the data that data point to.
- * @param signedContent
+ * @param signedContent external data used for signature
  * @param pool certificate pool to build certificates paths.
  * @param contentType free with der_free_oid()
  * @param content the output of the function, free with
@@ -797,8 +797,15 @@ hx509_cms_verify_signed(hx509_context context,
 			       "Both external and internal SignedData");
 	goto out;
     }
+
     if (sd.encapContentInfo.eContent)
-	signedContent = sd.encapContentInfo.eContent;
+	ret = der_copy_octet_string(sd.encapContentInfo.eContent, content);
+    else
+	ret = der_copy_octet_string(signedContent, content);
+    if (ret) {
+	hx509_set_error_string(context, 0, ret, "malloc: out of memory");
+	goto out;
+    }
 
     ret = hx509_certs_init(context, "MEMORY:cms-cert-buffer",
 			   0, NULL, &certs);
@@ -823,7 +830,7 @@ hx509_cms_verify_signed(hx509_context context,
     }
 
     for (found_valid_sig = 0, i = 0; i < sd.signerInfos.len; i++) {
-	heim_octet_string *signed_data;
+	heim_octet_string signed_data;
 	const heim_oid *match_oid;
 	heim_oid decode_oid;
 
@@ -885,7 +892,7 @@ hx509_cms_verify_signed(hx509_context context,
 	    ret = _hx509_verify_signature(context,
 					  NULL,
 					  &signer_info->digestAlgorithm,
-					  signedContent,
+					  content,
 					  &os);
 	    der_free_octet_string(&os);
 	    if (ret) {
@@ -922,32 +929,23 @@ hx509_cms_verify_signed(hx509_context context,
 		match_oid = &decode_oid;
 	    }
 
-	    ALLOC(signed_data, 1);
-	    if (signed_data == NULL) {
-		if (match_oid == &decode_oid)
-		    der_free_oid(&decode_oid);
-		ret = ENOMEM;
-		hx509_clear_error_string(context);
-		goto next_sigature;
-	    }
-	
 	    ASN1_MALLOC_ENCODE(CMSAttributes,
-			       signed_data->data,
-			       signed_data->length,
+			       signed_data.data,
+			       signed_data.length,
 			       &sa,
 			       &size, ret);
 	    if (ret) {
 		if (match_oid == &decode_oid)
 		    der_free_oid(&decode_oid);
-		free(signed_data);
 		hx509_clear_error_string(context);
 		goto next_sigature;
 	    }
-	    if (size != signed_data->length)
+	    if (size != signed_data.length)
 		_hx509_abort("internal ASN.1 encoder error");
 
 	} else {
-	    signed_data = rk_UNCONST(signedContent);
+	    signed_data.data = content->data;
+	    signed_data.length = content->length;
 	    match_oid = oid_id_pkcs7_data();
 	}
 
@@ -963,17 +961,15 @@ hx509_cms_verify_signed(hx509_context context,
 	    ret = hx509_verify_signature(context,
 					 cert,
 					 &signer_info->signatureAlgorithm,
-					 signed_data,
+					 &signed_data,
 					 &signer_info->signature);
 	    if (ret)
 		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
 				       "Failed to verify sigature in "
 				       "CMS SignedData");
 	}
-	if (signed_data != signedContent) {
-	    der_free_octet_string(signed_data);
-	    free(signed_data);
-	}
+        if (signer_info->signedAttrs)
+	    free(signed_data.data);
 	if (ret)
 	    goto next_sigature;
 
@@ -1007,20 +1003,13 @@ hx509_cms_verify_signed(hx509_context context,
 	goto out;
     }
 
-    content->data = malloc(signedContent->length);
-    if (content->data == NULL) {
-	hx509_clear_error_string(context);
-	ret = ENOMEM;
-	goto out;
-    }
-    content->length = signedContent->length;
-    memcpy(content->data, signedContent->data, content->length);
-
 out:
     free_SignedData(&sd);
     if (certs)
 	hx509_certs_free(&certs);
     if (ret) {
+	if (content->data)
+	    der_free_octet_string(content);
 	if (*signer_certs)
 	    hx509_certs_free(signer_certs);
 	der_free_oid(contentType);
