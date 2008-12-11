@@ -97,16 +97,15 @@ calculate_reply_hash(krb5_context context,
 		     krb5_keyblock *key,
 		     Kx509Response *rep)
 {
+    krb5_error_code ret;
     HMAC_CTX ctx;
 
     HMAC_CTX_init(&ctx);
 
-    HMAC_Init_ex(&ctx,
-		 key->keyvalue.data, key->keyvalue.length,
+    HMAC_Init_ex(&ctx, key->keyvalue.data, key->keyvalue.length,
 		 EVP_sha1(), NULL);
-    rep->hash->length = HMAC_size(&ctx);
-    rep->hash->data = malloc(rep->hash->length);
-    if (rep->hash->data == NULL) {
+    ret = krb5_data_alloc(rep->hash, HMAC_size(&ctx));
+    if (ret) {
 	HMAC_CTX_cleanup(&ctx);
 	krb5_set_error_message(context, ENOMEM, "malloc: out of memory");
 	return ENOMEM;
