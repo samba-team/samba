@@ -70,11 +70,12 @@ print_and_decode_tkt (krb5_context context,
     krb5_crypto_destroy (context, crypto);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_decrypt_EncryptedData");
-    ret = krb5_decode_EncTicketPart (context, dec_data.data, dec_data.length,
-				     &decr_part, &len);
+    ret = decode_EncTicketPart (dec_data.data, dec_data.length,
+				&decr_part, &len);
     krb5_data_free (&dec_data);
     if (ret)
 	krb5_err (context, 1, ret, "krb5_decode_EncTicketPart");
+    free_EncTicketPart(&decr_part);
 }
 
 struct getargs args[] = {
