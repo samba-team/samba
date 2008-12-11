@@ -307,7 +307,34 @@ typedef OM_uint32 _gss_pseudo_random(
 	       gss_buffer_t prf_out
               );
 
-#define GMI_VERSION 1
+typedef OM_uint32
+_gss_wrap_iov_t(OM_uint32 *minor_status,
+		gss_ctx_id_t  context_handle,
+		int conf_req_flag,
+		gss_qop_t qop_req,
+		int * conf_state,
+		size_t iov_count,
+		gss_iov_buffer_desc *iov);
+
+typedef OM_uint32
+_gss_unwrap_iov_t(OM_uint32 *minor_status,
+	       gss_ctx_id_t context_handle,
+	       int *conf_state,
+	       gss_qop_t *qop_state,
+	       size_t iov_count,
+	       gss_iov_buffer_desc *iov);
+
+typedef OM_uint32
+_gss_wrap_iov_length_t(OM_uint32 * minor_status,
+		       gss_ctx_id_t context_handle,
+		       int conf_req_flag,
+		       gss_qop_t qop_req,
+		       size_t iov_count,
+		       gss_iov_buffer_desc *iov);
+
+
+
+#define GMI_VERSION 2
 
 typedef struct gssapi_mech_interface_desc {
 	unsigned			gm_version;
@@ -347,6 +374,10 @@ typedef struct gssapi_mech_interface_desc {
 	_gss_set_sec_context_option	*gm_set_sec_context_option;
 	_gss_set_cred_option		*gm_set_cred_option;
 	_gss_pseudo_random		*gm_pseudo_random;
+	_gss_wrap_iov_t			*gm_wrap_iov;
+	_gss_unwrap_iov_t		*gm_unwrap_iov;
+	_gss_wrap_iov_length_t		*gm_wrap_iov_length;
+
 } gssapi_mech_interface_desc, *gssapi_mech_interface;
 
 gssapi_mech_interface

@@ -102,6 +102,12 @@ typedef struct gss_buffer_set_desc_struct {
       gss_buffer_desc *elements;
 } gss_buffer_set_desc, *gss_buffer_set_t;
 
+typedef struct gss_iov_buffer_desc_struct {
+    OM_uint32 type;
+    OM_uint32 flags;
+    gss_buffer_desc buffer;
+} gss_iov_buffer_desc, *gss_iov_buffer_t;
+
 /*
  * For now, define a QOP-type as an OM_uint32
  */
@@ -178,6 +184,7 @@ typedef OM_uint32 gss_qop_t;
 #define GSS_C_NO_CREDENTIAL ((gss_cred_id_t) 0)
 #define GSS_C_NO_CHANNEL_BINDINGS ((gss_channel_bindings_t) 0)
 #define GSS_C_EMPTY_BUFFER {0, NULL}
+#define GSS_C_NO_IOV_BUFFER ((gss_iov_buffer_t)0)
 
 /*
  * Some alternate names for a couple of the above
@@ -205,6 +212,26 @@ typedef OM_uint32 gss_qop_t;
  * credential or security context
  */
 #define GSS_C_INDEFINITE 0xfffffffful
+
+/*
+ * Type of gss_wrap_iov()/gss_unwrap_iov().
+ */
+
+#define GSS_IOV_BUFFER_TYPE_EMPTY 0
+#define GSS_IOV_BUFFER_TYPE_DATA 1
+#define GSS_IOV_BUFFER_TYPE_HEADER 2
+#define GSS_IOV_BUFFER_TYPE_TRAILER 7
+#define GSS_IOV_BUFFER_TYPE_PADDING 9
+#define GSS_IOV_BUFFER_TYPE_STREAM 10
+
+/*
+ * Flags of gss_wrap_iov()/gss_unwrap_iov().
+ */
+
+#define GSS_IOV_BUFFER_FLAG_ALLOCATE 1
+#define GSS_IOV_BUFFER_FLAG_ALLOCATED 2
+#define GSS_IOV_BUFFER_FLAG_SIGN_ONLY 4
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -742,6 +769,40 @@ gss_pseudo_random
 	 ssize_t desired_output_len,
 	 gss_buffer_t prf_out
 	);
+
+/*
+ * AEAD support
+ */
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_wrap_iov(OM_uint32 * /* minor_status */,
+	     gss_ctx_id_t /* context_handle */,
+	     int /* conf_req_flag */,
+	     gss_qop_t /* qop_req */,
+	     int * /* conf_state */,
+	     size_t /* iov_count */,
+	     gss_iov_buffer_desc * /*iov */);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_unwrap_iov(OM_uint32 * /* minor_status */,
+	       gss_ctx_id_t /* context_handle */,
+	       int * /* conf_state */,
+	       gss_qop_t * /* qop_state */,
+	       size_t /* iov_count */,
+	       gss_iov_buffer_desc * /* iov */);
+    
+OM_uint32  GSSAPI_LIB_FUNCTION
+gss_wrap_iov_length(OM_uint32 * /* minor_status */,
+		    gss_ctx_id_t /* context_handle */,
+		    int /* conf_req_flag */,
+		    gss_qop_t /* qop_req */,
+		    size_t /* iov_count */,
+		    gss_iov_buffer_desc * /* iov */);
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_release_iov_buffer(OM_uint32 * /* minor_status */,
+		       size_t /* iov_count */,
+		       gss_iov_buffer_desc * /* iov */);
 
 /*
  * The following routines are obsolete variants of gss_get_mic,

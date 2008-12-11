@@ -469,7 +469,10 @@ static gssapi_mech_interface_desc krb5_mech = {
     _gsskrb5_inquire_cred_by_oid,
     _gsskrb5_set_sec_context_option,
     _gsskrb5_set_cred_option,
-    _gsskrb5_pseudo_random
+    _gsskrb5_pseudo_random,
+    _gk_wrap_iov,
+    _gk_unwrap_iov,
+    _gk_wrap_iov_length
 };
 
 gssapi_mech_interface

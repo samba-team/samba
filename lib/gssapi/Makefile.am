@@ -22,6 +22,7 @@ krb5src = \
 	krb5/acquire_cred.c \
 	krb5/add_cred.c \
 	krb5/address_to_krb5addr.c \
+	krb5/aeap.c \
 	krb5/arcfour.c \
 	krb5/canonicalize_name.c \
 	krb5/ccache_name.c \
@@ -77,6 +78,7 @@ mechsrc = \
 	mech/gss_acquire_cred.c \
 	mech/gss_add_cred.c \
 	mech/gss_add_oid_set_member.c \
+	mech/gss_aeap.c \
 	mech/gss_buffer_set.c \
 	mech/gss_canonicalize_name.c \
 	mech/gss_compare_name.c \
