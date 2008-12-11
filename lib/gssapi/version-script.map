@@ -94,8 +94,8 @@ HEIMDAL_GSS_1.0 {
 
 		# _gsskrb5cfx_ are really internal symbols, but export
 		# then now to make testing easier.
-		_gsskrb5cfx_max_wrap_length_cfx;
 		_gsskrb5cfx_wrap_length_cfx;
+		_gssapi_wrap_size_cfx;
 
 	local:
 		*;
