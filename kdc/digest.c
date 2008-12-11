@@ -587,6 +587,7 @@ _kdc_do_digest(krb5_context context,
 				   KRB5_KU_DIGEST_OPAQUE,
 				   buf.data, buf.length, &res);
 	free_Checksum(&res);
+	krb5_data_free(&buf);
 	krb5_crypto_destroy(context, crypto);
 	crypto = NULL;
 	if (ret)
@@ -1170,6 +1171,8 @@ _kdc_do_digest(krb5_context context,
 	    krb5_set_error_message(context, ret, "NTLM storage read flags");
 	    goto out;
 	}
+	krb5_storage_free(sp);
+	sp = NULL;
 	krb5_data_free(&buf);
 
 	if ((flags & NTLM_NEG_NTLM) == 0) {
