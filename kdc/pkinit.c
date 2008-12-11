@@ -886,6 +886,7 @@ pk_mk_pa_reply_dh(krb5_context context,
 	return ret;
 
     ASN1_MALLOC_ENCODE(DHPublicKey, buf.data, buf.length, &i, &size, ret);
+    der_free_heim_integer(&i);
     if (ret) {
 	krb5_set_error_message(context, ret, "ASN.1 encoding of "
 			       "DHPublicKey failed (%d)", ret);
