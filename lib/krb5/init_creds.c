@@ -368,19 +368,27 @@ krb5_get_init_creds_opt_set_pac_request(krb5_context context,
     return 0;
 }
 
+/**
+ * Deprecated: use the new krb5_init_creds_init() and
+ * krb5_init_creds_get_error().
+ *
+ * @ingroup krb5_deprecated
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_get_error(krb5_context context,
 				  krb5_get_init_creds_opt *opt,
 				  KRB_ERROR **error)
+  __attribute__((deprecated))
 {
     krb5_error_code ret;
-
+    
     *error = NULL;
-
+    
     ret = require_ext_opt(context, opt, "init_creds_opt_get_error");
     if (ret)
 	return ret;
-
+    
     if (opt->opt_private->error == NULL)
 	return 0;
 
