@@ -720,16 +720,20 @@ handle_http_tcp (krb5_context context,
 	    "Content-type: application/octet-stream\r\n"
 	    "Content-transfer-encoding: binary\r\n\r\n";
 	if (write(d->s, proto, strlen(proto)) < 0) {
+	    free(data);
 	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
 	if (write(d->s, msg, strlen(msg)) < 0) {
+	    free(data);
 	    kdc_log(context, config, 0, "HTTP write failed: %s: %s",
 		    d->addr_string, strerror(errno));
 	    return -1;
 	}
     }
+    if (len > d->len)
+        len = d->len;
     memcpy(d->buf, data, len);
     d->len = len;
     free(data);
@@ -779,6 +783,10 @@ handle_tcp(krb5_context context,
 	      strncmp((char *)d[idx].buf, "GET ", 4) == 0 &&
 	      strncmp((char *)d[idx].buf + d[idx].len - 4,
 		      "\r\n\r\n", 4) == 0) {
+
+        /* remove the trailing \r\n\r\n so the string is NUL terminated */
+        d[idx].buf[d[idx].len - 4] = '\0';
+
 	ret = handle_http_tcp (context, config, &d[idx]);
 	if (ret < 0)
 	    clear_descr (d + idx);
