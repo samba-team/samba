@@ -3407,14 +3407,26 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	uint32    des_access = r->in.access_mask;
 	NTSTATUS  nt_status;
 	size_t    sd_size;
+	const char *fn = "_samr_Connect2";
 
+	switch (p->hdr_req.opnum) {
+	case NDR_SAMR_CONNECT2:
+		fn = "_samr_Connect2";
+		break;
+	case NDR_SAMR_CONNECT4:
+		fn = "_samr_Connect4";
+		break;
+	case NDR_SAMR_CONNECT5:
+		fn = "_samr_Connect5";
+		break;
+	}
 
-	DEBUG(5,("_samr_Connect2: %d\n", __LINE__));
+	DEBUG(5,("%s: %d\n", fn, __LINE__));
 
 	/* Access check */
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to _samr_Connect2\n"));
+		DEBUG(3, ("access denied to %s\n", fn));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -3424,7 +3436,7 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	se_map_generic(&des_access, &sam_generic_mapping);
 
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token,
-		NULL, 0, des_access, &acc_granted, "_samr_Connect2");
+		NULL, 0, des_access, &acc_granted, fn);
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -3440,7 +3452,7 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	DEBUG(5,("_samr_Connect2: %d\n", __LINE__));
+	DEBUG(5,("%s: %d\n", fn, __LINE__));
 
 	return nt_status;
 }
