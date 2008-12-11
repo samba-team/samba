@@ -81,12 +81,14 @@ make_etypelist(krb5_context context,
 
     ALLOC(*auth_data, 1);
     if (*auth_data == NULL) {
+        free(buf);
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
 
     ALLOC_SEQ(*auth_data, 1);
     if ((*auth_data)->val == NULL) {
+        free(*auth_data);
 	free(buf);
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
