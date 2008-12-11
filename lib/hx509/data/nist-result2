@@ -1,7 +1,7 @@
 # $Id$
 # id FAIL
-4.2.8 FAIL	doesn't support times past 2038
-4.4.13 FAIL	doesn't support times past 2038
+4.2.8 EITHER	depeneds on if time_t is 64 bit or not
+4.4.13 EITHER	depeneds on if time_t is 64 bit or not
 4.5.1 FAIL	
 4.5.4 FAIL
 4.5.6 FAIL
