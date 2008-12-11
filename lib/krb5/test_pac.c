@@ -279,12 +279,10 @@ main(int argc, char **argv)
 
     ret = krb5_pac_verify(context, pac, authtime2, p2,
 			   &member_keyblock2, NULL);
-    if (ret)
-	krb5_err(context, 1, ret, "krb5_pac_verify");
+    if (ret == 0)
+	krb5_errx(context, 1, "krb5_pac_verify");
 
     krb5_pac_free(context, pac);
-
-
 
     /*
      * Test empty free
