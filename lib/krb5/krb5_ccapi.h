@@ -38,6 +38,10 @@
 
 #include <krb5-types.h>
 
+ #ifdef __APPLE__
+#pragma pack(push,2)
+#endif
+
 enum {
     cc_credentials_v5 = 2
 };
@@ -92,7 +96,7 @@ typedef struct cc_credentials_v5_t cc_credentials_v5_t;
 typedef struct cc_credentials_t *cc_credentials_t;
 typedef struct cc_credentials_iterator_t *cc_credentials_iterator_t;
 typedef struct cc_string_t *cc_string_t;
-typedef time_t cc_time_t;
+typedef cc_uint32 cc_time_t;
 
 typedef struct cc_data {
     cc_uint32 type;
@@ -226,5 +230,10 @@ struct cc_context_t {
 
 typedef cc_int32
 (*cc_initialize_func)(cc_context_t*, cc_int32, cc_int32 *, char const **);
+
+#ifdef __APPLE__
+#pragma pack(pop)
+#endif
+
 
 #endif /* KRB5_CCAPI_H */
