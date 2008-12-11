@@ -161,9 +161,11 @@ modules:: $(PLUGINS)
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
-all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 pythonmods
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 pythonmods setup
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
+setup:
+	@ln -sf ../source4/setup setup
 
 SELFTEST4 = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
     --builddir=$(builddir) --srcdir=$(samba4srcdir) \
