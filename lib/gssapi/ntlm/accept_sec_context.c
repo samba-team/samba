@@ -76,6 +76,7 @@ _gss_ntlm_accept_sec_context
 {
     krb5_error_code ret;
     struct ntlm_buf data;
+    OM_uint32 junk;
     ntlm_ctx ctx;
 
     output_token->value = NULL;
@@ -201,6 +202,8 @@ _gss_ntlm_accept_sec_context
 		n->domain = strdup(type3.targetname);
 	    }
 	    if (n == NULL || n->user == NULL || n->domain == NULL) {
+		gss_name_t tempn =  (gss_name_t)n;
+		_gss_ntlm_release_name(&junk, &tempn);
 		heim_ntlm_free_type3(&type3);
 		_gss_ntlm_delete_sec_context(minor_status,
 					     context_handle, NULL);
@@ -214,6 +217,8 @@ _gss_ntlm_accept_sec_context
 	ret = krb5_data_copy(&ctx->sessionkey,
 			     session.data, session.length);
 	if (ret) {	
+	    if (src_name)
+		_gss_ntlm_release_name(&junk, src_name);
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    *minor_status = ret;
 	    return GSS_S_FAILURE;
