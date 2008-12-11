@@ -193,7 +193,6 @@ check(void *opt, int argc, char **argv)
     p2 = strdup(realm);
     if (p2 == NULL) {
 	krb5_warn(context, errno, "malloc");
-	free(p);
 	goto fail;
     }
     strlwr(p2);
