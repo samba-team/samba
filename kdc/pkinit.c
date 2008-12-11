@@ -685,7 +685,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 		      const KDC_REQ *req,
 		      const krb5_data *req_buffer,
 		      krb5_keyblock *reply_key,
-		      ContentInfo *content_info)
+		      ContentInfo *content_info,
+		      hx509_cert *kdc_cert)
 {
     const heim_oid *envelopedAlg = NULL, *sdAlg = NULL, *evAlg = NULL;
     krb5_error_code ret;
@@ -695,6 +696,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 
     krb5_data_zero(&buf);
     krb5_data_zero(&signed_data);
+
+    *kdc_cert = NULL;
 
     /*
      * If the message client is a win2k-type but it send pa data
@@ -809,7 +812,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
 					client_params->client_anchors,
 					kdc_identity->certpool,
 					&signed_data);
-	hx509_cert_free(cert);
+	*kdc_cert = cert;
     }
 
     krb5_data_free(&buf);
@@ -840,6 +843,11 @@ pk_mk_pa_reply_enckey(krb5_context context,
 				  oid_id_pkcs7_envelopedData(),
 				  content_info);
 out:
+    if (ret && *kdc_cert) {
+        hx509_cert_free(*kdc_cert);
+	*kdc_cert = NULL;
+    }
+      
     krb5_data_free(&buf);
     krb5_data_free(&signed_data);
     return ret;
@@ -1027,7 +1035,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 					req,
 					req_buffer,
 					&client_params->reply_key,
-					&info);
+					&info,
+					&kdc_cert);
 	    if (ret) {
 		free_PA_PK_AS_REP(&rep);
 		goto out;
@@ -1121,7 +1130,8 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 				    req,
 				    req_buffer,
 				    &client_params->reply_key,
-				    &info);
+				    &info,
+				    &kdc_cert);
 	if (ret) {
 	    free_PA_PK_AS_REP_Win2k(&rep);
 	    goto out;
