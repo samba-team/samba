@@ -263,7 +263,7 @@ get_init_creds_common(krb5_context context,
 		      krb5_get_init_creds_opt *options,
 		      krb5_get_init_creds_ctx *ctx)
 {
-    krb5_get_init_creds_opt default_opt;
+    krb5_get_init_creds_opt *default_opt = NULL;
     krb5_error_code ret;
     krb5_enctype *etypes;
     krb5_preauthtype *pre_auth_types;
@@ -271,8 +271,8 @@ get_init_creds_common(krb5_context context,
     memset(ctx, 0, sizeof(*ctx));
 
     if (options == NULL) {
-	krb5_get_init_creds_opt_init (&default_opt);
-	options = &default_opt;
+        krb5_get_init_creds_opt_alloc (context, &default_opt);
+	options = default_opt;
     } else {
 	_krb5_get_init_creds_opt_free_krb5_error(options);
     }
@@ -336,6 +336,8 @@ get_init_creds_common(krb5_context context,
 	etypes = malloc((options->etype_list_length + 1)
 			* sizeof(krb5_enctype));
 	if (etypes == NULL) {
+	    if (default_opt)
+	        krb5_get_init_creds_opt_free(context, default_opt);
 	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
@@ -348,6 +350,8 @@ get_init_creds_common(krb5_context context,
 	pre_auth_types = malloc((options->preauth_list_length + 1)
 				* sizeof(krb5_preauthtype));
 	if (pre_auth_types == NULL) {
+	    if (default_opt)
+	        krb5_get_init_creds_opt_free(context, default_opt);
 	    krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
@@ -360,6 +364,8 @@ get_init_creds_common(krb5_context context,
 	;			/* XXX */
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_ANONYMOUS)
 	ctx->flags.request_anonymous = options->anonymous;
+    if (default_opt)
+        krb5_get_init_creds_opt_free(context, default_opt);
     return 0;
 }
 
@@ -382,16 +388,18 @@ change_password (krb5_context context,
     krb5_data result_code_string;
     krb5_data result_string;
     char *p;
-    krb5_get_init_creds_opt options;
+    krb5_get_init_creds_opt *options;
 
     memset (&cpw_cred, 0, sizeof(cpw_cred));
 
-    krb5_get_init_creds_opt_init (&options);
-    krb5_get_init_creds_opt_set_tkt_life (&options, 60);
-    krb5_get_init_creds_opt_set_forwardable (&options, FALSE);
-    krb5_get_init_creds_opt_set_proxiable (&options, FALSE);
+    ret = krb5_get_init_creds_opt_alloc(context, &options);
+    if (ret)
+        return ret;
+    krb5_get_init_creds_opt_set_tkt_life (options, 60);
+    krb5_get_init_creds_opt_set_forwardable (options, FALSE);
+    krb5_get_init_creds_opt_set_proxiable (options, FALSE);
     if (old_options && old_options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST)
-	krb5_get_init_creds_opt_set_preauth_list (&options,
+	krb5_get_init_creds_opt_set_preauth_list (options,
 						  old_options->preauth_list,
 						  old_options->preauth_list_length);					
 
@@ -406,7 +414,8 @@ change_password (krb5_context context,
 					data,
 					0,
 					"kadmin/changepw",
-					&options);
+					options);
+    krb5_get_init_creds_opt_free(context, options);
     if (ret)
 	goto out;
 
