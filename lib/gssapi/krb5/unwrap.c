@@ -372,12 +372,12 @@ OM_uint32 _gsskrb5_unwrap
   if (qop_state != NULL)
       *qop_state = GSS_C_QOP_DEFAULT;
 
+  GSSAPI_KRB5_INIT (&context);
+
   if (ctx->more_flags & IS_CFX)
       return _gssapi_unwrap_cfx (minor_status, ctx, context,
 				 input_message_buffer, output_message_buffer,
 				 conf_state, qop_state);
-
-  GSSAPI_KRB5_INIT (&context);
 
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
