@@ -103,7 +103,6 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	     gss_iov_buffer_desc *iov)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
-    krb5_crypto crypto = NULL;
     krb5_context context;
     OM_uint32 major_status, junk;
     krb5_crypto_iov *data;
@@ -135,7 +134,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	usage = KRB5_KU_USAGE_INITIATOR_SIGN;
     }
 
-    *minor_status = krb5_encrypt_iov_ivec(context, crypto, usage,
+    *minor_status = krb5_encrypt_iov_ivec(context, ctx->crypto, usage,
 					  data, iov_count, NULL);
     free(data);
     if (major_status != GSS_S_COMPLETE) {
@@ -156,8 +155,8 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_iov_buffer_desc *iov)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
-    krb5_crypto crypto = NULL;
     krb5_context context;
+    krb5_error_code ret;
     OM_uint32 major_status, junk;
     krb5_crypto_iov *data;
     unsigned usage;
@@ -188,12 +187,13 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	usage = KRB5_KU_USAGE_ACCEPTOR_SIGN;
     }
 
-    *minor_status = krb5_decrypt_iov_ivec(context, crypto, usage,
-					  data, iov_count, NULL);
+    ret = krb5_decrypt_iov_ivec(context, ctx->crypto, usage,
+				data, iov_count, NULL);
     free(data);
-    if (major_status != GSS_S_COMPLETE) {
+    if (ret) {
+        *minor_status = ret;
 	gss_release_iov_buffer(&junk, iov_count, iov);
-	return major_status;
+	return GSS_S_FAILURE;
     }
 
     *minor_status = 0;
@@ -208,8 +208,8 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 		    int iov_count,
 		    gss_iov_buffer_desc *iov)
 {
+    gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
-    krb5_crypto crypto = NULL;
     unsigned int i;
     size_t size;
     size_t *padding = NULL;
@@ -226,12 +226,12 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 	    break;
 	case GSS_IOV_BUFFER_TYPE_HEADER:
 	    iov[i].buffer.length =
-	      krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_HEADER);
+	      krb5_crypto_length(context, ctx->crypto, KRB5_CRYPTO_TYPE_HEADER);
 	    size += iov[i].buffer.length;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_TRAILER:
 	    iov[i].buffer.length =
-	      krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_TRAILER);
+	      krb5_crypto_length(context, ctx->crypto, KRB5_CRYPTO_TYPE_TRAILER);
 	    size += iov[i].buffer.length;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_PADDING:
@@ -250,7 +250,8 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 	}
     }
     if (padding) {
-	size_t pad = krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_PADDING);
+	size_t pad = krb5_crypto_length(context, ctx->crypto,
+					KRB5_CRYPTO_TYPE_PADDING);
 	if (pad > 1) {
 	    *padding = pad - (size % pad);
 	    if (*padding == pad)
