@@ -677,8 +677,11 @@ kcm_get_first (krb5_context context,
     krb5_storage_free(response);
     krb5_data_free(&response_data);
 
-    if (ret)
+    if (ret) {
+        free(c->uuids);
+        free(c);
 	return ret;
+    }
 
     *cursor = c;
 
