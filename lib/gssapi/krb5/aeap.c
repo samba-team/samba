@@ -36,7 +36,7 @@
 #include <roken.h>
 
 static OM_uint32
-iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, size_t iov_count)
+iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, int iov_count)
 {
     unsigned int i;
     
@@ -54,7 +54,7 @@ iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, size_t iov_count
 }
 
 static OM_uint32
-iov_map(OM_uint32 *minor_status, size_t iov_count,
+iov_map(OM_uint32 *minor_status, int iov_count,
 	const gss_iov_buffer_desc *iov,
 	krb5_crypto_iov *data)
 {
@@ -99,7 +99,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	     int conf_req_flag,
 	     gss_qop_t qop_req,
 	     int * conf_state,
-	     size_t iov_count,
+	     int iov_count,
 	     gss_iov_buffer_desc *iov)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
@@ -152,7 +152,7 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_ctx_id_t context_handle,
 	       int *conf_state,
 	       gss_qop_t *qop_state,
-	       size_t iov_count,
+	       int iov_count,
 	       gss_iov_buffer_desc *iov)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
@@ -205,7 +205,7 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_ctx_id_t context_handle,
 		    int conf_req_flag,
 		    gss_qop_t qop_req,
-		    size_t iov_count,
+		    int iov_count,
 		    gss_iov_buffer_desc *iov)
 {
     krb5_context context;
