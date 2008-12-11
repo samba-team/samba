@@ -342,6 +342,7 @@ make_ccred_from_cred(krb5_context context,
 	addr->length = incred->addresses.val[i].address.length;
 	addr->data = malloc(addr->length);
 	if (addr->data == NULL) {
+	    free(addr);
 	    ret = ENOMEM;
 	    goto fail;
 	}
