@@ -603,8 +603,10 @@ print_certificate(hx509_context hxcontext, hx509_cert cert, int verbose)
     {
 	heim_integer serialNumber;
 
-	hx509_cert_get_serialnumber(cert, &serialNumber);
-	der_print_hex_heim_integer(&serialNumber, &str);
+	ret = hx509_cert_get_serialnumber(cert, &serialNumber);
+	if (ret) errx(1, "hx509_cert_get_serialnumber");
+	ret = der_print_hex_heim_integer(&serialNumber, &str);
+	if (ret) errx(1, "der_print_hex_heim_integer");
 	der_free_heim_integer(&serialNumber);
 	printf("    serial: %s\n", str);
 	free(str);
