@@ -340,6 +340,8 @@ generate_constant (const Symbol *s)
 		 "}\n\n",
 		 s->gen_name, s->gen_name);
 
+	free(list);
+
 	close_codefile();
 
 	break;
