@@ -590,7 +590,8 @@ heim_ntlm_decode_type2(const struct ntlm_buf *buf, struct ntlm_type2 *type2)
     ret = 0;
 
 out:
-    krb5_storage_free(in);
+    if (in)
+	krb5_storage_free(in);
     if (ret)
 	heim_ntlm_free_type2(type2);
 
