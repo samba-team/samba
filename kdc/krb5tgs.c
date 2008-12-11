@@ -1576,7 +1576,8 @@ server_lookup:
 		kdc_log(context, config, 0,
 			"Addition ticket have not matching etypes", spp);
 		krb5_clear_error_message(context);
-		return KRB5KDC_ERR_ETYPE_NOSUPP;
+		ret = KRB5KDC_ERR_ETYPE_NOSUPP;
+		goto out;
 	    }
 	    etype = b->etype.val[i];
 	    kvno = 0;
@@ -1588,7 +1589,7 @@ server_lookup:
 	    if(ret) {
 		kdc_log(context, config, 0,
 			"Server (%s) has no support for etypes", spn);
-		return ret;
+		goto out;
 	    }
 	    ekey = &skey->key;
 	    kvno = server->entry.kvno;
