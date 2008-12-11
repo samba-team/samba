@@ -12,7 +12,7 @@ if [ "$(uname -s)" = "Darwin" ] ; then
     grep "Process $pid: 0 leaks for 0 total leaked bytes" leaks-log > /dev/null || \
 	{ echo "Memory leak in $name" ; echo ""; cat leaks-log; ec=1; }
 
-    # [ "$ec" != "0"] && { env PS1=": leaks-debugger !!!! ; " bash ; }
+    # [ "$ec" != "0" ] && { env PS1=": leaks-debugger !!!! ; " bash ; }
 
 fi
 
