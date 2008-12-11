@@ -326,20 +326,21 @@ decrypt_tkt (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_EncASRepPart(context,
-				   data.data,
+    ret = decode_EncASRepPart(data.data,
+			      data.length,
+			      &dec_rep->enc_part,
+			      &size);
+    if (ret)
+	ret = decode_EncTGSRepPart(data.data,
 				   data.length,
 				   &dec_rep->enc_part,
 				   &size);
-    if (ret)
-	ret = krb5_decode_EncTGSRepPart(context,
-					data.data,
-					data.length,
-					&dec_rep->enc_part,
-					&size);
     krb5_data_free (&data);
-    if (ret)
+    if (ret) {
+        krb5_set_error_message(context, ret, 
+			       N_("Failed to decode encpart in ticket", ""));
 	return ret;
+    }
     return 0;
 }
 
@@ -852,11 +853,10 @@ set_ptypes(krb5_context context,
 		*preauth = &preauth2;
 		ALLOC_SEQ(*preauth, 1);
 		(*preauth)->val[0].type = KRB5_PADATA_ENC_TIMESTAMP;
-		krb5_decode_ETYPE_INFO(context,
-				       md.val[i].padata_value.data,
-				       md.val[i].padata_value.length,
-				       &(*preauth)->val[0].info,
-				       NULL);
+		decode_ETYPE_INFO(md.val[i].padata_value.data,
+				  md.val[i].padata_value.length,
+				  &(*preauth)->val[0].info,
+				  NULL);
 		break;
 	    default:
 		break;
