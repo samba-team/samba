@@ -271,9 +271,6 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     if (ktypes == NULL)
 	ktypes = default_keytypes;
 
-    if (ktypes == NULL)
-	abort();
-
     *ret_key_set = key_set = NULL;
     *nkeyset = 0;
 
