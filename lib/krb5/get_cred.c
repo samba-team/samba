@@ -375,17 +375,18 @@ decrypt_tkt_with_subkey (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_EncASRepPart(context,
-				   data.data,
+    ret = decode_EncASRepPart(data.data,
+			      data.length,
+			      &dec_rep->enc_part,
+			      &size);
+    if (ret)
+	ret = decode_EncTGSRepPart(data.data,
 				   data.length,
 				   &dec_rep->enc_part,
 				   &size);
     if (ret)
-	ret = krb5_decode_EncTGSRepPart(context,
-					data.data,
-					data.length,
-					&dec_rep->enc_part,
-					&size);
+      krb5_set_error_message(context, ret, 
+			     N_("Failed to decode encpart in ticket", ""));
     krb5_data_free (&data);
     return ret;
 }

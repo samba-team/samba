@@ -58,8 +58,11 @@ decrypt_tkt_enc_part (krb5_context context,
     if (ret)
 	return ret;
 
-    ret = krb5_decode_EncTicketPart(context, plain.data, plain.length,
-				    decr_part, &len);
+    ret = decode_EncTicketPart(plain.data, plain.length, decr_part, &len);
+    if (ret)
+        krb5_set_error_message(context, ret, 
+			       N_("Failed to decode encrypted "
+				  "ticket part", ""));
     krb5_data_free (&plain);
     return ret;
 }
@@ -881,8 +884,8 @@ krb5_rd_req_ctx(krb5_context context,
 	    krb5_pac_free(context, pac);
 	    if (ret)
 		goto out;
-	}
-	ret = 0;
+	} else
+	  ret = 0;
     }
 out:
     if (ret || outctx == NULL) {
