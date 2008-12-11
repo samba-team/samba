@@ -219,7 +219,7 @@ doit(int s,
     size_t in_len = 0;
     char *in_ptr;
     pop_state state = INIT;
-    unsigned count, bytes;
+    unsigned count = 0, bytes;
     unsigned asked_for = 0, retrieved = 0, asked_deleted = 0, deleted = 0;
     unsigned sent_xdele = 0;
     int out_fd;
