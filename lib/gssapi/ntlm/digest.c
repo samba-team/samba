@@ -133,12 +133,13 @@ get_ccache(krb5_context context, int *destroy, krb5_ccache *id)
     return 0;
 
 out:
-    if (*destroy)
-	krb5_cc_destroy(context, *id);
-    else
-	krb5_cc_close(context, *id);
-
-    *id = NULL;
+    if (*id) {
+	if (*destroy)
+	    krb5_cc_destroy(context, *id);
+	else
+	    krb5_cc_close(context, *id);
+	*id = NULL;
+    }
 
     if (kt)
 	krb5_kt_close(context, kt);
