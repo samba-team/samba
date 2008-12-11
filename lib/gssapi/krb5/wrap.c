@@ -152,12 +152,12 @@ _gsskrb5_wrap_size_limit (
   krb5_keytype keytype;
   const gsskrb5_ctx ctx = (const gsskrb5_ctx) context_handle;
 
+  GSSAPI_KRB5_INIT (&context);
+
   if (ctx->more_flags & IS_CFX)
       return _gssapi_wrap_size_cfx(minor_status, ctx, context,
 				   conf_req_flag, qop_req,
 				   req_output_size, max_input_size);
-
-  GSSAPI_KRB5_INIT (&context);
 
   HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
   ret = _gsskrb5i_get_token_key(ctx, context, &key);
