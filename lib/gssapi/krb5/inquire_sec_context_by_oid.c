@@ -445,6 +445,7 @@ get_service_keyblock
     HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (ctx->service_keyblock == NULL) {
 	HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
+	krb5_storage_free(sp);
 	_gsskrb5_set_status(EINVAL, "No service keyblock on gssapi context");
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
