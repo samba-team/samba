@@ -158,6 +158,8 @@ void
 _kdc_pk_free_client_param(krb5_context context,
 			  pk_client_params *client_params)
 {
+    if (client_params == NULL)
+        return;
     if (client_params->cert)
 	hx509_cert_free(client_params->cert);
     if (client_params->dh)
@@ -653,9 +655,9 @@ out:
     krb5_data_free(&eContent);
     der_free_oid(&eContentType);
     der_free_oid(&contentInfoOid);
-    if (ret)
-	_kdc_pk_free_client_param(context, client_params);
-    else
+    if (ret) {
+        _kdc_pk_free_client_param(context, client_params);
+    } else 
 	*ret_params = client_params;
     return ret;
 }
