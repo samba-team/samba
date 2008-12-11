@@ -748,7 +748,8 @@ heim_ntlm_decode_type3(const struct ntlm_buf *buf,
 	CHECK(ret_buf(in, &sessionkey, &type3->sessionkey), 0);
 
 out:
-    krb5_storage_free(in);
+    if (in)
+	krb5_storage_free(in);
     if (ret)
 	heim_ntlm_free_type3(type3);
 
