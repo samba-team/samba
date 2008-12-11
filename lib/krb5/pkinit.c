@@ -1766,7 +1766,7 @@ _krb5_parse_moduli_line(krb5_context context,
 	goto out;
     }
     m1->name = strdup(p1);
-    if (p1 == NULL) {
+    if (m1->name == NULL) {
 	ret = ENOMEM;
 	krb5_set_error_message(context, ret, N_("malloc: out of memeory", ""));
 	goto out;
