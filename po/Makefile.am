@@ -42,7 +42,7 @@ install-data-hook:
 	    lang=`echo $$x | sed 's@.*/\(.*\)\\.mo$$@\1@'`; \
 	    echo "installing lang $$domain $$lang" ; \
 	    $(top_srcdir)/install-sh -d \
-		$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES" ; \
+		"$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES" ; \
 	    $(top_srcdir)/install-sh $(srcdir)/$$x \
 	        "$(DESTDIR)$(localedir)/$$lang/LC_MESSAGES/$$domain.mo" ; \
 	done
