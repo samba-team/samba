@@ -111,6 +111,10 @@ ec=0
  echo '' ) 					\
     > ${objdir}/krb5-cc.conf
 
+${kswitch} -p foo@${R} 2>/dev/null && ../../kuser/kdestroy
+${kswitch} -p foo@${R} 2>/dev/null && ../../kuser/kdestroy
+${kswitch} -p bar@${R} 2>/dev/null && ../../kuser/kdestroy
+${kswitch} -p bar@${R} 2>/dev/null && ../../kuser/kdestroy
 
 echo "getting default tickets"; > messages.log
 ${kinit} foo@${R} || { ec=1 ; eval "${testfailed}"; }
