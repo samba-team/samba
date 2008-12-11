@@ -304,7 +304,6 @@ _kdc_do_524(krb5_context context,
     krb5_storage *sp;
     char *spn = NULL;
     unsigned char buf[MAX_KTXT_LEN + 4 * 4];
-    size_t len;
     int kvno = 0;
 
     if(!config->enable_524) {
@@ -342,8 +341,7 @@ _kdc_do_524(krb5_context context,
 		"Failed to decrypt ticket from %s for %s", from, spn);
 	goto out;
     }
-    ret = krb5_decode_EncTicketPart(context, et_data.data, et_data.length,
-				    &et, &len);
+    ret = decode_EncTicketPart(et_data.data, et_data.length, &et, NULL);
     krb5_data_free(&et_data);
     if(ret){
 	kdc_log(context, config, 0,
