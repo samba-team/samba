@@ -1158,7 +1158,16 @@ _key_schedule(krb5_context context,
 {
     krb5_error_code ret;
     struct encryption_type *et = _find_enctype(key->key->keytype);
-    struct key_type *kt = et->keytype;
+    struct key_type *kt;
+
+    if (et == NULL) {
+	krb5_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,
+				N_("encryption type %d not supported", ""),
+				key->key->keytype);
+	return KRB5_PROG_ETYPE_NOSUPP;
+    }
+
+    kt = et->keytype;
 
     if(kt->schedule == NULL)
 	return 0;
