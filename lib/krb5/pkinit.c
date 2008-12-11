@@ -1752,8 +1752,10 @@ _krb5_parse_moduli_line(krb5_context context,
 
     while (isspace((unsigned char)*p))
 	p++;
-    if (*p  == '#')
+    if (*p  == '#') {
+        free(m1);
 	return 0;
+    }
     ret = EINVAL;
 
     p1 = strsep(&p, " \t");
