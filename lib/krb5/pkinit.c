@@ -1628,7 +1628,8 @@ _krb5_pk_load_id(krb5_context context,
     } else
 	*ret_id = id;
 
-    hx509_lock_free(lock);
+    if (lock)
+        hx509_lock_free(lock);
 
     return ret;
 }
