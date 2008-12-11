@@ -3162,6 +3162,11 @@ krb5_encrypt_iov_ivec(krb5_context context,
     const struct encryption_type *et = crypto->et;
     krb5_crypto_iov *tiv, *piv, *hiv;
 
+    if (num_data < 0) {
+        krb5_clear_error_message(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
     if(!derived_crypto(context, crypto)) {
 	krb5_clear_error_message(context);
 	return KRB5_CRYPTO_INTERNAL;
@@ -3363,6 +3368,11 @@ krb5_decrypt_iov_ivec(krb5_context context,
     struct encryption_type *et = crypto->et;
     krb5_crypto_iov *tiv, *hiv;
 
+    if (num_data < 0) {
+        krb5_clear_error_message(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
+
     if(!derived_crypto(context, crypto)) {
 	krb5_clear_error_message(context);
 	return KRB5_CRYPTO_INTERNAL;
@@ -3517,6 +3527,11 @@ krb5_create_checksum_iov(krb5_context context,
     int i;
     size_t len;
     char *p, *q;
+
+    if (num_data < 0) {
+        krb5_clear_error_message(context);
+	return KRB5_CRYPTO_INTERNAL;
+    }
 
     if(!derived_crypto(context, crypto)) {
 	krb5_clear_error_message(context);
