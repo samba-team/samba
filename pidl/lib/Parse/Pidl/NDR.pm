@@ -890,7 +890,6 @@ my %property_list = (
 	"nopull"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"nosize"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT"],
-	"noejs"			=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"todo"			=> ["FUNCTION"],
 
 	# union
