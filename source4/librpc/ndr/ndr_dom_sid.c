@@ -137,8 +137,7 @@ enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct
 		/* handle a w2k bug which send random data in the buffer */
 		ZERO_STRUCTP(sid);
 	} else if (sid->num_auths == 0 && sid->sub_auths) {
-		talloc_free(sid->sub_auths);
-		sid->sub_auths = NULL;
+		ZERO_STRUCT(sid->sub_auths);
 	}
 
 	return NDR_ERR_SUCCESS;
@@ -215,3 +214,35 @@ enum ndr_err_code ndr_push_dom_sid0(struct ndr_push *ndr, int ndr_flags, const s
 	return ndr_push_dom_sid(ndr, ndr_flags, sid);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *r)
+{
+	uint32_t cntr_sub_auths_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->sid_rev_num));
+		NDR_CHECK(ndr_push_int8(ndr, NDR_SCALARS, r->num_auths));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
+		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < r->num_auths; cntr_sub_auths_0++) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sub_auths[cntr_sub_auths_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *r)
+{
+	uint32_t cntr_sub_auths_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->sid_rev_num));
+		NDR_CHECK(ndr_pull_int8(ndr, NDR_SCALARS, &r->num_auths));
+		if (r->num_auths < 0 || r->num_auths > 15) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->id_auth, 6));
+		for (cntr_sub_auths_0 = 0; cntr_sub_auths_0 < r->num_auths; cntr_sub_auths_0++) {
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sub_auths[cntr_sub_auths_0]));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}

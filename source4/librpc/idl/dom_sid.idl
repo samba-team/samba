@@ -22,13 +22,11 @@ cpp_quote("#define dom_sid0 dom_sid")
 ]
 interface dom_sid
 {
-	/* a domain SID. Note that unlike Samba3 this contains a pointer,
-	   so you can't copy them using assignment */
-	typedef [public,gensize,noprint,nosize] struct {
+	typedef [public,gensize,noprint,nosize,nopull,nopush] struct {
 		uint8  sid_rev_num;             /**< SID revision number */
 		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
 		uint8  id_auth[6];              /**< Identifier Authority */
-		uint32 sub_auths[num_auths];
+		uint32 sub_auths[15];
 	} dom_sid;
 
 	/* id used to identify a endpoint, possibly in a cluster */
@@ -37,6 +35,4 @@ interface dom_sid
 		uint32 id2;
 		uint32 node;
 	} server_id;
-
 }
-

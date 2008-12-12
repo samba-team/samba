@@ -249,7 +249,6 @@ static bool sddl_decode_ace(TALLOC_CTX *mem_ctx, struct security_ace *ace, char 
 		return false;
 	}
 	ace->trustee = *sid;
-	talloc_steal(mem_ctx, sid->sub_auths);
 	talloc_free(sid);
 
 	return true;

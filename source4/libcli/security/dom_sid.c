@@ -122,11 +122,6 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array(ret, uint32_t, num_sub_auths);
-	if (!ret->sub_auths) {
-		return NULL;
-	}
-
 	ret->sid_rev_num = rev;
 	ret->id_auth[0] = 0;
 	ret->id_auth[1] = 0;
@@ -183,11 +178,6 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 		return NULL;
 	}
 
-	ret->sub_auths = talloc_array(ret, uint32_t, dom_sid->num_auths);
-	if (!ret->sub_auths) {
-		return NULL;
-	}
-
 	ret->sid_rev_num = dom_sid->sid_rev_num;
 	ret->id_auth[0] = dom_sid->id_auth[0];
 	ret->id_auth[1] = dom_sid->id_auth[1];
@@ -206,7 +196,7 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 
 /*
   add a rid to a domain dom_sid to make a full dom_sid. This function
-  returns a new sid in the suppplied memory context
+  returns a new sid in the supplied memory context
 */
 struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
 				const struct dom_sid *domain_sid, 
@@ -219,11 +209,6 @@ struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
 
 	*sid = *domain_sid;
 
-	sid->sub_auths = talloc_array(sid, uint32_t, sid->num_auths+1);
-	if (!sid->sub_auths) {
-		return NULL;
-	}
-	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32_t));
 	sid->sub_auths[sid->num_auths] = rid;
 	sid->num_auths++;
 
