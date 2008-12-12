@@ -66,12 +66,35 @@ static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
         return result;
 }
 
+static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
+{
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
+}
+
 static vfs_op_tuple onefs_ops[] = {
+	{SMB_VFS_OP(onefs_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
+	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_mkdir), SMB_VFS_OP_MKDIR,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_open), SMB_VFS_OP_OPEN,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_create_file), SMB_VFS_OP_CREATE_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_close), SMB_VFS_OP_CLOSE,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_rename), SMB_VFS_OP_RENAME,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_stat), SMB_VFS_OP_STAT,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_fstat), SMB_VFS_OP_FSTAT,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_lstat), SMB_VFS_OP_LSTAT,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_unlink), SMB_VFS_OP_UNLINK,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_chflags), SMB_VFS_OP_CHFLAGS,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},

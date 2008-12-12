@@ -88,6 +88,9 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(*psbuf);
 	const char *wild;
+	char *base = NULL;
+	char *stream = NULL;
+	int base_fd = -1;
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -191,9 +194,25 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	if (!lp_oplocks(SNUM(conn)))
 		oplock_request = 0;
 
+	/* Stream handling */
+	if (is_ntfs_stream_name(path)) {
+		status = onefs_split_ntfs_stream_name(talloc_tos(), path,
+						      &base, &stream);
+	}
+	/* It's a stream, so pass in the base_fd */
+	if (stream != NULL) {
+		SMB_ASSERT(fsp->base_fsp);
+
+		DEBUG(10,("Opening a stream: base=%s(%d), stream=%s",
+			  base, fsp->base_fsp->fh->fd, stream));
+
+		base_fd = fsp->base_fsp->fh->fd;
+	}
+
 	fsp->fh->fd = onefs_sys_create_file(conn,
-					    -1,
-					    path,
+					    base_fd,
+					    stream != NULL ? stream :
+					    (base != NULL ? base : path),
 					    access_mask,
 					    open_access_mask,
 					    share_access,
@@ -427,6 +446,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	bool def_acl = False;
 	bool posix_open = False;
 	bool new_file_created = False;
+	bool clear_ads = False;
 	struct file_id id;
 	mode_t new_unx_mode = (mode_t)0;
 	mode_t unx_mode = (mode_t)0;
@@ -584,12 +604,14 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			 * exist create.
 			 */
 			flags2 |= (O_CREAT | O_TRUNC);
+			clear_ads = true;
 			break;
 
 		case FILE_OVERWRITE_IF:
 			/* If file exists replace/overwrite. If file doesn't
 			 * exist create. */
 			flags2 |= (O_CREAT | O_TRUNC);
+			clear_ads = true;
 			break;
 
 		case FILE_OPEN:
@@ -615,6 +637,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 			}
 			flags2 |= O_TRUNC;
+			clear_ads = true;
 			break;
 
 		case FILE_CREATE:
@@ -1097,6 +1120,16 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	}
 
 	SMB_ASSERT(lck != NULL);
+
+	/* Delete streams if create_disposition requires it */
+	if (file_existed && clear_ads) {
+		status = delete_all_streams(conn, fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			return status;
+		}
+	}
 
 	/* note that we ignore failure for the following. It is
            basically a hack for NFS, and NFS will never set one of
@@ -1586,6 +1619,8 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 		goto fail;
 	}
 
+	/* Open the base file */
+
 	for (i=0; i<num_streams; i++) {
 		char *streamname;
 
@@ -1725,8 +1760,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 	}
 
 	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
-	    && is_ntfs_stream_name(fname)
-	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
+	    && is_ntfs_stream_name(fname)) {
 		char *base;
 		uint32 base_create_disposition;
 
@@ -1735,8 +1769,8 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			goto fail;
 		}
 
-		status = split_ntfs_stream_name(talloc_tos(), fname,
-						&base, NULL);
+		status = onefs_split_ntfs_stream_name(talloc_tos(), fname,
+						      &base, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("onefs_create_file_unixpath: "
 				  "split_ntfs_stream_name failed: %s\n",
@@ -1765,7 +1799,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			    FILE_SHARE_DELETE),		/* share_access */
 			base_create_disposition,	/* create_disposition*/
 			0,				/* create_options */
-			0,				/* file_attributes */
+			file_attributes,		/* file_attributes */
 			NO_OPLOCK,			/* oplock_request */
 			0,				/* allocation_size */
 			NULL,				/* sd */
@@ -1779,11 +1813,6 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 				  "failed: %s\n", base, nt_errstr(status)));
 			goto fail;
 		}
-		/*
-		 * we don't need to low level fd: This might conflict with
-		 * OneFS streams.
-		 */
-		fd_close(base_fsp);
 	}
 
 	/* Covert generic bits in the security descriptor. */

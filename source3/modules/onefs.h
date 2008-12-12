@@ -67,6 +67,32 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   int *pinfo,
 			   SMB_STRUCT_STAT *psbuf);
 
+int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp);
+
+int onefs_rename(vfs_handle_struct *handle, const char *oldname,
+		 const char *newname);
+
+int onefs_stat(vfs_handle_struct *handle, const char *fname,
+	       SMB_STRUCT_STAT *sbuf);
+
+int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
+		SMB_STRUCT_STAT *sbuf);
+
+int onefs_lstat(vfs_handle_struct *handle, const char *path,
+		SMB_STRUCT_STAT *sbuf);
+
+int onefs_unlink(vfs_handle_struct *handle, const char *path);
+
+int onefs_chflags(vfs_handle_struct *handle, const char *path,
+		  unsigned int flags);
+
+NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
+			  struct files_struct *fsp,
+			  const char *fname,
+			  TALLOC_CTX *mem_ctx,
+			  unsigned int *num_streams,
+			  struct stream_struct **streams);
+
 NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info, SEC_DESC **ppdesc);
 
@@ -75,13 +101,14 @@ NTSTATUS onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
 
 NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent, SEC_DESC *psd);
-
-
 /*
  * Utility functions
  */
 NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 			      struct ifs_security_descriptor *sd);
+
+NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
+				      char **pbase, char **pstream);
 
 /*
  * System Interfaces
