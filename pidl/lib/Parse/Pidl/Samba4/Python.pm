@@ -280,6 +280,11 @@ sub PythonStruct($$$$$$)
 		$self->indent;
 		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
 		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
+		$self->deindent;
+		$self->pidl("#ifdef ".uc("py_$name\_extra_methods"));
+		$self->pidl("\t" .uc("py_$name\_extra_methods"));
+		$self->pidl("#endif");
+		$self->indent;
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
 		$self->pidl("};");
@@ -623,6 +628,10 @@ sub Interface($$$)
 	$self->pidl_hdr("#define _HEADER_PYTHON_$interface->{NAME}\n\n");
 
 	$self->pidl_hdr("\n");
+
+	if (has_property($interface, "pyhelper")) {
+		$self->pidl("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
+	}
 
 	$self->Const($_) foreach (@{$interface->{CONSTS}});
 
