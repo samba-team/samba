@@ -176,9 +176,9 @@ stop() {
 		echo
 		[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/ctdb
 		echo ""
-		return $RETVAL
 		;;
 	esac
+	return $RETVAL
 }	
 
 restart() {
