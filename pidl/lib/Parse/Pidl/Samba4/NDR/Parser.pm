@@ -16,7 +16,7 @@ use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid unmake_str);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
-use Parse::Pidl::Samba4 qw(is_intree choose_header);
+use Parse::Pidl::Samba4 qw(is_intree choose_header ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 use Parse::Pidl qw(warning);
 
@@ -376,7 +376,7 @@ sub ParseArrayPullHeader($$$$$$)
 		$self->defer("}");
 	}
 
-	if (not $l->{IS_FIXED} and not is_charset_array($e, $l)) {
+	if (ArrayDynamicallyAllocated($e,$l) and not is_charset_array($e,$l)) {
 		$self->AllocateArrayLevel($e,$l,$ndr,$var_name,$size);
 	}
 
@@ -917,7 +917,7 @@ sub ParseMemCtxPullFlags($$$$)
 
 	return undef unless ($l->{TYPE} eq "POINTER" or $l->{TYPE} eq "ARRAY");
 
-	return undef if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
+	return undef unless ($l->{TYPE} ne "ARRAY" or ArrayDynamicallyAllocated($e,$l));
 	return undef if has_fast_array($e, $l);
 	return undef if is_charset_array($e, $l);
 

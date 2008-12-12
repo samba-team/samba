@@ -14,6 +14,7 @@ use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
+use Parse::Pidl::Samba4 qw(ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 
 use vars qw($VERSION);
@@ -942,7 +943,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
-			if (!$l->{IS_FIXED}) {
+			if (ArrayDynamicallyAllocated($e, $l)) {
 				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
 			}
 			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");
