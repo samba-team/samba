@@ -846,10 +846,16 @@ interface netlogon
 		uint32 unknown5;
 	} netr_NETLOGON_INFO_3;
 
+	typedef struct {
+		[string,charset(UTF16)] uint16 *trusted_dc_name;
+		[string,charset(UTF16)] uint16 *trusted_domain_name;
+	} netr_NETLOGON_INFO_4;
+
 	typedef union {
 		[case(1)]  netr_NETLOGON_INFO_1 *info1;
 		[case(2)]  netr_NETLOGON_INFO_2 *info2;
 		[case(3)]  netr_NETLOGON_INFO_3 *info3;
+		[case(4)]  netr_NETLOGON_INFO_4 *info4;
 	} netr_CONTROL_QUERY_INFORMATION;
 
 	/* function_code values */
