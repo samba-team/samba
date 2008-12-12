@@ -295,6 +295,10 @@ sub PythonStruct($$$$$$)
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
 	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
 	$self->pidl_hdr("\n");
+	$self->pidl("#ifndef ".uc("py_$name\_repr"));
+	$self->pidl("#define ".uc("py_$name\_repr") . " py_talloc_default_repr");
+	$self->pidl("#endif");
+	$self->pidl("");
 	my $docstring = ($self->DocString($d, $name) or "NULL");
 	my $typeobject = "$name\_Type";
 	$self->pidl("PyTypeObject $typeobject = {");
@@ -304,7 +308,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getset = $getsetters,");
-	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	$self->pidl(".tp_repr = ".uc("py_$name\_repr").",");
 	$self->pidl(".tp_doc = $docstring,");
 	$self->pidl(".tp_methods = $py_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
