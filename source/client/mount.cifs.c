@@ -80,6 +80,9 @@
 #define MOUNT_PASSWD_SIZE 64
 #define DOMAIN_SIZE 64
 
+/* currently maximum length of IPv6 address string */
+#define MAX_ADDRESS_LEN INET6_ADDRSTRLEN
+
 const char *thisprogram;
 int verboseflag = 0;
 static int got_password = 0;
@@ -187,12 +190,6 @@ static char * getusername(void) {
 		username = password->pw_name;
 	}
 	return username;
-}
-
-static char * parse_cifs_url(char * unc_name)
-{
-	printf("\nMounting cifs URL not implemented yet. Attempt to mount %s\n",unc_name);
-	return NULL;
 }
 
 static int open_cred_file(char * file_name)
@@ -493,7 +490,7 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		} else if (strncmp(data, "ip", 2) == 0) {
 			if (!value || !*value) {
 				printf("target ip address argument missing");
-			} else if (strnlen(value, 35) < 35) {
+			} else if (strnlen(value, MAX_ADDRESS_LEN) <= MAX_ADDRESS_LEN) {
 				if(verboseflag)
 					printf("ip address %s override specified\n",value);
 				got_ip = 1;
@@ -878,23 +875,23 @@ static void replace_char(char *string, char from, char to, int maxlen)
 }
 
 /* Note that caller frees the returned buffer if necessary */
-static char * parse_server(char ** punc_name)
+static struct addrinfo *
+parse_server(char ** punc_name)
 {
 	char * unc_name = *punc_name;
 	int length = strnlen(unc_name, MAX_UNC_LEN);
 	char * share;
-	char * ipaddress_string = NULL;
-	struct hostent * host_entry = NULL;
-	struct in_addr server_ipaddr;
+	struct addrinfo *addrlist;
+	int rc;
 
 	if(length > (MAX_UNC_LEN - 1)) {
 		printf("mount error: UNC name too long");
 		return NULL;
 	}
-	if (strncasecmp("cifs://",unc_name,7) == 0)
-		return parse_cifs_url(unc_name+7);
-	if (strncasecmp("smb://",unc_name,6) == 0) {
-		return parse_cifs_url(unc_name+6);
+	if ((strncasecmp("cifs://", unc_name, 7) == 0) ||
+	    (strncasecmp("smb://", unc_name, 6) == 0)) {
+		printf("\nMounting cifs URL not implemented yet. Attempt to mount %s\n", unc_name);
+		return NULL;
 	}
 
 	if(length < 3) {
@@ -935,7 +932,12 @@ continue_unc_parsing:
 				*share = 0;  /* temporarily terminate the string */
 				share += 1;
 				if(got_ip == 0) {
-					host_entry = gethostbyname(unc_name);
+					rc = getaddrinfo(unc_name, NULL, NULL, &addrlist);
+					if (rc != 0) {
+						printf("mount error: could not resolve address for %s: %s\n",
+							unc_name, gai_strerror(rc));
+						addrlist = NULL;
+					}
 				}
 				*(share - 1) = '/'; /* put delimiter back */
 
@@ -950,23 +952,9 @@ continue_unc_parsing:
 						printf("ip address specified explicitly\n");
 					return NULL;
 				}
-				if(host_entry == NULL) {
-					printf("mount error: could not find target server. TCP name %s not found\n", unc_name);
-					return NULL;
-				} else {
-					/* BB should we pass an alternate version of the share name as Unicode */
-					/* BB what about ipv6? BB */
-					/* BB add retries with alternate servers in list */
+				/* BB should we pass an alternate version of the share name as Unicode */
 
-					memcpy(&server_ipaddr.s_addr, host_entry->h_addr, 4);
-
-					ipaddress_string = inet_ntoa(server_ipaddr);                                                                                     
-					if(ipaddress_string == NULL) {
-						printf("mount error: could not get valid ip address for target server\n");
-						return NULL;
-					}
-					return ipaddress_string; 
-				}
+				return addrlist; 
 			} else {
 				/* BB add code to find DFS root (send null path on get DFS Referral to specified server here */
 				printf("Mounting the DFS root for a particular server not implemented yet\n");
@@ -1030,10 +1018,11 @@ int main(int argc, char ** argv)
 	int flags = MS_MANDLOCK; /* no need to set legacy MS_MGC_VAL */
 	char * orgoptions = NULL;
 	char * share_name = NULL;
-	char * ipaddr = NULL;
+	const char * ipaddr = NULL;
 	char * uuid = NULL;
 	char * mountpoint = NULL;
 	char * options = NULL;
+	char * optionstail;
 	char * resolved_path = NULL;
 	char * temp;
 	char * dev_name;
@@ -1046,10 +1035,14 @@ int main(int argc, char ** argv)
 	int optlen = 0;
 	int orgoptlen = 0;
 	size_t options_size = 0;
+	size_t current_len;
 	int retry = 0; /* set when we have to retry mount with uppercase */
+	struct addrinfo *addrhead = NULL, *addr;
 	struct stat statbuf;
 	struct utsname sysinfo;
 	struct mntent mountent;
+	struct sockaddr_in *addr4;
+	struct sockaddr_in6 *addr6;
 	FILE * pmntfile;
 
 	/* setlocale(LC_ALL, "");
@@ -1241,8 +1234,8 @@ int main(int argc, char ** argv)
                 rc = EX_USAGE;
 		goto mount_exit;
 	}
-	ipaddr = parse_server(&share_name);
-	if((ipaddr == NULL) && (got_ip == 0)) {
+	addrhead = addr = parse_server(&share_name);
+	if((addrhead == NULL) && (got_ip == 0)) {
 		printf("No ip address specified and hostname not found\n");
 		rc = EX_USAGE;
 		goto mount_exit;
@@ -1306,7 +1299,6 @@ int main(int argc, char ** argv)
 	}
 	/* FIXME launch daemon (handles dfs name resolution and credential change) 
 	   remember to clear parms and overwrite password field before launching */
-mount_retry:
 	if(orgoptions) {
 		optlen = strlen(orgoptions);
 		orgoptlen = optlen;
@@ -1321,10 +1313,10 @@ mount_retry:
 	}
 	if(user_name)
 		optlen += strlen(user_name) + 6;
-	if(ipaddr)
-		optlen += strlen(ipaddr) + 4;
+	optlen += MAX_ADDRESS_LEN + 4;
 	if(mountpassword)
 		optlen += strlen(mountpassword) + 6;
+mount_retry:
 	SAFE_FREE(options);
 	options_size = optlen + 10 + DOMAIN_SIZE;
 	options = (char *)malloc(options_size /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
@@ -1334,18 +1326,12 @@ mount_retry:
 		exit(EX_SYSERR);
 	}
 
-	options[0] = 0;
-	strlcpy(options,"unc=",options_size);
+	strlcpy(options, "unc=", options_size);
 	strlcat(options,share_name,options_size);
 	/* scan backwards and reverse direction of slash */
 	temp = strrchr(options, '/');
 	if(temp > options + 6)
 		*temp = '\\';
-	if(ipaddr) {
-		strlcat(options,",ip=",options_size);
-		strlcat(options,ipaddr,options_size);
-	}
-
 	if(user_name) {
 		/* check for syntax like user=domain\user */
 		if(got_domain == 0)
@@ -1387,11 +1373,42 @@ mount_retry:
 	/* convert all '\\' to '/' in share portion so that /proc/mounts looks pretty */
 	replace_char(dev_name, '\\', '/', strlen(share_name));
 
-	if(mount(dev_name, mountpoint, "cifs", flags, options)) {
-	/* remember to kill daemon on error */
+	if (!got_ip && addr) {
+		strlcat(options, ",ip=", options_size);
+		current_len = strnlen(options, options_size);
+		optionstail = options + current_len;
+		switch (addr->ai_addr->sa_family) {
+		case AF_INET6:
+			addr6 = (struct sockaddr_in6 *) addr->ai_addr;
+			ipaddr = inet_ntop(AF_INET6, &addr6->sin6_addr, optionstail,
+					   options_size - current_len);
+			break;
+		case AF_INET:
+			addr4 = (struct sockaddr_in *) addr->ai_addr;
+			ipaddr = inet_ntop(AF_INET, &addr4->sin_addr, optionstail,
+					   options_size - current_len);
+			break;
+		}
+
+		/* if the address looks bogus, try the next one */
+		if (!ipaddr) {
+			addr = addr->ai_next;
+			if (addr)
+				goto mount_retry;
+			rc = EX_SYSERR;
+			goto mount_exit;
+		}
+	}
+
+	if (mount(dev_name, mountpoint, "cifs", flags, options)) {
 		switch (errno) {
-		case 0:
-			printf("mount failed but no error number set\n");
+		case ECONNREFUSED:
+		case EHOSTUNREACH:
+			if (addr) {
+				addr = addr->ai_next;
+				if (addr)
+					goto mount_retry;
+			}
 			break;
 		case ENODEV:
 			printf("mount error: cifs filesystem not supported by the system\n");
@@ -1406,64 +1423,64 @@ mount_retry:
 					goto mount_retry;
 				}
 			}
-		default:
-			printf("mount error %d = %s\n",errno,strerror(errno));
 		}
+		printf("mount error(%d): %s\n", errno, strerror(errno));
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
 		rc = EX_FAIL;
-	} else {
-		atexit(unlock_mtab);
-		rc = lock_mtab();
-		if (rc) {
-			printf("cannot lock mtab");
-			goto mount_exit;
-		}
-		pmntfile = setmntent(MOUNTED, "a+");
-		if (!pmntfile) {
-			printf("could not update mount table\n");
-			unlock_mtab();
-			rc = EX_FILEIO;
-			goto mount_exit;
-		}
-		mountent.mnt_fsname = dev_name;
-		mountent.mnt_dir = mountpoint;
-		mountent.mnt_type = CONST_DISCARD(char *,"cifs");
-		mountent.mnt_opts = (char *)malloc(220);
-		if(mountent.mnt_opts) {
-			char * mount_user = getusername();
-			memset(mountent.mnt_opts,0,200);
-			if(flags & MS_RDONLY)
-				strlcat(mountent.mnt_opts,"ro",220);
-			else
-				strlcat(mountent.mnt_opts,"rw",220);
-			if(flags & MS_MANDLOCK)
-				strlcat(mountent.mnt_opts,",mand",220);
-			if(flags & MS_NOEXEC)
-				strlcat(mountent.mnt_opts,",noexec",220);
-			if(flags & MS_NOSUID)
-				strlcat(mountent.mnt_opts,",nosuid",220);
-			if(flags & MS_NODEV)
-				strlcat(mountent.mnt_opts,",nodev",220);
-			if(flags & MS_SYNCHRONOUS)
-				strlcat(mountent.mnt_opts,",sync",220);
-			if(mount_user) {
-				if(getuid() != 0) {
-					strlcat(mountent.mnt_opts,
-						",user=", 220);
-					strlcat(mountent.mnt_opts,
-						mount_user, 220);
-				}
+		goto mount_exit;
+	}
+
+	atexit(unlock_mtab);
+	rc = lock_mtab();
+	if (rc) {
+		printf("cannot lock mtab");
+		goto mount_exit;
+	}
+	pmntfile = setmntent(MOUNTED, "a+");
+	if (!pmntfile) {
+		printf("could not update mount table\n");
+		unlock_mtab();
+		rc = EX_FILEIO;
+		goto mount_exit;
+	}
+	mountent.mnt_fsname = dev_name;
+	mountent.mnt_dir = mountpoint;
+	mountent.mnt_type = CONST_DISCARD(char *,"cifs");
+	mountent.mnt_opts = (char *)malloc(220);
+	if(mountent.mnt_opts) {
+		char * mount_user = getusername();
+		memset(mountent.mnt_opts,0,200);
+		if(flags & MS_RDONLY)
+			strlcat(mountent.mnt_opts,"ro",220);
+		else
+			strlcat(mountent.mnt_opts,"rw",220);
+		if(flags & MS_MANDLOCK)
+			strlcat(mountent.mnt_opts,",mand",220);
+		if(flags & MS_NOEXEC)
+			strlcat(mountent.mnt_opts,",noexec",220);
+		if(flags & MS_NOSUID)
+			strlcat(mountent.mnt_opts,",nosuid",220);
+		if(flags & MS_NODEV)
+			strlcat(mountent.mnt_opts,",nodev",220);
+		if(flags & MS_SYNCHRONOUS)
+			strlcat(mountent.mnt_opts,",sync",220);
+		if(mount_user) {
+			if(getuid() != 0) {
+				strlcat(mountent.mnt_opts,
+					",user=", 220);
+				strlcat(mountent.mnt_opts,
+					mount_user, 220);
 			}
 		}
-		mountent.mnt_freq = 0;
-		mountent.mnt_passno = 0;
-		rc = addmntent(pmntfile,&mountent);
-		endmntent(pmntfile);
-		unlock_mtab();
-		SAFE_FREE(mountent.mnt_opts);
-		if (rc)
-			rc = EX_FILEIO;
 	}
+	mountent.mnt_freq = 0;
+	mountent.mnt_passno = 0;
+	rc = addmntent(pmntfile,&mountent);
+	endmntent(pmntfile);
+	unlock_mtab();
+	SAFE_FREE(mountent.mnt_opts);
+	if (rc)
+		rc = EX_FILEIO;
 mount_exit:
 	if(mountpassword) {
 		int len = strlen(mountpassword);
@@ -1471,6 +1488,8 @@ mount_exit:
 		SAFE_FREE(mountpassword);
 	}
 
+	if (addrhead)
+		freeaddrinfo(addrhead);
 	SAFE_FREE(options);
 	SAFE_FREE(orgoptions);
 	SAFE_FREE(resolved_path);
