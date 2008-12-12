@@ -1727,7 +1727,7 @@ struct netr_ServerGetTrustInfo {
 		struct samr_Password *new_owf_password;/* [ref] */
 		struct samr_Password *old_owf_password;/* [ref] */
 		struct netr_TrustInfo **trust_info;/* [ref] */
-		WERROR result;
+		NTSTATUS result;
 	} out;
 
 };

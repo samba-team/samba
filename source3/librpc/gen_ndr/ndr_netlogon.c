@@ -15613,7 +15613,7 @@ static enum ndr_err_code ndr_push_netr_ServerGetTrustInfo(struct ndr_push *ndr, 
 		if (*r->out.trust_info) {
 			NDR_CHECK(ndr_push_netr_TrustInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.trust_info));
 		}
-		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -15721,7 +15721,7 @@ static enum ndr_err_code ndr_pull_netr_ServerGetTrustInfo(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trust_info_1, 0);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trust_info_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -15781,7 +15781,7 @@ _PUBLIC_ void ndr_print_netr_ServerGetTrustInfo(struct ndr_print *ndr, const cha
 		}
 		ndr->depth--;
 		ndr->depth--;
-		ndr_print_WERROR(ndr, "result", r->out.result);
+		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
