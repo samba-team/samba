@@ -918,7 +918,7 @@ static void reply_spnego_auth(struct smb_request *req,
 			DEBUG(3,("reply_spnego_auth: network "
 				"misconfiguration, client sent us a "
 				"krb5 ticket and kerberos security "
-				"not enabled"));
+				"not enabled\n"));
 			reply_nterror(req, nt_status_squash(
 					NT_STATUS_LOGON_FAILURE));
 			SAFE_FREE(kerb_mech);
