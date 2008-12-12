@@ -148,6 +148,18 @@ start() {
 
 stop() {
 	echo -n $"Shutting down ctdbd service: "
+	ctdb ping >& /dev/null || {
+	    echo -n "  Warning: ctdbd not running ! "
+	    case $init_style in
+		suse)
+		    rc_status -v
+		    ;;
+		redhat)
+		    echo ""
+		    ;;
+	    esac
+	    return 0
+	}
 	ctdb shutdown
 	RETVAL=$?
 	count=0
