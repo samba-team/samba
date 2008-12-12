@@ -116,7 +116,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 	if (resolve_ctx != NULL && server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
 		struct nbt_name name;
 		struct composite_context *creq;
-		make_nbt_name_client(&name, server_address->addr);
+		make_nbt_name_server(&name, server_address->addr);
 		creq = resolve_name_send(resolve_ctx, &name, result->event_ctx);
 		if (composite_nomem(creq, result)) return result;
 		composite_continue(result, creq, continue_resolve_name, result);
