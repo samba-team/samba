@@ -68,6 +68,13 @@ ctdb_test_exit ()
     if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
 	echo "Restarting ctdb on all nodes to get back into known state..."
 	restart_ctdb
+    else
+	# This could be made unconditional but then we might get
+	# duplication from the recovery in restart_ctdb.  We want to
+	# leave the recovery in restart_ctdb so that future tests that
+	# might do a manual restart mid-test will benefit.
+	echo "Forcing a recovery..."
+	onnode 0 ctdb recover
     fi
 
     test_exit
