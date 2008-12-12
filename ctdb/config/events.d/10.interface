@@ -100,13 +100,13 @@ case $cmd in
 	# this _very_ annoying behaviour we have to keep a record of the secondaries and re-add
 	# them afterwards. yuck
 	secondaries=""
-	if /sbin/ip addr list dev $iface primary | grep "inet $ip/$maskbits " > /dev/null; then
+	if /sbin/ip addr list dev $iface primary | grep -q "inet $ip/$maskbits " ; then
 	    secondaries=`/sbin/ip addr list dev $iface secondary | grep " inet " | awk '{print $2}'`
 	fi
 	/sbin/ip addr del $ip/$maskbits dev $iface || failed=1
 	[ -z "$secondaries" ] || {
 	    for i in $secondaries; do
-		if /sbin/ip addr list dev $iface | grep "inet $i" > /dev/null; then
+		if /sbin/ip addr list dev $iface | grep -q "inet $i" ; then
 		    echo "kept secondary $i on dev $iface"
 		else 
 		    echo "re-adding secondary address $i to dev $iface"
@@ -147,7 +147,7 @@ case $cmd in
 	    case $IFACE in 
 	    bond*)
 		IFACE=`echo $IFACE |sed -e 's/\....$//'`
-		grep '^MII Status: up' /proc/net/bonding/$IFACE > /dev/null || {
+		grep -q '^MII Status: up' /proc/net/bonding/$IFACE || {
 			echo "ERROR: public network interface $IFACE is down"
 			exit 1
 		}
@@ -157,9 +157,16 @@ case $cmd in
 		;;
 	    *)
 		[ -z "$IFACE" ] || {
-	    	    /usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
-			echo "ERROR: No link on the public network interface $IFACE"
-			exit 1
+		    /usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+			# On some systems, this is not successful when a
+			# cable is plugged but the interface has not been
+			# brought up previously. Bring the interface up and
+			# try again...
+			/sbin/ip link set $IFACE up
+			/usr/sbin/ethtool $IFACE | grep -q 'Link detected: yes' || {
+			    echo "ERROR: No link on the public network interface $IFACE"
+			    exit 1
+			}
 	    	    }
 		}
 		;;
