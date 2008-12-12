@@ -170,35 +170,35 @@ static void terminate(bool is_parent)
 	exit(0);
 }
 
-static bool do_sigterm;
+static SIG_ATOMIC_T do_sigterm = 0;
 
 static void termination_handler(int signum)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 	sys_select_signal(signum);
 }
 
-static bool do_sigusr2;
+static SIG_ATOMIC_T do_sigusr2 = 0;
 
 static void sigusr2_handler(int signum)
 {
-	do_sigusr2 = True;
+	do_sigusr2 = 1;
 	sys_select_signal(SIGUSR2);
 }
 
-static bool do_sighup;
+static SIG_ATOMIC_T do_sighup = 0;
 
 static void sighup_handler(int signum)
 {
-	do_sighup = True;
+	do_sighup = 1;
 	sys_select_signal(SIGHUP);
 }
 
-static bool do_sigchld;
+static SIG_ATOMIC_T do_sigchld = 0;
 
 static void sigchld_handler(int signum)
 {
-	do_sigchld = True;
+	do_sigchld = 1;
 	sys_select_signal(SIGCHLD);
 }
 
@@ -221,7 +221,7 @@ static void msg_shutdown(struct messaging_context *msg,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 }
 
 
@@ -822,7 +822,7 @@ void winbind_check_sighup(const char *logfile)
 		flush_caches();
 		reload_services_file(logfile);
 
-		do_sighup = False;
+		do_sighup = 0;
 	}
 }
 
@@ -997,13 +997,13 @@ static void process_loop(void)
 
 	if (do_sigusr2) {
 		print_winbindd_status();
-		do_sigusr2 = False;
+		do_sigusr2 = 0;
 	}
 
 	if (do_sigchld) {
 		pid_t pid;
 
-		do_sigchld = False;
+		do_sigchld = 0;
 
 		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
 			winbind_child_died(pid);
