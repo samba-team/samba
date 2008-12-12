@@ -39,24 +39,15 @@ static void socket_connect_handler(struct event_context *ev,
 				   struct fd_event *fde, 
 				   uint16_t flags, void *private);
 static void continue_resolve_name(struct composite_context *ctx);
-static void continue_socket_connect(struct composite_context *creq);
 
 /*
   call the real socket_connect() call, and setup event handler
 */
 static void socket_send_connect(struct composite_context *result)
 {
-	struct composite_context *creq;
 	struct fd_event *fde;
 	struct connect_state *state = talloc_get_type(result->private_data, 
 						      struct connect_state);
-
-	creq = talloc_zero(state, struct composite_context);
-	if (composite_nomem(creq, result)) return;
-	creq->state = COMPOSITE_STATE_IN_PROGRESS;
-	creq->event_ctx = result->event_ctx;
-	creq->async.fn = continue_socket_connect;
-	creq->async.private_data = result;
 
 	result->status = socket_connect(state->sock,
 					state->my_address,
@@ -174,19 +165,6 @@ static void continue_resolve_name(struct composite_context *creq)
 
 	socket_send_connect(result);
 }
-
-/*
-  called when a connect has finished. Complete the top level composite context
-*/
-static void continue_socket_connect(struct composite_context *creq)
-{
-	struct composite_context *result = talloc_get_type(creq->async.private_data, 
-							   struct composite_context);
-	result->status = creq->status;
-	if (!composite_is_ok(result)) return;
-	composite_done(result);
-}
-
 
 /*
   wait for a socket_connect_send() to finish
