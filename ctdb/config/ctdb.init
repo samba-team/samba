@@ -91,6 +91,10 @@ else if [ -x /sbin/start-stop-daemon ]; then
 fi
 fi
 
+reset_retval() {
+	return $1
+}
+
 start() {
         killall -q ctdbd
 	echo -n $"Starting ctdbd service: "
@@ -163,6 +167,9 @@ stop() {
 	done
 	case $init_style in
 	    suse)
+		# re-set the return code to the recorded RETVAL
+		# in order to print the correct status message
+		set_retval $RETVAL
 		rc_status -v
 		;;
 	    redhat)
