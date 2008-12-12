@@ -479,7 +479,7 @@ _restart_ctdb ()
 setup_ctdb ()
 {
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
-	daemons_setup $CTDB_NUM_NODES
+	daemons_setup $CTDB_TEST_NUM_DAEMONS
     fi
 }
 
@@ -487,7 +487,7 @@ restart_ctdb ()
 {
     if [ -n "$CTDB_NODES_SOCKETS" ] ; then
 	daemons_stop
-	daemons_start $CTDB_NUM_NODES
+	daemons_start $CTDB_TEST_NUM_DAEMONS
     else
 	onnode -pq all $CTDB_TEST_WRAPPER _restart_ctdb 
     fi || return 1
@@ -496,6 +496,12 @@ restart_ctdb ()
 
     echo "Setting RerecoveryTimeout to 1"
     onnode -pq all "ctdb setvar RerecoveryTimeout 1"
+
+    # In recent versions of CTDB, forcing a recovery like this blocks
+    # until the recovery is complete.  Hopefully this will help the
+    # cluster to stabilise before a subsequent test.
+    echo "Forcing a recovery..."
+    onnode -q 0 ctdb recover
 
     #echo "Sleeping to allow ctdb to settle..."
     #sleep_for 10

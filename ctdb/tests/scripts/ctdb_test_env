@@ -3,8 +3,6 @@
 export CTDB_DIR=$(cd $(dirname $(dirname $(dirname $0))) ; pwd)
 var_dir=$CTDB_DIR/tests/var
 
-export CTDB_NUM_NODES=3
-
 ######################################################################
 
 ctdb_bin_dir=$CTDB_DIR/bin
@@ -23,8 +21,10 @@ fi
 export CTDB_TEST_WRAPPER
 
 if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+    export CTDB_TEST_NUM_DAEMONS=3
+
     export CTDB_NODES_SOCKETS=""
-    for i in $(seq 0 $(($CTDB_NUM_NODES -1))) ; do
+    for i in $(seq 0 $(($CTDB_TEST_NUM_DAEMONS -1))) ; do
 	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
     done
 
