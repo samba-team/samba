@@ -199,6 +199,22 @@ restart() {
 }	
 
 status() {
+	echo -n $"Checking for ctdbd service: "
+	ctdb ping >& /dev/null || {
+	    RETVAL=$?
+	    echo -n "  ctdbd not running. "
+	    case $init_style in
+		suse)
+		    set_retval $RETVAL
+		    rc_status -v
+		    ;;
+		redhat)
+		    echo ""
+		    ;;
+	    esac
+	    return $RETVAL
+	}
+	echo ""
 	ctdb status
 }	
 
