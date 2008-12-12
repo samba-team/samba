@@ -648,7 +648,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
-	pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
+	pkt.u.bind_ack.assoc_group_id = iface?call->context->assoc_group_id:0;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
