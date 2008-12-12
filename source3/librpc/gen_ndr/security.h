@@ -4,6 +4,9 @@
 
 #include "librpc/gen_ndr/misc.h"
 #include "librpc/gen_ndr/dom_sid.h"
+#define dom_sid2 dom_sid
+#define dom_sid28 dom_sid
+#define dom_sid0 dom_sid
 #ifndef _HEADER_security
 #define _HEADER_security
 
@@ -129,6 +132,13 @@
 #define DOMAIN_RID_ENTERPRISE_ADMINS	( 519 )
 #define NT4_ACL_REVISION	( SECURITY_ACL_REVISION_NT4 )
 #define SD_REVISION	( SECURITY_DESCRIPTOR_REVISION_1 )
+struct dom_sid {
+	uint8_t sid_rev_num;
+	int8_t num_auths;/* [range(0,15)] */
+	uint8_t id_auth[6];
+	uint32_t sub_auths[15];
+}/* [noprint,gensize,nopull,public,nopush,nosize] */;
+
 enum sec_privilege
 #ifndef USE_UINT_ENUMS
  {

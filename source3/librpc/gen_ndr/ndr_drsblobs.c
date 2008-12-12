@@ -2351,7 +2351,6 @@ static enum ndr_err_code ndr_push_AuthInfoNT4Owf(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->password));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_BUFFERS, &r->password));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2364,7 +2363,6 @@ static enum ndr_err_code ndr_pull_AuthInfoNT4Owf(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->password));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_BUFFERS, &r->password));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2477,7 +2475,6 @@ static enum ndr_err_code ndr_push_AuthInfo(struct ndr_push *ndr, int ndr_flags, 
 			break;
 
 			case TRUST_AUTH_TYPE_NT4OWF:
-				NDR_CHECK(ndr_push_AuthInfoNT4Owf(ndr, NDR_BUFFERS, &r->nt4owf));
 			break;
 
 			case TRUST_AUTH_TYPE_CLEAR:
@@ -2525,7 +2522,6 @@ static enum ndr_err_code ndr_pull_AuthInfo(struct ndr_pull *ndr, int ndr_flags, 
 			break;
 
 			case TRUST_AUTH_TYPE_NT4OWF:
-				NDR_CHECK(ndr_pull_AuthInfoNT4Owf(ndr, NDR_BUFFERS, &r->nt4owf));
 			break;
 
 			case TRUST_AUTH_TYPE_CLEAR:
@@ -2584,7 +2580,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_AuthenticationInformation(struct ndr_push *n
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_AuthInfo(ndr, NDR_BUFFERS, &r->AuthInfo));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2605,7 +2600,6 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AuthenticationInformation(struct ndr_pull *n
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_AuthInfo(ndr, NDR_BUFFERS, &r->AuthInfo));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2641,7 +2635,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, 
 		for (cntr_current_0 = 0; cntr_current_0 < r->count; cntr_current_0++) {
 			if (r->current[cntr_current_0]) {
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->current[cntr_current_0]));
-				NDR_CHECK(ndr_push_AuthenticationInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->current[cntr_current_0]));
+				NDR_CHECK(ndr_push_AuthenticationInformation(ndr, NDR_SCALARS, r->current[cntr_current_0]));
 			}
 		}
 	}
@@ -2681,7 +2675,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_trustCurrentPasswords(struct ndr_pull *ndr, 
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->current[cntr_current_0]));
 				_mem_save_current_1 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->current[cntr_current_0], 0);
-				NDR_CHECK(ndr_pull_AuthenticationInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->current[cntr_current_0]));
+				NDR_CHECK(ndr_pull_AuthenticationInformation(ndr, NDR_SCALARS, r->current[cntr_current_0]));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_current_1, 0);
 				ndr->offset = _relative_save_offset;
 			}

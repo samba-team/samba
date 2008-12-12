@@ -11,7 +11,7 @@ struct GUID {
 	uint16_t time_hi_and_version;
 	uint8_t clock_seq[2];
 	uint8_t node[6];
-}/* [noprint,gensize,public,noejs] */;
+}/* [noprint,gensize,public] */;
 
 struct ndr_syntax_id {
 	struct GUID uuid;

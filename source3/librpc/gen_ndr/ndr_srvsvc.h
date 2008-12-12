@@ -186,7 +186,11 @@ void ndr_print_srvsvc_NetShareInfoCtr(struct ndr_print *ndr, const char *name, c
 enum ndr_err_code ndr_push_srvsvc_PlatformId(struct ndr_push *ndr, int ndr_flags, enum srvsvc_PlatformId r);
 enum ndr_err_code ndr_pull_srvsvc_PlatformId(struct ndr_pull *ndr, int ndr_flags, enum srvsvc_PlatformId *r);
 void ndr_print_srvsvc_PlatformId(struct ndr_print *ndr, const char *name, enum srvsvc_PlatformId r);
+enum ndr_err_code ndr_push_srvsvc_NetSrvInfo100(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo100 *r);
+enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo100(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo100 *r);
 void ndr_print_srvsvc_NetSrvInfo100(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo100 *r);
+enum ndr_err_code ndr_push_srvsvc_NetSrvInfo101(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo101 *r);
+enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo101(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo101 *r);
 void ndr_print_srvsvc_NetSrvInfo101(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo101 *r);
 void ndr_print_srvsvc_NetSrvInfo102(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo102 *r);
 void ndr_print_srvsvc_NetSrvInfo402(struct ndr_print *ndr, const char *name, const struct srvsvc_NetSrvInfo402 *r);

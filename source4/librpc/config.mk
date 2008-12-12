@@ -54,10 +54,9 @@ PUBLIC_DEPENDENCIES = LIBNDR LIBSECURITY
 
 NDR_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security.o \
 			 ../librpc/ndr/ndr_sec_helper.o \
-			 $(gen_ndrsrcdir)/ndr_dom_sid.o \
-			 $(ndrsrcdir)/ndr_dom_sid.o
+			 $(gen_ndrsrcdir)/ndr_dom_sid.o
 
-PUBLIC_HEADERS += $(addprefix $(gen_ndrsrcdir)/, security.h dom_sid.h)
+PUBLIC_HEADERS += $(addprefix $(gen_ndrsrcdir)/, security.h)
 
 
 [SUBSYSTEM::NDR_AUDIOSRV]
@@ -737,15 +736,9 @@ PRIVATE_DEPENDENCIES = RPC_NDR_DRSUAPI PYTALLOC param swig_credentials python_dc
 
 python_drsuapi_OBJ_FILES = $(gen_ndrsrcdir)/py_drsuapi.o
 
-[PYTHON::python_dcerpc_dom_sid]
-LIBRARY_REALNAME = samba/dcerpc/dom_sid.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
-
-python_dcerpc_dom_sid_OBJ_FILES = $(gen_ndrsrcdir)/py_dom_sid.o
-
 [PYTHON::python_dcerpc_security]
 LIBRARY_REALNAME = samba/dcerpc/security.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc_dom_sid python_dcerpc
+PRIVATE_DEPENDENCIES = PYTALLOC python_dcerpc_misc python_dcerpc
 
 python_dcerpc_security_OBJ_FILES = $(gen_ndrsrcdir)/py_security.o
 

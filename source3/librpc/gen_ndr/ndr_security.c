@@ -427,7 +427,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
-		NDR_CHECK(ndr_push_dom_sid(ndr, NDR_BUFFERS, &r->trustee));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -621,11 +620,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_descriptor(struct ndr_push *ndr, in
 		if (ndr_flags & NDR_BUFFERS) {
 			if (r->owner_sid) {
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->owner_sid));
-				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->owner_sid));
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->owner_sid));
 			}
 			if (r->group_sid) {
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->group_sid));
-				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->group_sid));
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->group_sid));
 			}
 			if (r->sacl) {
 				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->sacl));
@@ -694,7 +693,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->owner_sid));
 				_mem_save_owner_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->owner_sid, 0);
-				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->owner_sid));
+				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->owner_sid));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_owner_sid_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
@@ -704,7 +703,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_descriptor(struct ndr_pull *ndr, in
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->group_sid));
 				_mem_save_group_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->group_sid, 0);
-				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->group_sid));
+				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->group_sid));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_group_sid_0, 0);
 				ndr->offset = _relative_save_offset;
 			}
@@ -855,14 +854,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_token(struct ndr_push *ndr, int ndr
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		if (r->user_sid) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->user_sid));
+			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->user_sid));
 		}
 		if (r->group_sid) {
-			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->group_sid));
+			NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->group_sid));
 		}
 		for (cntr_sids_0 = 0; cntr_sids_0 < r->num_sids; cntr_sids_0++) {
 			if (r->sids[cntr_sids_0]) {
-				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->sids[cntr_sids_0]));
+				NDR_CHECK(ndr_push_dom_sid(ndr, NDR_SCALARS, r->sids[cntr_sids_0]));
 			}
 		}
 	}
@@ -916,13 +915,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 		if (r->user_sid) {
 			_mem_save_user_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->user_sid, 0);
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->user_sid));
+			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->user_sid));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_user_sid_0, 0);
 		}
 		if (r->group_sid) {
 			_mem_save_group_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->group_sid, 0);
-			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->group_sid));
+			NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->group_sid));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_group_sid_0, 0);
 		}
 		_mem_save_sids_0 = NDR_PULL_GET_MEM_CTX(ndr);
@@ -931,7 +930,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_token(struct ndr_pull *ndr, int ndr
 			if (r->sids[cntr_sids_0]) {
 				_mem_save_sids_1 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->sids[cntr_sids_0], 0);
-				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS|NDR_BUFFERS, r->sids[cntr_sids_0]));
+				NDR_CHECK(ndr_pull_dom_sid(ndr, NDR_SCALARS, r->sids[cntr_sids_0]));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_1, 0);
 			}
 		}

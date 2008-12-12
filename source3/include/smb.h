@@ -209,18 +209,7 @@ typedef uint32 codepoint_t;
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct dom_sid {
-	uint8  sid_rev_num;             /**< SID revision number */
-	uint8  num_auths;               /**< Number of sub-authorities */
-	uint8  id_auth[6];              /**< Identifier Authority */
-	/*
-	 *  Pointer to sub-authorities.
-	 *
-	 * @note The values in these uint32's are in *native* byteorder, not
-	 * neccessarily little-endian...... JRA.
-	 */
-	uint32 sub_auths[MAXSUBAUTHS];  
-} DOM_SID;
+typedef struct dom_sid DOM_SID;
 
 enum id_mapping {
 	ID_UNKNOWN = 0,
