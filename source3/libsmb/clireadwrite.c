@@ -36,6 +36,41 @@ static size_t cli_read_max_bufsize(struct cli_state *cli)
 	return (cli->max_xmit - (smb_size+32)) & ~1023;
 }
 
+/****************************************************************************
+  Calculate the recommended write buffer size
+****************************************************************************/
+static size_t cli_write_max_bufsize(struct cli_state *cli, uint16_t write_mode)
+{
+        if (write_mode == 0 &&
+	    !client_is_signing_on(cli) &&
+	    !cli_encryption_on(cli) &&
+	    (cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
+	    (cli->capabilities & CAP_LARGE_FILES)) {
+		/* Only do massive writes if we can do them direct
+		 * with no signing or encrypting - not on a pipe. */
+		return CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
+	}
+
+	if (cli->is_samba) {
+		return CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
+	}
+
+	if (((cli->capabilities & CAP_LARGE_WRITEX) == 0)
+	    || client_is_signing_on(cli)
+	    || strequal(cli->dev, "LPT1:")) {
+
+		/*
+		 * Printer devices are restricted to max_xmit writesize in
+		 * Vista and XPSP3 as are signing connections.
+		 */
+
+		return (cli->max_xmit - (smb_size+32)) & ~1023;
+	}
+
+	return CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
+}
+
+
 /*
  * Send a read&x request
  */
@@ -614,31 +649,7 @@ ssize_t cli_write(struct cli_state *cli,
 		mpx = 1;
 	}
 
-	/* Default (small) writesize. */
-	writesize = (cli->max_xmit - (smb_size+32)) & ~1023;
-
-        if (write_mode == 0 &&
-			!client_is_signing_on(cli) &&
-			!cli_encryption_on(cli) &&
-			(cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
-			(cli->capabilities & CAP_LARGE_FILES)) {
-		/* Only do massive writes if we can do them direct
-		 * with no signing or encrypting - not on a pipe. */
-		writesize = CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
-	} else if ((cli->capabilities & CAP_LARGE_WRITEX) &&
-			(strcmp(cli->dev, "LPT1:") != 0)) {
-
-		/* Printer devices are restricted to max_xmit
-		 * writesize in Vista and XPSP3. */
-
-		if (cli->is_samba) {
-			writesize = CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
-		} else if (!client_is_signing_on(cli)) {
-			/* Windows restricts signed writes to max_xmit.
-			 * Found by Volker. */
-			writesize = CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
-		}
-	}
+	writesize = cli_write_max_bufsize(cli, write_mode);
 
 	blocks = (size + (writesize-1)) / writesize;
 
