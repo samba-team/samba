@@ -22,19 +22,18 @@
 
 static const struct {
 	int prot;
-	const char *name;
-} prots[] = {
-	{PROTOCOL_CORE,"PC NETWORK PROGRAM 1.0"},
-	{PROTOCOL_COREPLUS,"MICROSOFT NETWORKS 1.03"},
-	{PROTOCOL_LANMAN1,"MICROSOFT NETWORKS 3.0"},
-	{PROTOCOL_LANMAN1,"LANMAN1.0"},
-	{PROTOCOL_LANMAN2,"LM1.2X002"},
-	{PROTOCOL_LANMAN2,"DOS LANMAN2.1"},
-	{PROTOCOL_LANMAN2,"LANMAN2.1"},
-	{PROTOCOL_LANMAN2,"Samba"},
-	{PROTOCOL_NT1,"NT LANMAN 1.0"},
-	{PROTOCOL_NT1,"NT LM 0.12"},
-	{-1,NULL}
+	const char name[24];
+} prots[10] = {
+	{PROTOCOL_CORE,		"PC NETWORK PROGRAM 1.0"},
+	{PROTOCOL_COREPLUS,	"MICROSOFT NETWORKS 1.03"},
+	{PROTOCOL_LANMAN1,	"MICROSOFT NETWORKS 3.0"},
+	{PROTOCOL_LANMAN1,	"LANMAN1.0"},
+	{PROTOCOL_LANMAN2,	"LM1.2X002"},
+	{PROTOCOL_LANMAN2,	"DOS LANMAN2.1"},
+	{PROTOCOL_LANMAN2,	"LANMAN2.1"},
+	{PROTOCOL_LANMAN2,	"Samba"},
+	{PROTOCOL_NT1,		"NT LANMAN 1.0"},
+	{PROTOCOL_NT1,		"NT LM 0.12"},
 };
 
 static const char *star_smbserver_name = "*SMBSERVER";
@@ -1221,9 +1220,10 @@ void cli_negprot_send(struct cli_state *cli)
 	cli_set_message(cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
-	for (numprots=0;
-	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
-	     numprots++) {
+	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
+		if (prots[numprots].prot > cli->protocol) {
+			break;
+		}
 		*p++ = 2;
 		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
@@ -1252,18 +1252,23 @@ bool cli_negprot(struct cli_state *cli)
 
 	memset(cli->outbuf,'\0',smb_size);
 
+	plength = 0;
+
 	/* setup the protocol strings */
-	for (plength=0,numprots=0;
-	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
-	     numprots++)
+	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
+		if (prots[numprots].prot > cli->protocol) {
+			break;
+		}
 		plength += strlen(prots[numprots].name)+2;
+	}
 
 	cli_set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
-	for (numprots=0;
-	     prots[numprots].name && prots[numprots].prot<=cli->protocol;
-	     numprots++) {
+	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
+		if (prots[numprots].prot > cli->protocol) {
+			break;
+		}
 		*p++ = 2;
 		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
 	}
