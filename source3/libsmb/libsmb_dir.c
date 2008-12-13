@@ -1193,8 +1193,6 @@ SMBC_mkdir_ctx(SMBCCTX *context,
  * Our list function simply checks to see if a directory is not empty
  */
 
-static int smbc_rmdir_dirempty = True;
-
 static void
 rmdir_list_fn(const char *mnt,
               file_info *finfo,
@@ -1203,7 +1201,8 @@ rmdir_list_fn(const char *mnt,
 {
 	if (strncmp(finfo->name, ".", 1) != 0 &&
             strncmp(finfo->name, "..", 2) != 0) {
-		smbc_rmdir_dirempty = False;
+		bool *smbc_rmdir_dirempty = (bool *)state;
+		*smbc_rmdir_dirempty = false;
         }
 }
 
@@ -1292,8 +1291,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 
                         /* Local storage to avoid buffer overflows */
 			char *lpath;
-
-			smbc_rmdir_dirempty = True;  /* Make this so ... */
+			bool smbc_rmdir_dirempty = true;
 
 			lpath = talloc_asprintf(frame, "%s\\*",
 						targetpath);
@@ -1305,7 +1303,8 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 
 			if (cli_list(targetcli, lpath,
                                      aDIR | aSYSTEM | aHIDDEN,
-                                     rmdir_list_fn, NULL) < 0) {
+                                     rmdir_list_fn,
+				     &smbc_rmdir_dirempty) < 0) {
 
 				/* Fix errno to ignore latest error ... */
 				DEBUG(5, ("smbc_rmdir: "
