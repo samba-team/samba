@@ -76,9 +76,10 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS resolve_name_bcast_recv(struct composite_context *c, 
 				 TALLOC_CTX *mem_ctx,
-				 struct socket_address ***addrs)
+				 struct socket_address ***addrs,
+				 char ***names)
 {
-	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs);
+	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs, names);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* this makes much more sense for a bcast name resolution
 		   timeout */

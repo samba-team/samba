@@ -33,7 +33,8 @@ typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
 							  struct nbt_name *);
 typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *creq,
 					 TALLOC_CTX *mem_ctx,
-					 struct socket_address ***addrs);
+					 struct socket_address ***addrs,
+					 char ***names);
 #include "libcli/resolve/proto.h"
 struct interface;
 #include "libcli/resolve/lp_proto.h"

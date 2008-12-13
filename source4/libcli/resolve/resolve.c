@@ -35,6 +35,7 @@ struct resolve_state {
 	struct nbt_name name;
 	struct composite_context *creq;
 	struct socket_address **addrs;
+	char **names;
 };
 
 static struct composite_context *setup_next_method(struct composite_context *c);
@@ -84,7 +85,7 @@ static void resolve_handler(struct composite_context *creq)
 	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 	const struct resolve_method *method = state->method;
 
-	c->status = method->recv_fn(creq, state, &state->addrs);
+	c->status = method->recv_fn(creq, state, &state->addrs, &state->names);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
 		state->method = state->method->next;
@@ -171,6 +172,11 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 							      inet_ntoa(ip), 0);
 		if (composite_nomem(state->addrs[0], c)) return c;
 		state->addrs[1] = NULL;
+		state->names = talloc_array(state, char *, 2);
+		if (composite_nomem(state->names, c)) return c;
+		state->names[0] = talloc_strdup(state->names, state->name.name);
+		if (composite_nomem(state->names[0], c)) return c;
+		state->names[1] = NULL;
 		composite_done(c);
 		return c;
 	}
@@ -191,7 +197,8 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
  */
 NTSTATUS resolve_name_all_recv(struct composite_context *c,
 			       TALLOC_CTX *mem_ctx,
-			       struct socket_address ***addrs)
+			       struct socket_address ***addrs,
+			       char ***names)
 {
 	NTSTATUS status;
 
@@ -200,6 +207,9 @@ NTSTATUS resolve_name_all_recv(struct composite_context *c,
 	if (NT_STATUS_IS_OK(status)) {
 		struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 		*addrs = talloc_steal(mem_ctx, state->addrs);
+		if (names) {
+			*names = talloc_steal(mem_ctx, state->names);
+		}
 	}
 
 	talloc_free(c);
@@ -220,7 +230,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 	NTSTATUS status;
 	struct socket_address **addrs = NULL;
 
-	status = resolve_name_all_recv(c, mem_ctx, &addrs);
+	status = resolve_name_all_recv(c, mem_ctx, &addrs, NULL);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*reply_addr = talloc_steal(mem_ctx, addrs[0]->addr);

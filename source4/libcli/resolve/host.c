@@ -46,9 +46,10 @@ struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS resolve_name_host_recv(struct composite_context *c, 
 				TALLOC_CTX *mem_ctx,
-				struct socket_address ***addrs)
+				struct socket_address ***addrs,
+				char ***names)
 {
-	return resolve_name_dns_ex_recv(c, mem_ctx, addrs);
+	return resolve_name_dns_ex_recv(c, mem_ctx, addrs, names);
 }
 
 bool resolve_context_add_host_method(struct resolve_context *ctx)

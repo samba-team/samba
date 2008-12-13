@@ -41,6 +41,7 @@ struct nbtlist_state {
 	struct nbt_name_request **queries;
 	struct nbt_name_query *io_queries;
 	struct socket_address **addrs;
+	char **names;
 	struct interface *ifaces;
 };
 
@@ -82,14 +83,21 @@ static void nbtlist_handler(struct nbt_name_request *req)
 				    q->out.num_addrs + 1);
 	if (composite_nomem(state->addrs, c)) return;
 
+	state->names = talloc_array(state, char *, q->out.num_addrs + 1);
+	if (composite_nomem(state->names, c)) return;
+
 	for (i=0;i<q->out.num_addrs;i++) {
 		state->addrs[i] = socket_address_from_strings(state->addrs,
 							      "ipv4",
 							      q->out.reply_addrs[i],
 							      0);
 		if (composite_nomem(state->addrs[i], c)) return;
+
+		state->names[i] = talloc_strdup(state->names, state->name.name);
+		if (composite_nomem(state->names[i], c)) return;
 	}
 	state->addrs[i] = NULL;
+	state->names[i] = NULL;
 
 	composite_done(c);
 }
@@ -184,7 +192,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c, 
 				   TALLOC_CTX *mem_ctx,
-				   struct socket_address ***addrs)
+				   struct socket_address ***addrs,
+				   char ***names)
 {
 	NTSTATUS status;
 
@@ -193,6 +202,9 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 	if (NT_STATUS_IS_OK(status)) {
 		struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 		*addrs = talloc_steal(mem_ctx, state->addrs);
+		if (names) {
+			*names = talloc_steal(mem_ctx, state->names);
+		}
 	}
 
 	talloc_free(c);

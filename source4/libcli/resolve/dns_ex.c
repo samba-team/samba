@@ -46,6 +46,7 @@ struct dns_ex_state {
 	uint32_t flags;
 	struct nbt_name name;
 	struct socket_address **addrs;
+	char **names;
 	pid_t child;
 	int child_fd;
 	struct fd_event *fde;
@@ -231,10 +232,11 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		if (!addrs_rr[i]) {
 			continue;
 		}
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u",
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
 						      first?"":",",
 						      inet_ntoa(*addrs_rr[i]->u.a),
-						      srv_rr[i]?srv_rr[i]->u.srv->port:0);
+						      srv_rr[i]?srv_rr[i]->u.srv->port:0,
+						      addrs_rr[i]->domain);
 		if (!addrs) {
 			goto done;
 		}
@@ -289,10 +291,10 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 		}
 		in = (struct sockaddr_in *)res->ai_addr;
 
-		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u",
+		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
 						      first?"":",",
 						      inet_ntoa(in->sin_addr),
-						      0);
+						      0, state->name.name);
 		if (!addrs) {
 			goto done;
 		}
@@ -318,21 +320,31 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
 	struct dns_ex_state *state = talloc_get_type(c->private_data,
 				     struct dns_ex_state);
-	char address[2048];
+	char *address;
 	uint32_t num_addrs, i;
 	char **addrs;
 	int ret;
 	int status;
+	int value = 0;
 
 	/* if we get any event from the child then we know that we
 	   won't need to kill it off */
 	talloc_set_destructor(state, NULL);
 
-	/* yes, we don't care about EAGAIN or other niceities
-	   here. They just can't happen with this parent/child
-	   relationship, and even if they did then giving an error is
-	   the right thing to do */
-	ret = read(state->child_fd, address, sizeof(address)-1);
+	if (ioctl(state->child_fd, FIONREAD, &value) != 0) {
+		value = 8192;
+	}
+
+	address = talloc_array(state, char, value+1);
+	if (address) {
+		/* yes, we don't care about EAGAIN or other niceities
+		   here. They just can't happen with this parent/child
+		   relationship, and even if they did then giving an error is
+		   the right thing to do */
+		ret = read(state->child_fd, address, value);
+	} else {
+		ret = -1;
+	}
 	close(state->child_fd);
 	if (waitpid(state->child, &status, WNOHANG) == 0) {
 		kill(state->child, SIGKILL);
@@ -356,9 +368,13 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 				    num_addrs+1);
 	if (composite_nomem(state->addrs, c)) return;
 
+	state->names = talloc_array(state, char *, num_addrs+1);
+	if (composite_nomem(state->names, c)) return;
+
 	for (i=0; i < num_addrs; i++) {
 		uint32_t port = 0;
 		char *p = strrchr(addrs[i], ':');
+		char *n;
 
 		if (!p) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -367,6 +383,15 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 
 		*p = '\0';
 		p++;
+
+		n = strrchr(p, '/');
+		if (!n) {
+			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return;
+		}
+
+		*n = '\0';
+		n++;
 
 		if (strcmp(addrs[i], "0.0.0.0") == 0 ||
 		    inet_addr(addrs[i]) == INADDR_NONE) {
@@ -382,8 +407,12 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 							      addrs[i],
 							      port);
 		if (composite_nomem(state->addrs[i], c)) return;
+
+		state->names[i] = talloc_strdup(state->names, n);
+		if (composite_nomem(state->names[i], c)) return;
 	}
 	state->addrs[i] = NULL;
+	state->names[i] = NULL;
 
 	composite_done(c);
 }
@@ -470,7 +499,8 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS resolve_name_dns_ex_recv(struct composite_context *c, 
 				  TALLOC_CTX *mem_ctx,
-				  struct socket_address ***addrs)
+				  struct socket_address ***addrs,
+				  char ***names)
 {
 	NTSTATUS status;
 
@@ -480,6 +510,9 @@ NTSTATUS resolve_name_dns_ex_recv(struct composite_context *c,
 		struct dns_ex_state *state = talloc_get_type(c->private_data,
 					     struct dns_ex_state);
 		*addrs = talloc_steal(mem_ctx, state->addrs);
+		if (names) {
+			*names = talloc_steal(mem_ctx, state->names);
+		}
 	}
 
 	talloc_free(c);
