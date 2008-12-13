@@ -903,6 +903,9 @@ interface netlogon
 		[case(NETLOGON_CONTROL_REDISCOVER)]        [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TC_QUERY)]          [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_CHANGE_PASSWORD)]   [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_TC_VERIFY)]         [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_FIND_USER)]         [string,charset(UTF16)] uint16 *user;
 		[case(NETLOGON_CONTROL_SET_DBFLAG)]        uint32 debug_level;
 	} netr_CONTROL_DATA_INFORMATION;
 
