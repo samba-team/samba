@@ -3067,7 +3067,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 	files_struct *dir_fsp;
 	char *parent_fname = NULL;
 
-	if (root_dir_fid == 0 || !fname || !new_fname || !*new_fname) {
+	if (root_dir_fid == 0 || !fname || !new_fname) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
