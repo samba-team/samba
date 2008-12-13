@@ -36,7 +36,7 @@ static const struct {
 	{PROTOCOL_NT1,		"NT LM 0.12"},
 };
 
-static const char *star_smbserver_name = "*SMBSERVER";
+#define STAR_SMBSERVER "*SMBSERVER"
 
 /**
  * Set the user session key for a connection
@@ -862,7 +862,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 
 		if (principal == NULL &&
 			!is_ipaddress(cli->desthost) &&
-			!strequal(star_smbserver_name,
+			!strequal(STAR_SMBSERVER,
 				cli->desthost)) {
 			char *realm = NULL;
 			char *machine = NULL;
@@ -1500,7 +1500,7 @@ NTSTATUS cli_connect(struct cli_state *cli,
 
 	/* reasonable default hostname */
 	if (!host) {
-		host = star_smbserver_name;
+		host = STAR_SMBSERVER;
 	}
 
 	fstrcpy(cli->desthost, host);
@@ -1648,8 +1648,8 @@ again:
 			*p = 0;
 			goto again;
 		}
-		if (strcmp(called.name, star_smbserver_name)) {
-			make_nmb_name(&called , star_smbserver_name, 0x20);
+		if (strcmp(called.name, STAR_SMBSERVER)) {
+			make_nmb_name(&called , STAR_SMBSERVER, 0x20);
 			goto again;
 		}
 		return NT_STATUS_BAD_NETWORK_NAME;
@@ -1779,7 +1779,7 @@ bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 	 */
 
 	if(is_ipaddress(desthost)) {
-		make_nmb_name(&called, star_smbserver_name, 0x20);
+		make_nmb_name(&called, STAR_SMBSERVER, 0x20);
 	} else {
 		make_nmb_name(&called, desthost, 0x20);
 	}
@@ -1788,7 +1788,7 @@ bool attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 		NTSTATUS status;
 		struct nmb_name smbservername;
 
-		make_nmb_name(&smbservername, star_smbserver_name, 0x20);
+		make_nmb_name(&smbservername, STAR_SMBSERVER, 0x20);
 
 		/*
 		 * If the name wasn't *SMBSERVER then
