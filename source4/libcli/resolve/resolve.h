@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __RESOLVE_H__
-#define __RESOLVE_H__
+#ifndef __LIBCLI_RESOLVE_H__
+#define __LIBCLI_RESOLVE_H__
 
 struct socket_address;
 struct event_context;
@@ -37,4 +37,4 @@ typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *creq,
 struct interface;
 #include "libcli/resolve/lp_proto.h"
 
-#endif /* __RESOLVE_H__ */
+#endif /* __LIBCLI_RESOLVE_H__ */
