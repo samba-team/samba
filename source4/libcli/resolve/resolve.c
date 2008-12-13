@@ -199,19 +199,6 @@ NTSTATUS resolve_name_all_recv(struct composite_context *c,
 	return status;
 }
 
-/*
-  general name resolution - sync call
- */
-NTSTATUS resolve_all_name(struct resolve_context *ctx,
-		      struct nbt_name *name,
-		      TALLOC_CTX *mem_ctx,
-		      struct socket_address ***addrs,
-		      struct event_context *ev)
-{
-	struct composite_context *c = resolve_name_all_send(ctx, name, ev);
-	return resolve_name_all_recv(c, mem_ctx, addrs);
-}
-
 struct composite_context *resolve_name_send(struct resolve_context *ctx,
 					    struct nbt_name *name,
 					    struct event_context *event_ctx)

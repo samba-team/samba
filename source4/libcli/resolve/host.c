@@ -51,17 +51,6 @@ NTSTATUS resolve_name_host_recv(struct composite_context *c,
 	return resolve_name_dns_ex_recv(c, mem_ctx, addrs);
 }
 
-/*
-  getaddrinfo() name resolution method - sync call
- */
-NTSTATUS resolve_name_host(struct nbt_name *name, 
-			    TALLOC_CTX *mem_ctx,
-			    struct socket_address ***addrs)
-{
-	struct composite_context *c = resolve_name_host_send(mem_ctx, NULL, NULL, name);
-	return resolve_name_host_recv(c, mem_ctx, addrs);
-}
-
 bool resolve_context_add_host_method(struct resolve_context *ctx)
 {
 	return resolve_context_add_method(ctx, resolve_name_host_send, resolve_name_host_recv,

@@ -195,23 +195,3 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 	return status;
 }
 
-/*
-  nbt list of addresses name resolution method - sync call
- */
-NTSTATUS resolve_name_nbtlist(struct nbt_name *name, 
-			      TALLOC_CTX *mem_ctx,
-			      const char **address_list,
-			      struct interface *ifaces, 
-			      uint16_t nbt_port,
-			      int nbt_timeout,
-			      bool broadcast, bool wins_lookup,
-			      struct socket_address ***addrs)
-{
-	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
-								name, address_list, 
-								ifaces, nbt_port,
-								nbt_timeout,
-							        broadcast, wins_lookup);
-	return resolve_name_nbtlist_recv(c, mem_ctx, addrs);
-}
-

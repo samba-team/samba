@@ -85,26 +85,6 @@ NTSTATUS resolve_name_bcast_recv(struct composite_context *c,
 	return status;
 }
 
-/*
-  broadcast name resolution method - sync call
- */
-NTSTATUS resolve_name_bcast(struct nbt_name *name, 
-			    TALLOC_CTX *mem_ctx,
-			    struct interface *ifaces,
-			    uint16_t nbt_port,
-			    int nbt_timeout,
-			    struct socket_address ***addrs)
-{
-	struct resolve_bcast_data *data = talloc(mem_ctx, struct resolve_bcast_data);
-	struct composite_context *c;
-	data->ifaces = talloc_reference(data, ifaces);
-	data->nbt_port = nbt_port;
-	data->nbt_timeout = nbt_timeout;
-	
-	c = resolve_name_bcast_send(mem_ctx, NULL, data, name);
-	return resolve_name_bcast_recv(c, mem_ctx, addrs);
-}
-
 bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)
 {
 	struct resolve_bcast_data *data = talloc(ctx, struct resolve_bcast_data);
