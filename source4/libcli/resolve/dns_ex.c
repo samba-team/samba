@@ -43,6 +43,7 @@ struct dns_ex_state {
 	bool do_getaddrinfo;
 	bool do_fallback;
 	bool do_srv;
+	uint32_t flags;
 	struct nbt_name name;
 	struct socket_address **addrs;
 	pid_t child;
@@ -393,6 +394,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 						   struct event_context *event_ctx,
 						   void *privdata,
+						   uint32_t flags,
 						   struct nbt_name *name,
 						   bool do_getaddrinfo,
 						   bool do_fallback,
@@ -425,6 +427,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 	state->do_getaddrinfo = do_getaddrinfo;
 	state->do_fallback = do_fallback;
 	state->do_srv = do_srv;
+	state->flags = flags;
 
 	state->child_fd = fd[0];
 	state->event_ctx = c->event_ctx;

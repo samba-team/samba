@@ -37,7 +37,7 @@ struct resolve_bcast_data {
  */
 struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
 						  struct event_context *event_ctx,
-						  void *userdata,
+						  void *userdata, uint32_t flags,
 						  struct nbt_name *name)
 {
 	int num_interfaces;
@@ -63,7 +63,9 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, data->ifaces, data->nbt_port, data->nbt_timeout, true, false);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, name,
+				      address_list, data->ifaces, data->nbt_port,
+				      data->nbt_timeout, true, false);
 	talloc_free(address_list);
 
 	return c;	

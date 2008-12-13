@@ -34,6 +34,7 @@
 #include "libcli/resolve/resolve.h"
 
 struct nbtlist_state {
+	uint16_t flags;
 	struct nbt_name name;
 	struct nbt_name_socket *nbtsock;
 	int num_queries;
@@ -98,6 +99,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
  */
 struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 						    struct event_context *event_ctx,
+						    uint32_t flags,
 						    struct nbt_name *name, 
 						    const char **address_list,
 						    struct interface *ifaces,
@@ -118,6 +120,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	state = talloc(c, struct nbtlist_state);
 	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
+
+	state->flags = flags;
 
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
