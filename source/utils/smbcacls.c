@@ -735,6 +735,8 @@ static int owner_set(struct cli_state *cli, enum chown_mode change_mode,
 
 	if (!cli_set_secdesc(cli, fnum, sd)) {
 		printf("ERROR: secdesc set failed: %s\n", cli_errstr(cli));
+		cli_close(cli, fnum);
+		return EXIT_FAILED;
 	}
 
 	cli_close(cli, fnum);
