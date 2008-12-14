@@ -951,7 +951,8 @@ static int cacl_set(struct cli_state *cli, char *filename,
 /*****************************************************
  Return a connection to a server.
 *******************************************************/
-static struct cli_state *connect_one(const char *server, const char *share)
+static struct cli_state *connect_one(struct user_auth_info *auth_info,
+				     const char *server, const char *share)
 {
 	struct cli_state *c = NULL;
 	struct sockaddr_storage ss;
@@ -960,41 +961,41 @@ static struct cli_state *connect_one(const char *server, const char *share)
 
 	zero_sockaddr(&ss);
 
-	if (get_cmdline_auth_info_use_kerberos()) {
+	if (get_cmdline_auth_info_use_kerberos(auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
-	if (get_cmdline_auth_info_use_machine_account() &&
-	    !set_cmdline_auth_info_machine_account_creds()) {
+	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
+	    !set_cmdline_auth_info_machine_account_creds(auth_info)) {
 		return NULL;
 	}
 
-	if (!get_cmdline_auth_info_got_pass()) {
+	if (!get_cmdline_auth_info_got_pass(auth_info)) {
 		char *pass = getpass("Password: ");
 		if (pass) {
-			set_cmdline_auth_info_password(pass);
+			set_cmdline_auth_info_password(auth_info, pass);
 		}
 	}
 
 	nt_status = cli_full_connection(&c, global_myname(), server, 
 				&ss, 0,
 				share, "?????",
-				get_cmdline_auth_info_username(),
+				get_cmdline_auth_info_username(auth_info),
 				lp_workgroup(),
-				get_cmdline_auth_info_password(),
+				get_cmdline_auth_info_password(auth_info),
 				flags,
-				get_cmdline_auth_info_signing_state(),
+				get_cmdline_auth_info_signing_state(auth_info),
 				NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt()) {
+	if (get_cmdline_auth_info_smb_encrypt(auth_info)) {
 		nt_status = cli_cm_force_encryption(c,
-					get_cmdline_auth_info_username(),
-					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_username(auth_info),
+					get_cmdline_auth_info_password(auth_info),
 					lp_workgroup(),
 					share);
                 if (!NT_STATUS_IS_OK(nt_status)) {
@@ -1040,6 +1041,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	TALLOC_CTX *frame = talloc_stackframe();
 	const char *owner_username = "";
 	char *server;
+	struct user_auth_info *auth_info;
 
 	load_case_tables();
 
@@ -1054,6 +1056,12 @@ static struct cli_state *connect_one(const char *server, const char *share)
 
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
+
+	auth_info = user_auth_info_init(frame);
+	if (auth_info == NULL) {
+		exit(1);
+	}
+	popt_common_set_auth_info(auth_info);
 
 	pc = poptGetContext("smbcacls", argc, argv, long_options, 0);
 
@@ -1131,7 +1139,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 	share++;
 
 	if (!test_args) {
-		cli = connect_one(server, share);
+		cli = connect_one(auth_info, server, share);
 		if (!cli) {
 			exit(EXIT_FAILED);
 		}

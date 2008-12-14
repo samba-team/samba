@@ -117,6 +117,10 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	return NT_STATUS_OK;
 }
 
+#if 0
+
+Completely unfinished and unused -- vl :-)
+
 /**
  * Connect to a DCE/RPC interface.
  * 
@@ -178,3 +182,5 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, struct dcerpc_pipe
 
 	return nt_status;
 }
+
+#endif

@@ -637,6 +637,7 @@ void pidfile_create(const char *program_name);
 
 /* The following definitions come from lib/popt_common.c  */
 
+void popt_common_set_auth_info(struct user_auth_info *auth_info);
 
 /* The following definitions come from lib/privileges.c  */
 
@@ -1139,22 +1140,28 @@ void gfree_all( void );
 const char *my_netbios_names(int i);
 bool set_netbios_aliases(const char **str_array);
 bool init_names(void);
-const char *get_cmdline_auth_info_username(void);
-void set_cmdline_auth_info_username(const char *username);
-const char *get_cmdline_auth_info_password(void);
-void set_cmdline_auth_info_password(const char *password);
-bool set_cmdline_auth_info_signing_state(const char *arg);
-int get_cmdline_auth_info_signing_state(void);
-void set_cmdline_auth_info_use_kerberos(bool b);
-bool get_cmdline_auth_info_use_kerberos(void);
-void set_cmdline_auth_info_use_krb5_ticket(void);
-void set_cmdline_auth_info_smb_encrypt(void);
-void set_cmdline_auth_info_use_machine_account(void);
-bool get_cmdline_auth_info_got_pass(void);
-bool get_cmdline_auth_info_smb_encrypt(void);
-bool get_cmdline_auth_info_use_machine_account(void);
-bool get_cmdline_auth_info_copy(struct user_auth_info *info);
-bool set_cmdline_auth_info_machine_account_creds(void);
+struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx);
+const char *get_cmdline_auth_info_username(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
+				    const char *username);
+void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
+				    const char *password);
+const char *get_cmdline_auth_info_password(struct user_auth_info *auth_info);
+bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
+					 const char *arg);
+int get_cmdline_auth_info_signing_state(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
+					bool b);
+bool get_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
+void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_got_pass(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info);
+bool get_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info);
+struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
+						 struct user_auth_info *info);
+bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
 const char *get_numlist(const char *p, uint32 **num, int *count);
@@ -2419,7 +2426,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				bool force_encrypt);
 void cli_cm_shutdown(void);
 void cli_cm_display(void);
-void cli_cm_set_credentials(void);
+void cli_cm_set_credentials(struct user_auth_info *auth_info);
 void cli_cm_set_port(int port_number);
 void cli_cm_set_dest_name_type(int type);
 void cli_cm_set_signing_state(int state);

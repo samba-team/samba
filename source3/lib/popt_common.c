@@ -318,7 +318,7 @@ const struct poptOption popt_common_dynconfig[] = {
  * exit on failure
  * ****************************************************************************/
 
-static void get_password_file(void)
+static void get_password_file(struct user_auth_info *auth_info)
 {
 	int fd = -1;
 	char *p;
@@ -377,13 +377,14 @@ static void get_password_file(void)
 	}
 	SAFE_FREE(spec);
 
-	set_cmdline_auth_info_password(pass);
+	set_cmdline_auth_info_password(auth_info, pass);
 	if (close_it) {
 		close(fd);
 	}
 }
 
-static void get_credentials_file(const char *file)
+static void get_credentials_file(struct user_auth_info *auth_info,
+				 const char *file)
 {
 	XFILE *auth;
 	fstring buf;
@@ -426,9 +427,9 @@ static void get_credentials_file(const char *file)
 			val++;
 
 		if (strwicmp("password", param) == 0) {
-			set_cmdline_auth_info_password(val);
+			set_cmdline_auth_info_password(auth_info, val);
 		} else if (strwicmp("username", param) == 0) {
-			set_cmdline_auth_info_username(val);
+			set_cmdline_auth_info_username(auth_info, val);
 		} else if (strwicmp("domain", param) == 0) {
 			set_global_myworkgroup(val);
 		}
@@ -453,13 +454,16 @@ static void popt_common_credentials_callback(poptContext con,
 					const struct poptOption *opt,
 					const char *arg, const void *data)
 {
+	struct user_auth_info *auth_info = talloc_get_type_abort(
+		*((const char **)data), struct user_auth_info);
 	char *p;
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
-		set_cmdline_auth_info_username("GUEST");
+		set_cmdline_auth_info_username(auth_info, "GUEST");
 
 		if (getenv("LOGNAME")) {
-			set_cmdline_auth_info_username(getenv("LOGNAME"));
+			set_cmdline_auth_info_username(auth_info,
+						       getenv("LOGNAME"));
 		}
 
 		if (getenv("USER")) {
@@ -467,24 +471,25 @@ static void popt_common_credentials_callback(poptContext con,
 			if (!puser) {
 				exit(ENOMEM);
 			}
-			set_cmdline_auth_info_username(puser);
+			set_cmdline_auth_info_username(auth_info, puser);
 
 			if ((p = strchr_m(puser,'%'))) {
 				size_t len;
 				*p = 0;
 				len = strlen(p+1);
-				set_cmdline_auth_info_password(p+1);
+				set_cmdline_auth_info_password(auth_info, p+1);
 				memset(strchr_m(getenv("USER"),'%')+1,'X',len);
 			}
 			SAFE_FREE(puser);
 		}
 
 		if (getenv("PASSWD")) {
-			set_cmdline_auth_info_password(getenv("PASSWD"));
+			set_cmdline_auth_info_password(auth_info,
+						       getenv("PASSWD"));
 		}
 
 		if (getenv("PASSWD_FD") || getenv("PASSWD_FILE")) {
-			get_password_file();
+			get_password_file(auth_info);
 		}
 
 		return;
@@ -499,19 +504,22 @@ static void popt_common_credentials_callback(poptContext con,
 			if ((lp=strchr_m(puser,'%'))) {
 				size_t len;
 				*lp = 0;
-				set_cmdline_auth_info_username(puser);
-				set_cmdline_auth_info_password(lp+1);
+				set_cmdline_auth_info_username(auth_info,
+							       puser);
+				set_cmdline_auth_info_password(auth_info,
+							       lp+1);
 				len = strlen(lp+1);
 				memset(strchr_m(arg,'%')+1,'X',len);
 			} else {
-				set_cmdline_auth_info_username(puser);
+				set_cmdline_auth_info_username(auth_info,
+							       puser);
 			}
 			SAFE_FREE(puser);
 		}
 		break;
 
 	case 'A':
-		get_credentials_file(arg);
+		get_credentials_file(auth_info, arg);
 		break;
 
 	case 'k':
@@ -519,31 +527,40 @@ static void popt_common_credentials_callback(poptContext con,
 		d_printf("No kerberos support compiled in\n");
 		exit(1);
 #else
-		set_cmdline_auth_info_use_krb5_ticket();
+		set_cmdline_auth_info_use_krb5_ticket(auth_info);
 #endif
 		break;
 
 	case 'S':
-		if (!set_cmdline_auth_info_signing_state(arg)) {
+		if (!set_cmdline_auth_info_signing_state(auth_info, arg)) {
 			fprintf(stderr, "Unknown signing option %s\n", arg );
 			exit(1);
 		}
 		break;
 	case 'P':
-		set_cmdline_auth_info_use_machine_account();
+		set_cmdline_auth_info_use_machine_account(auth_info);
 		break;
 	case 'N':
-		set_cmdline_auth_info_password("");
+		set_cmdline_auth_info_password(auth_info, "");
 		break;
 	case 'e':
-		set_cmdline_auth_info_smb_encrypt();
+		set_cmdline_auth_info_smb_encrypt(auth_info);
 		break;
 
 	}
 }
 
+static struct user_auth_info *global_auth_info;
+
+void popt_common_set_auth_info(struct user_auth_info *auth_info)
+{
+	global_auth_info = auth_info;
+}
+
 struct poptOption popt_common_credentials[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE, (void *)popt_common_credentials_callback },
+	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE,
+	  (void *)popt_common_credentials_callback, 0,
+	  (const char *)&global_auth_info },
 	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Set the network username", "USERNAME" },
 	{ "no-pass", 'N', POPT_ARG_NONE, NULL, 'N', "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use kerberos (active directory) authentication" },
