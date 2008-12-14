@@ -2306,8 +2306,7 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 					struct netr_Authenticator *return_authenticator /* [out] [ref] */,
 					struct samr_Password *new_owf_password /* [out] [ref] */,
 					struct samr_Password *old_owf_password /* [out] [ref] */,
-					struct netr_TrustInfo **trust_info /* [out] [ref] */,
-					WERROR *werror)
+					struct netr_TrustInfo **trust_info /* [out] [ref] */)
 {
 	struct netr_ServerGetTrustInfo r;
 	NTSTATUS status;
@@ -2348,10 +2347,6 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 	*trust_info = *r.out.trust_info;
 
 	/* Return result */
-	if (werror) {
-		*werror = r.out.result;
-	}
-
-	return werror_to_ntstatus(r.out.result);
+	return r.out.result;
 }
 

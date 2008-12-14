@@ -240,7 +240,7 @@ void display_sec_acl(SEC_ACL *sec_acl)
 
 void display_acl_type(uint16 type)
 {
-	static fstring typestr="";
+	fstring typestr="";
 
 	typestr[0] = 0;
 

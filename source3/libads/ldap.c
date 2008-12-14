@@ -162,6 +162,11 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 		return True;
 	}
 
+	if (ads->config.client_site_name == NULL) {
+		DEBUG(10,("ads_closest_dc: client belongs to no site\n"));
+		return True;
+	}
+
 	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n", 
 		ads->config.ldap_server_name));
 
@@ -267,10 +272,12 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 
 static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
+	const char *c_domain;
 	const char *c_realm;
 	int count, i=0;
 	struct ip_service *ip_list;
 	const char *realm;
+	const char *domain;
 	bool got_realm = False;
 	bool use_own_domain = False;
 	char *sitename;
@@ -308,13 +315,44 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
 
+	if ( use_own_domain ) {
+		c_domain = lp_workgroup();
+	} else {
+		c_domain = ads->server.workgroup;
+	}
+
 	realm = c_realm;
+	domain = c_domain;
+
+	/*
+	 * In case of LDAP we use get_dc_name() as that
+	 * creates the custom krb5.conf file
+	 */
+	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+		fstring srv_name;
+		struct sockaddr_storage ip_out;
+
+		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
+			(got_realm ? "realm" : "domain"), realm));
+
+		if (get_dc_name(domain, realm, srv_name, &ip_out)) {
+			/*
+			 * we call ads_try_connect() to fill in the
+			 * ads->config details
+			 */
+			if (ads_try_connect(ads, srv_name, false)) {
+				return NT_STATUS_OK;
+			}
+		}
+
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
 
 	sitename = sitename_fetch(realm);
 
  again:
 
-	DEBUG(6,("ads_find_dc: looking for %s '%s'\n",
+	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
 		(got_realm ? "realm" : "domain"), realm));
 
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
@@ -613,9 +651,8 @@ got_connection:
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
-		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-		saf_store( ads->server.workgroup, addr);
-		saf_store( ads->server.realm, addr);
+		saf_store( ads->server.workgroup, ads->config.ldap_server_name);
+		saf_store( ads->server.realm, ads->config.ldap_server_name);
 	}
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);

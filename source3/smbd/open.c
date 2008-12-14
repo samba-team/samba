@@ -1048,7 +1048,7 @@ bool map_open_params_to_ntcreate(const char *fname, int deny_mode, int open_func
 	uint32 access_mask;
 	uint32 share_mode;
 	uint32 create_disposition;
-	uint32 create_options = 0;
+	uint32 create_options = FILE_NON_DIRECTORY_FILE;
 
 	DEBUG(10,("map_open_params_to_ntcreate: fname = %s, deny_mode = 0x%x, "
 		  "open_func = 0x%x\n",
@@ -3067,7 +3067,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 	files_struct *dir_fsp;
 	char *parent_fname = NULL;
 
-	if (root_dir_fid == 0 || !fname || !new_fname || !*new_fname) {
+	if (root_dir_fid == 0 || !fname || !new_fname) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

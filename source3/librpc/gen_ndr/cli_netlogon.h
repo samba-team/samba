@@ -366,6 +366,5 @@ NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
 					struct netr_Authenticator *return_authenticator /* [out] [ref] */,
 					struct samr_Password *new_owf_password /* [out] [ref] */,
 					struct samr_Password *old_owf_password /* [out] [ref] */,
-					struct netr_TrustInfo **trust_info /* [out] [ref] */,
-					WERROR *werror);
+					struct netr_TrustInfo **trust_info /* [out] [ref] */);
 #endif /* __CLI_NETLOGON__ */

@@ -633,13 +633,19 @@ smbc_set_credentials(char *workgroup,
                      smbc_bool use_kerberos,
                      char *signing_state)
 {
-        
-        set_cmdline_auth_info_username(user);
-        set_cmdline_auth_info_password(password);
-        set_cmdline_auth_info_use_kerberos(use_kerberos);
-        if (! set_cmdline_auth_info_signing_state(signing_state)) {
+        struct user_auth_info *auth_info;
+
+	auth_info = user_auth_info_init(talloc_tos());
+	if (auth_info == NULL) {
+		return;
+	}
+        set_cmdline_auth_info_username(auth_info, user);
+        set_cmdline_auth_info_password(auth_info, password);
+        set_cmdline_auth_info_use_kerberos(auth_info, use_kerberos);
+        if (! set_cmdline_auth_info_signing_state(auth_info, signing_state)) {
                 DEBUG(0, ("Invalid signing state: %s", signing_state));
         }
         set_global_myworkgroup(workgroup);
-        cli_cm_set_credentials();
+        cli_cm_set_credentials(auth_info);
+	TALLOC_FREE(auth_info);
 }

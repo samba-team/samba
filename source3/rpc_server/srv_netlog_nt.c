@@ -1402,10 +1402,10 @@ NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_ServerGetTrustInfo(pipes_struct *p,
-				    struct netr_ServerGetTrustInfo *r)
+NTSTATUS _netr_ServerGetTrustInfo(pipes_struct *p,
+				  struct netr_ServerGetTrustInfo *r)
 {
 	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
