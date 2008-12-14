@@ -50,7 +50,7 @@ rpc_server/dcerpc_server.h: dcerpc_server.h
 rpc_server/common/common.h: dcerpc_server/common.h
 libcli/auth/credentials.h: domain_credentials.h
 ../lib/util/charset/charset.h: charset.h
-libcli/ldap/ldap.h: ldap.h
+libcli/ldap/ldap.h: ldap-util.h
 ../lib/torture/torture.h: torture.h
 libcli/libcli.h: client.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
