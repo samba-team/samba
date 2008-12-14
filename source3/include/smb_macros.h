@@ -333,7 +333,7 @@ do { \
 /* Warning - this must only be called with 0 <= c < 128. IT WILL
  * GIVE GARBAGE if c > 128 or c < 0. JRA.
  */
-extern char toupper_ascii_fast_table[];
+extern const char toupper_ascii_fast_table[];
 #define toupper_ascii_fast(c) toupper_ascii_fast_table[(unsigned int)(c)];
 #endif
 
