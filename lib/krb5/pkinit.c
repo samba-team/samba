@@ -453,7 +453,7 @@ build_auth_pack(krb5_context context,
 	a->clientPublicValue->subjectPublicKey.data = dhbuf.data;
     }
 
-    {
+    if (0) {
 	a->supportedCMSTypes = calloc(1, sizeof(*a->supportedCMSTypes));
 	if (a->supportedCMSTypes == NULL)
 	    return ENOMEM;
@@ -648,7 +648,7 @@ pk_mk_padata(krb5_context context,
     if (ret)
 	free(buf.data);
 
-    if (ret == 0 && ctx->type == PKINIT_WIN2K)
+    if (ret == 0)
 	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
 
  out:
@@ -737,7 +737,7 @@ _krb5_pk_verify_sign(krb5_context context,
 
     ret = hx509_cms_verify_signed(id->hx509ctx,
 				  id->verify_ctx,
-				  0,
+				  HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH|HX509_CMS_VS_NO_KU_CHECK,
 				  data,
 				  length,
 				  NULL,
