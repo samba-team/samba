@@ -130,6 +130,7 @@ typedef enum {
 
 /* flags to hx509_cms_verify_signed */
 #define HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH		0x01
+#define HX509_CMS_VS_NO_KU_CHECK			0x02
 
 /* selectors passed to hx509_crypto_select and hx509_crypto_available */
 #define HX509_SELECT_ALL 0

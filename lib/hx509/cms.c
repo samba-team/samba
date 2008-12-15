@@ -852,8 +852,17 @@ hx509_cms_verify_signed(hx509_context context,
 	ret = find_CMSIdentifier(context, &signer_info->sid, certs,
 				 _hx509_verify_get_time(ctx), &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
-	if (ret)
-	    continue;
+	if (ret) {
+	    if ((flags & HX509_CMS_VS_NO_KU_CHECK) == 0)
+		continue;
+
+	    ret = find_CMSIdentifier(context, &signer_info->sid, certs,
+				     _hx509_verify_get_time(ctx), &cert,
+				     0);
+	    if (ret)
+		continue;
+
+	}
 
 	if (signer_info->signedAttrs) {
 	    const Attribute *attr;
