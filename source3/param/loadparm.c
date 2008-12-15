@@ -4585,10 +4585,12 @@ static void init_printer_values(struct service *pService)
 	}
 }
 
+
 /**
- * Free the allocated data for one parameter for a given share.
+ * Free the allocated data for one parameter for a given share
+ * specified by an snum.
  */
-static void free_parameter(int snum, struct parm_struct parm)
+static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 {
 	void *parm_ptr;
 
@@ -4621,7 +4623,7 @@ static void free_parameters(int snum)
 	uint32_t i;
 
 	for (i=0; parm_table[i].label; i++) {
-		free_parameter(snum, parm_table[i]);
+		free_one_parameter_by_snum(snum, parm_table[i]);
 	}
 }
 
