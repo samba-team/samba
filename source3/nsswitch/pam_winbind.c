@@ -93,8 +93,8 @@ static const char *_pam_error_code_str(int err)
 			return "PAM_CONV_ERR";
 		case PAM_AUTHTOK_ERR:
 			return "PAM_AUTHTOK_ERR";
-		case PAM_AUTHTOK_RECOVERY_ERR:
-			return "PAM_AUTHTOK_RECOVERY_ERR";
+		case PAM_AUTHTOK_RECOVER_ERR:
+			return "PAM_AUTHTOK_RECOVER_ERR";
 		case PAM_AUTHTOK_LOCK_BUSY:
 			return "PAM_AUTHTOK_LOCK_BUSY";
 		case PAM_AUTHTOK_DISABLE_AGING:
