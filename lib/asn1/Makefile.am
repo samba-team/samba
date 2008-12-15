@@ -8,6 +8,11 @@ lib_LTLIBRARIES = libasn1.la
 noinst_LTLIBRARIES = libnasn1.la
 libasn1_la_LDFLAGS = -version-info 8:0:0
 
+if versionscript
+libasn1_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
+
 libasn1_la_LIBADD = \
 	libnasn1.la \
 	@LIB_com_err@ \
@@ -455,7 +460,7 @@ gen_files_kx509 =					\
 
 noinst_PROGRAMS = asn1_compile asn1_print asn1_gen
 
-TESTS = check-der check-gen check-timegm
+TESTS = check-der check-gen check-timegm check-ber
 check_PROGRAMS = $(TESTS)
 
 asn1_gen_SOURCES = asn1_gen.c
@@ -513,6 +518,7 @@ check_der_LDADD = \
 	$(LIB_roken)
 
 check_gen_LDADD = $(check_der_LDADD)
+check_ber_LDADD = $(check_der_LDADD)
 asn1_print_LDADD = $(check_der_LDADD)
 asn1_gen_LDADD = $(check_der_LDADD)
 check_timegm_LDADD = $(check_der_LDADD)
