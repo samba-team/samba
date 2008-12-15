@@ -58,6 +58,7 @@ printable_time_long(time_t t)
 #define COL_ISSUED		NP_("  Issued","")
 #define COL_EXPIRES		NP_("  Expires", "")
 #define COL_FLAGS		NP_("Flags", "")
+#define COL_NAME		NP_("  Name", "")
 #define COL_PRINCIPAL		NP_("  Principal", "")
 #define COL_PRINCIPAL_KVNO	NP_("  Principal (kvno)", "")
 #define COL_CACHENAME		NP_("  Cache name", "")
@@ -495,34 +496,35 @@ list_caches(void)
 	krb5_err (context, 1, ret, "krb5_cc_cache_get_first");
 
     ct = rtbl_create();
-    rtbl_add_column(ct, COL_PRINCIPAL, 0);
+    rtbl_add_column(ct, COL_NAME, 0);
     rtbl_add_column(ct, COL_CACHENAME, 0);
     rtbl_add_column(ct, COL_EXPIRES, 0);
     rtbl_set_prefix(ct, "   ");
-    rtbl_set_column_prefix(ct, COL_PRINCIPAL, "");
+    rtbl_set_column_prefix(ct, COL_NAME, "");
 
     while ((ret = krb5_cc_cache_next (context, cursor, &id)) == 0) {
-	krb5_principal principal;
+	krb5_principal principal = NULL;
+	int expired = 0;
 	char *name;
+	time_t t;
 
 	ret = krb5_cc_get_principal(context, id, &principal);
-	if (ret == 0) {
-	    time_t t;
-	    int expired = check_for_tgt (context, id, principal, &t);
+	if (ret == 0)
+	    expired = check_for_tgt (context, id, principal, &t);
 
-	    ret = krb5_unparse_name(context, principal, &name);
-	    if (ret == 0) {
-		rtbl_add_column_entry(ct, COL_PRINCIPAL, name);
-		rtbl_add_column_entry(ct, COL_CACHENAME,
-				      krb5_cc_get_name(context, id));
-		rtbl_add_column_entry(ct, COL_EXPIRES,
-				      expired ? N_(">>> Expired <<<", "") :
-				      printable_time(t));
-		free(name);
-		krb5_free_principal(context, principal);
-	    }
+	ret = krb5_cc_get_friendly_name(context, id, &name);
+	if (ret == 0) {
+	    rtbl_add_column_entry(ct, COL_NAME, name);
+	    rtbl_add_column_entry(ct, COL_CACHENAME,
+				  krb5_cc_get_name(context, id));
+	    rtbl_add_column_entry(ct, COL_EXPIRES,
+				  expired ? N_(">>> Expired <<<", "") :
+				  printable_time(t));
+	    free(name);
 	}
 	krb5_cc_close(context, id);
+	if (principal)
+	    krb5_free_principal(context, principal);
     }
 
     krb5_cc_cache_end_seq_get(context, cursor);
