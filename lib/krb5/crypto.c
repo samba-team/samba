@@ -1853,12 +1853,24 @@ verify_checksum(krb5_context context,
 	return KRB5KRB_AP_ERR_BAD_INTEGRITY; /* XXX */
     }
     keyed_checksum = (ct->flags & F_KEYED) != 0;
-    if(keyed_checksum && crypto == NULL) {
-	krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
-				N_("Checksum type %s is keyed but no "
-				   "crypto context (key) was passed in", ""),
-				ct->name);
-	return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
+    if(keyed_checksum) {
+	struct checksum_type *kct;
+	if (crypto == NULL) {
+	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
+				    N_("Checksum type %s is keyed but no "
+				       "crypto context (key) was passed in", ""),
+				    ct->name);
+	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
+	}
+	kct = crypto->et->keyed_checksum;
+	if (kct == NULL || kct->type != ct->type) {
+	    krb5_set_error_message (context, KRB5_PROG_SUMTYPE_NOSUPP,
+				    N_("Checksum type %s is keyed, but "
+				       "the key type %s passed didnt have that checksum "
+				       "type as the keyed type", ""),
+				    ct->name, crypto->et->name);
+	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
+	}
     }
     if(keyed_checksum) {
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
