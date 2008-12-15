@@ -243,7 +243,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     hx509_verify_attach_anchors(ctx, anchors);
 
-    ret = hx509_cms_verify_signed(context, ctx, co.data, co.length, sd,
+    ret = hx509_cms_verify_signed(context, ctx, 0, co.data, co.length, sd,
 				  store, &type, &c, &signers);
     if (co.data != p)
 	der_free_octet_string(&co);
@@ -1951,7 +1951,7 @@ test_one_cert(hx509_context hxcontext, void *ctx, hx509_cert cert)
     if (ret)
 	errx(1, "hx509_cms_create_signed_1");
 
-    ret = hx509_cms_verify_signed(context, vctx, sd.data, sd.length,
+    ret = hx509_cms_verify_signed(context, vctx, 0, sd.data, sd.length,
 				  NULL, NULL, &type, &c, &signer);
     free(sd.data);
     if (ret)
