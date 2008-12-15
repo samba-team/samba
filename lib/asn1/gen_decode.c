@@ -504,7 +504,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    fprintf(codefile,
 		    "int dce_fix;\n");
 
-	fprintf(codefile, "e = der_match_tag_and_length2(p, len, %s, &%s, %s, "
+	fprintf(codefile, "e = der_match_tag_and_length(p, len, %s, &%s, %s, "
 		"&%s_datalen, &l);\n",
 		classname(t->tag.tagclass),
 		typestring,
@@ -553,11 +553,17 @@ decode_type (const char *name, const Type *t, int optional,
 	    fprintf(codefile,
 		    "if(dce_fix){\n"
 		    "len += 2;\n"
-		    "e = der_match_tag_and_length (p, len, "
-		    "(Der_class)0,(Der_type)0, UT_EndOfContent, "
+		    "e = der_match_tag_and_length(p, len, "
+		    "(Der_class)0, &%s, UT_EndOfContent, "
 		    "&%s_datalen, &l);\n"
-		    "if(e) %s;\np += l; len -= l; ret += l;\n"
-		    "} else \n", tmpstr, forwstr);
+		    "if(e) %s;\n"
+		    "p += l; len -= l; ret += l;\n"
+		    "if (%s != (Der_type)0) { e = ASN1_BAD_ID; %s; }\n"
+		    "} else \n",
+		    typestring,
+		    tmpstr,
+		    forwstr,
+		    typestring, forwstr);
 	fprintf(codefile,
 		"len = %s_oldlen - %s_datalen;\n",
 		tmpstr, tmpstr);
