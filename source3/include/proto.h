@@ -4440,8 +4440,9 @@ NTSTATUS local_password_change(const char *user_name,
 				const char *new_passwd, 
 				char **pp_err_str,
 				char **pp_msg_str);
-bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen);
-uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, bool size_only);
+bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
+			   uint8 *buf, uint32 buflen);
+uint32 init_buffer_from_samu (uint8 **buf, struct samu *sampass, bool size_only);
 bool pdb_copy_sam_account(struct samu *dst, struct samu *src );
 bool pdb_update_bad_password_count(struct samu *sampass, bool *updated);
 bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);

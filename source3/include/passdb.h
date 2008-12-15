@@ -95,7 +95,13 @@ typedef struct logon_cache_struct {
 	uint16 bad_password_count;
 	time_t bad_password_time;
 } LOGIN_CACHE;
-		
+
+#define SAMU_BUFFER_V0		0
+#define SAMU_BUFFER_V1		1
+#define SAMU_BUFFER_V2		2
+#define SAMU_BUFFER_V3		3
+#define SAMU_BUFFER_LATEST	SAMU_BUFFER_V3
+
 struct samu {
 	struct pdb_methods *methods;
 
