@@ -4599,7 +4599,7 @@ static void free_parameter(int snum, struct parm_struct parm)
 	} else if (parm.p_class != P_LOCAL) {
 		return;
 	} else {
-		parm_ptr = lp_local_ptr(snum, parm.ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, parm.ptr);
 	}
 
 	if ((parm.type == P_STRING) ||
@@ -7171,7 +7171,7 @@ static void init_copymap(struct service *pservice)
  pointer into the default structure.
 ***************************************************************************/
 
-void *lp_local_ptr(int snum, void *ptr)
+void *lp_local_ptr_by_snum(int snum, void *ptr)
 {
 	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
 }
@@ -7225,7 +7225,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			       pszParmName));
 			return (True);
 		}
-		parm_ptr = lp_local_ptr(snum, def_ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, def_ptr);
 	}
 
 	if (snum >= 0) {

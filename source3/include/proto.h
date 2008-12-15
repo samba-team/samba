@@ -4260,7 +4260,7 @@ const char *lp_ldap_machine_suffix(void);
 const char *lp_ldap_user_suffix(void);
 const char *lp_ldap_group_suffix(void);
 const char *lp_ldap_idmap_suffix(void);
-void *lp_local_ptr(int snum, void *ptr);
+void *lp_local_ptr_by_snum(int snum, void *ptr);
 bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue);
 void init_locals(void);
 bool lp_is_default(int snum, struct parm_struct *parm);
