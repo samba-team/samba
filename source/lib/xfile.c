@@ -354,12 +354,27 @@ int x_fgetc(XFILE *f)
 /* simulate fread */
 size_t x_fread(void *p, size_t size, size_t nmemb, XFILE *f)
 {
+	size_t remaining = size * nmemb;
 	size_t total = 0;
-	while (total < size*nmemb) {
-		int c = x_fgetc(f);
-		if (c == EOF) break;
-		(total+(char *)p)[0] = (char)c;
-		total++;
+
+	while (remaining > 0) {
+		size_t thistime;
+
+		x_fillbuf(f);
+
+		if (f->bufused == 0) {
+			f->flags |= X_FLAG_EOF;
+			break;
+		}
+
+		thistime = MIN(f->bufused, remaining);
+
+		memcpy((char *)p+total, f->next, thistime);
+
+		f->next += thistime;
+		f->bufused -= thistime;
+		remaining -= thistime;
+		total += thistime;
 	}
 	return total/size;
 }
