@@ -738,12 +738,13 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
  * Decode SignedData and verify that the signature is correct.
  *
  * @param context A hx509 context.
- * @param ctx a hx509 version context
- * @param data pointer to CMS SignedData encoded data
+ * @param ctx a hx509 verify context.
+ * @param flags to control the behaivor of the function.
+ * @param data pointer to CMS SignedData encoded data.
  * @param length length of the data that data point to.
- * @param signedContent external data used for signature
+ * @param signedContent external data used for signature.
  * @param pool certificate pool to build certificates paths.
- * @param contentType free with der_free_oid()
+ * @param contentType free with der_free_oid().
  * @param content the output of the function, free with
  * der_free_octet_string().
  * @param signer_certs list of the cerficates used to sign this
@@ -755,6 +756,7 @@ find_attribute(const CMSAttributes *attr, const heim_oid *oid)
 int
 hx509_cms_verify_signed(hx509_context context,
 			hx509_verify_ctx ctx,
+			unsigned int flags,
 			const void *data,
 			size_t length,
 			const heim_octet_string *signedContent,
@@ -949,7 +951,8 @@ hx509_cms_verify_signed(hx509_context context,
 	    match_oid = oid_id_pkcs7_data();
 	}
 
-	if (der_heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType)) {
+	if (der_heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType) &&
+	    (flags & HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH) == 0) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
 	    hx509_set_error_string(context, 0, ret,
 				   "Oid in message mismatch from the expected");

@@ -1,6 +1,6 @@
 # $Id$
 
-HEIMDAL_X509_1.1 {
+HEIMDAL_X509_1.2 {
 	global:
 		initialize_hx_error_table_r;
 		hx509_bitstring_print;
