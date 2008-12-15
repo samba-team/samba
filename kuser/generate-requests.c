@@ -35,16 +35,6 @@
 
 RCSID("$Id$");
 
-static krb5_error_code
-null_key_proc (krb5_context context,
-	       krb5_enctype type,
-	       krb5_salt salt,
-	       krb5_const_pointer keyseed,
-	       krb5_keyblock **key)
-{
-    return ENOTTY;
-}
-
 static unsigned
 read_words (const char *filename, char ***ret_w)
 {
@@ -74,6 +64,7 @@ read_words (const char *filename, char ***ret_w)
 static void
 generate_requests (const char *filename, unsigned nreq)
 {
+    krb5_principal client;
     krb5_context context;
     krb5_error_code ret;
     krb5_creds cred;
@@ -89,24 +80,18 @@ generate_requests (const char *filename, unsigned nreq)
 
     for (i = 0; i < nreq; ++i) {
 	char *name = words[rand() % nwords];
-	krb5_realm *client_realm;
 
 	memset(&cred, 0, sizeof(cred));
 
-	ret = krb5_parse_name (context, name, &cred.client);
+	ret = krb5_parse_name (context, name, &client);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_parse_name %s", name);
-	client_realm = krb5_princ_realm (context, cred.client);
 
-	ret = krb5_make_principal(context, &cred.server, *client_realm,
-				  KRB5_TGS_NAME, *client_realm, NULL);
+	ret = krb5_get_init_creds_password (context, &cred, client, "",
+					    NULL, NULL, 0, NULL, NULL);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_make_principal");
-
-	ret = krb5_get_in_cred (context, 0, NULL, NULL, NULL, NULL,
-				null_key_proc, NULL, NULL, NULL,
-				&cred, NULL);
-	krb5_free_cred_contents (context, &cred);
+	    krb5_free_cred_contents (context, &cred);
+	krb5_free_principal(context, client);
     }
 }
 
