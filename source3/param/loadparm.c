@@ -4616,9 +4616,10 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 }
 
 /**
- * Free the allocated parameter data for a share.
+ * Free the allocated parameter data for a share specified
+ * by an snum.
  */
-static void free_parameters(int snum)
+static void free_parameters_by_snum(int snum)
 {
 	uint32_t i;
 
@@ -4632,7 +4633,7 @@ static void free_parameters(int snum)
  */
 static void free_global_parameters(void)
 {
-	free_parameters(GLOBAL_SECTION_SNUM);
+	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
 }
 
 /***************************************************************************
@@ -5743,7 +5744,7 @@ static void free_service(struct service *pservice)
 		DEBUG(5, ("free_service: Freeing service %s\n",
 		       pservice->szService));
 
-	free_parameters(getservicebyname(pservice->szService, NULL));
+	free_parameters_by_snum(getservicebyname(pservice->szService, NULL));
 
 	string_free(&pservice->szService);
 	bitmap_free(pservice->copymap);
