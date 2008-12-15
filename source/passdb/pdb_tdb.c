@@ -37,13 +37,14 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#define TDBSAM_VERSION	3	/* Most recent TDBSAM version */
+#define TDBSAM_VERSION	4	/* Most recent TDBSAM version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
 #define USERPREFIX_LEN		5
 #define RIDPREFIX		"RID_"
 #define PRIVPREFIX		"PRIV_"
+#define NEXT_RID_STRING		"NEXT_RID"
 
 /* GLOBAL TDB SAM CONTEXT */
 
@@ -101,6 +102,10 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 		ret = init_samu_from_buffer(user, SAMU_BUFFER_V3,
 					    (uint8 *)rec->value.dptr,
 					    rec->value.dsize);
+	case 4:
+		ret = init_samu_from_buffer(user, SAMU_BUFFER_V4,
+					    (uint8 *)rec->value.dptr,
+					    rec->value.dsize);
 		break;
 	default:
 		/* unknown tdbsam version */
@@ -136,6 +141,37 @@ static int tdbsam_convert_one(struct db_record *rec, void *priv)
 	return 0;
 }
 
+static bool tdbsam_upgrade_next_rid(struct db_context *db)
+{
+	TDB_CONTEXT *tdb;
+	uint32 rid;
+	bool ok = false;
+
+	ok = dbwrap_fetch_uint32(db, NEXT_RID_STRING, &rid);
+	if (ok) {
+		return true;
+	}
+
+	tdb = tdb_open_log(state_path("winbindd_idmap.tdb"), 0,
+			   TDB_DEFAULT, O_RDONLY, 0644);
+
+	if (tdb) {
+		ok = tdb_fetch_uint32(tdb, "RID_COUNTER", &rid);
+		if (!ok) {
+			rid = BASE_RID;
+		}
+		tdb_close(tdb);
+	} else {
+		rid = BASE_RID;
+	}
+
+	if (dbwrap_store_uint32(db, NEXT_RID_STRING, rid) != 0) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool tdbsam_convert(struct db_context *db, int32 from)
 {
 	struct tdbsam_convert_state state;
@@ -147,6 +183,11 @@ static bool tdbsam_convert(struct db_context *db, int32 from)
 	if (db->transaction_start(db) != 0) {
 		DEBUG(0, ("Could not start transaction\n"));
 		return false;
+	}
+
+	if (!tdbsam_upgrade_next_rid(db)) {
+		DEBUG(0, ("tdbsam_upgrade_next_rid failed\n"));
+		goto cancel;
 	}
 
 	ret = db->traverse(db, tdbsam_convert_one, &state);
@@ -730,90 +771,21 @@ static bool tdbsam_rid_algorithm(struct pdb_methods *methods)
 	return False;
 }
 
-/*
- * Historically, winbind was responsible for allocating RIDs, so the next RID
- * value was stored in winbindd_idmap.tdb. It has been moved to passdb now,
- * but for compatibility reasons we still keep the the next RID counter in
- * winbindd_idmap.tdb.
- */
-
-/*****************************************************************************
- Initialise idmap database. For now (Dec 2005) this is a copy of the code in
- sam/idmap_tdb.c. Maybe at a later stage we can remove that capability from
- winbind completely and store the RID counter in passdb.tdb.
-
- Dont' fully initialize with the HWM values, if it's new, we're only
- interested in the RID counter.
-*****************************************************************************/
-
-static bool init_idmap_tdb(TDB_CONTEXT *tdb)
-{
-	int32 version;
-
-	if (tdb_lock_bystring(tdb, "IDMAP_VERSION") != 0) {
-		DEBUG(0, ("Could not lock IDMAP_VERSION\n"));
-		return False;
-	}
-
-	version = tdb_fetch_int32(tdb, "IDMAP_VERSION");
-
-	if (version == -1) {
-		/* No key found, must be a new db */
-		if (tdb_store_int32(tdb, "IDMAP_VERSION",
-				    IDMAP_VERSION) != 0) {
-			DEBUG(0, ("Could not store IDMAP_VERSION\n"));
-			tdb_unlock_bystring(tdb, "IDMAP_VERSION");
-			return False;
-		}
-		version = IDMAP_VERSION;
-	}
-
-	if (version != IDMAP_VERSION) {
-		DEBUG(0, ("Expected IDMAP_VERSION=%d, found %d. Please "
-			  "start winbind once\n", IDMAP_VERSION, version));
-		tdb_unlock_bystring(tdb, "IDMAP_VERSION");
-		return False;
-	}
-
-	tdb_unlock_bystring(tdb, "IDMAP_VERSION");
-	return True;
-}
-
 static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 {
-	TDB_CONTEXT *tdb;
 	uint32 rid;
-	bool ret = False;
-
-	tdb = tdb_open_log(state_path("winbindd_idmap.tdb"), 0,
-			   TDB_DEFAULT, O_RDWR | O_CREAT, 0644);
-
-	if (tdb == NULL) {
-		DEBUG(1, ("Could not open idmap: %s\n", strerror(errno)));
-		goto done;
-	}
-
-	if (!init_idmap_tdb(tdb)) {
-		DEBUG(1, ("Could not init idmap\n"));
-		goto done;
-	}
 
 	rid = BASE_RID;		/* Default if not set */
 
-	if (!tdb_change_uint32_atomic(tdb, "RID_COUNTER", &rid, 1)) {
-		DEBUG(3, ("tdbsam_new_rid: Failed to increase RID_COUNTER\n"));
-		goto done;
+	if (dbwrap_change_uint32_atomic(db_sam, NEXT_RID_STRING, &rid, 1) != 0) {
+		DEBUG(3, ("tdbsam_new_rid: Failed to increase %s\n",
+			NEXT_RID_STRING));
+		return false;
 	}
 
 	*prid = rid;
-	ret = True;
 
- done:
-	if ((tdb != NULL) && (tdb_close(tdb) != 0)) {
-		smb_panic("tdb_close(idmap_tdb) failed");
-	}
-
-	return ret;
+	return true;
 }
 
 struct tdbsam_search_state {
