@@ -28,16 +28,15 @@ int net_status_usage(struct net_context *c, int argc, const char **argv)
 	return -1;
 }
 
-static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
-			void *state)
+static int show_session(struct db_record *rec, void *private_data)
 {
-	bool *parseable = (bool *)state;
+	bool *parseable = (bool *)private_data;
 	struct sessionid sessionid;
 
-	if (dbuf.dsize != sizeof(sessionid))
+	if (rec->value.dsize != sizeof(sessionid))
 		return 0;
 
-	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+	memcpy(&sessionid, rec->value.dptr, sizeof(sessionid));
 
 	if (!process_exists(sessionid.pid)) {
 		return 0;
@@ -60,7 +59,7 @@ static int show_session(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 static int net_status_sessions(struct net_context *c, int argc, const char **argv)
 {
-	TDB_CONTEXT *tdb;
+	struct db_context *db;
 	bool parseable;
 
 	if (c->display_usage) {
@@ -87,16 +86,15 @@ static int net_status_sessions(struct net_context *c, int argc, const char **arg
 			 "------------------------\n");
 	}
 
-	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0,
-			   TDB_DEFAULT, O_RDONLY, 0);
-
-	if (tdb == NULL) {
+	db = db_open(NULL, lock_path("sessionid.tdb"), 0,
+		     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
+	if (db == NULL) {
 		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
 		return -1;
 	}
 
-	tdb_traverse(tdb, show_session, &parseable);
-	tdb_close(tdb);
+	db->traverse_read(db, show_session, &parseable);
+	TALLOC_FREE(db);
 
 	return 0;
 }
@@ -126,16 +124,15 @@ struct sessionids {
 	struct sessionid *entries;
 };
 
-static int collect_pid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
-		       void *state)
+static int collect_pid(struct db_record *rec, void *private_data)
 {
-	struct sessionids *ids = (struct sessionids *)state;
+	struct sessionids *ids = (struct sessionids *)private_data;
 	struct sessionid sessionid;
 
-	if (dbuf.dsize != sizeof(sessionid))
+	if (rec->value.dsize != sizeof(sessionid))
 		return 0;
 
-	memcpy(&sessionid, dbuf.dptr, sizeof(sessionid));
+	memcpy(&sessionid, rec->value.dptr, sizeof(sessionid));
 
 	if (!process_exists(sessionid.pid))
 		return 0;
@@ -189,21 +186,20 @@ static int show_share_parseable(struct db_record *rec,
 static int net_status_shares_parseable(struct net_context *c, int argc, const char **argv)
 {
 	struct sessionids ids;
-	TDB_CONTEXT *tdb;
+	struct db_context *db;
 
 	ids.num_entries = 0;
 	ids.entries = NULL;
 
-	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0,
-			   TDB_DEFAULT, O_RDONLY, 0);
-
-	if (tdb == NULL) {
+	db = db_open(NULL, lock_path("sessionid.tdb"), 0,
+		     TDB_CLEAR_IF_FIRST, O_RDONLY, 0644);
+	if (db == NULL) {
 		d_fprintf(stderr, "%s not initialised\n", lock_path("sessionid.tdb"));
 		return -1;
 	}
 
-	tdb_traverse(tdb, collect_pid, &ids);
-	tdb_close(tdb);
+	db->traverse_read(db, collect_pid, &ids);
+	TALLOC_FREE(db);
 
 	connections_forall(show_share_parseable, &ids);
 
