@@ -575,7 +575,7 @@ rfc2459_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/rfc2459.asn1
 	./asn1_compile$(EXEEXT) --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints $(srcdir)/rfc2459.asn1 rfc2459_asn1 || (rm -f rfc2459_asn1_files ; exit 1)
 
 cms_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1
-	./asn1_compile$(EXEEXT) $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
+	./asn1_compile$(EXEEXT) --decode-dce-ber $(srcdir)/CMS.asn1 cms_asn1 || (rm -f cms_asn1_files ; exit 1)
 
 krb5_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/k5.asn1
 	./asn1_compile$(EXEEXT) --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA --sequence=ETYPE-INFO --sequence=ETYPE-INFO2 $(srcdir)/k5.asn1 krb5_asn1 || (rm -f krb5_asn1_files ; exit 1)
