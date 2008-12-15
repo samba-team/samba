@@ -1182,7 +1182,7 @@ build_conf_principals(krb5_context context, krb5_ccache id,
     }
 
     ret = krb5_make_principal(context, &cred->server,
-			      krb5_principal_get_realm(context, client),
+			      KRB5_REALM_NAME,
 			      KRB5_CONF_NAME, name, pname, NULL);
     free(pname);
     if (ret) {
@@ -1492,4 +1492,61 @@ krb5_cccol_last_change_time(krb5_context context,
     krb5_cccol_cursor_free(context, &cursor);
 
     return 0;
+}
+/**
+ * Return a friendly name on credential cache. Free the result with krb5_xfree().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_get_friendly_name(krb5_context context,
+			  krb5_ccache id,
+			  char **name)
+{
+    krb5_error_code ret;
+    krb5_data data;
+
+    ret = krb5_cc_get_config(context, id, NULL, "FriendlyName", &data);
+    if (ret) {
+	krb5_principal principal;
+	ret = krb5_cc_get_principal(context, id, &principal);
+	if (ret)
+	    return ret;
+	ret = krb5_unparse_name(context, principal, name);
+	krb5_free_principal(context, principal);
+    } else {
+	ret = asprintf(name, "%.*s", (int)data.length, data.data);
+	krb5_data_free(&data);
+	if (ret <= 0) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	} else
+	    ret = 0;
+    }
+
+    return ret;
+}
+
+/**
+ * Set the friendly name on credential cache.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_ccache
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_cc_set_friendly_name(krb5_context context,
+			  krb5_ccache id,
+			  const char *name)
+{
+    krb5_data data;
+
+    data.data = rk_UNCONST(name);
+    data.length = strlen(name);
+
+    return krb5_cc_set_config(context, id, NULL, "FriendlyName", &data);
 }
