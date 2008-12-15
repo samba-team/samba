@@ -4585,6 +4585,51 @@ static void init_printer_values(struct service *pService)
 	}
 }
 
+/**
+ * Common part of freeing allocated data for one parameter.
+ */
+static void free_one_parameter_common(void *parm_ptr,
+				      struct parm_struct parm)
+{
+	if ((parm.type == P_STRING) ||
+	    (parm.type == P_USTRING))
+	{
+		string_free((char**)parm_ptr);
+	} else if (parm.type == P_LIST) {
+		TALLOC_FREE(*((char***)parm_ptr));
+	}
+}
+
+/**
+ * Free the allocated data for one parameter for a share
+ * given as a service struct.
+ */
+static void free_one_parameter(struct service *service,
+			       struct parm_struct parm)
+{
+	void *parm_ptr;
+
+	if (parm.p_class != P_LOCAL) {
+		return;
+	}
+
+	parm_ptr = lp_local_ptr(service, parm.ptr);
+
+	free_one_parameter_common(parm_ptr, parm);
+}
+
+/**
+ * Free the allocated parameter data of a share given
+ * as a service struct.
+ */
+static void free_parameters(struct service *service)
+{
+	uint32_t i;
+
+	for (i=0; parm_table[i].label; i++) {
+		free_one_parameter(service, parm_table[i]);
+	}
+}
 
 /**
  * Free the allocated data for one parameter for a given share
@@ -4606,13 +4651,7 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 		parm_ptr = lp_local_ptr_by_snum(snum, parm.ptr);
 	}
 
-	if ((parm.type == P_STRING) ||
-	    (parm.type == P_USTRING))
-	{
-		string_free((char**)parm_ptr);
-	} else if (parm.type == P_LIST) {
-		TALLOC_FREE(*((char***)parm_ptr));
-	}
+	free_one_parameter_common(parm_ptr, parm);
 }
 
 /**
