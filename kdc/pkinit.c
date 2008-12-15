@@ -411,7 +411,7 @@ _kdc_pk_rd_padata(krb5_context context,
 	free_PA_PK_AS_REQ_Win2k(&r);
 	if (ret) {
 	    krb5_set_error_message(context, ret,
-				   "Can't decode PK-AS-REQ: %d", ret);
+				   "Can't unwrap ContentInfo(win): %d", ret);
 	    goto out;
 	}
 
@@ -1650,10 +1650,17 @@ _kdc_pk_initialize(krb5_context context,
 	hx509_query_free(kdc_identity->hx509ctx, q);
 	if (ret == 0) {
 	    if (hx509_cert_check_eku(kdc_identity->hx509ctx, cert,
-				     oid_id_pkkdcekuoid(), 0))
-		krb5_warnx(context, "WARNING Found KDC certificate "
+				     oid_id_pkkdcekuoid(), 0)) {
+		hx509_name name;
+		char *str;
+		ret = hx509_cert_get_subject(cert, &name);
+		hx509_name_to_string(name, &str);
+		krb5_warnx(context, "WARNING Found KDC certificate (%s)"
 			   "is missing the PK-INIT KDC EKU, this is bad for "
-			   "interoperability.");
+			   "interoperability.", str);
+		hx509_name_free(&name);
+		free(str);
+	    }
 	    hx509_cert_free(cert);
 	} else
 	    krb5_warnx(context, "PKINIT: failed to find a signing "
