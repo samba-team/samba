@@ -5783,7 +5783,7 @@ static void free_service(struct service *pservice)
 		DEBUG(5, ("free_service: Freeing service %s\n",
 		       pservice->szService));
 
-	free_parameters_by_snum(getservicebyname(pservice->szService, NULL));
+	free_parameters(pservice);
 
 	string_free(&pservice->szService);
 	bitmap_free(pservice->copymap);
