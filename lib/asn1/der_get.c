@@ -269,8 +269,8 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	if (e) goto out;
 	if (class != ASN1_C_UNIV) return ASN1_BAD_ID;
 	if (type == PRIM && tag == UT_EndOfContent) {
-	    if (depth < 1)
-	        return ASN1_INDEF_UNDERRUN;
+	    if (depth == 0)
+		break;
 	    depth--;
 	}
 	if (tag != UT_OctetString) {
