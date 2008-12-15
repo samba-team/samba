@@ -425,7 +425,7 @@ struct service {
 	bool bHideUnReadable;
 	bool bHideUnWriteableFiles;
 	bool bBrowseable;
-       bool bAccessBasedShareEnum;
+	bool bAccessBasedShareEnum;
 	bool bAvailable;
 	bool bRead_only;
 	bool bNo_set_dir;
@@ -569,7 +569,7 @@ static struct service sDefault = {
 	False,			/* bHideUnReadable */
 	False,			/* bHideUnWriteableFiles */
 	True,			/* bBrowseable */
-       False,                  /* bAccessBasedShareEnum */
+	False,			/* bAccessBasedShareEnum */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
@@ -670,6 +670,8 @@ static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
+
+static void *lp_local_ptr(struct service *service, void *ptr);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
@@ -4584,9 +4586,56 @@ static void init_printer_values(struct service *pService)
 }
 
 /**
- * Free the allocated data for one parameter for a given share.
+ * Common part of freeing allocated data for one parameter.
  */
-static void free_parameter(int snum, struct parm_struct parm)
+static void free_one_parameter_common(void *parm_ptr,
+				      struct parm_struct parm)
+{
+	if ((parm.type == P_STRING) ||
+	    (parm.type == P_USTRING))
+	{
+		string_free((char**)parm_ptr);
+	} else if (parm.type == P_LIST) {
+		TALLOC_FREE(*((char***)parm_ptr));
+	}
+}
+
+/**
+ * Free the allocated data for one parameter for a share
+ * given as a service struct.
+ */
+static void free_one_parameter(struct service *service,
+			       struct parm_struct parm)
+{
+	void *parm_ptr;
+
+	if (parm.p_class != P_LOCAL) {
+		return;
+	}
+
+	parm_ptr = lp_local_ptr(service, parm.ptr);
+
+	free_one_parameter_common(parm_ptr, parm);
+}
+
+/**
+ * Free the allocated parameter data of a share given
+ * as a service struct.
+ */
+static void free_parameters(struct service *service)
+{
+	uint32_t i;
+
+	for (i=0; parm_table[i].label; i++) {
+		free_one_parameter(service, parm_table[i]);
+	}
+}
+
+/**
+ * Free the allocated data for one parameter for a given share
+ * specified by an snum.
+ */
+static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 {
 	void *parm_ptr;
 
@@ -4599,27 +4648,22 @@ static void free_parameter(int snum, struct parm_struct parm)
 	} else if (parm.p_class != P_LOCAL) {
 		return;
 	} else {
-		parm_ptr = lp_local_ptr(snum, parm.ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, parm.ptr);
 	}
 
-	if ((parm.type == P_STRING) ||
-	    (parm.type == P_USTRING))
-	{
-		string_free((char**)parm_ptr);
-	} else if (parm.type == P_LIST) {
-		TALLOC_FREE(*((char***)parm_ptr));
-	}
+	free_one_parameter_common(parm_ptr, parm);
 }
 
 /**
- * Free the allocated parameter data for a share.
+ * Free the allocated parameter data for a share specified
+ * by an snum.
  */
-static void free_parameters(int snum)
+static void free_parameters_by_snum(int snum)
 {
 	uint32_t i;
 
 	for (i=0; parm_table[i].label; i++) {
-		free_parameter(snum, parm_table[i]);
+		free_one_parameter_by_snum(snum, parm_table[i]);
 	}
 }
 
@@ -4628,7 +4672,7 @@ static void free_parameters(int snum)
  */
 static void free_global_parameters(void)
 {
-	free_parameters(GLOBAL_SECTION_SNUM);
+	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
 }
 
 /***************************************************************************
@@ -5739,7 +5783,7 @@ static void free_service(struct service *pservice)
 		DEBUG(5, ("free_service: Freeing service %s\n",
 		       pservice->szService));
 
-	free_parameters(getservicebyname(pservice->szService, NULL));
+	free_parameters(pservice);
 
 	string_free(&pservice->szService);
 	bitmap_free(pservice->copymap);
@@ -7167,13 +7211,23 @@ static void init_copymap(struct service *pservice)
 }
 
 /***************************************************************************
+ Return the local pointer to a parameter given a service struct and the
+ pointer into the default structure.
+***************************************************************************/
+
+static void *lp_local_ptr(struct service *service, void *ptr)
+{
+	return (void *)(((char *)service) + PTR_DIFF(ptr, &sDefault));
+}
+
+/***************************************************************************
  Return the local pointer to a parameter given the service number and the 
  pointer into the default structure.
 ***************************************************************************/
 
-void *lp_local_ptr(int snum, void *ptr)
+void *lp_local_ptr_by_snum(int snum, void *ptr)
 {
-	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
+	return lp_local_ptr(ServicePtrs[snum], ptr);
 }
 
 /***************************************************************************
@@ -7225,7 +7279,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			       pszParmName));
 			return (True);
 		}
-		parm_ptr = lp_local_ptr(snum, def_ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, def_ptr);
 	}
 
 	if (snum >= 0) {
