@@ -527,6 +527,7 @@ _kdc_pk_rd_padata(krb5_context context,
 
 	ret = hx509_cms_verify_signed(kdc_identity->hx509ctx,
 				      kdc_identity->verify_ctx,
+				      HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH,
 				      signed_content.data,
 				      signed_content.length,
 				      NULL,
@@ -793,7 +794,8 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	    goto out;
 	
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	if (config->pkinit_kdc_friendly_name)
+	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
 	
 	ret = hx509_certs_find(kdc_identity->hx509ctx,
 			       kdc_identity->certs,
@@ -832,7 +834,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     }
 
     ret = hx509_cms_envelope_1(kdc_identity->hx509ctx,
-			       0,
+			       HX509_CMS_EV_NO_KU_CHECK,
 			       client_params->cert,
 			       signed_data.data, signed_data.length,
 			       envelopedAlg,
@@ -861,6 +863,7 @@ out:
 
 static krb5_error_code
 pk_mk_pa_reply_dh(krb5_context context,
+		  krb5_kdc_configuration *config,
                   DH *kdc_dh,
       		  pk_client_params *client_params,
                   krb5_keyblock *reply_key,
@@ -924,7 +927,8 @@ pk_mk_pa_reply_dh(krb5_context context,
 	    goto out;
 	
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	if (config->pkinit_kdc_friendly_name)
+	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
 	
 	ret = hx509_certs_find(kdc_identity->hx509ctx,
 			       kdc_identity->certs,
@@ -1071,7 +1075,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    if (ret)
 		return ret;
 
-	    ret = pk_mk_pa_reply_dh(context, client_params->dh,
+	    ret = pk_mk_pa_reply_dh(context, config, client_params->dh,
 				    client_params,
 				    &client_params->reply_key,
 				    &info,
@@ -1641,7 +1645,8 @@ _kdc_pk_initialize(krb5_context context,
 	}
 	
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	if (config->pkinit_kdc_friendly_name)
+	    hx509_query_match_friendly_name(q, config->pkinit_kdc_friendly_name);
 	
 	ret = hx509_certs_find(kdc_identity->hx509ctx,
 			       kdc_identity->certs,
