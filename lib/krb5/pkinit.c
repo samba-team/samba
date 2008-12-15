@@ -737,6 +737,7 @@ _krb5_pk_verify_sign(krb5_context context,
 
     ret = hx509_cms_verify_signed(id->hx509ctx,
 				  id->verify_ctx,
+				  0,
 				  data,
 				  length,
 				  NULL,
