@@ -264,13 +264,13 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
     data->length = 0;
     data->data = NULL;
 
-    while (1) {
+    while (len) {
 	e = der_get_tag (p, len, &class, &type, &tag, &l);
 	if (e) goto out;
 	if (class != ASN1_C_UNIV) return ASN1_BAD_ID;
 	if (type == PRIM && tag == UT_EndOfContent) {
-	    if (depth == 0)
-		break;
+	    if (depth < 1)
+	        return ASN1_INDEF_UNDERRUN;
 	    depth--;
 	}
 	if (tag != UT_OctetString) {
@@ -305,6 +305,8 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
 	p += datalen;
 	len -= datalen;
     }
+    if (depth != 0)
+	return ASN1_INDEF_OVERRUN;
     if(size) *size = oldlen - len;
     return 0;
  out:
