@@ -35,9 +35,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 # This is an attempt at being independent of the number of nodes
 # reported by "ctdb getpid -n all".
 try_command_on_node 0 "ctdb listnodes | wc -l"
-
 num_nodes="$out"
-
 echo "There are $num_nodes nodes..."
 
 # Call getpid a few different ways and make sure the answer is always the same.

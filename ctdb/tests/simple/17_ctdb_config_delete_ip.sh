@@ -47,7 +47,7 @@ num_to_remove=$(($RANDOM % $num_ips))
 
 # Find the details in the list.
 i=0
-while [ $i -lt $num_to_remove ] ; do
+while [ $i -le $num_to_remove ] ; do
     read ip_to_remove test_node
     i=$(($i + 1))
 done <<<"$out"

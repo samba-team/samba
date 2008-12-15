@@ -64,6 +64,7 @@ ctdb_test_exit ()
     [ $(($testfailures+0)) -eq 0 -a $status -ne 0 ] && testfailures=$status
 
     eval "$ctdb_test_exit_hook"
+    unset ctdb_test_exit_hook
 
     if ! onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy ; then
 	echo "Restarting ctdb on all nodes to get back into known state..."
