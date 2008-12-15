@@ -1640,6 +1640,7 @@ _kdc_as_rep(krb5_context context,
     reply_key = &ckey->key;
 #if PKINIT
     if (pkp) {
+        e_text = "Failed to build PK-INIT reply";
 	ret = _kdc_pk_mk_pa_reply(context, config, pkp, client,
 				  req, req_buffer,
 				  &reply_key, rep.padata);
