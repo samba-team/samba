@@ -201,6 +201,7 @@ o   Steve French <stevef@smf-t60p.smfdom>
 
 o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
     * BUG 5688: LPQ process is orphaned if socket address parameter is invalid.
+    * Vars for signals must be volatile sig_atomic_t.
 
 
 o   Henning Henkel <henning.henkel@fh-furtwangen.de>
@@ -219,6 +220,8 @@ o   Jeff Layton <jlayton@redhat.com>
 o   Volker Lendecke <vl@samba.org>
     * Fix crash bug when freeing a non-malloc'ed buffer if the client sends a
       non-encrypted packet with the crypto state set.
+    * Fix error code when smbclient puts a file over an existing directory.
+    * Pass the get_real_filename operation through the VFS.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -226,6 +229,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * Fix several issues concerning Alternate Data Streams.
     * Fix valgrind bug lp_parm_const_string().
     * Fix setting of trust passwords using 'net rpc trustdom add'.
+    * Correctly detect if the current dc is the closest one.
 
 
 o   Tim Prouty <tprouty@samba.org>
