@@ -22,4 +22,6 @@ error_code BAD_CHARACTER,	"ASN.1 invalid character in string"
 error_code MIN_CONSTRAINT,	"ASN.1 too few elements"
 error_code MAX_CONSTRAINT,	"ASN.1 too many elements"
 error_code EXACT_CONSTRAINT,	"ASN.1 wrong number of elements"
+error_code INDEF_OVERRUN,   	"ASN.1 BER indefinte encoding overrun"
+error_code INDEF_UNDERRUN,   	"ASN.1 BER indefinte encoding underun"
 end
