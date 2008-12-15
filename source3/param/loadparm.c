@@ -425,7 +425,7 @@ struct service {
 	bool bHideUnReadable;
 	bool bHideUnWriteableFiles;
 	bool bBrowseable;
-       bool bAccessBasedShareEnum;
+	bool bAccessBasedShareEnum;
 	bool bAvailable;
 	bool bRead_only;
 	bool bNo_set_dir;
@@ -569,7 +569,7 @@ static struct service sDefault = {
 	False,			/* bHideUnReadable */
 	False,			/* bHideUnWriteableFiles */
 	True,			/* bBrowseable */
-       False,                  /* bAccessBasedShareEnum */
+	False,			/* bAccessBasedShareEnum */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
