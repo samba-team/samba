@@ -671,6 +671,8 @@ static void set_server_role(void);
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
 
+static void *lp_local_ptr(struct service *service, void *ptr);
+
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
 	{PROTOCOL_LANMAN2, "LANMAN2"},
@@ -7167,13 +7169,23 @@ static void init_copymap(struct service *pservice)
 }
 
 /***************************************************************************
+ Return the local pointer to a parameter given a service struct and the
+ pointer into the default structure.
+***************************************************************************/
+
+static void *lp_local_ptr(struct service *service, void *ptr)
+{
+	return (void *)(((char *)service) + PTR_DIFF(ptr, &sDefault));
+}
+
+/***************************************************************************
  Return the local pointer to a parameter given the service number and the 
  pointer into the default structure.
 ***************************************************************************/
 
 void *lp_local_ptr_by_snum(int snum, void *ptr)
 {
-	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
+	return lp_local_ptr(ServicePtrs[snum], ptr);
 }
 
 /***************************************************************************
