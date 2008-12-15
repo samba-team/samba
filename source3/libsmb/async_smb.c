@@ -955,6 +955,39 @@ static void cli_state_handler(struct event_context *event_ctx,
 
 	DEBUG(11, ("cli_state_handler called with flags %d\n", flags));
 
+	if (flags & EVENT_FD_WRITE) {
+		size_t to_send;
+		ssize_t sent;
+
+		for (req = cli->outstanding_requests; req; req = req->next) {
+			to_send = smb_len(req->outbuf)+4;
+			if (to_send > req->sent) {
+				break;
+			}
+		}
+
+		if (req == NULL) {
+			if (cli->fd_event != NULL) {
+				event_fd_set_not_writeable(cli->fd_event);
+			}
+			return;
+		}
+
+		sent = sys_send(cli->fd, req->outbuf + req->sent,
+			    to_send - req->sent, 0);
+
+		if (sent < 0) {
+			status = map_nt_error_from_unix(errno);
+			goto sock_error;
+		}
+
+		req->sent += sent;
+
+		if (req->sent == to_send) {
+			return;
+		}
+	}
+
 	if (flags & EVENT_FD_READ) {
 		int res, available;
 		size_t old_size, new_size;
@@ -1020,38 +1053,6 @@ static void cli_state_handler(struct event_context *event_ctx,
 		}
 	}
 
-	if (flags & EVENT_FD_WRITE) {
-		size_t to_send;
-		ssize_t sent;
-
-		for (req = cli->outstanding_requests; req; req = req->next) {
-			to_send = smb_len(req->outbuf)+4;
-			if (to_send > req->sent) {
-				break;
-			}
-		}
-
-		if (req == NULL) {
-			if (cli->fd_event != NULL) {
-				event_fd_set_not_writeable(cli->fd_event);
-			}
-			return;
-		}
-
-		sent = sys_send(cli->fd, req->outbuf + req->sent,
-			    to_send - req->sent, 0);
-
-		if (sent < 0) {
-			status = map_nt_error_from_unix(errno);
-			goto sock_error;
-		}
-
-		req->sent += sent;
-
-		if (req->sent == to_send) {
-			return;
-		}
-	}
 	return;
 
  sock_error:
