@@ -518,6 +518,20 @@ der_get_tag (const unsigned char *p, size_t len,
 
 int
 der_match_tag (const unsigned char *p, size_t len,
+	       Der_class class, Der_type type,
+	       unsigned int tag, size_t *size)
+{
+    Der_type thistype;
+    int e;
+
+    e = der_match_tag2(p, len, class, &thistype, tag, size);
+    if (e) return e;
+    if (thistype != type) return ASN1_BAD_ID;
+    return 0;
+}
+
+int
+der_match_tag2 (const unsigned char *p, size_t len,
 		Der_class class, Der_type *type,
 		unsigned int tag, size_t *size)
 {
@@ -546,7 +560,7 @@ der_match_tag_and_length (const unsigned char *p, size_t len,
     size_t l, ret = 0;
     int e;
 
-    e = der_match_tag (p, len, class, type, tag, &l);
+    e = der_match_tag2 (p, len, class, type, tag, &l);
     if (e) return e;
     p += l;
     len -= l;
