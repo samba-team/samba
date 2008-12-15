@@ -68,11 +68,11 @@ decode_heim_any(const unsigned char *p, size_t len,
     e = der_get_length(p + l, len - l, &length, &len_len);
     if (e) return e;
     if (length == ASN1_INDEFINITE) {
-	if (len < len_len + l)
+        if (len < len_len + l)
 	    return ASN1_OVERFLOW;
-	length = len - len_len + l;
+	length = len - (len_len + l);
     } else {
-	if (length + len_len + l > len)
+	if (len < length + len_len + l)
 	    return ASN1_OVERFLOW;
     }
     
