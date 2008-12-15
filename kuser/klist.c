@@ -222,7 +222,7 @@ print_tickets (krb5_context context,
 	       int do_hidden)
 {
     krb5_error_code ret;
-    char *str;
+    char *str, *name;
     krb5_cc_cursor cursor;
     krb5_creds creds;
     int32_t sec, usec;
@@ -238,6 +238,13 @@ print_tickets (krb5_context context,
 	    krb5_cc_get_type(context, ccache),
 	    krb5_cc_get_name(context, ccache));
     printf ("%17s: %s\n", N_("Principal", ""), str);
+
+    ret = krb5_cc_get_friendly_name(context, ccache, &name);
+    if (ret == 0) {
+	if (strcmp(name, str) != 0)
+	    printf ("%17s: %s\n", N_("Friendly name", ""), name);
+	free(name);
+    }
     free (str);
 
     if(do_verbose)
