@@ -100,4 +100,26 @@ struct dsdb_pdc_fsmo {
  */
 #define DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID "1.3.6.1.4.1.7165.4.4.2"
 
+#define DSDB_OPENLDAP_DEREFERENCE_CONTROL "1.3.6.1.4.1.4203.666.5.16"
+
+struct dsdb_openldap_dereference {
+	const char *source_attribute;
+	const char **dereference_attribute;
+};
+
+struct dsdb_openldap_dereference_control {
+	struct dsdb_openldap_dereference **dereference;
+};
+
+struct dsdb_openldap_dereference_result {
+	const char *source_attribute;
+	const char *dereferenced_dn;
+	int num_attributes;
+	struct ldb_message_element *attributes;
+};
+
+struct dsdb_openldap_dereference_result_control {
+	struct dsdb_openldap_dereference_result **attributes;
+};
+
 #endif /* __SAMDB_H__ */
