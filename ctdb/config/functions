@@ -154,6 +154,7 @@ ctdb_check_directories_probe() {
   wait_dirs="$*"
   [ -z "$wait_dirs" ] && return;
   for d in $wait_dirs; do
+      ( echo $d | grep -q '%' ) && continue
       [ -d $d ] || return 1
   done
   return 0
