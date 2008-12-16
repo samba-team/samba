@@ -12,7 +12,7 @@ use Exporter;
 @EXPORT_OK = qw(ParseFunction $res $res_hdr ParseOutputArgument);
 
 use strict;
-use Parse::Pidl qw(fatal warning);
+use Parse::Pidl qw(fatal warning error);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::Samba4 qw(DeclLong);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv);
@@ -76,7 +76,11 @@ sub ParseOutputArgument($$$)
 	my ($self, $fn, $e) = @_;
 	my $level = 0;
 
-	fatal($e->{ORIGINAL}, "[out] argument is not a pointer or array") if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY");
+	if ($e->{LEVELS}[0]->{TYPE} ne "POINTER" and $e->{LEVELS}[0]->{TYPE} ne "ARRAY") {
+		$self->pidl("return NT_STATUS_NOT_SUPPORTED;");
+		error($e->{ORIGINAL}, "[out] argument is not a pointer or array");
+		return;
+	}
 
 	if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
 		$level = 1;
