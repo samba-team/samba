@@ -58,8 +58,8 @@
 	<title>EXAMPLES</title>
 	<para>
 	The following example shows how to retrieve idmappings from our principal and
-	and trusted AD domains. All is needed is to set default to yes. If trusted
-	domains are present id conflicts must be resolved beforehand, there is no
+	and trusted AD domains. If trusted domains are present id conflicts must be
+	resolved beforehand, there is no
 	guarantee on the order conflicting mappings would be resolved at this point.
 
 	This example also shows how to leave a small non conflicting range for local
