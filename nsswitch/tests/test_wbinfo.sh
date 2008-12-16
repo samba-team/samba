@@ -14,10 +14,10 @@ TARGET=$4
 shift 4
 
 failed=0
-samba4bindir=`dirname $0`/../../bin
+samba4bindir=`dirname $0`/../../source4/bin
 wbinfo=$samba4bindir/wbinfo
 
-. `dirname $0`/../../../testprogs/blackbox/subunit.sh
+. `dirname $0`/../../testprogs/blackbox/subunit.sh
 
 testfail() {
 	name="$1"
