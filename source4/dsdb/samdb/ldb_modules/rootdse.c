@@ -278,7 +278,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 		/* should we allow the backend to return referrals in this case

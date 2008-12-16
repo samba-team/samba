@@ -53,6 +53,26 @@ struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char 
 	return NULL;
 }
 
+/* check if a control with the specified "oid" exist and return it */
+/* returns NULL if not found */
+struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid)
+{
+	int i;
+
+	/* check if there's a paged request control */
+	if (rep->controls != NULL) {
+		for (i = 0; rep->controls[i]; i++) {
+			if (strcmp(oid, rep->controls[i]->oid) == 0) {
+				break;
+			}
+		}
+
+		return rep->controls[i];
+	}
+
+	return NULL;
+}
+
 /* saves the current controls list into the "saver" and replace the one in req with a new one excluding
 the "exclude" control */
 /* returns False on error */

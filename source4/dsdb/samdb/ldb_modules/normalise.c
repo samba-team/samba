@@ -134,7 +134,7 @@ static int normalize_search_callback(struct ldb_request *req, struct ldb_reply *
 			}
 		}
 
-		return ldb_module_send_entry(ac->req, msg);
+		return ldb_module_send_entry(ac->req, msg, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 

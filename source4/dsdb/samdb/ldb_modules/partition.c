@@ -186,7 +186,7 @@ static int partition_req_callback(struct ldb_request *req,
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_DONE:
 		if (ares->error == LDB_SUCCESS) {

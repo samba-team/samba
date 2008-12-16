@@ -1077,7 +1077,7 @@ int map_return_entry(struct map_context *ac, struct ldb_reply *ares)
 		}
 	}
 
-	return ldb_module_send_entry(ac->req, ares->message);
+	return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 }
 
 /* Search a record. */

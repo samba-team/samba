@@ -311,7 +311,9 @@ static void ildb_callback(struct ldap_request *req)
 				ldbmsg->num_elements = search->num_attributes;
 				ldbmsg->elements = talloc_move(ldbmsg, &search->attributes);
 
-				ret = ldb_module_send_entry(ac->req, ldbmsg);
+				controls = talloc_steal(ac, msg->controls);
+				
+				ret = ldb_module_send_entry(ac->req, ldbmsg, controls);
 				if (ret != LDB_SUCCESS) {
 					callback_failed = true;
 				}

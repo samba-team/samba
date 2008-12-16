@@ -326,7 +326,6 @@ typedef int (*ldb_attr_comparison_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, 
   attribute handler structure
 
   attr			-> The attribute name
-  flags			-> LDB_ATTR_FLAG_*
   ldif_read_fn		-> convert from ldif to binary format
   ldif_write_fn		-> convert from binary to ldif format
   canonicalise_fn	-> canonicalise a value, for use by indexing and dn construction
@@ -1074,6 +1073,15 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
   \return the control, NULL if not found 
 */
 struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid);
+
+/**
+   check if a control with the specified "oid" exist and return it 
+  \param rep the reply struct where to add the control
+  \param oid the object identifier of the control as string
+
+  \return the control, NULL if not found 
+*/
+struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid);
 
 /**
   Search the database

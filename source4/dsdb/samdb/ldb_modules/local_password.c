@@ -820,7 +820,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 		/* free the rest */
 		talloc_free(ares);
 
-		return ldb_module_send_entry(ac->req, merge->message);
+		return ldb_module_send_entry(ac->req, merge->message, merge->controls);
 
 	case LDB_REPLY_REFERRAL:
 		/* ignore */
@@ -833,7 +833,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 
 		/* if this entry was not returned yet, return it now */
 		if (lr->remote) {
-			ret = ldb_module_send_entry(ac->req, ac->remote->message);
+			ret = ldb_module_send_entry(ac->req, ac->remote->message, ac->remote->controls);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req,
 							NULL, NULL, ret);
@@ -899,7 +899,7 @@ static int lpdb_remote_search_callback(struct ldb_request *req,
 				ldb_msg_remove_attr(ares->message, "objectClass");
 			}
 			
-			return ldb_module_send_entry(ac->req, ares->message);
+			return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		}
 
 		if (ldb_msg_find_ldb_val(ares->message, "objectGUID") == NULL) {

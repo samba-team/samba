@@ -161,7 +161,7 @@ static int ps_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		ret = ldb_module_send_entry(ac->req, ares->message);
+		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}

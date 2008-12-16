@@ -406,7 +406,7 @@ static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply
 	case LDB_REPLY_ENTRY:
 
 		if (ldb_dn_compare(ares->message->dn, mc->aggregate_dn) != 0) {
-			return ldb_module_send_entry(ac->req, ares->message);
+			return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		}
 
 		for (i=0; i < ARRAY_SIZE(generated_attrs); i++) {
@@ -418,7 +418,7 @@ static int schema_fsmo_search_callback(struct ldb_request *req, struct ldb_reply
 			}
 		}
 
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 
