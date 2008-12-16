@@ -28,4 +28,7 @@ $(pidldir)/lib/Parse/Pidl/Expr.pm: $(pidldir)/idl.yp
 
 testcov-html:: pidl-testcov
 
+pidl-clean:
+	/bin/rm -f $(pidldir)/Makefile
 
+clean:: pidl-clean

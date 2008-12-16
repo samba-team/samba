@@ -40,6 +40,9 @@
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8
 
+static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
+				 const char *symbol);
+
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path)
 {
 	talloc_free(ldb->modules_dir);
@@ -291,8 +294,8 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	return 0;
 }
 
-void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
-			    const char *symbol)
+static void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
+				 const char *symbol)
 {
 	char *path;
 	void *handle;
@@ -334,6 +337,10 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 	for (i = 0; module_list[i] != NULL; i++) {
 		struct ldb_module *current;
 		const struct ldb_module_ops *ops;
+
+		if (strcmp(module_list[i], "") == 0) {
+			continue;
+		}
 		
 		ops = ldb_find_module_ops(module_list[i]);
 		if (ops == NULL) {
