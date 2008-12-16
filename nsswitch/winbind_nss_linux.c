@@ -105,8 +105,8 @@ static bool next_token_alloc(const char **ptr,
                                 char **pp_buff,
                                 const char *sep)
 {
-	char *s;
-	char *saved_s;
+	const char *s;
+	const char *saved_s;
 	char *pbuf;
 	bool quoted;
 	size_t len=1;
@@ -116,7 +116,7 @@ static bool next_token_alloc(const char **ptr,
 		return(false);
 	}
 
-	s = (char *)*ptr;
+	s = *ptr;
 
 	/* default to simple separators */
 	if (!sep) {
