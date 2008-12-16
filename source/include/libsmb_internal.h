@@ -113,18 +113,19 @@ struct SMBC_internal_data {
 	/* True when this handle is initialized */
 	bool                                    initialized;
 
-        /* dirent pointer location
-         *
+        /* dirent pointer location */
+	struct smbc_dirent			dirent;
+	/*
          * Leave room for any urlencoded filename and the comment field.
          *
-         * We really should use sizeof(struct smbc_dirent) plus (NAME_MAX * 3)
-         * plus whatever the max length of a comment is, plus a couple of null
-         * terminators (one after the filename, one after the comment).
+	 * We use (NAME_MAX * 3) plus whatever the max length of a comment is,
+	 * plus a couple of null terminators (one after the filename,
+	 * one after the comment).
          *
          * According to <linux/limits.h>, NAME_MAX is 255.  Is it longer
          * anyplace else?
          */
-	char                                    dirent[1024];
+	char                                    _dirent_name[1024];
 
 	/*
          * server connection list

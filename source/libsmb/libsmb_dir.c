@@ -976,9 +976,8 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
         }
 
-        dirp = (struct smbc_dirent *)context->internal->dirent;
-        maxlen = (sizeof(context->internal->dirent) -
-                  sizeof(struct smbc_dirent));
+        dirp = &context->internal->dirent;
+        maxlen = sizeof(context->internal->_dirent_name);
 
         smbc_readdir_internal(context, dirp, dirent, maxlen);
 
@@ -1049,9 +1048,8 @@ SMBC_getdents_ctx(SMBCCTX *context,
 		}
 
                 /* Do urlencoding of next entry, if so selected */
-                dirent = (struct smbc_dirent *)context->internal->dirent;
-                maxlen = (sizeof(context->internal->dirent) -
-                          sizeof(struct smbc_dirent));
+                dirent = &context->internal->dirent;
+                maxlen = sizeof(context->internal->_dirent_name);
                 smbc_readdir_internal(context, dirent,
                                       dirlist->dirent, maxlen);
 
