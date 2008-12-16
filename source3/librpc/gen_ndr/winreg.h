@@ -54,7 +54,7 @@ struct winreg_String {
 	uint16_t name_len;/* [value(strlen_m_term(name)*2)] */
 	uint16_t name_size;/* [value(strlen_m_term(name)*2)] */
 	const char *name;/* [unique,charset(UTF16)] */
-}/* [public,noejs] */;
+}/* [public] */;
 
 struct KeySecurityData {
 	uint8_t *data;/* [unique,length_is(len),size_is(size)] */

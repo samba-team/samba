@@ -226,6 +226,7 @@ struct ntvfs_context {
 /* a set of flags to control handling of request structures */
 #define NTVFS_ASYNC_STATE_ASYNC     (1<<1) /* the backend will answer this one later */
 #define NTVFS_ASYNC_STATE_MAY_ASYNC (1<<2) /* the backend is allowed to answer async */
+#define NTVFS_ASYNC_STATE_CLOSE     (1<<3) /* the backend session should be closed */
 
 /* the ntvfs_async_state structure allows backend functions to 
    delay replying to requests. To use this, the front end must

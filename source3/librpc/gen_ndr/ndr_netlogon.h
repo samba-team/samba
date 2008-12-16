@@ -104,7 +104,7 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 
 #define NDR_NETR_LOGONSAMLOGONWITHFLAGS (0x2d)
 
-#define NDR_NETR_NETRSERVERGETTRUSTINFO (0x2e)
+#define NDR_NETR_SERVERGETTRUSTINFO (0x2e)
 
 #define NDR_NETLOGON_CALL_COUNT (47)
 void ndr_print_netr_UasInfo(struct ndr_print *ndr, const char *name, const struct netr_UasInfo *r);
@@ -226,6 +226,7 @@ void ndr_print_netr_DomainTrust(struct ndr_print *ndr, const char *name, const s
 void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *name, const struct netr_DomainTrustList *r);
 void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, const char *name, const struct netr_DsRAddressToSitenamesExWCtr *r);
 void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, const struct DcSitesCtr *r);
+void ndr_print_netr_TrustInfo(struct ndr_print *ndr, const char *name, const struct netr_TrustInfo *r);
 void ndr_print_netr_LogonUasLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogon *r);
 void ndr_print_netr_LogonUasLogoff(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogoff *r);
 void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogon *r);
@@ -276,5 +277,5 @@ void ndr_print_netr_ServerTrustPasswordsGet(struct ndr_print *ndr, const char *n
 void ndr_print_netr_DsRGetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetForestTrustInformation *r);
 void ndr_print_netr_GetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_GetForestTrustInformation *r);
 void ndr_print_netr_LogonSamLogonWithFlags(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogonWithFlags *r);
-void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r);
+void ndr_print_netr_ServerGetTrustInfo(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerGetTrustInfo *r);
 #endif /* _HEADER_NDR_netlogon */

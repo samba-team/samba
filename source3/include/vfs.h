@@ -110,6 +110,7 @@
    open handle. JRA. */
 /* Changed to version 24 - make security descriptor const in fset_nt_acl. JRA. */
 /* Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t. */
+/* Leave at 25 - not yet released. Add create_file call. -- tprouty. */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -134,6 +135,8 @@ struct connection_struct;
 struct files_struct;
 struct security_descriptor;
 struct vfs_statvfs_struct;
+struct smb_request;
+struct ea_list;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
@@ -170,6 +173,7 @@ typedef enum _vfs_op_type {
 	/* File operations */
 
 	SMB_VFS_OP_OPEN,
+	SMB_VFS_OP_CREATE_FILE,
 	SMB_VFS_OP_CLOSE,
 	SMB_VFS_OP_READ,
 	SMB_VFS_OP_PREAD,
@@ -206,6 +210,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
+	SMB_VFS_OP_GET_REAL_FILENAME,
 
 	/* NT ACL operations. */
 
@@ -305,6 +310,23 @@ struct vfs_ops {
 		/* File operations */
 
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
+		NTSTATUS (*create_file)(struct vfs_handle_struct *handle,
+					struct smb_request *req,
+					uint16_t root_dir_fid,
+					const char *fname,
+					uint32_t create_file_flags,
+					uint32_t access_mask,
+					uint32_t share_access,
+					uint32_t create_disposition,
+					uint32_t create_options,
+					uint32_t file_attributes,
+					uint32_t oplock_request,
+					uint64_t allocation_size,
+					struct security_descriptor *sd,
+					struct ea_list *ea_list,
+					files_struct **result,
+					int *pinfo,
+					SMB_STRUCT_STAT *psbuf);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		ssize_t (*vfs_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
@@ -353,6 +375,12 @@ struct vfs_ops {
 				       TALLOC_CTX *mem_ctx,
 				       unsigned int *num_streams,
 				       struct stream_struct **streams);
+
+		int (*get_real_filename)(struct vfs_handle_struct *handle,
+					 const char *path,
+					 const char *name,
+					 TALLOC_CTX *mem_ctx,
+					 char **found_name);
 
 		/* NT ACL operations. */
 
@@ -452,6 +480,7 @@ struct vfs_ops {
 		/* File operations */
 
 		struct vfs_handle_struct *open;
+		struct vfs_handle_struct *create_file;
 		struct vfs_handle_struct *close_hnd;
 		struct vfs_handle_struct *vfs_read;
 		struct vfs_handle_struct *pread;
@@ -488,6 +517,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *chflags;
 		struct vfs_handle_struct *file_id_create;
 		struct vfs_handle_struct *streaminfo;
+		struct vfs_handle_struct *get_real_filename;
 
 		/* NT ACL operations. */
 

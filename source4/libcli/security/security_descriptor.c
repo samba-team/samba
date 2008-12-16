@@ -65,18 +65,6 @@ static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	/* remapping array in trustee dom_sid from old acl to new acl */
-
-	for (i = 0; i < oacl->num_aces; i++) {
-		nacl->aces[i].trustee.sub_auths = 
-			(uint32_t *)talloc_memdup(nacl->aces, nacl->aces[i].trustee.sub_auths,
-				      sizeof(uint32_t) * nacl->aces[i].trustee.num_auths);
-
-		if ((nacl->aces[i].trustee.sub_auths == NULL) && (nacl->aces[i].trustee.num_auths > 0)) {
-			goto failed;
-		}
-	}
-
 	nacl->revision = oacl->revision;
 	nacl->size = oacl->size;
 	nacl->num_aces = oacl->num_aces;
@@ -175,14 +163,6 @@ static NTSTATUS security_descriptor_acl_add(struct security_descriptor *sd,
 	}
 
 	acl->aces[acl->num_aces] = *ace;
-	acl->aces[acl->num_aces].trustee.sub_auths =
-		(uint32_t *)talloc_memdup(acl->aces,
-			      acl->aces[acl->num_aces].trustee.sub_auths,
-			      sizeof(uint32_t) *
-			      acl->aces[acl->num_aces].trustee.num_auths);
-	if (acl->aces[acl->num_aces].trustee.sub_auths == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	switch (acl->aces[acl->num_aces].type) {
 	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:

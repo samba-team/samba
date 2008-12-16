@@ -270,13 +270,14 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 		}
 	}
 
+	/* we allow all kinds of trusts here */
 	nt_status = authsam_account_ok(tmp_ctx, 
 				       private->samdb, 
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
 				       private->msg,
 				       private->realm_ref_msg,
 				       workstation,
-				       name);
+				       name, true);
 	free(name);
 
 	if (NT_STATUS_IS_OK(nt_status))

@@ -1422,6 +1422,52 @@ done:
 	return ret;
 }
 
+/*
+  test RAW_OPEN_OPENX against an existing directory to
+  ensure it returns NT_STATUS_FILE_IS_A_DIRECTORY.
+  Samba 3.2.0 - 3.2.6 are known to fail this.
+  
+*/
+static bool test_openx_over_dir(struct smbcli_state *cli, TALLOC_CTX *tctx)
+{
+	union smb_open io;
+	const char *fname = BASEDIR "\\openx_over_dir";
+	NTSTATUS status;
+	int d_fnum = -1;
+	int fnum = -1;
+	bool ret = true;
+
+	printf("Checking RAW_OPEN_OPENX over an existing directory\n");
+	smbcli_unlink(cli->tree, fname);
+
+        /* Create the Directory */
+	status = create_directory_handle(cli->tree, fname, &d_fnum);
+	smbcli_close(cli->tree, d_fnum);	
+
+        /* Prepare to open the file over the directory. */
+	io.openx.level = RAW_OPEN_OPENX;
+	io.openx.in.fname = fname;
+	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openx.in.open_func = OPENX_OPEN_FUNC_OPEN;
+	io.openx.in.search_attrs = 0;
+	io.openx.in.file_attrs = 0;
+	io.openx.in.write_time = 0;
+	io.openx.in.size = 1024*1024;
+	io.openx.in.timeout = 0;
+
+	status = smb_raw_open(cli->tree, tctx, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
+	fnum = io.openx.out.file.fnum;
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+
+	return ret;
+}
+
+
 /* A little torture test to expose a race condition in Samba 3.0.20 ... :-) */
 
 static bool test_raw_open_multi(struct torture_context *tctx)
@@ -1624,6 +1670,7 @@ bool torture_raw_open(struct torture_context *torture, struct smbcli_state *cli)
 	ret &= test_ctemp(cli, torture);
 	ret &= test_chained(cli, torture);
 	ret &= test_no_leading_slash(cli, torture);
+	ret &= test_openx_over_dir(cli, torture);
 	ret &= test_open_for_delete(cli, torture);
 
 	smb_raw_exit(cli->session);

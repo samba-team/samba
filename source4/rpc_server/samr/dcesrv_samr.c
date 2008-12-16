@@ -140,11 +140,13 @@
 
 #define SET_PARAMETERS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
-		return NT_STATUS_NO_MEMORY;				\
+	if (r->in.info->field.length != 0) {				\
+		if (samdb_msg_add_parameters(sam_ctx, mem_ctx, msg, attr, &r->in.info->field) != 0) { \
+			return NT_STATUS_NO_MEMORY;			\
+		}							\
+		set_el = ldb_msg_find_element(msg, attr);		\
+		set_el->flags = LDB_FLAG_MOD_REPLACE;			\
 	}								\
-	set_el = ldb_msg_find_element(msg, attr);			\
-	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)
 
 
@@ -763,8 +765,7 @@ static NTSTATUS dcesrv_samr_info_DomInfo13(struct samr_domain_state *state,
 	info->domain_create_time = ldb_msg_find_attr_as_uint(dom_msgs[0], "creationTime",
 						     0x0LL);
 
-	info->unknown1 = 0;
-	info->unknown2 = 0;
+	info->modified_count_at_last_promotion = 0;
 
 	return NT_STATUS_OK;
 }
@@ -3512,14 +3513,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_UINT  (msg, info23.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
 			SET_UINT  (msg, info23.info.code_page,    "codePage");
-		IFSET(SAMR_FIELD_PASSWORD) {
+		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
 						   a_state->sam_ctx,
 						   a_state->account_dn,
 						   a_state->domain_state->domain_dn,
 						   mem_ctx, msg, 
 						   &r->in.info->info23.password);
-		} else IFSET(SAMR_FIELD_PASSWORD2) {
+		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password(dce_call,
 						   a_state->sam_ctx,
 						   a_state->account_dn,
@@ -3568,14 +3569,14 @@ static NTSTATUS dcesrv_samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALL
 			SET_UINT  (msg, info25.info.country_code, "countryCode");
 		IFSET(SAMR_FIELD_CODE_PAGE)    
 			SET_UINT  (msg, info25.info.code_page,    "codePage");
-		IFSET(SAMR_FIELD_PASSWORD) {
+		IFSET(SAMR_FIELD_NT_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
 						      a_state->sam_ctx,
 						      a_state->account_dn,
 						      a_state->domain_state->domain_dn,
 						      mem_ctx, msg, 
 						      &r->in.info->info25.password);
-		} else IFSET(SAMR_FIELD_PASSWORD2) {
+		} else IFSET(SAMR_FIELD_LM_PASSWORD_PRESENT) {
 			status = samr_set_password_ex(dce_call,
 						      a_state->sam_ctx,
 						      a_state->account_dn,

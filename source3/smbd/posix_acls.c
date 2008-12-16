@@ -3248,17 +3248,24 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = open_directory(fsp->conn,
-				NULL,
-				parent_name,
-				&sbuf,
-				FILE_READ_ATTRIBUTES, /* Just a stat open */
-				FILE_SHARE_NONE, /* Ignored for stat opens */
-				FILE_OPEN,
-				0,
-				INTERNAL_OPEN_ONLY,
-				&info,
-				&parent_fsp);
+	status = SMB_VFS_CREATE_FILE(
+		fsp->conn,				/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		parent_name,				/* fname */
+		0,					/* create_file_flags */
+		FILE_READ_ATTRIBUTES,			/* access_mask */
+		FILE_SHARE_NONE,			/* share_access */
+		FILE_OPEN,				/* create_disposition*/
+		FILE_DIRECTORY_FILE,			/* create_options */
+		0,					/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&parent_fsp,				/* result */
+		&info,					/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

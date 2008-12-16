@@ -950,14 +950,17 @@ static bool deltest17(struct torture_context *tctx, struct smbcli_state *cli1, s
 
 	smbcli_close(cli1->tree, fnum1);
 
-	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, false, __location__);
+	/* After the first close, the files has the delete on close bit set. */
+	correct &= check_delete_on_close(tctx, cli1, fnum2, fname, true, __location__);
 
 	smbcli_close(cli1->tree, fnum2);
 
-	/* See if the file is deleted - shouldn't be.... */
+	/* Make sure the file has been deleted */
 	fnum1 = smbcli_open(cli1->tree, fname, O_RDWR, DENY_NONE);
-	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open of %s failed (should succeed) - %s", 
+	torture_assert(tctx, fnum1 == -1, talloc_asprintf(tctx, "open of %s failed (should succeed) - %s",
 		       fname, smbcli_errstr(cli1->tree)));
+
+	CHECK_STATUS(cli1, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
 	return correct;
 }
@@ -994,7 +997,12 @@ static bool deltest18(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum1 != -1, talloc_asprintf(tctx, "open - 1 of %s failed (%s)", 
 		       dname, smbcli_errstr(cli1->tree)));
 
-	/* The delete on close bit is *not* reported as being set. */
+	/*
+	 * The delete on close bit is *not* reported as being set.
+	 * Win2k3/win2k8 should pass this check, but WinXPsp2 reports delete on
+	 * close as being set.  This causes the subsequent create to fail with
+	 * NT_STATUS_DELETE_PENDING.
+	 */
 	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, false, __location__);
 
 	/* Now try opening again for read-only. */
@@ -1082,7 +1090,12 @@ static bool deltest19(struct torture_context *tctx, struct smbcli_state *cli1, s
 	torture_assert(tctx, fnum1 != -1, 
 		talloc_asprintf(tctx, "open - 1 of %s failed (%s)", fname, smbcli_errstr(cli1->tree)));
 
-	/* The delete on close bit is *not* reported as being set. */
+	/*
+	 * The delete on close bit is *not* reported as being set.
+	 * Win2k3/win2k8 should pass this check, but WinXPsp2 reports delete on
+	 * close as being set.  This causes the subsequent create to fail with
+	 * NT_STATUS_DELETE_PENDING.
+	 */
 	correct &= check_delete_on_close(tctx, cli1, fnum1, dname, false, __location__);
 
 	/* Now try opening again for read-only. */

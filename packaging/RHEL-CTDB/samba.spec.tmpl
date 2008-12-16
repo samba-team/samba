@@ -133,12 +133,11 @@ cd source
 # RPM_OPT_FLAGS="$RPM_OPT_FLAGS -D_FILE_OFFSET_BITS=64"
 
 ## check for ccache
-# ccache -h 2>&1 > /dev/null
-#if [ $? -eq 0 ]; then
-#	CC="ccache gcc"
-#else
+if ccache -h >/dev/null 2>&1 ; then
+	CC="ccache gcc"
+else
 	CC="gcc"
-#fi 
+fi
 
 ## always run autogen.sh
 ./autogen.sh
@@ -149,6 +148,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --with-configdir=%{_sysconfdir}/samba \
         --libdir=%{_libarchdir} \
 	--with-modulesdir=%{_libarchdir}/samba \
+	--with-pammodulesdir=%{_libarch}/security \
         --with-lockdir=/var/lib/samba \
         --with-logfilebase=/var/log/samba \
         --with-mandir=%{_mandir} \
@@ -167,7 +167,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
         --without-smbwrapper \
 	--with-pam \
 	--with-quotas \
-	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2 \
+	--with-shared-modules=idmap_rid,idmap_ad,idmap_tdb2,vfs_gpfs \
 	--with-syslog \
 	--with-utmp \
 	--with-cluster-support \
@@ -230,8 +230,7 @@ make DESTDIR=$RPM_BUILD_ROOT \
         install
 cd ..
 
-# NSS & PAM winbind support
-install -m 755 source/bin/pam_winbind.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_winbind.so
+# NSS winbind support
 install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/libnss_winbind.so.2
 ( cd $RPM_BUILD_ROOT/%{_libarch};
   ln -sf libnss_winbind.so.2  libnss_winbind.so )
@@ -242,8 +241,6 @@ install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/lib
 #install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
-# Install pam_smbpass.so
-install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_libarch}/security/pam_smbpass.so
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
@@ -419,6 +416,8 @@ exit 0
 /sbin/mount.cifs
 /sbin/umount.cifs
 
+%{_sbindir}/cifs.upcall
+
 %{_bindir}/rpcclient
 %{_bindir}/smbcacls
 %{_bindir}/findsmb
@@ -432,6 +431,7 @@ exit 0
 
 %{_mandir}/man8/mount.cifs.8.*
 %{_mandir}/man8/umount.cifs.8.*
+%{_mandir}/man8/cifs.upcall.8*
 %{_mandir}/man8/smbspool.8*
 %{_mandir}/man1/smbget.1*
 %{_mandir}/man5/smbgetrc.5*
@@ -512,7 +512,6 @@ exit 0
 %{_mandir}/man1/ldbedit.1*
 %{_mandir}/man1/ldbmodify.1*
 %{_mandir}/man1/ldbsearch.1*
-%{_mandir}/man8/cifs.upcall.8*
 
 %ifarch i386 i486 i586 i686 ppc s390
 %files winbind-32bit

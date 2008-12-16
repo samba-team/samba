@@ -209,18 +209,7 @@ typedef uint32 codepoint_t;
  *
  * @sa http://msdn.microsoft.com/library/default.asp?url=/library/en-us/security/accctrl_38yn.asp
  **/
-typedef struct dom_sid {
-	uint8  sid_rev_num;             /**< SID revision number */
-	uint8  num_auths;               /**< Number of sub-authorities */
-	uint8  id_auth[6];              /**< Identifier Authority */
-	/*
-	 *  Pointer to sub-authorities.
-	 *
-	 * @note The values in these uint32's are in *native* byteorder, not
-	 * neccessarily little-endian...... JRA.
-	 */
-	uint32 sub_auths[MAXSUBAUTHS];  
-} DOM_SID;
+typedef struct dom_sid DOM_SID;
 
 enum id_mapping {
 	ID_UNKNOWN = 0,
@@ -710,7 +699,6 @@ struct pending_message_list {
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
-#define SHARE_MODE_ALLOW_INITIAL_DELETE_ON_CLOSE      0x2
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
@@ -1894,5 +1882,10 @@ struct smb_extended_info {
 	NTTIME samba_gitcommitdate;
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
+
+/*
+ * create_file_flags
+ */
+#define CFF_DOS_PATH		0x00000001
 
 #endif /* _SMB_H */

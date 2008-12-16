@@ -219,9 +219,8 @@ static void display_sam_dom_info_13(struct samr_DomInfo13 *info13)
 	printf("Sequence No:\t%llu\n", (unsigned long long)info13->sequence_num);
 	printf("Domain Create Time:\t%s\n",
 		http_timestring(talloc_tos(), nt_time_to_unix(info13->domain_create_time)));
-	printf("Unknown1:\t%d\n", info13->unknown1);
-	printf("Unknown2:\t%d\n", info13->unknown2);
-
+	printf("Sequence No at last promotion:\t%llu\n",
+		(unsigned long long)info13->modified_count_at_last_promotion);
 }
 
 static void display_sam_info_1(struct samr_DispEntryGeneral *r)
@@ -262,6 +261,35 @@ static void display_sam_info_5(struct samr_DispEntryAscii *r)
 {
 	printf("index: 0x%x ", r->idx);
 	printf("Account: %s\n", r->account_name.string);
+}
+
+/****************************************************************************
+ ****************************************************************************/
+
+static NTSTATUS get_domain_handle(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  const char *sam,
+				  struct policy_handle *connect_pol,
+				  uint32_t access_mask,
+				  struct dom_sid *_domain_sid,
+				  struct policy_handle *domain_pol)
+{
+
+	if (StrCaseCmp(sam, "domain") == 0) {
+		return rpccli_samr_OpenDomain(cli, mem_ctx,
+					      connect_pol,
+					      access_mask,
+					      _domain_sid,
+					      domain_pol);
+	} else if (StrCaseCmp(sam, "builtin") == 0) {
+		return rpccli_samr_OpenDomain(cli, mem_ctx,
+					      connect_pol,
+					      access_mask,
+					      CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					      domain_pol);
+	}
+
+	return NT_STATUS_INVALID_PARAMETER;
 }
 
 /**********************************************************************
@@ -649,21 +677,11 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						&domain_sid, &domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else {
-		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -955,20 +973,11 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
 	/* Get domain policy handle */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						access_mask,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   access_mask,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1107,20 +1116,11 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1197,25 +1197,11 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (strequal(argv[1], "domain")) {
-
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						SEC_FLAG_MAXIMUM_ALLOWED,
-						&domain_sid,
-						&domain_pol);
-
-	} else if (strequal(argv[1], "builtin")) {
-
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						SEC_FLAG_MAXIMUM_ALLOWED,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-
-	} else {
-		return NT_STATUS_OK;
-	}
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   SEC_FLAG_MAXIMUM_ALLOWED,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1294,20 +1280,11 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 	/* Open handle on domain */
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_INVALID_PARAMETER;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1890,20 +1867,11 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1973,20 +1941,11 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	if (StrCaseCmp(argv[1], "domain")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						&domain_sid,
-						&domain_pol);
-	else if (StrCaseCmp(argv[1], "builtin")==0)
-		result = rpccli_samr_OpenDomain(cli, mem_ctx,
-						&connect_pol,
-						MAXIMUM_ALLOWED_ACCESS,
-						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
-						&domain_pol);
-	else
-		return NT_STATUS_OK;
+	result = get_domain_handle(cli, mem_ctx, argv[1],
+				   &connect_pol,
+				   MAXIMUM_ALLOWED_ACCESS,
+				   &domain_sid,
+				   &domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -2658,6 +2617,241 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 int argc, const char **argv,
+					 int opcode)
+{
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	const char *user, *param;
+	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t level;
+	uint32_t user_rid;
+	union samr_UserInfo info;
+	struct samr_CryptPassword pwd_buf;
+	struct samr_CryptPasswordEx pwd_buf_ex;
+	uint8_t nt_hash[16];
+	uint8_t lm_hash[16];
+	DATA_BLOB session_key;
+	uint8_t password_expired = 0;
+
+	if (argc < 4) {
+		printf("Usage: %s username level password [password_expired]\n",
+			argv[0]);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	user = argv[1];
+	level = atoi(argv[2]);
+	param = argv[3];
+
+	if (argc >= 5) {
+		password_expired = atoi(argv[4]);
+	}
+
+	status = cli_get_session_key(mem_ctx, cli, &session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	init_samr_CryptPassword(param, &session_key, &pwd_buf);
+	init_samr_CryptPasswordEx(param, &session_key, &pwd_buf_ex);
+	nt_lm_owf_gen(param, nt_hash, lm_hash);
+
+	switch (level) {
+	case 18:
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(nt_hash, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			memcpy(nt_hash, out.data, out.length);
+		}
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(lm_hash, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			memcpy(lm_hash, out.data, out.length);
+		}
+
+		init_samr_user_info18(&info.info18,
+				      lm_hash,
+				      nt_hash,
+				      password_expired);
+		break;
+	case 21:
+		ZERO_STRUCT(info.info21);
+
+		info.info21.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT |
+					     SAMR_FIELD_LM_PASSWORD_PRESENT;
+		if (argc >= 5) {
+			info.info21.fields_present |= SAMR_FIELD_EXPIRED_FLAG;
+			info.info21.password_expired = password_expired;
+		}
+
+		info.info21.lm_password_set = true;
+		info.info21.lm_owf_password.length = 16;
+		info.info21.lm_owf_password.size = 16;
+
+		info.info21.nt_password_set = true;
+		info.info21.nt_owf_password.length = 16;
+		info.info21.nt_owf_password.size = 16;
+
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(nt_hash, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			info.info21.nt_owf_password.array =
+				(uint16_t *)talloc_memdup(mem_ctx, out.data, 16);
+		}
+		{
+			DATA_BLOB in,out;
+			in = data_blob_const(lm_hash, 16);
+			out = data_blob_talloc_zero(mem_ctx, 16);
+			sess_crypt_blob(&out, &in, &session_key, true);
+			info.info21.lm_owf_password.array =
+				(uint16_t *)talloc_memdup(mem_ctx, out.data, 16);
+		}
+
+		break;
+	case 23:
+		ZERO_STRUCT(info.info23);
+
+		info.info23.info.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT |
+						  SAMR_FIELD_LM_PASSWORD_PRESENT;
+		if (argc >= 5) {
+			info.info23.info.fields_present |= SAMR_FIELD_EXPIRED_FLAG;
+			info.info23.info.password_expired = password_expired;
+		}
+
+		info.info23.password = pwd_buf;
+
+		break;
+	case 24:
+		init_samr_user_info24(&info.info24,
+				      &pwd_buf,
+				      password_expired);
+		break;
+	case 25:
+		ZERO_STRUCT(info.info25);
+
+		info.info25.info.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT |
+						  SAMR_FIELD_LM_PASSWORD_PRESENT;
+		if (argc >= 5) {
+			info.info25.info.fields_present |= SAMR_FIELD_EXPIRED_FLAG;
+			info.info25.info.password_expired = password_expired;
+		}
+
+		info.info25.password = pwd_buf_ex;
+
+		break;
+	case 26:
+		init_samr_user_info26(&info.info26,
+				      &pwd_buf_ex,
+				      password_expired);
+		break;
+	default:
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* Get sam policy handle */
+
+	status = rpccli_try_samr_connects(cli, mem_ctx,
+					  MAXIMUM_ALLOWED_ACCESS,
+					  &connect_pol);
+
+	if (!NT_STATUS_IS_OK(status))
+		goto done;
+
+	/* Get domain policy handle */
+
+	status = rpccli_samr_OpenDomain(cli, mem_ctx,
+					&connect_pol,
+					access_mask,
+					&domain_sid,
+					&domain_pol);
+
+	if (!NT_STATUS_IS_OK(status))
+		goto done;
+
+	user_rid = strtol(user, NULL, 0);
+	if (user_rid) {
+		status = rpccli_samr_OpenUser(cli, mem_ctx,
+					      &domain_pol,
+					      access_mask,
+					      user_rid,
+					      &user_pol);
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER) ||
+	    (user_rid == 0)) {
+
+		/* Probably this was a user name, try lookupnames */
+		struct samr_Ids rids, types;
+		struct lsa_String lsa_acct_name;
+
+		init_lsa_String(&lsa_acct_name, user);
+
+		status = rpccli_samr_LookupNames(cli, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &rids,
+						 &types);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = rpccli_samr_OpenUser(cli, mem_ctx,
+					      &domain_pol,
+					      access_mask,
+					      rids.ids[0],
+					      &user_pol);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	switch (opcode) {
+	case NDR_SAMR_SETUSERINFO:
+		status = rpccli_samr_SetUserInfo(cli, mem_ctx,
+						 &user_pol,
+						 level,
+						 &info);
+		break;
+	case NDR_SAMR_SETUSERINFO2:
+		status = rpccli_samr_SetUserInfo2(cli, mem_ctx,
+						  &user_pol,
+						  level,
+						  &info);
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+ done:
+	return status;
+}
+
+static NTSTATUS cmd_samr_setuserinfo(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     int argc, const char **argv)
+{
+	return cmd_samr_setuserinfo_int(cli, mem_ctx, argc, argv,
+					NDR_SAMR_SETUSERINFO);
+}
+
+static NTSTATUS cmd_samr_setuserinfo2(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc, const char **argv)
+{
+	return cmd_samr_setuserinfo_int(cli, mem_ctx, argc, argv,
+					NDR_SAMR_SETUSERINFO2);
+}
+
 static NTSTATUS cmd_samr_get_dispinfo_idx(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  int argc, const char **argv)
@@ -2759,5 +2953,7 @@ struct cmd_set samr_commands[] = {
 	{ "chgpasswd2",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd2,            NULL, &ndr_table_samr.syntax_id, NULL, "Change user password", "" },
 	{ "chgpasswd3",         RPC_RTYPE_NTSTATUS, cmd_samr_chgpasswd3,            NULL, &ndr_table_samr.syntax_id, NULL, "Change user password", "" },
 	{ "getdispinfoidx",     RPC_RTYPE_NTSTATUS, cmd_samr_get_dispinfo_idx,      NULL, &ndr_table_samr.syntax_id, NULL, "Get Display Information Index", "" },
+	{ "setuserinfo",        RPC_RTYPE_NTSTATUS, cmd_samr_setuserinfo,           NULL, &ndr_table_samr.syntax_id, NULL, "Set user info", "" },
+	{ "setuserinfo2",       RPC_RTYPE_NTSTATUS, cmd_samr_setuserinfo2,          NULL, &ndr_table_samr.syntax_id, NULL, "Set user info2", "" },
 	{ NULL }
 };

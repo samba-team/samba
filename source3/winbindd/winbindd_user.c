@@ -456,7 +456,7 @@ void winbindd_getpwnam(struct winbindd_cli_state *state)
 
 	/* Get info for the domain */
 
-	domain = find_domain_from_name(domname);
+	domain = find_domain_from_name_noinit(domname);
 
 	if (domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s.  "

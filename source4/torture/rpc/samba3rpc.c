@@ -580,8 +580,8 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 		arcfour_crypt_blob(u_info.info23.password.data, 516,
 				   &session_key);
 		u_info.info23.info.password_expired = 0;
-		u_info.info23.info.fields_present = SAMR_FIELD_PASSWORD | 
-						    SAMR_FIELD_PASSWORD2 |
+		u_info.info23.info.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT |
+						    SAMR_FIELD_LM_PASSWORD_PRESENT |
 						    SAMR_FIELD_EXPIRED_FLAG;
 		sui2.in.user_handle = wks_handle;
 		sui2.in.info = &u_info;
@@ -767,7 +767,7 @@ static bool join3(struct smbcli_state *cli,
 			cli_credentials_get_workstation(wks_creds));
 		i21->acct_flags = ACB_WSTRUST;
 		i21->fields_present = SAMR_FIELD_FULL_NAME |
-			SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD;
+			SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_NT_PASSWORD_PRESENT;
 		/* this would break the test result expectations
 		i21->fields_present |= SAMR_FIELD_EXPIRED_FLAG;
 		i21->password_expired = 1;

@@ -43,7 +43,7 @@ static bool test_async_resolve(struct torture_context *tctx)
 	torture_comment(tctx, "Testing async resolve of '%s' for %d seconds\n",
 			host, timelimit);
 	while (timeval_elapsed(&tv) < timelimit) {
-		const char *s;
+		struct socket_address **s;
 		struct composite_context *c = resolve_name_host_send(mem_ctx, ev, NULL, &n);
 		torture_assert(tctx, c != NULL, "resolve_name_host_send");
 		torture_assert_ntstatus_ok(tctx, resolve_name_host_recv(c, mem_ctx, &s),

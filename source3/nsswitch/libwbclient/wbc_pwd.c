@@ -126,15 +126,7 @@ done:
 	return grp;
 }
 
-/** @brief Fill in a struct passwd* for a domain user based
- *   on username
- *
- * @param *name     Username to lookup
- * @param **pwd     Pointer to resulting struct passwd* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Fill in a struct passwd* for a domain user based on username */
 wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -167,15 +159,7 @@ wbcErr wbcGetpwnam(const char *name, struct passwd **pwd)
 	return wbc_status;
 }
 
-/** @brief Fill in a struct passwd* for a domain user based
- *   on uid
- *
- * @param uid       Uid to lookup
- * @param **pwd     Pointer to resulting struct passwd* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Fill in a struct passwd* for a domain user based on uid */
 wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -206,15 +190,7 @@ wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd)
 	return wbc_status;
 }
 
-/** @brief Fill in a struct passwd* for a domain user based
- *   on username
- *
- * @param *name     Username to lookup
- * @param **grp     Pointer to resulting struct group* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Fill in a struct passwd* for a domain user based on username */
 wbcErr wbcGetgrnam(const char *name, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -251,15 +227,7 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 	return wbc_status;
 }
 
-/** @brief Fill in a struct passwd* for a domain user based
- *   on uid
- *
- * @param gid       Uid to lookup
- * @param **grp     Pointer to resulting struct group* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Fill in a struct passwd* for a domain user based on uid */
 wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -309,11 +277,7 @@ static uint32_t pw_cache_idx;
  */
 static struct winbindd_response pw_response;
 
-/** @brief Reset the passwd iterator
- *
- * @return #wbcErr
- **/
-
+/* Reset the passwd iterator */
 wbcErr wbcSetpwent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -335,11 +299,7 @@ wbcErr wbcSetpwent(void)
 	return wbc_status;
 }
 
-/** @brief Close the passwd iterator
- *
- * @return #wbcErr
- **/
-
+/* Close the passwd iterator */
 wbcErr wbcEndpwent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -359,13 +319,7 @@ wbcErr wbcEndpwent(void)
 	return wbc_status;
 }
 
-/** @brief Return the next struct passwd* entry from the pwent iterator
- *
- * @param **pwd       Pointer to resulting struct passwd* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Return the next struct passwd* entry from the pwent iterator */
 wbcErr wbcGetpwent(struct passwd **pwd)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -425,11 +379,7 @@ static uint32_t gr_cache_idx;
  */
 static struct winbindd_response gr_response;
 
-/** @brief Reset the group iterator
- *
- * @return #wbcErr
- **/
-
+/* Reset the group iterator */
 wbcErr wbcSetgrent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -451,11 +401,7 @@ wbcErr wbcSetgrent(void)
 	return wbc_status;
 }
 
-/** @brief Close the group iterator
- *
- * @return #wbcErr
- **/
-
+/* Close the group iterator */
 wbcErr wbcEndgrent(void)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -475,13 +421,7 @@ wbcErr wbcEndgrent(void)
 	return wbc_status;
 }
 
-/** @brief Return the next struct group* entry from the pwent iterator
- *
- * @param **grp       Pointer to resulting struct group* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Return the next struct group* entry from the pwent iterator */
 wbcErr wbcGetgrent(struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -531,15 +471,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Return the next struct group* entry from the pwent iterator
- *
- * This is similar to #wbcGetgrent, just that the member list is empty
- *
- * @param **grp       Pointer to resulting struct group* from the query.
- *
- * @return #wbcErr
- **/
-
+/* Return the next struct group* entry from the pwent iterator */
 wbcErr wbcGetgrlist(struct group **grp)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -584,14 +516,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Return the unix group array belonging to the given user
- *
- * @param *account       The given user name
- * @param *num_groups    Number of elements returned in the groups array
- * @param **_groups      Pointer to resulting gid_t array.
- *
- * @return #wbcErr
- **/
+/* Return the unix group array belonging to the given user */
 wbcErr wbcGetGroups(const char *account,
 		    uint32_t *num_groups,
 		    gid_t **_groups)

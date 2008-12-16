@@ -1641,7 +1641,7 @@ static int password_hash_add(struct ldb_module *module, struct ldb_request *req)
 	ntAttr = ldb_msg_find_element(req->op.mod.message, "unicodePwd");
 	lmAttr = ldb_msg_find_element(req->op.mod.message, "dBCSPwd");
 
-	if ((!sambaAttr) && (!ntAttr) && (!lmAttr)) {
+	if ((!sambaAttr) && (!clearTextPasswordAttr) && (!ntAttr) && (!lmAttr)) {
 		return ldb_next_request(module, req);
 	}
 

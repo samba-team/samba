@@ -36,7 +36,7 @@
 #include "libcli/security/security.h"
 #include "param/param.h"
 
-#define SAMBA_ACCOC_GROUP 0x12345678
+#define SAMBA_ASSOC_GROUP 0x12345678
 
 extern const struct dcesrv_interface dcesrv_mgmt_interface;
 
@@ -288,26 +288,6 @@ _PUBLIC_ NTSTATUS dcesrv_fetch_session_key(struct dcesrv_connection *p,
 	return NT_STATUS_OK;
 }
 
-
-/*
-  destroy a link to an endpoint
-*/
-static int dcesrv_endpoint_destructor(struct dcesrv_connection *p)
-{
-	while (p->contexts) {
-		struct dcesrv_connection_context *c = p->contexts;
-
-		DLIST_REMOVE(p->contexts, c);
-
-		if (c->iface) {
-			c->iface->unbind(c, c->iface);
-		}
-	}
-
-	return 0;
-}
-
-
 /*
   connect to a dcerpc endpoint
 */
@@ -354,8 +334,6 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->processing = false;
 	p->state_flags = state_flags;
 	ZERO_STRUCT(p->transport);
-
-	talloc_set_destructor(p, dcesrv_endpoint_destructor);
 
 	*_p = p;
 	return NT_STATUS_OK;
@@ -531,6 +509,16 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 	return NT_STATUS_OK;	
 }
 
+static int dcesrv_connection_context_destructor(struct dcesrv_connection_context *c)
+{
+	DLIST_REMOVE(c->conn->contexts, c);
+
+	if (c->iface) {
+		c->iface->unbind(c, c->iface);
+	}
+
+	return 0;
+}
 
 /*
   handle a bind request
@@ -558,7 +546,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	 * assoc_group_id back to the clients
 	 */
 	if (call->pkt.u.bind.assoc_group_id != 0 &&
-	    call->pkt.u.bind.assoc_group_id != SAMBA_ACCOC_GROUP) {
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    call->pkt.u.bind.assoc_group_id != SAMBA_ASSOC_GROUP) {
 		return dcesrv_bind_nak(call, 0);	
 	}
 
@@ -609,10 +598,29 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		context->conn = call->conn;
 		context->iface = iface;
 		context->context_id = context_id;
+		/*
+		 * we need to send a non zero assoc_group_id here to make longhorn happy,
+		 * it also matches samba3
+		 */
+		context->assoc_group_id = SAMBA_ASSOC_GROUP;
 		context->private = NULL;
 		context->handles = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
+		talloc_set_destructor(context, dcesrv_connection_context_destructor);
+
+		status = iface->bind(call, iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			char *uuid_str = GUID_string(call, &uuid);
+			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n",
+				 uuid_str, if_version, nt_errstr(status)));
+			talloc_free(uuid_str);
+			/* we don't want to trigger the iface->unbind() hook */
+			context->iface = NULL;
+			talloc_free(call->context);
+			call->context = NULL;
+			return dcesrv_bind_nak(call, 0);
+		}
 	}
 
 	if (call->conn->cli_max_recv_frag == 0) {
@@ -627,6 +635,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	/* handle any authentication that is being requested */
 	if (!dcesrv_auth_bind(call)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return dcesrv_bind_nak(call, DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
 
@@ -638,8 +648,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
-	/* we need to send a non zero assoc_group_id here to make longhorn happy, it also matches samba3 */
-	pkt.u.bind_ack.assoc_group_id = SAMBA_ACCOC_GROUP;
+	pkt.u.bind_ack.assoc_group_id = iface?call->context->assoc_group_id:0;
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);
@@ -649,6 +658,8 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.num_results = 1;
 	pkt.u.bind_ack.ctx_list = talloc(call, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
 	pkt.u.bind_ack.ctx_list[0].result = result;
@@ -658,27 +669,22 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 
 	status = dcesrv_auth_bind_ack(call, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return dcesrv_bind_nak(call, 0);
-	}
-
-	if (iface) {
-		status = iface->bind(call, iface);
-		if (!NT_STATUS_IS_OK(status)) {
-			char *uuid_str = GUID_string(call, &uuid);
-			DEBUG(2,("Request for dcerpc interface %s/%d rejected: %s\n", 
-				 uuid_str, if_version, nt_errstr(status)));
-			talloc_free(uuid_str);
-			return dcesrv_bind_nak(call, 0);
-		}
 	}
 
 	rep = talloc(call, struct data_blob_list_item);
 	if (!rep) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(call->context);
+		call->context = NULL;
 		return status;
 	}
 
@@ -747,16 +753,20 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->conn = call->conn;
 	context->iface = iface;
 	context->context_id = context_id;
+	context->assoc_group_id = SAMBA_ASSOC_GROUP;
 	context->private = NULL;
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;
+	talloc_set_destructor(context, dcesrv_connection_context_destructor);
 
-	if (iface) {
-		status = iface->bind(call, iface);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	status = iface->bind(call, iface);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* we don't want to trigger the iface->unbind() hook */
+		context->iface = NULL;
+		talloc_free(context);
+		call->context = NULL;
+		return status;
 	}
 
 	return NT_STATUS_OK;
@@ -784,13 +794,24 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	context_id = call->pkt.u.alter.ctx_list[0].context_id;
 
 	/* see if they are asking for a new interface */
-	if (result == 0 &&
-	    dcesrv_find_context(call->conn, context_id) == NULL) {
-		status = dcesrv_alter_new_context(call, context_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			result = DCERPC_BIND_PROVIDER_REJECT;
-			reason = DCERPC_BIND_REASON_ASYNTAX;		
+	if (result == 0) {
+		call->context = dcesrv_find_context(call->conn, context_id);
+		if (!call->context) {
+			status = dcesrv_alter_new_context(call, context_id);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = DCERPC_BIND_PROVIDER_REJECT;
+				reason = DCERPC_BIND_REASON_ASYNTAX;
+			}
 		}
+	}
+
+	if (result == 0 &&
+	    call->pkt.u.alter.assoc_group_id != 0 &&
+	    lp_parm_bool(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv","assoc group checking", true) &&
+	    call->pkt.u.alter.assoc_group_id != call->context->assoc_group_id) {
+		/* TODO: work out what to return here */
+		result = DCERPC_BIND_PROVIDER_REJECT;
+		reason = DCERPC_BIND_REASON_ASYNTAX;
 	}
 
 	/* setup a alter_resp */
@@ -801,7 +822,11 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.u.alter_resp.max_xmit_frag = 0x2000;
 	pkt.u.alter_resp.max_recv_frag = 0x2000;
-	pkt.u.alter_resp.assoc_group_id = call->pkt.u.alter.assoc_group_id;
+	if (result == 0) {
+		pkt.u.alter_resp.assoc_group_id = call->context->assoc_group_id;
+	} else {
+		pkt.u.alter_resp.assoc_group_id = 0;
+	}
 	pkt.u.alter_resp.num_results = 1;
 	pkt.u.alter_resp.ctx_list = talloc_array(call, struct dcerpc_ack_ctx, 1);
 	if (!pkt.u.alter_resp.ctx_list) {
@@ -1398,6 +1423,38 @@ const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name)
 	return NULL;
 }
 
+void dcerpc_server_init(struct loadparm_context *lp_ctx)
+{
+	static bool initialized;
+	extern NTSTATUS dcerpc_server_wkssvc_init(void);
+	extern NTSTATUS dcerpc_server_drsuapi_init(void);
+	extern NTSTATUS dcerpc_server_winreg_init(void);
+	extern NTSTATUS dcerpc_server_spoolss_init(void);
+	extern NTSTATUS dcerpc_server_epmapper_init(void);
+	extern NTSTATUS dcerpc_server_srvsvc_init(void);
+	extern NTSTATUS dcerpc_server_netlogon_init(void);
+	extern NTSTATUS dcerpc_server_rpcecho_init(void);
+	extern NTSTATUS dcerpc_server_unixinfo_init(void);
+	extern NTSTATUS dcerpc_server_samr_init(void);
+	extern NTSTATUS dcerpc_server_remote_init(void);
+	extern NTSTATUS dcerpc_server_lsa_init(void);
+	extern NTSTATUS dcerpc_server_browser_init(void);
+	init_module_fn static_init[] = { STATIC_dcerpc_server_MODULES };
+	init_module_fn *shared_init;
+
+	if (initialized) {
+		return;
+	}
+	initialized = true;
+
+	shared_init = load_samba_modules(NULL, lp_ctx, "dcerpc_server");
+
+	run_init_functions(static_init);
+	run_init_functions(shared_init);
+
+	talloc_free(shared_init);
+}
+
 /*
   return the DCERPC module version, and the size of some critical types
   This can be used by endpoint server modules to either detect compilation errors, or provide
@@ -1429,6 +1486,8 @@ _PUBLIC_ NTSTATUS dcesrv_init_ipc_context(TALLOC_CTX *mem_ctx, struct loadparm_c
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
+
+	dcerpc_server_init(lp_ctx);
 
 	status = dcesrv_init_context(mem_ctx, lp_ctx, lp_dcerpc_endpoint_servers(lp_ctx), &dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(status);

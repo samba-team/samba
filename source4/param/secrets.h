@@ -20,13 +20,6 @@
 #ifndef _SECRETS_H
 #define _SECRETS_H
 
-/* structure for storing machine account password
-   (ie. when samba server is member of a domain */
-struct machine_acct_pass {
-	uint8_t hash[16];
-	time_t mod_time;
-};
-
 #define SECRETS_PRIMARY_DOMAIN_DN "cn=Primary Domains"
 #define SECRETS_PRINCIPALS_DN "cn=Principals"
 #define SECRETS_PRIMARY_DOMAIN_FILTER "(&(flatname=%s)(objectclass=primaryDomain))"

@@ -176,7 +176,7 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	server_n = server;
 
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 
 	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
@@ -184,7 +184,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	make_nmb_name(&called , server, 0x20);
 
  again:
-        zero_addr(&ss);
+        zero_sockaddr(&ss);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise())) {

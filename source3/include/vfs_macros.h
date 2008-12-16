@@ -48,6 +48,7 @@
 
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
+#define SMB_VFS_CREATE_FILE(conn, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs.ops.create_file)((conn)->vfs.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_CLOSE(fsp) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp)))
 #define SMB_VFS_READ(fsp, data, n) ((fsp)->conn->vfs.ops.vfs_read((fsp)->conn->vfs.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_PREAD(fsp, data, n, off) ((fsp)->conn->vfs.ops.pread((fsp)->conn->vfs.handles.pread, (fsp), (data), (n), (off)))
@@ -84,6 +85,7 @@
 #define SMB_VFS_CHFLAGS(conn, path, flags) ((conn)->vfs.ops.chflags((conn)->vfs.handles.chflags, (path), (flags)))
 #define SMB_VFS_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops.file_id_create((conn)->vfs.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs.ops.streaminfo((conn)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs.ops.get_real_filename((conn)->vfs.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -173,6 +175,7 @@
 
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
+#define SMB_VFS_OPAQUE_CREATE_FILE(conn, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((conn)->vfs_opaque.ops.create_file)((conn)->vfs_opaque.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_OPAQUE_CLOSE(fsp) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp)))
 #define SMB_VFS_OPAQUE_READ(fsp, data, n) ((fsp)->conn->vfs_opaque.ops.vfs_read((fsp)->conn->vfs_opaque.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_OPAQUE_PREAD(fsp, data, n, off) ((fsp)->conn->vfs_opaque.ops.pread((fsp)->conn->vfs_opaque.handles.pread, (fsp), (data), (n), (off)))
@@ -209,6 +212,7 @@
 #define SMB_VFS_OPAQUE_CHFLAGS(conn, path, flags) ((conn)->vfs_opaque.ops.chflags((conn)->vfs_opaque.handles.chflags, (path), (flags)))
 #define SMB_VFS_OPAQUE_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops_opaque.file_id_create((conn)->vfs_opaque.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_OPAQUE_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs_opaque.ops.streaminfo((conn)->vfs_opaque.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_OPAQUE_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_opaque.ops.get_real_filename((conn)->vfs_opaque.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -299,6 +303,7 @@
 
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))
+#define SMB_VFS_NEXT_CREATE_FILE(handle, req, root_dir_fid, fname, create_file_flags, access_mask, share_access, create_disposition, create_options, file_attributes, oplock_request, allocation_size, sd, ea_list, result, pinfo, psbuf) (((handle)->vfs_next.ops.create_file)((handle)->vfs_next.handles.create_file, (req), (root_dir_fid), (fname), (create_file_flags), (access_mask), (share_access), (create_disposition), (create_options), (file_attributes), (oplock_request), (allocation_size), (sd), (ea_list), (result), (pinfo), (psbuf)))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp)))
 #define SMB_VFS_NEXT_READ(handle, fsp, data, n) ((handle)->vfs_next.ops.vfs_read((handle)->vfs_next.handles.vfs_read, (fsp), (data), (n)))
 #define SMB_VFS_NEXT_PREAD(handle, fsp, data, n, off) ((handle)->vfs_next.ops.pread((handle)->vfs_next.handles.pread, (fsp), (data), (n), (off)))
@@ -335,6 +340,7 @@
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs_next.ops.streaminfo((handle)->vfs_next.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_NEXT_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_next.ops.get_real_filename((conn)->vfs_next.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))

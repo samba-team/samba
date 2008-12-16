@@ -218,13 +218,12 @@ static int readfile(char *b, int n, XFILE *f)
  Send a message.
 ****************************************************************************/
 
-static void send_message(void)
+static void send_message(const char *username)
 {
 	int total_len = 0;
 	int grp_id;
 
-	if (!cli_message_start(cli, desthost,
-				get_cmdline_auth_info_username(), &grp_id)) {
+	if (!cli_message_start(cli, desthost, username, &grp_id)) {
 		d_printf("message start: %s\n", cli_errstr(cli));
 		return;
 	}
@@ -4607,7 +4606,7 @@ static int do_tar_op(const char *base_directory)
  Handle a message operation.
 ****************************************************************************/
 
-static int do_message_op(void)
+static int do_message_op(struct user_auth_info *auth_info)
 {
 	struct sockaddr_storage ss;
 	struct nmb_name called, calling;
@@ -4623,7 +4622,7 @@ static int do_message_op(void)
 	snprintf(name_type_hex, sizeof(name_type_hex), "#%X", name_type);
 	fstrcat(server_name, name_type_hex);
 
-        zero_addr(&ss);
+        zero_sockaddr(&ss);
 	if (have_ip)
 		ss = dest_ss;
 
@@ -4648,7 +4647,7 @@ static int do_message_op(void)
 		return 1;
 	}
 
-	send_message();
+	send_message(get_cmdline_auth_info_username(auth_info));
 	cli_cm_shutdown();
 
 	return 0;
@@ -4695,6 +4694,7 @@ static int do_message_op(void)
 		POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct user_auth_info *auth_info;
 
 	if (!client_set_cur_dir("\\")) {
 		exit(ENOMEM);
@@ -4724,6 +4724,12 @@ static int do_message_op(void)
 
 	load_case_tables();
 
+	auth_info = user_auth_info_init(frame);
+	if (auth_info == NULL) {
+		exit(1);
+	}
+	popt_common_set_auth_info(auth_info);
+
 	/* skip argv(0) */
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
 	poptSetOtherOptionHelp(pc, "service <password>");
@@ -4751,8 +4757,11 @@ static int do_message_op(void)
 		}
 
 		/* if the service has already been retrieved then check if we have also a password */
-		if (service_opt && (!get_cmdline_auth_info_got_pass()) && poptPeekArg(pc)) {
-			set_cmdline_auth_info_password(poptGetArg(pc));
+		if (service_opt
+		    && (!get_cmdline_auth_info_got_pass(auth_info))
+		    && poptPeekArg(pc)) {
+			set_cmdline_auth_info_password(auth_info,
+						       poptGetArg(pc));
 		}
 
 		switch (opt) {
@@ -4858,8 +4867,11 @@ static int do_message_op(void)
 	}
 
 	/* if the service has already been retrieved then check if we have also a password */
-	if (service_opt && !get_cmdline_auth_info_got_pass() && poptPeekArg(pc)) {
-		set_cmdline_auth_info_password(poptGetArg(pc));
+	if (service_opt
+	    && !get_cmdline_auth_info_got_pass(auth_info)
+	    && poptPeekArg(pc)) {
+		set_cmdline_auth_info_password(auth_info,
+					       poptGetArg(pc));
 	}
 
 	/* check for the -P option */
@@ -4893,8 +4905,8 @@ static int do_message_op(void)
 			argv[0], get_dyn_CONFIGFILE());
 	}
 
-	if (get_cmdline_auth_info_use_machine_account() &&
-	    !set_cmdline_auth_info_machine_account_creds()) {
+	if (get_cmdline_auth_info_use_machine_account(auth_info) &&
+	    !set_cmdline_auth_info_machine_account_creds(auth_info)) {
 		exit(-1);
 	}
 
@@ -4929,7 +4941,7 @@ static int do_message_op(void)
 		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
-	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt(auth_info);
 	if (!init_names()) {
 		fprintf(stderr, "init_names() failed\n");
 		exit(1);
@@ -4947,7 +4959,7 @@ static int do_message_op(void)
 
 	/* Store the username and password for dfs support */
 
-	cli_cm_set_credentials();
+	cli_cm_set_credentials(auth_info);
 
 	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
 
@@ -4980,7 +4992,7 @@ static int do_message_op(void)
 	}
 
 	if (message) {
-		return do_message_op();
+		return do_message_op(auth_info);
 	}
 
 	if (process(base_directory)) {

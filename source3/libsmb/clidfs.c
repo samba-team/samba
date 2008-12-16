@@ -144,13 +144,13 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	server_n = server;
 
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 
 	make_nmb_name(&calling, global_myname(), 0x0);
 	make_nmb_name(&called , server, name_type);
 
  again:
-	zero_addr(&ss);
+	zero_sockaddr(&ss);
 	if (have_ip)
 		ss = dest_ss;
 
@@ -471,18 +471,19 @@ static void cm_set_password(const char *newpass)
 /****************************************************************************
 ****************************************************************************/
 
-void cli_cm_set_credentials(void)
+void cli_cm_set_credentials(struct user_auth_info *auth_info)
 {
 	SAFE_FREE(cm_creds.username);
-	cm_creds.username = SMB_STRDUP(get_cmdline_auth_info_username());
+	cm_creds.username = SMB_STRDUP(get_cmdline_auth_info_username(
+					       auth_info));
 
-	if (get_cmdline_auth_info_got_pass()) {
-		cm_set_password(get_cmdline_auth_info_password());
+	if (get_cmdline_auth_info_got_pass(auth_info)) {
+		cm_set_password(get_cmdline_auth_info_password(auth_info));
 	}
 
-	cm_creds.use_kerberos = get_cmdline_auth_info_use_kerberos();
+	cm_creds.use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
 	cm_creds.fallback_after_kerberos = false;
-	cm_creds.signing_state = get_cmdline_auth_info_signing_state();
+	cm_creds.signing_state = get_cmdline_auth_info_signing_state(auth_info);
 }
 
 /****************************************************************************

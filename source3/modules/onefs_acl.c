@@ -19,20 +19,23 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
+#include "onefs.h"
 
-#include <sys/isi_acl.h>
 #include <isi_acl/isi_acl_util.h>
-#include <sys/isi_oplock.h>
 #include <ifs/ifs_syscalls.h>
 
-#include "onefs.h"
+const struct enum_list enum_onefs_acl_wire_format[] = {
+	{ACL_FORMAT_RAW,  "No Format"},
+	{ACL_FORMAT_WINDOWS_SD, "Format Windows SD"},
+	{ACL_FORMAT_ALWAYS, "Always Format SD"},
+	{-1, NULL}
+};
 
 /**
  * Turn SID into UID/GID and setup a struct ifs_identity
  */
 static bool
-onefs_sid_to_identity(DOM_SID *sid, struct ifs_identity *id, bool is_group)
+onefs_sid_to_identity(const DOM_SID *sid, struct ifs_identity *id, bool is_group)
 {
 	enum ifs_identity_type type = IFS_ID_TYPE_LAST+1;
 	uid_t uid = 0;
@@ -514,15 +517,22 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		if (security_info & SACL_SECURITY_INFORMATION)
 			desired_access |= IFS_RTS_SACL_ACCESS;
 
-		if ((fsp->fh->fd = ifs_createfile(-1,
-						  fsp->fsp_name,
-						  desired_access,
-						  0, 0,
-						  OPLOCK_NONE,
-						  0, NULL, 0,
-						  NULL, 0, NULL)) == -1) {
-			DEBUG(0, ("Error opening file %s. errno=%d\n",
-			    fsp->fsp_name, errno));
+		if ((fsp->fh->fd = onefs_sys_create_file(handle->conn,
+							 -1,
+							 fsp->fsp_name,
+							 desired_access,
+							 desired_access,
+							 0,
+							 0,
+							 0,
+							 0,
+							 INTERNAL_OPEN_ONLY,
+							 0,
+							 NULL,
+							 0,
+							 NULL)) == -1) {
+			DEBUG(0, ("Error opening file %s. errno=%d (%s)\n",
+				  fsp->fsp_name, errno, strerror(errno)));
 			status = map_nt_error_from_unix(errno);
 			goto out;
 		}
@@ -679,22 +689,18 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
 }
 
 /**
- * Isilon-specific function for setting an NTFS ACL on an open file.
+ * Isilon-specific function for setting up an ifs_security_descriptor, given a
+ * samba SEC_DESC.
  *
- * @return NT_STATUS_UNSUCCESSFUL for userspace errors, NTSTATUS based off
- * errno on syscall errors
+ * @param[out] sd ifs_security_descriptor to fill in
+ *
+ * @return NTSTATUS_OK if successful
  */
-NTSTATUS
-onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-		  uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS onefs_setup_sd(uint32 security_info_sent, SEC_DESC *psd,
+			struct ifs_security_descriptor *sd)
 {
-	struct ifs_security_descriptor sd = {};
 	struct ifs_security_acl dacl, sacl, *daclp, *saclp;
 	struct ifs_identity owner, group, *ownerp, *groupp;
-	int fd;
-	bool fopened = false;
-
-	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
 	ownerp = NULL;
 	groupp = NULL;
@@ -759,9 +765,36 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	/* Setup ifs_security_descriptor */
 	DEBUG(5,("Setting up SD\n"));
-	if (aclu_initialize_sd(&sd, psd->type, ownerp, groupp,
-	    (daclp ? &daclp : NULL), (saclp ? &saclp : NULL), false))
+	if (aclu_initialize_sd(sd, psd->type, ownerp, groupp,
+		(daclp ? &daclp : NULL), (saclp ? &saclp : NULL), false))
 		return NT_STATUS_UNSUCCESSFUL;
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * Isilon-specific function for setting an NTFS ACL on an open file.
+ *
+ * @return NT_STATUS_UNSUCCESSFUL for userspace errors, NTSTATUS based off
+ * errno on syscall errors
+ */
+NTSTATUS
+onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+		  uint32 security_info_sent, SEC_DESC *psd)
+{
+	struct ifs_security_descriptor sd = {};
+	int fd;
+	bool fopened = false;
+	NTSTATUS status;
+
+	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
+
+	status = onefs_setup_sd(security_info_sent, psd, &sd);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));
+		return status;
+	}
 
 	fd = fsp->fh->fd;
 	if (fd == -1) {
@@ -775,16 +808,24 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		if (security_info_sent & SACL_SECURITY_INFORMATION)
 			desired_access |= IFS_RTS_SACL_ACCESS;
 
-		if ((fd = ifs_createfile(-1,
-					 fsp->fsp_name,
-					 desired_access,
-					 0, 0,
-					 OPLOCK_NONE,
-					 0, NULL, 0,
-					 NULL, 0, NULL)) == -1) {
-			DEBUG(0, ("Error opening file %s. errno=%d\n",
-			    fsp->fsp_name, errno));
-			return map_nt_error_from_unix(errno);
+		if ((fd = onefs_sys_create_file(handle->conn,
+						-1,
+						fsp->fsp_name,
+						desired_access,
+						desired_access,
+						0,
+						0,
+						0,
+						0,
+						INTERNAL_OPEN_ONLY,
+						0,
+						NULL,
+						0,
+						NULL)) == -1) {
+			DEBUG(0, ("Error opening file %s. errno=%d (%s)\n",
+				  fsp->fsp_name, errno, strerror(errno)));
+			status = map_nt_error_from_unix(errno);
+			goto out;
 		}
 		fopened = true;
 	}
@@ -792,10 +833,12 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         errno = 0;
 	if (ifs_set_security_descriptor(fd, security_info_sent, &sd)) {
 		DEBUG(0, ("Error setting security descriptor = %d\n", errno));
+		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
 	DEBUG(5, ("Security descriptor set correctly!\n"));
+	status = NT_STATUS_OK;
 
 	/* FALLTHROUGH */
 out:
@@ -803,5 +846,5 @@ out:
 		close(fd);
 
 	aclu_free_sd(&sd, false);
-	return errno ? map_nt_error_from_unix(errno) : NT_STATUS_OK;
+	return status;
 }

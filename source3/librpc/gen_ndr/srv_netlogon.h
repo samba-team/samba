@@ -47,7 +47,7 @@ NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p, struct netr_ServerTrustP
 WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p, struct netr_DsRGetForestTrustInformation *r);
 WERROR _netr_GetForestTrustInformation(pipes_struct *p, struct netr_GetForestTrustInformation *r);
 NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p, struct netr_LogonSamLogonWithFlags *r);
-WERROR _netr_NETRSERVERGETTRUSTINFO(pipes_struct *p, struct netr_NETRSERVERGETTRUSTINFO *r);
+NTSTATUS _netr_ServerGetTrustInfo(pipes_struct *p, struct netr_ServerGetTrustInfo *r);
 void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns);
 NTSTATUS rpc_netlogon_init(void);
 #endif /* __SRV_NETLOGON__ */

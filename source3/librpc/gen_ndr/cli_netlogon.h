@@ -356,7 +356,15 @@ NTSTATUS rpccli_netr_LogonSamLogonWithFlags(struct rpc_pipe_client *cli,
 					    union netr_Validation *validation /* [out] [ref,switch_is(validation_level)] */,
 					    uint8_t *authoritative /* [out] [ref] */,
 					    uint32_t *flags /* [in,out] [ref] */);
-NTSTATUS rpccli_netr_NETRSERVERGETTRUSTINFO(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *werror);
+NTSTATUS rpccli_netr_ServerGetTrustInfo(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_name /* [in] [unique,charset(UTF16)] */,
+					const char *account_name /* [in] [ref,charset(UTF16)] */,
+					enum netr_SchannelType secure_channel_type /* [in]  */,
+					const char *computer_name /* [in] [ref,charset(UTF16)] */,
+					struct netr_Authenticator *credential /* [in] [ref] */,
+					struct netr_Authenticator *return_authenticator /* [out] [ref] */,
+					struct samr_Password *new_owf_password /* [out] [ref] */,
+					struct samr_Password *old_owf_password /* [out] [ref] */,
+					struct netr_TrustInfo **trust_info /* [out] [ref] */);
 #endif /* __CLI_NETLOGON__ */

@@ -431,7 +431,7 @@ enum srvsvc_PlatformId
 struct srvsvc_NetSrvInfo100 {
 	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */
-};
+}/* [public] */;
 
 struct srvsvc_NetSrvInfo101 {
 	enum srvsvc_PlatformId platform_id;
@@ -440,7 +440,7 @@ struct srvsvc_NetSrvInfo101 {
 	uint32_t version_minor;
 	uint32_t server_type;
 	const char *comment;/* [unique,charset(UTF16)] */
-};
+}/* [public] */;
 
 struct srvsvc_NetSrvInfo102 {
 	enum srvsvc_PlatformId platform_id;

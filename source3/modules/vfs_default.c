@@ -208,6 +208,32 @@ static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
 	return result;
 }
 
+static NTSTATUS vfswrap_create_file(vfs_handle_struct *handle,
+				    struct smb_request *req,
+				    uint16_t root_dir_fid,
+				    const char *fname,
+				    uint32_t create_file_flags,
+				    uint32_t access_mask,
+				    uint32_t share_access,
+				    uint32_t create_disposition,
+				    uint32_t create_options,
+				    uint32_t file_attributes,
+				    uint32_t oplock_request,
+				    uint64_t allocation_size,
+				    struct security_descriptor *sd,
+				    struct ea_list *ea_list,
+				    files_struct **result,
+				    int *pinfo,
+				    SMB_STRUCT_STAT *psbuf)
+{
+	return create_file_default(handle->conn, req, root_dir_fid, fname,
+				   create_file_flags, access_mask, share_access,
+				   create_disposition, create_options,
+				   file_attributes, oplock_request,
+				   allocation_size, sd, ea_list, result, pinfo,
+				   psbuf);
+}
+
 static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
@@ -1012,6 +1038,16 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
+				     const char *path,
+				     const char *name,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
+{
+	return get_real_filename(handle->conn, path, name, mem_ctx,
+				 found_name);
+}
+
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
@@ -1359,6 +1395,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 
 	{SMB_VFS_OP(vfswrap_open),	SMB_VFS_OP_OPEN,
 	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_create_file),	SMB_VFS_OP_CREATE_FILE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_close),	SMB_VFS_OP_CLOSE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_read),	SMB_VFS_OP_READ,
@@ -1430,6 +1468,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_get_real_filename),	SMB_VFS_OP_GET_REAL_FILENAME,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

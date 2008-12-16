@@ -25,8 +25,6 @@ RPMSRCDIR=`rpm --eval %_sourcedir`
 
 DIRNAME=$(dirname $0)
 TOPDIR=${DIRNAME}/../..
-SRCDIR=${TOPDIR}/source
-VERSION_H=${SRCDIR}/include/version.h
 
 SPECFILE="samba.spec"
 DOCS="docs.tar.bz2"
@@ -49,25 +47,14 @@ esac
 ##
 ## determine the samba version and create the SPEC file
 ##
-pushd ${SRCDIR}
-./script/mkversion.sh
-popd
-if [ ! -f ${VERSION_H} ] ; then
-	echo "Error creating version.h"
-	exit 1
+${DIRNAME}/makespec.sh
+RC=$?
+if [ $RC -ne 0 ]; then
+	exit ${RC}
 fi
 
-VERSION=`grep SAMBA_VERSION_OFFICIAL_STRING ${VERSION_H} | awk '{print $3}'`
-vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX ${VERSION_H} | awk '{print $3}'`
-if test "x${vendor_version}"  != "x" ; then
-	VERSION="${VERSION}-${vendor_version}"
-fi
-VERSION=`echo ${VERSION} | sed 's/-/_/g'`
-VERSION=`echo ${VERSION} | sed 's/\"//g'`
-echo "VERSION: ${VERSION}"
-sed -e s/PVERSION/${VERSION}/g \
-	< ${DIRNAME}/${SPECFILE}.tmpl \
-	> ${DIRNAME}/${SPECFILE}
+RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
+VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 
 ##
 ## create the tarball

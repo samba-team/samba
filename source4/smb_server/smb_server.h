@@ -483,6 +483,11 @@ struct loadparm_context;
 /* check req->ntvfs->async_states->status and if not OK then send an error reply */
 #define SMBSRV_CHECK_ASYNC_STATUS_ERR_SIMPLE do { \
 	req = talloc_get_type(ntvfs->async_states->private_data, struct smbsrv_request); \
+	if (ntvfs->async_states->state & NTVFS_ASYNC_STATE_CLOSE || NT_STATUS_EQUAL(ntvfs->async_states->status, NT_STATUS_NET_WRITE_FAULT)) { \
+		smbsrv_terminate_connection(req->smb_conn, get_friendly_nt_error_msg (ntvfs->async_states->status)); \
+		talloc_free(req); \
+		return; \
+	} \
 	if (NT_STATUS_IS_ERR(ntvfs->async_states->status)) { \
 		smbsrv_send_error(req, ntvfs->async_states->status); \
 		return; \
@@ -494,6 +499,11 @@ struct loadparm_context;
 } while (0)
 #define SMBSRV_CHECK_ASYNC_STATUS_SIMPLE do { \
 	req = talloc_get_type(ntvfs->async_states->private_data, struct smbsrv_request); \
+	if (ntvfs->async_states->state & NTVFS_ASYNC_STATE_CLOSE || NT_STATUS_EQUAL(ntvfs->async_states->status, NT_STATUS_NET_WRITE_FAULT)) { \
+		smbsrv_terminate_connection(req->smb_conn, get_friendly_nt_error_msg (ntvfs->async_states->status)); \
+		talloc_free(req); \
+		return; \
+	} \
 	if (!NT_STATUS_IS_OK(ntvfs->async_states->status)) { \
 		smbsrv_send_error(req, ntvfs->async_states->status); \
 		return; \
@@ -506,3 +516,5 @@ struct loadparm_context;
 
 /* zero out some reserved fields in a reply */
 #define SMBSRV_VWV_RESERVED(start, count) memset(req->out.vwv + VWV(start), 0, (count)*2)
+
+#include "smb_server/service_smb_proto.h"

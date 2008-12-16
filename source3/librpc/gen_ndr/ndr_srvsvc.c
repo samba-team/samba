@@ -6358,7 +6358,7 @@ _PUBLIC_ void ndr_print_srvsvc_PlatformId(struct ndr_print *ndr, const char *nam
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
-static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo100(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo100 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_srvsvc_NetSrvInfo100(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo100 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -6376,7 +6376,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo100(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo100(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo100 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo100(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo100 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
@@ -6421,7 +6421,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSrvInfo100(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo101(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo101 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_srvsvc_NetSrvInfo101(struct ndr_push *ndr, int ndr_flags, const struct srvsvc_NetSrvInfo101 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -6449,7 +6449,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetSrvInfo101(struct ndr_push *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo101(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo101 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_srvsvc_NetSrvInfo101(struct ndr_pull *ndr, int ndr_flags, struct srvsvc_NetSrvInfo101 *r)
 {
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;

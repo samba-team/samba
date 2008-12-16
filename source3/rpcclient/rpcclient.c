@@ -28,6 +28,8 @@ static enum pipe_auth_type pipe_default_auth_type = PIPE_AUTH_TYPE_NONE;
 static enum pipe_auth_level pipe_default_auth_level = PIPE_AUTH_LEVEL_NONE;
 static unsigned int timeout = 0;
 
+struct user_auth_info *rpcclient_auth_info;
+
 /* List to hold groups of commands.
  *
  * Commands are defined in a list of arrays: arrays are easy to
@@ -560,6 +562,7 @@ static void add_command_set(struct cmd_set *cmd_set)
  * @param cmd Command to run, as a single string.
  **/
 static NTSTATUS do_cmd(struct cli_state *cli,
+		       struct user_auth_info *auth_info,
 		       struct cmd_set *cmd_entry,
 		       int argc, char **argv)
 {
@@ -589,8 +592,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cli, cmd_entry->interface,
 					pipe_default_auth_level,
 					lp_workgroup(),
-					get_cmdline_auth_info_username(),
-					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_username(auth_info),
+					get_cmdline_auth_info_password(auth_info),
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_NTLMSSP:
@@ -598,8 +601,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 					cli, cmd_entry->interface,
 					pipe_default_auth_level,
 					lp_workgroup(),
-					get_cmdline_auth_info_username(),
-					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_username(auth_info),
+					get_cmdline_auth_info_password(auth_info),
 					&cmd_entry->rpc_pipe);
 				break;
 			case PIPE_AUTH_TYPE_SCHANNEL:
@@ -687,7 +690,8 @@ static NTSTATUS do_cmd(struct cli_state *cli,
  *
  * @returns The NTSTATUS from running the command.
  **/
-static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
+static NTSTATUS process_cmd(struct user_auth_info *auth_info,
+			    struct cli_state *cli, char *cmd)
 {
 	struct cmd_list *temp_list;
 	NTSTATUS result = NT_STATUS_OK;
@@ -713,7 +717,8 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 					goto out_free;
 				}
 
-				result = do_cmd(cli, temp_set, argc, argv);
+				result = do_cmd(cli, auth_info, temp_set,
+						argc, argv);
 
 				goto out_free;
 			}
@@ -776,13 +781,19 @@ out_free:
 
 	load_case_tables();
 
-	zero_addr(&server_ss);
+	zero_sockaddr(&server_ss);
 
 	setlinebuf(stdout);
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("rpcclient", True);
+
+	rpcclient_auth_info = user_auth_info_init(frame);
+	if (rpcclient_auth_info == NULL) {
+		exit(1);
+	}
+	popt_common_set_auth_info(rpcclient_auth_info);
 
 	/* Parse options */
 
@@ -850,16 +861,16 @@ out_free:
 	 * from stdin if necessary
 	 */
 
-	if (get_cmdline_auth_info_use_machine_account() &&
-	    !set_cmdline_auth_info_machine_account_creds()) {
+	if (get_cmdline_auth_info_use_machine_account(rpcclient_auth_info) &&
+	    !set_cmdline_auth_info_machine_account_creds(rpcclient_auth_info)) {
 		result = 1;
 		goto done;
 	}
 
-	if (!get_cmdline_auth_info_got_pass()) {
+	if (!get_cmdline_auth_info_got_pass(rpcclient_auth_info)) {
 		char *pass = getpass("Password:");
 		if (pass) {
-			set_cmdline_auth_info_password(pass);
+			set_cmdline_auth_info_password(rpcclient_auth_info, pass);
 		}
 	}
 
@@ -868,7 +879,7 @@ out_free:
 		server += 2;
 	}
 
-	if (get_cmdline_auth_info_use_kerberos()) {
+	if (get_cmdline_auth_info_use_kerberos(rpcclient_auth_info)) {
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
@@ -877,11 +888,12 @@ out_free:
 	nt_status = cli_full_connection(&cli, global_myname(), server,
 					opt_ipaddr ? &server_ss : NULL, opt_port,
 					"IPC$", "IPC",
-					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_username(rpcclient_auth_info),
 					lp_workgroup(),
-					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_password(rpcclient_auth_info),
 					flags,
-					get_cmdline_auth_info_signing_state(),NULL);
+					get_cmdline_auth_info_signing_state(rpcclient_auth_info),
+					NULL);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
@@ -889,10 +901,10 @@ out_free:
 		goto done;
 	}
 
-	if (get_cmdline_auth_info_smb_encrypt()) {
+	if (get_cmdline_auth_info_smb_encrypt(rpcclient_auth_info)) {
 		nt_status = cli_cm_force_encryption(cli,
-					get_cmdline_auth_info_username(),
-					get_cmdline_auth_info_password(),
+					get_cmdline_auth_info_username(rpcclient_auth_info),
+					get_cmdline_auth_info_password(rpcclient_auth_info),
 					lp_workgroup(),
 					"IPC$");
 		if (!NT_STATUS_IS_OK(nt_status)) {
@@ -927,7 +939,7 @@ out_free:
 		result = 0;
 
                 while((cmd=next_command(&p)) != NULL) {
-                        NTSTATUS cmd_result = process_cmd(cli, cmd);
+                        NTSTATUS cmd_result = process_cmd(rpcclient_auth_info, cli, cmd);
 			SAFE_FREE(cmd);
 			result = NT_STATUS_IS_ERR(cmd_result);
                 }
@@ -946,7 +958,7 @@ out_free:
 			break;
 
 		if (line[0] != '\n')
-			process_cmd(cli, line);
+			process_cmd(rpcclient_auth_info, cli, line);
 		SAFE_FREE(line);
 	}
 

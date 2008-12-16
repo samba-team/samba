@@ -396,7 +396,7 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	state->ctx->status = wb_connect_samr_recv(
 		ctx, state->domain,
 		&state->domain->libnet_ctx->samr.pipe,
-		&state->domain->libnet_ctx->samr.handle, 
+		&state->domain->libnet_ctx->samr.connect_handle,
 		&state->domain->libnet_ctx->samr.handle);
 	if (!composite_is_ok(state->ctx)) return;
 

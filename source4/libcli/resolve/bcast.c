@@ -73,9 +73,10 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
   broadcast name resolution method - recv side
  */
 NTSTATUS resolve_name_bcast_recv(struct composite_context *c, 
-				 TALLOC_CTX *mem_ctx, const char **reply_addr)
+				 TALLOC_CTX *mem_ctx,
+				 struct socket_address ***addrs)
 {
-	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
+	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* this makes much more sense for a bcast name resolution
 		   timeout */
@@ -92,7 +93,7 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 			    struct interface *ifaces,
 			    uint16_t nbt_port,
 			    int nbt_timeout,
-			    const char **reply_addr)
+			    struct socket_address ***addrs)
 {
 	struct resolve_bcast_data *data = talloc(mem_ctx, struct resolve_bcast_data);
 	struct composite_context *c;
@@ -101,7 +102,7 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 	data->nbt_timeout = nbt_timeout;
 	
 	c = resolve_name_bcast_send(mem_ctx, NULL, data, name);
-	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
+	return resolve_name_bcast_recv(c, mem_ctx, addrs);
 }
 
 bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)

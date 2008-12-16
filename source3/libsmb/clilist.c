@@ -417,7 +417,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 		}
 
 		SAFE_FREE(mask);
-		if (ff_searchcount > 0) {
+		if (ff_searchcount > 0 && ff_eos == 0 && finfo.name) {
 			mask = SMB_STRDUP(finfo.name);
 		} else {
 			mask = SMB_STRDUP("");

@@ -232,7 +232,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	TALLOC_CTX *ctx = talloc_stackframe();
 
 	if (parm->p_class == P_LOCAL && snum >= 0) {
-		ptr = lp_local_ptr(snum, ptr);
+		ptr = lp_local_ptr_by_snum(snum, ptr);
 	}
 
 	printf("<tr><td>%s</td><td>", get_parm_translated(ctx,
@@ -375,7 +375,7 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					void *ptr = parm->ptr;
 
 				if (parm->p_class == P_LOCAL && snum >= 0) {
-					ptr = lp_local_ptr(snum, ptr);
+					ptr = lp_local_ptr_by_snum(snum, ptr);
 				}
 
 				switch (parm->type) {

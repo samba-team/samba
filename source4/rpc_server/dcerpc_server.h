@@ -153,6 +153,8 @@ struct dcesrv_connection_context {
 	struct dcesrv_connection_context *next, *prev;
 	uint32_t context_id;
 
+	uint32_t assoc_group_id;
+
 	/* the connection this is on */
 	struct dcesrv_connection *conn;
 

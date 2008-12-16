@@ -855,6 +855,7 @@ my %property_list = (
 	"endpoint"		=> ["INTERFACE"],
 	"pointer_default"	=> ["INTERFACE"],
 	"helper"		=> ["INTERFACE"],
+	"pyhelper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
 	"restricted"	=> ["INTERFACE"],
 
@@ -890,7 +891,6 @@ my %property_list = (
 	"nopull"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"nosize"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"noprint"		=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP", "ELEMENT"],
-	"noejs"			=> ["FUNCTION", "TYPEDEF", "STRUCT", "UNION", "ENUM", "BITMAP"],
 	"todo"			=> ["FUNCTION"],
 
 	# union

@@ -8,6 +8,10 @@
 
 #include "librpc/gen_ndr/ndr_dom_sid.h"
 #define NDR_SECURITY_CALL_COUNT (0)
+enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *r);
+enum ndr_err_code ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *r);
+void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *r);
+size_t ndr_size_dom_sid(const struct dom_sid *r, int flags);
 enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r);
 enum ndr_err_code ndr_pull_security_ace_flags(struct ndr_pull *ndr, int ndr_flags, uint8_t *r);
 void ndr_print_security_ace_flags(struct ndr_print *ndr, const char *name, uint8_t r);

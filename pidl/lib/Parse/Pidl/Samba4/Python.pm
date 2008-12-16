@@ -14,6 +14,7 @@ use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
+use Parse::Pidl::Samba4 qw(ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 
 use vars qw($VERSION);
@@ -223,7 +224,10 @@ sub PythonStruct($$$$$$)
 	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
+	$self->pidl("char *kwlist[] = {NULL};");
 	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
+	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"\", kwlist))");
+	$self->pidl("\treturn NULL;");
 	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
 	$self->deindent;
 	$self->pidl("}");
@@ -279,6 +283,11 @@ sub PythonStruct($$$$$$)
 		$self->indent;
 		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
 		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
+		$self->deindent;
+		$self->pidl("#ifdef ".uc("py_$name\_extra_methods"));
+		$self->pidl("\t" .uc("py_$name\_extra_methods"));
+		$self->pidl("#endif");
+		$self->indent;
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
 		$self->pidl("};");
@@ -289,6 +298,10 @@ sub PythonStruct($$$$$$)
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
 	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
 	$self->pidl_hdr("\n");
+	$self->pidl("#ifndef ".uc("py_$name\_repr"));
+	$self->pidl("#define ".uc("py_$name\_repr") . " py_talloc_default_repr");
+	$self->pidl("#endif");
+	$self->pidl("");
 	my $docstring = ($self->DocString($d, $name) or "NULL");
 	my $typeobject = "$name\_Type";
 	$self->pidl("PyTypeObject $typeobject = {");
@@ -298,7 +311,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getset = $getsetters,");
-	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	$self->pidl(".tp_repr = ".uc("py_$name\_repr").",");
 	$self->pidl(".tp_doc = $docstring,");
 	$self->pidl(".tp_methods = $py_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
@@ -623,6 +636,10 @@ sub Interface($$$)
 
 	$self->pidl_hdr("\n");
 
+	if (has_property($interface, "pyhelper")) {
+		$self->pidl("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
+	}
+
 	$self->Const($_) foreach (@{$interface->{CONSTS}});
 
 	foreach my $d (@{$interface->{TYPES}}) {
@@ -942,7 +959,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
-			if (!$l->{IS_FIXED}) {
+			if (ArrayDynamicallyAllocated($e, $l)) {
 				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
 			}
 			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");

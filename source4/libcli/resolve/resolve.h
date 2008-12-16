@@ -22,9 +22,16 @@
 #ifndef __RESOLVE_H__
 #define __RESOLVE_H__
 
+struct socket_address;
+
 #include "../libcli/nbt/libnbt.h"
-typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx, struct event_context *, void *privdata, struct nbt_name *);
-typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *, TALLOC_CTX *, const char **);
+typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
+							  struct event_context *,
+							  void *privdata,
+							  struct nbt_name *);
+typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *creq,
+					 TALLOC_CTX *mem_ctx,
+					 struct socket_address ***addrs);
 #include "libcli/resolve/proto.h"
 struct interface;
 #include "libcli/resolve/lp_proto.h"

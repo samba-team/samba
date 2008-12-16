@@ -803,7 +803,40 @@ static NTSTATUS dcesrv_netr_AccountSync(struct dcesrv_call_state *dce_call, TALL
 static WERROR dcesrv_netr_GetDcName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetDcName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	const char * const attrs[] = { NULL };
+	void *sam_ctx;
+	struct ldb_message **res;
+	struct ldb_dn *domain_dn;
+	int ret;
+	const char *dcname;
+
+	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx,
+				dce_call->conn->dce_ctx->lp_ctx,
+				dce_call->conn->auth_state.session_info);
+	if (sam_ctx == NULL) {
+		return WERR_DS_SERVICE_UNAVAILABLE;
+	}
+
+	domain_dn = samdb_domain_to_dn(sam_ctx, mem_ctx,
+				       r->in.domainname);
+	if (domain_dn == NULL) {
+		return WERR_DS_SERVICE_UNAVAILABLE;
+	}
+
+	ret = gendb_search_dn(sam_ctx, mem_ctx, domain_dn, &res, attrs);
+	if (ret != 1) {
+		return WERR_NO_SUCH_DOMAIN;
+	}
+
+	/* TODO: - return real IP address
+	 *       - check all r->in.* parameters (server_unc is ignored by w2k3!)
+	 */
+	dcname = talloc_asprintf(mem_ctx, "\\\\%s",
+				 lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx));
+	W_ERROR_HAVE_NO_MEMORY(dcname);
+
+	*r->out.dcname = dcname;
+	return WERR_OK;
 }
 
 
@@ -823,7 +856,18 @@ static WERROR dcesrv_netr_LogonControl(struct dcesrv_call_state *dce_call, TALLO
 static WERROR dcesrv_netr_GetAnyDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_GetAnyDCName *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct netr_GetDcName r2;
+	WERROR werr;
+
+	ZERO_STRUCT(r2);
+
+	r2.in.logon_server	= r->in.logon_server;
+	r2.in.domainname	= r->in.domainname;
+	r2.out.dcname		= r->out.dcname;
+
+	werr = dcesrv_netr_GetDcName(dce_call, mem_ctx, &r2);
+
+	return werr;
 }
 
 
@@ -1383,11 +1427,11 @@ static WERROR dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *dc
 }
 
 
-/* 
-  netr_NETRSERVERGETTRUSTINFO 
+/*
+  netr_ServerGetTrustInfo
 */
-static WERROR dcesrv_netr_NETRSERVERGETTRUSTINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRSERVERGETTRUSTINFO *r)
+static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_ServerGetTrustInfo *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

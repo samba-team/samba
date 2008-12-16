@@ -417,6 +417,32 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 	}
 }
 
+static int kludge_acl_extended(struct ldb_module *module, struct ldb_request *req)
+{
+	enum security_user_level user_type;
+
+	/* allow everybody to read the sequence number */
+	if (strcmp(req->op.extended.oid,
+		   LDB_EXTENDED_SEQUENCE_NUMBER) == 0) {
+		return ldb_next_request(module, req);
+	}
+
+	user_type = what_is_user(module);
+
+	switch (user_type) {
+	case SECURITY_SYSTEM:
+	case SECURITY_ADMINISTRATOR:
+		return ldb_next_request(module, req);
+	default:
+		ldb_asprintf_errstring(module->ldb,
+				       "kludge_acl_change: "
+				       "attempted database modify not permitted. "
+				       "User %s is not SYSTEM or an administrator",
+				       user_name(req, module));
+		return LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS;
+	}
+}
+
 static int kludge_acl_init(struct ldb_module *module)
 {
 	int ret, i;
@@ -494,6 +520,6 @@ _PUBLIC_ const struct ldb_module_ops ldb_kludge_acl_module_ops = {
 	.modify            = kludge_acl_change,
 	.del               = kludge_acl_change,
 	.rename            = kludge_acl_change,
-	.extended          = kludge_acl_change,
+	.extended          = kludge_acl_extended,
 	.init_context	   = kludge_acl_init
 };

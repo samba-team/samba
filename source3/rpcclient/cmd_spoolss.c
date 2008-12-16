@@ -2641,6 +2641,8 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
+extern struct user_auth_info *rpcclient_auth_info;
+
 static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv)
@@ -2671,11 +2673,11 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 	nt_status = cli_full_connection(&cli_server2, global_myname(), servername2, 
 					NULL, 0,
 					"IPC$", "IPC",
-					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_username(rpcclient_auth_info),
 					lp_workgroup(),
-					get_cmdline_auth_info_password(),
-					get_cmdline_auth_info_use_kerberos() ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
-					get_cmdline_auth_info_signing_state(), NULL);
+					get_cmdline_auth_info_password(rpcclient_auth_info),
+					get_cmdline_auth_info_use_kerberos(rpcclient_auth_info) ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
+					get_cmdline_auth_info_signing_state(rpcclient_auth_info), NULL);
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return WERR_GENERAL_FAILURE;

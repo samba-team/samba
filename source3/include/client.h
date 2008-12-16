@@ -52,6 +52,7 @@ struct cli_pipe_auth_data {
 
 	char *domain;
 	char *user_name;
+	DATA_BLOB user_session_key;
 
 	union {
 		struct schannel_auth_struct *schannel_auth;

@@ -1521,7 +1521,10 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	saf_store(r->in.domain_name, r->in.dc_name);
+	saf_join_store(r->out.netbios_domain_name, r->in.dc_name);
+	if (r->out.dns_domain_name) {
+		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
+	}
 
 #ifdef WITH_ADS
 	if (r->out.domain_is_ad) {
@@ -1752,6 +1755,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     r->in.domain_name,
 				     NULL,
 				     NULL,
+				     DS_FORCE_REDISCOVERY |
 				     DS_DIRECTORY_SERVICE_REQUIRED |
 				     DS_WRITABLE_REQUIRED |
 				     DS_RETURN_DNS_NAME,

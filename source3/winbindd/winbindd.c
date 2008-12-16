@@ -7,17 +7,17 @@
    Copyright (C) Andrew Tridgell 2002
    Copyright (C) Jelmer Vernooij 2003
    Copyright (C) Volker Lendecke 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -103,9 +103,9 @@ static void winbindd_status(void)
 	DEBUG(0, ("winbindd status:\n"));
 
 	/* Print client state information */
-	
+
 	DEBUG(0, ("\t%d clients currently active\n", winbindd_num_clients()));
-	
+
 	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
 		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
@@ -157,7 +157,7 @@ static void terminate(bool is_parent)
 	}
 
 	idmap_close();
-	
+
 	trustdom_cache_shutdown();
 
 #if 0
@@ -173,35 +173,35 @@ static void terminate(bool is_parent)
 	exit(0);
 }
 
-static bool do_sigterm;
+static SIG_ATOMIC_T do_sigterm = 0;
 
 static void termination_handler(int signum)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 	sys_select_signal(signum);
 }
 
-static bool do_sigusr2;
+static SIG_ATOMIC_T do_sigusr2 = 0;
 
 static void sigusr2_handler(int signum)
 {
-	do_sigusr2 = True;
+	do_sigusr2 = 1;
 	sys_select_signal(SIGUSR2);
 }
 
-static bool do_sighup;
+static SIG_ATOMIC_T do_sighup = 0;
 
 static void sighup_handler(int signum)
 {
-	do_sighup = True;
+	do_sighup = 1;
 	sys_select_signal(SIGHUP);
 }
 
-static bool do_sigchld;
+static SIG_ATOMIC_T do_sigchld = 0;
 
 static void sigchld_handler(int signum)
 {
-	do_sigchld = True;
+	do_sigchld = 1;
 	sys_select_signal(SIGCHLD);
 }
 
@@ -224,7 +224,7 @@ static void msg_shutdown(struct messaging_context *msg,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 }
 
 
@@ -288,7 +288,7 @@ static struct winbindd_dispatch_table {
 	void (*fn)(struct winbindd_cli_state *state);
 	const char *winbindd_cmd_name;
 } dispatch_table[] = {
-	
+
 	/* User functions */
 
 	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
@@ -685,9 +685,9 @@ static void new_connection(int listen_sock, bool privileged)
 	struct winbindd_cli_state *state;
 	socklen_t len;
 	int sock;
-	
+
 	/* Accept connection */
-	
+
 	len = sizeof(sunaddr);
 
 	do {
@@ -696,16 +696,16 @@ static void new_connection(int listen_sock, bool privileged)
 
 	if (sock == -1)
 		return;
-	
+
 	DEBUG(6,("accepted socket %d\n", sock));
-	
+
 	/* Create new connection structure */
-	
+
 	if ((state = TALLOC_ZERO_P(NULL, struct winbindd_cli_state)) == NULL) {
 		close(sock);
 		return;
 	}
-	
+
 	state->sock = sock;
 
 	state->last_access = time(NULL);	
@@ -720,7 +720,7 @@ static void new_connection(int listen_sock, bool privileged)
 			 request_len_recv, state);
 
 	/* Add to connection list */
-	
+
 	winbindd_add_client(state);
 }
 
@@ -731,7 +731,7 @@ static void remove_client(struct winbindd_cli_state *state)
 	char c = 0;
 
 	/* It's a dead client - hold a funeral */
-	
+
 	if (state == NULL) {
 		return;
 	}
@@ -740,14 +740,14 @@ static void remove_client(struct winbindd_cli_state *state)
 	write(state->sock, &c, sizeof(c));
 
 	/* Close socket */
-		
+
 	close(state->sock);
-		
+
 	/* Free any getent state */
-		
+
 	free_getent_state(state->getpwent_state);
 	free_getent_state(state->getgrent_state);
-		
+
 	/* We may have some extra data that was not freed if the client was
 	   killed unexpectedly */
 
@@ -756,9 +756,9 @@ static void remove_client(struct winbindd_cli_state *state)
 	TALLOC_FREE(state->mem_ctx);
 
 	remove_fd_event(&state->fd_event);
-		
+
 	/* Remove from list and free */
-		
+
 	winbindd_remove_client(state);
 	TALLOC_FREE(state);
 }
@@ -802,7 +802,7 @@ void winbind_check_sighup(const char *lfile)
 		flush_caches();
 		reload_services_file(lfile);
 
-		do_sighup = False;
+		do_sighup = 0;
 	}
 }
 
@@ -893,7 +893,7 @@ static void process_loop(void)
 	}
 
 	/* Call select */
-        
+
 	selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
 	if (selret == 0) {
@@ -944,7 +944,7 @@ static void process_loop(void)
 		/* new, non-privileged connection */
 		new_connection(listen_sock, False);
 	}
-            
+
 	if (FD_ISSET(listen_priv_sock, &r_fds)) {
 		while (winbindd_num_clients() >
 		       WINBINDD_MAX_SIMULTANEOUS_CLIENTS - 1) {
@@ -977,13 +977,13 @@ static void process_loop(void)
 
 	if (do_sigusr2) {
 		print_winbindd_status();
-		do_sigusr2 = False;
+		do_sigusr2 = 0;
 	}
 
 	if (do_sigchld) {
 		pid_t pid;
 
-		do_sigchld = False;
+		do_sigchld = 0;
 
 		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
 			winbind_child_died(pid);
@@ -1159,7 +1159,7 @@ int main(int argc, char **argv, char **envp)
 	BlockSignals(False, SIGCHLD);
 
 	/* Setup signal handlers */
-	
+
 	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
 	CatchSignal(SIGQUIT, termination_handler);
 	CatchSignal(SIGTERM, termination_handler);
@@ -1232,13 +1232,13 @@ int main(int argc, char **argv, char **envp)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DEBUG,
 			   winbind_msg_debug);
-	
+
 	netsamlogon_cache_init(); /* Non-critical */
-	
+
 	/* clear the cached list of trusted domains */
 
 	wcache_tdc_clear();	
-	
+
 	if (!init_domain_list()) {
 		DEBUG(0,("unable to initialize domain list\n"));
 		exit(1);

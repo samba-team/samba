@@ -5,7 +5,7 @@
 
    Copyright (C) Volker Lendecke 2005
    Copyright (C) Gerald Carter 2006
-   
+
    The helpers always consist of three functions: 
 
    * A request setup function that takes the necessary parameters together
@@ -21,12 +21,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -166,7 +166,7 @@ static void lookupsid_recv(TALLOC_CTX *mem_ctx, bool success,
 		/* Try again using the forest root */
 		struct winbindd_domain *root_domain = find_root_domain();
 		struct winbindd_request request;
-		
+
 		if ( !root_domain ) {
 			DEBUG(5,("lookupsid_recv: unable to determine forest root\n"));
 			cont(s->caller_private_data, False, NULL, NULL, SID_NAME_UNKNOWN);
@@ -491,7 +491,7 @@ void winbindd_listent_async(TALLOC_CTX *mem_ctx,
 	do_async_domain(mem_ctx, domain, &request, listent_recv,
 		        (void *)cont, private_data);
 }
- 
+
 enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
                                               struct winbindd_cli_state *state)
 {
@@ -509,7 +509,7 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	methods = domain->methods;
 	status = methods->query_user_list(domain, state->mem_ctx, 
 					  &num_entries, &info);
-	
+
 	if (!NT_STATUS_IS_OK(status))
 		return WINBINDD_ERROR;
 
@@ -521,7 +521,7 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	   +1 for the ',' between group names */
 	extra_data = (char *)SMB_REALLOC(extra_data, 
 		(sizeof(fstring) + 1) * num_entries);
- 
+
 	if (!extra_data) {
 		DEBUG(0,("failed to enlarge buffer!\n"));
 		return WINBINDD_ERROR;
@@ -530,12 +530,12 @@ enum winbindd_result winbindd_dual_list_users(struct winbindd_domain *domain,
 	/* Pack user list into extra data fields */
 	for (i = 0; i < num_entries; i++) {
 		fstring acct_name, name;
-		
+
 		if (info[i].acct_name == NULL)
 			fstrcpy(acct_name, "");
 		else
 			fstrcpy(acct_name, info[i].acct_name);
-		
+
 		fill_domain_username(name, domain->name, acct_name, True);
 		/* Append to extra data */
 		memcpy(&extra_data[extra_data_len], name, strlen(name));
@@ -904,7 +904,7 @@ enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
 			   (char *)state->response.extra_data.data));
 		state->response.length += len+1;
 	}
-	
+
 	return WINBINDD_OK;
 }
 
@@ -926,7 +926,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, bool success,
 static void gettoken_recvaliases(void *private_data, bool success,
 				 const DOM_SID *aliases,
 				 size_t num_aliases);
-				 
+
 
 void winbindd_gettoken_async(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid,
 			     void (*cont)(void *private_data, bool success,
@@ -975,7 +975,7 @@ static void gettoken_recvdomgroups(TALLOC_CTX *mem_ctx, bool success,
 	struct gettoken_state *state =
 		talloc_get_type_abort(private_data, struct gettoken_state);
 	char *sids_str;
-	
+
 	if (!success) {
 		DEBUG(10, ("Could not get domain groups\n"));
 		state->cont(state->private_data, False, NULL, 0);

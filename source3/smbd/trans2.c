@@ -1006,22 +1006,24 @@ static void call_trans2open(connection_struct *conn,
 		return;
 	}
 
-	status = create_file(conn,			/* conn */
-			     req,			/* req */
-			     0,				/* root_dir_fid */
-			     fname,			/* fname */
-			     access_mask,		/* access_mask */
-			     share_mode,		/* share_access */
-			     create_disposition,	/* create_disposition*/
-			     create_options,		/* create_options */
-			     open_attr,			/* file_attributes */
-			     oplock_request,		/* oplock_request */
-			     open_size,			/* allocation_size */
-			     NULL,			/* sd */
-			     ea_list,			/* ea_list */
-			     &fsp,			/* result */
-			     &smb_action,		/* pinfo */
-			     &sbuf);			/* psbuf */
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		CFF_DOS_PATH,				/* create_file_flags */
+		access_mask,				/* access_mask */
+		share_mode,				/* share_access */
+		create_disposition,			/* create_disposition*/
+		create_options,				/* create_options */
+		open_attr,				/* file_attributes */
+		oplock_request,				/* oplock_request */
+		open_size,				/* allocation_size */
+		NULL,					/* sd */
+		ea_list,				/* ea_list */
+		&fsp,					/* result */
+		&smb_action,				/* pinfo */
+		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1093,15 +1095,13 @@ static bool exact_match(connection_struct *conn,
 {
 	if (mask[0] == '.' && mask[1] == 0)
 		return False;
-	if (conn->case_sensitive)
-		return strcmp(str,mask)==0;
-	if (StrCaseCmp(str,mask) != 0) {
-		return False;
-	}
 	if (dptr_has_wild(conn->dirptr)) {
 		return False;
 	}
-	return True;
+	if (conn->case_sensitive)
+		return strcmp(str,mask)==0;
+	else
+		return StrCaseCmp(str,mask) == 0;
 }
 
 /****************************************************************************
@@ -5057,15 +5057,26 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		return NT_STATUS_OK;
 	}
 
-	status = open_file_ntcreate(conn, req, fname, psbuf,
-				FILE_WRITE_ATTRIBUTES,
-				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				FORCE_OPLOCK_BREAK_TO_NONE,
-				NULL, &new_fsp);
-	
+        status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		0,					/* create_file_flags */
+		FILE_WRITE_ATTRIBUTES,			/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&new_fsp,				/* result */
+		NULL,					/* pinfo */
+		psbuf);					/* psbuf */
+
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
 		return status;
@@ -5826,14 +5837,25 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 
 	/* Pathname or stat or directory file. */
 
-	status = open_file_ntcreate(conn, req, fname, psbuf,
-				FILE_WRITE_DATA,
-				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				FILE_OPEN,
-				0,
-				FILE_ATTRIBUTE_NORMAL,
-				FORCE_OPLOCK_BREAK_TO_NONE,
-				NULL, &new_fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		0,					/* create_file_flags */
+		FILE_WRITE_DATA,			/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		FILE_ATTRIBUTE_NORMAL,			/* file_attributes */
+		FORCE_OPLOCK_BREAK_TO_NONE,		/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&new_fsp,				/* result */
+		NULL,					/* pinfo */
+		psbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		/* NB. We check for open_was_deferred in the caller. */
@@ -6257,16 +6279,24 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
 		fname, (unsigned int)unixmode ));
 
-	status = open_directory(conn, req,
-				fname,
-				psbuf,
-				FILE_READ_ATTRIBUTES, /* Just a stat open */
-				FILE_SHARE_NONE, /* Ignored for stat opens */
-				FILE_CREATE,
-				0,
-				mod_unixmode,
-				&info,
-				&fsp);
+	status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		0,					/* create_file_flags */
+		FILE_READ_ATTRIBUTES,			/* access_mask */
+		FILE_SHARE_NONE,			/* share_access */
+		FILE_CREATE,				/* create_disposition*/
+		FILE_DIRECTORY_FILE,			/* create_options */
+		mod_unixmode,				/* file_attributes */
+		0,					/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		psbuf);					/* psbuf */
 
         if (NT_STATUS_IS_OK(status)) {
                 close_file(req, fsp, NORMAL_CLOSE);
@@ -6423,17 +6453,25 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		(unsigned int)wire_open_mode,
 		(unsigned int)unixmode ));
 
-	status = open_file_ntcreate(conn, req,
-				fname,
-				psbuf,
-				access_mask,
-				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				create_disp,
-				0, 		/* no create options yet. */
-				mod_unixmode,
-				oplock_request,
-				&info,
-				&fsp);
+        status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		0,					/* create_file_flags */
+		access_mask,				/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		create_disp,				/* create_disposition*/
+		0,					/* create_options */
+		mod_unixmode,				/* file_attributes */
+		oplock_request,				/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		psbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -6518,6 +6556,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	uint16 flags = 0;
 	char del = 1;
 	int info = 0;
+	int create_options = 0;
 	int i;
 	struct share_mode_lock *lck = NULL;
 
@@ -6541,30 +6580,28 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		fname));
 
 	if (VALID_STAT_OF_DIR(*psbuf)) {
-		status = open_directory(conn, req,
-					fname,
-					psbuf,
-					DELETE_ACCESS,
-					FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-					FILE_OPEN,
-					0,
-					FILE_FLAG_POSIX_SEMANTICS|0777,
-					&info,
-					&fsp);
-	} else {
-
-		status = open_file_ntcreate(conn, req,
-				fname,
-				psbuf,
-				DELETE_ACCESS,
-				FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
-				FILE_OPEN,
-				0,
-				FILE_FLAG_POSIX_SEMANTICS|0777,
-				0, /* No oplock, but break existing ones. */
-				&info,
-				&fsp);
+		create_options |= FILE_DIRECTORY_FILE;
 	}
+
+        status = SMB_VFS_CREATE_FILE(
+		conn,					/* conn */
+		req,					/* req */
+		0,					/* root_dir_fid */
+		fname,					/* fname */
+		0,					/* create_file_flags */
+		DELETE_ACCESS,				/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+		    FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		create_options,				/* create_options */
+		FILE_FLAG_POSIX_SEMANTICS|0777,		/* file_attributes */
+		0,					/* oplock_request */
+		0,					/* allocation_size */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		&info,					/* pinfo */
+		psbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

@@ -493,6 +493,19 @@ static bool is_hidden_share(int snum)
 }
 
 /*******************************************************************
+ Verify user is allowed to view share, access based enumeration
+********************************************************************/
+static bool is_enumeration_allowed(pipes_struct *p,
+                                   int snum)
+{
+    if (!lp_access_based_share_enum(snum))
+        return true;
+
+    return share_access_check(p->server_info->ptok, lp_servicename(snum),
+                              FILE_READ_DATA);
+}
+
+/*******************************************************************
  Fill in a share info structure.
  ********************************************************************/
 
@@ -509,6 +522,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	TALLOC_CTX *ctx = p->mem_ctx;
 	int i = 0;
 	int valid_share_count = 0;
+	bool *allowed = 0;
 	union srvsvc_NetShareCtr ctr;
 	uint32_t resume_handle = resume_handle_p ? *resume_handle_p : 0;
 
@@ -521,15 +535,21 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 	num_services = lp_numservices();
 	unbecome_root();
 
-	/* Count the number of entries. */
-	for (snum = 0; snum < num_services; snum++) {
-		if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) ) {
-			DEBUG(10, ("counting service %s\n", lp_servicename(snum)));
-			num_entries++;
-		} else {
-			DEBUG(10, ("NOT counting service %s\n", lp_servicename(snum)));
-		}
-	}
+        allowed = TALLOC_ZERO_ARRAY(ctx, bool, num_services);
+        W_ERROR_HAVE_NO_MEMORY(allowed);
+
+        /* Count the number of entries. */
+        for (snum = 0; snum < num_services; snum++) {
+                if (lp_browseable(snum) && lp_snum_ok(snum) &&
+                    is_enumeration_allowed(p, snum) &&
+                    (all_shares || !is_hidden_share(snum)) ) {
+                        DEBUG(10, ("counting service %s\n", lp_servicename(snum)));
+                        allowed[snum] = true;
+                        num_entries++;
+                } else {
+                        DEBUG(10, ("NOT counting service %s\n", lp_servicename(snum)));
+                }
+        }
 
 	if (!num_entries || (resume_handle >= num_entries)) {
 		return WERR_OK;
@@ -547,7 +567,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr0->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_0(p, &ctr.ctr0->array[i++], snum);
 			}
@@ -564,7 +584,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1(p, &ctr.ctr1->array[i++], snum);
 			}
@@ -581,7 +601,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr2->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_2(p, &ctr.ctr2->array[i++], snum);
 			}
@@ -598,7 +618,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr501->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_501(p, &ctr.ctr501->array[i++], snum);
 			}
@@ -615,7 +635,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr502->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_502(p, &ctr.ctr502->array[i++], snum);
 			}
@@ -632,7 +652,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1004->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1004(p, &ctr.ctr1004->array[i++], snum);
 			}
@@ -649,7 +669,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1005->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1005(p, &ctr.ctr1005->array[i++], snum);
 			}
@@ -666,7 +686,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1006->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1006(p, &ctr.ctr1006->array[i++], snum);
 			}
@@ -683,7 +703,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1007->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1007(p, &ctr.ctr1007->array[i++], snum);
 			}
@@ -700,7 +720,7 @@ static WERROR init_srv_share_info_ctr(pipes_struct *p,
 		W_ERROR_HAVE_NO_MEMORY(ctr.ctr1501->array);
 
 		for (snum = 0; snum < num_services; snum++) {
-			if (lp_browseable(snum) && lp_snum_ok(snum) && (all_shares || !is_hidden_share(snum)) &&
+			if (allowed[snum] &&
 			    (resume_handle <= (i + valid_share_count++)) ) {
 				init_srv_share_info_1501(p, &ctr.ctr1501->array[i++], snum);
 			}
@@ -2048,11 +2068,12 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_file(
+	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		r->in.file,				/* fname */
+		CFF_DOS_PATH,				/* create_file_flags */
 		FILE_READ_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/
@@ -2162,11 +2183,12 @@ WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	nt_status = create_file(
+	nt_status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		NULL,					/* req */
 		0,					/* root_dir_fid */
 		r->in.file,				/* fname */
+		CFF_DOS_PATH,				/* create_file_flags */
 		FILE_WRITE_ATTRIBUTES,			/* access_mask */
 		FILE_SHARE_READ|FILE_SHARE_WRITE,	/* share_access */
 		FILE_OPEN,				/* create_disposition*/

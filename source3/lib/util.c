@@ -280,135 +280,154 @@ bool init_names(void)
   Used mainly in client tools.
 ****************************************************************************/
 
-static struct user_auth_info cmdline_auth_info = {
-	NULL,	/* username */
-	NULL,	/* password */
-	false,	/* got_pass */
-	false,	/* use_kerberos */
-	Undefined, /* signing state */
-	false,	/* smb_encrypt */
-	false   /* use machine account */
-};
-
-const char *get_cmdline_auth_info_username(void)
+struct user_auth_info *user_auth_info_init(TALLOC_CTX *mem_ctx)
 {
-	if (!cmdline_auth_info.username) {
-		return "";
+	struct user_auth_info *result;
+
+	result = TALLOC_ZERO_P(mem_ctx, struct user_auth_info);
+	if (result == NULL) {
+		return NULL;
 	}
-	return cmdline_auth_info.username;
+
+	result->signing_state = Undefined;
+	return result;
 }
 
-void set_cmdline_auth_info_username(const char *username)
+const char *get_cmdline_auth_info_username(struct user_auth_info *auth_info)
 {
-	SAFE_FREE(cmdline_auth_info.username);
-	cmdline_auth_info.username = SMB_STRDUP(username);
-	if (!cmdline_auth_info.username) {
+	if (!auth_info->username) {
+		return "";
+	}
+	return auth_info->username;
+}
+
+void set_cmdline_auth_info_username(struct user_auth_info *auth_info,
+				    const char *username)
+{
+	TALLOC_FREE(auth_info->username);
+	auth_info->username = talloc_strdup(auth_info, username);
+	if (!auth_info->username) {
 		exit(ENOMEM);
 	}
 }
 
-const char *get_cmdline_auth_info_password(void)
+const char *get_cmdline_auth_info_password(struct user_auth_info *auth_info)
 {
-	if (!cmdline_auth_info.password) {
+	if (!auth_info->password) {
 		return "";
 	}
-	return cmdline_auth_info.password;
+	return auth_info->password;
 }
 
-void set_cmdline_auth_info_password(const char *password)
+void set_cmdline_auth_info_password(struct user_auth_info *auth_info,
+				    const char *password)
 {
-	SAFE_FREE(cmdline_auth_info.password);
-	cmdline_auth_info.password = SMB_STRDUP(password);
-	if (!cmdline_auth_info.password) {
+	TALLOC_FREE(auth_info->password);
+	auth_info->password = talloc_strdup(auth_info, password);
+	if (!auth_info->password) {
 		exit(ENOMEM);
 	}
-	cmdline_auth_info.got_pass = true;
+	auth_info->got_pass = true;
 }
 
-bool set_cmdline_auth_info_signing_state(const char *arg)
+bool set_cmdline_auth_info_signing_state(struct user_auth_info *auth_info,
+					 const char *arg)
 {
-	cmdline_auth_info.signing_state = -1;
+	auth_info->signing_state = -1;
 	if (strequal(arg, "off") || strequal(arg, "no") ||
 			strequal(arg, "false")) {
-		cmdline_auth_info.signing_state = false;
+		auth_info->signing_state = false;
 	} else if (strequal(arg, "on") || strequal(arg, "yes") ||
 			strequal(arg, "true") || strequal(arg, "auto")) {
-		cmdline_auth_info.signing_state = true;
+		auth_info->signing_state = true;
 	} else if (strequal(arg, "force") || strequal(arg, "required") ||
 			strequal(arg, "forced")) {
-		cmdline_auth_info.signing_state = Required;
+		auth_info->signing_state = Required;
 	} else {
 		return false;
 	}
 	return true;
 }
 
-int get_cmdline_auth_info_signing_state(void)
+int get_cmdline_auth_info_signing_state(struct user_auth_info *auth_info)
 {
-	return cmdline_auth_info.signing_state;
+	return auth_info->signing_state;
 }
 
-void set_cmdline_auth_info_use_kerberos(bool b)
+void set_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info,
+					bool b)
 {
-        cmdline_auth_info.use_kerberos = b;
+        auth_info->use_kerberos = b;
 }
 
-bool get_cmdline_auth_info_use_kerberos(void)
+bool get_cmdline_auth_info_use_kerberos(struct user_auth_info *auth_info)
 {
-	return cmdline_auth_info.use_kerberos;
-}
-
-/* This should only be used by lib/popt_common.c JRA */
-void set_cmdline_auth_info_use_krb5_ticket(void)
-{
-	cmdline_auth_info.use_kerberos = true;
-	cmdline_auth_info.got_pass = true;
+	return auth_info->use_kerberos;
 }
 
 /* This should only be used by lib/popt_common.c JRA */
-void set_cmdline_auth_info_smb_encrypt(void)
+void set_cmdline_auth_info_use_krb5_ticket(struct user_auth_info *auth_info)
 {
-	cmdline_auth_info.smb_encrypt = true;
+	auth_info->use_kerberos = true;
+	auth_info->got_pass = true;
 }
 
-void set_cmdline_auth_info_use_machine_account(void)
+/* This should only be used by lib/popt_common.c JRA */
+void set_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info)
 {
-	cmdline_auth_info.use_machine_account = true;
+	auth_info->smb_encrypt = true;
 }
 
-bool get_cmdline_auth_info_got_pass(void)
+void set_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
 {
-	return cmdline_auth_info.got_pass;
+	auth_info->use_machine_account = true;
 }
 
-bool get_cmdline_auth_info_smb_encrypt(void)
+bool get_cmdline_auth_info_got_pass(struct user_auth_info *auth_info)
 {
-	return cmdline_auth_info.smb_encrypt;
+	return auth_info->got_pass;
 }
 
-bool get_cmdline_auth_info_use_machine_account(void)
+bool get_cmdline_auth_info_smb_encrypt(struct user_auth_info *auth_info)
 {
-	return cmdline_auth_info.use_machine_account;
+	return auth_info->smb_encrypt;
 }
 
-bool get_cmdline_auth_info_copy(struct user_auth_info *info)
+bool get_cmdline_auth_info_use_machine_account(struct user_auth_info *auth_info)
 {
-	*info = cmdline_auth_info;
-	/* Now re-alloc the strings. */
-	info->username = SMB_STRDUP(get_cmdline_auth_info_username());
-	info->password = SMB_STRDUP(get_cmdline_auth_info_password());
-	if (!info->username || !info->password) {
-		return false;
+	return auth_info->use_machine_account;
+}
+
+struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
+						  struct user_auth_info *src)
+{
+	struct user_auth_info *result;
+
+	result = user_auth_info_init(mem_ctx);
+	if (result == NULL) {
+		return NULL;
 	}
-	return true;
+
+	*result = *src;
+
+	result->username = talloc_strdup(
+		result, get_cmdline_auth_info_username(src));
+	result->password = talloc_strdup(
+		result, get_cmdline_auth_info_password(src));
+	if ((result->username == NULL) || (result->password == NULL)) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+
+	return result;
 }
 
-bool set_cmdline_auth_info_machine_account_creds(void)
+bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info)
 {
 	char *pass = NULL;
 	char *account = NULL;
 
-	if (!get_cmdline_auth_info_use_machine_account()) {
+	if (!get_cmdline_auth_info_use_machine_account(auth_info)) {
 		return false;
 	}
 
@@ -430,8 +449,8 @@ bool set_cmdline_auth_info_machine_account_creds(void)
 		return false;
 	}
 
-	set_cmdline_auth_info_username(account);
-	set_cmdline_auth_info_password(pass);
+	set_cmdline_auth_info_username(auth_info, account);
+	set_cmdline_auth_info_password(auth_info, pass);
 
 	SAFE_FREE(account);
 	SAFE_FREE(pass);

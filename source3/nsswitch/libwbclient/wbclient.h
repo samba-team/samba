@@ -486,10 +486,17 @@ struct wbcDomainControllerInfoEx {
 	const char *client_site_name;
 };
 
-/*
+/**********************************************************
  * Memory Management
- */
+ **********************************************************/
 
+/**
+ * @brief Free library allocated memory
+ *
+ * @param *p Pointer to free
+ *
+ * @return void
+ **/
 void wbcFreeMemory(void*);
 
 
@@ -497,9 +504,25 @@ void wbcFreeMemory(void*);
  * Utility functions for dealing with SIDs
  */
 
+/**
+ * @brief Convert a binary SID to a character string
+ *
+ * @param sid           Binary Security Identifier
+ * @param **sid_string  Resulting character string
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSidToString(const struct wbcDomainSid *sid,
 		      char **sid_string);
 
+/**
+ * @brief Convert a character string to a binary SID
+ *
+ * @param *str          Character string in the form of S-...
+ * @param sid           Resulting binary SID
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcStringToSid(const char *sid_string,
 		      struct wbcDomainSid *sid);
 
@@ -507,32 +530,76 @@ wbcErr wbcStringToSid(const char *sid_string,
  * Utility functions for dealing with GUIDs
  */
 
+/**
+ * @brief Convert a binary GUID to a character string
+ *
+ * @param guid           Binary Guid
+ * @param **guid_string  Resulting character string
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGuidToString(const struct wbcGuid *guid,
 		       char **guid_string);
 
+/**
+ * @brief Convert a character string to a binary GUID
+ *
+ * @param *str          Character string
+ * @param guid          Resulting binary GUID
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcStringToGuid(const char *guid_string,
 		       struct wbcGuid *guid);
 
+/**
+ * @brief Ping winbindd to see if the daemon is running
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcPing(void);
 
 wbcErr wbcLibraryDetails(struct wbcLibraryDetails **details);
 
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **details);
 
-/*
+/**********************************************************
  * Name/SID conversion
- */
+ **********************************************************/
 
+/**
+ * @brief Convert a domain and name to SID
+ *
+ * @param domain      Domain name (possibly "")
+ * @param name        User or group name
+ * @param *sid        Pointer to the resolved domain SID
+ * @param *name_type  Pointer to the SID type
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLookupName(const char *dom_name,
 		     const char *name,
 		     struct wbcDomainSid *sid,
 		     enum wbcSidType *name_type);
 
+/**
+ * @brief Convert a SID to a domain and name
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param pdomain     Resolved Domain name (possibly "")
+ * @param pname       Resolved User or group name
+ * @param *pname_type Pointer to the resolved SID type
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 		    char **domain,
 		    char **name,
 		    enum wbcSidType *name_type);
 
+/**
+ * @brief Translate a collection of RIDs within a domain to names
+ */
 wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     int num_rids,
 		     uint32_t *rids,
@@ -540,15 +607,24 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     const char ***names,
 		     enum wbcSidType **types);
 
+/*
+ * @brief Get the groups a user belongs to
+ **/
 wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 bool domain_groups_only,
 			 uint32_t *num_sids,
 			 struct wbcDomainSid **sids);
 
+/**
+ * @brief Lists Users
+ **/
 wbcErr wbcListUsers(const char *domain_name,
 		    uint32_t *num_users,
 		    const char ***users);
 
+/**
+ * @brief Lists Groups
+ **/
 wbcErr wbcListGroups(const char *domain_name,
 		     uint32_t *num_groups,
 		     const char ***groups);
@@ -558,88 +634,324 @@ wbcErr wbcGetDisplayName(const struct wbcDomainSid *sid,
 			 char **pfullname,
 			 enum wbcSidType *pname_type);
 
-/*
+/**********************************************************
  * SID/uid/gid Mappings
- */
+ **********************************************************/
 
+/**
+ * @brief Convert a Windows SID to a Unix uid, allocating an uid if needed
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *puid       Pointer to the resolved uid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcSidToUid(const struct wbcDomainSid *sid,
 		   uid_t *puid);
 
+/**
+ * @brief Convert a Windows SID to a Unix uid if there already is a mapping
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *puid       Pointer to the resolved uid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcQuerySidToUid(const struct wbcDomainSid *sid,
 			uid_t *puid);
 
+/**
+ * @brief Convert a Unix uid to a Windows SID, allocating a SID if needed
+ *
+ * @param uid         Unix uid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcUidToSid(uid_t uid,
 		   struct wbcDomainSid *sid);
 
+/**
+ * @brief Convert a Unix uid to a Windows SID if there already is a mapping
+ *
+ * @param uid         Unix uid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcQueryUidToSid(uid_t uid,
 			struct wbcDomainSid *sid);
 
+/**
+ * @brief Convert a Windows SID to a Unix gid, allocating a gid if needed
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *pgid       Pointer to the resolved gid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcSidToGid(const struct wbcDomainSid *sid,
 		   gid_t *pgid);
 
+/**
+ * @brief Convert a Windows SID to a Unix gid if there already is a mapping
+ *
+ * @param *sid        Pointer to the domain SID to be resolved
+ * @param *pgid       Pointer to the resolved gid_t value
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcQuerySidToGid(const struct wbcDomainSid *sid,
 			gid_t *pgid);
 
+/**
+ * @brief Convert a Unix gid to a Windows SID, allocating a SID if needed
+ *
+ * @param gid         Unix gid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcGidToSid(gid_t gid,
 		   struct wbcDomainSid *sid);
 
+/**
+ * @brief Convert a Unix gid to a Windows SID if there already is a mapping
+ *
+ * @param gid         Unix gid to be resolved
+ * @param *sid        Pointer to the resolved domain SID
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcQueryGidToSid(gid_t gid,
 			struct wbcDomainSid *sid);
 
+/**
+ * @brief Obtain a new uid from Winbind
+ *
+ * @param *puid      *pointer to the allocated uid
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcAllocateUid(uid_t *puid);
 
+/**
+ * @brief Obtain a new gid from Winbind
+ *
+ * @param *pgid      Pointer to the allocated gid
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcAllocateGid(gid_t *pgid);
 
+/**
+ * @brief Set an user id mapping
+ *
+ * @param uid       Uid of the desired mapping.
+ * @param *sid      Pointer to the sid of the diresired mapping.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid);
 
+/**
+ * @brief Set a group id mapping
+ *
+ * @param gid       Gid of the desired mapping.
+ * @param *sid      Pointer to the sid of the diresired mapping.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid);
 
+/**
+ * @brief Remove a user id mapping
+ *
+ * @param uid       Uid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcRemoveUidMapping(uid_t uid, const struct wbcDomainSid *sid);
 
+/**
+ * @brief Remove a group id mapping
+ *
+ * @param gid       Gid of the mapping to remove.
+ * @param *sid      Pointer to the sid of the mapping to remove.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid);
 
+/**
+ * @brief Set the highwater mark for allocated uids.
+ *
+ * @param uid_hwm      The new uid highwater mark value
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetUidHwm(uid_t uid_hwm);
 
+/**
+ * @brief Set the highwater mark for allocated gids.
+ *
+ * @param gid_hwm      The new gid highwater mark value
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetGidHwm(gid_t gid_hwm);
 
-/*
+/**********************************************************
  * NSS Lookup User/Group details
- */
+ **********************************************************/
 
+/**
+ * @brief Fill in a struct passwd* for a domain user based
+ *   on username
+ *
+ * @param *name     Username to lookup
+ * @param **pwd     Pointer to resulting struct passwd* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetpwnam(const char *name, struct passwd **pwd);
 
+/**
+ * @brief Fill in a struct passwd* for a domain user based
+ *   on uid
+ *
+ * @param uid       Uid to lookup
+ * @param **pwd     Pointer to resulting struct passwd* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd);
 
+/**
+ * @brief Fill in a struct passwd* for a domain user based
+ *   on username
+ *
+ * @param *name     Username to lookup
+ * @param **grp     Pointer to resulting struct group* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetgrnam(const char *name, struct group **grp);
 
+/**
+ * @brief Fill in a struct passwd* for a domain user based
+ *   on uid
+ *
+ * @param gid       Uid to lookup
+ * @param **grp     Pointer to resulting struct group* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetgrgid(gid_t gid, struct group **grp);
 
+/**
+ * @brief Reset the passwd iterator
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetpwent(void);
 
+/**
+ * @brief Close the passwd iterator
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcEndpwent(void);
 
+/**
+ * @brief Return the next struct passwd* entry from the pwent iterator
+ *
+ * @param **pwd       Pointer to resulting struct passwd* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetpwent(struct passwd **pwd);
 
+/**
+ * @brief Reset the group iterator
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcSetgrent(void);
 
+/**
+ * @brief Close the group iterator
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcEndgrent(void);
 
+/**
+ * @brief Return the next struct group* entry from the pwent iterator
+ *
+ * @param **grp       Pointer to resulting struct group* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetgrent(struct group **grp);
 
+/**
+ * @brief Return the next struct group* entry from the pwent iterator
+ *
+ * This is similar to #wbcGetgrent, just that the member list is empty
+ *
+ * @param **grp       Pointer to resulting struct group* from the query.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetgrlist(struct group **grp);
 
+/**
+ * @brief Return the unix group array belonging to the given user
+ *
+ * @param *account       The given user name
+ * @param *num_groups    Number of elements returned in the groups array
+ * @param **_groups      Pointer to resulting gid_t array.
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcGetGroups(const char *account,
 		    uint32_t *num_groups,
 		    gid_t **_groups);
 
 
-/*
+/**********************************************************
  * Lookup Domain information
- */
+ **********************************************************/
 
+/**
+ * @brief Lookup the current status of a trusted domain
+ *
+ * @param domain      Domain to query
+ * @param *dinfo       Pointer to returned domain_info struct
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcDomainInfo(const char *domain,
 		     struct wbcDomainInfo **info);
 
+/**
+ * @brief Enumerate the domain trusts known by Winbind
+ *
+ * @param **domains     Pointer to the allocated domain list array
+ * @param *num_domains  Pointer to number of domains returned
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcListTrusts(struct wbcDomainInfo **domains, 
 		     size_t *num_domains);
 
@@ -665,66 +977,206 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains,
 #define WBC_LOOKUP_DC_RETURN_DNS_NAME          0x40000000
 #define WBC_LOOKUP_DC_RETURN_FLAT_NAME         0x80000000
 
+/**
+ * @brief Enumerate the domain trusts known by Winbind
+ *
+ * @param domain        Name of the domain to query for a DC
+ * @param flags         Bit flags used to control the domain location query
+ * @param *dc_info      Pointer to the returned domain controller information
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLookupDomainController(const char *domain,
 				 uint32_t flags,
 				 struct wbcDomainControllerInfo **dc_info);
 
+/**
+ * @brief Get extended domain controller information
+ *
+ * @param domain        Name of the domain to query for a DC
+ * @param guid          Guid of the domain to query for a DC
+ * @param site          Site of the domain to query for a DC
+ * @param flags         Bit flags used to control the domain location query
+ * @param *dc_info      Pointer to the returned extended domain controller information
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLookupDomainControllerEx(const char *domain,
 				   struct wbcGuid *guid,
 				   const char *site,
 				   uint32_t flags,
 				   struct wbcDomainControllerInfoEx **dc_info);
 
-/*
+/**********************************************************
  * Athenticate functions
- */
+ **********************************************************/
 
+/**
+ * @brief Authenticate a username/password pair
+ *
+ * @param username     Name of user to authenticate
+ * @param password     Clear text password os user
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password);
 
+/**
+ * @brief Authenticate with more detailed information
+ *
+ * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
+ *                     is not supported yet
+ * @param info         Output details on WBC_ERR_SUCCESS
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthUserInfo **info,
 			     struct wbcAuthErrorInfo **error);
 
+/**
+ * @brief Logon a User
+ *
+ * @param[in]  params      Pointer to a wbcLogonUserParams structure
+ * @param[out] info        Pointer to a pointer to a wbcLogonUserInfo structure
+ * @param[out] error       Pointer to a pointer to a wbcAuthErrorInfo structure
+ * @param[out] policy      Pointer to a pointer to a wbcUserPasswordPolicyInfo structure
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLogonUser(const struct wbcLogonUserParams *params,
 		    struct wbcLogonUserInfo **info,
 		    struct wbcAuthErrorInfo **error,
 		    struct wbcUserPasswordPolicyInfo **policy);
 
+/**
+ * @brief Trigger a logoff notification to Winbind for a specific user
+ *
+ * @param username    Name of user to remove from Winbind's list of
+ *                    logged on users.
+ * @param uid         Uid assigned to the username
+ * @param ccfilename  Absolute path to the Krb5 credentials cache to
+ *                    be removed
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLogoffUser(const char *username,
 		     uid_t uid,
 		     const char *ccfilename);
 
+/**
+ * @brief Trigger an extended logoff notification to Winbind for a specific user
+ *
+ * @param params      A wbcLogoffUserParams structure
+ * @param error       User output details on error
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcLogoffUserEx(const struct wbcLogoffUserParams *params,
 		       struct wbcAuthErrorInfo **error);
 
+/**
+ * @brief Change a password for a user
+ *
+ * @param username      Name of user to authenticate
+ * @param old_password  Old clear text password of user
+ * @param new_password  New clear text password of user
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcChangeUserPassword(const char *username,
 			     const char *old_password,
 			     const char *new_password);
 
+/**
+ * @brief Change a password for a user with more detailed information upon
+ *   failure
+ *
+ * @param params                Input parameters
+ * @param error                 User output details on WBC_ERR_PWD_CHANGE_FAILED
+ * @param reject_reason         New password reject reason on WBC_ERR_PWD_CHANGE_FAILED
+ * @param policy                Password policy output details on WBC_ERR_PWD_CHANGE_FAILED
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcChangeUserPasswordEx(const struct wbcChangePasswordParams *params,
 			       struct wbcAuthErrorInfo **error,
 			       enum wbcPasswordChangeRejectReason *reject_reason,
 			       struct wbcUserPasswordPolicyInfo **policy);
 
+/**
+ * @brief Authenticate a user with cached credentials
+ *
+ * @param *params    Pointer to a wbcCredentialCacheParams structure
+ * @param **info     Pointer to a pointer to a wbcCredentialCacheInfo structure
+ * @param **error    Pointer to a pointer to a wbcAuthErrorInfo structure
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcCredentialCache(struct wbcCredentialCacheParams *params,
                           struct wbcCredentialCacheInfo **info,
                           struct wbcAuthErrorInfo **error);
 
-/*
+/**********************************************************
  * Resolve functions
- */
+ **********************************************************/
+
+/**
+ * @brief Resolve a NetbiosName via WINS
+ *
+ * @param name         Name to resolve
+ * @param *ip          Pointer to the ip address string
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcResolveWinsByName(const char *name, char **ip);
+
+/**
+ * @brief Resolve an IP address via WINS into a NetbiosName
+ *
+ * @param ip          The ip address string
+ * @param *name       Pointer to the name
+ *
+ * @return #wbcErr
+ *
+ **/
 wbcErr wbcResolveWinsByIP(const char *ip, char **name);
 
-/*
+/**********************************************************
  * Trusted domain functions
- */
+ **********************************************************/
+
+/**
+ * @brief Trigger a verification of the trust credentials of a specific domain
+ *
+ * @param *domain      The name of the domain, only NULL for the default domain is
+ *                     supported yet. Other values than NULL will result in
+ *                     WBC_ERR_NOT_IMPLEMENTED.
+ * @param error        Output details on WBC_ERR_AUTH_ERROR
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcCheckTrustCredentials(const char *domain,
 				struct wbcAuthErrorInfo **error);
-/*
+
+/**********************************************************
  * Helper functions
- */
+ **********************************************************/
+
+/**
+ * @brief Initialize a named blob and add to list of blobs
+ *
+ * @param[in,out] num_blobs     Pointer to the number of blobs
+ * @param[in,out] blobs         Pointer to an array of blobs
+ * @param[in]     name          Name of the new named blob
+ * @param[in]     flags         Flags of the new named blob
+ * @param[in]     data          Blob data of new blob
+ * @param[in]     length        Blob data length of new blob
+ *
+ * @return #wbcErr
+ **/
 wbcErr wbcAddNamedBlob(size_t *num_blobs,
 		       struct wbcNamedBlob **blobs,
 		       const char *name,

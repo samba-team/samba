@@ -127,11 +127,6 @@ static bool sid_parse(void *mem_ctx,
 	torture_assert(torture, (*psid)->num_auths <= 15,
 			"invalid sub_auth value");
 
-	(*psid)->sub_auths = talloc_array(mem_ctx, uint32_t,
-			(*psid)->num_auths);
-	torture_assert(torture, (*psid)->sub_auths != NULL,
-			"out of memory");
-
         for (i = 0; i < (*psid)->num_auths; i++) {
                 (*psid)->sub_auths[i] = IVAL(data->data, *offset);
 		(*offset) += 4;

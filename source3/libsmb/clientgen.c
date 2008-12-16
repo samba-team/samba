@@ -732,12 +732,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS cli_echo_recv(struct async_req *req)
 {
-	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
-	if (req->state == ASYNC_REQ_ERROR) {
-		return req->status;
-	}
-
-	return NT_STATUS_OK;
+	return async_req_simple_recv(req);
 }
 
 /**

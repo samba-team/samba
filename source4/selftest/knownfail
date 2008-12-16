@@ -5,8 +5,10 @@
 # a successful run for any of these tests an error.
 local.resolve.*.async
 local.iconv.*.next_codepoint()
+base.delete.*.deltest17
 base.delete.*.deltest20a
 base.delete.*.deltest20b
+base.delete.*.deltest21
 rpc.winreg.*security
 samba4.local.registry.(dir|ldb).check hive security
 samba4.local.registry.local.security
@@ -23,10 +25,8 @@ rpc.netlogon.*.LogonUasLogon
 rpc.netlogon.*.LogonUasLogoff
 rpc.netlogon.*.DatabaseSync
 rpc.netlogon.*.DatabaseSync2
-rpc.netlogon.*.GetDcName
 rpc.netlogon.*.LogonControl
 rpc.netlogon.*.LogonControl2
-rpc.netlogon.*.GetAnyDCName
 rpc.netlogon.*.DsrEnumerateDomainTrusts
 rpc.netlogon.*.NetrEnumerateTrustedDomains
 rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
@@ -36,6 +36,7 @@ rpc.netlogon.*.DsRAddressToSitenamesExW
 rpc.netlogon.*.GetPassword
 rpc.netlogon.*.GetTrustPasswords
 rpc.netlogon.*.DatabaseRedo
+rpc.netlogon.*.ServerGetTrustInfo
 base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo

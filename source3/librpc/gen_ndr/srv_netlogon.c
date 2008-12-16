@@ -3733,18 +3733,18 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 	return true;
 }
 
-static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
+static bool api_netr_ServerGetTrustInfo(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct netr_NETRSERVERGETTRUSTINFO *r;
+	struct netr_ServerGetTrustInfo *r;
 
-	call = &ndr_table_netlogon.calls[NDR_NETR_NETRSERVERGETTRUSTINFO];
+	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERGETTRUSTINFO];
 
-	r = talloc(talloc_tos(), struct netr_NETRSERVERGETTRUSTINFO);
+	r = talloc(talloc_tos(), struct netr_ServerGetTrustInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -3768,10 +3768,35 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRSERVERGETTRUSTINFO, r);
+		NDR_PRINT_IN_DEBUG(netr_ServerGetTrustInfo, r);
 	}
 
-	r->out.result = _netr_NETRSERVERGETTRUSTINFO(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.return_authenticator = talloc_zero(r, struct netr_Authenticator);
+	if (r->out.return_authenticator == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.new_owf_password = talloc_zero(r, struct samr_Password);
+	if (r->out.new_owf_password == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.old_owf_password = talloc_zero(r, struct samr_Password);
+	if (r->out.old_owf_password == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.trust_info = talloc_zero(r, struct netr_TrustInfo *);
+	if (r->out.trust_info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _netr_ServerGetTrustInfo(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3780,7 +3805,7 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERGETTRUSTINFO, r);
+		NDR_PRINT_OUT_DEBUG(netr_ServerGetTrustInfo, r);
 	}
 
 	push = ndr_push_init_ctx(r, NULL);
@@ -3856,7 +3881,7 @@ static struct api_struct api_netlogon_cmds[] =
 	{"NETR_DSRGETFORESTTRUSTINFORMATION", NDR_NETR_DSRGETFORESTTRUSTINFORMATION, api_netr_DsRGetForestTrustInformation},
 	{"NETR_GETFORESTTRUSTINFORMATION", NDR_NETR_GETFORESTTRUSTINFORMATION, api_netr_GetForestTrustInformation},
 	{"NETR_LOGONSAMLOGONWITHFLAGS", NDR_NETR_LOGONSAMLOGONWITHFLAGS, api_netr_LogonSamLogonWithFlags},
-	{"NETR_NETRSERVERGETTRUSTINFO", NDR_NETR_NETRSERVERGETTRUSTINFO, api_netr_NETRSERVERGETTRUSTINFO},
+	{"NETR_SERVERGETTRUSTINFO", NDR_NETR_SERVERGETTRUSTINFO, api_netr_ServerGetTrustInfo},
 };
 
 void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns)

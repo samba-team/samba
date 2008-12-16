@@ -425,6 +425,7 @@ struct service {
 	bool bHideUnReadable;
 	bool bHideUnWriteableFiles;
 	bool bBrowseable;
+	bool bAccessBasedShareEnum;
 	bool bAvailable;
 	bool bRead_only;
 	bool bNo_set_dir;
@@ -568,6 +569,7 @@ static struct service sDefault = {
 	False,			/* bHideUnReadable */
 	False,			/* bHideUnWriteableFiles */
 	True,			/* bBrowseable */
+	False,			/* bAccessBasedShareEnum */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
@@ -668,6 +670,8 @@ static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
 static void set_allowed_client_auth(void);
+
+static void *lp_local_ptr(struct service *service, void *ptr);
 
 static const struct enum_list enum_protocol[] = {
 	{PROTOCOL_NT1, "NT1"},
@@ -3304,6 +3308,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT,
 	},
 	{
+		.label		= "access based share enum",
+		.type		= P_BOOL,
+		.p_class	= P_LOCAL,
+		.ptr		= &sDefault.bAccessBasedShareEnum,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE
+	},
+	{
 		.label		= "browsable",
 		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
@@ -4573,9 +4586,56 @@ static void init_printer_values(struct service *pService)
 }
 
 /**
- * Free the allocated data for one parameter for a given share.
+ * Common part of freeing allocated data for one parameter.
  */
-static void free_parameter(int snum, struct parm_struct parm)
+static void free_one_parameter_common(void *parm_ptr,
+				      struct parm_struct parm)
+{
+	if ((parm.type == P_STRING) ||
+	    (parm.type == P_USTRING))
+	{
+		string_free((char**)parm_ptr);
+	} else if (parm.type == P_LIST) {
+		TALLOC_FREE(*((char***)parm_ptr));
+	}
+}
+
+/**
+ * Free the allocated data for one parameter for a share
+ * given as a service struct.
+ */
+static void free_one_parameter(struct service *service,
+			       struct parm_struct parm)
+{
+	void *parm_ptr;
+
+	if (parm.p_class != P_LOCAL) {
+		return;
+	}
+
+	parm_ptr = lp_local_ptr(service, parm.ptr);
+
+	free_one_parameter_common(parm_ptr, parm);
+}
+
+/**
+ * Free the allocated parameter data of a share given
+ * as a service struct.
+ */
+static void free_parameters(struct service *service)
+{
+	uint32_t i;
+
+	for (i=0; parm_table[i].label; i++) {
+		free_one_parameter(service, parm_table[i]);
+	}
+}
+
+/**
+ * Free the allocated data for one parameter for a given share
+ * specified by an snum.
+ */
+static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 {
 	void *parm_ptr;
 
@@ -4588,27 +4648,22 @@ static void free_parameter(int snum, struct parm_struct parm)
 	} else if (parm.p_class != P_LOCAL) {
 		return;
 	} else {
-		parm_ptr = lp_local_ptr(snum, parm.ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, parm.ptr);
 	}
 
-	if ((parm.type == P_STRING) ||
-	    (parm.type == P_USTRING))
-	{
-		string_free((char**)parm_ptr);
-	} else if (parm.type == P_LIST) {
-		TALLOC_FREE(*((char***)parm_ptr));
-	}
+	free_one_parameter_common(parm_ptr, parm);
 }
 
 /**
- * Free the allocated parameter data for a share.
+ * Free the allocated parameter data for a share specified
+ * by an snum.
  */
-static void free_parameters(int snum)
+static void free_parameters_by_snum(int snum)
 {
 	uint32_t i;
 
 	for (i=0; parm_table[i].label; i++) {
-		free_parameter(snum, parm_table[i]);
+		free_one_parameter_by_snum(snum, parm_table[i]);
 	}
 }
 
@@ -4617,7 +4672,7 @@ static void free_parameters(int snum)
  */
 static void free_global_parameters(void)
 {
-	free_parameters(GLOBAL_SECTION_SNUM);
+	free_parameters_by_snum(GLOBAL_SECTION_SNUM);
 }
 
 /***************************************************************************
@@ -5063,7 +5118,6 @@ FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
-FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
@@ -5332,6 +5386,7 @@ FN_LOCAL_BOOL(lp_hide_special_files, bHideSpecialFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
 FN_LOCAL_BOOL(lp_hideunwriteable_files, bHideUnWriteableFiles)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)
+FN_LOCAL_BOOL(lp_access_based_share_enum, bAccessBasedShareEnum)
 FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
@@ -5728,7 +5783,7 @@ static void free_service(struct service *pservice)
 		DEBUG(5, ("free_service: Freeing service %s\n",
 		       pservice->szService));
 
-	free_parameters(getservicebyname(pservice->szService, NULL));
+	free_parameters(pservice);
 
 	string_free(&pservice->szService);
 	bitmap_free(pservice->copymap);
@@ -5926,6 +5981,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	/* set the browseable flag from the global default */
 
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
+	ServicePtrs[i]->bAccessBasedShareEnum = sDefault.bAccessBasedShareEnum;
 
 	ServicePtrs[i]->autoloaded = True;
 
@@ -7155,13 +7211,23 @@ static void init_copymap(struct service *pservice)
 }
 
 /***************************************************************************
+ Return the local pointer to a parameter given a service struct and the
+ pointer into the default structure.
+***************************************************************************/
+
+static void *lp_local_ptr(struct service *service, void *ptr)
+{
+	return (void *)(((char *)service) + PTR_DIFF(ptr, &sDefault));
+}
+
+/***************************************************************************
  Return the local pointer to a parameter given the service number and the 
  pointer into the default structure.
 ***************************************************************************/
 
-void *lp_local_ptr(int snum, void *ptr)
+void *lp_local_ptr_by_snum(int snum, void *ptr)
 {
-	return (void *)(((char *)ServicePtrs[snum]) + PTR_DIFF(ptr, &sDefault));
+	return lp_local_ptr(ServicePtrs[snum], ptr);
 }
 
 /***************************************************************************
@@ -7213,7 +7279,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			       pszParmName));
 			return (True);
 		}
-		parm_ptr = lp_local_ptr(snum, def_ptr);
+		parm_ptr = lp_local_ptr_by_snum(snum, def_ptr);
 	}
 
 	if (snum >= 0) {
@@ -9467,4 +9533,19 @@ int lp_min_receive_file_size(void)
 		return 0;
 	}
 	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
+}
+
+/*******************************************************************
+ If socket address is an empty character string, it is necessary to 
+ define it as "0.0.0.0". 
+********************************************************************/
+
+const char *lp_socket_address(void)
+{
+	char *sock_addr = Globals.szSocketAddress;
+	
+	if (sock_addr[0] == '\0'){
+		string_set(&Globals.szSocketAddress, "0.0.0.0");
+	}
+	return  Globals.szSocketAddress;
 }

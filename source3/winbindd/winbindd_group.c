@@ -800,7 +800,7 @@ void winbindd_getgrnam(struct winbindd_cli_state *state)
 
 	/* Get info for the domain */
 
-	if ((domain = find_domain_from_name(name_domain)) == NULL) {
+	if ((domain = find_domain_from_name_noinit(name_domain)) == NULL) {
 		DEBUG(3, ("could not get domain sid for domain %s\n",
 			  name_domain));
 		request_error(state);
@@ -833,7 +833,7 @@ struct getgrsid_state {
 };
 
 static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
-	{
+{
 	struct getgrsid_state *s =
 		(struct getgrsid_state *)private_data;
 	struct winbindd_domain *domain;
@@ -884,7 +884,7 @@ static void getgrsid_sid2gid_recv(void *private_data, bool success, gid_t gid)
 	s->state->response.extra_data.data = gr_mem;
 
 	request_ok(s->state);
-	}
+}
 
 static void getgrsid_lookupsid_recv( void *private_data, bool success,
 				     const char *dom_name, const char *name,

@@ -119,16 +119,7 @@ done:
 }
 
 
-/** @brief Lookup the current status of a trusted domain
- *
- * @param domain      Domain to query
- * @param *dinfo       Pointer to returned domain_info struct
- *
- * @return #wbcErr
- *
- **/
-
-
+/* Lookup the current status of a trusted domain */
 wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 {
 	struct winbindd_request request;
@@ -189,14 +180,7 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 }
 
 
-/** @brief Resolve a NetbiosName via WINS
- *
- * @param name         Name to resolve
- * @param *ip          Pointer to the ip address string
- *
- * @return #wbcErr
- *
- **/
+/* Resolve a NetbiosName via WINS */
 wbcErr wbcResolveWinsByName(const char *name, char **ip)
 {
 	struct winbindd_request request;
@@ -229,14 +213,7 @@ wbcErr wbcResolveWinsByName(const char *name, char **ip)
 	return wbc_status;
 }
 
-/** @brief Resolve an IP address via WINS into a NetbiosName
- *
- * @param ip          The ip address string
- * @param *name       Pointer to the name
- *
- * @return #wbcErr
- *
- **/
+/* Resolve an IP address via WINS into a NetbiosName */
 wbcErr wbcResolveWinsByIP(const char *ip, char **name)
 {
 	struct winbindd_request request;
@@ -401,14 +378,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	return wbc_status;
 }
 
-/** @brief Enumerate the domain trusts known by Winbind
- *
- * @param **domains     Pointer to the allocated domain list array
- * @param *num_domains  Pointer to number of domains returned
- *
- * @return #wbcErr
- *
- **/
+/* Enumerate the domain trusts known by Winbind */
 wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 {
 	struct winbindd_response response;
@@ -493,18 +463,7 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	return wbc_status;
 }
 
-/** @brief Enumerate the domain trusts known by Winbind
- *
- * @param domain        Name of the domain to query for a DC
- * @param flags         Bit flags used to control the domain location query
- * @param *dc_info      Pointer to the returned domain controller information
- *
- * @return #wbcErr
- *
- **/
-
-
-
+/* Enumerate the domain trusts known by Winbind */
 wbcErr wbcLookupDomainController(const char *domain,
 				 uint32_t flags,
 				struct wbcDomainControllerInfo **dc_info)
@@ -617,18 +576,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Get extended domain controller information
- *
- * @param domain        Name of the domain to query for a DC
- * @param guid          Guid of the domain to query for a DC
- * @param site          Site of the domain to query for a DC
- * @param flags         Bit flags used to control the domain location query
- * @param *dc_info      Pointer to the returned extended domain controller information
- *
- * @return #wbcErr
- *
- **/
-
+/* Get extended domain controller information */
 wbcErr wbcLookupDomainControllerEx(const char *domain,
 				   struct wbcGuid *guid,
 				   const char *site,
@@ -690,19 +638,7 @@ done:
 	return wbc_status;
 }
 
-/** @brief Initialize a named blob and add to list of blobs
- *
- * @param[in,out] num_blobs     Pointer to the number of blobs
- * @param[in,out] blobs         Pointer to an array of blobs
- * @param[in]     name          Name of the new named blob
- * @param[in]     flags         Flags of the new named blob
- * @param[in]     data          Blob data of new blob
- * @param[in]     length        Blob data length of new blob
- *
- * @return #wbcErr
- *
- **/
-
+/* Initialize a named blob and add to list of blobs */
 wbcErr wbcAddNamedBlob(size_t *num_blobs,
 		       struct wbcNamedBlob **blobs,
 		       const char *name,

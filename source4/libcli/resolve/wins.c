@@ -23,6 +23,7 @@
 #include "../libcli/nbt/libnbt.h"
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
+#include "lib/socket/socket.h"
 #include "lib/socket/netif.h"
 
 struct resolve_wins_data {
@@ -50,9 +51,10 @@ struct composite_context *resolve_name_wins_send(
   wins name resolution method - recv side
  */
 NTSTATUS resolve_name_wins_recv(struct composite_context *c, 
-				TALLOC_CTX *mem_ctx, const char **reply_addr)
+				TALLOC_CTX *mem_ctx,
+				struct socket_address ***addrs)
 {
-	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
+	return resolve_name_nbtlist_recv(c, mem_ctx, addrs);
 }
 
 /*
@@ -64,7 +66,7 @@ NTSTATUS resolve_name_wins(struct nbt_name *name,
 			    struct interface *ifaces,
 			    uint16_t nbt_port,
 			    int nbt_timeout,
-			    const char **reply_addr)
+			    struct socket_address ***addrs)
 {
 	struct composite_context *c;
 	struct resolve_wins_data *wins_data = talloc(mem_ctx, struct resolve_wins_data);
@@ -73,7 +75,7 @@ NTSTATUS resolve_name_wins(struct nbt_name *name,
 	wins_data->nbt_port = nbt_port;
 	wins_data->nbt_timeout = nbt_timeout;
 	c = resolve_name_wins_send(mem_ctx, NULL, wins_data, name);
-	return resolve_name_wins_recv(c, mem_ctx, reply_addr);
+	return resolve_name_wins_recv(c, mem_ctx, addrs);
 }
 
 bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)

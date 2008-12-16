@@ -17,7 +17,7 @@ struct lsa_String {
 	uint16_t length;/* [value(2*strlen_m(string))] */
 	uint16_t size;/* [value(2*strlen_m(string))] */
 	const char *string;/* [unique,charset(UTF16),length_is(length/2),size_is(size/2)] */
-}/* [public,noejs] */;
+}/* [public] */;
 
 struct lsa_StringLarge {
 	uint16_t length;/* [value(2*strlen_m(string))] */

@@ -2079,7 +2079,7 @@ NTSTATUS _samr_LookupRids(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-					    SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
+					    0, /* Don't know the acc_bits yet */
 					    "_samr_LookupRids");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -2430,8 +2430,10 @@ static NTSTATUS get_user_info_18(pipes_struct *p,
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	init_samr_user_info18(r, pdb_get_lanman_passwd(smbpass),
-			      pdb_get_nt_passwd(smbpass));
+	init_samr_user_info18(r,
+			      pdb_get_lanman_passwd(smbpass),
+			      pdb_get_nt_passwd(smbpass),
+			      0 /* FIXME */);
 
 	TALLOC_FREE(smbpass);
 
@@ -2607,8 +2609,8 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			      pdb_get_logon_count(pw),
 			      0, /* country_code */
 			      0, /* code_page */
-			      0, /* nt_password_set */
 			      0, /* lm_password_set */
+			      0, /* nt_password_set */
 			      password_expired);
 
 	return NT_STATUS_OK;
@@ -2634,7 +2636,7 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(info->acc_granted,
-					    SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					    SAMR_USER_ACCESS_GET_ATTRIBUTES,
 					    "_samr_QueryUserInfo");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -3699,29 +3701,62 @@ static bool set_user_info_16(struct samr_UserInfo16 *id16,
  set_user_info_18
  ********************************************************************/
 
-static bool set_user_info_18(struct samr_UserInfo18 *id18,
-			     struct samu *pwd)
+static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
+				 TALLOC_CTX *mem_ctx,
+				 DATA_BLOB *session_key,
+				 struct samu *pwd)
 {
 	if (id18 == NULL) {
 		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
-		return False;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd.hash, PDB_CHANGED)) {
-		return False;
-	}
-	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd.hash, PDB_CHANGED)) {
-		return False;
-	}
- 	if (!pdb_set_pass_last_set_time (pwd, time(NULL), PDB_CHANGED)) {
-		return False;
+	if (id18->nt_pwd_active || id18->lm_pwd_active) {
+		if (!session_key->length) {
+			return NT_STATUS_NO_USER_SESSION_KEY;
+		}
 	}
 
-	if(!NT_STATUS_IS_OK(pdb_update_sam_account(pwd))) {
-		return False;
- 	}
+	if (id18->nt_pwd_active) {
 
-	return True;
+		DATA_BLOB in, out;
+
+		in = data_blob_const(id18->nt_pwd.hash, 16);
+		out = data_blob_talloc_zero(mem_ctx, 16);
+
+		sess_crypt_blob(&out, &in, session_key, false);
+
+		if (!pdb_set_nt_passwd(pwd, out.data, PDB_CHANGED)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
+	}
+
+	if (id18->lm_pwd_active) {
+
+		DATA_BLOB in, out;
+
+		in = data_blob_const(id18->lm_pwd.hash, 16);
+		out = data_blob_talloc_zero(mem_ctx, 16);
+
+		sess_crypt_blob(&out, &in, session_key, false);
+
+		if (!pdb_set_lanman_passwd(pwd, out.data, PDB_CHANGED)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
+	}
+
+	if (id18->password_expired) {
+		pdb_set_pass_last_set_time(pwd, 0, PDB_CHANGED);
+	} else {
+		/* FIXME */
+		pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
+	}
+
+	return pdb_update_sam_account(pwd);
 }
 
 /*******************************************************************
@@ -3856,8 +3891,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ((id23->info.fields_present & SAMR_FIELD_PASSWORD) ||
-	    (id23->info.fields_present & SAMR_FIELD_PASSWORD2)) {
+	if ((id23->info.fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) ||
+	    (id23->info.fields_present & SAMR_FIELD_LM_PASSWORD_PRESENT)) {
 
 		DEBUG(5, ("Attempting administrator password change (level 23) for user %s\n",
 			  pdb_get_username(pwd)));
@@ -4178,9 +4213,10 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 		case 18:
 			/* Used by AS/U JRA. */
-			if (!set_user_info_18(&info->info18, pwd)) {
-				status = NT_STATUS_ACCESS_DENIED;
-			}
+			status = set_user_info_18(&info->info18,
+						  p->mem_ctx,
+						  &p->server_info->user_session_key,
+						  pwd);
 			break;
 
 		case 20:
