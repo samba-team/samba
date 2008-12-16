@@ -7,8 +7,6 @@
 #ifndef _HEADER_wkssvc
 #define _HEADER_wkssvc
 
-enum srvsvc_PlatformId;
-
 struct wkssvc_NetWkstaInfo100 {
 	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */

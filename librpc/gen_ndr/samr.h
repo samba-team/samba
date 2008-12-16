@@ -698,8 +698,6 @@ enum samr_ConnectVersion
 #endif
 ;
 
-enum samr_RejectReason;
-
 struct samr_ChangeReject {
 	enum samr_RejectReason reason;
 	uint32_t unknown1;

@@ -10,10 +10,6 @@
 #define _HEADER_drsblobs
 
 #define SUPPLEMENTAL_CREDENTIALS_PREFIX	( "                                                " )
-enum drsuapi_DsAttributeId;
-
-enum lsa_TrustAuthType;
-
 struct replPropertyMetaData1 {
 	enum drsuapi_DsAttributeId attid;
 	uint32_t version;
