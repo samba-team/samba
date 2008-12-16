@@ -23,9 +23,9 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "events.h"
-#include "events_internal.h"
-#include "events_util.h"
+#include "tevent.h"
+#include "tevent_internal.h"
+#include "tevent_util.h"
 #include <sys/epoll.h>
 
 struct epoll_event_context {

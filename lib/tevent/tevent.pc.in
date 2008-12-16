@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: events
 Description: An event system library
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -levents
+Libs: -L${libdir} -ltevent
 Cflags: -I${includedir} 
 URL: http://samba.org/

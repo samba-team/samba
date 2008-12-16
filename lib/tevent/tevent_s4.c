@@ -17,8 +17,8 @@
 */
 
 #include "includes.h"
-#include "events.h"
-#include "events_internal.h"
+#include "tevent.h"
+#include "tevent_internal.h"
 
 NTSTATUS s4_events_standard_init(void)
 {

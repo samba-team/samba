@@ -23,9 +23,9 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/select.h"
-#include "events.h"
-#include "events_internal.h"
-#include "events_util.h"
+#include "tevent.h"
+#include "tevent_internal.h"
+#include "tevent_util.h"
 
 #define NUM_SIGNALS 64
 

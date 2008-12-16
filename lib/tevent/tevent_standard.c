@@ -31,9 +31,9 @@
 #include "system/filesys.h"
 #include "system/network.h"
 #include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
-#include "events.h"
-#include "events_util.h"
-#include "events_internal.h"
+#include "tevent.h"
+#include "tevent_util.h"
+#include "tevent_internal.h"
 
 struct std_event_context {
 	/* a pointer back to the generic event_context */

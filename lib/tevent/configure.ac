@@ -3,8 +3,8 @@ AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
-AC_INIT(events, 1.0.0)
-AC_CONFIG_SRCDIR([events.c])
+AC_INIT(tevent, 1.0.0)
+AC_CONFIG_SRCDIR([tevent.c])
 AC_CONFIG_HEADER(config.h)
 AC_LIBREPLACE_ALL_CHECKS
 
@@ -22,7 +22,7 @@ BUILD_WITH_SHARED_BUILD_DIR
 m4_include(pkg.m4)
 m4_include(libtalloc.m4)
 
-m4_include(libevents.m4)
+m4_include(libtevent.m4)
 AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
 AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
 

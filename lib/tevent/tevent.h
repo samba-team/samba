@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __EVENTS_H__
-#define __EVENTS_H__
+#ifndef __TEVENT_H__
+#define __TEVENT_H__
 
 #include <stdint.h>
 #include <talloc.h>
@@ -95,4 +95,4 @@ struct event_context *event_context_find(TALLOC_CTX *mem_ctx);
 #define EVENT_FD_NOT_READABLE(fde) \
 	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_READ)
 
-#endif /* __EVENTS_H__ */
+#endif /* __TEVENT_H__ */

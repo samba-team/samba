@@ -2525,7 +2525,7 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 #define SWIG_as_voidptrptr(a) ((void)SWIG_as_voidptr(*a),(void**)(a)) 
 
 
-#include "events.h"
+#include "tevent.h"
 typedef struct event_context event;
 
 SWIGINTERN event *new_event(TALLOC_CTX *mem_ctx){ return event_context_init(mem_ctx); }

@@ -26,9 +26,9 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/select.h"
-#include "events.h"
-#include "events_util.h"
-#include "events_internal.h"
+#include "tevent.h"
+#include "tevent_util.h"
+#include "tevent_internal.h"
 
 struct select_event_context {
 	/* a pointer back to the generic event_context */

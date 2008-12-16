@@ -20,9 +20,9 @@
 
 #include "replace.h"
 #include "talloc.h"
-#include "events.h"
-#include "events_internal.h"
-#include "events_util.h"
+#include "tevent.h"
+#include "tevent_internal.h"
+#include "tevent_util.h"
 #include <fcntl.h>
 
 /**

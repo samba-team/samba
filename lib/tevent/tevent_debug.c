@@ -19,8 +19,8 @@
 */
 
 #include "replace.h"
-#include "events.h"
-#include "events_internal.h"
+#include "tevent.h"
+#include "tevent_internal.h"
 
 /********************************************************************
  * Debug wrapper functions, modeled (with lot's of code copied as is)

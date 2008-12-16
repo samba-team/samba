@@ -18,10 +18,10 @@
 
 %module(docstring="Event management.",package="samba.events") events;
 
-%import "../../../lib/talloc/talloc.i";
+%import "../../lib/talloc/talloc.i";
 
 %{
-#include "events.h"
+#include "tevent.h"
 typedef struct event_context event;
 %}
 
