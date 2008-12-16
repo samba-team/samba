@@ -6,7 +6,7 @@ mkinclude cluster/config.mk
 mkinclude smbd/process_model.mk
 mkinclude libnet/config.mk
 mkinclude auth/config.mk
-mkinclude nsswitch/config.mk
+mkinclude ../nsswitch/config.mk
 mkinclude lib/samba3/config.mk
 mkinclude lib/socket/config.mk
 mkinclude ../lib/util/charset/config.mk

@@ -35,7 +35,7 @@ m4_include(../lib/util/time.m4)
 m4_include(../lib/popt/samba.m4)
 m4_include(../lib/util/charset/config.m4)
 m4_include(lib/socket/config.m4)
-m4_include(nsswitch/nsstest.m4)
+m4_include(../nsswitch/nsstest.m4)
 m4_include(../pidl/config.m4)
 AC_ZLIB([
 SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
@@ -119,7 +119,7 @@ m4_include(ntvfs/unixuid/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(nsswitch/config.m4)
+m4_include(../nsswitch/config.m4)
 
 dnl Samba 4 files
 AC_SUBST(LD)

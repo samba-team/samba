@@ -259,9 +259,6 @@ const char *ldb_default_modules_dir(void);
 
 int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
 
-void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
-			    const char *symbol);
-
 struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb);
 
 int ldb_module_send_entry(struct ldb_request *req,

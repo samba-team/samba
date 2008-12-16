@@ -190,6 +190,7 @@ PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx,
 }
 
 %apply const char * const *NULL_STR_LIST { const char * const *attrs }
+%apply const char * const *NULL_STR_LIST { const char * const *options }
 %apply const char * const *NULL_STR_LIST { const char * const *control_strings }
 
 #endif
@@ -711,9 +712,10 @@ typedef struct ldb_context {
         %feature("docstring") connect "S.connect(url,flags=0,options=None) -> None\n" \
                                       "Connect to a LDB URL.";
         ldb_error connect(const char *url, unsigned int flags = 0, 
-            const char *options[] = NULL);
+            const char *const *options = NULL);
 
         ~ldb() { talloc_free($self); }
+
         ldb_error search_ex(TALLOC_CTX *mem_ctx,
                    ldb_dn *base = NULL, 
                    enum ldb_scope scope = LDB_SCOPE_DEFAULT, 

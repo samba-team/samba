@@ -1,5 +1,5 @@
 <samba:parameter name="acl compatibility"
-                 context="S"
+                 context="G"
 				 type="enum"
                  advanced="1" developer="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">

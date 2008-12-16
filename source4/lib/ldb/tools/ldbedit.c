@@ -112,6 +112,11 @@ static int merge_edits(struct ldb_context *ldb,
 	int ret = 0;
 	int adds=0, modifies=0, deletes=0;
 
+	if (ldb_transaction_start(ldb) != 0) {
+		fprintf(stderr, "Failed to start transaction\n");
+		return -1;
+	}
+
 	/* do the adds and modifies */
 	for (i=0;i<count2;i++) {
 		msg = msg_find(ldb, msgs1, count1, msgs2[i]->dn);
@@ -148,6 +153,11 @@ static int merge_edits(struct ldb_context *ldb,
 			}
 			deletes++;
 		}
+	}
+
+	if (ldb_transaction_commit(ldb) != 0) {
+		fprintf(stderr, "Failed to commit transaction\n");
+		return -1;
 	}
 
 	printf("# %d adds  %d modifies  %d deletes\n", adds, modifies, deletes);
