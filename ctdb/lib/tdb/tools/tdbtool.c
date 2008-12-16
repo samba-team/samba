@@ -518,7 +518,7 @@ static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 		print_rec(the_tdb, *pkey, dbuf, NULL);
 }
 
-static int test_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int test_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	return 0;
 }
