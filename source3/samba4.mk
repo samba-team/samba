@@ -36,6 +36,8 @@ SAMBA4_CFLAGS = -I.. -I$(samba4srcdir) -I$(samba4srcdir)/include \
 # overrides are not specified first.
 ifeq ($(MAKE_VERSION),3.81)
 %.o: CFLAGS+=$(FLAGS)
+../librpc/gen_ndr/%_c.o: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/py_%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.ho: CFLAGS=$(SAMBA4_CFLAGS)
 $(heimdalsrcdir)/%.o: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir)
@@ -45,6 +47,8 @@ $(heimdalsrcdir)/%.o: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir
 $(heimdalsrcdir)/%.ho: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir)
 $(samba4srcdir)/%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.ho: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/%_c.o: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/py_%.o: CFLAGS=$(SAMBA4_CFLAGS)
 %.o: CFLAGS+=$(FLAGS)
 endif
 

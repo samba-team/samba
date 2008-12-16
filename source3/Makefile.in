@@ -1228,16 +1228,7 @@ modules:: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 samba3-idl::
 	@PIDL_OUTPUTDIR="../librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
-	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/lsa.idl \
-	 	../librpc/idl/dfs.idl ../librpc/idl/echo.idl ../librpc/idl/winreg.idl \
-		../librpc/idl/initshutdown.idl ../librpc/idl/srvsvc.idl ../librpc/idl/svcctl.idl \
-		../librpc/idl/eventlog.idl ../librpc/idl/wkssvc.idl ../librpc/idl/netlogon.idl \
-		 ../librpc/idl/epmapper.idl \
-		../librpc/idl/xattr.idl ../librpc/idl/misc.idl ../librpc/idl/samr.idl \
-		../librpc/idl/security.idl ../librpc/idl/dssetup.idl ../librpc/idl/krb5pac.idl \
-		../librpc/idl/ntsvcs.idl ../librpc/idl/drsuapi.idl \
-		../librpc/idl/drsblobs.idl ../librpc/idl/nbt.idl \
-		../librpc/idl/named_pipe_auth.idl 
+	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/*.idl
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
 	 	librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl
