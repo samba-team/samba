@@ -312,18 +312,6 @@ SUBSYSTEM = LIBLDB
 ldb_anr_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/anr.o
 
 ################################################
-# Start MODULE ldb_normalise
-[MODULE::ldb_normalise]
-INIT_FUNCTION = LDB_MODULE(normalise)
-CFLAGS = -Ilib/ldb/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBSAMBA-UTIL SAMDB
-SUBSYSTEM = LIBLDB
-# End MODULE ldb_normalise
-################################################
-
-ldb_normalise_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/normalise.o
-
-################################################
 # Start MODULE ldb_instancetype
 [MODULE::ldb_instancetype]
 INIT_FUNCTION = LDB_MODULE(instancetype)
