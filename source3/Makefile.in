@@ -208,7 +208,7 @@ BIN_PROGS = @EXTRA_BIN_PROGS@ \
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
+	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ \
 	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@
 
 PAM_MODULES = @PAM_MODULES@
@@ -994,15 +994,6 @@ REPLACETORT_OBJ = @libreplacedir@/test/testsuite.o \
 		@libreplacedir@/test/main.o \
 		$(LIBREPLACE_OBJ)
 
-NDRDUMP_OBJ = ../librpc/tools/ndrdump.o \
-	      $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
-	      $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-		  $(LIBNDR_DRSUAPI_OBJ) $(COMPRESSION_OBJ) \
-	      ../librpc/gen_ndr/ndr_svcctl.o \
-		  librpc/gen_ndr/tables.o ../librpc/ndr/ndr_table.o \
-	      ../librpc/ndr/ndr_krb5pac.o \
-		  ../librpc/gen_ndr/ndr_krb5pac.o ../lib/util/asn1.o
-
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
 SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
@@ -1232,13 +1223,6 @@ samba3-idl::
 	@PIDL_OUTPUTDIR="librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh \
 	 	librpc/idl/messaging.idl librpc/idl/libnetapi.idl librpc/idl/notify.idl
-	@$(MAKE) ndr-tables
-
-NDR_TABLES = librpc/gen_ndr/tables.c
-
-ndr-tables:: librpc/gen_ndr/*.h ../librpc/gen_ndr/*.h
-	@echo "Generating $(NDR_TABLES)"
-	@$(PERL) ../librpc/tables.pl $^ > $(NDR_TABLES)
 
 #####################################################################
 
@@ -1565,11 +1549,6 @@ bin/locktest2@EXEEXT@: $(BINARY_PREREQS) $(LOCKTEST2_OBJ) @BUILD_POPT@ @LIBTALLO
 	@$(CC) $(FLAGS) -o $@ $(LOCKTEST2_OBJ) $(LDFLAGS) $(DYNEXP) \
 		$(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(POPT_LIBS) \
 		$(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
-
-bin/ndrdump@EXEEXT@: $(BINARY_PREREQS) $(NDRDUMP_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@ @LIBTDB_SHARED@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(NDRDUMP_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) \
-		$(POPT_LIBS) $(LDAP_LIBS) $(LIBTALLOC_LIBS) $(LIBTDB_LIBS) $(ZLIB_LIBS)
 
 bin/debug2html@EXEEXT@: $(BINARY_PREREQS) $(DEBUG2HTML_OBJ) @BUILD_POPT@ @LIBTALLOC_SHARED@
 	@echo Linking $@
