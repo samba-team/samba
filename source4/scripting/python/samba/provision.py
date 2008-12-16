@@ -471,7 +471,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     tdb_modules_list = [
                     "subtree_rename",
                     "subtree_delete",
-                    "linked_attributes"]
+                    "linked_attributes",
+                    "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
                     "partition"]
  
@@ -489,11 +490,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid", "paged_searches"]
         # We can handle linked attributes here, as we don't have directory-side subtree operations
-        tdb_modules_list = ["linked_attributes"]
+        tdb_modules_list = ["linked_attributes", "extended_dn_out_dereference"]
     elif ldap_backend_type == "openldap":
-        backend_modules = ["normalise", "entryuuid", "paged_searches"]
+        backend_modules = ["entryuuid", "paged_searches"]
         # OpenLDAP handles subtree renames, so we don't want to do any of these things
-        tdb_modules_list = None
+        tdb_modules_list = ["extended_dn_out_dereference"]
     elif ldap_backend is not None:
         raise "LDAP Backend specified, but LDAP Backend Type not specified"
     elif serverrole == "domain controller":
