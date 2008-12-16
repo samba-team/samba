@@ -155,5 +155,3 @@ done:
 	talloc_free(info);
 	return wbc_status;
 }
-
-

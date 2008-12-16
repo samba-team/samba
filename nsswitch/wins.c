@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
-   a WINS nsswitch module 
+   a WINS nsswitch module
    Copyright (C) Andrew Tridgell 1999
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-   
+
 */
 
 #include "includes.h"
@@ -207,7 +207,7 @@ int lookup(nsd_file_t *rq)
 	bool found = False;
 
 	nsd_logprintf(NSD_LOG_MIN, "entering lookup (wins)\n");
-	if (! rq) 
+	if (! rq)
 		return NSD_ERROR;
 
 	map = nsd_attr_fetch_string(rq->f_attrs, "table", (char*)0);
@@ -225,7 +225,7 @@ int lookup(nsd_file_t *rq)
 	response[0] = '\0';
 	len = sizeof(response) - 2;
 
-	/* 
+	/*
 	 * response needs to be a string of the following format
 	 * ip_address[ ip_address]*\tname[ alias]*
 	 */
@@ -276,7 +276,7 @@ int lookup(nsd_file_t *rq)
 		if (size > len) {
 		    free(ip_list);
 		    return NSD_ERROR;
-		}   
+		}
 		strncat(response,key,size);
 		strncat(response,"\n",1);
 		found = True;
@@ -306,7 +306,7 @@ static char *get_static(char **buffer, size_t *buflen, int len)
 
 	/* Error check.  We return false if things aren't set up right, or
 	   there isn't enough buffer space left. */
-	
+
 	if ((buffer == NULL) || (buflen == NULL) || (*buflen < len)) {
 		return NULL;
 	}
@@ -333,7 +333,7 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	int i, count;
 	fstring name;
 	size_t namelen;
-		
+
 #if HAVE_PTHREAD
 	pthread_mutex_lock(&wins_nss_mutex);
 #endif

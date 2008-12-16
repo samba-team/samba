@@ -1,8 +1,8 @@
 /*
-  Solaris NSS wrapper for winbind 
+  Solaris NSS wrapper for winbind
   - Shirish Kalele 2000
-  
-  Based on Luke Howard's ldap_nss module for Solaris 
+
+  Based on Luke Howard's ldap_nss module for Solaris
   */
 
 /*
@@ -38,7 +38,7 @@
 #include <sys/syslog.h>
 #endif /*hpux*/
 
-#if defined(HAVE_NSS_COMMON_H) || defined(HPUX) 
+#if defined(HAVE_NSS_COMMON_H) || defined(HPUX)
 
 #undef NSS_DEBUG
 
@@ -63,9 +63,9 @@ struct nss_groupsbymem {
        gid_t *gid_array;
        int maxgids;
        int force_slow_way;
-       int (*str2ent)(const char *instr, int instr_len, void *ent, 
+       int (*str2ent)(const char *instr, int instr_len, void *ent,
 		      char *buffer, int buflen);
-       nss_status_t (*process_cstr)(const char *instr, int instr_len, 
+       nss_status_t (*process_cstr)(const char *instr, int instr_len,
 				    struct nss_groupsbymem *);
        int numgids;
 };
@@ -106,7 +106,7 @@ _nss_winbind_getpwent_solwrap (nss_backend_t* be, void *args)
 	int* errnop = &NSS_ARGS(args)->erange;
 	char logmsg[80];
 
-	ret = _nss_winbind_getpwent_r(result, buffer, 
+	ret = _nss_winbind_getpwent_r(result, buffer,
 				      buflen, errnop);
 
 	if(ret == NSS_STATUS_SUCCESS)
@@ -119,7 +119,7 @@ _nss_winbind_getpwent_solwrap (nss_backend_t* be, void *args)
 			snprintf(logmsg, 79, "_nss_winbind_getpwent_solwrap: Returning error: %d.\n",ret);
 			NSS_DEBUG(logmsg);
 		}
-    
+
 	return ret;
 }
 
@@ -138,7 +138,7 @@ _nss_winbind_getpwnam_solwrap (nss_backend_t* be, void* args)
 						&NSS_ARGS(args)->erange);
 	if(ret == NSS_STATUS_SUCCESS)
 		NSS_ARGS(args)->returnval = (void*) result;
-  
+
 	return ret;
 }
 
@@ -147,7 +147,7 @@ _nss_winbind_getpwuid_solwrap(nss_backend_t* be, void* args)
 {
 	NSS_STATUS ret;
 	struct passwd* result = (struct passwd*) NSS_ARGS(args)->buf.result;
-  
+
 	NSS_DEBUG("_nss_winbind_getpwuid_solwrap");
 	ret = _nss_winbind_getpwuid_r (NSS_ARGS(args)->key.uid,
 				       result,
@@ -156,7 +156,7 @@ _nss_winbind_getpwuid_solwrap(nss_backend_t* be, void* args)
 				       &NSS_ARGS(args)->erange);
 	if(ret == NSS_STATUS_SUCCESS)
 		NSS_ARGS(args)->returnval = (void*) result;
-  
+
 	return ret;
 }
 
@@ -183,7 +183,7 @@ _nss_winbind_passwd_constr (const char* db_name,
 			    const char* cfg_args)
 {
 	nss_backend_t *be;
-  
+
 	if(!(be = SMB_MALLOC_P(nss_backend_t)) )
 		return NULL;
 
@@ -221,7 +221,7 @@ _nss_winbind_getgrent_solwrap(nss_backend_t* be, void* args)
 	int* errnop = &NSS_ARGS(args)->erange;
 	char logmsg[80];
 
-	ret = _nss_winbind_getgrent_r(result, buffer, 
+	ret = _nss_winbind_getgrent_r(result, buffer,
 				      buflen, errnop);
 
 	if(ret == NSS_STATUS_SUCCESS)
@@ -235,7 +235,7 @@ _nss_winbind_getgrent_solwrap(nss_backend_t* be, void* args)
 		}
 
 	return ret;
-	
+
 }
 
 static NSS_STATUS
@@ -253,10 +253,10 @@ _nss_winbind_getgrnam_solwrap(nss_backend_t* be, void* args)
 
 	if(ret == NSS_STATUS_SUCCESS)
 		NSS_ARGS(args)->returnval = (void*) result;
-  
+
 	return ret;
 }
-  
+
 static NSS_STATUS
 _nss_winbind_getgrgid_solwrap(nss_backend_t* be, void* args)
 {
@@ -310,7 +310,7 @@ _nss_winbind_group_destr (nss_backend_t* be, void* args)
 	return NSS_STATUS_SUCCESS;
 }
 
-static nss_backend_op_t group_ops[] = 
+static nss_backend_op_t group_ops[] =
 {
 	_nss_winbind_group_destr,
 	_nss_winbind_endgrent_solwrap,
@@ -319,7 +319,7 @@ static nss_backend_op_t group_ops[] =
 	_nss_winbind_getgrnam_solwrap,
 	_nss_winbind_getgrgid_solwrap,
 	_nss_winbind_getgroupsbymember_solwrap
-}; 
+};
 
 nss_backend_t*
 _nss_winbind_group_constr (const char* db_name,
@@ -333,7 +333,7 @@ _nss_winbind_group_constr (const char* db_name,
 
 	be->ops = group_ops;
 	be->n_ops = sizeof(group_ops) / sizeof(nss_backend_op_t);
-  
+
 	NSS_DEBUG("Initialized nss_winbind group backend");
 	return be;
 }
@@ -410,7 +410,7 @@ parse_response(int af, nss_XbyY_args_t* argp, struct winbindd_response *response
 		argp->erange = 1;
 		return NSS_STR_PARSE_ERANGE;
 	}
-	
+
 	data = response->data.winsresp;
 	for( i = 0; i < addrcount; i++) {
 		p = strchr(data, '\t');
@@ -524,7 +524,7 @@ _nss_winbind_hosts_getbyname(nss_backend_t* be, void *args)
 
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
-	
+
 	strncpy(request.data.winsreq, argp->key.name, sizeof(request.data.winsreq) - 1);
 	request.data.winsreq[sizeof(request.data.winsreq) - 1] = '\0';
 
@@ -560,7 +560,7 @@ _nss_winbind_hosts_getbyaddr(nss_backend_t* be, void *args)
 			request.data.winsreq, sizeof request.data.winsreq);
 #else
         snprintf(request.data.winsreq, sizeof request.data.winsreq,
-                "%u.%u.%u.%u", 
+                "%u.%u.%u.%u",
                 ((unsigned char *)argp->key.hostaddr.addr)[0],
                 ((unsigned char *)argp->key.hostaddr.addr)[1],
                 ((unsigned char *)argp->key.hostaddr.addr)[2],

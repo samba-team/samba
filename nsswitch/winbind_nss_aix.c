@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    AIX loadable authentication module, providing identification and
@@ -7,17 +7,17 @@
    Copyright (C) Tim Potter 2003
    Copyright (C) Steve Roylance 2003
    Copyright (C) Andrew Tridgell 2003-2004
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,7 +31,7 @@
   changing routines, so you do not need to install the winbind PAM
   module.
 
-  see 
+  see
   http://publib16.boulder.ibm.com/doc_link/en_US/a_doc_lib/aixprggd/kernextc/sec_load_mod.htm
   for some information in the interface that this module implements
 
@@ -113,12 +113,12 @@ static void free_grp(struct group *grp)
 
 	free(grp->gr_name);
 	free(grp->gr_passwd);
-	
+
 	if (!grp->gr_mem) {
 		free(grp);
 		return;
 	}
-	
+
 	for (i=0; grp->gr_mem[i]; i++) {
 		free(grp->gr_mem[i]);
 	}
@@ -200,7 +200,7 @@ static struct passwd *fill_pwent(struct winbindd_pw *pw)
 	result->pw_gecos  = strdup(pw->pw_gecos);
 	result->pw_dir    = strdup(pw->pw_dir);
 	result->pw_shell  = strdup(pw->pw_shell);
-	
+
 	return result;
 }
 
@@ -229,12 +229,12 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 	if ((gr->num_gr_mem < 0) || !gr_mem) {
 		gr->num_gr_mem = 0;
 	}
-	
+
 	if (gr->num_gr_mem == 0) {
-		/* Group is empty */		
+		/* Group is empty */
 		return result;
 	}
-	
+
 	result->gr_mem = (char **)malloc(sizeof(char *) * (gr->num_gr_mem+1));
 	if (!result->gr_mem) {
 		errno = ENOMEM;
@@ -243,8 +243,8 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 
 	/* Start looking at extra data */
 	i=0;
-	for (name = strtok_r(gr_mem, ",", &p); 
-	     name; 
+	for (name = strtok_r(gr_mem, ",", &p);
+	     name;
 	     name = strtok_r(NULL, ",", &p)) {
 		if (i == gr->num_gr_mem) {
 			break;
@@ -261,7 +261,7 @@ static struct group *fill_grent(struct winbindd_gr *gr, char *gr_mem)
 
 
 
-/* take a group id and return a filled struct group */	
+/* take a group id and return a filled struct group */
 static struct group *wb_aix_getgrgid(gid_t gid)
 {
 	struct winbindd_response response;
@@ -273,7 +273,7 @@ static struct group *wb_aix_getgrgid(gid_t gid)
 
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
-	
+
 	request.data.gid = gid;
 
 	ret = winbindd_request_response(WINBINDD_GETGRGID, &request, &response);
@@ -309,7 +309,7 @@ static struct group *wb_aix_getgrnam(const char *name)
 	STRCPY_RETNULL(request.data.groupname, name);
 
 	ret = winbindd_request_response(WINBINDD_GETGRNAM, &request, &response);
-	
+
 	HANDLE_ERRORS(ret);
 
 	grp = fill_grent(&response.data.gr, response.extra_data.data);
@@ -373,7 +373,7 @@ static char *wb_aix_getgrset(char *user)
 
 	num_gids = response.data.num_entries;
 	gid_list = (gid_t *)response.extra_data.data;
-		
+
 	/* allocate a space large enough to contruct the string */
 	tmpbuf = malloc(num_gids*12);
 	if (!tmpbuf) {
@@ -381,9 +381,9 @@ static char *wb_aix_getgrset(char *user)
 	}
 
 	for (idx=i=0; i < num_gids-1; i++) {
-		idx += sprintf(tmpbuf+idx, "%u,", gid_list[i]);	
+		idx += sprintf(tmpbuf+idx, "%u,", gid_list[i]);
 	}
-	idx += sprintf(tmpbuf+idx, "%u", gid_list[i]);	
+	idx += sprintf(tmpbuf+idx, "%u", gid_list[i]);
 
 	winbindd_free_response(&response);
 
@@ -391,7 +391,7 @@ static char *wb_aix_getgrset(char *user)
 }
 
 
-/* take a uid and return a filled struct passwd */	
+/* take a uid and return a filled struct passwd */
 static struct passwd *wb_aix_getpwuid(uid_t uid)
 {
 	struct winbindd_response response;
@@ -403,9 +403,9 @@ static struct passwd *wb_aix_getpwuid(uid_t uid)
 
 	ZERO_STRUCT(response);
 	ZERO_STRUCT(request);
-		
+
 	request.data.uid = uid;
-	
+
 	ret = winbindd_request_response(WINBINDD_GETPWUID, &request, &response);
 
 	HANDLE_ERRORS(ret);
@@ -442,7 +442,7 @@ static struct passwd *wb_aix_getpwnam(const char *name)
 	ret = winbindd_request_response(WINBINDD_GETPWNAM, &request, &response);
 
 	HANDLE_ERRORS(ret);
-	
+
 	pwd = fill_pwent(&response.data.pw);
 
 	winbindd_free_response(&response);
@@ -471,7 +471,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-	
+
 	ret = winbindd_request_response(WINBINDD_LIST_USERS, &request, &response);
 	if (ret != 0) {
 		errno = EINVAL;
@@ -486,7 +486,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 		errno = ENOMEM;
 		return -1;
 	}
-	
+
 	memcpy(s, response.extra_data.data, len+1);
 
 	replace_commas(s);
@@ -495,7 +495,7 @@ static int wb_aix_lsuser(char *attributes[], attrval_t results[], int size)
 	results[0].attr_flag = 0;
 
 	winbindd_free_response(&response);
-	
+
 	return 0;
 }
 
@@ -519,7 +519,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
-	
+
 	ret = winbindd_request_response(WINBINDD_LIST_GROUPS, &request, &response);
 	if (ret != 0) {
 		errno = EINVAL;
@@ -534,7 +534,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 		errno = ENOMEM;
 		return -1;
 	}
-	
+
 	memcpy(s, response.extra_data.data, len+1);
 
 	replace_commas(s);
@@ -543,7 +543,7 @@ static int wb_aix_lsgroup(char *attributes[], attrval_t results[], int size)
 	results[0].attr_flag = 0;
 
 	winbindd_free_response(&response);
-	
+
 	return 0;
 }
 
@@ -552,9 +552,9 @@ static attrval_t pwd_to_group(struct passwd *pwd)
 {
 	attrval_t r;
 	struct group *grp = wb_aix_getgrgid(pwd->pw_gid);
-	
+
 	if (!grp) {
-		r.attr_flag = EINVAL;				
+		r.attr_flag = EINVAL;
 	} else {
 		r.attr_flag = 0;
 		r.attr_un.au_char = strdup(grp->gr_name);
@@ -692,18 +692,18 @@ static int wb_aix_group_attrib(const char *key, char *attributes[],
 /*
   called for user/group enumerations
 */
-static int wb_aix_getentry(char *key, char *table, char *attributes[], 
+static int wb_aix_getentry(char *key, char *table, char *attributes[],
 			   attrval_t results[], int size)
 {
-	logit("Got getentry with key='%s' table='%s' size=%d attributes[0]='%s'\n", 
+	logit("Got getentry with key='%s' table='%s' size=%d attributes[0]='%s'\n",
 	      key, table, size, attributes[0]);
 
-	if (strcmp(key, "ALL") == 0 && 
+	if (strcmp(key, "ALL") == 0 &&
 	    strcmp(table, "user") == 0) {
 		return wb_aix_lsuser(attributes, results, size);
 	}
 
-	if (strcmp(key, "ALL") == 0 && 
+	if (strcmp(key, "ALL") == 0 &&
 	    strcmp(table, "group") == 0) {
 		return wb_aix_lsgroup(attributes, results, size);
 	}
@@ -732,7 +732,7 @@ static void *wb_aix_open(const char *name, const char *domain, int mode, char *o
 	if (strstr(options, "debug")) {
 		debug_enabled = 1;
 	}
-	logit("open name='%s' mode=%d domain='%s' options='%s'\n", name, domain, 
+	logit("open name='%s' mode=%d domain='%s' options='%s'\n", name, domain,
 	      mode, options);
 	return NULL;
 }
@@ -744,14 +744,14 @@ static void wb_aix_close(void *token)
 }
 
 #ifdef HAVE_STRUCT_SECMETHOD_TABLE_METHOD_ATTRLIST
-/* 
-   return a list of additional attributes supported by the backend 
+/*
+   return a list of additional attributes supported by the backend
 */
 static attrlist_t **wb_aix_attrlist(void)
 {
 	/* pretty confusing but we are allocating the array of pointers
 	   and the structures we'll be pointing to all at once.  So
- 	   you need N+1 pointers and N structures. */
+	   you need N+1 pointers and N structures. */
 
 	attrlist_t **ret = NULL;
 	attrlist_t *offset = NULL;
@@ -821,7 +821,7 @@ static attrlist_t **wb_aix_attrlist(void)
 
 
 /*
-  turn a long username into a short one. Needed to cope with the 8 char 
+  turn a long username into a short one. Needed to cope with the 8 char
   username limit in AIX 5.2 and below
 */
 static int wb_aix_normalize(char *longname, char *shortname)
@@ -854,7 +854,7 @@ static int wb_aix_normalize(char *longname, char *shortname)
 /*
   authenticate a user
  */
-static int wb_aix_authenticate(char *user, char *pass, 
+static int wb_aix_authenticate(char *user, char *pass,
 			       int *reenter, char **message)
 {
 	struct winbindd_request request;
@@ -950,7 +950,7 @@ static int wb_aix_chpass(char *user, char *oldpass, char *newpass, char **messag
 /*
   don't do any password strength testing for now
 */
-static int wb_aix_passwdrestrictions(char *user, char *newpass, char *oldpass, 
+static int wb_aix_passwdrestrictions(char *user, char *newpass, char *oldpass,
 				     char **message)
 {
 	logit("passwdresrictions called for '%s'\n", user);
@@ -977,13 +977,13 @@ static char *wb_aix_getpasswd(char *user)
 }
 
 /*
-  this is called to update things like the last login time. We don't 
+  this is called to update things like the last login time. We don't
   currently pass this onto the DC
 */
-static int wb_aix_putentry(char *key, char *table, char *attributes[], 
+static int wb_aix_putentry(char *key, char *table, char *attributes[],
 			   attrval_t values[], int size)
 {
-	logit("putentry key='%s' table='%s' attrib='%s'\n", 
+	logit("putentry key='%s' table='%s' attrib='%s'\n",
 	      key, table, size>=1?attributes[0]:"<null>");
 	errno = ENOSYS;
 	return -1;
@@ -1047,7 +1047,7 @@ int wb_aix_init(struct secmethod_table *methods)
 	methods->method_passwdexpired      = wb_aix_passwdexpired;
 	methods->method_putentry           = wb_aix_putentry;
 	methods->method_getpasswd          = wb_aix_getpasswd;
-	methods->method_authenticate       = wb_aix_authenticate;	
+	methods->method_authenticate       = wb_aix_authenticate;
 	methods->method_commit             = wb_aix_commit;
 	methods->method_chpass             = wb_aix_chpass;
 	methods->method_passwdrestrictions = wb_aix_passwdrestrictions;
@@ -1074,4 +1074,3 @@ int wb_aix_init(struct secmethod_table *methods)
 
 	return AUTH_SUCCESS;
 }
-

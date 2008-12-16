@@ -1,4 +1,4 @@
-/* pam_winbind header file 
+/* pam_winbind header file
    (Solaris needs some macros from Linux for common PAM code)
 
    Shirish Kalele 2000
@@ -32,7 +32,7 @@
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
 #if defined(HAVE_SECURITY_PAM_APPL_H)
-#include <security/pam_appl.h> 
+#include <security/pam_appl.h>
 #elif defined(HAVE_PAM_PAM_APPL_H)
 #include <pam/pam_appl.h>
 #endif
@@ -83,7 +83,7 @@ do {                             \
 
 #define _pam_drop(X) SAFE_FREE(X)
 
-#define  x_strdup(s)  ( (s) ? strdup(s):NULL )     
+#define  x_strdup(s)  ( (s) ? strdup(s):NULL )
 #endif /* HAVE_SECURITY__PAM_MACROS_H */
 
 #ifdef HAVE_SECURITY_PAM_EXT_H
@@ -167,4 +167,3 @@ struct pwb_context {
 #define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
 #define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
-

@@ -1,20 +1,20 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -54,6 +54,7 @@
 #ifndef FSTRING_LEN
 #define FSTRING_LEN 256
 typedef char fstring[FSTRING_LEN];
+#define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #endif
 
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */

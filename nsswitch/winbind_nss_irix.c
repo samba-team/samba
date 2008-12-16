@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Windows NT Domain nsswitch module
 
    Copyright (C) Tim Potter 2000
    Copyright (C) James Peach 2006
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -38,7 +38,7 @@ int asprintf(char **,const char *, ...) PRINTF_ATTRIBUTE(2,3);
 #endif
 
 /* Maximum number of users to pass back over the unix domain socket
-   per call. This is not a static limit on the total number of users 
+   per call. This is not a static limit on the total number of users
    or groups returned in total. */
 
 #define MAX_GETPWENT_USERS 250
@@ -170,7 +170,7 @@ do_request(nsd_file_t *rq, struct winbindd_request *request)
 	}
 }
 
-static int 
+static int
 winbind_callback(nsd_file_t **rqp, int fd)
 {
 	struct winbindd_response response;
@@ -195,7 +195,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	if (status != NSS_STATUS_SUCCESS) {
 		/* free any extra data area in response structure */
 		winbindd_free_response(&response);
-		nsd_logprintf(NSD_LOG_MIN, 
+		nsd_logprintf(NSD_LOG_MIN,
 			"callback (winbind) returning not found, status = %d\n",
 			status);
 
@@ -225,9 +225,9 @@ winbind_callback(nsd_file_t **rqp, int fd)
 		if (rlen == 0 || result == NULL) {
 			return NSD_ERROR;
 		}
-		
+
 		winbindd_free_response(&response);
-		
+
 		nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 		nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
 		return NSD_OK;
@@ -236,7 +236,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	    case WINBINDD_GETPWNAM:
 	    {
 	        struct winbindd_pw *pw = &response.data.pw;
-	    
+
 	        nsd_logprintf(NSD_LOG_MIN,
 			"callback (winbind) GETPWUID | GETPWUID\n");
 
@@ -250,9 +250,9 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	                        pw->pw_shell);
 	        if (rlen == 0 || result == NULL)
 	            return NSD_ERROR;
-	    
+
 	        winbindd_free_response(&response);
-	    
+
 	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
 	        return NSD_OK;
@@ -263,7 +263,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	    {
 	        const struct winbindd_gr *gr = &response.data.gr;
 	        const char * members;
-	    
+
 	        nsd_logprintf(NSD_LOG_MIN,
 			"callback (winbind) GETGRNAM | GETGRGID\n");
 
@@ -272,14 +272,14 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	        } else {
 	                members = "";
 	        }
-	    
+
 	        rlen = asprintf(&result, "%s:%s:%d:%s\n",
 			    gr->gr_name, gr->gr_passwd, gr->gr_gid, members);
 	        if (rlen == 0 || result == NULL)
 	            return NSD_ERROR;
-	    
+
 	        winbindd_free_response(&response);
-	    
+
 	        nsd_logprintf(NSD_LOG_MIN, "    %s\n", result);
 	        nsd_set_result(rq, NS_SUCCESS, result, rlen, DYNAMIC);
 	        return NSD_OK;
@@ -296,46 +296,46 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	    case WINBINDD_GETGRLST:
 	    {
 	        int entries;
-	    
+
 	        nsd_logprintf(NSD_LOG_MIN,
 		    "callback (winbind) GETGRENT | GETGRLIST %d responses\n",
 		    response.data.num_entries);
-	    
+
 	        if (response.data.num_entries) {
 	            const struct winbindd_gr *gr = &response.data.gr;
 	            const char * members;
 	            fstring grp_name;
 	            int     i;
-	    
+
 	            gr = (struct winbindd_gr *)response.extra_data.data;
 	            if (! gr ) {
 	                nsd_logprintf(NSD_LOG_MIN, "     no extra_data\n");
 	                winbindd_free_response(&response);
 	                return NSD_ERROR;
 	            }
-	    
+
 	            members = (char *)response.extra_data.data +
 			(response.data.num_entries * sizeof(struct winbindd_gr));
-	    
+
 	            for (i = 0; i < response.data.num_entries; i++) {
 	                snprintf(grp_name, sizeof(grp_name) - 1, "%s:%s:%d:",
 	                            gr->gr_name, gr->gr_passwd, gr->gr_gid);
-	    
+
 	                nsd_append_element(rq, NS_SUCCESS, result, rlen);
 	                nsd_append_result(rq, NS_SUCCESS,
 				&members[gr->gr_mem_ofs],
 	                        strlen(&members[gr->gr_mem_ofs]));
-	    
+
 	                /* Don't log the whole list, because it might be
 	                 * _really_ long and we probably don't want to clobber
 	                 * the log with it.
 	                 */
 	                nsd_logprintf(NSD_LOG_MIN, "    %s (...)\n", grp_name);
-	    
+
 	                gr++;
 	            }
 	        }
-	    
+
 	        entries = response.data.num_entries;
 	        winbindd_free_response(&response);
 	        if (entries < MAX_GETPWENT_USERS)
@@ -405,7 +405,7 @@ winbind_callback(nsd_file_t **rqp, int fd)
 	}
 }
 
-static int 
+static int
 winbind_timeout(nsd_file_t **rqp, nsd_times_t *to)
 {
 	nsd_file_t *rq;
@@ -455,7 +455,7 @@ send_next_request(nsd_file_t *rq, struct winbindd_request *request)
 	SAFE_FREE(request);
 
 	if (status != NSS_STATUS_SUCCESS) {
-		nsd_logprintf(NSD_LOG_MIN, 
+		nsd_logprintf(NSD_LOG_MIN,
 			"send_next_request (winbind) error status = %d\n",
 			status);
 		rq->f_status = status;
@@ -512,15 +512,15 @@ int lookup(nsd_file_t *rq)
 	    request->data.uid = atoi(key);
 	    rq->f_cmd_data = (void *)WINBINDD_GETPWUID;
 	} else if (strcasecmp(map,"passwd.byname") == 0) {
-	    strncpy(request->data.username, key, 
+	    strncpy(request->data.username, key,
 		sizeof(request->data.username) - 1);
 	    request->data.username[sizeof(request->data.username) - 1] = '\0';
-	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM; 
+	    rq->f_cmd_data = (void *)WINBINDD_GETPWNAM;
 	} else if (strcasecmp(map,"group.byname") == 0) {
-	    strncpy(request->data.groupname, key, 
+	    strncpy(request->data.groupname, key,
 		sizeof(request->data.groupname) - 1);
 	    request->data.groupname[sizeof(request->data.groupname) - 1] = '\0';
-	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM; 
+	    rq->f_cmd_data = (void *)WINBINDD_GETGRNAM;
 	} else if (strcasecmp(map,"group.bygid") == 0) {
 	    request->data.gid = atoi(key);
 	    rq->f_cmd_data = (void *)WINBINDD_GETGRGID;

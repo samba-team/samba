@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    winbind client common code
@@ -6,18 +6,18 @@
    Copyright (C) Tim Potter 2000
    Copyright (C) Andrew Tridgell 2000
    Copyright (C) Andrew Bartlett 2002
-   
-   
+
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-   
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Library General Public License for more details.
-   
+
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -74,11 +74,11 @@ void winbind_close_sock(void)
 /* Make sure socket handle isn't stdin, stdout or stderr */
 #define RECURSION_LIMIT 3
 
-static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */) 
+static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 {
 	int new_fd;
 	if (fd >= 0 && fd <= 2) {
-#ifdef F_DUPFD 
+#ifdef F_DUPFD
 		if ((new_fd = fcntl(fd, F_DUPFD, 3)) == -1) {
 			return -1;
 		}
@@ -92,9 +92,9 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
 #else
 		if (limit <= 0)
 			return -1;
-		
+
 		new_fd = dup(fd);
-		if (new_fd == -1) 
+		if (new_fd == -1)
 			return -1;
 
 		/* use the program stack to hold our list of FDs to close */
@@ -114,7 +114,7 @@ static int make_nonstd_fd_internals(int fd, int limit /* Recursion limiter */)
  Set close on exec also.
 ****************************************************************************/
 
-static int make_safe_fd(int fd) 
+static int make_safe_fd(int fd)
 {
 	int result, flags;
 	int new_fd = make_nonstd_fd_internals(fd, RECURSION_LIMIT);
@@ -366,65 +366,65 @@ static int winbind_open_pipe_sock(int recursing, int need_priv)
 int winbind_write_sock(void *buffer, int count, int recursing, int need_priv)
 {
 	int result, nwritten;
-	
+
 	/* Open connection to winbind daemon */
-	
+
  restart:
-	
+
 	if (winbind_open_pipe_sock(recursing, need_priv) == -1) {
 		errno = ENOENT;
 		return -1;
 	}
-	
+
 	/* Write data to socket */
-	
+
 	nwritten = 0;
-	
+
 	while(nwritten < count) {
 		struct timeval tv;
 		fd_set r_fds;
-		
+
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling select(). */
 
 		FD_ZERO(&r_fds);
 		FD_SET(winbindd_fd, &r_fds);
 		ZERO_STRUCT(tv);
-		
+
 		if (select(winbindd_fd + 1, &r_fds, NULL, NULL, &tv) == -1) {
 			winbind_close_sock();
 			return -1;                   /* Select error */
 		}
-		
+
 		/* Write should be OK if fd not available for reading */
-		
+
 		if (!FD_ISSET(winbindd_fd, &r_fds)) {
-			
+
 			/* Do the write */
-			
+
 			result = write(winbindd_fd,
-				       (char *)buffer + nwritten, 
+				       (char *)buffer + nwritten,
 				       count - nwritten);
-			
+
 			if ((result == -1) || (result == 0)) {
-				
+
 				/* Write failed */
-				
+
 				winbind_close_sock();
 				return -1;
 			}
-			
+
 			nwritten += result;
-			
+
 		} else {
-			
+
 			/* Pipe has closed on remote end */
-			
+
 			winbind_close_sock();
 			goto restart;
 		}
 	}
-	
+
 	return nwritten;
 }
 
@@ -443,7 +443,7 @@ int winbind_read_sock(void *buffer, int count)
 	while(nread < count) {
 		struct timeval tv;
 		fd_set r_fds;
-		
+
 		/* Catch pipe close on other end by checking if a read()
 		   call would not block by calling select(). */
 
@@ -457,7 +457,7 @@ int winbind_read_sock(void *buffer, int count)
 			winbind_close_sock();
 			return -1;                   /* Select error */
 		}
-		
+
 		if (selret == 0) {
 			/* Not ready for read yet... */
 			if (total_time >= 30) {
@@ -470,27 +470,27 @@ int winbind_read_sock(void *buffer, int count)
 		}
 
 		if (FD_ISSET(winbindd_fd, &r_fds)) {
-			
+
 			/* Do the Read */
-			
-			int result = read(winbindd_fd, (char *)buffer + nread, 
+
+			int result = read(winbindd_fd, (char *)buffer + nread,
 			      count - nread);
-			
+
 			if ((result == -1) || (result == 0)) {
-				
+
 				/* Read failed.  I think the only useful thing we
 				   can do here is just return -1 and fail since the
 				   transaction has failed half way through. */
-			
+
 				winbind_close_sock();
 				return -1;
 			}
-			
+
 			nread += result;
-			
+
 		}
 	}
-	
+
 	return nread;
 }
 
@@ -503,15 +503,15 @@ int winbindd_read_reply(struct winbindd_response *response)
 	if (!response) {
 		return -1;
 	}
-	
+
 	/* Read fixed length response */
-	
+
 	result1 = winbind_read_sock(response,
 				    sizeof(struct winbindd_response));
 	if (result1 == -1) {
 		return -1;
 	}
-	
+
 	/* We actually send the pointer value of the extra_data field from
 	   the server.  This has no meaning in the client's address space
 	   so we clear it out. */
@@ -519,17 +519,17 @@ int winbindd_read_reply(struct winbindd_response *response)
 	response->extra_data.data = NULL;
 
 	/* Read variable length response */
-	
+
 	if (response->length > sizeof(struct winbindd_response)) {
-		int extra_data_len = response->length - 
+		int extra_data_len = response->length -
 			sizeof(struct winbindd_response);
-		
+
 		/* Mallocate memory for extra data */
-		
+
 		if (!(response->extra_data.data = malloc(extra_data_len))) {
 			return -1;
 		}
-		
+
 		result2 = winbind_read_sock(response->extra_data.data,
 					    extra_data_len);
 		if (result2 == -1) {
@@ -537,14 +537,14 @@ int winbindd_read_reply(struct winbindd_response *response)
 			return -1;
 		}
 	}
-	
+
 	/* Return total amount of data read */
-	
+
 	return result1 + result2;
 }
 
-/* 
- * send simple types of requests 
+/*
+ * send simple types of requests
  */
 
 NSS_STATUS winbindd_send_request(int req_type, int need_priv,
@@ -562,33 +562,33 @@ NSS_STATUS winbindd_send_request(int req_type, int need_priv,
 		ZERO_STRUCT(lrequest);
 		request = &lrequest;
 	}
-	
+
 	/* Fill in request and send down pipe */
 
 	winbindd_init_request(request, req_type);
-	
+
 	if (winbind_write_sock(request, sizeof(*request),
 			       request->wb_flags & WBFLAG_RECURSE,
-			       need_priv) == -1) 
+			       need_priv) == -1)
 	{
 		/* Set ENOENT for consistency.  Required by some apps */
 		errno = ENOENT;
-		
+
 		return NSS_STATUS_UNAVAIL;
 	}
 
 	if ((request->extra_len != 0) &&
 	    (winbind_write_sock(request->extra_data.data,
-	    			request->extra_len,
+				request->extra_len,
 				request->wb_flags & WBFLAG_RECURSE,
-				need_priv) == -1)) 
+				need_priv) == -1))
 	{
 		/* Set ENOENT for consistency.  Required by some apps */
 		errno = ENOENT;
 
 		return NSS_STATUS_UNAVAIL;
 	}
-	
+
 	return NSS_STATUS_SUCCESS;
 }
 
@@ -624,13 +624,13 @@ NSS_STATUS winbindd_get_response(struct winbindd_response *response)
 	if (response->result != WINBINDD_OK) {
 		return NSS_STATUS_NOTFOUND;
 	}
-	
+
 	return NSS_STATUS_SUCCESS;
 }
 
 /* Handle simple types of requests */
 
-NSS_STATUS winbindd_request_response(int req_type, 
+NSS_STATUS winbindd_request_response(int req_type,
 			    struct winbindd_request *request,
 			    struct winbindd_response *response)
 {
@@ -639,7 +639,7 @@ NSS_STATUS winbindd_request_response(int req_type,
 
 	while ((status == NSS_STATUS_UNAVAIL) && (count < 10)) {
 		status = winbindd_send_request(req_type, 0, request);
-		if (status != NSS_STATUS_SUCCESS) 
+		if (status != NSS_STATUS_SUCCESS)
 			return(status);
 		status = winbindd_get_response(response);
 		count += 1;
@@ -648,7 +648,7 @@ NSS_STATUS winbindd_request_response(int req_type,
 	return status;
 }
 
-NSS_STATUS winbindd_priv_request_response(int req_type, 
+NSS_STATUS winbindd_priv_request_response(int req_type,
 					  struct winbindd_request *request,
 					  struct winbindd_response *response)
 {
@@ -657,7 +657,7 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 
 	while ((status == NSS_STATUS_UNAVAIL) && (count < 10)) {
 		status = winbindd_send_request(req_type, 1, request);
-		if (status != NSS_STATUS_SUCCESS) 
+		if (status != NSS_STATUS_SUCCESS)
 			return(status);
 		status = winbindd_get_response(response);
 		count += 1;

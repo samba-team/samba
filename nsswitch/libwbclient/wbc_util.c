@@ -299,7 +299,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 
 	wbc_status = wbcStringToSid(r, &info->sid);
 	BAIL_ON_WBC_ERROR(wbc_status);
-	
+
 	/* Trust type */
 	r = s;
 	if ((s = strchr(r, '\\')) == NULL) {
@@ -332,9 +332,9 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	s++;
 
 	if (strcmp(r, "Yes") == 0) {
-		info->trust_flags |= WBC_DOMINFO_TRUST_TRANSITIVE;		
+		info->trust_flags |= WBC_DOMINFO_TRUST_TRANSITIVE;
 	}
-	
+
 	/* Incoming */
 	r = s;
 	if ((s = strchr(r, '\\')) == NULL) {
@@ -345,7 +345,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	s++;
 
 	if (strcmp(r, "Yes") == 0) {
-		info->trust_flags |= WBC_DOMINFO_TRUST_INCOMING;		
+		info->trust_flags |= WBC_DOMINFO_TRUST_INCOMING;
 	}
 
 	/* Outgoing */
@@ -358,7 +358,7 @@ static wbcErr process_domain_info_string(TALLOC_CTX *ctx,
 	s++;
 
 	if (strcmp(r, "Yes") == 0) {
-		info->trust_flags |= WBC_DOMINFO_TRUST_OUTGOING;		
+		info->trust_flags |= WBC_DOMINFO_TRUST_OUTGOING;
 	}
 
 	/* Online/Offline status */
@@ -385,14 +385,14 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *p = NULL;
 	char *q = NULL;
-	char *extra_data = NULL;	
-	int count = 0;	
+	char *extra_data = NULL;
+	int count = 0;
 	struct wbcDomainInfo *d_list = NULL;
 	int i = 0;
-	
+
 	*domains = NULL;
 	*num_domains = 0;
-	
+
 	ZERO_STRUCT(response);
 
 	/* Send request */
@@ -409,20 +409,20 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	if (strlen(p) == 0) {
 		/* We should always at least get back our
 		   own SAM domain */
-		
+
 		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
 	/* Count number of domains */
 
-	count = 0;	
+	count = 0;
 	while (p) {
 		count++;
 
 		if ((q = strchr(p, '\n')) != NULL)
 			q++;
-		p = q;		
+		p = q;
 	}
 
 	d_list = talloc_array(NULL, struct wbcDomainInfo, count);
@@ -431,13 +431,13 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 	extra_data = strdup((char*)response.extra_data.data);
 	BAIL_ON_PTR_ERROR(extra_data, wbc_status);
 
-	p = extra_data;	
+	p = extra_data;
 
 	/* Outer loop processes the list of domain information */
 
 	for (i=0; i<count && p; i++) {
 		char *next = strchr(p, '\n');
-		
+
 		if (next) {
 			*next = '\0';
 			next++;
@@ -449,9 +449,9 @@ wbcErr wbcListTrusts(struct wbcDomainInfo **domains, size_t *num_domains)
 		p = next;
 	}
 
-	*domains = d_list;	
-	*num_domains = i;	
-	
+	*domains = d_list;
+	*num_domains = i;
+
  done:
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		if (d_list)

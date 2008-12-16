@@ -244,7 +244,7 @@ SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
 VERSION_OBJ = lib/version.o
 
-WBCOMMON_OBJ = nsswitch/wb_common.o
+WBCOMMON_OBJ = ../nsswitch/wb_common.o
 
 AFS_OBJ = lib/afs.o
 
@@ -809,7 +809,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(LIBADS_OBJ) $(POPT_LIB_OBJ) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ) 
 
-PAM_WINBIND_OBJ = nsswitch/pam_winbind.o localedir.o $(WBCOMMON_OBJ) \
+PAM_WINBIND_OBJ = ../nsswitch/pam_winbind.o localedir.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
 
 LIBSMBCLIENT_OBJ0 = \
@@ -1009,7 +1009,7 @@ SMBFILTER_OBJ = utils/smbfilter.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
                  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		 $(LIBNDR_GEN_OBJ0)
 
-WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
+WINBIND_WINS_NSS_OBJ = ../nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) \
 	$(LIBNDR_GEN_OBJ0)
 
@@ -1073,7 +1073,7 @@ WINBINDD_OBJ = \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
 		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ) 
 
-WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \
 		lib/winbind_util.o $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@
 
@@ -1110,7 +1110,7 @@ LDBADD_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbadd.o
 LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
-WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
+WINBIND_KRB5_LOCATOR_OBJ1 = ../nsswitch/winbind_krb5_locator.o
 WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(LIBREPLACE_OBJ)
 
 POPT_OBJ=../lib/popt/findme.o ../lib/popt/popt.o ../lib/popt/poptconfig.o \
@@ -1767,13 +1767,13 @@ shlibs test_shlibs: @LIBTDB_SHARED@
 #
 #-------------------------------------------------------------------
 
-LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
-		  nsswitch/libwbclient/wbc_util.o \
-		  nsswitch/libwbclient/wbc_pwd.o \
-		  nsswitch/libwbclient/wbc_idmap.o \
-		  nsswitch/libwbclient/wbc_sid.o \
-		  nsswitch/libwbclient/wbc_guid.o \
-		  nsswitch/libwbclient/wbc_pam.o
+LIBWBCLIENT_OBJ0 = ../nsswitch/libwbclient/wbclient.o \
+		  ../nsswitch/libwbclient/wbc_util.o \
+		  ../nsswitch/libwbclient/wbc_pwd.o \
+		  ../nsswitch/libwbclient/wbc_idmap.o \
+		  ../nsswitch/libwbclient/wbc_sid.o \
+		  ../nsswitch/libwbclient/wbc_guid.o \
+		  ../nsswitch/libwbclient/wbc_pam.o
 LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) \
 		  $(WBCOMMON_OBJ) \
 		  @LIBTALLOC_STATIC@ $(LIBREPLACE_OBJ)
@@ -1784,7 +1784,7 @@ LIBWBCLIENT_SHARED_TARGET_SONAME=$(LIBWBCLIENT_SHARED_TARGET).$(LIBWBCLIENT_SOVE
 LIBWBCLIENT_STATIC_TARGET=@LIBWBCLIENT_STATIC_TARGET@
 LIBWBCLIENT=@LIBWBCLIENT_STATIC@ @LIBWBCLIENT_SHARED@
 LIBWBCLIENT_SYMS=$(srcdir)/exports/libwbclient.@SYMSEXT@
-LIBWBCLIENT_HEADERS=$(srcdir)/nsswitch/libwbclient/wbclient.h
+LIBWBCLIENT_HEADERS=$(srcdir)/../nsswitch/libwbclient/wbclient.h
 
 $(LIBWBCLIENT_SYMS): $(LIBWBCLIENT_HEADERS)
 	@$(MKSYMS_SH) $(AWK) $@ $(LIBWBCLIENT_HEADERS)
@@ -2776,7 +2776,7 @@ etags::
 	etags --append `find $(srcdir)/../source4/ldap_server -name "*.[ch]"`
 	etags --append `find $(srcdir)/../source4/smb_server -name "*.[ch]"`
 	etags --append `find $(srcdir)/../source4/include -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/nsswitch -name "*.[ch]"`
+	etags --append `find $(srcdir)/../nsswitch -name "*.[ch]"`
 	etags --append `find $(srcdir)/../source4/cldap_server -name "*.[ch]"`
 	etags --append `find $(srcdir)/../source4/utils -name "*.[ch]"`
 	etags --append `find $(srcdir)/../source4/librpc -name "*.[ch]"`

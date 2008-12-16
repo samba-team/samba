@@ -1,14 +1,14 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
    Copyright (C) Tim Potter 2000
    Copyright (C) Gerald Carter 2006
-   
+
    You are free to use this interface definition in any way you see
    fit, including without restriction, using this header in your own
-   products. You do not need to give any attribution.  
+   products. You do not need to give any attribution.
 */
 
 #ifndef SAFE_FREE
@@ -40,8 +40,6 @@
 #define WINBINDD_LOCATOR_KDC_ADDRESS "WINBINDD_LOCATOR_KDC_ADDRESS"
 
 /* Update this when you change the interface.  */
-
-/* Version 20: added WINBINDD_REMOVE_MAPPING command */
 
 #define WINBIND_INTERFACE_VERSION 20
 
@@ -217,7 +215,7 @@ typedef struct winbindd_gr {
 /*******************************************************************************
  * This structure MUST be the same size in the 32bit and 64bit builds
  * for compatibility between /lib64/libnss_winbind.so and /lib/libnss_winbind.so
- * 
+ *
  * DO NOT CHANGE THIS STRUCTURE WITHOUT TESTING THE 32BIT NSS LIB AGAINST
  * A 64BIT WINBINDD    --jerry
  ******************************************************************************/
@@ -327,7 +325,7 @@ struct winbindd_request {
 		} dsgetdcname;
 
 		/* padding -- needed to fix alignment between 32bit and 64bit libs.
-		   The size is the sizeof the union without the padding aligned on 
+		   The size is the sizeof the union without the padding aligned on
 		   an 8 byte boundary.   --jerry */
 
 		char padding[1800];
@@ -353,27 +351,27 @@ enum winbindd_result {
 /*******************************************************************************
  * This structure MUST be the same size in the 32bit and 64bit builds
  * for compatibility between /lib64/libnss_winbind.so and /lib/libnss_winbind.so
- * 
+ *
  * DO NOT CHANGE THIS STRUCTURE WITHOUT TESTING THE 32BIT NSS LIB AGAINST
  * A 64BIT WINBINDD    --jerry
  ******************************************************************************/
 
 struct winbindd_response {
-    
+
 	/* Header information */
 
 	uint32_t length;                      /* Length of response */
 	enum winbindd_result result;          /* Result code */
 
 	/* Fixed length return data */
-	
+
 	union {
 		int interface_version;  /* Try to ensure this is always in the same spot... */
-		
+
 		fstring winsresp;		/* WINS response */
 
 		/* getpwnam, getpwuid */
-		
+
 		struct winbindd_pw pw;
 
 		/* getgrnam, getgrgid */
@@ -387,7 +385,7 @@ struct winbindd_response {
 		} sid;
 		struct winbindd_name {
 			fstring dom_name;       /* lookupsid */
-			fstring name;       
+			fstring name;
 			int type;
 		} name;
 		uid_t uid;          /* sid_to_uid */

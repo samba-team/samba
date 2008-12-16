@@ -51,6 +51,8 @@ examples/VFS/skel_transparent.so
 *.po
 *.pyc
 semantic.cache
+nsswitch/libnss_winbind.so
+nsswitch/libnss_wins.so
 source3/bin/*
 source3/config.cache
 source3/config.log

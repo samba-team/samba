@@ -952,7 +952,7 @@ wbcErr wbcDomainInfo(const char *domain,
  *
  * @return #wbcErr
  **/
-wbcErr wbcListTrusts(struct wbcDomainInfo **domains, 
+wbcErr wbcListTrusts(struct wbcDomainInfo **domains,
 		     size_t *num_domains);
 
 /* Flags for wbcLookupDomainController */

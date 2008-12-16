@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind status program.
 
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett 2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -378,8 +378,8 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 	}
 
 	if (print_all) {
-		d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n", 
-			 "Domain Name", "DNS Domain", "Trust Type", 
+		d_printf("%-16s%-24s%-12s%-12s%-5s%-5s\n",
+			 "Domain Name", "DNS Domain", "Trust Type",
 			 "Transitive", "In", "Out");
 	}
 
@@ -398,10 +398,10 @@ static bool wbinfo_list_domains(bool list_all_domains, bool verbose)
 		case WBC_DOMINFO_TRUSTTYPE_NONE:
 			d_printf("None        ");
 			break;
-		case WBC_DOMINFO_TRUSTTYPE_FOREST:		
+		case WBC_DOMINFO_TRUSTTYPE_FOREST:
 			d_printf("Forest      ");
 			break;
-		case WBC_DOMINFO_TRUSTTYPE_EXTERNAL:		
+		case WBC_DOMINFO_TRUSTTYPE_EXTERNAL:
 			d_printf("External    ");
 			break;
 		case WBC_DOMINFO_TRUSTTYPE_IN_FOREST:
@@ -472,8 +472,8 @@ static bool wbinfo_show_onlinestatus(const char *domain)
 		}
 
 		is_offline = (domain_list[i].domain_flags & WBC_DOMINFO_DOMAIN_OFFLINE);
-		
-		d_printf("%s : %s\n", 
+
+		d_printf("%s : %s\n",
 			 domain_list[i].short_name,
 			 is_offline ? "offline" : "online" );
 	}
@@ -1104,12 +1104,12 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 
 	/* Display response */
 
-	d_printf("plaintext kerberos password authentication for [%s] %s (requesting cctype: %s)\n", 
+	d_printf("plaintext kerberos password authentication for [%s] %s (requesting cctype: %s)\n",
 		username, (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed", cctype);
 
 	if (response.data.auth.nt_status)
-		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
-			 response.data.auth.nt_status_string, 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n",
+			 response.data.auth.nt_status_string,
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
 
@@ -1162,7 +1162,7 @@ static bool wbinfo_auth(char *username)
 
 #if 0
 	if (response.data.auth.nt_status)
-		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n",
 			 response.data.auth.nt_status_string,
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -1260,7 +1260,7 @@ static bool wbinfo_auth_crap(char *username)
 		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
 	if (wbc_status == WBC_ERR_AUTH_ERROR) {
-		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n",
 			 err->nt_string,
 			 err->nt_status,
 			 err->display_string);
@@ -1312,7 +1312,7 @@ static bool wbinfo_klog(char *username)
 		 (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
 	if (response.data.auth.nt_status)
-		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
+		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n",
 			 response.data.auth.nt_status_string,
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
@@ -1853,14 +1853,14 @@ int main(int argc, char **argv, char **envp)
 			break;
 		case 'r':
 			if (!wbinfo_get_usergroups(string_arg)) {
-				d_fprintf(stderr, "Could not get groups for user %s\n", 
+				d_fprintf(stderr, "Could not get groups for user %s\n",
 				       string_arg);
 				goto done;
 			}
 			break;
 		case OPT_USERSIDS:
 			if (!wbinfo_get_usersids(string_arg)) {
-				d_fprintf(stderr, "Could not get group SIDs for user SID %s\n", 
+				d_fprintf(stderr, "Could not get group SIDs for user SID %s\n",
 				       string_arg);
 				goto done;
 			}
