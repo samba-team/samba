@@ -1250,5 +1250,9 @@ int ltdb_reindex(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	if (tdb_repack(ltdb->tdb) != 0) {
+		return LDB_ERR_OPERATIONS_ERROR;		
+	}
+
 	return LDB_SUCCESS;
 }
