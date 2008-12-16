@@ -34,8 +34,6 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 # Restart when done since things are likely to be broken.
 ctdb_test_exit_hook="restart_ctdb"
 
-echo "OK, that worked... expect a restart..."
-
 make_temp_db_filename ()
 {
     dd if=/dev/urandom count=1 bs=512 2>/dev/null |
@@ -44,24 +42,34 @@ make_temp_db_filename ()
 }
 
 try_command_on_node -v 0 "ctdb getdbmap"
+
+db_map_pattern='^(Number of databases:[[:digit:]]+|dbid:0x[[:xdigit:]]+ name:[^[:space:]]+ path:[^[:space:]]+)$'
+
+sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern" "$out"
+
 num_db_init=$(echo "$out" | sed -n -e '1s/.*://p')
 
 for i in $(seq 1 5) ; do
     f=$(make_temp_db_filename)
-    echo "Attempting to create test database \"$f\"..."
+    echo "Creating test database: $f"
     try_command_on_node 0 ctdb attach "$f"
     try_command_on_node 0 ctdb getdbmap
+    sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern" "$out"
     num=$(echo "$out" | sed -n -e '1s/^.*://p')
     if [ $num = $(($num_db_init + $i)) ] ; then
-	echo "OK: seem to have the right number of databases"
+	echo "OK: correct number of additional databases"
     else
-	echo "BAD: we didn't get an additional database"
+	echo "BAD: no additional database"
 	exit 1
     fi
-
-    # Add check to make sure we have the database we actually added!
-    # Probably do a sanity check on the overall output of getdbmap
-    # each time too.
+    if [ "${out/name:${f} /}" != "$out" ] ; then
+	echo "OK: getdbmap knows about \"$f\""
+    else
+	echo "BAD: getdbmap does not know about \"$f\""
+	exit 1
+    fi
 done
+
+echo "OK, that worked... expect a restart..."
 
 ctdb_test_exit
