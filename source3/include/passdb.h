@@ -100,7 +100,9 @@ typedef struct logon_cache_struct {
 #define SAMU_BUFFER_V1		1
 #define SAMU_BUFFER_V2		2
 #define SAMU_BUFFER_V3		3
-#define SAMU_BUFFER_LATEST	SAMU_BUFFER_V3
+/* nothing changed from V3 to V4 */
+#define SAMU_BUFFER_V4		4
+#define SAMU_BUFFER_LATEST	SAMU_BUFFER_V4
 
 struct samu {
 	struct pdb_methods *methods;

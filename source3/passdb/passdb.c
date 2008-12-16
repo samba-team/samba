@@ -860,6 +860,7 @@ NTSTATUS local_password_change(const char *user_name,
 #define SAMU_BUFFER_FORMAT_V1       "dddddddBBBBBBBBBBBBddBBwdwdBwwd"
 #define SAMU_BUFFER_FORMAT_V2       "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 #define SAMU_BUFFER_FORMAT_V3       "dddddddBBBBBBBBBBBBddBBBdwdBwwd"
+/* nothing changed between V3 and V4 */
 
 /*********************************************************************
 *********************************************************************/
@@ -1973,6 +1974,18 @@ static uint32 init_buffer_from_samu_v3 (uint8 **buf, struct samu *sampass, bool 
 	return (buflen);
 }
 
+static bool init_samu_from_buffer_v4(struct samu *sampass, uint8 *buf, uint32 buflen)
+{
+	/* nothing changed between V3 and V4 */
+	return init_samu_from_buffer_v3(sampass, buf, buflen);
+}
+
+static uint32 init_buffer_from_samu_v4(uint8 **buf, struct samu *sampass, bool size_only)
+{
+	/* nothing changed between V3 and V4 */
+	return init_buffer_from_samu_v3(buf, sampass, size_only);
+}
+
 /**********************************************************************
  Intialize a struct samu struct from a BYTE buffer of size len
  *********************************************************************/
@@ -1989,6 +2002,8 @@ bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
 		return init_samu_from_buffer_v2(sampass, buf, buflen);
 	case SAMU_BUFFER_V3:
 		return init_samu_from_buffer_v3(sampass, buf, buflen);
+	case SAMU_BUFFER_V4:
+		return init_samu_from_buffer_v4(sampass, buf, buflen);
 	}
 
 	return false;
@@ -2000,7 +2015,7 @@ bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
 
 uint32 init_buffer_from_samu (uint8 **buf, struct samu *sampass, bool size_only)
 {
-	return init_buffer_from_samu_v3(buf, sampass, size_only);
+	return init_buffer_from_samu_v4(buf, sampass, size_only);
 }
 
 /*********************************************************************
