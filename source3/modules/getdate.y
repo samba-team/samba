@@ -157,9 +157,6 @@ typedef struct
 #define YYLEX_PARAM parm
 #define YYPARSE_PARAM parm
 
-static int yyerror ();
-static int yylex ();
-
 %}
 
 /* We want a reentrant parser.  */
@@ -173,6 +170,13 @@ static int yylex ();
   int intval;
   textint textintval;
 }
+
+%{
+
+static int yyerror(const char *);
+static int yylex(YYSTYPE *, parser_control *);
+
+%}
 
 %token tAGO tDST
 
@@ -449,13 +453,13 @@ o_merid:
 #include "modules/getdate.h"
 
 #ifndef gmtime
-struct tm *gmtime ();
+struct tm *gmtime (const time_t *);
 #endif
 #ifndef localtime
-struct tm *localtime ();
+struct tm *localtime (const time_t *);
 #endif
 #ifndef mktime
-time_t mktime ();
+time_t mktime (struct tm *);
 #endif
 
 static table const meridian_table[] =
@@ -863,7 +867,7 @@ yylex (YYSTYPE *lvalp, parser_control *pc)
 
 /* Do nothing if the parser reports an error.  */
 static int
-yyerror (char *s ATTRIBUTE_UNUSED)
+yyerror (const char *s ATTRIBUTE_UNUSED)
 {
   return 0;
 }
