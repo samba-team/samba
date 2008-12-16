@@ -59,6 +59,11 @@ struct dsdb_control_current_partition {
 #define DSDB_CONTROL_REPLICATED_UPDATE_OID "1.3.6.1.4.1.7165.4.3.3"
 /* DSDB_CONTROL_REPLICATED_UPDATE_OID has NULL data */
 
+#define DSDB_CONTROL_DN_STORAGE_FORMAT_OID "1.3.6.1.4.1.7165.4.3.4"
+/* DSDB_CONTROL_DN_STORAGE_FORMAT_OID has NULL data and behaves very
+ * much like LDB_CONTROL_EXTENDED_DN_OID when the DB stores an
+ * extended DN, and otherwise returns normal DNs */
+
 #define DSDB_EXTENDED_REPLICATED_OBJECTS_OID "1.3.6.1.4.1.7165.4.4.1"
 struct dsdb_extended_replicated_object {
 	struct ldb_message *msg;

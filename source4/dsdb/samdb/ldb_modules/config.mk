@@ -171,15 +171,39 @@ INIT_FUNCTION = LDB_MODULE(kludge_acl)
 ldb_kludge_acl_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/kludge_acl.o
 
 ################################################
-# Start MODULE ldb_extended_dn
-[MODULE::ldb_extended_dn]
+# Start MODULE ldb_extended_dn_in
+[MODULE::ldb_extended_dn_in]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBNDR LIBSECURITY SAMDB
-INIT_FUNCTION = LDB_MODULE(extended_dn)
-# End MODULE ldb_extended_dn
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+INIT_FUNCTION = LDB_MODULE(extended_dn_in)
+# End MODULE ldb_extended_dn_in
 ################################################
 
-ldb_extended_dn_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn.o
+ldb_extended_dn_in_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_in.o
+
+################################################
+# Start MODULE ldb_extended_dn_out
+[MODULE::ldb_extended_dn_out]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+INIT_FUNCTION = LDB_MODULE(extended_dn_out_ldb),LDB_MODULE(extended_dn_out_dereference)
+ENABLE = YES
+ALIASES = extended_dn_out_ldb extended_dn_out_dereference
+# End MODULE ldb_extended_dn_out
+################################################
+
+ldb_extended_dn_out_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_out.o
+
+################################################
+# Start MODULE ldb_extended_dn_store
+[MODULE::ldb_extended_dn_store]
+SUBSYSTEM = LIBLDB
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+INIT_FUNCTION = LDB_MODULE(extended_dn_store)
+# End MODULE ldb_extended_dn_store
+################################################
+
+ldb_extended_dn_store_OBJ_FILES = $(dsdbsrcdir)/samdb/ldb_modules/extended_dn_store.o
 
 ################################################
 # Start MODULE ldb_show_deleted
