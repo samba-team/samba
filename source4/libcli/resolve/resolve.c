@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"

@@ -22,6 +22,7 @@
 struct sys_lease_context;
 struct opendb_entry;
 struct messaging_context;
+struct event_context;
 
 typedef NTSTATUS (*sys_lease_send_break_fn)(struct messaging_context *,
 					    struct opendb_entry *,

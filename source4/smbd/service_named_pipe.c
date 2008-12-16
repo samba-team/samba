@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "smbd/service.h"
 #include "param/param.h"

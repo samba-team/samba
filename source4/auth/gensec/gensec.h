@@ -65,6 +65,7 @@ enum gensec_role
 struct auth_session_info;
 struct cli_credentials;
 struct gensec_settings;
+struct event_context;
 
 struct gensec_update_request {
 	struct gensec_security *gensec_security;

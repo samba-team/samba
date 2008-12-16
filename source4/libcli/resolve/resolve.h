@@ -23,6 +23,7 @@
 #define __RESOLVE_H__
 
 struct socket_address;
+struct event_context;
 
 #include "../libcli/nbt/libnbt.h"
 typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,

@@ -12,7 +12,7 @@ opendb_ctdb_OBJ_FILES = $(ctdbsrcdir)/opendb_ctdb.o
 
 ##################
 [SUBSYSTEM::ctdb]
-PUBLIC_DEPENDENCIES = TDB_WRAP LIBTALLOC
+PUBLIC_DEPENDENCIES = TDB_WRAP LIBTALLOC LIBEVENTS
 
 ctdb_OBJ_FILES = $(addprefix $(ctdbsrcdir)/, \
 		ctdb_cluster.o \
