@@ -1201,12 +1201,6 @@ interface netlogon
 		NETR_TRUST_FLAG_AES       = 0x00000100
 	} netr_TrustFlags;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint16 length;
-		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *data;
-	} netr_BinaryString;
-
 	typedef struct {
 		netr_Blob blob;
 		[string,charset(UTF16)] uint16 *workstation_domain;
@@ -1215,7 +1209,7 @@ interface netlogon
 		[string,charset(UTF16)] uint16 *unknown2;
 		[string,charset(UTF16)] uint16 *unknown3;
 		[string,charset(UTF16)] uint16 *unknown4;
-		netr_BinaryString blob2;
+		lsa_BinaryString blob2;
 		lsa_String product;
 		lsa_String unknown5;
 		lsa_String unknown6;
