@@ -1120,6 +1120,7 @@ static int samldb_foreign_notice_sid(struct samldb_ctx *ac)
 {
 	static const char * const attrs[3] = { "nextRid", "name", NULL };
 	struct ldb_request *req;
+	NTSTATUS status;
 	char *filter;
 	int ret;
 
@@ -1127,12 +1128,10 @@ static int samldb_foreign_notice_sid(struct samldb_ctx *ac)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ac->domain_sid = dom_sid_dup(ac, ac->sid);
-	if (!ac->domain_sid) {
+	status = dom_sid_split_rid(ac, ac->sid, &ac->domain_sid, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	/* get the domain component part of the provided SID */
-	ac->domain_sid->num_auths--;
 
 	filter = talloc_asprintf(ac, "(&(objectSid=%s)(objectclass=domain))",
 				 ldap_encode_ndr_dom_sid(ac, ac->domain_sid));
