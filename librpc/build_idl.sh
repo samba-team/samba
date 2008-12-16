@@ -30,7 +30,7 @@ fi
 list=""
 for f in ${IDL_FILES}; do
 	basename=`basename $f .idl`
-	ndr="$PIDL_OUTPUTDIR/ndr_$basename.c"
+	ndr="$PIDL_OUTPUTDIR/py_$basename.c"
 
 	if [ -f $ndr ]; then
 		if [ "x`find $f -newer $ndr -print`" = "x$f" ]; then
