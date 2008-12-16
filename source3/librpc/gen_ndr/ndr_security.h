@@ -6,7 +6,6 @@
 #ifndef _HEADER_NDR_security
 #define _HEADER_NDR_security
 
-#include "librpc/gen_ndr/ndr_dom_sid.h"
 #define NDR_SECURITY_CALL_COUNT (0)
 enum ndr_err_code ndr_push_dom_sid(struct ndr_push *ndr, int ndr_flags, const struct dom_sid *r);
 enum ndr_err_code ndr_pull_dom_sid(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *r);

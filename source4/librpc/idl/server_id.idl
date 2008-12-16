@@ -1,7 +1,7 @@
 [
 	pointer_default(unique)
 ]
-interface dom_sid
+interface server_id
 {
 	/* id used to identify a endpoint, possibly in a cluster */
 	typedef [public] struct {

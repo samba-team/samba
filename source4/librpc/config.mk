@@ -54,7 +54,7 @@ PUBLIC_DEPENDENCIES = LIBNDR LIBSECURITY
 
 NDR_SECURITY_OBJ_FILES = $(gen_ndrsrcdir)/ndr_security.o \
 			 ../librpc/ndr/ndr_sec_helper.o \
-			 $(gen_ndrsrcdir)/ndr_dom_sid.o
+			 $(gen_ndrsrcdir)/ndr_server_id.o
 
 PUBLIC_HEADERS += $(addprefix $(gen_ndrsrcdir)/, security.h)
 

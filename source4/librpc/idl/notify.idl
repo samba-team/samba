@@ -7,7 +7,7 @@
    the change notify buffers
 */
 
-import "security.idl";
+import "server_id.idl";
 
 [
   pointer_default(unique)

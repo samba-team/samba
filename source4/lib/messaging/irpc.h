@@ -23,6 +23,7 @@
 #define IRPC_H
 
 #include "librpc/gen_ndr/irpc.h"
+#include "librpc/gen_ndr/server_id.h"
 
 /*
   an incoming irpc message

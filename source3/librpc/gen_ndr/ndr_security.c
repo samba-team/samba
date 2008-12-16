@@ -4,7 +4,6 @@
 #include "librpc/gen_ndr/ndr_security.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "librpc/gen_ndr/ndr_dom_sid.h"
 _PUBLIC_ enum ndr_err_code ndr_push_security_ace_flags(struct ndr_push *ndr, int ndr_flags, uint8_t r)
 {
 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r));
