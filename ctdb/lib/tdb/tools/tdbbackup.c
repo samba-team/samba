@@ -143,9 +143,17 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 		return 1;
 	}
 
-	/* lock the old tdb */
-	if (tdb_lockall(tdb) != 0) {
-		fprintf(stderr,"Failed to lock %s\n", old_name);
+	if (tdb_transaction_start(tdb) != 0) {
+		printf("Failed to start transaction on old tdb\n");
+		tdb_close(tdb);
+		tdb_close(tdb_new);
+		unlink(tmp_name);
+		free(tmp_name);
+		return 1;
+	}
+
+	if (tdb_transaction_start(tdb_new) != 0) {
+		printf("Failed to start transaction on new tdb\n");
 		tdb_close(tdb);
 		tdb_close(tdb_new);
 		unlink(tmp_name);
@@ -168,6 +176,14 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 
 	/* close the old tdb */
 	tdb_close(tdb);
+
+	if (tdb_transaction_commit(tdb_new) != 0) {
+		fprintf(stderr, "Failed to commit new tdb\n");
+		tdb_close(tdb_new);
+		unlink(tmp_name);
+		free(tmp_name);		
+		return 1;
+	}
 
 	/* close the new tdb and re-open read-only */
 	tdb_close(tdb_new);
@@ -193,9 +209,6 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 		free(tmp_name);
 		return 1;
 	}
-
-	/* make sure the new tdb has reached stable storage */
-	fsync(tdb_fd(tdb_new));
 
 	/* close the new tdb and rename it to .bak */
 	tdb_close(tdb_new);
