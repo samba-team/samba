@@ -159,6 +159,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	struct ldb_request *lreq;
 	struct ldb_control *search_control;
 	struct ldb_search_options_control *search_options;
+	struct ldb_control *extended_dn_control;
+	struct ldb_extended_dn_control *extended_dn_decoded = NULL;
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *scope_str, *errstr = NULL;
@@ -166,6 +168,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	int result = -1;
 	int ldb_ret = -1;
 	int i, j;
+	int extended_type = 1;
 
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
@@ -245,6 +248,18 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			ldb_request_add_control(lreq, LDB_CONTROL_SEARCH_OPTIONS_OID, false, search_options);
 		}
 	}
+
+	extended_dn_control = ldb_request_get_control(lreq, LDB_CONTROL_EXTENDED_DN_OID);
+
+	if (extended_dn_control) {
+		if (extended_dn_control->data) {
+			extended_dn_decoded = talloc_get_type(extended_dn_control->data, struct ldb_extended_dn_control);
+			extended_type = extended_dn_decoded->type;
+		} else {
+			extended_type = 0;
+		}
+	}
+
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	ldb_ret = ldb_request(samdb, lreq);
@@ -266,7 +281,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			talloc_steal(ent_r, res->msgs[i]);
 			
 			ent = &ent_r->msg->r.SearchResultEntry;
-			ent->dn = ldb_dn_alloc_linearized(ent_r, res->msgs[i]->dn);
+			ent->dn = ldb_dn_get_extended_linearized(ent_r, res->msgs[i]->dn, extended_type);
 			ent->num_attributes = 0;
 			ent->attributes = NULL;
 			if (res->msgs[i]->num_elements == 0) {
