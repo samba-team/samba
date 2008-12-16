@@ -36,6 +36,8 @@ SAMBA4_CFLAGS = -I.. -I$(samba4srcdir) -I$(samba4srcdir)/include \
 # overrides are not specified first.
 ifeq ($(MAKE_VERSION),3.81)
 %.o: CFLAGS+=$(FLAGS)
+../librpc/gen_ndr/%_c.o: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/py_%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.ho: CFLAGS=$(SAMBA4_CFLAGS)
 $(heimdalsrcdir)/%.o: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir)
@@ -45,6 +47,8 @@ $(heimdalsrcdir)/%.o: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir
 $(heimdalsrcdir)/%.ho: CFLAGS=-I$(heimdalbuildsrcdir) $(SAMBA4_CFLAGS) -I$(srcdir)
 $(samba4srcdir)/%.o: CFLAGS=$(SAMBA4_CFLAGS)
 $(samba4srcdir)/%.ho: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/%_c.o: CFLAGS=$(SAMBA4_CFLAGS)
+../librpc/gen_ndr/py_%.o: CFLAGS=$(SAMBA4_CFLAGS)
 %.o: CFLAGS+=$(FLAGS)
 endif
 
@@ -70,7 +74,7 @@ smbdsrcdir := $(samba4srcdir)/smbd
 clustersrcdir := $(samba4srcdir)/cluster
 libnetsrcdir := $(samba4srcdir)/libnet
 authsrcdir := $(samba4srcdir)/auth
-nsswitchsrcdir := $(samba4srcdir)/nsswitch
+nsswitchsrcdir := $(samba4srcdir)/../nsswitch
 libsrcdir := $(samba4srcdir)/lib
 libsocketsrcdir := $(samba4srcdir)/lib/socket
 libcharsetsrcdir := $(samba4srcdir)/../lib/util/charset
@@ -161,7 +165,7 @@ modules:: $(PLUGINS)
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
-all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 pythonmods setup
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 bin/wbinfo4 pythonmods setup
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
 setup:

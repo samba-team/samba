@@ -127,6 +127,7 @@ sub Parse($$)
 {
 	my ($idl,$ndr_header) = @_;
 	my $res = "";
+	my $has_obj = 0;
 
 	$res .= "#include \"librpc/gen_ndr/orpc.h\"\n" . 
 			"#include \"$ndr_header\"\n\n";
@@ -135,6 +136,7 @@ sub Parse($$)
 	{
 		if ($_->{TYPE} eq "INTERFACE" && has_property($_, "object")) {
 			$res .="struct $_->{NAME};\n";
+			$has_obj = 1;
 		}
 	}
 
@@ -142,14 +144,17 @@ sub Parse($$)
 	{
 		if ($_->{TYPE} eq "INTERFACE" && has_property($_, "object")) {
 			$res.=ParseInterface($_);
+			$has_obj = 1;
 		} 
 
 		if ($_->{TYPE} eq "COCLASS") {
 			$res.=ParseCoClass($_);
+			$has_obj = 1;
 		}
 	}
 
-	return $res;
+	return $res if ($has_obj);
+	return undef;
 }
 
 1;

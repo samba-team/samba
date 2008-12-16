@@ -629,7 +629,7 @@ bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 	else
 		SCVAL(q,0,*data8);
 
-	DEBUG(5,("%s%04x %s: %02x\n", tab_depth(5,depth), ps->data_offset, name, *data8));
+	DEBUGADD(5,("%s%04x %s: %02x\n", tab_depth(5,depth), ps->data_offset, name, *data8));
 
 	ps->data_offset += 1;
 
@@ -694,7 +694,7 @@ bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 			SSVAL(q,0,*data16);
 	}
 
-	DEBUG(5,("%s%04x %s: %04x\n", tab_depth(5,depth), ps->data_offset, name, *data16));
+	DEBUGADD(5,("%s%04x %s: %04x\n", tab_depth(5,depth), ps->data_offset, name, *data16));
 
 	ps->data_offset += sizeof(uint16);
 
@@ -723,7 +723,7 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 			SIVAL(q,0,*data32);
 	}
 
-	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
+	DEBUGADD(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
 
 	ps->data_offset += sizeof(uint32);
 
@@ -752,7 +752,7 @@ bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32)
 			SIVALS(q,0,*data32);
 	}
 
-	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
+	DEBUGADD(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
 
 	ps->data_offset += sizeof(int32);
 
@@ -781,7 +781,7 @@ bool prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
 			SIVAL(q,0,NT_STATUS_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
+	DEBUGADD(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name,
 		 nt_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
@@ -811,7 +811,7 @@ bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *st
 			SIVAL(q,0,NT_STATUS_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
+	DEBUGADD(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name,
 		 dcerpc_errstr(debug_ctx(), NT_STATUS_V(*status))));
 
 	ps->data_offset += sizeof(uint32);
@@ -842,7 +842,7 @@ bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status)
 			SIVAL(q,0,W_ERROR_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
+	DEBUGADD(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name,
 		 win_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
@@ -870,14 +870,14 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 			SCVAL(q, i, data8s[i]);
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset ,name));
+	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset ,name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data8s, len);
 	else {
 		for (i = 0; i < len; i++)
-			DEBUG(5,("%02x ", data8s[i]));
+			DEBUGADD(5,("%02x ", data8s[i]));
 	}
-	DEBUG(5,("\n"));
+	DEBUGADD(5,("\n"));
 
 	ps->data_offset += len;
 
@@ -913,14 +913,14 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data16s, 2*len);
 	else {
 		for (i = 0; i < len; i++)
-			DEBUG(5,("%04x ", data16s[i]));
+			DEBUGADD(5,("%04x ", data16s[i]));
 	}
-	DEBUG(5,("\n"));
+	DEBUGADD(5,("\n"));
 
 	ps->data_offset += (len * sizeof(uint16));
 
@@ -955,14 +955,14 @@ static void dbg_rw_punival(bool charmode, const char *name, int depth, prs_struc
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)out_buf, 2*len);
 	else {
 		for (i = 0; i < len; i++)
-			DEBUG(5,("%04x ", out_buf[i]));
+			DEBUGADD(5,("%04x ", out_buf[i]));
 	}
-	DEBUG(5,("\n"));
+	DEBUGADD(5,("\n"));
 }
 
 /******************************************************************
@@ -1010,14 +1010,14 @@ bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data32s, 4*len);
 	else {
 		for (i = 0; i < len; i++)
-			DEBUG(5,("%08x ", data32s[i]));
+			DEBUGADD(5,("%08x ", data32s[i]));
 	}
-	DEBUG(5,("\n"));
+	DEBUGADD(5,("\n"));
 
 	ps->data_offset += (len * sizeof(uint32));
 
@@ -1078,7 +1078,7 @@ bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STR
 		} else {
 			str->buffer = NULL;
 			/* Return early to ensure Coverity isn't confused. */
-			DEBUG(5,("%s%04x %s: \n", tab_depth(5,depth), ps->data_offset, name));
+			DEBUGADD(5,("%s%04x %s: \n", tab_depth(5,depth), ps->data_offset, name));
 			return True;
 		}
 	}
@@ -1091,14 +1091,14 @@ bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STR
 			SCVAL(q, i, str->buffer[i]);
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)str->buffer, str->str_str_len);
 	else {
 		for (i = 0; i < str->str_str_len; i++)
 			DEBUG(5,("%02x ", str->buffer[i]));
 	}
-	DEBUG(5,("\n"));
+	DEBUGADD(5,("\n"));
 
 	ps->data_offset += str->str_str_len;
 
@@ -1227,9 +1227,9 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		len++;
 
-		DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+		DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 		print_asc(5, (unsigned char*)start, 2*len);	
-		DEBUG(5, ("\n"));
+		DEBUGADD(5, ("\n"));
 	}
 	else { /* unmarshalling */
 	
@@ -1284,9 +1284,9 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 			str->buffer[len++] = '\0';
 		}
 
-		DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
+		DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 		print_asc(5, (unsigned char*)str->buffer, 2*len);	
-		DEBUG(5, ("\n"));
+		DEBUGADD(5, ("\n"));
 	}
 
 	/* set the offset in the prs_struct; 'len' points to the

@@ -23,7 +23,7 @@ interface IRemoteActivation
 
 	const uint32 MODE_GET_CLASS_OBJECT = 0xffffffff;
 	WERROR RemoteActivation (
-			[in] ORPCTHIS this,
+			[in] ORPCTHIS this_object,
 			[out,ref] ORPCTHAT *that,
 			[in] GUID Clsid,
 			[in] [string,charset(UTF16)] uint16 *pwszObjectName,

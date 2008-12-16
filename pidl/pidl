@@ -17,7 +17,7 @@ pidl - An IDL compiler written in Perl
 
 pidl --help
 
-pidl [--outputdir[=OUTNAME]] [--includedir DIR...] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--header[=OUTPUT]] [--python[=OUTPUT]] [--swig[=OUTPUT]] [--ndr-parser[=OUTPUT]] [--client] [--server] [--warn-compat] [--quiet] [--verbose] [--template] [--ws-parser[=OUTPUT]] [--diff] [--dump-idl] [--tdr-parser[=OUTPUT]] [--samba3-ndr-client[=OUTPUT]] [--samba3-ndr-server[=OUTPUT]] [--typelib=[OUTPUT]] [<idlfile>.idl]...
+pidl [--outputdir[=OUTNAME]] [--includedir DIR...] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--header[=OUTPUT]] [--python[=OUTPUT]] [--ndr-parser[=OUTPUT]] [--client] [--server] [--warn-compat] [--quiet] [--verbose] [--template] [--ws-parser[=OUTPUT]] [--diff] [--dump-idl] [--tdr-parser[=OUTPUT]] [--samba3-ndr-client[=OUTPUT]] [--samba3-ndr-server[=OUTPUT]] [--typelib=[OUTPUT]] [<idlfile>.idl]...
 
 =head1 DESCRIPTION
 
@@ -477,7 +477,6 @@ my($opt_server);
 my($opt_ndr_parser);
 my($opt_tdr_parser);
 my($opt_ws_parser);
-my($opt_swig);
 my($opt_python);
 my($opt_quiet) = 0;
 my($opt_outputdir) = '.';
@@ -521,7 +520,6 @@ Samba 4 output:
  --client[=OUTFILE]      create a C NDR client [ndr_BASENAME_c.c]
  --tdr-parser[=OUTFILE]  create a C TDR parser [tdr_BASENAME.c]
  --python[=OUTFILE]      create python wrapper file [py_BASENAME.c]
- --swig[=OUTFILE]        create swig wrapper file [BASENAME.i]
  --server[=OUTFILE]      create server boilerplate [ndr_BASENAME_s.c]
  --template              print a template for a pipe
  --dcom-proxy[=OUTFILE]  create DCOM proxy [ndr_BASENAME_p.c]
@@ -567,7 +565,6 @@ my $result = GetOptions (
 	    'ws-parser:s' => \$opt_ws_parser,
 		'python' => \$opt_python,
 	    'diff' => \$opt_diff,
-	    'swig:s' => \$opt_swig,
         'dcom-proxy:s' => \$opt_dcom_proxy,
 		'com-header:s' => \$opt_com_header,
 	    'quiet' => \$opt_quiet,
@@ -666,7 +663,6 @@ sub process_file($)
 	    defined($opt_samba3_header) or 
 	    defined($opt_samba3_parser) or 
 	    defined($opt_samba3_server) or 
-	    defined($opt_swig) or
 	    defined($opt_samba3_ndr_client) or
 	    defined($opt_samba3_ndr_server)) {
 		require Parse::Pidl::NDR;
@@ -696,13 +692,6 @@ sub process_file($)
 
 		FileSave($c_client, $srcd);
 		FileSave($c_header, $hdrd);
-	}
-
-	if (defined($opt_swig)) {
-		  require Parse::Pidl::Samba4::SWIG;
-		  my($filename) = ($opt_swig or "$outputdir/$basename.i");
-		  my $code = Parse::Pidl::Samba4::SWIG::Parse($ndr, $basename, "$outputdir/ndr_$basename\_c.h", $gen_header);
-		  FileSave($filename, $code);
 	}
 
 	if (defined($opt_python)) {

@@ -12,7 +12,7 @@ require Exporter;
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
-use Parse::Pidl qw(fatal);
+use Parse::Pidl qw(fatal error);
 use strict;
 
 use vars qw($VERSION);
@@ -69,7 +69,7 @@ sub NumStars($;$)
 		$n++;
 	}
 
-	fatal($e->{ORIGINAL}, "Too few pointers $n < $d") if ($n < $d);
+	error($e->{ORIGINAL}, "Too few pointers $n < $d") if ($n < $d);
 
 	$n -= $d;
 

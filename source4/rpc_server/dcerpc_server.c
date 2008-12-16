@@ -648,7 +648,20 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST | extra_flags;
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
-	pkt.u.bind_ack.assoc_group_id = iface?call->context->assoc_group_id:0;
+
+	/*
+	  make it possible for iface->bind() to specify the assoc_group_id
+	  This helps the openchange mapiproxy plugin to work correctly.
+	  
+	  metze
+	*/
+	if (call->context) {
+		pkt.u.bind_ack.assoc_group_id = call->context->assoc_group_id;
+	} else {
+		/* we better pick something - this chosen so as to send a non zero assoc_group_id (matching windows), it also matches samba3 */
+		pkt.u.bind_ack.assoc_group_id = SAMBA_ASSOC_GROUP;
+	}
+
 	if (iface) {
 		/* FIXME: Use pipe name as specified by endpoint instead of interface name */
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call, "\\PIPE\\%s", iface->name);

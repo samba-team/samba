@@ -152,7 +152,7 @@ bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth)
 	if(!prs_uint8 ("sid_rev_num", ps, depth, &sid->sid_rev_num))
 		return False;
 
-	if(!prs_uint8 ("num_auths  ", ps, depth, &sid->num_auths))
+	if(!prs_uint8 ("num_auths  ", ps, depth, (uint8 *)&sid->num_auths))
 		return False;
 
 	for (i = 0; i < 6; i++)

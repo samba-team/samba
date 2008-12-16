@@ -201,6 +201,7 @@ sub Parse($$)
 {
 	my ($pidl,$comh_filename) = @_;
 	my $res = "";
+	my $has_obj = 0;
 
 	$res .=	"#include \"includes.h\"\n" .
 			"#include \"lib/com/dcom/dcom.h\"\n" .
@@ -213,9 +214,12 @@ sub Parse($$)
 		next unless has_property($_, "object");
 
 		$res .= ParseInterface($_);
+
+		$has_obj = 1;
 	}
 
-	return $res;
+	return $res if ($has_obj);
+	return undef;
 }
 
 1;

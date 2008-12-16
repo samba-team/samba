@@ -368,13 +368,14 @@ static void print_socket_options(int s)
 	 * leak in SCO Openserver 5.0 */
 	/* reported on samba-technical  --jerry */
 	if ( DEBUGLEVEL >= 5 ) {
+		DEBUG(5,("Socket options:\n"));
 		for (; p->name != NULL; p++) {
 			if (getsockopt(s, p->level, p->option,
 						(void *)&value, &vlen) == -1) {
-				DEBUG(5,("Could not test socket option %s.\n",
+				DEBUGADD(5,("\tCould not test socket option %s.\n",
 							p->name));
 			} else {
-				DEBUG(5,("socket option %s = %d\n",
+				DEBUGADD(5,("\t%s = %d\n",
 							p->name,value));
 			}
 		}

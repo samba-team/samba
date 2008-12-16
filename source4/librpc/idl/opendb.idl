@@ -7,7 +7,7 @@
    ntvfs/common/opendb.c
 */
 
-import "security.idl";
+import "server_id.idl";
 
 [
   pointer_default(unique)

@@ -5,7 +5,6 @@
 */
 
 import "misc.idl";
-import "dom_sid.idl";
 
 /*
    use the same structure for dom_sid2 as dom_sid. A dom_sid2 is really
@@ -27,7 +26,6 @@ cpp_quote("#define dom_sid28 dom_sid")
 cpp_quote("#define dom_sid0 dom_sid")
 
 [
-	helper("librpc/gen_ndr/ndr_dom_sid.h"),
 	pyhelper("librpc/ndr/py_security.c"),
 	pointer_default(unique)
 ]

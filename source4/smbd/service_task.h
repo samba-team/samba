@@ -22,7 +22,7 @@
 #ifndef __SERVICE_TASK_H__
 #define __SERVICE_TASK_H__ 
 
-#include "librpc/gen_ndr/security.h"
+#include "librpc/gen_ndr/server_id.h"
 
 struct task_server {
 	struct event_context *event_ctx;
