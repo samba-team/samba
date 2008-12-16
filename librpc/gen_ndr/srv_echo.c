@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_echo.h"
+#include "../librpc/gen_ndr/srv_echo.h"
 
 static bool api_echo_AddOne(pipes_struct *p)
 {

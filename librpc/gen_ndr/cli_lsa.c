@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_lsa.h"
+#include "../librpc/gen_ndr/cli_lsa.h"
 
 NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli,
 			  TALLOC_CTX *mem_ctx,

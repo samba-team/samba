@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_drsuapi.h"
+#include "../librpc/gen_ndr/cli_drsuapi.h"
 
 NTSTATUS rpccli_drsuapi_DsBind(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,

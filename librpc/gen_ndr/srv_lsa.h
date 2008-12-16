@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_lsa.h"
+#include "../librpc/gen_ndr/ndr_lsa.h"
 #ifndef __SRV_LSARPC__
 #define __SRV_LSARPC__
 NTSTATUS _lsa_Close(pipes_struct *p, struct lsa_Close *r);

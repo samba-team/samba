@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_dfs.h"
+#include "../librpc/gen_ndr/ndr_dfs.h"
 #ifndef __SRV_NETDFS__
 #define __SRV_NETDFS__
 void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r);

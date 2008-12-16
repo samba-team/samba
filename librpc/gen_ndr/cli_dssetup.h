@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_dssetup.h"
+#include "../librpc/gen_ndr/ndr_dssetup.h"
 #ifndef __CLI_DSSETUP__
 #define __CLI_DSSETUP__
 NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client *cli,

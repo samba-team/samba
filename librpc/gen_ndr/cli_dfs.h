@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_dfs.h"
+#include "../librpc/gen_ndr/ndr_dfs.h"
 #ifndef __CLI_NETDFS__
 #define __CLI_NETDFS__
 NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,

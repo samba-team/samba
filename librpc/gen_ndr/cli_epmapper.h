@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_epmapper.h"
+#include "../librpc/gen_ndr/ndr_epmapper.h"
 #ifndef __CLI_EPMAPPER__
 #define __CLI_EPMAPPER__
 NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,

@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_echo.h"
+#include "../librpc/gen_ndr/ndr_echo.h"
 #ifndef __CLI_RPCECHO__
 #define __CLI_RPCECHO__
 NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,

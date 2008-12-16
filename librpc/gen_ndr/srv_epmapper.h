@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_epmapper.h"
+#include "../librpc/gen_ndr/ndr_epmapper.h"
 #ifndef __SRV_EPMAPPER__
 #define __SRV_EPMAPPER__
 uint32 _epm_Insert(pipes_struct *p, struct epm_Insert *r);

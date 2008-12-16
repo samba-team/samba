@@ -1228,7 +1228,7 @@ modules:: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 samba3-idl::
 	@PIDL_OUTPUTDIR="../librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" PIDL="../pidl/pidl" \
-	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh ../librpc/idl/lsa.idl \
+	 srcdir="$(srcdir)" ../librpc/build_idl.sh ../librpc/idl/lsa.idl \
 	 	../librpc/idl/dfs.idl ../librpc/idl/echo.idl ../librpc/idl/winreg.idl \
 		../librpc/idl/initshutdown.idl ../librpc/idl/srvsvc.idl ../librpc/idl/svcctl.idl \
 		../librpc/idl/eventlog.idl ../librpc/idl/wkssvc.idl ../librpc/idl/netlogon.idl \
@@ -1245,7 +1245,7 @@ samba3-idl::
 
 NDR_TABLES = librpc/gen_ndr/tables.c
 
-ndr-tables:: librpc/gen_ndr/*.h
+ndr-tables:: librpc/gen_ndr/*.h ../librpc/gen_ndr/*.h
 	@echo "Generating $(NDR_TABLES)"
 	@$(PERL) ../librpc/tables.pl $^ > $(NDR_TABLES)
 

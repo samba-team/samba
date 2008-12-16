@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_eventlog.h"
+#include "../librpc/gen_ndr/ndr_eventlog.h"
 #ifndef __CLI_EVENTLOG__
 #define __CLI_EVENTLOG__
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,

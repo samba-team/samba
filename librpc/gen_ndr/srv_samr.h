@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
 #ifndef __SRV_SAMR__
 #define __SRV_SAMR__
 NTSTATUS _samr_Connect(pipes_struct *p, struct samr_Connect *r);

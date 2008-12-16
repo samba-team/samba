@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_winreg.h"
+#include "../librpc/gen_ndr/cli_winreg.h"
 
 NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,

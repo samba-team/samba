@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_wkssvc.h"
+#include "../librpc/gen_ndr/ndr_wkssvc.h"
 #ifndef __CLI_WKSSVC__
 #define __CLI_WKSSVC__
 NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,

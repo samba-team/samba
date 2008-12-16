@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_wkssvc.h"
+#include "../librpc/gen_ndr/srv_wkssvc.h"
 
 static bool api_wkssvc_NetWkstaGetInfo(pipes_struct *p)
 {

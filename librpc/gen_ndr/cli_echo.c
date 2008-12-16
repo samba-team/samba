@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_echo.h"
+#include "../librpc/gen_ndr/cli_echo.h"
 
 NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,
 			    TALLOC_CTX *mem_ctx,

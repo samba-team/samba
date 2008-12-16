@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_wkssvc.h"
+#include "../librpc/gen_ndr/cli_wkssvc.h"
 
 NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,

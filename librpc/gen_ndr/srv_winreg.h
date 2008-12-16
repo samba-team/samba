@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_winreg.h"
+#include "../librpc/gen_ndr/ndr_winreg.h"
 #ifndef __SRV_WINREG__
 #define __SRV_WINREG__
 WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r);

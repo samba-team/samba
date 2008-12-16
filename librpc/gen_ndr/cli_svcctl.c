@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_svcctl.h"
+#include "../librpc/gen_ndr/cli_svcctl.h"
 
 NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,

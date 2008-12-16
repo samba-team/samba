@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_ntsvcs.h"
+#include "../librpc/gen_ndr/srv_ntsvcs.h"
 
 static bool api_PNP_Disconnect(pipes_struct *p)
 {

@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_eventlog.h"
+#include "../librpc/gen_ndr/srv_eventlog.h"
 
 static bool api_eventlog_ClearEventLogW(pipes_struct *p)
 {

@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_initshutdown.h"
+#include "../librpc/gen_ndr/srv_initshutdown.h"
 
 static bool api_initshutdown_Init(pipes_struct *p)
 {

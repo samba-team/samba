@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_initshutdown.h"
+#include "../librpc/gen_ndr/ndr_initshutdown.h"
 #ifndef __SRV_INITSHUTDOWN__
 #define __SRV_INITSHUTDOWN__
 WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r);

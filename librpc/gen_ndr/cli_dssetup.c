@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_dssetup.h"
+#include "../librpc/gen_ndr/cli_dssetup.h"
 
 NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client *cli,
 							  TALLOC_CTX *mem_ctx,

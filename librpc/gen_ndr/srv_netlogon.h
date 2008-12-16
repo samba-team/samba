@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 #ifndef __SRV_NETLOGON__
 #define __SRV_NETLOGON__
 WERROR _netr_LogonUasLogon(pipes_struct *p, struct netr_LogonUasLogon *r);

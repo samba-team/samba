@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_winreg.h"
+#include "../librpc/gen_ndr/srv_winreg.h"
 
 static bool api_winreg_OpenHKCR(pipes_struct *p)
 {

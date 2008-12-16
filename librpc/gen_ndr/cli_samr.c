@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_samr.h"
+#include "../librpc/gen_ndr/cli_samr.h"
 
 NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 			     TALLOC_CTX *mem_ctx,

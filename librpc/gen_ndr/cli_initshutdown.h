@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_initshutdown.h"
+#include "../librpc/gen_ndr/ndr_initshutdown.h"
 #ifndef __CLI_INITSHUTDOWN__
 #define __CLI_INITSHUTDOWN__
 NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,

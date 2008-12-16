@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_srvsvc.h"
+#include "../librpc/gen_ndr/cli_srvsvc.h"
 
 NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,

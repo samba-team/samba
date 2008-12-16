@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_svcctl.h"
+#include "../librpc/gen_ndr/ndr_svcctl.h"
 #ifndef __SRV_SVCCTL__
 #define __SRV_SVCCTL__
 WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHandle *r);

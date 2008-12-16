@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_ntsvcs.h"
+#include "../librpc/gen_ndr/cli_ntsvcs.h"
 
 NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,

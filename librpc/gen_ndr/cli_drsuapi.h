@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_drsuapi.h"
+#include "../librpc/gen_ndr/ndr_drsuapi.h"
 #ifndef __CLI_DRSUAPI__
 #define __CLI_DRSUAPI__
 NTSTATUS rpccli_drsuapi_DsBind(struct rpc_pipe_client *cli,

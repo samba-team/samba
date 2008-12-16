@@ -2684,7 +2684,7 @@ SWIGINTERN ldb_dn *new_ldb_dn(ldb *ldb_ctx,char const *str){
                we do it this way... */
             talloc_steal(NULL, ret);
 
-            if (ret == NULL)
+            if (ret == NULL || !ldb_dn_validate(ret))
                 SWIG_exception(SWIG_ValueError, 
                                 "unable to parse dn string");
 fail:

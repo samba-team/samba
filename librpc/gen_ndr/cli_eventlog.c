@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_eventlog.h"
+#include "../librpc/gen_ndr/cli_eventlog.h"
 
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,

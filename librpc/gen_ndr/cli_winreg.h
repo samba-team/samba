@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_winreg.h"
+#include "../librpc/gen_ndr/ndr_winreg.h"
 #ifndef __CLI_WINREG__
 #define __CLI_WINREG__
 NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,

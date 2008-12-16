@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_ntsvcs.h"
+#include "../librpc/gen_ndr/ndr_ntsvcs.h"
 #ifndef __CLI_NTSVCS__
 #define __CLI_NTSVCS__
 NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,

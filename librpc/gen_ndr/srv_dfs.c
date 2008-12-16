@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_dfs.h"
+#include "../librpc/gen_ndr/srv_dfs.h"
 
 static bool api_dfs_GetManagerVersion(pipes_struct *p)
 {

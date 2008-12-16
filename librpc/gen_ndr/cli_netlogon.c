@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_netlogon.h"
+#include "../librpc/gen_ndr/cli_netlogon.h"
 
 NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,

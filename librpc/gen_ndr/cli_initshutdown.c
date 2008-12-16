@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_initshutdown.h"
+#include "../librpc/gen_ndr/cli_initshutdown.h"
 
 NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,

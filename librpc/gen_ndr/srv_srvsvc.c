@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_srvsvc.h"
+#include "../librpc/gen_ndr/srv_srvsvc.h"
 
 static bool api_srvsvc_NetCharDevEnum(pipes_struct *p)
 {

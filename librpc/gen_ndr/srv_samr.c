@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_samr.h"
+#include "../librpc/gen_ndr/srv_samr.h"
 
 static bool api_samr_Connect(pipes_struct *p)
 {

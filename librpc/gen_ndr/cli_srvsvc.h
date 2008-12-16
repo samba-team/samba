@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc.h"
 #ifndef __CLI_SRVSVC__
 #define __CLI_SRVSVC__
 NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,

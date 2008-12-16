@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_svcctl.h"
+#include "../librpc/gen_ndr/srv_svcctl.h"
 
 static bool api_svcctl_CloseServiceHandle(pipes_struct *p)
 {

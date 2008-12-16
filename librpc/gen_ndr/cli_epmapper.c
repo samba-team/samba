@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_epmapper.h"
+#include "../librpc/gen_ndr/cli_epmapper.h"
 
 NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,

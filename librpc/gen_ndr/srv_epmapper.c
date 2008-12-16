@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_epmapper.h"
+#include "../librpc/gen_ndr/srv_epmapper.h"
 
 static bool api_epm_Insert(pipes_struct *p)
 {

@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_eventlog.h"
+#include "../librpc/gen_ndr/ndr_eventlog.h"
 #ifndef __SRV_EVENTLOG__
 #define __SRV_EVENTLOG__
 NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p, struct eventlog_ClearEventLogW *r);

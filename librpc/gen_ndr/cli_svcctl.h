@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_svcctl.h"
+#include "../librpc/gen_ndr/ndr_svcctl.h"
 #ifndef __CLI_SVCCTL__
 #define __CLI_SVCCTL__
 NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli,

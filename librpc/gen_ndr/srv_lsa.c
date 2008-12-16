@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_lsa.h"
+#include "../librpc/gen_ndr/srv_lsa.h"
 
 static bool api_lsa_Close(pipes_struct *p)
 {

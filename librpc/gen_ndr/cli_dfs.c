@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/cli_dfs.h"
+#include "../librpc/gen_ndr/cli_dfs.h"
 
 NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,

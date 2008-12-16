@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_netlogon.h"
+#include "../librpc/gen_ndr/srv_netlogon.h"
 
 static bool api_netr_LogonUasLogon(pipes_struct *p)
 {

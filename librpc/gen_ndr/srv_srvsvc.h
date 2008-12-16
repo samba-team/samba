@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_srvsvc.h"
+#include "../librpc/gen_ndr/ndr_srvsvc.h"
 #ifndef __SRV_SRVSVC__
 #define __SRV_SRVSVC__
 WERROR _srvsvc_NetCharDevEnum(pipes_struct *p, struct srvsvc_NetCharDevEnum *r);

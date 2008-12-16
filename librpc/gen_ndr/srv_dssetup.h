@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_dssetup.h"
+#include "../librpc/gen_ndr/ndr_dssetup.h"
 #ifndef __SRV_DSSETUP__
 #define __SRV_DSSETUP__
 WERROR _dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p, struct dssetup_DsRoleGetPrimaryDomainInformation *r);

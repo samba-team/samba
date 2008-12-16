@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "../librpc/gen_ndr/ndr_netlogon.h"
 #ifndef __CLI_NETLOGON__
 #define __CLI_NETLOGON__
 NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,

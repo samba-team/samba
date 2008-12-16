@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_wkssvc.h"
+#include "../librpc/gen_ndr/ndr_wkssvc.h"
 #ifndef __SRV_WKSSVC__
 #define __SRV_WKSSVC__
 WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r);

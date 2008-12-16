@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_ntsvcs.h"
+#include "../librpc/gen_ndr/ndr_ntsvcs.h"
 #ifndef __SRV_NTSVCS__
 #define __SRV_NTSVCS__
 WERROR _PNP_Disconnect(pipes_struct *p, struct PNP_Disconnect *r);

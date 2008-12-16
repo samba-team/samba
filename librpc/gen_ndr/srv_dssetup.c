@@ -4,7 +4,7 @@
  */
 
 #include "includes.h"
-#include "librpc/gen_ndr/srv_dssetup.h"
+#include "../librpc/gen_ndr/srv_dssetup.h"
 
 static bool api_dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p)
 {

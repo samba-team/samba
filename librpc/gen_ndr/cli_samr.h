@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_samr.h"
+#include "../librpc/gen_ndr/ndr_samr.h"
 #ifndef __CLI_SAMR__
 #define __CLI_SAMR__
 NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,

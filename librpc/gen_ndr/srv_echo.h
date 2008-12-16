@@ -1,4 +1,4 @@
-#include "librpc/gen_ndr/ndr_echo.h"
+#include "../librpc/gen_ndr/ndr_echo.h"
 #ifndef __SRV_RPCECHO__
 #define __SRV_RPCECHO__
 void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r);
