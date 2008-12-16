@@ -184,4 +184,3 @@ testit "wbinfo -K against $TARGET with domain creds" $wbinfo -K "$DOMAIN/$USERNA
 testit "wbinfo --separator against $TARGET" $wbinfo --separator || failed=`expr $failed + 1`
 
 exit $failed
-

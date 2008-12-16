@@ -30,7 +30,7 @@ SMB_EXT_LIB(ZLIB, [${ZLIB_LIBS}])
 ],[
 SMB_INCLUDE_MK(lib/zlib.mk)
 ])
-m4_include(nsswitch/nsstest.m4)
+m4_include(../nsswitch/nsstest.m4)
 m4_include(../pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
@@ -108,7 +108,7 @@ m4_include(../lib/nss_wrapper/config.m4)
 m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
-m4_include(nsswitch/config.m4)
+m4_include(../nsswitch/config.m4)
 
 #################################################
 # add *_CFLAGS only for the real build

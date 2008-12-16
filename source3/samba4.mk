@@ -70,7 +70,7 @@ smbdsrcdir := $(samba4srcdir)/smbd
 clustersrcdir := $(samba4srcdir)/cluster
 libnetsrcdir := $(samba4srcdir)/libnet
 authsrcdir := $(samba4srcdir)/auth
-nsswitchsrcdir := $(samba4srcdir)/nsswitch
+nsswitchsrcdir := $(samba4srcdir)/../nsswitch
 libsrcdir := $(samba4srcdir)/lib
 libsocketsrcdir := $(samba4srcdir)/lib/socket
 libcharsetsrcdir := $(samba4srcdir)/../lib/util/charset
@@ -161,7 +161,7 @@ modules:: $(PLUGINS)
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
-all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 pythonmods setup
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 bin/wbinfo4 pythonmods setup
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
 setup:

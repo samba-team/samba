@@ -1,9 +1,8 @@
 case "$host_os" in
-	*linux*) 
+	*linux*)
 		SMB_ENABLE(nsstest,YES)
 	;;
 	*)
 		SMB_ENABLE(nsstest,NO)
 	;;
 esac
-

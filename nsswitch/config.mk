@@ -31,4 +31,4 @@ PRIVATE_DEPENDENCIES = \
 #################################
 
 wbinfo_OBJ_FILES = \
-		$(nsswitchsrcdir)/wbinfo.o
+		$(nsswitchsrcdir)/wbinfo4.o
