@@ -48,9 +48,9 @@ static bool test_RemoteActivation(struct torture_context *tctx,
 	}
 
 	ZERO_STRUCT(r.in);
-	r.in.this.version.MajorVersion = 5;
-	r.in.this.version.MinorVersion = 1;
-	r.in.this.cid = GUID_random();
+	r.in.this_object.version.MajorVersion = 5;
+	r.in.this_object.version.MinorVersion = 1;
+	r.in.this_object.cid = GUID_random();
 	GUID_from_string(CLSID_IMAGEDOC, &r.in.Clsid);
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
 	r.in.num_protseqs = 3;
