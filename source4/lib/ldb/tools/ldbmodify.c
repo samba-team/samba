@@ -91,6 +91,11 @@ int main(int argc, const char **argv)
 
 	ldb = ldb_init(NULL, NULL);
 
+	if (ldb_transaction_start(ldb) != 0) {
+		printf("Failed to start transaction\n");
+		exit(1);
+	}
+
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
@@ -106,6 +111,11 @@ int main(int argc, const char **argv)
 			}
 			ret = process_file(ldb, f, &count);
 		}
+	}
+
+	if (count != 0 && ldb_transaction_commit(ldb) != 0) {
+		printf("Failed to commit transaction\n");
+		exit(1);
 	}
 
 	talloc_free(ldb);
