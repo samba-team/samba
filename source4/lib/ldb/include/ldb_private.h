@@ -84,6 +84,9 @@ struct ldb_schema {
 	/* attribute handling table */
 	unsigned num_attributes;
 	struct ldb_schema_attribute *attributes;
+
+	unsigned num_dn_extended_syntax;
+	struct ldb_dn_extended_syntax *dn_extended_syntax;
 };
 
 /*
