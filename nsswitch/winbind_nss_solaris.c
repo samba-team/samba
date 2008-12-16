@@ -281,16 +281,21 @@ _nss_winbind_getgroupsbymember_solwrap(nss_backend_t* be, void* args)
 {
 	int errnop;
 	struct nss_groupsbymem *gmem = (struct nss_groupsbymem *)args;
+	long int numgids = gmem->numgids;
+	long int maxgids = gmem->maxgids;
 
 	NSS_DEBUG("_nss_winbind_getgroupsbymember");
 
 	_nss_winbind_initgroups_dyn(gmem->username,
 		gmem->gid_array[0], /* Primary Group */
-		&gmem->numgids,
-		&gmem->maxgids,
+		&numgids,
+		&maxgids,
 		&gmem->gid_array,
 		gmem->maxgids,
 		&errnop);
+
+	gmem->numgids = numgids;
+	gmem->maxgids = maxgids;
 
 	/*
 	 * If the maximum number of gids have been found, return
