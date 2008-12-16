@@ -346,13 +346,14 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 		}
 
 		nextRid = ldb_msg_find_attr_as_string(ares->message,
-							"nextRid", NULL);
+						      "nextRid", NULL);
 		if (nextRid == NULL) {
 			ldb_asprintf_errstring(ac->module->ldb,
-				"attribute nextRid not found in %s\n",
-				ldb_dn_get_linearized(ares->message->dn));
+				"while looking for domain above %s attribute nextRid not found in %s\n",
+					       ldb_dn_get_linearized(ac->req->op.add.message->dn), 
+					       ldb_dn_get_linearized(ares->message->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
-			break;;
+			break;
 		}
 
 		ac->next_rid = strtol(nextRid, NULL, 0);
@@ -369,6 +370,7 @@ static int samldb_get_parent_domain_callback(struct ldb_request *req,
 
 		talloc_free(ares);
 		ret = LDB_SUCCESS;
+		ldb_reset_err_string(ac->module->ldb);
 		break;
 
 	case LDB_REPLY_REFERRAL:
@@ -1067,8 +1069,8 @@ static int samldb_foreign_notice_sid_callback(struct ldb_request *req,
 							"nextRid", NULL);
 		if (nextRid == NULL) {
 			ldb_asprintf_errstring(ac->module->ldb,
-				"attribute nextRid not found in %s\n",
-				ldb_dn_get_linearized(ares->message->dn));
+				"while looking for forign sid %s attribute nextRid not found in %s\n",
+					       dom_sid_string(ares, ac->sid), ldb_dn_get_linearized(ares->message->dn));
 			ret = LDB_ERR_OPERATIONS_ERROR;
 			break;
 		}
