@@ -32,7 +32,7 @@ sub openldap_start($$$) {
 	    $olpath = "$olroot/libexec:$olroot/sbin:";
 	}
 	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
-        system("slapd -d63 -f $slapd_conf -h $uri > $logs 2>&1 &");
+        system("slapd -d0 -f $slapd_conf -h $uri > $logs 2>&1 &");
         $ENV{PATH} = $oldpath;
 }
 
