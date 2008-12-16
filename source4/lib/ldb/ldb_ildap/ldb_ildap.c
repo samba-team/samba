@@ -428,7 +428,7 @@ static int ildb_search(struct ildb_context *ac)
 	if (req->op.search.base == NULL) {
 		msg->r.SearchRequest.basedn = talloc_strdup(msg, "");
 	} else {
-		msg->r.SearchRequest.basedn  = ldb_dn_alloc_linearized(msg, req->op.search.base);
+		msg->r.SearchRequest.basedn  = ldb_dn_get_extended_linearized(msg, req->op.search.base, 0);
 	}
 	if (msg->r.SearchRequest.basedn == NULL) {
 		ldb_set_errstring(ac->module->ldb, "Unable to determine baseDN");
@@ -473,7 +473,7 @@ static int ildb_add(struct ildb_context *ac)
 
 	msg->type = LDAP_TAG_AddRequest;
 
-	msg->r.AddRequest.dn = ldb_dn_alloc_linearized(msg, req->op.add.message->dn);
+	msg->r.AddRequest.dn = ldb_dn_get_extended_linearized(msg, req->op.add.message->dn, 0);
 	if (msg->r.AddRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -516,7 +516,7 @@ static int ildb_modify(struct ildb_context *ac)
 
 	msg->type = LDAP_TAG_ModifyRequest;
 
-	msg->r.ModifyRequest.dn = ldb_dn_alloc_linearized(msg, req->op.mod.message->dn);
+	msg->r.ModifyRequest.dn = ldb_dn_get_extended_linearized(msg, req->op.mod.message->dn, 0);
 	if (msg->r.ModifyRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -557,7 +557,7 @@ static int ildb_delete(struct ildb_context *ac)
 
 	msg->type = LDAP_TAG_DelRequest;
 
-	msg->r.DelRequest.dn = ldb_dn_alloc_linearized(msg, req->op.del.dn);
+	msg->r.DelRequest.dn = ldb_dn_get_extended_linearized(msg, req->op.del.dn, 0);
 	if (msg->r.DelRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
@@ -580,7 +580,7 @@ static int ildb_rename(struct ildb_context *ac)
 	}
 
 	msg->type = LDAP_TAG_ModifyDNRequest;
-	msg->r.ModifyDNRequest.dn = ldb_dn_alloc_linearized(msg, req->op.rename.olddn);
+	msg->r.ModifyDNRequest.dn = ldb_dn_get_extended_linearized(msg, req->op.rename.olddn, 0);
 	if (msg->r.ModifyDNRequest.dn == NULL) {
 		talloc_free(msg);
 		return LDB_ERR_INVALID_DN_SYNTAX;
