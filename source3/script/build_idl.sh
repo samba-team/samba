@@ -1,12 +1,12 @@
 #!/bin/sh
 
-ARGS="--includedir=../librpc/idl --outputdir librpc/gen_ndr --header --ndr-parser --samba3-ndr-server --samba3-ndr-client $PIDL_ARGS --"
+ARGS="--includedir=../librpc/idl --outputdir $PIDL_OUTPUTDIR --header --ndr-parser --samba3-ndr-server --samba3-ndr-client $PIDL_ARGS --"
 IDL_FILES="$*"
 
 oldpwd=`pwd`
 cd ${srcdir}
 
-[ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
+[ -d $PIDL_OUTPUTDIR ] || mkdir -p $PIDL_OUTPUTDIR || exit 1
 
 PIDL="$PIDL $ARGS"
 
@@ -17,7 +17,7 @@ PIDL="$PIDL $ARGS"
 list=""
 for f in ${IDL_FILES}; do
 	basename=`basename $f .idl`
-	ndr="librpc/gen_ndr/ndr_$basename.c"
+	ndr="$PIDL_OUTPUTDIR/ndr_$basename.c"
 
 	if [ -f $ndr ]; then
 		if [ "x`find $f -newer $ndr -print`" = "x$f" ]; then
