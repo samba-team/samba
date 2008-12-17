@@ -20,7 +20,14 @@
 
 #include <iniparser.h>
 
-#ifndef LINUX
+#if defined(LINUX)
+
+/* newer versions of PAM have this in _pam_compat.h */
+#ifndef PAM_AUTHTOK_RECOVERY_ERR
+#define PAM_AUTHTOK_RECOVERY_ERR PAM_AUTHTOK_RECOVER_ERR
+#endif
+
+#else /* !LINUX */
 
 /* Solaris always uses dynamic pam modules */
 #define PAM_EXTERN extern
