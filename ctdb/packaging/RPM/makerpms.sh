@@ -20,11 +20,8 @@ EXTRA_OPTIONS="$1"
     exit 1
 }
 
-
 SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
-
-# At this point the SPECDIR and SRCDIR vaiables must have a value!
 
 VERSION='1.0'
 REVISION=''
@@ -39,6 +36,7 @@ if [ $? -ne 0 ]; then
         exit 1
 fi
 
+# At this point the SPECDIR and SRCDIR vaiables must have a value!
 
 ##
 ## copy additional source files
