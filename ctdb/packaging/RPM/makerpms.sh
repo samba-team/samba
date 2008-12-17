@@ -48,8 +48,7 @@ cp -p packaging/RPM/${SPECFILE} ${SPECDIR}
 ## Build
 ##
 echo "$(basename $0): Getting Ready to build release package"
-cd ${SPECDIR}
-${RPMBUILD} -ba --clean --rmsource $EXTRA_OPTIONS $SPECFILE || exit 1
+${RPMBUILD} -ba --clean --rmsource ${EXTRA_OPTIONS} ${SPECDIR}/${SPECFILE} || exit 1
 
 echo "$(basename $0): Done."
 
