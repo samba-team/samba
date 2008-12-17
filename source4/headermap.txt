@@ -81,7 +81,7 @@ librpc/gen_ndr/samr.h: gen_ndr/samr.h
 librpc/gen_ndr/ndr_samr.h: gen_ndr/ndr_samr.h
 librpc/gen_ndr/ndr_samr_c.h: gen_ndr/ndr_samr_c.h
 librpc/gen_ndr/security.h: gen_ndr/security.h
-librpc/gen_ndr/dom_sid.h: gen_ndr/dom_sid.h
+librpc/gen_ndr/server_id.h: gen_ndr/server_id.h
 librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 librpc/gen_ndr/svcctl.h: gen_ndr/svcctl.h
 librpc/gen_ndr/ndr_svcctl.h: gen_ndr/ndr_svcctl.h
@@ -103,7 +103,7 @@ librpc/gen_ndr/ndr_svcctl_c.h: gen_ndr/ndr_svcctl_c.h
 ../librpc/gen_ndr/ndr_samr.h: gen_ndr/ndr_samr.h
 ../librpc/gen_ndr/ndr_samr_c.h: gen_ndr/ndr_samr_c.h
 ../librpc/gen_ndr/security.h: gen_ndr/security.h
-../librpc/gen_ndr/dom_sid.h: gen_ndr/dom_sid.h
+../librpc/gen_ndr/server_id.h: gen_ndr/server_id.h
 ../librpc/gen_ndr/nbt.h: gen_ndr/nbt.h
 ../librpc/gen_ndr/svcctl.h: gen_ndr/svcctl.h
 ../librpc/gen_ndr/ndr_svcctl.h: gen_ndr/ndr_svcctl.h
