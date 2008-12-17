@@ -23,7 +23,7 @@
   see xfile.c for explanations
 */
 
-typedef struct {
+typedef struct _XFILE {
 	int fd;
 	char *buf;
 	char *next;
