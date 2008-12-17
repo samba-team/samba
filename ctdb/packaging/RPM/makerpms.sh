@@ -21,10 +21,11 @@ TOPDIR=${DIRNAME}/../..
 SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
 
-VERSION='1.0'
-REVISION=''
 SPECFILE="ctdb.spec"
 RPMBUILD="rpmbuild"
+
+VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
+RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
 
 pushd ${TOPDIR}
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
