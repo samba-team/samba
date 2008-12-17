@@ -178,12 +178,6 @@ fi
 make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE" %{?_smp_mflags} \
 	all modules pam_smbpass
 
-## build the cifs fs mount helper
-cd client
-gcc  -o mount.cifs $RPM_OPT_FLAGS  -D_GNU_SOURCE -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE mount.cifs.c
-gcc  -o umount.cifs $RPM_OPT_FLAGS  -D_GNU_SOURCE -Wall -D_GNU_SOURCE -D_LARGEFILE64_SOURCE umount.cifs.c
-cd ..
-
 # Remove some permission bits to avoid to many dependencies
 cd ..
 find examples docs -type f | xargs -r chmod -x
@@ -238,8 +232,8 @@ install -m644 setup/samba.pamd $RPM_BUILD_ROOT%{_sysconfdir}/pam.d/samba
 install -m755 setup/smbprint $RPM_BUILD_ROOT%{_bindir}
 install -m644 setup/smbusers $RPM_BUILD_ROOT%{_sysconfdir}/samba/smbusers
 install -m644 setup/smb.conf $RPM_BUILD_ROOT%{_sysconfdir}/samba/smb.conf
-install -m755 source/client/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
-install -m755 source/client/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
+install -m755 bin/mount.cifs $RPM_BUILD_ROOT/sbin/mount.cifs
+install -m755 bin/umount.cifs $RPM_BUILD_ROOT/sbin/umount.cifs
 install -m755 source/script/mksmbpasswd.sh $RPM_BUILD_ROOT%{_bindir}
 
 /bin/rm $RPM_BUILD_ROOT%{_sbindir}/*mount.cifs
