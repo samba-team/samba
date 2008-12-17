@@ -12,8 +12,14 @@
 	<filename moreinfo="none">configure</filename>
 	script.</para>
 
+	<para>LDAP connections should be secured where possible. This may be
+	done setting either this parameter to
+	<parameter moreinfo="none">Start_tls</parameter>
+	or by specifying <parameter moreinfo="none">ldaps://</parameter> in
+        the URL argument of <smbconfoption name="passdb backend"/>.</para>
+
 	<para>The <smbconfoption name="ldap ssl"/> can be set to one of
-	three values:</para>
+	two values:</para>
 	<itemizedlist>
 		<listitem>
 			<para><parameter moreinfo="none">Off</parameter> = Never
@@ -25,16 +31,7 @@
 			the LDAPv3 StartTLS extended operation (RFC2830) for
 			communicating with the directory server.</para>
 		</listitem>
-
-		<listitem>
-			<para><parameter moreinfo="none">On</parameter>  = Use SSL
-			on the ldaps port when contacting the <parameter>
-			moreinfo="none">ldap server</parameter>. Only available when the
-			backwards-compatiblity <command>
-			moreinfo="none">--with-ldapsam</command> option is specified
-			to configure. See <smbconfoption name="passdb backend"/></para>.
-		</listitem>
 	</itemizedlist>
 </description>
-<value type="default">start_tls</value>
+<value type="default">no</value>
 </samba:parameter>
