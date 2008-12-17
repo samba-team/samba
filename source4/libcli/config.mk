@@ -117,8 +117,7 @@ LIBCLI_CLDAP_OBJ_FILES = $(libclisrcdir)/cldap/cldap.o
 # PUBLIC_HEADERS += $(libclisrcdir)/cldap/cldap.h
 
 [SUBSYSTEM::LIBCLI_WREPL]
-PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBCLI_RESOLVE LIBEVENTS \
-					  LIBPACKET LIBNDR
+PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBEVENTS LIBPACKET
 
 LIBCLI_WREPL_OBJ_FILES = $(libclisrcdir)/wrepl/winsrepl.o
 
