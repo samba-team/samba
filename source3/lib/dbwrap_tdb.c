@@ -291,6 +291,14 @@ static int db_tdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(db_ctx->wtdb->tdb);
 }
 
+static int db_tdb_get_flags(struct db_context *db)
+
+{
+	struct db_tdb_ctx *db_ctx =
+		talloc_get_type_abort(db->private_data, struct db_tdb_ctx);
+	return tdb_get_flags(db_ctx->wtdb->tdb);
+}
+
 static int db_tdb_transaction_start(struct db_context *db)
 {
 	struct db_tdb_ctx *db_ctx =
@@ -344,6 +352,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->get_seqnum = db_tdb_get_seqnum;
+	result->get_flags = db_tdb_get_flags;
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	result->transaction_start = db_tdb_transaction_start;
 	result->transaction_commit = db_tdb_transaction_commit;

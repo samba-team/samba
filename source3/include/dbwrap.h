@@ -42,6 +42,7 @@ struct db_context {
 				      void *private_data),
 			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
+	int (*get_flags)(struct db_context *db);
 	int (*transaction_start)(struct db_context *db);
 	int (*transaction_commit)(struct db_context *db);
 	int (*transaction_cancel)(struct db_context *db);

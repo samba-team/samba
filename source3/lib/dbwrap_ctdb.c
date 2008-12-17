@@ -1158,6 +1158,13 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
+static int db_ctdb_get_flags(struct db_context *db)
+{
+        struct db_ctdb_ctx *ctx = talloc_get_type_abort(db->private_data,
+                                                        struct db_ctdb_ctx);
+	return tdb_get_flags(ctx->wtdb->tdb);
+}
+
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
 				int hash_size, int tdb_flags,
@@ -1219,6 +1226,7 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	result->traverse = db_ctdb_traverse;
 	result->traverse_read = db_ctdb_traverse_read;
 	result->get_seqnum = db_ctdb_get_seqnum;
+	result->get_flags = db_ctdb_get_flags;
 	result->transaction_start = db_ctdb_transaction_start;
 	result->transaction_commit = db_ctdb_transaction_commit;
 	result->transaction_cancel = db_ctdb_transaction_cancel;
