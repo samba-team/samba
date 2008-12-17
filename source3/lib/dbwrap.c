@@ -105,12 +105,12 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
+NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
 {
 	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, talloc_tos(), string_term_tdb_data(key));
+	rec = db->fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -119,13 +119,13 @@ NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
 	return status;
 }
 
-NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
-			       TDB_DATA data, int flags)
+NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
+		      TDB_DATA data, int flags)
 {
 	struct db_record *rec;
 	NTSTATUS status;
 
-	rec = db->fetch_locked(db, talloc_tos(), string_term_tdb_data(key));
+	rec = db->fetch_locked(db, talloc_tos(), key);
 	if (rec == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -135,14 +135,32 @@ NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 	return status;
 }
 
-TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
-			       const char *key)
+TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+		      TDB_DATA key)
 {
 	TDB_DATA result;
 
-	if (db->fetch(db, mem_ctx, string_term_tdb_data(key), &result) == -1) {
+	if (db->fetch(db, mem_ctx, key, &result) == -1) {
 		return make_tdb_data(NULL, 0);
 	}
 
 	return result;
 }
+
+NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key)
+{
+	return dbwrap_delete(db, string_term_tdb_data(key));
+}
+
+NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
+			       TDB_DATA data, int flags)
+{
+	return dbwrap_store(db, string_term_tdb_data(key), data, flags);
+}
+
+TDB_DATA dbwrap_fetch_bystring(struct db_context *db, TALLOC_CTX *mem_ctx,
+			       const char *key)
+{
+	return dbwrap_fetch(db, mem_ctx, string_term_tdb_data(key));
+}
+
