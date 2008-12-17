@@ -44,6 +44,7 @@ struct dns_ex_state {
 	bool do_fallback;
 	bool do_srv;
 	uint32_t flags;
+	uint16_t port;
 	struct nbt_name name;
 	struct socket_address **addrs;
 	char **names;
@@ -235,7 +236,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
 						      first?"":",",
 						      inet_ntoa(*addrs_rr[i]->u.a),
-						      srv_rr[i]?srv_rr[i]->u.srv->port:0,
+						      state->port,
 						      addrs_rr[i]->domain);
 		if (!addrs) {
 			goto done;
@@ -294,7 +295,8 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
 						      first?"":",",
 						      inet_ntoa(in->sin_addr),
-						      0, state->name.name);
+						      state->port,
+						      state->name.name);
 		if (!addrs) {
 			goto done;
 		}
@@ -400,7 +402,8 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
 		}
 		port = strtoul(p, NULL, 10);
 		if (port > UINT16_MAX) {
-			port = 0;
+			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+			return;
 		}
 		state->addrs[i] = socket_address_from_strings(state->addrs,
 							      "ipv4",
@@ -424,6 +427,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 						   struct event_context *event_ctx,
 						   void *privdata,
 						   uint32_t flags,
+						   uint16_t port,
 						   struct nbt_name *name,
 						   bool do_getaddrinfo,
 						   bool do_fallback,
@@ -457,6 +461,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 	state->do_fallback = do_fallback;
 	state->do_srv = do_srv;
 	state->flags = flags;
+	state->port = port;
 
 	state->child_fd = fd[0];
 	state->event_ctx = c->event_ctx;

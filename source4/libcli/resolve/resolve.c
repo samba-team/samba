@@ -32,6 +32,7 @@ struct resolve_state {
 	struct resolve_context *ctx;
 	struct resolve_method *method;
 	uint32_t flags;
+	uint16_t port;
 	struct nbt_name name;
 	struct composite_context *creq;
 	struct socket_address **addrs;
@@ -116,6 +117,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 			creq = state->method->send_fn(c, c->event_ctx,
 						      state->method->privdata,
 						      state->flags,
+						      state->port,
 						      &state->name);
 		}
 		if (creq == NULL && state->method) state->method = state->method->next;
@@ -135,6 +137,7 @@ static struct composite_context *setup_next_method(struct composite_context *c)
  */
 struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 						uint32_t flags,
+						uint16_t port,
 						struct nbt_name *name,
 						struct event_context *event_ctx)
 {
@@ -155,6 +158,7 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 	c->private_data = state;
 
 	state->flags = flags;
+	state->port = port;
 
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
@@ -220,7 +224,7 @@ struct composite_context *resolve_name_send(struct resolve_context *ctx,
 					    struct nbt_name *name,
 					    struct event_context *event_ctx)
 {
-	return resolve_name_all_send(ctx, 0, name, event_ctx);
+	return resolve_name_all_send(ctx, 0, 0, name, event_ctx);
 }
 
 NTSTATUS resolve_name_recv(struct composite_context *c,

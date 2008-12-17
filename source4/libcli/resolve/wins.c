@@ -41,11 +41,12 @@ struct composite_context *resolve_name_wins_send(
 				struct event_context *event_ctx,
 				void *userdata,
 				uint32_t flags,
+				uint16_t port,
 				struct nbt_name *name)
 {
 	struct resolve_wins_data *wins_data = talloc_get_type(userdata, struct resolve_wins_data);
 	if (wins_data->address_list == NULL) return NULL;
-	return resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, name,
+	return resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, port, name,
 					 wins_data->address_list, wins_data->ifaces,
 					 wins_data->nbt_port, wins_data->nbt_timeout,
 					 false, true);

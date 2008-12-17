@@ -35,10 +35,11 @@
 struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 						 struct event_context *event_ctx,
 						 void *privdata, uint32_t flags,
+						 uint16_t port,
 						 struct nbt_name *name)
 {
 	return resolve_name_dns_ex_send(mem_ctx, event_ctx, NULL, flags,
-					name, true, true, false);
+					port, name, true, true, false);
 }
 
 /*

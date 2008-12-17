@@ -30,6 +30,7 @@ typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
 							  struct event_context *,
 							  void *privdata,
 							  uint32_t flags,
+							  uint16_t port,
 							  struct nbt_name *);
 typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *creq,
 					 TALLOC_CTX *mem_ctx,

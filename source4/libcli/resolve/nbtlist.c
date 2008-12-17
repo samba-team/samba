@@ -35,6 +35,7 @@
 
 struct nbtlist_state {
 	uint16_t flags;
+	uint16_t port;
 	struct nbt_name name;
 	struct nbt_name_socket *nbtsock;
 	int num_queries;
@@ -90,7 +91,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 		state->addrs[i] = socket_address_from_strings(state->addrs,
 							      "ipv4",
 							      q->out.reply_addrs[i],
-							      0);
+							      state->port);
 		if (composite_nomem(state->addrs[i], c)) return;
 
 		state->names[i] = talloc_strdup(state->names, state->name.name);
@@ -108,6 +109,7 @@ static void nbtlist_handler(struct nbt_name_request *req)
 struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 						    struct event_context *event_ctx,
 						    uint32_t flags,
+						    uint16_t port,
 						    struct nbt_name *name, 
 						    const char **address_list,
 						    struct interface *ifaces,
@@ -130,6 +132,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	c->private_data = state;
 
 	state->flags = flags;
+	state->port = port;
 
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
