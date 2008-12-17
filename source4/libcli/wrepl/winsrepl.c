@@ -345,8 +345,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	if (composite_nomem(peer, result)) return result;
 
 	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
-					  0, NULL,
-					  wrepl_socket->event.ctx);
+					  0, wrepl_socket->event.ctx);
 	composite_continue(result, state->creq, wrepl_connect_handler, state);
 	return result;
 }

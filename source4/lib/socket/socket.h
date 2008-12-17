@@ -178,14 +178,12 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-				              struct resolve_context *resolve_ctx,
 					      struct event_context *event_ctx);
 NTSTATUS socket_connect_recv(struct composite_context *ctx);
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
 			   uint32_t flags, 
-			   struct resolve_context *resolve_ctx,
 			   struct event_context *ev);
 
 struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,

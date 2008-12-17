@@ -25,7 +25,6 @@
 #include "lib/socket/socket.h"
 #include "lib/events/events.h"
 #include "libcli/composite/composite.h"
-#include "libcli/resolve/resolve.h"
 
 
 struct connect_state {
@@ -38,7 +37,6 @@ struct connect_state {
 static void socket_connect_handler(struct event_context *ev,
 				   struct fd_event *fde, 
 				   uint16_t flags, void *private);
-static void continue_resolve_name(struct composite_context *ctx);
 
 /*
   call the real socket_connect() call, and setup event handler
@@ -75,16 +73,13 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-					      struct resolve_context *resolve_ctx,
 					      struct event_context *event_ctx)
 {
 	struct composite_context *result;
 	struct connect_state *state;
 
-	result = talloc_zero(sock, struct composite_context);
+	result = composite_create(sock, event_ctx);
 	if (result == NULL) return NULL;
-	result->state = COMPOSITE_STATE_IN_PROGRESS;
-	result->event_ctx = event_ctx;
 
 	state = talloc_zero(result, struct connect_state);
 	if (composite_nomem(state, result)) return result;
@@ -113,16 +108,6 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 
 	set_blocking(socket_get_fd(sock), false);
 
-	if (resolve_ctx != NULL && server_address->addr && strcmp(sock->backend_name, "ipv4") == 0) {
-		struct nbt_name name;
-		struct composite_context *creq;
-		make_nbt_name_server(&name, server_address->addr);
-		creq = resolve_name_send(resolve_ctx, &name, result->event_ctx);
-		if (composite_nomem(creq, result)) return result;
-		composite_continue(result, creq, continue_resolve_name, result);
-		return result;
-	}
-
 	socket_send_connect(result);
 
 	return result;
@@ -147,26 +132,6 @@ static void socket_connect_handler(struct event_context *ev,
 }
 
 /*
-  recv name resolution reply then send the connect
-*/
-static void continue_resolve_name(struct composite_context *creq)
-{
-	struct composite_context *result = talloc_get_type(creq->async.private_data, 
-							   struct composite_context);
-	struct connect_state *state = talloc_get_type(result->private_data, struct connect_state);
-	const char *addr;
-
-	result->status = resolve_name_recv(creq, state, &addr);
-	if (!composite_is_ok(result)) return;
-
-	state->server_address = socket_address_from_strings(state, state->sock->backend_name,
-							    addr, state->server_address->port);
-	if (composite_nomem(state->server_address, result)) return;
-
-	socket_send_connect(result);
-}
-
-/*
   wait for a socket_connect_send() to finish
 */
 NTSTATUS socket_connect_recv(struct composite_context *result)
@@ -183,11 +148,11 @@ NTSTATUS socket_connect_recv(struct composite_context *result)
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
-			   uint32_t flags, struct resolve_context *resolve_ctx,
+			   uint32_t flags,
 			   struct event_context *ev)
 {
 	struct composite_context *ctx;
 	ctx = socket_connect_send(sock, my_address, 
-				  server_address, flags, resolve_ctx, ev);
+				  server_address, flags, ev);
 	return socket_connect_recv(ctx);
 }

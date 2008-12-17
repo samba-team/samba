@@ -37,8 +37,6 @@ struct connect_multi_state {
 	int num_ports;
 	uint16_t *ports;
 
-	struct resolve_context *resolve_ctx;
-
 	struct socket_context *sock;
 	uint16_t result_port;
 
@@ -89,7 +87,6 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 	if (composite_nomem(multi->server_address, result)) goto failed;
 
 	multi->num_ports = num_server_ports;
-	multi->resolve_ctx = talloc_reference(multi, resolve_ctx);
 	multi->ports = talloc_array(multi, uint16_t, multi->num_ports);
 	if (composite_nomem(multi->ports, result)) goto failed;
 
@@ -159,7 +156,7 @@ static void connect_multi_next_socket(struct composite_context *result)
 	talloc_steal(state, state->sock);
 
 	creq = socket_connect_send(state->sock, NULL, 
-				   state->addr, 0, multi->resolve_ctx, 
+				   state->addr, 0,
 				   result->event_ctx);
 	if (composite_nomem(creq, result)) return;
 	talloc_steal(state, creq);

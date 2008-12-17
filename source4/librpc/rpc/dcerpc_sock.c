@@ -338,7 +338,7 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 	s->sock->path = talloc_reference(s->sock, full_path);
 
 	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
-				       NULL, c->event_ctx);
+				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
 }

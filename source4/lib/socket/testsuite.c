@@ -152,7 +152,7 @@ static bool test_tcp(struct torture_context *tctx)
 
 	torture_comment(tctx, "server port is %d\n", srv_addr->port);
 
-	status = socket_connect_ev(sock2, NULL, srv_addr, 0, NULL, ev);
+	status = socket_connect_ev(sock2, NULL, srv_addr, 0, ev);
 	torture_assert_ntstatus_ok(tctx, status, "connect() on socket 2");
 
 	status = socket_accept(sock1, &sock3);
