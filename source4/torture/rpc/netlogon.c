@@ -2137,7 +2137,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	q1.workstation_site = "Default-First-Site-Name";
 	q1.blob2.length = 0;
 	q1.blob2.size = 0;
-	q1.blob2.data = NULL;
+	q1.blob2.array = NULL;
 	q1.product.string = "product string";
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
@@ -2203,7 +2203,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	q1.workstation_site = "Default-First-Site-Name";
 	q1.blob2.length = 0;
 	q1.blob2.size = 0;
-	q1.blob2.data = NULL;
+	q1.blob2.array = NULL;
 	q1.product.string = "product string";
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);
