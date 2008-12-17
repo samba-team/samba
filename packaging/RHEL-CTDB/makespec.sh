@@ -22,8 +22,7 @@ if [ ! -f ${VERSION_H} ] ; then
 fi
 
 VERSION=`grep SAMBA_VERSION_OFFICIAL_STRING ${VERSION_H} | awk '{print $3}'`
-vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX ${VERSION_H} | awk '{print
-$3}'`
+vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX ${VERSION_H} | awk '{print $3}'`
 if test "x${vendor_version}"  != "x" ; then
 	VERSION="${VERSION}-${vendor_version}"
 fi
