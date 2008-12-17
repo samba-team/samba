@@ -11,6 +11,8 @@ ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
 
 PATH="${ctdb_test_scripts_dir}:${ctdb_tools_dir}:${PATH}"
 
+export CTDB_TIMEOUT=60
+
 ######################################################################
 
 if [ -n "$CTDB_TEST_REMOTE_SCRIPTS_DIR" ] ; then
