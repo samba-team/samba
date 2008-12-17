@@ -26,6 +26,16 @@ struct socket_address;
 struct event_context;
 
 #include "../libcli/nbt/libnbt.h"
+
+/* force that only NBT name resolution is used */
+#define RESOLVE_NAME_FLAG_FORCE_NBT		0x00000001
+/* force that only DNS name resolution is used */
+#define RESOLVE_NAME_FLAG_FORCE_DNS		0x00000002
+/* tell the dns resolver to do a DNS SRV lookup */
+#define RESOLVE_NAME_FLAG_DNS_SRV		0x00000004
+/* allow the resolver to overwrite the given port, e.g. for DNS SRV */
+#define RESOLVE_NAME_FLAG_OVERWRITE_PORT	0x00000008
+
 typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
 							  struct event_context *,
 							  void *privdata,

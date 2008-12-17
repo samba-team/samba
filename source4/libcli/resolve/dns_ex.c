@@ -40,9 +40,7 @@
 #include "heimdal/lib/roken/resolve.h"
 
 struct dns_ex_state {
-	bool do_getaddrinfo;
 	bool do_fallback;
-	bool do_srv;
 	uint32_t flags;
 	uint16_t port;
 	struct nbt_name name;
@@ -88,15 +86,16 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	char *addrs;
 	bool first;
 	uint32_t i;
+	bool do_srv = (state->flags & RESOLVE_NAME_FLAG_DNS_SRV);
 
 	/* this is the blocking call we are going to lots of trouble
 	   to avoid in the parent */
-	reply = dns_lookup(state->name.name, state->do_srv?"SRV":"A");
+	reply = dns_lookup(state->name.name, do_srv?"SRV":"A");
 	if (!reply) {
 		goto done;
 	}
 
-	if (state->do_srv) {
+	if (do_srv) {
 		dns_srv_order(reply);
 	}
 
@@ -107,7 +106,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			continue;
 		}
 
-		if (state->do_srv) {
+		if (do_srv) {
 			/* we are only interested in SRV records */
 			if (rr->type != T_SRV) {
 				continue;
@@ -162,7 +161,7 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 			continue;
 		}
 
-		if (state->do_srv) {
+		if (do_srv) {
 			/* we are only interested in SRV records */
 			if (rr->type != T_SRV) {
 				continue;
@@ -230,13 +229,22 @@ static void run_child_dns_lookup(struct dns_ex_state *state, int fd)
 	}
 	first = true;
 	for (i=0; i < count; i++) {
+		uint16_t port;
 		if (!addrs_rr[i]) {
 			continue;
 		}
+
+		if (srv_rr[i] &&
+		    (state->flags & RESOLVE_NAME_FLAG_OVERWRITE_PORT)) {
+			port = srv_rr[i]->u.srv->port;
+		} else {
+			port = state->port;
+		}
+
 		addrs = talloc_asprintf_append_buffer(addrs, "%s%s:%u/%s",
 						      first?"":",",
 						      inet_ntoa(*addrs_rr[i]->u.a),
-						      state->port,
+						      port,
 						      addrs_rr[i]->domain);
 		if (!addrs) {
 			goto done;
@@ -429,9 +437,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 						   uint32_t flags,
 						   uint16_t port,
 						   struct nbt_name *name,
-						   bool do_getaddrinfo,
-						   bool do_fallback,
-						   bool do_srv)
+						   bool do_fallback)
 {
 	struct composite_context *c;
 	struct dns_ex_state *state;
@@ -441,7 +447,10 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	if (composite_nomem(c->event_ctx, c)) return c;
+	if (flags & RESOLVE_NAME_FLAG_FORCE_NBT) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
 
 	state = talloc_zero(c, struct dns_ex_state);
 	if (composite_nomem(state, c)) return c;
@@ -457,9 +466,7 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
-	state->do_getaddrinfo = do_getaddrinfo;
 	state->do_fallback = do_fallback;
-	state->do_srv = do_srv;
 	state->flags = flags;
 	state->port = port;
 
@@ -484,10 +491,10 @@ struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
 
 	if (state->child == 0) {
 		close(fd[0]);
-		if (state->do_getaddrinfo) {
-			run_child_getaddrinfo(state, fd[1]);
-		} else {
+		if (state->flags & RESOLVE_NAME_FLAG_FORCE_DNS) {
 			run_child_dns_lookup(state, fd[1]);
+		} else {
+			run_child_getaddrinfo(state, fd[1]);
 		}
 		_exit(0);
 	}

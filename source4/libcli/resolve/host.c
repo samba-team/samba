@@ -39,7 +39,7 @@ struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
 						 struct nbt_name *name)
 {
 	return resolve_name_dns_ex_send(mem_ctx, event_ctx, NULL, flags,
-					port, name, true, true, false);
+					port, name, true);
 }
 
 /*

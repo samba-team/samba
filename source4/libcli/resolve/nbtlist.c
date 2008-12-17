@@ -125,7 +125,15 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	if (composite_nomem(c->event_ctx, c)) return c;
+	if (flags & RESOLVE_NAME_FLAG_FORCE_DNS) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
+
+	if (strlen(name->name) > 15) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
 
 	state = talloc(c, struct nbtlist_state);
 	if (composite_nomem(state, c)) return c;
