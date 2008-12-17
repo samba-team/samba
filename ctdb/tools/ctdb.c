@@ -31,7 +31,10 @@
 #include "../common/rb_tree.h"
 #include "db_wrap.h"
 
-#define ERR_TIMEOUT	20
+
+#define ERR_TIMEOUT	20	/* timed out trying to reach node */
+#define ERR_NONODE	21	/* node does not exist */
+#define ERR_DISNODE	22	/* node is disconnected */
 
 static void usage(void);
 
@@ -54,6 +57,43 @@ static int control_version(struct ctdb_context *ctdb, int argc, const char **arg
 }
 #endif
 
+
+/*
+  verify that a node exists and is reachable
+ */
+static void verify_node(struct ctdb_context *ctdb)
+{
+	int ret;
+	struct ctdb_node_map *nodemap=NULL;
+
+	if (options.pnn == CTDB_CURRENT_NODE) {
+		return;
+	}
+	if (options.pnn == CTDB_BROADCAST_ALL) {
+		return;
+	}
+
+	/* verify the node exists */
+	if (ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap) != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		exit(10);
+	}
+	if (options.pnn >= nodemap->num) {
+		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
+		exit(ERR_NONODE);
+	}
+	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_DISCONNECTED) {
+		DEBUG(DEBUG_ERR, ("Node %u is DISCONNECTED\n", options.pnn));
+		exit(ERR_DISNODE);
+	}
+
+	/* verify we can access the node */
+	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (ret == -1) {
+		DEBUG(DEBUG_ERR,("Can not ban node. Node is not operational.\n"));
+		exit(10);
+	}
+}
 
 /*
  check if a database exists
@@ -262,14 +302,8 @@ static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const c
 static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	int mypnn;
 	struct ctdb_uptime *uptime = NULL;
 	int tmp, days, hours, minutes, seconds;
-
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (mypnn == -1) {
-		return -1;
-	}
 
 	ret = ctdb_ctrl_uptime(ctdb, ctdb, TIMELIMIT(), options.pnn, &uptime);
 	if (ret != 0) {
@@ -325,7 +359,7 @@ static int control_pnn(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int mypnn;
 
-	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
 	if (mypnn == -1) {
 		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node."));
 		return -1;
@@ -1326,17 +1360,6 @@ static int control_ban(struct ctdb_context *ctdb, int argc, const char **argv)
 		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
 		return ret;
 	}
-	if (options.pnn >= nodemap->num) {
-		DEBUG(DEBUG_ERR, ("Node %u does not exist\n", options.pnn));
-		return ret;
-	}
-
-	/* verify we can access the node */
-	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("Can not ban node. Node is not operational.\n"));
-		return -1;
-	}
 
 	if (nodemap->nodes[options.pnn].flags & NODE_FLAGS_BANNED) {
 		DEBUG(DEBUG_ERR,("Node %u is already banned.\n", options.pnn));
@@ -1381,13 +1404,6 @@ static int control_unban(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	/* record the current generation number */
 	generation = get_generation(ctdb);
-
-	/* verify we can access the node */
-	ret = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
-	if (ret == -1) {
-		DEBUG(DEBUG_ERR,("Can not unban node. Node is not operational.\n"));
-		return -1;
-	}
 
 	data.dptr = (uint8_t *)&options.pnn;
 	data.dsize = sizeof(uint32_t);
@@ -2746,6 +2762,9 @@ int main(int argc, const char *argv[])
 		DEBUG(DEBUG_ERR, ("Failed to init ctdb\n"));
 		exit(1);
 	}
+
+	/* verify the node exists */
+	verify_node(ctdb);
 
 	for (i=0;i<ARRAY_SIZE(ctdb_commands);i++) {
 		if (strcmp(control, ctdb_commands[i].name) == 0) {

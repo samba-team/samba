@@ -359,8 +359,8 @@ void ctdb_node_dead(struct ctdb_node *node)
 	ctdb_daemon_cancel_controls(node->ctdb, node);
 
 	if (node->ctdb->methods == NULL) {
-		DEBUG(DEBUG_ALERT,(__location__ " Can not restart transport. ctdb->methods==NULL\n"));
-		ctdb_fatal(node->ctdb, "can not restart transport.");
+		DEBUG(DEBUG_ERR,(__location__ " Can not restart transport while shutting down daemon.\n"));
+		return;
 	}
 
 	node->ctdb->methods->restart(node);
