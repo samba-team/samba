@@ -3,6 +3,7 @@
 #               Gerald (Jerry) Carter 2003
 #		Jim McDonough 2007
 #		Andrew Tridgell 2007
+#		Michael Adam 2008
 
 # The following allows environment variables to override the target directories
 #   the alternative is to have a file in your home directory calles .rpmmacros
