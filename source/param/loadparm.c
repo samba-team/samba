@@ -4790,7 +4790,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szLdapIdmapSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_ssl = LDAP_SSL_ON;
+	Globals.ldap_ssl = LDAP_SSL_OFF;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
