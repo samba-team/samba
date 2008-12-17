@@ -15,10 +15,8 @@
 
 EXTRA_OPTIONS="$1"
 
-[ -d packaging ] || {
-    echo "Must run this from the ctdb directory"
-    exit 1
-}
+DIRNAME=$(dirname $0)
+TOPDIR=${DIRNAME}/../..
 
 SPECDIR=`rpm --eval %_specdir`
 SRCDIR=`rpm --eval %_sourcedir`
@@ -28,9 +26,11 @@ REVISION=''
 SPECFILE="ctdb.spec"
 RPMBUILD="rpmbuild"
 
+pushd ${TOPDIR}
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
 git archive --prefix=ctdb-${VERSION}/ HEAD | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 RC=$?
+popd
 echo "Done."
 if [ $RC -ne 0 ]; then
         echo "Build failed!"
@@ -42,7 +42,7 @@ fi
 ##
 ## copy additional source files
 ##
-cp -p packaging/RPM/${SPECFILE} ${SPECDIR}
+cp -p ${DIRNAME}/${SPECFILE} ${SPECDIR}
 
 ##
 ## Build
