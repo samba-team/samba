@@ -359,6 +359,7 @@ gen_files_pkinit =					\
 	asn1_TrustedCA_Win2k.x				\
 	asn1_PA_PK_AS_REQ_Win2k.x			\
 	asn1_PA_PK_AS_REP_Win2k.x			\
+	asn1_PA_PK_AS_REP_BTMM.x			\
 	asn1_KDCDHKeyInfo_Win2k.x			\
 	asn1_ReplyKeyPack_Win2k.x			\
 	asn1_PkinitSP80056AOtherInfo.x			\

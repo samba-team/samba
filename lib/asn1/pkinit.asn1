@@ -164,7 +164,6 @@ PA-PK-AS-REP-Win2k ::= CHOICE {
 	encKeyPack		[1] IMPLICIT OCTET STRING
 }
 
-
 KDCDHKeyInfo-Win2k ::= SEQUENCE {
 	nonce			[0] INTEGER (-2147483648..2147483647),
 	subjectPublicKey	[2] BIT STRING
@@ -175,6 +174,12 @@ ReplyKeyPack-Win2k ::= SEQUENCE {
         nonce                   [1] INTEGER (-2147483648..2147483647),
 	...
 }
+
+PA-PK-AS-REP-BTMM ::= SEQUENCE {
+	dhSignedData		[0] heim_any OPTIONAL,
+	encKeyPack		[1] heim_any OPTIONAL
+}
+
 
 PkinitSP80056AOtherInfo ::= SEQUENCE { 
 	algorithmID   AlgorithmIdentifier, 
