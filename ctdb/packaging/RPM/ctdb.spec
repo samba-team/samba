@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 68
+Release: 69
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -121,6 +121,9 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Dec 18 2008 : Version 1.0.69
+ - Various fixes to scripts by M Adam
+ - Dont call ctdb_fatal() when the transport is down during shutdown
 * Fri Dec 12 2008 : Version 1.0.68
  - Fixes for monitoring of interfaces status from Michael Adam.
  - Use -q instead of >/dev/null for grep to enhance readability of the
