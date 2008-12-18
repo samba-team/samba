@@ -8,7 +8,6 @@ local.iconv.*.next_codepoint()
 base.delete.*.deltest17
 base.delete.*.deltest20a
 base.delete.*.deltest20b
-base.delete.*.deltest21
 rpc.winreg.*security
 samba4.local.registry.(dir|ldb).check hive security
 samba4.local.registry.local.security
