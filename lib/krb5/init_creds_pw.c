@@ -284,16 +284,15 @@ get_init_creds_common(krb5_context context,
         krb5_get_init_creds_opt_alloc (context, &default_opt);
 	options = default_opt;
 	krb5_get_init_creds_opt_set_default_flags(context, NULL, realm, options);
-
-    } else {
-	_krb5_get_init_creds_opt_free_krb5_error(options);
     }
 
     if (options->opt_private) {
-	ret = krb5_init_creds_set_password(context, ctx, 
-					   options->opt_private->password);
-	if (ret)
-	    goto out;
+	if (options->opt_private->password) {
+	    ret = krb5_init_creds_set_password(context, ctx, 
+					       options->opt_private->password);
+	    if (ret)
+		goto out;
+	}
 
 	ctx->keyproc = options->opt_private->key_proc;
 	ctx->req_pac = options->opt_private->req_pac;
