@@ -235,6 +235,10 @@ static int load_registry_service(const char *servicename)
 		return -1;
 	}
 
+	if ((servicename == NULL) || (*servicename == '\0')) {
+		return -1;
+	}
+
 	if (strequal(servicename, GLOBAL_NAME)) {
 		return -2;
 	}
