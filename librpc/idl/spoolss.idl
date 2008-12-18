@@ -1291,7 +1291,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 change_low,
 		[in,unique] spoolss_NotifyOptionsContainer *container,
-		[out, unique] spoolss_NotifyInfo *info
+		[out,ref] spoolss_NotifyInfo **info
 	);
 
 	/******************/
