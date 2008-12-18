@@ -370,7 +370,7 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 {
     krb5_error_code ret;
     
-    *error = calloc(sizeof(**error));
+    *error = calloc(1, sizeof(**error));
     if (*error == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
 	return ENOMEM;
