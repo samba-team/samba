@@ -7690,7 +7690,6 @@ void init_sec_ctx(void);
 
 int smbd_server_fd(void);
 int get_client_fd(void);
-int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);
