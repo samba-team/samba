@@ -1871,8 +1871,7 @@ verify_checksum(krb5_context context,
 				    ct->name, crypto->et->name);
 	    return KRB5_PROG_SUMTYPE_NOSUPP; /* XXX */
 	}
-    }
-    if(keyed_checksum) {
+
 	ret = get_checksum_key(context, crypto, usage, ct, &dkey);
 	if (ret)
 	    return ret;
