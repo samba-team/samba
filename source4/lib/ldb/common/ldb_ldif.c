@@ -278,13 +278,15 @@ int ldb_ldif_write(struct ldb_context *ldb,
 	TALLOC_CTX *mem_ctx;
 	unsigned int i, j;
 	int total=0, ret;
+	char *p;
 	const struct ldb_message *msg;
 
 	mem_ctx = talloc_named_const(NULL, 0, "ldb_ldif_write");
 
 	msg = ldif->msg;
-
-	ret = fprintf_fn(private_data, "dn: %s\n", ldb_dn_get_linearized(msg->dn));
+	p = ldb_dn_get_extended_linearized(mem_ctx, msg->dn, 1);
+	ret = fprintf_fn(private_data, "dn: %s\n", p);
+	talloc_free(p);
 	CHECK_RET;
 
 	if (ldif->changetype != LDB_CHANGETYPE_NONE) {

@@ -61,9 +61,6 @@ uASCompat: 1
 replace: modifiedCount
 modifiedCount: 1
 -
-replace: objectCategory
-objectCategory: CN=Domain-DNS,${SCHEMADN}
--
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
 -

@@ -29,7 +29,8 @@ struct auth_session_info {
 };
 
 #include "librpc/gen_ndr/netlogon.h"
-#include "lib/events/events.h"
+
+struct event_context;
 
 /* Create a security token for a session SYSTEM (the most
  * trusted/prvilaged account), including the local machine account as

@@ -37,7 +37,8 @@ struct resolve_bcast_data {
  */
 struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx, 
 						  struct event_context *event_ctx,
-						  void *userdata,
+						  void *userdata, uint32_t flags,
+						  uint16_t port,
 						  struct nbt_name *name)
 {
 	int num_interfaces;
@@ -63,7 +64,9 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, data->ifaces, data->nbt_port, data->nbt_timeout, true, false);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, port, name,
+				      address_list, data->ifaces, data->nbt_port,
+				      data->nbt_timeout, true, false);
 	talloc_free(address_list);
 
 	return c;	
@@ -74,35 +77,16 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS resolve_name_bcast_recv(struct composite_context *c, 
 				 TALLOC_CTX *mem_ctx,
-				 struct socket_address ***addrs)
+				 struct socket_address ***addrs,
+				 char ***names)
 {
-	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs);
+	NTSTATUS status = resolve_name_nbtlist_recv(c, mem_ctx, addrs, names);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/* this makes much more sense for a bcast name resolution
 		   timeout */
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 	return status;
-}
-
-/*
-  broadcast name resolution method - sync call
- */
-NTSTATUS resolve_name_bcast(struct nbt_name *name, 
-			    TALLOC_CTX *mem_ctx,
-			    struct interface *ifaces,
-			    uint16_t nbt_port,
-			    int nbt_timeout,
-			    struct socket_address ***addrs)
-{
-	struct resolve_bcast_data *data = talloc(mem_ctx, struct resolve_bcast_data);
-	struct composite_context *c;
-	data->ifaces = talloc_reference(data, ifaces);
-	data->nbt_port = nbt_port;
-	data->nbt_timeout = nbt_timeout;
-	
-	c = resolve_name_bcast_send(mem_ctx, NULL, data, name);
-	return resolve_name_bcast_recv(c, mem_ctx, addrs);
 }
 
 bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)

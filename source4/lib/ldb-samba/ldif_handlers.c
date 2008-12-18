@@ -64,8 +64,8 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_pull_struct_blob(in, sid, NULL, sid,
-				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	ndr_err = ndr_pull_struct_blob_all(in, sid, NULL, sid,
+					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
 		return -1;
@@ -139,6 +139,36 @@ static int ldb_canonicalise_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	return ldb_handler_copy(ldb, mem_ctx, in, out);
 }
 
+static int extended_dn_read_SID(struct ldb_context *ldb, void *mem_ctx,
+			      const struct ldb_val *in, struct ldb_val *out)
+{
+	struct dom_sid sid;
+	enum ndr_err_code ndr_err;
+	if (ldb_comparision_objectSid_isString(in)) {
+		if (ldif_read_objectSid(ldb, mem_ctx, in, out) == 0) {
+			return 0;
+		}
+	}
+	
+	/* Perhaps not a string after all */
+	*out = data_blob_talloc(mem_ctx, NULL, in->length/2+1);
+
+	if (!out->data) {
+		return -1;
+	}
+
+	(*out).length = strhex_to_str((char *)out->data, out->length,
+				     (const char *)in->data, in->length);
+
+	/* Check it looks like a SID */
+	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &sid,
+					   (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return -1;
+	}
+	return 0;
+}
+
 /*
   convert a ldif formatted objectGUID to a NDR formatted blob
 */
@@ -146,16 +176,10 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 			        const struct ldb_val *in, struct ldb_val *out)
 {
 	struct GUID guid;
-	char *guid_string;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	guid_string = talloc_strndup(mem_ctx, (const char *)in->data, in->length);
-	if (!guid_string) {
-		return -1;
-	}
 
-	status = GUID_from_string(guid_string, &guid);
-	talloc_free(guid_string);
+	status = GUID_from_data_blob(in, &guid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -176,8 +200,8 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob(in, mem_ctx, NULL, &guid,
-				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	ndr_err = ndr_pull_struct_blob_all(in, mem_ctx, NULL, &guid,
+					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
 	}
@@ -191,20 +215,42 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 
 static bool ldb_comparision_objectGUID_isString(const struct ldb_val *v)
 {
+	if (v->length != 36 && v->length != 38) return false;
+
+	/* Might be a GUID string, can't be a binary GUID (fixed 16 bytes) */
+	return true;
+}
+
+static int extended_dn_read_GUID(struct ldb_context *ldb, void *mem_ctx,
+			      const struct ldb_val *in, struct ldb_val *out)
+{
 	struct GUID guid;
-	NTSTATUS status;
-
-	if (v->length < 33) return false;
-
-	/* see if the input if null-terninated (safety check for the below) */
-	if (v->data[v->length] != '\0') return false;
-
-	status = GUID_from_string((const char *)v->data, &guid);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
+	enum ndr_err_code ndr_err;
+	if (in->length == 36 && ldif_read_objectGUID(ldb, mem_ctx, in, out) == 0) {
+		return 0;
 	}
 
-	return true;
+	/* Try as 'hex' form */
+	if (in->length != 32) {
+		return -1;
+	}
+		
+	*out = data_blob_talloc(mem_ctx, NULL, in->length/2+1);
+	
+	if (!out->data) {
+		return -1;
+	}
+	
+	(*out).length = strhex_to_str((char *)out->data, out->length,
+				      (const char *)in->data, in->length);
+	
+	/* Check it looks like a GUID */
+	ndr_err = ndr_pull_struct_blob_all(out, mem_ctx, NULL, &guid,
+					   (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return -1;
+	}
+	return 0;
 }
 
 /*
@@ -293,8 +339,9 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 	if (sd == NULL) {
 		return -1;
 	}
+	/* We can't use ndr_pull_struct_blob_all because this contains relative pointers */
 	ndr_err = ndr_pull_struct_blob(in, sd, NULL, sd,
-				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+					   (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sd);
 		return -1;
@@ -494,10 +541,10 @@ static int ldif_write_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	if (blob == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_pull_struct_blob(in, blob, 
-				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
-				       blob,
-				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	ndr_err = ndr_pull_struct_blob_all(in, blob, 
+					   lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")), 
+					   blob,
+					   (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(blob);
 		return -1;
@@ -578,41 +625,71 @@ static int ldif_comparison_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 	return ret;
 }
 
+static int extended_dn_write_hex(struct ldb_context *ldb, void *mem_ctx,
+				 const struct ldb_val *in, struct ldb_val *out)
+{
+	*out = data_blob_string_const(data_blob_hex_string(mem_ctx, in));
+	if (!out->data) {
+		return -1;
+	}
+	return 0;
+}
+
+
 #define LDB_SYNTAX_SAMBA_GUID			"LDB_SYNTAX_SAMBA_GUID"
 #define LDB_SYNTAX_SAMBA_OBJECT_CATEGORY	"LDB_SYNTAX_SAMBA_OBJECT_CATEGORY"
 #define LDB_SYNTAX_SAMBA_PREFIX_MAP	"LDB_SYNTAX_SAMBA_PREFIX_MAP"
 
 static const struct ldb_schema_syntax samba_syntaxes[] = {
 	{
-		.name		= LDB_SYNTAX_SAMBA_SID,
-		.ldif_read_fn	= ldif_read_objectSid,
-		.ldif_write_fn	= ldif_write_objectSid,
-		.canonicalise_fn= ldb_canonicalise_objectSid,
-		.comparison_fn	= ldb_comparison_objectSid
+		.name		  = LDB_SYNTAX_SAMBA_SID,
+		.ldif_read_fn	  = ldif_read_objectSid,
+		.ldif_write_fn	  = ldif_write_objectSid,
+		.canonicalise_fn  = ldb_canonicalise_objectSid,
+		.comparison_fn	  = ldb_comparison_objectSid
 	},{
-		.name		= LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,
-		.ldif_read_fn	= ldif_read_ntSecurityDescriptor,
-		.ldif_write_fn	= ldif_write_ntSecurityDescriptor,
-		.canonicalise_fn= ldb_handler_copy,
-		.comparison_fn	= ldb_comparison_binary
+		.name		  = LDB_SYNTAX_SAMBA_SECURITY_DESCRIPTOR,
+		.ldif_read_fn	  = ldif_read_ntSecurityDescriptor,
+		.ldif_write_fn	  = ldif_write_ntSecurityDescriptor,
+		.canonicalise_fn  = ldb_handler_copy,
+		.comparison_fn	  = ldb_comparison_binary
 	},{
-		.name		= LDB_SYNTAX_SAMBA_GUID,
-		.ldif_read_fn	= ldif_read_objectGUID,
-		.ldif_write_fn	= ldif_write_objectGUID,
-		.canonicalise_fn= ldb_canonicalise_objectGUID,
-		.comparison_fn	= ldb_comparison_objectGUID
+		.name		  = LDB_SYNTAX_SAMBA_GUID,
+		.ldif_read_fn	  = ldif_read_objectGUID,
+		.ldif_write_fn	  = ldif_write_objectGUID,
+		.canonicalise_fn  = ldb_canonicalise_objectGUID,
+		.comparison_fn	  = ldb_comparison_objectGUID
 	},{
-		.name		= LDB_SYNTAX_SAMBA_OBJECT_CATEGORY,
-		.ldif_read_fn	= ldb_handler_copy,
-		.ldif_write_fn	= ldb_handler_copy,
-		.canonicalise_fn= ldif_canonicalise_objectCategory,
-		.comparison_fn	= ldif_comparison_objectCategory
+		.name		  = LDB_SYNTAX_SAMBA_OBJECT_CATEGORY,
+		.ldif_read_fn	  = ldb_handler_copy,
+		.ldif_write_fn	  = ldb_handler_copy,
+		.canonicalise_fn  = ldif_canonicalise_objectCategory,
+		.comparison_fn	  = ldif_comparison_objectCategory
 	},{
-		.name		= LDB_SYNTAX_SAMBA_PREFIX_MAP,
-		.ldif_read_fn	= ldif_read_prefixMap,
-		.ldif_write_fn	= ldif_write_prefixMap,
-		.canonicalise_fn= ldif_canonicalise_prefixMap,
-		.comparison_fn	= ldif_comparison_prefixMap
+		.name		  = LDB_SYNTAX_SAMBA_PREFIX_MAP,
+		.ldif_read_fn	  = ldif_read_prefixMap,
+		.ldif_write_fn	  = ldif_write_prefixMap,
+		.canonicalise_fn  = ldif_canonicalise_prefixMap,
+		.comparison_fn	  = ldif_comparison_prefixMap
+	}
+};
+
+static const struct ldb_dn_extended_syntax samba_dn_syntax[] = {
+	{
+		.name		  = "SID",
+		.read_fn          = extended_dn_read_SID,
+		.write_clear_fn   = ldif_write_objectSid,
+		.write_hex_fn     = extended_dn_write_hex
+	},{
+		.name		  = "GUID",
+		.read_fn          = extended_dn_read_GUID,
+		.write_clear_fn   = ldif_write_objectGUID,
+		.write_hex_fn     = extended_dn_write_hex
+	},{
+		.name		  = "WKGUID",
+		.read_fn          = ldb_handler_copy,
+		.write_clear_fn   = ldb_handler_copy,
+		.write_hex_fn     = ldb_handler_copy
 	}
 };
 
@@ -677,6 +754,16 @@ int ldb_register_samba_handlers(struct ldb_context *ldb)
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
+	}
+
+	for (i=0; i < ARRAY_SIZE(samba_dn_syntax); i++) {
+		int ret;
+		ret = ldb_dn_extended_add_syntax(ldb, LDB_ATTR_FLAG_FIXED, &samba_dn_syntax[i]);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+
+		
 	}
 
 	return LDB_SUCCESS;

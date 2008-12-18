@@ -432,17 +432,18 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     """
     assert session_info is not None
 
-    samdb = SamDB(samdb_path, session_info=session_info, 
-                  credentials=credentials, lp=lp)
-
-    # Wipes the database
     try:
+        samdb = SamDB(samdb_path, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+        # Wipes the database
         samdb.erase()
     except:
         os.unlink(samdb_path)
-
-    samdb = SamDB(samdb_path, session_info=session_info, 
-                  credentials=credentials, lp=lp)
+        samdb = SamDB(samdb_path, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+         # Wipes the database
+        samdb.erase()
+        
 
     #Add modules to the list to activate them by default
     #beware often order is important
@@ -459,8 +460,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "ranged_results",
                     "anr",
                     "server_sort",
-                    "extended_dn",
                     "asq",
+                    "extended_dn_store",
+                    "extended_dn_in",
                     "rdn_name",
                     "objectclass",
                     "samldb",
@@ -470,7 +472,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     tdb_modules_list = [
                     "subtree_rename",
                     "subtree_delete",
-                    "linked_attributes"]
+                    "linked_attributes",
+                    "extended_dn_out_ldb"]
     modules_list2 = ["show_deleted",
                     "partition"]
  
@@ -488,11 +491,11 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid", "paged_searches"]
         # We can handle linked attributes here, as we don't have directory-side subtree operations
-        tdb_modules_list = ["linked_attributes"]
+        tdb_modules_list = ["linked_attributes", "extended_dn_out_dereference"]
     elif ldap_backend_type == "openldap":
-        backend_modules = ["normalise", "entryuuid", "paged_searches"]
+        backend_modules = ["entryuuid", "paged_searches"]
         # OpenLDAP handles subtree renames, so we don't want to do any of these things
-        tdb_modules_list = None
+        tdb_modules_list = ["extended_dn_out_dereference"]
     elif ldap_backend is not None:
         raise "LDAP Backend specified, but LDAP Backend Type not specified"
     elif serverrole == "domain controller":
@@ -650,7 +653,7 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     reg = registry.Registry()
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
-    reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
+    reg.mount_hive(hive, registry.HKEY_LOCAL_MACHINE)
     provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
@@ -826,6 +829,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                        {"SCHEMADN": names.schemadn })
         message("Setting up sam.ldb AD schema")
         setup_add_ldif(samdb, setup_path("schema.ldif"), 
+                       {"SCHEMADN": names.schemadn})
+        setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
         message("Setting up sam.ldb configuration data")

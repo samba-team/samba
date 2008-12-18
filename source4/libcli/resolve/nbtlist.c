@@ -34,12 +34,15 @@
 #include "libcli/resolve/resolve.h"
 
 struct nbtlist_state {
+	uint16_t flags;
+	uint16_t port;
 	struct nbt_name name;
 	struct nbt_name_socket *nbtsock;
 	int num_queries;
 	struct nbt_name_request **queries;
 	struct nbt_name_query *io_queries;
 	struct socket_address **addrs;
+	char **names;
 	struct interface *ifaces;
 };
 
@@ -81,14 +84,21 @@ static void nbtlist_handler(struct nbt_name_request *req)
 				    q->out.num_addrs + 1);
 	if (composite_nomem(state->addrs, c)) return;
 
+	state->names = talloc_array(state, char *, q->out.num_addrs + 1);
+	if (composite_nomem(state->names, c)) return;
+
 	for (i=0;i<q->out.num_addrs;i++) {
 		state->addrs[i] = socket_address_from_strings(state->addrs,
 							      "ipv4",
 							      q->out.reply_addrs[i],
-							      0);
+							      state->port);
 		if (composite_nomem(state->addrs[i], c)) return;
+
+		state->names[i] = talloc_strdup(state->names, state->name.name);
+		if (composite_nomem(state->names[i], c)) return;
 	}
 	state->addrs[i] = NULL;
+	state->names[i] = NULL;
 
 	composite_done(c);
 }
@@ -98,6 +108,8 @@ static void nbtlist_handler(struct nbt_name_request *req)
  */
 struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 						    struct event_context *event_ctx,
+						    uint32_t flags,
+						    uint16_t port,
 						    struct nbt_name *name, 
 						    const char **address_list,
 						    struct interface *ifaces,
@@ -113,11 +125,22 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 	c = composite_create(mem_ctx, event_ctx);
 	if (c == NULL) return NULL;
 
-	if (composite_nomem(c->event_ctx, c)) return c;
+	if (flags & RESOLVE_NAME_FLAG_FORCE_DNS) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
+
+	if (strlen(name->name) > 15) {
+		composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+		return c;
+	}
 
 	state = talloc(c, struct nbtlist_state);
 	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
+
+	state->flags = flags;
+	state->port = port;
 
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
@@ -180,7 +203,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c, 
 				   TALLOC_CTX *mem_ctx,
-				   struct socket_address ***addrs)
+				   struct socket_address ***addrs,
+				   char ***names)
 {
 	NTSTATUS status;
 
@@ -189,29 +213,12 @@ NTSTATUS resolve_name_nbtlist_recv(struct composite_context *c,
 	if (NT_STATUS_IS_OK(status)) {
 		struct nbtlist_state *state = talloc_get_type(c->private_data, struct nbtlist_state);
 		*addrs = talloc_steal(mem_ctx, state->addrs);
+		if (names) {
+			*names = talloc_steal(mem_ctx, state->names);
+		}
 	}
 
 	talloc_free(c);
 	return status;
-}
-
-/*
-  nbt list of addresses name resolution method - sync call
- */
-NTSTATUS resolve_name_nbtlist(struct nbt_name *name, 
-			      TALLOC_CTX *mem_ctx,
-			      const char **address_list,
-			      struct interface *ifaces, 
-			      uint16_t nbt_port,
-			      int nbt_timeout,
-			      bool broadcast, bool wins_lookup,
-			      struct socket_address ***addrs)
-{
-	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
-								name, address_list, 
-								ifaces, nbt_port,
-								nbt_timeout,
-							        broadcast, wins_lookup);
-	return resolve_name_nbtlist_recv(c, mem_ctx, addrs);
 }
 

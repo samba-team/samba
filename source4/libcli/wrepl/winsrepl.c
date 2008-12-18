@@ -30,7 +30,6 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
-#include "libcli/resolve/resolve.h"
 
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status);
 
@@ -319,7 +318,6 @@ const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
   connect a wrepl_socket to a WINS server
 */
 struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
-					     struct resolve_context *resolve_ctx,
 					     const char *our_ip, const char *peer_ip)
 {
 	struct composite_context *result;
@@ -347,8 +345,7 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	if (composite_nomem(peer, result)) return result;
 
 	state->creq = socket_connect_send(wrepl_socket->sock, us, peer,
-					  0, resolve_ctx,
-					  wrepl_socket->event.ctx);
+					  0, wrepl_socket->event.ctx);
 	composite_continue(result, state->creq, wrepl_connect_handler, state);
 	return result;
 }
@@ -374,10 +371,10 @@ NTSTATUS wrepl_connect_recv(struct composite_context *result)
 /*
   connect a wrepl_socket to a WINS server - sync API
 */
-NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket, struct resolve_context *resolve_ctx,
+NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket,
 		       const char *our_ip, const char *peer_ip)
 {
-	struct composite_context *c_req = wrepl_connect_send(wrepl_socket, resolve_ctx, our_ip, peer_ip);
+	struct composite_context *c_req = wrepl_connect_send(wrepl_socket, our_ip, peer_ip);
 	return wrepl_connect_recv(c_req);
 }
 

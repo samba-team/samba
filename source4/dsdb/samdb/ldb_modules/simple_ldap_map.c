@@ -44,7 +44,7 @@ struct entryuuid_private {
 static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct GUID guid;
-	NTSTATUS status = GUID_from_string((char *)val->data, &guid);
+	NTSTATUS status = GUID_from_data_blob(val, &guid);
 	enum ndr_err_code ndr_err;
 	struct ldb_val out = data_blob(NULL, 0);
 
@@ -62,27 +62,13 @@ static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, co
 
 static struct ldb_val guid_always_string(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
-	struct GUID *guid;
 	struct ldb_val out = data_blob(NULL, 0);
-	if (val->length >= 32 && val->data[val->length] == '\0') {
-		ldb_handler_copy(module->ldb, ctx, val, &out);
-	} else {
-		enum ndr_err_code ndr_err;
-
-		guid = talloc(ctx, struct GUID);
-		if (guid == NULL) {
-			return out;
-		}
-		ndr_err = ndr_pull_struct_blob(val, guid, NULL, guid,
-					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			talloc_free(guid);
-			return out;
-		}
-		out = data_blob_string_const(GUID_string(ctx, guid));
-		talloc_free(guid);
+	struct GUID guid;
+	NTSTATUS status = GUID_from_data_blob(val, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return out;
 	}
-	return out;
+	return data_blob_string_const(GUID_string(ctx, &guid));
 }
 
 static struct ldb_val encode_ns_guid(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
@@ -107,27 +93,12 @@ static struct ldb_val encode_ns_guid(struct ldb_module *module, TALLOC_CTX *ctx,
 static struct ldb_val guid_ns_string(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
-	if (val->length >= 32 && val->data[val->length] == '\0') {
-		struct GUID guid;
-		GUID_from_string((char *)val->data, &guid);
-		out = data_blob_string_const(NS_GUID_string(ctx, &guid));
-	} else {
-		enum ndr_err_code ndr_err;
-		struct GUID *guid_p;
-		guid_p = talloc(ctx, struct GUID);
-		if (guid_p == NULL) {
-			return out;
-		}
-		ndr_err = ndr_pull_struct_blob(val, guid_p, NULL, guid_p,
-					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			talloc_free(guid_p);
-			return out;
-		}
-		out = data_blob_string_const(NS_GUID_string(ctx, guid_p));
-		talloc_free(guid_p);
+	struct GUID guid;
+	NTSTATUS status = GUID_from_data_blob(val, &guid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return out;
 	}
-	return out;
+	return data_blob_string_const(NS_GUID_string(ctx, &guid));
 }
 
 /* The backend holds binary sids, so just copy them back */

@@ -278,7 +278,7 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}
 
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 		/* should we allow the backend to return referrals in this case
@@ -301,8 +301,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 
 	/* see if its for the rootDSE - only a base search on the "" DN qualifies */
-	if (req->op.search.scope != LDB_SCOPE_BASE ||
-	    ( ! ldb_dn_is_null(req->op.search.base))) {
+	if (!(req->op.search.scope == LDB_SCOPE_BASE && ldb_dn_is_null(req->op.search.base))) {
 		/* Otherwise, pass down to the rest of the stack */
 		return ldb_next_request(module, req);
 	}

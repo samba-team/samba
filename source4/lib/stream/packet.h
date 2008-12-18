@@ -20,6 +20,10 @@
    
 */
 
+struct packet_context;
+struct event_context;
+struct fd_event;
+
 typedef NTSTATUS (*packet_full_request_fn_t)(void *private, 
 					     DATA_BLOB blob, size_t *packet_size);
 typedef NTSTATUS (*packet_callback_fn_t)(void *private, DATA_BLOB blob);

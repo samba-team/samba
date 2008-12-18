@@ -65,29 +65,46 @@ WERROR _PNP_GetDeviceListSize(pipes_struct *p,
 	return WERR_OK;
 }
 
+/****************************************************************
+ _PNP_GetDeviceList
+****************************************************************/
 
-/********************************************************************
-********************************************************************/
-
-WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u )
+WERROR _PNP_GetDeviceList(pipes_struct *p,
+			  struct PNP_GetDeviceList *r)
 {
-	fstring device;
 	char *devicepath;
+	uint32_t size = 0;
 
-	if ( !q_u->devicename )
+	DATA_BLOB blob;
+	struct lsa_StringLarge s;
+	enum ndr_err_code ndr_err;
+
+	if ( !r->in.filter )
 		return WERR_ACCESS_DENIED;
 
-	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
-
-	if (!(devicepath = get_device_path(p->mem_ctx, device))) {
+	if (!(devicepath = get_device_path(p->mem_ctx, r->in.filter))) {
 		return WERR_NOMEM;
 	}
 
-	/* This has to be DOUBLE NULL terminated */
+	size = strlen(devicepath) + 2;
 
-	init_unistr2( &r_u->devicepath, devicepath, UNI_STR_DBLTERMINATE );
-	TALLOC_FREE(devicepath);
-	r_u->needed = r_u->devicepath.uni_str_len;
+	if (*r->in.length < size) {
+		return WERR_CM_BUFFER_SMALL;
+	}
+
+	s.string = r->in.filter;
+
+	/* This has to be DOUBLE NULL terminated */
+	ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, &s,
+			(ndr_push_flags_fn_t)ndr_push_lsa_StringLarge);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ntstatus_to_werror(ndr_map_error2ntstatus(ndr_err));
+	}
+
+	r->out.buffer = (uint16_t *)talloc_memdup(p->mem_ctx, blob.data, blob.length);
+	if (!r->out.buffer) {
+		return WERR_NOMEM;
+	}
 
 	return WERR_OK;
 }
@@ -263,16 +280,6 @@ WERROR _PNP_GetRelatedDeviceInstance(pipes_struct *p,
 
 WERROR _PNP_EnumerateSubKeys(pipes_struct *p,
 			     struct PNP_EnumerateSubKeys *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_GetDeviceList(pipes_struct *p,
-			  struct PNP_GetDeviceList *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

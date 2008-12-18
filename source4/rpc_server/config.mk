@@ -18,7 +18,7 @@ PUBLIC_HEADERS += $(rpc_serversrcdir)/common/common.h
 [MODULE::dcerpc_rpcecho]
 INIT_FUNCTION = dcerpc_server_rpcecho_init
 SUBSYSTEM = dcerpc_server
-PRIVATE_DEPENDENCIES = NDR_ECHO 
+PRIVATE_DEPENDENCIES = NDR_ECHO LIBEVENTS
 # End MODULE dcerpc_rpcecho
 ################################################
 

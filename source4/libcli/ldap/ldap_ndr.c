@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "libcli/ldap/ldap.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"

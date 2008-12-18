@@ -326,7 +326,6 @@ typedef int (*ldb_attr_comparison_t)(struct ldb_context *, TALLOC_CTX *mem_ctx, 
   attribute handler structure
 
   attr			-> The attribute name
-  flags			-> LDB_ATTR_FLAG_*
   ldif_read_fn		-> convert from ldif to binary format
   ldif_write_fn		-> convert from binary to ldif format
   canonicalise_fn	-> canonicalise a value, for use by indexing and dn construction
@@ -349,6 +348,16 @@ struct ldb_schema_attribute {
 
 const struct ldb_schema_attribute *ldb_schema_attribute_by_name(struct ldb_context *ldb,
 								const char *name);
+
+struct ldb_dn_extended_syntax {
+	const char *name;
+	ldb_attr_handler_t read_fn;
+	ldb_attr_handler_t write_clear_fn;
+	ldb_attr_handler_t write_hex_fn;
+};
+
+const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_context *ldb,
+								    const char *name);
 
 /**
    The attribute is not returned by default
@@ -1066,6 +1075,15 @@ int ldb_request_add_control(struct ldb_request *req, const char *oid, bool criti
 struct ldb_control *ldb_request_get_control(struct ldb_request *req, const char *oid);
 
 /**
+   check if a control with the specified "oid" exist and return it 
+  \param rep the reply struct where to add the control
+  \param oid the object identifier of the control as string
+
+  \return the control, NULL if not found 
+*/
+struct ldb_control *ldb_reply_get_control(struct ldb_reply *rep, const char *oid);
+
+/**
   Search the database
 
   This function searches the database, and returns 
@@ -1421,15 +1439,82 @@ int ldb_base64_decode(char *s);
 
 /* The following definitions come from lib/ldb/common/ldb_dn.c  */
 
+/**
+  Get the linear form of a DN (without any extended components)
+  
+  \param dn The DN to linearize
+*/
+
+const char *ldb_dn_get_linearized(struct ldb_dn *dn);
+
+/**
+  Allocate a copy of the linear form of a DN (without any extended components) onto the supplied memory context 
+  
+  \param dn The DN to linearize
+  \param mem_ctx TALLOC context to return result on
+*/
+
+char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
+
+/**
+  Get the linear form of a DN (with any extended components)
+  
+  \param mem_ctx TALLOC context to return result on
+  \param dn The DN to linearize
+  \param mode Style of extended DN to return (0 is HEX representation of binary form, 1 is a string form)
+*/
+char *ldb_dn_get_extended_linearized(void *mem_ctx, struct ldb_dn *dn, int mode);
+const struct ldb_val *ldb_dn_get_extended_component(struct ldb_dn *dn, const char *name);
+int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const struct ldb_val *val);
+
+void ldb_dn_remove_extended_components(struct ldb_dn *dn);
+bool ldb_dn_has_extended(struct ldb_dn *dn);
+
+int ldb_dn_extended_add_syntax(struct ldb_context *ldb, 
+			       unsigned flags,
+			       const struct ldb_dn_extended_syntax *syntax);
+
+/** 
+  Allocate a new DN from a string
+
+  \param mem_ctx TALLOC context to return resulting ldb_dn structure on
+  \param dn The new DN 
+
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+*/
+
 struct ldb_dn *ldb_dn_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *dn);
+/** 
+  Allocate a new DN from a printf style format string and arguments
+
+  \param mem_ctx TALLOC context to return resulting ldb_dn structure on
+  \param new_fms The new DN as a format string (plus arguments)
+
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+*/
+
 struct ldb_dn *ldb_dn_new_fmt(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, const char *new_fmt, ...) PRINTF_ATTRIBUTE(3,4);
+/** 
+  Allocate a new DN from a struct ldb_val (useful to avoid buffer overrun)
+
+  \param mem_ctx TALLOC context to return resulting ldb_dn structure on
+  \param dn The new DN 
+
+  \note The DN will not be parsed at this time.  Use ldb_dn_validate to tell if the DN is syntacticly correct
+*/
+
 struct ldb_dn *ldb_dn_from_ldb_val(void *mem_ctx, struct ldb_context *ldb, const struct ldb_val *strdn);
+
+/**
+  Determine if this DN is syntactically valid 
+
+  \param dn The DN to validate
+*/
+
 bool ldb_dn_validate(struct ldb_dn *dn);
 
 char *ldb_dn_escape_value(TALLOC_CTX *mem_ctx, struct ldb_val value);
-const char *ldb_dn_get_linearized(struct ldb_dn *dn);
 const char *ldb_dn_get_casefold(struct ldb_dn *dn);
-char *ldb_dn_alloc_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 char *ldb_dn_alloc_casefold(TALLOC_CTX *mem_ctx, struct ldb_dn *dn);
 
 int ldb_dn_compare_base(struct ldb_dn *base, struct ldb_dn *dn);

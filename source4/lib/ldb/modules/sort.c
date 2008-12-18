@@ -152,7 +152,7 @@ static int server_sort_results(struct sort_context *ac)
 		ares->type = LDB_REPLY_ENTRY;
 		ares->message = talloc_move(ares, &ac->msgs[i]);
 
-		ret = ldb_module_send_entry(ac->req, ares->message);
+		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

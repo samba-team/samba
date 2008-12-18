@@ -31,13 +31,14 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
-
+#include "lib/socket/socket.h"
 
 struct sec_conn_state {
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_pipe *pipe2;
 	struct dcerpc_binding *binding;
 	struct smbcli_tree *tree;
+	struct socket_address *peer_addr;
 };
 
 
@@ -94,11 +95,17 @@ _PUBLIC_ struct composite_context* dcerpc_secondary_connection_send(struct dcerp
 		return c;
 
 	case NCACN_IP_TCP:
+		s->peer_addr = dcerpc_socket_peer_addr(s->pipe->conn, s);
+		if (!s->peer_addr) {
+			composite_error(c, NT_STATUS_INVALID_PARAMETER);
+			return c;
+		}
+
 		pipe_tcp_req = dcerpc_pipe_open_tcp_send(s->pipe2->conn,
-							 s->binding->host,
+							 s->peer_addr->addr,
 							 s->binding->target_hostname,
 							 atoi(s->binding->endpoint),
-							 dcerpc_resolve_ctx(s->pipe->conn));
+							 resolve_context_init(s));
 		composite_continue(c, pipe_tcp_req, continue_open_tcp, c);
 		return c;
 

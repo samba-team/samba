@@ -846,19 +846,36 @@ interface netlogon
 		uint32 unknown5;
 	} netr_NETLOGON_INFO_3;
 
+	typedef struct {
+		[string,charset(UTF16)] uint16 *trusted_dc_name;
+		[string,charset(UTF16)] uint16 *trusted_domain_name;
+	} netr_NETLOGON_INFO_4;
+
 	typedef union {
 		[case(1)]  netr_NETLOGON_INFO_1 *info1;
 		[case(2)]  netr_NETLOGON_INFO_2 *info2;
 		[case(3)]  netr_NETLOGON_INFO_3 *info3;
+		[case(4)]  netr_NETLOGON_INFO_4 *info4;
 	} netr_CONTROL_QUERY_INFORMATION;
 
 	/* function_code values */
 	typedef [v1_enum] enum {
-		NETLOGON_CONTROL_SYNC             = 2,
-		NETLOGON_CONTROL_REDISCOVER       = 5,
-		NETLOGON_CONTROL_TC_QUERY         = 6,
-		NETLOGON_CONTROL_TRANSPORT_NOTIFY = 7,
-		NETLOGON_CONTROL_SET_DBFLAG       = 65534
+		NETLOGON_CONTROL_QUERY			= 0x00000001,
+		NETLOGON_CONTROL_REPLICATE		= 0x00000002,
+		NETLOGON_CONTROL_SYNCHRONIZE		= 0x00000003,
+		NETLOGON_CONTROL_PDC_REPLICATE		= 0x00000004,
+		NETLOGON_CONTROL_REDISCOVER		= 0x00000005,
+		NETLOGON_CONTROL_TC_QUERY		= 0x00000006,
+		NETLOGON_CONTROL_TRANSPORT_NOTIFY	= 0x00000007,
+		NETLOGON_CONTROL_FIND_USER		= 0x00000008,
+		NETLOGON_CONTROL_CHANGE_PASSWORD	= 0x00000009,
+		NETLOGON_CONTROL_TC_VERIFY		= 0x0000000A,
+		NETLOGON_CONTROL_FORCE_DNS_REG		= 0x0000000B,
+		NETLOGON_CONTROL_QUERY_DNS_REG		= 0x0000000C,
+		NETLOGON_CONTROL_BACKUP_CHANGE_LOG	= 0x0000FFFC,
+		NETLOGON_CONTROL_TRUNCATE_LOG		= 0x0000FFFD,
+		NETLOGON_CONTROL_SET_DBFLAG		= 0x0000FFFE,
+		NETLOGON_CONTROL_BREAKPOINT		= 0x0000FFFF
 	} netr_LogonControlCode;
 
 	WERROR netr_LogonControl(
@@ -886,6 +903,9 @@ interface netlogon
 		[case(NETLOGON_CONTROL_REDISCOVER)]        [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TC_QUERY)]          [string,charset(UTF16)] uint16 *domain;
 		[case(NETLOGON_CONTROL_TRANSPORT_NOTIFY)]  [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_CHANGE_PASSWORD)]   [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_TC_VERIFY)]         [string,charset(UTF16)] uint16 *domain;
+		[case(NETLOGON_CONTROL_FIND_USER)]         [string,charset(UTF16)] uint16 *user;
 		[case(NETLOGON_CONTROL_SET_DBFLAG)]        uint32 debug_level;
 	} netr_CONTROL_DATA_INFORMATION;
 
@@ -1004,9 +1024,9 @@ interface netlogon
 
 	WERROR netr_LogonControl2Ex(
 		[in,unique] [string,charset(UTF16)] uint16 *logon_server,
-		[in]   uint32 function_code,
+		[in]   netr_LogonControlCode function_code,
 		[in]   uint32 level,
-		[in][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  data,
+		[in,ref][switch_is(function_code)] netr_CONTROL_DATA_INFORMATION  *data,
 		[out,ref][switch_is(level)]	netr_CONTROL_QUERY_INFORMATION *query
 		);
 
@@ -1181,12 +1201,6 @@ interface netlogon
 		NETR_TRUST_FLAG_AES       = 0x00000100
 	} netr_TrustFlags;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint16 length;
-		uint16 size;
-		[size_is(size/2),length_is(length/2)] uint16 *data;
-	} netr_BinaryString;
-
 	typedef struct {
 		netr_Blob blob;
 		[string,charset(UTF16)] uint16 *workstation_domain;
@@ -1195,7 +1209,7 @@ interface netlogon
 		[string,charset(UTF16)] uint16 *unknown2;
 		[string,charset(UTF16)] uint16 *unknown3;
 		[string,charset(UTF16)] uint16 *unknown4;
-		netr_BinaryString blob2;
+		lsa_BinaryString blob2;
 		lsa_String product;
 		lsa_String unknown5;
 		lsa_String unknown6;

@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "cluster/cluster.h"
 #include "system/filesys.h"
 #include "cluster/cluster_private.h"

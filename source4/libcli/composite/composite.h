@@ -24,6 +24,8 @@
 
 #include "libcli/raw/interfaces.h"
 
+struct event_context;
+
 /*
   this defines the structures associated with "composite"
   requests. Composite requests are libcli requests that are internally

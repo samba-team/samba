@@ -187,6 +187,7 @@ void ndr_print_netr_InfoFlags(struct ndr_print *ndr, const char *name, uint32_t 
 void ndr_print_netr_NETLOGON_INFO_1(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_1 *r);
 void ndr_print_netr_NETLOGON_INFO_2(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_2 *r);
 void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_3 *r);
+void ndr_print_netr_NETLOGON_INFO_4(struct ndr_print *ndr, const char *name, const struct netr_NETLOGON_INFO_4 *r);
 void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_QUERY_INFORMATION *r);
 void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char *name, enum netr_LogonControlCode r);
 void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_DATA_INFORMATION *r);
@@ -205,7 +206,6 @@ enum ndr_err_code ndr_push_netr_DsRGetDCNameInfo(struct ndr_push *ndr, int ndr_f
 enum ndr_err_code ndr_pull_netr_DsRGetDCNameInfo(struct ndr_pull *ndr, int ndr_flags, struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char *name, const struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_TrustFlags(struct ndr_print *ndr, const char *name, uint32_t r);
-void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *name, const struct netr_BinaryString *r);
 void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *name, const struct netr_DomainQuery1 *r);
 void ndr_print_netr_DomainQuery(struct ndr_print *ndr, const char *name, const union netr_DomainQuery *r);
 void ndr_print_netr_trust_extension(struct ndr_print *ndr, const char *name, const struct netr_trust_extension *r);

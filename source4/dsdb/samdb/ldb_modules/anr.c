@@ -289,7 +289,7 @@ static int anr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 		return ldb_module_send_referral(ac->req, ares->referral);

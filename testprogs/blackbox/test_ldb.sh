@@ -181,21 +181,23 @@ if [ x"$st" != x"0" ]; then
 fi
 
 echo "Getting HEX GUID/SID of $BASEDN"
-HEXDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:0 | grep 'dn: ' | cut -d ' ' -f2-`
+HEXDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:0 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
 HEXGUID=`echo "$HEXDN" | cut -d ';' -f1`
-HEXSID=`echo "$HEXDN" | cut -d ';' -f2`
 echo "HEXGUID[$HEXGUID]"
-echo "HEXSID[$HEXSID]"
+
+echo "Getting STR GUID/SID of $BASEDN"
+STRDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:1 distinguishedName | grep 'distinguishedName: ' | cut -d ' ' -f2-`
+echo "STRDN: $STRDN"
+STRGUID=`echo "$STRDN" | cut -d ';' -f1`
+echo "STRGUID[$STRGUID]"
 
 echo "Getting STR GUID/SID of $BASEDN"
 STRDN=`bin/ldbsearch $CONFIGURATION $options -b "$BASEDN" -H $p://$SERVER -s base "(objectClass=*)" --controls=extended_dn:1:1 | grep 'dn: ' | cut -d ' ' -f2-`
 echo "STRDN: $STRDN"
-STRGUID=`echo "$STRDN" | cut -d ';' -f1`
 STRSID=`echo "$STRDN" | cut -d ';' -f2`
-echo "STRGUID[$STRGUID]"
 echo "STRSID[$STRSID]"
 
-SPECIALDNS="$HEXGUID $HEXSID $STRGUID $STRSID"
+SPECIALDNS="$HEXGUID $STRGUID $STRSID"
 for SPDN in $SPECIALDNS; do
 	echo "Search for $SPDN"
 	nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER -s base -b "$SPDN" '(objectClass=*)' | grep "dn: $BASEDN"  | wc -l`

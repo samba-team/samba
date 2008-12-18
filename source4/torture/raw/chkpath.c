@@ -306,7 +306,7 @@ static bool test_chkpath_names(struct smbcli_state *cli, struct torture_context 
 		case '?':/*0x3F*/
 		case '|':/*0x7C*/
 			if (i == '/' &&
-			    torture_setting_bool(tctx, "samba3", true)) {
+			    torture_setting_bool(tctx, "samba3", false)) {
 				/* samba 3 handles '/' as '\\' */
 				break;
 			}
