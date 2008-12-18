@@ -1175,13 +1175,13 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
  */
 
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_in *server,
-			    const struct sockaddr_in *client,
+			    const struct sockaddr *server,
+			    const struct sockaddr *client,
 			    void (*release_ip_handler)(const char *ip_addr,
 						       void *private_data),
 			    void *private_data)
 {
-	struct ctdb_control_tcp p;
+	struct ctdb_control_tcp_vnn p;
 	TDB_DATA data;
 	NTSTATUS status;
 
@@ -1189,6 +1189,21 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	 * Only one connection so far
 	 */
 	SMB_ASSERT(conn->release_ip_handler == NULL);
+
+	switch (client->sa_family) {
+	case AF_INET:
+		p.dest.ip = *(struct sockaddr_in *)server;
+		p.src.ip = *(struct sockaddr_in *)client;
+		break;
+#ifdef HAVE_IPV6
+	case AF_INET6:
+		p.dest.ip6 = *(struct sockaddr_in6 *)server;
+		p.src.ip6 = *(struct sockaddr_in6 *)client;
+		break;
+#endif
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	conn->release_ip_handler = release_ip_handler;
 
@@ -1201,9 +1216,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 		return status;
 	}
 
-	p.dest = *server;
-	p.src = *client;
-
 	/*
 	 * inform ctdb of our tcp connection, so if IP takeover happens ctdb
 	 * can send an extra ack to trigger a reset for our client, so it
@@ -1213,7 +1225,7 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 	data.dsize = sizeof(p);
 
 	return ctdbd_control(conn, CTDB_CURRENT_NODE, 
-			     CTDB_CONTROL_TCP_CLIENT, 0,
+			     CTDB_CONTROL_TCP_ADD, 0,
 			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);
 }
 

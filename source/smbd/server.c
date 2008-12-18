@@ -59,7 +59,8 @@ int get_client_fd(void)
 	return server_fd;
 }
 
-int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client)
+static int client_get_tcp_info(struct sockaddr_storage *server,
+			       struct sockaddr_storage *client)
 {
 	socklen_t length;
 	if (server_fd == -1) {
@@ -1466,7 +1467,7 @@ extern void build_options(bool screen);
 		 * client.
 		 */
 
-		struct sockaddr_in srv, clnt;
+		struct sockaddr_storage srv, clnt;
 
 		if (client_get_tcp_info(&srv, &clnt) == 0) {
 
@@ -1474,7 +1475,9 @@ extern void build_options(bool screen);
 
 			status = ctdbd_register_ips(
 				messaging_ctdbd_connection(),
-				&srv, &clnt, release_ip, NULL);
+				(struct sockaddr *)&srv,
+				(struct sockaddr *)&clnt,
+				release_ip, NULL);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
