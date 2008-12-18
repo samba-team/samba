@@ -653,7 +653,7 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     reg = registry.Registry()
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
-    reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
+    reg.mount_hive(hive, registry.HKEY_LOCAL_MACHINE)
     provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
