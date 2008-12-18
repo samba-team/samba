@@ -44,7 +44,6 @@ test_node=1
 
 try_command_on_node 0 "ctdb listnodes"
 num_nodes=$(echo "$out" | wc -l)
-
 echo "There are $num_nodes nodes."
 
 echo "Shutting down node ${test_node}..."

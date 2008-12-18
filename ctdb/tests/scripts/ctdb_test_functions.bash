@@ -160,13 +160,20 @@ try_command_on_node ()
     local nodespec="$1" ; shift
 
     local verbose=false
-    if [ "$nodespec" = "-v" ] ; then
-	verbose=true
+    local onnode_opts=""
+
+    while [ "${nodespec#-}" != "$nodespec" ] ; do
+	if [ "$nodespec" = "-v" ] ; then
+	    verbose=true
+	else
+	    onnode_opts="$nodespec"
+	fi
 	nodespec="$1" ; shift
-    fi
+    done
+
     local cmd="$*"
 
-    out=$(onnode -q "$nodespec" "$cmd" 2>&1) || {
+    out=$(onnode -q $onnode_opts "$nodespec" "$cmd" 2>&1) || {
 
 	echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
 	echo "$out"

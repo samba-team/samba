@@ -37,10 +37,10 @@ pattern='^(CTDB version 1|Gathered statistics for [[:digit:]]+ nodes|[[:space:]]
 
 try_command_on_node -v 0 "onnode -q 1 ctdb statistics"
 
-sanity_check_output 38 $num_nodes "$pattern" "$out"
+sanity_check_output 38 "$pattern" "$out"
 
 try_command_on_node -v 0 "onnode -q 1 ctdb statistics -n all"
 
-sanity_check_output 38 $num_nodes "$pattern" "$out"
+sanity_check_output 38 "$pattern" "$out"
 
 ctdb_test_exit
