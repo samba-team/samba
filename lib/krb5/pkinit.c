@@ -649,7 +649,7 @@ pk_mk_padata(krb5_context context,
 	free(buf.data);
 
     if (ret == 0)
-	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
+    	krb5_padata_add(context, md, KRB5_PADATA_PK_AS_09_BINDING, NULL, 0);
 
  out:
     free_ContentInfo(&content_info);
@@ -1344,12 +1344,42 @@ _krb5_pk_rd_pa_reply(krb5_context context,
 	case choice_PA_PK_AS_REP_encKeyPack:
 	    os = rep.u.encKeyPack;
 	    break;
-	default:
+	default: {
+	    PA_PK_AS_REP_BTMM btmm;
 	    free_PA_PK_AS_REP(&rep);
-	    krb5_set_error_message(context, EINVAL,
-				   N_("PKINIT: -27 reply "
-				      "invalid content type", ""));
-	    return EINVAL;
+	    memset(&rep, 0, sizeof(rep));
+	    
+	    ret = decode_PA_PK_AS_REP_BTMM(pa->padata_value.data,
+					   pa->padata_value.length,
+					   &btmm,
+					   &size);
+	    if (ret) {
+		krb5_set_error_message(context, EINVAL,
+				       N_("PKINIT: -27 reply "
+					  "invalid content type", ""));
+		return EINVAL;
+	    }
+
+	    if (btmm.dhSignedData || btmm.encKeyPack == NULL) {
+		free_PA_PK_AS_REP_BTMM(&btmm);
+		ret = EINVAL;
+		krb5_set_error_message(context, ret,
+				       N_("DH mode not supported for BTMM mode", ""));
+		return ret;
+	    }
+
+	    /*
+	     * Transform to IETF style PK-INIT reply so that free works below
+	     */
+
+	    rep.element = choice_PA_PK_AS_REP_encKeyPack;
+	    rep.u.encKeyPack.data = btmm.encKeyPack->data;
+	    rep.u.encKeyPack.length = btmm.encKeyPack->length;
+	    btmm.encKeyPack->data = NULL;
+	    btmm.encKeyPack->length = 0;
+	    free_PA_PK_AS_REP_BTMM(&btmm);
+	    os = rep.u.encKeyPack;
+	}
 	}
 
 	ret = hx509_cms_unwrap_ContentInfo(&os, &oid, &data, NULL);
