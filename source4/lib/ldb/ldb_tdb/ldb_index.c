@@ -226,7 +226,7 @@ int ltdb_index_transaction_start(struct ldb_module *module)
   a wrapper around ltdb_search_dn1() which translates pointer based index records
   and maps them into normal ldb message structures
  */
-static int ltdb_search_dn1_wrap(struct ldb_module *module, 
+static int ltdb_search_dn1_index(struct ldb_module *module, 
 				struct ldb_dn *dn, struct ldb_message *msg)
 {
 	int ret, i;
@@ -237,7 +237,7 @@ static int ltdb_search_dn1_wrap(struct ldb_module *module,
 
 	/* if this isn't a @INDEX record then don't munge it */
 	if (strncmp(ldb_dn_get_linearized(msg->dn), LTDB_INDEX ":", strlen(LTDB_INDEX) + 1) != 0) {
-		return ret;
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
@@ -265,7 +265,7 @@ static int ltdb_idxptr_fix_dn(struct ldb_module *module, const char *strdn)
 	int ret;
 	
 	dn = ldb_dn_new(msg, module->ldb, strdn);
-	if (ltdb_search_dn1_wrap(module, dn, msg) == LDB_SUCCESS) {
+	if (ltdb_search_dn1_index(module, dn, msg) == LDB_SUCCESS) {
 		ret = ltdb_store(module, msg, TDB_REPLACE);
 	}
 	talloc_free(msg);
@@ -535,7 +535,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_search_dn1_wrap(module, dn, msg);
+	ret = ltdb_search_dn1_index(module, dn, msg);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -881,7 +881,7 @@ static int ltdb_index_dn_one(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_search_dn1_wrap(module, key, msg);
+	ret = ltdb_search_dn1_index(module, key, msg);
 	talloc_free(key);
 	if (ret != LDB_SUCCESS) {
 		return ret;
@@ -1009,7 +1009,7 @@ static int ltdb_index_filter(const struct dn_list *dn_list,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ltdb_search_dn1_wrap(ac->module, dn, msg);
+		ret = ltdb_search_dn1(ac->module, dn, msg);
 		talloc_free(dn);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/* the record has disappeared? yes, this can happen */
@@ -1217,7 +1217,7 @@ static int ltdb_index_add1(struct ldb_module *module, const char *dn,
 	}
 	talloc_steal(msg, dn_key);
 
-	ret = ltdb_search_dn1_wrap(module, dn_key, msg);
+	ret = ltdb_search_dn1_index(module, dn_key, msg);
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(msg);
 		return ret;
@@ -1329,7 +1329,7 @@ int ltdb_index_del_value(struct ldb_module *module, const char *dn,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ltdb_search_dn1_wrap(module, dn_key, msg);
+	ret = ltdb_search_dn1_index(module, dn_key, msg);
 	if (ret != LDB_SUCCESS && ret != LDB_ERR_NO_SUCH_OBJECT) {
 		talloc_free(dn_key);
 		return ret;
