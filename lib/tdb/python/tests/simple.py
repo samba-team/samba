@@ -80,18 +80,6 @@ class SimpleTdbTests(TestCase):
         self.tdb["brainslug"] = "2"
         self.assertEquals(["bla", "brainslug"], list(self.tdb))
 
-    def test_items(self):
-        self.tdb["bla"] = "1"
-        self.tdb["brainslug"] = "2"
-        self.assertEquals([("bla", "1"), ("brainslug", "2")], self.tdb.items())
-
-    def test_iteritems(self):
-        self.tdb["bloe"] = "2"
-        self.tdb["bla"] = "25"
-        i = self.tdb.iteritems()
-        self.assertEquals(set([("bla", "25"), ("bloe", "2")]),
-                              set([i.next(), i.next()]))
-
     def test_transaction_cancel(self):
         self.tdb["bloe"] = "2"
         self.tdb.transaction_start()
@@ -112,39 +100,23 @@ class SimpleTdbTests(TestCase):
         i = iter(self.tdb)
         self.assertEquals(set(["bloe", "bla"]), set([i.next(), i.next()]))
 
-    def test_keys(self):
-        self.tdb["bloe"] = "2"
-        self.tdb["bla"] = "25"
-        self.assertEquals(["bla", "bloe"], self.tdb.keys())
-
     def test_iterkeys(self):
         self.tdb["bloe"] = "2"
         self.tdb["bla"] = "25"
         i = self.tdb.iterkeys()
         self.assertEquals(set(["bloe", "bla"]), set([i.next(), i.next()]))
 
-    def test_values(self):
-        self.tdb["bloe"] = "2"
-        self.tdb["bla"] = "25"
-        self.assertEquals(["25", "2"], self.tdb.values())
-
-    def test_itervalues(self):
-        self.tdb["bloe"] = "2"
-        self.tdb["bla"] = "25"
-        i = self.tdb.itervalues()
-        self.assertEquals(set(["25", "2"]), set([i.next(), i.next()]))
-
     def test_clear(self):
         self.tdb["bloe"] = "2"
         self.tdb["bla"] = "25"
-        self.assertEquals(2, len(self.tdb))
+        self.assertEquals(2, len(list(self.tdb)))
         self.tdb.clear()
-        self.assertEquals(0, len(self.tdb))
+        self.assertEquals(0, len(list(self.tdb)))
 
     def test_len(self):
-        self.assertEquals(0, len(self.tdb))
+        self.assertEquals(0, len(list(self.tdb)))
         self.tdb["entry"] = "value"
-        self.assertEquals(1, len(self.tdb))
+        self.assertEquals(1, len(list(self.tdb)))
 
 
 if __name__ == '__main__':
