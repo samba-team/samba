@@ -267,7 +267,10 @@ der_get_octet_string_ber (const unsigned char *p, size_t len,
     while (len) {
 	e = der_get_tag (p, len, &class, &type, &tag, &l);
 	if (e) goto out;
-	if (class != ASN1_C_UNIV) return ASN1_BAD_ID;
+	if (class != ASN1_C_UNIV) {
+	    e = ASN1_BAD_ID; 
+	    goto out; 
+	}
 	if (type == PRIM && tag == UT_EndOfContent) {
 	    if (depth == 0)
 		break;
