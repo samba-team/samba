@@ -91,12 +91,12 @@ int main(int argc, const char **argv)
 
 	ldb = ldb_init(NULL, NULL);
 
+	options = ldb_cmdline_process(ldb, argc, argv, usage);
+
 	if (ldb_transaction_start(ldb) != 0) {
 		printf("Failed to start transaction: %s\n", ldb_errstring(ldb));
 		exit(1);
 	}
-
-	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
 		ret = process_file(ldb, stdin, &count);
