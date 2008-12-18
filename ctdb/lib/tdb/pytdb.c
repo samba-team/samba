@@ -34,10 +34,12 @@
 #include <signal.h>
 #include <tdb.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 typedef struct {
 	PyObject_HEAD
 	TDB_CONTEXT *ctx;
+	bool closed;
 } PyTdbObject;
 
 PyAPI_DATA(PyTypeObject) PyTdb;
@@ -93,6 +95,7 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 
 	ret = PyObject_New(PyTdbObject, &PyTdb);
 	ret->ctx = ctx;
+	ret->closed = false;
 	return (PyObject *)ret;
 }
 
@@ -161,7 +164,11 @@ static PyObject *obj_unlockall_read(PyTdbObject *self)
 
 static PyObject *obj_close(PyTdbObject *self)
 {
-	int ret = tdb_close(self->ctx);
+	int ret;
+	if (self->closed)
+		return Py_None;
+	ret = tdb_close(self->ctx);
+	self->closed = true;
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
 	return Py_None;
 }
@@ -395,7 +402,8 @@ static PyObject *tdb_object_repr(PyTdbObject *self)
 
 static void tdb_object_dealloc(PyTdbObject *self)
 {
-	tdb_close(self->ctx);
+	if (!self->closed)
+		tdb_close(self->ctx);
 	PyObject_Del(self);
 }
 
