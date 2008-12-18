@@ -49,8 +49,8 @@ onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status 1 disconnected
 try_command_on_node -v 0 '! ctdb ping -n 1'
 
 sanity_check_output \
-    2 \
-    "(: ctdb_control error: 'ctdb_control to disconnected node'|Unable to get ping response from node 1)" \
+    1 \
+    "(: ctdb_control error: 'ctdb_control to disconnected node'|Unable to get ping response from node 1|Node 1 is DISCONNECTED)" \
     "$out"
 
 echo "Expect a restart..."

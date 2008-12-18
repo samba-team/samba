@@ -38,24 +38,6 @@ EOF
 
 ctdb_test_init "$@"
 
-# Note that this doesn't work reliably over NFS!
-ctdb_trigger_recovered_file="/tmp/ctdb-trigger-recovered"
-
-setup_recovered_trigger ()
-{
-    onnode -q 0 touch "$ctdb_trigger_recovered_file"
-}
-
-recovered_triggered ()
-{
-    onnode -q 0 '! [ -e "$ctdb_trigger_recovered_file" ]'
-}
-
-wait_until_recovered_triggered ()
-{
-    wait_until 30 recovered_triggered
-}
-
 ########################################
 
 set -e
@@ -78,12 +60,9 @@ done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
 echo "Selected node ${test_node} with IPs: $ips"
 
-setup_recovered_trigger
-
 echo "Disabling node $test_node"
 try_command_on_node 1 ctdb disable -n $test_node
 
-# Avoid a potential race condition...
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disabled
 
 if wait_until_ips_are_on_nodeglob "[!${test_node}]" $ips ; then
@@ -106,11 +85,6 @@ else
     echo "Some IPs didn't move."
     testfailures=1
 fi
-
-# Disabling this because for some reason it is completely unreliable.
-# Depend even more on the sleep below...
-echo "Waiting until cluster has recovered..."
-wait_until_recovered_triggered
 
 echo "All done!"
 
