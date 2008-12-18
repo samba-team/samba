@@ -585,7 +585,7 @@ bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
 
 	*new_pass = data_blob_talloc(mem_ctx, &in_buffer[512 - byte_len], byte_len);
 
-	if (!*new_pass->data) {
+	if (!new_pass->data) {
 		return false;
 	}
 
