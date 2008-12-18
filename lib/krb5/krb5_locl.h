@@ -214,7 +214,6 @@ struct _krb5_get_init_creds_opt_private {
     krb5_get_init_creds_tristate req_pac;
     /* PKINIT */
     krb5_pk_init_ctx pk_init_ctx;
-    KRB_ERROR *error;
     krb5_get_init_creds_tristate addressless;
     int flags;
 #define KRB5_INIT_CREDS_CANONICALIZE		1
