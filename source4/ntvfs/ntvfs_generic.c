@@ -281,6 +281,8 @@ static NTSTATUS map_openx_open(uint16_t flags, uint16_t open_mode,
 			       uint16_t open_func, const char *fname,
 			       union smb_open *io2)
 {
+	io2->generic.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
+
 	if (flags & OPENX_FLAGS_REQUEST_OPLOCK) {
 		io2->generic.in.flags |= NTCREATEX_FLAGS_REQUEST_OPLOCK;
 	}
