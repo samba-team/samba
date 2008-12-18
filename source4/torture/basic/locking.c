@@ -624,10 +624,18 @@ ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 	torture_comment(tctx, "a different processs %s get a write lock on the unlocked stack\n", ret?"can":"cannot");
 
 
-	smbcli_close(cli1->tree, fnum1);
-	smbcli_close(cli2->tree, fnum2);
-	smbcli_unlink(cli1->tree, fname);
-       
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum1),
+		talloc_asprintf(tctx, "close1 failed (%s)", smbcli_errstr(cli1->tree)));
+
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli2->tree, fnum2),
+		talloc_asprintf(tctx, "close2 failed (%s)", smbcli_errstr(cli2->tree)));
+
+	torture_assert_ntstatus_ok(tctx, smbcli_close(cli1->tree, fnum3),
+		talloc_asprintf(tctx, "close2 failed (%s)", smbcli_errstr(cli2->tree)));
+
+	torture_assert_ntstatus_ok(tctx, smbcli_unlink(cli1->tree, fname),
+		talloc_asprintf(tctx, "unlink failed (%s)", smbcli_errstr(cli1->tree)));
+
 	return correct;
 }
 
