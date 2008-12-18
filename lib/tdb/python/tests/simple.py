@@ -73,7 +73,7 @@ class SimpleTdbTests(TestCase):
         self.tdb.map_size
 
     def test_name(self):
-        self.tdb.name
+        self.tdb.filename
 
     def test_iterator(self):
         self.tdb["bla"] = "1"
