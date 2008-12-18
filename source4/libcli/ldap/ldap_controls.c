@@ -24,6 +24,7 @@
 #include "libcli/ldap/ldap.h"
 #include "lib/ldb/include/ldb.h"
 #include "libcli/ldap/ldap_proto.h"
+#include "dsdb/samdb/samdb.h"
 
 struct control_handler {
 	const char *oid;
@@ -1087,6 +1088,119 @@ static bool encode_vlv_response(void *mem_ctx, void *in, DATA_BLOB *out)
 	return true;
 }
 
+static bool encode_openldap_dereference(void *mem_ctx, void *in, DATA_BLOB *out)
+{
+	struct dsdb_openldap_dereference_control *control = talloc_get_type(in, struct dsdb_openldap_dereference_control);
+	int i,j;
+	struct asn1_data *data = asn1_init(mem_ctx);
+
+	if (!data) return false;
+	
+	if (!control) return false;
+	
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+	
+	for (i=0; control->dereference && control->dereference[i]; i++) {
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+			return false;
+		}
+		if (!asn1_write_OctetString(data, control->dereference[i]->source_attribute, strlen(control->dereference[i]->source_attribute))) {
+			return false;
+		}
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+			return false;
+		}
+		for (j=0; control->dereference && control->dereference[i]->dereference_attribute[j]; j++) {
+			if (!asn1_write_OctetString(data, control->dereference[i]->dereference_attribute[j], 
+						    strlen(control->dereference[i]->dereference_attribute[j]))) {
+				return false;
+			}
+		}
+		
+		asn1_pop_tag(data);
+		asn1_pop_tag(data);
+	}
+	asn1_pop_tag(data);
+
+	*out = data_blob_talloc(mem_ctx, data->data, data->length);
+	if (out->data == NULL) {
+		return false;
+	}
+	talloc_free(data);
+	return true;
+}
+
+static bool decode_openldap_dereference(void *mem_ctx, DATA_BLOB in, void **out)
+{
+	struct asn1_data *data = asn1_init(mem_ctx);
+	struct dsdb_openldap_dereference_result_control *control;
+	struct dsdb_openldap_dereference_result **r = NULL;
+	int i = 0;
+	if (!data) return false;
+
+	control = talloc(mem_ctx, struct dsdb_openldap_dereference_result_control);
+	if (!control) return false;
+
+	if (!asn1_load(data, in)) {
+		return false;
+	}
+
+	control = talloc(mem_ctx, struct dsdb_openldap_dereference_result_control);
+	if (!control) {
+		return false;
+	}
+
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	while (asn1_tag_remaining(data) > 0) {					
+		r = talloc_realloc(control, r, struct dsdb_openldap_dereference_result *, i + 2);
+		if (!r) {
+			return false;
+		}
+		r[i] = talloc_zero(r, struct dsdb_openldap_dereference_result);
+		if (!r[i]) {
+			return false;
+		}
+
+		if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+			return false;
+		}
+		
+		asn1_read_OctetString_talloc(r[i], data, &r[i]->source_attribute);
+		asn1_read_OctetString_talloc(r[i], data, &r[i]->dereferenced_dn);
+		if (asn1_peek_tag(data, ASN1_CONTEXT(0))) {
+			if (!asn1_start_tag(data, ASN1_CONTEXT(0))) {
+				return false;
+			}
+			
+			ldap_decode_attribs_bare(r, data, &r[i]->attributes,
+						 &r[i]->num_attributes);
+			
+			if (!asn1_end_tag(data)) {
+				return false;
+			}
+		}
+		if (!asn1_end_tag(data)) {
+			return false;
+		}
+		i++;
+		r[i] = NULL;
+	}
+
+	if (!asn1_end_tag(data)) {
+		return false;
+	}
+
+	control->attributes = r;
+	*out = control;
+
+	return true;
+}
+
 struct control_handler ldap_known_controls[] = {
 	{ "1.2.840.113556.1.4.319", decode_paged_results_request, encode_paged_results_request },
 	{ "1.2.840.113556.1.4.529", decode_extended_dn_request, encode_extended_dn_request },
@@ -1107,6 +1221,7 @@ struct control_handler ldap_known_controls[] = {
 	{ "1.3.6.1.4.1.7165.4.3.2", NULL, NULL },
 /* DSDB_EXTENDED_REPLICATED_OBJECTS_OID is internal only, and has no network representation */
 	{ "1.3.6.1.4.1.7165.4.4.1", NULL, NULL },
+	{ DSDB_OPENLDAP_DEREFERENCE_CONTROL, decode_openldap_dereference, encode_openldap_dereference},
 	{ NULL, NULL, NULL }
 };
 

@@ -244,7 +244,7 @@ systemAuxiliaryClass: samDomain
 defaultSecurityDescriptor: D:(A;;RPLCLORC;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)(A;;RPLCLORC;;;AU)
 systemFlags: 16
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=Builtin-Domain,${SCHEMADN}
+defaultObjectCategory: CN=Samba4-Local-Domain,${SCHEMADN}
 
 
 dn: CN=Samba4Top,${SCHEMADN}

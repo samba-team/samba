@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "libcli/composite/composite.h"
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
@@ -32,9 +31,12 @@
 struct resolve_state {
 	struct resolve_context *ctx;
 	struct resolve_method *method;
+	uint32_t flags;
+	uint16_t port;
 	struct nbt_name name;
 	struct composite_context *creq;
 	struct socket_address **addrs;
+	char **names;
 };
 
 static struct composite_context *setup_next_method(struct composite_context *c);
@@ -84,7 +86,7 @@ static void resolve_handler(struct composite_context *creq)
 	struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 	const struct resolve_method *method = state->method;
 
-	c->status = method->recv_fn(creq, state, &state->addrs);
+	c->status = method->recv_fn(creq, state, &state->addrs, &state->names);
 	
 	if (!NT_STATUS_IS_OK(c->status)) {
 		state->method = state->method->next;
@@ -112,7 +114,11 @@ static struct composite_context *setup_next_method(struct composite_context *c)
 
 	do {
 		if (state->method) {
-			creq = state->method->send_fn(c, c->event_ctx, state->method->privdata, &state->name);
+			creq = state->method->send_fn(c, c->event_ctx,
+						      state->method->privdata,
+						      state->flags,
+						      state->port,
+						      &state->name);
 		}
 		if (creq == NULL && state->method) state->method = state->method->next;
 
@@ -130,6 +136,8 @@ static struct composite_context *setup_next_method(struct composite_context *c)
   general name resolution - async send
  */
 struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
+						uint32_t flags,
+						uint16_t port,
 						struct nbt_name *name,
 						struct event_context *event_ctx)
 {
@@ -149,6 +157,9 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 	if (composite_nomem(state, c)) return c;
 	c->private_data = state;
 
+	state->flags = flags;
+	state->port = port;
+
 	c->status = nbt_name_dup(state, name, &state->name);
 	if (!composite_is_ok(c)) return c;
 	
@@ -165,6 +176,11 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 							      inet_ntoa(ip), 0);
 		if (composite_nomem(state->addrs[0], c)) return c;
 		state->addrs[1] = NULL;
+		state->names = talloc_array(state, char *, 2);
+		if (composite_nomem(state->names, c)) return c;
+		state->names[0] = talloc_strdup(state->names, state->name.name);
+		if (composite_nomem(state->names[0], c)) return c;
+		state->names[1] = NULL;
 		composite_done(c);
 		return c;
 	}
@@ -185,7 +201,8 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
  */
 NTSTATUS resolve_name_all_recv(struct composite_context *c,
 			       TALLOC_CTX *mem_ctx,
-			       struct socket_address ***addrs)
+			       struct socket_address ***addrs,
+			       char ***names)
 {
 	NTSTATUS status;
 
@@ -194,30 +211,20 @@ NTSTATUS resolve_name_all_recv(struct composite_context *c,
 	if (NT_STATUS_IS_OK(status)) {
 		struct resolve_state *state = talloc_get_type(c->private_data, struct resolve_state);
 		*addrs = talloc_steal(mem_ctx, state->addrs);
+		if (names) {
+			*names = talloc_steal(mem_ctx, state->names);
+		}
 	}
 
 	talloc_free(c);
 	return status;
 }
 
-/*
-  general name resolution - sync call
- */
-NTSTATUS resolve_all_name(struct resolve_context *ctx,
-		      struct nbt_name *name,
-		      TALLOC_CTX *mem_ctx,
-		      struct socket_address ***addrs,
-		      struct event_context *ev)
-{
-	struct composite_context *c = resolve_name_all_send(ctx, name, ev);
-	return resolve_name_all_recv(c, mem_ctx, addrs);
-}
-
 struct composite_context *resolve_name_send(struct resolve_context *ctx,
 					    struct nbt_name *name,
 					    struct event_context *event_ctx)
 {
-	return resolve_name_all_send(ctx, name, event_ctx);
+	return resolve_name_all_send(ctx, 0, 0, name, event_ctx);
 }
 
 NTSTATUS resolve_name_recv(struct composite_context *c,
@@ -227,7 +234,7 @@ NTSTATUS resolve_name_recv(struct composite_context *c,
 	NTSTATUS status;
 	struct socket_address **addrs = NULL;
 
-	status = resolve_name_all_recv(c, mem_ctx, &addrs);
+	status = resolve_name_all_recv(c, mem_ctx, &addrs, NULL);
 
 	if (NT_STATUS_IS_OK(status)) {
 		*reply_addr = talloc_steal(mem_ctx, addrs[0]->addr);

@@ -280,7 +280,7 @@ static int proxy_search_callback(struct ldb_request *req,
 		ac->count++;
 #endif
 		proxy_convert_record(ac->module->ldb, proxy, ares->message);
-		ret = ldb_module_send_entry(ac->req, ares->message);
+		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		break;
 
 	case LDB_REPLY_REFERRAL:

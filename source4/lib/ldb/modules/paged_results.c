@@ -147,7 +147,7 @@ static int paged_results(struct paged_context *ac)
 
 	while (ac->store->num_entries > 0 && ac->size > 0) {
 		msg = ac->store->first;
-		ret = ldb_module_send_entry(ac->req, msg->r->message);
+		ret = ldb_module_send_entry(ac->req, msg->r->message, msg->r->controls);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}

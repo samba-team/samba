@@ -15,7 +15,7 @@ process_model_single_OBJ_FILES = $(smbdsrcdir)/process_single.o
 [MODULE::process_model_standard]
 INIT_FUNCTION = process_model_standard_init 
 SUBSYSTEM = process_model
-PRIVATE_DEPENDENCIES = SETPROCTITLE
+PRIVATE_DEPENDENCIES = LIBEVENTS SETPROCTITLE
 # End MODULE process_model_standard
 ################################################
 
@@ -37,6 +37,7 @@ process_model_thread_OBJ_FILES = $(smbdsrcdir)/process_thread.o
 [MODULE::process_model_prefork]
 INIT_FUNCTION = process_model_prefork_init 
 SUBSYSTEM = process_model
+PRIVATE_DEPENDENCIES = LIBEVENTS SETPROCTITLE
 # End MODULE process_model_thread
 ################################################
 

@@ -19,21 +19,35 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __RESOLVE_H__
-#define __RESOLVE_H__
+#ifndef __LIBCLI_RESOLVE_H__
+#define __LIBCLI_RESOLVE_H__
 
 struct socket_address;
+struct event_context;
 
 #include "../libcli/nbt/libnbt.h"
+
+/* force that only NBT name resolution is used */
+#define RESOLVE_NAME_FLAG_FORCE_NBT		0x00000001
+/* force that only DNS name resolution is used */
+#define RESOLVE_NAME_FLAG_FORCE_DNS		0x00000002
+/* tell the dns resolver to do a DNS SRV lookup */
+#define RESOLVE_NAME_FLAG_DNS_SRV		0x00000004
+/* allow the resolver to overwrite the given port, e.g. for DNS SRV */
+#define RESOLVE_NAME_FLAG_OVERWRITE_PORT	0x00000008
+
 typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
 							  struct event_context *,
 							  void *privdata,
+							  uint32_t flags,
+							  uint16_t port,
 							  struct nbt_name *);
 typedef NTSTATUS (*resolve_name_recv_fn)(struct composite_context *creq,
 					 TALLOC_CTX *mem_ctx,
-					 struct socket_address ***addrs);
+					 struct socket_address ***addrs,
+					 char ***names);
 #include "libcli/resolve/proto.h"
 struct interface;
 #include "libcli/resolve/lp_proto.h"
 
-#endif /* __RESOLVE_H__ */
+#endif /* __LIBCLI_RESOLVE_H__ */

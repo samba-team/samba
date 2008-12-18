@@ -56,8 +56,8 @@ NDR_SECURITY_OBJ_FILES = ../librpc/gen_ndr/ndr_security.o \
 			 ../librpc/ndr/ndr_sec_helper.o \
 			 $(gen_ndrsrcdir)/ndr_server_id.o
 
-PUBLIC_HEADERS += ../librpc/gen_ndr/security.h)
-
+PUBLIC_HEADERS += ../librpc/gen_ndr/security.h
+PUBLIC_HEADERS += $(gen_ndrsrcdir)/server_id.h
 
 [SUBSYSTEM::NDR_AUDIOSRV]
 PUBLIC_DEPENDENCIES = LIBNDR
@@ -166,7 +166,7 @@ PUBLIC_DEPENDENCIES = LIBNDR NDR_LSA NDR_SECURITY
 
 NDR_SAMR_OBJ_FILES = ../librpc/gen_ndr/ndr_samr.o
 
-PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/samr.h gen_ndr/ndr_samr.h gen_ndr/ndr_samr_c.h)
+PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, samr.h ndr_samr.h ndr_samr_c.h)
 
 [SUBSYSTEM::NDR_NFS4ACL]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_SECURITY
@@ -199,14 +199,14 @@ PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_SVCCTL_OBJ_FILES = ../librpc/gen_ndr/ndr_svcctl.o
 
-PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/ndr_svcctl.h gen_ndr/svcctl.h)
+PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, ndr_svcctl.h svcctl.h)
 
 [SUBSYSTEM::NDR_ATSVC]
 PUBLIC_DEPENDENCIES = LIBNDR
 
 NDR_ATSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_atsvc.o
 
-PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr, atsvc.h ndr_atsvc.h)
+PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, atsvc.h ndr_atsvc.h)
 
 [SUBSYSTEM::NDR_EVENTLOG]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_LSA
@@ -626,9 +626,9 @@ dcerpc_OBJ_FILES = $(addprefix $(dcerpcsrcdir)/, dcerpc.o dcerpc_auth.o dcerpc_s
 $(eval $(call proto_header_template,$(dcerpcsrcdir)/dcerpc_proto.h,$(dcerpc_OBJ_FILES:.o=.c)))
 
 
-PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h \
-			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
-			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h)
+PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, rpc/dcerpc.h) \
+			$(addprefix ../librpc/gen_ndr/, mgmt.h ndr_mgmt.h ndr_mgmt_c.h \
+			epmapper.h ndr_epmapper.h ndr_epmapper_c.h)
 
 
 [PYTHON::python_dcerpc]

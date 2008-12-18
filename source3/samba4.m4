@@ -108,8 +108,8 @@ SMB_INCLUDE_MK(lib/ldb/python.mk)
 SMB_ENABLE(swig_ldb,YES)
 
 m4_include(lib/tls/config.m4)
-eventsdir="../source4/lib/events"
-m4_include(lib/events/libevents.m4)
+teventdir="../lib/tevent"
+m4_include(../lib/tevent/libtevent.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
 m4_include(auth/gensec/config.m4)

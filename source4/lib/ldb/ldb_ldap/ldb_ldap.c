@@ -515,7 +515,7 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 			}
 			if (berptr) ber_free(berptr, 0);
 
-			ret = ldb_module_send_entry(ac->req, ldbmsg);
+			ret = ldb_module_send_entry(ac->req, ldbmsg, NULL /* controls not yet supported */);
 			if (ret != LDB_SUCCESS) {
 
 				callback_failed = true;

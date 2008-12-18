@@ -1688,13 +1688,16 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct netr_LogonControl2Ex r;
+	union netr_CONTROL_DATA_INFORMATION data;
 	union netr_CONTROL_QUERY_INFORMATION query;
 	int i;
+
+	data.domain = lp_workgroup(tctx->lp_ctx);
 
 	r.in.logon_server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 
 	r.in.function_code = NETLOGON_CONTROL_REDISCOVER;
-	r.in.data.domain = lp_workgroup(tctx->lp_ctx);
+	r.in.data = &data;
 	r.out.query = &query;
 
 	for (i=1;i<4;i++) {
@@ -1707,8 +1710,10 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
+	data.domain = lp_workgroup(tctx->lp_ctx);
+
 	r.in.function_code = NETLOGON_CONTROL_TC_QUERY;
-	r.in.data.domain = lp_workgroup(tctx->lp_ctx);
+	r.in.data = &data;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -1719,9 +1724,11 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 		status = dcerpc_netr_LogonControl2Ex(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
+
+	data.domain = lp_workgroup(tctx->lp_ctx);
 
 	r.in.function_code = NETLOGON_CONTROL_TRANSPORT_NOTIFY;
-	r.in.data.domain = lp_workgroup(tctx->lp_ctx);
+	r.in.data = &data;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -1733,8 +1740,10 @@ static bool test_LogonControl2Ex(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "LogonControl");
 	}
 
+	data.debug_level = ~0;
+
 	r.in.function_code = NETLOGON_CONTROL_SET_DBFLAG;
-	r.in.data.debug_level = ~0;
+	r.in.data = &data;
 
 	for (i=1;i<4;i++) {
 		r.in.level = i;
@@ -2128,7 +2137,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	q1.workstation_site = "Default-First-Site-Name";
 	q1.blob2.length = 0;
 	q1.blob2.size = 0;
-	q1.blob2.data = NULL;
+	q1.blob2.array = NULL;
 	q1.product.string = "product string";
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
@@ -2194,7 +2203,7 @@ static bool test_GetDomainInfo_async(struct torture_context *tctx,
 	q1.workstation_site = "Default-First-Site-Name";
 	q1.blob2.length = 0;
 	q1.blob2.size = 0;
-	q1.blob2.data = NULL;
+	q1.blob2.array = NULL;
 	q1.product.string = "product string";
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo - async count %d\n", ASYNC_COUNT);

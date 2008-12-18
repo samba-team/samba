@@ -582,6 +582,13 @@ static struct functable net_func[] = {
 		"  Use 'net help registry' to get more information about 'net "
 		"registry' commands."
 	},
+	{	"lua",
+		net_lua,
+		NET_TRANSPORT_LOCAL,
+		"Open a lua interpreter",
+		"  Use 'net help lua' to get more information about 'net "
+		"lua' commands."
+	},
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",
 		net_afs,

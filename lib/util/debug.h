@@ -133,6 +133,7 @@ _PUBLIC_ void register_debug_handlers(const char *name, struct debug_ops *ops);
 */
 _PUBLIC_ void dbgtext(const char *format, ...) PRINTF_ATTRIBUTE(1,2);
 
-extern XFILE *dbf;
+struct _XFILE;
+extern struct _XFILE *dbf;
 
 #endif

@@ -534,8 +534,6 @@ struct nbt_netlogon_response_from_pdc {
 	uint16_t lm20_token;
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
-enum netr_SamDatabaseID;
-
 struct nbt_db_change_info {
 	enum netr_SamDatabaseID db_index;
 	uint64_t serial;

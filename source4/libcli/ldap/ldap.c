@@ -504,9 +504,9 @@ static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-static bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
-					 struct asn1_data *data,
-					 const char **result)
+bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
+				  struct asn1_data *data,
+				  const char **result)
 {
 	DATA_BLOB string;
 	if (!asn1_read_OctetString(data, mem_ctx, &string))
@@ -894,7 +894,7 @@ failed:
 	return NULL;	
 }
 
-
+/* Decode a single LDAP attribute, possibly containing multiple values */
 static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 			       struct ldb_message_element *attrib)
 {
@@ -911,11 +911,11 @@ static void ldap_decode_attrib(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 	
 }
 
-static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
-				struct ldb_message_element **attributes,
-				int *num_attributes)
+/* Decode a set of LDAP attributes, as found in the dereference control */
+void ldap_decode_attribs_bare(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+			      struct ldb_message_element **attributes,
+			      int *num_attributes)
 {
-	asn1_start_tag(data, ASN1_SEQUENCE(0));
 	while (asn1_peek_tag(data, ASN1_SEQUENCE(0))) {
 		struct ldb_message_element attrib;
 		ZERO_STRUCT(attrib);
@@ -923,6 +923,16 @@ static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 		add_attrib_to_array_talloc(mem_ctx, &attrib,
 					   attributes, num_attributes);
 	}
+}
+
+/* Decode a set of LDAP attributes, as found in a search entry */
+void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
+			 struct ldb_message_element **attributes,
+			 int *num_attributes)
+{
+	asn1_start_tag(data, ASN1_SEQUENCE(0));
+	ldap_decode_attribs_bare(mem_ctx, data, 
+				 attributes, num_attributes);
 	asn1_end_tag(data);
 }
 

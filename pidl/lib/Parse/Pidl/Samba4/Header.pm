@@ -226,6 +226,8 @@ sub HeaderType($$$;$)
 sub HeaderTypedef($;$)
 {
 	my($typedef,$tail) = @_;
+	# Don't print empty "enum foo;", since some compilers don't like it.
+	return if ($typedef->{DATA}->{TYPE} eq "ENUM" and not defined($typedef->{DATA}->{ELEMENTS}));
 	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME}, $tail) if defined ($typedef->{DATA});
 }
 
