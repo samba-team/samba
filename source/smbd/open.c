@@ -725,99 +725,17 @@ static bool is_delete_request(files_struct *fsp) {
 }
 
 /*
- * 1) No files open at all or internal open: Grant whatever the client wants.
- *
- * 2) Exclusive (or batch) oplock around: If the requested access is a delete
- *    request, break if the oplock around is a batch oplock. If it's another
- *    requested access type, break.
- * 
- * 3) Only level2 around: Grant level2 and do nothing else.
+ * Send a break message to the oplock holder and delay the open for
+ * our client.
  */
 
-static bool delay_for_oplocks(struct share_mode_lock *lck,
-			      files_struct *fsp,
-			      uint16 mid,
-			      int pass_number,
-			      int oplock_request)
+static NTSTATUS send_break_message(files_struct *fsp,
+					struct share_mode_entry *exclusive,
+					uint16 mid,
+					int oplock_request)
 {
-	int i;
-	struct share_mode_entry *exclusive = NULL;
-	bool valid_entry = False;
-	bool delay_it = False;
-	bool have_level2 = False;
 	NTSTATUS status;
 	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-
-	if (oplock_request & INTERNAL_OPEN_ONLY) {
-		fsp->oplock_type = NO_OPLOCK;
-	}
-
-	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
-		return False;
-	}
-
-	for (i=0; i<lck->num_share_modes; i++) {
-
-		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
-			continue;
-		}
-
-		/* At least one entry is not an invalid or deferred entry. */
-		valid_entry = True;
-
-		if (pass_number == 1) {
-			if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-				SMB_ASSERT(exclusive == NULL);			
-				exclusive = &lck->share_modes[i];
-			}
-		} else {
-			if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
-				SMB_ASSERT(exclusive == NULL);			
-				exclusive = &lck->share_modes[i];
-			}
-		}
-
-		if (lck->share_modes[i].op_type == LEVEL_II_OPLOCK) {
-			SMB_ASSERT(exclusive == NULL);			
-			have_level2 = True;
-		}
-	}
-
-	if (!valid_entry) {
-		/* All entries are placeholders or deferred.
-		 * Directly grant whatever the client wants. */
-		if (fsp->oplock_type == NO_OPLOCK) {
-			/* Store a level2 oplock, but don't tell the client */
-			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-		}
-		return False;
-	}
-
-	if (exclusive != NULL) { /* Found an exclusive oplock */
-		SMB_ASSERT(!have_level2);
-		delay_it = is_delete_request(fsp) ?
-			BATCH_OPLOCK_TYPE(exclusive->op_type) :	True;
-	}
-
-	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
-		/* We can at most grant level2 as there are other
-		 * level2 or NO_OPLOCK entries. */
-		fsp->oplock_type = LEVEL_II_OPLOCK;
-	}
-
-	if ((fsp->oplock_type == NO_OPLOCK) && have_level2) {
-		/* Store a level2 oplock, but don't tell the client */
-		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
-	}
-
-	if (!delay_it) {
-		return False;
-	}
-
-	/*
-	 * Send a break message to the oplock holder and delay the open for
-	 * our client.
-	 */
 
 	DEBUG(10, ("Sending break request to PID %s\n",
 		   procid_str_static(&exclusive->pid)));
@@ -842,7 +760,123 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 			  nt_errstr(status)));
 	}
 
-	return True;
+	return status;
+}
+
+/*
+ * 1) No files open at all or internal open: Grant whatever the client wants.
+ *
+ * 2) Exclusive (or batch) oplock around: If the requested access is a delete
+ *    request, break if the oplock around is a batch oplock. If it's another
+ *    requested access type, break.
+ *
+ * 3) Only level2 around: Grant level2 and do nothing else.
+ */
+
+static bool delay_for_oplocks(struct share_mode_lock *lck,
+			      files_struct *fsp,
+			      uint16 mid,
+			      int pass_number,
+			      int oplock_request)
+{
+	extern uint32 global_client_caps;
+	int i;
+	struct share_mode_entry *exclusive = NULL;
+	bool valid_entry = false;
+	bool have_level2 = false;
+	bool have_a_none_oplock = false;
+	bool allow_level2 = (global_client_caps & CAP_LEVEL_II_OPLOCKS) &&
+		            lp_level2_oplocks(SNUM(fsp->conn));
+
+	if (oplock_request & INTERNAL_OPEN_ONLY) {
+		fsp->oplock_type = NO_OPLOCK;
+	}
+
+	if ((oplock_request & INTERNAL_OPEN_ONLY) || is_stat_open(fsp->access_mask)) {
+		return false;
+	}
+
+	for (i=0; i<lck->num_share_modes; i++) {
+
+		if (!is_valid_share_mode_entry(&lck->share_modes[i])) {
+			continue;
+		}
+
+		/* At least one entry is not an invalid or deferred entry. */
+		valid_entry = true;
+
+		if (pass_number == 1) {
+			if (BATCH_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+				SMB_ASSERT(exclusive == NULL);
+				exclusive = &lck->share_modes[i];
+			}
+		} else {
+			if (EXCLUSIVE_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+				SMB_ASSERT(exclusive == NULL);
+				exclusive = &lck->share_modes[i];
+			}
+		}
+
+		if (LEVEL_II_OPLOCK_TYPE(lck->share_modes[i].op_type)) {
+			SMB_ASSERT(exclusive == NULL);
+			have_level2 = true;
+		}
+
+		if (lck->share_modes[i].op_type == NO_OPLOCK) {
+			have_a_none_oplock = true;
+		}
+	}
+
+	if (exclusive != NULL) { /* Found an exclusive oplock */
+		bool delay_it = is_delete_request(fsp) ?
+				BATCH_OPLOCK_TYPE(exclusive->op_type) :	true;
+		SMB_ASSERT(!have_level2);
+		if (delay_it) {
+			send_break_message(fsp, exclusive, mid, oplock_request);
+			return true;
+		}
+	}
+
+	/*
+	 * Match what was requested (fsp->oplock_type) with
+ 	 * what was found in the existing share modes.
+ 	 */
+
+	if (!valid_entry) {
+		/* All entries are placeholders or deferred.
+		 * Directly grant whatever the client wants. */
+		if (fsp->oplock_type == NO_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		}
+	} else if (have_a_none_oplock) {
+		fsp->oplock_type = NO_OPLOCK;
+	} else if (have_level2) {
+		if (fsp->oplock_type == NO_OPLOCK ||
+				fsp->oplock_type == FAKE_LEVEL_II_OPLOCK) {
+			/* Store a level2 oplock, but don't tell the client */
+			fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+		} else {
+			fsp->oplock_type = LEVEL_II_OPLOCK;
+		}
+	} else {
+		/* This case can never happen. */
+		SMB_ASSERT(1);
+	}
+
+	/*
+	 * Don't grant level2 to clients that don't want them
+	 * or if we've turned them off.
+	 */
+	if (fsp->oplock_type == LEVEL_II_OPLOCK && !allow_level2) {
+		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+	}
+
+	DEBUG(10,("delay_for_oplocks: oplock type 0x%x on file %s\n",
+		fsp->oplock_type, fsp->fsp_name));
+
+	/* No delay. */
+	return false;
 }
 
 static bool request_timed_out(struct timeval request_time,
@@ -1949,12 +1983,9 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 	 * file structs.
 	 */
 
-	if ((fsp->oplock_type != NO_OPLOCK) &&
-	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK)) {
-		if (!set_file_oplock(fsp, fsp->oplock_type)) {
-			/* Could not get the kernel oplock */
-			fsp->oplock_type = NO_OPLOCK;
-		}
+	if (!set_file_oplock(fsp, fsp->oplock_type)) {
+		/* Could not get the kernel oplock */
+		fsp->oplock_type = NO_OPLOCK;
 	}
 
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED || info == FILE_WAS_SUPERSEDED) {
