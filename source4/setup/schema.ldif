@@ -10373,6 +10373,3 @@ systemFlags: 16
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=Group-Policy-Container,${SCHEMADN}
 
-dn: CN=Aggregate,${SCHEMADN}
-objectClass: top
-objectClass: subSchema
