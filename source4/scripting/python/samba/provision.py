@@ -432,17 +432,18 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     """
     assert session_info is not None
 
-    samdb = SamDB(samdb_path, session_info=session_info, 
-                  credentials=credentials, lp=lp)
-
-    # Wipes the database
     try:
+        samdb = SamDB(samdb_path, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+        # Wipes the database
         samdb.erase()
     except:
         os.unlink(samdb_path)
-
-    samdb = SamDB(samdb_path, session_info=session_info, 
-                  credentials=credentials, lp=lp)
+        samdb = SamDB(samdb_path, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+         # Wipes the database
+        samdb.erase()
+        
 
     #Add modules to the list to activate them by default
     #beware often order is important
