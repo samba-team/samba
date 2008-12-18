@@ -25,7 +25,26 @@ REGISTRY_VALUE_PREFIX = "SAMBA_REGVAL"
 REGISTRY_DB_VERSION = 1
 
 import os
+import struct
 import tdb
+
+
+def fetch_uint32(tdb, key):
+    try:
+        data = tdb[key]
+    except KeyError:
+        return None
+    assert len(data) == 4
+    return struct.unpack("<L", data)[0]
+
+
+def fetch_int32(tdb, key):
+    try:
+        data = tdb[key]
+    except KeyError:
+        return None
+    assert len(data) == 4
+    return struct.unpack("<l", data)[0]
 
 
 class TdbDatabase(object):
@@ -60,7 +79,7 @@ class Registry(TdbDatabase):
 
     def keys(self):
         """Return list with all the keys."""
-        return [k.rstrip("\x00") for k in self.tdb.keys() if not k.startswith(REGISTRY_VALUE_PREFIX)]
+        return [k.rstrip("\x00") for k in self.tdb.iterkeys() if not k.startswith(REGISTRY_VALUE_PREFIX)]
 
     def subkeys(self, key):
         """Retrieve the subkeys for the specified key.
@@ -71,7 +90,6 @@ class Registry(TdbDatabase):
         data = self.tdb.get("%s\x00" % key)
         if data is None:
             return []
-        import struct
         (num, ) = struct.unpack("<L", data[0:4])
         keys = data[4:].split("\0")
         assert keys[-1] == ""
@@ -89,7 +107,6 @@ class Registry(TdbDatabase):
         if data is None:
             return {}
         ret = {}
-        import struct
         (num, ) = struct.unpack("<L", data[0:4])
         data = data[4:]
         for i in range(num):
@@ -115,16 +132,16 @@ class PolicyDatabase(TdbDatabase):
         :param file: Path to the file to open.
         """
         super(PolicyDatabase, self).__init__(file)
-        self.min_password_length = self.tdb.fetch_uint32("min password length\x00")
-        self.password_history = self.tdb.fetch_uint32("password history\x00")
-        self.user_must_logon_to_change_password = self.tdb.fetch_uint32("user must logon to change pasword\x00")
-        self.maximum_password_age = self.tdb.fetch_uint32("maximum password age\x00")
-        self.minimum_password_age = self.tdb.fetch_uint32("minimum password age\x00")
-        self.lockout_duration = self.tdb.fetch_uint32("lockout duration\x00")
-        self.reset_count_minutes = self.tdb.fetch_uint32("reset count minutes\x00")
-        self.bad_lockout_minutes = self.tdb.fetch_uint32("bad lockout minutes\x00")
-        self.disconnect_time = self.tdb.fetch_int32("disconnect time\x00")
-        self.refuse_machine_password_change = self.tdb.fetch_uint32("refuse machine password change\x00")
+        self.min_password_length = fetch_uint32(self.tdb, "min password length\x00")
+        self.password_history = fetch_uint32(self.tdb, "password history\x00")
+        self.user_must_logon_to_change_password = fetch_uint32(self.tdb, "user must logon to change pasword\x00")
+        self.maximum_password_age = fetch_uint32(self.tdb, "maximum password age\x00")
+        self.minimum_password_age = fetch_uint32(self.tdb, "minimum password age\x00")
+        self.lockout_duration = fetch_uint32(self.tdb, "lockout duration\x00")
+        self.reset_count_minutes = fetch_uint32(self.tdb, "reset count minutes\x00")
+        self.bad_lockout_minutes = fetch_uint32(self.tdb, "bad lockout minutes\x00")
+        self.disconnect_time = fetch_int32(self.tdb, "disconnect time\x00")
+        self.refuse_machine_password_change = fetch_uint32(self.tdb, "refuse machine password change\x00")
 
         # FIXME: Read privileges as well
 
@@ -143,14 +160,14 @@ MEMBEROF_PREFIX = "MEMBEROF/"
 class GroupMappingDatabase(TdbDatabase):
     """Samba 3 group mapping database reader."""
     def _check_version(self):
-        assert self.tdb.fetch_int32("INFO/version\x00") in (GROUPDB_DATABASE_VERSION_V1, GROUPDB_DATABASE_VERSION_V2)
+        assert fetch_int32(self.tdb, "INFO/version\x00") in (GROUPDB_DATABASE_VERSION_V1, GROUPDB_DATABASE_VERSION_V2)
 
     def groupsids(self):
         """Retrieve the SIDs for the groups in this database.
 
         :return: List with sids as strings.
         """
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith(GROUP_PREFIX):
                 yield k[len(GROUP_PREFIX):].rstrip("\0")
 
@@ -164,14 +181,13 @@ class GroupMappingDatabase(TdbDatabase):
         data = self.tdb.get("%s%s\0" % (GROUP_PREFIX, sid))
         if data is None:
             return data
-        import struct
         (gid, sid_name_use) = struct.unpack("<lL", data[0:8])
         (nt_name, comment, _) = data[8:].split("\0")
         return (gid, sid_name_use, nt_name, comment)
 
     def aliases(self):
         """Retrieve the aliases in this database."""
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith(MEMBEROF_PREFIX):
                 yield k[len(MEMBEROF_PREFIX):].rstrip("\0")
 
@@ -189,17 +205,17 @@ IDMAP_VERSION_V2 = 2
 class IdmapDatabase(TdbDatabase):
     """Samba 3 ID map database reader."""
     def _check_version(self):
-        assert self.tdb.fetch_int32("IDMAP_VERSION\0") == IDMAP_VERSION_V2
+        assert fetch_int32(self.tdb, "IDMAP_VERSION\0") == IDMAP_VERSION_V2
 
     def uids(self):
         """Retrieve a list of all uids in this database."""
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith(IDMAP_USER_PREFIX):
                 yield int(k[len(IDMAP_USER_PREFIX):].rstrip("\0"))
 
     def gids(self):
         """Retrieve a list of all gids in this database."""
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith(IDMAP_GROUP_PREFIX):
                 yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip("\0"))
 
@@ -222,11 +238,11 @@ class IdmapDatabase(TdbDatabase):
 
     def get_user_hwm(self):
         """Obtain the user high-water mark."""
-        return self.tdb.fetch_uint32(IDMAP_HWM_USER)
+        return fetch_uint32(self.tdb, IDMAP_HWM_USER)
 
     def get_group_hwm(self):
         """Obtain the group high-water mark."""
-        return self.tdb.fetch_uint32(IDMAP_HWM_GROUP)
+        return fetch_uint32(self.tdb, IDMAP_HWM_GROUP)
 
 
 class SecretsDatabase(TdbDatabase):
@@ -244,7 +260,7 @@ class SecretsDatabase(TdbDatabase):
         return self.tdb.get("SECRETS/DOMGUID/%s" % host)
 
     def ldap_dns(self):
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith("SECRETS/LDAP_BIND_PW/"):
                 yield k[len("SECRETS/LDAP_BIND_PW/"):].rstrip("\0")
 
@@ -253,7 +269,7 @@ class SecretsDatabase(TdbDatabase):
 
         :return: Iterator over the names of domains in this database.
         """
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith("SECRETS/SID/"):
                 yield k[len("SECRETS/SID/"):].rstrip("\0")
 
@@ -264,10 +280,10 @@ class SecretsDatabase(TdbDatabase):
         return self.tdb.get("SECRETS/AFS_KEYFILE/%s" % host)
 
     def get_machine_sec_channel_type(self, host):
-        return self.tdb.fetch_uint32("SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host)
+        return fetch_uint32(self.tdb, "SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host)
 
     def get_machine_last_change_time(self, host):
-        return self.tdb.fetch_uint32("SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
+        return fetch_uint32(self.tdb, "SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
             
     def get_machine_password(self, host):
         return self.tdb.get("SECRETS/MACHINE_PASSWORD/%s" % host)
@@ -279,7 +295,7 @@ class SecretsDatabase(TdbDatabase):
         return self.tdb.get("SECRETS/$DOMTRUST.ACC/%s" % host)
 
     def trusted_domains(self):
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith("SECRETS/$DOMTRUST.ACC/"):
                 yield k[len("SECRETS/$DOMTRUST.ACC/"):].rstrip("\0")
 
@@ -296,7 +312,7 @@ SHARE_DATABASE_VERSION_V2 = 2
 class ShareInfoDatabase(TdbDatabase):
     """Samba 3 Share Info database reader."""
     def _check_version(self):
-        assert self.tdb.fetch_int32("INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
+        assert fetch_int32(self.tdb, "INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
     def get_secdesc(self, name):
         """Obtain the security descriptor on a particular share.
@@ -492,12 +508,12 @@ class LdapSam(object):
 class TdbSam(TdbDatabase):
     """Samba 3 TDB passdb backend reader."""
     def _check_version(self):
-        self.version = self.tdb.fetch_uint32("INFO/version\0") or 0
+        self.version = fetch_uint32(self.tdb, "INFO/version\0") or 0
         assert self.version in (0, 1, 2)
 
     def usernames(self):
         """Iterate over the usernames in this Tdb database."""
-        for k in self.tdb.keys():
+        for k in self.tdb.iterkeys():
             if k.startswith(TDBSAM_USER_PREFIX):
                 yield k[len(TDBSAM_USER_PREFIX):].rstrip("\0")
 
@@ -506,7 +522,6 @@ class TdbSam(TdbDatabase):
     def __getitem__(self, name):
         data = self.tdb["%s%s\0" % (TDBSAM_USER_PREFIX, name)]
         user = SAMUser(name)
-        import struct
     
         def unpack_string(data):
             (length, ) = struct.unpack("<L", data[:4])
