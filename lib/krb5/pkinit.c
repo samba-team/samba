@@ -452,8 +452,8 @@ build_auth_pack(krb5_context context,
 	a->clientPublicValue->subjectPublicKey.length = dhbuf.length * 8;
 	a->clientPublicValue->subjectPublicKey.data = dhbuf.data;
     }
-
-    if (0) {
+    
+    {
 	a->supportedCMSTypes = calloc(1, sizeof(*a->supportedCMSTypes));
 	if (a->supportedCMSTypes == NULL)
 	    return ENOMEM;
