@@ -1189,7 +1189,16 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	e->op_mid = 0;
-	e->op_type = NO_OPLOCK;
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		/*
+		 * Going from exclusive or batch,
+ 		 * we always go through FAKE_LEVEL_II
+ 		 * first.
+ 		 */
+		e->op_type = FAKE_LEVEL_II_OPLOCK;
+	} else {
+		e->op_type = NO_OPLOCK;
+	}
 	lck->modified = True;
 	return True;
 }

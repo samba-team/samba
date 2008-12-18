@@ -104,7 +104,10 @@ void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds)
 
 bool set_file_oplock(files_struct *fsp, int oplock_type)
 {
-	if (koplocks && !koplocks->set_oplock(fsp, oplock_type)) {
+	if ((fsp->oplock_type != NO_OPLOCK) &&
+	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
+	    koplocks &&
+	    !koplocks->set_oplock(fsp, oplock_type)) {
 		return False;
 	}
 
@@ -112,7 +115,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	if (oplock_type == LEVEL_II_OPLOCK) {
 		level_II_oplocks_open++;
-	} else {
+	} else if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
 		exclusive_oplocks_open++;
 	}
 
@@ -145,10 +148,15 @@ void release_file_oplock(files_struct *fsp)
 
 	SMB_ASSERT(exclusive_oplocks_open>=0);
 	SMB_ASSERT(level_II_oplocks_open>=0);
-	
-	fsp->oplock_type = NO_OPLOCK;
+
+	if (EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		/* This doesn't matter for close. */
+		fsp->oplock_type = FAKE_LEVEL_II_OPLOCK;
+	} else {
+		fsp->oplock_type = NO_OPLOCK;
+	}
 	fsp->sent_oplock_break = NO_BREAK_SENT;
-	
+
 	flush_write_cache(fsp, OPLOCK_RELEASE_FLUSH);
 
 	TALLOC_FREE(fsp->oplock_timeout);
@@ -434,6 +442,11 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 
 	/* Ensure we're really at level2 state. */
 	SMB_ASSERT(fsp->oplock_type == LEVEL_II_OPLOCK);
+
+	DEBUG(10,("process_oplock_async_level2_break_message: sending break to "
+		"none message for fid %d, file %s\n",
+		fsp->fnum,
+		fsp->fsp_name));
 
 	/* Now send a break to none message to our client. */
 
