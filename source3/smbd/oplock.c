@@ -821,10 +821,33 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 		share_mode_entry_to_message(msg, share_entry);
 
-		messaging_send_buf(smbd_messaging_context(), share_entry->pid,
-				   MSG_SMB_ASYNC_LEVEL2_BREAK,
-				   (uint8 *)msg,
-				   MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+		/*
+		 * Deal with a race condition when breaking level2
+ 		 * oplocks. Don't send all the messages and release
+ 		 * the lock, this allows someone else to come in and
+ 		 * get a level2 lock before any of the messages are
+ 		 * processed, and thus miss getting a break message.
+ 		 * Ensure at least one entry (the one we're breaking)
+ 		 * is processed immediately under the lock and becomes
+ 		 * set as NO_OPLOCK to stop any waiter getting a level2.
+ 		 * Bugid #5980.
+ 		 */
+
+		if (procid_is_me(&share_entry->pid)) {
+			DATA_BLOB blob = data_blob_const(msg,
+					MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+			process_oplock_async_level2_break_message(smbd_messaging_context(),
+						NULL,
+						MSG_SMB_ASYNC_LEVEL2_BREAK,
+						share_entry->pid,
+						&blob);
+		} else {
+			messaging_send_buf(smbd_messaging_context(),
+					share_entry->pid,
+					MSG_SMB_ASYNC_LEVEL2_BREAK,
+					(uint8 *)msg,
+					MSG_SMB_SHARE_MODE_ENTRY_SIZE);
+		}
 	}
 
 	/* We let the message receivers handle removing the oplock state
