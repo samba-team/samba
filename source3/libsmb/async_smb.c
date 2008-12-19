@@ -310,19 +310,41 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 
 	ofs = old_size;
 
+	/*
+	 * Push the chained request:
+	 *
+	 * wct field
+	 */
+
 	SCVAL(outbuf, ofs, wct);
 	ofs += 1;
+
+	/*
+	 * vwv array
+	 */
 
 	memcpy(outbuf + ofs, vwv, sizeof(uint16_t) * wct);
 	ofs += sizeof(uint16_t) * wct;
 
+	/*
+	 * bcc (byte count)
+	 */
+
 	SSVAL(outbuf, ofs, num_bytes + bytes_padding);
 	ofs += sizeof(uint16_t);
+
+	/*
+	 * padding
+	 */
 
 	if (bytes_padding != 0) {
 		memset(outbuf + ofs, 0, bytes_padding);
 		ofs += bytes_padding;
 	}
+
+	/*
+	 * The bytes field
+	 */
 
 	memcpy(outbuf + ofs, bytes, num_bytes);
 
