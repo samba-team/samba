@@ -269,7 +269,7 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 	new_size = old_size + chain_padding + 1 + wct * sizeof(uint16_t) + 2;
 
 	if ((bytes_alignment != 0) && ((new_size % bytes_alignment) != 0)) {
-		bytes_padding = bytes_alignment + (new_size % bytes_alignment);
+		bytes_padding = bytes_alignment - (new_size % bytes_alignment);
 	}
 
 	new_size += bytes_padding + num_bytes;
