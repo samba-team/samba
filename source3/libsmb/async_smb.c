@@ -234,7 +234,7 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
 bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 		      uint8_t wct, const uint16_t *vwv,
 		      size_t bytes_alignment,
-		      uint16_t num_bytes, const uint8_t *bytes)
+		      uint32_t num_bytes, const uint8_t *bytes)
 {
 	char *outbuf;
 	size_t old_size, new_size;
@@ -274,7 +274,7 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 
 	new_size += bytes_padding + num_bytes;
 
-	if (new_size > 0xffff) {
+	if ((smb_command != SMBwriteX) && (new_size > 0xffff)) {
 		DEBUG(1, ("splice_chain: %u bytes won't fit\n",
 			  (unsigned)new_size));
 		return false;
@@ -417,7 +417,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 					   uint8_t additional_flags,
 					   uint8_t wct, const uint16_t *vwv,
 					   size_t bytes_alignment,
-					   uint16_t num_bytes,
+					   uint32_t num_bytes,
 					   const uint8_t *bytes)
 {
 	struct async_req **tmp_reqs;
@@ -606,7 +606,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
 				   size_t bytes_alignment,
-				   uint16_t num_bytes, const uint8_t *bytes)
+				   uint32_t num_bytes, const uint8_t *bytes)
 {
 	struct async_req *result;
 	bool uncork = false;
