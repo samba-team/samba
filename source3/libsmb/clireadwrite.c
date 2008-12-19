@@ -112,7 +112,7 @@ struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
 		wct += 2;
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBreadX, 0, wct, vwv,
+	result = cli_request_send(mem_ctx, ev, cli, SMBreadX, 0, wct, vwv, 0,
 				  0, NULL);
 	if (result == NULL) {
 		return NULL;

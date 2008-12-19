@@ -918,7 +918,7 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 		 * Primary request, retrieve our mid
 		 */
 		result = cli_request_send(mem_ctx, state->ev, state->cli,
-					  cmd, 0, wct, vwv,
+					  cmd, 0, wct, vwv, 0,
 					  talloc_get_size(bytes), bytes);
 		if (result == NULL) {
 			goto fail;
@@ -936,8 +936,8 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 				    wct * sizeof(uint16_t) + num_bytes + 3)) {
 			goto fail;
 		}
-		result = cli_request_send(mem_ctx, state->ev, state->cli,
-					  cmd, 0, wct, vwv, num_bytes, bytes);
+		result = cli_request_send(mem_ctx, state->ev, state->cli, cmd,
+					  0, wct, vwv, 0, num_bytes, bytes);
 		if (result == NULL) {
 			goto fail;
 		}

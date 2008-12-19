@@ -705,7 +705,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		return NULL;
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBecho, 0, 1, vwv,
+	result = cli_request_send(mem_ctx, ev, cli, SMBecho, 0, 1, vwv, 0,
 				  data.length, data.data);
 	if (result == NULL) {
 		TALLOC_FREE(data_copy);

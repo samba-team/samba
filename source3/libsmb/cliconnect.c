@@ -1269,7 +1269,7 @@ struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	result = cli_request_send(mem_ctx, ev, cli, SMBnegprot, 0, 0, NULL,
+	result = cli_request_send(mem_ctx, ev, cli, SMBnegprot, 0, 0, NULL, 0,
 				  talloc_get_size(bytes), bytes);
 	TALLOC_FREE(bytes);
 	return result;

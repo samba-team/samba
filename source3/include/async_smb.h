@@ -119,6 +119,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
+				   size_t bytes_alignment,
 				   uint16_t num_bytes, const uint8_t *bytes);
 
 bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,

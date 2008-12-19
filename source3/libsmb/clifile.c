@@ -895,7 +895,7 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	result = cli_request_send(mem_ctx, ev, cli, SMBopenX, additional_flags,
-				  15, vwv, talloc_get_size(bytes), bytes);
+				  15, vwv, 0, talloc_get_size(bytes), bytes);
 	TALLOC_FREE(bytes);
 	return result;
 }
@@ -974,7 +974,7 @@ struct async_req *cli_close_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	SSVAL(vwv+0, 0, fnum);
 	SIVALS(vwv+1, 0, -1);
 
-	return cli_request_send(mem_ctx, ev, cli, SMBclose, 0, 3, vwv,
+	return cli_request_send(mem_ctx, ev, cli, SMBclose, 0, 3, vwv, 0,
 				0, NULL);
 }
 

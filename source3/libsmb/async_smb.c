@@ -394,6 +394,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 					   uint8_t smb_command,
 					   uint8_t additional_flags,
 					   uint8_t wct, const uint16_t *vwv,
+					   size_t bytes_alignment,
 					   uint16_t num_bytes,
 					   const uint8_t *bytes)
 {
@@ -423,7 +424,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 			      cli_async_req_destructor);
 
 	if (!smb_splice_chain(&req->outbuf, smb_command, wct, vwv,
-			      0, num_bytes, bytes)) {
+			      bytes_alignment, num_bytes, bytes)) {
 		goto fail;
 	}
 
@@ -569,6 +570,7 @@ void cli_chain_uncork(struct cli_state *cli)
  * @param[in] additional_flags	open_and_x wants to add oplock header flags
  * @param[in] wct		How many words?
  * @param[in] vwv		The words, already in network order
+ * @param[in] bytes_alignment	How shall we align "bytes"?
  * @param[in] num_bytes		How many bytes?
  * @param[in] bytes		The data the request ships
  *
@@ -581,6 +583,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
+				   size_t bytes_alignment,
 				   uint16_t num_bytes, const uint8_t *bytes)
 {
 	struct async_req *result;
@@ -596,7 +599,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	result = cli_request_chain(mem_ctx, ev, cli, smb_command,
-				   additional_flags, wct, vwv,
+				   additional_flags, wct, vwv, bytes_alignment,
 				   num_bytes, bytes);
 
 	if (result == NULL) {
