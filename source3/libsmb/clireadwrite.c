@@ -744,3 +744,409 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 
 	return total;
 }
+
+/*
+ * Send a write&x request
+ */
+
+struct async_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli, uint16_t fnum,
+				      uint16_t mode, const uint8_t *buf,
+				      off_t offset, size_t size)
+{
+	bool bigoffset = ((cli->capabilities & CAP_LARGE_FILES) != 0);
+	uint8_t wct = bigoffset ? 14 : 12;
+	size_t max_write = cli_write_max_bufsize(cli, mode);
+	uint16_t vwv[14];
+
+	size = MIN(size, max_write);
+
+	SCVAL(vwv+0, 0, 0xFF);
+	SCVAL(vwv+0, 1, 0);
+	SSVAL(vwv+1, 0, 0);
+	SSVAL(vwv+2, 0, fnum);
+	SIVAL(vwv+3, 0, offset);
+	SIVAL(vwv+5, 0, 0);
+	SSVAL(vwv+7, 0, mode);
+	SSVAL(vwv+8, 0, 0);
+	SSVAL(vwv+9, 0, (size>>16));
+	SSVAL(vwv+10, 0, size);
+
+	SSVAL(vwv+11, 0,
+	      cli_wct_ofs(cli)
+	      + 1		/* the wct field */
+	      + wct * 2		/* vwv */
+	      + 2		/* num_bytes field */
+	      + 1		/* pad */);
+
+	if (bigoffset) {
+		SIVAL(vwv+12, 0, (((uint64_t)offset)>>32) & 0xffffffff);
+	}
+
+	return cli_request_send(mem_ctx, ev, cli, SMBwriteX, 0, wct, vwv,
+				2, size, buf);
+}
+
+NTSTATUS cli_write_andx_recv(struct async_req *req, size_t *pwritten)
+{
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+	size_t written;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	if (wct < 6) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	written = SVAL(vwv+2, 0);
+	written |= SVAL(vwv+4, 0)<<16;
+	*pwritten = written;
+
+	return NT_STATUS_OK;
+}
+
+struct cli_writeall_state {
+	struct event_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	uint16_t mode;
+	const uint8_t *buf;
+	off_t offset;
+	size_t size;
+	size_t written;
+};
+
+static void cli_writeall_written(struct async_req *req);
+
+static struct async_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct cli_state *cli,
+					   uint16_t fnum,
+					   uint16_t mode,
+					   const uint8_t *buf,
+					   off_t offset, size_t size)
+{
+	struct async_req *result;
+	struct async_req *subreq;
+	struct cli_writeall_state *state;
+
+	result = async_req_new(mem_ctx, ev);
+	if (result == NULL) {
+		goto fail;
+	}
+	state = talloc(result, struct cli_writeall_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->cli = cli;
+	state->fnum = fnum;
+	state->mode = mode;
+	state->buf = buf;
+	state->offset = offset;
+	state->size = size;
+	state->written = 0;
+
+	subreq = cli_write_andx_send(state, state->ev, state->cli, state->fnum,
+				     state->mode, state->buf, state->offset,
+				     state->size);
+	if (subreq == NULL) {
+		goto fail;
+	}
+
+	subreq->async.fn = cli_writeall_written;
+	subreq->async.priv = result;
+	return result;
+
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void cli_writeall_written(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct cli_writeall_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_writeall_state);
+	NTSTATUS status;
+	size_t written, to_write;
+
+	status = cli_write_andx_recv(subreq, &written);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	state->written += written;
+
+	if (state->written > state->size) {
+		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	to_write = state->size - state->written;
+
+	if (to_write == 0) {
+		async_req_done(req);
+		return;
+	}
+
+	subreq = cli_write_andx_send(state, state->ev, state->cli, state->fnum,
+				     state->mode,
+				     state->buf + state->written,
+				     state->offset + state->written, to_write);
+	if (subreq == NULL) {
+		async_req_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	subreq->async.fn = cli_writeall_written;
+	subreq->async.priv = req;
+}
+
+static NTSTATUS cli_writeall_recv(struct async_req *req)
+{
+	return async_req_simple_recv(req);
+}
+
+struct cli_push_state {
+	struct async_req *req;
+
+	struct event_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+	uint16_t mode;
+	off_t start_offset;
+	size_t window_size;
+
+	size_t (*source)(uint8_t *buf, size_t n, void *priv);
+	void *priv;
+
+	size_t chunk_size;
+
+	size_t sent;
+	bool eof;
+
+	/*
+	 * Outstanding requests
+	 */
+	int num_reqs;
+	struct async_req **reqs;
+
+	int pending;
+
+	uint8_t *buf;
+};
+
+static void cli_push_written(struct async_req *req);
+
+struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum, uint16_t mode,
+				off_t start_offset, size_t window_size,
+				size_t (*source)(uint8_t *buf, size_t n,
+						 void *priv),
+				void *priv)
+{
+	struct async_req *result;
+	struct cli_push_state *state;
+	int i;
+
+	result = async_req_new(mem_ctx, ev);
+	if (result == NULL) {
+		goto failed;
+	}
+	state = talloc(result, struct cli_push_state);
+	if (state == NULL) {
+		goto failed;
+	}
+	result->private_data = state;
+	state->req = result;
+
+	state->cli = cli;
+	state->ev = ev;
+	state->fnum = fnum;
+	state->start_offset = start_offset;
+	state->mode = mode;
+	state->source = source;
+	state->priv = priv;
+	state->eof = false;
+	state->sent = 0;
+	state->pending = 0;
+
+	state->chunk_size = cli_write_max_bufsize(cli, mode);
+
+	state->num_reqs = MAX(window_size/state->chunk_size, 1);
+	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
+
+	state->reqs = TALLOC_ZERO_ARRAY(state, struct async_req *,
+					state->num_reqs);
+	if (state->reqs == NULL) {
+		goto failed;
+	}
+
+	state->buf = TALLOC_ARRAY(
+		state, uint8_t, state->chunk_size * state->num_reqs);
+	if (state->buf == NULL) {
+		goto failed;
+	}
+
+	for (i=0; i<state->num_reqs; i++) {
+		size_t to_write;
+		uint8_t *buf = state->buf + i*state->chunk_size;
+
+		to_write = state->source(buf, state->chunk_size, state->priv);
+		if (to_write == 0) {
+			state->eof = true;
+			break;
+		}
+
+		state->reqs[i] = cli_writeall_send(
+			state->reqs, state->ev, state->cli, state->fnum,
+			state->mode, buf, state->start_offset + state->sent,
+			to_write);
+		if (state->reqs[i] == NULL) {
+			goto failed;
+		}
+
+		state->reqs[i]->async.fn = cli_push_written;
+		state->reqs[i]->async.priv = state;
+
+		state->sent += to_write;
+		state->pending += 1;
+	}
+
+	if (i == 0) {
+		if (!async_post_status(result, NT_STATUS_OK)) {
+			goto failed;
+		}
+		return result;
+	}
+
+	return result;
+
+ failed:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void cli_push_written(struct async_req *req)
+{
+	struct cli_push_state *state = talloc_get_type_abort(
+		req->async.priv, struct cli_push_state);
+	NTSTATUS status;
+	int i;
+	uint8_t *buf;
+	size_t to_write;
+
+	for (i=0; i<state->num_reqs; i++) {
+		if (state->reqs[i] == req) {
+			break;
+		}
+	}
+
+	if (i == state->num_reqs) {
+		async_req_error(state->req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	status = cli_writeall_recv(req);
+	TALLOC_FREE(state->reqs[i]);
+	req = NULL;
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(state->req, status);
+		return;
+	}
+
+	state->pending -= 1;
+	if (state->pending == 0) {
+		async_req_done(state->req);
+		return;
+	}
+
+	if (state->eof) {
+		return;
+	}
+
+	buf = state->buf + i * state->chunk_size;
+
+	to_write = state->source(buf, state->chunk_size, state->priv);
+	if (to_write == 0) {
+		state->eof = true;
+		return;
+	}
+
+	state->reqs[i] = cli_writeall_send(
+		state->reqs, state->ev, state->cli, state->fnum,
+		state->mode, buf, state->start_offset + state->sent, to_write);
+	if (state->reqs[i] == NULL) {
+		async_req_error(state->req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	state->reqs[i]->async.fn = cli_push_written;
+	state->reqs[i]->async.priv = state;
+
+	state->sent += to_write;
+	state->pending += 1;
+}
+
+NTSTATUS cli_push_recv(struct async_req *req)
+{
+	return async_req_simple_recv(req);
+}
+
+NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
+		  off_t start_offset, size_t window_size,
+		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
+		  void *priv)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS result = NT_STATUS_NO_MEMORY;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto nomem;
+	}
+
+	req = cli_push_send(frame, ev, cli, fnum, mode, start_offset,
+			    window_size, source, priv);
+	if (req == NULL) {
+		goto nomem;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	result = cli_push_recv(req);
+ nomem:
+	TALLOC_FREE(frame);
+	return result;
+}
