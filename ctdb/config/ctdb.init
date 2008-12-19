@@ -12,7 +12,7 @@
 ### BEGIN INIT INFO
 # Provides:            ctdb
 # Required-Start:      $network
-# Required-Stop:
+# Required-Stop:       $network
 # Default-Stop:
 # Default-Start:       3 5
 # Short-Description:   start and stop ctdb service
