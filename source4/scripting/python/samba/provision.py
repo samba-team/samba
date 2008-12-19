@@ -830,6 +830,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         message("Setting up sam.ldb AD schema")
         setup_add_ldif(samdb, setup_path("schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
+        setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
+                       {"SCHEMADN": names.schemadn})
 
         message("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {

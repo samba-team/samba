@@ -51,8 +51,10 @@ static time_t cli_servertime(const char *host, struct sockaddr_storage *pss, int
 		fprintf(stderr,"Session request failed\n");
 		goto done;
 	}
-	if (!cli_negprot(cli)) {
-		fprintf(stderr,"Protocol negotiation failed\n");
+	status = cli_negprot(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "Protocol negotiation failed: %s\n",
+			nt_errstr(status));
 		goto done;
 	}
 

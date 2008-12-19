@@ -1206,7 +1206,7 @@ bool cli_tdis(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-void cli_negprot_send(struct cli_state *cli)
+void cli_negprot_sendsync(struct cli_state *cli)
 {
 	char *p;
 	int numprots;
@@ -1241,75 +1241,89 @@ void cli_negprot_send(struct cli_state *cli)
  Send a negprot command.
 ****************************************************************************/
 
-bool cli_negprot(struct cli_state *cli)
+struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli)
 {
-	char *p;
+	struct async_req *result;
+	uint8_t *bytes = NULL;
 	int numprots;
-	int plength;
 
 	if (cli->protocol < PROTOCOL_NT1)
 		cli->use_spnego = False;
 
-	memset(cli->outbuf,'\0',smb_size);
-
-	plength = 0;
-
 	/* setup the protocol strings */
 	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
+		uint8_t c = 2;
 		if (prots[numprots].prot > cli->protocol) {
 			break;
 		}
-		plength += strlen(prots[numprots].name)+2;
-	}
-
-	cli_set_message(cli->outbuf,0,plength,True);
-
-	p = smb_buf(cli->outbuf);
-	for (numprots=0; numprots < ARRAY_SIZE(prots); numprots++) {
-		if (prots[numprots].prot > cli->protocol) {
-			break;
+		bytes = (uint8_t *)talloc_append_blob(
+			talloc_tos(), bytes, data_blob_const(&c, sizeof(c)));
+		if (bytes == NULL) {
+			return NULL;
 		}
-		*p++ = 2;
-		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
+		bytes = smb_bytes_push_str(bytes, false, prots[numprots].name);
+		if (bytes == NULL) {
+			return NULL;
+		}
 	}
 
-	SCVAL(cli->outbuf,smb_com,SMBnegprot);
-	cli_setup_packet(cli);
+	result = cli_request_send(mem_ctx, ev, cli, SMBnegprot, 0, 0, NULL,
+				  talloc_get_size(bytes), bytes);
+	TALLOC_FREE(bytes);
+	return result;
+}
 
-	SCVAL(smb_buf(cli->outbuf),0,2);
+NTSTATUS cli_negprot_recv(struct async_req *req)
+{
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
+	struct cli_state *cli = cli_req->cli;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+	uint16_t protnum;
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
-
-	show_msg(cli->inbuf);
-
-	if (cli_is_error(cli) ||
-	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
-		return(False);
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
-	cli->protocol = prots[SVAL(cli->inbuf,smb_vwv0)].prot;	
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	protnum = SVAL(vwv, 0);
+
+	if ((protnum >= ARRAY_SIZE(prots))
+	    || (prots[protnum].prot > cli_req->cli->protocol)) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	cli->protocol = prots[protnum].prot;
 
 	if ((cli->protocol < PROTOCOL_NT1) && cli->sign_info.mandatory_signing) {
 		DEBUG(0,("cli_negprot: SMB signing is mandatory and the selected protocol level doesn't support it.\n"));
-		return False;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (cli->protocol >= PROTOCOL_NT1) {    
 		struct timespec ts;
 		/* NT protocol */
-		cli->sec_mode = CVAL(cli->inbuf,smb_vwv1);
-		cli->max_mux = SVAL(cli->inbuf, smb_vwv1+1);
-		cli->max_xmit = IVAL(cli->inbuf,smb_vwv3+1);
-		cli->sesskey = IVAL(cli->inbuf,smb_vwv7+1);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv15+1);
+		cli->sec_mode = CVAL(vwv + 1, 0);
+		cli->max_mux = SVAL(vwv + 1, 1);
+		cli->max_xmit = IVAL(vwv + 3, 1);
+		cli->sesskey = IVAL(vwv + 7, 1);
+		cli->serverzone = SVALS(vwv + 15, 1);
 		cli->serverzone *= 60;
 		/* this time arrives in real GMT */
-		ts = interpret_long_date(cli->inbuf+smb_vwv11+1);
+		ts = interpret_long_date(((char *)(vwv+11))+1);
 		cli->servertime = ts.tv_sec;
-		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
-		cli->capabilities = IVAL(cli->inbuf,smb_vwv9+1);
+		cli->secblob = data_blob(bytes, num_bytes);
+		cli->capabilities = IVAL(vwv + 9, 1);
 		if (cli->capabilities & CAP_RAW_MODE) {
 			cli->readbraw_supported = True;
 			cli->writebraw_supported = True;      
@@ -1317,9 +1331,10 @@ bool cli_negprot(struct cli_state *cli)
 		/* work out if they sent us a workgroup */
 		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
 		    smb_buflen(cli->inbuf) > 8) {
-			clistr_pull(cli, cli->server_domain, 
-				    smb_buf(cli->inbuf)+8, sizeof(cli->server_domain),
-				    smb_buflen(cli->inbuf)-8, STR_UNICODE|STR_NOALIGN);
+			clistr_pull(cli, cli->server_domain,
+				    bytes+8, sizeof(cli->server_domain),
+				    num_bytes-8,
+				    STR_UNICODE|STR_NOALIGN);
 		}
 
 		/*
@@ -1331,7 +1346,7 @@ bool cli_negprot(struct cli_state *cli)
 			/* Fail if server says signing is mandatory and we don't want to support it. */
 			if (!cli->sign_info.allow_smb_signing) {
 				DEBUG(0,("cli_negprot: SMB signing is mandatory and we have disabled it.\n"));
-				return False;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
@@ -1339,7 +1354,7 @@ bool cli_negprot(struct cli_state *cli)
 			/* Fail if client says signing is mandatory and the server doesn't support it. */
 			if (!(cli->sec_mode & NEGOTIATE_SECURITY_SIGNATURES_ENABLED)) {
 				DEBUG(1,("cli_negprot: SMB signing is mandatory and the server doesn't support it.\n"));
-				return False;
+				return NT_STATUS_ACCESS_DENIED;
 			}
 			cli->sign_info.negotiated_smb_signing = True;
 			cli->sign_info.mandatory_signing = True;
@@ -1357,17 +1372,18 @@ bool cli_negprot(struct cli_state *cli)
 
 	} else if (cli->protocol >= PROTOCOL_LANMAN1) {
 		cli->use_spnego = False;
-		cli->sec_mode = SVAL(cli->inbuf,smb_vwv1);
-		cli->max_xmit = SVAL(cli->inbuf,smb_vwv2);
-		cli->max_mux = SVAL(cli->inbuf, smb_vwv3); 
-		cli->sesskey = IVAL(cli->inbuf,smb_vwv6);
-		cli->serverzone = SVALS(cli->inbuf,smb_vwv10);
+		cli->sec_mode = SVAL(vwv + 1, 0);
+		cli->max_xmit = SVAL(vwv + 2, 0);
+		cli->max_mux = SVAL(vwv + 3, 0);
+		cli->sesskey = IVAL(vwv + 6, 0);
+		cli->serverzone = SVALS(vwv + 10, 0);
 		cli->serverzone *= 60;
 		/* this time is converted to GMT by make_unix_date */
-		cli->servertime = cli_make_unix_date(cli,cli->inbuf+smb_vwv8);
-		cli->readbraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x1) != 0);
-		cli->writebraw_supported = ((SVAL(cli->inbuf,smb_vwv5) & 0x2) != 0);
-		cli->secblob = data_blob(smb_buf(cli->inbuf),smb_buflen(cli->inbuf));
+		cli->servertime = cli_make_unix_date(
+			cli, (char *)(vwv + 8));
+		cli->readbraw_supported = ((SVAL(vwv + 5, 0) & 0x1) != 0);
+		cli->writebraw_supported = ((SVAL(vwv + 5, 0) & 0x2) != 0);
+		cli->secblob = data_blob(bytes, num_bytes);
 	} else {
 		/* the old core protocol */
 		cli->use_spnego = False;
@@ -1381,7 +1397,42 @@ bool cli_negprot(struct cli_state *cli)
 	if (getenv("CLI_FORCE_ASCII"))
 		cli->capabilities &= ~CAP_UNICODE;
 
-	return True;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_negprot(struct cli_state *cli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		cli_set_error(cli, NT_STATUS_INVALID_PARAMETER);
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = cli_negprot_send(frame, ev, cli);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_negprot_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -1667,12 +1718,9 @@ again:
 		cli->fallback_after_kerberos = true;
 	}
 
-	if (!cli_negprot(cli)) {
-		DEBUG(1,("failed negprot\n"));
-		nt_status = cli_nt_error(cli);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			nt_status = NT_STATUS_UNSUCCESSFUL;
-		}
+	nt_status = cli_negprot(cli);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1, ("failed negprot: %s\n", nt_errstr(nt_status)));
 		cli_shutdown(cli);
 		return nt_status;
 	}

@@ -831,9 +831,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	cli_setup_signing_state(*cli, Undefined);
 
-	if (!cli_negprot(*cli)) {
-		DEBUG(1, ("cli_negprot failed\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
+	result = cli_negprot(*cli);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(1, ("cli_negprot failed: %s\n", nt_errstr(result)));
 		goto done;
 	}
 

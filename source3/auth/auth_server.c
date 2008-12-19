@@ -38,6 +38,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	char *pserver = NULL;
 	bool connected_ok = False;
 	struct named_mutex *mutex = NULL;
+	NTSTATUS status;
 
 	if (!(cli = cli_initialise()))
 		return NULL;
@@ -49,7 +50,6 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 	p = pserver;
 
         while(next_token_talloc(mem_ctx, &p, &desthost, LIST_SEP)) {
-		NTSTATUS status;
 
 		desthost = talloc_sub_basic(mem_ctx,
 				current_user_info.smb_name,
@@ -112,9 +112,12 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 
 	DEBUG(3,("got session\n"));
 
-	if (!cli_negprot(cli)) {
+	status = cli_negprot(cli);
+
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(mutex);
-		DEBUG(1,("%s rejected the negprot\n",desthost));
+		DEBUG(1, ("%s rejected the negprot: %s\n",
+			  desthost, nt_errstr(status)));
 		cli_shutdown(cli);
 		return NULL;
 	}
