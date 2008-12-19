@@ -3067,6 +3067,8 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
         if (ldif == NULL) {
             return Py_None;
         } else {
+	    /* We don't want this attached to the 'ldb' any more */
+            talloc_steal(NULL, ldif);
             return Py_BuildValue((char *)"(iO)", ldif->changetype, 
                    SWIG_NewPointerObj(ldif->msg, SWIGTYPE_p_ldb_message, 0));
         }
