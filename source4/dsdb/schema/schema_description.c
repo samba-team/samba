@@ -387,8 +387,6 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 char *schema_class_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass)
 {
 	char *schema_description = NULL;
-	DATA_BLOB guid_blob;
-	char *guid_hex;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return NULL;

@@ -37,12 +37,14 @@ struct dsdb_syntax {
 	const char *comment;
 	const char *ldb_syntax;
 
-	WERROR (*drsuapi_to_ldb)(const struct dsdb_schema *schema,
+	WERROR (*drsuapi_to_ldb)(struct ldb_context *ldb, 
+				 const struct dsdb_schema *schema,
 				 const struct dsdb_attribute *attr,
 				 const struct drsuapi_DsReplicaAttribute *in,
 				 TALLOC_CTX *mem_ctx,
 				 struct ldb_message_element *out);
-	WERROR (*ldb_to_drsuapi)(const struct dsdb_schema *schema,
+	WERROR (*ldb_to_drsuapi)(struct ldb_context *ldb, 
+				 const struct dsdb_schema *schema,
 				 const struct dsdb_attribute *attr,
 				 const struct ldb_message_element *in,
 				 TALLOC_CTX *mem_ctx,
