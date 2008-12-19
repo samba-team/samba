@@ -28,6 +28,7 @@ static const char *sockops="TCP_NODELAY";
 static int nprocs=1;
 static int port_to_use=0;
 int torture_numops=100;
+int torture_blocksize=1024*1024;
 static int procnum; /* records process count number when forking */
 static struct cli_state *current_cli;
 static fstring randomfname;
@@ -4974,6 +4975,81 @@ static bool run_chain1(int dummy)
 	return True;
 }
 
+static size_t null_source(uint8_t *buf, size_t n, void *priv)
+{
+	size_t *to_pull = (size_t *)priv;
+	size_t thistime = *to_pull;
+
+	thistime = MIN(thistime, n);
+	if (thistime == 0) {
+		return 0;
+	}
+
+	memset(buf, 0, thistime);
+	*to_pull -= thistime;
+	return thistime;
+}
+
+static bool run_windows_write(int dummy)
+{
+	struct cli_state *cli1;
+	int fnum;
+	int i;
+	bool ret = false;
+	const char *fname = "\\writetest.txt";
+	double seconds;
+	double kbytes;
+
+	printf("starting windows_write test\n");
+	if (!torture_open_connection(&cli1, 0)) {
+		return False;
+	}
+
+	fnum = cli_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum == -1) {
+		printf("open failed (%s)\n", cli_errstr(cli1));
+		return False;
+	}
+
+	cli_sockopt(cli1, sockops);
+
+	start_timer();
+
+	for (i=0; i<torture_numops; i++) {
+		char c = 0;
+		off_t start = i * torture_blocksize;
+		NTSTATUS status;
+		size_t to_pull = torture_blocksize - 1;
+
+		if (cli_write(cli1, fnum, 0, &c,
+			      start + torture_blocksize - 1, 1) != 1) {
+			printf("cli_write failed: %s\n", cli_errstr(cli1));
+			goto fail;
+		}
+
+		status = cli_push(cli1, fnum, 0, i * torture_blocksize, torture_blocksize,
+				  null_source, &to_pull);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("cli_push returned: %s\n", nt_errstr(status));
+			goto fail;
+		}
+	}
+
+	seconds = end_timer();
+	kbytes = (double)torture_blocksize * torture_numops;
+	kbytes /= 1024;
+
+	printf("Wrote %d kbytes in %.2f seconds: %d kb/sec\n", (int)kbytes,
+	       (double)seconds, (int)(kbytes/seconds));
+
+	ret = true;
+ fail:
+	cli_close(cli1, fnum);
+	cli_unlink(cli1, fname);
+	torture_close_connection(cli1);
+	return ret;
+}
+
 static bool run_cli_echo(int dummy)
 {
 	struct cli_state *cli;
@@ -5535,6 +5611,7 @@ static struct {
 	{ "EATEST", run_eatest, 0},
 	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
 	{ "CHAIN1", run_chain1, 0},
+	{ "WINDOWS-WRITE", run_windows_write, 0},
 	{ "CLI_ECHO", run_cli_echo, 0},
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
@@ -5693,7 +5770,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:B:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
@@ -5755,6 +5832,9 @@ static void usage(void)
 		case 'b':
 			fstrcpy(multishare_conn_fname, optarg);
 			use_multishare_conn = True;
+			break;
+		case 'B':
+			torture_blocksize = atoi(optarg);
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
