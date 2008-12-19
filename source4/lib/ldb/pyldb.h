@@ -35,12 +35,15 @@
 
 typedef py_talloc_Object PyLdbObject;
 PyAPI_DATA(PyTypeObject) PyLdb;
+PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
+#define PyLdb_AsLdbContext(pyobj) py_talloc_get_type(pyobj, struct ldb_context)
 
 typedef py_talloc_Object PyLdbDnObject;
 PyAPI_DATA(PyTypeObject) PyLdbDn;
 struct ldb_dn *PyLdbDn_AsDn(PyObject *);
 PyObject *PyLdbDn_FromDn(struct ldb_dn *);
-int PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
+bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
+#define PyLdbDn_AsDn(pyobj) py_talloc_get_type(pyobj, struct ldb_dn)
 #define PyLdbDn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
 
 typedef py_talloc_Object PyLdbMessageObject;
@@ -48,12 +51,30 @@ PyAPI_DATA(PyTypeObject) PyLdbMessage;
 PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
 struct ldb_message *PyLdbMessage_AsMessage(PyObject *obj);
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
+#define PyLdbMessage_AsMessage(pyobj) py_talloc_get_type(pyobj, struct ldb_message)
 
 typedef py_talloc_Object PyLdbModuleObject;
 PyAPI_DATA(PyTypeObject) PyLdbModule;
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
+#define PyLdbModule_AsModule(pyobj) py_talloc_get_type(pyobj, struct ldb_module)
 
 typedef py_talloc_Object PyLdbMessageElementObject;
+PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
+PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *);
+#define PyLdbMessageElement_AsMessageElement(pyobj) py_talloc_get_type(pyobj, struct ldb_message_element)
+#define PyLdbMessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
+
+typedef py_talloc_Object PyLdbTreeObject;
+PyAPI_DATA(PyTypeObject) PyLdbTree;
+PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
+#define PyLdbTree_AsTree(pyobj) py_talloc_get_type(pyobj, struct ldb_parse_tree)
+
+#define PyErr_LDB_ERROR_IS_ERR_RAISE(ret,ldb) \
+	if (ret != LDB_SUCCESS) { \
+		PyErr_SetLdbError(ret, ldb); \
+		return NULL; \
+	}
+
 
 #endif /* _PYLDB_H_ */

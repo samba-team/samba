@@ -421,7 +421,7 @@ class LdbMsgTests(unittest.TestCase):
         self.assertEquals("bar", self.msg.get("foo")[0])
 
     def test_get_unknown(self):
-        self.assertRaises(KeyError, self.msg.get, "lalalala")
+        self.assertEquals(None, self.msg.get("lalalala"))
 
 
 class MessageElementTests(unittest.TestCase):
@@ -457,6 +457,7 @@ class MessageElementTests(unittest.TestCase):
         self.assertEquals(["foo", "bar"], x)
         x = ldb.MessageElement(["foo"])
         self.assertEquals("foo", x)
+
 
 class ModuleTests(unittest.TestCase):
     def test_register_module(self):
