@@ -4928,6 +4928,23 @@ static void chain1_read_completion(struct async_req *req)
 	TALLOC_FREE(req);
 }
 
+static void chain1_write_completion(struct async_req *req)
+{
+	NTSTATUS status;
+	size_t written;
+
+	status = cli_write_andx_recv(req, &written);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(req);
+		d_printf("cli_write_andx_recv returned %s\n",
+			 nt_errstr(status));
+		return;
+	}
+
+	d_printf("wrote %d bytes\n", (int)written);
+	TALLOC_FREE(req);
+}
+
 static void chain1_close_completion(struct async_req *req)
 {
 	NTSTATUS status;
@@ -4946,6 +4963,7 @@ static bool run_chain1(int dummy)
 	struct event_context *evt = event_context_init(NULL);
 	struct async_req *reqs[4];
 	bool done = false;
+	const char *text = "hallo";
 
 	printf("starting chain1 test\n");
 	if (!torture_open_connection(&cli1, 0)) {
@@ -4958,8 +4976,9 @@ static bool run_chain1(int dummy)
 	reqs[0] = cli_open_send(talloc_tos(), evt, cli1, "\\test",
 				O_CREAT|O_RDWR, 0);
 	reqs[0]->async.fn = chain1_open_completion;
-	reqs[1] = cli_read_andx_send(talloc_tos(), evt, cli1, 0, 0, 10);
-	reqs[1]->async.fn = chain1_read_completion;
+	reqs[1] = cli_write_andx_send(talloc_tos(), evt, cli1, 0, 0,
+				      (uint8_t *)text, 0, strlen(text));
+	reqs[1]->async.fn = chain1_write_completion;
 	reqs[2] = cli_read_andx_send(talloc_tos(), evt, cli1, 0, 1, 10);
 	reqs[2]->async.fn = chain1_read_completion;
 	reqs[3] = cli_close_send(talloc_tos(), evt, cli1, 0);
