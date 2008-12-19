@@ -17,7 +17,6 @@ builddir = @builddir@
 sharedbuilddir = @sharedbuilddir@
 INSTALLCMD = @INSTALL@
 SLAPD = @SLAPD@
-SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@

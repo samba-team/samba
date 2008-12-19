@@ -27,13 +27,13 @@
 #include "param/provision.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
+#include "lib/ldb/pyldb.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
 {
 	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
-	struct ldb_context *ldb_context_from_py_object(PyObject *py_obj);
 	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
@@ -133,7 +133,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	/* FIXME paths */
 	result->lp_ctx = lp_from_py_object(PyObject_GetAttrString(py_result, "lp"));
-	result->samdb = ldb_context_from_py_object(PyObject_GetAttrString(py_result, "samdb"));
+	result->samdb = PyLdb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 
 	return NT_STATUS_OK;
 }
