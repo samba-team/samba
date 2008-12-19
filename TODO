@@ -4,13 +4,9 @@ $Id$
 
 * configure
 
-handle readline hiding in readline/readline.h
-
 * appl
 
 ** appl/popper
-
-Add security layer to pop over GSS-API
 
 * doc
 
@@ -18,25 +14,15 @@ Add security layer to pop over GSS-API
 
 * kadmin
 
-is in need of a major cleanup
-
 * kpasswdd
-
-figure out what's the deal with do_sequence and the MIT client
 
 * lib
 
 ** lib/asn1
 
-prepend a prefix on all generated symbols
-
-implicit optional CONS types
-
 ** lib/auth
 
 ** lib/auth/sia
-
-PAM
 
 ** lib/com_err
 
@@ -44,16 +30,8 @@ PAM
 
 ** lib/gssapi
 
-anonymous credentials not implemented
-
-gss_acquire_cred(GSS_C_BOTH) with a keytab only, gss_add_cred,
-gss_release_cred renders the output_cred_handle broken.
-
 cache delegation credentials to avoid hitting the kdc ?  require time
 stampless tickets, and was supported in the recv'ing end with 0.6.1.
-
-flag to look at ok-to-delegate even if GSS_C_DELEG_FLAG was set
-(limited to some target domains).
 
 ** lib/hdb
 
@@ -65,17 +43,7 @@ fix to use rpc?
 
 ** lib/krb5
 
-the replay cache is, in its current state, not very useful
-
-OTP?
-
-make checksum/encryption type configuration more realm-specific.
-
-crypto: allow scatter/gather creation of checksums
-
 verify_user: handle non-secure verification failing because of
 host->realm mapping
-
-config_file: do it in case-sensitive and/or insensitive
 
 ** lib/roken
