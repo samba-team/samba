@@ -1732,7 +1732,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const str
 					dn->invalid = true;
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
-				return 0;
+				return LDB_SUCCESS;
 			}
 		}
 	}
@@ -1757,7 +1757,7 @@ int ldb_dn_set_extended_component(struct ldb_dn *dn, const char *name, const str
 	dn->extended_components = p;
 	dn->extended_comp_num++;
 	
-	return 0;
+	return LDB_SUCCESS;
 }
 
 void ldb_dn_remove_extended_components(struct ldb_dn *dn)

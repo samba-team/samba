@@ -254,7 +254,7 @@ int ldb_dn_extended_add_syntax(struct ldb_context *ldb,
 
 	ldb->schema.num_dn_extended_syntax = n;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*

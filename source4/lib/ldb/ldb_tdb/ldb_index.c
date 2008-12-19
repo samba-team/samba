@@ -112,7 +112,7 @@ static int ltdb_free_idxptr(struct ldb_module *module, struct ldb_message_elemen
 		talloc_free(tmp);
 	}
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 
@@ -219,7 +219,7 @@ int ltdb_index_transaction_start(struct ldb_module *module)
 	struct ltdb_private *ltdb =
 		talloc_get_type(module->private_data, struct ltdb_private);
 	ltdb->idxptr = talloc_zero(module, struct ltdb_idxptr);
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
@@ -292,7 +292,7 @@ int ltdb_index_transaction_commit(struct ldb_module *module)
 
 	talloc_free(ltdb->idxptr);
 	ltdb->idxptr = NULL;
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /* cleanup the idxptr mode when transaction cancels */
@@ -302,7 +302,7 @@ int ltdb_index_transaction_cancel(struct ldb_module *module)
 		talloc_get_type(module->private_data, struct ltdb_private);
 	talloc_free(ltdb->idxptr);
 	ltdb->idxptr = NULL;
-	return 0;
+	return LDB_SUCCESS;
 }
 
 			
