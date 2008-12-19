@@ -552,6 +552,7 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 void cli_chain_uncork(struct cli_state *cli)
 {
 	struct cli_request *req = cli->chain_accumulator;
+	size_t smblen;
 
 	SMB_ASSERT(req != NULL);
 
@@ -561,7 +562,19 @@ void cli_chain_uncork(struct cli_state *cli)
 	cli->chain_accumulator = NULL;
 
 	SSVAL(req->outbuf, smb_mid, req->mid);
-	smb_setlen((char *)req->outbuf, talloc_get_size(req->outbuf) - 4);
+
+	smblen = talloc_get_size(req->outbuf) - 4;
+
+	smb_setlen((char *)req->outbuf, smblen);
+
+	if (smblen > 0x1ffff) {
+		/*
+		 * This is a POSIX 14 word large write. Overwrite just the
+		 * size field, the '0xFFSMB' has been set by smb_setlen which
+		 * _smb_setlen_large does not do.
+		 */
+		_smb_setlen_large(((char *)req->outbuf), smblen);
+	}
 
 	cli_calculate_sign_mac(cli, (char *)req->outbuf);
 
