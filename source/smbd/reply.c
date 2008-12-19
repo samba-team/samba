@@ -5582,7 +5582,9 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	}
 
 	if(replace_if_exists && dst_exists) {
-		if (is_ntfs_stream_name(newname)) {
+		/* Ensure both or neither are stream names. */
+		if (is_ntfs_stream_name(fsp->fsp_name) !=
+				is_ntfs_stream_name(newname)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
