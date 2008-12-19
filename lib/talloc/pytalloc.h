@@ -21,6 +21,7 @@
 #define _PY_TALLOC_H_
 
 #include <Python.h>
+#include <talloc.h>
 
 typedef struct {
 	PyObject_HEAD
@@ -36,8 +37,7 @@ void py_talloc_dealloc(PyObject* self);
 
 /* FIXME: Call PyErr_SetString(PyExc_TypeError, "expected " __STR(type) ") 
  * when talloc_get_type() returns NULL. */
-#define py_talloc_get_type(py_obj, type) \
-	talloc_get_type(py_talloc_get_ptr(py_obj), type)
+#define py_talloc_get_type(py_obj, type) (talloc_get_type(py_talloc_get_ptr(py_obj), type))
 
 #define py_talloc_get_ptr(py_obj) ((py_talloc_Object *)py_obj)->ptr
 #define py_talloc_get_mem_ctx(py_obj)  ((py_talloc_Object *)py_obj)->talloc_ctx
