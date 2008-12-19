@@ -152,7 +152,7 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 struct dom_sid *dom_sid_parse_length(TALLOC_CTX *mem_ctx, const DATA_BLOB *sid)
 {
 	struct dom_sid *ret;
-	char *p = talloc_strndup(mem_ctx, sid->data, sid->length);
+	char *p = talloc_strndup(mem_ctx, (char *)sid->data, sid->length);
 	if (!p) {
 		return NULL;
 	}
