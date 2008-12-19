@@ -215,17 +215,21 @@ report_expiration (krb5_context context,
  */
 
 static void
-print_expire (krb5_context context,
-	      krb5_const_realm realm,
-	      EncKDCRepPart *enc_part,
-	      krb5_prompter_fct prompter,
-	      krb5_data *data)
+krb5_init_creds_prompt_expire (Krb5_context context,
+			       krb5_init_creds_context ctx)
 {
-    int i;
-    LastReq *lr = &enc_part->last_req;
+    krb5_const_realm realm;
+    LastReq *lr;
+    krb5_boolean reported = FALSE;
     krb5_timestamp sec;
     time_t t;
-    krb5_boolean reported = FALSE;
+    size_t i;
+
+    if (ctx->prompter == NULL)
+        return;
+
+    realm = krb5_principal_get_realm (context, ctx->cred.client);
+    lr = &ctx->enc_part.last_req;
 
     krb5_timeofday (context, &sec);
 
@@ -238,13 +242,15 @@ print_expire (krb5_context context,
 	if (lr->val[i].lr_value <= t) {
 	    switch (abs(lr->val[i].lr_type)) {
 	    case LR_PW_EXPTIME :
-		report_expiration(context, prompter, data,
+		report_expiration(context, ctx->prompter, 
+				  ctx->prompter_data,
 				  "Your password will expire at ",
 				  lr->val[i].lr_value);
 		reported = TRUE;
 		break;
 	    case LR_ACCT_EXPTIME :
-		report_expiration(context, prompter, data,
+		report_expiration(context, ctx->prompter, 
+				  ctx->prompter_data,
 				  "Your account will expire at ",
 				  lr->val[i].lr_value);
 		reported = TRUE;
@@ -254,11 +260,12 @@ print_expire (krb5_context context,
     }
 
     if (!reported
-	&& enc_part->key_expiration
-	&& *enc_part->key_expiration <= t) {
-	report_expiration(context, prompter, data,
+	&& ctx->enc_part.key_expiration
+	&& *ctx->enc_part.key_expiration <= t) {
+        report_expiration(context, ctx->prompter, 
+			  ctx->prompter_data,
 			  "Your password/account will expire at ",
-			  *enc_part->key_expiration);
+			  *ctx->enc_part.key_expiration);
     }
 }
 
@@ -1655,13 +1662,6 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 
     }
 
-    if (ctx->prompter)
-	print_expire(context,
-		     krb5_principal_get_realm (context, ctx->cred.client),
-		     &ctx->enc_part,
-		     ctx->prompter,
-		     ctx->prompter_data);
-
  out:
     if (stctx)
 	krb5_sendto_ctx_free(context, stctx);
@@ -1727,6 +1727,10 @@ krb5_get_init_creds_password(krb5_context context,
     }
 
     ret = krb5_init_creds_get(context, ctx);
+    
+    if (ret == 0)
+        krb5_init_creds_prompt_expire(context, ctx);
+
 
     if (ret == KRB5KDC_ERR_KEY_EXPIRED && chpw == 0) {
 	char buf[1024];
@@ -1793,6 +1797,8 @@ krb5_get_init_creds_keyblock(krb5_context context,
 
     ret = krb5_init_creds_get(context, ctx);
 
+    if (ret == 0)
+        krb5_init_creds_prompt_expire(context, ctx);
 
  out:
     if (ret == 0)
@@ -1835,6 +1841,8 @@ krb5_get_init_creds_keytab(krb5_context context,
 	goto out;
 
     ret = krb5_init_creds_get(context, ctx);
+    if (ret == 0)
+        krb5_init_creds_prompt_expire(context, ctx);
 
  out:
     if (ret == 0)
