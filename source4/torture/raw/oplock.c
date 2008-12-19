@@ -2632,10 +2632,6 @@ static bool test_raw_oplock_batch23(struct torture_context *tctx, struct smbcli_
 	uint16_t fnum=0, fnum2=0,fnum3=0;
 	struct smbcli_state *cli3 = NULL;
 
-	if (torture_setting_bool(tctx, "samba3", false)) {
-		torture_skip(tctx, "BATCH23 disabled against samba3\n");
-	}
-
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
 	}

@@ -2364,8 +2364,12 @@ bool cli_ulogoff(struct cli_state *cli);
 bool cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen);
 bool cli_tdis(struct cli_state *cli);
-void cli_negprot_send(struct cli_state *cli);
-bool cli_negprot(struct cli_state *cli);
+void cli_negprot_sendsync(struct cli_state *cli);
+NTSTATUS cli_negprot(struct cli_state *cli);
+struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
+				   struct event_context *ev,
+				   struct cli_state *cli);
+NTSTATUS cli_negprot_recv(struct async_req *req);
 bool cli_session_request(struct cli_state *cli,
 			 struct nmb_name *calling, struct nmb_name *called);
 NTSTATUS cli_connect(struct cli_state *cli,
@@ -6023,11 +6027,6 @@ bool make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer)
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
-/* The following definitions come from rpc_parse/parse_ntsvcs.c  */
-
-bool ntsvcs_io_q_get_device_list(const char *desc, NTSVCS_Q_GET_DEVICE_LIST *q_u, prs_struct *ps, int depth);
-bool ntsvcs_io_r_get_device_list(const char *desc, NTSVCS_R_GET_DEVICE_LIST *r_u, prs_struct *ps, int depth);
-
 /* The following definitions come from rpc_parse/parse_prs.c  */
 
 void prs_dump(const char *name, int v, prs_struct *ps);
@@ -6553,15 +6552,6 @@ bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
 void close_policy_by_pipe(pipes_struct *p);
 bool pipe_access_check(pipes_struct *p);
-
-/* The following definitions come from rpc_server/srv_ntsvcs.c  */
-
-void ntsvcs2_get_pipe_fns( struct api_struct **fns, int *n_fns );
-NTSTATUS rpc_ntsvcs2_init(void);
-
-/* The following definitions come from rpc_server/srv_ntsvcs_nt.c  */
-
-WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u );
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 

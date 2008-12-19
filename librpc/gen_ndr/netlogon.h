@@ -654,33 +654,62 @@ struct netr_NETLOGON_INFO_3 {
 	uint32_t unknown5;
 };
 
+struct netr_NETLOGON_INFO_4 {
+	const char *trusted_dc_name;/* [unique,charset(UTF16)] */
+	const char *trusted_domain_name;/* [unique,charset(UTF16)] */
+};
+
 union netr_CONTROL_QUERY_INFORMATION {
 	struct netr_NETLOGON_INFO_1 *info1;/* [unique,case] */
 	struct netr_NETLOGON_INFO_2 *info2;/* [unique,case(2)] */
 	struct netr_NETLOGON_INFO_3 *info3;/* [unique,case(3)] */
+	struct netr_NETLOGON_INFO_4 *info4;/* [unique,case(4)] */
 };
 
 enum netr_LogonControlCode
 #ifndef USE_UINT_ENUMS
  {
-	NETLOGON_CONTROL_SYNC=2,
-	NETLOGON_CONTROL_REDISCOVER=5,
-	NETLOGON_CONTROL_TC_QUERY=6,
-	NETLOGON_CONTROL_TRANSPORT_NOTIFY=7,
-	NETLOGON_CONTROL_SET_DBFLAG=65534
+	NETLOGON_CONTROL_QUERY=0x00000001,
+	NETLOGON_CONTROL_REPLICATE=0x00000002,
+	NETLOGON_CONTROL_SYNCHRONIZE=0x00000003,
+	NETLOGON_CONTROL_PDC_REPLICATE=0x00000004,
+	NETLOGON_CONTROL_REDISCOVER=0x00000005,
+	NETLOGON_CONTROL_TC_QUERY=0x00000006,
+	NETLOGON_CONTROL_TRANSPORT_NOTIFY=0x00000007,
+	NETLOGON_CONTROL_FIND_USER=0x00000008,
+	NETLOGON_CONTROL_CHANGE_PASSWORD=0x00000009,
+	NETLOGON_CONTROL_TC_VERIFY=0x0000000A,
+	NETLOGON_CONTROL_FORCE_DNS_REG=0x0000000B,
+	NETLOGON_CONTROL_QUERY_DNS_REG=0x0000000C,
+	NETLOGON_CONTROL_BACKUP_CHANGE_LOG=0x0000FFFC,
+	NETLOGON_CONTROL_TRUNCATE_LOG=0x0000FFFD,
+	NETLOGON_CONTROL_SET_DBFLAG=0x0000FFFE,
+	NETLOGON_CONTROL_BREAKPOINT=0x0000FFFF
 }
 #else
  { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF}
-#define NETLOGON_CONTROL_SYNC ( 2 )
-#define NETLOGON_CONTROL_REDISCOVER ( 5 )
-#define NETLOGON_CONTROL_TC_QUERY ( 6 )
-#define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 7 )
-#define NETLOGON_CONTROL_SET_DBFLAG ( 65534 )
+#define NETLOGON_CONTROL_QUERY ( 0x00000001 )
+#define NETLOGON_CONTROL_REPLICATE ( 0x00000002 )
+#define NETLOGON_CONTROL_SYNCHRONIZE ( 0x00000003 )
+#define NETLOGON_CONTROL_PDC_REPLICATE ( 0x00000004 )
+#define NETLOGON_CONTROL_REDISCOVER ( 0x00000005 )
+#define NETLOGON_CONTROL_TC_QUERY ( 0x00000006 )
+#define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 0x00000007 )
+#define NETLOGON_CONTROL_FIND_USER ( 0x00000008 )
+#define NETLOGON_CONTROL_CHANGE_PASSWORD ( 0x00000009 )
+#define NETLOGON_CONTROL_TC_VERIFY ( 0x0000000A )
+#define NETLOGON_CONTROL_FORCE_DNS_REG ( 0x0000000B )
+#define NETLOGON_CONTROL_QUERY_DNS_REG ( 0x0000000C )
+#define NETLOGON_CONTROL_BACKUP_CHANGE_LOG ( 0x0000FFFC )
+#define NETLOGON_CONTROL_TRUNCATE_LOG ( 0x0000FFFD )
+#define NETLOGON_CONTROL_SET_DBFLAG ( 0x0000FFFE )
+#define NETLOGON_CONTROL_BREAKPOINT ( 0x0000FFFF )
 #endif
 ;
 
 union netr_CONTROL_DATA_INFORMATION {
 	const char *domain;/* [unique,charset(UTF16),case(NETLOGON_CONTROL_REDISCOVER)] */
+	const char *user;/* [unique,charset(UTF16),case(NETLOGON_CONTROL_FIND_USER)] */
 	uint32_t debug_level;/* [case(NETLOGON_CONTROL_SET_DBFLAG)] */
 };
 
@@ -810,12 +839,6 @@ struct netr_DsRGetDCNameInfo {
 #define NETR_TRUST_FLAG_MIT_KRB5 ( 0x00000080 )
 #define NETR_TRUST_FLAG_AES ( 0x00000100 )
 
-struct netr_BinaryString {
-	uint16_t length;
-	uint16_t size;
-	uint16_t *data;/* [unique,length_is(length/2),size_is(size/2)] */
-}/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
-
 struct netr_DomainQuery1 {
 	struct netr_Blob blob;
 	const char *workstation_domain;/* [unique,charset(UTF16)] */
@@ -824,7 +847,7 @@ struct netr_DomainQuery1 {
 	const char *unknown2;/* [unique,charset(UTF16)] */
 	const char *unknown3;/* [unique,charset(UTF16)] */
 	const char *unknown4;/* [unique,charset(UTF16)] */
-	struct netr_BinaryString blob2;
+	struct lsa_BinaryString blob2;
 	struct lsa_String product;
 	struct lsa_String unknown5;
 	struct lsa_String unknown6;
@@ -1296,9 +1319,9 @@ struct netr_DatabaseRedo {
 struct netr_LogonControl2Ex {
 	struct {
 		const char *logon_server;/* [unique,charset(UTF16)] */
-		uint32_t function_code;
+		enum netr_LogonControlCode function_code;
 		uint32_t level;
-		union netr_CONTROL_DATA_INFORMATION data;/* [switch_is(function_code)] */
+		union netr_CONTROL_DATA_INFORMATION *data;/* [ref,switch_is(function_code)] */
 	} in;
 
 	struct {

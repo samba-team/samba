@@ -30,4 +30,16 @@
 #define PyErr_SetNTSTATUS(status) \
         PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNTSTATUS(status))
 
+#define PyErr_NTSTATUS_IS_ERR_RAISE(status) \
+	if (NT_STATUS_IS_ERR(status)) { \
+		PyErr_SetNTSTATUS(status); \
+		return NULL; \
+	}
+
+#define PyErr_WERROR_IS_ERR_RAISE(status) \
+	if (!W_ERROR_IS_OK(status)) { \
+		PyErr_SetWERROR(status); \
+		return NULL; \
+	}
+
 #endif /* __PYERRORS_H__ */

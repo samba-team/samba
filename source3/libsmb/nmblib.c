@@ -21,9 +21,6 @@
 
 #include "includes.h"
 
-int num_good_sends = 0;
-int num_good_receives = 0;
-
 static const struct opcode_names {
 	const char *nmb_opcode_name;
 	int opcode;
@@ -796,8 +793,6 @@ struct packet_struct *read_packet(int fd,enum packet_type packet_type)
 
 	packet->fd = fd;
 
-	num_good_receives++;
-
 	DEBUG(5,("Received a packet of len %d from (%s) port %d\n",
 		 length, inet_ntoa(packet->ip), packet->port ) );
 
@@ -837,9 +832,6 @@ static bool send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 	if (!ret)
 		DEBUG(0,("Packet send failed to %s(%d) ERRNO=%s\n",
 			inet_ntoa(ip),port,strerror(errno)));
-
-	if (ret)
-		num_good_sends++;
 
 	return(ret);
 }

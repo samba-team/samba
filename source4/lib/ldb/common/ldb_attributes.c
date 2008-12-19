@@ -225,3 +225,50 @@ int ldb_setup_wellknown_attributes(struct ldb_context *ldb)
 	return LDB_SUCCESS;
 }
 
+
+/*
+  add a extended dn syntax to the ldb_schema
+*/
+int ldb_dn_extended_add_syntax(struct ldb_context *ldb, 
+			       unsigned flags,
+			       const struct ldb_dn_extended_syntax *syntax)
+{
+	int n;
+	struct ldb_dn_extended_syntax *a;
+
+	if (!syntax) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	n = ldb->schema.num_dn_extended_syntax + 1;
+
+	a = talloc_realloc(ldb, ldb->schema.dn_extended_syntax,
+			   struct ldb_dn_extended_syntax, n);
+
+	if (!a) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	a[ldb->schema.num_dn_extended_syntax] = *syntax;
+	ldb->schema.dn_extended_syntax = a;
+
+	ldb->schema.num_dn_extended_syntax = n;
+
+	return LDB_SUCCESS;
+}
+
+/*
+  return the extended dn syntax for a given name
+*/
+const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_context *ldb,
+								    const char *name)
+{
+	int i;
+	for (i=0; i < ldb->schema.num_dn_extended_syntax; i++) {
+		if (ldb_attr_cmp(ldb->schema.dn_extended_syntax[i].name, name) == 0) {
+			return &ldb->schema.dn_extended_syntax[i];
+		}
+	}
+	return NULL;
+}
+

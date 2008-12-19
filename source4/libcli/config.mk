@@ -117,8 +117,7 @@ LIBCLI_CLDAP_OBJ_FILES = $(libclisrcdir)/cldap/cldap.o
 # PUBLIC_HEADERS += $(libclisrcdir)/cldap/cldap.h
 
 [SUBSYSTEM::LIBCLI_WREPL]
-PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBCLI_RESOLVE LIBEVENTS \
-					  LIBPACKET LIBNDR
+PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBEVENTS LIBPACKET
 
 LIBCLI_WREPL_OBJ_FILES = $(libclisrcdir)/wrepl/winsrepl.o
 
@@ -136,6 +135,7 @@ PRIVATE_DEPENDENCIES = LIBCLI_NBT LIBSAMBA-HOSTCONFIG LIBNETIF
 
 LP_RESOLVE_OBJ_FILES = $(addprefix $(libclisrcdir)/resolve/, \
 					  bcast.o nbtlist.o wins.o \
+					  dns_ex.o \
 					  host.o resolve_lp.o)
 
 $(eval $(call proto_header_template,$(libclisrcdir)/resolve/lp_proto.h,$(LP_RESOLVE_OBJ_FILES:.o=.c)))

@@ -2346,7 +2346,7 @@ static bool run_negprot_nowait(int dummy)
 	}
 
 	for (i=0;i<50000;i++) {
-		cli_negprot_send(cli);
+		cli_negprot_sendsync(cli);
 	}
 
 	if (!torture_close_connection(cli)) {
@@ -4726,6 +4726,7 @@ static bool run_error_map_extract(int dummy) {
 	
 	static struct cli_state *c_dos;
 	static struct cli_state *c_nt;
+	NTSTATUS status;
 
 	uint32 error;
 
@@ -4744,8 +4745,11 @@ static bool run_error_map_extract(int dummy) {
 
 	c_nt->use_spnego = False;
 
-	if (!cli_negprot(c_nt)) {
-		printf("%s rejected the NT-error negprot (%s)\n",host, cli_errstr(c_nt));
+	status = cli_negprot(c_nt);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s rejected the NT-error negprot (%s)\n", host,
+		       nt_errstr(status));
 		cli_shutdown(c_nt);
 		return False;
 	}
@@ -4765,8 +4769,10 @@ static bool run_error_map_extract(int dummy) {
 	c_dos->use_spnego = False;
 	c_dos->force_dos_errors = True;
 
-	if (!cli_negprot(c_dos)) {
-		printf("%s rejected the DOS-error negprot (%s)\n",host, cli_errstr(c_dos));
+	status = cli_negprot(c_dos);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%s rejected the DOS-error negprot (%s)\n", host,
+		       nt_errstr(status));
 		cli_shutdown(c_dos);
 		return False;
 	}
@@ -4839,9 +4845,10 @@ static bool run_sesssetup_bench(int dummy)
 		return false;
 	}
 
-	if (!cli_negprot(c)) {
+	status = cli_negprot(c);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s rejected the NT-error negprot (%s)\n", host,
-		       cli_errstr(c));
+		       nt_errstr(status));
 		cli_shutdown(c);
 		return false;
 	}

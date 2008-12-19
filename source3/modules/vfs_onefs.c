@@ -38,6 +38,32 @@ static int onefs_open(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
+static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
+			 vfs_statvfs_struct *statbuf)
+{
+	struct statvfs statvfs_buf;
+	int result;
+
+	DEBUG(5, ("Calling SMB_STAT_VFS \n"));
+	result = statvfs(path, &statvfs_buf);
+	ZERO_STRUCTP(statbuf);
+
+	if (!result) {
+		statbuf->OptimalTransferSize = statvfs_buf.f_iosize;
+		statbuf->BlockSize = statvfs_buf.f_bsize;
+		statbuf->TotalBlocks = statvfs_buf.f_blocks;
+		statbuf->BlocksAvail = statvfs_buf.f_bfree;
+		statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
+		statbuf->TotalFileNodes = statvfs_buf.f_files;
+		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
+		statbuf->FsIdentifier =
+		    (((uint64_t)statvfs_buf.f_fsid.val[0]<<32) &
+			0xffffffff00000000LL) |
+		    (uint64_t)statvfs_buf.f_fsid.val[1];
+	}
+        return result;
+}
+
 static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_mkdir), SMB_VFS_OP_MKDIR,
 	 SMB_VFS_LAYER_OPAQUE},
@@ -50,6 +76,8 @@ static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_statvfs), SMB_VFS_OP_STATVFS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };

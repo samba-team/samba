@@ -33,32 +33,26 @@ clean::
 	rm -f $(TDB_SONAME) $(TDB_SOLIB) libtdb.a libtdb.$(SHLIBEXT)
 	rm -f $(ALL_PROGS) tdb.pc
 
-build-python:: _tdb.$(SHLIBEXT) 
+build-python:: tdb.$(SHLIBEXT) 
 
 tdb_wrap.o: $(tdbdir)/tdb_wrap.c
 	$(CC) $(PICFLAG) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
-_tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
+tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o $@ tdb_wrap.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags`
 
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET)
 
 install-python:: build-python
-	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"` \
-		$(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
-	cp $(tdbdir)/tdb.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"`
-	cp _tdb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
+	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
+	cp tdb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
 
 check-python:: build-python $(TDB_SONAME)
 	$(LIB_PATH_VAR)=. PYTHONPATH=".:$(tdbdir)" $(PYTHON) $(tdbdir)/python/tests/simple.py
 
-install-swig::
-	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
-	cp tdb.i $(DESTDIR)`$(SWIG) -swiglib`
-
 clean::
-	rm -f _tdb.$(SHLIBEXT)
+	rm -f tdb.$(SHLIBEXT)
 
 installdirs::
 	mkdir -p $(DESTDIR)$(bindir)

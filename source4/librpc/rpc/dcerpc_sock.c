@@ -39,7 +39,6 @@ struct sock_private {
 	struct packet_context *packet;
 	uint32_t pending_reads;
 
-	struct resolve_context *resolve_ctx;
 	const char *path; /* For ncacn_unix_sock and ncalrpc */
 };
 
@@ -306,7 +305,6 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
-						       struct resolve_context *resolve_context,
 						       struct socket_address *server,
 						       const char *target_hostname,
 						       const char *full_path,
@@ -337,11 +335,9 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 
 	talloc_steal(s->sock, s->socket_ctx);
 
-	s->sock->resolve_ctx = resolve_context;
 	s->sock->path = talloc_reference(s->sock, full_path);
 
 	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
-				       resolve_context, 
 				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
@@ -390,7 +386,6 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 
 	/* resolve_nbt_name gives only ipv4 ... - send socket open request */
 	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn,
-						     s->resolve_ctx,
 						     s->srvaddr, s->target_hostname,
 						     NULL,
 						     NCACN_IP_TCP);
@@ -566,7 +561,6 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 
 	/* send socket open request */
 	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, 
-						     NULL,
 						     s->srvaddr, NULL,
 						     s->path,
 						     NCALRPC);
@@ -637,7 +631,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL, s->srvaddr, NULL, s->path, NCALRPC);
+	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NULL, s->path, NCALRPC);
 	composite_continue(c, sock_np_req, continue_np_open_socket, c);
 	return c;
 }
@@ -670,8 +664,9 @@ const char *dcerpc_unix_socket_path(struct dcerpc_connection *p)
 	return sock->path;
 }
 
-struct resolve_context *dcerpc_resolve_ctx(struct dcerpc_connection *p)
+struct socket_address *dcerpc_socket_peer_addr(struct dcerpc_connection *p, TALLOC_CTX *mem_ctx)
 {
 	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
-	return sock->resolve_ctx;
+	return socket_get_peer_addr(sock->sock, mem_ctx);
 }
+

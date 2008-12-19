@@ -186,7 +186,7 @@ static int partition_req_callback(struct ldb_request *req,
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
-		return ldb_module_send_entry(ac->req, ares->message);
+		return ldb_module_send_entry(ac->req, ares->message, ares->controls);
 
 	case LDB_REPLY_DONE:
 		if (ares->error == LDB_SUCCESS) {
@@ -890,6 +890,14 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 						     res,
 						     ldb_extended_default_callback,
 						     NULL);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(res);
+				return ret;
+			}
+
+			ret = ldb_request_add_control(treq,
+						      DSDB_CONTROL_CURRENT_PARTITION_OID,
+						      false, data->partitions[i]);
 			if (ret != LDB_SUCCESS) {
 				talloc_free(res);
 				return ret;

@@ -64,7 +64,7 @@ static int show_deleted_search_callback(struct ldb_request *req,
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 
-		return ldb_module_send_entry(ar->req, ares->message);
+		return ldb_module_send_entry(ar->req, ares->message, ares->controls);
 
 	case LDB_REPLY_REFERRAL:
 		return ldb_module_send_referral(ar->req, ares->referral);

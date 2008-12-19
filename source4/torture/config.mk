@@ -107,7 +107,7 @@ PRIVATE_DEPENDENCIES = \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_FRSAPI RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
 		RPC_NDR_REMACT RPC_NDR_OXIDRESOLVER RPC_NDR_NTSVCS WB_HELPER LIBSAMBA-NET \
-		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_UTIL TORTURE_RAP \
+		LIBCLI_AUTH POPT_CREDENTIALS TORTURE_LDAP TORTURE_LDB TORTURE_UTIL TORTURE_RAP \
 		dcerpc_server service process_model ntvfs SERVICE_SMB RPC_NDR_BROWSER
 
 torture_rpc_OBJ_FILES = $(addprefix $(torturesrcdir)/rpc/, \
@@ -189,6 +189,20 @@ PRIVATE_DEPENDENCIES = \
 TORTURE_LDAP_OBJ_FILES = $(addprefix $(torturesrcdir)/ldap/, common.o basic.o schema.o uptodatevector.o cldap.o cldapbench.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/ldap/proto.h,$(TORTURE_LDAP_OBJ_FILES:.o=.c)))
+
+#################################
+# Start SUBSYSTEM TORTURE_LDB
+[MODULE::TORTURE_LDB]
+SUBSYSTEM = smbtorture
+INIT_FUNCTION = torture_ldb_init
+PRIVATE_DEPENDENCIES = \
+		LDB_WRAP
+# End SUBSYSTEM TORTURE_LDB
+#################################
+
+TORTURE_LDB_OBJ_FILES = $(addprefix $(torturesrcdir)/ldb/, ldb.o)
+
+$(eval $(call proto_header_template,$(torturesrcdir)/ldb/proto.h,$(TORTURE_LDB_OBJ_FILES:.o=.c)))
 
 #################################
 # Start SUBSYSTEM TORTURE_NBT

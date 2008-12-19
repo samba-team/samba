@@ -90,28 +90,24 @@ static void init_netlogon_info3(struct netr_NETLOGON_INFO_3 *r,
 WERROR _netr_LogonControl(pipes_struct *p,
 			  struct netr_LogonControl *r)
 {
-	struct netr_NETLOGON_INFO_1 *info1;
-	uint32_t flags = 0x0;
-	uint32_t pdc_connection_status = W_ERROR_V(WERR_OK);
-
-	/* Setup the Logon Control response */
+	struct netr_LogonControl2Ex l;
 
 	switch (r->in.level) {
-		case 1:
-			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
-			if (!info1) {
-				return WERR_NOMEM;
-			}
-			init_netlogon_info1(info1,
-					    flags,
-					    pdc_connection_status);
-			r->out.info->info1 = info1;
-			break;
-		default:
-			return WERR_UNKNOWN_LEVEL;
+	case 1:
+		break;
+	case 2:
+		return WERR_NOT_SUPPORTED;
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 
-	return WERR_OK;
+	l.in.logon_server	= r->in.logon_server;
+	l.in.function_code	= r->in.function_code;
+	l.in.level		= r->in.level;
+	l.in.data		= NULL;
+	l.out.query		= r->out.info;
+
+	return _netr_LogonControl2Ex(p, &l);
 }
 
 /****************************************************************************
@@ -131,6 +127,24 @@ static void send_sync_message(void)
 
 WERROR _netr_LogonControl2(pipes_struct *p,
 			   struct netr_LogonControl2 *r)
+{
+	struct netr_LogonControl2Ex l;
+
+	l.in.logon_server	= r->in.logon_server;
+	l.in.function_code	= r->in.function_code;
+	l.in.level		= r->in.level;
+	l.in.data		= r->in.data;
+	l.out.query		= r->out.query;
+
+	return _netr_LogonControl2Ex(p, &l);
+}
+
+/****************************************************************
+ _netr_LogonControl2Ex
+****************************************************************/
+
+WERROR _netr_LogonControl2Ex(pipes_struct *p,
+			     struct netr_LogonControl2Ex *r)
 {
         uint32 flags = 0x0;
         uint32 pdc_connection_status = 0x0;
@@ -1137,16 +1151,6 @@ NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _netr_LogonControl2Ex(pipes_struct *p,
-			     struct netr_LogonControl2Ex *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************

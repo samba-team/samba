@@ -40,11 +40,16 @@ struct composite_context *resolve_name_wins_send(
 				TALLOC_CTX *mem_ctx, 
 				struct event_context *event_ctx,
 				void *userdata,
+				uint32_t flags,
+				uint16_t port,
 				struct nbt_name *name)
 {
 	struct resolve_wins_data *wins_data = talloc_get_type(userdata, struct resolve_wins_data);
 	if (wins_data->address_list == NULL) return NULL;
-	return resolve_name_nbtlist_send(mem_ctx, event_ctx, name, wins_data->address_list, wins_data->ifaces, wins_data->nbt_port, wins_data->nbt_timeout, false, true);
+	return resolve_name_nbtlist_send(mem_ctx, event_ctx, flags, port, name,
+					 wins_data->address_list, wins_data->ifaces,
+					 wins_data->nbt_port, wins_data->nbt_timeout,
+					 false, true);
 }
 
 /*
@@ -52,30 +57,10 @@ struct composite_context *resolve_name_wins_send(
  */
 NTSTATUS resolve_name_wins_recv(struct composite_context *c, 
 				TALLOC_CTX *mem_ctx,
-				struct socket_address ***addrs)
+				struct socket_address ***addrs,
+				char ***names)
 {
-	return resolve_name_nbtlist_recv(c, mem_ctx, addrs);
-}
-
-/*
-  wins name resolution method - sync call
- */
-NTSTATUS resolve_name_wins(struct nbt_name *name, 
-			    TALLOC_CTX *mem_ctx,
-			    const char **address_list,
-			    struct interface *ifaces,
-			    uint16_t nbt_port,
-			    int nbt_timeout,
-			    struct socket_address ***addrs)
-{
-	struct composite_context *c;
-	struct resolve_wins_data *wins_data = talloc(mem_ctx, struct resolve_wins_data);
-	wins_data->address_list = address_list;
-	wins_data->ifaces = ifaces;
-	wins_data->nbt_port = nbt_port;
-	wins_data->nbt_timeout = nbt_timeout;
-	c = resolve_name_wins_send(mem_ctx, NULL, wins_data, name);
-	return resolve_name_wins_recv(c, mem_ctx, addrs);
+	return resolve_name_nbtlist_recv(c, mem_ctx, addrs, names);
 }
 
 bool resolve_context_add_wins_method(struct resolve_context *ctx, const char **address_list, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)

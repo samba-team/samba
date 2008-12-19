@@ -358,7 +358,7 @@ _PUBLIC_ struct composite_context *ldap_connect_send(struct ldap_connection *con
 		}
 
 		ctx = socket_connect_send(conn->sock, NULL, unix_addr, 
-					  0, lp_resolve_context(conn->lp_ctx), conn->event.event_ctx);
+					  0, conn->event.event_ctx);
 		ctx->async.fn = ldap_connect_recv_unix_conn;
 		ctx->async.private_data = state;
 		return result;

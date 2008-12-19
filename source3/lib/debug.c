@@ -832,7 +832,7 @@ void check_log_size( void )
 		/* map debug levels to syslog() priorities
 		 * note that not all DEBUG(0, ...) calls are
 		 * necessarily errors */
-		static int priority_map[] = {
+		static const int priority_map[4] = {
 			LOG_ERR,     /* 0 */
 			LOG_WARNING, /* 1 */
 			LOG_NOTICE,  /* 2 */
@@ -842,7 +842,7 @@ void check_log_size( void )
 		char *msgbuf = NULL;
 		int ret;
 
-		if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) ) || syslog_level < 0)
+		if( syslog_level >= ARRAY_SIZE(priority_map) || syslog_level < 0)
 			priority = LOG_DEBUG;
 		else
 			priority = priority_map[syslog_level];

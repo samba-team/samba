@@ -127,7 +127,7 @@ static char *cli_request_print(TALLOC_CTX *mem_ctx, struct async_req *req)
 static int cli_request_destructor(struct cli_request *req)
 {
 	if (req->enc_state != NULL) {
-		common_free_enc_buffer(req->enc_state, req->outbuf);
+		common_free_enc_buffer(req->enc_state, (char *)req->outbuf);
 	}
 	DLIST_REMOVE(req->cli->outstanding_requests, req);
 	if (req->cli->outstanding_requests == NULL) {
@@ -187,7 +187,7 @@ static bool is_andx_req(uint8_t cmd)
  * to the chain. Find the offset to the place where we have to put our cmd.
  */
 
-static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
+static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 {
 	uint8_t cmd;
 	size_t ofs;
@@ -231,12 +231,12 @@ static bool find_andx_cmd_ofs(char *buf, size_t *pofs)
  * *poutbuf.
  */
 
-bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
+bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
 		      uint8_t wct, const uint16_t *vwv,
 		      size_t bytes_alignment,
-		      uint16_t num_bytes, const uint8_t *bytes)
+		      uint32_t num_bytes, const uint8_t *bytes)
 {
-	char *outbuf;
+	uint8_t *outbuf;
 	size_t old_size, new_size;
 	size_t ofs;
 	size_t chain_padding = 0;
@@ -269,18 +269,18 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 	new_size = old_size + chain_padding + 1 + wct * sizeof(uint16_t) + 2;
 
 	if ((bytes_alignment != 0) && ((new_size % bytes_alignment) != 0)) {
-		bytes_padding = bytes_alignment + (new_size % bytes_alignment);
+		bytes_padding = bytes_alignment - (new_size % bytes_alignment);
 	}
 
 	new_size += bytes_padding + num_bytes;
 
-	if (new_size > 0xffff) {
+	if ((smb_command != SMBwriteX) && (new_size > 0xffff)) {
 		DEBUG(1, ("splice_chain: %u bytes won't fit\n",
 			  (unsigned)new_size));
 		return false;
 	}
 
-	outbuf = TALLOC_REALLOC_ARRAY(NULL, *poutbuf, char, new_size);
+	outbuf = TALLOC_REALLOC_ARRAY(NULL, *poutbuf, uint8_t, new_size);
 	if (outbuf == NULL) {
 		DEBUG(0, ("talloc failed\n"));
 		return false;
@@ -295,7 +295,7 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 		if (!find_andx_cmd_ofs(outbuf, &andx_cmd_ofs)) {
 			DEBUG(1, ("invalid command chain\n"));
 			*poutbuf = TALLOC_REALLOC_ARRAY(
-				NULL, *poutbuf, char, old_size);
+				NULL, *poutbuf, uint8_t, old_size);
 			return false;
 		}
 
@@ -310,19 +310,41 @@ bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
 
 	ofs = old_size;
 
+	/*
+	 * Push the chained request:
+	 *
+	 * wct field
+	 */
+
 	SCVAL(outbuf, ofs, wct);
 	ofs += 1;
+
+	/*
+	 * vwv array
+	 */
 
 	memcpy(outbuf + ofs, vwv, sizeof(uint16_t) * wct);
 	ofs += sizeof(uint16_t) * wct;
 
+	/*
+	 * bcc (byte count)
+	 */
+
 	SSVAL(outbuf, ofs, num_bytes + bytes_padding);
 	ofs += sizeof(uint16_t);
+
+	/*
+	 * padding
+	 */
 
 	if (bytes_padding != 0) {
 		memset(outbuf + ofs, 0, bytes_padding);
 		ofs += bytes_padding;
 	}
+
+	/*
+	 * The bytes field
+	 */
 
 	memcpy(outbuf + ofs, bytes, num_bytes);
 
@@ -379,6 +401,7 @@ static int cli_async_req_destructor(struct async_req *req)
  * @param[in] additional_flags	open_and_x wants to add oplock header flags
  * @param[in] wct		How many words?
  * @param[in] vwv		The words, already in network order
+ * @param[in] bytes_alignment	How shall we align "bytes"?
  * @param[in] num_bytes		How many bytes?
  * @param[in] bytes		The data the request ships
  *
@@ -394,7 +417,8 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 					   uint8_t smb_command,
 					   uint8_t additional_flags,
 					   uint8_t wct, const uint16_t *vwv,
-					   uint16_t num_bytes,
+					   size_t bytes_alignment,
+					   uint32_t num_bytes,
 					   const uint8_t *bytes)
 {
 	struct async_req **tmp_reqs;
@@ -423,7 +447,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 			      cli_async_req_destructor);
 
 	if (!smb_splice_chain(&req->outbuf, smb_command, wct, vwv,
-			      0, num_bytes, bytes)) {
+			      bytes_alignment, num_bytes, bytes)) {
 		goto fail;
 	}
 
@@ -489,11 +513,12 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 	if (size_hint == 0) {
 		size_hint = 100;
 	}
-	req->outbuf = talloc_array(req, char, smb_wct + size_hint);
+	req->outbuf = talloc_array(req, uint8_t, smb_wct + size_hint);
 	if (req->outbuf == NULL) {
 		goto fail;
 	}
-	req->outbuf = TALLOC_REALLOC_ARRAY(NULL, req->outbuf, char, smb_wct);
+	req->outbuf = TALLOC_REALLOC_ARRAY(NULL, req->outbuf, uint8_t,
+					   smb_wct);
 
 	req->num_async = 0;
 	req->async = NULL;
@@ -502,7 +527,7 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 	req->recv_helper.fn = NULL;
 
 	SSVAL(req->outbuf, smb_tid, cli->cnum);
-	cli_setup_packet_buf(cli, req->outbuf);
+	cli_setup_packet_buf(cli, (char *)req->outbuf);
 
 	req->mid = cli_new_mid(cli);
 
@@ -536,22 +561,23 @@ void cli_chain_uncork(struct cli_state *cli)
 	cli->chain_accumulator = NULL;
 
 	SSVAL(req->outbuf, smb_mid, req->mid);
-	smb_setlen(req->outbuf, talloc_get_size(req->outbuf) - 4);
+	smb_setlen((char *)req->outbuf, talloc_get_size(req->outbuf) - 4);
 
-	cli_calculate_sign_mac(cli, req->outbuf);
+	cli_calculate_sign_mac(cli, (char *)req->outbuf);
 
 	if (cli_encryption_on(cli)) {
 		NTSTATUS status;
 		char *enc_buf;
 
-		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
+		status = cli_encrypt_message(cli, (char *)req->outbuf,
+					     &enc_buf);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("Error in encrypting client message. "
 				  "Error %s\n",	nt_errstr(status)));
 			TALLOC_FREE(req);
 			return;
 		}
-		req->outbuf = enc_buf;
+		req->outbuf = (uint8_t *)enc_buf;
 		req->enc_state = cli->trans_enc_state;
 	}
 
@@ -569,6 +595,7 @@ void cli_chain_uncork(struct cli_state *cli)
  * @param[in] additional_flags	open_and_x wants to add oplock header flags
  * @param[in] wct		How many words?
  * @param[in] vwv		The words, already in network order
+ * @param[in] bytes_alignment	How shall we align "bytes"?
  * @param[in] num_bytes		How many bytes?
  * @param[in] bytes		The data the request ships
  *
@@ -581,7 +608,8 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
-				   uint16_t num_bytes, const uint8_t *bytes)
+				   size_t bytes_alignment,
+				   uint32_t num_bytes, const uint8_t *bytes)
 {
 	struct async_req *result;
 	bool uncork = false;
@@ -596,7 +624,7 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	result = cli_request_chain(mem_ctx, ev, cli, smb_command,
-				   additional_flags, wct, vwv,
+				   additional_flags, wct, vwv, bytes_alignment,
 				   num_bytes, bytes);
 
 	if (result == NULL) {
@@ -955,6 +983,39 @@ static void cli_state_handler(struct event_context *event_ctx,
 
 	DEBUG(11, ("cli_state_handler called with flags %d\n", flags));
 
+	if (flags & EVENT_FD_WRITE) {
+		size_t to_send;
+		ssize_t sent;
+
+		for (req = cli->outstanding_requests; req; req = req->next) {
+			to_send = smb_len(req->outbuf)+4;
+			if (to_send > req->sent) {
+				break;
+			}
+		}
+
+		if (req == NULL) {
+			if (cli->fd_event != NULL) {
+				event_fd_set_not_writeable(cli->fd_event);
+			}
+			return;
+		}
+
+		sent = sys_send(cli->fd, req->outbuf + req->sent,
+			    to_send - req->sent, 0);
+
+		if (sent < 0) {
+			status = map_nt_error_from_unix(errno);
+			goto sock_error;
+		}
+
+		req->sent += sent;
+
+		if (req->sent == to_send) {
+			return;
+		}
+	}
+
 	if (flags & EVENT_FD_READ) {
 		int res, available;
 		size_t old_size, new_size;
@@ -1020,38 +1081,6 @@ static void cli_state_handler(struct event_context *event_ctx,
 		}
 	}
 
-	if (flags & EVENT_FD_WRITE) {
-		size_t to_send;
-		ssize_t sent;
-
-		for (req = cli->outstanding_requests; req; req = req->next) {
-			to_send = smb_len(req->outbuf)+4;
-			if (to_send > req->sent) {
-				break;
-			}
-		}
-
-		if (req == NULL) {
-			if (cli->fd_event != NULL) {
-				event_fd_set_not_writeable(cli->fd_event);
-			}
-			return;
-		}
-
-		sent = sys_send(cli->fd, req->outbuf + req->sent,
-			    to_send - req->sent, 0);
-
-		if (sent < 0) {
-			status = map_nt_error_from_unix(errno);
-			goto sock_error;
-		}
-
-		req->sent += sent;
-
-		if (req->sent == to_send) {
-			return;
-		}
-	}
 	return;
 
  sock_error:

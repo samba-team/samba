@@ -195,8 +195,11 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (!cli_negprot(c)) {
-		d_printf("protocol negotiation failed\n");
+	status = cli_negprot(c);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("protocol negotiation failed: %s\n",
+			 nt_errstr(status));
 		cli_shutdown(c);
 		return NULL;
 	}

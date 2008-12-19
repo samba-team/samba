@@ -34,7 +34,7 @@ m4_include(../nsswitch/nsstest.m4)
 m4_include(../pidl/config.m4)
 
 AC_CONFIG_FILES(lib/registry/registry.pc)
-AC_CONFIG_FILES(lib/events/events.pc)
+AC_CONFIG_FILES(../lib/tevent/tevent.pc)
 AC_CONFIG_FILES(librpc/dcerpc.pc)
 AC_CONFIG_FILES(../librpc/ndr.pc)
 AC_CONFIG_FILES(../lib/torture/torture.pc)
@@ -96,7 +96,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
-m4_include(lib/events/libevents.m4)
+m4_include(../lib/tevent/libtevent.m4)
 
 dnl m4_include(auth/kerberos/config.m4)
 m4_include(auth/gensec/config.m4)

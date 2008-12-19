@@ -67,6 +67,7 @@ libtlssrcdir := lib/tls
 libregistrysrcdir := lib/registry
 smbreadlinesrcdir := lib/smbreadline
 libmessagingsrcdir := lib/messaging
+libteventsrcdir := ../lib/tevent
 libeventssrcdir := lib/events
 libcmdlinesrcdir := lib/cmdline
 poptsrcdir := ../lib/popt

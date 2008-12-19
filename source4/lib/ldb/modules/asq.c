@@ -178,7 +178,7 @@ static int asq_reqs_callback(struct ldb_request *req, struct ldb_reply *ares)
 	case LDB_REPLY_ENTRY:
 		/* pass the message up to the original callback as we
 		 * do not have to elaborate on it any further */
-		ret = ldb_module_send_entry(ac->req, ares->message);
+		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
 		}

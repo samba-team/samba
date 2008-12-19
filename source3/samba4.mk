@@ -82,6 +82,7 @@ ldb_sambasrcdir := $(samba4srcdir)/lib/ldb-samba
 libtlssrcdir := $(samba4srcdir)/lib/tls
 libregistrysrcdir := $(samba4srcdir)/lib/registry
 libmessagingsrcdir := $(samba4srcdir)/lib/messaging
+libteventsrcdir := $(samba4srcdir)/../lib/tevent
 libeventssrcdir := $(samba4srcdir)/lib/events
 libcmdlinesrcdir := $(samba4srcdir)/lib/cmdline
 poptsrcdir := $(samba4srcdir)/../lib/popt

@@ -66,7 +66,7 @@ struct cli_request {
 	/**
 	 * The bytes we have to ship to the server
 	 */
-	char *outbuf;
+	uint8_t *outbuf;
 
 	/**
 	 * How much from "outbuf" did we already send
@@ -119,16 +119,17 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   uint8_t smb_command,
 				   uint8_t additional_flags,
 				   uint8_t wct, const uint16_t *vwv,
-				   uint16_t num_bytes, const uint8_t *bytes);
+				   size_t bytes_alignment,
+				   uint32_t num_bytes, const uint8_t *bytes);
 
 bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 		    size_t size_hint);
 void cli_chain_uncork(struct cli_state *cli);
 bool cli_in_chain(struct cli_state *cli);
-bool smb_splice_chain(char **poutbuf, uint8_t smb_command,
+bool smb_splice_chain(uint8_t **poutbuf, uint8_t smb_command,
 		      uint8_t wct, const uint16_t *vwv,
 		      size_t bytes_alignment,
-		      uint16_t num_bytes, const uint8_t *bytes);
+		      uint32_t num_bytes, const uint8_t *bytes);
 
 NTSTATUS cli_pull_reply(struct async_req *req,
 			uint8_t *pwct, uint16_t **pvwv,

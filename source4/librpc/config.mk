@@ -57,7 +57,7 @@ NDR_SECURITY_OBJ_FILES = ../librpc/gen_ndr/ndr_security.o \
 			 $(gen_ndrsrcdir)/ndr_server_id.o
 
 PUBLIC_HEADERS += ../librpc/gen_ndr/security.h
-
+PUBLIC_HEADERS += $(gen_ndrsrcdir)/server_id.h
 
 [SUBSYSTEM::NDR_AUDIOSRV]
 PUBLIC_DEPENDENCIES = LIBNDR

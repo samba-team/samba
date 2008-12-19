@@ -587,10 +587,13 @@ struct ldb_handle *ldb_handle_new(TALLOC_CTX *mem_ctx, struct ldb_context *ldb)
  *      req: the original request passed to your module
  *      msg: reply message (must be a talloc pointer, and it will be stolen
  *           on the ldb_reply that is sent to the callback)
+ * 	ctrls: controls to send in the reply  (must be a talloc pointer, and it will be stolen
+ *           on the ldb_reply that is sent to the callback)
  */
 
 int ldb_module_send_entry(struct ldb_request *req,
-			  struct ldb_message *msg)
+			  struct ldb_message *msg,
+			  struct ldb_control **ctrls)
 {
 	struct ldb_reply *ares;
 
@@ -602,6 +605,7 @@ int ldb_module_send_entry(struct ldb_request *req,
 	}
 	ares->type = LDB_REPLY_ENTRY;
 	ares->message = talloc_steal(ares, msg);
+	ares->controls = talloc_steal(ares, ctrls);
 	ares->error = LDB_SUCCESS;
 
 	return req->callback(req, ares);

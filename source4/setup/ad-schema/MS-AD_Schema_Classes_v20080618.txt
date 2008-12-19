@@ -277,20 +277,20 @@ subClassOf: top
 systemMustContain: msDS-MaximumPasswordAge, msDS-MinimumPasswordAge,msDS-MinimumPasswordLength, msDS-PasswordComplexityEnabled,msDS-LockoutObservationWindow, msDS-LockoutDuration,msDS-LockoutThreshold, msDS-PasswordReversibleEncryptionEnabled,msDS-PasswordSettingsPrecedence, msDS-PasswordHistoryLength
 systemMayContain: msDS-PSOAppliesTo
 systemPossSuperiors: msDS-PasswordSettingsContainer
-schemaIdGuid:: 3bcd9db8-f84b-451c-952f-6c52b81f9ec6
+schemaIdGuid: 3bcd9db8-f84b-451c-952f-6c52b81f9ec6
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-DS-Password-Settings,CN=Schema,CN=Configuration,<RootDomainDN>
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 
-cn: ms-DS-Password-Settings
+cn: ms-DS-Password-Settings-Container
 ldapDisplayName: msDS-PasswordSettingsContainer
 governsId: 1.2.840.113556.1.5.256
 objectClassCategory: 1
 rdnAttId: cn
 subClassOf: top
 systemPossSuperiors: Container
-schemaIdGuid:: 5b06b06a-4cf3-44c0-bd16-43bc10a987da
+schemaIdGuid: 5b06b06a-4cf3-44c0-bd16-43bc10a987da
 defaultSecurityDescriptor: D:(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;DA)(A;;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)
 systemOnly: FALSE
 defaultObjectCategory: CN=ms-DS-Password-Settings-Container,CN=Schema,CN=Configuration,<RootDomainDN>
