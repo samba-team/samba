@@ -401,6 +401,7 @@ static int cli_async_req_destructor(struct async_req *req)
  * @param[in] additional_flags	open_and_x wants to add oplock header flags
  * @param[in] wct		How many words?
  * @param[in] vwv		The words, already in network order
+ * @param[in] bytes_alignment	How shall we align "bytes"?
  * @param[in] num_bytes		How many bytes?
  * @param[in] bytes		The data the request ships
  *
