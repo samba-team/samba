@@ -18,8 +18,8 @@
 #
 
 import unittest
-from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam,
-                          WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase, SAMUser)
+from samba.samba3 import GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam
+from samba.samba3 import WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase, SAMUser
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")

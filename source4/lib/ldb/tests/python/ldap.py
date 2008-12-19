@@ -13,10 +13,10 @@ sys.path.append("../lib/subunit/python")
 import samba.getopt as options
 
 from samba.auth import system_session
-from ldb import (SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError,
-                 LDB_ERR_NO_SUCH_OBJECT, LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
-                 LDB_ERR_ENTRY_ALREADY_EXISTS, LDB_ERR_UNWILLING_TO_PERFORM,
-                 LDB_ERR_NOT_ALLOWED_ON_NON_LEAF, LDB_ERR_OTHER, LDB_ERR_INVALID_DN_SYNTAX)
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import LDB_ERR_NO_SUCH_OBJECT, LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
+from ldb import LDB_ERR_ENTRY_ALREADY_EXISTS, LDB_ERR_UNWILLING_TO_PERFORM
+from ldb import LDB_ERR_NOT_ALLOWED_ON_NON_LEAF, LDB_ERR_OTHER, LDB_ERR_INVALID_DN_SYNTAX
 from samba import Ldb
 from subunit import SubunitTestRunner
 from samba import param

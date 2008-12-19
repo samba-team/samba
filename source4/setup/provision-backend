@@ -34,7 +34,7 @@ from samba import param
 
 from samba.auth import system_session
 import samba.getopt as options
-from samba.provision import (provision_backend)
+from samba.provision import provision_backend
 
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)
