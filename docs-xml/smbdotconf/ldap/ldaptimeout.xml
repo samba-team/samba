@@ -5,9 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-	When Samba connects to an ldap server that server may be down or unreachable. To prevent Samba from hanging whilst
-	waiting for the connection this parameter specifies in seconds how long Samba should wait before failing the 
-	connect. The default is to only wait fifteen seconds for the ldap server to respond to the connect request.
+	This parameter defines the number of seconds that Samba should use as timeout for LDAP operations.
 	</para>
 </description>
 <value type="default">15</value>
