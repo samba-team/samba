@@ -210,13 +210,19 @@ report_expiration (krb5_context context,
     free (p);
 }
 
-/*
- * Parse the last_req data and show it to the user if it's interesting
+/**
+ * Check the context, and in the case there is a expiration warning,
+ * use the prompter to print the warning.
+ *
+ * @param context A Kerberos 5 context.
+ * @param ctx The krb5_init_creds_context check for expiration.
+ *
+ * @ingroup krb5_credential
  */
 
-static void
-krb5_init_creds_prompt_expire (Krb5_context context,
-			       krb5_init_creds_context ctx)
+void KRB5_LIB_FUNCTION
+krb5_init_creds_prompt_expire(krb5_context context,
+			      krb5_init_creds_context ctx)
 {
     krb5_const_realm realm;
     LastReq *lr;
