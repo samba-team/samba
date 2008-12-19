@@ -640,6 +640,7 @@ static bool test_stream_delete(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 done:
 	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
 	return ret;
 }
 
@@ -1112,6 +1113,198 @@ done:
 	return ret;
 }
 
+static bool test_stream_rename2(struct torture_context *tctx,
+			       struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname1 = BASEDIR "\\stream.txt";
+	const char *fname2 = BASEDIR "\\stream2.txt";
+	const char *stream_name1 = ":Stream One:$DATA";
+	const char *stream_name2 = ":Stream Two:$DATA";
+	const char *stream_name_default = "::$DATA";
+	const char *sname1;
+	const char *sname2;
+	bool ret = true;
+	int fnum = -1;
+	union smb_setfileinfo sinfo;
+	union smb_rename rio;
+
+	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname1, "Stream One");
+	sname2 = talloc_asprintf(mem_ctx, "%s:%s", fname1, "Stream Two");
+
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+	    SEC_STD_DELETE|SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = (NTCREATEX_SHARE_ACCESS_READ |
+					NTCREATEX_SHARE_ACCESS_WRITE |
+					NTCREATEX_SHARE_ACCESS_DELETE);
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = sname1;
+
+	/* Open/create new stream. */
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/*
+	 * Check raw rename with <base>:<stream>.
+	 */
+	printf("(%s) Checking NTRENAME of a stream using <base>:<stream>\n",
+	       __location__);
+	rio.generic.level = RAW_RENAME_NTRENAME;
+	rio.ntrename.in.old_name = sname1;
+	rio.ntrename.in.new_name = sname2;
+	rio.ntrename.in.attrib = 0;
+	rio.ntrename.in.cluster_size = 0;
+	rio.ntrename.in.flags = RENAME_FLAG_RENAME;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	/*
+	 * Check raw rename to the default stream using :<stream>.
+	 */
+	printf("(%s) Checking NTRENAME to default stream using :<stream>\n",
+	       __location__);
+	rio.ntrename.in.new_name = stream_name_default;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
+
+	/*
+	 * Check raw rename using :<stream>.
+	 */
+	printf("(%s) Checking NTRENAME of a stream using :<stream>\n",
+	       __location__);
+	rio.ntrename.in.new_name = stream_name2;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Check raw rename of a stream to a file.
+	 */
+	printf("(%s) Checking NTRENAME of a stream to a file\n",
+	       __location__);
+	rio.ntrename.in.old_name = sname2;
+	rio.ntrename.in.new_name = fname2;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_INVALID_PARAMETER);
+
+	/*
+	 * Check raw rename of a file to a stream.
+	 */
+	printf("(%s) Checking NTRENAME of a file to a stream\n",
+	       __location__);
+
+	/* Create the file. */
+	io.ntcreatex.in.fname = fname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Try the rename. */
+	rio.ntrename.in.old_name = fname2;
+	rio.ntrename.in.new_name = sname1;
+	status = smb_raw_rename(cli->tree, &rio);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID);
+
+	/*
+	 * Reopen the stream for trans2 renames.
+	 */
+	io.ntcreatex.in.fname = sname2;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * Check trans2 rename of a stream using :<stream>.
+	 */
+	printf("(%s) Checking trans2 rename of a stream using :<stream>\n",
+	       __location__);
+	ZERO_STRUCT(sinfo);
+	sinfo.rename_information.level = RAW_SFILEINFO_RENAME_INFORMATION;
+	sinfo.rename_information.in.file.fnum = fnum;
+	sinfo.rename_information.in.overwrite = 1;
+	sinfo.rename_information.in.root_fid = 0;
+	sinfo.rename_information.in.new_name = stream_name1;
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * Check trans2 rename of an overwriting stream using :<stream>.
+	 */
+	printf("(%s) Checking trans2 rename of an overwriting stream using "
+	       ":<stream>\n", __location__);
+
+	/* Create second stream. */
+	io.ntcreatex.in.fname = sname2;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+
+	/* Rename the first stream onto the second. */
+	sinfo.rename_information.in.file.fnum = fnum;
+	sinfo.rename_information.in.new_name = stream_name2;
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+	/*
+	 * Reopen the stream with the new name.
+	 */
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.ntcreatex.in.fname = sname2;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+
+	/*
+	 * Check trans2 rename of a stream using <base>:<stream>.
+	 */
+	printf("(%s) Checking trans2 rename of a stream using "
+	       "<base>:<stream>\n", __location__);
+	sinfo.rename_information.in.file.fnum = fnum;
+	sinfo.rename_information.in.new_name = sname1;
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_NOT_SUPPORTED);
+
+	/*
+	 * Samba3 doesn't currently support renaming a stream to the default
+	 * stream.  This test does pass on windows.
+	 */
+	if (torture_setting_bool(tctx, "samba3", false)) {
+		goto done;
+	}
+
+	/*
+	 * Check trans2 rename to the default stream using :<stream>.
+	 */
+	printf("(%s) Checking trans2 rename to defaualt stream using "
+	       ":<stream>\n", __location__);
+	sinfo.rename_information.in.file.fnum = fnum;
+	sinfo.rename_information.in.new_name = stream_name_default;
+	status = smb_raw_setfileinfo(cli->tree, &sinfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	smbcli_close(cli->tree, fnum);
+
+ done:
+	smbcli_close(cli->tree, fnum);
+	status = smbcli_unlink(cli->tree, fname1);
+	status = smbcli_unlink(cli->tree, fname2);
+	return ret;
+}
+
 
 /* 
    basic testing of streams calls
@@ -1131,15 +1324,17 @@ bool torture_raw_streams(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 	ret &= test_stream_sharemodes(torture, cli, torture);
 	smb_raw_exit(cli->session);
+	if (!torture_setting_bool(torture, "samba4", false)) {
+		ret &= test_stream_delete(torture, cli, torture);
+	}
 	ret &= test_stream_names(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_names2(torture, cli, torture);
 	smb_raw_exit(cli->session);
 	ret &= test_stream_rename(torture, cli, torture);
 	smb_raw_exit(cli->session);
-	if (!torture_setting_bool(torture, "samba4", false)) {
-		ret &= test_stream_delete(torture, cli, torture);
-	}
+	ret &= test_stream_rename2(torture, cli, torture);
+	smb_raw_exit(cli->session);
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
