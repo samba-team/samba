@@ -368,8 +368,6 @@ krb5_get_init_creds_opt_get_error(krb5_context context,
 				  KRB_ERROR **error)
   __attribute__((deprecated))
 {
-    krb5_error_code ret;
-    
     *error = calloc(1, sizeof(**error));
     if (*error == NULL) {
 	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
