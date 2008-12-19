@@ -746,6 +746,7 @@ static void new_connection(int listen_sock, bool privileged)
 static void remove_client(struct winbindd_cli_state *state)
 {
 	char c = 0;
+	int nwritten;
 
 	/* It's a dead client - hold a funeral */
 	
@@ -754,7 +755,11 @@ static void remove_client(struct winbindd_cli_state *state)
 	}
 
 	/* tell client, we are closing ... */
-	write(state->sock, &c, sizeof(c));
+	nwritten = write(state->sock, &c, sizeof(c));
+	if (nwritten == -1) {
+		DEBUG(2, ("final write to client failed: %s\n",
+			  strerror(errno)));
+	}
 
 	/* Close socket */
 		
