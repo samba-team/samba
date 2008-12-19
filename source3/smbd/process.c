@@ -37,7 +37,8 @@ SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
 extern int max_send;
 
-static void construct_reply_common(const char *inbuf, char *outbuf);
+static void construct_reply_common(struct smb_request *req, const char *inbuf,
+				   char *outbuf);
 
 /* Accessor function for smb_read_error for smbd functions. */
 
@@ -1248,8 +1249,9 @@ static const struct smb_message_struct {
  allocate and initialize a reply packet
 ********************************************************************/
 
-bool create_outbuf(TALLOC_CTX *mem_ctx, const char *inbuf, char **outbuf,
-		   uint8_t num_words, uint32_t num_bytes)
+static bool create_outbuf(TALLOC_CTX *mem_ctx, struct smb_request *req,
+			  const char *inbuf, char **outbuf, uint8_t num_words,
+			  uint32_t num_bytes)
 {
 	/*
          * Protect against integer wrap
@@ -1270,7 +1272,7 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, const char *inbuf, char **outbuf,
 		return false;
 	}
 
-	construct_reply_common(inbuf, *outbuf);
+	construct_reply_common(req, inbuf, *outbuf);
 	srv_set_message(*outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
@@ -1286,7 +1288,7 @@ bool create_outbuf(TALLOC_CTX *mem_ctx, const char *inbuf, char **outbuf,
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 {
 	char *outbuf;
-	if (!create_outbuf(req, (char *)req->inbuf, &outbuf, num_words,
+	if (!create_outbuf(req, req, (char *)req->inbuf, &outbuf, num_words,
 			   num_bytes)) {
 		smb_panic("could not allocate output buffer\n");
 	}
@@ -1592,11 +1594,12 @@ void remove_from_common_flags2(uint32 v)
 	common_flags2 &= ~v;
 }
 
-static void construct_reply_common(const char *inbuf, char *outbuf)
+static void construct_reply_common(struct smb_request *req, const char *inbuf,
+				   char *outbuf)
 {
 	srv_set_message(outbuf,0,0,false);
 	
-	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
+	SCVAL(outbuf, smb_com, req->cmd);
 	SIVAL(outbuf,smb_rcls,0);
 	SCVAL(outbuf,smb_flg, FLAG_REPLY | (CVAL(inbuf,smb_flg) & FLAG_CASELESS_PATHNAMES)); 
 	SSVAL(outbuf,smb_flg2,
@@ -1612,7 +1615,7 @@ static void construct_reply_common(const char *inbuf, char *outbuf)
 
 void construct_reply_common_req(struct smb_request *req, char *outbuf)
 {
-	construct_reply_common((char *)req->inbuf, outbuf);
+	construct_reply_common(req, (char *)req->inbuf, outbuf);
 }
 
 /****************************************************************************
