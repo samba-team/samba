@@ -190,7 +190,7 @@ static int writefile(int f, char *b, int n)
  number read. read approx n bytes.
 ****************************************************************************/
 
-static int readfile(char *b, int n, XFILE *f)
+static int readfile(uint8_t *b, int n, XFILE *f)
 {
 	int i;
 	int c;
@@ -212,6 +212,25 @@ static int readfile(char *b, int n, XFILE *f)
 	}
 
 	return(i);
+}
+
+struct push_state {
+	XFILE *f;
+	SMB_OFF_T nread;
+};
+
+static size_t push_source(uint8_t *buf, size_t n, void *priv)
+{
+	struct push_state *state = (struct push_state *)priv;
+	int result;
+
+	if (x_feof(state->f)) {
+		return 0;
+	}
+
+	result = readfile(buf, n, state->f);
+	state->nread += result;
+	return result;
 }
 
 /****************************************************************************
@@ -1587,13 +1606,12 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	int fnum;
 	XFILE *f;
 	SMB_OFF_T start = 0;
-	off_t nread = 0;
-	char *buf = NULL;
-	int maxwrite = io_bufsize;
 	int rc = 0;
 	struct timeval tp_start;
 	struct cli_state *targetcli;
 	char *targetname = NULL;
+	struct push_state state;
+	NTSTATUS status;
 
 	if (!cli_resolve_path(ctx, "", cli, rname, &targetcli, &targetname)) {
 		d_printf("Failed to open %s: %s\n", rname, cli_errstr(cli));
@@ -1646,50 +1664,26 @@ static int do_put(const char *rname, const char *lname, bool reput)
 	DEBUG(1,("putting file %s as %s ",lname,
 		 rname));
 
-	buf = (char *)SMB_MALLOC(maxwrite);
-	if (!buf) {
-		d_printf("ERROR: Not enough memory!\n");
-		return 1;
-	}
+	x_setvbuf(f, NULL, X_IOFBF, io_bufsize);
 
-	x_setvbuf(f, NULL, X_IOFBF, maxwrite);
+	state.f = f;
+	state.nread = 0;
 
-	while (!x_feof(f)) {
-		int n = maxwrite;
-		int ret;
-
-		if ((n = readfile(buf,n,f)) < 1) {
-			if((n == 0) && x_feof(f))
-				break; /* Empty local file. */
-
-			d_printf("Error reading local file: %s\n", strerror(errno));
-			rc = 1;
-			break;
-		}
-
-		ret = cli_write(targetcli, fnum, 0, buf, nread + start, n);
-
-		if (n != ret) {
-			d_printf("Error writing file: %s\n", cli_errstr(cli));
-			rc = 1;
-			break;
-		}
-
-		nread += n;
+	status = cli_push(targetcli, fnum, 0, 0, io_bufsize, push_source,
+			  &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "cli_push returned %s\n", nt_errstr(status));
 	}
 
 	if (!cli_close(targetcli, fnum)) {
 		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
 		x_fclose(f);
-		SAFE_FREE(buf);
 		return 1;
 	}
 
 	if (f != x_stdin) {
 		x_fclose(f);
 	}
-
-	SAFE_FREE(buf);
 
 	{
 		struct timeval tp_end;
@@ -1700,10 +1694,10 @@ static int do_put(const char *rname, const char *lname, bool reput)
 			(tp_end.tv_sec - tp_start.tv_sec)*1000 +
 			(tp_end.tv_usec - tp_start.tv_usec)/1000;
 		put_total_time_ms += this_time;
-		put_total_size += nread;
+		put_total_size += state.nread;
 
 		DEBUG(1,("(%3.1f kb/s) (average %3.1f kb/s)\n",
-			 nread / (1.024*this_time + 1.0e-4),
+			 state.nread / (1.024*this_time + 1.0e-4),
 			 put_total_size / (1.024*put_total_time_ms)));
 	}
 

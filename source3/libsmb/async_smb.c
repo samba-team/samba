@@ -552,6 +552,7 @@ bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 void cli_chain_uncork(struct cli_state *cli)
 {
 	struct cli_request *req = cli->chain_accumulator;
+	size_t smblen;
 
 	SMB_ASSERT(req != NULL);
 
@@ -561,7 +562,19 @@ void cli_chain_uncork(struct cli_state *cli)
 	cli->chain_accumulator = NULL;
 
 	SSVAL(req->outbuf, smb_mid, req->mid);
-	smb_setlen((char *)req->outbuf, talloc_get_size(req->outbuf) - 4);
+
+	smblen = talloc_get_size(req->outbuf) - 4;
+
+	smb_setlen((char *)req->outbuf, smblen);
+
+	if (smblen > 0x1ffff) {
+		/*
+		 * This is a POSIX 14 word large write. Overwrite just the
+		 * size field, the '0xFFSMB' has been set by smb_setlen which
+		 * _smb_setlen_large does not do.
+		 */
+		_smb_setlen_large(((char *)req->outbuf), smblen);
+	}
 
 	cli_calculate_sign_mac(cli, (char *)req->outbuf);
 
@@ -636,6 +649,37 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 	}
 
 	return result;
+}
+
+/**
+ * Calculate the current ofs to wct for requests like write&x
+ * @param[in] req	The smb request we're currently building
+ * @retval how many bytes offset have we accumulated?
+ */
+
+uint16_t cli_wct_ofs(const struct cli_state *cli)
+{
+	size_t buf_size;
+
+	if (cli->chain_accumulator == NULL) {
+		return smb_wct - 4;
+	}
+
+	buf_size = talloc_get_size(cli->chain_accumulator->outbuf);
+
+	if (buf_size == smb_wct) {
+		return smb_wct - 4;
+	}
+
+	/*
+	 * Add alignment for subsequent requests
+	 */
+
+	if ((buf_size % 4) != 0) {
+		buf_size += (4 - (buf_size % 4));
+	}
+
+	return buf_size - 4;
 }
 
 /**

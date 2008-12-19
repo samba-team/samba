@@ -2800,6 +2800,25 @@ ssize_t cli_write(struct cli_state *cli,
 		 const char *buf, off_t offset, size_t size);
 ssize_t cli_smbwrite(struct cli_state *cli,
 		     int fnum, char *buf, off_t offset, size_t size1);
+struct async_req *cli_write_andx_send(TALLOC_CTX *mem_ctx,
+				      struct event_context *ev,
+				      struct cli_state *cli, uint16_t fnum,
+				      uint16_t mode, const uint8_t *buf,
+				      off_t offset, size_t size);
+NTSTATUS cli_write_andx_recv(struct async_req *req, size_t *pwritten);
+
+struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct cli_state *cli,
+				uint16_t fnum, uint16_t mode,
+				off_t start_offset, size_t window_size,
+				size_t (*source)(uint8_t *buf, size_t n,
+						 void *priv),
+				void *priv);
+NTSTATUS cli_push_recv(struct async_req *req);
+NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,
+		  off_t start_offset, size_t window_size,
+		  size_t (*source)(uint8_t *buf, size_t n, void *priv),
+		  void *priv);
 
 /* The following definitions come from libsmb/clisecdesc.c  */
 
@@ -7489,8 +7508,6 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 				  void *private_data);
 NTSTATUS allow_new_trans(struct trans_state *list, int mid);
 void respond_to_all_remaining_local_messages(void);
-bool create_outbuf(TALLOC_CTX *mem_ctx, const char *inbuf, char **outbuf,
-		   uint8_t num_words, uint32_t num_bytes);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
