@@ -122,6 +122,8 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 				   size_t bytes_alignment,
 				   uint32_t num_bytes, const uint8_t *bytes);
 
+uint16_t cli_wct_ofs(const struct cli_state *cli);
+
 bool cli_chain_cork(struct cli_state *cli, struct event_context *ev,
 		    size_t size_hint);
 void cli_chain_uncork(struct cli_state *cli);

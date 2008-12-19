@@ -639,6 +639,37 @@ struct async_req *cli_request_send(TALLOC_CTX *mem_ctx,
 }
 
 /**
+ * Calculate the current ofs to wct for requests like write&x
+ * @param[in] req	The smb request we're currently building
+ * @retval how many bytes offset have we accumulated?
+ */
+
+uint16_t cli_wct_ofs(const struct cli_state *cli)
+{
+	size_t buf_size;
+
+	if (cli->chain_accumulator == NULL) {
+		return smb_wct - 4;
+	}
+
+	buf_size = talloc_get_size(cli->chain_accumulator->outbuf);
+
+	if (buf_size == smb_wct) {
+		return smb_wct - 4;
+	}
+
+	/*
+	 * Add alignment for subsequent requests
+	 */
+
+	if ((buf_size % 4) != 0) {
+		buf_size += (4 - (buf_size % 4));
+	}
+
+	return buf_size - 4;
+}
+
+/**
  * Figure out if there is an andx command behind the current one
  * @param[in] buf	The smb buffer to look at
  * @param[in] ofs	The offset to the wct field that is followed by the cmd
