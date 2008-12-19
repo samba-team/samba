@@ -5,4 +5,4 @@ PUBLIC_DEPENDENCIES = LIBLDB LIBEVENTS PYTALLOC
 swig_ldb_OBJ_FILES = $(ldbsrcdir)/pyldb.o
 $(swig_ldb_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)/include
 
-$(swig_ldb_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(swig_ldb_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)

@@ -6,7 +6,6 @@ import os, sys
 import unittest
 
 # Required for the standalone LDB build
-sys.path.append("swig")
 sys.path.append("build/lib.linux-i686-2.4")
 
 import ldb

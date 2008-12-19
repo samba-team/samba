@@ -62,25 +62,20 @@ examples/ldifreader: examples/ldifreader.o
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
 # Python bindings
-build-python:: _ldb.$(SHLIBEXT)
+build-python:: ldb.$(SHLIBEXT)
 
 ldb_wrap.o: $(ldbdir)/ldb_wrap.c
 	$(CC) $(PICFLAG) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 	
-_ldb.$(SHLIBEXT): ldb_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
+ldb.$(SHLIBEXT): ldb_wrap.o
+	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
 install-python:: build-python
-	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"` \
-		$(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
-	cp $(ldbdir)/ldb.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"`
-	cp _ldb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
-
-install-swig::
-	cp ldb.i `$(SWIG) -swiglib`
+	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
+	cp ldb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
 
 check-python:: build-python
 	LD_LIBRARY_PATH=lib PYTHONPATH=.:$(ldbdir) $(PYTHON) $(ldbdir)/tests/python/api.py
 
 clean::
-	rm -f _ldb.$(SHLIBEXT)
+	rm -f ldb.$(SHLIBEXT)
