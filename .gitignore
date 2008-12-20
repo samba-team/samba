@@ -347,3 +347,4 @@ librpc/gen_ndr/*_c.h
 librpc/gen_ndr/*_s.c
 librpc/gen_ndr/cli_named_pipe_auth.[ch]
 librpc/gen_ndr/srv_named_pipe_auth.[ch]
+lib/tevent/Makefile

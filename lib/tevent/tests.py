@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba import events
+import events
 import unittest
 
 # Just test the bindings are there and that calling them doesn't crash

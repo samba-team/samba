@@ -4,7 +4,7 @@
 	$(SWIG) -O -Wall -python -keyword $<
 
 showflags::
-	@echo 'libevents will be compiled with flags:'
+	@echo 'libtevent will be compiled with flags:'
 	@echo '  CFLAGS = $(CFLAGS)'
 	@echo '  CPPFLAGS = $(CPPFLAGS)'
 	@echo '  LDFLAGS = $(LDFLAGS)'
