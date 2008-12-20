@@ -354,3 +354,6 @@ struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
 }
 
 %}
+
+char *private_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
+               const char *name);

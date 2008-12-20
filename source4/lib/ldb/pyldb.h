@@ -3,8 +3,6 @@
 
    Swig interface to ldb.
 
-   Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
-   Copyright (C) 2006 Simo Sorce <idra@samba.org>
    Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
 
      ** NOTE! The following LGPL license applies to the ldb
@@ -32,6 +30,7 @@
 #include <pytalloc.h>
 #include <ldb.h>
 #include <ldb_private.h>
+#include <ldb_errors.h>
 
 typedef py_talloc_Object PyLdbObject;
 PyAPI_DATA(PyTypeObject) PyLdb;
@@ -70,6 +69,7 @@ PyAPI_DATA(PyTypeObject) PyLdbTree;
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
 #define PyLdbTree_AsTree(pyobj) py_talloc_get_type(pyobj, struct ldb_parse_tree)
 
+void PyErr_SetLdbError(int ret, struct ldb_context *ldb_ctx);
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(ret,ldb) \
 	if (ret != LDB_SUCCESS) { \
 		PyErr_SetLdbError(ret, ldb); \

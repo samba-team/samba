@@ -262,5 +262,6 @@ param_section.next_parameter = new_instancemethod(_param.param_section_next_para
 param_section_swigregister = _param.param_section_swigregister
 param_section_swigregister(param_section)
 
+private_path = _param.private_path
 
 

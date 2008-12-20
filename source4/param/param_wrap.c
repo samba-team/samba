@@ -4153,6 +4153,50 @@ SWIGINTERN PyObject *param_section_swiginit(PyObject *SWIGUNUSEDPARM(self), PyOb
   return SWIG_Python_InitShadowInstance(args);
 }
 
+SWIGINTERN PyObject *_wrap_private_path(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
+  struct loadparm_context *arg2 = (struct loadparm_context *) 0 ;
+  char *arg3 = (char *) 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "lp_ctx",(char *) "name", NULL 
+  };
+  char *result = 0 ;
+  
+  arg2 = loadparm_init(NULL);
+  arg1 = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:private_path",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (obj0) {
+    res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "private_path" "', argument " "2"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg2 = (struct loadparm_context *)(argp2);
+  }
+  if (obj1) {
+    res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "private_path" "', argument " "3"" of type '" "char const *""'");
+    }
+    arg3 = (char *)(buf3);
+  }
+  result = (char *)private_path(arg1,arg2,(char const *)arg3);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return resultobj;
+fail:
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
 	 { (char *)"LoadParm_default_service", (PyCFunction) _wrap_LoadParm_default_service, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -4230,6 +4274,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_param_section", (PyCFunction)_wrap_delete_param_section, METH_O, NULL},
 	 { (char *)"param_section_swigregister", param_section_swigregister, METH_VARARGS, NULL},
 	 { (char *)"param_section_swiginit", param_section_swiginit, METH_VARARGS, NULL},
+	 { (char *)"private_path", (PyCFunction) _wrap_private_path, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
