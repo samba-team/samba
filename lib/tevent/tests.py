@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import events
+import tevent as events
 import unittest
 
 # Just test the bindings are there and that calling them doesn't crash
@@ -25,7 +25,7 @@ import unittest
 
 class EventTestCase(unittest.TestCase):
     def test_create(self):
-        self.assertTrue(events.event() is not None)
+        self.assertTrue(events.EventContext() is not None)
 
     def test_loop_wait(self):
-        self.assertEquals(0, events.event().loop_wait())
+        self.assertEquals(0, events.EventContext().loop_wait())

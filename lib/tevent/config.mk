@@ -47,13 +47,11 @@ PUBLIC_HEADERS += $(addprefix $(libteventsrcdir)/, tevent.h tevent_internal.h)
 
 # TODO: Change python stuff to tevent
 [PYTHON::swig_events]
-LIBRARY_REALNAME = samba/_events.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = LIBTEVENT LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
+LIBRARY_REALNAME = tevent.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = LIBTEVENT PYTALLOC LIBSAMBA-UTIL
 
-swig_events_OBJ_FILES = $(libteventsrcdir)/events_wrap.o
+swig_events_OBJ_FILES = $(libteventsrcdir)/pytevent.o
 
-$(eval $(call python_py_module_template,samba/events.py,$(libteventsrcdir)/events.py))
-
-$(swig_events_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(swig_events_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)
 
 PC_FILES += $(libteventsrcdir)/tevent.pc

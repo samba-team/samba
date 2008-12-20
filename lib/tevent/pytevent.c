@@ -103,8 +103,14 @@ void inittevent(void)
 {
     PyObject *m;
 
+    if (PyType_Ready(&PyEventContext) < 0)
+    	return;
+
     m = Py_InitModule3("tevent", tevent_methods, "Event management.");
     if (m == NULL)
         return;
+
+    Py_INCREF(&PyEventContext);
+    PyModule_AddObject(m, "EventContext", (PyObject *)&PyEventContext);
 }
 
