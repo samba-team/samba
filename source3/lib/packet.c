@@ -140,15 +140,21 @@ bool packet_handler(struct packet_context *ctx,
 		return true;
 	}
 
-	buf = (uint8_t *)TALLOC_MEMDUP(ctx, ctx->in.data, length);
-	if (buf == NULL) {
-		*status = NT_STATUS_NO_MEMORY;
-		return true;
-	}
+	if (length == ctx->in.length) {
+		buf = ctx->in.data;
+		ctx->in.data = NULL;
+		ctx->in.length = 0;
+	} else {
+		buf = (uint8_t *)TALLOC_MEMDUP(ctx, ctx->in.data, length);
+		if (buf == NULL) {
+			*status = NT_STATUS_NO_MEMORY;
+			return true;
+		}
 
-	memmove(ctx->in.data, ctx->in.data + length,
-		ctx->in.length - length);
-	ctx->in.length -= length;
+		memmove(ctx->in.data, ctx->in.data + length,
+			ctx->in.length - length);
+		ctx->in.length -= length;
+	}
 
 	*status = callback(buf, length, priv);
 	return True;
