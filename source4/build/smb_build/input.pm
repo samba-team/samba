@@ -108,7 +108,7 @@ sub check_module($$$)
 		push (@{$mod->{PUBLIC_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 		add_libreplace($mod);
 	} 
-	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
+	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}}) and $mod->{TYPE} ne "PYTHON") {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}

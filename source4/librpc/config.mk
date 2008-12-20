@@ -648,7 +648,7 @@ python_echo_OBJ_FILES = ../librpc/gen_ndr/py_echo.o
 
 [PYTHON::python_winreg]
 LIBRARY_REALNAME = samba/dcerpc/winreg.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc PYTALLOC param swig_credentials python_dcerpc_misc python_lsa python_dcerpc
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG PYTALLOC param swig_credentials python_dcerpc_misc python_lsa python_dcerpc
 
 python_winreg_OBJ_FILES = ../librpc/gen_ndr/py_winreg.o
 
