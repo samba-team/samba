@@ -36,6 +36,7 @@ typedef py_talloc_Object PyLdbObject;
 PyAPI_DATA(PyTypeObject) PyLdb;
 PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
 #define PyLdb_AsLdbContext(pyobj) py_talloc_get_type(pyobj, struct ldb_context)
+#define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
 
 typedef py_talloc_Object PyLdbDnObject;
 PyAPI_DATA(PyTypeObject) PyLdbDn;

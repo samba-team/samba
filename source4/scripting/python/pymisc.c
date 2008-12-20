@@ -27,6 +27,21 @@
 #include <Python.h>
 #include "pyldb.h"
 #include "libcli/util/pyerrors.h"
+#include "librpc/gen_ndr/py_misc.h"
+#include "librpc/gen_ndr/py_security.h"
+
+/* FIXME: These should be in a header file somewhere, once we finish moving
+ * away from SWIG .. */
+extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
+
+#define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
+	if (!PyLdb_Check(py_ldb)) { \
+		PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
+		return NULL; \
+	} \
+	ldb = PyLdb_AsLdbContext(py_ldb);
+
 
 static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 {
@@ -62,8 +77,13 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_creds))
 		return NULL;
 
-	/* FIXME: Magic py_creds -> creds */
-	/* FIXME: Magic py_ldb -> ldb */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	
+	creds = cli_credentials_from_py_object(py_creds);
+	if (creds == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials object");
+		return NULL;
+	}
 
     	ldb_set_opaque(ldb, "credentials", creds);
 
@@ -78,8 +98,13 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_lp_ctx))
 		return NULL;
 
-	/* FIXME: Magic py_lp_ctx -> lp_ctx */
-	/* FIXME: Magic py_ldb -> ldb */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm object");
+		return NULL;
+	}
 
     	ldb_set_opaque(ldb, "loadparm", lp_ctx);
 
@@ -95,8 +120,8 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_session_info))
 		return NULL;
 
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 	/* FIXME: Magic py_session_info -> info */
-	/* FIXME: Magic py_ldb -> ldb */
 
     	ldb_set_opaque(ldb, "sessionInfo", info);
 
@@ -113,8 +138,14 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_sid))
 		return NULL;
 	
-	/* FIXME: Magic py_ldb -> ldb */
-	/* FIXME: Magic py_sid -> sid */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+
+	if (!dom_sid_Check(py_sid)) {
+		PyErr_SetString(PyExc_TypeError, "expected SID");
+		return NULL;
+	}
+
+	sid = py_talloc_get_ptr(py_sid);
 
 	ret = samdb_set_domain_sid(ldb, sid);
 	if (!ret) {
@@ -133,7 +164,7 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
 		return NULL;
 
-	/* FIXME: Magic py_ldb -> ldb */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 	ret = ldb_register_samba_handlers(ldb);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
@@ -149,8 +180,12 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_guid))
 		return NULL;
 
-	/* FIXME: Magic py_ldb -> ldb */
-	/* FIXME: Magic py_guid -> guid */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
+	if (!GUID_Check(py_guid)) {
+		PyErr_SetString(PyExc_TypeError, "Expected GUID");
+		return NULL;
+	}
+	guid = py_talloc_get_ptr(py_guid);
 
 	ret = samdb_set_ntds_invocation_id(ldb, guid);
 	if (!ret) {
@@ -168,7 +203,7 @@ static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "O", &py_ldb))
 		return NULL;
 
-	/* FIXME: Magic py_ldb -> ldb */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	ret = dsdb_set_global_schema(ldb);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
@@ -186,7 +221,7 @@ static PyObject *py_dsdb_attach_schema_from_ldif_file(PyObject *self, PyObject *
 	if (!PyArg_ParseTuple(args, "Oss", &py_ldb, &pf, &df))
 		return NULL;
 
-	/* FIXME: Magic py_ldb -> ldb */
+	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
 	result = dsdb_attach_schema_from_ldif_file(ldb, pf, df);
 	PyErr_WERROR_IS_ERR_RAISE(result);
