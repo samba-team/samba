@@ -264,9 +264,10 @@ class DnTests(unittest.TestCase):
     def setUp(self):
         self.ldb = ldb.Ldb("foo.ldb")
 
-    def test_eq_str(self):
+    def test_eq(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        self.assertEquals("dc=foo,bar=bloe", x)
+        y = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        self.assertEquals(x, y)
 
     def test_str(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
@@ -328,7 +329,8 @@ class DnTests(unittest.TestCase):
 
     def test_add_base(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
-        self.assertTrue(x.add_base(ldb.Dn(self.ldb, "bla=bloe")))
+        base = ldb.Dn(self.ldb, "bla=bloe")
+        self.assertTrue(x.add_base(base))
         self.assertEquals("dc=foo,bar=bloe,bla=bloe", x.__str__())
 
     def test_add(self):
@@ -440,13 +442,15 @@ class MessageElementTests(unittest.TestCase):
         x = ldb.MessageElement(["foo"])
         self.assertEquals("MessageElement(['foo'])", repr(x))
         x = ldb.MessageElement(["foo", "bla"])
+        self.assertEquals(2, len(x))
         self.assertEquals("MessageElement(['foo','bla'])", repr(x))
 
     def test_get_item(self):
         x = ldb.MessageElement(["foo", "bar"])
         self.assertEquals("foo", x[0])
         self.assertEquals("bar", x[1])
-        self.assertRaises(KeyError, lambda: x[-1])
+        self.assertEquals("bar", x[-1])
+        self.assertRaises(IndexError, lambda: x[45])
 
     def test_len(self):
         x = ldb.MessageElement(["foo", "bar"])
@@ -454,9 +458,12 @@ class MessageElementTests(unittest.TestCase):
 
     def test_eq(self):
         x = ldb.MessageElement(["foo", "bar"])
-        self.assertEquals(["foo", "bar"], x)
+        y = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals(y, x)
         x = ldb.MessageElement(["foo"])
-        self.assertEquals("foo", x)
+        self.assertNotEquals(y, x)
+        y = ldb.MessageElement(["foo"])
+        self.assertEquals(y, x)
 
 
 class ModuleTests(unittest.TestCase):
