@@ -28,7 +28,7 @@
 /**
   return the number of elements in a string list
 */
-static size_t str_list_length(const char **list)
+size_t ev_str_list_length(const char **list)
 {
 	size_t ret;
 	for (ret=0;list && list[ret];ret++) /* noop */ ;
@@ -40,7 +40,7 @@ static size_t str_list_length(const char **list)
 */
 const char **ev_str_list_add(const char **list, const char *s)
 {
-	size_t len = str_list_length(list);
+	size_t len = ev_str_list_length(list);
 	const char **ret;
 
 	ret = talloc_realloc(NULL, list, const char *, len+2);

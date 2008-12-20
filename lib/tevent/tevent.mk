@@ -37,17 +37,13 @@ clean::
 check-python:: build-python
 	$(LIB_PATH_VAR)=. PYTHONPATH=".:$(teventdir)" $(PYTHON) $(teventdir)/tests.py
 
-install-swig::
-	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
-	cp tevent.i $(DESTDIR)`$(SWIG) -swiglib`
+build-python:: tevent.$(SHLIBEXT)
 
-build-python:: _events.$(SHLIBEXT)
+pytevent.o: $(teventdir)/pytevent.c
+	$(CC) $(PICFLAG) -c $(teventdir)/pytevent.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
-events_wrap.o: $(teventdir)/events_wrap.c
-	$(CC) $(PICFLAG) -c $(teventdir)/events_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
-
-_events.$(SHLIBEXT): libtevent.$(SHLIBEXT) events_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o $@ events_wrap.o -L. -ltevent `$(PYTHON_CONFIG) --libs`
+tevent.$(SHLIBEXT): libtevent.$(SHLIBEXT) pytevent.o
+	$(SHLD) $(SHLD_FLAGS) -o $@ pytevent.o -L. -ltevent `$(PYTHON_CONFIG) --libs`
 
 install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0, prefix='$(prefix)')"` \
