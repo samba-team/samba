@@ -1446,11 +1446,11 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.oMSyntax		= 127,
 		.oMObjectClass		= OMOBJECTCLASS("\x2a\x86\x48\x86\xf7\x14\x01\x01\x01\x0c"),
 		.attributeSyntax_oid	= "2.5.5.14",
-		.drsuapi_to_ldb		= dsdb_syntax_FOOBAR_drsuapi_to_ldb,
-		.ldb_to_drsuapi		= dsdb_syntax_FOOBAR_ldb_to_drsuapi,
-		.equality               = "distinguishedNameMatch",
+		.drsuapi_to_ldb		= dsdb_syntax_DN_BINARY_drsuapi_to_ldb,
+		.ldb_to_drsuapi		= dsdb_syntax_DN_BINARY_ldb_to_drsuapi,
+		.equality               = "octetStringMatch",
 		.comment                = "OctetString: String+DN",
-		.ldb_syntax             = LDB_SYNTAX_DN,
+		.ldb_syntax             = LDB_SYNTAX_OCTET_STRING,
 	}
 };
 
