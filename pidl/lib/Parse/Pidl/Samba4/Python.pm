@@ -224,8 +224,7 @@ sub PythonStruct($$$$$$)
 	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
-	$self->pidl("return py_talloc_import(type, ret);");
+	$self->pidl("return py_talloc_new($cname, type);");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -677,7 +676,7 @@ sub Interface($$$)
 		$self->pidl("};");
 		$self->pidl("");
 
-		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
+		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
 		$self->pidl("dcerpc_InterfaceObject *ret;");
@@ -728,7 +727,7 @@ sub Interface($$$)
 		$self->deindent;
 		$self->pidl("}");
 
-		$self->pidl("ret = PyObject_New(dcerpc_InterfaceObject, &$interface->{NAME}_InterfaceType);");
+		$self->pidl("ret = PyObject_New(dcerpc_InterfaceObject, type);");
 		$self->pidl("");
 		$self->pidl("event_ctx = event_context_init(mem_ctx);");
 		$self->pidl("");

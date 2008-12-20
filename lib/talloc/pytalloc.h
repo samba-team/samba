@@ -48,4 +48,6 @@ PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *
 /* Sane default implementation of reprfunc. */
 PyObject *py_talloc_default_repr(PyObject *py_obj);
 
+#define py_talloc_new(type, typeobj) py_talloc_import(typeobj, talloc_zero(NULL, type))
+
 #endif /* _PY_TALLOC_H_ */
