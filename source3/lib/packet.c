@@ -120,33 +120,37 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx)
 }
 
 bool packet_handler(struct packet_context *ctx,
-		    bool (*full_req)(const DATA_BLOB *data,
+		    bool (*full_req)(const uint8_t *buf,
+				     size_t available,
 				     size_t *length,
-				     void *private_data),
-		    NTSTATUS (*callback)(const DATA_BLOB *data,
-					 void *private_data),
-		    void *private_data,
-		    NTSTATUS *status)
+				     void *priv),
+		    NTSTATUS (*callback)(uint8_t *buf, size_t length,
+					 void *priv),
+		    void *priv, NTSTATUS *status)
 {
 	size_t length;
-	DATA_BLOB data;
+	uint8_t *buf;
 
-	if (!full_req(&ctx->in, &length, private_data)) {
+	if (!full_req(ctx->in.data, ctx->in.length, &length, priv)) {
 		return False;
 	}
 
-	SMB_ASSERT(length <= ctx->in.length);
+	if (length > ctx->in.length) {
+		*status = NT_STATUS_INTERNAL_ERROR;
+		return true;
+	}
 
-	data = data_blob(ctx->in.data, length);
+	buf = (uint8_t *)TALLOC_MEMDUP(ctx, ctx->in.data, length);
+	if (buf == NULL) {
+		*status = NT_STATUS_NO_MEMORY;
+		return true;
+	}
 
 	memmove(ctx->in.data, ctx->in.data + length,
 		ctx->in.length - length);
 	ctx->in.length -= length;
 
-	*status = callback(&data, private_data);
-
-	data_blob_free(&data);
-
+	*status = callback(buf, length, priv);
 	return True;
 }
 
