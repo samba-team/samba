@@ -727,8 +727,6 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
 	*p_unread = 0;
 
- again:
-
 	to.tv_sec = SMBD_SELECT_TIMEOUT;
 	to.tv_usec = 0;
 
@@ -810,7 +808,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		 * the state of the flag in fds for the server file descriptor is
 		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
 		 */
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	/*
@@ -829,7 +827,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	if (timeval_is_zero(&to)) {
 		/* Process a timed event now... */
 		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
-			goto again;
+			return NT_STATUS_RETRY;
 		}
 	}
 	
@@ -848,7 +846,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	}
 
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	/* if we get EINTR then maybe we have received an oplock
@@ -862,7 +860,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		 * the state of the flag in fds for the server file descriptor is
 		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
 		 */
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	/* Check if error */
@@ -873,7 +871,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	/*
@@ -889,7 +887,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		 * the state of the flag in fds for the server file descriptor is
 		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
 		 */
-		goto again;
+		return NT_STATUS_RETRY;
 	}
 
 	/*
@@ -1925,9 +1923,13 @@ void smbd_process(void)
 
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		status = receive_message_or_smb(
-			talloc_tos(), &inbuf, &inbuf_len,
-			&unread_bytes, &encrypted);
+		status = NT_STATUS_RETRY;
+
+		while (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+			status = receive_message_or_smb(
+				talloc_tos(), &inbuf, &inbuf_len,
+				&unread_bytes, &encrypted);
+		}
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("receive_message_or_smb failed: %s, "
