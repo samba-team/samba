@@ -221,14 +221,11 @@ sub PythonStruct($$$$$$)
 		$self->pidl("");
 	}
 
-	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)");
+	$self->pidl("static PyObject *py_$name\_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("char *kwlist[] = {NULL};");
 	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
-	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"\", kwlist))");
-	$self->pidl("\treturn NULL;");
-	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
+	$self->pidl("return py_talloc_import(type, ret);");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
