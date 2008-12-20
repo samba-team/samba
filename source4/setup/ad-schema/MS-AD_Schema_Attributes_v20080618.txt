@@ -2423,6 +2423,20 @@ searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
 
+cn: Global-Address-List2
+ldapDisplayName: globalAddressList2
+attributeId: 1.2.840.113556.1.4.2047
+attributeSyntax: 2.5.5.1
+linkID: 2124
+omSyntax: 127
+omObjectClass: 1.3.12.2.1011.28.0.714
+isSingleValued: FALSE
+schemaIdGuid: 4898f63d-4112-477c-8826-3ca00bd8277d
+systemOnly: FALSE
+searchFlags: 0
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
+schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+
 cn: Governs-ID
 ldapDisplayName: governsID
 attributeId: 1.2.840.113556.1.2.22
@@ -3886,6 +3900,20 @@ omSyntax: 127
 omObjectClass: 1.3.12.2.1011.28.0.714
 isSingleValued: FALSE
 schemaIdGuid: f70b6e48-06f4-11d2-aa53-00c04fd7d83a
+systemOnly: FALSE
+searchFlags: 0
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
+schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+
+cn: Address-Book-Roots2
+ldapDisplayName: addressBookRoots2
+attributeId: 1.2.840.113556.1.4.2046
+attributeSyntax: 2.5.5.1
+linkID: 2122
+omSyntax: 127
+omObjectClass: 1.3.12.2.1011.28.0.714
+isSingleValued: FALSE
+schemaIdGuid: 508ca374-a511-4e4e-9f4f-856f61a6b7e4
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
@@ -5833,6 +5861,20 @@ systemOnly: TRUE
 searchFlags: 0
 rangeLower: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
+schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+
+cn: ms-DS-BridgeHead-Servers-Used
+ldapDisplayName: msDS-BridgeHeadServersUsed
+attributeId: 1.2.840.113556.1.4.2049
+attributeSyntax: 2.5.5.7
+omSyntax: 127
+omObjectClass: 1.2.840.113556.1.1.1.11
+linkID: 2160
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+schemaIdGuid: 3ced1465-7b71-2541-8780-1e1ea6243a82
+searchFlags: 0
+systemFlags: FLAG_ATTR_NOT_REPLICATED | FLAG_ATTR_IS_OPERATIONAL | FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
 
 cn: ms-DS-Byte-Array
@@ -13735,6 +13777,20 @@ omSyntax: 127
 omObjectClass: 1.3.12.2.1011.28.0.714
 isSingleValued: FALSE
 schemaIdGuid: ed9de9a0-7041-11d2-9905-0000f87a57d4
+systemOnly: FALSE
+searchFlags: 0
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
+schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+
+cn: Template-Roots2
+ldapDisplayName: templateRoots2
+attributeId: 1.2.840.113556.1.4.2048
+attributeSyntax: 2.5.5.1
+omSyntax: 127
+omObjectClass: 1.3.12.2.1011.28.0.714
+isSingleValued: FALSE
+linkId: 2126
+schemaIdGuid: b1cba91a-0682-4362-a659-153e201ef069
 systemOnly: FALSE
 searchFlags: 0
 systemFlags: FLAG_SCHEMA_BASE_OBJECT

@@ -37,4 +37,4 @@ if test -z "$PYTHON_CONFIG"; then
 	PYTHON_INSTALL_TARGET=""
 	PYTHON_CHECK_TARGET=""
 fi
-AC_OUTPUT(Makefile events.pc)
+AC_OUTPUT(Makefile tevent.pc)
