@@ -282,7 +282,7 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 		status = dsdb_decrypt_attribute(gensec_skey, rid, a);
 		W_ERROR_NOT_OK_RETURN(status);
 
-		status = dsdb_attribute_drsuapi_to_ldb(schema, a, msg->elements, e);
+		status = dsdb_attribute_drsuapi_to_ldb(ldb, schema, a, msg->elements, e);
 		W_ERROR_NOT_OK_RETURN(status);
 
 		m->attid			= a->attid;
