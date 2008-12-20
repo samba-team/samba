@@ -41,7 +41,7 @@ from samba.idmap import IDmapDB
 import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
-        LDB_ERR_NO_SUCH_OBJECT, timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
+        timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
 
 __docformat__ = "restructuredText"
 

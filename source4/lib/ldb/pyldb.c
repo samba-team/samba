@@ -451,42 +451,52 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list)
 	return ret;
 }
 
-static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct ldb_context *ldb;
 	const char *kwnames[] = { "url", "flags", "options", NULL };
 	char *url = NULL;
 	PyObject *py_options = Py_None;
 	const char **options;
 	int flags = 0;
 	int ret;
+	struct ldb_context *ldb;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ziO", (char **)kwnames,
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ziO:Ldb.__init__", (char **)kwnames,
 									 &url, &flags, &py_options))
-		return NULL;
+		return -1;
 
-	ldb = ldb_init(NULL, event_context_init(NULL)); 
-	if (ldb == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
+	ldb = PyLdb_AsLdbContext(self);
 
 	if (py_options == Py_None) {
 		options = NULL;
 	} else {
 		options = PyList_AsStringList(ldb, py_options);
 		if (options == NULL)
-			return NULL;
+			return -1;
 	}
 	
 	if (url != NULL) {
 		ret = ldb_connect(ldb, url, flags, options);
-		PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
+		if (ret != LDB_SUCCESS) {
+			PyErr_SetLdbError(ret, ldb);
+			return -1;
+		}
 	}
 
 	talloc_free(options);
+	return 0;
+}
 
-	return py_talloc_import(&PyLdb, ldb);
+static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	struct ldb_context *ldb;
+	ldb = ldb_init(NULL, event_context_init(NULL)); 
+	if (ldb == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	return py_talloc_import(type, ldb);
 }
 
 static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwargs)
@@ -881,6 +891,7 @@ static PyMethodDef py_ldb_methods[] = {
 		"S.rename(old_dn, new_dn) -> None\n"
 		"Rename an entry." },
 	{ "search", (PyCFunction)py_ldb_search, METH_VARARGS|METH_KEYWORDS,
+		"S.search(base=None, scope=None, expression=None, attrs=None, controls=None) -> msgs\n"
 		"Search in a database.\n"
 		"\n"
 		":param base: Optional base DN to search\n"
@@ -960,12 +971,15 @@ PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 }
 
 PyTypeObject PyLdb = {
+	PyObject_HEAD_INIT(NULL)
 	.tp_name = "Ldb",
 	.tp_methods = py_ldb_methods,
 	.tp_repr = (reprfunc)py_ldb_repr,
 	.tp_new = py_ldb_new,
+	.tp_init = (initproc)py_ldb_init,
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_getset = py_ldb_getset,
+	.tp_getattro = PyObject_GenericGetAttr,
 	.tp_basicsize = sizeof(PyLdbObject),
 	.tp_doc = "Connection to a LDB database.",
 	.tp_as_sequence = &py_ldb_seq,
@@ -1872,6 +1886,47 @@ void initldb(void)
 	PyModule_AddObject(m, "CHANGETYPE_ADD", PyInt_FromLong(LDB_CHANGETYPE_ADD));
 	PyModule_AddObject(m, "CHANGETYPE_DELETE", PyInt_FromLong(LDB_CHANGETYPE_DELETE));
 	PyModule_AddObject(m, "CHANGETYPE_MODIFY", PyInt_FromLong(LDB_CHANGETYPE_MODIFY));
+
+	PyModule_AddObject(m, "SUCCESS", PyInt_FromLong(LDB_SUCCESS));
+	PyModule_AddObject(m, "ERR_OPERATIONS_ERROR", PyInt_FromLong(LDB_ERR_OPERATIONS_ERROR));
+	PyModule_AddObject(m, "ERR_PROTOCOL_ERROR", PyInt_FromLong(LDB_ERR_PROTOCOL_ERROR));
+	PyModule_AddObject(m, "ERR_TIME_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_TIME_LIMIT_EXCEEDED));
+	PyModule_AddObject(m, "ERR_SIZE_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_SIZE_LIMIT_EXCEEDED));
+	PyModule_AddObject(m, "ERR_COMPARE_FALSE", PyInt_FromLong(LDB_ERR_COMPARE_FALSE));
+	PyModule_AddObject(m, "ERR_COMPARE_TRUE", PyInt_FromLong(LDB_ERR_COMPARE_TRUE));
+	PyModule_AddObject(m, "ERR_AUTH_METHOD_NOT_SUPPORTED", PyInt_FromLong(LDB_ERR_AUTH_METHOD_NOT_SUPPORTED));
+	PyModule_AddObject(m, "ERR_STRONG_AUTH_REQUIRED", PyInt_FromLong(LDB_ERR_STRONG_AUTH_REQUIRED));
+	PyModule_AddObject(m, "ERR_REFERRAL", PyInt_FromLong(LDB_ERR_REFERRAL));
+	PyModule_AddObject(m, "ERR_ADMIN_LIMIT_EXCEEDED", PyInt_FromLong(LDB_ERR_ADMIN_LIMIT_EXCEEDED));
+	PyModule_AddObject(m, "ERR_UNSUPPORTED_CRITICAL_EXTENSION", PyInt_FromLong(LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION));
+	PyModule_AddObject(m, "ERR_CONFIDENTIALITY_REQUIRED", PyInt_FromLong(LDB_ERR_CONFIDENTIALITY_REQUIRED));
+	PyModule_AddObject(m, "ERR_SASL_BIND_IN_PROGRESS", PyInt_FromLong(LDB_ERR_SASL_BIND_IN_PROGRESS));
+	PyModule_AddObject(m, "ERR_NO_SUCH_ATTRIBUTE", PyInt_FromLong(LDB_ERR_NO_SUCH_ATTRIBUTE));
+	PyModule_AddObject(m, "ERR_UNDEFINED_ATTRIBUTE_TYPE", PyInt_FromLong(LDB_ERR_UNDEFINED_ATTRIBUTE_TYPE));
+	PyModule_AddObject(m, "ERR_INAPPROPRIATE_MATCHING", PyInt_FromLong(LDB_ERR_INAPPROPRIATE_MATCHING));
+	PyModule_AddObject(m, "ERR_CONSTRAINT_VIOLATION", PyInt_FromLong(LDB_ERR_CONSTRAINT_VIOLATION));
+	PyModule_AddObject(m, "ERR_ATTRIBUTE_OR_VALUE_EXISTS", PyInt_FromLong(LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS));
+	PyModule_AddObject(m, "ERR_INVALID_ATTRIBUTE_SYNTAX", PyInt_FromLong(LDB_ERR_INVALID_ATTRIBUTE_SYNTAX));
+	PyModule_AddObject(m, "ERR_NO_SUCH_OBJECT", PyInt_FromLong(LDB_ERR_NO_SUCH_OBJECT));
+	PyModule_AddObject(m, "ERR_ALIAS_PROBLEM", PyInt_FromLong(LDB_ERR_ALIAS_PROBLEM));
+	PyModule_AddObject(m, "ERR_INVALID_DN_SYNTAX", PyInt_FromLong(LDB_ERR_INVALID_DN_SYNTAX));
+	PyModule_AddObject(m, "ERR_ALIAS_DEREFERINCING_PROBLEM", PyInt_FromLong(LDB_ERR_ALIAS_DEREFERENCING_PROBLEM));
+	PyModule_AddObject(m, "ERR_INAPPROPRIATE_AUTHENTICATION", PyInt_FromLong(LDB_ERR_INAPPROPRIATE_AUTHENTICATION));
+	PyModule_AddObject(m, "ERR_INVALID_CREDENTIALS", PyInt_FromLong(LDB_ERR_INVALID_CREDENTIALS));
+	PyModule_AddObject(m, "ERR_INSUFFICIENT_ACCESS_RIGHTS", PyInt_FromLong(LDB_ERR_INSUFFICIENT_ACCESS_RIGHTS));
+	PyModule_AddObject(m, "ERR_BUSY", PyInt_FromLong(LDB_ERR_BUSY));
+	PyModule_AddObject(m, "ERR_UNAVAILABLE", PyInt_FromLong(LDB_ERR_UNAVAILABLE));
+	PyModule_AddObject(m, "ERR_UNWILLING_TO_PERFORM", PyInt_FromLong(LDB_ERR_UNWILLING_TO_PERFORM));
+	PyModule_AddObject(m, "ERR_LOOP_DETECT", PyInt_FromLong(LDB_ERR_LOOP_DETECT));
+	PyModule_AddObject(m, "ERR_NAMING_VIOLATION", PyInt_FromLong(LDB_ERR_NAMING_VIOLATION));
+	PyModule_AddObject(m, "ERR_OBJECT_CLASS_VIOLATION", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_VIOLATION));
+	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_NON_LEAF", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_NON_LEAF));
+	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_RDN", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_RDN));
+	PyModule_AddObject(m, "ERR_ENTYR_ALREADY_EXISTS", PyInt_FromLong(LDB_ERR_ENTRY_ALREADY_EXISTS));
+	PyModule_AddObject(m, "ERR_OBJECT_CLASS_MODS_PROHIBITED", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED));
+	PyModule_AddObject(m, "ERR_AFFECTS_MULTIPLE_DSAS", PyInt_FromLong(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
+
+	PyModule_AddObject(m, "ERR_OTHER", PyInt_FromLong(LDB_ERR_OTHER));
 
 	PyModule_AddObject(m, "__docformat__", PyString_FromString("restructuredText"));
 
