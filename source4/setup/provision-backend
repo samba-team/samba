@@ -83,7 +83,7 @@ if opts.realm is None or opts.domain is None:
 	parser.print_usage()
 	sys.exit(1)
 
-smbconf = sambaopts.get_loadparm().configfile()
+smbconf = sambaopts.get_loadparm().configfile
 
 if opts.server_role == "dc":
 	server_role = "domain controller"

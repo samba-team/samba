@@ -80,6 +80,7 @@ class ProvisionPaths(object):
 	self.olmmrserveridsconf = None
 	self.olmmrsyncreplconf = None
 
+
 class ProvisionNames(object):
     def __init__(self):
         self.rootdn = None
@@ -362,7 +363,8 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
 
     default_lp = param.LoadParm()
     #Load non-existant file
-    default_lp.load(smbconf)
+    if os.path.exists(smbconf):
+        default_lp.load(smbconf)
     
     if targetdir is not None:
         privatedir_line = "private dir = " + os.path.abspath(os.path.join(targetdir, "private"))
@@ -920,8 +922,6 @@ def provision(setup_dir, message, session_info,
 
     if domainsid is None:
         domainsid = security.random_sid()
-    else:
-        domainsid = security.Sid(domainsid)
 
     if policyguid is None:
         policyguid = str(uuid.uuid4())

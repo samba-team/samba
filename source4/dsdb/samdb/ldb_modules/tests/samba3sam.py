@@ -28,7 +28,6 @@ from ldb import SCOPE_DEFAULT, SCOPE_BASE, SCOPE_SUBTREE
 from samba import Ldb, substitute_var
 from samba.tests import LdbTestCase, TestCaseInTempDir, cmdline_loadparm
 import samba.dcerpc.security
-import samba.security
 import samba.ndr
 
 datadir = os.path.join(os.path.dirname(__file__), 
@@ -118,14 +117,8 @@ class MapBaseTestCase(TestCaseInTempDir):
     def assertSidEquals(self, text, ndr_sid):
         sid_obj1 = samba.ndr.ndr_unpack(samba.dcerpc.security.dom_sid,
                                         str(ndr_sid[0]))
-        sid_obj2 = samba.security.Sid(text)
-        # For now, this is the only way we can compare these since the 
-        # classes are in different places. Should reconcile that at some point.
-        self.assertEquals(sid_obj1.sid_rev_num, sid_obj2.sid_rev_num)
-        self.assertEquals(sid_obj1.num_auths, sid_obj2.num_auths)
-        # FIXME: self.assertEquals(sid_obj1.id_auth, sid_obj2.id_auth)
-        # FIXME: self.assertEquals(sid_obj1.sub_auths[:sid_obj1.num_auths], 
-        #                  sid_obj2.sub_auths[:sid_obj2.num_auths])
+        sid_obj2 = samba.dcerpc.security.dom_sid(text)
+        self.assertEquals(sid_obj1, sid_obj2)
 
 
 class Samba3SamTestCase(MapBaseTestCase):

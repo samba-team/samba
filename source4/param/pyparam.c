@@ -26,7 +26,6 @@
 #include "pytalloc.h"
 
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_ptr(obj)
-#define PyLoadparmContext_Check(obj) PyObject_TypeCheck(obj, &PyLoadparmContext)
 
 PyAPI_DATA(PyTypeObject) PyLoadparmContext;
 PyAPI_DATA(PyTypeObject) PyLoadparmService;
@@ -142,7 +141,7 @@ static PyObject *py_lp_ctx_load(py_talloc_Object *self, PyObject *args)
 	ret = lp_load((struct loadparm_context *)self->ptr, filename);
 
 	if (!ret) {
-		PyErr_SetString(PyExc_RuntimeError, "Unable to load file");
+		PyErr_Format(PyExc_RuntimeError, "Unable to load file %s", filename);
 		return NULL;
 	}
 	return Py_None;
@@ -154,7 +153,7 @@ static PyObject *py_lp_ctx_load_default(py_talloc_Object *self)
         ret = lp_load_default(self->ptr);
 
 	if (!ret) {
-		PyErr_SetString(PyExc_RuntimeError, "Unable to load file");
+		PyErr_SetString(PyExc_RuntimeError, "Unable to load default file");
 		return NULL;
 	}
 	return Py_None;

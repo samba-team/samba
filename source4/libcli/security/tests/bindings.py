@@ -18,11 +18,11 @@
 #
 
 import unittest
-from samba import security
+from samba.dcerpc import security
 
 class SecurityTokenTests(unittest.TestCase):
     def setUp(self):
-        self.token = security.SecurityToken()
+        self.token = security.token()
 
     def test_is_system(self):
         self.assertFalse(self.token.is_system())
@@ -47,17 +47,17 @@ class SecurityTokenTests(unittest.TestCase):
 
 class SecurityDescriptorTests(unittest.TestCase):
     def setUp(self):
-        self.descriptor = security.SecurityDescriptor()
+        self.descriptor = security.descriptor()
 
 
 class DomSidTests(unittest.TestCase):
     def test_parse_sid(self):
-        sid = security.Sid("S-1-5-21")
+        sid = security.dom_sid("S-1-5-21")
         self.assertEquals("S-1-5-21", str(sid))
 
     def test_sid_equal(self):
-        sid1 = security.Sid("S-1-5-21")
-        sid2 = security.Sid("S-1-5-21")
+        sid1 = security.dom_sid("S-1-5-21")
+        sid2 = security.dom_sid("S-1-5-21")
         self.assertTrue(sid1.__eq__(sid1))
         self.assertTrue(sid1.__eq__(sid2))
 
@@ -67,7 +67,7 @@ class DomSidTests(unittest.TestCase):
 
     def test_repr(self):
         sid = security.random_sid()
-        self.assertTrue(repr(sid).startswith("Sid('S-1-5-21-"))
+        self.assertTrue(repr(sid).startswith("dom_sid('S-1-5-21-"))
 
 
 class PrivilegeTests(unittest.TestCase):

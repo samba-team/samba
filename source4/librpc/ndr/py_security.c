@@ -32,19 +32,14 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 	}
 }
 
-static PyObject *py_dom_sid_eq(PyObject *self, PyObject *args)
+static int py_dom_sid_cmp(PyObject *self, PyObject *py_other)
 {
 	struct dom_sid *this = py_talloc_get_ptr(self), *other;
-	PyObject *py_other;
-
-	if (!PyArg_ParseTuple(args, "O", &py_other)) 
-		return NULL;
-
-	other = py_talloc_get_type(py_other, struct dom_sid);
+	other = py_talloc_get_ptr(py_other);
 	if (other == NULL)
-		return Py_False;
+		return -1;
 
-	return dom_sid_equal(this, other)?Py_True:Py_False;
+	return dom_sid_compare(this, other);
 }
 
 static PyObject *py_dom_sid_str(PyObject *self)
@@ -82,17 +77,12 @@ static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 	return 0;
 }
 
-static PyMethodDef py_dom_sid_extra_methods[] = {
-	{ "__eq__", (PyCFunction)py_dom_sid_eq, METH_VARARGS, "S.__eq__(x) -> S == x" }, \
-	{ NULL }
-};
-
 static void py_dom_sid_patch(PyTypeObject *type)
 {
 	type->tp_init = py_dom_sid_init;
 	type->tp_str = py_dom_sid_str;
 	type->tp_repr = py_dom_sid_repr;
-	PyType_AddMethods(type, py_dom_sid_extra_methods);
+	type->tp_compare = py_dom_sid_cmp;
 }
 
 #define PY_DOM_SID_PATCH py_dom_sid_patch
@@ -162,19 +152,6 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
-static PyObject *py_descriptor_eq(PyObject *self, PyObject *args)
-{
-	struct security_descriptor *desc1 = py_talloc_get_ptr(self), *desc2;
-	PyObject *py_other;
-
-	if (!PyArg_ParseTuple(args, "O", &py_other))
-		return NULL;
-
-	desc2 = py_talloc_get_ptr(py_other);
-
-	return PyBool_FromLong(security_descriptor_equal(desc1, desc2));
-}
-
 static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	return py_talloc_import(self, security_descriptor_initialise(NULL));
@@ -189,8 +166,6 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 	{ "dacl_del", (PyCFunction)py_descriptor_dacl_del, METH_VARARGS,
 		NULL },
 	{ "sacl_del", (PyCFunction)py_descriptor_sacl_del, METH_VARARGS,
-		NULL },
-	{ "__eq__", (PyCFunction)py_descriptor_eq, METH_VARARGS,
 		NULL },
 	{ NULL }
 };

@@ -666,11 +666,14 @@ class ParamFile(object):
     Does not use a parameter table, unlike the "normal".
     """
 
-    def __init__(self):
-        self._sections = {}
+    def __init__(self, sections=None):
+        self._sections = sections or {}
 
     def _sanitize_name(self, name):
         return name.strip().lower().replace(" ","")
+
+    def __repr__(self):
+        return "ParamFile(%r)" % self._sections
 
     def read(self, filename):
         """Read a file.
@@ -683,7 +686,7 @@ class ParamFile(object):
             if not l:
                 continue
             if l[0] == "[" and l[-1] == "]":
-                section = self._sanitize_name(l[1:-2])
+                section = self._sanitize_name(l[1:-1])
                 self._sections.setdefault(section, {})
             elif "=" in l:
                (k, v) = l.split("=", 1) 
@@ -704,7 +707,9 @@ class ParamFile(object):
         if not section in self._sections:
             return None
         param = self._sanitize_name(param)
-        return self._sections[section].get(param)
+        if not param in self._sections[section]:
+            return None
+        return self._sections[section][param].strip()
 
     def __getitem__(self, section):
         return self._sections[section]
@@ -745,7 +750,7 @@ class Samba3(object):
 
     def get_sam_db(self):
         lp = self.get_conf()
-        backends = str(lp.get("passdb backend")).split(" ")
+        backends = (lp.get("passdb backend") or "").split(" ")
         if ":" in backends[0]:
             (name, location) = backends[0].split(":", 2)
         else:
