@@ -660,6 +660,56 @@ class WinsDatabase(object):
         pass
 
 
+class ParamFile(object):
+    """Simple smb.conf-compatible file parser
+
+    Does not use a parameter table, unlike the "normal".
+    """
+
+    def __init__(self):
+        self._sections = {}
+
+    def _sanitize_name(self, name):
+        return name.strip().lower().replace(" ","")
+
+    def read(self, filename):
+        """Read a file.
+
+        :param filename: Path to the file
+        """
+        section = None
+        for i, l in enumerate(open(filename, 'r').xreadlines()):
+            l = l.strip()
+            if not l:
+                continue
+            if l[0] == "[" and l[-1] == "]":
+                section = self._sanitize_name(l[1:-2])
+                self._sections.setdefault(section, {})
+            elif "=" in l:
+               (k, v) = l.split("=", 1) 
+               self._sections[section][self._sanitize_name(k)] = v
+            else:
+                raise Error("Unable to parser line %d: %r" % (i+1,l))
+
+    def get(self, param, section=None):
+        """Return the value of a parameter.
+
+        :param param: Parameter name
+        :param section: Section name, defaults to "global"
+        :return: parameter value as string if found, None otherwise.
+        """
+        if section is None:
+            section = "global"
+        section = self._sanitize_name(section)
+        if not section in self._sections:
+            return None
+        param = self._sanitize_name(param)
+        return self._sections[section].get(param)
+
+    def __getitem__(self, section):
+        return self._sections[section]
+
+
 class Samba3(object):
     """Samba 3 configuration and state data reader."""
     def __init__(self, libdir, smbconfpath):
@@ -670,8 +720,7 @@ class Samba3(object):
         """
         self.smbconfpath = smbconfpath
         self.libdir = libdir
-        import param
-        self.lp = param.ParamFile()
+        self.lp = ParamFile()
         self.lp.read(self.smbconfpath)
 
     def libdir_path(self, path):
