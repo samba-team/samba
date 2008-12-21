@@ -14,11 +14,9 @@ $(eval $(call proto_header_template,$(authsrcdir)/credentials/credentials_proto.
 PUBLIC_HEADERS += $(authsrcdir)/credentials/credentials.h
 
 [PYTHON::swig_credentials]
-LIBRARY_REALNAME = samba/_credentials.$(SHLIBEXT)
-PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS
+LIBRARY_REALNAME = samba/credentials.$(SHLIBEXT)
+PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS PYTALLOC param
 
-$(eval $(call python_py_module_template,samba/credentials.py,$(authsrcdir)/credentials/credentials.py))
+swig_credentials_OBJ_FILES = $(authsrcdir)/credentials/pycredentials.o
 
-swig_credentials_OBJ_FILES = $(authsrcdir)/credentials/credentials_wrap.o
-
-$(swig_credentials_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(swig_credentials_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)
