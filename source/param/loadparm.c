@@ -718,24 +718,17 @@ static const struct enum_list enum_ldap_sasl_wrapping[] = {
 
 static const struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "no"},
-	{LDAP_SSL_OFF, "No"},
 	{LDAP_SSL_OFF, "off"},
-	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
-	{LDAP_SSL_START_TLS, "Start_tls"},
+	{LDAP_SSL_START_TLS, "start_tls"},
 	{-1, NULL}
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
 	{LDAP_PASSWD_SYNC_OFF, "no"},
-	{LDAP_PASSWD_SYNC_OFF, "No"},
 	{LDAP_PASSWD_SYNC_OFF, "off"},
-	{LDAP_PASSWD_SYNC_OFF, "Off"},
-	{LDAP_PASSWD_SYNC_ON, "Yes"},
 	{LDAP_PASSWD_SYNC_ON, "yes"},
 	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ON, "On"},
-	{LDAP_PASSWD_SYNC_ONLY, "Only"},
 	{LDAP_PASSWD_SYNC_ONLY, "only"},
 	{-1, NULL}
 };
