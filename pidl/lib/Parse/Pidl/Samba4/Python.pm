@@ -1183,6 +1183,12 @@ sub Parse($$$$$)
 		my ($fn_name, $pyfn_name, $flags, $doc) = @$_;
 		$self->pidl("{ \"$fn_name\", (PyCFunction)$pyfn_name, $flags, $doc },");
 	}
+
+	$self->deindent;
+	$self->pidl("#ifdef ".uc("py_mod_$basename\_extra_methods"));
+	$self->pidl("\t" .uc("py_mod_$basename\_extra_methods"));
+	$self->pidl("#endif");
+	$self->indent;
 	
 	$self->pidl("{ NULL, NULL, 0, NULL }");
 	$self->deindent;

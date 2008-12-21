@@ -301,7 +301,12 @@ static PyObject *py_random_sid(PyObject *self)
 
         sid = dom_sid_parse_talloc(NULL, str);
 	talloc_free(str);
-	ret = py_talloc_import(&PyDomSidType, sid);
+	ret = py_talloc_import(&dom_sid_Type, sid);
 	talloc_free(sid);
 	return ret;
 }
+
+#define PY_MOD_SECURITY_EXTRA_METHODS \
+	{ "random_sid", (PyCFunction)py_random_sid, METH_NOARGS, NULL }, \
+	{ "privilege_id", (PyCFunction)py_privilege_id, METH_VARARGS, NULL }, \
+	{ "privilege_name", (PyCFunction)py_privilege_name, METH_VARARGS, NULL },
