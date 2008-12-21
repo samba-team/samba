@@ -270,3 +270,38 @@ static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwar
 		NULL }, \
 	{ "set_privilege", (PyCFunction)py_token_set_privilege, METH_VARARGS, \
 		NULL },
+
+static PyObject *py_privilege_name(PyObject *self, PyObject *args)
+{
+	int priv;
+	if (!PyArg_ParseTuple(args, "i", &priv))
+		return NULL;
+
+	return PyString_FromString(sec_privilege_name(priv));
+}
+
+static PyObject *py_privilege_id(PyObject *self, PyObject *args)
+{
+	char *name;
+
+	if (!PyArg_ParseTuple(args, "s", &name))
+		return NULL;
+
+	return PyInt_FromLong(sec_privilege_id(name));
+}
+
+static PyObject *py_random_sid(PyObject *self)
+{
+	struct dom_sid *sid;
+	PyObject *ret;
+    	char *str = talloc_asprintf(NULL, "S-1-5-21-%u-%u-%u", 
+			(unsigned)generate_random(), 
+			(unsigned)generate_random(), 
+			(unsigned)generate_random());
+
+        sid = dom_sid_parse_talloc(NULL, str);
+	talloc_free(str);
+	ret = py_talloc_import(&PyDomSidType, sid);
+	talloc_free(sid);
+	return ret;
+}
