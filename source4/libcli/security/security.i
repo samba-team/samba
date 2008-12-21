@@ -32,15 +32,6 @@ typedef struct security_descriptor security_descriptor;
 #include "libcli/util/pyerrors.h"
 %}
 
-%typemap(out,noblock=1) WERROR {
-    if (!W_ERROR_IS_OK($1)) {
-        PyErr_SetWERROR($1);
-        SWIG_fail;
-    } else if ($result == NULL) {
-        $result = Py_None;
-    }
-};
-
 %typemap(out,noblock=1) NTSTATUS {
     if (NT_STATUS_IS_ERR($1)) {
         PyErr_SetNTSTATUS($1);
@@ -89,77 +80,6 @@ enum sec_privilege {
 	SEC_PRIV_NETWORK_LOGON=23,
 	SEC_PRIV_REMOTE_INTERACTIVE_LOGON=24
 };
-
-%rename(SecurityToken) security_token;
-
-%talloctype(security_token);
-
-typedef struct security_token { 
-    %extend {
-        security_token(TALLOC_CTX *mem_ctx) { return security_token_initialise(mem_ctx); }
-        %feature("docstring") is_sid "S.is_sid(sid) -> bool\n" \
-            "Check whether this token is of the specified SID.";
-        bool is_sid(const struct dom_sid *sid);
-        %feature("docstring") is_system "S.is_system() -> bool\n" \
-                          "Check whether this is a system token.";
-        bool is_system();
-        %feature("docstring") is_anonymous "S.is_anonymus() -> bool\n" \
-                          "Check whether this is an anonymous token.";
-        bool is_anonymous();
-        bool has_sid(const struct dom_sid *sid);
-        bool has_builtin_administrators();
-        bool has_nt_authenticated_users();
-        bool has_privilege(enum sec_privilege privilege);
-        void set_privilege(enum sec_privilege privilege);
-    }
-} security_token;
-
-%talloctype(security_descriptor);
-
-typedef struct security_descriptor {
-    %extend {
-        security_descriptor(TALLOC_CTX *mem_ctx) { return security_descriptor_initialise(mem_ctx); }
-        %feature("docstring") sacl_add "S.sacl_add(ace) -> None\n" \
-                              "Add a security ace to this security descriptor";
-        NTSTATUS sacl_add(const struct security_ace *ace);
-        NTSTATUS dacl_add(const struct security_ace *ace);
-        NTSTATUS dacl_del(const struct dom_sid *trustee);
-        NTSTATUS sacl_del(const struct dom_sid *trustee);
-#ifdef SWIGPYTHON
-        %rename(__eq__) equal;
-#endif
-        bool equal(const struct security_descriptor *other);
-    }
-} security_descriptor;
-
-%rename(Sid) dom_sid;
-
-%talloctype(dom_sid);
-
-typedef struct dom_sid {
-    %immutable;
-    uint8_t sid_rev_num;
-    int8_t num_auths;/* [range(0,15)] */
-    uint8_t id_auth[6];
-    uint32_t *sub_auths;
-    %mutable;
-    %extend {
-        dom_sid(TALLOC_CTX *mem_ctx, const char *text) {
-            return dom_sid_parse_talloc(mem_ctx, text);
-        }
-#ifdef SWIGPYTHON
-        const char *__str__(TALLOC_CTX *mem_ctx) {
-            return dom_sid_string(mem_ctx, $self);
-        }
-        %rename(__eq__) equal;
-#endif
-        bool equal(const struct dom_sid *other);
-    }
-%pythoncode {
-    def __repr__(self):
-        return "Sid(%r)" % str(self)
-}
-} dom_sid;
 
 %feature("docstring") random_sid "random_sid() -> sid\n" \
          "Generate a random SID";
