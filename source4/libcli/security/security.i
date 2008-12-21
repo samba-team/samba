@@ -28,7 +28,39 @@ typedef struct security_descriptor security_descriptor;
 %}
 
 %import "../lib/talloc/talloc.i"
-%include "../util/errors.i"
+%{
+#include "libcli/util/pyerrors.h"
+%}
+
+%typemap(out,noblock=1) WERROR {
+    if (!W_ERROR_IS_OK($1)) {
+        PyErr_SetWERROR($1);
+        SWIG_fail;
+    } else if ($result == NULL) {
+        $result = Py_None;
+    }
+};
+
+%typemap(out,noblock=1) NTSTATUS {
+    if (NT_STATUS_IS_ERR($1)) {
+        PyErr_SetNTSTATUS($1);
+        SWIG_fail;
+    } else if ($result == NULL) {
+        $result = Py_None;
+    }
+};
+
+%typemap(in,noblock=1) NTSTATUS {
+	if (PyLong_Check($input))
+		$1 = NT_STATUS(PyLong_AsUnsignedLong($input));
+	else if (PyInt_Check($input))
+		$1 = NT_STATUS(PyInt_AsLong($input));
+	else {
+		PyErr_SetString(PyExc_TypeError, "Expected a long or an int");
+		return NULL;
+	}
+}
+
 %import "stdint.i"
 
 enum sec_privilege {

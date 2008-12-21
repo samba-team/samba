@@ -32,10 +32,8 @@ struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
         return cli_credentials_init_anon(NULL);
     }
 	
-    if (PyCredentials_Check(py_obj))
-	    return PyCredentials_AsCliCredentials(py_obj);
-
-    return NULL;
+    /* FIXME: Check type? */
+    return PyCredentials_AsCliCredentials(py_obj);
 }
 
 static PyObject *PyString_FromStringOrNULL(const char *str)
