@@ -56,7 +56,7 @@ struct ldb_message *PyLdbMessage_AsMessage(PyObject *obj);
 typedef py_talloc_Object PyLdbModuleObject;
 PyAPI_DATA(PyTypeObject) PyLdbModule;
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
-#define PyLdbModule_AsModule(pyobj) py_talloc_get_type(pyobj, struct ldb_module)
+#define PyLdbModule_AsModule(pyobj) ((struct ldb_module *)py_talloc_get_ptr(pyobj))
 
 typedef py_talloc_Object PyLdbMessageElementObject;
 PyAPI_DATA(PyTypeObject) PyLdbMessageElement;

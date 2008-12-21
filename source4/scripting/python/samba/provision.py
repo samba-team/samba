@@ -752,7 +752,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         return samdb
 
     message("Pre-loading the Samba 4 and AD schema")
-    samdb.set_domain_sid(domainsid)
+    samdb.set_domain_sid(str(domainsid))
     if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
 

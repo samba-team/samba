@@ -29,6 +29,7 @@
 #include "libcli/util/pyerrors.h"
 #include "librpc/gen_ndr/py_misc.h"
 #include "librpc/gen_ndr/py_security.h"
+#include "libcli/security/security.h"
 #include "auth/pyauth.h"
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
@@ -146,12 +147,7 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	if (!dom_sid_Check(py_sid)) {
-		PyErr_SetString(PyExc_TypeError, "expected SID");
-		return NULL;
-	}
-
-	sid = py_talloc_get_ptr(py_sid);
+	sid = dom_sid_parse_talloc(NULL, PyString_AsString(py_sid));
 
 	ret = samdb_set_domain_sid(ldb, sid);
 	if (!ret) {
@@ -181,19 +177,15 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 {
 	PyObject *py_ldb, *py_guid;
 	bool ret;
-	struct GUID *guid;
+	struct GUID guid;
 	struct ldb_context *ldb;
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_guid))
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	if (!GUID_Check(py_guid)) {
-		PyErr_SetString(PyExc_TypeError, "Expected GUID");
-		return NULL;
-	}
-	guid = py_talloc_get_ptr(py_guid);
+	GUID_from_string(PyString_AsString(py_guid), &guid);
 
-	ret = samdb_set_ntds_invocation_id(ldb, guid);
+	ret = samdb_set_ntds_invocation_id(ldb, &guid);
 	if (!ret) {
 		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id failed");
 		return NULL;

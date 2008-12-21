@@ -39,7 +39,7 @@ void py_talloc_dealloc(PyObject* self);
  * when talloc_get_type() returns NULL. */
 #define py_talloc_get_type(py_obj, type) (talloc_get_type(py_talloc_get_ptr(py_obj), type))
 
-#define py_talloc_get_ptr(py_obj) ((py_talloc_Object *)py_obj)->ptr
+#define py_talloc_get_ptr(py_obj) (((py_talloc_Object *)py_obj)->ptr)
 #define py_talloc_get_mem_ctx(py_obj)  ((py_talloc_Object *)py_obj)->talloc_ctx
 
 PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);

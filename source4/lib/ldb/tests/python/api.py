@@ -10,6 +10,9 @@ sys.path.append("build/lib.linux-i686-2.4")
 
 import ldb
 
+def filename():
+    return os.tempnam()
+
 class NoContextTests(unittest.TestCase):
     def test_valid_attr_name(self):
         self.assertTrue(ldb.valid_attr_name("foo"))
@@ -26,14 +29,14 @@ class NoContextTests(unittest.TestCase):
 
 class SimpleLdb(unittest.TestCase):
     def test_connect(self):
-        ldb.Ldb("foo.ldb")
+        ldb.Ldb(filename())
 
     def test_connect_none(self):
         ldb.Ldb()
 
     def test_connect_later(self):
         x = ldb.Ldb()
-        x.connect("foo.ldb")
+        x.connect(filename())
 
     def test_repr(self):
         x = ldb.Ldb()
@@ -56,19 +59,19 @@ class SimpleLdb(unittest.TestCase):
         self.assertEquals("[<ldb module 'tdb'>]", repr(x.modules()))
 
     def test_search(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(len(l.search()), 1)
 
     def test_search_controls(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(len(l.search(controls=["paged_results:0:5"])), 1)
 
     def test_search_attrs(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
 
     def test_search_string_dn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(len(l.search("", ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
 
     def test_search_attr_string(self):
@@ -76,29 +79,24 @@ class SimpleLdb(unittest.TestCase):
         self.assertRaises(TypeError, l.search, attrs="dc")
 
     def test_opaque(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         l.set_opaque("my_opaque", l)
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEquals(None, l.get_opaque("unknown"))
 
-    def test_parse_control_strings(self):
-        l = ldb.Ldb("foo.ldb")
-        self.assertRaises(ldb.LdbError, l.parse_control_strings, ["foo", "bar"])
-        self.assertTrue(l.parse_control_strings(["paged_results:0:5"]) is not None)
-
     def test_search_scope_base(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(len(l.search(ldb.Dn(l, "dc=foo"), 
                           ldb.SCOPE_ONELEVEL)), 0)
 
     def test_delete(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertRaises(ldb.LdbError, lambda: l.delete(ldb.Dn(l, "dc=foo")))
 
     def test_contains(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertFalse(ldb.Dn(l, "dc=foo") in l)
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=foo")
         m["b"] = ["a"]
@@ -109,23 +107,23 @@ class SimpleLdb(unittest.TestCase):
             l.delete(m.dn)
 
     def test_get_config_basedn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(None, l.get_config_basedn())
 
     def test_get_root_basedn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(None, l.get_root_basedn())
 
     def test_get_schema_basedn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(None, l.get_schema_basedn())
 
     def test_get_default_basedn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         self.assertEquals(None, l.get_default_basedn())
 
     def test_add(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=foo")
         m["bla"] = "bla"
@@ -137,7 +135,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=foo"))
 
     def test_add_dict(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = {"dn": ldb.Dn(l, "dc=foo"),
              "bla": "bla"}
         self.assertEquals(len(l.search()), 1)
@@ -148,7 +146,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=foo"))
 
     def test_add_dict_string_dn(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = {"dn": "dc=foo", "bla": "bla"}
         self.assertEquals(len(l.search()), 1)
         l.add(m)
@@ -158,7 +156,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=foo"))
 
     def test_rename(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=foo")
         m["bla"] = "bla"
@@ -171,12 +169,13 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=bar"))
 
     def test_rename_string_dns(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=foo")
         m["bla"] = "bla"
         self.assertEquals(len(l.search()), 1)
         l.add(m)
+        self.assertEquals(len(l.search()), 2)
         try:
             l.rename("dc=foo", "dc=bar")
             self.assertEquals(len(l.search()), 2)
@@ -184,7 +183,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=bar"))
 
     def test_modify_delete(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=modifydelete")
         m["bla"] = ["1234"]
@@ -202,7 +201,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=modifydelete"))
 
     def test_modify_add(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=add")
         m["bla"] = ["1234"]
@@ -219,7 +218,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=add"))
 
     def test_modify_modify(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         m = ldb.Message()
         m.dn = ldb.Dn(l, "dc=modify2")
         m["bla"] = ["1234", "456"]
@@ -236,7 +235,7 @@ class SimpleLdb(unittest.TestCase):
             l.delete(ldb.Dn(l, "dc=modify2"))
 
     def test_transaction_commit(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         l.transaction_start()
         m = ldb.Message(ldb.Dn(l, "dc=foo"))
         m["foo"] = ["bar"]
@@ -245,7 +244,7 @@ class SimpleLdb(unittest.TestCase):
         l.delete(m.dn)
 
     def test_transaction_cancel(self):
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         l.transaction_start()
         m = ldb.Message(ldb.Dn(l, "dc=foo"))
         m["foo"] = ["bar"]
@@ -256,13 +255,13 @@ class SimpleLdb(unittest.TestCase):
     def test_set_debug(self):
         def my_report_fn(level, text):
             pass
-        l = ldb.Ldb("foo.ldb")
+        l = ldb.Ldb(filename())
         l.set_debug(my_report_fn)
 
 
 class DnTests(unittest.TestCase):
     def setUp(self):
-        self.ldb = ldb.Ldb("foo.ldb")
+        self.ldb = ldb.Ldb(filename())
 
     def test_eq(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
@@ -411,7 +410,7 @@ class LdbMsgTests(unittest.TestCase):
         self.assertEquals(["dn", "foo", "bar"], self.msg.keys())
 
     def test_dn(self):
-        self.msg.dn = ldb.Dn(ldb.Ldb("foo.ldb"), "@BASEINFO")
+        self.msg.dn = ldb.Dn(ldb.Ldb(filename()), "@BASEINFO")
         self.assertEquals("@BASEINFO", self.msg.dn.__str__())
 
     def test_get_dn(self):
