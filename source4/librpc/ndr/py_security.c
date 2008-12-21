@@ -18,6 +18,20 @@
 */
 #include "libcli/security/security.h"
 
+static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
+{
+	PyObject *dict;
+	int i;
+	if (type->tp_dict == NULL)
+		type->tp_dict = PyDict_New();
+	dict = type->tp_dict;
+	for (i = 0; methods[i].ml_name; i++) {
+		PyObject *descr = PyDescr_NewMethod(type, &methods[i]);
+		PyDict_SetItemString(dict, methods[i].ml_name, 
+				     descr);
+	}
+}
+
 static PyObject *py_dom_sid_eq(PyObject *self, PyObject *args)
 {
 	struct dom_sid *this = py_talloc_get_ptr(self), *other;
@@ -51,27 +65,37 @@ static PyObject *py_dom_sid_repr(PyObject *self)
 	return ret;
 }
 
-#define PY_DOM_SID_REPR py_dom_sid_repr
-
-static PyObject *py_dom_sid_init(PyObject *self, PyObject *args)
+static int py_dom_sid_init(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct dom_sid *this = py_talloc_get_ptr(self);
-	char *str;
-	struct dom_sid *new_this;
+	char *str = NULL;
+	struct dom_sid *sid = py_talloc_get_ptr(self);
+	const char *kwnames[] = { "str", NULL };
 
-	if (!PyArg_ParseTuple(args, "|s", &str))
-		return NULL;
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", discard_const_p(char *, kwnames), &str))
+		return -1;
 
-	new_this = dom_sid_parse_talloc(NULL, str);
-	memcpy(this, new_this, sizeof(*new_this));
-	talloc_free(new_this);
-	return Py_None;
+	if (str != NULL && !dom_sid_parse(str, sid)) {
+		PyErr_SetString(PyExc_TypeError, "Unable to parse string");
+		return -1;
+	}
+
+	return 0;
 }
 
-#define PY_DOM_SID_EXTRA_METHODS \
+static PyMethodDef py_dom_sid_extra_methods[] = {
 	{ "__eq__", (PyCFunction)py_dom_sid_eq, METH_VARARGS, "S.__eq__(x) -> S == x" }, \
-	{ "__str__", (PyCFunction)py_dom_sid_str, METH_NOARGS, "S.__str__() -> str(S)" }, \
-	{ "__init__", (PyCFunction)py_dom_sid_init, METH_VARARGS, "S.__init__(str=None)" },
+	{ NULL }
+};
+
+static void py_dom_sid_patch(PyTypeObject *type)
+{
+	type->tp_init = py_dom_sid_init;
+	type->tp_str = py_dom_sid_str;
+	type->tp_repr = py_dom_sid_repr;
+	PyType_AddMethods(type, py_dom_sid_extra_methods);
+}
+
+#define PY_DOM_SID_PATCH py_dom_sid_patch
 
 static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 {
@@ -156,18 +180,28 @@ static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject 
 	return py_talloc_import(self, security_descriptor_initialise(NULL));
 }	
 
-#define PY_SECURITY_DESCRIPTOR_EXTRA_METHODS \
-	{ "sacl_add", (PyCFunction)py_descriptor_sacl_add, METH_VARARGS, \
-		"S.sacl_add(ace) -> None\n" \
-		"Add a security ace to this security descriptor" },\
-	{ "dacl_add", (PyCFunction)py_descriptor_dacl_add, METH_VARARGS, \
-		NULL }, \
-	{ "dacl_del", (PyCFunction)py_descriptor_dacl_del, METH_VARARGS, \
-		NULL }, \
-	{ "sacl_del", (PyCFunction)py_descriptor_sacl_del, METH_VARARGS, \
-		NULL }, \
-	{ "__eq__", (PyCFunction)py_descriptor_eq, METH_VARARGS, \
+static PyMethodDef py_descriptor_extra_methods[] = {
+	{ "sacl_add", (PyCFunction)py_descriptor_sacl_add, METH_VARARGS,
+		"S.sacl_add(ace) -> None\n"
+		"Add a security ace to this security descriptor" },
+	{ "dacl_add", (PyCFunction)py_descriptor_dacl_add, METH_VARARGS,
 		NULL },
+	{ "dacl_del", (PyCFunction)py_descriptor_dacl_del, METH_VARARGS,
+		NULL },
+	{ "sacl_del", (PyCFunction)py_descriptor_sacl_del, METH_VARARGS,
+		NULL },
+	{ "__eq__", (PyCFunction)py_descriptor_eq, METH_VARARGS,
+		NULL },
+	{ NULL }
+};
+
+static void py_descriptor_patch(PyTypeObject *type)
+{
+	type->tp_new = py_descriptor_new;
+	PyType_AddMethods(type, py_descriptor_extra_methods);
+}
+
+#define PY_DESCRIPTOR_PATCH py_descriptor_patch
 
 static PyObject *py_token_is_sid(PyObject *self, PyObject *args)
 {
@@ -251,25 +285,34 @@ static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwar
 	return py_talloc_import(self, security_token_initialise(NULL));
 }	
 
-#define PY_SECURITY_TOKEN_EXTRA_METHODS \
-	{ "is_sid", (PyCFunction)py_token_is_sid, METH_VARARGS, \
-		"S.is_sid(sid) -> bool\n" \
-		"Check whether this token is of the specified SID." }, \
-	{ "has_sid", (PyCFunction)py_token_has_sid, METH_VARARGS, \
-		NULL }, \
-	{ "is_anonymous", (PyCFunction)py_token_is_anonymous, METH_NOARGS, \
-		"S.is_anonymus() -> bool\n" \
-		"Check whether this is an anonymous token." }, \
-	{ "is_system", (PyCFunction)py_token_is_system, METH_NOARGS, \
-		NULL }, \
-	{ "has_builtin_administrators", (PyCFunction)py_token_has_builtin_administrators, METH_NOARGS, \
-		NULL }, \
-	{ "has_nt_authenticated_users", (PyCFunction)py_token_has_nt_authenticated_users, METH_NOARGS, \
-		NULL }, \
-	{ "has_privilege", (PyCFunction)py_token_has_privilege, METH_VARARGS, \
-		NULL }, \
-	{ "set_privilege", (PyCFunction)py_token_set_privilege, METH_VARARGS, \
+static PyMethodDef py_token_extra_methods[] = {
+	{ "is_sid", (PyCFunction)py_token_is_sid, METH_VARARGS,
+		"S.is_sid(sid) -> bool\n"
+		"Check whether this token is of the specified SID." },
+	{ "has_sid", (PyCFunction)py_token_has_sid, METH_VARARGS,
 		NULL },
+	{ "is_anonymous", (PyCFunction)py_token_is_anonymous, METH_NOARGS,
+		"S.is_anonymus() -> bool\n"
+		"Check whether this is an anonymous token." },
+	{ "is_system", (PyCFunction)py_token_is_system, METH_NOARGS,
+		NULL },
+	{ "has_builtin_administrators", (PyCFunction)py_token_has_builtin_administrators, METH_NOARGS,
+		NULL },
+	{ "has_nt_authenticated_users", (PyCFunction)py_token_has_nt_authenticated_users, METH_NOARGS,
+		NULL },
+	{ "has_privilege", (PyCFunction)py_token_has_privilege, METH_VARARGS,
+		NULL },
+	{ "set_privilege", (PyCFunction)py_token_set_privilege, METH_VARARGS,
+		NULL },
+	{ NULL }
+};
+
+#define PY_TOKEN_PATCH py_token_patch
+static void py_token_patch(PyTypeObject *type)
+{
+	type->tp_new = py_token_new;
+	PyType_AddMethods(type, py_token_extra_methods);
+}
 
 static PyObject *py_privilege_name(PyObject *self, PyObject *args)
 {
@@ -306,7 +349,21 @@ static PyObject *py_random_sid(PyObject *self)
 	return ret;
 }
 
-#define PY_MOD_SECURITY_EXTRA_METHODS \
-	{ "random_sid", (PyCFunction)py_random_sid, METH_NOARGS, NULL }, \
-	{ "privilege_id", (PyCFunction)py_privilege_id, METH_VARARGS, NULL }, \
+static PyMethodDef py_mod_security_extra_methods[] = {
+	{ "random_sid", (PyCFunction)py_random_sid, METH_NOARGS, NULL },
+	{ "privilege_id", (PyCFunction)py_privilege_id, METH_VARARGS, NULL },
 	{ "privilege_name", (PyCFunction)py_privilege_name, METH_VARARGS, NULL },
+	{ NULL }
+};
+
+static void py_mod_security_patch(PyObject *m)
+{
+	int i;
+	for (i = 0; py_mod_security_extra_methods[i].ml_name; i++) {
+		PyObject *descr = PyCFunction_New(&py_mod_security_extra_methods[i], NULL);
+		PyModule_AddObject(m, py_mod_security_extra_methods[i].ml_name,
+				   descr);
+	}
+}
+
+#define PY_MOD_SECURITY_PATCH py_mod_security_patch

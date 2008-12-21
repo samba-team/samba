@@ -84,42 +84,32 @@ bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 	return dom_sid_compare(sid1, sid2) == 0;
 }
 
-
-/*
-  convert a string to a dom_sid, returning a talloc'd dom_sid
-*/
-struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
+bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
-	struct dom_sid *ret;
 	uint_t rev, ia, num_sub_auths, i;
 	char *p;
   
 	if (strncasecmp(sidstr, "S-", 2)) {
-		return NULL;
+		return false;
 	}
 
 	sidstr += 2;
 
 	rev = strtol(sidstr, &p, 10);
 	if (*p != '-') {
-		return NULL;
+		return false;
 	}
 	sidstr = p+1;
 
 	ia = strtol(sidstr, &p, 10);
 	if (p == sidstr) {
-		return NULL;
+		return false;
 	}
 	sidstr = p;
 
 	num_sub_auths = 0;
 	for (i=0;sidstr[i];i++) {
 		if (sidstr[i] == '-') num_sub_auths++;
-	}
-
-	ret = talloc(mem_ctx, struct dom_sid);
-	if (!ret) {
-		return NULL;
 	}
 
 	ret->sid_rev_num = rev;
@@ -133,14 +123,32 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 
 	for (i=0;i<num_sub_auths;i++) {
 		if (sidstr[0] != '-') {
-			return NULL;
+			return false;
 		}
 		sidstr++;
 		ret->sub_auths[i] = strtoul(sidstr, &p, 10);
 		if (p == sidstr) {
-			return NULL;
+			return false;
 		}
 		sidstr = p;
+	}
+
+	return true;
+}
+
+/*
+  convert a string to a dom_sid, returning a talloc'd dom_sid
+*/
+struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
+{
+	struct dom_sid *ret;
+	ret = talloc(mem_ctx, struct dom_sid);
+	if (!ret) {
+		return NULL;
+	}
+	if (!dom_sid_parse(sidstr, ret)) {
+		talloc_free(ret);
+		return NULL;
 	}
 
 	return ret;

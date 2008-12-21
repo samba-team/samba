@@ -24,7 +24,7 @@ sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
 	             module_methods => [], module_objects => [], ready_types => [],
-			 	 readycode => [] };
+				 patch_type_calls => [], readycode => [] };
 	bless($self, $class);
 }
 
@@ -38,7 +38,9 @@ sub pidl($$)
 {
 	my ($self, $d) = @_;
 	if ($d) {
-		$self->{res} .= $self->{tabs};
+		if ((!($d =~ /^#/))) {
+			$self->{res} .= $self->{tabs};
+		}
 		$self->{res} .= $d;
 	}
 	$self->{res} .= "\n";
@@ -279,11 +281,6 @@ sub PythonStruct($$$$$$)
 		$self->indent;
 		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.pack() -> blob\\nNDR pack\" },");
 		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS, \"S.unpack(blob) -> None\\nNDR unpack\" },");
-		$self->deindent;
-		$self->pidl("#ifdef ".uc("py_$name\_extra_methods"));
-		$self->pidl("\t" .uc("py_$name\_extra_methods"));
-		$self->pidl("#endif");
-		$self->indent;
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
 		$self->pidl("};");
@@ -294,11 +291,8 @@ sub PythonStruct($$$$$$)
 	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
 	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
 	$self->pidl_hdr("\n");
-	$self->pidl("#ifndef ".uc("py_$name\_repr"));
-	$self->pidl("#define ".uc("py_$name\_repr") . " py_talloc_default_repr");
-	$self->pidl("#endif");
 	$self->pidl("");
-	my $docstring = ($self->DocString($d, $name) or "NULL");
+	my $docstring = $self->DocString($d, $name);
 	my $typeobject = "$name\_Type";
 	$self->pidl("PyTypeObject $typeobject = {");
 	$self->indent;
@@ -307,8 +301,10 @@ sub PythonStruct($$$$$$)
 	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getset = $getsetters,");
-	$self->pidl(".tp_repr = ".uc("py_$name\_repr").",");
-	$self->pidl(".tp_doc = $docstring,");
+	$self->pidl(".tp_repr = py_talloc_default_repr,");
+	if ($docstring) {
+		$self->pidl(".tp_doc = $docstring,");
+	}
 	$self->pidl(".tp_methods = $py_methods,");
 	$self->pidl(".tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,");
 	$self->pidl(".tp_new = py_$name\_new,");
@@ -815,12 +811,22 @@ sub register_module_typeobject($$$)
 	$self->register_module_object($name, "(PyObject *)$py_name");
 
 	$self->check_ready_type($py_name);
+
+	$self->register_patch_type_call($name, $py_name);
 }
 
 sub check_ready_type($$)
 {
 	my ($self, $py_name) = @_;
 	push (@{$self->{ready_types}}, $py_name) unless (grep(/^$py_name$/,@{$self->{ready_types}}));
+}
+
+sub register_patch_type_call($$$)
+{
+	my ($self, $typename, $cvar) = @_;
+
+	push(@{$self->{patch_type_calls}}, [$typename, $cvar]);
+
 }
 
 sub register_module_readycode($$)
@@ -1184,12 +1190,6 @@ sub Parse($$$$$)
 		$self->pidl("{ \"$fn_name\", (PyCFunction)$pyfn_name, $flags, $doc },");
 	}
 
-	$self->deindent;
-	$self->pidl("#ifdef ".uc("py_mod_$basename\_extra_methods"));
-	$self->pidl("\t" .uc("py_mod_$basename\_extra_methods"));
-	$self->pidl("#endif");
-	$self->indent;
-	
 	$self->pidl("{ NULL, NULL, 0, NULL }");
 	$self->deindent;
 	$self->pidl("};");
@@ -1208,6 +1208,13 @@ sub Parse($$$$$)
 	}
 
 	$self->pidl($_) foreach (@{$self->{readycode}});
+
+	foreach (@{$self->{patch_type_calls}}) {
+		my ($typename, $cvar) = @$_;
+		$self->pidl("#ifdef PY_".uc($typename)."_PATCH");
+		$self->pidl("PY_".uc($typename)."_PATCH($cvar);");
+		$self->pidl("#endif");
+	}
 
 	$self->pidl("");
 
@@ -1234,6 +1241,10 @@ sub Parse($$$$$)
 		$self->pidl("Py_INCREF($c_name);");
 		$self->pidl("PyModule_AddObject(m, \"$object_name\", $c_name);");
 	}
+
+	$self->pidl("#ifdef PY_MOD_".uc($basename)."_PATCH");
+	$self->pidl("PY_MOD_".uc($basename)."_PATCH(m);");
+	$self->pidl("#endif");
 
 	$self->pidl("");
 	$self->deindent;

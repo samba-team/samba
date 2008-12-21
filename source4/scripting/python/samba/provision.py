@@ -38,7 +38,7 @@ from auth import system_session
 from samba import Ldb, substitute_var, valid_netbios_name, check_all_substituted
 from samba.samdb import SamDB
 from samba.idmap import IDmapDB
-import security
+from samba.dcerpc import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
