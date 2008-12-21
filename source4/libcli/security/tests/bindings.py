@@ -58,8 +58,8 @@ class DomSidTests(unittest.TestCase):
     def test_sid_equal(self):
         sid1 = security.dom_sid("S-1-5-21")
         sid2 = security.dom_sid("S-1-5-21")
-        self.assertTrue(sid1.__eq__(sid1))
-        self.assertTrue(sid1.__eq__(sid2))
+        self.assertEquals(sid1, sid1)
+        self.assertEquals(sid1, sid2)
 
     def test_random(self):
         sid = security.random_sid()
