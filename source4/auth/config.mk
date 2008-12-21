@@ -37,12 +37,10 @@ auth_sam_reply_OBJ_FILES = $(addprefix $(authsrcdir)/, auth_sam_reply.o)
 $(eval $(call proto_header_template,$(authsrcdir)/auth_sam_reply.h,$(auth_sam_reply_OBJ_FILES:.o=.c)))
 
 [PYTHON::swig_auth]
-LIBRARY_REALNAME = samba/_auth.$(SHLIBEXT)
+LIBRARY_REALNAME = samba/auth.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = auth_system_session
-PRIVATE_DEPENDENCIES = SAMDB 
+PRIVATE_DEPENDENCIES = SAMDB PYTALLOC param
 
-$(eval $(call python_py_module_template,samba/auth.py,$(authsrcdir)/auth.py))
+swig_auth_OBJ_FILES = $(authsrcdir)/pyauth.o
 
-swig_auth_OBJ_FILES = $(authsrcdir)/auth_wrap.o
-
-$(swig_auth_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(swig_auth_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)

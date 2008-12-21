@@ -29,6 +29,7 @@
 #include "libcli/util/pyerrors.h"
 #include "librpc/gen_ndr/py_misc.h"
 #include "librpc/gen_ndr/py_security.h"
+#include "auth/pyauth.h"
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
@@ -121,7 +122,12 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	/* FIXME: Magic py_session_info -> info */
+	/*if (!PyAuthSession_Check(py_session_info)) {
+		PyErr_SetString(PyExc_TypeError, "Expected session info object");
+		return NULL;
+	}*/
+
+	info = PyAuthSession_AsSession(py_session_info);
 
     	ldb_set_opaque(ldb, "sessionInfo", info);
 
