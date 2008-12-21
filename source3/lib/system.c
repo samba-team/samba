@@ -142,6 +142,20 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 }
 
 /*******************************************************************
+A writev wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	ssize_t ret;
+
+	do {
+		ret = writev(fd, iov, iovcnt);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A pread wrapper that will deal with EINTR and 64-bit file offsets.
 ********************************************************************/
 
