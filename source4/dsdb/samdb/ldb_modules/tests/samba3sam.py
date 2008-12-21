@@ -151,7 +151,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         """Looking up by mapped attribute"""
         msg = self.ldb.search(expression="(name=Backup Operators)")
         self.assertEquals(len(msg), 1)
-        self.assertEquals(msg[0]["name"], "Backup Operators")
+        self.assertEquals(str(msg[0]["name"]), "Backup Operators")
 
     def test_old_name_of_renamed(self):
         """Looking up by old name of renamed attribute"""
@@ -197,9 +197,9 @@ class Samba3SamTestCase(MapBaseTestCase):
                 scope=SCOPE_BASE, 
                 attrs=['foo','blah','cn','showInAdvancedViewOnly'])
         self.assertEquals(len(msg), 1)
-        self.assertEquals(msg[0]["showInAdvancedViewOnly"], "TRUE")
-        self.assertEquals(msg[0]["foo"], "bar")
-        self.assertEquals(msg[0]["blah"], "Blie")
+        self.assertEquals(str(msg[0]["showInAdvancedViewOnly"]), "TRUE")
+        self.assertEquals(str(msg[0]["foo"]), "bar")
+        self.assertEquals(str(msg[0]["blah"]), "Blie")
 
         # Adding record that will be mapped
         self.ldb.add({"dn": "cn=Niemand,cn=Users,dc=vernstok,dc=nl",
@@ -212,32 +212,32 @@ class Samba3SamTestCase(MapBaseTestCase):
         msg = self.ldb.search(expression="(unixName=bin)", 
                               attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)
-        self.assertEquals(msg[0]["cn"], "Niemand")
-        self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
+        self.assertEquals(str(msg[0]["cn"]), "Niemand")
+        self.assertEquals(str(msg[0]["sambaUnicodePwd"]), "geheim")
 
         # Checking for existence of record (local && remote)
         msg = self.ldb.search(expression="(&(unixName=bin)(sambaUnicodePwd=geheim))", 
                          attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
         self.assertEquals(len(msg), 1)           # TODO: should check with more records
-        self.assertEquals(msg[0]["cn"], "Niemand")
-        self.assertEquals(msg[0]["unixName"], "bin")
-        self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
+        self.assertEquals(str(msg[0]["cn"]), "Niemand")
+        self.assertEquals(str(msg[0]["unixName"]), "bin")
+        self.assertEquals(str(msg[0]["sambaUnicodePwd"]), "geheim")
 
         # Checking for existence of record (local || remote)
         msg = self.ldb.search(expression="(|(unixName=bin)(sambaUnicodePwd=geheim))", 
                          attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
         #print "got %d replies" % len(msg)
         self.assertEquals(len(msg), 1)        # TODO: should check with more records
-        self.assertEquals(msg[0]["cn"], "Niemand")
-        self.assertEquals(msg[0]["unixName"], "bin")
-        self.assertEquals(msg[0]["sambaUnicodePwd"], "geheim")
+        self.assertEquals(str(msg[0]["cn"]), "Niemand")
+        self.assertEquals(str(msg[0]["unixName"]), "bin")
+        self.assertEquals(str(msg[0]["sambaUnicodePwd"]), "geheim")
 
         # Checking for data in destination database
         msg = self.samba3.db.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
-        self.assertEquals(msg[0]["sambaSID"], 
+        self.assertEquals(str(msg[0]["sambaSID"]), 
                 "S-1-5-21-4231626423-2410014848-2360679739-2001")
-        self.assertEquals(msg[0]["displayName"], "Niemand")
+        self.assertEquals(str(msg[0]["displayName"]), "Niemand")
 
         # Adding attribute...
         self.ldb.modify_ldif("""
@@ -250,8 +250,8 @@ description: Blah
         # Checking whether changes are still there...
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
-        self.assertEquals(msg[0]["cn"], "Niemand")
-        self.assertEquals(msg[0]["description"], "Blah")
+        self.assertEquals(str(msg[0]["cn"]), "Niemand")
+        self.assertEquals(str(msg[0]["description"]), "Blah")
 
         # Modifying attribute...
         self.ldb.modify_ldif("""
@@ -264,7 +264,7 @@ description: Blie
         # Checking whether changes are still there...
         msg = self.ldb.search(expression="(cn=Niemand)")
         self.assertTrue(len(msg) >= 1)
-        self.assertEquals(msg[0]["description"], "Blie")
+        self.assertEquals(str(msg[0]["description"]), "Blie")
 
         # Deleting attribute...
         self.ldb.modify_ldif("""
@@ -396,7 +396,7 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
 
         # Search remote record by remote DN
         dn = self.samba3.dn("cn=A")
@@ -406,7 +406,7 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertTrue(not "lastLogon" in res[0])
-        self.assertEquals(res[0]["sambaLogonTime"], "x")
+        self.assertEquals(str(res[0]["sambaLogonTime"]), "x")
 
         # Search split record by local DN
         dn = self.samba4.dn("cn=X")
@@ -414,8 +414,8 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
                 attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["dnsHostName"], "x")
-        self.assertEquals(res[0]["lastLogon"], "x")
+        self.assertEquals(str(res[0]["dnsHostName"]), "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
 
         # Search split record by remote DN
         dn = self.samba3.dn("cn=X")
@@ -425,7 +425,7 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "dnsHostName" in res[0])
         self.assertTrue(not "lastLogon" in res[0])
-        self.assertEquals(res[0]["sambaLogonTime"], "x")
+        self.assertEquals(str(res[0]["sambaLogonTime"]), "x")
 
         # Testing search by attribute
 
@@ -434,22 +434,22 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
                 attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
 
         # Search by kept attribute
         res = self.ldb.search(expression="(description=y)", 
                 scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[0]["dnsHostName"], "z")
-        self.assertEquals(res[0]["lastLogon"], "z")
+        self.assertEquals(str(res[0]["dnsHostName"]), "z")
+        self.assertEquals(str(res[0]["lastLogon"]), "z")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "z")
+        self.assertEquals(str(res[1]["lastLogon"]), "z")
 
         # Search by renamed attribute
         res = self.ldb.search(expression="(badPwdCount=x)", scope=SCOPE_DEFAULT,
@@ -457,10 +457,10 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
 
         # Search by converted attribute
         # TODO:
@@ -470,14 +470,14 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         res = self.ldb.search(expression="(objectSid=*)", base=None, scope=SCOPE_DEFAULT, attrs=["dnsHostName", "lastLogon", "objectSid"])
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[0]["dnsHostName"], "x")
-        self.assertEquals(res[0]["lastLogon"], "x")
+        self.assertEquals(str(res[0]["dnsHostName"]), "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
         self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552", 
                              res[0]["objectSid"])
         self.assertTrue("objectSid" in res[0])
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertSidEquals("S-1-5-21-4231626423-2410014848-2360679739-552",
                              res[1]["objectSid"])
         self.assertTrue("objectSid" in res[1])
@@ -490,8 +490,8 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "x")
-        self.assertEquals(res[0]["primaryGroupID"], "512")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
+        self.assertEquals(str(res[0]["primaryGroupID"]), "512")
 
         # TODO: There should actually be two results, A and X.  The
         # primaryGroupID of X seems to get corrupted somewhere, and the
@@ -517,13 +517,13 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         res = self.ldb.search(expression="(objectClass=user)", attrs=attrs)
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[0]["dnsHostName"], "x")
-        self.assertEquals(res[0]["lastLogon"], "x")
-        self.assertEquals(res[0]["objectClass"][0], "user")
+        self.assertEquals(str(res[0]["dnsHostName"]), "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
+        self.assertEquals(str(res[0]["objectClass"][0]), "user")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
-        self.assertEquals(res[1]["objectClass"][0], "user")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
+        self.assertEquals(str(res[1]["objectClass"][0]), "user")
 
         # Prove that the objectClass is actually used for the search
         res = self.ldb.search(expression="(|(objectClass=user)(badPwdCount=x))",
@@ -531,15 +531,15 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(set(res[0]["objectClass"]), set(["top"]))
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
-        self.assertEquals(res[1]["objectClass"][0], "user")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
+        self.assertEquals(str(res[1]["objectClass"][0]), "user")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[2])
-        self.assertEquals(res[2]["lastLogon"], "x")
+        self.assertEquals(str(res[2]["lastLogon"]), "x")
         self.assertEquals(res[2]["objectClass"][0], "user")
 
         # Testing search by parse tree
@@ -549,33 +549,33 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
 
         # Search by conjunction of remote attributes
         res = self.ldb.search(expression="(&(lastLogon=x)(description=x))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[0]["dnsHostName"], "x")
-        self.assertEquals(res[0]["lastLogon"], "x")
+        self.assertEquals(str(res[0]["dnsHostName"]), "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         
         # Search by conjunction of local and remote attribute 
         res = self.ldb.search(expression="(&(codePage=x)(description=x))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
 
         # Search by conjunction of local and remote attribute w/o match
         attrs = ["dnsHostName", "lastLogon"]
@@ -591,11 +591,11 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
 
         # Search by disjunction of remote attributes
         res = self.ldb.search(expression="(|(badPwdCount=x)(lastLogon=x))", 
@@ -603,27 +603,27 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertFalse("dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=A"))
         self.assertFalse("dnsHostName" in res[2])
-        self.assertEquals(res[2]["lastLogon"], "x")
+        self.assertEquals(str(res[2]["lastLogon"]), "x")
 
         # Search by disjunction of local and remote attribute
         res = self.ldb.search(expression="(|(revision=x)(lastLogon=y))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=B"))
         self.assertFalse("dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "y")
+        self.assertEquals(str(res[1]["lastLogon"]), "y")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[2]["dnsHostName"], "x")
-        self.assertEquals(res[2]["lastLogon"], "x")
+        self.assertEquals(str(res[2]["dnsHostName"]), "x")
+        self.assertEquals(str(res[2]["lastLogon"]), "x")
 
         # Search by disjunction of local and remote attribute w/o match
         res = self.ldb.search(expression="(|(codePage=y)(nextRid=z))", 
@@ -636,27 +636,27 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[2]["dnsHostName"], "z")
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["dnsHostName"]), "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[3])
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
 
         # Search by negated remote attribute
         res = self.ldb.search(expression="(!(description=x))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 3)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[0]["dnsHostName"], "z")
-        self.assertEquals(res[0]["lastLogon"], "z")
+        self.assertEquals(str(res[0]["dnsHostName"]), "z")
+        self.assertEquals(str(res[0]["lastLogon"]), "z")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "z")
+        self.assertEquals(str(res[1]["lastLogon"]), "z")
 
         # Search by negated conjunction of local attributes
         res = self.ldb.search(expression="(!(&(codePage=x)(revision=x)))", 
@@ -664,33 +664,33 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[2]["dnsHostName"], "z")
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["dnsHostName"]), "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[3])
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
 
         # Search by negated conjunction of remote attributes
         res = self.ldb.search(expression="(!(&(lastLogon=x)(description=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "y")
+        self.assertEquals(str(res[1]["lastLogon"]), "y")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[2]["dnsHostName"], "z")
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["dnsHostName"]), "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[3])
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
 
         # Search by negated conjunction of local and remote attribute
         res = self.ldb.search(expression="(!(&(codePage=x)(description=x)))", 
@@ -698,46 +698,46 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 5)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[2]["dnsHostName"], "z")
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["dnsHostName"]), "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[3])
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
 
         # Search by negated disjunction of local attributes
         res = self.ldb.search(expression="(!(|(revision=x)(dnsHostName=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[1])
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[2]["dnsHostName"], "z")
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["dnsHostName"]), "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[3])
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
 
         # Search by negated disjunction of remote attributes
         res = self.ldb.search(expression="(!(|(badPwdCount=x)(lastLogon=x)))", 
                               attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 4)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=Y"))
-        self.assertEquals(res[0]["dnsHostName"], "y")
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["dnsHostName"]), "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[1]["dnsHostName"], "z")
-        self.assertEquals(res[1]["lastLogon"], "z")
+        self.assertEquals(str(res[1]["dnsHostName"]), "z")
+        self.assertEquals(str(res[1]["lastLogon"]), "z")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[2])
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
 
         # Search by negated disjunction of local and remote attribute
         res = self.ldb.search(expression="(!(|(revision=x)(lastLogon=y)))", 
@@ -745,32 +745,32 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         self.assertEquals(len(res), 4)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "x")
+        self.assertEquals(str(res[0]["lastLogon"]), "x")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[1]["dnsHostName"], "z")
-        self.assertEquals(res[1]["lastLogon"], "z")
+        self.assertEquals(str(res[1]["dnsHostName"]), "z")
+        self.assertEquals(str(res[1]["lastLogon"]), "z")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[2])
-        self.assertEquals(res[2]["lastLogon"], "z")
+        self.assertEquals(str(res[2]["lastLogon"]), "z")
 
         # Search by complex parse tree
         res = self.ldb.search(expression="(|(&(revision=x)(dnsHostName=x))(!(&(description=x)(nextRid=y)))(badPwdCount=y))", attrs=["dnsHostName", "lastLogon"])
         self.assertEquals(len(res), 6)
         self.assertEquals(str(res[0].dn), self.samba4.dn("cn=B"))
         self.assertTrue(not "dnsHostName" in res[0])
-        self.assertEquals(res[0]["lastLogon"], "y")
+        self.assertEquals(str(res[0]["lastLogon"]), "y")
         self.assertEquals(str(res[1].dn), self.samba4.dn("cn=X"))
-        self.assertEquals(res[1]["dnsHostName"], "x")
-        self.assertEquals(res[1]["lastLogon"], "x")
+        self.assertEquals(str(res[1]["dnsHostName"]), "x")
+        self.assertEquals(str(res[1]["lastLogon"]), "x")
         self.assertEquals(str(res[2].dn), self.samba4.dn("cn=A"))
         self.assertTrue(not "dnsHostName" in res[2])
-        self.assertEquals(res[2]["lastLogon"], "x")
+        self.assertEquals(str(res[2]["lastLogon"]), "x")
         self.assertEquals(str(res[3].dn), self.samba4.dn("cn=Z"))
-        self.assertEquals(res[3]["dnsHostName"], "z")
-        self.assertEquals(res[3]["lastLogon"], "z")
+        self.assertEquals(str(res[3]["dnsHostName"]), "z")
+        self.assertEquals(str(res[3]["lastLogon"]), "z")
         self.assertEquals(str(res[4].dn), self.samba4.dn("cn=C"))
         self.assertTrue(not "dnsHostName" in res[4])
-        self.assertEquals(res[4]["lastLogon"], "z")
+        self.assertEquals(str(res[4]["lastLogon"]), "z")
 
         # Clean up
         dns = [self.samba4.dn("cn=%s" % n) for n in ["A","B","C","X","Y","Z"]]
@@ -791,9 +791,9 @@ primaryGroupID: 1-5-21-4231626423-2410014848-2360679739-512
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["foo"], "bar")
-        self.assertEquals(res[0]["revision"], "1")
-        self.assertEquals(res[0]["description"], "test")
+        self.assertEquals(str(res[0]["foo"]), "bar")
+        self.assertEquals(str(res[0]["revision"]), "1")
+        self.assertEquals(str(res[0]["description"]), "test")
         # Check it's not in the local db
         res = self.samba4.db.search(expression="(cn=test)", 
                                     scope=SCOPE_DEFAULT, attrs=attrs)
@@ -816,9 +816,9 @@ description: foo
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["foo"], "baz")
-        self.assertEquals(res[0]["revision"], "1")
-        self.assertEquals(res[0]["description"], "foo")
+        self.assertEquals(str(res[0]["foo"]), "baz")
+        self.assertEquals(str(res[0]["revision"]), "1")
+        self.assertEquals(str(res[0]["description"]), "foo")
 
         # Rename local record
         dn2 = "cn=toast,dc=idealx,dc=org"
@@ -827,9 +827,9 @@ description: foo
         res = self.ldb.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["foo"], "baz")
-        self.assertEquals(res[0]["revision"], "1")
-        self.assertEquals(res[0]["description"], "foo")
+        self.assertEquals(str(res[0]["foo"]), "baz")
+        self.assertEquals(str(res[0]["revision"]), "1")
+        self.assertEquals(str(res[0]["description"]), "foo")
 
         # Delete local record
         self.ldb.delete(dn2)
@@ -852,17 +852,17 @@ description: foo
                 attrs=["description", "sambaBadPasswordCount", "sambaNextRid"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "foo")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "3")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "foo")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "3")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid"]
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs, expression="")
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "foo")
-        self.assertEquals(res[0]["badPwdCount"], "3")
-        self.assertEquals(res[0]["nextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "foo")
+        self.assertEquals(str(res[0]["badPwdCount"]), "3")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
         # Check in local db
         res = self.samba4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 0)
@@ -881,17 +881,17 @@ badPwdCount: 4
                 attrs=["description", "badPwdCount", "nextRid"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["badPwdCount"], "4")
-        self.assertEquals(res[0]["nextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["badPwdCount"]), "4")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
         # Check in remote db
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, 
                 attrs=["description", "sambaBadPasswordCount", "sambaNextRid"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "4")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "4")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
 
         # Rename remote record
         dn2 = self.samba4.dn("cn=toast")
@@ -902,18 +902,18 @@ badPwdCount: 4
                 attrs=["description", "badPwdCount", "nextRid"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["badPwdCount"], "4")
-        self.assertEquals(res[0]["nextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["badPwdCount"]), "4")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
         # Check in remote db 
         dn2 = self.samba3.dn("cn=toast")
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, 
                 attrs=["description", "sambaBadPasswordCount", "sambaNextRid"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "4")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "4")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
 
         # Delete remote record
         self.ldb.delete(dn)
@@ -950,20 +950,20 @@ description: test
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["revision"], "1")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["revision"]), "1")
         # Check in remote db
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "test")
+        self.assertEquals(str(res[0]["description"]), "test")
         self.assertTrue(not "revision" in res[0])
         # Check in local db
         res = self.samba4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertTrue(not "description" in res[0])
-        self.assertEquals(res[0]["revision"], "1")
+        self.assertEquals(str(res[0]["revision"]), "1")
 
         # Delete (newly) split record
         self.ldb.delete(dn)
@@ -985,10 +985,10 @@ description: test
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "foo")
-        self.assertEquals(res[0]["badPwdCount"], "3")
-        self.assertEquals(res[0]["nextRid"], "1001")
-        self.assertEquals(res[0]["revision"], "1")
+        self.assertEquals(str(res[0]["description"]), "foo")
+        self.assertEquals(str(res[0]["badPwdCount"]), "3")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
+        self.assertEquals(str(res[0]["revision"]), "1")
         # Check in local db
         res = self.samba4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
@@ -996,16 +996,16 @@ description: test
         self.assertTrue(not "description" in res[0])
         self.assertTrue(not "badPwdCount" in res[0])
         self.assertTrue(not "nextRid" in res[0])
-        self.assertEquals(res[0]["revision"], "1")
+        self.assertEquals(str(res[0]["revision"]), "1")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", 
                  "revision"]
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "foo")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "3")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "foo")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "3")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
         self.assertTrue(not "revision" in res[0])
 
         # Modify of split record
@@ -1024,10 +1024,10 @@ revision: 2
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["badPwdCount"], "4")
-        self.assertEquals(res[0]["nextRid"], "1001")
-        self.assertEquals(res[0]["revision"], "2")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["badPwdCount"]), "4")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
+        self.assertEquals(str(res[0]["revision"]), "2")
         # Check in local db
         res = self.samba4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
@@ -1035,16 +1035,16 @@ revision: 2
         self.assertTrue(not "description" in res[0])
         self.assertTrue(not "badPwdCount" in res[0])
         self.assertTrue(not "nextRid" in res[0])
-        self.assertEquals(res[0]["revision"], "2")
+        self.assertEquals(str(res[0]["revision"]), "2")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", 
                  "revision"]
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "4")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "4")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
         self.assertTrue(not "revision" in res[0])
 
         # Rename split record
@@ -1056,10 +1056,10 @@ revision: 2
         res = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["badPwdCount"], "4")
-        self.assertEquals(res[0]["nextRid"], "1001")
-        self.assertEquals(res[0]["revision"], "2")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["badPwdCount"]), "4")
+        self.assertEquals(str(res[0]["nextRid"]), "1001")
+        self.assertEquals(str(res[0]["revision"]), "2")
         # Check in local db
         res = self.samba4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
@@ -1067,7 +1067,7 @@ revision: 2
         self.assertTrue(not "description" in res[0])
         self.assertTrue(not "badPwdCount" in res[0])
         self.assertTrue(not "nextRid" in res[0])
-        self.assertEquals(res[0]["revision"], "2")
+        self.assertEquals(str(res[0]["revision"]), "2")
         # Check in remote db
         dn2 = self.samba3.dn("cn=toast")
         res = self.samba3.db.search(dn2, scope=SCOPE_BASE, 
@@ -1075,9 +1075,9 @@ revision: 2
                  "revision"])
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
-        self.assertEquals(res[0]["description"], "test")
-        self.assertEquals(res[0]["sambaBadPasswordCount"], "4")
-        self.assertEquals(res[0]["sambaNextRid"], "1001")
+        self.assertEquals(str(res[0]["description"]), "test")
+        self.assertEquals(str(res[0]["sambaBadPasswordCount"]), "4")
+        self.assertEquals(str(res[0]["sambaNextRid"]), "1001")
         self.assertTrue(not "revision" in res[0])
 
         # Delete split record

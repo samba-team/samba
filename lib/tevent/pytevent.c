@@ -96,6 +96,7 @@ PyTypeObject PyEventContext = {
     .tp_methods = py_event_ctx_methods,
     .tp_basicsize = sizeof(py_talloc_Object),
     .tp_dealloc = py_talloc_dealloc,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = py_event_ctx_new,
 };
 

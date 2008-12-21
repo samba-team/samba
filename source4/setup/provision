@@ -166,8 +166,9 @@ if opts.blank:
 elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
+session = system_session()
 provision(setup_dir, message, 
-          system_session(), creds, smbconf=smbconf, targetdir=opts.targetdir,
+          session, creds, smbconf=smbconf, targetdir=opts.targetdir,
           samdb_fill=samdb_fill, realm=opts.realm, domain=opts.domain,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
           policyguid=opts.policy_guid, hostname=opts.host_name,

@@ -1275,9 +1275,9 @@ static PyObject *py_ldb_msg_element_iter(PyLdbMessageElementObject *self)
 	return PyObject_GetIter(ldb_msg_element_to_set(NULL, PyLdbMessageElement_AsMessageElement(self)));
 }
 
-PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el)
+PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *el, TALLOC_CTX *mem_ctx)
 {
-	return py_talloc_import(&PyLdbMessageElement, el);
+	return py_talloc_import_ex(&PyLdbMessageElement, mem_ctx, el);
 }
 
 static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -1338,11 +1338,22 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 	return ret;
 }
 
+static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
+{
+	struct ldb_message_element *el = PyLdbMessageElement_AsMessageElement(self);
+
+	if (el->num_values == 1)
+		return PyString_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
+	else 
+		return Py_None;
+}
+
 PyTypeObject PyLdbMessageElement = {
 	.tp_name = "MessageElement",
 	.tp_basicsize = sizeof(PyLdbMessageElementObject),
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_repr = (reprfunc)py_ldb_msg_element_repr,
+	.tp_str = (reprfunc)py_ldb_msg_element_str,
 	.tp_methods = py_ldb_msg_element_methods,
 	.tp_compare = (cmpfunc)py_ldb_msg_element_cmp,
 	.tp_iter = (getiterfunc)py_ldb_msg_element_iter,
@@ -1388,7 +1399,7 @@ static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *p
 	if (el == NULL) {
 		return NULL;
 	}
-	return (PyObject *)PyLdbMessageElement_FromMessageElement(el);
+	return (PyObject *)PyLdbMessageElement_FromMessageElement(el, self->talloc_ctx);
 }
 
 static PyObject *py_ldb_msg_getitem(PyLdbMessageObject *self, PyObject *py_name)
@@ -1424,7 +1435,7 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
-		PyList_SetItem(l, j, Py_BuildValue("(sO)", msg->elements[i].name, PyLdbMessageElement_FromMessageElement(&msg->elements[i])));
+		PyList_SetItem(l, j, Py_BuildValue("(sO)", msg->elements[i].name, PyLdbMessageElement_FromMessageElement(&msg->elements[i], self->talloc_ctx)));
 	}
 	return l;
 }
@@ -1956,7 +1967,7 @@ void initldb(void)
 	PyModule_AddObject(m, "ERR_OBJECT_CLASS_VIOLATION", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_VIOLATION));
 	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_NON_LEAF", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_NON_LEAF));
 	PyModule_AddObject(m, "ERR_NOT_ALLOWED_ON_RDN", PyInt_FromLong(LDB_ERR_NOT_ALLOWED_ON_RDN));
-	PyModule_AddObject(m, "ERR_ENTYR_ALREADY_EXISTS", PyInt_FromLong(LDB_ERR_ENTRY_ALREADY_EXISTS));
+	PyModule_AddObject(m, "ERR_ENTRY_ALREADY_EXISTS", PyInt_FromLong(LDB_ERR_ENTRY_ALREADY_EXISTS));
 	PyModule_AddObject(m, "ERR_OBJECT_CLASS_MODS_PROHIBITED", PyInt_FromLong(LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED));
 	PyModule_AddObject(m, "ERR_AFFECTS_MULTIPLE_DSAS", PyInt_FromLong(LDB_ERR_AFFECTS_MULTIPLE_DSAS));
 

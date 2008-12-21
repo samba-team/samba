@@ -61,8 +61,8 @@ PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
 typedef py_talloc_Object PyLdbMessageElementObject;
 PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
-PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *);
-#define PyLdbMessageElement_AsMessageElement(pyobj) py_talloc_get_type(pyobj, struct ldb_message_element)
+PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, TALLOC_CTX *mem_ctx);
+#define PyLdbMessageElement_AsMessageElement(pyobj) ((struct ldb_message_element *)py_talloc_get_ptr(pyobj))
 #define PyLdbMessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
 typedef py_talloc_Object PyLdbTreeObject;

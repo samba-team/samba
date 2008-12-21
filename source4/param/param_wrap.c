@@ -2793,27 +2793,26 @@ SWIGINTERN struct param_opt *param_section_next_parameter(param_section *self,st
 
 struct loadparm_context *lp_from_py_object(PyObject *py_obj)
 {
-    struct loadparm_context *lp_ctx;
+    struct loadparm_context *lp_ctx = NULL;
     if (PyString_Check(py_obj)) {
         lp_ctx = loadparm_init(NULL);
         if (!lp_load(lp_ctx, PyString_AsString(py_obj))) {
             talloc_free(lp_ctx);
+	    PyErr_SetString(PyExc_RuntimeError, "Unable to load file");
             return NULL;
         }
         return lp_ctx;
     }
 
-    if (py_obj == Py_None) {
-        lp_ctx = loadparm_init(NULL);
-        if (!lp_load_default(lp_ctx)) {
-            talloc_free(lp_ctx);
-            return NULL;
-        }
+    SWIG_ConvertPtr(py_obj, (void *)&lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (lp_ctx != NULL)
         return lp_ctx;
+    lp_ctx = loadparm_init(NULL);
+    if (!lp_load_default(lp_ctx)) {
+	    talloc_free(lp_ctx);
+	    PyErr_SetString(PyExc_RuntimeError, "Unable to load default file");
+	    return NULL;
     }
-
-    if (SWIG_ConvertPtr(py_obj, (void *)&lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
-        return NULL;
     return lp_ctx;
 }
 
