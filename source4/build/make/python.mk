@@ -40,18 +40,6 @@ $$(pythonbuilddir)/$(1): $(2) ;
 $(call python_module_template,$(1))
 endef
 
-# Swig extensions
-swig:: pythonmods
-
-.SUFFIXES: _wrap.c .i .py
-
-%_wrap.c %.py: %.i
-	[ "$(SWIG)" = "no" ] || $(SWIG) -O -Wall -python -keyword  -I../source4 $<
-
-realdistclean::
-	@echo "Removing SWIG output files"
-	# FIXME: Remove _wrap.c files
-
 pythonmods::
 
 clean::
