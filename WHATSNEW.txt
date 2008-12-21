@@ -13,6 +13,7 @@ Major enhancements in Samba 3.3.0 include:
  Configuration/installation:
  o Splitting of library directory into library directory and separate
    modules directory.
+ o The default value of "ldap ssl" has been changed to "start tls".
 
  File Serving:
  o Extended Cluster support.
@@ -43,6 +44,17 @@ The configure option "--with-libdir" has been removed. The library
 directory can still be specified by using the existing "--libdir" option.
 A new option "--with-modulesdir" has been added to allow the specification
 of a separate directory for the shared modules.
+
+
+Configuration changes
+=====================
+
+The default value of "ldap ssl" has been changed to "start tls". This means,
+Samba will use the LDAPv3 StartTLS extended operation (RFC2830) for
+communicating with directory servers by default. If your directory servers
+do not support this extended operation, you will have to set
+"ldap ssl = no". Otherwise, Samba could not contact the directory servers
+anymore!
 
 
 Winbind idmap backend changes
@@ -167,6 +179,7 @@ smb.conf changes
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
+    ldap ssl				Changed Default	start tls
     winbind reconnect delay		New		30
 
 
