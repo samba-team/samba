@@ -27,11 +27,11 @@
 		</listitem>
 
 		<listitem>
-			<para><parameter moreinfo="none">Start_tls</parameter> = Use
+			<para><parameter moreinfo="none">start tls</parameter> = Use
 			the LDAPv3 StartTLS extended operation (RFC2830) for
 			communicating with the directory server.</para>
 		</listitem>
 	</itemizedlist>
 </description>
-<value type="default">no</value>
+<value type="default">start tls</value>
 </samba:parameter>
