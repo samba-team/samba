@@ -58,11 +58,9 @@ PRIVATE_DEPENDENCIES = LIBLDB TDB_WRAP UTIL_TDB NDR_SECURITY
 SECRETS_OBJ_FILES = $(paramsrcdir)/secrets.o
 
 [PYTHON::param]
-LIBRARY_REALNAME = samba/_param.$(SHLIBEXT)
-PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG
+LIBRARY_REALNAME = samba/param.$(SHLIBEXT)
+PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG PYTALLOC
 
-param_OBJ_FILES = $(paramsrcdir)/param_wrap.o
+param_OBJ_FILES = $(paramsrcdir)/pyparam.o
 
-$(eval $(call python_py_module_template,samba/param.py,$(paramsrcdir)/param.py))
-
-$(param_OBJ_FILES): CFLAGS+=$(CFLAG_NO_UNUSED_MACROS) $(CFLAG_NO_CAST_QUAL)
+$(param_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)

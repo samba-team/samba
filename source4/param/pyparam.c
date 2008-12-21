@@ -183,6 +183,15 @@ static PyObject *py_lp_ctx_is_myname(py_talloc_Object *self, PyObject *args)
 	return PyBool_FromLong(lp_is_myname(self->ptr, name));
 }
 
+static PyObject *py_lp_ctx_is_mydomain(py_talloc_Object *self, PyObject *args)
+{
+	char *name;
+	if (!PyArg_ParseTuple(args, "s", &name))
+		return NULL;
+
+	return PyBool_FromLong(lp_is_mydomain(self->ptr, name));
+}
+
 static PyObject *py_lp_ctx_set(py_talloc_Object *self, PyObject *args)
 {
 	char *name, *value;
@@ -223,6 +232,9 @@ static PyMethodDef py_lp_ctx_methods[] = {
 	{ "is_myname", (PyCFunction)py_lp_ctx_is_myname, METH_VARARGS,
 		"S.is_myname(name) -> bool\n"
 		"Check whether the specified name matches one of our netbios names." },
+	{ "is_mydomain", (PyCFunction)py_lp_ctx_is_mydomain, METH_VARARGS,
+		"S.is_mydomain(name) -> bool\n"
+		"Check whether the specified name matches our domain name." },
 	{ "get", (PyCFunction)py_lp_ctx_get, METH_VARARGS,
         	"S.get(name, service_name) -> value\n"
 		"Find specified parameter." },
@@ -246,7 +258,7 @@ static PyObject *py_lp_ctx_config_file(py_talloc_Object *self, void *closure)
 
 static PyGetSetDef py_lp_ctx_getset[] = {
 	{ (char *)"default_service", (getter)py_lp_ctx_default_service, NULL, NULL },
-	{ (char *)"config_file", (getter)py_lp_ctx_config_file, NULL, 
+	{ (char *)"configfile", (getter)py_lp_ctx_config_file, NULL, 
 		(char *)"Name of last config file that was loaded." },
 	{ NULL }
 };
@@ -282,7 +294,7 @@ static PyMappingMethods py_lp_ctx_mapping = {
 };
 
 PyTypeObject PyLoadparmContext = {
-	.tp_name = "LoadparmContext",
+	.tp_name = "LoadParm",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_getset = py_lp_ctx_getset,
@@ -320,10 +332,7 @@ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
         return lp_ctx;
     }
 
-    if (PyLoadparmContext_Check(py_obj))
-	    return PyLoadparmContext_AsLoadparmContext(py_obj);
-
-    return NULL;
+    return PyLoadparmContext_AsLoadparmContext(py_obj);
 }
 
 struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
@@ -347,149 +356,5 @@ void initparam(void)
 		return;
 
 	Py_INCREF(&PyLoadparmContext);
-	PyModule_AddObject(m, "LoadparmContext", (PyObject *)&PyLoadparmContext);
+	PyModule_AddObject(m, "LoadParm", (PyObject *)&PyLoadparmContext);
 }
-
-/*
-typedef struct loadparm_context {
-    %extend {
-        int use(struct param_context *param_ctx) { return param_use($self, param_ctx); }
-    }
-} loadparm_context;
-
-typedef struct loadparm_service {
-    %extend { 
-        const char *volume_label(struct loadparm_service *sDefault) { return volume_label($self, sDefault); }
-        const char *printername(struct loadparm_service *sDefault) { return lp_printername($self, sDefault); }
-        int maxprintjobs(struct loadparm_service *sDefault) { return lp_maxprintjobs($self, sDefault); } 
-    }
-} loadparm_service;
-
-%rename(ParamFile) param_context;
-
-%talloctype(param_context);
-typedef struct param_context {
-    %extend { 
-        param(TALLOC_CTX *mem_ctx) { return param_init(mem_ctx); }
-        %feature("docstring") add_section "S.get_section(name) -> section\n"
-                                          "Get an existing section.";
-        struct param_section *get_section(const char *name);
-        %feature("docstring") add_section "S.add_section(name) -> section\n"
-                                          "Add a new section.";
-        struct param_section *add_section(const char *name);
-        struct param_opt *get(const char *name, const char *section_name="global");
-        const char *get_string(const char *name, const char *section_name="global");
-        int set_string(const char *param, const char *value, const char *section="global");
-#ifdef SWIGPYTHON
-        int set(const char *parameter, PyObject *ob, const char *section_name="global")
-        {
-            struct param_opt *opt = param_get_add($self, parameter, section_name);
-
-            talloc_free(opt->value);
-            opt->value = talloc_strdup(opt, PyString_AsString(PyObject_Str(ob)));
-
-            return 0;
-        }
-        
-#endif
-
-        %feature("docstring") first_section "S.first_section() -> section\n"
-                                          "Find first section";
-        struct param_section *first_section() { return $self->sections; }
-        %feature("docstring") next_section "S.next_section(prev) -> section\n"
-                                          "Find next section";
-        struct param_section *next_section(struct param_section *s) { return s->next; }
-
-        %feature("docstring") read "S.read(filename) -> bool\n"
-                                          "Read a filename.";
-        int read(const char *fn);
-        %feature("docstring") read "S.write(filename) -> bool\n"
-                                          "Write this object to a file.";
-        int write(const char *fn);
-    }
-    %pythoncode {
-        def __getitem__(self, name):
-            ret = self.get_section(name)
-            if ret is None:
-                raise KeyError("No such section %s" % name)
-            return ret
-
-        class SectionIterator:
-            def __init__(self, param):
-                self.param = param
-                self.key = None
-
-            def __iter__(self):
-                return self
-                
-            def next(self):
-                if self.key is None:
-                    self.key = self.param.first_section()
-                    if self.key is None:
-                        raise StopIteration
-                    return self.key
-                else:
-                    self.key = self.param.next_section(self.key)
-                    if self.key is None:
-                        raise StopIteration
-                    return self.key
-
-        def __iter__(self):
-            return self.SectionIterator(self)
-    }
-} param;
-
-%talloctype(param_opt);
-
-typedef struct param_opt {
-    %immutable key;
-    %immutable value;
-    const char *key, *value;
-    %extend {
-#ifdef SWIGPYTHON
-        const char *__str__() { return $self->value; }
-#endif
-    }
-} param_opt;
-
-%talloctype(param);
-typedef struct param_section {
-    %immutable name;
-    const char *name;
-    %extend {
-        struct param_opt *get(const char *name);
-        struct param_opt *first_parameter() { return $self->parameters; }
-        struct param_opt *next_parameter(struct param_opt *s) { return s->next; }
-    }
-    %pythoncode {
-        def __getitem__(self, name):
-            ret = self.get(name)
-            if ret is None:
-                raise KeyError("No such option %s" % name)
-            return ret
-
-        class ParamIterator:
-            def __init__(self, section):
-                self.section = section
-                self.key = None
-
-            def __iter__(self):
-                return self
-                
-            def next(self):
-                if self.key is None:
-                    self.key = self.section.first_parameter()
-                    if self.key is None:
-                        raise StopIteration
-                    return self.key
-                else:
-                    self.key = self.section.next_parameter(self.key)
-                    if self.key is None:
-                        raise StopIteration
-                    return self.key
-
-        def __iter__(self):
-            return self.ParamIterator(self)
-    }
-} param_section;
-*/
