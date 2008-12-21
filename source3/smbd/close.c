@@ -167,7 +167,7 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
  Delete all streams
 ****************************************************************************/
 
-static NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
+NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
 {
 	struct stream_struct *stream_info;
 	int i;
