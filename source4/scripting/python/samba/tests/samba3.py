@@ -19,7 +19,7 @@
 
 import unittest
 from samba.samba3 import GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam
-from samba.samba3 import WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase, SAMUser
+from samba.samba3 import WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase, SAMUser, ParamFile
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
@@ -208,3 +208,25 @@ class ShareInfoTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.shareinfodb.close()
+
+
+class ParamTestCase(unittest.TestCase):
+    def test_init(self):
+        file = ParamFile()
+        self.assertTrue(file is not None)
+
+    def test_add_section(self):
+        file = ParamFile()
+        file.add_section("global")
+        self.assertTrue(file["global"] is not None)
+
+    def test_set_param_string(self):
+        file = ParamFile()
+        file.add_section("global")
+        file.set_string("data", "bar")
+        self.assertEquals("bar", file.get_string("data"))
+
+    def test_get_section(self):
+        file = ParamFile()
+        self.assertEquals(None, file.get_section("unknown"))
+        self.assertRaises(KeyError, lambda: file["unknown"])

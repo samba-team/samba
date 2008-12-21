@@ -50,23 +50,3 @@ class LoadParmTestCase(unittest.TestCase):
         file = param.LoadParm()
         file.load_default()
 
-class ParamTestCase(unittest.TestCase):
-    def test_init(self):
-        file = param.ParamFile()
-        self.assertTrue(file is not None)
-
-    def test_add_section(self):
-        file = param.ParamFile()
-        file.add_section("global")
-        self.assertTrue(file["global"] is not None)
-
-    def test_set_param_string(self):
-        file = param.ParamFile()
-        file.add_section("global")
-        file.set_string("data", "bar")
-        self.assertEquals("bar", file.get_string("data"))
-
-    def test_get_section(self):
-        file = param.ParamFile()
-        self.assertEquals(None, file.get_section("unknown"))
-        self.assertRaises(KeyError, lambda: file["unknown"])

@@ -261,7 +261,7 @@ def provision_paths_from_lp(lp, dnsdomain):
 
     paths.netlogon = lp.get("path", "netlogon")
 
-    paths.smbconf = lp.configfile()
+    paths.smbconf = lp.configfile
 
     return paths
 
@@ -291,7 +291,7 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
 
     if lp.get("realm").upper() != realm:
         raise Exception("realm '%s' in %s must match chosen realm '%s'" %
-                        (lp.get("realm"), lp.configfile(), realm))
+                        (lp.get("realm"), lp.configfile, realm))
     
     dnsdomain = dnsdomain.lower()
 

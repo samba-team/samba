@@ -140,7 +140,7 @@ if opts.interactive:
 			break
 
 lp = sambaopts.get_loadparm()
-smbconf = lp.configfile()
+smbconf = lp.configfile
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci

@@ -709,6 +709,18 @@ class ParamFile(object):
     def __getitem__(self, section):
         return self._sections[section]
 
+    def get_section(self, section):
+        return self._sections.get(section)
+
+    def add_section(self, section):
+        self._sections[self._sanitize_name(section)] = {}
+
+    def set_string(self, name, value):
+        self._sections["global"][name] = value
+
+    def get_string(self, name):
+        return self._sections["global"].get(name)
+
 
 class Samba3(object):
     """Samba 3 configuration and state data reader."""
