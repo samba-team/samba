@@ -23,7 +23,7 @@
 __docformat__ = "restructuredText"
 
 import samba
-import misc
+import glue
 import ldb
 
 class IDmapDB(samba.Ldb):
@@ -50,7 +50,7 @@ class IDmapDB(samba.Ldb):
             self.connect(lp.get("idmap database"))
 
     def connect(self, url):
-        super(IDmapDB, self).connect(misc.private_path(self.lp, url))
+        super(IDmapDB, self).connect(self.lp.private_path(url))
 
     def setup_name_mapping(self, sid, type, unixid):
         """Setup a mapping between a sam name and a unix name.

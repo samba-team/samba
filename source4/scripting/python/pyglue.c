@@ -37,8 +37,8 @@ extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \
 	if (!PyLdb_Check(py_ldb)) { \
-		PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
-		return NULL; \
+		/*PyErr_SetString(PyExc_TypeError, "Ldb connection object required"); \
+		return NULL; \ */ \
 	} \
 	ldb = PyLdb_AsLdbContext(py_ldb);
 
@@ -259,11 +259,11 @@ static PyMethodDef py_misc_methods[] = {
 	{ NULL }
 };
 
-void initmisc(void)
+void initglue(void)
 {
 	PyObject *m;
 
-	m = Py_InitModule3("misc", py_misc_methods, 
+	m = Py_InitModule3("glue", py_misc_methods, 
 			   "Python bindings for miscellaneous Samba functions.");
 	if (m == NULL)
 		return;

@@ -43,7 +43,7 @@ else:
 
 import ldb
 import credentials
-import misc
+import glue
 
 class Ldb(ldb.Ldb):
     """Simple Samba-specific LDB subclass that takes care 
@@ -80,7 +80,7 @@ class Ldb(ldb.Ldb):
         if session_info is not None:
             self.set_session_info(session_info)
 
-        assert misc.ldb_register_samba_handlers(self) == 0
+        glue.ldb_register_samba_handlers(self)
 
         if lp is not None:
             self.set_loadparm(lp)
@@ -92,10 +92,14 @@ class Ldb(ldb.Ldb):
         if url is not None:
             self.connect(url)
 
+    def set_credentials(self, credentials):
+        glue.ldb_set_credentials(self, credentials)
 
-    set_credentials = misc.ldb_set_credentials
-    set_session_info = misc.ldb_set_session_info
-    set_loadparm = misc.ldb_set_loadparm
+    def set_session_info(self, session_info):
+        glue.ldb_set_session_info(self, session_info)
+
+    def set_loadparm(self, lp_ctx):
+        glue.ldb_set_loadparm(self, lp_ctx)
 
     def searchone(self, attribute, basedn=None, expression=None, 
                   scope=ldb.SCOPE_BASE):
@@ -235,4 +239,4 @@ def valid_netbios_name(name):
         return False
     return True
 
-version = misc.version
+version = glue.version

@@ -78,6 +78,10 @@ typedef struct loadparm_context {
             return lp_set_cmdline($self, parm_name, parm_value);
         }
 
+        char *private_path(const char *name, TALLOC_CTX *mem_ctx) {
+            return private_path(mem_ctx, $self, name);
+        }
+
         %feature("docstring") set "S.get(name, service_name) -> value\n" \
                                    "Find specified parameter.";
         PyObject *get(const char *param_name, const char *service_name)
@@ -354,6 +358,3 @@ struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
 }
 
 %}
-
-char *private_path(TALLOC_CTX* mem_ctx, struct loadparm_context *lp_ctx,
-               const char *name);

@@ -29,7 +29,7 @@ import os
 import pwd
 import grp
 import time
-import uuid, misc
+import uuid, glue
 import socket
 import param
 import registry
@@ -926,13 +926,13 @@ def provision(setup_dir, message, session_info,
     if policyguid is None:
         policyguid = str(uuid.uuid4())
     if adminpass is None:
-        adminpass = misc.random_password(12)
+        adminpass = glue.generate_random_str(12)
     if krbtgtpass is None:
-        krbtgtpass = misc.random_password(12)
+        krbtgtpass = glue.generate_random_str(12)
     if machinepass is None:
-        machinepass  = misc.random_password(12)
+        machinepass  = glue.generate_random_str(12)
     if dnspass is None:
-        dnspass = misc.random_password(12)
+        dnspass = glue.generate_random_str(12)
     root_uid = findnss_uid([root or "root"])
     nobody_uid = findnss_uid([nobody or "nobody"])
     users_gid = findnss_gid([users or "users"])
@@ -1172,7 +1172,7 @@ def provision_backend(setup_dir=None, message=None,
         root = findnss(pwd.getpwnam, ["root"])[0]
 
     if adminpass is None:
-        adminpass = misc.random_password(12)
+        adminpass = glue.generate_random_str(12)
 
     if targetdir is not None:
         if (not os.path.exists(os.path.join(targetdir, "etc"))):

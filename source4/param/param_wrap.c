@@ -2673,6 +2673,9 @@ SWIGINTERN bool loadparm_context_set(loadparm_context *self,char const *parm_nam
                 return false;
             return lp_set_cmdline(self, parm_name, parm_value);
         }
+SWIGINTERN char *loadparm_context_private_path(loadparm_context *self,char const *name,TALLOC_CTX *mem_ctx){
+            return private_path(mem_ctx, self, name);
+        }
 SWIGINTERN PyObject *loadparm_context_get(loadparm_context *self,char const *param_name,char const *service_name){
             struct parm_struct *parm = NULL;
             void *parm_ptr = NULL;
@@ -3213,6 +3216,50 @@ SWIGINTERN PyObject *_wrap_LoadParm_set(PyObject *SWIGUNUSEDPARM(self), PyObject
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_LoadParm_private_path(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  char *arg2 = (char *) 0 ;
+  TALLOC_CTX *arg3 = (TALLOC_CTX *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "name", NULL 
+  };
+  char *result = 0 ;
+  
+  arg1 = loadparm_init(NULL);
+  arg3 = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_private_path",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_private_path" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  if (obj1) {
+    res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "LoadParm_private_path" "', argument " "2"" of type '" "char const *""'");
+    }
+    arg2 = (char *)(buf2);
+  }
+  result = (char *)loadparm_context_private_path(arg1,(char const *)arg2,arg3);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return NULL;
 }
 
@@ -4153,50 +4200,6 @@ SWIGINTERN PyObject *param_section_swiginit(PyObject *SWIGUNUSEDPARM(self), PyOb
   return SWIG_Python_InitShadowInstance(args);
 }
 
-SWIGINTERN PyObject *_wrap_private_path(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
-  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
-  struct loadparm_context *arg2 = (struct loadparm_context *) 0 ;
-  char *arg3 = (char *) 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  int res3 ;
-  char *buf3 = 0 ;
-  int alloc3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  char *  kwnames[] = {
-    (char *) "lp_ctx",(char *) "name", NULL 
-  };
-  char *result = 0 ;
-  
-  arg2 = loadparm_init(NULL);
-  arg1 = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:private_path",kwnames,&obj0,&obj1)) SWIG_fail;
-  if (obj0) {
-    res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
-    if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "private_path" "', argument " "2"" of type '" "struct loadparm_context *""'"); 
-    }
-    arg2 = (struct loadparm_context *)(argp2);
-  }
-  if (obj1) {
-    res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
-    if (!SWIG_IsOK(res3)) {
-      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "private_path" "', argument " "3"" of type '" "char const *""'");
-    }
-    arg3 = (char *)(buf3);
-  }
-  result = (char *)private_path(arg1,arg2,(char const *)arg3);
-  resultobj = SWIG_FromCharPtr((const char *)result);
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  return resultobj;
-fail:
-  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  return NULL;
-}
-
-
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
 	 { (char *)"LoadParm_default_service", (PyCFunction) _wrap_LoadParm_default_service, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -4227,6 +4230,7 @@ static PyMethodDef SwigMethods[] = {
 		"S.set(name, value) -> bool\n"
 		"Change a parameter.\n"
 		""},
+	 { (char *)"LoadParm_private_path", (PyCFunction) _wrap_LoadParm_private_path, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_get", (PyCFunction) _wrap_LoadParm_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
@@ -4274,7 +4278,6 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"delete_param_section", (PyCFunction)_wrap_delete_param_section, METH_O, NULL},
 	 { (char *)"param_section_swigregister", param_section_swigregister, METH_VARARGS, NULL},
 	 { (char *)"param_section_swiginit", param_section_swiginit, METH_VARARGS, NULL},
-	 { (char *)"private_path", (PyCFunction) _wrap_private_path, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

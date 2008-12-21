@@ -156,6 +156,7 @@ PyTypeObject PyRegistry = {
 	.tp_new = registry_new,
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
@@ -246,12 +247,14 @@ PyTypeObject PyHiveKey = {
 	.tp_new = hive_open,
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 PyTypeObject PyRegistryKey = {
 	.tp_name = "RegistryKey",
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_open_samba(PyObject *self, PyObject *args, PyObject *kwargs)

@@ -23,7 +23,7 @@
 """Convenience functions for using the SAM."""
 
 import samba
-import misc
+import glue
 import ldb
 from samba.idmap import IDmapDB
 import pwd
@@ -43,14 +43,14 @@ class SamDB(samba.Ldb):
         self.lp = lp
         super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
                                     modules_dir=modules_dir, lp=lp)
-        assert misc.dsdb_set_global_schema(self) == 0
+        glue.dsdb_set_global_schema(self)
         if url:
             self.connect(url)
         else:
             self.connect(lp.get("sam database"))
 
     def connect(self, url):
-        super(SamDB, self).connect(misc.private_path(self.lp, url))
+        super(SamDB, self).connect(self.lp.private_path(url))
 
     def add_foreign(self, domaindn, sid, desc):
         """Add a foreign security principle."""
@@ -182,17 +182,17 @@ userPassword: %s
 
         :param sid: The new domain sid to use.
         """
-        misc.samdb_set_domain_sid(self, sid)
+        glue.samdb_set_domain_sid(self, sid)
 
     def attach_schema_from_ldif(self, pf, df):
-        misc.dsdb_attach_schema_from_ldif_file(self, pf, df)
+        glue.dsdb_attach_schema_from_ldif_file(self, pf, df)
 
     def set_invocation_id(self, invocation_id):
     	"""Set the invocation id for this SamDB handle.
     	
     	:param invocation_id: GUID of the invocation id.
     	"""
-    	misc.dsdb_set_ntds_invocation_id(self, invocation_id)
+    	glue.dsdb_set_ntds_invocation_id(self, invocation_id)
 
     def setexpiry(self, user, expiry_seconds, noexpiry):
         """Set the password expiry for a user
@@ -212,7 +212,7 @@ userPassword: %s
             accountExpires = 0
         else:
             userAccountControl = userAccountControl & ~0x10000
-            accountExpires = misc.unix2nttime(expiry_seconds + int(time.time()))
+            accountExpires = glue.unix2nttime(expiry_seconds + int(time.time()))
 
         mod = """
 dn: %s

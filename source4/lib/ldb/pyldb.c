@@ -320,6 +320,7 @@ PyTypeObject PyLdbDn = {
 	.tp_new = py_ldb_dn_new,
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_basicsize = sizeof(PyLdbObject),
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 /* Debug */
@@ -971,7 +972,6 @@ PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 }
 
 PyTypeObject PyLdb = {
-	PyObject_HEAD_INIT(NULL)
 	.tp_name = "Ldb",
 	.tp_methods = py_ldb_methods,
 	.tp_repr = (reprfunc)py_ldb_repr,
@@ -1151,6 +1151,7 @@ PyTypeObject PyLdbModule = {
 	.tp_str = (reprfunc)py_ldb_module_str,
 	.tp_basicsize = sizeof(py_talloc_Object),
 	.tp_dealloc = py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx,
@@ -1328,6 +1329,7 @@ PyTypeObject PyLdbMessageElement = {
 	.tp_iter = (getiterfunc)py_ldb_msg_element_iter,
 	.tp_as_sequence = &py_ldb_msg_element_seq,
 	.tp_new = py_ldb_msg_element_new,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_ldb_msg_remove_attr(PyLdbMessageObject *self, PyObject *args)
@@ -1462,7 +1464,7 @@ static PyObject *py_ldb_msg_new(PyTypeObject *type, PyObject *args, PyObject *kw
 		if (!PyObject_AsDn(NULL, pydn, NULL, &ret->dn))
 			return NULL;
 
-	return py_talloc_import(&PyLdbMessage, ret); 
+	return py_talloc_import(type, ret); 
 }
 
 PyObject *PyLdbMessage_FromMessage(struct ldb_message *msg)
@@ -1505,6 +1507,7 @@ PyTypeObject PyLdbMessage = {
 	.tp_dealloc = py_talloc_dealloc,
 	.tp_new = py_ldb_msg_new,
 	.tp_repr = (reprfunc)py_ldb_msg_repr,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *tree)
@@ -1516,6 +1519,7 @@ PyTypeObject PyLdbTree = {
 	.tp_name = "Tree",
 	.tp_basicsize = sizeof(PyLdbTreeObject),
 	.tp_dealloc = py_talloc_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 /* Ldb_module */

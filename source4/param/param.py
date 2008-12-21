@@ -119,6 +119,7 @@ LoadParm.is_mydomain = new_instancemethod(_param.LoadParm_is_mydomain,None,LoadP
 LoadParm.is_myname = new_instancemethod(_param.LoadParm_is_myname,None,LoadParm)
 LoadParm.use = new_instancemethod(_param.LoadParm_use,None,LoadParm)
 LoadParm.set = new_instancemethod(_param.LoadParm_set,None,LoadParm)
+LoadParm.private_path = new_instancemethod(_param.LoadParm_private_path,None,LoadParm)
 LoadParm.get = new_instancemethod(_param.LoadParm_get,None,LoadParm)
 LoadParm_swigregister = _param.LoadParm_swigregister
 LoadParm_swigregister(LoadParm)
@@ -262,6 +263,5 @@ param_section.next_parameter = new_instancemethod(_param.param_section_next_para
 param_section_swigregister = _param.param_section_swigregister
 param_section_swigregister(param_section)
 
-private_path = _param.private_path
 
 
