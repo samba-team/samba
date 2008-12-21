@@ -1037,6 +1037,7 @@ void *sys_memalign( size_t align, size_t size );
 int sys_usleep(long usecs);
 ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
+ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt);
 ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_send(int s, const void *msg, size_t len, int flags);
