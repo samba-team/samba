@@ -541,8 +541,12 @@ static bool irpc_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 
 void initmessaging(void)
 {
-	extern void initirpc(void);
 	PyObject *mod;
+	PyObject *dep_irpc;
+
+	dep_irpc = PyImport_ImportModule("samba.dcerpc.irpc");
+	if (dep_irpc == NULL)
+		return;
 
 	if (PyType_Ready(&irpc_ClientConnectionType) < 0)
 		return;
@@ -559,8 +563,6 @@ void initmessaging(void)
 	mod = Py_InitModule3("messaging", NULL, "Internal RPC");
 	if (mod == NULL)
 		return;
-
-	initirpc();
 
 	Py_INCREF((PyObject *)&irpc_ClientConnectionType);
 	PyModule_AddObject(mod, "ClientConnection", (PyObject *)&irpc_ClientConnectionType);
