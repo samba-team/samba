@@ -76,6 +76,7 @@ PAM_ERRORS_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, pam_errors.o)
 [MODULE::auth]
 INIT_FUNCTION = server_service_auth_init
 SUBSYSTEM = service
+OUTPUT_TYPE = MERGED_OBJ
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSECURITY SAMDB CREDENTIALS 
 
 auth_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, auth.o auth_util.o auth_simple.o)
