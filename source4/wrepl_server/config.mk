@@ -4,7 +4,7 @@
 # Start SUBSYSTEM WREPL_SRV
 [MODULE::WREPL_SRV]
 INIT_FUNCTION = server_service_wrepl_init
-SUBSYSTEM = samba
+SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_WREPL WINSDB process_model 
 # End SUBSYSTEM WREPL_SRV
