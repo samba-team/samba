@@ -87,7 +87,7 @@ $(4): $(1)
 endif
 
 ifneq ($(notdir $(1)),$(notdir $(5)))
-$(5): $(1)
+$(5): $(1) $(4)
 	@echo "Creating symbolic link for $$@"
 	@ln -fs $$(<F) $$@
 endif
