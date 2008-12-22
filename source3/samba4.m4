@@ -5,10 +5,6 @@ m4_include(build/m4/public.m4)
 
 m4_include(build/m4/check_python.m4)
 
-m4_include(build/m4/ac_pkg_swig.m4)
-
-AC_PROG_SWIG(1.3.36)
-
 AC_SAMBA_PYTHON_DEVEL([
 SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
 SMB_ENABLE(EXT_LIB_PYTHON,YES)
@@ -70,7 +66,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 
 SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = 0.9.1,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
@@ -121,6 +117,18 @@ m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
 m4_include(../nsswitch/config.m4)
 
+USESHARED=false
+
+AC_SUBST(INTERN_LDFLAGS)
+AC_SUBST(INSTALL_LINK_FLAGS)
+if test $USESHARED = "true";
+then
+	INTERN_LDFLAGS="-L\${builddir}/bin/shared -L\${builddir}/bin/static"
+	INSTALL_LINK_FLAGS="-Wl,-rpath-link,\${builddir}/bin/shared";
+else
+	INTERN_LDFLAGS="-L\${builddir}/bin/static -L\${builddir}/bin/shared"
+fi
+
 dnl Samba 4 files
 AC_SUBST(LD)
 AC_LIBREPLACE_SHLD_FLAGS
@@ -146,7 +154,7 @@ CEOF
 
 AC_OUTPUT_COMMANDS([
 cd ${srcdir}/../source4
-USESHARED=false $PERL -I${builddir} -I${builddir}/build \
+$PERL -I${builddir} -I${builddir}/build \
     -I. -Ibuild \
     build/smb_build/main.pl --output=../source3/samba4-data.mk main.mk || exit $?
 cd ../source3
