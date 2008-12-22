@@ -315,7 +315,7 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 	/* First length to send is the offset to the data. */
 	size_t len = SVAL(cli->outbuf,smb_vwv11) + 4;
 	size_t nwritten=0;
-	ssize_t ret;
+	struct iovec iov[2];
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
 	if (cli->fd == -1) {
@@ -327,33 +327,19 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
 		return false;
 	}
 
-	while (nwritten < len) {
-		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
-		if (ret <= 0) {
-			close(cli->fd);
-			cli->fd = -1;
-			cli->smb_rw_error = SMB_WRITE_ERROR;
-			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
-			return false;
-		}
-		nwritten += ret;
-	}
+	iov[0].iov_base = cli->outbuf;
+	iov[0].iov_len = len;
+	iov[1].iov_base = CONST_DISCARD(char *, p);
+	iov[1].iov_len = extradata;
 
-	/* Now write the extra data. */
-	nwritten=0;
-	while (nwritten < extradata) {
-		ret = write_socket(cli->fd,p+nwritten,extradata - nwritten);
-		if (ret <= 0) {
-			close(cli->fd);
-			cli->fd = -1;
-			cli->smb_rw_error = SMB_WRITE_ERROR;
-			DEBUG(0,("Error writing %d extradata "
-				"bytes to client. %d (%s)\n",
-				(int)extradata,(int)ret, strerror(errno) ));
-			return false;
-		}
-		nwritten += ret;
+	nwritten = write_data_iov(cli->fd, iov, 2);
+	if (nwritten < (len + extradata)) {
+		close(cli->fd);
+		cli->fd = -1;
+		cli->smb_rw_error = SMB_WRITE_ERROR;
+		DEBUG(0,("Error writing %d bytes to client. (%s)\n",
+			 (int)(len+extradata), strerror(errno)));
+		return false;
 	}
 
 	/* Increment the mid so we can tell between responses. */
