@@ -1,6 +1,7 @@
 ##############################
 [MODULE::TEVENT_AIO]
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = LIBTEVENT
 ##############################
 
@@ -8,6 +9,7 @@ TEVENT_AIO_OBJ_FILES = $(libteventsrcdir)/tevent_aio.o
 
 ##############################
 [MODULE::TEVENT_EPOLL]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = LIBTEVENT
 ##############################
 
@@ -15,6 +17,7 @@ TEVENT_EPOLL_OBJ_FILES = $(libteventsrcdir)/tevent_epoll.o
 
 ##############################
 [MODULE::TEVENT_SELECT]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = LIBTEVENT
 ##############################
 
@@ -22,6 +25,7 @@ TEVENT_SELECT_OBJ_FILES = $(libteventsrcdir)/tevent_select.o
 
 ##############################
 [MODULE::TEVENT_STANDARD]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = LIBTEVENT
 ##############################
 
