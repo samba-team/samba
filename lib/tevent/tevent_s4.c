@@ -20,42 +20,6 @@
 #include "tevent.h"
 #include "tevent_internal.h"
 
-NTSTATUS s4_events_standard_init(void)
-{
-       if (!events_standard_init()) {
-               return NT_STATUS_INTERNAL_ERROR;
-       }
-       return NT_STATUS_OK;
-}
-
-NTSTATUS s4_events_select_init(void)
-{
-       if (!events_select_init()) {
-               return NT_STATUS_INTERNAL_ERROR;
-       }
-       return NT_STATUS_OK;
-}
-
-#if HAVE_EVENTS_EPOLL
-NTSTATUS s4_events_epoll_init(void)
-{
-       if (!events_epoll_init()) {
-               return NT_STATUS_INTERNAL_ERROR;
-       }
-       return NT_STATUS_OK;
-}
-#endif
-
-#if HAVE_LINUX_AIO
-NTSTATUS s4_events_aio_init(void)
-{
-       if (!events_aio_init()) {
-               return NT_STATUS_INTERNAL_ERROR;
-       }
-       return NT_STATUS_OK;
-}
-#endif
-
 /*
   this is used to catch debug messages from events
 */

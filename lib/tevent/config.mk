@@ -2,7 +2,6 @@
 [MODULE::TEVENT_AIO]
 PRIVATE_DEPENDENCIES = LIBAIO_LINUX
 SUBSYSTEM = LIBTEVENT
-INIT_FUNCTION = s4_events_aio_init
 ##############################
 
 TEVENT_AIO_OBJ_FILES = $(libteventsrcdir)/tevent_aio.o
@@ -10,7 +9,6 @@ TEVENT_AIO_OBJ_FILES = $(libteventsrcdir)/tevent_aio.o
 ##############################
 [MODULE::TEVENT_EPOLL]
 SUBSYSTEM = LIBTEVENT
-INIT_FUNCTION = s4_events_epoll_init
 ##############################
 
 TEVENT_EPOLL_OBJ_FILES = $(libteventsrcdir)/tevent_epoll.o
@@ -18,7 +16,6 @@ TEVENT_EPOLL_OBJ_FILES = $(libteventsrcdir)/tevent_epoll.o
 ##############################
 [MODULE::TEVENT_SELECT]
 SUBSYSTEM = LIBTEVENT
-INIT_FUNCTION = s4_events_select_init
 ##############################
 
 TEVENT_SELECT_OBJ_FILES = $(libteventsrcdir)/tevent_select.o
@@ -26,7 +23,6 @@ TEVENT_SELECT_OBJ_FILES = $(libteventsrcdir)/tevent_select.o
 ##############################
 [MODULE::TEVENT_STANDARD]
 SUBSYSTEM = LIBTEVENT
-INIT_FUNCTION = s4_events_standard_init
 ##############################
 
 TEVENT_STANDARD_OBJ_FILES = $(libteventsrcdir)/tevent_standard.o
