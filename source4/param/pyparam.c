@@ -310,7 +310,7 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-struct loadparm_context *lp_from_py_object(PyObject *py_obj)
+_PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj)
 {
     struct loadparm_context *lp_ctx;
     if (PyString_Check(py_obj)) {

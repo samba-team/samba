@@ -4,6 +4,7 @@
 # Start MODULE process_model_single
 [MODULE::process_model_single]
 INIT_FUNCTION = process_model_single_init 
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = process_model
 # End MODULE process_model_single
 ################################################

@@ -128,7 +128,7 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/ and not ($ctx->{INIT_FUNCTION} =~ /\(/)) {
-		$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
+		$self->output("\$($ctx->{NAME}_OBJ_FILES): CFLAGS+=-D$ctx->{INIT_FUNCTION}=samba_init_module\n");
 	}
 
 	$self->output("\$(eval \$(call shared_module_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");

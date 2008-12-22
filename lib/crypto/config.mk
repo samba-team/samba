@@ -8,8 +8,7 @@ LIBCRYPTO_OBJ_FILES = $(addprefix $(libcryptosrcdir)/, \
 					 crc32.o md5.o hmacmd5.o md4.o \
 					 arcfour.o sha256.o hmacsha256.o)
 
-[MODULE::TORTURE_LIBCRYPTO]
-SUBSYSTEM = smbtorture
+[SUBSYSTEM::TORTURE_LIBCRYPTO]
 PRIVATE_DEPENDENCIES = LIBCRYPTO
 
 TORTURE_LIBCRYPTO_OBJ_FILES = $(addprefix $(libcryptosrcdir)/, \

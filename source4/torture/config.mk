@@ -9,6 +9,7 @@ TORTURE_UTIL_OBJ_FILES = $(addprefix $(torturesrcdir)/, util_smb.o)
 [MODULE::TORTURE_BASIC]
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_base_init
+OUTPUT_TYPE = MERGED_OBJ
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB POPT_CREDENTIALS \
 		TORTURE_UTIL LIBCLI_RAW \
@@ -41,6 +42,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/basic/proto.h,$(TORTURE_BAS
 #################################
 # Start SUBSYSTEM TORTURE_RAW
 [MODULE::TORTURE_RAW]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_raw_init
 PRIVATE_DEPENDENCIES = \
@@ -89,13 +91,14 @@ mkinclude smb2/config.mk
 mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
-PRIVATE_DEPENDENCIES = torture
+PRIVATE_DEPENDENCIES = torture SERVICE_SMB
 
 TORTURE_NDR_OBJ_FILES = $(addprefix $(torturesrcdir)/ndr/, ndr.o winreg.o atsvc.o lsa.o epmap.o dfs.o netlogon.o drsuapi.o spoolss.o samr.o)
 
 $(eval $(call proto_header_template,$(torturesrcdir)/ndr/proto.h,$(TORTURE_NDR_OBJ_FILES:.o=.c)))
 
 [MODULE::torture_rpc]
+OUTPUT_TYPE = MERGED_OBJ
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
 #OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbtorture
@@ -124,6 +127,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/rpc/proto.h,$(torture_rpc_O
 #################################
 # Start SUBSYSTEM TORTURE_RAP
 [MODULE::TORTURE_RAP]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_rap_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL LIBCLI_SMB
@@ -137,6 +141,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/rap/proto.h,$(TORTURE_RAP_O
 #################################
 # Start SUBSYSTEM TORTURE_AUTH
 [MODULE::TORTURE_AUTH]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbtorture
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB gensec auth KERBEROS \
@@ -153,6 +158,7 @@ mkinclude local/config.mk
 #################################
 # Start MODULE TORTURE_NBENCH
 [MODULE::TORTURE_NBENCH]
+OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = smbtorture
 INIT_FUNCTION = torture_nbench_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
@@ -167,6 +173,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/nbench/proto.h,$(TORTURE_NB
 # Start MODULE TORTURE_UNIX
 [MODULE::TORTURE_UNIX]
 SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = torture_unix_init
 PRIVATE_DEPENDENCIES = TORTURE_UTIL 
 # End MODULE TORTURE_UNIX
@@ -180,6 +187,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/unix/proto.h,$(TORTURE_UNIX
 # Start SUBSYSTEM TORTURE_LDAP
 [MODULE::TORTURE_LDAP]
 SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = torture_ldap_init
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_LDAP LIBCLI_CLDAP SAMDB POPT_CREDENTIALS torture
@@ -194,6 +202,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/ldap/proto.h,$(TORTURE_LDAP
 # Start SUBSYSTEM TORTURE_LDB
 [MODULE::TORTURE_LDB]
 SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = torture_ldb_init
 PRIVATE_DEPENDENCIES = \
 		LDB_WRAP
@@ -208,6 +217,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/ldb/proto.h,$(TORTURE_LDB_O
 # Start SUBSYSTEM TORTURE_NBT
 [MODULE::TORTURE_NBT]
 SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = torture_nbt_init
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_NBT LIBCLI_DGRAM LIBCLI_WREPL torture_rpc
@@ -223,6 +233,7 @@ $(eval $(call proto_header_template,$(torturesrcdir)/nbt/proto.h,$(TORTURE_NBT_O
 # Start SUBSYSTEM TORTURE_NET
 [MODULE::TORTURE_NET]
 SUBSYSTEM = smbtorture
+OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = torture_net_init
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \

@@ -36,5 +36,6 @@ PRIVATE_DEPENDENCIES = \
 		CLUSTER
 
 samba_OBJ_FILES = $(smbdsrcdir)/server.o
+$(samba_OBJ_FILES): CFLAGS+=-DSTATIC_service_MODULES="$(service_INIT_FUNCTIONS)NULL"
 
 MANPAGES += $(smbdsrcdir)/samba.8

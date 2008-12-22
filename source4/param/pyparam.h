@@ -20,6 +20,6 @@
 #ifndef _PYPARAM_H_
 #define _PYPARAM_H_
 
-struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+_PUBLIC_ struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 
 #endif /* _PYPARAM_H_ */

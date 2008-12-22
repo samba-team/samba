@@ -219,7 +219,7 @@ PUBLIC_HEADERS += $(rpc_serversrcdir)/dcerpc_server.h
 
 [MODULE::DCESRV]
 INIT_FUNCTION = server_service_rpc_init
-SUBSYSTEM = samba
+SUBSYSTEM = service
 PRIVATE_DEPENDENCIES = dcerpc_server
 
 DCESRV_OBJ_FILES = $(rpc_serversrcdir)/service_rpc.o
