@@ -166,7 +166,7 @@ modules:: $(PLUGINS)
 
 pythonmods:: $(PYTHON_PYS) $(PYTHON_SO)
 
-all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 bin/wbinfo4 pythonmods setup
+all:: bin/samba4 bin/regpatch4 bin/regdiff4 bin/regshell4 bin/regtree4 bin/smbclient4 bin/wbinfo4 pythonmods setup plugins
 torture:: bin/smbtorture4
 everything:: $(patsubst %,%4,$(BINARIES))
 setup:
@@ -250,3 +250,4 @@ gdbtest4-env:: everything
 	SMBD_VALGRIND="xterm -n server -e $(selftestdir)/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST4) $(SELFTEST4_NOSLOW_OPTS) --socket-wrapper --testenv
 
+plugins: $(PLUGINS)
