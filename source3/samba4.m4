@@ -117,7 +117,7 @@ m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
 m4_include(../nsswitch/config.m4)
 
-USESHARED=false
+USESHARED=$BLDSHARED
 
 AC_SUBST(INTERN_LDFLAGS)
 AC_SUBST(INSTALL_LINK_FLAGS)
