@@ -20,10 +20,7 @@
 #include "param/param.h"
 #include "pyauth.h"
 #include "auth/system_session_proto.h"
-
-/* FIXME: These should be in a header file somewhere, once we finish moving
- * away from SWIG .. */
-extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+#include "param/pyparam.h"
 
 PyTypeObject PyAuthSession = {
 	.tp_name = "AuthSession",

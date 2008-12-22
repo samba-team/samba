@@ -24,8 +24,8 @@
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */
 #include <pytalloc.h>
 #include <tevent.h>
+#include "param/pyparam.h"
 
-extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 
 PyAPI_DATA(PyTypeObject) PyRegistryKey;

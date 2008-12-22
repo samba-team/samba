@@ -29,10 +29,10 @@
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
 #include "auth/pyauth.h"
+#include "param/pyparam.h"
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */
-extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 
 #define PyErr_LDB_OR_RAISE(py_ldb, ldb) \

@@ -22,9 +22,7 @@
 #include "lib/cmdline/credentials.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 #include "libcli/util/pyerrors.h"
-
-/* Here until param/param.i gets rewritten in "manual" C */
-extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
+#include "param/pyparam.h"
 
 struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
 {

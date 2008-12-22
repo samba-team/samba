@@ -23,6 +23,7 @@
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
+#include "param/pyparam.h"
 
 static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct PyNdrRpcMethodDef *md, PyObject *args, PyObject *kwargs)
 {
@@ -315,7 +316,6 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	const char *kwnames[] = {
 		"binding", "syntax", "lp_ctx", "credentials", "basis_connection", NULL
 	};
-	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 	struct ndr_interface_table *table;
 

@@ -28,12 +28,12 @@
 #include <Python.h>
 #include "scripting/python/modules.h"
 #include "lib/ldb/pyldb.h"
+#include "param/pyparam.h"
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_settings *settings, 
 			struct provision_result *result)
 {
-	extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);
 	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
