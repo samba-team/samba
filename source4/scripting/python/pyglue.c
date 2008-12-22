@@ -27,8 +27,6 @@
 #include <Python.h>
 #include "pyldb.h"
 #include "libcli/util/pyerrors.h"
-#include "librpc/gen_ndr/py_misc.h"
-#include "librpc/gen_ndr/py_security.h"
 #include "libcli/security/security.h"
 #include "auth/pyauth.h"
 
