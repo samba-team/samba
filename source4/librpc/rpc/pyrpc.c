@@ -251,7 +251,7 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 	return ret;
 }
 
-static PyObject *py_iface_later_context(PyObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
 	NTSTATUS status;
@@ -287,9 +287,75 @@ static PyObject *py_iface_later_context(PyObject *self, PyObject *args, PyObject
 	return Py_None;
 }
 
+PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table)
+{
+	dcerpc_InterfaceObject *ret;
+	const char *binding_string;
+	struct cli_credentials *credentials;
+	struct loadparm_context *lp_ctx = NULL;
+	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct event_context *event_ctx;
+	NTSTATUS status;
+
+	const char *kwnames[] = {
+		"binding", "lp_ctx", "credentials", "basis_connection", NULL
+	};
+	extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|OOO:samr", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {
+		return NULL;
+	}
+
+	lp_ctx = lp_from_py_object(py_lp_ctx);
+	if (lp_ctx == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+		return NULL;
+	}
+
+	status = dcerpc_init(lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+	credentials = cli_credentials_from_py_object(py_credentials);
+	if (credentials == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Expected credentials");
+		return NULL;
+	}
+	ret = PyObject_New(dcerpc_InterfaceObject, type);
+
+	event_ctx = event_context_init(mem_ctx);
+
+	if (py_basis != Py_None) {
+		struct dcerpc_pipe *base_pipe;
+
+		if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {
+			PyErr_SetString(PyExc_ValueError, "basis_connection must be a DCE/RPC connection");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		base_pipe = ((dcerpc_InterfaceObject *)py_basis)->pipe;
+
+		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
+	} else {
+		status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, 
+		             table, credentials, event_ctx, lp_ctx);
+	}
+	if (NT_STATUS_IS_ERR(status)) {
+		PyErr_SetNTSTATUS(status);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+	return (PyObject *)ret;
+}
+
 static PyMethodDef dcerpc_interface_methods[] = {
 	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
-	{ "alter_context", (PyCFunction)py_iface_later_context, METH_VARARGS|METH_KEYWORDS, "S.alter_context(syntax)\nChange to a different interface" },
+	{ "alter_context", (PyCFunction)py_iface_alter_context, METH_VARARGS|METH_KEYWORDS, "S.alter_context(syntax)\nChange to a different interface" },
 	{ NULL, NULL, 0, NULL },
 };
 

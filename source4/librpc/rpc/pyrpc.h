@@ -69,5 +69,6 @@ struct PyNdrRpcMethodDef {
 };
 
 bool PyInterface_AddNdrRpcMethods(PyTypeObject *object, const struct PyNdrRpcMethodDef *mds);
+PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table);
 
 #endif /* _PYRPC_H_ */

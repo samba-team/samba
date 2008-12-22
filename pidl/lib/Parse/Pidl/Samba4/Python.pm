@@ -673,89 +673,10 @@ sub Interface($$$)
 		$self->pidl("static PyObject *interface_$interface->{NAME}_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("dcerpc_InterfaceObject *ret;");
-		$self->pidl("const char *binding_string;");
-		$self->pidl("struct cli_credentials *credentials;");
-		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
-		$self->pidl("PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;");
-		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
-		$self->pidl("struct event_context *event_ctx;");
-		$self->pidl("NTSTATUS status;");
-		$self->pidl("");
-		$self->pidl("const char *kwnames[] = {");
-		$self->indent;
-		$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", \"basis_connection\", NULL");
-		$self->deindent;
-		$self->pidl("};");
-		$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
-		$self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
-		$self->pidl("");
-		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s|OOO:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials, &py_basis)) {");
-		$self->indent;
-		$self->pidl("return NULL;");
+		$self->pidl("return py_dcerpc_interface_init_helper(type, args, kwargs, &ndr_table_$interface->{NAME});");
 		$self->deindent;
 		$self->pidl("}");
-		$self->pidl("");
-		$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
-		$self->pidl("if (lp_ctx == NULL) {");
-		$self->indent;
-		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
-		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
-		$self->pidl("");
-
-		$self->pidl("status = dcerpc_init(lp_ctx);");
-		$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
-		$self->indent;
-		$self->pidl("PyErr_SetNTSTATUS(status);");
-		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
-
-		$self->pidl("credentials = cli_credentials_from_py_object(py_credentials);");
-		$self->pidl("if (credentials == NULL) {");
-		$self->indent;
-		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected credentials\");");
-		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
-
-		$self->pidl("ret = PyObject_New(dcerpc_InterfaceObject, type);");
-		$self->pidl("");
-		$self->pidl("event_ctx = event_context_init(mem_ctx);");
-		$self->pidl("");
-
-		$self->pidl("if (py_basis != Py_None) {");
-		$self->indent;
-		$self->pidl("struct dcerpc_pipe *base_pipe;");
-		$self->pidl("");
-		$self->pidl("if (!PyObject_TypeCheck(py_basis, &dcerpc_InterfaceType)) {");
-		$self->indent;
-		$self->pidl("PyErr_SetString(PyExc_ValueError, \"basis_connection must be a DCE/RPC connection\");");
-		$self->pidl("talloc_free(mem_ctx);");
-		$self->pidl("return NULL;");
-		$self->deindent;
-		$self->pidl("}");
-		$self->pidl("");
-		$self->pidl("base_pipe = ((dcerpc_InterfaceObject *)py_basis)->pipe;");
-		$self->pidl("");
-		$self->pidl("status = dcerpc_secondary_context(base_pipe, &ret->pipe, &ndr_table_$interface->{NAME});");
-		$self->deindent;
-		$self->pidl("} else {");
-		$self->indent;
-		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
-		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, event_ctx, lp_ctx);");
-		$self->deindent;
-		$self->pidl("}");
-		$self->handle_ntstatus("status", "NULL", "mem_ctx");
-
-		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
-
-		$self->pidl("return (PyObject *)ret;");
-		$self->deindent;
-		$self->pidl("}");
-		
+	
 		$self->pidl("");
 
 		my $signature = 
@@ -1202,7 +1123,6 @@ sub Parse($$$$$)
 #include \"librpc/rpc/dcerpc.h\"
 #include \"lib/talloc/pytalloc.h\"
 #include \"librpc/rpc/pyrpc.h\"
-#include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 
