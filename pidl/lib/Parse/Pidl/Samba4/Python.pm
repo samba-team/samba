@@ -9,7 +9,7 @@ use Exporter;
 @ISA = qw(Exporter);
 
 use strict;
-use Parse::Pidl qw(warning fatal);
+use Parse::Pidl qw(warning fatal error);
 use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
@@ -57,6 +57,15 @@ sub deindent($)
 {
 	my ($self) = @_;
 	$self->{tabs} = substr($self->{tabs}, 0, -1);
+}
+
+sub PrettifyTypeName($$)
+{
+	my ($name, $basename) = @_;
+
+	$name =~ s/^$basename\_//;
+
+	return $name;
 }
 
 sub Import
@@ -564,11 +573,7 @@ sub PythonType($$$$)
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
 		my $typeobject;
-		my $fn_name = $d->{NAME};
-
-		$fn_name =~ s/^$interface->{NAME}_//;
-		$fn_name =~ s/^$basename\_//;
-
+		my $fn_name = PrettifyTypeName($d->{NAME}, $basename);
 
 		if ($d->{TYPE} eq "STRUCT") {
 			$typeobject = $self->PythonStruct($modulename, $fn_name, $d->{NAME}, mapTypeName($d), $d);
@@ -623,7 +628,7 @@ sub Interface($$$)
 	my($self,$interface,$basename) = @_;
 
 	if (has_property($interface, "pyhelper")) {
-		$self->pidl_hdr("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
+		$self->pidl("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
 	}
 
 	$self->Const($_) foreach (@{$interface->{CONSTS}});
@@ -817,7 +822,7 @@ sub register_module_import($$)
 {
 	my ($self, $basename) = @_;
 
-	push (@{$self->{module_imports}}, $basename);
+	push (@{$self->{module_imports}}, $basename) unless (grep(/^$basename$/,@{$self->{module_imports}}));
 }
 
 sub use_type_variable($$)
@@ -825,14 +830,15 @@ sub use_type_variable($$)
 	my ($self, $orig_ctype) = @_;
 	my $ctype = resolveType($orig_ctype);
 	unless (defined($ctype->{BASEFILE})) {
-		fatal($orig_ctype, "Unable to determine origin of type " . mapTypeName($orig_ctype));
+		return undef;
 	}
 	# If this is an external type, make sure we do the right imports.
 	if (($ctype->{BASEFILE} ne $self->{BASENAME})) {
+		$self->register_module_import($ctype->{BASEFILE});
 		unless (defined($self->{type_imports}->{$ctype->{NAME}})) {
 			$self->{type_imports}->{$ctype->{NAME}} = $ctype->{BASEFILE};
 		}
-		return "$ctype->{NAME}_Type"
+		return "$ctype->{NAME}_Type";
 	}
 	return "&$ctype->{NAME}_Type";
 }
@@ -892,6 +898,12 @@ sub ConvertObjectFromPythonData($$$$$$)
 
 	if ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
 		my $ctype_name = $self->use_type_variable($ctype);
+		unless (defined ($ctype_name)) {
+			error(undef, "Unable to determine origin of type " . mapTypeName($ctype));
+			$self->assign($target, "NULL");
+			# FIXME:
+			return;
+		}
 		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
 		$self->assign($target, "py_talloc_get_ptr($cvar)");
 		return;
@@ -1060,7 +1072,7 @@ sub ConvertObjectToPythonData($$$$$)
 	$ctype = resolveType($ctype);
 
 	my $actual_ctype = $ctype;
-	while ($actual_ctype->{TYPE} eq "TYPEDEF") {
+	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $actual_ctype->{DATA};
 	} 
 	
@@ -1074,6 +1086,10 @@ sub ConvertObjectToPythonData($$$$$)
 		fatal($ctype, "union without discriminant: " . mapTypeName($ctype) . ": $cvar");
 	} elsif ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
 		my $ctype_name = $self->use_type_variable($ctype);
+		unless (defined($ctype_name)) {
+			error(undef, "Unable to determine origin of type " . mapTypeName($ctype));
+			return "NULL"; # FIXME!
+		}
 		return "py_talloc_import_ex($ctype_name, $mem_ctx, $cvar)";
 	}
 
@@ -1229,7 +1245,8 @@ sub Parse($$$$$)
 	foreach (keys %{$self->{type_imports}}) {
 		my $basefile = $self->{type_imports}->{$_};
 		$self->pidl_hdr("static PyTypeObject *$_\_Type;\n");
-		$self->pidl("$_\_Type = (PyTypeObject *)PyObject_GetAttrString(dep_$basefile, \"$_\");");
+		my $pretty_name = PrettifyTypeName($_, $basefile);
+		$self->pidl("$_\_Type = (PyTypeObject *)PyObject_GetAttrString(dep_$basefile, \"$pretty_name\");");
 		$self->pidl("if ($_\_Type == NULL)");
 		$self->pidl("\treturn;");
 		$self->pidl("");
