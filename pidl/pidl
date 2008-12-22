@@ -609,7 +609,7 @@ sub process_file($)
 	}
 
 	require Parse::Pidl::Typelist;
-	Parse::Pidl::Typelist::LoadIdl($pidl);
+	Parse::Pidl::Typelist::LoadIdl($pidl, $basename);
 
 	if (defined($opt_dump_idl_tree)) {
 		my($pidl_file) = ($opt_dump_idl_tree or "$outputdir/$basename.pidl");
@@ -697,10 +697,9 @@ sub process_file($)
 	if (defined($opt_python)) {
 		require Parse::Pidl::Samba4::Python;
 		my $generator = new Parse::Pidl::Samba4::Python(); 
-		my ($hdr,$prsr) = $generator->Parse($basename, $ndr, 
+		my ($prsr) = $generator->Parse($basename, $ndr, 
 					"$outputdir/ndr_$basename\_c.h", $h_filename);
 		FileSave("$outputdir/py_$basename.c", $prsr);
-		FileSave("$outputdir/py_$basename.h", $hdr);
 	}
 
 	if (defined($opt_server)) {

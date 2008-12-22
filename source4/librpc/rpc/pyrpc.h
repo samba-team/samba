@@ -24,8 +24,8 @@
 #include "librpc/rpc/dcerpc.h"
 
 #define PY_CHECK_TYPE(type, var, fail) \
-	if (!type ## _Check(var)) {\
-		PyErr_Format(PyExc_TypeError, "Expected type %s", type ## _Type.tp_name); \
+	if (!PyObject_TypeCheck(var, type)) {\
+		PyErr_Format(PyExc_TypeError, "Expected type %s", (type)->tp_name); \
 		fail; \
 	}
 

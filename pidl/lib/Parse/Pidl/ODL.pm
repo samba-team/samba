@@ -8,6 +8,7 @@ use Parse::Pidl qw(error);
 use Parse::Pidl::IDL;
 use Parse::Pidl::Util qw(has_property unmake_str);
 use Parse::Pidl::Typelist qw(hasType getType);
+use File::Basename;
 use strict;
 
 use vars qw($VERSION);
@@ -71,8 +72,9 @@ sub ODL2IDL
 				my $podl = Parse::Pidl::IDL::parse_file($idl_path, $opt_incdirs);
 				if (defined(@$podl)) {
 					require Parse::Pidl::Typelist;
+					my $basename = basename($idl_path, ".idl");
 
-					Parse::Pidl::Typelist::LoadIdl($podl);
+					Parse::Pidl::Typelist::LoadIdl($podl, $basename);
 					my $pidl = ODL2IDL($podl, $basedir, $opt_incdirs);
 
 					foreach my $y (@$pidl) {

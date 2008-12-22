@@ -24,6 +24,7 @@ sub new($) {
 	my ($class) = @_;
 	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
 	             module_methods => [], module_objects => [], ready_types => [],
+				 module_imports => [], type_imports => {},
 				 patch_type_calls => [], readycode => [] };
 	bless($self, $class);
 }
@@ -65,7 +66,8 @@ sub Import
 	foreach (@imports) {
 		$_ = unmake_str($_);
 		s/\.idl$//;
-		$self->pidl_hdr("#include \"librpc/gen_ndr/py_$_\.h\"\n");
+		$self->pidl_hdr("#include \"librpc/gen_ndr/$_\.h\"\n");
+		$self->register_module_import($_);
 	}
 }
 
@@ -287,14 +289,11 @@ sub PythonStruct($$$$$$)
 		$self->pidl("");
 	}
 
-	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
-	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
-	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
-	$self->pidl_hdr("\n");
+	$self->pidl_hdr("staticforward PyTypeObject $name\_Type;\n");
 	$self->pidl("");
 	my $docstring = $self->DocString($d, $name);
 	my $typeobject = "$name\_Type";
-	$self->pidl("PyTypeObject $typeobject = {");
+	$self->pidl("static PyTypeObject $typeobject = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$modulename.$prettyname\",");
@@ -479,7 +478,7 @@ sub PythonFunctionPackIn($$$)
 		next unless (grep(/in/,@{$e->{DIRECTION}}));
 		if ($metadata_args->{in}->{$e->{NAME}}) {
 			my $py_var = "py_".$metadata_args->{in}->{$e->{NAME}};
-			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
+			$self->pidl("PY_CHECK_TYPE(&PyList_Type, $py_var, $fail);");
 			my $val = "PyList_Size($py_var)";
 			if ($e->{LEVELS}[0]->{TYPE} eq "POINTER") {
 				$self->pidl("r->in.$e->{NAME} = talloc_ptrtype(r, r->in.$e->{NAME});");
@@ -623,13 +622,8 @@ sub Interface($$$)
 {
 	my($self,$interface,$basename) = @_;
 
-	$self->pidl_hdr("#ifndef _HEADER_PYTHON_$interface->{NAME}\n");
-	$self->pidl_hdr("#define _HEADER_PYTHON_$interface->{NAME}\n\n");
-
-	$self->pidl_hdr("\n");
-
 	if (has_property($interface, "pyhelper")) {
-		$self->pidl("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
+		$self->pidl_hdr("#include \"".unmake_str($interface->{PROPERTIES}->{pyhelper})."\"\n");
 	}
 
 	$self->Const($_) foreach (@{$interface->{CONSTS}});
@@ -641,7 +635,7 @@ sub Interface($$$)
 	}
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
-		$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
+		$self->pidl_hdr("staticforward PyTypeObject $interface->{NAME}_InterfaceType;\n");
 		$self->pidl("");
 
 		my @fns = ();
@@ -661,7 +655,6 @@ sub Interface($$$)
 		}
 
 		$self->pidl("const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[] = {");
-		$self->pidl_hdr("extern const struct PyNdrRpcMethodDef py_ndr_$interface->{NAME}\_methods[];");
 		$self->indent;
 		foreach my $d (@fns) {
 			my ($infn, $outfn, $callfn, $prettyname, $docstring, $opnum) = @$d;
@@ -775,7 +768,7 @@ sub Interface($$$)
 			$docstring = $signature;
 		}
 
-		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
+		$self->pidl("static PyTypeObject $interface->{NAME}_InterfaceType = {");
 		$self->indent;
 		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 		$self->pidl(".tp_name = \"$basename.$interface->{NAME}\",");
@@ -794,7 +787,6 @@ sub Interface($$$)
 	}
 
 	$self->pidl_hdr("\n");
-	$self->pidl_hdr("#endif /* _HEADER_NDR_$interface->{NAME} */\n");
 }
 
 sub register_module_method($$$$$)
@@ -819,6 +811,30 @@ sub check_ready_type($$)
 {
 	my ($self, $py_name) = @_;
 	push (@{$self->{ready_types}}, $py_name) unless (grep(/^$py_name$/,@{$self->{ready_types}}));
+}
+
+sub register_module_import($$)
+{
+	my ($self, $basename) = @_;
+
+	push (@{$self->{module_imports}}, $basename);
+}
+
+sub use_type_variable($$)
+{
+	my ($self, $orig_ctype) = @_;
+	my $ctype = resolveType($orig_ctype);
+	unless (defined($ctype->{BASEFILE})) {
+		fatal($orig_ctype, "Unable to determine origin of type " . mapTypeName($orig_ctype));
+	}
+	# If this is an external type, make sure we do the right imports.
+	if (($ctype->{BASEFILE} ne $self->{BASENAME})) {
+		unless (defined($self->{type_imports}->{$ctype->{NAME}})) {
+			$self->{type_imports}->{$ctype->{NAME}} = $ctype->{BASEFILE};
+		}
+		return "$ctype->{NAME}_Type"
+	}
+	return "&$ctype->{NAME}_Type";
 }
 
 sub register_patch_type_call($$$)
@@ -862,20 +878,21 @@ sub ConvertObjectFromPythonData($$$$$$)
 	$ctype = resolveType($ctype);
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF") {
-		$actual_ctype = $ctype->{DATA};
+	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
+		$actual_ctype = $actual_ctype->{DATA};
 	}
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
 		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]*|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
-		$self->pidl("PY_CHECK_TYPE(PyInt, $cvar, $fail);");
+		$self->pidl("PY_CHECK_TYPE(&PyInt_Type, $cvar, $fail);");
 		$self->pidl("$target = PyInt_AsLong($cvar);");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
-		$self->pidl("PY_CHECK_TYPE($ctype->{NAME}, $cvar, $fail);");
+		my $ctype_name = $self->use_type_variable($ctype);
+		$self->pidl("PY_CHECK_TYPE($ctype_name, $cvar, $fail);");
 		$self->assign($target, "py_talloc_get_ptr($cvar)");
 		return;
 	}
@@ -952,12 +969,12 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		}
 
 		if (is_charset_array($e, $l)) {
-			$self->pidl("PY_CHECK_TYPE(PyUnicode, $py_var, $fail);");
+			$self->pidl("PY_CHECK_TYPE(&PyUnicode_Type, $py_var, $fail);");
 			# FIXME: Use Unix charset setting rather than utf-8
 			$self->pidl($var_name . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
 		} else {
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
-			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
+			$self->pidl("PY_CHECK_TYPE(&PyList_Type, $py_var, $fail);");
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
@@ -1043,8 +1060,8 @@ sub ConvertObjectToPythonData($$$$$)
 	$ctype = resolveType($ctype);
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF") {
-		$actual_ctype = $ctype->{DATA};
+	while ($actual_ctype->{TYPE} eq "TYPEDEF") {
+		$actual_ctype = $actual_ctype->{DATA};
 	} 
 	
 	if ($actual_ctype->{TYPE} eq "ENUM") {
@@ -1056,7 +1073,8 @@ sub ConvertObjectToPythonData($$$$$)
 	} elsif ($actual_ctype->{TYPE} eq "UNION") {
 		fatal($ctype, "union without discriminant: " . mapTypeName($ctype) . ": $cvar");
 	} elsif ($actual_ctype->{TYPE} eq "STRUCT" or $actual_ctype->{TYPE} eq "INTERFACE") {
-		return "py_talloc_import_ex(&$ctype->{NAME}_Type, $mem_ctx, $cvar)";
+		my $ctype_name = $self->use_type_variable($ctype);
+		return "py_talloc_import_ex($ctype_name, $mem_ctx, $cvar)";
 	}
 
 	fatal($ctype, "unknown type $actual_ctype->{TYPE} for ".mapTypeName($ctype) . ": $cvar");
@@ -1158,13 +1176,10 @@ sub ConvertObjectToPython($$$$$$)
 sub Parse($$$$$)
 {
     my($self,$basename,$ndr,$ndr_hdr,$hdr) = @_;
-    
-    my $py_hdr = $hdr;
-    $py_hdr =~ s/ndr_([^\/]+)$/py_$1/g;
 
-    $self->pidl_hdr("/* header auto-generated by pidl */\n\n");
-	
-    $self->pidl("
+	$self->{BASENAME} = $basename;
+
+    $self->pidl_hdr("
 /* Python wrapper functions auto-generated by pidl */
 #include \"includes.h\"
 #include <Python.h>
@@ -1174,7 +1189,6 @@ sub Parse($$$$$)
 #include \"lib/events/events.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
-#include \"$py_hdr\"
 
 ");
 
@@ -1200,7 +1214,26 @@ sub Parse($$$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
+	foreach (@{$self->{module_imports}}) {
+		$self->pidl("PyObject *dep_$_;");
+	}
 	$self->pidl("");
+
+	foreach (@{$self->{module_imports}}) {
+		$self->pidl("dep_$_ = PyImport_ImportModule(\"samba.dcerpc.$_\");");
+		$self->pidl("if (dep_$_ == NULL)");
+		$self->pidl("\treturn;");
+		$self->pidl("");
+	}
+
+	foreach (keys %{$self->{type_imports}}) {
+		my $basefile = $self->{type_imports}->{$_};
+		$self->pidl_hdr("static PyTypeObject *$_\_Type;\n");
+		$self->pidl("$_\_Type = (PyTypeObject *)PyObject_GetAttrString(dep_$basefile, \"$_\");");
+		$self->pidl("if ($_\_Type == NULL)");
+		$self->pidl("\treturn;");
+		$self->pidl("");
+	}
 
 	foreach (@{$self->{ready_types}}) {
 		$self->pidl("if (PyType_Ready($_) < 0)");
@@ -1249,7 +1282,7 @@ sub Parse($$$$$)
 	$self->pidl("");
 	$self->deindent;
 	$self->pidl("}");
-    return ($self->{res_hdr}, $self->{res});
+    return ($self->{res_hdr} . $self->{res});
 }
 
 1;

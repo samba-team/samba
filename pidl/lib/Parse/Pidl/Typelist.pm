@@ -177,6 +177,7 @@ sub RegisterScalars()
 		addType({
 			NAME => $_,
 			TYPE => "TYPEDEF",
+			BASEFILE => "<builtin>",
 			DATA => {
 				TYPE => "SCALAR",
 				NAME => $_
@@ -266,9 +267,10 @@ sub mapTypeName($)
 	return mapType($dt, $dt->{NAME});
 }
 
-sub LoadIdl($)
+sub LoadIdl($;$)
 {
-	my ($idl) = @_;
+	my $idl = shift;
+	my $basename = shift;
 
 	foreach my $x (@{$idl}) {
 		next if $x->{TYPE} ne "INTERFACE";
@@ -277,16 +279,19 @@ sub LoadIdl($)
 		addType({
 			NAME => $x->{NAME},
 			TYPE => "TYPEDEF",
-			DATA => $x
+			DATA => $x,
+			BASEFILE => $basename,
 			}) if (has_property($x, "object"));
 
 		foreach my $y (@{$x->{DATA}}) {
-			addType($y) if (
-				$y->{TYPE} eq "TYPEDEF" 
-		 		 or $y->{TYPE} eq "UNION"
-		 		 or $y->{TYPE} eq "STRUCT"
-		         or $y->{TYPE} eq "ENUM"
-		         or $y->{TYPE} eq "BITMAP");
+			if ($y->{TYPE} eq "TYPEDEF" 
+		 		or $y->{TYPE} eq "UNION"
+		 		or $y->{TYPE} eq "STRUCT"
+		        or $y->{TYPE} eq "ENUM"
+		        or $y->{TYPE} eq "BITMAP") {
+				$y->{BASEFILE} = $basename;
+				addType($y);
+			}
 		}
 	}
 }
