@@ -996,14 +996,16 @@ static bool test_stream_names2(struct torture_context *tctx,
 			break;
 		}
 
-		printf("(%s) %s:Stream%c0x%02X:$DATA%s => expected[%s]\n",
-		       __location__, fname, isprint(i)?(char)i:' ', i,
-		       isprint(i)?"":" (not printable)",
-		       nt_errstr(expected));
 
 		io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 		io.ntcreatex.in.fname = path;
 		status = smb_raw_open(cli->tree, mem_ctx, &io);
+		if (!NT_STATUS_EQUAL(status, expected)) {
+			printf("(%s) %s:Stream%c0x%02X:$DATA%s => expected[%s]\n",
+				__location__, fname, isprint(i)?(char)i:' ', i,
+				isprint(i)?"":" (not printable)",
+				nt_errstr(expected));
+		}
 		CHECK_STATUS(status, expected);
 
 		talloc_free(path);
