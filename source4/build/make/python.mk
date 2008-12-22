@@ -1,4 +1,4 @@
-pythonbuilddir = $(builddir)/bin/python
+pythonbuilddir = bin/python
 
 installpython::
 	mkdir -p $(DESTDIR)$(pythondir)
