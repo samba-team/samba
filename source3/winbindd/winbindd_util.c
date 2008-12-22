@@ -540,7 +540,11 @@ static void rescan_forest_trusts( void )
 void rescan_trusted_domains( void )
 {
 	time_t now = time(NULL);
-	
+
+	/* Check that we allow trusted domains at all */
+	if (!lp_allow_trusted_domains())
+		return;
+
 	/* see if the time has come... */
 	
 	if ((now >= last_trustdom_scan) &&
@@ -796,7 +800,12 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	struct winbindd_domain *domain;	
 	DOM_SID dom_sid;
 	uint32 rid;
-	
+
+	/* Check if we even care */
+
+	if (!lp_allow_trusted_domains())
+		return;
+
 	domain = find_domain_from_name_noinit( name );
 	if ( domain )
 		return;	
