@@ -64,11 +64,11 @@ examples/ldifreader: examples/ldifreader.o
 # Python bindings
 build-python:: ldb.$(SHLIBEXT)
 
-ldb_wrap.o: $(ldbdir)/ldb_wrap.c
-	$(CC) $(PICFLAG) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+pyldb.o: $(ldbdir)/pyldb.c
+	$(CC) $(PICFLAG) -c $(ldbdir)/pyldb.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 	
-ldb.$(SHLIBEXT): ldb_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
+ldb.$(SHLIBEXT): pyldb.o
+	$(SHLD) $(SHLD_FLAGS) -o ldb.$(SHLIBEXT) pyldb.o $(LIB_FLAGS) `$(PYTHON_CONFIG) --ldflags`
 
 install-python:: build-python
 	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='$(prefix)')"`
