@@ -13,9 +13,9 @@ PUBLIC_HEADERS += param/param.h
 PC_FILES += $(paramsrcdir)/samba-hostconfig.pc
 
 [SUBSYSTEM::PROVISION]
-PRIVATE_DEPENDENCIES = LIBPYTHON swig_ldb param
+PRIVATE_DEPENDENCIES = LIBPYTHON swig_ldb 
 
-PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o
+PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o $(param_OBJ_FILES)
 
 #################################
 # Start SUBSYSTEM share

@@ -3,6 +3,7 @@
 [MODULE::SERVICE_SMB]
 INIT_FUNCTION = server_service_smb_init
 SUBSYSTEM = service
+OUTPUT_TYPE = MERGED_OBJ
 PRIVATE_DEPENDENCIES = SMB_SERVER
 
 SERVICE_SMB_OBJ_FILES = $(smb_serversrcdir)/smb_server.o
