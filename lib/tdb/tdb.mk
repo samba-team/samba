@@ -35,11 +35,11 @@ clean::
 
 build-python:: tdb.$(SHLIBEXT) 
 
-tdb_wrap.o: $(tdbdir)/tdb_wrap.c
-	$(CC) $(PICFLAG) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+pytdb.o: $(tdbdir)/pytdb.c
+	$(CC) $(PICFLAG) -c $(tdbdir)/pytdb.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
-tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
-	$(SHLD) $(SHLD_FLAGS) -o $@ tdb_wrap.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags`
+tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) pytdb.o
+	$(SHLD) $(SHLD_FLAGS) -o $@ pytdb.o -L. -ltdb `$(PYTHON_CONFIG) --ldflags`
 
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET)

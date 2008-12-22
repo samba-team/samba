@@ -351,3 +351,8 @@ lib/tevent/Makefile
 lib/tevent/tevent.so
 lib/tevent/libtevent.so*
 lib/tevent/libtevent.a
+lib/tdb/libtdb.so
+lib/tdb/tdb.so
+lib/tdb/libtdb.a
+lib/tdb/Makefile
+lib/tdb/bin
