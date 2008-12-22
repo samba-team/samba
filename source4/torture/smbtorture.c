@@ -49,7 +49,7 @@ static bool run_matching(struct torture_context *torture,
 	if (suite == NULL) {
 		struct torture_suite *o;
 
-		for (o = torture_root->children; o; o = o->next) {
+		for (o = (torture_root == NULL?NULL:torture_root->children); o; o = o->next) {
 			if (gen_fnmatch(expr, o->name) == 0) {
 				*matched = true;
 				reload_charcnv(torture->lp_ctx);
