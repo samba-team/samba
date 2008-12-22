@@ -1109,37 +1109,37 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
  Write data to a fd.
 ****************************************************************************/
 
+/****************************************************************************
+ Write data to a fd.
+****************************************************************************/
+
 ssize_t write_data(int fd, const char *buffer, size_t N)
 {
-	size_t total=0;
 	ssize_t ret;
-	char addr[INET6_ADDRSTRLEN];
+	struct iovec iov;
 
-	while (total < N) {
-		ret = sys_write(fd,buffer + total,N - total);
+	iov.iov_base = CONST_DISCARD(char *, buffer);
+	iov.iov_len = N;
 
-		if (ret == -1) {
-			if (fd == get_client_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("write_data: write failure in "
-					"writing to client %s. Error %s\n",
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
-			} else {
-				DEBUG(0,("write_data: write failure. "
-					"Error = %s\n", strerror(errno) ));
-			}
-			return -1;
-		}
-
-		if (ret == 0) {
-			return total;
-		}
-
-		total += ret;
+	ret = write_data_iov(fd, &iov, 1);
+	if (ret >= 0) {
+		return ret;
 	}
-	return (ssize_t)total;
+
+	if (fd == get_client_fd()) {
+		char addr[INET6_ADDRSTRLEN];
+		/*
+		 * Try and give an error message saying what client failed.
+		 */
+		DEBUG(0, ("write_data: write failure in writing to client %s. "
+			  "Error %s\n", get_peer_addr(fd,addr,sizeof(addr)),
+			  strerror(errno)));
+	} else {
+		DEBUG(0,("write_data: write failure. Error = %s\n",
+			 strerror(errno) ));
+	}
+
+	return -1;
 }
 
 /****************************************************************************
