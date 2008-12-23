@@ -22,7 +22,7 @@ import os
 from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf
 from samba.samdb import SamDB
 from samba.tests import cmdline_loadparm, TestCaseInTempDir
-from samba import security
+from samba.dcerpc import security
 from unittest import TestCase
 import uuid
 from samba import param

@@ -7,8 +7,9 @@ ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
 
 TDB_SONAME = libtdb.$(SHLIBEXT).1
 TDB_SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
+TDB_STLIB = libtdb.a
 
-TDB_LIB = libtdb.a
+TDB_LIB = $(TDB_STLIB) 
 
 bin/tdbtest$(EXEEXT): tools/tdbtest.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
@@ -30,7 +31,7 @@ test:: bin/tdbtorture$(EXEEXT) $(TDB_SONAME)
 
 clean:: 
 	rm -f test.db test.tdb torture.tdb test.gdbm
-	rm -f $(TDB_SONAME) $(TDB_SOLIB) libtdb.a libtdb.$(SHLIBEXT)
+	rm -f $(TDB_SONAME) $(TDB_SOLIB) $(TDB_STLIB) libtdb.$(SHLIBEXT)
 	rm -f $(ALL_PROGS) tdb.pc
 
 build-python:: tdb.$(SHLIBEXT) 
@@ -68,10 +69,10 @@ installheaders:: installdirs
 
 installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libtdb.a $(TDB_SOLIB) $(DESTDIR)$(libdir)
+	cp $(TDB_STLIB) $(TDB_SOLIB) $(DESTDIR)$(libdir)
 
-libtdb.a: $(TDB_OBJ)
-	ar -rv libtdb.a $(TDB_OBJ)
+$(TDB_STLIB): $(TDB_OBJ)
+	ar -rv $(TDB_STLIB) $(TDB_OBJ)
 
 libtdb.$(SHLIBEXT): $(TDB_SOLIB)
 	ln -fs $< $@

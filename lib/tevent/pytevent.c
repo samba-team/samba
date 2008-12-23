@@ -19,8 +19,12 @@
 #include <Python.h>
 #include <tevent.h>
 #include <stdbool.h>
-#include <../talloc/pytalloc.h>
 #include <tevent_util.h>
+
+typedef struct {
+	PyObject_HEAD
+	struct event_context *ev_ctx;
+} PyEventContextObject;
 
 PyAPI_DATA(PyTypeObject) PyEventContext;
 
@@ -62,6 +66,7 @@ static PyObject *py_event_ctx_new(PyTypeObject *type, PyObject *args, PyObject *
     const char *kwnames[] = { "name", NULL };
     char *name = NULL;
     struct event_context *ev_ctx;
+    PyEventContextObject *ret;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", (char **)kwnames, &name))
         return NULL;
 
@@ -70,17 +75,19 @@ static PyObject *py_event_ctx_new(PyTypeObject *type, PyObject *args, PyObject *
     else
         ev_ctx = event_context_init_byname(NULL, name);
 
-    return py_talloc_import(&PyEventContext, ev_ctx);
+    ret = (PyEventContextObject *)type->tp_alloc(type, 0);
+    ret->ev_ctx = ev_ctx;
+    return (PyObject *)ret;
 }
 
-static PyObject *py_event_ctx_loop_once(py_talloc_Object *self)
+static PyObject *py_event_ctx_loop_once(PyEventContextObject *self)
 {
-    return PyInt_FromLong(event_loop_once(self->ptr));
+    return PyInt_FromLong(event_loop_once(self->ev_ctx));
 }
 
-static PyObject *py_event_ctx_loop_wait(py_talloc_Object *self)
+static PyObject *py_event_ctx_loop_wait(PyEventContextObject *self)
 {
-    return PyInt_FromLong(event_loop_wait(self->ptr));
+    return PyInt_FromLong(event_loop_wait(self->ev_ctx));
 }
 
 static PyMethodDef py_event_ctx_methods[] = {
@@ -91,11 +98,17 @@ static PyMethodDef py_event_ctx_methods[] = {
     { NULL }
 };
 
+static void py_event_ctx_dealloc(PyEventContextObject * self)
+{
+	talloc_free(self->ev_ctx);
+	self->ob_type->tp_free(self);
+}
+
 PyTypeObject PyEventContext = {
     .tp_name = "EventContext",
     .tp_methods = py_event_ctx_methods,
-    .tp_basicsize = sizeof(py_talloc_Object),
-    .tp_dealloc = py_talloc_dealloc,
+    .tp_basicsize = sizeof(PyEventContextObject),
+    .tp_dealloc = (destructor)py_event_ctx_dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = py_event_ctx_new,
 };

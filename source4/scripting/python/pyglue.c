@@ -18,6 +18,7 @@
 
 #include "includes.h"
 #include "ldb.h"
+#include "ldb_errors.h"
 #include "param/param.h"
 #include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"

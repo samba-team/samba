@@ -94,8 +94,6 @@ static int config_backend = CONFIG_BACKEND_FILE;
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
 
-extern int extra_time_offset;
-
 static bool defaults_saved = False;
 
 struct param_opt_struct {

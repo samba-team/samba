@@ -35,13 +35,12 @@ bool login_cache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	asprintf(&cache_fname, "%s/%s", lp_lockdir(), LOGIN_CACHE_FILE);
-	if (cache_fname)
-		DEBUG(5, ("Opening cache file at %s\n", cache_fname));
-	else {
+	if (asprintf(&cache_fname, "%s/%s", lp_lockdir(), LOGIN_CACHE_FILE) == -1) {
 		DEBUG(0, ("Filename allocation failed.\n"));
 		return False;
 	}
+
+	DEBUG(5, ("Opening cache file at %s\n", cache_fname));
 
 	cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT,
 	                     O_RDWR|O_CREAT, 0644);

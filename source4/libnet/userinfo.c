@@ -23,13 +23,10 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libnet/composite.h"
 #include "librpc/gen_ndr/security.h"
 #include "libcli/security/security.h"
-#include "libnet/userman.h"
-#include "libnet/userinfo.h"
+#include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "libnet/libnet_proto.h"
 
 
 struct userinfo_state {

@@ -57,12 +57,17 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 		strlcat(ret, p, len);
 	
 		while ((p=strtok_r(NULL, sep, &saveptr)) != NULL) {
-			char *s;
+			int retval;
+			char *s = NULL;
 			if (reverse)
-				asprintf(&s, "%s%s,%s", field, p, ret);
+				retval = asprintf(&s, "%s%s,%s", field, p, ret);
 			else
-				asprintf(&s, "%s,%s%s", ret, field, p);
+				retval = asprintf(&s, "%s,%s%s", ret, field, p);
 			free(ret);
+			if (retval == -1) {
+				free(r);
+				return NULL;
+			}
 			ret = SMB_STRDUP(s);
 			free(s);
 		}

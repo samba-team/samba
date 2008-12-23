@@ -1223,6 +1223,8 @@ NTSTATUS libnet_Join(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, struct lib
 		case SEC_CHAN_BDC:
 			return libnet_Join_primary_domain(ctx, mem_ctx, r);
 		case SEC_CHAN_DOMAIN:
+		case SEC_CHAN_DNS_DOMAIN:
+		case SEC_CHAN_NULL:
 			break;
 	}
 

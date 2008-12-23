@@ -23,3 +23,4 @@ TDB_WRAP_OBJ_FILES = $(libsrcdir)/tdb_wrap.o
 PUBLIC_HEADERS += $(libsrcdir)/tdb_wrap.h
 
 SMBREADLINE_OBJ_LIST = $(SMBREADLINE_OBJ_FILES)
+

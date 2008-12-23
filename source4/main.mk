@@ -14,7 +14,6 @@ mkinclude lib/ldb-samba/config.mk
 mkinclude lib/tls/config.mk
 mkinclude lib/registry/config.mk
 mkinclude lib/messaging/config.mk
-mkinclude ../lib/tevent/config.mk
 mkinclude lib/events/config.mk
 mkinclude lib/cmdline/config.mk
 mkinclude ../lib/socket_wrapper/config.mk

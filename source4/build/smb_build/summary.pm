@@ -57,6 +57,7 @@ sub show($$)
 	showisexternal($output, "popt", "LIBPOPT");
 	showisexternal($output, "talloc", "LIBTALLOC");
 	showisexternal($output, "tdb", "LIBTDB");
+	showisexternal($output, "tevent", "LIBTEVENT");
 	showisexternal($output, "ldb", "LIBLDB");
 	print "Developer mode: ".(enabled($config->{developer})?"yes":"no")."\n";
 	print "Automatic dependencies: ".
