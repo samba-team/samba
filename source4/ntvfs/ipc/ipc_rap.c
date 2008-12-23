@@ -53,8 +53,6 @@
 } while (0)
 
 
-#define NERR_Success 0
-#define NERR_badpass 86
 #define NERR_notsupported 50
 
 struct rap_string_heap {

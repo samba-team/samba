@@ -90,7 +90,7 @@ static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, u
 	return false;
 }
 
-static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *socket, struct nbt_name *name)
+static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socket, struct nbt_name *name)
 {
 	if (PyTuple_Check(obj)) {
 		if (PyTuple_Size(obj) == 2) {
@@ -121,7 +121,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *socket, st
 	return false;
 }
 
-static PyObject *PyObject_FromNBTName(struct nbt_name_socket *socket, struct smb_iconv_convenience *ic,
+static PyObject *PyObject_FromNBTName(struct nbt_name_socket *name_socket, struct smb_iconv_convenience *ic,
 				      struct nbt_name *name)
 {
 	if (name->scope) {

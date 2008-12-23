@@ -29,7 +29,6 @@
 
 #define TIME_LIMIT_SECS 30
 #define usec_to_sec(s) ((s) / 1000000)
-#define sec_to_usec(s) ((s) * 1000000)
 
 /* Map a shared memory buffer of at least nelem counters. */
 static void * map_count_buffer(unsigned nelem, size_t elemsz)

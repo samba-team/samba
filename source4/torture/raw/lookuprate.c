@@ -237,7 +237,7 @@ bool torture_bench_lookup(struct torture_context *torture)
 	NTSTATUS	status;
 	bool		result = false;
 
-	int i, tries;
+	int i;
 	struct smbcli_state *cli = NULL;
 
 	if (!torture_open_connection(&cli, torture, 0)) {

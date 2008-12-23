@@ -454,7 +454,7 @@ init_failed:
   setup for a new connection
 */
 struct socket_context *tls_init_server(struct tls_params *params, 
-				       struct socket_context *socket,
+				       struct socket_context *socket_ctx,
 				       struct fd_event *fde, 
 				       const char *plain_chars)
 {
@@ -463,9 +463,9 @@ struct socket_context *tls_init_server(struct tls_params *params,
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
 	
-	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
+	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock, 
 					   SOCKET_TYPE_STREAM, 
-					   socket->flags | SOCKET_FLAG_ENCRYPT);
+					   socket_ctx->flags | SOCKET_FLAG_ENCRYPT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -475,13 +475,13 @@ struct socket_context *tls_init_server(struct tls_params *params,
 		return NULL;
 	}
 
-	tls->socket          = socket;
+	tls->socket          = socket_ctx;
 	tls->fde             = fde;
 	if (talloc_reference(tls, fde) == NULL) {
 		talloc_free(new_sock);
 		return NULL;
 	}
-	if (talloc_reference(tls, socket) == NULL) {
+	if (talloc_reference(tls, socket_ctx) == NULL) {
 		talloc_free(new_sock);
 		return NULL;
 	}
@@ -534,7 +534,7 @@ failed:
 /*
   setup for a new client connection
 */
-struct socket_context *tls_init_client(struct socket_context *socket,
+struct socket_context *tls_init_client(struct socket_context *socket_ctx,
 				       struct fd_event *fde,
 				       const char *ca_path)
 {
@@ -545,9 +545,9 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	struct socket_context *new_sock;
 	NTSTATUS nt_status;
 	
-	nt_status = socket_create_with_ops(socket, &tls_socket_ops, &new_sock, 
+	nt_status = socket_create_with_ops(socket_ctx, &tls_socket_ops, &new_sock, 
 					   SOCKET_TYPE_STREAM, 
-					   socket->flags | SOCKET_FLAG_ENCRYPT);
+					   socket_ctx->flags | SOCKET_FLAG_ENCRYPT);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return NULL;
 	}
@@ -555,12 +555,12 @@ struct socket_context *tls_init_client(struct socket_context *socket,
 	tls = talloc(new_sock, struct tls_context);
 	if (tls == NULL) return NULL;
 
-	tls->socket          = socket;
+	tls->socket          = socket_ctx;
 	tls->fde             = fde;
 	if (talloc_reference(tls, fde) == NULL) {
 		return NULL;
 	}
-	if (talloc_reference(tls, socket) == NULL) {
+	if (talloc_reference(tls, socket_ctx) == NULL) {
 		return NULL;
 	}
 	new_sock->private_data    = tls;

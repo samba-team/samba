@@ -148,7 +148,6 @@ bool test_SetupCredentials2(struct dcerpc_pipe *p, struct torture_context *tctx,
 	struct creds_CredentialState *creds;
 	const struct samr_Password *mach_password;
 	const char *machine_name;
-	const char *plain_pass;
 
 	mach_password = cli_credentials_get_nt_hash(machine_credentials, tctx);
 	machine_name = cli_credentials_get_workstation(machine_credentials);

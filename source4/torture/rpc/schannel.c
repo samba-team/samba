@@ -129,7 +129,7 @@ static bool test_samr_ops(struct torture_context *tctx,
 	NTSTATUS status;
 	struct samr_GetDomPwInfo r;
 	struct samr_PwInfo info;
-	struct samr_Connect connect;
+	struct samr_Connect connect_r;
 	struct samr_OpenDomain opendom;
 	int i;
 	struct lsa_String name;
@@ -140,13 +140,13 @@ static bool test_samr_ops(struct torture_context *tctx,
 	r.in.domain_name = &name;
 	r.out.info = &info;
 
-	connect.in.system_name = 0;
-	connect.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	connect.out.connect_handle = &handle;
+	connect_r.in.system_name = 0;
+	connect_r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	connect_r.out.connect_handle = &handle;
 	
 	printf("Testing Connect and OpenDomain on BUILTIN\n");
 
-	status = dcerpc_samr_Connect(p, tctx, &connect);
+	status = dcerpc_samr_Connect(p, tctx, &connect_r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
 			printf("Connect failed (expected, schannel mapped to anonymous): %s\n",

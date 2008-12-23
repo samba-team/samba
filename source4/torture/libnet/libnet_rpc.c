@@ -41,11 +41,11 @@ static bool test_connect_service(struct libnet_context *ctx,
 				 bool badcreds, NTSTATUS expected_status)
 {
 	NTSTATUS status;
-	struct libnet_RpcConnect connect;
-	connect.level            = level;
-	connect.in.binding       = binding_string;
-	connect.in.name          = hostname;
-	connect.in.dcerpc_iface  = iface;
+	struct libnet_RpcConnect connect_r;
+	connect_r.level            = level;
+	connect_r.in.binding       = binding_string;
+	connect_r.in.name          = hostname;
+	connect_r.in.dcerpc_iface  = iface;
 
 	/* if bad credentials are needed, set baduser%badpassword instead
 	   of default commandline-passed credentials */
@@ -54,12 +54,12 @@ static bool test_connect_service(struct libnet_context *ctx,
 		cli_credentials_set_password(ctx->cred, "badpassword", CRED_SPECIFIED);
 	}
 
-	status = libnet_RpcConnect(ctx, ctx, &connect);
+	status = libnet_RpcConnect(ctx, ctx, &connect_r);
 
 	if (!NT_STATUS_EQUAL(status, expected_status)) {
 		d_printf("Connecting to rpc service %s on %s.\n\tFAILED. Expected: %s."
 		       "Received: %s\n",
-		       connect.in.dcerpc_iface->name, connect.in.binding, nt_errstr(expected_status),
+		       connect_r.in.dcerpc_iface->name, connect_r.in.binding, nt_errstr(expected_status),
 		       nt_errstr(status));
 
 		return false;
@@ -68,15 +68,15 @@ static bool test_connect_service(struct libnet_context *ctx,
 	d_printf("PASSED. Expected: %s, received: %s\n", nt_errstr(expected_status),
 	       nt_errstr(status));
 
-	if (connect.level == LIBNET_RPC_CONNECT_DC_INFO && NT_STATUS_IS_OK(status)) {
+	if (connect_r.level == LIBNET_RPC_CONNECT_DC_INFO && NT_STATUS_IS_OK(status)) {
 		d_printf("Domain Controller Info:\n");
-		d_printf("\tDomain Name:\t %s\n", connect.out.domain_name);
-		d_printf("\tDomain SID:\t %s\n", dom_sid_string(ctx, connect.out.domain_sid));
-		d_printf("\tRealm:\t\t %s\n", connect.out.realm);
-		d_printf("\tGUID:\t\t %s\n", GUID_string(ctx, connect.out.guid));
+		d_printf("\tDomain Name:\t %s\n", connect_r.out.domain_name);
+		d_printf("\tDomain SID:\t %s\n", dom_sid_string(ctx, connect_r.out.domain_sid));
+		d_printf("\tRealm:\t\t %s\n", connect_r.out.realm);
+		d_printf("\tGUID:\t\t %s\n", GUID_string(ctx, connect_r.out.guid));
 
 	} else if (!NT_STATUS_IS_OK(status)) {
-		d_printf("Error string: %s\n", connect.out.error_string);
+		d_printf("Error string: %s\n", connect_r.out.error_string);
 	}
 
 	return true;
