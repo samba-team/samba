@@ -304,8 +304,8 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum dsdb_sch
 		const char *oid = objectclass->governsID_oid;
 		const char *subClassOf = objectclass->subClassOf;
 		int objectClassCategory = objectclass->objectClassCategory;
-		char **must;
-		char **may;
+		const char **must;
+		const char **may;
 		char *schema_entry = NULL;
 		const char *objectclass_name_as_list[] = {
 			objectclass->lDAPDisplayName,

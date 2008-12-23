@@ -215,8 +215,8 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 			       const char **auxillary_classes,
 			       const char *subClassOf,
 			       int objectClassCategory,
-			       char **must,
-			       char **may,
+			       const char **must,
+			       const char **may,
 			       const char *schemaHexGUID)
 {
 	char *schema_entry = talloc_asprintf(mem_ctx, 
@@ -343,10 +343,10 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 {
 	int i;
 	char *schema_description;
-	char **aux_class_list = NULL;
-	char **attrs;
-	char **must_attr_list = NULL;
-	char **may_attr_list = NULL;
+	const char **aux_class_list = NULL;
+	const char **attrs;
+	const char **must_attr_list = NULL;
+	const char **may_attr_list = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	const struct dsdb_class *aux_class;
 	if (!tmp_ctx) {

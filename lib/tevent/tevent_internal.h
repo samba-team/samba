@@ -103,7 +103,7 @@ struct ev_debug_ops {
 
 int ev_set_debug(struct event_context *ev,
 		 void (*debug)(void *context, enum ev_debug_level level,
-				const char *fmt, va_list ap),
+				const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0),
 		 void *context);
 int ev_set_debug_stderr(struct event_context *ev);
 void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...);

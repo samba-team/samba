@@ -194,7 +194,6 @@ static PyObject *py_input_read(PyObject *_self, PyObject *args, PyObject *kwargs
 
 static PyObject *py_input_readline(PyObject *_self)
 {
-	input_Stream_Object *self = (input_Stream_Object *)_self;
 	/* FIXME */
 	PyErr_SetString(PyExc_NotImplementedError, 
 			"readline() not yet implemented");
@@ -204,9 +203,7 @@ static PyObject *py_input_readline(PyObject *_self)
 static PyObject *py_input_readlines(PyObject *_self, PyObject *args, PyObject *kwargs)
 {
 	const char *kwnames[] = { "hint", NULL };
-	PyObject *ret;
 	int hint;
-	input_Stream_Object *self = (input_Stream_Object *)_self;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|i", discard_const_p(char *, kwnames), &hint))
 		return NULL;
@@ -219,7 +216,6 @@ static PyObject *py_input_readlines(PyObject *_self, PyObject *args, PyObject *k
 
 static PyObject *py_input___iter__(PyObject *_self)
 {
-	input_Stream_Object *self = (input_Stream_Object *)_self;
 	/* FIXME */
 	PyErr_SetString(PyExc_NotImplementedError, 
 			"__iter__() not yet implemented");

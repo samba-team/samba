@@ -388,7 +388,6 @@ static void init_domain_recv_queryinfo(struct rpc_request *req)
  * open an LDAP connection */
 static void init_domain_recv_samr(struct composite_context *ctx)
 {
-	const char *ldap_url;
 	struct init_domain_state *state =
 		talloc_get_type(ctx->async.private_data,
 				struct init_domain_state);

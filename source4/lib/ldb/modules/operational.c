@@ -268,16 +268,12 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
-	/* use new set of attrs if any */
-	if (search_attrs == NULL) {
-		search_attrs = req->op.search.attrs;
-	}
-
 	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,
-					(const char * const *)search_attrs,
+					/* use new set of attrs if any */
+					search_attrs?req->op.search.attrs:search_attrs,
 					req->controls,
 					ac, operational_callback,
 					req);

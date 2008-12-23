@@ -1065,11 +1065,11 @@ static int partition_extended(struct ldb_module *module, struct ldb_request *req
 
 static int partition_sort_compare(const void *v1, const void *v2)
 {
-	struct dsdb_control_current_partition *p1;
-	struct dsdb_control_current_partition *p2;
+	const struct dsdb_control_current_partition *p1;
+	const struct dsdb_control_current_partition *p2;
 
-	p1 = *((struct dsdb_control_current_partition **)v1);
-	p2 = *((struct dsdb_control_current_partition **)v2);
+	p1 = *((struct dsdb_control_current_partition * const*)v1);
+	p2 = *((struct dsdb_control_current_partition * const*)v2);
 
 	return ldb_dn_compare(p1->dn, p2->dn);
 }

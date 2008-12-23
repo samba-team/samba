@@ -53,7 +53,6 @@ static struct security_acl *security_acl_dup(TALLOC_CTX *mem_ctx,
 					     const struct security_acl *oacl)
 {
 	struct security_acl *nacl;
-	int i;
 
 	nacl = talloc (mem_ctx, struct security_acl);
 	if (nacl == NULL) {

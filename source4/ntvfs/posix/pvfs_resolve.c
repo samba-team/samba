@@ -190,16 +190,16 @@ static NTSTATUS parse_stream_name(struct smb_iconv_convenience *ic,
 				  struct pvfs_filename *name,
 				  const char *s)
 {
-	char *p;
+	char *p, *stream_name;
 	if (s[1] == '\0') {
 		return NT_STATUS_OBJECT_NAME_INVALID;
 	}
-	name->stream_name = talloc_strdup(name, s+1);
+	name->stream_name = stream_name = talloc_strdup(name, s+1);
 	if (name->stream_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	p = name->stream_name;
+	p = stream_name;
 
 	while (*p) {
 		size_t c_size;

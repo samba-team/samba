@@ -93,7 +93,7 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	struct ldb_message_element *allowedAttributes;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	TALLOC_CTX *mem_ctx;
-	char **objectclass_list, **attr_list;
+	const char **objectclass_list, **attr_list;
 	int i, ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
@@ -118,7 +118,7 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	   we alter the element array in ldb_msg_add_empty() */
 	oc_el = ldb_msg_find_element(msg, "objectClass");
 	
-	objectclass_list = talloc_array(mem_ctx, char *, oc_el->num_values + 1);
+	objectclass_list = talloc_array(mem_ctx, const char *, oc_el->num_values + 1);
 	if (!objectclass_list) {
 		ldb_oom(ldb);
 		talloc_free(mem_ctx);
@@ -126,11 +126,11 @@ static int kludge_acl_allowedAttributes(struct ldb_context *ldb, struct ldb_mess
 	}
 
 	for (i=0; oc_el && i < oc_el->num_values; i++) {
-		objectclass_list[i] = (char *)oc_el->values[i].data;
+		objectclass_list[i] = (const char *)oc_el->values[i].data;
 	}
 	objectclass_list[i] = NULL;
 
-	attr_list = dsdb_full_attribute_list(mem_ctx, schema, (const char **)objectclass_list, DSDB_SCHEMA_ALL);
+	attr_list = dsdb_full_attribute_list(mem_ctx, schema, objectclass_list, DSDB_SCHEMA_ALL);
 	if (!attr_list) {
 		ldb_asprintf_errstring(ldb, "kludge_acl: Failed to get list of attributes create %s attribute", attrName);
 		talloc_free(mem_ctx);

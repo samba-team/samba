@@ -17,8 +17,8 @@
 */
 
 #include "includes.h"
-#include "tevent.h"
-#include "tevent_internal.h"
+#include <tevent.h>
+#include <tevent_internal.h>
 
 /*
   this is used to catch debug messages from events

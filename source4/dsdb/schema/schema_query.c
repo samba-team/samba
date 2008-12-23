@@ -212,18 +212,18 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 	return WERR_OK;
 }
 
-char **merge_attr_list(TALLOC_CTX *mem_ctx, 
-		       char **attrs, const char **new_attrs) 
+const char **merge_attr_list(TALLOC_CTX *mem_ctx, 
+		       const char **attrs, const char * const*new_attrs) 
 {
-	char **ret_attrs;
+	const char **ret_attrs;
 	int i;
-	size_t new_len, orig_len = str_list_length((const char **)attrs);
+	size_t new_len, orig_len = str_list_length(attrs);
 	if (!new_attrs) {
 		return attrs;
 	}
 
 	ret_attrs = talloc_realloc(mem_ctx, 
-				   attrs, char *, orig_len + str_list_length(new_attrs) + 1);
+				   attrs, const char *, orig_len + str_list_length(new_attrs) + 1);
 	if (ret_attrs) {
 		for (i=0; i < str_list_length(new_attrs); i++) {
 			ret_attrs[orig_len + i] = new_attrs[i];
@@ -241,9 +241,9 @@ char **merge_attr_list(TALLOC_CTX *mem_ctx,
   considering subclasses, auxillary classes etc)
 */
 
-char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *class, enum dsdb_attr_list_query query)
+const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *class, enum dsdb_attr_list_query query)
 {
-	char **attr_list = NULL;
+	const char **attr_list = NULL;
 	switch (query) {
 	case DSDB_SCHEMA_ALL_MAY:
 		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
@@ -281,7 +281,7 @@ char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *class, 
 	return attr_list;
 }
 
-static char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
+static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx, 
 						const struct dsdb_schema *schema, 
 						const char **class_list,
 						enum dsdb_attr_list_query query)
@@ -289,39 +289,39 @@ static char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
 	int i;
 	const struct dsdb_class *class;
 	
-	char **attr_list = NULL;
-	char **this_class_list;
-	char **recursive_list;
+	const char **attr_list = NULL;
+	const char **this_class_list;
+	const char **recursive_list;
 
 	for (i=0; class_list && class_list[i]; i++) {
 		class = dsdb_class_by_lDAPDisplayName(schema, class_list[i]);
 		
 		this_class_list = dsdb_attribute_list(mem_ctx, class, query);
-		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)this_class_list);
+		attr_list = merge_attr_list(mem_ctx, attr_list, this_class_list);
 
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
 								   class->systemAuxiliaryClass, 
 								   query);
 		
-		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)recursive_list);
+		attr_list = merge_attr_list(mem_ctx, attr_list, recursive_list);
 		
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
 								   class->auxiliaryClass, 
 								   query);
 		
-		attr_list = merge_attr_list(mem_ctx, attr_list, (const char **)recursive_list);
+		attr_list = merge_attr_list(mem_ctx, attr_list, recursive_list);
 		
 	}
 	return attr_list;
 }
 
-char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, 
+const char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx, 
 				const struct dsdb_schema *schema, 
 				const char **class_list,
 				enum dsdb_attr_list_query query)
 {
-	char **attr_list = dsdb_full_attribute_list_internal(mem_ctx, schema, class_list, query);
-	size_t new_len = str_list_length((const char **)attr_list);
+	const char **attr_list = dsdb_full_attribute_list_internal(mem_ctx, schema, class_list, query);
+	size_t new_len = str_list_length(attr_list);
 
 	/* Remove duplicates */
 	if (new_len > 1) {
@@ -331,8 +331,8 @@ char **dsdb_full_attribute_list(TALLOC_CTX *mem_ctx,
 		      (comparison_fn_t)strcasecmp);
 		
 		for (i=1 ; i < new_len; i++) {
-			char **val1 = &attr_list[i-1];
-			char **val2 = &attr_list[i];
+			const char **val1 = &attr_list[i-1];
+			const char **val2 = &attr_list[i];
 			if (ldb_attr_cmp(*val1, *val2) == 0) {
 				memmove(val1, val2, (new_len - i) * sizeof( *attr_list)); 
 				new_len--;
