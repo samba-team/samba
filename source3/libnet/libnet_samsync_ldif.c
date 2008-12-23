@@ -586,7 +586,7 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 	uchar zero_buf[16];
 	uint32 rid = 0, group_rid = 0, gidNumber = 0;
 	time_t unix_time;
-	int i;
+	int i, ret;
 
 	memset(zero_buf, '\0', sizeof(zero_buf));
 
@@ -660,7 +660,10 @@ static NTSTATUS fetch_account_info_to_ldif(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	gidNumber = groupmap[i].gidNumber;
-	snprintf(sambaSID, sizeof(sambaSID), groupmap[i].sambaSID);
+	ret = snprintf(sambaSID, sizeof(sambaSID), "%s", groupmap[i].sambaSID);
+	if (ret < 0 || ret == sizeof(sambaSID)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	/* Set up sambaAcctFlags */
 	flags = pdb_encode_acct_ctrl(r->acct_flags,
