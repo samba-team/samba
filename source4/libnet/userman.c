@@ -23,11 +23,8 @@
 
 #include "includes.h"
 #include "libcli/composite/composite.h"
-#include "libnet/composite.h"
-#include "libnet/userman.h"
-#include "libnet/userinfo.h"
+#include "libnet/libnet.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
-#include "libnet/libnet_proto.h"
 
 /*
  * Composite USER ADD functionality
@@ -684,7 +681,7 @@ static NTSTATUS usermod_change(struct composite_context *c,
 		s->queryuser.in.user_handle = &s->user_handle;
 		s->queryuser.in.level       = level;
 		s->queryuser.out.info       = talloc(s, union samr_UserInfo *);
-		if (composite_nomem(s->queryuser.out.info, c)) return;
+		if (composite_nomem(s->queryuser.out.info, c)) return NT_STATUS_NO_MEMORY;
 
 
 		/* send query user info request to retrieve complete data of

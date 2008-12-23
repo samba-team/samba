@@ -1511,8 +1511,8 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 	drsuapi->s = s;
 
 	if (!drsuapi->binding) {
-		char *krb5_str = "";
-		char *print_str = "";
+		const char *krb5_str = "";
+		const char *print_str = "";
 		/*
 		 * Note: Replication only works with Windows 2000 when 'krb5' is
 		 *       passed as auth_type here. If NTLMSSP is used, Windows
