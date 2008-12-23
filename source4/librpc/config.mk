@@ -605,7 +605,7 @@ PUBLIC_HEADERS += $(addprefix $(librpcsrcdir)/, gen_ndr/dcerpc.h gen_ndr/ndr_dce
 # Start SUBSYSTEM dcerpc
 [LIBRARY::dcerpc]
 PRIVATE_DEPENDENCIES = \
-		samba-socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
+		samba_socket LIBCLI_RESOLVE LIBCLI_SMB LIBCLI_SMB2 \
 		LIBNDR NDR_DCERPC RPC_NDR_EPMAPPER \
 		NDR_SCHANNEL RPC_NDR_NETLOGON \
 		RPC_NDR_MGMT \

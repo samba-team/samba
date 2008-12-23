@@ -69,7 +69,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-HOSTCONFIG \
 		LIBSAMBA-UTIL \
 		LIBPOPT \
-		samba-socket \
+		samba_socket \
 		POPT_SAMBA \
 		LIBCLI_RESOLVE \
 		CHARSET

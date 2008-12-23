@@ -7,7 +7,7 @@ PUBLIC_DEPENDENCIES = \
 		UTIL_TDB \
 		CLUSTER \
 		LIBNDR \
-		samba-socket
+		samba_socket
 
 MESSAGING_OBJ_FILES = $(libmessagingsrcdir)/messaging.o
 

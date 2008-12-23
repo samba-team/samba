@@ -46,7 +46,7 @@ $(eval $(call proto_header_template,$(libclinbtsrcdir)/nbtname.h,$(NDR_NBT_BUF_O
 
 [SUBSYSTEM::LIBCLI_NBT]
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS \
-	NDR_SECURITY samba-socket LIBSAMBA-UTIL
+	NDR_SECURITY samba_socket LIBSAMBA-UTIL
 
 LIBCLI_NBT_OBJ_FILES = $(addprefix $(libclinbtsrcdir)/, \
 	nbtsocket.o \
@@ -106,7 +106,7 @@ LIBCLI_CLDAP_OBJ_FILES = $(libclisrcdir)/cldap/cldap.o
 # PUBLIC_HEADERS += $(libclisrcdir)/cldap/cldap.h
 
 [SUBSYSTEM::LIBCLI_WREPL]
-PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBEVENTS LIBPACKET
+PUBLIC_DEPENDENCIES = NDR_WINSREPL samba_socket LIBEVENTS LIBPACKET
 
 LIBCLI_WREPL_OBJ_FILES = $(libclisrcdir)/wrepl/winsrepl.o
 
@@ -139,7 +139,7 @@ $(eval $(call proto_header_template,$(libclisrcdir)/finddcs.h,$(LIBCLI_FINDDCS_O
 [SUBSYSTEM::LIBCLI_SMB]
 PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH \
 	LIBCLI_SMB_COMPOSITE LIBCLI_NBT LIBSECURITY LIBCLI_RESOLVE \
-	LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba-socket
+	LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba_socket
 
 LIBCLI_SMB_OBJ_FILES = $(addprefix $(libclisrcdir)/, \
 		clireadwrite.o \
@@ -157,7 +157,7 @@ $(eval $(call proto_header_template,$(libclisrcdir)/libcli_proto.h,$(LIBCLI_SMB_
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_DEPENDENCIES = LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE LIBSECURITY LIBNDR
 #LDFLAGS = $(LIBCLI_SMB_COMPOSITE_OUTPUT)
-PUBLIC_DEPENDENCIES = samba-socket LIBPACKET gensec LIBCRYPTO CREDENTIALS 
+PUBLIC_DEPENDENCIES = samba_socket LIBPACKET gensec LIBCRYPTO CREDENTIALS 
 
 LIBCLI_RAW_OBJ_FILES = $(addprefix $(libclisrcdir)/raw/, rawfile.o smb_signing.o clisocket.o \
 					  clitransport.o clisession.o clitree.o clierror.o rawrequest.o \
