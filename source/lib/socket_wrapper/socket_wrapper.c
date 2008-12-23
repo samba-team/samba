@@ -899,7 +899,10 @@ static int swrap_get_pcap_fd(const char *fname)
 		file_hdr.frame_max_len	= SWRAP_FRAME_LENGTH_MAX;
 		file_hdr.link_type	= 0x0065; /* 101 RAW IP */
 
-		write(fd, &file_hdr, sizeof(file_hdr));
+		if (write(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+			close(fd);
+			return -1;
+		}
 		return fd;
 	}
 
@@ -1190,7 +1193,12 @@ static void swrap_dump_packet(struct socket_info *si,
 
 	fd = swrap_get_pcap_fd(file_name);
 	if (fd != -1) {
-		write(fd, packet, packet_len);
+		if (write(fd, packet, packet_len) != packet_len) {
+			close(fd);
+			free(packet);
+			return;
+		}
+		close(fd);
 	}
 
 	free(packet);
