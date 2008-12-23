@@ -1,7 +1,7 @@
-AC_SUBST(EVENTS_OBJ)
-AC_SUBST(EVENTS_CFLAGS)
-AC_SUBST(EVENTS_LIBS)
+AC_SUBST(TEVENT_OBJ)
+AC_SUBST(TEVENT_CFLAGS)
+AC_SUBST(TEVENT_LIBS)
 
-AC_CHECK_HEADER(events.h,
-   [AC_CHECK_LIB(events, event_context_init, [EVENTS_LIBS="-levents"]) ],
-   [PKG_CHECK_MODULES(EVENTS, events)])
+AC_CHECK_HEADER(tevent.h,
+   [AC_CHECK_LIB(tevent, event_context_init, [TEVENT_LIBS="-ltevent"]) ],
+   [PKG_CHECK_MODULES(TEVENT, tevent)])

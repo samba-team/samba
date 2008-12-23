@@ -3,6 +3,7 @@
    Samba system utilities
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Jeremy Allison 1998-2002
+   Copyright (C) Jelmer Vernooij 2006
 
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released

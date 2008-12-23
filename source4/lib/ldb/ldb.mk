@@ -1,7 +1,7 @@
 LDB_LIB = -Llib -lldb
 
 LIB_FLAGS=$(LDFLAGS) $(LIBS) $(LDB_LIB) $(POPT_LIBS) $(TALLOC_LIBS) \
-		  $(TDB_LIBS) $(EVENTS_LIBS) $(LDAP_LIBS) $(LIBDL)
+		  $(TDB_LIBS) $(TEVENT_LIBS) $(LDAP_LIBS) $(LIBDL)
 
 LDB_TDB_DIR=ldb_tdb
 LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
