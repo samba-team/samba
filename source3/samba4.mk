@@ -6,6 +6,7 @@ HOSTLD = $(CC)
 PARTLINK = $(PROG_LD) -r
 MDLD = $(SHLD)
 MDLD_FLAGS = $(LDSHFLAGS) 
+shliboutputdir = bin/shared
 
 samba4srcdir = $(srcdir)/../source4
 
@@ -58,8 +59,6 @@ endif
 	@rm -f $@
 	@mkdir -p $(@D)
 	@$(AR) -rc $@ $^
-
-INTERN_LDFLAGS = -L${builddir}/bin/static -L${builddir}/bin/shared
 
 pidldir = $(samba4srcdir)/../pidl
 include $(pidldir)/config.mk
@@ -151,7 +150,7 @@ clean::
 	@-find $(samba4srcdir) -name '*.ho' -exec rm -f '{}' \;
 	@echo Removing samba 4 libraries
 	@-rm -f $(STATIC_LIBS) $(SHARED_LIBS)
-	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
+	@-rm -f bin/static/*.a $(shliboutputdir)/*.$(SHLIBEXT) bin/mergedobj/*.o
 	@echo Removing samba 4 modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c

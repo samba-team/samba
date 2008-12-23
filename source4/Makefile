@@ -15,6 +15,7 @@ torturedir = ../lib/torture
 swatdir = $(datadir)/swat
 setupdir = $(datadir)/setup
 ncalrpcdir = $(localstatedir)/ncalrpc
+shliboutputdir = $(builddir)/bin/shared
 
 BNLD = $(LD)
 BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
@@ -155,7 +156,7 @@ manpages:: $(MANPAGES)
 all:: showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
 everything:: all
 
-LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared
+LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(shliboutputdir)
 
 # 'make testsuite' creates all binaries which are
 # needed by samba3's 'make test' and the build-farm

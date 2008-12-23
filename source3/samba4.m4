@@ -123,10 +123,10 @@ AC_SUBST(INTERN_LDFLAGS)
 AC_SUBST(INSTALL_LINK_FLAGS)
 if test $USESHARED = "true";
 then
-	INTERN_LDFLAGS="-L\${builddir}/bin/shared -L\${builddir}/bin/static"
-	INSTALL_LINK_FLAGS="-Wl,-rpath-link,\${builddir}/bin/shared";
+	INTERN_LDFLAGS="-L\$(shliboutputdir) -L\${builddir}/bin/static"
+	INSTALL_LINK_FLAGS="-Wl,-rpath-link,\$(shliboutputdir)";
 else
-	INTERN_LDFLAGS="-L\${builddir}/bin/static -L\${builddir}/bin/shared"
+	INTERN_LDFLAGS="-L\${builddir}/bin/static -L\$(shliboutputdir)"
 fi
 
 dnl Samba 4 files

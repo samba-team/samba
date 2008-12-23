@@ -40,7 +40,7 @@ sub generate_shared_library($)
 			$lib->{LIBRARY_REALNAME} =~ s/^$sane_subsystem\_//g;
 			$lib->{LIBRARY_REALNAME}.= ".\$(SHLIBEXT)";
 		} else {
-			$lib->{SHAREDDIR} = "bin/shared";
+			$lib->{SHAREDDIR} = "\$(shliboutputdir)";
 			$lib->{LIBRARY_REALNAME} = "$lib_name.\$(SHLIBEXT)";
 		}
 	}

@@ -45,7 +45,7 @@ clean:: clean_pch
 	@-find . -name '*.ho' -exec rm -f '{}' \;
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBS) $(SHARED_LIBS)
-	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
+	@-rm -f bin/static/*.a $(shliboutputdir)/*.$(SHLIBEXT) bin/mergedobj/*.o
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c
