@@ -299,17 +299,29 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 
 	if (strchr_m(srvPrinc, '@')) {
 		/* It's a fully-named principal. */
-		asprintf(&princ_s, "%s", srvPrinc);
+		if (asprintf(&princ_s, "%s", srvPrinc) == -1) {
+			ret = -1;
+			goto out;
+		}
 	} else if (srvPrinc[strlen(srvPrinc)-1] == '$') {
 		/* It's the machine account, as used by smbclient clients. */
-		asprintf(&princ_s, "%s@%s", srvPrinc, lp_realm());
+		if (asprintf(&princ_s, "%s@%s", srvPrinc, lp_realm()) == -1) {
+			ret = -1;
+			goto out;
+		}
 	} else {
 		/* It's a normal service principal.  Add the SPN now so that we
 		 * can obtain credentials for it and double-check the salt value
 		 * used to generate the service's keys. */
 		 
-		asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm());
-		asprintf(&short_princ_s, "%s/%s@%s", srvPrinc, machine_name, lp_realm());
+		if (asprintf(&princ_s, "%s/%s@%s", srvPrinc, my_fqdn, lp_realm()) == -1) {
+			ret = -1;
+			goto out;
+		}
+		if (asprintf(&short_princ_s, "%s/%s@%s", srvPrinc, machine_name, lp_realm()) == -1) {
+			ret = -1;
+			goto out;
+		}
 		
 		/* According to http://support.microsoft.com/kb/326985/en-us, 
 		   certain principal names are automatically mapped to the host/...
