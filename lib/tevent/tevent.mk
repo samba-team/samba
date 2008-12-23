@@ -1,8 +1,9 @@
 TEVENT_SONAME = libtevent.$(SHLIBEXT).0
 TEVENT_SOLIB = libtevent.$(SHLIBEXT).$(PACKAGE_VERSION)
+TEVENT_STLIB = libtevent.a
 
-libtevent.a: $(TEVENT_OBJ)
-	ar -rv libtevent.a $(TEVENT_OBJ)
+$(TEVENT_STLIB): $(TEVENT_OBJ)
+	ar -rv $(TEVENT_STLIB) $(TEVENT_OBJ)
 
 libtevent.$(SHLIBEXT): $(TEVENT_SOLIB)
 	ln -fs $< $@
@@ -23,14 +24,14 @@ installheaders:: installdirs
 
 installlibs:: installdirs
 	cp tevent.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libtevent.a $(TEVENT_SOLIB) $(DESTDIR)$(libdir)
+	cp $(TEVENT_STLIB) $(TEVENT_SOLIB) $(DESTDIR)$(libdir)
 
 install:: all installdirs installheaders installlibs $(PYTHON_INSTALL_TARGET)
 
 clean::
-	rm -f $(TEVENT_SONAME) $(TEVENT_SOLIB) libtevent.a libtevent.$(SHLIBEXT)
+	rm -f $(TEVENT_SONAME) $(TEVENT_SOLIB) $(TEVENT_STLIB) libtevent.$(SHLIBEXT)
 	rm -f tevent.pc
-	rm -f _libtevent.$(SHLIBEXT)
+	rm -f tevent.$(SHLIBEXT)
 
 #python stuff
 
