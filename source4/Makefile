@@ -144,7 +144,7 @@ include $(srcdir)/static_deps.mk
 endif
 
 clean::
-	@find ../lib ../libcli -name '*.o' -o -name '*.ho' | xargs rm -f
+	@find ../lib ../libcli ../librpc ../nsswitch -name '*.o' -o -name '*.ho' | xargs rm -f
 
 DEFAULT_HEADERS = $(srcdir)/../lib/util/dlinklist.h \
 		  $(srcdir)/version.h
