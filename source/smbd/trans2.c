@@ -3663,7 +3663,7 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 	unsigned int i;
 	unsigned int ofs = 0;
 
-	for (i=0; i<num_streams; i++) {
+	for (i = 0; i < num_streams && ofs <= max_data_bytes; i++) {
 		unsigned int next_offset;
 		size_t namelen;
 		smb_ucs2_t *namebuf;
@@ -3682,11 +3682,6 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 
 		namelen -= 2;
 
-		if (ofs + 24 + namelen > max_data_bytes) {
-			TALLOC_FREE(namebuf);
-			return NT_STATUS_BUFFER_TOO_SMALL;
-		}
-
 		SIVAL(data, ofs+4, namelen);
 		SOFF_T(data, ofs+8, streams[i].size);
 		SOFF_T(data, ofs+16, streams[i].alloc_size);
@@ -3700,10 +3695,6 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 		}
 		else {
 			unsigned int align = ndr_align_size(next_offset, 8);
-
-			if (next_offset + align > max_data_bytes) {
-				return NT_STATUS_BUFFER_TOO_SMALL;
-			}
 
 			memset(data+next_offset, 0, align);
 			next_offset += align;
