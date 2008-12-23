@@ -145,6 +145,7 @@ ssize_t sys_recvfile(int fromfd,
 			SMB_OFF_T offset,
 			size_t count)
 {
+	static int pipefd[2] = { -1, -1 };
 	static bool try_splice_call = true;
 	size_t total_written = 0;
 
@@ -171,31 +172,45 @@ ssize_t sys_recvfile(int fromfd,
 				count);
 	}
 
-	while (total_written < count) {
-		ssize_t ret = splice(fromfd,
-					NULL,
-					tofd,
-					&offset,
-					count,
-					0);
-		if (ret == -1) {
-			if (errno != EINTR) {
-				if (total_written == 0 &&
-						(errno == EBADF || errno == EINVAL)) {
-					try_splice_call = false;
-					return default_sys_recvfile(fromfd,
-								tofd,
-								offset,
-								count);
-				}
-				break;
-			}
-			continue;
-		}
-		total_written += ret;
-		count -= ret;
+	if ((pipefd[0] == -1) && (pipe(pipefd) == -1)) {
+		try_splice_call = false;
+		return default_sys_recvfile(fromfd, tofd, offset, count);
 	}
 
+	while (count > 0) {
+		int nread, to_write;
+
+		nread = splice(fromfd, NULL, pipefd[1], NULL, count, 0);
+		if (nread == -1) {
+			if (errno == EINTR) {
+				continue;
+			}
+			if (total_written == 0 &&
+			    (errno == EBADF || errno == EINVAL)) {
+				try_splice_call = false;
+				return default_sys_recvfile(fromfd, tofd,
+							    offset, count);
+			}
+			break;
+		}
+
+		to_write = nread;
+		while (to_write > 0) {
+			int thistime;
+			thistime = splice(pipefd[0], NULL, tofd, &offset,
+					  to_write, 0);
+			if (thistime == -1) {
+				goto done;
+			}
+			offset += thistime;
+			to_write -= thistime;
+		}
+
+		total_written += nread;
+		count -= nread;
+	}
+
+ done:
 	if (total_written < count) {
 		int saved_errno = errno;
 		if (drain_socket(fromfd, count-total_written) !=
