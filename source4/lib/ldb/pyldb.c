@@ -28,6 +28,12 @@
 #include "ldb_includes.h"
 #include "pyldb.h"
 
+/* There's no Py_ssize_t in 2.4, apparently */
+#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
+typedef int Py_ssize_t;
+typedef inquiry lenfunc;
+#endif
+
 /* Picked out of thin air. To do this properly, we should probably have some part of the 
  * errors in LDB be allocated to bindings ? */
 #define LDB_ERR_PYTHON_EXCEPTION	142

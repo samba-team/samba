@@ -25,6 +25,12 @@
 #include "param/loadparm.h"
 #include "pytalloc.h"
 
+/* There's no Py_ssize_t in 2.4, apparently */
+#if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
+typedef int Py_ssize_t;
+typedef inquiry lenfunc;
+#endif
+
 #define PyLoadparmContext_AsLoadparmContext(obj) py_talloc_get_ptr(obj)
 
 PyAPI_DATA(PyTypeObject) PyLoadparmContext;
