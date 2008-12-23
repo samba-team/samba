@@ -205,7 +205,9 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
  out:
 
-	chdir(wd);
+	if (chdir(wd) == -1) {
+		smb_panic("chdir failed in generic_job_submit");
+	}
 	TALLOC_FREE(current_directory);
         return ret;
 }
