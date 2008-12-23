@@ -3381,7 +3381,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
                                        NT_PRINTER_INFO_LEVEL *printer)
 {
 	ADS_STATUS ads_rc;
-	LDAPMessage *res;
+	LDAPMessage *res = NULL;
 	char *prt_dn = NULL;
 
 	DEBUG(5, ("unpublishing printer %s\n", printer->info_2->printername));
@@ -3390,7 +3390,7 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 	ads_rc = ads_find_printer_on_server(ads, &res, 
 			    printer->info_2->sharename, global_myname());
 
-	if (ADS_ERR_OK(ads_rc) && ads_count_replies(ads, res)) {
+	if (ADS_ERR_OK(ads_rc) && res && ads_count_replies(ads, res)) {
 		prt_dn = ads_get_dn(ads, res);
 		if (!prt_dn) {
 			ads_msgfree(ads, res);
@@ -3400,7 +3400,9 @@ static WERROR nt_printer_unpublish_ads(ADS_STRUCT *ads,
 		ads_memfree(ads, prt_dn);
 	}
 
-	ads_msgfree(ads, res);
+	if (res) {
+		ads_msgfree(ads, res);
+	}
 	return WERR_OK;
 }
 
