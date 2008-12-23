@@ -1019,8 +1019,7 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 		return NT_STATUS_NO_TRUST_LSA_SECRET;
 	}
 
-	asprintf(&machine_account, "%s$", machine_name);
-	if (!machine_account) {
+	if (asprintf(&machine_account, "%s$", machine_name) == -1) {
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
