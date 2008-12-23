@@ -4184,9 +4184,10 @@ static char *get_ldap_filter(TALLOC_CTX *mem_ctx, const char *username)
 	char *escaped = NULL;
 	char *result = NULL;
 
-	asprintf(&filter, "(&%s(objectclass=%s))",
-			  "(uid=%u)", LDAP_OBJ_SAMBASAMACCOUNT);
-	if (filter == NULL) goto done;
+	if (asprintf(&filter, "(&%s(objectclass=%s))",
+			  "(uid=%u)", LDAP_OBJ_SAMBASAMACCOUNT) < 0) {
+		goto done;
+	}
 
 	escaped = escape_ldap_string_alloc(username);
 	if (escaped == NULL) goto done;
