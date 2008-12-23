@@ -1,4 +1,3 @@
-BLDSHARED=true
 AC_SUBST(BLDSHARED)
 smbtorture4_path=bin/smbtorture4
 m4_include(build/m4/public.m4)
@@ -116,8 +115,6 @@ m4_include(auth/config.m4)
 m4_include(kdc/config.m4)
 m4_include(ntvfs/sysdep/config.m4)
 m4_include(../nsswitch/config.m4)
-
-USESHARED=$BLDSHARED
 
 AC_SUBST(INTERN_LDFLAGS)
 AC_SUBST(INSTALL_LINK_FLAGS)
