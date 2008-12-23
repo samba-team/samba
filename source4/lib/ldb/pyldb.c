@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "pyldb.h"
-#include "events.h"
+#include "tevent.h"
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "ldb_private.h"

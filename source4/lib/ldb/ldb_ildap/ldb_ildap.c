@@ -44,7 +44,7 @@
 #include "includes.h"
 #include "ldb_includes.h"
 
-#include "lib/events/events.h"
+#include "tevent.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"
