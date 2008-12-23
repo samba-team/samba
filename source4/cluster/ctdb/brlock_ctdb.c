@@ -378,7 +378,7 @@ reply:
 */
 static NTSTATUS brl_ctdb_lock(struct brl_context *brl,
 			      struct brl_handle *brlh,
-			      uint16_t smbpid,
+			      uint32_t smbpid,
 			      uint64_t start, uint64_t size, 
 			      enum brl_type lock_type,
 			      void *notify_ptr)
@@ -609,7 +609,7 @@ found:
 */
 static NTSTATUS brl_ctdb_unlock(struct brl_context *brl,
 				struct brl_handle *brlh, 
-				uint16_t smbpid,
+				uint32_t smbpid,
 				uint64_t start, uint64_t size)
 {
 	struct ctdb_call call;
@@ -782,7 +782,7 @@ static int brl_ctdb_locktest_func(struct ctdb_call_info *call)
 */
 static NTSTATUS brl_ctdb_locktest(struct brl_context *brl,
 				  struct brl_handle *brlh,
-				  uint16_t smbpid, 
+				  uint32_t smbpid, 
 				  uint64_t start, uint64_t size, 
 				  enum brl_type lock_type)
 {

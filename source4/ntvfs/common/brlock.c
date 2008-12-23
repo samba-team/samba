@@ -71,7 +71,7 @@ struct brl_handle *brl_create_handle(TALLOC_CTX *mem_ctx, struct ntvfs_handle *n
 */
 NTSTATUS brl_lock(struct brl_context *brl,
 		  struct brl_handle *brlh,
-		  uint16_t smbpid,
+		  uint32_t smbpid,
 		  uint64_t start, uint64_t size, 
 		  enum brl_type lock_type,
 		  void *notify_ptr)
@@ -85,7 +85,7 @@ NTSTATUS brl_lock(struct brl_context *brl,
 */
 NTSTATUS brl_unlock(struct brl_context *brl,
 		    struct brl_handle *brlh, 
-		    uint16_t smbpid,
+		    uint32_t smbpid,
 		    uint64_t start, uint64_t size)
 {
 	return ops->brl_unlock(brl, brlh, smbpid, start, size);

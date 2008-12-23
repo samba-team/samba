@@ -28,20 +28,20 @@ struct brlock_ops {
 	struct brl_handle *(*brl_create_handle)(TALLOC_CTX *, struct ntvfs_handle *, DATA_BLOB *);
 	NTSTATUS (*brl_lock)(struct brl_context *,
 			     struct brl_handle *,
-			     uint16_t ,
+			     uint32_t ,
 			     uint64_t , uint64_t , 
 			     enum brl_type ,
 			     void *);
 	NTSTATUS (*brl_unlock)(struct brl_context *,
 			       struct brl_handle *, 
-			       uint16_t ,
+			       uint32_t ,
 			       uint64_t , uint64_t );
 	NTSTATUS (*brl_remove_pending)(struct brl_context *,
 				       struct brl_handle *, 
 				       void *);
 	NTSTATUS (*brl_locktest)(struct brl_context *,
 				 struct brl_handle *,
-				 uint16_t , 
+				 uint32_t , 
 				 uint64_t , uint64_t , 
 				 enum brl_type );
 	NTSTATUS (*brl_close)(struct brl_context *,
