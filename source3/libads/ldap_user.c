@@ -35,7 +35,10 @@
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	asprintf(&ldap_exp, "(samAccountName=%s)", escaped_user);
+	if (asprintf(&ldap_exp, "(samAccountName=%s)", escaped_user) == -1) {
+		SAFE_FREE(escaped_user);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 	status = ads_search(ads, res, ldap_exp, attrs);
 	SAFE_FREE(ldap_exp);
 	SAFE_FREE(escaped_user);
