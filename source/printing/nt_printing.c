@@ -3163,7 +3163,9 @@ static bool map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 
 	map_sz_into_ctr(ctr, SPOOL_REG_SERVERNAME, longname);
 
-	asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename);
+	if (asprintf(&allocated_string, "\\\\%s\\%s", longname, info2->sharename) == -1) {
+		return false;
+	}
 	map_sz_into_ctr(ctr, SPOOL_REG_UNCNAME, allocated_string);
 	SAFE_FREE(allocated_string);
 
@@ -3243,6 +3245,7 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	struct GUID guid;
 	WERROR win_rc = WERR_OK;
 	size_t converted_size;
+	int ret;
 
 	DEBUG(5, ("publishing printer %s\n", printer->info_2->printername));
 
@@ -3254,27 +3257,23 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	srv_dn_utf8 = ldap_get_dn((LDAP *)ads->ldap.ld, (LDAPMessage *)res);
 	if (!srv_dn_utf8) {
-		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	ads_msgfree(ads, res);
 	srv_cn_utf8 = ldap_explode_dn(srv_dn_utf8, 1);
 	if (!srv_cn_utf8) {
 		ldap_memfree(srv_dn_utf8);
-		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	/* Now convert to CH_UNIX. */
 	if (!pull_utf8_allocate(&srv_dn, srv_dn_utf8, &converted_size)) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
-		ads_destroy(&ads);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	if (!pull_utf8_allocate(&srv_cn_0, srv_cn_utf8[0], &converted_size)) {
 		ldap_memfree(srv_dn_utf8);
 		ldap_memfree(srv_cn_utf8);
-		ads_destroy(&ads);
 		SAFE_FREE(srv_dn);
 		return WERR_SERVER_UNAVAILABLE;
 	}
@@ -3285,26 +3284,27 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 	srv_cn_escaped = escape_rdn_val_string_alloc(srv_cn_0);
 	if (!srv_cn_escaped) {
 		SAFE_FREE(srv_cn_0);
-		ldap_memfree(srv_dn_utf8);
-		ads_destroy(&ads);
+		SAFE_FREE(srv_dn);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 	sharename_escaped = escape_rdn_val_string_alloc(printer->info_2->sharename);
 	if (!sharename_escaped) {
 		SAFE_FREE(srv_cn_escaped);
 		SAFE_FREE(srv_cn_0);
-		ldap_memfree(srv_dn_utf8);
-		ads_destroy(&ads);
+		SAFE_FREE(srv_dn);
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
-
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
+	ret = asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, sharename_escaped, srv_dn);
 
 	SAFE_FREE(srv_dn);
 	SAFE_FREE(srv_cn_0);
 	SAFE_FREE(srv_cn_escaped);
 	SAFE_FREE(sharename_escaped);
+
+	if (ret == -1) {
+		return WERR_NOMEM;
+	}
 
 	/* build the ads mods */
 	ctx = talloc_init("nt_printer_publish_ads");

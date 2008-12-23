@@ -909,13 +909,12 @@ new: start=%.0f,size=%.0f\n", (double)l_curr->start, (double)l_curr->size,
 				 */
 				char *msg = NULL;
 
-				/* Don't check if alloc succeeds here - we're
-				 * forcing a core dump anyway. */
-
-				asprintf(&msg, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
-lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size );
-
-				smb_panic(msg);
+				if (asprintf(&msg, "logic flaw in cases: l_curr: start = %.0f, size = %.0f : \
+lock: start = %.0f, size = %.0f", (double)l_curr->start, (double)l_curr->size, (double)lock->start, (double)lock->size ) != -1) {
+					smb_panic(msg);
+				} else {
+					smb_panic("posix_lock_list");
+				}
 			}
 		} /* end for ( l_curr = lhead; l_curr;) */
 	} /* end for (i=0; i<num_locks && ul_head; i++) */
