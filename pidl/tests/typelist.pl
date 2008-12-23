@@ -30,6 +30,7 @@ is_deeply(getType({ TYPE => "STRUCT" }), { TYPE => "STRUCT" });
 is_deeply(getType({ TYPE => "ENUM", NAME => "foo" }), $x);
 is_deeply(getType("uint16"), {
 		NAME => "uint16",
+		BASEFILE => "<builtin>",
 		TYPE => "TYPEDEF",
 		DATA => { NAME => "uint16", TYPE => "SCALAR" }});
 
