@@ -27,48 +27,68 @@
 #define _PYLDB_H_
 
 #include <Python.h>
-#include <pytalloc.h>
-#include <ldb.h>
-#include <ldb_private.h>
-#include <ldb_errors.h>
 
-typedef py_talloc_Object PyLdbObject;
+typedef struct {
+	PyObject_HEAD
+	struct ldb_context *ldb_ctx;
+	TALLOC_CTX *mem_ctx;
+} PyLdbObject;
+
 PyAPI_DATA(PyTypeObject) PyLdb;
 PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx);
-#define PyLdb_AsLdbContext(pyobj) py_talloc_get_type(pyobj, struct ldb_context)
+#define PyLdb_AsLdbContext(pyobj) ((PyLdbObject *)pyobj)->ldb_ctx
 #define PyLdb_Check(ob) PyObject_TypeCheck(ob, &PyLdb)
 
-typedef py_talloc_Object PyLdbDnObject;
+typedef struct {
+	PyObject_HEAD
+	struct ldb_dn *dn;
+	TALLOC_CTX *mem_ctx;
+} PyLdbDnObject;
+
 PyAPI_DATA(PyTypeObject) PyLdbDn;
-struct ldb_dn *PyLdbDn_AsDn(PyObject *);
 PyObject *PyLdbDn_FromDn(struct ldb_dn *);
 bool PyObject_AsDn(TALLOC_CTX *mem_ctx, PyObject *object, struct ldb_context *ldb_ctx, struct ldb_dn **dn);
-#define PyLdbDn_AsDn(pyobj) py_talloc_get_type(pyobj, struct ldb_dn)
+#define PyLdbDn_AsDn(pyobj) ((PyLdbDnObject *)pyobj)->dn
 #define PyLdbDn_Check(ob) PyObject_TypeCheck(ob, &PyLdbDn)
 
-typedef py_talloc_Object PyLdbMessageObject;
+typedef struct {
+	PyObject_HEAD
+	struct ldb_message *msg;
+	TALLOC_CTX *mem_ctx;
+} PyLdbMessageObject;
 PyAPI_DATA(PyTypeObject) PyLdbMessage;
 PyObject *PyLdbMessage_FromMessage(struct ldb_message *message);
-struct ldb_message *PyLdbMessage_AsMessage(PyObject *obj);
 #define PyLdbMessage_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessage)
-#define PyLdbMessage_AsMessage(pyobj) py_talloc_get_type(pyobj, struct ldb_message)
+#define PyLdbMessage_AsMessage(pyobj) ((PyLdbMessageObject *)pyobj)->msg
 
-typedef py_talloc_Object PyLdbModuleObject;
+typedef struct {
+	PyObject_HEAD
+	struct ldb_module *mod;
+	TALLOC_CTX *mem_ctx;
+} PyLdbModuleObject;
 PyAPI_DATA(PyTypeObject) PyLdbModule;
 PyObject *PyLdbModule_FromModule(struct ldb_module *mod);
-#define PyLdbModule_AsModule(pyobj) ((struct ldb_module *)py_talloc_get_ptr(pyobj))
+#define PyLdbModule_AsModule(pyobj) ((PyLdbModuleObject *)pyobj)->mod
 
-typedef py_talloc_Object PyLdbMessageElementObject;
+typedef struct {
+	PyObject_HEAD	
+	struct ldb_message_element *el;
+	TALLOC_CTX *mem_ctx;
+} PyLdbMessageElementObject;
 PyAPI_DATA(PyTypeObject) PyLdbMessageElement;
 struct ldb_message_element *PyObject_AsMessageElement(TALLOC_CTX *mem_ctx, PyObject *obj, int flags, const char *name);
 PyObject *PyLdbMessageElement_FromMessageElement(struct ldb_message_element *, TALLOC_CTX *mem_ctx);
-#define PyLdbMessageElement_AsMessageElement(pyobj) ((struct ldb_message_element *)py_talloc_get_ptr(pyobj))
+#define PyLdbMessageElement_AsMessageElement(pyobj) ((PyLdbMessageElementObject *)pyobj)->el
 #define PyLdbMessageElement_Check(ob) PyObject_TypeCheck(ob, &PyLdbMessageElement)
 
-typedef py_talloc_Object PyLdbTreeObject;
+typedef struct {
+	PyObject_HEAD
+	struct ldb_parse_tree *tree;
+	TALLOC_CTX *mem_ctx;
+} PyLdbTreeObject;
 PyAPI_DATA(PyTypeObject) PyLdbTree;
 PyObject *PyLdbTree_FromTree(struct ldb_parse_tree *);
-#define PyLdbTree_AsTree(pyobj) py_talloc_get_type(pyobj, struct ldb_parse_tree)
+#define PyLdbTree_AsTree(pyobj) ((PyLdbTreeObject *)pyobj)->tree
 
 void PyErr_SetLdbError(int ret, struct ldb_context *ldb_ctx);
 #define PyErr_LDB_ERROR_IS_ERR_RAISE(ret,ldb) \
