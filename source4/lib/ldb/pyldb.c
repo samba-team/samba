@@ -32,6 +32,7 @@
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
 typedef inquiry lenfunc;
+typedef intargfunc sizeargfunc;
 #endif
 
 /* Picked out of thin air. To do this properly, we should probably have some part of the 
