@@ -602,7 +602,13 @@ ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ,
 	}
 	realm++;
 
-	asprintf(&princ_name, "kadmin/changepw@%s", realm);
+	if (asprintf(&princ_name, "kadmin/changepw@%s", realm) == -1) {
+		krb5_cc_close(context, ccache);
+                krb5_free_context(context);
+		DEBUG(1,("asprintf failed\n"));
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
+
 	ret = smb_krb5_parse_name(context, princ_name, &creds.server);
 	if (ret) {
 		krb5_cc_close(context, ccache);
@@ -733,8 +739,13 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     krb5_get_init_creds_opt_set_proxiable(&opts, 0);
 
     /* We have to obtain an INITIAL changepw ticket for changing password */
-    asprintf(&chpw_princ, "kadmin/changepw@%s",
-				(char *) krb5_princ_realm(context, princ));
+    if (asprintf(&chpw_princ, "kadmin/changepw@%s",
+				(char *) krb5_princ_realm(context, princ)) == -1) {
+	krb5_free_context(context);
+	DEBUG(1,("ads_krb5_chg_password: asprintf fail\n"));
+	return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+    }
+
     password = SMB_STRDUP(oldpw);
     ret = krb5_get_init_creds_password(context, &creds, princ, password,
 					   kerb_prompter, NULL, 
@@ -804,16 +815,14 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	  as otherwise the server might end up setting the password for a user
 	  instead
 	 */
-	asprintf(&principal, "%s@%s", machine_account, ads->config.realm);
+	if (asprintf(&principal, "%s@%s", machine_account, ads->config.realm) < 0) {
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	}
 	
 	status = ads_krb5_set_password(ads->auth.kdc_server, principal, 
 				       password, ads->auth.time_offset);
 	
-	free(principal);
-
+	SAFE_FREE(principal);
 	return status;
 }
-
-
-
 #endif
