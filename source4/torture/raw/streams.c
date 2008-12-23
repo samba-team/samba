@@ -1492,6 +1492,49 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	return ret;
 }
 
+/* Test streaminfo with enough streams on a file to fill up the buffer.  */
+static bool test_stream_large_streaminfo(struct torture_context *tctx,
+					 struct smbcli_state *cli,
+					 TALLOC_CTX *mem_ctx)
+{
+#define LONG_STREAM_SIZE 2
+	char *lstream_name;
+	const char *fname = BASEDIR "\\stream.txt";
+	const char *fname_stream;
+	NTSTATUS status;
+	bool ret = true;
+	int i;
+	union smb_fileinfo finfo;
+
+	lstream_name = talloc_array(mem_ctx, char, LONG_STREAM_SIZE);
+
+	for (i = 0; i < LONG_STREAM_SIZE - 1; i++) {
+		lstream_name[i] = (char)('a' + i%26);
+	}
+	lstream_name[LONG_STREAM_SIZE - 1] = '\0';
+
+	printf("(%s) Creating a file with a lot of streams\n", __location__);
+	for (i = 0; i < 10000; i++) {
+		fname_stream = talloc_asprintf(mem_ctx, "%s:%s%d", fname,
+					       lstream_name, i);
+		ret = create_file_with_stream(tctx, cli, mem_ctx, fname,
+					      fname_stream);
+		if (!ret) {
+			goto done;
+		}
+	}
+
+	finfo.generic.level = RAW_FILEINFO_STREAM_INFO;
+	finfo.generic.in.file.path = fname;
+
+	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, STATUS_BUFFER_OVERFLOW);
+
+ done:
+	smbcli_unlink(cli->tree, fname);
+	return ret;
+}
+
 /* 
    basic testing of streams calls
 */
@@ -1523,6 +1566,8 @@ bool torture_raw_streams(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 	ret &= test_stream_create_disposition(torture, cli, torture);
 	smb_raw_exit(cli->session);
+	/* ret &= test_stream_large_streaminfo(torture, cli, torture); */
+/* 	smb_raw_exit(cli->session); */
 
 	smbcli_deltree(cli->tree, BASEDIR);
 
