@@ -31,7 +31,7 @@
 				       const char *servername)
 {
 	ADS_STATUS status;
-	char *srv_dn, **srv_cn, *s;
+	char *srv_dn, **srv_cn, *s = NULL;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	status = ads_find_machine_acct(ads, res, servername);
@@ -41,25 +41,43 @@
 		return status;
 	}
 	if (ads_count_replies(ads, *res) != 1) {
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 	srv_dn = ldap_get_dn(ads->ldap.ld, *res);
 	if (srv_dn == NULL) {
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 	if (srv_cn == NULL) {
 		ldap_memfree(srv_dn);
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
 	}
-	ads_msgfree(ads, *res);
+	if (res) {
+		ads_msgfree(ads, *res);
+		*res = NULL;
+	}
 
-	asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer);
+	if (asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer) == -1) {
+		ldap_memfree(srv_dn);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 	status = ads_search(ads, res, s, attrs);
 
 	ldap_memfree(srv_dn);
 	ldap_value_free(srv_cn);
-	free(s);
+	SAFE_FREE(s);
 	return status;	
 }
 
