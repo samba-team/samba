@@ -18,8 +18,11 @@
 */
 
 #include <talloc.h>
-#include "../lib/talloc/pytalloc.h"
+#include <pytalloc.h>
 
+/**
+ * Simple dealloc for talloc-wrapping PyObjects
+ */
 void py_talloc_dealloc(PyObject* self)
 {
 	py_talloc_Object *obj = (py_talloc_Object *)self;
@@ -28,6 +31,9 @@ void py_talloc_dealloc(PyObject* self)
 	self->ob_type->tp_free(self);
 }
 
+/**
+ * Import an existing talloc pointer into a Python object.
+ */
 PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
 						   void *ptr)
 {
@@ -43,10 +49,14 @@ PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 	return (PyObject *)ret;
 }
 
-PyObject *py_talloc_default_repr(PyObject *py_obj)
+/**
+ * Default (but slightly more useful than the default) implementation of Repr().
+ */
+PyObject *py_talloc_default_repr(PyObject *obj)
 {
-	py_talloc_Object *obj = (py_talloc_Object *)py_obj;
-	PyTypeObject *type = (PyTypeObject*)PyObject_Type((PyObject *)obj);
+	py_talloc_Object *talloc_obj = (py_talloc_Object *)obj;
+	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
 
-	return PyString_FromFormat("<%s talloc object at 0x%x>", type->tp_name, (intptr_t)py_obj);
+	return PyString_FromFormat("<%s talloc object at 0x%x>", 
+				   type->tp_name, (intptr_t)talloc_obj->ptr);
 }
