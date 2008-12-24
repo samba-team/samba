@@ -2332,20 +2332,7 @@ const char *shlib_ext(void)
 
 /*******************************************************************
  Given a filename - get its directory name
- NB: Returned in static storage.  Caveats:
- o  If caller wishes to preserve, they should copy.
 ********************************************************************/
-
-char *parent_dirname(const char *path)
-{
-	char *parent;
-
-	if (!parent_dirname_talloc(talloc_tos(), path, &parent, NULL)) {
-		return NULL;
-	}
-
-	return parent;
-}
 
 bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
 			   char **parent, const char **name)

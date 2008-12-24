@@ -1230,7 +1230,6 @@ char *modules_path(const char *name);
 char *data_path(const char *name);
 char *state_path(const char *name);
 const char *shlib_ext(void);
-char *parent_dirname(const char *path);
 bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
 			   char **parent, const char **name);
 bool ms_has_wild(const char *s);
