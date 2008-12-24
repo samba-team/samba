@@ -491,57 +491,6 @@ bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 	return True;
 }
 
-/****************************************************************************
- Like atoi but gets the value up to the separator character.
-****************************************************************************/
-
-static const char *Atoic(const char *p, int *n, const char *c)
-{
-	if (!isdigit((int)*p)) {
-		DEBUG(5, ("Atoic: malformed number\n"));
-		return NULL;
-	}
-
-	(*n) = atoi(p);
-
-	while ((*p) && isdigit((int)*p))
-		p++;
-
-	if (strchr_m(c, *p) == NULL) {
-		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
-		return NULL;
-	}
-
-	return p;
-}
-
-/*************************************************************************
- Reads a list of numbers.
- *************************************************************************/
-
-const char *get_numlist(const char *p, uint32 **num, int *count)
-{
-	int val;
-
-	if (num == NULL || count == NULL)
-		return NULL;
-
-	(*count) = 0;
-	(*num  ) = NULL;
-
-	while ((p = Atoic(p, &val, ":,")) != NULL && (*p) != ':') {
-		*num = SMB_REALLOC_ARRAY((*num), uint32, (*count)+1);
-		if (!(*num)) {
-			return NULL;
-		}
-		(*num)[(*count)] = val;
-		(*count)++;
-		p++;
-	}
-
-	return p;
-}
-
 /*******************************************************************
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/

@@ -1165,7 +1165,6 @@ struct user_auth_info *get_cmdline_auth_info_copy(TALLOC_CTX *mem_ctx,
 bool set_cmdline_auth_info_machine_account_creds(struct user_auth_info *auth_info);
 bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 			     gid_t **gids, size_t *num_gids);
-const char *get_numlist(const char *p, uint32 **num, int *count);
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 bool socket_exist(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
