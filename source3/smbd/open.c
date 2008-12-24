@@ -1363,8 +1363,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return print_fsp_open(req, conn, fname, req->vuid, fsp, psbuf);
 	}
 
-	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
-				   &newname)) {
+	if (!parent_dirname(talloc_tos(), fname, &parent_dir, &newname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -2190,8 +2189,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
-	if (!parent_dirname_talloc(talloc_tos(), name, &parent_dir,
-				   &dirname)) {
+	if (!parent_dirname(talloc_tos(), name, &parent_dir, &dirname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

@@ -5396,8 +5396,8 @@ static void notify_rename(connection_struct *conn, bool is_dir,
 	mask = is_dir ? FILE_NOTIFY_CHANGE_DIR_NAME
 		: FILE_NOTIFY_CHANGE_FILE_NAME;
 
-	if (!parent_dirname_talloc(NULL, oldpath, &olddir, &oldname)
-	    || !parent_dirname_talloc(NULL, newpath, &newdir, &newname)) {
+	if (!parent_dirname(talloc_tos(), oldpath, &olddir, &oldname)
+	    || !parent_dirname(talloc_tos(), newpath, &newdir, &newname)) {
 		TALLOC_FREE(olddir);
 		return;
 	}

@@ -5983,8 +5983,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 
 	if (lp_inherit_perms(SNUM(conn))) {
 		char *parent;
-		if (!parent_dirname_talloc(talloc_tos(), fname, &parent,
-					   NULL)) {
+		if (!parent_dirname(talloc_tos(), fname, &parent, NULL)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		inherit_access_posix_acl(conn, parent, fname, unixmode);

@@ -3241,10 +3241,7 @@ NTSTATUS append_parent_acl(files_struct *fsp,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!parent_dirname_talloc(mem_ctx,
-				fsp->fsp_name,
-				&parent_name,
-				NULL)) {
+	if (!parent_dirname(mem_ctx, fsp->fsp_name, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

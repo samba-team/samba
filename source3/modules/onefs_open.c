@@ -462,8 +462,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		return print_fsp_open(req, conn, fname, req->vuid, fsp);
 	}
 
-	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
-				   &newname)) {
+	if (!parent_dirname(talloc_tos(), fname, &parent_dir, &newname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1339,8 +1338,7 @@ static NTSTATUS onefs_open_directory(connection_struct *conn,
 	}
 
 	/* Get parent dirname */
-	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
-				   &dirname)) {
+	if (!parent_dirname(talloc_tos(), fname, &parent_dir, &dirname)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

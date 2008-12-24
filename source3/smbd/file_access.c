@@ -66,10 +66,7 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	}
 
 	/* Get the parent directory permission mask and owners. */
-	if (!parent_dirname_talloc(ctx,
-				fname,
-				&dname,
-				NULL)) {
+	if (!parent_dirname(ctx, fname, &dname, NULL)) {
 		return False;
 	}
 	if(SMB_VFS_STAT(conn, dname, &sbuf) != 0) {

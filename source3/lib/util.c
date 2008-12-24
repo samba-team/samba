@@ -2334,8 +2334,8 @@ const char *shlib_ext(void)
  Given a filename - get its directory name
 ********************************************************************/
 
-bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
-			   char **parent, const char **name)
+bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
+		    const char **name)
 {
 	char *p;
 	ptrdiff_t len;

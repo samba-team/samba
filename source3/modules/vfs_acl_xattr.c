@@ -328,10 +328,7 @@ static NTSTATUS inherit_new_acl(vfs_handle_struct *handle,
 	size_t size;
 	char *parent_name;
 
-	if (!parent_dirname_talloc(ctx,
-				fname,
-				&parent_name,
-				NULL)) {
+	if (!parent_dirname(ctx, fname, &parent_name, NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
