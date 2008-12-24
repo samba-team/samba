@@ -150,11 +150,16 @@ static int vfswrap_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mo
 {
 	int result;
 	bool has_dacl = False;
+	char *parent = NULL;
 
 	START_PROFILE(syscall_mkdir);
 
-	if (lp_inherit_acls(SNUM(handle->conn)) && (has_dacl = directory_has_default_acl(handle->conn, parent_dirname(path))))
+	if (lp_inherit_acls(SNUM(handle->conn))
+	    && parent_dirname_talloc(talloc_tos(), path, &parent, NULL)
+	    && (has_dacl = directory_has_default_acl(handle->conn, parent)))
 		mode = 0777;
+
+	TALLOC_FREE(parent);
 
 	result = mkdir(path, mode);
 
