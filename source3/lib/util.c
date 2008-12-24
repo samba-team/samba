@@ -2367,10 +2367,9 @@ bool parent_dirname_talloc(TALLOC_CTX *mem_ctx, const char *dir,
 
 	len = p-dir;
 
-	if (!(*parent = TALLOC_ARRAY(mem_ctx, char, len+1))) {
+	if (!(*parent = (char *)TALLOC_MEMDUP(mem_ctx, dir, len+1))) {
 		return False;
 	}
-	memcpy(*parent, dir, len);
 	(*parent)[len] = '\0';
 
 	if (name) {
