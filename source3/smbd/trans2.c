@@ -5982,9 +5982,13 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
  	 */
 
 	if (lp_inherit_perms(SNUM(conn))) {
-		inherit_access_posix_acl(
-			conn, parent_dirname(fname),
-			fname, unixmode);
+		char *parent;
+		if (!parent_dirname_talloc(talloc_tos(), fname, &parent,
+					   NULL)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		inherit_access_posix_acl(conn, parent, fname, unixmode);
+		TALLOC_FREE(parent);
 	}
 
 	if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
