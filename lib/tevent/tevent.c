@@ -256,7 +256,7 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 				    event_timed_handler_t handler, 
 				    void *private_data)
 {
-	return ev->ops->add_timed(ev, mem_ctx, next_event, handler, private_data);
+	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data);
 }
 
 /*

@@ -21,49 +21,49 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-struct event_ops {
+struct tevent_ops {
 	/* conntext init */
-	int (*context_init)(struct event_context *ev);
+	int (*context_init)(struct tevent_context *ev);
 
 	/* fd_event functions */
-	struct fd_event *(*add_fd)(struct event_context *ev,
-				   TALLOC_CTX *mem_ctx,
-				   int fd, uint16_t flags,
-				   event_fd_handler_t handler,
-				   void *private_data);
-	uint16_t (*get_fd_flags)(struct fd_event *fde);
-	void (*set_fd_flags)(struct fd_event *fde, uint16_t flags);
+	struct tevent_fd *(*add_fd)(struct tevent_context *ev,
+				    TALLOC_CTX *mem_ctx,
+				    int fd, uint16_t flags,
+				    tevent_fd_handler_t handler,
+				    void *private_data);
+	uint16_t (*get_fd_flags)(struct tevent_fd *fde);
+	void (*set_fd_flags)(struct tevent_fd *fde, uint16_t flags);
 
 	/* timed_event functions */
-	struct timed_event *(*add_timed)(struct event_context *ev,
-					 TALLOC_CTX *mem_ctx,
-					 struct timeval next_event,
-					 event_timed_handler_t handler,
-					 void *private_data);
+	struct tevent_timer *(*add_timer)(struct tevent_context *ev,
+					  TALLOC_CTX *mem_ctx,
+					  struct timeval next_event,
+					  tevent_timer_handler_t handler,
+					  void *private_data);
 	/* disk aio event functions */
-	struct aio_event *(*add_aio)(struct event_context *ev,
-				     TALLOC_CTX *mem_ctx,
-				     struct iocb *iocb, 
-				     event_aio_handler_t handler, 
-				     void *private_data);
+	struct tevent_aio *(*add_aio)(struct tevent_context *ev,
+				      TALLOC_CTX *mem_ctx,
+				      struct iocb *iocb,
+				      tevent_aio_handler_t handler,
+				      void *private_data);
 	/* signal functions */
-	struct signal_event *(*add_signal)(struct event_context *ev, 
-					   TALLOC_CTX *mem_ctx,
-					   int signum, int sa_flags,
-					   event_signal_handler_t handler, 
-					   void *private_data);
+	struct tevent_signal *(*add_signal)(struct tevent_context *ev,
+					    TALLOC_CTX *mem_ctx,
+					    int signum, int sa_flags,
+					    tevent_signal_handler_t handler,
+					    void *private_data);
 
 	/* loop functions */
-	int (*loop_once)(struct event_context *ev);
-	int (*loop_wait)(struct event_context *ev);
+	int (*loop_once)(struct tevent_context *ev);
+	int (*loop_wait)(struct tevent_context *ev);
 };
 
-struct fd_event {
-	struct fd_event *prev, *next;
-	struct event_context *event_ctx;
+struct tevent_fd {
+	struct tevent_fd *prev, *next;
+	struct tevent_context *event_ctx;
 	int fd;
 	uint16_t flags; /* see EVENT_FD_* flags */
-	event_fd_handler_t handler;
+	tevent_fd_handler_t handler;
 	/* this is private for the specific handler */
 	void *private_data;
 	/* this is private for the events_ops implementation */
@@ -71,21 +71,21 @@ struct fd_event {
 	void *additional_data;
 };
 
-struct timed_event {
-	struct timed_event *prev, *next;
-	struct event_context *event_ctx;
+struct tevent_timer {
+	struct tevent_timer *prev, *next;
+	struct tevent_context *event_ctx;
 	struct timeval next_event;
-	event_timed_handler_t handler;
+	tevent_timer_handler_t handler;
 	/* this is private for the specific handler */
 	void *private_data;
 	/* this is private for the events_ops implementation */
 	void *additional_data;
 };
 
-struct signal_event {
-	struct signal_event *prev, *next;
-	struct event_context *event_ctx;
-	event_signal_handler_t handler;
+struct tevent_signal {
+	struct tevent_signal *prev, *next;
+	struct tevent_context *event_ctx;
+	tevent_signal_handler_t handler;
 	void *private_data;
 	int signum;
 	int sa_flags;
@@ -101,22 +101,22 @@ struct ev_debug_ops {
 	void *context;
 };
 
-int ev_set_debug(struct event_context *ev,
+int ev_set_debug(struct tevent_context *ev,
 		 void (*debug)(void *context, enum ev_debug_level level,
 				const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0),
 		 void *context);
-int ev_set_debug_stderr(struct event_context *ev);
+int ev_set_debug_stderr(struct tevent_context *ev);
 void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...);
 
 /* aio event is private to the aio backend */
-struct aio_event;
+struct tevent_aio;
 
-struct event_context {
+struct tevent_context {
 	/* the specific events implementation */
-	const struct event_ops *ops;
+	const struct tevent_ops *ops;
 
 	/* list of timed events - used by common code */
-	struct timed_event *timed_events;
+	struct tevent_timer *timer_events;
 
 	/* this is private for the events_ops implementation */
 	void *additional_data;
@@ -125,27 +125,30 @@ struct event_context {
 	int num_signal_handlers;
 
 	/* pipe hack used with signal handlers */
-	struct fd_event *pipe_fde;
+	struct tevent_fd *pipe_fde;
 
 	/* debugging operations */
 	struct ev_debug_ops debug_ops;
 };
 
 
-bool event_register_backend(const char *name, const struct event_ops *ops);
+bool event_register_backend(const char *name, const struct tevent_ops *ops);
 
 bool ev_timeval_is_zero(const struct timeval *tv);
-struct timed_event *common_event_add_timed(struct event_context *, TALLOC_CTX *,
-					   struct timeval, event_timed_handler_t, void *);
-struct timeval common_event_loop_timer_delay(struct event_context *);
+struct tevent_timer *common_event_add_timed(struct tevent_context *,
+					    TALLOC_CTX *,
+					    struct timeval,
+					    tevent_timer_handler_t,
+					    void *);
+struct timeval common_event_loop_timer_delay(struct tevent_context *);
 
-struct signal_event *common_event_add_signal(struct event_context *ev, 
-					     TALLOC_CTX *mem_ctx,
-					     int signum,
-					     int sa_flags,
-					     event_signal_handler_t handler, 
-					     void *private_data);
-int common_event_check_signal(struct event_context *ev);
+struct tevent_signal *common_event_add_signal(struct tevent_context *ev,
+					      TALLOC_CTX *mem_ctx,
+					      int signum,
+					      int sa_flags,
+					      tevent_signal_handler_t handler,
+					      void *private_data);
+int common_event_check_signal(struct tevent_context *ev);
 
 
 bool events_standard_init(void);

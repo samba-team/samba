@@ -113,7 +113,7 @@ static int common_event_timed_destructor(struct timed_event *te)
 {
 	struct event_context *ev = talloc_get_type(te->event_ctx,
 						   struct event_context);
-	DLIST_REMOVE(ev->timed_events, te);
+	DLIST_REMOVE(ev->timer_events, te);
 	return 0;
 }
 
@@ -144,7 +144,7 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 
 	/* keep the list ordered */
 	last_te = NULL;
-	for (cur_te = ev->timed_events; cur_te; cur_te = cur_te->next) {
+	for (cur_te = ev->timer_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
 		if (ev_timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
 			break;
@@ -153,7 +153,7 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 		last_te = cur_te;
 	}
 
-	DLIST_ADD_AFTER(ev->timed_events, te, last_te);
+	DLIST_ADD_AFTER(ev->timer_events, te, last_te);
 
 	talloc_set_destructor(te, common_event_timed_destructor);
 
@@ -169,7 +169,7 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
 struct timeval common_event_loop_timer_delay(struct event_context *ev)
 {
 	struct timeval current_time = ev_timeval_zero();
-	struct timed_event *te = ev->timed_events;
+	struct timed_event *te = ev->timer_events;
 
 	if (!te) {
 		/* have a default tick time of 30 seconds. This guarantees
@@ -208,7 +208,7 @@ struct timeval common_event_loop_timer_delay(struct event_context *ev)
 	/* We need to remove the timer from the list before calling the
 	 * handler because in a semi-async inner event loop called from the
 	 * handler we don't want to come across this event again -- vl */
-	DLIST_REMOVE(ev->timed_events, te);
+	DLIST_REMOVE(ev->timer_events, te);
 
 	/*
 	 * If the timed event was registered for a zero current_time,
