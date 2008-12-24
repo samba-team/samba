@@ -23,6 +23,7 @@
 
 extern const struct generic_mapping file_generic_mapping;
 extern bool global_client_failed_oplock_break;
+extern uint32 global_client_caps;
 
 struct deferred_open_record {
 	bool delayed_for_oplocks;
@@ -796,7 +797,6 @@ static bool delay_for_oplocks(struct share_mode_lock *lck,
 			      int pass_number,
 			      int oplock_request)
 {
-	extern uint32 global_client_caps;
 	int i;
 	struct share_mode_entry *exclusive = NULL;
 	bool valid_entry = false;
