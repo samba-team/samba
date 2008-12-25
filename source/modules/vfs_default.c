@@ -714,6 +714,20 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (st.st_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
 
+	/* available disk space is enough or not? */
+	if (lp_strict_allocate(SNUM(fsp->conn))){
+		SMB_BIG_UINT space_avail;
+		SMB_BIG_UINT bsize,dfree,dsize;
+
+		space_avail = get_dfree_info(fsp->conn,fsp->fsp_name,false,&bsize,&dfree,&dsize);
+		/* space_avail is 1k blocks */
+		if (space_avail == (SMB_BIG_UINT)-1 ||
+				((SMB_BIG_UINT)space_to_write/1024 > space_avail) ) {
+			errno = ENOSPC;
+			return -1;
+		}
+	}
+
 	/* Write out the real space on disk. */
 	if (SMB_VFS_LSEEK(fsp, st.st_size, SEEK_SET) != st.st_size)
 		return -1;
