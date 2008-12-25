@@ -26,7 +26,11 @@
 
 static TALLOC_CTX *ctx;
 
-enum acl_mode {SMB_ACL_DELETE, SMB_ACL_MODIFY, SMB_ACL_ADD, SMB_ACL_SET, SMB_ACL_VIEW };
+enum acl_mode { SMB_ACL_DELETE,
+	        SMB_ACL_MODIFY,
+	        SMB_ACL_ADD,
+	        SMB_ACL_SET,
+	        SMB_ACL_VIEW };
 
 struct perm_value {
 	const char *perm;
@@ -45,7 +49,8 @@ static const struct perm_value special_values[] = {
 	{ NULL, 0 },
 };
 
-#define SEC_RIGHTS_DIR_CHANGE ( SEC_RIGHTS_DIR_READ|SEC_STD_DELETE|SEC_RIGHTS_DIR_WRITE|SEC_DIR_TRAVERSE )
+#define SEC_RIGHTS_DIR_CHANGE ( SEC_RIGHTS_DIR_READ|SEC_STD_DELETE|\
+				SEC_RIGHTS_DIR_WRITE|SEC_DIR_TRAVERSE )
 
 static const struct perm_value standard_values[] = {
 	{ "READ",   SEC_RIGHTS_DIR_READ|SEC_DIR_TRAVERSE },
@@ -115,7 +120,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 }
 
 /********************************************************************
- print a ascii version of a security descriptor on a FILE handle
+ print an ascii version of a security descriptor on a FILE handle
 ********************************************************************/
 
 static void sec_desc_print(FILE *f, SEC_DESC *sd)
@@ -137,11 +142,10 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 		print_ace(f, ace);
 		fprintf(f, "\n");
 	}
-
 }
 
 /********************************************************************
-    parse an ACE in the same format as print_ace()
+ parse an ACE in the same format as print_ace()
 ********************************************************************/
 
 static bool parse_ace(SEC_ACE *ace, const char *orig_str)
@@ -266,7 +270,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 				orig_str, p);
 			TALLOC_FREE(frame);
 			SAFE_FREE(str);
-		 	return False;
+			return False;
 		}
 		p++;
 	}
@@ -297,34 +301,34 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 	int num_ace;
 	const char *pacl;
 	int i;
-	
+
 	if ( !szACL )
 		return NULL;
 
 	pacl = szACL;
 	num_ace = count_chars( pacl, ',' ) + 1;
-	
-	if ( !(ace = TALLOC_ZERO_ARRAY( mem_ctx, SEC_ACE, num_ace )) ) 
+
+	if ( !(ace = TALLOC_ZERO_ARRAY( mem_ctx, SEC_ACE, num_ace )) )
 		return NULL;
-	
+
 	for ( i=0; i<num_ace; i++ ) {
 		char *end_acl = strchr_m( pacl, ',' );
 		fstring acl_string;
 
 		strncpy( acl_string, pacl, MIN( PTR_DIFF( end_acl, pacl ), sizeof(fstring)-1) );
 		acl_string[MIN( PTR_DIFF( end_acl, pacl ), sizeof(fstring)-1)] = '\0';
-		
+
 		if ( !parse_ace( &ace[i], acl_string ) )
 			return NULL;
 
 		pacl = end_acl;
 		pacl++;
 	}
-	
+
 	if ( !(acl = make_sec_acl( mem_ctx, NT4_ACL_REVISION, num_ace, ace )) )
 		return NULL;
-		
-	sd = make_sec_desc( mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, 
+
+	sd = make_sec_desc( mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 		NULL, NULL, NULL, acl, sd_size);
 
 	return sd;
@@ -357,22 +361,22 @@ static bool add_ace(TALLOC_CTX *mem_ctx, SEC_ACL **the_acl, SEC_ACE *ace)
 
 static int ace_compare(SEC_ACE *ace1, SEC_ACE *ace2)
 {
-	if (sec_ace_equal(ace1, ace2)) 
+	if (sec_ace_equal(ace1, ace2))
 		return 0;
 
-	if (ace1->type != ace2->type) 
+	if (ace1->type != ace2->type)
 		return ace2->type - ace1->type;
 
-	if (sid_compare(&ace1->trustee, &ace2->trustee)) 
+	if (sid_compare(&ace1->trustee, &ace2->trustee))
 		return sid_compare(&ace1->trustee, &ace2->trustee);
 
-	if (ace1->flags != ace2->flags) 
+	if (ace1->flags != ace2->flags)
 		return ace1->flags - ace2->flags;
 
-	if (ace1->access_mask != ace2->access_mask) 
+	if (ace1->access_mask != ace2->access_mask)
 		return ace1->access_mask - ace2->access_mask;
 
-	if (ace1->size != ace2->size) 
+	if (ace1->size != ace2->size)
 		return ace1->size - ace2->size;
 
 	return memcmp(ace1, ace2, sizeof(SEC_ACE));
@@ -405,7 +409,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	SEC_DESC *old = NULL;
 	size_t sd_size = 0;
 	uint32 i, j;
-	
+
 	if (mode != SMB_ACL_SET) {
 	    if (!(old = get_share_security( mem_ctx, sharename, &sd_size )) ) {
 		fprintf(stderr, "Unable to retrieve permissions for share [%s]\n", sharename);
@@ -417,7 +421,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		fprintf( stderr, "Failed to parse acl\n");
 		return -1;
 	}
-	
+
 	switch (mode) {
 	case SMB_ACL_VIEW:
 		sec_desc_print( stdout, old);
@@ -532,7 +536,7 @@ int main(int argc, const char *argv[])
 	x_setbuf( x_stderr, NULL );
 
 	pc = poptGetContext("sharesec", argc, argv, long_options, 0);
-	
+
 	poptSetOtherOptionHelp(pc, "sharename\n");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
@@ -563,13 +567,13 @@ int main(int argc, const char *argv[])
 		case 'F':
 			force_acl = True;
 			break;
-			
+
 		case 'M':
 			initialize_sid = True;
 			break;
 		}
 	}
-	
+
 	setlinebuf(stdout);
 
 	load_case_tables();
@@ -577,15 +581,15 @@ int main(int argc, const char *argv[])
 	lp_load( get_dyn_CONFIGFILE(), False, False, False, True );
 
 	/* check for initializing secrets.tdb first */
-	
+
 	if ( initialize_sid ) {
 		DOM_SID *sid = get_global_sam_sid();
-		
+
 		if ( !sid ) {
 			fprintf( stderr, "Failed to retrieve Machine SID!\n");
 			return 3;
 		}
-		
+
 		printf ("%s\n", sid_string_tos( sid ) );
 		return 0;
 	}
@@ -597,22 +601,22 @@ int main(int argc, const char *argv[])
 
 	/* get the sharename */
 
-	if(!poptPeekArg(pc)) { 
-		poptPrintUsage(pc, stderr, 0);	
+	if(!poptPeekArg(pc)) {
+		poptPrintUsage(pc, stderr, 0);
 		return -1;
 	}
-	
+
 	fstrcpy(sharename, poptGetArg(pc));
-	
+
 	snum = lp_servicenumber( sharename );
-	
+
 	if ( snum == -1 && !force_acl ) {
 		fprintf( stderr, "Invalid sharename: %s\n", sharename);
 		return -1;
 	}
-		
+
 	retval = change_share_sec(ctx, sharename, the_acl, mode);
-	
+
 	talloc_destroy(ctx);
 
 	return retval;
