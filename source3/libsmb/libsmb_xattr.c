@@ -424,7 +424,7 @@ sec_desc_parse(TALLOC_CTX *ctx,
                struct cli_state *ipc_cli,
                POLICY_HND *pol,
                bool numeric,
-               char *str)
+               const char *str)
 {
 	const char *p = str;
 	char *tok;
@@ -1531,8 +1531,7 @@ cacl_set(TALLOC_CTX *ctx,
                         the_acl = p + 1;
                 }
                 
-                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric,
-                                    CONST_DISCARD(char *, the_acl));
+                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, the_acl);
                 
                 if (!sd) {
 			errno = EINVAL;
