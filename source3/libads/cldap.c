@@ -106,17 +106,6 @@ static int send_cldap_netlogon(TALLOC_CTX *mem_ctx, int sock, const char *domain
 	return 0;
 }
 
-static SIG_ATOMIC_T gotalarm;
-
-/***************************************************************
- Signal function to tell us we timed out.
-****************************************************************/
-
-static void gotalarm_sig(void)
-{
-	gotalarm = 1;
-}
-
 /*
   receive a cldap netlogon reply
 */
@@ -132,10 +121,11 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 	DATA_BLOB os2 = data_blob_null;
 	DATA_BLOB os3 = data_blob_null;
 	int i1;
-	/* half the time of a regular ldap timeout, not less than 3 seconds. */
-	unsigned int al_secs = MAX(3,lp_ldap_timeout()/2);
 	struct netlogon_samlogon_response *r = NULL;
 	NTSTATUS status;
+
+	fd_set r_fds;
+	struct timeval timeout;
 
 	blob = data_blob(NULL, 8192);
 	if (blob.data == NULL) {
@@ -144,18 +134,29 @@ static int recv_cldap_netlogon(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	/* Setup timeout */
-	gotalarm = 0;
-	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
-	alarm(al_secs);
-	/* End setup timeout. */
- 
+	FD_ZERO(&r_fds);
+	FD_SET(sock, &r_fds);
+
+	/*
+	 * half the time of a regular ldap timeout, not less than 3 seconds.
+	 */
+	timeout.tv_sec = MAX(3,lp_ldap_timeout()/2);
+	timeout.tv_usec = 0;
+
+	ret = sys_select(sock+1, &r_fds, NULL, NULL, &timeout);
+	if (ret == -1) {
+		DEBUG(10, ("select failed: %s\n", strerror(errno)));
+		data_blob_free(&blob);
+		return -1;
+	}
+
+	if (ret == 0) {
+		DEBUG(1,("no reply received to cldap netlogon\n"));
+		data_blob_free(&blob);
+		return -1;
+	}
+
 	ret = read(sock, blob.data, blob.length);
-
-	/* Teardown timeout. */
-	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-	alarm(0);
-
 	if (ret <= 0) {
 		DEBUG(1,("no reply received to cldap netlogon\n"));
 		data_blob_free(&blob);
