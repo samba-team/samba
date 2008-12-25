@@ -146,7 +146,7 @@ ssize_t sys_recvfile(int fromfd,
 			size_t count)
 {
 	static int pipefd[2] = { -1, -1 };
-	static bool try_splice_call = true;
+	static bool try_splice_call = false;
 	size_t total_written = 0;
 
 	DEBUG(10,("sys_recvfile: from = %d, to = %d, "
