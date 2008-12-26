@@ -192,7 +192,7 @@ BIN_PROGS2 = bin/smbcontrol@EXEEXT@ bin/smbtree@EXEEXT@ bin/tdbbackup@EXEEXT@ \
 	bin/nmblookup@EXEEXT@ bin/pdbedit@EXEEXT@ bin/tdbdump@EXEEXT@ \
 	bin/tdbtool@EXEEXT@
 BIN_PROGS3 = bin/smbpasswd@EXEEXT@ bin/rpcclient@EXEEXT@ bin/smbcacls@EXEEXT@ \
-	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ \
+	bin/profiles@EXEEXT@ bin/ntlm_auth@EXEEXT@ bin/sharesec@EXEEXT@ \
 	bin/smbcquotas@EXEEXT@ bin/eventlogadm@EXEEXT@
 BIN_PROGS4 = bin/ldbedit@EXEEXT@ bin/ldbsearch@EXEEXT@ bin/ldbadd@EXEEXT@ \
 	bin/ldbdel@EXEEXT@ bin/ldbmodify@EXEEXT@
@@ -209,7 +209,7 @@ BIN_PROGS = @EXTRA_BIN_PROGS@ \
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
-	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ \
+	bin/log2pcap@EXEEXT@ \
 	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@
 
 PAM_MODULES = @PAM_MODULES@
