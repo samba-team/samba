@@ -92,7 +92,8 @@ static void cmd_getgrnam_recv_domain(struct composite_context *ctx)
 		return;
 	}
 
-	group_info->in.group_name = group_name;
+	group_info->in.level = GROUP_INFO_BY_NAME;
+	group_info->in.data.group_name = group_name;
 	group_info->in.domain_name = group_dom;
 	state->workgroup_name = talloc_strdup(state, group_dom);
 	if(composite_nomem(state->workgroup_name, state->ctx)) return;

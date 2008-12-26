@@ -29,11 +29,19 @@ struct libnet_CreateGroup {
 	} out;
 };
 
+enum libnet_GroupInfo_level {
+	GROUP_INFO_BY_NAME=0,
+	GROUP_INFO_BY_SID
+};
 
 struct libnet_GroupInfo {
 	struct {
-		const char *group_name;
 		const char *domain_name;
+		enum libnet_GroupInfo_level level;
+		union {
+			const char *group_name;
+			const struct dom_sid *group_sid;
+		} data;
 	} in;
 	struct {
 		const char *group_name;

@@ -264,9 +264,10 @@ bool torture_groupinfo_api(struct torture_context *torture)
 	mem_ctx = talloc_init("torture group info");
 
 	ZERO_STRUCT(req);
-	
+
 	req.in.domain_name = domain_name.string;
-	req.in.group_name   = name;
+	req.in.level = GROUP_INFO_BY_NAME;
+	req.in.data.group_name = name;
 
 	status = libnet_GroupInfo(ctx, mem_ctx, &req);
 	if (!NT_STATUS_IS_OK(status)) {

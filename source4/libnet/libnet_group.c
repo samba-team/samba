@@ -172,7 +172,9 @@ NTSTATUS libnet_CreateGroup(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 struct group_info_state {
 	struct libnet_context *ctx;
 	const char *domain_name;
+	enum libnet_GroupInfo_level level;
 	const char *group_name;
+	const char *sid_string;
 	struct libnet_LookupName lookup;
 	struct libnet_DomainOpen domopen;
 	struct libnet_rpc_groupinfo info;
@@ -203,7 +205,7 @@ struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
 	struct composite_context *c;
 	struct group_info_state *s;
 	bool prereq_met = false;
-	struct composite_context *lookup_req;
+	struct composite_context *lookup_req, *info_req;
 
 	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
@@ -216,25 +218,54 @@ struct composite_context* libnet_GroupInfo_send(struct libnet_context *ctx,
 
 	/* store arguments in the state structure */
 	s->monitor_fn = monitor;
-	s->ctx = ctx;	
+	s->ctx = ctx;
 	s->domain_name = talloc_strdup(c, io->in.domain_name);
-	s->group_name  = talloc_strdup(c, io->in.group_name);
+	s->level = io->in.level;
+	switch(s->level) {
+	case GROUP_INFO_BY_NAME:
+		s->group_name = talloc_strdup(c, io->in.data.group_name);
+		s->sid_string = NULL;
+		break;
+	case GROUP_INFO_BY_SID:
+		s->group_name = NULL;
+		s->sid_string = dom_sid_string(c, io->in.data.group_sid);
+		break;
+	}
 
 	/* prerequisite: make sure the domain is opened */
 	prereq_met = samr_domain_opened(ctx, s->domain_name, &c, &s->domopen,
 					continue_domain_open_info, monitor);
 	if (!prereq_met) return c;
-	
-	/* prepare arguments for LookupName call */
-	s->lookup.in.name        = s->group_name;
-	s->lookup.in.domain_name = s->domain_name;
 
-	/* send the request */
-	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
-	if (composite_nomem(lookup_req, c)) return c;
+	switch(s->level) {
+	case GROUP_INFO_BY_NAME:
+		/* prepare arguments for LookupName call */
+		s->lookup.in.name        = s->group_name;
+		s->lookup.in.domain_name = s->domain_name;
 
-	/* set the next stage */
-	composite_continue(c, lookup_req, continue_name_found, c);
+		/* send the request */
+		lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
+		if (composite_nomem(lookup_req, c)) return c;
+
+		/* set the next stage */
+		composite_continue(c, lookup_req, continue_name_found, c);
+		break;
+	case GROUP_INFO_BY_SID:
+		/* prepare arguments for groupinfo call */
+		s->info.in.domain_handle = s->ctx->samr.handle;
+		s->info.in.sid           = s->sid_string;
+		/* we're looking for all information available */
+		s->info.in.level         = GROUPINFOALL;
+
+		/* send the request */
+		info_req = libnet_rpc_groupinfo_send(s->ctx->samr.pipe, &s->info, s->monitor_fn);
+		if (composite_nomem(info_req, c)) return c;
+
+		/* set the next stage */
+		composite_continue(c, info_req, continue_group_info, c);
+		break;
+	}
+
 	return c;
 }
 
@@ -246,7 +277,7 @@ static void continue_domain_open_info(struct composite_context *ctx)
 {
 	struct composite_context *c;
 	struct group_info_state *s;
-	struct composite_context *lookup_req;
+	struct composite_context *lookup_req, *info_req;
 	
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct group_info_state);
@@ -255,16 +286,35 @@ static void continue_domain_open_info(struct composite_context *ctx)
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domopen);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare arguments for LookupName call */
-	s->lookup.in.name        = s->group_name;
-	s->lookup.in.domain_name = s->domain_name;
+	switch(s->level) {
+	case GROUP_INFO_BY_NAME:
+		/* prepare arguments for LookupName call */
+		s->lookup.in.name        = s->group_name;
+		s->lookup.in.domain_name = s->domain_name;
 
-	/* send the request */
-	lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
-	if (composite_nomem(lookup_req, c)) return;
-	
-	/* set the next stage */
-	composite_continue(c, lookup_req, continue_name_found, c);
+		/* send the request */
+		lookup_req = libnet_LookupName_send(s->ctx, c, &s->lookup, s->monitor_fn);
+		if (composite_nomem(lookup_req, c)) return;
+
+		/* set the next stage */
+		composite_continue(c, lookup_req, continue_name_found, c);
+		break;
+	case GROUP_INFO_BY_SID:
+		/* prepare arguments for groupinfo call */
+		s->info.in.domain_handle = s->ctx->samr.handle;
+		s->info.in.sid           = s->sid_string;
+		/* we're looking for all information available */
+		s->info.in.level         = GROUPINFOALL;
+
+		/* send the request */
+		info_req = libnet_rpc_groupinfo_send(s->ctx->samr.pipe, &s->info, s->monitor_fn);
+		if (composite_nomem(info_req, c)) return;
+
+		/* set the next stage */
+		composite_continue(c, info_req, continue_group_info, c);
+		break;
+
+	}
 }
 
 
@@ -283,7 +333,7 @@ static void continue_name_found(struct composite_context *ctx)
 	/* receive SID assiociated with name found */
 	c->status = libnet_LookupName_recv(ctx, c, &s->lookup);
 	if (!composite_is_ok(c)) return;
-	
+
 	/* Is is a group SID actually ? */
 	if (s->lookup.out.sid_type != SID_NAME_DOM_GRP &&
 	    s->lookup.out.sid_type != SID_NAME_ALIAS) {
