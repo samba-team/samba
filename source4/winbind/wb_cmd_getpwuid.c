@@ -55,7 +55,7 @@ struct composite_context *wb_cmd_getpwuid_send(TALLOC_CTX *mem_ctx,
 	struct composite_context *ctx, *result;
 	struct cmd_getpwuid_state *state;
 
-	DEBUG(5, ("wb_cmd_getpwnam_send called\n"));
+	DEBUG(5, ("wb_cmd_getpwuid_send called\n"));
 
 	result = composite_create(mem_ctx, service->task->event_ctx);
 	if (!result) return NULL;
@@ -190,7 +190,7 @@ NTSTATUS wb_cmd_getpwuid_recv(struct composite_context *ctx,
 {
 	NTSTATUS status = composite_wait(ctx);
 
-	DEBUG(5, ("wb_cmd_getpwnam_recv called\n"));
+	DEBUG(5, ("wb_cmd_getpwuid_recv called\n"));
 
 	if (NT_STATUS_IS_OK(status)) {
 		struct cmd_getpwuid_state *state =
