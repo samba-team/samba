@@ -40,6 +40,7 @@ WINBIND_OBJ_FILES = $(addprefix $(winbindsrcdir)/, \
 		wb_cmd_lookupname.o \
 		wb_cmd_lookupsid.o \
 		wb_cmd_getdcname.o \
+		wb_cmd_getgrnam.o \
 		wb_cmd_getpwnam.o \
 		wb_cmd_getpwuid.o \
 		wb_cmd_userdomgroups.o \
