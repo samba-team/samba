@@ -745,10 +745,10 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		uint64_t space_avail;
 		uint64_t bsize,dfree,dsize;
 
-		space_avail = get_dfree_info(conn,fsp->fsp_name,false,&bsize,&dfree,&dsize);
+		space_avail = get_dfree_info(fsp->conn,fsp->fsp_name,false,&bsize,&dfree,&dsize);
 		/* space_avail is 1k blocks */
-		if (space_avail == (SMB_BIG_UINT)-1 ||
-				((SMB_BIG_UINT)space_to_write/1024 > space_avail) ) {
+		if (space_avail == (uint64_t)-1 ||
+				((uint64_t)space_to_write/1024 > space_avail) ) {
 			errno = ENOSPC;
 			return -1;
 		}
