@@ -33,13 +33,14 @@ struct libnet_CreateGroup {
 struct libnet_GroupInfo {
 	struct {
 		const char *group_name;
-		const char *domain_name;		
+		const char *domain_name;
 	} in;
 	struct {
+		const char *group_name;
 		struct dom_sid *group_sid;
 		uint32_t num_members;
 		const char *description;
-		
+
 		const char *error_string;
 	} out;
 };

@@ -344,7 +344,9 @@ NTSTATUS libnet_GroupInfo_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
 	if (NT_STATUS_IS_OK(status)) {
 		/* put the results into io structure if everything went fine */
 		s = talloc_get_type(c->private_data, struct group_info_state);
-		
+
+		io->out.group_name = talloc_steal(mem_ctx,
+					s->info.out.info.all.name.string);
 		io->out.group_sid = talloc_steal(mem_ctx, s->lookup.out.sid);
 		io->out.num_members = s->info.out.info.all.num_members;
 		io->out.description = talloc_steal(mem_ctx, s->info.out.info.all.description.string);
