@@ -213,6 +213,34 @@ static bool wbinfo_get_groupinfo(char *group)
 	return true;
 }
 
+/* pull grent for a given gid */
+static bool wbinfo_get_gidinfo(int gid)
+{
+	struct winbindd_request request;
+	struct winbindd_response response;
+	NSS_STATUS result;
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	/* Send request */
+
+	request.data.gid = gid;
+
+	result = winbindd_request_response(WINBINDD_GETGRGID, &request,
+				  &response);
+
+	if ( result != NSS_STATUS_SUCCESS)
+		return false;
+
+	d_printf( "%s:%s:%d\n",
+		  response.data.gr.gr_name,
+		  response.data.gr.gr_passwd,
+		  response.data.gr.gr_gid );
+
+	return true;
+}
+
 /* List groups a user is a member of */
 
 static bool wbinfo_get_usergroups(char *user)
@@ -1005,6 +1033,7 @@ enum {
 	OPT_LIST_OWN_DOMAIN,
 	OPT_UID_INFO,
 	OPT_GROUP_INFO,
+	OPT_GID_INFO,
 };
 
 int main(int argc, char **argv, char **envp)
@@ -1042,6 +1071,7 @@ int main(int argc, char **argv, char **envp)
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
 		{ "uid-info", 0, POPT_ARG_INT, &int_arg, OPT_UID_INFO, "Get user info from uid", "UID" },
 		{ "group-info", 0, POPT_ARG_STRING, &string_arg, OPT_GROUP_INFO, "Get group info", "GROUP" },
+		{ "gid-info", 0, POPT_ARG_INT, &int_arg, OPT_GID_INFO, "Get group info from gid", "GID" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
 		  OPT_USERDOMGROUPS, "Get user domain groups", "SID" },
@@ -1189,6 +1219,13 @@ int main(int argc, char **argv, char **envp)
 			if ( !wbinfo_get_groupinfo(string_arg)) {
 				d_fprintf(stderr, "Could not get info for "
 					  "group %s\n", string_arg);
+				goto done;
+			}
+			break;
+		case OPT_GID_INFO:
+			if ( !wbinfo_get_gidinfo(int_arg)) {
+				d_fprintf(stderr, "Could not get info for gid "
+						"%d\n", int_arg);
 				goto done;
 			}
 			break;
