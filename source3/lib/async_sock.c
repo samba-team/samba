@@ -236,7 +236,10 @@ static void async_send_callback(struct event_context *ev,
 		req->private_data, struct async_syscall_state);
 	struct param_send *p = &state->param.param_send;
 
-	SMB_ASSERT(state->syscall_type == ASYNC_SYSCALL_SEND);
+	if (state->syscall_type != ASYNC_SYSCALL_SEND) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	state->result.result_ssize_t = send(p->fd, p->buffer, p->length,
 					    p->flags);
@@ -300,7 +303,10 @@ static void async_sendall_callback(struct event_context *ev,
 		req->private_data, struct async_syscall_state);
 	struct param_sendall *p = &state->param.param_sendall;
 
-	SMB_ASSERT(state->syscall_type == ASYNC_SYSCALL_SENDALL);
+	if (state->syscall_type != ASYNC_SYSCALL_SENDALL) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	state->result.result_ssize_t = send(p->fd, (char *)p->buffer + p->sent,
 					    p->length - p->sent, p->flags);
@@ -317,7 +323,10 @@ static void async_sendall_callback(struct event_context *ev,
 	}
 
 	p->sent += state->result.result_ssize_t;
-	SMB_ASSERT(p->sent <= p->length);
+	if (p->sent > p->length) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	if (p->sent == p->length) {
 		TALLOC_FREE(state->fde);
@@ -385,7 +394,10 @@ static void async_recv_callback(struct event_context *ev,
 		req->private_data, struct async_syscall_state);
 	struct param_recv *p = &state->param.param_recv;
 
-	SMB_ASSERT(state->syscall_type == ASYNC_SYSCALL_RECV);
+	if (state->syscall_type != ASYNC_SYSCALL_RECV) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	state->result.result_ssize_t = recv(p->fd, p->buffer, p->length,
 					    p->flags);
@@ -450,7 +462,10 @@ static void async_recvall_callback(struct event_context *ev,
 		req->private_data, struct async_syscall_state);
 	struct param_recvall *p = &state->param.param_recvall;
 
-	SMB_ASSERT(state->syscall_type == ASYNC_SYSCALL_RECVALL);
+	if (state->syscall_type != ASYNC_SYSCALL_RECVALL) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	state->result.result_ssize_t = recv(p->fd,
 					    (char *)p->buffer + p->received,
@@ -468,7 +483,10 @@ static void async_recvall_callback(struct event_context *ev,
 	}
 
 	p->received += state->result.result_ssize_t;
-	SMB_ASSERT(p->received <= p->length);
+	if (p->received > p->length) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	if (p->received == p->length) {
 		TALLOC_FREE(state->fde);
@@ -535,7 +553,10 @@ static void async_connect_callback(struct event_context *ev,
 		req->private_data, struct async_syscall_state);
 	struct param_connect *p = &state->param.param_connect;
 
-	SMB_ASSERT(state->syscall_type == ASYNC_SYSCALL_CONNECT);
+	if (state->syscall_type != ASYNC_SYSCALL_CONNECT) {
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
 
 	TALLOC_FREE(state->fde);
 
