@@ -7982,4 +7982,14 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 
 NTSTATUS nss_info_template_init( void );
 
+/* Misc protos */
+
+struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct wb_context *wb_ctx, bool need_priv,
+				const struct winbindd_request *wb_req);
+NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+		       struct winbindd_response **presponse);
+struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx);
+
+
 #endif /*  _PROTO_H_  */
