@@ -209,7 +209,7 @@ size_t async_syscall_result_size_t(struct async_req *req, int *perrno)
  * @retval The return value from the asynchronously called syscall
  */
 
-ssize_t async_syscall_result_int(struct async_req *req, int *perrno)
+int async_syscall_result_int(struct async_req *req, int *perrno)
 {
 	struct async_syscall_state *state = talloc_get_type_abort(
 		req->private_data, struct async_syscall_state);
