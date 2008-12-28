@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "winbindd.h"
+#include "winbindd/winbindd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
