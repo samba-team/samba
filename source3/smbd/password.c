@@ -281,9 +281,6 @@ int register_existing_vuid(uint16 vuid,
 		"and will be vuid %u\n", (int)vuser->server_info->utok.uid,
 		 vuser->server_info->unix_name, vuser->vuid));
 
-	next_vuid++;
-	num_validated_vuids++;
-
 	if (!session_claim(vuser)) {
 		DEBUG(1, ("register_existing_vuid: Failed to claim session "
 			"for vuid=%d\n",
