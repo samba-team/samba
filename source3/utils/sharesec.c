@@ -30,6 +30,7 @@ enum acl_mode { SMB_ACL_DELETE,
 	        SMB_ACL_MODIFY,
 	        SMB_ACL_ADD,
 	        SMB_ACL_SET,
+		SMB_SD_DELETE,
 	        SMB_ACL_VIEW };
 
 struct perm_value {
@@ -410,14 +411,16 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	size_t sd_size = 0;
 	uint32 i, j;
 
-	if (mode != SMB_ACL_SET) {
+	if (mode != SMB_ACL_SET && mode != SMB_SD_DELETE) {
 	    if (!(old = get_share_security( mem_ctx, sharename, &sd_size )) ) {
-		fprintf(stderr, "Unable to retrieve permissions for share [%s]\n", sharename);
+		fprintf(stderr, "Unable to retrieve permissions for share "
+			"[%s]\n", sharename);
 		return -1;
 	    }
 	}
 
-	if ( (mode != SMB_ACL_VIEW) && !(sd = parse_acl_string(mem_ctx, the_acl, &sd_size )) ) {
+	if ( (mode != SMB_ACL_VIEW && mode != SMB_SD_DELETE) &&
+	    !(sd = parse_acl_string(mem_ctx, the_acl, &sd_size )) ) {
 		fprintf( stderr, "Failed to parse acl\n");
 		return -1;
 	}
@@ -448,7 +451,6 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 		printf(" not found\n");
 		}
 	    }
-
 	    break;
 	case SMB_ACL_MODIFY:
 	    for (i=0;sd->dacl && i<sd->dacl->num_aces;i++) {
@@ -484,6 +486,13 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	case SMB_ACL_SET:
 	    old = sd;
 	    break;
+	case SMB_SD_DELETE:
+	    if (!delete_share_security(sharename)) {
+		fprintf( stderr, "Failed to delete security descriptor for "
+			 "share [%s]\n", sharename );
+		return -1;
+	    }
+	    return 0;
 	}
 
 	/* Denied ACE entries must come before allowed ones */
@@ -513,10 +522,11 @@ int main(int argc, const char *argv[])
 	bool initialize_sid = False;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "remove", 'r', POPT_ARG_STRING, &the_acl, 'r', "Delete an ACE", "ACL" },
-		{ "modify", 'm', POPT_ARG_STRING, &the_acl, 'm', "Modify an acl", "ACL" },
-		{ "add", 'a', POPT_ARG_STRING, &the_acl, 'a', "Add an ACE", "ACL" },
-		{ "replace", 'R', POPT_ARG_STRING, &the_acl, 'R', "Set share mission ACL", "ACLS" },
+		{ "remove", 'r', POPT_ARG_STRING, &the_acl, 'r', "Remove ACEs", "ACL" },
+		{ "modify", 'm', POPT_ARG_STRING, &the_acl, 'm', "Modify existing ACEs", "ACL" },
+		{ "add", 'a', POPT_ARG_STRING, &the_acl, 'a', "Add ACEs", "ACL" },
+		{ "replace", 'R', POPT_ARG_STRING, &the_acl, 'R', "Overwrite share permission ACL", "ACLS" },
+		{ "delete", 'D', POPT_ARG_NONE, NULL, 'D', "Delete the entire security descriptor" },
 		{ "view", 'v', POPT_ARG_NONE, NULL, 'v', "View current share permissions" },
 		{ "machine-sid", 'M', POPT_ARG_NONE, NULL, 'M', "Initialize the machine SID" },
 		{ "force", 'F', POPT_ARG_NONE, NULL, 'F', "Force storing the ACL", "ACLS" },
@@ -555,9 +565,14 @@ int main(int argc, const char *argv[])
 			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_ADD;
 			break;
+
 		case 'R':
 			the_acl = smb_xstrdup(poptGetOptArg(pc));
 			mode = SMB_ACL_SET;
+			break;
+
+		case 'D':
+			mode = SMB_SD_DELETE;
 			break;
 
 		case 'v':
