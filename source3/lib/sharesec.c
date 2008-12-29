@@ -41,7 +41,7 @@ static bool share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32 vers_id;
- 
+
 	if (share_db != NULL) {
 		return True;
 	}
@@ -53,7 +53,7 @@ static bool share_info_db_init(void)
 			state_path("share_info.tdb"), strerror(errno) ));
 		return False;
 	}
- 
+
 	vers_id = dbwrap_fetch_int32(share_db, vstring);
 	if (vers_id == SHARE_DATABASE_VERSION_V2) {
 		return true;
@@ -251,6 +251,10 @@ bool delete_share_security(const char *servicename)
 	TDB_DATA kbuf;
 	char *key;
 	NTSTATUS status;
+
+	if (!share_info_db_init()) {
+		return False;
+	}
 
 	if (!(key = talloc_asprintf(talloc_tos(), "SECDESC/%s",
 				    servicename))) {
