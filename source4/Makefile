@@ -78,7 +78,6 @@ appwebsrcdir := lib/appweb
 libstreamsrcdir := lib/stream
 libutilsrcdir := ../lib/util
 libtdrsrcdir := lib/tdr
-libdbwrapsrcdir := lib/dbwrap
 libcryptosrcdir := ../lib/crypto
 libtorturesrcdir := ../lib/torture
 smb_serversrcdir := smb_server

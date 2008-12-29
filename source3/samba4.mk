@@ -90,7 +90,6 @@ nsswrappersrcdir := $(samba4srcdir)/../lib/nss_wrapper
 libstreamsrcdir := $(samba4srcdir)/lib/stream
 libutilsrcdir := $(samba4srcdir)/../lib/util
 libtdrsrcdir := $(samba4srcdir)/lib/tdr
-libdbwrapsrcdir := $(samba4srcdir)/lib/dbwrap
 libcryptosrcdir := $(samba4srcdir)/../lib/crypto
 libtorturesrcdir := ../lib/torture
 libcompressionsrcdir := $(samba4srcdir)/../lib/compression
