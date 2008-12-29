@@ -82,11 +82,7 @@ user_struct *get_valid_user_struct(uint16 vuid)
 
 bool is_partial_auth_vuid(uint16 vuid)
 {
-	if (vuid == UID_FIELD_INVALID) {
-		return False;
-	}
-	return get_valid_user_struct_internal(vuid,
-			SERVER_ALLOCATED_REQUIRED_NO) ? True : False;
+	return (get_partial_auth_user_struct(vuid) != NULL);
 }
 
 /****************************************************************************
