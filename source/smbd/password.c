@@ -188,7 +188,6 @@ int register_initial_vuid(void)
 	while( get_valid_user_struct_internal(next_vuid,
 			SERVER_ALLOCATED_REQUIRED_ANY) != NULL ) {
 		increment_next_vuid(&next_vuid);
-		next_vuid++;
 	}
 
 	DEBUG(10,("register_initial_vuid: allocated vuid = %u\n",
