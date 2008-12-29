@@ -20,28 +20,28 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "vfs_posix.h"
-#include "lib/events/events.h"
 #include "system/aio.h"
 
 struct pvfs_aio_read_state {
 	struct ntvfs_request *req;
 	union smb_read *rd;
 	struct pvfs_file *f;
-	struct aio_event *ae;
+	struct tevent_aio *ae;
 };
 
 struct pvfs_aio_write_state {
 	struct ntvfs_request *req;
 	union smb_write *wr;
 	struct pvfs_file *f;
-	struct aio_event *ae;
+	struct tevent_aio *ae;
 };
 
 /*
   called when an aio read has finished
 */
-static void pvfs_aio_read_handler(struct event_context *ev, struct aio_event *ae, 
+static void pvfs_aio_read_handler(struct tevent_context *ev, struct tevent_aio *ae,
 			     int ret, void *private)
 {
 	struct pvfs_aio_read_state *state = talloc_get_type(private, 
@@ -83,10 +83,10 @@ NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
 
         io_prep_pread(&iocb, f->handle->fd, rd->readx.out.data,
 		      maxcnt, rd->readx.in.offset);
-	state->ae = event_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb, 
-				  pvfs_aio_read_handler, state);
+	state->ae = tevent_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb,
+				   pvfs_aio_read_handler, state);
 	if (state->ae == NULL) {
-		DEBUG(0,("Failed event_add_aio\n"));
+		DEBUG(0,("Failed tevent_add_aio\n"));
 		talloc_free(state);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
@@ -106,7 +106,7 @@ NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
 /*
   called when an aio write has finished
 */
-static void pvfs_aio_write_handler(struct event_context *ev, struct aio_event *ae, 
+static void pvfs_aio_write_handler(struct tevent_context *ev, struct tevent_aio *ae,
 			     int ret, void *private)
 {
 	struct pvfs_aio_write_state *state = talloc_get_type(private, 
@@ -147,10 +147,10 @@ NTSTATUS pvfs_aio_pwrite(struct ntvfs_request *req, union smb_write *wr,
 
         io_prep_pwrite(&iocb, f->handle->fd, wr->writex.in.data,
 		       wr->writex.in.count, wr->writex.in.offset);
-	state->ae = event_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb, 
-				  pvfs_aio_write_handler, state);
+	state->ae = tevent_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb,
+				   pvfs_aio_write_handler, state);
 	if (state->ae == NULL) {
-		DEBUG(0,("Failed event_add_aio\n"));
+		DEBUG(0,("Failed tevent_add_aio\n"));
 		talloc_free(state);
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
