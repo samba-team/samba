@@ -1189,13 +1189,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		reopen_logs();
 	}
 
-	/*
-	 * For clustering, we need to re-init our ctdbd connection after the
-	 * fork
-	 */
-	if (!NT_STATUS_IS_OK(messaging_reinit(winbind_messaging_context())))
-		exit(1);
-
 	/* Don't handle the same messages as our parent. */
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_SMB_CONF_UPDATED, NULL);
