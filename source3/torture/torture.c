@@ -4869,6 +4869,8 @@ static bool run_sesssetup_bench(int dummy)
 			return false;
 		}
 
+		d_printf("\r%d   ", (int)c->vuid);
+
 		if (!cli_ulogoff(c)) {
 			d_printf("(%s) cli_ulogoff failed: %s\n",
 				 __location__, cli_errstr(c));
