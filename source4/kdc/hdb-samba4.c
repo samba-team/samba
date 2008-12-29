@@ -1548,7 +1548,7 @@ krb5_error_code hdb_samba4_create(krb5_context context, struct HDB **db, const c
 {
 	NTSTATUS nt_status;
 	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_samba4_create(kdc_mem_ctx, event_context_find(kdc_mem_ctx), kdc_lp_ctx, 
+	nt_status = kdc_hdb_samba4_create(kdc_mem_ctx, kdc_ev_ctx, kdc_lp_ctx,
 					  context, db, arg);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
