@@ -170,7 +170,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	ZERO_STRUCTP(ace);
 	p = strchr_m(str,':');
 	if (!p) {
-		printf("ACE '%s': missing ':'.\n", orig_str);
+		fprintf(stderr, "ACE '%s': missing ':'.\n", orig_str);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
 		return False;
@@ -187,7 +187,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	/* Try to parse text form */
 
 	if (!string_to_sid(&sid, str)) {
-		printf("ACE '%s': failed to convert '%s' to SID\n",
+		fprintf(stderr, "ACE '%s': failed to convert '%s' to SID\n",
 			orig_str, str);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
@@ -196,7 +196,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 
 	cp = p;
 	if (!next_token_talloc(frame, &cp, &tok, "/")) {
-		printf("ACE '%s': failed to find '/' character.\n",
+		fprintf(stderr, "ACE '%s': failed to find '/' character.\n",
 			orig_str);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
@@ -208,8 +208,8 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	} else if (strncmp(tok, "DENIED", strlen("DENIED")) == 0) {
 		atype = SEC_ACE_TYPE_ACCESS_DENIED;
 	} else {
-		printf("ACE '%s': missing 'ALLOWED' or 'DENIED' entry at '%s'\n",
-			orig_str, tok);
+		fprintf(stderr, "ACE '%s': missing 'ALLOWED' or 'DENIED' "
+			"entry at '%s'\n", orig_str, tok);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
 		return False;
@@ -220,7 +220,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 
 	if (!(next_token_talloc(frame, &cp, &tok, "/") &&
 	      sscanf(tok, "%i", &aflags) && aflags == 0)) {
-		printf("ACE '%s': bad integer flags entry at '%s'\n",
+		fprintf(stderr, "ACE '%s': bad integer flags entry at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
@@ -228,7 +228,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 	}
 
 	if (!next_token_talloc(frame, &cp, &tok, "/")) {
-		printf("ACE '%s': missing / at '%s'\n",
+		fprintf(stderr, "ACE '%s': missing / at '%s'\n",
 			orig_str, tok);
 		SAFE_FREE(str);
 		TALLOC_FREE(frame);
@@ -237,7 +237,7 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 
 	if (strncmp(tok, "0x", 2) == 0) {
 		if (sscanf(tok, "%i", &amask) != 1) {
-			printf("ACE '%s': bad hex number at '%s'\n",
+			fprintf(stderr, "ACE '%s': bad hex number at '%s'\n",
 				orig_str, tok);
 			TALLOC_FREE(frame);
 			SAFE_FREE(str);
@@ -266,8 +266,8 @@ static bool parse_ace(SEC_ACE *ace, const char *orig_str)
 		}
 
 		if (!found) {
-			printf("ACE '%s': bad permission value at '%s'\n",
-				orig_str, p);
+			fprintf(stderr, "ACE '%s': bad permission value at "
+				"'%s'\n", orig_str, p);
 			TALLOC_FREE(frame);
 			SAFE_FREE(str);
 			return False;
