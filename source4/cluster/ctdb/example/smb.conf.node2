@@ -1,6 +1,0 @@
-ctdb:address = 127.0.0.2:9001
-interfaces = lo:2
-log file = /home/tridge/samba/samba4.svn/prefix/var/log.node2
-pid directory = /home/tridge/samba/samba4.svn/prefix/var/run/node2
-lock directory = /home/tridge/samba/samba4.svn/prefix/var/run/locks/node1
-include = /home/tridge/samba/samba4.svn/prefix/etc/smb.conf.cluster

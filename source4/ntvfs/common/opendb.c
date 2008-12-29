@@ -62,11 +62,7 @@ struct odb_context *odb_init(TALLOC_CTX *mem_ctx,
 				      struct ntvfs_context *ntvfs_ctx)
 {
 	if (ops == NULL) {
-		if (lp_parm_bool(ntvfs_ctx->lp_ctx, NULL, "ctdb", "opendb", false)) {
-			odb_ctdb_init_ops();
-		} else {
-			odb_tdb_init_ops();
-		}
+		odb_tdb_init_ops();
 	}
 	return ops->odb_init(mem_ctx, ntvfs_ctx);
 }

@@ -37,7 +37,6 @@
 #include "smbd/service.h"
 #include "param/secrets.h"
 #include "smbd/pidfile.h"
-#include "cluster/ctdb/ctdb_cluster.h"
 #include "param/param.h"
 
 /*
@@ -321,9 +320,6 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 		DEBUG(0,("Initializing event context failed\n"));
 		return 1;
 	}
-
-	/* initialise clustering if needed */
-	cluster_ctdb_init(cmdline_lp_ctx, event_ctx, model);
 
 	if (opt_interactive) {
 		/* terminate when stdin goes away */
