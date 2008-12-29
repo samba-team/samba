@@ -26,7 +26,7 @@
 #include "librpc/ndr/libndr.h"
 #include "version.h"
 #include <Python.h>
-#include "pyldb.h"
+#include "lib/ldb/pyldb.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
 #include "auth/pyauth.h"
