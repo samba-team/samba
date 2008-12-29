@@ -4839,18 +4839,21 @@ static bool run_error_map_extract(int dummy) {
 static bool run_sesssetup_bench(int dummy)
 {
 	static struct cli_state *c;
+	const char *fname = "\\file.dat";
+	int fnum;
 	NTSTATUS status;
 	int i;
 
-	if (!(c = open_nbt_connection())) {
+	if (!torture_open_connection(&c, 0)) {
 		return false;
 	}
 
-	status = cli_negprot(c);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("%s rejected the NT-error negprot (%s)\n", host,
-		       nt_errstr(status));
-		cli_shutdown(c);
+	fnum = cli_nt_create_full(
+		c, fname, 0, GENERIC_ALL_ACCESS|DELETE_ACCESS,
+		FILE_ATTRIBUTE_NORMAL, 0, FILE_OVERWRITE_IF,
+		FILE_DELETE_ON_CLOSE, 0);
+	if (fnum == -1) {
+		d_printf("open %s failed: %s\n", fname, cli_errstr(c));
 		return false;
 	}
 
