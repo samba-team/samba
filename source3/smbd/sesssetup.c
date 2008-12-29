@@ -547,11 +547,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		}
 	}
 
-	/* register_existing_vuid keeps the server info */
-	/* register_existing_vuid takes ownership of session_key on success,
-	 * no need to free after this on success. A better interface would copy
-	 * it.... */
-
 	if (!is_partial_auth_vuid(sess_vuid)) {
 		sess_vuid = register_initial_vuid();
 	}
@@ -559,6 +554,11 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	data_blob_free(&server_info->user_session_key);
 	server_info->user_session_key = session_key;
 	session_key = data_blob_null;
+
+	/* register_existing_vuid keeps the server info */
+	/* register_existing_vuid takes ownership of session_key on success,
+	 * no need to free after this on success. A better interface would copy
+	 * it.... */
 
 	sess_vuid = register_existing_vuid(sess_vuid,
 					server_info,
