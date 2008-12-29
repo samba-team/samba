@@ -70,6 +70,7 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 
 struct libnet_samdump_keytab_data {
 	const char *keytab_name;
+	struct event_context *ev_ctx;
 	struct loadparm_context *lp_ctx;
 };
 
@@ -88,7 +89,7 @@ static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
 		/* not interested in builtin users */
 		if (database == SAM_DATABASE_DOMAIN) {
 			nt_status = samdump_keytab_handle_user(mem_ctx, 
-							       event_context_find(mem_ctx),
+							       data->ev_ctx,
 							       data->lp_ctx,
 							       data->keytab_name,
 							       delta);
@@ -109,6 +110,7 @@ NTSTATUS libnet_SamDump_keytab(struct libnet_context *ctx, TALLOC_CTX *mem_ctx, 
 	struct libnet_SamSync r2;
 
 	data.keytab_name = r->in.keytab_name;
+	data.ev_ctx = ctx->event_ctx;
 	data.lp_ctx = ctx->lp_ctx;
 
 	r2.out.error_string            = NULL;
