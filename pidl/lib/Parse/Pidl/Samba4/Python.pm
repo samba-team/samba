@@ -789,7 +789,9 @@ sub register_module_object($$$)
 sub assign($$$)
 {
 	my ($self, $dest, $src) = @_;
-	if ($dest =~ /^\&/) {
+	if ($dest =~ /^\&/ and $src eq "NULL") {
+		$self->pidl("memset($dest, 0, sizeof(" . get_value_of($dest) . "));");
+	} elsif ($dest =~ /^\&/) {
 		$self->pidl("memcpy($dest, $src, sizeof(" . get_value_of($dest) . "));");
 	} else {
 		$self->pidl("$dest = $src;");
