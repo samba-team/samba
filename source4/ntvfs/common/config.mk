@@ -1,7 +1,7 @@
 ################################################
 # Start LIBRARY ntvfs_common
 [SUBSYSTEM::ntvfs_common]
-PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify sys_lease share LIBDBWRAP
+PUBLIC_DEPENDENCIES = NDR_OPENDB NDR_NOTIFY sys_notify sys_lease share
 PRIVATE_DEPENDENCIES = brlock_ctdb opendb_ctdb
 # End LIBRARY ntvfs_common
 ################################################
