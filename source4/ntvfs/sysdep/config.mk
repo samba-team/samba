@@ -18,7 +18,7 @@ sys_notify_inotify_OBJ_FILES = $(ntvfssrcdir)/sysdep/inotify.o
 sys_notify_OBJ_FILES = $(ntvfssrcdir)/sysdep/sys_notify.o
 
 [SUBSYSTEM::sys_lease_linux]
-PRIVATE_DEPENDENCIES = LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTEVENT
 
 sys_lease_linux_OBJ_FILES = $(ntvfssrcdir)/sysdep/sys_lease_linux.o
 

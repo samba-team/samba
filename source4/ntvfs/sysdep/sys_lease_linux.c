@@ -22,8 +22,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "system/filesys.h"
-#include "lib/events/events.h"
 #include "ntvfs/sysdep/sys_lease.h"
 #include "ntvfs/ntvfs.h"
 #include "librpc/gen_ndr/ndr_opendb.h"
@@ -41,8 +41,8 @@ struct linux_lease_pending {
 /* the global linked list of pending leases */
 static struct linux_lease_pending *leases;
 
-static void linux_lease_signal_handler(struct event_context *ev_ctx,
-				       struct signal_event *se,
+static void linux_lease_signal_handler(struct tevent_context *ev_ctx,
+				       struct tevent_signal *se,
 				       int signum, int count,
 				       void *_info, void *private_data)
 {
@@ -89,11 +89,11 @@ static int linux_lease_pending_destructor(struct linux_lease_pending *p)
 
 static NTSTATUS linux_lease_init(struct sys_lease_context *ctx)
 {
-	struct signal_event *se;
+	struct tevent_signal *se;
 
-	se = event_add_signal(ctx->event_ctx, ctx,
-			      LINUX_LEASE_RT_SIGNAL, SA_SIGINFO,
-			      linux_lease_signal_handler, ctx);
+	se = tevent_add_signal(ctx->event_ctx, ctx,
+			       LINUX_LEASE_RT_SIGNAL, SA_SIGINFO,
+			       linux_lease_signal_handler, ctx);
 	NT_STATUS_HAVE_NO_MEMORY(se);
 
 	return NT_STATUS_OK;
