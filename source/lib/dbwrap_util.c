@@ -78,7 +78,7 @@ bool dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
 	return true;
 }
 
-bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
+int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
 {
 	struct db_record *rec;
 	uint32 v_store;
@@ -86,7 +86,7 @@ bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v)
 
 	rec = db->fetch_locked(db, NULL, string_term_tdb_data(keystr));
 	if (rec == NULL) {
-		return false;
+		return -1;
 	}
 
 	SIVAL(&v_store, 0, v);
