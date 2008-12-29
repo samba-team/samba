@@ -103,10 +103,6 @@ void invalidate_vuid(uint16 vuid)
 {
 	user_struct *vuser = NULL;
 
-	if (vuid == UID_FIELD_INVALID) {
-		return;
-	}
-
 	vuser = get_valid_user_struct_internal(vuid,
 			SERVER_ALLOCATED_REQUIRED_ANY);
 	if (vuser == NULL) {
