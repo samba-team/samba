@@ -86,7 +86,7 @@ struct tdb_wrap *secrets_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_c
   connect to the secrets ldb
 */
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
-					struct event_context *ev_ctx,
+					struct tevent_context *ev_ctx,
 					struct loadparm_context *lp_ctx)
 {
 	char *path;
@@ -129,7 +129,7 @@ struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
  * @return pointer to a SID object if the SID could be obtained, NULL otherwise
  */
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
-				       struct event_context *ev_ctx,
+				       struct tevent_context *ev_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *domain)
 {

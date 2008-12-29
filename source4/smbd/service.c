@@ -53,7 +53,7 @@ NTSTATUS register_server_service(const char *name,
   initialise a server service
 */
 static NTSTATUS server_service_init(const char *name,
-				    struct event_context *event_context,
+				    struct tevent_context *event_context,
 				    struct loadparm_context *lp_ctx,
 				    const struct model_ops *model_ops)
 {
@@ -71,7 +71,7 @@ static NTSTATUS server_service_init(const char *name,
 /*
   startup all of our server services
 */
-NTSTATUS server_service_startup(struct event_context *event_ctx, 
+NTSTATUS server_service_startup(struct tevent_context *event_ctx, 
 				struct loadparm_context *lp_ctx,
 				const char *model, const char **server_services)
 {

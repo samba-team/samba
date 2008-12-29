@@ -50,7 +50,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char **ports,
 						   const char *host_name,
 						   struct resolve_context *resolve_ctx,
-						   struct event_context *event_ctx,
+						   struct tevent_context *event_ctx,
 						   const char *socket_options)
 {
 	struct composite_context *result, *ctx;
@@ -153,7 +153,7 @@ NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 			     const char *host_addr, const char **ports,
 			     const char *host_name,
 			     struct resolve_context *resolve_ctx,
-			     struct event_context *event_ctx,
+			     struct tevent_context *event_ctx,
 				 const char *socket_options,
 			     struct smbcli_socket **result)
 {
@@ -190,7 +190,7 @@ resolve a hostname and connect
 _PUBLIC_ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
-						 struct event_context *event_ctx,
+						 struct tevent_context *event_ctx,
 						 const char *socket_options)
 {
 	int name_type = NBT_NAME_SERVER;

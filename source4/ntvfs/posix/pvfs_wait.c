@@ -34,7 +34,7 @@ struct pvfs_wait {
 	void *private_data;
 	int msg_type;
 	struct messaging_context *msg_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct ntvfs_request *req;
 	enum pvfs_wait_notice reason;
 };
@@ -93,8 +93,8 @@ static void pvfs_wait_dispatch(struct messaging_context *msg,
 /*
   receive a timeout on a message wait
 */
-static void pvfs_wait_timeout(struct event_context *ev, 
-			      struct timed_event *te, struct timeval t,
+static void pvfs_wait_timeout(struct tevent_context *ev, 
+			      struct tevent_timer *te, struct timeval t,
 			      void *private_data)
 {
 	struct pvfs_wait *pwait = talloc_get_type(private_data,

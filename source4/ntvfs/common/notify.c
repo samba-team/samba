@@ -84,7 +84,7 @@ static int notify_destructor(struct notify_context *notify)
 struct notify_context *notify_init(TALLOC_CTX *mem_ctx, struct server_id server, 
 				   struct messaging_context *messaging_ctx,
 				   struct loadparm_context *lp_ctx,
-				   struct event_context *ev,
+				   struct tevent_context *ev,
 				   struct share_config *scfg)
 {
 	struct notify_context *notify;

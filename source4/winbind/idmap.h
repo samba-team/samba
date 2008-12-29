@@ -31,7 +31,7 @@ struct idmap_context {
 	struct dom_sid *unix_users_sid;
 };
 
-struct event_context;
+struct tevent_context;
 
 #include "winbind/idmap_proto.h"
 

@@ -506,7 +506,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security)
@@ -573,7 +573,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
 			     struct gensec_security **gensec_security,
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct gensec_settings *settings)
 {
 	NTSTATUS status;
@@ -599,7 +599,7 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security)
@@ -985,7 +985,7 @@ _PUBLIC_ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_
 	return gensec_security->ops->update(gensec_security, out_mem_ctx, in, out);
 }
 
-static void gensec_update_async_timed_handler(struct event_context *ev, struct timed_event *te,
+static void gensec_update_async_timed_handler(struct tevent_context *ev, struct tevent_timer *te,
 					      struct timeval t, void *ptr)
 {
 	struct gensec_update_request *req = talloc_get_type(ptr, struct gensec_update_request);
@@ -1008,7 +1008,7 @@ _PUBLIC_ void gensec_update_send(struct gensec_security *gensec_security, const 
 				 void *private_data)
 {
 	struct gensec_update_request *req = NULL;
-	struct timed_event *te = NULL;
+	struct tevent_timer *te = NULL;
 
 	req = talloc(gensec_security, struct gensec_update_request);
 	if (!req) goto failed;

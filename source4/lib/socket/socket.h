@@ -20,7 +20,7 @@
 #ifndef _SAMBA_SOCKET_H
 #define _SAMBA_SOCKET_H
 
-struct event_context;
+struct tevent_context;
 struct socket_context;
 
 enum socket_type {
@@ -178,20 +178,20 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-					      struct event_context *event_ctx);
+					      struct tevent_context *event_ctx);
 NTSTATUS socket_connect_recv(struct composite_context *ctx);
 NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
 			   uint32_t flags, 
-			   struct event_context *ev);
+			   struct tevent_context *ev);
 
 struct composite_context *socket_connect_multi_send(TALLOC_CTX *mem_ctx,
 						    const char *server_address,
 						    int num_server_ports,
 						    uint16_t *server_ports,
 						    struct resolve_context *resolve_ctx,
-						    struct event_context *event_ctx);
+						    struct tevent_context *event_ctx);
 NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 				   TALLOC_CTX *mem_ctx,
 				   struct socket_context **result,
@@ -199,7 +199,7 @@ NTSTATUS socket_connect_multi_recv(struct composite_context *ctx,
 NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      int num_server_ports, uint16_t *server_ports,
 			      struct resolve_context *resolve_ctx,
-			      struct event_context *event_ctx,
+			      struct tevent_context *event_ctx,
 			      struct socket_context **result,
 			      uint16_t *port);
 void set_socket_options(int fd, const char *options);

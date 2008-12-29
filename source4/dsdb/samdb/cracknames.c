@@ -1232,7 +1232,7 @@ NTSTATUS crack_service_principal_name(struct ldb_context *sam_ctx,
 }
 
 NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx, 
-				struct event_context *ev_ctx, 
+				struct tevent_context *ev_ctx, 
 				struct loadparm_context *lp_ctx,
 				uint32_t format_offered,
 				const char *name, 
@@ -1295,7 +1295,7 @@ NTSTATUS crack_name_to_nt4_name(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS crack_auto_name_to_nt4_name(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev_ctx, 
+				     struct tevent_context *ev_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     const char *name,
 				     const char **nt4_domain,

@@ -106,7 +106,7 @@ int ev_set_debug(struct tevent_context *ev,
 				const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0),
 		 void *context);
 int ev_set_debug_stderr(struct tevent_context *ev);
-void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...);
+void ev_debug(struct tevent_context *ev, enum ev_debug_level level, const char *fmt, ...);
 
 /* aio event is private to the aio backend */
 struct tevent_aio;

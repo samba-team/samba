@@ -154,7 +154,7 @@ struct wreplsrv_partner {
 		struct wreplsrv_pull_cycle_io *cycle_io;
 
 		/* the current timed_event to the next pull cycle */
-		struct timed_event *te;
+		struct tevent_timer *te;
 	} pull;
 
 	/* push specific options */
@@ -289,7 +289,7 @@ struct wreplsrv_service {
 		struct timeval next_event;
 
 		/* here we have a reference to the timed event the schedules the periodic stuff */
-		struct timed_event *te;
+		struct tevent_timer *te;
 	} periodic;
 
 	/* some stuff for scavenging processing */

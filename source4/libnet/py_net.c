@@ -27,7 +27,7 @@
 /* FIXME: This prototype should be in param/pyparam.h */
 struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx);
 
-static struct libnet_context *py_net_ctx(PyObject *obj, struct event_context *ev)
+static struct libnet_context *py_net_ctx(PyObject *obj, struct tevent_context *ev)
 {
 	/* FIXME: Use obj */
 	return libnet_context_init(ev, py_default_loadparm_context(NULL));
@@ -39,7 +39,7 @@ static PyObject *py_net_join(PyObject *cls, PyObject *args, PyObject *kwargs)
 	NTSTATUS status;
 	PyObject *result;
 	TALLOC_CTX *mem_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct libnet_context *libnet_ctx;
 	const char *kwnames[] = { "domain_name", "netbios_name", "join_type", "level", NULL };
 

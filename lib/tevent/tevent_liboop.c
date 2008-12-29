@@ -33,7 +33,7 @@
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	 
 */
 
-static int oop_event_context_destructor(struct event_context *ev)
+static int oop_event_context_destructor(struct tevent_context *ev)
 {
 	oop_source_sys *oop_sys = ev->additional_data;
 
@@ -45,7 +45,7 @@ static int oop_event_context_destructor(struct event_context *ev)
 /*
   create a oop_event_context structure.
 */
-static int oop_event_context_init(struct event_context *ev, void *private_data)
+static int oop_event_context_init(struct tevent_context *ev, void *private_data)
 {
 	oop_source_sys *oop_sys = private_data;
 
@@ -65,7 +65,7 @@ static int oop_event_context_init(struct event_context *ev, void *private_data)
 
 static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, void *ptr)
 {
-	struct fd_event *fde = ptr;
+	struct tevent_fd *fde = ptr;
 
 	if (fd != fde->fd) return OOP_ERROR;
 
@@ -88,9 +88,9 @@ static void *oop_event_fd_handler(oop_source *oop, int fd, oop_event oop_type, v
 /*
   destroy an fd_event
 */
-static int oop_event_fd_destructor(struct fd_event *fde)
+static int oop_event_fd_destructor(struct tevent_fd *fde)
 {
-	struct event_context *ev = fde->event_ctx;
+	struct tevent_context *ev = fde->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
 
@@ -111,16 +111,16 @@ static int oop_event_fd_destructor(struct fd_event *fde)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+static struct tevent_fd *oop_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					 int fd, uint16_t flags,
 					 event_fd_handler_t handler,
 					 void *private_data)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
 	
-	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
+	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
 	fde->event_ctx		= ev;
@@ -144,7 +144,7 @@ static struct fd_event *oop_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 /*
   return the fd event flags
 */
-static uint16_t oop_event_get_fd_flags(struct fd_event *fde)
+static uint16_t oop_event_get_fd_flags(struct tevent_fd *fde)
 {
 	return fde->flags;
 }
@@ -152,7 +152,7 @@ static uint16_t oop_event_get_fd_flags(struct fd_event *fde)
 /*
   set the fd event flags
 */
-static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+static void oop_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	oop_source_sys *oop_sys;
 	oop_source *oop;
@@ -175,16 +175,16 @@ static void oop_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 	fde->flags = flags;
 }
 
-static int oop_event_timed_destructor(struct timed_event *te);
+static int oop_event_timed_destructor(struct tevent_timer *te);
 
-static int oop_event_timed_deny_destructor(struct timed_event *te)
+static int oop_event_timed_deny_destructor(struct tevent_timer *te)
 {
 	return -1;
 }
 
 static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *ptr)
 {
-	struct timed_event *te = ptr;
+	struct tevent_timer *te = ptr;
 
 	/* deny the handler to free the event */
 	talloc_set_destructor(te, oop_event_timed_deny_destructor);
@@ -199,9 +199,9 @@ static void *oop_event_timed_handler(oop_source *oop, struct timeval t, void *pt
 /*
   destroy a timed event
 */
-static int oop_event_timed_destructor(struct timed_event *te)
+static int oop_event_timed_destructor(struct tevent_timer *te)
 {
-	struct event_context *ev = te->event_ctx;
+	struct tevent_context *ev = te->event_ctx;
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
 
@@ -214,16 +214,16 @@ static int oop_event_timed_destructor(struct timed_event *te)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-static struct timed_event *oop_event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
+static struct tevent_timer *oop_event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					       struct timeval next_event, 
 					       event_timed_handler_t handler, 
 					       void *private_data) 
 {
 	oop_source_sys *oop_sys = ev->additional_data;
 	oop_source *oop = oop_sys_source(oop_sys);
-	struct timed_event *te;
+	struct tevent_timer *te;
 
-	te = talloc(mem_ctx?mem_ctx:ev, struct timed_event);
+	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
 	if (te == NULL) return NULL;
 
 	te->event_ctx		= ev;
@@ -242,7 +242,7 @@ static struct timed_event *oop_event_add_timed(struct event_context *ev, TALLOC_
 /*
   do a single event loop using the events defined in ev 
 */
-static int oop_event_loop_once(struct event_context *ev)
+static int oop_event_loop_once(struct tevent_context *ev)
 {
 	void *oop_ret;
 	oop_source_sys *oop_sys = ev->additional_data;
@@ -258,7 +258,7 @@ static int oop_event_loop_once(struct event_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int oop_event_loop_wait(struct event_context *ev)
+static int oop_event_loop_wait(struct tevent_context *ev)
 {
 	void *oop_ret;
 	oop_source_sys *oop_sys = ev->additional_data;

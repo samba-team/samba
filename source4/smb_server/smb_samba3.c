@@ -95,7 +95,7 @@ static const struct stream_server_ops samba3_smb_stream_ops = {
 /*
   setup a listening socket on all the SMB ports for a particular address
 */
-static NTSTATUS samba3_add_socket(struct event_context *event_context,
+static NTSTATUS samba3_add_socket(struct tevent_context *event_context,
 				  struct loadparm_context *lp_ctx,
 				  const struct model_ops *model_ops,
 				  const char *address)

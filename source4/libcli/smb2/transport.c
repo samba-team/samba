@@ -33,8 +33,8 @@
 /*
   an event has happened on the socket
 */
-static void smb2_transport_event_handler(struct event_context *ev, 
-					 struct fd_event *fde, 
+static void smb2_transport_event_handler(struct tevent_context *ev, 
+					 struct tevent_fd *fde, 
 					 uint16_t flags, void *private)
 {
 	struct smb2_transport *transport = talloc_get_type(private,
@@ -301,7 +301,7 @@ error:
 /*
   handle timeouts of individual smb requests
 */
-static void smb2_timeout_handler(struct event_context *ev, struct timed_event *te, 
+static void smb2_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
 				 struct timeval t, void *private)
 {
 	struct smb2_request *req = talloc_get_type(private, struct smb2_request);
@@ -380,8 +380,8 @@ void smb2_transport_send(struct smb2_request *req)
 	talloc_set_destructor(req, smb2_request_destructor);
 }
 
-static void idle_handler(struct event_context *ev, 
-			 struct timed_event *te, struct timeval t, void *private)
+static void idle_handler(struct tevent_context *ev, 
+			 struct tevent_timer *te, struct timeval t, void *private)
 {
 	struct smb2_transport *transport = talloc_get_type(private,
 							   struct smb2_transport);

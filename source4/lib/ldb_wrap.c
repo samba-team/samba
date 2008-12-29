@@ -95,7 +95,7 @@ static int ldb_wrap_destructor(struct ldb_context *ldb)
   TODO:  We need an error_string parameter
  */
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,

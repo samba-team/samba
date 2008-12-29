@@ -24,7 +24,7 @@
 
 #include "libcli/raw/interfaces.h"
 
-struct event_context;
+struct tevent_context;
 
 /*
   this defines the structures associated with "composite"
@@ -56,7 +56,7 @@ struct composite_context {
 	NTSTATUS status;
 
 	/* the event context we are using */
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	/* information on what to do on completion */
 	struct {
@@ -73,7 +73,7 @@ struct smb2_request;
 struct rpc_request;
 struct nbt_name_request;
 
-struct composite_context *composite_create(TALLOC_CTX *mem_ctx, struct event_context *ev);
+struct composite_context *composite_create(TALLOC_CTX *mem_ctx, struct tevent_context *ev);
 bool composite_nomem(const void *p, struct composite_context *ctx);
 void composite_continue(struct composite_context *ctx,
 				 struct composite_context *new_ctx,

@@ -32,13 +32,13 @@
 
 struct select_event_context {
 	/* a pointer back to the generic event_context */
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	/* list of filedescriptor events */
-	struct fd_event *fd_events;
+	struct tevent_fd *fd_events;
 
 	/* list of timed events */
-	struct timed_event *timed_events;
+	struct tevent_timer *timed_events;
 
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
@@ -54,7 +54,7 @@ struct select_event_context {
 /*
   create a select_event_context structure.
 */
-static int select_event_context_init(struct event_context *ev)
+static int select_event_context_init(struct tevent_context *ev)
 {
 	struct select_event_context *select_ev;
 
@@ -71,7 +71,7 @@ static int select_event_context_init(struct event_context *ev)
 */
 static void calc_maxfd(struct select_event_context *select_ev)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	select_ev->maxfd = 0;
 	for (fde = select_ev->fd_events; fde; fde = fde->next) {
@@ -90,9 +90,9 @@ static void calc_maxfd(struct select_event_context *select_ev)
 /*
   destroy an fd_event
 */
-static int select_event_fd_destructor(struct fd_event *fde)
+static int select_event_fd_destructor(struct tevent_fd *fde)
 {
-	struct event_context *ev = fde->event_ctx;
+	struct tevent_context *ev = fde->event_ctx;
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 							   struct select_event_context);
 
@@ -115,16 +115,16 @@ static int select_event_fd_destructor(struct fd_event *fde)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-static struct fd_event *select_event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					 int fd, uint16_t flags,
 					 event_fd_handler_t handler,
 					 void *private_data)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 							   struct select_event_context);
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
+	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
 	fde->event_ctx		= ev;
@@ -148,7 +148,7 @@ static struct fd_event *select_event_add_fd(struct event_context *ev, TALLOC_CTX
 /*
   return the fd event flags
 */
-static uint16_t select_event_get_fd_flags(struct fd_event *fde)
+static uint16_t select_event_get_fd_flags(struct tevent_fd *fde)
 {
 	return fde->flags;
 }
@@ -156,9 +156,9 @@ static uint16_t select_event_get_fd_flags(struct fd_event *fde)
 /*
   set the fd event flags
 */
-static void select_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+static void select_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct select_event_context *select_ev;
 
 	if (fde->flags == flags) return;
@@ -175,7 +175,7 @@ static void select_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 static int select_event_loop_select(struct select_event_context *select_ev, struct timeval *tvalp)
 {
 	fd_set r_fds, w_fds;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int selrtn;
 	uint32_t destruction_count = ++select_ev->destruction_count;
 
@@ -252,7 +252,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 /*
   do a single event loop using the events defined in ev 
 */
-static int select_event_loop_once(struct event_context *ev)
+static int select_event_loop_once(struct tevent_context *ev)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 		 					   struct select_event_context);
@@ -269,7 +269,7 @@ static int select_event_loop_once(struct event_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int select_event_loop_wait(struct event_context *ev)
+static int select_event_loop_wait(struct tevent_context *ev)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 							   struct select_event_context);

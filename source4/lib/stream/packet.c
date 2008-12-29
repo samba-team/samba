@@ -35,10 +35,10 @@ struct packet_context {
 	uint32_t num_read;
 	uint32_t initial_read;
 	struct socket_context *sock;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	size_t packet_size;
 	void *private;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	bool serialise;
 	int processing;
 	bool recv_disable;
@@ -136,7 +136,7 @@ _PUBLIC_ void packet_set_socket(struct packet_context *pc, struct socket_context
   time on a socket. This can matter for code that relies on not
   getting more than one packet per event
 */
-_PUBLIC_ void packet_set_event_context(struct packet_context *pc, struct event_context *ev)
+_PUBLIC_ void packet_set_event_context(struct packet_context *pc, struct tevent_context *ev)
 {
 	pc->ev = ev;
 }
@@ -144,7 +144,7 @@ _PUBLIC_ void packet_set_event_context(struct packet_context *pc, struct event_c
 /*
   tell the packet layer the fde for the socket
 */
-_PUBLIC_ void packet_set_fde(struct packet_context *pc, struct fd_event *fde)
+_PUBLIC_ void packet_set_fde(struct packet_context *pc, struct tevent_fd *fde)
 {
 	pc->fde = fde;
 }
@@ -209,7 +209,7 @@ static void packet_eof(struct packet_context *pc)
 /*
   used to put packets on event boundaries
 */
-static void packet_next_event(struct event_context *ev, struct timed_event *te, 
+static void packet_next_event(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private)
 {
 	struct packet_context *pc = talloc_get_type(private, struct packet_context);

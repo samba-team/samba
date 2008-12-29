@@ -34,7 +34,7 @@
 /* Oh, there is so much to keep an eye on when authenticating a user.  Oh my! */
 struct pam_auth_crap_state {
 	struct composite_context *ctx;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct loadparm_context *lp_ctx;
 
 	struct winbind_SamLogon *req;

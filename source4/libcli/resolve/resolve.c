@@ -139,7 +139,7 @@ struct composite_context *resolve_name_all_send(struct resolve_context *ctx,
 						uint32_t flags,
 						uint16_t port,
 						struct nbt_name *name,
-						struct event_context *event_ctx)
+						struct tevent_context *event_ctx)
 {
 	struct composite_context *c;
 	struct resolve_state *state;
@@ -222,7 +222,7 @@ NTSTATUS resolve_name_all_recv(struct composite_context *c,
 
 struct composite_context *resolve_name_send(struct resolve_context *ctx,
 					    struct nbt_name *name,
-					    struct event_context *event_ctx)
+					    struct tevent_context *event_ctx)
 {
 	return resolve_name_all_send(ctx, 0, 0, name, event_ctx);
 }
@@ -251,7 +251,7 @@ NTSTATUS resolve_name(struct resolve_context *ctx,
 			  struct nbt_name *name,
 			  TALLOC_CTX *mem_ctx,
 			  const char **reply_addr,
-			  struct event_context *ev)
+			  struct tevent_context *ev)
 {
 	struct composite_context *c = resolve_name_send(ctx, name, ev);
 	return resolve_name_recv(c, mem_ctx, reply_addr);

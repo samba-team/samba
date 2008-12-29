@@ -32,7 +32,7 @@ typedef NTSTATUS (*notify_watch_t)(struct sys_notify_context *ctx,
 				   void *handle_p);
 
 struct sys_notify_context {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	void *private_data; /* for use of backend */
 	const char *name;
 	notify_watch_t notify_watch;
@@ -46,7 +46,7 @@ struct sys_notify_backend {
 NTSTATUS sys_notify_register(struct sys_notify_backend *backend);
 struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 						     TALLOC_CTX *mem_ctx, 
-						     struct event_context *ev);
+						     struct tevent_context *ev);
 NTSTATUS sys_notify_watch(struct sys_notify_context *ctx, struct notify_entry *e,
 			  sys_notify_callback_t callback, void *private_data, 
 			  void *handle);

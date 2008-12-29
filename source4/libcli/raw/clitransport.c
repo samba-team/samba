@@ -33,8 +33,8 @@
 /*
   an event has happened on the socket
 */
-static void smbcli_transport_event_handler(struct event_context *ev, 
-					   struct fd_event *fde, 
+static void smbcli_transport_event_handler(struct tevent_context *ev, 
+					   struct tevent_fd *fde, 
 					   uint16_t flags, void *private)
 {
 	struct smbcli_transport *transport = talloc_get_type(private,
@@ -307,8 +307,8 @@ again:
 	return mid;
 }
 
-static void idle_handler(struct event_context *ev, 
-			 struct timed_event *te, struct timeval t, void *private)
+static void idle_handler(struct tevent_context *ev, 
+			 struct tevent_timer *te, struct timeval t, void *private)
 {
 	struct smbcli_transport *transport = talloc_get_type(private,
 							     struct smbcli_transport);
@@ -541,7 +541,7 @@ _PUBLIC_ bool smbcli_transport_process(struct smbcli_transport *transport)
 /*
   handle timeouts of individual smb requests
 */
-static void smbcli_timeout_handler(struct event_context *ev, struct timed_event *te, 
+static void smbcli_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
 				   struct timeval t, void *private)
 {
 	struct smbcli_request *req = talloc_get_type(private, struct smbcli_request);

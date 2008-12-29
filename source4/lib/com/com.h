@@ -23,12 +23,12 @@
 #include "librpc/gen_ndr/misc.h"
 
 struct com_context;
-struct event_context;
+struct tevent_context;
 
 struct com_context 
 {
 	struct dcom_client_context *dcom;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
         struct com_extension {
                 uint32_t id;
                 void *data;
@@ -42,7 +42,7 @@ NTSTATUS com_register_running_class(struct GUID *clsid, const char *progid, stru
 
 struct dcom_interface_p *dcom_get_local_iface_p(struct GUID *ipid);
 
-WERROR com_init_ctx(struct com_context **ctx, struct event_context *event_ctx);
+WERROR com_init_ctx(struct com_context **ctx, struct tevent_context *event_ctx);
 WERROR com_create_object(struct com_context *ctx, struct GUID *clsid, int num_ifaces, struct GUID *iid, struct IUnknown **ip, WERROR *results);
 WERROR com_get_class_object(struct com_context *ctx, struct GUID *clsid, struct GUID *iid, struct IUnknown **ip);
 NTSTATUS com_init(void);

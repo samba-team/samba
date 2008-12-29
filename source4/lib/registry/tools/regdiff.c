@@ -29,7 +29,7 @@
 enum reg_backend { REG_UNKNOWN, REG_LOCAL, REG_REMOTE, REG_NULL };
 
 static struct registry_context *open_backend(poptContext pc,
-					     struct event_context *ev_ctx,
+					     struct tevent_context *ev_ctx,
 					     struct loadparm_context *lp_ctx,
 					     enum reg_backend backend,
 					     const char *remote_host)
@@ -83,7 +83,7 @@ int main(int argc, const char **argv)
 	};
 	TALLOC_CTX *ctx;
 	void *callback_data;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	struct reg_diff_callbacks *callbacks;
 
 	ctx = talloc_init("regdiff");

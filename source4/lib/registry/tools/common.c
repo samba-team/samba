@@ -24,7 +24,7 @@
 #include "lib/registry/tools/common.h"
 
 struct registry_context *reg_common_open_remote(const char *remote,
-						struct event_context *ev_ctx,
+						struct tevent_context *ev_ctx,
 						struct loadparm_context *lp_ctx,
 						struct cli_credentials *creds)
 {
@@ -43,7 +43,7 @@ struct registry_context *reg_common_open_remote(const char *remote,
 }
 
 struct registry_key *reg_common_open_file(const char *path,
-					  struct event_context *ev_ctx,
+					  struct tevent_context *ev_ctx,
 					  struct loadparm_context *lp_ctx,
 					  struct cli_credentials *creds)
 {
@@ -70,7 +70,7 @@ struct registry_key *reg_common_open_file(const char *path,
 }
 
 struct registry_context *reg_common_open_local(struct cli_credentials *creds, 
-					       struct event_context *ev_ctx, 
+					       struct tevent_context *ev_ctx, 
 					       struct loadparm_context *lp_ctx)
 {
 	WERROR error;

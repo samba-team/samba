@@ -52,10 +52,10 @@ struct messaging_context {
 	struct idr_context *idr;
 	const char **names;
 	struct timeval start_time;
-	struct timed_event *retry_te;
+	struct tevent_timer *retry_te;
 	struct {
-		struct event_context *ev;
-		struct fd_event *fde;
+		struct tevent_context *ev;
+		struct tevent_fd *fde;
 	} event;
 };
 
@@ -216,7 +216,7 @@ static NTSTATUS try_send(struct messaging_rec *rec)
 /*
   retry backed off messages
 */
-static void msg_retry_timer(struct event_context *ev, struct timed_event *te, 
+static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te, 
 			    struct timeval t, void *private)
 {
 	struct messaging_context *msg = talloc_get_type(private, 
@@ -338,7 +338,7 @@ static void messaging_recv_handler(struct messaging_context *msg)
 /*
   handle a socket event
 */
-static void messaging_handler(struct event_context *ev, struct fd_event *fde, 
+static void messaging_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 			      uint16_t flags, void *private)
 {
 	struct messaging_context *msg = talloc_get_type(private, 
@@ -536,7 +536,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 const char *dir,
 					 struct server_id server_id, 
 					 struct smb_iconv_convenience *iconv_convenience,
-					 struct event_context *ev)
+					 struct tevent_context *ev)
 {
 	struct messaging_context *msg;
 	NTSTATUS status;
@@ -615,7 +615,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
 						const char *dir,
 						struct smb_iconv_convenience *iconv_convenience,
-						struct event_context *ev)
+						struct tevent_context *ev)
 {
 	struct server_id id;
 	ZERO_STRUCT(id);
@@ -843,7 +843,7 @@ static int irpc_destructor(struct irpc_request *irpc)
 /*
   timeout a irpc request
 */
-static void irpc_timeout(struct event_context *ev, struct timed_event *te, 
+static void irpc_timeout(struct tevent_context *ev, struct tevent_timer *te, 
 			 struct timeval t, void *private)
 {
 	struct irpc_request *irpc = talloc_get_type(private, struct irpc_request);

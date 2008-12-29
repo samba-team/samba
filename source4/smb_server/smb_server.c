@@ -174,7 +174,7 @@ static const struct stream_server_ops smb_stream_ops = {
 /*
   setup a listening socket on all the SMB ports for a particular address
 */
-_PUBLIC_ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
+_PUBLIC_ NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
 				    struct loadparm_context *lp_ctx,
 			       const struct model_ops *model_ops,
 			       const char *address)

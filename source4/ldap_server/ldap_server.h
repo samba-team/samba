@@ -47,8 +47,8 @@ struct ldapsrv_connection {
 		int max_page_size;
 		int search_timeout;
 		
-		struct timed_event *ite;
-		struct timed_event *te;
+		struct tevent_timer *ite;
+		struct tevent_timer *te;
 	} limits;
 };
 

@@ -42,14 +42,14 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 */
 struct socket_context *tls_init_server(struct tls_params *parms,
 				    struct socket_context *sock, 
-				    struct fd_event *fde,
+				    struct tevent_fd *fde,
 				    const char *plain_chars);
 
 /*
   call tls_init_client() on each new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *sock, 
-				    struct fd_event *fde,
+				    struct tevent_fd *fde,
 				    const char *cafile);
 
 /*

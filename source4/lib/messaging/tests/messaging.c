@@ -58,7 +58,7 @@ static void exit_message(struct messaging_context *msg, void *private,
 */
 static bool test_ping_speed(struct torture_context *tctx)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct messaging_context *msg_client_ctx;
 	struct messaging_context *msg_server_ctx;
 	int ping_count = 0;

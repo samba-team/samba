@@ -42,8 +42,8 @@ struct stream_connection {
 	void *private;
 
 	struct {
-		struct event_context *ctx;
-		struct fd_event *fde;
+		struct tevent_context *ctx;
+		struct tevent_fd *fde;
 	} event;
 
 	struct socket_context *socket;

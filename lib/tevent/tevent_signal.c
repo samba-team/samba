@@ -129,7 +129,7 @@ static int signal_event_destructor(struct signal_event *se)
 /*
   this is part of the pipe hack needed to avoid the signal race condition
 */
-static void signal_pipe_handler(struct event_context *ev, struct fd_event *fde, 
+static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 				uint16_t flags, void *private)
 {
 	char c[16];
@@ -141,7 +141,7 @@ static void signal_pipe_handler(struct event_context *ev, struct fd_event *fde,
   add a signal event
   return NULL on failure (memory allocation error)
 */
-struct signal_event *common_event_add_signal(struct event_context *ev, 
+struct signal_event *common_event_add_signal(struct tevent_context *ev, 
 					     TALLOC_CTX *mem_ctx,
 					     int signum,
 					     int sa_flags,
@@ -233,7 +233,7 @@ struct signal_event *common_event_add_signal(struct event_context *ev,
   check if a signal is pending
   return != 0 if a signal was pending
 */
-int common_event_check_signal(struct event_context *ev)
+int common_event_check_signal(struct tevent_context *ev)
 {
 	int i;
 

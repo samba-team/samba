@@ -114,7 +114,7 @@ failed:
 /*
   handle a request timeout
 */
-static void nbt_name_socket_timeout(struct event_context *ev, struct timed_event *te,
+static void nbt_name_socket_timeout(struct tevent_context *ev, struct tevent_timer *te,
 				    struct timeval t, void *private)
 {
 	struct nbt_name_request *req = talloc_get_type(private,
@@ -291,7 +291,7 @@ done:
 /*
   handle fd events on a nbt_name_socket
 */
-static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *fde,
+static void nbt_name_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 				    uint16_t flags, void *private)
 {
 	struct nbt_name_socket *nbtsock = talloc_get_type(private,
@@ -310,7 +310,7 @@ static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *f
   then operations will use that event context
 */
 _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
-					     struct event_context *event_ctx,
+					     struct tevent_context *event_ctx,
 					     struct smb_iconv_convenience *iconv_convenience)
 {
 	struct nbt_name_socket *nbtsock;

@@ -39,13 +39,13 @@ static struct nbt_name_socket *wins_socket(struct nbtd_interface *iface)
 }
 
 
-static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
+static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te,
 			      struct timeval t, void *private_data);
 
 /*
   retry a WINS name registration
 */
-static void nbtd_wins_register_retry(struct event_context *ev, struct timed_event *te,
+static void nbtd_wins_register_retry(struct tevent_context *ev, struct tevent_timer *te,
 				     struct timeval t, void *private_data)
 {
 	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);
@@ -129,7 +129,7 @@ static void nbtd_wins_refresh_handler(struct composite_context *c)
 /*
   refresh a WINS name registration
 */
-static void nbtd_wins_refresh(struct event_context *ev, struct timed_event *te,
+static void nbtd_wins_refresh(struct tevent_context *ev, struct tevent_timer *te,
 			      struct timeval t, void *private_data)
 {
 	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);

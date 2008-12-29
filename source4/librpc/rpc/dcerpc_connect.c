@@ -708,7 +708,7 @@ static void continue_pipe_auth(struct composite_context *ctx)
 /*
   handle timeouts of a dcerpc connect
 */
-static void dcerpc_connect_timeout_handler(struct event_context *ev, struct timed_event *te, 
+static void dcerpc_connect_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
 					   struct timeval t, void *private)
 {
 	struct composite_context *c = talloc_get_type(private, struct composite_context);
@@ -723,12 +723,12 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent
 						     struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
-						     struct event_context *ev,
+						     struct tevent_context *ev,
 						     struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_connect_state *s;
-	struct event_context *new_ev = NULL;
+	struct tevent_context *new_ev = NULL;
 
 	/* composite context allocation and setup */
 	c = composite_create(parent_ctx, ev);
@@ -820,7 +820,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
-			       struct event_context *ev,
+			       struct tevent_context *ev,
 			       struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
@@ -848,7 +848,7 @@ _PUBLIC_ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_c
 						   const char *binding,
 						   const struct ndr_interface_table *table,
 						   struct cli_credentials *credentials,
-						   struct event_context *ev, struct loadparm_context *lp_ctx)
+						   struct tevent_context *ev, struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_conn_state *s;
@@ -935,7 +935,7 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     const char *binding,
 			     const struct ndr_interface_table *table,
 			     struct cli_credentials *credentials,
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;

@@ -431,7 +431,7 @@ NTSTATUS sam_get_results_principal(struct ldb_context *sam_ctx,
 				   
 /* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
 NTSTATUS sam_get_server_info_principal(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx,
+				       struct tevent_context *event_ctx,
 				       struct loadparm_context *lp_ctx,
 				       const char *principal,
 				       struct auth_serversupplied_info **server_info)

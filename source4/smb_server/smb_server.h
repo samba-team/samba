@@ -24,7 +24,7 @@
 #include "lib/socket/socket.h"
 #include "../lib/util/dlinklist.h"
 
-struct event_context;
+struct tevent_context;
 
 /*
   this header declares the core context structures associated with smb
@@ -394,7 +394,7 @@ struct smbsrv_connection {
 struct model_ops;
 struct loadparm_context;
 
-NTSTATUS smbsrv_add_socket(struct event_context *event_context,
+NTSTATUS smbsrv_add_socket(struct tevent_context *event_context,
 			   struct loadparm_context *lp_ctx,
 			       const struct model_ops *model_ops,
 			       const char *address);

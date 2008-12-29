@@ -134,7 +134,7 @@ failed:
 struct wins_release_demand_io {
 	struct {
 		struct nbtd_server *nbtd_server;
-		struct event_context *event_ctx;
+		struct tevent_context *event_ctx;
 		struct nbt_name *name;
 		uint16_t nb_flags;
 		uint32_t num_addresses;

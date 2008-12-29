@@ -71,7 +71,7 @@ static void wrepl_socket_dead(struct wrepl_socket *wrepl_socket, NTSTATUS status
 	}
 }
 
-static void wrepl_request_timeout_handler(struct event_context *ev, struct timed_event *te,
+static void wrepl_request_timeout_handler(struct tevent_context *ev, struct tevent_timer *te,
 					  struct timeval t, void *ptr)
 {
 	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
@@ -122,7 +122,7 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 /*
   handler for winrepl events
 */
-static void wrepl_handler(struct event_context *ev, struct fd_event *fde, 
+static void wrepl_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 			  uint16_t flags, void *private)
 {
 	struct wrepl_socket *wrepl_socket = talloc_get_type(private, 
@@ -162,7 +162,7 @@ static int wrepl_socket_destructor(struct wrepl_socket *sock)
   operations will use that event context
 */
 struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx,
+				       struct tevent_context *event_ctx,
 				       struct smb_iconv_convenience *iconv_convenience)
 {
 	struct wrepl_socket *wrepl_socket;
@@ -196,7 +196,7 @@ failed:
   initialise a wrepl_socket from an already existing connection
 */
 struct wrepl_socket *wrepl_socket_merge(TALLOC_CTX *mem_ctx, 
-				        struct event_context *event_ctx,
+				        struct tevent_context *event_ctx,
 					struct socket_context *sock,
 					struct packet_context *pack)
 {
@@ -381,7 +381,7 @@ NTSTATUS wrepl_connect(struct wrepl_socket *wrepl_socket,
 /* 
    callback from wrepl_request_trigger() 
 */
-static void wrepl_request_trigger_handler(struct event_context *ev, struct timed_event *te,
+static void wrepl_request_trigger_handler(struct tevent_context *ev, struct tevent_timer *te,
 					  struct timeval t, void *ptr)
 {
 	struct wrepl_request *req = talloc_get_type(ptr, struct wrepl_request);
@@ -397,7 +397,7 @@ static void wrepl_request_trigger_handler(struct event_context *ev, struct timed
 */
 static struct wrepl_request *wrepl_request_finished(struct wrepl_request *req, NTSTATUS status)
 {
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	if (req->state == WREPL_REQUEST_RECV) {
 		DLIST_REMOVE(req->wrepl_socket->recv_queue, req);

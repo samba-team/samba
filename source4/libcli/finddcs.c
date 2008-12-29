@@ -70,7 +70,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 				       struct dom_sid *domain_sid,
 				       struct smb_iconv_convenience *iconv_convenience,
 				       struct resolve_context *resolve_ctx,
-				       struct event_context *event_ctx,
+				       struct tevent_context *event_ctx,
 				       struct messaging_context *msg_ctx)
 {
 	struct composite_context *c, *creq;
@@ -260,7 +260,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 struct dom_sid *domain_sid,
 		 struct smb_iconv_convenience *iconv_convenience,
 		 struct resolve_context *resolve_ctx,
-		 struct event_context *event_ctx,
+		 struct tevent_context *event_ctx,
 		 struct messaging_context *msg_ctx,
 		 int *num_dcs, struct nbt_dc_name **dcs)
 {

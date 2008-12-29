@@ -355,7 +355,7 @@ static void print_transfer_stats(void)
 }
 
 static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      const char * which, const char **ports,
 				      struct smbcli_options *smb_options,
 				      const char *socket_options,
@@ -408,7 +408,7 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 	return(handle);
 }
 
-static int copy_files(struct event_context *ev, struct loadparm_context *lp_ctx)
+static int copy_files(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 {
 	uint8_t *	iobuf;	/* IO buffer. */
 	uint64_t	iomax;	/* Size of the IO buffer. */
@@ -549,7 +549,7 @@ int main(int argc, const char ** argv)
 {
 	int i;
 	const char ** dd_args;
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	poptContext pctx;
 	struct poptOption poptions[] = {

@@ -39,11 +39,11 @@ struct nbt_dgram_request {
 */
 struct nbt_dgram_socket {
 	struct socket_context *sock;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct smb_iconv_convenience *iconv_convenience;
 
 	/* the fd event */
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	/* a queue of outgoing requests */
 	struct nbt_dgram_request *send_queue;
@@ -93,7 +93,7 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 						    struct socket_address *),
 				    void *private);
 struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
-					       struct event_context *event_ctx,
+					       struct tevent_context *event_ctx,
 					       struct smb_iconv_convenience *);
 
 const char *dgram_mailslot_name(struct nbt_dgram_packet *packet);

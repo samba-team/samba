@@ -145,7 +145,7 @@ static struct smbcli_state *connect_one(TALLOC_CTX *mem_ctx,
 					struct smb_options *options,
 					struct smb_options *session_options,
 					struct gensec_settings *gensec_settings,
-					struct event_context *ev)
+					struct tevent_context *ev)
 {
 	struct smbcli_state *c;
 	char *server_n;
@@ -194,7 +194,7 @@ static void reconnect(TALLOC_CTX *mem_ctx,
 		      struct smbcli_options *options,
 		      struct smbcli_session_options *session_options,
 			  struct gensec_settings *gensec_settings,
-		      struct event_context *ev,
+		      struct tevent_context *ev,
 		      char *share1, char *share2)
 {
 	int server, conn, f, fstype;
@@ -365,7 +365,7 @@ static void test_locks(TALLOC_CTX *mem_ctx, char *share1, char *share2,
 			struct smbcli_options *options,
 			struct smbcli_session_options *session_options,
 			struct gensec_settings *gensec_settings,
-			struct event_context *ev)
+			struct tevent_context *ev)
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	char *nfs[NSERVERS];
@@ -486,7 +486,7 @@ static void usage(void)
 	char *p;
 	int seed;
 	struct loadparm_context *lp_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	mem_ctx = talloc_autofree_context();
 

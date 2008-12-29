@@ -48,8 +48,8 @@ static int websrv_destructor(struct websrv_context *web)
   called when a connection times out. This prevents a stuck connection
   from hanging around forever
 */
-static void websrv_timeout(struct event_context *event_context, 
-			   struct timed_event *te, 
+static void websrv_timeout(struct tevent_context *event_context, 
+			   struct tevent_timer *te, 
 			   struct timeval t, void *private)
 {
 	struct websrv_context *web = talloc_get_type(private, struct websrv_context);

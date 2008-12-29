@@ -1485,7 +1485,7 @@ static krb5_error_code LDB_destroy(krb5_context context, HDB *db)
  * code */
 
 NTSTATUS kdc_hdb_samba4_create(TALLOC_CTX *mem_ctx, 
-			    struct event_context *ev_ctx, 
+			    struct tevent_context *ev_ctx, 
 			    struct loadparm_context *lp_ctx,
 			    krb5_context context, struct HDB **db, const char *arg)
 {

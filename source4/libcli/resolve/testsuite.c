@@ -28,7 +28,7 @@
 static bool test_async_resolve(struct torture_context *tctx)
 {
 	struct nbt_name n;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int timelimit = torture_setting_int(tctx, "timelimit", 2);
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	int count = 0;

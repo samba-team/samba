@@ -46,7 +46,7 @@ static int pvfs_search_destructor(struct pvfs_search_state *search)
 /*
   called when a search timer goes off
 */
-static void pvfs_search_timer(struct event_context *ev, struct timed_event *te, 
+static void pvfs_search_timer(struct tevent_context *ev, struct tevent_timer *te, 
 				      struct timeval t, void *ptr)
 {
 	struct pvfs_search_state *search = talloc_get_type(ptr, struct pvfs_search_state);
@@ -58,7 +58,7 @@ static void pvfs_search_timer(struct event_context *ev, struct timed_event *te,
 */
 static void pvfs_search_setup_timer(struct pvfs_search_state *search)
 {
-	struct event_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
+	struct tevent_context *ev = search->pvfs->ntvfs->ctx->event_ctx;
 	if (search->handle == INVALID_SEARCH_HANDLE) return;
 	talloc_free(search->te);
 	search->te = event_add_timed(ev, search, 

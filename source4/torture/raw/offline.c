@@ -54,7 +54,7 @@ static double worst_latencies[OP_ENDOFLIST];
 
 struct offline_state {
 	struct torture_context *tctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct smbcli_tree *tree;
 	TALLOC_CTX *mem_ctx;
 	int client;
@@ -330,7 +330,7 @@ static void echo_completion(struct smbcli_request *req)
 	}
 }
 
-static void report_rate(struct event_context *ev, struct timed_event *te, 
+static void report_rate(struct tevent_context *ev, struct tevent_timer *te, 
 			struct timeval t, void *private_data)
 {
 	struct offline_state *state = talloc_get_type(private_data, 

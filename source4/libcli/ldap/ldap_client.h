@@ -44,7 +44,7 @@ struct ldap_request {
 		void *private_data;
 	} async;
 
-	struct timed_event *time_event;
+	struct tevent_timer *time_event;
 };
 
 
@@ -88,8 +88,8 @@ struct ldap_connection {
 	char *last_error;
 
 	struct {
-		struct event_context *event_ctx;
-		struct fd_event *fde;
+		struct tevent_context *event_ctx;
+		struct tevent_fd *fde;
 	} event;
 
 	struct packet_context *packet;
@@ -97,7 +97,7 @@ struct ldap_connection {
 
 struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
 					     struct loadparm_context *lp_ctx,
-					     struct event_context *ev);
+					     struct tevent_context *ev);
 
 NTSTATUS ldap_connect(struct ldap_connection *conn, const char *url);
 struct composite_context *ldap_connect_send(struct ldap_connection *conn,

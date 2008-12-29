@@ -44,7 +44,7 @@
 /* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
  * used as a keytab */
 TALLOC_CTX *kdc_mem_ctx;
-struct event_context *kdc_ev_ctx;
+struct tevent_context *kdc_ev_ctx;
 struct loadparm_context *kdc_lp_ctx;
 
 /* hold all the info needed to send a reply */
@@ -66,7 +66,7 @@ typedef bool (*kdc_process_fn_t)(struct kdc_server *kdc,
 struct kdc_socket {
 	struct socket_context *sock;
 	struct kdc_server *kdc;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	/* a queue of outgoing replies that have been deferred */
 	struct kdc_reply *send_queue;
@@ -199,7 +199,7 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
 /*
   handle fd events on a KDC socket
 */
-static void kdc_socket_handler(struct event_context *ev, struct fd_event *fde,
+static void kdc_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			       uint16_t flags, void *private)
 {
 	struct kdc_socket *kdc_socket = talloc_get_type(private, struct kdc_socket);

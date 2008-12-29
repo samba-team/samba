@@ -183,7 +183,7 @@ static bool connect_servers_fast(void)
 /***************************************************** 
 connect to the servers
 *******************************************************/
-static bool connect_servers(struct event_context *ev,
+static bool connect_servers(struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx)
 {
 	int i, j;
@@ -2889,7 +2889,7 @@ static struct {
   run the test with the current set of op_parms parameters
   return the number of operations that completed successfully
 */
-static int run_test(struct event_context *ev, struct loadparm_context *lp_ctx)
+static int run_test(struct tevent_context *ev, struct loadparm_context *lp_ctx)
 {
 	int op, i;
 
@@ -2970,7 +2970,7 @@ static int run_test(struct event_context *ev, struct loadparm_context *lp_ctx)
    perform a backtracking analysis of the minimal set of operations
    to generate an error
 */
-static void backtrack_analyze(struct event_context *ev,
+static void backtrack_analyze(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx)
 {
 	int chunk, ret;
@@ -3038,7 +3038,7 @@ static void backtrack_analyze(struct event_context *ev,
 /* 
    start the main gentest process
 */
-static bool start_gentest(struct event_context *ev,
+static bool start_gentest(struct tevent_context *ev,
 			  struct loadparm_context *lp_ctx)
 {
 	int op;
@@ -3130,7 +3130,7 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	int i, username_count=0;
 	bool ret;
 	char *ignore_file=NULL;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct loadparm_context *lp_ctx;
 	poptContext pc;
 	int argc_new;

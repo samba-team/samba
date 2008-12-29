@@ -30,7 +30,7 @@
 /*
   this allows the user to choose their own debug function
 */
-int ev_set_debug(struct event_context *ev,
+int ev_set_debug(struct tevent_context *ev,
 		 void (*debug)(void *context, enum ev_debug_level level,
 				const char *fmt, va_list ap),
 		 void *context)
@@ -57,7 +57,7 @@ void ev_debug_stderr(void *context, enum ev_debug_level level,
   convenience function to setup debug messages on stderr
   messages of level EV_DEBUG_WARNING and higher are printed
 */
-int ev_set_debug_stderr(struct event_context *ev)
+int ev_set_debug_stderr(struct tevent_context *ev)
 {
 	return ev_set_debug(ev, ev_debug_stderr, ev);
 }
@@ -70,7 +70,7 @@ int ev_set_debug_stderr(struct event_context *ev)
  * Applications using the library must decide where to
  * redirect debugging messages
 */
-void ev_debug(struct event_context *ev, enum ev_debug_level level, const char *fmt, ...)
+void ev_debug(struct tevent_context *ev, enum ev_debug_level level, const char *fmt, ...)
 {
 	va_list ap;
 	if (ev->debug_ops.debug == NULL) {

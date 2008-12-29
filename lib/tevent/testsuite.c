@@ -26,7 +26,7 @@
 
 static int fde_count;
 
-static void fde_handler(struct event_context *ev_ctx, struct fd_event *f, 
+static void fde_handler(struct tevent_context *ev_ctx, struct tevent_fd *f, 
 			uint16_t flags, void *private)
 {
 	int *fd = (int *)private;
@@ -40,14 +40,14 @@ static void fde_handler(struct event_context *ev_ctx, struct fd_event *f,
 	fde_count++;
 }
 
-static void finished_handler(struct event_context *ev_ctx, struct timed_event *te,
+static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer *te,
 			     struct timeval tval, void *private)
 {
 	int *finished = (int *)private;
 	(*finished) = 1;
 }
 
-static void count_handler(struct event_context *ev_ctx, struct signal_event *te,
+static void count_handler(struct tevent_context *ev_ctx, struct signal_event *te,
 			  int signum, int count, void *info, void *private)
 {
 	int *countp = (int *)private;
@@ -57,11 +57,11 @@ static void count_handler(struct event_context *ev_ctx, struct signal_event *te,
 static bool test_event_context(struct torture_context *test,
 			       const void *test_data)
 {
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	int fd[2] = { -1, -1 };
 	const char *backend = (const char *)test_data;
 	int alarm_count=0, info_count=0;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	struct signal_event *se1, *se2, *se3;
 	int finished=0;
 	struct timeval t;

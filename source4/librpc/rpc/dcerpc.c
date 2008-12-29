@@ -55,7 +55,7 @@ static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
    the event context is optional
 */
 static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
-						 struct event_context *ev,
+						 struct tevent_context *ev,
 						 struct smb_iconv_convenience *ic)
 {
 	struct dcerpc_connection *c;
@@ -90,7 +90,7 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 }
 
 /* initialise a dcerpc pipe. */
-_PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
+_PUBLIC_ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				     struct smb_iconv_convenience *ic)
 {
 	struct dcerpc_pipe *p;
@@ -652,7 +652,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 /*
   handle timeouts of individual dcerpc requests
 */
-static void dcerpc_timeout_handler(struct event_context *ev, struct timed_event *te, 
+static void dcerpc_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
 				   struct timeval t, void *private)
 {
 	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
@@ -1096,7 +1096,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
   return the event context for a dcerpc pipe
   used by callers who wish to operate asynchronously
 */
-_PUBLIC_ struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
+_PUBLIC_ struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p)
 {
 	return p->conn->event_ctx;
 }
@@ -1113,7 +1113,7 @@ NTSTATUS dcerpc_request_recv(struct rpc_request *req,
 	NTSTATUS status;
 
 	while (req->state != RPC_REQUEST_DONE) {
-		struct event_context *ctx = dcerpc_event_context(req->p);
+		struct tevent_context *ctx = dcerpc_event_context(req->p);
 		if (event_loop_once(ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}

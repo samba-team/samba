@@ -197,7 +197,7 @@ done:
 
 static int samldb_search_template(struct samldb_ctx *ac)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct loadparm_context *lparm_ctx;
 	struct ldb_context *templates_ldb;
 	char *templates_ldb_path;

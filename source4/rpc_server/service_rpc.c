@@ -227,7 +227,7 @@ static const struct stream_server_ops dcesrv_stream_ops = {
 static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx, 
 				   struct loadparm_context *lp_ctx,
 				   struct dcesrv_endpoint *e,
-			    struct event_context *event_ctx, const struct model_ops *model_ops)
+			    struct tevent_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -256,7 +256,7 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx, 
 				      struct loadparm_context *lp_ctx,
 				      struct dcesrv_endpoint *e,
-				      struct event_context *event_ctx, const struct model_ops *model_ops)
+				      struct tevent_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	uint16_t port = 1;
@@ -295,7 +295,7 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
 				 struct loadparm_context *lp_ctx,
 				 struct dcesrv_endpoint *e,
-				 struct event_context *event_ctx, const struct model_ops *model_ops)
+				 struct tevent_context *event_ctx, const struct model_ops *model_ops)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
 	NTSTATUS status;
@@ -328,7 +328,7 @@ static NTSTATUS dcesrv_add_ep_np(struct dcesrv_context *dce_ctx,
   add a socket address to the list of events, one event per dcerpc endpoint
 */
 static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct dcesrv_endpoint *e,
-					 struct event_context *event_ctx, const struct model_ops *model_ops,
+					 struct tevent_context *event_ctx, const struct model_ops *model_ops,
 					 const char *address)
 {
 	struct dcesrv_socket_context *dcesrv_sock;
@@ -366,7 +366,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx, 
 				  struct loadparm_context *lp_ctx,
 				  struct dcesrv_endpoint *e,
-				  struct event_context *event_ctx, const struct model_ops *model_ops)
+				  struct tevent_context *event_ctx, const struct model_ops *model_ops)
 {
 	NTSTATUS status;
 
@@ -397,7 +397,7 @@ static NTSTATUS dcesrv_add_ep_tcp(struct dcesrv_context *dce_ctx,
 static NTSTATUS dcesrv_add_ep(struct dcesrv_context *dce_ctx, 
 			      struct loadparm_context *lp_ctx,
 			      struct dcesrv_endpoint *e,
-			  struct event_context *event_ctx, const struct model_ops *model_ops)
+			  struct tevent_context *event_ctx, const struct model_ops *model_ops)
 {
 	switch (e->ep_description->transport) {
 	case NCACN_UNIX_STREAM:

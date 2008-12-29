@@ -35,7 +35,7 @@
 #include "lib/socket/netif.h"
 
 static struct ldb_context *wins_config_db_connect(TALLOC_CTX *mem_ctx, 
-						  struct event_context *ev_ctx,
+						  struct tevent_context *ev_ctx,
 						  struct loadparm_context *lp_ctx)
 {
 	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, private_path(mem_ctx, 

@@ -167,8 +167,8 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 /*
  Idle timeout handler
 */
-static void ldapsrv_conn_idle_timeout(struct event_context *ev,
-				      struct timed_event *te,
+static void ldapsrv_conn_idle_timeout(struct tevent_context *ev,
+				      struct tevent_timer *te,
 				      struct timeval t,
 				      void *private)
 {
@@ -214,8 +214,8 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 	packet_queue_run(conn->packet);
 }
 
-static void ldapsrv_conn_init_timeout(struct event_context *ev,
-				      struct timed_event *te,
+static void ldapsrv_conn_init_timeout(struct tevent_context *ev,
+				      struct tevent_timer *te,
 				      struct timeval t,
 				      void *private)
 {
@@ -440,7 +440,7 @@ static const struct stream_server_ops ldap_stream_ops = {
 /*
   add a socket address to the list of events, one event per port
 */
-static NTSTATUS add_socket(struct event_context *event_context,
+static NTSTATUS add_socket(struct tevent_context *event_context,
 			   struct loadparm_context *lp_ctx, 
 			   const struct model_ops *model_ops,
 			   const char *address, struct ldapsrv_service *ldap_service)

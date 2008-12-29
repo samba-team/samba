@@ -34,8 +34,8 @@ struct connect_state {
 	uint32_t flags;
 };
 
-static void socket_connect_handler(struct event_context *ev,
-				   struct fd_event *fde, 
+static void socket_connect_handler(struct tevent_context *ev,
+				   struct tevent_fd *fde, 
 				   uint16_t flags, void *private);
 
 /*
@@ -43,7 +43,7 @@ static void socket_connect_handler(struct event_context *ev,
 */
 static void socket_send_connect(struct composite_context *result)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	struct connect_state *state = talloc_get_type(result->private_data, 
 						      struct connect_state);
 
@@ -73,7 +73,7 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 					      struct socket_address *my_address,
 					      struct socket_address *server_address, 
 					      uint32_t flags,
-					      struct event_context *event_ctx)
+					      struct tevent_context *event_ctx)
 {
 	struct composite_context *result;
 	struct connect_state *state;
@@ -116,8 +116,8 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 /*
   handle write events on connect completion
 */
-static void socket_connect_handler(struct event_context *ev,
-				   struct fd_event *fde, 
+static void socket_connect_handler(struct tevent_context *ev,
+				   struct tevent_fd *fde, 
 				   uint16_t flags, void *private)
 {
 	struct composite_context *result =
@@ -149,7 +149,7 @@ NTSTATUS socket_connect_ev(struct socket_context *sock,
 			   struct socket_address *my_address,
 			   struct socket_address *server_address, 
 			   uint32_t flags,
-			   struct event_context *ev)
+			   struct tevent_context *ev)
 {
 	struct composite_context *ctx;
 	ctx = socket_connect_send(sock, my_address, 

@@ -168,7 +168,7 @@ struct auth_context {
 	struct auth_method_context *methods;
 
 	/* the event context to use for calls that can block */
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	/* the messaging context which can be used by backends */
 	struct messaging_context *msg_ctx;
@@ -219,13 +219,13 @@ NTSTATUS auth_system_session_info(TALLOC_CTX *parent_ctx,
 NTSTATUS auth_nt_status_squash(NTSTATUS nt_status);
 
 NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct messaging_context *msg,
 				     struct loadparm_context *lp_ctx,
 				     struct auth_context **auth_ctx);
 
 NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth_context **auth_ctx);
@@ -237,7 +237,7 @@ NTSTATUS auth_check_password(struct auth_context *auth_ctx,
 NTSTATUS auth_init(void);
 NTSTATUS auth_register(const struct auth_operations *ops);
 NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   struct messaging_context *msg,
 					   struct loadparm_context *lp_ctx,
 					   const char *nt4_domain,

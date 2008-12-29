@@ -123,7 +123,7 @@ struct ldb_context {
 
 	char *modules_dir;
 
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 };
 
 #ifndef ARRAY_SIZE

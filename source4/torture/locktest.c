@@ -107,7 +107,7 @@ static struct record *recorded;
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(struct event_context *ev,
+static struct smbcli_state *connect_one(struct tevent_context *ev,
 					struct loadparm_context *lp_ctx,
 					TALLOC_CTX *mem_ctx,
 					char *share, int snum, int conn)
@@ -183,7 +183,7 @@ static struct smbcli_state *connect_one(struct event_context *ev,
 }
 
 
-static void reconnect(struct event_context *ev,
+static void reconnect(struct tevent_context *ev,
 		      struct loadparm_context *lp_ctx,
 			  TALLOC_CTX *mem_ctx,
 		      struct smbcli_state *cli[NSERVERS][NCONNECTIONS], int fnum[NSERVERS][NCONNECTIONS][NFILES],
@@ -405,7 +405,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static int test_locks(struct event_context *ev,
+static int test_locks(struct tevent_context *ev,
 		      struct loadparm_context *lp_ctx,
 			  TALLOC_CTX *mem_ctx,
 		      char *share[NSERVERS])
@@ -555,7 +555,7 @@ static void usage(poptContext pc)
 	int opt;
 	int seed, server;
 	int username_count=0;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct loadparm_context *lp_ctx;
 	poptContext pc;
 	int argc_new, i;

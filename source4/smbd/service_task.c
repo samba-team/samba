@@ -32,7 +32,7 @@
 */
 void task_server_terminate(struct task_server *task, const char *reason)
 {
-	struct event_context *event_ctx = task->event_ctx;
+	struct tevent_context *event_ctx = task->event_ctx;
 	const struct model_ops *model_ops = task->model_ops;
 	DEBUG(0,("task_server_terminate: [%s]\n", reason));
 	model_ops->terminate(event_ctx, task->lp_ctx, reason);
@@ -52,7 +52,7 @@ struct task_state {
   called by the process model code when the new task starts up. This then calls
   the server specific startup code
 */
-static void task_server_callback(struct event_context *event_ctx, 
+static void task_server_callback(struct tevent_context *event_ctx, 
 				 struct loadparm_context *lp_ctx,
 				 struct server_id server_id, void *private)
 {
@@ -83,7 +83,7 @@ static void task_server_callback(struct event_context *event_ctx,
 /*
   startup a task based server
 */
-NTSTATUS task_server_startup(struct event_context *event_ctx, 
+NTSTATUS task_server_startup(struct tevent_context *event_ctx, 
 			     struct loadparm_context *lp_ctx,
 			     const char *service_name, 
 			     const struct model_ops *model_ops, 

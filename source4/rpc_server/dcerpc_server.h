@@ -108,7 +108,7 @@ struct dcesrv_call_state {
 	struct timeval time;
 
 	/* the backend can use this event context for async replies */
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	/* the message_context that will be used for async replies */
 	struct messaging_context *msg_ctx;
@@ -199,7 +199,7 @@ struct dcesrv_connection {
 	struct dcesrv_auth auth_state;
 
 	/* the event_context that will be used for this connection */
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	/* the message_context that will be used for this connection */
 	struct messaging_context *msg_ctx;
@@ -301,7 +301,7 @@ NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
 					TALLOC_CTX *mem_ctx,
 					const struct dcerpc_binding *ep_description,
 					struct auth_session_info *session_info,
-					struct event_context *event_ctx,
+					struct tevent_context *event_ctx,
 					struct messaging_context *msg_ctx,
 					struct server_id server_id,
 					uint32_t state_flags,
@@ -314,7 +314,7 @@ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 TALLOC_CTX *mem_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,
-				 struct event_context *event_ctx,
+				 struct tevent_context *event_ctx,
 				 struct messaging_context *msg_ctx,
 				 struct server_id server_id,
 				 uint32_t state_flags,

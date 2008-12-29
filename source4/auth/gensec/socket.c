@@ -31,7 +31,7 @@ static const struct socket_ops gensec_socket_ops;
 struct gensec_socket {
 	struct gensec_security *gensec_security;
 	struct socket_context *socket;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct packet_context *packet;
 	DATA_BLOB read_buffer;  /* SASL packets are turned into liniarlised data here, for reading */
 	size_t orig_send_len;
@@ -197,8 +197,8 @@ static void gensec_socket_error_handler(void *private, NTSTATUS status)
 	}
 }
 
-static void gensec_socket_trigger_read(struct event_context *ev, 
-				       struct timed_event *te, 
+static void gensec_socket_trigger_read(struct tevent_context *ev, 
+				       struct tevent_timer *te, 
 				       struct timeval t, void *private)
 {
 	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
@@ -413,7 +413,7 @@ static NTSTATUS gensec_socket_send(struct socket_context *sock,
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 			    TALLOC_CTX *mem_ctx,
 			    struct socket_context *current_socket,
-			    struct event_context *ev,
+			    struct tevent_context *ev,
 			    void (*recv_handler)(void *, uint16_t),
 			    void *recv_private,
 			    struct socket_context **new_socket)

@@ -70,7 +70,7 @@ struct vampire_state {
 	const char *targetdir;
 
 	struct loadparm_context *lp_ctx;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 };
 
 static NTSTATUS vampire_prepare_db(void *private_data,

@@ -392,7 +392,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 		const char *set_password;
 	};
 	struct gensec_ntlm_state *state;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct messaging_context *msg;
 
 	NTSTATUS nt_status;

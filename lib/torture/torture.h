@@ -90,7 +90,7 @@ struct torture_context
 	int level;
 
 	/** Event context */
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	/** Loadparm context (will go away in favor of torture_setting_ at some point) */
 	struct loadparm_context *lp_ctx;
@@ -427,7 +427,7 @@ bool torture_suite_init_tcase(struct torture_suite *suite,
 			      struct torture_tcase *tcase, 
 			      const char *name);
 
-struct torture_context *torture_context_init(struct event_context *event_ctx, struct torture_results *results);
+struct torture_context *torture_context_init(struct tevent_context *event_ctx, struct torture_results *results);
 
 struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct torture_ui_ops *ui_ops);
 

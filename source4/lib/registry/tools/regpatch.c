@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	struct registry_context *h;
 	const char *file = NULL;
 	const char *remote = NULL;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"remote", 'R', POPT_ARG_STRING, &remote, 0, "connect to specified remote server", NULL},

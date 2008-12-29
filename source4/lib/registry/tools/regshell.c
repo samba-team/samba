@@ -493,7 +493,7 @@ int main(int argc, char **argv)
 	poptContext pc;
 	const char *remote = NULL;
 	struct regshell_context *ctx;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	bool ret = true;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP

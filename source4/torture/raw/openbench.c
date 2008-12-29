@@ -41,12 +41,12 @@ static int open_failed;
 static int close_failed;
 static char **fnames;
 static int num_connected;
-static struct timed_event *report_te;
+static struct tevent_timer *report_te;
 
 struct benchopen_state {
 	struct torture_context *tctx;
 	TALLOC_CTX *mem_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct smbcli_state *cli;
 	struct smbcli_tree *tree;
 	int client_num;
@@ -64,7 +64,7 @@ struct benchopen_state {
 	struct smbcli_request *req_open;
 	struct smbcli_request *req_close;
 	struct smb_composite_connect reconnect;
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	/* these are used for reconnections */
 	const char **dest_ports;
@@ -74,7 +74,7 @@ struct benchopen_state {
 };
 
 static void next_open(struct benchopen_state *state);
-static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private_data);
 
 
@@ -113,7 +113,7 @@ static void reopen_connection_complete(struct composite_context *ctx)
 /*
   reopen a connection
  */
-static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private_data)
 {
 	struct benchopen_state *state = (struct benchopen_state *)private_data;
@@ -328,7 +328,7 @@ static void echo_completion(struct smbcli_request *req)
 	}
 }
 
-static void report_rate(struct event_context *ev, struct timed_event *te, 
+static void report_rate(struct tevent_context *ev, struct tevent_timer *te, 
 			struct timeval t, void *private_data)
 {
 	struct benchopen_state *state = talloc_get_type(private_data, 

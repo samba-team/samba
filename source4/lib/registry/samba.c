@@ -26,7 +26,7 @@
  */
 
 static WERROR mount_samba_hive(struct registry_context *ctx,
-			       struct event_context *event_ctx,
+			       struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *auth_info,
 			       struct cli_credentials *creds,
@@ -56,7 +56,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 
 _PUBLIC_ WERROR reg_open_samba(TALLOC_CTX *mem_ctx,
 			       struct registry_context **ctx,
-			       struct event_context *ev_ctx,
+			       struct tevent_context *ev_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct auth_session_info *session_info,
 			       struct cli_credentials *credentials)

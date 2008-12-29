@@ -999,8 +999,8 @@ static void ltdb_request_done(struct ldb_request *req, int error)
 	req->callback(req, ares);
 }
 
-static void ltdb_timeout(struct event_context *ev,
-			  struct timed_event *te,
+static void ltdb_timeout(struct tevent_context *ev,
+			  struct tevent_timer *te,
 			  struct timeval t,
 			  void *private_data)
 {
@@ -1051,8 +1051,8 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 	ltdb_request_extended_done(ctx->req, ext, ret);
 }
 
-static void ltdb_callback(struct event_context *ev,
-			  struct timed_event *te,
+static void ltdb_callback(struct tevent_context *ev,
+			  struct tevent_timer *te,
 			  struct timeval t,
 			  void *private_data)
 {
@@ -1095,9 +1095,9 @@ static void ltdb_callback(struct event_context *ev,
 static int ltdb_handle_request(struct ldb_module *module,
 			       struct ldb_request *req)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct ltdb_context *ac;
-	struct timed_event *te;
+	struct tevent_timer *te;
 	struct timeval tv;
 
 	if (check_critical_controls(req->controls)) {

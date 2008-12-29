@@ -105,7 +105,7 @@ struct smb2_setinfo {
 };
 
 struct cli_credentials;
-struct event_context;
+struct tevent_context;
 struct resolve_context;
 struct gensec_settings;
 #include "libcli/smb2/smb2_proto.h"

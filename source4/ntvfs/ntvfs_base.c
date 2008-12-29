@@ -153,7 +153,7 @@ bool ntvfs_interface_differs(const struct ntvfs_critical_sizes *const iface)
 NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, enum ntvfs_type type,
 			       enum protocol_types protocol,
 			       uint64_t ntvfs_client_caps,
-			       struct event_context *ev, struct messaging_context *msg,
+			       struct tevent_context *ev, struct messaging_context *msg,
 			       struct loadparm_context *lp_ctx,
 			       struct server_id server_id, struct ntvfs_context **_ctx)
 {

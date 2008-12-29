@@ -45,7 +45,7 @@ static NTSTATUS wreplsrv_periodic_run(struct wreplsrv_service *service)
 	return NT_STATUS_OK;
 }
 
-static void wreplsrv_periodic_handler_te(struct event_context *ev, struct timed_event *te,
+static void wreplsrv_periodic_handler_te(struct tevent_context *ev, struct tevent_timer *te,
 					 struct timeval t, void *ptr)
 {
 	struct wreplsrv_service *service = talloc_get_type(ptr, struct wreplsrv_service);
@@ -68,7 +68,7 @@ static void wreplsrv_periodic_handler_te(struct event_context *ev, struct timed_
 NTSTATUS wreplsrv_periodic_schedule(struct wreplsrv_service *service, uint32_t next_interval)
 {
 	TALLOC_CTX *tmp_mem;
-	struct timed_event *new_te;
+	struct tevent_timer *new_te;
 	struct timeval next_time;
 
 	/* prevent looping */

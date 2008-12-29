@@ -133,7 +133,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	int i;
 	size_t len = random() % 10000;
 	extern int torture_numops;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	int *count = talloc_zero(tctx, int);
 	bool ret = true;
 
@@ -225,7 +225,7 @@ static bool test_appendacl(struct smbcli_state *cli, struct torture_context *tct
 	struct smb_composite_appendacl **io;
 	struct smb_composite_appendacl **io_orig;
 	struct composite_context **c;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	struct security_descriptor *test_sd;
 	struct security_ace *ace;
@@ -342,7 +342,7 @@ static bool test_fsinfo(struct smbcli_state *cli, struct torture_context *tctx)
 
 	int i;
 	extern int torture_numops;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	int *count = talloc_zero(tctx, int);
 	bool ret = true;
 

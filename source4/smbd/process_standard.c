@@ -47,7 +47,7 @@ static int none_setproctitle(const char *fmt, ...)
 /*
   called when the process model is selected
 */
-static void standard_model_init(struct event_context *ev)
+static void standard_model_init(struct tevent_context *ev)
 {
 	signal(SIGCHLD, SIG_IGN);
 }
@@ -55,10 +55,10 @@ static void standard_model_init(struct event_context *ev)
 /*
   called when a listening socket becomes readable. 
 */
-static void standard_accept_connection(struct event_context *ev, 
+static void standard_accept_connection(struct tevent_context *ev, 
 				       struct loadparm_context *lp_ctx,
 				       struct socket_context *sock, 
-				       void (*new_conn)(struct event_context *,
+				       void (*new_conn)(struct tevent_context *,
 							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
 				       void *private)
@@ -66,7 +66,7 @@ static void standard_accept_connection(struct event_context *ev,
 	NTSTATUS status;
 	struct socket_context *sock2;
 	pid_t pid;
-	struct event_context *ev2;
+	struct tevent_context *ev2;
 	struct socket_address *c, *s;
 
 	/* accept an incoming connection. */
@@ -142,14 +142,14 @@ static void standard_accept_connection(struct event_context *ev,
 /*
   called to create a new server task
 */
-static void standard_new_task(struct event_context *ev, 
+static void standard_new_task(struct tevent_context *ev, 
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
-			      void (*new_task)(struct event_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
+			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
 			      void *private)
 {
 	pid_t pid;
-	struct event_context *ev2;
+	struct tevent_context *ev2;
 
 	pid = fork();
 
@@ -196,7 +196,7 @@ static void standard_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void standard_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, 
+_NORETURN_ static void standard_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, 
 					  const char *reason) 
 {
 	DEBUG(2,("standard_terminate: reason[%s]\n",reason));
@@ -212,7 +212,7 @@ _NORETURN_ static void standard_terminate(struct event_context *ev, struct loadp
 }
 
 /* called to set a title of a task or connection */
-static void standard_set_title(struct event_context *ev, const char *title) 
+static void standard_set_title(struct tevent_context *ev, const char *title) 
 {
 	if (title) {
 		setproctitle("%s", title);

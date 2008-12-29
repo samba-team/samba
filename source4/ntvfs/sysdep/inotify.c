@@ -198,7 +198,7 @@ static void inotify_dispatch(struct inotify_private *in,
 /*
   called when the kernel has some events for us
 */
-static void inotify_handler(struct event_context *ev, struct fd_event *fde,
+static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			    uint16_t flags, void *private_data)
 {
 	struct inotify_private *in = talloc_get_type(private_data,

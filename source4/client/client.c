@@ -2557,7 +2557,7 @@ static void display_share_result(struct srvsvc_NetShareCtr1 *ctr1)
 try and browse available shares on a host
 ****************************************************************************/
 static bool browse_host(struct loadparm_context *lp_ctx,
-			struct event_context *ev_ctx,
+			struct tevent_context *ev_ctx,
 			const char *query_host)
 {
 	struct dcerpc_pipe *p;
@@ -3041,7 +3041,7 @@ static int process_stdin(struct smbclient_context *ctx)
 return a connection to a server
 *******************************************************/
 static bool do_connect(struct smbclient_context *ctx, 
-		       struct event_context *ev_ctx,
+		       struct tevent_context *ev_ctx,
 		       struct resolve_context *resolve_ctx,
 		       const char *specified_server, const char **ports, 
 		       const char *specified_share, 
@@ -3088,7 +3088,7 @@ static bool do_connect(struct smbclient_context *ctx,
 handle a -L query
 ****************************************************************************/
 static int do_host_query(struct loadparm_context *lp_ctx,
-			 struct event_context *ev_ctx,
+			 struct tevent_context *ev_ctx,
 			 const char *query_host,
 			 const char *workgroup)
 {
@@ -3104,7 +3104,7 @@ handle a message operation
 static int do_message_op(const char *netbios_name, const char *desthost,
 			 const char **destports, const char *destip,
 			 int name_type,
-			 struct event_context *ev_ctx,
+			 struct tevent_context *ev_ctx,
 			 struct resolve_context *resolve_ctx,
 			 struct smbcli_options *options,
 			 struct smb_iconv_convenience *iconv_convenience,
@@ -3160,7 +3160,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 	int rc = 0;
 	int name_type = 0x20;
 	TALLOC_CTX *mem_ctx;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	struct smbclient_context *ctx;
 	const char *cmdstr = NULL;
 	struct smbcli_options smb_options;

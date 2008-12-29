@@ -32,7 +32,7 @@
  when the caller doesn't need a session_info
 */
 _PUBLIC_ NTSTATUS authenticate_username_pw(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   struct messaging_context *msg,
 					   struct loadparm_context *lp_ctx,
 					   const char *nt4_domain,

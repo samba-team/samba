@@ -249,7 +249,7 @@ struct ldap_message {
 	bool                   *controls_decoded;
 };
 
-struct event_context;
+struct tevent_context;
 struct cli_credentials;
 struct dom_sid;
 struct asn1_data;

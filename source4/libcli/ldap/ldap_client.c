@@ -43,7 +43,7 @@
 */
 _PUBLIC_ struct ldap_connection *ldap4_new_connection(TALLOC_CTX *mem_ctx, 
 					     struct loadparm_context *lp_ctx,
-					     struct event_context *ev)
+					     struct tevent_context *ev)
 {
 	struct ldap_connection *conn;
 
@@ -224,7 +224,7 @@ void ldap_read_io_handler(void *private_data, uint16_t flags)
 /*
   handle ldap socket events
 */
-static void ldap_io_handler(struct event_context *ev, struct fd_event *fde, 
+static void ldap_io_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 			    uint16_t flags, void *private_data)
 {
 	struct ldap_connection *conn = talloc_get_type(private_data, 
@@ -544,7 +544,7 @@ static int ldap_request_destructor(struct ldap_request *req)
 /*
   called on timeout of a ldap request
 */
-static void ldap_request_timeout(struct event_context *ev, struct timed_event *te, 
+static void ldap_request_timeout(struct tevent_context *ev, struct tevent_timer *te, 
 				      struct timeval t, void *private_data)
 {
 	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);
@@ -562,7 +562,7 @@ static void ldap_request_timeout(struct event_context *ev, struct timed_event *t
 /*
   called on completion of a one-way ldap request
 */
-static void ldap_request_complete(struct event_context *ev, struct timed_event *te, 
+static void ldap_request_complete(struct tevent_context *ev, struct tevent_timer *te, 
 				  struct timeval t, void *private_data)
 {
 	struct ldap_request *req = talloc_get_type(private_data, struct ldap_request);

@@ -29,7 +29,7 @@
 #include "lib/events/events.h"
 
 static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
-					   struct event_context *event_ctx,
+					   struct tevent_context *event_ctx,
 					   struct loadparm_context *lp_ctx,
 					    const char *keytab_name,
 					    struct netr_DELTA_ENUM *delta) 
@@ -70,7 +70,7 @@ static NTSTATUS samdump_keytab_handle_user(TALLOC_CTX *mem_ctx,
 
 struct libnet_samdump_keytab_data {
 	const char *keytab_name;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp_ctx;
 };
 

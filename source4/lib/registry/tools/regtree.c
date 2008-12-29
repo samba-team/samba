@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 	poptContext pc;
 	struct registry_context *h = NULL;
 	struct registry_key *start_key = NULL;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	WERROR error;
 	bool fullpath = false, no_values = false;
 	struct poptOption long_options[] = {

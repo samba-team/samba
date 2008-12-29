@@ -59,9 +59,9 @@ static void ev_wrap_debug(void *context, enum ev_debug_level level,
 
   This samba4 specific call sets the samba4 debug handler.
 */
-struct event_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
+struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	ev = event_context_init_byname(mem_ctx, NULL);
 	if (ev) {

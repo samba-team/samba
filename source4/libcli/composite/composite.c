@@ -35,7 +35,7 @@
  and initialize it
 */
 _PUBLIC_ struct composite_context *composite_create(TALLOC_CTX *mem_ctx,
-						    struct event_context *ev)
+						    struct tevent_context *ev)
 {
 	struct composite_context *c;
 
@@ -93,7 +93,7 @@ _PUBLIC_ NTSTATUS composite_wait_free(struct composite_context *c)
    and allows the caller to ignore the fact that the composite
    function completed early
 */
-static void composite_trigger(struct event_context *ev, struct timed_event *te,
+static void composite_trigger(struct tevent_context *ev, struct tevent_timer *te,
 			      struct timeval t, void *ptr)
 {
 	struct composite_context *c = talloc_get_type(ptr, struct composite_context);

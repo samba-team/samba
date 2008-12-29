@@ -455,7 +455,7 @@ static void composite_handler(struct composite_context *creq)
 struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
 						     TALLOC_CTX *mem_ctx,
 						     struct resolve_context *resolve_ctx,
-						     struct event_context *event_ctx)
+						     struct tevent_context *event_ctx)
 {
 	struct composite_context *c;
 	struct connect_state *state;
@@ -513,7 +513,7 @@ NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem
 */
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
 			       struct resolve_context *resolve_ctx,
-			       struct event_context *ev)
+			       struct tevent_context *ev)
 {
 	struct composite_context *c = smb_composite_connect_send(io, mem_ctx, resolve_ctx, ev);
 	return smb_composite_connect_recv(c, mem_ctx);

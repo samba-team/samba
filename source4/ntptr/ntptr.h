@@ -220,7 +220,7 @@ struct ntptr_ops {
 struct ntptr_context {
 	const struct ntptr_ops *ops;
 	void *private_data;
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 	struct loadparm_context *lp_ctx;
 };
 

@@ -185,7 +185,7 @@ struct auth_check_password_request {
 	} callback;
 };
 
-static void auth_check_password_async_timed_handler(struct event_context *ev, struct timed_event *te,
+static void auth_check_password_async_timed_handler(struct tevent_context *ev, struct tevent_timer *te,
 						    struct timeval t, void *ptr)
 {
 	struct auth_check_password_request *req = talloc_get_type(ptr, struct auth_check_password_request);
@@ -271,7 +271,7 @@ _PUBLIC_ void auth_check_password_send(struct auth_context *auth_ctx,
 	nt_status = NT_STATUS_NO_SUCH_USER; /* If all the modules say 'not for me', then this is reasonable */
 	for (method = auth_ctx->methods; method; method = method->next) {
 		NTSTATUS result;
-		struct timed_event *te = NULL;
+		struct tevent_timer *te = NULL;
 
 		/* check if the module wants to chek the password */
 		result = method->ops->want_check(method, req, user_info);
@@ -351,7 +351,7 @@ _PUBLIC_ NTSTATUS auth_check_password_recv(struct auth_check_password_request *r
  - Allow the caller to specify the methods to use
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **methods, 
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct messaging_context *msg,
 				     struct loadparm_context *lp_ctx,
 				     struct auth_context **auth_ctx)
@@ -414,7 +414,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
  - Uses default auth_methods, depending on server role and smb.conf settings
 ***************************************************************************/
 _PUBLIC_ NTSTATUS auth_context_create(TALLOC_CTX *mem_ctx, 
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct messaging_context *msg,
 			     struct loadparm_context *lp_ctx,
 			     struct auth_context **auth_ctx)

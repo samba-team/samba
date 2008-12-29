@@ -144,7 +144,7 @@ static int binary_net(int argc, const char **argv)
 	int rc;
 	int argc_new;
 	const char **argv_new;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct net_context *ctx = NULL;
 	poptContext pc;
 	struct poptOption long_options[] = {

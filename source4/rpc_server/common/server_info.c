@@ -62,7 +62,7 @@ const char *dcesrv_common_get_server_name(TALLOC_CTX *mem_ctx, struct dcesrv_con
 
 
 /* This hardcoded value should go into a ldb database! */
-uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct event_context *event_ctx, struct dcesrv_context *dce_ctx)
+uint32_t dcesrv_common_get_server_type(TALLOC_CTX *mem_ctx, struct tevent_context *event_ctx, struct dcesrv_context *dce_ctx)
 {
 	int default_server_announce = 0;
 	default_server_announce |= SV_TYPE_WORKSTATION;

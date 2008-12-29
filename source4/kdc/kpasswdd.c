@@ -47,7 +47,7 @@
 struct kpasswd_socket {
 	struct socket_context *sock;
 	struct kdc_server *kdc;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	/* a queue of outgoing replies that have been deferred */
 	struct kdc_reply *send_queue;

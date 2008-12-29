@@ -470,7 +470,7 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 				   struct torture_context *tctx,
 				   const char *hostname, 
 				   const char *sharename,
-				   struct event_context *ev)
+				   struct tevent_context *ev)
 {
 	NTSTATUS status;
 
@@ -539,7 +539,7 @@ _PUBLIC_ bool torture_get_conn_index(int conn_index,
 _PUBLIC_ bool torture_open_connection_ev(struct smbcli_state **c,
 					 int conn_index,
 					 struct torture_context *tctx,
-					 struct event_context *ev)
+					 struct tevent_context *ev)
 {
 	char *host, *share;
 	bool ret;

@@ -295,7 +295,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	struct loadparm_context *lp_ctx = NULL;
 	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None, *py_basis = Py_None;
 	TALLOC_CTX *mem_ctx = NULL;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	NTSTATUS status;
 
 	const char *kwnames[] = {
@@ -375,7 +375,7 @@ static PyObject *dcerpc_interface_new(PyTypeObject *self, PyObject *args, PyObje
 	struct loadparm_context *lp_ctx = NULL;
 	PyObject *py_lp_ctx = Py_None, *py_credentials = Py_None;
 	TALLOC_CTX *mem_ctx = NULL;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	NTSTATUS status;
 
 	PyObject *syntax, *py_basis = Py_None;

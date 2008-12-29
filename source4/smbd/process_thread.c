@@ -37,10 +37,10 @@
 static pthread_key_t title_key;
 
 struct new_conn_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct socket_context *sock;
 	struct loadparm_context *lp_ctx;
-	void (*new_conn)(struct event_context *, struct loadparm_context *lp_ctx, struct socket_context *, uint32_t , void *);
+	void (*new_conn)(struct tevent_context *, struct loadparm_context *lp_ctx, struct socket_context *, uint32_t , void *);
 	void *private;
 };
 
@@ -61,10 +61,10 @@ static void *thread_connection_fn(void *thread_parm)
 /*
   called when a listening socket becomes readable
 */
-static void thread_accept_connection(struct event_context *ev, 
+static void thread_accept_connection(struct tevent_context *ev, 
 				     struct loadparm_context *lp_ctx, 
 				     struct socket_context *sock,
-				     void (*new_conn)(struct event_context *, 
+				     void (*new_conn)(struct tevent_context *, 
 						      struct loadparm_context *,
 						      struct socket_context *, 
 						      uint32_t , void *), 
@@ -75,7 +75,7 @@ static void thread_accept_connection(struct event_context *ev,
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
 	struct new_conn_state *state;
-	struct event_context *ev2;
+	struct tevent_context *ev2;
 
 	ev2 = s4_event_context_init(ev);
 	if (ev2 == NULL) return;
@@ -121,9 +121,9 @@ static void thread_accept_connection(struct event_context *ev,
 
 
 struct new_task_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct loadparm_context *lp_ctx;
-	void (*new_task)(struct event_context *, struct loadparm_context *, 
+	void (*new_task)(struct tevent_context *, struct loadparm_context *, 
 			 uint32_t , void *);
 	void *private;
 };
@@ -146,10 +146,10 @@ static void *thread_task_fn(void *thread_parm)
 /*
   called when a new task is needed
 */
-static void thread_new_task(struct event_context *ev, 
+static void thread_new_task(struct tevent_context *ev, 
 			    struct loadparm_context *lp_ctx,
 			    const char *service_name,
-			    void (*new_task)(struct event_context *, 
+			    void (*new_task)(struct tevent_context *, 
 					     struct loadparm_context *,
 					     uint32_t , void *), 
 			    void *private)
@@ -158,7 +158,7 @@ static void thread_new_task(struct event_context *ev,
 	pthread_t thread_id;
 	pthread_attr_t thread_attr;
 	struct new_task_state *state;
-	struct event_context *ev2;
+	struct tevent_context *ev2;
 
 	ev2 = s4_event_context_init(ev);
 	if (ev2 == NULL) return;
@@ -188,7 +188,7 @@ static void thread_new_task(struct event_context *ev,
 }
 
 /* called when a task goes down */
-static void thread_terminate(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const char *reason) 
+static void thread_terminate(struct tevent_context *event_ctx, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(10,("thread_terminate: reason[%s]\n",reason));
 
@@ -199,7 +199,7 @@ static void thread_terminate(struct event_context *event_ctx, struct loadparm_co
 }
 
 /* called to set a title of a task or connection */
-static void thread_set_title(struct event_context *ev, const char *title) 
+static void thread_set_title(struct tevent_context *ev, const char *title) 
 {
 	char *old_title;
 	char *new_title;
@@ -509,7 +509,7 @@ static void thread_fault_handler(int sig)
 /*
   called when the process model is selected
 */
-static void thread_model_init(struct event_context *event_context)
+static void thread_model_init(struct tevent_context *event_context)
 {
 	struct mutex_ops m_ops;
 	struct debug_ops d_ops;

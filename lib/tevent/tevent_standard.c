@@ -37,10 +37,10 @@
 
 struct std_event_context {
 	/* a pointer back to the generic event_context */
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	/* list of filedescriptor events */
-	struct fd_event *fd_events;
+	struct tevent_fd *fd_events;
 
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
@@ -112,7 +112,7 @@ static void epoll_init_ctx(struct std_event_context *std_ev)
 	talloc_set_destructor(std_ev, epoll_ctx_destructor);
 }
 
-static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde);
+static void epoll_add_event(struct std_event_context *std_ev, struct tevent_fd *fde);
 
 /*
   reopen the epoll handle when our pid changes
@@ -121,7 +121,7 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
  */
 static void epoll_check_reopen(struct std_event_context *std_ev)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	if (std_ev->pid == getpid()) {
 		return;
@@ -147,7 +147,7 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 /*
  add the epoll event to the given fd_event
 */
-static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_add_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -174,7 +174,7 @@ static void epoll_add_event(struct std_event_context *std_ev, struct fd_event *f
 /*
  delete the epoll event for given fd_event
 */
-static void epoll_del_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_del_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -194,7 +194,7 @@ static void epoll_del_event(struct std_event_context *std_ev, struct fd_event *f
 /*
  change the epoll event to the given fd_event
 */
-static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_mod_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
 	if (std_ev->epoll_fd == -1) return;
@@ -214,7 +214,7 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct fd_event *f
 	}
 }
 
-static void epoll_change_event(struct std_event_context *std_ev, struct fd_event *fde)
+static void epoll_change_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
 	bool want_read = (fde->flags & EVENT_FD_READ);
@@ -290,8 +290,8 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	}
 
 	for (i=0;i<ret;i++) {
-		struct fd_event *fde = talloc_get_type(events[i].data.ptr, 
-						       struct fd_event);
+		struct tevent_fd *fde = talloc_get_type(events[i].data.ptr, 
+						       struct tevent_fd);
 		uint16_t flags = 0;
 
 		if (fde == NULL) {
@@ -336,7 +336,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 /*
   create a std_event_context structure.
 */
-static int std_event_context_init(struct event_context *ev)
+static int std_event_context_init(struct tevent_context *ev)
 {
 	struct std_event_context *std_ev;
 
@@ -356,7 +356,7 @@ static int std_event_context_init(struct event_context *ev)
 */
 static void calc_maxfd(struct std_event_context *std_ev)
 {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	std_ev->maxfd = 0;
 	for (fde = std_ev->fd_events; fde; fde = fde->next) {
@@ -375,9 +375,9 @@ static void calc_maxfd(struct std_event_context *std_ev)
 /*
   destroy an fd_event
 */
-static int std_event_fd_destructor(struct fd_event *fde)
+static int std_event_fd_destructor(struct tevent_fd *fde)
 {
-	struct event_context *ev = fde->event_ctx;
+	struct tevent_context *ev = fde->event_ctx;
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
 
@@ -404,18 +404,18 @@ static int std_event_fd_destructor(struct fd_event *fde)
   add a fd based event
   return NULL on failure (memory allocation error)
 */
-static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+static struct tevent_fd *std_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					 int fd, uint16_t flags,
 					 event_fd_handler_t handler,
 					 void *private_data)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	epoll_check_reopen(std_ev);
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct fd_event);
+	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
 	if (!fde) return NULL;
 
 	fde->event_ctx		= ev;
@@ -442,7 +442,7 @@ static struct fd_event *std_event_add_fd(struct event_context *ev, TALLOC_CTX *m
 /*
   return the fd event flags
 */
-static uint16_t std_event_get_fd_flags(struct fd_event *fde)
+static uint16_t std_event_get_fd_flags(struct tevent_fd *fde)
 {
 	return fde->flags;
 }
@@ -450,9 +450,9 @@ static uint16_t std_event_get_fd_flags(struct fd_event *fde)
 /*
   set the fd event flags
 */
-static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+static void std_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct std_event_context *std_ev;
 
 	if (fde->flags == flags) return;
@@ -473,7 +473,7 @@ static void std_event_set_fd_flags(struct fd_event *fde, uint16_t flags)
 static int std_event_loop_select(struct std_event_context *std_ev, struct timeval *tvalp)
 {
 	fd_set r_fds, w_fds;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	int selrtn;
 	uint32_t destruction_count = ++std_ev->destruction_count;
 
@@ -550,7 +550,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 /*
   do a single event loop using the events defined in ev 
 */
-static int std_event_loop_once(struct event_context *ev)
+static int std_event_loop_once(struct tevent_context *ev)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 		 					   struct std_event_context);
@@ -573,7 +573,7 @@ static int std_event_loop_once(struct event_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-static int std_event_loop_wait(struct event_context *ev)
+static int std_event_loop_wait(struct tevent_context *ev)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);

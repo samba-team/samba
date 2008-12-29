@@ -234,7 +234,7 @@ static bool test_sleep(struct torture_context *tctx,
 	struct timeval snd[ASYNC_COUNT];
 	struct timeval rcv[ASYNC_COUNT];
 	struct timeval diff[ASYNC_COUNT];
-	struct event_context *ctx;
+	struct tevent_context *ctx;
 	int total_done = 0;
 
 	if (torture_setting_bool(tctx, "quick", false)) {

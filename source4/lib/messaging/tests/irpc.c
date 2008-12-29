@@ -34,7 +34,7 @@ static bool test_debug;
 struct irpc_test_data
 {
 	struct messaging_context *msg_ctx1, *msg_ctx2;
-	struct event_context *ev;
+	struct tevent_context *ev;
 };
 
 /*
@@ -53,7 +53,7 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
 /*
   a deferred reply to echodata
 */
-static void deferred_echodata(struct event_context *ev, struct timed_event *te, 
+static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private)
 {
 	struct irpc_message *irpc = talloc_get_type(private, struct irpc_message);

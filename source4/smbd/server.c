@@ -148,7 +148,7 @@ static void setup_signals(void)
 /*
   handle io on stdin
 */
-static void server_stdin_handler(struct event_context *event_ctx, struct fd_event *fde, 
+static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
 				 uint16_t flags, void *private)
 {
 	const char *binary_name = (const char *)private;
@@ -167,8 +167,8 @@ static void server_stdin_handler(struct event_context *event_ctx, struct fd_even
 /*
   die if the user selected maximum runtime is exceeded
 */
-_NORETURN_ static void max_runtime_handler(struct event_context *ev, 
-					   struct timed_event *te, 
+_NORETURN_ static void max_runtime_handler(struct tevent_context *ev, 
+					   struct tevent_timer *te, 
 					   struct timeval t, void *private)
 {
 	const char *binary_name = (const char *)private;
@@ -201,7 +201,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	extern NTSTATUS server_service_samba3_smb_init(void);
 	init_module_fn static_init[] = { STATIC_service_MODULES };
 	init_module_fn *shared_init;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;
 	const char *model = "standard";

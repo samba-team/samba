@@ -172,7 +172,7 @@ _PUBLIC_ bool cli_credentials_parse_file(struct cli_credentials *cred, const cha
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_secrets(struct cli_credentials *cred, 
-					      struct event_context *event_ctx,
+					      struct tevent_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     struct ldb_context *ldb,
 				     const char *base,
@@ -364,7 +364,7 @@ _PUBLIC_ NTSTATUS cli_credentials_set_machine_account(struct cli_credentials *cr
  * @retval NTSTATUS error detailing any failure
  */
 NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
-			            struct event_context *event_ctx,
+			            struct tevent_context *event_ctx,
 				    struct loadparm_context *lp_ctx)
 {
 	NTSTATUS status;
@@ -392,7 +392,7 @@ NTSTATUS cli_credentials_set_krbtgt(struct cli_credentials *cred,
  * @retval NTSTATUS error detailing any failure
  */
 _PUBLIC_ NTSTATUS cli_credentials_set_stored_principal(struct cli_credentials *cred,
-						       struct event_context *event_ctx,
+						       struct tevent_context *event_ctx,
 					      struct loadparm_context *lp_ctx,
 					      const char *serviceprincipal)
 {

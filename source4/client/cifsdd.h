@@ -90,10 +90,10 @@ struct dd_iohandle
 
 struct smbcli_options;
 struct smbcli_session_options;
-struct event_context;
+struct tevent_context;
 
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size, int options, 

@@ -40,7 +40,7 @@ static uint32_t num_backends;
 */
 _PUBLIC_ struct sys_notify_context *sys_notify_context_create(struct share_config *scfg,
 							      TALLOC_CTX *mem_ctx, 
-							      struct event_context *ev)
+							      struct tevent_context *ev)
 {
 	struct sys_notify_context *ctx;
 	const char *bname;

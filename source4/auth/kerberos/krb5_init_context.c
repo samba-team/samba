@@ -37,7 +37,7 @@ struct smb_krb5_socket {
 	struct socket_context *sock;
 
 	/* the fd event */
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	NTSTATUS status;
 	DATA_BLOB request, reply;
@@ -130,8 +130,8 @@ static NTSTATUS smb_krb5_full_packet(void *private, DATA_BLOB data)
 /*
   handle request timeouts
 */
-static void smb_krb5_request_timeout(struct event_context *event_ctx, 
-				  struct timed_event *te, struct timeval t,
+static void smb_krb5_request_timeout(struct tevent_context *event_ctx, 
+				  struct tevent_timer *te, struct timeval t,
 				  void *private)
 {
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
@@ -169,7 +169,7 @@ static void smb_krb5_socket_send(struct smb_krb5_socket *smb_krb5)
 /*
   handle fd events on a smb_krb5_socket
 */
-static void smb_krb5_socket_handler(struct event_context *ev, struct fd_event *fde,
+static void smb_krb5_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 				 uint16_t flags, void *private)
 {
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
@@ -217,7 +217,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 	struct addrinfo *ai, *a;
 	struct smb_krb5_socket *smb_krb5;
 
-	struct event_context *ev = talloc_get_type(data, struct event_context);
+	struct tevent_context *ev = talloc_get_type(data, struct tevent_context);
 
 	DATA_BLOB send_blob = data_blob_const(send_buf->data, send_buf->length);
 
@@ -361,7 +361,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 }
 
 krb5_error_code smb_krb5_init_context(void *parent_ctx, 
-				      struct event_context *ev,
+				      struct tevent_context *ev,
 				      struct loadparm_context *lp_ctx,
 				       struct smb_krb5_context **smb_krb5_context) 
 {

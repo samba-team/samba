@@ -124,7 +124,7 @@ static bool test_tcp(struct torture_context *tctx)
 	DATA_BLOB blob, blob2;
 	size_t sent, nread;
 	TALLOC_CTX *mem_ctx = tctx;
-	struct event_context *ev = tctx->ev;
+	struct tevent_context *ev = tctx->ev;
 	struct interface *ifaces;
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock1, 0);

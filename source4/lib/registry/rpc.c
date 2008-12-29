@@ -480,7 +480,7 @@ _PUBLIC_ WERROR reg_open_remote(struct registry_context **ctx,
 				struct auth_session_info *session_info,
 				struct cli_credentials *credentials,
 				struct loadparm_context *lp_ctx,
-				const char *location, struct event_context *ev)
+				const char *location, struct tevent_context *ev)
 {
 	NTSTATUS status;
 	struct dcerpc_pipe *p;

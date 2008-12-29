@@ -68,7 +68,7 @@ enum gensec_role
 struct auth_session_info;
 struct cli_credentials;
 struct gensec_settings;
-struct event_context;
+struct tevent_context;
 
 struct gensec_update_request {
 	struct gensec_security *gensec_security;
@@ -168,7 +168,7 @@ struct gensec_security {
 	enum gensec_role gensec_role;
 	bool subcontext;
 	uint32_t want_features;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct messaging_context *msg_ctx; /* only valid as server */
 	struct socket_address *my_addr, *peer_addr;
 	struct gensec_settings *settings;
@@ -189,7 +189,7 @@ struct socket_context;
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 			    TALLOC_CTX *mem_ctx, 
 			    struct socket_context *current_socket,
-			    struct event_context *ev,
+			    struct tevent_context *ev,
 			    void (*recv_handler)(void *, uint16_t),
 			    void *recv_private,
 			    struct socket_context **new_socket);
@@ -220,7 +220,7 @@ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 				 struct gensec_security **gensec_security);
 NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx, 
 			     struct gensec_security **gensec_security,
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct gensec_settings *settings);
 NTSTATUS gensec_start_mech_by_sasl_list(struct gensec_security *gensec_security, 
 						 const char **sasl_names);
@@ -272,7 +272,7 @@ NTSTATUS gensec_start_mech_by_authtype(struct gensec_security *gensec_security,
 				       uint8_t auth_type, uint8_t auth_level);
 const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security, uint8_t authtype);
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
 			     struct messaging_context *msg,
 			     struct gensec_security **gensec_security);

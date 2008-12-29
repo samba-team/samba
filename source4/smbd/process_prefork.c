@@ -49,7 +49,7 @@ static int none_setproctitle(const char *fmt, ...)
 /*
   called when the process model is selected
 */
-static void prefork_model_init(struct event_context *ev)
+static void prefork_model_init(struct tevent_context *ev)
 {
 	signal(SIGCHLD, SIG_IGN);
 }
@@ -68,10 +68,10 @@ static void prefork_reload_after_fork(void)
 /*
   called when a listening socket becomes readable. 
 */
-static void prefork_accept_connection(struct event_context *ev, 
+static void prefork_accept_connection(struct tevent_context *ev, 
 				      struct loadparm_context *lp_ctx,
 				      struct socket_context *listen_socket,
-				       void (*new_conn)(struct event_context *,
+				       void (*new_conn)(struct tevent_context *,
 							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
 				       void *private)
@@ -94,16 +94,16 @@ static void prefork_accept_connection(struct event_context *ev,
 /*
   called to create a new server task
 */
-static void prefork_new_task(struct event_context *ev, 
+static void prefork_new_task(struct tevent_context *ev, 
 			     struct loadparm_context *lp_ctx,
 			     const char *service_name,
-			     void (*new_task_fn)(struct event_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
+			     void (*new_task_fn)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
 			     void *private)
 {
 	pid_t pid;
 	int i, num_children;
 
-	struct event_context *ev2, *ev_parent;
+	struct tevent_context *ev2, *ev_parent;
 
 	pid = fork();
 
@@ -189,13 +189,13 @@ static void prefork_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-_NORETURN_ static void prefork_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
+_NORETURN_ static void prefork_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(2,("prefork_terminate: reason[%s]\n",reason));
 }
 
 /* called to set a title of a task or connection */
-static void prefork_set_title(struct event_context *ev, const char *title) 
+static void prefork_set_title(struct tevent_context *ev, const char *title) 
 {
 	if (title) {
 		setproctitle("%s", title);

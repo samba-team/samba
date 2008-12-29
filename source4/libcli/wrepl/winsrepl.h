@@ -30,8 +30,8 @@ struct wrepl_socket {
 	struct packet_context *packet;
 
 	struct {
-		struct event_context *ctx;
-		struct fd_event *fde;
+		struct tevent_context *ctx;
+		struct tevent_fd *fde;
 	} event;
 
 	/* a queue of replies waiting to be received */
@@ -76,7 +76,7 @@ struct wrepl_request {
 	bool trigger;
 	NTSTATUS status;
 
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	struct wrepl_packet *packet;
 

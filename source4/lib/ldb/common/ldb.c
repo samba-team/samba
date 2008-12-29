@@ -39,7 +39,7 @@
    The mem_ctx is required
    The event_ctx is required
 */
-struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx)
+struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 {
 	struct ldb_context *ldb;
 	int ret;
@@ -393,7 +393,7 @@ static int ldb_autotransaction_request(struct ldb_context *ldb,
 
 int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 
 	if (!handle) {
 		return LDB_ERR_UNAVAILABLE;
@@ -474,12 +474,12 @@ void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms)
 	ldb->create_perms = perms;
 }
 
-void ldb_set_event_context(struct ldb_context *ldb, struct event_context *ev)
+void ldb_set_event_context(struct ldb_context *ldb, struct tevent_context *ev)
 {
 	ldb->ev_ctx = ev;
 }
 
-struct event_context * ldb_get_event_context(struct ldb_context *ldb)
+struct tevent_context * ldb_get_event_context(struct ldb_context *ldb)
 {
 	return ldb->ev_ctx;
 }

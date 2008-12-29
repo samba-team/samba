@@ -44,7 +44,7 @@
 struct stream_socket {
 	const struct stream_server_ops *ops;
 	struct loadparm_context *lp_ctx;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	const struct model_ops *model_ops;
 	struct socket_context *sock;
 	void *private;
@@ -56,7 +56,7 @@ struct stream_socket {
 */
 void stream_terminate_connection(struct stream_connection *srv_conn, const char *reason)
 {
-	struct event_context *event_ctx = srv_conn->event.ctx;
+	struct tevent_context *event_ctx = srv_conn->event.ctx;
 	const struct model_ops *model_ops = srv_conn->model_ops;
 
 	if (!reason) reason = "unknown reason";
@@ -100,7 +100,7 @@ static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 	}
 }
 
-static void stream_io_handler_fde(struct event_context *ev, struct fd_event *fde, 
+static void stream_io_handler_fde(struct tevent_context *ev, struct tevent_fd *fde, 
 				  uint16_t flags, void *private)
 {
 	struct stream_connection *conn = talloc_get_type(private, 
@@ -120,7 +120,7 @@ void stream_io_handler_callback(void *private, uint16_t flags)
   used for protocols, where a client connection needs to switched into
   a server connection
 */
-NTSTATUS stream_new_connection_merge(struct event_context *ev,
+NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const struct model_ops *model_ops,
 				     struct socket_context *sock,
@@ -155,7 +155,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
   called when a new socket connection has been established. This is called in the process
   context of the new process (if appropriate)
 */
-static void stream_new_connection(struct event_context *ev,
+static void stream_new_connection(struct tevent_context *ev,
 				  struct loadparm_context *lp_ctx,
 				  struct socket_context *sock, 
 				  struct server_id server_id, void *private)
@@ -224,7 +224,7 @@ static void stream_new_connection(struct event_context *ev,
 /*
   called when someone opens a connection to one of our listening ports
 */
-static void stream_accept_handler(struct event_context *ev, struct fd_event *fde, 
+static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 				  uint16_t flags, void *private)
 {
 	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
@@ -245,7 +245,7 @@ static void stream_accept_handler(struct event_context *ev, struct fd_event *fde
   	 a string for the port. Should leave allocating a port nr 
          to the socket implementation - JRV20070903
  */
-NTSTATUS stream_setup_socket(struct event_context *event_context,
+NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops,
 			     const struct stream_server_ops *stream_ops,

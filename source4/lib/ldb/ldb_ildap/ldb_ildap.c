@@ -52,7 +52,7 @@
 
 struct ildb_private {
 	struct ldap_connection *ldap;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 };
 
 struct ildb_context {
@@ -92,8 +92,8 @@ static void ildb_request_done(struct ildb_context *ctx,
 	ctx->req->callback(ctx->req, ares);
 }
 
-static void ildb_auto_done_callback(struct event_context *ev,
-				    struct timed_event *te,
+static void ildb_auto_done_callback(struct tevent_context *ev,
+				    struct tevent_timer *te,
 				    struct timeval t,
 				    void *private_data)
 {
@@ -182,7 +182,7 @@ static int ildb_map_error(struct ldb_module *module, NTSTATUS status)
 	return LDB_ERR_OPERATIONS_ERROR;
 }
 
-static void ildb_request_timeout(struct event_context *ev, struct timed_event *te,
+static void ildb_request_timeout(struct tevent_context *ev, struct tevent_timer *te,
 				 struct timeval t, void *private_data)
 {
 	struct ildb_context *ac = talloc_get_type(private_data, struct ildb_context);
@@ -661,7 +661,7 @@ static int ildb_handle_request(struct ldb_module *module, struct ldb_request *re
 {
 	struct ildb_private *ildb;
 	struct ildb_context *ac;
-	struct timed_event *te;
+	struct tevent_timer *te;
 	int ret;
 
 	ildb = talloc_get_type(module->private_data, struct ildb_private);

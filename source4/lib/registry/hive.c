@@ -28,7 +28,7 @@
 _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 			      struct auth_session_info *session_info,
 			      struct cli_credentials *credentials,
-			      struct event_context *ev_ctx,
+			      struct tevent_context *ev_ctx,
 			      struct loadparm_context *lp_ctx,
 			      struct hive_key **root)
 {

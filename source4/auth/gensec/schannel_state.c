@@ -34,7 +34,7 @@
 /**
   connect to the schannel ldb
 */
-struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx,
+struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx,
 					struct loadparm_context *lp_ctx)
 {
 	char *path;
@@ -140,7 +140,7 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev_ctx,
+				    struct tevent_context *ev_ctx,
 				    struct loadparm_context *lp_ctx,
 				    struct creds_CredentialState *creds)
 {
@@ -272,7 +272,7 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev_ctx,
+				    struct tevent_context *ev_ctx,
 				    struct loadparm_context *lp_ctx,
 					const char *computer_name, 
 					const char *domain, 

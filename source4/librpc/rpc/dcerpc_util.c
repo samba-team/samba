@@ -202,7 +202,7 @@ static void continue_epm_map(struct rpc_request *req)
 struct composite_context *dcerpc_epm_map_binding_send(TALLOC_CTX *mem_ctx,
 						      struct dcerpc_binding *binding,
 						      const struct ndr_interface_table *table,
-						      struct event_context *ev,
+						      struct tevent_context *ev,
 						      struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
@@ -303,7 +303,7 @@ NTSTATUS dcerpc_epm_map_binding_recv(struct composite_context *c)
   Get endpoint mapping for rpc connection
 */
 _PUBLIC_ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const struct ndr_interface_table *table, struct event_context *ev,
+				const struct ndr_interface_table *table, struct tevent_context *ev,
 				struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;

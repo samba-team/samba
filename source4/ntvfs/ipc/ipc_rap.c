@@ -100,13 +100,13 @@ struct rap_call {
 	struct ndr_pull *ndr_pull_param;
 	struct ndr_pull *ndr_pull_data;
 
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 };
 
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
 static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev_ctx,
+					 struct tevent_context *ev_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct smb_trans2 *trans)
 {
@@ -433,7 +433,7 @@ static const struct
 	{NULL, -1, api_Unsupported}
 };
 
-NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct event_context *event_ctx, struct loadparm_context *lp_ctx,
+NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct tevent_context *event_ctx, struct loadparm_context *lp_ctx,
 		      struct smb_trans2 *trans)
 {
 	int i;

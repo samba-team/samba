@@ -52,7 +52,7 @@ struct wins_challenge_io {
 	struct {
 		struct nbtd_server *nbtd_server;
 		uint16_t nbt_port;
-		struct event_context *event_ctx;
+		struct tevent_context *event_ctx;
 		struct nbt_name *name;
 		uint32_t num_addresses;
 		const char **addresses;

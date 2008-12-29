@@ -53,8 +53,8 @@ struct connect_one_state {
 };
 
 static void continue_resolve_name(struct composite_context *creq);
-static void connect_multi_timer(struct event_context *ev,
-				    struct timed_event *te,
+static void connect_multi_timer(struct tevent_context *ev,
+				    struct tevent_timer *te,
 				    struct timeval tv, void *p);
 static void connect_multi_next_socket(struct composite_context *result);
 static void continue_one(struct composite_context *creq);
@@ -68,7 +68,7 @@ _PUBLIC_ struct composite_context *socket_connect_multi_send(
 						    int num_server_ports,
 						    uint16_t *server_ports,
 						    struct resolve_context *resolve_ctx,
-						    struct event_context *event_ctx)
+						    struct tevent_context *event_ctx)
 {
 	struct composite_context *result;
 	struct connect_multi_state *multi;
@@ -179,8 +179,8 @@ static void connect_multi_next_socket(struct composite_context *result)
 /*
   a timer has gone off telling us that we should try the next port
 */
-static void connect_multi_timer(struct event_context *ev,
-				struct timed_event *te,
+static void connect_multi_timer(struct tevent_context *ev,
+				struct tevent_timer *te,
 				struct timeval tv, void *p)
 {
 	struct composite_context *result = talloc_get_type(p, struct composite_context);
@@ -265,7 +265,7 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx,
 			      const char *server_address,
 			      int num_server_ports, uint16_t *server_ports,
 			      struct resolve_context *resolve_ctx,
-			      struct event_context *event_ctx,
+			      struct tevent_context *event_ctx,
 			      struct socket_context **result,
 			      uint16_t *result_port)
 {

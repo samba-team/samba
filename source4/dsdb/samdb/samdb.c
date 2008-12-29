@@ -70,7 +70,7 @@ char *samdb_relative_path(struct ldb_context *ldb,
 }
 
 struct cli_credentials *samdb_credentials(TALLOC_CTX *mem_ctx, 
-					  struct event_context *event_ctx, 
+					  struct tevent_context *event_ctx, 
 					  struct loadparm_context *lp_ctx) 
 {
 	struct cli_credentials *cred = cli_credentials_init(mem_ctx);
@@ -97,7 +97,7 @@ struct cli_credentials *samdb_credentials(TALLOC_CTX *mem_ctx,
   return an opaque context pointer on success, or NULL on failure
  */
 struct ldb_context *samdb_connect(TALLOC_CTX *mem_ctx, 
-				  struct event_context *ev_ctx,
+				  struct tevent_context *ev_ctx,
 				  struct loadparm_context *lp_ctx,
 				  struct auth_session_info *session_info)
 {
@@ -126,7 +126,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 	struct ldb_context *templates_ldb;
 	char *templates_ldb_path; 
 	struct ldb_dn *basedn;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct loadparm_context *lp_ctx;
 
 	templates_ldb = talloc_get_type(ldb_get_opaque(ldb, "templates_ldb"), struct ldb_context);
@@ -223,7 +223,7 @@ int samdb_copy_template(struct ldb_context *ldb,
  Create the SID list for this user.
 ****************************************************************************/
 NTSTATUS security_token_create(TALLOC_CTX *mem_ctx, 
-			       struct event_context *ev_ctx, 
+			       struct tevent_context *ev_ctx, 
 			       struct loadparm_context *lp_ctx,
 			       struct dom_sid *user_sid,
 			       struct dom_sid *group_sid, 

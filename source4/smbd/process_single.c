@@ -29,17 +29,17 @@
 /*
   called when the process model is selected
 */
-static void single_model_init(struct event_context *ev)
+static void single_model_init(struct tevent_context *ev)
 {
 }
 
 /*
   called when a listening socket becomes readable. 
 */
-static void single_accept_connection(struct event_context *ev, 
+static void single_accept_connection(struct tevent_context *ev, 
 				     struct loadparm_context *lp_ctx,
 				     struct socket_context *listen_socket,
-				     void (*new_conn)(struct event_context *, 
+				     void (*new_conn)(struct tevent_context *, 
 						      struct loadparm_context *,
 						      struct socket_context *, 
 						      struct server_id , void *), 
@@ -78,10 +78,10 @@ static void single_accept_connection(struct event_context *ev,
 /*
   called to startup a new task
 */
-static void single_new_task(struct event_context *ev, 
+static void single_new_task(struct tevent_context *ev, 
 			    struct loadparm_context *lp_ctx, 
 			    const char *service_name,
-			    void (*new_task)(struct event_context *, struct loadparm_context *, struct server_id, void *), 
+			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private)
 {
 	static uint32_t taskid = 0;
@@ -95,13 +95,13 @@ static void single_new_task(struct event_context *ev,
 
 
 /* called when a task goes down */
-static void single_terminate(struct event_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
+static void single_terminate(struct tevent_context *ev, struct loadparm_context *lp_ctx, const char *reason) 
 {
 	DEBUG(2,("single_terminate: reason[%s]\n",reason));
 }
 
 /* called to set a title of a task or connection */
-static void single_set_title(struct event_context *ev, const char *title) 
+static void single_set_title(struct tevent_context *ev, const char *title) 
 {
 }
 

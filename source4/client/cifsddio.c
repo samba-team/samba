@@ -221,7 +221,7 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 }
 
 static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ctx,
-					      struct event_context *ev,
+					      struct tevent_context *ev,
 					      const char * host,
 					      const char **ports,
 					      const char * share,
@@ -303,7 +303,7 @@ static int open_smb_file(struct smbcli_state * cli,
 }
 
 static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx,
-					     struct event_context *ev,
+					     struct tevent_context *ev,
 					     const char * host,
 					const char **ports,
 					const char * share,
@@ -354,7 +354,7 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 /* ------------------------------------------------------------------------- */
 
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size,

@@ -30,7 +30,7 @@
 #include "param/param.h"
 
 _PUBLIC_ int cli_credentials_get_krb5_context(struct cli_credentials *cred, 
-					      struct event_context *event_ctx,
+					      struct tevent_context *event_ctx,
 				     struct loadparm_context *lp_ctx,
 				     struct smb_krb5_context **smb_krb5_context) 
 {
@@ -128,7 +128,7 @@ static int free_dccache(struct ccache_container *ccc) {
 }
 
 _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred, 
-					struct event_context *event_ctx,
+					struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       const char *name, 
 			       enum credentials_obtained obtained)
@@ -204,7 +204,7 @@ _PUBLIC_ int cli_credentials_set_ccache(struct cli_credentials *cred,
 
 
 static int cli_credentials_new_ccache(struct cli_credentials *cred, 
-				      struct event_context *event_ctx,
+				      struct tevent_context *event_ctx,
 				      struct loadparm_context *lp_ctx,
 				      struct ccache_container **_ccc)
 {
@@ -255,7 +255,7 @@ static int cli_credentials_new_ccache(struct cli_credentials *cred,
 }
 
 _PUBLIC_ int cli_credentials_get_ccache(struct cli_credentials *cred, 
-					struct event_context *event_ctx,
+					struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct ccache_container **ccc)
 {
@@ -351,7 +351,7 @@ static int free_gssapi_creds(struct gssapi_creds_container *gcc)
 }
 
 _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred, 
-					 struct event_context *event_ctx,
+					 struct tevent_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {
@@ -457,7 +457,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
 */
 
  int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
-					  struct event_context *event_ctx,
+					  struct tevent_context *event_ctx,
 					  struct loadparm_context *lp_ctx,
 					  gss_cred_id_t gssapi_cred,
 					  enum credentials_obtained obtained) 
@@ -512,7 +512,7 @@ _PUBLIC_ int cli_credentials_get_client_gss_creds(struct cli_credentials *cred,
  * it will be generated from the password.
  */
 _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred, 
-					struct event_context *event_ctx,
+					struct tevent_context *event_ctx,
 			       struct loadparm_context *lp_ctx,
 			       struct keytab_container **_ktc)
 {
@@ -567,7 +567,7 @@ _PUBLIC_ int cli_credentials_get_keytab(struct cli_credentials *cred,
  * FILE:/etc/krb5.keytab), open it and attach it */
 
 _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred, 
-					     struct event_context *event_ctx,
+					     struct tevent_context *event_ctx,
 				    struct loadparm_context *lp_ctx,
 				    const char *keytab_name, 
 				    enum credentials_obtained obtained) 
@@ -607,7 +607,7 @@ _PUBLIC_ int cli_credentials_set_keytab_name(struct cli_credentials *cred,
 }
 
 _PUBLIC_ int cli_credentials_update_keytab(struct cli_credentials *cred, 
-					   struct event_context *event_ctx,
+					   struct tevent_context *event_ctx,
 				  struct loadparm_context *lp_ctx) 
 {
 	krb5_error_code ret;
@@ -644,7 +644,7 @@ _PUBLIC_ int cli_credentials_update_keytab(struct cli_credentials *cred,
 /* Get server gss credentials (in gsskrb5, this means the keytab) */
 
 _PUBLIC_ int cli_credentials_get_server_gss_creds(struct cli_credentials *cred, 
-						  struct event_context *event_ctx,
+						  struct tevent_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 struct gssapi_creds_container **_gcc) 
 {

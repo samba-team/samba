@@ -109,15 +109,15 @@ bool ev_timeval_is_zero(const struct timeval *tv)
 /*
   destroy a timed event
 */
-static int common_event_timed_destructor(struct timed_event *te)
+static int common_event_timed_destructor(struct tevent_timer *te)
 {
-	struct event_context *ev = talloc_get_type(te->event_ctx,
-						   struct event_context);
+	struct tevent_context *ev = talloc_get_type(te->event_ctx,
+						   struct tevent_context);
 	DLIST_REMOVE(ev->timer_events, te);
 	return 0;
 }
 
-static int common_event_timed_deny_destructor(struct timed_event *te)
+static int common_event_timed_deny_destructor(struct tevent_timer *te)
 {
 	return -1;
 }
@@ -126,14 +126,14 @@ static int common_event_timed_deny_destructor(struct timed_event *te)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
+struct tevent_timer *common_event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 					   struct timeval next_event, 
 					   event_timed_handler_t handler, 
 					   void *private_data) 
 {
-	struct timed_event *te, *last_te, *cur_te;
+	struct tevent_timer *te, *last_te, *cur_te;
 
-	te = talloc(mem_ctx?mem_ctx:ev, struct timed_event);
+	te = talloc(mem_ctx?mem_ctx:ev, struct tevent_timer);
 	if (te == NULL) return NULL;
 
 	te->event_ctx		= ev;
@@ -166,10 +166,10 @@ struct timed_event *common_event_add_timed(struct event_context *ev, TALLOC_CTX 
   return the delay untill the next timed event,
   or zero if a timed event was triggered
 */
-struct timeval common_event_loop_timer_delay(struct event_context *ev)
+struct timeval common_event_loop_timer_delay(struct tevent_context *ev)
 {
 	struct timeval current_time = ev_timeval_zero();
-	struct timed_event *te = ev->timer_events;
+	struct tevent_timer *te = ev->timer_events;
 
 	if (!te) {
 		/* have a default tick time of 30 seconds. This guarantees

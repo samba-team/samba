@@ -24,7 +24,7 @@
 struct net_context {
 	struct cli_credentials *credentials;
 	struct loadparm_context *lp_ctx;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 };
 
 struct net_functable {

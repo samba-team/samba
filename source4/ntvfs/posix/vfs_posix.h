@@ -174,7 +174,7 @@ struct pvfs_file_handle {
 
 	struct {
 		bool update_triggered;
-		struct timed_event *update_event;
+		struct tevent_timer *update_event;
 		bool update_on_close;
 		NTTIME close_time;
 		bool update_forced;
@@ -225,7 +225,7 @@ struct pvfs_search_state {
 	time_t last_used;
 	uint_t num_ea_names;
 	struct ea_name *ea_names;
-	struct timed_event *te;
+	struct tevent_timer *te;
 };
 
 /* flags to pvfs_resolve_name() */

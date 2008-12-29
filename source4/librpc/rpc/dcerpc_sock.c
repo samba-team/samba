@@ -32,7 +32,7 @@
 
 /* transport private information used by general socket pipe transports */
 struct sock_private {
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	struct socket_context *sock;
 	char *server_name;
 
@@ -126,7 +126,7 @@ static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
 /*
   called when a IO is triggered by the events system
 */
-static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
+static void sock_io_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 			    uint16_t flags, void *private)
 {
 	struct dcerpc_connection *p = talloc_get_type(private, 

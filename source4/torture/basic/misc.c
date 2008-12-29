@@ -808,7 +808,7 @@ static struct composite_context *torture_connect_async(
 				struct torture_context *tctx,
 				struct smb_composite_connect *smb,
 				TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
+				struct tevent_context *ev,
 				const char *host,
 				const char *share,
 				const char *workgroup)
@@ -839,7 +839,7 @@ bool run_benchrw(struct torture_context *tctx)
 	struct smbcli_request *req;
 	struct benchrw_state **state;
 	int i , num_unc_names;
-	struct event_context 	*ev	;	
+	struct tevent_context 	*ev	;	
 	struct composite_context *req1;
 	struct params lpparams;
 	union smb_mkdir parms;

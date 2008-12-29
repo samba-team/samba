@@ -3036,8 +3036,8 @@ static bool oplock_handler_hold(struct smbcli_transport *transport,
 bool torture_hold_oplock(struct torture_context *torture, 
 			 struct smbcli_state *cli)
 {
-	struct event_context *ev = 
-		(struct event_context *)cli->transport->socket->event.ctx;
+	struct tevent_context *ev = 
+		(struct tevent_context *)cli->transport->socket->event.ctx;
 	int i;
 
 	printf("Setting up open files with oplocks in %s\n", BASEDIR);

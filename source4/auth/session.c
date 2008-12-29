@@ -31,7 +31,7 @@
 #include "auth/session_proto.h"
 
 _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx, 
-					    struct event_context *event_ctx, 
+					    struct tevent_context *event_ctx, 
 					    struct loadparm_context *lp_ctx) 
 {
 	NTSTATUS nt_status;
@@ -44,7 +44,7 @@ _PUBLIC_ struct auth_session_info *anonymous_session(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
-				     struct event_context *event_ctx, 
+				     struct tevent_context *event_ctx, 
 				     struct loadparm_context *lp_ctx,
 				     struct auth_session_info **_session_info) 
 {
@@ -153,7 +153,7 @@ _PUBLIC_ NTSTATUS auth_anonymous_server_info(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
-				    struct event_context *event_ctx, 
+				    struct tevent_context *event_ctx, 
 				    struct loadparm_context *lp_ctx,
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) 

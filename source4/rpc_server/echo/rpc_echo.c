@@ -156,7 +156,7 @@ struct echo_TestSleep_private {
 	struct echo_TestSleep *r;
 };
 
-static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, 
+static void echo_TestSleep_handler(struct tevent_context *ev, struct tevent_timer *te, 
 				   struct timeval t, void *private)
 {
 	struct echo_TestSleep_private *p = talloc_get_type(private, 

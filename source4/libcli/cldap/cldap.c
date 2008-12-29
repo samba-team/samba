@@ -144,8 +144,8 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 /*
   handle request timeouts
 */
-static void cldap_request_timeout(struct event_context *event_ctx, 
-				  struct timed_event *te, struct timeval t,
+static void cldap_request_timeout(struct tevent_context *event_ctx, 
+				  struct tevent_timer *te, struct timeval t,
 				  void *private)
 {
 	struct cldap_request *req = talloc_get_type(private, struct cldap_request);
@@ -223,7 +223,7 @@ static void cldap_socket_send(struct cldap_socket *cldap)
 /*
   handle fd events on a cldap_socket
 */
-static void cldap_socket_handler(struct event_context *ev, struct fd_event *fde,
+static void cldap_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 				 uint16_t flags, void *private)
 {
 	struct cldap_socket *cldap = talloc_get_type(private, struct cldap_socket);
@@ -240,7 +240,7 @@ static void cldap_socket_handler(struct event_context *ev, struct fd_event *fde,
   then operations will use that event context
 */
 struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx,
+				       struct tevent_context *event_ctx,
 				       struct smb_iconv_convenience *iconv_convenience)
 {
 	struct cldap_socket *cldap;

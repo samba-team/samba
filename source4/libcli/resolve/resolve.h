@@ -23,7 +23,7 @@
 #define __LIBCLI_RESOLVE_H__
 
 struct socket_address;
-struct event_context;
+struct tevent_context;
 
 #include "../libcli/nbt/libnbt.h"
 
@@ -37,7 +37,7 @@ struct event_context;
 #define RESOLVE_NAME_FLAG_OVERWRITE_PORT	0x00000008
 
 typedef struct composite_context *(*resolve_name_send_fn)(TALLOC_CTX *mem_ctx,
-							  struct event_context *,
+							  struct tevent_context *,
 							  void *privdata,
 							  uint32_t flags,
 							  uint16_t port,

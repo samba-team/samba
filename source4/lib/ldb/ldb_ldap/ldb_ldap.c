@@ -619,8 +619,8 @@ free_and_return:
 	return lret;
 }
 
-static void lldb_timeout(struct event_context *ev,
-			 struct timed_event *te,
+static void lldb_timeout(struct tevent_context *ev,
+			 struct tevent_timer *te,
 			 struct timeval t,
 			 void *private_data)
 {
@@ -630,13 +630,13 @@ static void lldb_timeout(struct event_context *ev,
 	lldb_request_done(ac->req, NULL, LDB_ERR_TIME_LIMIT_EXCEEDED);
 }
 
-static void lldb_callback(struct event_context *ev,
-			  struct timed_event *te,
+static void lldb_callback(struct tevent_context *ev,
+			  struct tevent_timer *te,
 			  struct timeval t,
 			  void *private_data)
 {
 	struct lldb_context *ac;
-	struct timed_event *lte;
+	struct tevent_timer *lte;
 	struct timeval tv;
 	LDAPMessage *result;
 	int lret;
@@ -701,8 +701,8 @@ static bool lldb_dn_is_special(struct ldb_request *req)
 	return false;
 }
 
-static void lldb_auto_done_callback(struct event_context *ev,
-				    struct timed_event *te,
+static void lldb_auto_done_callback(struct tevent_context *ev,
+				    struct tevent_timer *te,
 				    struct timeval t,
 				    void *private_data)
 {
@@ -716,8 +716,8 @@ static int lldb_handle_request(struct ldb_module *module, struct ldb_request *re
 {
 	struct lldb_private *lldb;
 	struct lldb_context *ac;
-	struct event_context *ev;
-	struct timed_event *te;
+	struct tevent_context *ev;
+	struct tevent_timer *te;
 	struct timeval tv;
 	int ret;
 

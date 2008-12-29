@@ -77,7 +77,7 @@ static void refresh_completion_handler(struct nbt_name_request *req)
 /*
   handle name refresh timer events
 */
-static void name_refresh_handler(struct event_context *ev, struct timed_event *te, 
+static void name_refresh_handler(struct tevent_context *ev, struct tevent_timer *te, 
 				 struct timeval t, void *private_data)
 {
 	struct nbtd_iface_name *iname = talloc_get_type(private_data, struct nbtd_iface_name);

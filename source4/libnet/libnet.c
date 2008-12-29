@@ -23,7 +23,7 @@
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
-struct libnet_context *libnet_context_init(struct event_context *ev,
+struct libnet_context *libnet_context_init(struct tevent_context *ev,
 					   struct loadparm_context *lp_ctx)
 {
 	struct libnet_context *ctx;

@@ -32,7 +32,7 @@ struct gssapi_creds_container {
 
 /* Manually prototyped here to avoid needing gss headers in most callers */
 int cli_credentials_set_client_gss_creds(struct cli_credentials *cred, 
-					 struct event_context *event_ctx,
+					 struct tevent_context *event_ctx,
 					 struct loadparm_context *lp_ctx,
 					 gss_cred_id_t gssapi_cred,
 					 enum credentials_obtained obtained);

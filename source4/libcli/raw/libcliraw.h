@@ -81,9 +81,9 @@ struct smbcli_socket {
 
 	/* the event handle for waiting for socket IO */
 	struct {
-		struct event_context *ctx;
-		struct fd_event *fde;
-		struct timed_event *te;
+		struct tevent_context *ctx;
+		struct tevent_fd *fde;
+		struct tevent_timer *te;
 	} event;
 };
 
@@ -377,7 +377,7 @@ NTSTATUS smb_raw_trans(struct smbcli_tree *tree,
 struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
 						 struct resolve_context *resolve_ctx,
-						 struct event_context *event_ctx,
+						 struct tevent_context *event_ctx,
 						 const char *socket_options);
 void smbcli_sock_dead(struct smbcli_socket *sock);
 

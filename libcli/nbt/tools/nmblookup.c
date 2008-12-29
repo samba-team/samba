@@ -181,7 +181,7 @@ static NTSTATUS do_node_query(struct nbt_name_socket *nbtsock,
 }
 
 
-static bool process_one(struct loadparm_context *lp_ctx, struct event_context *ev,
+static bool process_one(struct loadparm_context *lp_ctx, struct tevent_context *ev,
 			struct interface *ifaces, const char *name, int nbt_port)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
@@ -272,7 +272,7 @@ int main(int argc, const char *argv[])
 {
 	bool ret = true;
 	struct interface *ifaces;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	poptContext pc;
 	int opt;
 	enum {

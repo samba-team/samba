@@ -46,7 +46,7 @@ struct pvfs_notify_buffer {
 /*
   send a notify on the next event run. 
 */
-static void pvfs_notify_send_next(struct event_context *ev, struct timed_event *te, 
+static void pvfs_notify_send_next(struct tevent_context *ev, struct tevent_timer *te, 
 				  struct timeval t, void *ptr)
 {
 	struct ntvfs_request *req = talloc_get_type(ptr, struct ntvfs_request);

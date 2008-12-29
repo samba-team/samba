@@ -40,7 +40,7 @@ static void py_nbt_node_dealloc(PyObject *obj)
 
 static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	nbt_node_Object *ret = PyObject_New(nbt_node_Object, &nbt_node_Type);
 
 	ret->mem_ctx = talloc_new(NULL);

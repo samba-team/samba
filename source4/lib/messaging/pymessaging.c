@@ -65,7 +65,7 @@ typedef struct {
 
 PyObject *py_messaging_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	const char *kwnames[] = { "own_id", "messaging_path", NULL };
 	PyObject *own_id = Py_None;
 	const char *messaging_path = NULL;
@@ -317,7 +317,7 @@ typedef struct {
 
 PyObject *py_irpc_connect(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	const char *kwnames[] = { "server", "own_id", "messaging_path", NULL };
 	char *server;
 	const char *messaging_path = NULL;

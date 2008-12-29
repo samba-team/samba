@@ -40,7 +40,7 @@ struct torture_results *torture_results_init(TALLOC_CTX *mem_ctx, const struct t
 /**
  * Initialize a torture context
  */
-struct torture_context *torture_context_init(struct event_context *event_ctx, 
+struct torture_context *torture_context_init(struct tevent_context *event_ctx, 
 											 struct torture_results *results)
 {
 	struct torture_context *torture = talloc_zero(event_ctx, 

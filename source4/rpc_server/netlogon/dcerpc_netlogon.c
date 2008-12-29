@@ -287,7 +287,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate2(struct dcesrv_call_state *dce_ca
   the caller needs some of that information.
 
 */
-static NTSTATUS dcesrv_netr_creds_server_step_check(struct event_context *event_ctx, 
+static NTSTATUS dcesrv_netr_creds_server_step_check(struct tevent_context *event_ctx, 
 						    struct loadparm_context *lp_ctx,
 						    const char *computer_name,
 					     TALLOC_CTX *mem_ctx, 

@@ -51,7 +51,7 @@ struct ltdb_context {
 	struct ldb_dn *base;
 	enum ldb_scope scope;
 	const char * const *attrs;
-	struct timed_event *timeout_event;
+	struct tevent_timer *timeout_event;
 };
 
 /* special record types */

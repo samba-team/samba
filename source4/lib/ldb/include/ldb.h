@@ -181,7 +181,7 @@ enum ldb_scope {LDB_SCOPE_DEFAULT=-1,
 		LDB_SCOPE_SUBTREE=2};
 
 struct ldb_context;
-struct event_context;
+struct tevent_context;
 
 /* debugging uses one of the following levels */
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
@@ -795,9 +795,9 @@ int ldb_set_timeout(struct ldb_context *ldb, struct ldb_request *req, int timeou
 int ldb_set_timeout_from_prev_req(struct ldb_context *ldb, struct ldb_request *oldreq, struct ldb_request *newreq);
 void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms);
 void ldb_set_modules_dir(struct ldb_context *ldb, const char *path);
-struct event_context;
-void ldb_set_event_context(struct ldb_context *ldb, struct event_context *ev);
-struct event_context * ldb_get_event_context(struct ldb_context *ldb);
+struct tevent_context;
+void ldb_set_event_context(struct ldb_context *ldb, struct tevent_context *ev);
+struct tevent_context * ldb_get_event_context(struct ldb_context *ldb);
 
 /**
   Initialise ldbs' global information
@@ -819,7 +819,7 @@ int ldb_global_init(void);
   \return pointer to ldb_context that should be free'd (using talloc_free())
   at the end of the program.
 */
-struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx);
+struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx);
 
 /**
    Connect to a database.

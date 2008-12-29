@@ -28,7 +28,7 @@ static const struct model_ops *process_model_byname(const char *name);
 /*
   setup the events for the chosen process model
 */
-_PUBLIC_ const struct model_ops *process_model_startup(struct event_context *ev, const char *model)
+_PUBLIC_ const struct model_ops *process_model_startup(struct tevent_context *ev, const char *model)
 {
 	const struct model_ops *ops;
 

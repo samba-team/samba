@@ -24,8 +24,8 @@
 #include "librpc/gen_ndr/security.h"
 #include "lib/events/events.h"
 
-static void pvfs_write_time_update_handler(struct event_context *ev,
-					   struct timed_event *te,
+static void pvfs_write_time_update_handler(struct tevent_context *ev,
+					   struct tevent_timer *te,
 					   struct timeval tv,
 					   void *private_data)
 {

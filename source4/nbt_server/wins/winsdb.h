@@ -77,5 +77,5 @@ enum wins_hook_action {
 };
 
 struct ldb_message;
-struct event_context;
+struct tevent_context;
 #include "nbt_server/wins/winsdb_proto.h"

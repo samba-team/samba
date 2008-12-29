@@ -200,7 +200,7 @@ struct ntvfs_context {
 
 	struct server_id server_id;
 	struct loadparm_context *lp_ctx;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct messaging_context *msg_ctx;
 
 	struct {

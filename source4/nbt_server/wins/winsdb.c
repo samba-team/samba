@@ -937,7 +937,7 @@ failed:
 	return NBT_RCODE_SVR;
 }
 
-static bool winsdb_check_or_add_module_list(struct event_context *ev_ctx, 
+static bool winsdb_check_or_add_module_list(struct tevent_context *ev_ctx, 
 					    struct loadparm_context *lp_ctx, struct winsdb_handle *h)
 {
 	int trans;
@@ -1003,7 +1003,7 @@ failed:
 }
 
 struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx, 
-				     struct event_context *ev_ctx,
+				     struct tevent_context *ev_ctx,
 				     struct loadparm_context *lp_ctx,
 				     const char *owner,
 				     enum winsdb_handle_caller caller)

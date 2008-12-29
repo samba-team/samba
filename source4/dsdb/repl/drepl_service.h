@@ -147,7 +147,7 @@ struct dreplsrv_service {
 		struct timeval next_event;
 
 		/* here we have a reference to the timed event the schedules the periodic stuff */
-		struct timed_event *te;
+		struct tevent_timer *te;
 	} periodic;
 
 	/*

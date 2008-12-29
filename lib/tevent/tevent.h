@@ -25,15 +25,12 @@
 #include <stdint.h>
 #include <talloc.h>
 
-struct event_context;
+struct tevent_context;
 struct tevent_ops;
-struct fd_event;
+struct tevent_fd;
 struct tevent_timer;
 struct tevent_aio;
 struct tevent_signal;
-
-#define tevent_context event_context
-#define tevent_fd fd_event
 
 /* event handler types */
 typedef void (*tevent_fd_handler_t)(struct tevent_context *,
@@ -107,9 +104,9 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
 #ifdef TEVENT_COMPAT_DEFINES
 
-/*TODO:#define event_context	tevent_context*/
+#define event_context	tevent_context
 #define event_ops	tevent_ops
-/*TODO:#define fd_event	tevent_fd*/
+#define fd_event	tevent_fd
 #define timed_event	tevent_timer
 #define aio_event	tevent_aio
 #define signal_event	tevent_signal

@@ -51,7 +51,7 @@ struct nbt_dc_name {
 };
 
 struct cli_credentials;
-struct event_context;
+struct tevent_context;
 
 /* passed to br lock code. */
 enum brl_type {

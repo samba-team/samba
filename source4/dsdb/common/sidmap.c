@@ -49,7 +49,7 @@ struct sidmap_context {
 /*
   open a sidmap context - use talloc_free to close
 */
-struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx, 
+struct sidmap_context *sidmap_open(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx, 
 				   struct loadparm_context *lp_ctx)
 {
 	struct sidmap_context *sidmap;

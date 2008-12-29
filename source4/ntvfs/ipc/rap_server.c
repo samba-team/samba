@@ -31,7 +31,7 @@
  * idea. */
 
 NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
-			  struct event_context *event_ctx,
+			  struct tevent_context *event_ctx,
 			  struct loadparm_context *lp_ctx,
 			  struct rap_NetShareEnum *r)
 {

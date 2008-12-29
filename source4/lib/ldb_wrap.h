@@ -27,12 +27,12 @@ struct ldb_message;
 struct ldb_dn;
 struct cli_credentials;
 struct loadparm_context;
-struct event_context;
+struct tevent_context;
 
 char *wrap_casefold(void *context, void *mem_ctx, const char *s, size_t n);
 
 struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     struct loadparm_context *lp_ctx,
 				     const char *url,
 				     struct auth_session_info *session_info,

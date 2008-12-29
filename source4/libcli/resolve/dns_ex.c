@@ -48,8 +48,8 @@ struct dns_ex_state {
 	char **names;
 	pid_t child;
 	int child_fd;
-	struct fd_event *fde;
-	struct event_context *event_ctx;
+	struct tevent_fd *fde;
+	struct tevent_context *event_ctx;
 };
 
 /*
@@ -328,7 +328,7 @@ done:
 /*
   handle a read event on the pipe
 */
-static void pipe_handler(struct event_context *ev, struct fd_event *fde, 
+static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde, 
 			 uint16_t flags, void *private_data)
 {
 	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
@@ -436,7 +436,7 @@ static void pipe_handler(struct event_context *ev, struct fd_event *fde,
   getaddrinfo() or dns_lookup() name resolution method - async send
  */
 struct composite_context *resolve_name_dns_ex_send(TALLOC_CTX *mem_ctx,
-						   struct event_context *event_ctx,
+						   struct tevent_context *event_ctx,
 						   void *privdata,
 						   uint32_t flags,
 						   uint16_t port,

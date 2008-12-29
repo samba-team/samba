@@ -45,7 +45,7 @@ enum lock_stage {LOCK_INITIAL, LOCK_LOCK, LOCK_UNLOCK};
 
 struct benchlock_state {
 	struct torture_context *tctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct smbcli_tree *tree;
 	TALLOC_CTX *mem_ctx;
 	int client_num;
@@ -57,7 +57,7 @@ struct benchlock_state {
 	int lastcount;
 	struct smbcli_request *req;
 	struct smb_composite_connect reconnect;
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	/* these are used for reconnections */
 	const char **dest_ports;
@@ -116,11 +116,11 @@ static void lock_send(struct benchlock_state *state)
 	state->req->async.fn      = lock_completion;
 }
 
-static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private_data);
 
 
-static void reopen_file(struct event_context *ev, struct timed_event *te, 
+static void reopen_file(struct tevent_context *ev, struct tevent_timer *te, 
 				      struct timeval t, void *private_data)
 {
 	struct benchlock_state *state = (struct benchlock_state *)private_data;
@@ -171,7 +171,7 @@ static void reopen_connection_complete(struct composite_context *ctx)
 /*
   reopen a connection
  */
-static void reopen_connection(struct event_context *ev, struct timed_event *te, 
+static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te, 
 			      struct timeval t, void *private_data)
 {
 	struct benchlock_state *state = (struct benchlock_state *)private_data;
@@ -277,7 +277,7 @@ static void echo_completion(struct smbcli_request *req)
 	}
 }
 
-static void report_rate(struct event_context *ev, struct timed_event *te, 
+static void report_rate(struct tevent_context *ev, struct tevent_timer *te, 
 			struct timeval t, void *private_data)
 {
 	struct benchlock_state *state = talloc_get_type(private_data, 

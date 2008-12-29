@@ -37,7 +37,7 @@ struct irpc_message {
 	struct messaging_context *msg_ctx;
 	struct irpc_list *irpc;
 	void *data;
-	struct event_context *ev;
+	struct tevent_context *ev;
 };
 
 /* don't allow calls to take too long */
@@ -97,11 +97,11 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
 					 const char *dir,
 					 struct server_id server_id, 
 					 struct smb_iconv_convenience *iconv_convenience,
-					 struct event_context *ev);
+					 struct tevent_context *ev);
 struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx, 
 					 const char *dir,
 					 struct smb_iconv_convenience *iconv_convenience,
-					 struct event_context *ev);
+					 struct tevent_context *ev);
 NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id server, 
 			    uint32_t msg_type, void *ptr);
 void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private);

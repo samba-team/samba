@@ -42,7 +42,7 @@
 
   To setup a set of events you first need to create a event_context
   structure using the function event_context_init(); This returns a
-  'struct event_context' that you use in all subsequent calls.
+  'struct tevent_context' that you use in all subsequent calls.
 
   After that you can add/remove events that you are interested in
   using event_add_*() and talloc_free()
@@ -145,13 +145,13 @@ const char **event_backend_list(TALLOC_CTX *mem_ctx)
 
   NOTE: use event_context_init() inside of samba!
 */
-static struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx, 
+static struct tevent_context *event_context_init_ops(TALLOC_CTX *mem_ctx, 
 						    const struct event_ops *ops)
 {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int ret;
 
-	ev = talloc_zero(mem_ctx, struct event_context);
+	ev = talloc_zero(mem_ctx, struct tevent_context);
 	if (!ev) return NULL;
 
 	ev->ops = ops;
@@ -170,7 +170,7 @@ static struct event_context *event_context_init_ops(TALLOC_CTX *mem_ctx,
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
+struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
 {
 	struct event_ops_list *e;
 
@@ -197,7 +197,7 @@ struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char 
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
+struct tevent_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
 	return event_context_init_byname(mem_ctx, NULL);
 }
@@ -209,7 +209,7 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
   if flags contains EVENT_FD_AUTOCLOSE then the fd will be closed when
   the returned fd_event context is freed
 */
-struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
+struct tevent_fd *event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags, event_fd_handler_t handler,
 			      void *private_data)
 {
@@ -219,7 +219,7 @@ struct fd_event *event_add_fd(struct event_context *ev, TALLOC_CTX *mem_ctx,
 /*
   add a disk aio event
 */
-struct aio_event *event_add_aio(struct event_context *ev,
+struct aio_event *event_add_aio(struct tevent_context *ev,
 				TALLOC_CTX *mem_ctx,
 				struct iocb *iocb,
 				event_aio_handler_t handler,
@@ -232,7 +232,7 @@ struct aio_event *event_add_aio(struct event_context *ev,
 /*
   return the fd event flags
 */
-uint16_t event_get_fd_flags(struct fd_event *fde)
+uint16_t event_get_fd_flags(struct tevent_fd *fde)
 {
 	if (!fde) return 0;
 	return fde->event_ctx->ops->get_fd_flags(fde);
@@ -241,7 +241,7 @@ uint16_t event_get_fd_flags(struct fd_event *fde)
 /*
   set the fd event flags
 */
-void event_set_fd_flags(struct fd_event *fde, uint16_t flags)
+void event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	if (!fde) return;
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
@@ -251,7 +251,7 @@ void event_set_fd_flags(struct fd_event *fde, uint16_t flags)
   add a timed event
   return NULL on failure
 */
-struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ctx,
+struct tevent_timer *event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 				    struct timeval next_event, 
 				    event_timed_handler_t handler, 
 				    void *private_data)
@@ -266,7 +266,7 @@ struct timed_event *event_add_timed(struct event_context *ev, TALLOC_CTX *mem_ct
 
   return NULL on failure
 */
-struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_ctx,
+struct signal_event *event_add_signal(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 				      int signum,
 				      int sa_flags,
 				      event_signal_handler_t handler, 
@@ -278,7 +278,7 @@ struct signal_event *event_add_signal(struct event_context *ev, TALLOC_CTX *mem_
 /*
   do a single event loop using the events defined in ev 
 */
-int event_loop_once(struct event_context *ev)
+int event_loop_once(struct tevent_context *ev)
 {
 	return ev->ops->loop_once(ev);
 }
@@ -286,7 +286,7 @@ int event_loop_once(struct event_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-int event_loop_wait(struct event_context *ev)
+int event_loop_wait(struct tevent_context *ev)
 {
 	return ev->ops->loop_wait(ev);
 }
@@ -300,9 +300,9 @@ int event_loop_wait(struct event_context *ev)
   where you would prefer to use the existing event context if possible
   (which is most situations)
 */
-struct event_context *event_context_find(TALLOC_CTX *mem_ctx)
+struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
 {
-	struct event_context *ev = talloc_find_parent_bytype(mem_ctx, struct event_context);
+	struct tevent_context *ev = talloc_find_parent_bytype(mem_ctx, struct tevent_context);
 	if (ev == NULL) {		
 		ev = event_context_init(mem_ctx);
 	}

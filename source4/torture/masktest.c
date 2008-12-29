@@ -73,7 +73,7 @@ static char *reg_test(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char 
 return a connection to a server
 *******************************************************/
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
-					struct event_context *ev,
+					struct tevent_context *ev,
 					TALLOC_CTX *mem_ctx,
 					char *share, const char **ports,
 					const char *socket_options,
@@ -298,7 +298,7 @@ static void usage(poptContext pc)
 	struct smbcli_state *cli;	
 	int opt;
 	int seed;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct loadparm_context *lp_ctx;
 	struct smbcli_options options;
 	struct smbcli_session_options session_options;

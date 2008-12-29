@@ -236,7 +236,7 @@ static NTSTATUS lookup_well_known_sids(TALLOC_CTX *mem_ctx,
 /*
   lookup a SID for 1 name
 */
-static NTSTATUS dcesrv_lsa_lookup_name(struct event_context *ev_ctx, 
+static NTSTATUS dcesrv_lsa_lookup_name(struct tevent_context *ev_ctx, 
 				       struct loadparm_context *lp_ctx,
 				       struct lsa_policy_state *state, TALLOC_CTX *mem_ctx,
 				const char *name, const char **authority_name, 

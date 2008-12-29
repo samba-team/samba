@@ -149,7 +149,7 @@ struct wbsrv_samba3_call {
 	struct wbsrv_connection *wbconn;
 
 	/* the backend should use this event context */
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 
 	/* here the backend can store stuff like composite_context's ... */
 	void *private_data;

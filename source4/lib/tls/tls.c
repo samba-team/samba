@@ -47,7 +47,7 @@ struct tls_params {
 /* hold per connection tls data */
 struct tls_context {
 	struct socket_context *socket;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	bool tls_enabled;
 #if ENABLE_GNUTLS
 	gnutls_session session;
@@ -455,7 +455,7 @@ init_failed:
 */
 struct socket_context *tls_init_server(struct tls_params *params, 
 				       struct socket_context *socket_ctx,
-				       struct fd_event *fde, 
+				       struct tevent_fd *fde, 
 				       const char *plain_chars)
 {
 	struct tls_context *tls;
@@ -535,7 +535,7 @@ failed:
   setup for a new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *socket_ctx,
-				       struct fd_event *fde,
+				       struct tevent_fd *fde,
 				       const char *ca_path)
 {
 	struct tls_context *tls;
@@ -663,7 +663,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 */
 struct socket_context *tls_init_server(struct tls_params *params, 
 				    struct socket_context *socket,
-				    struct fd_event *fde, 
+				    struct tevent_fd *fde, 
 				    const char *plain_chars)
 {
 	return NULL;
@@ -674,7 +674,7 @@ struct socket_context *tls_init_server(struct tls_params *params,
   setup for a new client connection
 */
 struct socket_context *tls_init_client(struct socket_context *socket,
-				       struct fd_event *fde,
+				       struct tevent_fd *fde,
 				       const char *ca_path)
 {
 	return NULL;

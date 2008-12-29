@@ -59,7 +59,7 @@ struct dcerpc_connection {
 	uint32_t flags;
 	struct dcerpc_security security_state;
 	const char *binding_string;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct smb_iconv_convenience *iconv_convenience;
 
 	/** Directory in which to save ndrdump-parseable files */
@@ -249,7 +249,7 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     const char *binding,
 			     const struct ndr_interface_table *table,
 			     struct cli_credentials *credentials,
-			     struct event_context *ev,
+			     struct tevent_context *ev,
 			     struct loadparm_context *lp_ctx);
 NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req);
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
@@ -259,7 +259,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 						TALLOC_CTX *mem_ctx, 
 						void *r);
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
-struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				     struct smb_iconv_convenience *ic);
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p,
 			      struct smbcli_tree *tree,
@@ -277,7 +277,7 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 						     struct dcerpc_binding *binding,
 						     const struct ndr_interface_table *table,
 						     struct cli_credentials *credentials,
-						     struct event_context *ev,
+						     struct tevent_context *ev,
 						     struct loadparm_context *lp_ctx);
 
 NTSTATUS dcerpc_pipe_connect_b_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
@@ -288,7 +288,7 @@ NTSTATUS dcerpc_pipe_connect_b(TALLOC_CTX *parent_ctx,
 			       struct dcerpc_binding *binding,
 			       const struct ndr_interface_table *table,
 			       struct cli_credentials *credentials,
-			       struct event_context *ev,
+			       struct tevent_context *ev,
 			       struct loadparm_context *lp_ctx);
 const char *dcerpc_errstr(TALLOC_CTX *mem_ctx, uint32_t fault_code);
 
@@ -308,7 +308,7 @@ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx,
 				   struct cli_credentials *credentials,
 				   struct loadparm_context *lp_ctx,
 				   uint8_t auth_level);
-struct event_context *dcerpc_event_context(struct dcerpc_pipe *p);
+struct tevent_context *dcerpc_event_context(struct dcerpc_pipe *p);
 NTSTATUS dcerpc_init(struct loadparm_context *lp_ctx);
 struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_connection *c);
 uint16_t dcerpc_smb_fnum(struct dcerpc_connection *c);
@@ -330,13 +330,13 @@ struct composite_context* dcerpc_pipe_connect_send(TALLOC_CTX *parent_ctx,
 						   const char *binding,
 						   const struct ndr_interface_table *table,
 						   struct cli_credentials *credentials,
-						   struct event_context *ev, struct loadparm_context *lp_ctx);
+						   struct tevent_context *ev, struct loadparm_context *lp_ctx);
 NTSTATUS dcerpc_pipe_connect_recv(struct composite_context *c,
 				  TALLOC_CTX *mem_ctx,
 				  struct dcerpc_pipe **pp);
 
 NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding,
-				const struct ndr_interface_table *table, struct event_context *ev,
+				const struct ndr_interface_table *table, struct tevent_context *ev,
 				struct loadparm_context *lp_ctx);
 struct composite_context* dcerpc_secondary_auth_connection_send(struct dcerpc_pipe *p,
 								struct dcerpc_binding *binding,

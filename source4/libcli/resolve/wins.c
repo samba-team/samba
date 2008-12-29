@@ -38,7 +38,7 @@ struct resolve_wins_data {
  */
 struct composite_context *resolve_name_wins_send(
 				TALLOC_CTX *mem_ctx, 
-				struct event_context *event_ctx,
+				struct tevent_context *event_ctx,
 				void *userdata,
 				uint32_t flags,
 				uint16_t port,

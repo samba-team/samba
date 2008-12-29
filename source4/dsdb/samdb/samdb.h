@@ -27,7 +27,7 @@ struct dsdb_control_current_partition;
 struct dsdb_extended_replicated_object;
 struct dsdb_extended_replicated_objects;
 struct loadparm_context;
-struct event_context;
+struct tevent_context;
 
 #include "librpc/gen_ndr/security.h"
 #include "lib/ldb/include/ldb.h"

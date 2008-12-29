@@ -156,7 +156,7 @@ static struct dom_sid *idmap_msg_get_dom_sid(TALLOC_CTX *mem_ctx,
  * \return allocated idmap_context on success, NULL on error
  */
 struct idmap_context *idmap_init(TALLOC_CTX *mem_ctx,
-				 struct event_context *ev_ctx,
+				 struct tevent_context *ev_ctx,
 		struct loadparm_context *lp_ctx)
 {
 	struct idmap_context *idmap_ctx;

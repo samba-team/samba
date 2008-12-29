@@ -23,7 +23,7 @@
 
 typedef struct {
 	PyObject_HEAD
-	struct event_context *ev_ctx;
+	struct tevent_context *ev_ctx;
 } PyEventContextObject;
 
 PyAPI_DATA(PyTypeObject) PyEventContext;
@@ -65,7 +65,7 @@ static PyObject *py_event_ctx_new(PyTypeObject *type, PyObject *args, PyObject *
 {
     const char *kwnames[] = { "name", NULL };
     char *name = NULL;
-    struct event_context *ev_ctx;
+    struct tevent_context *ev_ctx;
     PyEventContextObject *ret;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", (char **)kwnames, &name))
         return NULL;

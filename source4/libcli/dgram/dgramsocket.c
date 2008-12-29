@@ -139,7 +139,7 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
 /*
   handle fd events on a nbt_dgram_socket
 */
-static void dgm_socket_handler(struct event_context *ev, struct fd_event *fde,
+static void dgm_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			       uint16_t flags, void *private)
 {
 	struct nbt_dgram_socket *dgmsock = talloc_get_type(private, 
@@ -157,7 +157,7 @@ static void dgm_socket_handler(struct event_context *ev, struct fd_event *fde,
   then operations will use that event context
 */
 struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
-					      struct event_context *event_ctx,
+					      struct tevent_context *event_ctx,
 					      struct smb_iconv_convenience *iconv_convenience)
 {
 	struct nbt_dgram_socket *dgmsock;

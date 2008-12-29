@@ -60,7 +60,7 @@ struct nbt_name_request {
 	bool received_wack;
 
 	/* the timeout event */
-	struct timed_event *te;
+	struct tevent_timer *te;
 
 	/* the name transaction id */
 	uint16_t name_trn_id;
@@ -94,14 +94,14 @@ struct nbt_name_request {
 */
 struct nbt_name_socket {
 	struct socket_context *sock;
-	struct event_context *event_ctx;
+	struct tevent_context *event_ctx;
 	struct smb_iconv_convenience *iconv_convenience;
 
 	/* a queue of requests pending to be sent */
 	struct nbt_name_request *send_queue;
 
 	/* the fd event */
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	/* mapping from name_trn_id to pending event */
 	struct idr_context *idr;
@@ -277,7 +277,7 @@ struct nbt_name_release {
 };
 
 struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
-					     struct event_context *event_ctx,
+					     struct tevent_context *event_ctx,
 					     struct smb_iconv_convenience *iconv_convenience);
 struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 					     struct nbt_name_query *io);

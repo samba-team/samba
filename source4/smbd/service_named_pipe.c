@@ -300,7 +300,7 @@ static const struct stream_server_ops named_pipe_stream_ops = {
 	.send_handler		= named_pipe_send,
 };
 
-NTSTATUS stream_setup_named_pipe(struct event_context *event_context,
+NTSTATUS stream_setup_named_pipe(struct tevent_context *event_context,
 				 struct loadparm_context *lp_ctx,
 				 const struct model_ops *model_ops,
 				 const struct stream_server_ops *stream_ops,

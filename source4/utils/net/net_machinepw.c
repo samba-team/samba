@@ -37,7 +37,7 @@ int net_machinepw(struct net_context *ctx, int argc, const char **argv)
 {
 	struct ldb_context *secrets;
 	TALLOC_CTX *mem_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct ldb_message **msgs;
 	int num_records;
 	const char *attrs[] = { "secret", NULL };

@@ -42,7 +42,7 @@
   connect to the SPOOLSS database
   return a ldb_context pointer on success, or NULL on failure
  */
-static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx, struct event_context *ev_ctx, struct loadparm_context *lp_ctx)
+static struct ldb_context *sptr_db_connect(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx, struct loadparm_context *lp_ctx)
 {
 	return ldb_wrap_connect(mem_ctx, ev_ctx, lp_ctx, lp_spoolss_url(lp_ctx), system_session(mem_ctx, lp_ctx), 
 				NULL, 0, NULL);

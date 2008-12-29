@@ -33,7 +33,7 @@
   getaddrinfo() (with fallback to dns_lookup()) name resolution method - async send
  */
 struct composite_context *resolve_name_host_send(TALLOC_CTX *mem_ctx,
-						 struct event_context *event_ctx,
+						 struct tevent_context *event_ctx,
 						 void *privdata, uint32_t flags,
 						 uint16_t port,
 						 struct nbt_name *name)
