@@ -139,11 +139,8 @@ void invalidate_vuid(uint16 vuid)
 
 void invalidate_all_vuids(void)
 {
-	user_struct *usp, *next=NULL;
-
-	for (usp=validated_users;usp;usp=next) {
-		next = usp->next;
-		invalidate_vuid(usp->vuid);
+	while (validated_users != NULL) {
+		invalidate_vuid(validated_users->vuid);
 	}
 }
 
