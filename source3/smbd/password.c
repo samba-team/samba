@@ -27,7 +27,7 @@ static char *session_workgroup = NULL;
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users;
-static int next_vuid = VUID_OFFSET;
+static uint16_t next_vuid = VUID_OFFSET;
 static int num_validated_vuids;
 
 enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
@@ -136,6 +136,16 @@ void invalidate_all_vuids(void)
 	}
 }
 
+static void increment_next_vuid(uint16_t *vuid)
+{
+	*vuid += 1;
+
+	/* Check for vuid wrap. */
+	if (*vuid == UID_FIELD_INVALID) {
+		*vuid = VUID_OFFSET;
+	}
+}
+
 /****************************************************
  Create a new partial auth user struct.
 *****************************************************/
@@ -164,11 +174,7 @@ int register_initial_vuid(void)
 	/* Allocate a free vuid. Yes this is a linear search... */
 	while( get_valid_user_struct_internal(next_vuid,
 			SERVER_ALLOCATED_REQUIRED_ANY) != NULL ) {
-		next_vuid++;
-		/* Check for vuid wrap. */
-		if (next_vuid == UID_FIELD_INVALID) {
-			next_vuid = VUID_OFFSET;
-		}
+		increment_next_vuid(&next_vuid);
 	}
 
 	DEBUG(10,("register_initial_vuid: allocated vuid = %u\n",
@@ -181,7 +187,7 @@ int register_initial_vuid(void)
 	 * need to allocate a vuid between the first and second calls
 	 * to NTLMSSP.
 	 */
-	next_vuid++;
+	increment_next_vuid(&next_vuid);
 	num_validated_vuids++;
 
 	DLIST_ADD(validated_users, vuser);
