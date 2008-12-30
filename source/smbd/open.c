@@ -1342,7 +1342,7 @@ static NTSTATUS open_file_ntcreate_internal(connection_struct *conn,
 
 		DEBUG(10, ("open_file_ntcreate: printer open fname=%s\n", fname));
 
-		return print_fsp_open(conn, fname, req->vuid, fsp);
+		return print_fsp_open(conn, fname, req->vuid, fsp, psbuf);
 	}
 
 	if (!parent_dirname_talloc(talloc_tos(), fname, &parent_dir,
