@@ -750,4 +750,6 @@ bool unmap_file(void *start, size_t size);
 
 void print_asc(int level, const uint8_t *buf,int len);
 
+#define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+
 #endif /* _SAMBA_UTIL_H_ */
