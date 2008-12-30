@@ -28,10 +28,9 @@ print_job_start().
 ***************************************************************************/
 
 NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
-			files_struct *fsp)
+			files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 {
 	int jobid;
-	SMB_STRUCT_STAT sbuf;
 	fstring name;
 	NTSTATUS status;
 
@@ -75,9 +74,9 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fsp->is_directory = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wcp = NULL;
-	SMB_VFS_FSTAT(fsp, &sbuf);
-	fsp->mode = sbuf.st_mode;
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &sbuf);
+	SMB_VFS_FSTAT(fsp, psbuf);
+	fsp->mode = psbuf->st_mode;
+	fsp->file_id = vfs_file_id_from_sbuf(conn, psbuf);
 
 	return NT_STATUS_OK;
 }
