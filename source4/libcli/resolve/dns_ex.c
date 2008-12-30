@@ -278,7 +278,7 @@ static void run_child_getaddrinfo(struct dns_ex_state *state, int fd)
 	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV;
 
 	ret = getaddrinfo(state->name.name, "0", &hints, &res_list);
-#if defined(EAI_NODATA) && (EAI_NODATA != EAI_NONAME)
+#ifdef EAI_NODATA
 	if (ret == EAI_NODATA && state->do_fallback) {
 #else
 	if (ret == EAI_NONAME && state->do_fallback) {
