@@ -379,22 +379,6 @@ int set_event_dispatch_time(struct event_context *event_ctx,
 	return 0;
 }
 
-/* Returns 1 if event was found and cancelled, 0 otherwise. */
-
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			TALLOC_FREE(te);
-			return 1;
-		}
-	}
-	return 0;
-}
-
 void dump_event_list(struct event_context *event_ctx)
 {
 	struct timed_event *te;
