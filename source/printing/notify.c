@@ -322,7 +322,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	DLIST_ADD_END(notify_queue_head, pnqueue, struct notify_queue *);
 	num_messages++;
 
-	if (smbd_event_context()) {
+	if ((notify_event == NULL) && (smbd_event_context() != NULL)) {
 		/* Add an event for 1 second's time to send this queue. */
 		notify_event = event_add_timed(smbd_event_context(), NULL,
 					timeval_current_ofs(1,0),
