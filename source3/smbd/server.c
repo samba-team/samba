@@ -59,6 +59,7 @@ int get_client_fd(void)
 	return server_fd;
 }
 
+#ifdef CLUSTER_SUPPORT
 static int client_get_tcp_info(struct sockaddr_storage *server,
 			       struct sockaddr_storage *client)
 {
@@ -76,6 +77,7 @@ static int client_get_tcp_info(struct sockaddr_storage *server,
 	}
 	return 0;
 }
+#endif
 
 struct event_context *smbd_event_context(void)
 {
