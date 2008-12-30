@@ -4594,6 +4594,7 @@ void reply_printopen(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
+	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
 
 	START_PROFILE(SMBsplopen);
@@ -4618,7 +4619,7 @@ void reply_printopen(struct smb_request *req)
 	}
 
 	/* Open for exclusive use, write only. */
-	status = print_fsp_open(req, conn, NULL, req->vuid, fsp);
+	status = print_fsp_open(req, conn, NULL, req->vuid, fsp, &sbuf);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);

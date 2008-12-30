@@ -4896,7 +4896,8 @@ bool sysv_cache_reload(void);
 
 NTSTATUS print_fsp_open(struct smb_request *req, connection_struct *conn,
 			const char *fname,
-			uint16_t current_vuid, files_struct *fsp);
+			uint16_t current_vuid, files_struct *fsp,
+			SMB_STRUCT_STAT *psbuf);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
 /* The following definitions come from printing/printing.c  */
