@@ -1769,6 +1769,10 @@ bool cups_pull_comment_location(NT_PRINTER_INFO_LEVEL_2 *printer)
 	if (response)
 		ippDelete(response);
 
+	if (request) {
+		ippDelete(request);
+	}
+
 	if (language)
 		cupsLangFree(language);
 
