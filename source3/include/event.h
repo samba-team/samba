@@ -62,7 +62,5 @@ struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 int event_loop_once(struct event_context *ev);
 void event_context_reinit(struct event_context *ev);
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when);
 void dump_event_list(struct event_context *event_ctx);
 
