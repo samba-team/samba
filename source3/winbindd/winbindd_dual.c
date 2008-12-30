@@ -1206,6 +1206,10 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 	close_conns_after_fork();
 
+	/* Ensure we're not handling an event inherited from
+	   our parent. */
+	ccache_remove_all_after_fork();
+
 	if (!override_logfile) {
 		lp_set_logfile(child->logfilename);
 		reopen_logs();
@@ -1268,12 +1272,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			}
 		}
 	}
-
-	/* Ensure we're not handling an event inherited from
-	   our parent. */
-
-	cancel_named_event(winbind_event_context(),
-			   "krb5_ticket_refresh_handler");
 
 	/* We might be in the idmap child...*/
 	if (child->domain && !(child->domain->internal) &&
