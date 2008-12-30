@@ -318,7 +318,7 @@ librpc/gen_ndr/*wzcsvc*
 librpc/gen_ndr/*w32time*
 librpc/gen_ndr/*wmi*
 librpc/gen_ndr/*trkwks*
-librpc/gen_ndr/*spoolss*
+librpc/gen_ndr/*_spoolss*
 librpc/gen_ndr/*rot*
 librpc/gen_ndr/*remact*
 librpc/gen_ndr/*oxidresolver*
