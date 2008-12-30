@@ -403,8 +403,6 @@ void set_domain_offline(struct winbindd_domain *domain)
 
 static void set_domain_online(struct winbindd_domain *domain)
 {
-	struct timeval now;
-
 	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
 
@@ -423,11 +421,7 @@ static void set_domain_online(struct winbindd_domain *domain)
 	winbindd_set_locator_kdc_envs(domain);
 
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
-	GetTimeOfDay(&now);
-	set_event_dispatch_time(winbind_event_context(),
-				"krb5_ticket_gain_handler", now);
-	set_event_dispatch_time(winbind_event_context(),
-				"krb5_ticket_refresh_handler", now);
+	ccache_regain_all_now();
 
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
