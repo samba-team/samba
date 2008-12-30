@@ -70,6 +70,7 @@ dynconfigsrcdir := $(samba4srcdir)/dynconfig
 heimdalsrcdir := $(samba4srcdir)/heimdal
 dsdbsrcdir := $(samba4srcdir)/dsdb
 smbdsrcdir := $(samba4srcdir)/smbd
+clustersrcdir := $(samba4srcdir)/cluster
 libnetsrcdir := $(samba4srcdir)/libnet
 authsrcdir := $(samba4srcdir)/auth
 nsswitchsrcdir := $(samba4srcdir)/../nsswitch
