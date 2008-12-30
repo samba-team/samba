@@ -73,8 +73,8 @@ clean::
 	rm -f *.o *.a */*.o
 
 distclean:: clean
-	rm -f config.log config.status include/config.h config.cache
+	rm -f config.log config.status config.h config.cache
 	rm -f Makefile
 
 realdistclean:: distclean
-	rm -f configure include/config.h.in
+	rm -f configure config.h.in
