@@ -580,7 +580,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_length_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, *r->in.length);
-		memset(r->out.buffer, 0, (*r->in.length) * sizeof(*r->out.buffer));
+		memset(CONST_DISCARD(struct PNP_GetDeviceList *,r->out.buffer), 0, (*r->in.length) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.length);
 		*r->out.length = *r->in.length;
 	}
@@ -896,7 +896,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 		NDR_PULL_ALLOC(ndr, r->out.reg_data_type);
 		*r->out.reg_data_type = *r->in.reg_data_type;
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, *r->in.buffer_size);
-		memset(r->out.buffer, 0, (*r->in.buffer_size) * sizeof(*r->out.buffer));
+		memset(CONST_DISCARD(struct PNP_GetDeviceRegProp *,r->out.buffer), 0, (*r->in.buffer_size) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.buffer_size);
 		*r->out.buffer_size = *r->in.buffer_size;
 		NDR_PULL_ALLOC(ndr, r->out.needed);

@@ -926,7 +926,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buffer_size);
-		memset(r->out.buffer, 0, (r->in.buffer_size) * sizeof(*r->out.buffer));
+		memset(CONST_DISCARD(struct svcctl_QueryServiceObjectSecurity *,r->out.buffer), 0, (r->in.buffer_size) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 	}
@@ -2028,7 +2028,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull 
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.service_status, r->in.buf_size);
-		memset(r->out.service_status, 0, (r->in.buf_size) * sizeof(*r->out.service_status));
+		memset(CONST_DISCARD(struct svcctl_EnumDependentServicesW *,r->out.service_status), 0, (r->in.buf_size) * sizeof(*r->out.service_status));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 		NDR_PULL_ALLOC(ndr, r->out.services_returned);
@@ -2181,7 +2181,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *nd
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, 0);
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.service, r->in.buf_size);
-		memset(r->out.service, 0, (r->in.buf_size) * sizeof(*r->out.service));
+		memset(CONST_DISCARD(struct svcctl_EnumServicesStatusW *,r->out.service), 0, (r->in.buf_size) * sizeof(*r->out.service));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 		NDR_PULL_ALLOC(ndr, r->out.services_returned);
@@ -5386,7 +5386,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *n
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buf_size);
-		memset(r->out.buffer, 0, (r->in.buf_size) * sizeof(*r->out.buffer));
+		memset(CONST_DISCARD(struct svcctl_QueryServiceConfig2W *,r->out.buffer), 0, (r->in.buf_size) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 	}
@@ -5494,7 +5494,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *n
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buf_size);
-		memset(r->out.buffer, 0, (r->in.buf_size) * sizeof(*r->out.buffer));
+		memset(CONST_DISCARD(struct svcctl_QueryServiceStatusEx *,r->out.buffer), 0, (r->in.buf_size) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 	}
@@ -5868,7 +5868,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_group_name_0, 0);
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.services, r->in.buf_size);
-		memset(r->out.services, 0, (r->in.buf_size) * sizeof(*r->out.services));
+		memset(CONST_DISCARD(struct EnumServicesStatusExW *,r->out.services), 0, (r->in.buf_size) * sizeof(*r->out.services));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 		NDR_PULL_ALLOC(ndr, r->out.service_returned);
