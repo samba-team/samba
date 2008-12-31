@@ -3873,6 +3873,10 @@ bool is_valid_writeX_buffer(const uint8_t *inbuf)
 		DEBUG(10,("is_valid_writeX_buffer: IPC$ tid\n"));
 		return false;
 	}
+	if (IS_PRINT(conn)) {
+		DEBUG(10,("is_valid_writeX_buffer: printing tid\n"));
+		return false;
+	}
 	doff = SVAL(inbuf,smb_vwv11);
 
 	numtowrite = SVAL(inbuf,smb_vwv10);
