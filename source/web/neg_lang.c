@@ -32,8 +32,7 @@ int web_open(const char *fname, int flags, mode_t mode)
 	char *lang = lang_tdb_current();
 	int fd;
 	if (lang) {
-		asprintf(&p, "lang/%s/%s", lang, fname);
-		if (p) {
+		if (asprintf(&p, "lang/%s/%s", lang, fname) != -1) {
 			fd = sys_open(p, flags, mode);
 			free(p);
 			if (fd != -1) {

@@ -497,7 +497,9 @@ static void cgi_download(char *file)
 
 	printf("Content-Length: %d\r\n\r\n", (int)st.st_size);
 	while ((l=read(fd,buf,sizeof(buf)))>0) {
-		fwrite(buf, 1, l, stdout);
+		if (fwrite(buf, 1, l, stdout) != l) {
+			break;
+		}
 	}
 	close(fd);
 	exit(0);
