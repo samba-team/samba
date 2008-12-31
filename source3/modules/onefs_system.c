@@ -91,7 +91,7 @@ static const char *onefs_oplock_str(enum oplock_type onefs_oplock_type)
 /*
  * Convert from onefs to samba oplock.
  */
-static int onefs_to_samba_oplock(enum oplock_type onefs_oplock)
+static int onefs_oplock_to_samba_oplock(enum oplock_type onefs_oplock)
 {
 	switch (onefs_oplock) {
 	case OPLOCK_NONE:
@@ -112,7 +112,7 @@ static int onefs_to_samba_oplock(enum oplock_type onefs_oplock)
 /*
  * Convert from samba to onefs oplock.
  */
-static enum oplock_type samba_to_onefs_oplock(int samba_oplock_type)
+static enum oplock_type onefs_samba_oplock_to_oplock(int samba_oplock_type)
 {
 	if (BATCH_OPLOCK_TYPE(samba_oplock_type)) return OPLOCK_BATCH;
 	if (EXCLUSIVE_OPLOCK_TYPE(samba_oplock_type)) return OPLOCK_EXCLUSIVE;
@@ -152,7 +152,7 @@ int onefs_sys_create_file(connection_struct *conn,
 
 		secinfo = (get_sec_info(sd) & IFS_SEC_INFO_KNOWN_MASK);
 
-		status = onefs_setup_sd(secinfo, sd, &ifs_sd);
+		status = onefs_samba_sd_to_sd(secinfo, sd, &ifs_sd);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("SD initialization failure: %s",
@@ -164,7 +164,7 @@ int onefs_sys_create_file(connection_struct *conn,
 		pifs_sd = &ifs_sd;
 	}
 
-	onefs_oplock = samba_to_onefs_oplock(oplock_request);
+	onefs_oplock = onefs_samba_oplock_to_oplock(oplock_request);
 
 	/* Temporary until oplock work is added to vfs_onefs */
 	onefs_oplock = OPLOCK_NONE;
@@ -204,7 +204,8 @@ int onefs_sys_create_file(connection_struct *conn,
 		  onefs_oplock_str(onefs_granted_oplock)));
 
 	if (granted_oplock) {
-		*granted_oplock = onefs_to_samba_oplock(onefs_granted_oplock);
+		*granted_oplock =
+		    onefs_oplock_to_samba_oplock(onefs_granted_oplock);
 	}
 
  out:

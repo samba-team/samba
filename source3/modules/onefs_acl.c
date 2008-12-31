@@ -696,8 +696,8 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
  *
  * @return NTSTATUS_OK if successful
  */
-NTSTATUS onefs_setup_sd(uint32 security_info_sent, SEC_DESC *psd,
-			struct ifs_security_descriptor *sd)
+NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
+			      struct ifs_security_descriptor *sd)
 {
 	struct ifs_security_acl dacl, sacl, *daclp, *saclp;
 	struct ifs_identity owner, group, *ownerp, *groupp;
@@ -789,7 +789,7 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
-	status = onefs_setup_sd(security_info_sent, psd, &sd);
+	status = onefs_samba_sd_to_sd(security_info_sent, psd, &sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));

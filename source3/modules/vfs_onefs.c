@@ -27,14 +27,16 @@
 static int onefs_mkdir(vfs_handle_struct *handle, const char *path,
 		       mode_t mode)
 {
-	DEBUG(0, ("SMB_VFS_MKDIR should never be called in vfs_onefs"));
+	/* SMB_VFS_MKDIR should never be called in vfs_onefs */
+	SMB_ASSERT(false);
 	return SMB_VFS_NEXT_MKDIR(handle, path, mode);
 }
 
 static int onefs_open(vfs_handle_struct *handle, const char *fname,
 		      files_struct *fsp, int flags, mode_t mode)
 {
-	DEBUG(0, ("SMB_VFS_OPEN should never be called in vfs_onefs"));
+	/* SMB_VFS_OPEN should never be called in vfs_onefs */
+	SMB_ASSERT(false);
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 

@@ -575,8 +575,6 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		 * (requiring delete access) then recreates it.
 		 */
 		case FILE_SUPERSEDE:
-			/* If file exists replace/overwrite. If file doesn't
-			 * exist create. */
 			/**
 			 * @todo: Clear all file attributes?
 			 * http://www.osronline.com/article.cfm?article=302
@@ -748,19 +746,8 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		 */
 		flags2 &= ~(O_CREAT|O_TRUNC);
 
-		/**
-		 * XXX: TODO
-		 * Apparently this is necessary because we ship with
-		 * lp_acl_check_permissions = no.  It is set to no because our
-		 * ifs_createfile does the access check correctly.  This check
-		 * was added in the last merge, and the question is why is it
-		 * necessary?  Check out Bug 25547 and Bug 14596.  The key is
-		 * to figure out what case this is covering, and do some
-		 * testing to see if it's actually necessary.  If it is, maybe
-		 * it should go upstream in open.c.
-		 */
-		if (!lp_acl_check_permissions(SNUM(conn)) &&
-		    (access_mask & DELETE_ACCESS)) {
+		/* Deny DELETE_ACCESS explicitly if the share is read only. */
+		if (access_mask & DELETE_ACCESS) {
 			return map_nt_error_from_unix(EACCES);
 		}
 	}

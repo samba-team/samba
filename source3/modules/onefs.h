@@ -80,8 +80,8 @@ NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 /*
  * Utility functions
  */
-NTSTATUS onefs_setup_sd(uint32 security_info_sent, SEC_DESC *psd,
-			struct ifs_security_descriptor *sd);
+NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
+			      struct ifs_security_descriptor *sd);
 
 /*
  * System Interfaces
