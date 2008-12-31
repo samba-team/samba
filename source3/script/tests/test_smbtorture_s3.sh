@@ -35,6 +35,10 @@ echo "$skipped1"
 echo "$skipped2"
 echo "$skipped3"
 
+if test "x$SMBTORTURE_S3_SUBTESTS" != "x" ; then
+    tests="$SMBTORTURE_S3_SUBTESTS"
+fi
+
 failed=0
 for t in $tests; do
     if [ ! -z "$start" -a "$start" != $t ]; then
