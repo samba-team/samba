@@ -4,11 +4,11 @@
 
 while true; do
     case $1 in
-	(--version-file)
+	--version-file)
 	    VERSION_FILE=$2
 	    shift 2
 	    ;;
-	(*)
+	*)
 	    break
 	    ;;
     esac
