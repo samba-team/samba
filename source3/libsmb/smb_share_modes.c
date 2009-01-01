@@ -1,7 +1,7 @@
 /*
    Samba share mode database library external interface library.
    Used by non-Samba products needing access to the Samba share mode db.
-                                                                                                                                  
+
    Copyright (C) Jeremy Allison 2005 - 2006
 
    sharemodes_procid functions (C) Copyright (C) Volker Lendecke 2005
@@ -9,17 +9,17 @@
      ** NOTE! The following LGPL license applies to this module only.
      ** This does NOT imply that all of Samba is released
      ** under the LGPL
-                                                                                                                                  
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
    version 3 of the License, or (at your option) any later version.
-                                                                                                                                  
+
    This library is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details.
-                                                                                                                                  
+
    You should have received a copy of the GNU Lesser General Public
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
@@ -115,7 +115,7 @@ int smb_lock_share_mode_entry(struct smbdb_ctx *db_ctx,
 {
 	return tdb_chainlock(db_ctx->smb_tdb, get_locking_key(dev, ino));
 }
-                                                                                                                                  
+
 int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
                                 uint64_t dev,
                                 uint64_t ino)
