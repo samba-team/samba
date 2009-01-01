@@ -3852,7 +3852,9 @@ static TDB_DATA make_tdc_key( const char *domain_name )
 	}
 	       
 		
-	asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name );
+	if (asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name ) == -1) {
+		return key;
+	}
 	key = string_term_tdb_data(keystr);
 	
 	return key;	
