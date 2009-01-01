@@ -64,9 +64,8 @@ static void print_cache_entry(const char* keystr, const char* datastr,
 		}
 		timeout_str[strlen(timeout_str) - 1] = '\0';	/* remove tailing CR */
 	} else {
-		asprintf(&alloc_str, "%.2d:%.2d:%.2d", timeout_tm.tm_hour,
-		         timeout_tm.tm_min, timeout_tm.tm_sec);
-		if (!alloc_str) {
+		if (asprintf(&alloc_str, "%.2d:%.2d:%.2d", timeout_tm.tm_hour,
+		         timeout_tm.tm_min, timeout_tm.tm_sec) == -1) {
 			return;
 		}
 		timeout_str = alloc_str;

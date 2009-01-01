@@ -476,7 +476,9 @@ static int ads_user_add(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* try setting the password */
-	asprintf(&upn, "%s@%s", argv[0], ads->config.realm);
+	if (asprintf(&upn, "%s@%s", argv[0], ads->config.realm) == -1) {
+		goto done;
+	}
 	status = ads_krb5_set_password(ads->auth.kdc_server, upn, argv[1],
 				       ads->auth.time_offset);
 	safe_free(upn);
@@ -531,7 +533,10 @@ static int ads_user_info(struct net_context *c, int argc, const char **argv)
 		return -1;
 	}
 
-	asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user);
+	if (asprintf(&searchstring, "(sAMAccountName=%s)", escaped_user) == -1) {
+		SAFE_FREE(escaped_user);
+		return -1;
+	}
 	rc = ads_search(ads, &res, searchstring, attrs);
 	safe_free(searchstring);
 
@@ -1295,7 +1300,9 @@ int net_ads_join(struct net_context *c, int argc, const char **argv)
 			/* kinit with the machine password */
 
 			use_in_memory_ccache();
-			asprintf( &ads_dns->auth.user_name, "%s$", global_myname() );
+			if (asprintf( &ads_dns->auth.user_name, "%s$", global_myname()) == -1) {
+				goto fail;
+			}
 			ads_dns->auth.password = secrets_fetch_machine_password(
 				r->out.netbios_domain_name, NULL, NULL );
 			ads_dns->auth.realm = SMB_STRDUP( r->out.dns_domain_name );
@@ -1634,7 +1641,14 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		return -1;
 	}
 
-	asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn);
+	if (asprintf(&prt_dn, "cn=%s-%s,%s", srv_cn_escaped, printername_escaped, srv_dn) == -1) {
+		SAFE_FREE(srv_cn_escaped);
+		SAFE_FREE(printername_escaped);
+		d_fprintf(stderr, "Internal error, out of memory!");
+		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
 
 	SAFE_FREE(srv_cn_escaped);
 	SAFE_FREE(printername_escaped);
@@ -1805,7 +1819,9 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	user = argv[0];
 	if (!strchr_m(user, '@')) {
-		asprintf(&chr, "%s@%s", argv[0], lp_realm());
+		if (asprintf(&chr, "%s@%s", argv[0], lp_realm()) == -1) {
+			return -1;
+		}
 		user = chr;
 	}
 
@@ -1835,7 +1851,9 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 	if (argv[1]) {
 		new_password = (char *)argv[1];
 	} else {
-		asprintf(&prompt, "Enter new password for %s:", user);
+		if (asprintf(&prompt, "Enter new password for %s:", user) == -1) {
+			return -1;
+		}
 		new_password = getpass(prompt);
 		free(prompt);
 	}
@@ -1883,7 +1901,10 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 
 	fstrcpy(my_name, global_myname());
 	strlower_m(my_name);
-	asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm);
+	if (asprintf(&host_principal, "%s$@%s", my_name, ads->config.realm) == -1) {
+		ads_destroy(&ads);
+		return -1;
+	}
 	d_printf("Changing password for principal: %s\n", host_principal);
 
 	ret = ads_change_trust_account_password(ads, host_principal);

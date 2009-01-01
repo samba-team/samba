@@ -196,7 +196,9 @@ static int net_lookup_dc(struct net_context *c, int argc, const char **argv)
 		return -1;
 
 	print_sockaddr(addr, sizeof(addr), &ss);
-	asprintf(&pdc_str, "%s", addr);
+	if (asprintf(&pdc_str, "%s", addr) == -1) {
+		return -1;
+	}
 	d_printf("%s\n", pdc_str);
 
 	sitename = sitename_fetch(domain);
@@ -237,7 +239,9 @@ static int net_lookup_pdc(struct net_context *c, int argc, const char **argv)
 		return -1;
 
 	print_sockaddr(addr, sizeof(addr), &ss);
-	asprintf(&pdc_str, "%s", addr);
+	if (asprintf(&pdc_str, "%s", addr) == -1) {
+		return -1;
+	}
 	d_printf("%s\n", pdc_str);
 	SAFE_FREE(pdc_str);
 	return 0;

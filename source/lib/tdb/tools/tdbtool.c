@@ -455,7 +455,7 @@ static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 		print_rec(the_tdb, *pkey, dbuf, NULL);
 }
 
-static int test_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int test_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 	return 0;
 }
@@ -506,7 +506,9 @@ static int do_command(void)
             return 0;
 	case CMD_SYSTEM:
 	    /* Shell command */
-	    system(arg1);
+	    if (system(arg1) == -1) {
+		terror("system failed");
+	    }
 	    return 0;
 	case CMD_QUIT:
 	    return 1;

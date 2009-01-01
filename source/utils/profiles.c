@@ -47,7 +47,7 @@ static void verbose_output(const char *format, ...)
 		return;
 	}
 
-	fprintf(stdout, var);
+	fprintf(stdout, "%s", var);
 	va_end(args);
 	SAFE_FREE(var);
 }

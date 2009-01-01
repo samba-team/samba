@@ -111,7 +111,9 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 	ZERO_STRUCT( ee );	/* MUST initialize between records */
 
 	while ( !feof( f1 ) ) {
-		fgets( linein, sizeof( linein ) - 1, f1 );
+		if (fgets( linein, sizeof( linein ) - 1, f1 ) == NULL) {
+			break;
+		}
 		linein[strlen( linein ) - 1] = 0;	/* whack the line delimiter */
 
 		if ( debugflag )
