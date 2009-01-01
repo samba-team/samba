@@ -525,8 +525,8 @@ enum ndr_err_code ndr_push_spoolss_SetPrinterData(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, uint32_t flags)
+uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, struct smb_iconv_convenience *ic, uint32_t flags)
 {
 	if (!devmode) return 0;
-	return ndr_size_spoolss_DeviceMode(devmode,flags);
+	return ndr_size_spoolss_DeviceMode(devmode,ic,flags);
 }

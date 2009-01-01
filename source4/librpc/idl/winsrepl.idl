@@ -164,7 +164,7 @@ interface wrepl
 	} wrepl_packet;
 
 	typedef [flag(NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
-		[value(ndr_size_wrepl_packet(&packet, ndr->flags))] uint32 size;
+		[value(ndr_size_wrepl_packet(&packet, ndr->iconv_convenience, ndr->flags))] uint32 size;
 		wrepl_packet    packet;
 	} wrepl_wrap;
 

@@ -283,7 +283,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x01 */
 	typedef struct {
-		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->flags))] uint32 _ndr_size;
+		[value(_ndr_size_spoolss_DeviceMode(devmode, ndr->iconv_convenience, ndr->flags))] uint32 _ndr_size;
 		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
@@ -726,7 +726,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
 
 	typedef [public,gensize] struct {
-		[value(ndr_size_spoolss_OSVersion(r,ndr->flags))] uint32 _ndr_size;
+		[value(ndr_size_spoolss_OSVersion(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
 		uint32 major;
 		uint32 minor;
 		uint32 build;
@@ -735,7 +735,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_OSVersion;
 
 	typedef [public,gensize] struct {
-		[value(ndr_size_spoolss_OSVersionEx(r,ndr->flags))] uint32 _ndr_size;
+		[value(ndr_size_spoolss_OSVersionEx(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
 		uint32 major;
 		uint32 minor;
 		uint32 build;
@@ -801,7 +801,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] [string,charset(UTF16)] uint16 value_name[],
 		[in] spoolss_PrinterDataType type,
 		[in,subcontext(4),switch_is(type)] spoolss_PrinterData data,
-		[in,value(ndr_size_spoolss_PrinterData(&data,type,flags))] uint32 _offered
+		[in,value(ndr_size_spoolss_PrinterData(&data,type,ndr->iconv_convenience,flags))] uint32 _offered
 	);
 
 	/******************/
