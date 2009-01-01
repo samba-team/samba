@@ -525,7 +525,9 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	}
 
 	if (recycle_keep_dir_tree(handle) == True) {
-		asprintf(&temp_name, "%s/%s", repository, path_name);
+		if (asprintf(&temp_name, "%s/%s", repository, path_name) == -1) {
+			ALLOC_CHECK(temp_name, done);
+		}
 	} else {
 		temp_name = SMB_STRDUP(repository);
 	}
@@ -543,8 +545,9 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 		}
 	}
 
-	asprintf(&final_name, "%s/%s", temp_name, base);
-	ALLOC_CHECK(final_name, done);
+	if (asprintf(&final_name, "%s/%s", temp_name, base) == -1) {
+		ALLOC_CHECK(final_name, done);
+	}
 	DEBUG(10, ("recycle: recycled file name: %s\n", final_name));		/* new filename with path */
 
 	/* check if we should delete file from recycle bin */
@@ -561,7 +564,9 @@ static int recycle_unlink(vfs_handle_struct *handle, const char *file_name)
 	i = 1;
 	while (recycle_file_exist(handle, final_name)) {
 		SAFE_FREE(final_name);
-		asprintf(&final_name, "%s/Copy #%d of %s", temp_name, i++, base);
+		if (asprintf(&final_name, "%s/Copy #%d of %s", temp_name, i++, base) == -1) {
+			ALLOC_CHECK(final_name, done);
+		}
 	}
 
 	DEBUG(10, ("recycle: Moving %s to %s\n", file_name, final_name));
