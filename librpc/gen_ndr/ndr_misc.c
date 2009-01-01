@@ -33,9 +33,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, st
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ size_t ndr_size_GUID(const struct GUID *r, int flags)
+_PUBLIC_ size_t ndr_size_GUID(const struct GUID *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_GUID);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_GUID, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_ndr_syntax_id(struct ndr_push *ndr, int ndr_flags, const struct ndr_syntax_id *r)

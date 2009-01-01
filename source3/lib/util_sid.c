@@ -382,7 +382,7 @@ bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 {
 	size_t i;
 
-	if (len < ndr_size_dom_sid(sid, 0))
+	if (len < ndr_size_dom_sid(sid, NULL, 0))
 		return False;
 
 	SCVAL(outbuf,0,sid->sid_rev_num);
@@ -523,7 +523,7 @@ bool non_mappable_sid(DOM_SID *sid)
 char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
-	int len = ndr_size_dom_sid(sid, 0);
+	int len = ndr_size_dom_sid(sid, NULL, 0);
 	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;
@@ -541,7 +541,7 @@ char *sid_binstring(const DOM_SID *sid)
 char *sid_binstring_hex(const DOM_SID *sid)
 {
 	char *buf, *s;
-	int len = ndr_size_dom_sid(sid, 0);
+	int len = ndr_size_dom_sid(sid, NULL, 0);
 	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;

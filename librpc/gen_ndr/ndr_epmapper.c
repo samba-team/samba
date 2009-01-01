@@ -1578,17 +1578,17 @@ _PUBLIC_ void ndr_print_epm_tower(struct ndr_print *ndr, const char *name, const
 	}
 }
 
-static size_t ndr_size_epm_tower(const struct epm_tower *r, int flags)
+static size_t ndr_size_epm_tower(const struct epm_tower *r, struct smb_iconv_convenience *ic, int flags)
 {
 	flags |= LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_LITTLE_ENDIAN;
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_epm_tower);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_epm_tower, ic);
 }
 
 static enum ndr_err_code ndr_push_epm_twr_t(struct ndr_push *ndr, int ndr_flags, const struct epm_twr_t *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_epm_tower(&r->tower, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_epm_tower(&r->tower, ndr->iconv_convenience, ndr->flags)));
 		{
 			struct ndr_push *_ndr_tower;
 			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_tower, 4, -1));
@@ -1622,7 +1622,7 @@ _PUBLIC_ void ndr_print_epm_twr_t(struct ndr_print *ndr, const char *name, const
 {
 	ndr_print_struct(ndr, name, "epm_twr_t");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "tower_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_epm_tower(&r->tower, ndr->flags):r->tower_length);
+	ndr_print_uint32(ndr, "tower_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_epm_tower(&r->tower, ndr->iconv_convenience, ndr->flags):r->tower_length);
 	ndr_print_epm_tower(ndr, "tower", &r->tower);
 	ndr->depth--;
 }

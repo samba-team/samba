@@ -55,11 +55,11 @@ void ndr_print_replUpToDateVectorBlob(struct ndr_print *ndr, const char *name, c
 enum ndr_err_code ndr_push_repsFromTo1OtherInfo(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo1OtherInfo *r);
 enum ndr_err_code ndr_pull_repsFromTo1OtherInfo(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo1OtherInfo *r);
 void ndr_print_repsFromTo1OtherInfo(struct ndr_print *ndr, const char *name, const struct repsFromTo1OtherInfo *r);
-size_t ndr_size_repsFromTo1OtherInfo(const struct repsFromTo1OtherInfo *r, int flags);
+size_t ndr_size_repsFromTo1OtherInfo(const struct repsFromTo1OtherInfo *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo1 *r);
 enum ndr_err_code ndr_pull_repsFromTo1(struct ndr_pull *ndr, int ndr_flags, struct repsFromTo1 *r);
 void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, const struct repsFromTo1 *r);
-size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, int flags);
+size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_repsFromTo(struct ndr_print *ndr, const char *name, const union repsFromTo *r);
 enum ndr_err_code ndr_push_repsFromToBlob(struct ndr_push *ndr, int ndr_flags, const struct repsFromToBlob *r);
 enum ndr_err_code ndr_pull_repsFromToBlob(struct ndr_pull *ndr, int ndr_flags, struct repsFromToBlob *r);
@@ -118,11 +118,11 @@ void ndr_print_AuthenticationInformationArray(struct ndr_print *ndr, const char 
 enum ndr_err_code ndr_push_trustAuthInOutBlob(struct ndr_push *ndr, int ndr_flags, const struct trustAuthInOutBlob *r);
 enum ndr_err_code ndr_pull_trustAuthInOutBlob(struct ndr_pull *ndr, int ndr_flags, struct trustAuthInOutBlob *r);
 void ndr_print_trustAuthInOutBlob(struct ndr_print *ndr, const char *name, const struct trustAuthInOutBlob *r);
-size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, int flags);
+size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustCurrentPasswords *r);
 enum ndr_err_code ndr_pull_trustCurrentPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustCurrentPasswords *r);
 void ndr_print_trustCurrentPasswords(struct ndr_print *ndr, const char *name, const struct trustCurrentPasswords *r);
-size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, int flags);
+size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_trustDomainPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustDomainPasswords *r);
 enum ndr_err_code ndr_pull_trustDomainPasswords(struct ndr_pull *ndr, int ndr_flags, struct trustDomainPasswords *r);
 void ndr_print_trustDomainPasswords(struct ndr_print *ndr, const char *name, const struct trustDomainPasswords *r);

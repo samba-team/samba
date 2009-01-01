@@ -6678,9 +6678,9 @@ _PUBLIC_ void ndr_print_netr_ChangeLogEntry(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_netr_ChangeLogEntry(const struct netr_ChangeLogEntry *r, int flags)
+_PUBLIC_ size_t ndr_size_netr_ChangeLogEntry(const struct netr_ChangeLogEntry *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_netr_ChangeLogEntry);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_netr_ChangeLogEntry, ic);
 }
 
 static enum ndr_err_code ndr_push_netr_Blob(struct ndr_push *ndr, int ndr_flags, const struct netr_Blob *r)
@@ -11792,11 +11792,11 @@ static enum ndr_err_code ndr_push_netr_DatabaseRedo(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		{
 			struct ndr_push *_ndr_change_log_entry;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_netr_ChangeLogEntry(_ndr_change_log_entry, NDR_SCALARS|NDR_BUFFERS, &r->in.change_log_entry));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_change_log_entry, 4, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags)));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.return_authenticator == NULL) {
@@ -11917,7 +11917,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *nam
 		ndr_print_netr_Authenticator(ndr, "return_authenticator", r->in.return_authenticator);
 		ndr->depth--;
 		ndr_print_netr_ChangeLogEntry(ndr, "change_log_entry", &r->in.change_log_entry);
-		ndr_print_uint32(ndr, "change_log_entry_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->flags):r->in.change_log_entry_size);
+		ndr_print_uint32(ndr, "change_log_entry_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_netr_ChangeLogEntry(&r->in.change_log_entry, ndr->iconv_convenience, ndr->flags):r->in.change_log_entry_size);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

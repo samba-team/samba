@@ -74,7 +74,7 @@ void ndr_print_drsuapi_DsBindInfoCtr(struct ndr_print *ndr, const char *name, co
 enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObjectIdentifier *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectIdentifier(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaObjectIdentifier *r);
 void ndr_print_drsuapi_DsReplicaObjectIdentifier(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectIdentifier *r);
-size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_DsReplicaObjectIdentifier *r, int flags);
+size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_DsReplicaObjectIdentifier *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaSyncOptions(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_drsuapi_DsReplicaSyncOptions(struct ndr_print *ndr, const char *name, uint32_t r);
@@ -115,11 +115,11 @@ void ndr_print_drsuapi_DsAttributeValueCtr(struct ndr_print *ndr, const char *na
 enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObjectIdentifier3 *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectIdentifier3(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaObjectIdentifier3 *r);
 void ndr_print_drsuapi_DsReplicaObjectIdentifier3(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectIdentifier3 *r);
-size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3(const struct drsuapi_DsReplicaObjectIdentifier3 *r, int flags);
+size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3(const struct drsuapi_DsReplicaObjectIdentifier3 *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
 void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaObjectIdentifier3Binary *r);
-size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, int flags);
+size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsReplicaAttribute(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaAttribute *r);
 enum ndr_err_code ndr_pull_drsuapi_DsReplicaAttribute(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsReplicaAttribute *r);
 void ndr_print_drsuapi_DsReplicaAttribute(struct ndr_print *ndr, const char *name, const struct drsuapi_DsReplicaAttribute *r);
@@ -140,7 +140,7 @@ void ndr_print_drsuapi_DsReplicaObjectListItemEx(struct ndr_print *ndr, const ch
 enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr1 *r);
 enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr1(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesCtr1 *r);
 void ndr_print_drsuapi_DsGetNCChangesCtr1(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr1 *r);
-size_t ndr_size_drsuapi_DsGetNCChangesCtr1(const struct drsuapi_DsGetNCChangesCtr1 *r, int flags);
+size_t ndr_size_drsuapi_DsGetNCChangesCtr1(const struct drsuapi_DsGetNCChangesCtr1 *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsLinkedAttributeFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_drsuapi_DsLinkedAttributeFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_drsuapi_DsLinkedAttributeFlags(struct ndr_print *ndr, const char *name, uint32_t r);
@@ -150,7 +150,7 @@ void ndr_print_drsuapi_DsReplicaLinkedAttribute(struct ndr_print *ndr, const cha
 enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr6(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr6 *r);
 enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesCtr6 *r);
 void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr6 *r);
-size_t ndr_size_drsuapi_DsGetNCChangesCtr6(const struct drsuapi_DsGetNCChangesCtr6 *r, int flags);
+size_t ndr_size_drsuapi_DsGetNCChangesCtr6(const struct drsuapi_DsGetNCChangesCtr6 *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1TS(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr1TS *r);
 enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr1TS(struct ndr_pull *ndr, int ndr_flags, struct drsuapi_DsGetNCChangesCtr1TS *r);
 void ndr_print_drsuapi_DsGetNCChangesCtr1TS(struct ndr_print *ndr, const char *name, const struct drsuapi_DsGetNCChangesCtr1TS *r);

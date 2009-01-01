@@ -893,7 +893,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 				  struct netr_Authenticator *credential /* [in] [ref] */,
 				  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
 				  struct netr_ChangeLogEntry change_log_entry /* [in] [subcontext_size(change_log_entry_size),subcontext(4)] */,
-				  uint32_t change_log_entry_size /* [in] [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->flags))] */,
+				  uint32_t change_log_entry_size /* [in] [value(ndr_size_netr_ChangeLogEntry(&change_log_entry,ndr->iconv_convenience,ndr->flags))] */,
 				  struct netr_DELTA_ENUM_ARRAY **delta_enum_array /* [out] [ref] */)
 {
 	struct netr_DatabaseRedo r;

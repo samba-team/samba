@@ -505,7 +505,7 @@ struct NETLOGON_SAM_LOGON_RESPONSE_EX {
 	const char * user_name;
 	const char * server_site;
 	const char * client_site;
-	uint8_t sockaddr_size;/* [value(ndr_size_nbt_sockaddr(&sockaddr,ndr->flags))] */
+	uint8_t sockaddr_size;/* [value(ndr_size_nbt_sockaddr(&sockaddr,ndr->iconv_convenience,ndr->flags))] */
 	struct nbt_sockaddr sockaddr;/* [subcontext_size(sockaddr_size),subcontext(0)] */
 	const char * next_closest_site;
 	uint32_t nt_version;

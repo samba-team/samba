@@ -1558,7 +1558,7 @@ sub ParseStructNdrSize($$$$)
 	if (my $flags = has_property($t, "flag")) {
 		$self->pidl("flags |= $flags;");
 	}
-	$self->pidl("return ndr_size_struct($varname, flags, (ndr_push_flags_fn_t)ndr_push_$name);");
+	$self->pidl("return ndr_size_struct($varname, flags, (ndr_push_flags_fn_t)ndr_push_$name, ic);");
 }
 
 sub DeclStruct($$$$)
@@ -1570,7 +1570,7 @@ sub DeclStruct($$$$)
 sub ArgsStructNdrSize($$$)
 {
 	my ($d, $name, $varname) = @_;
-	return "const struct $name *$varname, int flags";
+	return "const struct $name *$varname, struct smb_iconv_convenience *ic, int flags";
 }
 
 $typefamily{STRUCT} = {
@@ -1593,7 +1593,7 @@ sub ParseUnionNdrSize($$$)
 		$self->pidl("flags |= $flags;");
 	}
 
-	$self->pidl("return ndr_size_union($varname, flags, level, (ndr_push_flags_fn_t)ndr_push_$name);");
+	$self->pidl("return ndr_size_union($varname, flags, level, (ndr_push_flags_fn_t)ndr_push_$name, ic);");
 }
 
 sub ParseUnionPushPrimitives($$$$)
@@ -1873,7 +1873,7 @@ sub DeclUnion($$$$)
 sub ArgsUnionNdrSize($$)
 {
 	my ($d,$name) = @_;
-	return "const union $name *r, uint32_t level, int flags";
+	return "const union $name *r, uint32_t level, struct smb_iconv_convenience *ic, int flags";
 }
 
 $typefamily{UNION} = {

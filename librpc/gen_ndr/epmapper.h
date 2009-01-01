@@ -220,7 +220,7 @@ struct epm_tower {
 }/* [gensize,flag(LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_LITTLE_ENDIAN)] */;
 
 struct epm_twr_t {
-	uint32_t tower_length;/* [value(ndr_size_epm_tower(&tower,ndr->flags))] */
+	uint32_t tower_length;/* [value(ndr_size_epm_tower(&tower,ndr->iconv_convenience,ndr->flags))] */
 	struct epm_tower tower;/* [subcontext(4)] */
 };
 

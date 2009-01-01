@@ -35,7 +35,7 @@ void ndr_print_DATA_BLOB_REM(struct ndr_print *ndr, const char *name, const stru
 enum ndr_err_code ndr_push_PAC_INFO(struct ndr_push *ndr, int ndr_flags, const union PAC_INFO *r);
 enum ndr_err_code ndr_pull_PAC_INFO(struct ndr_pull *ndr, int ndr_flags, union PAC_INFO *r);
 void ndr_print_PAC_INFO(struct ndr_print *ndr, const char *name, const union PAC_INFO *r);
-size_t ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags);
+size_t ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_PAC_BUFFER(struct ndr_push *ndr, int ndr_flags, const struct PAC_BUFFER *r);
 enum ndr_err_code ndr_pull_PAC_BUFFER(struct ndr_pull *ndr, int ndr_flags, struct PAC_BUFFER *r);
 void ndr_print_PAC_BUFFER(struct ndr_print *ndr, const char *name, const struct PAC_BUFFER *r);

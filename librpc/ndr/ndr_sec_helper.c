@@ -30,13 +30,13 @@
 /*
   return the wire size of a security_ace
 */
-size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
+size_t ndr_size_security_ace(const struct security_ace *ace, struct smb_iconv_convenience *ic, int flags)
 {
 	size_t ret;
 
 	if (!ace) return 0;
 
-	ret = 8 + ndr_size_dom_sid(&ace->trustee, flags);
+	ret = 8 + ndr_size_dom_sid(&ace->trustee, ic, flags);
 
 	switch (ace->type) {
 	case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
@@ -91,14 +91,14 @@ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, str
 /*
   return the wire size of a security_acl
 */
-size_t ndr_size_security_acl(const struct security_acl *acl, int flags)
+size_t ndr_size_security_acl(const struct security_acl *acl, struct smb_iconv_convenience *ic, int flags)
 {
 	size_t ret;
 	int i;
 	if (!acl) return 0;
 	ret = 8;
 	for (i=0;i<acl->num_aces;i++) {
-		ret += ndr_size_security_ace(&acl->aces[i], flags);
+		ret += ndr_size_security_ace(&acl->aces[i], ic, flags);
 	}
 	return ret;
 }
@@ -106,23 +106,23 @@ size_t ndr_size_security_acl(const struct security_acl *acl, int flags)
 /*
   return the wire size of a security descriptor
 */
-size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int flags)
+size_t ndr_size_security_descriptor(const struct security_descriptor *sd, struct smb_iconv_convenience *ic, int flags)
 {
 	size_t ret;
 	if (!sd) return 0;
 	
 	ret = 20;
-	ret += ndr_size_dom_sid(sd->owner_sid, flags);
-	ret += ndr_size_dom_sid(sd->group_sid, flags);
-	ret += ndr_size_security_acl(sd->dacl, flags);
-	ret += ndr_size_security_acl(sd->sacl, flags);
+	ret += ndr_size_dom_sid(sd->owner_sid, ic, flags);
+	ret += ndr_size_dom_sid(sd->group_sid, ic, flags);
+	ret += ndr_size_security_acl(sd->dacl, ic, flags);
+	ret += ndr_size_security_acl(sd->sacl, ic, flags);
 	return ret;
 }
 
 /*
   return the wire size of a dom_sid
 */
-size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags)
+size_t ndr_size_dom_sid(const struct dom_sid *sid, struct smb_iconv_convenience *ic, int flags)
 {
 	if (!sid) return 0;
 	return 8 + 4*sid->num_auths;

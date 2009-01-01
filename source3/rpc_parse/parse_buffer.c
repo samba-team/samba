@@ -439,7 +439,7 @@ bool smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC
 		}
 		
 		if (*secdesc != NULL) {
-			buffer->string_at_end -= ndr_size_security_descriptor(*secdesc, 0);
+			buffer->string_at_end -= ndr_size_security_descriptor(*secdesc, NULL, 0);
 
 			if(!prs_set_offset(ps, buffer->string_at_end))
 				return False;

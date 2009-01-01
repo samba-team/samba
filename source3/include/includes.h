@@ -559,7 +559,6 @@ typedef char fstring[FSTRING_LEN];
 #endif
 
 /* Samba 3 doesn't use iconv_convenience: */
-extern void *global_iconv_convenience;
 extern void *cmdline_lp_ctx;
 struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 

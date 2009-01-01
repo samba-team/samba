@@ -103,6 +103,7 @@ struct ndr_print {
 	uint32_t flags; /* LIBNDR_FLAG_* */
 	uint32_t depth;
 	struct ndr_token_list *switch_list;
+	struct smb_iconv_convenience *iconv_convenience;
 	void (*print)(struct ndr_print *, const char *, ...) PRINTF_ATTRIBUTE(2,3);
 	void *private_data;
 };
@@ -360,8 +361,8 @@ void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2); 
 enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const void *p, ndr_push_flags_fn_t fn);
 enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, void *p, uint32_t level, ndr_push_flags_fn_t fn);
-size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push);
-size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push);
+size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push, struct smb_iconv_convenience *);
+size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push, struct smb_iconv_convenience *);
 uint32_t ndr_push_get_relative_base_offset(struct ndr_push *ndr);
 void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32_t offset);
 enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset);

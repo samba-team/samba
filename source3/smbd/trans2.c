@@ -3071,6 +3071,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			     i < conn->server_info->ptok->num_sids; ++i) {
 				sid_bytes += ndr_size_dom_sid(
 					&conn->server_info->ptok->user_sids[i],
+					NULL, 
 					0);
 			}
 
@@ -3093,6 +3094,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			    i < conn->server_info->ptok->num_sids; ++i) {
 				int sid_len = ndr_size_dom_sid(
 					&conn->server_info->ptok->user_sids[i],
+					NULL,
 					0);
 
 				sid_linearize(pdata + data_len, sid_len,

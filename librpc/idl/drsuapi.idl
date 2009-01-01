@@ -142,7 +142,7 @@ interface drsuapi
 	/*****************/
 	/* Function 0x02 */
 	typedef [public,gensize] struct {
-		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags)-4)] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->iconv_convenience, ndr->flags)-4)] uint32 __ndr_size;
 		[value(ndr_size_dom_sid28(&sid, ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
@@ -514,7 +514,7 @@ interface drsuapi
 
 	/* DN String values */
 	typedef [public,gensize] struct {
-		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags))] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->iconv_convenience, ndr->flags))] uint32 __ndr_size;
 		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
@@ -523,7 +523,7 @@ interface drsuapi
 	} drsuapi_DsReplicaObjectIdentifier3;
 
 	typedef [public,gensize] struct {
-		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->flags))] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->iconv_convenience, ndr->flags))] uint32 __ndr_size;
 		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
@@ -586,7 +586,7 @@ interface drsuapi
 		drsuapi_DsExtendedError extended_ret; /* w2k sends the nc_object_count value here */
 		uint32 object_count;
 		/* this +55 is sometimes +56, so I don't know where this comes from... --metze */
-		[value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->flags)+55)] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->iconv_convenience,ndr->flags)+55)] uint32 __ndr_size;
 		drsuapi_DsReplicaObjectListItemEx *first_object;
 		boolean32 more_data;
 	} drsuapi_DsGetNCChangesCtr1;
@@ -619,7 +619,7 @@ interface drsuapi
 		drsuapi_DsExtendedError extended_ret;
 		uint32 object_count;
 		/* this +55 is sometimes +56, so I don't know where this comes from... --metze */
-		[value(ndr_size_drsuapi_DsGetNCChangesCtr6(r,ndr->flags)+55)] uint32 __ndr_size;
+		[value(ndr_size_drsuapi_DsGetNCChangesCtr6(r,ndr->iconv_convenience,ndr->flags)+55)] uint32 __ndr_size;
 		drsuapi_DsReplicaObjectListItemEx *first_object;
 		boolean32 more_data;
 		uint32 nc_object_count; /* estimated amount of objects in the whole NC */

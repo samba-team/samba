@@ -10,7 +10,7 @@
 enum ndr_err_code ndr_push_GUID(struct ndr_push *ndr, int ndr_flags, const struct GUID *r);
 enum ndr_err_code ndr_pull_GUID(struct ndr_pull *ndr, int ndr_flags, struct GUID *r);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *r);
-size_t ndr_size_GUID(const struct GUID *r, int flags);
+size_t ndr_size_GUID(const struct GUID *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_ndr_syntax_id(struct ndr_push *ndr, int ndr_flags, const struct ndr_syntax_id *r);
 enum ndr_err_code ndr_pull_ndr_syntax_id(struct ndr_pull *ndr, int ndr_flags, struct ndr_syntax_id *r);
 void ndr_print_ndr_syntax_id(struct ndr_print *ndr, const char *name, const struct ndr_syntax_id *r);

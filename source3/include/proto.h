@@ -2307,19 +2307,6 @@ _PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool
 _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
 const char *ndr_errstr(enum ndr_err_code err);
 
-/* The following definitions come from librpc/ndr/ndr_sec_helper.c  */
-
-size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags);
-size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
-size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
-size_t ndr_size_security_ace(const struct security_ace *ace, int flags);
-size_t ndr_size_security_acl(const struct security_acl *acl, int flags);
-size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int flags);
-void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-void ndr_print_dom_sid28(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
-
 /* The following definitions come from librpc/ndr/sid.c  */
 
 char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);

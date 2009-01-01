@@ -435,7 +435,7 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* store it back */
 	
-	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
+	sd_size = ndr_size_security_descriptor(sd_store->sd, NULL, 0)
 		+ sizeof(SEC_DESC_BUF);
 	if ( !prs_init(&ps, sd_size, ctx, MARSHALL) ) {
 		DEBUG(0,("sec_desc_upg_fn: Failed to allocate prs memory for %s\n", key.dptr ));
@@ -5477,7 +5477,8 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	/* Store the security descriptor in a tdb */
 
 	if (!prs_init(&ps,
-		(uint32)ndr_size_security_descriptor(new_secdesc_ctr->sd, 0)
+		(uint32_t)ndr_size_security_descriptor(new_secdesc_ctr->sd, 
+						     NULL, 0)
 		+ sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL) ) {
 		status = WERR_NOMEM;
 		goto out;
@@ -5630,7 +5631,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 		/* Save default security descriptor for later */
 
-		if (!prs_init(&ps, (uint32)ndr_size_security_descriptor((*secdesc_ctr)->sd, 0) +
+		if (!prs_init(&ps, (uint32_t)ndr_size_security_descriptor((*secdesc_ctr)->sd, NULL, 0) +
 			sizeof(SEC_DESC_BUF), ctx, MARSHALL))
 			return False;
 

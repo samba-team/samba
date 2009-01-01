@@ -197,7 +197,7 @@ void ndr_print_netr_ChangeLogObject(struct ndr_print *ndr, const char *name, con
 enum ndr_err_code ndr_push_netr_ChangeLogEntry(struct ndr_push *ndr, int ndr_flags, const struct netr_ChangeLogEntry *r);
 enum ndr_err_code ndr_pull_netr_ChangeLogEntry(struct ndr_pull *ndr, int ndr_flags, struct netr_ChangeLogEntry *r);
 void ndr_print_netr_ChangeLogEntry(struct ndr_print *ndr, const char *name, const struct netr_ChangeLogEntry *r);
-size_t ndr_size_netr_ChangeLogEntry(const struct netr_ChangeLogEntry *r, int flags);
+size_t ndr_size_netr_ChangeLogEntry(const struct netr_ChangeLogEntry *r, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const struct netr_Blob *r);
 void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_DsRGetDCNameInfo_AddressType(struct ndr_print *ndr, const char *name, enum netr_DsRGetDCNameInfo_AddressType r);

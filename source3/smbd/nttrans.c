@@ -1655,7 +1655,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	    security_info_wanted & DACL_SECURITY_INFORMATION)
 		psd->type |= SEC_DESC_DACL_PRESENT;
 
-	sd_size = ndr_size_security_descriptor(psd, 0);
+	sd_size = ndr_size_security_descriptor(psd, NULL, 0);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 

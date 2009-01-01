@@ -92,7 +92,7 @@ struct drsuapi_DsBindInfoCtr {
 };
 
 struct drsuapi_DsReplicaObjectIdentifier {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r,ndr->flags)-4)] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r,ndr->iconv_convenience,ndr->flags)-4)] */
 	uint32_t __ndr_size_sid;/* [value(ndr_size_dom_sid28(&sid,ndr->flags))] */
 	struct GUID guid;
 	struct dom_sid28 sid;
@@ -468,7 +468,7 @@ struct drsuapi_DsAttributeValueCtr {
 };
 
 struct drsuapi_DsReplicaObjectIdentifier3 {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r,ndr->flags))] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t __ndr_size_sid;/* [value(ndr_size_dom_sid28(&sid,ndr->flags))] */
 	struct GUID guid;
 	struct dom_sid28 sid;
@@ -477,7 +477,7 @@ struct drsuapi_DsReplicaObjectIdentifier3 {
 }/* [gensize,public] */;
 
 struct drsuapi_DsReplicaObjectIdentifier3Binary {
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r,ndr->flags))] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t __ndr_size_sid;/* [value(ndr_size_dom_sid28(&sid,ndr->flags))] */
 	struct GUID guid;
 	struct dom_sid28 sid;
@@ -538,7 +538,7 @@ struct drsuapi_DsGetNCChangesCtr1 {
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 	enum drsuapi_DsExtendedError extended_ret;
 	uint32_t object_count;
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->flags)+55)] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr1(r,ndr->iconv_convenience,ndr->flags)+55)] */
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;/* [unique] */
 	uint32_t more_data;
 }/* [gensize,public] */;
@@ -565,7 +565,7 @@ struct drsuapi_DsGetNCChangesCtr6 {
 	struct drsuapi_DsReplicaOIDMapping_Ctr mapping_ctr;
 	enum drsuapi_DsExtendedError extended_ret;
 	uint32_t object_count;
-	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr6(r,ndr->flags)+55)] */
+	uint32_t __ndr_size;/* [value(ndr_size_drsuapi_DsGetNCChangesCtr6(r,ndr->iconv_convenience,ndr->flags)+55)] */
 	struct drsuapi_DsReplicaObjectListItemEx *first_object;/* [unique] */
 	uint32_t more_data;
 	uint32_t nc_object_count;

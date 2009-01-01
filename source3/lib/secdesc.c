@@ -233,11 +233,11 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 	}
 
 	if (dst->owner_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->owner_sid, 0);
+		offset += ndr_size_dom_sid(dst->owner_sid, NULL, 0);
 	}
 
 	if (dst->group_sid != NULL) {
-		offset += ndr_size_dom_sid(dst->group_sid, 0);
+		offset += ndr_size_dom_sid(dst->group_sid, NULL, 0);
 	}
 
 	*sd_size = (size_t)offset;

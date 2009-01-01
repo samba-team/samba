@@ -324,7 +324,7 @@ interface security
 	typedef [public,nopull,gensize,nosize] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
-		[value(ndr_size_security_ace(r,ndr->flags))] uint16 size;
+		[value(ndr_size_security_ace(r,ndr->iconv_convenience,ndr->flags))] uint16 size;
 		uint32 access_mask;
 		[switch_is(type)] security_ace_object_ctr object;
 		dom_sid trustee;
@@ -339,7 +339,7 @@ interface security
 
 	typedef [public,gensize,nosize] struct {
 		security_acl_revision revision;
-		[value(ndr_size_security_acl(r,ndr->flags))] uint16 size;
+		[value(ndr_size_security_acl(r,ndr->iconv_convenience,ndr->flags))] uint16 size;
 		[range(0,1000)] uint32 num_aces;
 		security_ace aces[num_aces];
 	} security_acl;
@@ -381,7 +381,7 @@ interface security
 	} security_descriptor;
 
 	typedef [public] struct {
-		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->flags))] uint32 sd_size;
+		[range(0,0x40000),value(ndr_size_security_descriptor(sd,ndr->iconv_convenience,ndr->flags))] uint32 sd_size;
 		[subcontext(4)] security_descriptor *sd;
 	} sec_desc_buf;
 

@@ -12,7 +12,7 @@ union named_pipe_auth_req_info {
 }/* [switch_type(uint32)] */;
 
 struct named_pipe_auth_req {
-	uint32_t length;/* [value(ndr_size_named_pipe_auth_req(r,ndr->flags)-4),flag(LIBNDR_FLAG_BIGENDIAN)] */
+	uint32_t length;/* [value(ndr_size_named_pipe_auth_req(r,ndr->iconv_convenience,ndr->flags)-4),flag(LIBNDR_FLAG_BIGENDIAN)] */
 	const char *magic;/* [value(NAMED_PIPE_AUTH_MAGIC),charset(DOS)] */
 	uint32_t level;
 	union named_pipe_auth_req_info info;/* [switch_is(level)] */
@@ -22,7 +22,7 @@ union named_pipe_auth_rep_info {
 }/* [switch_type(uint32)] */;
 
 struct named_pipe_auth_rep {
-	uint32_t length;/* [value(ndr_size_named_pipe_auth_rep(r,ndr->flags)-4),flag(LIBNDR_FLAG_BIGENDIAN)] */
+	uint32_t length;/* [value(ndr_size_named_pipe_auth_rep(r,ndr->iconv_convenience,ndr->flags)-4),flag(LIBNDR_FLAG_BIGENDIAN)] */
 	const char *magic;/* [value(NAMED_PIPE_AUTH_MAGIC),charset(DOS)] */
 	uint32_t level;
 	union named_pipe_auth_rep_info info;/* [switch_is(level)] */

@@ -59,7 +59,7 @@ void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, enum security_ace_type type,
 {
 	t->type = type;
 	t->flags = flag;
-	t->size = ndr_size_dom_sid(sid, 0) + 8;
+	t->size = ndr_size_dom_sid(sid, NULL, 0) + 8;
 	t->access_mask = mask;
 
 	ZERO_STRUCTP(&t->trustee);
@@ -86,7 +86,7 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
 
 	(*pp_new)[i].type  = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	(*pp_new)[i].flags = 0;
-	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, 0);
+	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, NULL, 0);
 	(*pp_new)[i].access_mask = mask;
 	sid_copy(&(*pp_new)[i].trustee, sid);
 	return NT_STATUS_OK;

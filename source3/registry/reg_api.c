@@ -436,7 +436,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 		return err;
 	}
 
-	*secdescsize = ndr_size_security_descriptor(secdesc, 0);
+	*secdescsize = ndr_size_security_descriptor(secdesc, NULL, 0);
 	TALLOC_FREE(mem_ctx);
 
 	*last_changed_time = 0;

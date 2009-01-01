@@ -418,7 +418,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_ace(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_security_ace_type(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_security_ace_flags(ndr, NDR_SCALARS, r->flags));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_security_ace(r, ndr->flags)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_security_ace(r, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->access_mask));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->object, r->type));
 		NDR_CHECK(ndr_push_security_ace_object_ctr(ndr, NDR_SCALARS, &r->object));
@@ -436,7 +436,7 @@ _PUBLIC_ void ndr_print_security_ace(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	ndr_print_security_ace_type(ndr, "type", r->type);
 	ndr_print_security_ace_flags(ndr, "flags", r->flags);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_ace(r, ndr->flags):r->size);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_ace(r, ndr->iconv_convenience, ndr->flags):r->size);
 	ndr_print_uint32(ndr, "access_mask", r->access_mask);
 	ndr_print_set_switch_value(ndr, &r->object, r->type);
 	ndr_print_security_ace_object_ctr(ndr, "object", &r->object);
@@ -475,7 +475,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_security_acl(struct ndr_push *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_security_acl_revision(ndr, NDR_SCALARS, r->revision));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_security_acl(r, ndr->flags)));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, ndr_size_security_acl(r, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->num_aces));
 		for (cntr_aces_0 = 0; cntr_aces_0 < r->num_aces; cntr_aces_0++) {
 			NDR_CHECK(ndr_push_security_ace(ndr, NDR_SCALARS, &r->aces[cntr_aces_0]));
@@ -526,7 +526,7 @@ _PUBLIC_ void ndr_print_security_acl(struct ndr_print *ndr, const char *name, co
 	ndr_print_struct(ndr, name, "security_acl");
 	ndr->depth++;
 	ndr_print_security_acl_revision(ndr, "revision", r->revision);
-	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_acl(r, ndr->flags):r->size);
+	ndr_print_uint16(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_acl(r, ndr->iconv_convenience, ndr->flags):r->size);
 	ndr_print_uint32(ndr, "num_aces", r->num_aces);
 	ndr->print(ndr, "%s: ARRAY(%d)", "aces", (int)r->num_aces);
 	ndr->depth++;
@@ -774,7 +774,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_sec_desc_buf(struct ndr_push *ndr, int ndr_f
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_security_descriptor(r->sd, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_security_descriptor(r->sd, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->sd));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -827,7 +827,7 @@ _PUBLIC_ void ndr_print_sec_desc_buf(struct ndr_print *ndr, const char *name, co
 {
 	ndr_print_struct(ndr, name, "sec_desc_buf");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "sd_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_descriptor(r->sd, ndr->flags):r->sd_size);
+	ndr_print_uint32(ndr, "sd_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_security_descriptor(r->sd, ndr->iconv_convenience, ndr->flags):r->sd_size);
 	ndr_print_ptr(ndr, "sd", r->sd);
 	ndr->depth++;
 	if (r->sd) {

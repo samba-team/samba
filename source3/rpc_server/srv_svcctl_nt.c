@@ -688,7 +688,7 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 	if ( !W_ERROR_IS_OK(wresult) )
 		return wresult;
 
-	buffer_size = ndr_size_QUERY_SERVICE_CONFIG(r->out.query, 0);
+	buffer_size = ndr_size_QUERY_SERVICE_CONFIG(r->out.query, NULL, 0);
 	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
         if (buffer_size > r->in.buf_size ) {
@@ -838,7 +838,7 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
                 return WERR_NOMEM;
 
-	*r->out.needed = ndr_size_security_descriptor( sec_desc, 0 );
+	*r->out.needed = ndr_size_security_descriptor( sec_desc, NULL, 0 );
 
 	if ( *r->out.needed > r->in.buffer_size ) {
 		ZERO_STRUCTP( &r->out.buffer );

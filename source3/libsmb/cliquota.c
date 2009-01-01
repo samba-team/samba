@@ -150,7 +150,7 @@ bool cli_get_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 	SIVAL(params, 8,0x00000000);
 	SIVAL(params,12,0x00000024);
 
-	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
+	sid_len = ndr_size_dom_sid(&pqt->sid, NULL, 0);
 	data_len = sid_len+8;
 	SIVAL(data, 0, 0x00000000);
 	SIVAL(data, 4, sid_len);
@@ -213,7 +213,7 @@ bool cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_STRUC
 
 	SSVAL(params,0,quota_fnum);
 
-	sid_len = ndr_size_dom_sid(&pqt->sid, 0);
+	sid_len = ndr_size_dom_sid(&pqt->sid, NULL, 0);
 	SIVAL(data,0,0);
 	SIVAL(data,4,sid_len);
 	SBIG_UINT(data, 8,(uint64_t)0);

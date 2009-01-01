@@ -924,7 +924,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_union_blob(DATA_BLOB *blob, TALLOC_CTX *mem_
 /*
   generic ndr_size_*() handler for structures
 */
-_PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push)
+_PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t push, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code status;
@@ -933,7 +933,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 	/* avoid recursion */
 	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
 
-	ndr = ndr_push_init_ctx(NULL, global_iconv_convenience);
+	ndr = ndr_push_init_ctx(NULL, iconv_convenience);
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 	status = push(ndr, NDR_SCALARS|NDR_BUFFERS, discard_const(p));
@@ -949,7 +949,7 @@ _PUBLIC_ size_t ndr_size_struct(const void *p, int flags, ndr_push_flags_fn_t pu
 /*
   generic ndr_size_*() handler for unions
 */
-_PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push)
+_PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_push_flags_fn_t push, struct smb_iconv_convenience *iconv_convenience)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code status;
@@ -958,7 +958,7 @@ _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_pus
 	/* avoid recursion */
 	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
 
-	ndr = ndr_push_init_ctx(NULL, global_iconv_convenience);
+	ndr = ndr_push_init_ctx(NULL, iconv_convenience);
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
 

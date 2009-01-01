@@ -166,7 +166,6 @@ _PUBLIC_ void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name
 	ndr->print(ndr, "%-25s: %s", name, print_sockaddr(addr, sizeof(addr), ss));
 }
 
-void *global_iconv_convenience;
 void *cmdline_lp_ctx;
 struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx)
 {

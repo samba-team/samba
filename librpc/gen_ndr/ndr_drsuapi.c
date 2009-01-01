@@ -440,7 +440,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier(struct ndr
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, strlen_m(r->dn) + 1));
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags) - 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->iconv_convenience, ndr->flags) - 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid28(&r->sid, ndr->flags)));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid));
 		NDR_CHECK(ndr_push_dom_sid28(ndr, NDR_SCALARS, &r->sid));
@@ -478,7 +478,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier(struct ndr_print *ndr,
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectIdentifier");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags) - 4:r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->iconv_convenience, ndr->flags) - 4:r->__ndr_size);
 	ndr_print_uint32(ndr, "__ndr_size_sid", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid28(&r->sid, ndr->flags):r->__ndr_size_sid);
 	ndr_print_GUID(ndr, "guid", &r->guid);
 	ndr_print_dom_sid28(ndr, "sid", &r->sid);
@@ -487,9 +487,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier(struct ndr_print *ndr,
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_DsReplicaObjectIdentifier *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier(const struct drsuapi_DsReplicaObjectIdentifier *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaSyncOptions(struct ndr_push *ndr, int ndr_flags, uint32_t r)
@@ -1892,7 +1892,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3(struct nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid28(&r->sid, ndr->flags)));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid));
 		NDR_CHECK(ndr_push_dom_sid28(ndr, NDR_SCALARS, &r->sid));
@@ -1926,7 +1926,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3(struct ndr_print *ndr
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectIdentifier3");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->flags):r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
 	ndr_print_uint32(ndr, "__ndr_size_sid", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid28(&r->sid, ndr->flags):r->__ndr_size_sid);
 	ndr_print_GUID(ndr, "guid", &r->guid);
 	ndr_print_dom_sid28(ndr, "sid", &r->sid);
@@ -1935,16 +1935,16 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3(struct ndr_print *ndr
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3(const struct drsuapi_DsReplicaObjectIdentifier3 *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3(const struct drsuapi_DsReplicaObjectIdentifier3 *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaObjectIdentifier3Binary *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid28(&r->sid, ndr->flags)));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid));
 		NDR_CHECK(ndr_push_dom_sid28(ndr, NDR_SCALARS, &r->sid));
@@ -1992,7 +1992,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_prin
 {
 	ndr_print_struct(ndr, name, "drsuapi_DsReplicaObjectIdentifier3Binary");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->flags):r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(r, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
 	ndr_print_uint32(ndr, "__ndr_size_sid", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid28(&r->sid, ndr->flags):r->__ndr_size_sid);
 	ndr_print_GUID(ndr, "guid", &r->guid);
 	ndr_print_dom_sid28(ndr, "sid", &r->sid);
@@ -2003,9 +2003,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsReplicaObjectIdentifier3Binary(struct ndr_prin
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsReplicaObjectIdentifier3Binary(const struct drsuapi_DsReplicaObjectIdentifier3Binary *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsReplicaAttribute(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsReplicaAttribute *r)
@@ -2409,7 +2409,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1(struct ndr_push *
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
 		NDR_CHECK(ndr_push_drsuapi_DsExtendedError(ndr, NDR_SCALARS, r->extended_ret));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->object_count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->flags) + 55));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->iconv_convenience, ndr->flags) + 55));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->first_object));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->more_data));
 	}
@@ -2513,7 +2513,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr1(struct ndr_print *ndr, const 
 	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
 	ndr_print_drsuapi_DsExtendedError(ndr, "extended_ret", r->extended_ret);
 	ndr_print_uint32(ndr, "object_count", r->object_count);
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->flags) + 55:r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr1(r, ndr->iconv_convenience, ndr->flags) + 55:r->__ndr_size);
 	ndr_print_ptr(ndr, "first_object", r->first_object);
 	ndr->depth++;
 	if (r->first_object) {
@@ -2524,9 +2524,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr1(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsGetNCChangesCtr1(const struct drsuapi_DsGetNCChangesCtr1 *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsGetNCChangesCtr1(const struct drsuapi_DsGetNCChangesCtr1 *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsGetNCChangesCtr1);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsGetNCChangesCtr1, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsLinkedAttributeFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
@@ -2633,7 +2633,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr6(struct ndr_push *
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaOIDMapping_Ctr(ndr, NDR_SCALARS, &r->mapping_ctr));
 		NDR_CHECK(ndr_push_drsuapi_DsExtendedError(ndr, NDR_SCALARS, r->extended_ret));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->object_count));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->flags) + 55));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->iconv_convenience, ndr->flags) + 55));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->first_object));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->more_data));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nc_object_count));
@@ -2788,7 +2788,7 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 	ndr_print_drsuapi_DsReplicaOIDMapping_Ctr(ndr, "mapping_ctr", &r->mapping_ctr);
 	ndr_print_drsuapi_DsExtendedError(ndr, "extended_ret", r->extended_ret);
 	ndr_print_uint32(ndr, "object_count", r->object_count);
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->flags) + 55:r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_drsuapi_DsGetNCChangesCtr6(r, ndr->iconv_convenience, ndr->flags) + 55:r->__ndr_size);
 	ndr_print_ptr(ndr, "first_object", r->first_object);
 	ndr->depth++;
 	if (r->first_object) {
@@ -2818,9 +2818,9 @@ _PUBLIC_ void ndr_print_drsuapi_DsGetNCChangesCtr6(struct ndr_print *ndr, const 
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_drsuapi_DsGetNCChangesCtr6(const struct drsuapi_DsGetNCChangesCtr6 *r, int flags)
+_PUBLIC_ size_t ndr_size_drsuapi_DsGetNCChangesCtr6(const struct drsuapi_DsGetNCChangesCtr6 *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsGetNCChangesCtr6);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsGetNCChangesCtr6, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_drsuapi_DsGetNCChangesCtr1TS(struct ndr_push *ndr, int ndr_flags, const struct drsuapi_DsGetNCChangesCtr1TS *r)

@@ -430,9 +430,9 @@ _PUBLIC_ void ndr_print_PAC_INFO(struct ndr_print *ndr, const char *name, const 
 	}
 }
 
-_PUBLIC_ size_t ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, int flags)
+_PUBLIC_ size_t ndr_size_PAC_INFO(const union PAC_INFO *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_PAC_INFO);
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_PAC_INFO, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_PAC_DATA(struct ndr_push *ndr, int ndr_flags, const struct PAC_DATA *r)

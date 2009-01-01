@@ -137,12 +137,12 @@ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
 			if (r->nt_version & NETLOGON_NT_VERSION_5EX_WITH_IP) {
-				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 				{
 					struct ndr_push *_ndr_sockaddr;
-					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+					NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 					NDR_CHECK(ndr_push_nbt_sockaddr(_ndr_sockaddr, NDR_SCALARS|NDR_BUFFERS, &r->sockaddr));
-					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+					NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 				}
 			}
 			if (r->nt_version & NETLOGON_NT_VERSION_WITH_CLOSEST_SITE) {

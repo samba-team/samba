@@ -586,9 +586,9 @@ _PUBLIC_ void ndr_print_QUERY_SERVICE_CONFIG(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_QUERY_SERVICE_CONFIG(const struct QUERY_SERVICE_CONFIG *r, int flags)
+_PUBLIC_ size_t ndr_size_QUERY_SERVICE_CONFIG(const struct QUERY_SERVICE_CONFIG *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_QUERY_SERVICE_CONFIG);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_QUERY_SERVICE_CONFIG, ic);
 }
 
 static enum ndr_err_code ndr_push_svcctl_CloseServiceHandle(struct ndr_push *ndr, int flags, const struct svcctl_CloseServiceHandle *r)

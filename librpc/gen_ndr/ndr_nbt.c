@@ -1583,9 +1583,9 @@ _PUBLIC_ void ndr_print_nbt_sockaddr(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_nbt_sockaddr(const struct nbt_sockaddr *r, int flags)
+_PUBLIC_ size_t ndr_size_nbt_sockaddr(const struct nbt_sockaddr *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_nbt_sockaddr);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_nbt_sockaddr, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_nbt_server_type(struct ndr_push *ndr, int ndr_flags, uint32_t r)
@@ -1929,12 +1929,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_NETLOGON_SAM_LOGON_RESPONSE_EX(struct ndr_pu
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->user_name));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->server_site));
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->client_site));
-			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 			{
 				struct ndr_push *_ndr_sockaddr;
-				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 				NDR_CHECK(ndr_push_nbt_sockaddr(_ndr_sockaddr, NDR_SCALARS, &r->sockaddr));
-				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags)));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sockaddr, 0, ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags)));
 			}
 			NDR_CHECK(ndr_push_nbt_string(ndr, NDR_SCALARS, r->next_closest_site));
 			NDR_CHECK(ndr_push_netlogon_nt_version_flags(ndr, NDR_SCALARS, r->nt_version));
@@ -2005,7 +2005,7 @@ _PUBLIC_ void ndr_print_NETLOGON_SAM_LOGON_RESPONSE_EX(struct ndr_print *ndr, co
 		ndr_print_nbt_string(ndr, "user_name", r->user_name);
 		ndr_print_nbt_string(ndr, "server_site", r->server_site);
 		ndr_print_nbt_string(ndr, "client_site", r->client_site);
-		ndr_print_uint8(ndr, "sockaddr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_nbt_sockaddr(&r->sockaddr, ndr->flags):r->sockaddr_size);
+		ndr_print_uint8(ndr, "sockaddr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_nbt_sockaddr(&r->sockaddr, ndr->iconv_convenience, ndr->flags):r->sockaddr_size);
 		ndr_print_nbt_sockaddr(ndr, "sockaddr", &r->sockaddr);
 		ndr_print_nbt_string(ndr, "next_closest_site", r->next_closest_site);
 		ndr_print_netlogon_nt_version_flags(ndr, "nt_version", r->nt_version);

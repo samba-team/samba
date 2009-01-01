@@ -1553,7 +1553,7 @@ static uint32 sk_record_data_size( SEC_DESC * sd )
 
 	/* the record size is sizeof(hdr) + name + static members + data_size_field */
 
-	size = sizeof(uint32)*5 + ndr_size_security_descriptor(sd, 0) + sizeof(uint32);
+	size = sizeof(uint32)*5 + ndr_size_security_descriptor(sd, NULL, 0) + sizeof(uint32);
 
 	/* multiple of 8 */
 	size_mod8 = size & 0xfffffff8;
@@ -1783,7 +1783,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 			nk->sec_desc->ref_count = 0;
 			
 			/* size value must be self-inclusive */
-			nk->sec_desc->size      = ndr_size_security_descriptor(sec_desc, 0)
+			nk->sec_desc->size      = ndr_size_security_descriptor(sec_desc, NULL, 0)
 				+ sizeof(uint32);
 
 			DLIST_ADD_END( file->sec_desc_list, nk->sec_desc, REGF_SK_REC *);

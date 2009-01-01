@@ -64,13 +64,13 @@ struct repsFromTo1OtherInfo {
 }/* [gensize,public] */;
 
 struct repsFromTo1 {
-	uint32_t blobsize;/* [value(ndr_size_repsFromTo1(this,ndr->flags)+8)] */
+	uint32_t blobsize;/* [value(ndr_size_repsFromTo1(this,ndr->iconv_convenience,ndr->flags)+8)] */
 	uint32_t consecutive_sync_failures;
 	NTTIME last_success;
 	NTTIME last_attempt;
 	WERROR result_last_attempt;
 	struct repsFromTo1OtherInfo *other_info;/* [relative] */
-	uint32_t other_info_length;/* [value(ndr_size_repsFromTo1OtherInfo(other_info,ndr->flags))] */
+	uint32_t other_info_length;/* [value(ndr_size_repsFromTo1OtherInfo(other_info,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t replica_flags;
 	uint8_t schedule[84];
 	uint32_t reserved;
@@ -135,7 +135,7 @@ struct ldapControlDirSyncBlob {
 	NTTIME time;
 	uint32_t u2;
 	uint32_t u3;
-	uint32_t extra_length;/* [value(ndr_size_ldapControlDirSyncExtra(&extra,extra.uptodateness_vector.version,0))] */
+	uint32_t extra_length;/* [value(ndr_size_ldapControlDirSyncExtra(&extra,extra.uptodateness_vector.version,ndr->iconv_convenience,0))] */
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
 	struct GUID guid1;
 	union ldapControlDirSyncExtra extra;/* [switch_is(extra_length)] */
@@ -174,7 +174,7 @@ struct supplementalCredentialsSubBlob {
 
 struct supplementalCredentialsBlob {
 	uint32_t unknown1;/* [value(0)] */
-	uint32_t __ndr_size;/* [value(ndr_size_supplementalCredentialsSubBlob(&sub,ndr->flags))] */
+	uint32_t __ndr_size;/* [value(ndr_size_supplementalCredentialsSubBlob(&sub,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t unknown2;/* [value(0)] */
 	struct supplementalCredentialsSubBlob sub;/* [subcontext_size(__ndr_size),subcontext(0)] */
 	uint8_t unknown3;/* [value(0)] */
@@ -315,8 +315,8 @@ struct trustDomainPasswords {
 	uint8_t confounder[512];
 	struct trustCurrentPasswords outgoing;/* [subcontext_size(outgoing_size),subcontext(0)] */
 	struct trustCurrentPasswords incoming;/* [subcontext_size(incoming_size),subcontext(0)] */
-	uint32_t outgoing_size;/* [value(ndr_size_trustCurrentPasswords(&outgoing,ndr->flags))] */
-	uint32_t incoming_size;/* [value(ndr_size_trustCurrentPasswords(&incoming,ndr->flags))] */
+	uint32_t outgoing_size;/* [value(ndr_size_trustCurrentPasswords(&outgoing,ndr->iconv_convenience,ndr->flags))] */
+	uint32_t incoming_size;/* [value(ndr_size_trustCurrentPasswords(&incoming,ndr->iconv_convenience,ndr->flags))] */
 }/* [public,nopull] */;
 
 struct DsCompressedChunk {

@@ -454,7 +454,7 @@ interface nbt
 		nbt_string           client_site;
 
 		/* Optional on NETLOGON_NT_VERSION_5EX_WITH_IP */
-		[value(ndr_size_nbt_sockaddr(&sockaddr, ndr->flags))] uint8 sockaddr_size;
+		[value(ndr_size_nbt_sockaddr(&sockaddr, ndr->iconv_convenience, ndr->flags))] uint8 sockaddr_size;
 		[subcontext(0),subcontext_size(sockaddr_size)] nbt_sockaddr sockaddr;
 
 		/* Optional on NETLOGON_NT_VERSION_WITH_CLOSEST_SITE */

@@ -101,7 +101,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_req(struct ndr_push *ndr, in
 		{
 			uint32_t _flags_save_uint32 = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_named_pipe_auth_req(r, ndr->flags) - 4));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_named_pipe_auth_req(r, ndr->iconv_convenience, ndr->flags) - 4));
 			ndr->flags = _flags_save_uint32;
 		}
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, NAMED_PIPE_AUTH_MAGIC, 4, sizeof(uint8_t), CH_DOS));
@@ -140,7 +140,7 @@ _PUBLIC_ void ndr_print_named_pipe_auth_req(struct ndr_print *ndr, const char *n
 {
 	ndr_print_struct(ndr, name, "named_pipe_auth_req");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_named_pipe_auth_req(r, ndr->flags) - 4:r->length);
+	ndr_print_uint32(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_named_pipe_auth_req(r, ndr->iconv_convenience, ndr->flags) - 4:r->length);
 	ndr_print_string(ndr, "magic", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NAMED_PIPE_AUTH_MAGIC:r->magic);
 	ndr_print_uint32(ndr, "level", r->level);
 	ndr_print_set_switch_value(ndr, &r->info, r->level);
@@ -148,9 +148,9 @@ _PUBLIC_ void ndr_print_named_pipe_auth_req(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_named_pipe_auth_req(const struct named_pipe_auth_req *r, int flags)
+_PUBLIC_ size_t ndr_size_named_pipe_auth_req(const struct named_pipe_auth_req *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_named_pipe_auth_req, ic);
 }
 
 static enum ndr_err_code ndr_push_named_pipe_auth_rep_info(struct ndr_push *ndr, int ndr_flags, const union named_pipe_auth_rep_info *r)
@@ -245,7 +245,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_named_pipe_auth_rep(struct ndr_push *ndr, in
 		{
 			uint32_t _flags_save_uint32 = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_BIGENDIAN);
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_named_pipe_auth_rep(r, ndr->flags) - 4));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_named_pipe_auth_rep(r, ndr->iconv_convenience, ndr->flags) - 4));
 			ndr->flags = _flags_save_uint32;
 		}
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, NAMED_PIPE_AUTH_MAGIC, 4, sizeof(uint8_t), CH_DOS));
@@ -286,7 +286,7 @@ _PUBLIC_ void ndr_print_named_pipe_auth_rep(struct ndr_print *ndr, const char *n
 {
 	ndr_print_struct(ndr, name, "named_pipe_auth_rep");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_named_pipe_auth_rep(r, ndr->flags) - 4:r->length);
+	ndr_print_uint32(ndr, "length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_named_pipe_auth_rep(r, ndr->iconv_convenience, ndr->flags) - 4:r->length);
 	ndr_print_string(ndr, "magic", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?NAMED_PIPE_AUTH_MAGIC:r->magic);
 	ndr_print_uint32(ndr, "level", r->level);
 	ndr_print_set_switch_value(ndr, &r->info, r->level);
@@ -295,8 +295,8 @@ _PUBLIC_ void ndr_print_named_pipe_auth_rep(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_named_pipe_auth_rep(const struct named_pipe_auth_rep *r, int flags)
+_PUBLIC_ size_t ndr_size_named_pipe_auth_rep(const struct named_pipe_auth_rep *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_named_pipe_auth_rep);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_named_pipe_auth_rep, ic);
 }
 

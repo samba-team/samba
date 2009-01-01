@@ -1051,7 +1051,7 @@ static void dcerpc_ship_next_request(struct dcerpc_connection *c)
 	if (req->object) {
 		pkt.u.request.object.object = *req->object;
 		pkt.pfc_flags |= DCERPC_PFC_FLAG_OBJECT_UUID;
-		chunk_size -= ndr_size_GUID(req->object,0);
+		chunk_size -= ndr_size_GUID(req->object,NULL,0);
 	}
 
 	/* we send a series of pdus without waiting for a reply */

@@ -19,7 +19,7 @@ interface named_pipe_auth
 
 	typedef [public,gensize] struct {
 		[flag(NDR_BIG_ENDIAN),
-		 value(ndr_size_named_pipe_auth_req(r,ndr->flags)-4)]
+		 value(ndr_size_named_pipe_auth_req(r,ndr->iconv_convenience,ndr->flags)-4)]
 			uint32 length;
 		[charset(DOS),value(NAMED_PIPE_AUTH_MAGIC)] uint8 magic[4];
 		uint32 level;
@@ -33,7 +33,7 @@ interface named_pipe_auth
 
 	typedef [public,gensize] struct {
 		[flag(NDR_BIG_ENDIAN),
-		 value(ndr_size_named_pipe_auth_rep(r,ndr->flags)-4)]
+		 value(ndr_size_named_pipe_auth_rep(r,ndr->iconv_convenience,ndr->flags)-4)]
 			uint32 length;
 		[charset(DOS),value(NAMED_PIPE_AUTH_MAGIC)] uint8 magic[4];
 		uint32 level;

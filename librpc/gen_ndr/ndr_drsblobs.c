@@ -486,9 +486,9 @@ _PUBLIC_ void ndr_print_repsFromTo1OtherInfo(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_repsFromTo1OtherInfo(const struct repsFromTo1OtherInfo *r, int flags)
+_PUBLIC_ size_t ndr_size_repsFromTo1OtherInfo(const struct repsFromTo1OtherInfo *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo1OtherInfo);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo1OtherInfo, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_flags, const struct repsFromTo1 *r)
@@ -498,13 +498,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_repsFromTo1(struct ndr_push *ndr, int ndr_fl
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_push_align(ndr, 8));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1(r, ndr->flags) + 8));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->consecutive_sync_failures));
 			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_success));
 			NDR_CHECK(ndr_push_NTTIME_1sec(ndr, NDR_SCALARS, r->last_attempt));
 			NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->result_last_attempt));
 			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->other_info));
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->flags)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_drsuapi_DsReplicaNeighbourFlags(ndr, NDR_SCALARS, r->replica_flags));
 			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->schedule, 84));
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
@@ -578,7 +578,7 @@ _PUBLIC_ void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, con
 		uint32_t _flags_save_STRUCT = ndr->flags;
 		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
 		ndr->depth++;
-		ndr_print_uint32(ndr, "blobsize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1(r, ndr->flags) + 8:r->blobsize);
+		ndr_print_uint32(ndr, "blobsize", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1(r, ndr->iconv_convenience, ndr->flags) + 8:r->blobsize);
 		ndr_print_uint32(ndr, "consecutive_sync_failures", r->consecutive_sync_failures);
 		ndr_print_NTTIME_1sec(ndr, "last_success", r->last_success);
 		ndr_print_NTTIME_1sec(ndr, "last_attempt", r->last_attempt);
@@ -589,7 +589,7 @@ _PUBLIC_ void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, con
 			ndr_print_repsFromTo1OtherInfo(ndr, "other_info", r->other_info);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->flags):r->other_info_length);
+		ndr_print_uint32(ndr, "other_info_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_repsFromTo1OtherInfo(r->other_info, ndr->iconv_convenience, ndr->flags):r->other_info_length);
 		ndr_print_drsuapi_DsReplicaNeighbourFlags(ndr, "replica_flags", r->replica_flags);
 		ndr_print_array_uint8(ndr, "schedule", r->schedule, 84);
 		ndr_print_uint32(ndr, "reserved", r->reserved);
@@ -602,10 +602,10 @@ _PUBLIC_ void ndr_print_repsFromTo1(struct ndr_print *ndr, const char *name, con
 	}
 }
 
-_PUBLIC_ size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, int flags)
+_PUBLIC_ size_t ndr_size_repsFromTo1(const struct repsFromTo1 *r, struct smb_iconv_convenience *ic, int flags)
 {
 	flags |= LIBNDR_PRINT_ARRAY_HEX;
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo1);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_repsFromTo1, ic);
 }
 
 static enum ndr_err_code ndr_push_repsFromTo(struct ndr_push *ndr, int ndr_flags, const union repsFromTo *r)
@@ -1084,9 +1084,9 @@ _PUBLIC_ void ndr_print_ldapControlDirSyncExtra(struct ndr_print *ndr, const cha
 	}
 }
 
-static size_t ndr_size_ldapControlDirSyncExtra(const union ldapControlDirSyncExtra *r, uint32_t level, int flags)
+static size_t ndr_size_ldapControlDirSyncExtra(const union ldapControlDirSyncExtra *r, uint32_t level, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_ldapControlDirSyncExtra);
+	return ndr_size_union(r, flags, level, (ndr_push_flags_fn_t)ndr_push_ldapControlDirSyncExtra, ic);
 }
 
 static enum ndr_err_code ndr_push_ldapControlDirSyncBlob(struct ndr_push *ndr, int ndr_flags, const struct ldapControlDirSyncBlob *r)
@@ -1097,10 +1097,10 @@ static enum ndr_err_code ndr_push_ldapControlDirSyncBlob(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->time));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->u3));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, 0)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, ndr->iconv_convenience, 0)));
 		NDR_CHECK(ndr_push_drsuapi_DsReplicaHighWaterMark(ndr, NDR_SCALARS, &r->highwatermark));
 		NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->guid1));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->extra, ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, 0)));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->extra, ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, ndr->iconv_convenience, 0)));
 		NDR_CHECK(ndr_push_ldapControlDirSyncExtra(ndr, NDR_SCALARS, &r->extra));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -1137,7 +1137,7 @@ _PUBLIC_ void ndr_print_ldapControlDirSyncBlob(struct ndr_print *ndr, const char
 	ndr_print_NTTIME(ndr, "time", r->time);
 	ndr_print_uint32(ndr, "u2", r->u2);
 	ndr_print_uint32(ndr, "u3", r->u3);
-	ndr_print_uint32(ndr, "extra_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, 0):r->extra_length);
+	ndr_print_uint32(ndr, "extra_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_ldapControlDirSyncExtra(&r->extra, r->extra.uptodateness_vector.version, ndr->iconv_convenience, 0):r->extra_length);
 	ndr_print_drsuapi_DsReplicaHighWaterMark(ndr, "highwatermark", &r->highwatermark);
 	ndr_print_GUID(ndr, "guid1", &r->guid1);
 	ndr_print_set_switch_value(ndr, &r->extra, r->extra_length);
@@ -1337,9 +1337,9 @@ _PUBLIC_ void ndr_print_supplementalCredentialsSubBlob(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-static size_t ndr_size_supplementalCredentialsSubBlob(const struct supplementalCredentialsSubBlob *r, int flags)
+static size_t ndr_size_supplementalCredentialsSubBlob(const struct supplementalCredentialsSubBlob *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsSubBlob);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsSubBlob, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsBlob(struct ndr_push *ndr, int ndr_flags, const struct supplementalCredentialsBlob *r)
@@ -1347,13 +1347,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_supplementalCredentialsBlob(struct ndr_push 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->iconv_convenience, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		{
 			struct ndr_push *_ndr_sub;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sub, 0, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sub, 0, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_supplementalCredentialsSubBlob(_ndr_sub, NDR_SCALARS, &r->sub));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sub, 0, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sub, 0, ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->iconv_convenience, ndr->flags)));
 		}
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0));
 	}
@@ -1387,7 +1387,7 @@ _PUBLIC_ void ndr_print_supplementalCredentialsBlob(struct ndr_print *ndr, const
 	ndr_print_struct(ndr, name, "supplementalCredentialsBlob");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "unknown1", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown1);
-	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->flags):r->__ndr_size);
+	ndr_print_uint32(ndr, "__ndr_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_supplementalCredentialsSubBlob(&r->sub, ndr->iconv_convenience, ndr->flags):r->__ndr_size);
 	ndr_print_uint32(ndr, "unknown2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown2);
 	ndr_print_supplementalCredentialsSubBlob(ndr, "sub", &r->sub);
 	ndr_print_uint8(ndr, "unknown3", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0:r->unknown3);
@@ -2616,9 +2616,9 @@ _PUBLIC_ void ndr_print_AuthenticationInformation(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, int flags)
+_PUBLIC_ size_t ndr_size_trustAuthInOutBlob(const struct trustAuthInOutBlob *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustAuthInOutBlob, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_trustCurrentPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustCurrentPasswords *r)
@@ -2709,9 +2709,9 @@ _PUBLIC_ void ndr_print_trustCurrentPasswords(struct ndr_print *ndr, const char 
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, int flags)
+_PUBLIC_ size_t ndr_size_trustCurrentPasswords(const struct trustCurrentPasswords *r, struct smb_iconv_convenience *ic, int flags)
 {
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustCurrentPasswords);
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_trustCurrentPasswords, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_trustDomainPasswords(struct ndr_push *ndr, int ndr_flags, const struct trustDomainPasswords *r)
@@ -2721,18 +2721,18 @@ _PUBLIC_ enum ndr_err_code ndr_push_trustDomainPasswords(struct ndr_push *ndr, i
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->confounder, 512));
 		{
 			struct ndr_push *_ndr_outgoing;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_trustCurrentPasswords(_ndr_outgoing, NDR_SCALARS|NDR_BUFFERS, &r->outgoing));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_outgoing, 0, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->iconv_convenience, ndr->flags)));
 		}
 		{
 			struct ndr_push *_ndr_incoming;
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->iconv_convenience, ndr->flags)));
 			NDR_CHECK(ndr_push_trustCurrentPasswords(_ndr_incoming, NDR_SCALARS|NDR_BUFFERS, &r->incoming));
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_incoming, 0, ndr_size_trustCurrentPasswords(&r->incoming, ndr->iconv_convenience, ndr->flags)));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags)));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->outgoing, ndr->iconv_convenience, ndr->flags)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_trustCurrentPasswords(&r->incoming, ndr->iconv_convenience, ndr->flags)));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -2746,8 +2746,8 @@ _PUBLIC_ void ndr_print_trustDomainPasswords(struct ndr_print *ndr, const char *
 	ndr_print_array_uint8(ndr, "confounder", r->confounder, 512);
 	ndr_print_trustCurrentPasswords(ndr, "outgoing", &r->outgoing);
 	ndr_print_trustCurrentPasswords(ndr, "incoming", &r->incoming);
-	ndr_print_uint32(ndr, "outgoing_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->outgoing, ndr->flags):r->outgoing_size);
-	ndr_print_uint32(ndr, "incoming_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->incoming, ndr->flags):r->incoming_size);
+	ndr_print_uint32(ndr, "outgoing_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->outgoing, ndr->iconv_convenience, ndr->flags):r->outgoing_size);
+	ndr_print_uint32(ndr, "incoming_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_trustCurrentPasswords(&r->incoming, ndr->iconv_convenience, ndr->flags):r->incoming_size);
 	ndr->depth--;
 }
 

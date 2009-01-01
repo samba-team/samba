@@ -54,7 +54,7 @@ void ndr_print_nbt_dgram_packet(struct ndr_print *ndr, const char *name, const s
 enum ndr_err_code ndr_push_nbt_sockaddr(struct ndr_push *ndr, int ndr_flags, const struct nbt_sockaddr *r);
 enum ndr_err_code ndr_pull_nbt_sockaddr(struct ndr_pull *ndr, int ndr_flags, struct nbt_sockaddr *r);
 void ndr_print_nbt_sockaddr(struct ndr_print *ndr, const char *name, const struct nbt_sockaddr *r);
-size_t ndr_size_nbt_sockaddr(const struct nbt_sockaddr *r, int flags);
+size_t ndr_size_nbt_sockaddr(const struct nbt_sockaddr *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_nbt_server_type(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_nbt_server_type(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_nbt_server_type(struct ndr_print *ndr, const char *name, uint32_t r);

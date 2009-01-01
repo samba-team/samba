@@ -257,7 +257,7 @@ union security_ace_object_ctr {
 struct security_ace {
 	enum security_ace_type type;
 	uint8_t flags;
-	uint16_t size;/* [value(ndr_size_security_ace(r,ndr->flags))] */
+	uint16_t size;/* [value(ndr_size_security_ace(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t access_mask;
 	union security_ace_object_ctr object;/* [switch_is(type)] */
 	struct dom_sid trustee;
@@ -278,7 +278,7 @@ enum security_acl_revision
 
 struct security_acl {
 	enum security_acl_revision revision;
-	uint16_t size;/* [value(ndr_size_security_acl(r,ndr->flags))] */
+	uint16_t size;/* [value(ndr_size_security_acl(r,ndr->iconv_convenience,ndr->flags))] */
 	uint32_t num_aces;/* [range(0,1000)] */
 	struct security_ace *aces;
 }/* [gensize,public,nosize] */;
@@ -322,7 +322,7 @@ struct security_descriptor {
 }/* [gensize,public,flag(LIBNDR_FLAG_LITTLE_ENDIAN),nosize] */;
 
 struct sec_desc_buf {
-	uint32_t sd_size;/* [value(ndr_size_security_descriptor(sd,ndr->flags)),range(0,0x40000)] */
+	uint32_t sd_size;/* [value(ndr_size_security_descriptor(sd,ndr->iconv_convenience,ndr->flags)),range(0,0x40000)] */
 	struct security_descriptor *sd;/* [unique,subcontext(4)] */
 }/* [public] */;
 

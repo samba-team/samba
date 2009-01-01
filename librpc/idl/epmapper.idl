@@ -216,7 +216,7 @@ interface epmapper
 	} epm_tower;
 
 	typedef struct {
-		[value(ndr_size_epm_tower(&tower, ndr->flags))] uint32  tower_length;
+		[value(ndr_size_epm_tower(&tower, ndr->iconv_convenience, ndr->flags))] uint32  tower_length;
 		[subcontext(4)] epm_tower tower;
 	} epm_twr_t;
 

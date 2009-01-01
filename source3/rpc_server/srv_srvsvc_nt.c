@@ -2106,7 +2106,7 @@ WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
 		goto error_exit;
 	}
 
-	sd_size = ndr_size_security_descriptor(psd, 0);
+	sd_size = ndr_size_security_descriptor(psd, NULL, 0);
 
 	sd_buf = TALLOC_ZERO_P(p->mem_ctx, struct sec_desc_buf);
 	if (!sd_buf) {
