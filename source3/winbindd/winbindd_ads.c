@@ -525,7 +525,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	}
 
 	sidstr = sid_binstring(sid);
-	asprintf(&ldap_exp, "(objectSid=%s)", sidstr);
+	if (asprintf(&ldap_exp, "(objectSid=%s)", sidstr) == -1) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 	rc = ads_search_retry(ads, &msg, ldap_exp, attrs);
 	free(ldap_exp);
 	free(sidstr);
