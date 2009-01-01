@@ -329,13 +329,13 @@ static int dotarbuf(int f, char *b, int n)
 
 		diff=tbufsiz-tp;
 		memcpy(tarbuf + tp, b, diff);
-		fail=fail && (1+write(f, tarbuf, tbufsiz));
+		fail=fail && (1+sys_write(f, tarbuf, tbufsiz));
 		n-=diff;
 		b+=diff;
 		tp=0;
 
 		while (n >= tbufsiz) {
-			fail=fail && (1 + write(f, b, tbufsiz));
+			fail=fail && (1 + sys_write(f, b, tbufsiz));
 			n-=tbufsiz;
 			b+=tbufsiz;
 		}
@@ -364,7 +364,10 @@ static void dozerobuf(int f, int n)
 
 	if (n+tp >= tbufsiz) {
 		memset(tarbuf+tp, 0, tbufsiz-tp);
-		write(f, tarbuf, tbufsiz);
+		if (sys_write(f, tarbuf, tbufsiz) != tbufsiz) {
+			DEBUG(0, ("dozerobuf: sys_write fail\n"));
+			return;
+		}
 		memset(tarbuf, 0, (tp+=n-tbufsiz));
 	} else {
 		memset(tarbuf+tp, 0, n);
@@ -408,8 +411,12 @@ static void dotareof(int f)
 
 	/* Could be a pipe, in which case S_ISREG should fail,
 		* and we should write out at full size */
-	if (tp > 0)
-		write(f, tarbuf, S_ISREG(stbuf.st_mode) ? tp : tbufsiz);
+	if (tp > 0) {
+		size_t towrite = S_ISREG(stbuf.st_mode) ? tp : tbufsiz;
+		if (sys_write(f, tarbuf, towrite) != towrite) {
+			DEBUG(0,("dotareof: sys_write fail\n"));
+		}
+	}
 }
 
 /****************************************************************************

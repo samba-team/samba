@@ -550,8 +550,7 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 		return NULL;
 	}
 
-	asprintf(&prompt, "Enter %s's password:", user);
-	if (!prompt) {
+	if (asprintf(&prompt, "Enter %s's password:", user) == -1) {
 		return NULL;
 	}
 

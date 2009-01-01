@@ -749,7 +749,9 @@ static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 	if (argv[1]) {
 		u1003.usri1003_password = argv[1];
 	} else {
-		asprintf(&prompt, "Enter new password for %s:", argv[0]);
+		if (asprintf(&prompt, "Enter new password for %s:", argv[0]) == -1) {
+			return -1;
+		}
 		u1003.usri1003_password = getpass(prompt);
 		SAFE_FREE(prompt);
 	}
@@ -5533,7 +5535,9 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	strupper_m(domain_name);
 
 	/* account name used at first is our domain's name with '$' */
-	asprintf(&acct_name, "%s$", lp_workgroup());
+	if (asprintf(&acct_name, "%s$", lp_workgroup()) == -1) {
+		return -1;
+	}
 	strupper_m(acct_name);
 
 	/*

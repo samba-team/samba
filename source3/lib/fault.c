@@ -119,7 +119,18 @@ void dump_core_setup(const char *progname)
 		SAFE_FREE(logbase);
 		return;
 	}
-	mkdir(corepath,0700);
+	if (mkdir(corepath,0700) == -1) {
+		if (errno != EEXIST) {
+			SAFE_FREE(corepath);
+			SAFE_FREE(logbase);
+			return;
+		}
+	}
+	if (chmod(corepath,0700) == -1) {
+		SAFE_FREE(corepath);
+		SAFE_FREE(logbase);
+		return;
+	}
 
 	SAFE_FREE(corepath);
 	if (asprintf(&corepath, "%s/cores/%s",
@@ -127,11 +138,26 @@ void dump_core_setup(const char *progname)
 		SAFE_FREE(logbase);
 		return;
 	}
-	mkdir(corepath,0700);
+	if (mkdir(corepath,0700) == -1) {
+		if (errno != EEXIST) {
+			SAFE_FREE(corepath);
+			SAFE_FREE(logbase);
+			return;
+		}
+	}
 
-	chown(corepath,getuid(),getgid());
-	chmod(corepath,0700);
+	if (chown(corepath,getuid(),getgid()) == -1) {
+		SAFE_FREE(corepath);
+		SAFE_FREE(logbase);
+		return;
+	}
+	if (chmod(corepath,0700) == -1) {
+		SAFE_FREE(corepath);
+		SAFE_FREE(logbase);
+		return;
+	}
 
+	SAFE_FREE(corepath);
 	SAFE_FREE(logbase);
 
 #ifdef HAVE_GETRLIMIT

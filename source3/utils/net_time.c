@@ -116,7 +116,9 @@ static int net_time_set(struct net_context *c, int argc, const char **argv)
 	/* yes, I know this is cheesy. Use "net time system" if you want to
 	   roll your own. I'm putting this in as it works on a large number
 	   of systems and the user has a choice in whether its used or not */
-	asprintf(&cmd, "/bin/date %s", systime(t));
+	if (asprintf(&cmd, "/bin/date %s", systime(t)) == -1) {
+		return -1;
+	}
 	result = system(cmd);
 	if (result)
 		d_fprintf(stderr, "%s failed.  Error was (%s)\n",

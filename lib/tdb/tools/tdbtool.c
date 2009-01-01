@@ -506,7 +506,9 @@ static int do_command(void)
             return 0;
 	case CMD_SYSTEM:
 	    /* Shell command */
-	    system(arg1);
+	    if (system(arg1) == -1) {
+		terror("system() call failed\n");
+	    }
 	    return 0;
 	case CMD_QUIT:
 	    return 1;
