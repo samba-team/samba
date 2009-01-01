@@ -84,7 +84,11 @@ bool torture_utable(int dummy)
 		d_printf("Failed to create valid.dat - %s", strerror(errno));
 		return False;
 	}
-	write(fd, valid, 0x10000);
+	if (write(fd, valid, 0x10000) != 0x10000) {
+		d_printf("Failed to create valid.dat - %s", strerror(errno));
+		close(fd);
+		return false;
+	}
 	close(fd);
 	d_printf("wrote valid.dat\n");
 
