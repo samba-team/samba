@@ -30,7 +30,9 @@ static int test_readdir_os2_delete_ret;
 static void cleanup(void)
 {
 	/* I'm a lazy bastard */
-	system("rm -rf " TESTDIR);
+	if (system("rm -rf " TESTDIR)) {
+		FAILED("system");
+	}
 	mkdir(TESTDIR, 0700) == 0 || FAILED("mkdir");
 }
 
@@ -118,7 +120,9 @@ int test_readdir_os2_delete(void)
 
 	rmdir(TESTDIR) == 0 || FAILED("rmdir");
 
-	system("rm -rf " TESTDIR);
+	if (system("rm -rf " TESTDIR) == -1) {
+		FAILED("system");
+	}
 
 	return test_readdir_os2_delete_ret;
 }

@@ -1221,7 +1221,9 @@ static bool run_tcon2_test(int dummy)
 
 	printf("starting tcon2 test\n");
 
-	asprintf(&service, "\\\\%s\\%s", host, share);
+	if (asprintf(&service, "\\\\%s\\%s", host, share) == -1) {
+		return false;
+	}
 
 	status = cli_raw_tcon(cli, service, password, "?????", &max_xmit, &cnum);
 
@@ -5071,8 +5073,13 @@ static bool run_local_rbtree(int dummy)
 	for (i=0; i<1000; i++) {
 		char *key, *value;
 
-		asprintf(&key, "key%ld", random());
-		asprintf(&value, "value%ld", random());
+		if (asprintf(&key, "key%ld", random()) == -1) {
+			goto done;
+		}
+		if (asprintf(&value, "value%ld", random()) == -1) {
+			SAFE_FREE(key);
+			goto done;
+		}
 
 		if (!rbt_testval(db, key, value)) {
 			SAFE_FREE(key);
@@ -5081,7 +5088,10 @@ static bool run_local_rbtree(int dummy)
 		}
 
 		SAFE_FREE(value);
-		asprintf(&value, "value%ld", random());
+		if (asprintf(&value, "value%ld", random()) == -1) {
+			SAFE_FREE(key);
+			goto done;
+		}
 
 		if (!rbt_testval(db, key, value)) {
 			SAFE_FREE(key);
