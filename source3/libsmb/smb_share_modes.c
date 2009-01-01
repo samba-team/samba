@@ -92,16 +92,16 @@ int smb_share_mode_db_close(struct smbdb_ctx *db_ctx)
 	return ret;
 }
 
-static TDB_DATA get_locking_key(uint64_t dev, uint64_t ino)
+static TDB_DATA get_locking_key(struct locking_key *lk, uint64_t dev,
+				uint64_t ino)
 {
-	static struct locking_key lk;
 	TDB_DATA ld;
 
-	memset(&lk, '\0', sizeof(struct locking_key));
-	lk.dev = (SMB_DEV_T)dev;
-	lk.inode = (SMB_INO_T)ino;
-	ld.dptr = (uint8 *)&lk;
-	ld.dsize = sizeof(lk);
+	memset(lk, '\0', sizeof(*lk));
+	lk->dev = (SMB_DEV_T)dev;
+	lk->inode = (SMB_INO_T)ino;
+	ld.dptr = (uint8 *)lk;
+	ld.dsize = sizeof(*lk);
 	return ld;
 }
 
@@ -113,14 +113,17 @@ int smb_lock_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino)
 {
-	return tdb_chainlock(db_ctx->smb_tdb, get_locking_key(dev, ino));
+	struct locking_key lk;
+	return tdb_chainlock(db_ctx->smb_tdb, get_locking_key(&lk, dev, ino));
 }
 
 int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
                                 uint64_t dev,
                                 uint64_t ino)
 {
-	return tdb_chainunlock(db_ctx->smb_tdb, get_locking_key(dev, ino));
+	struct locking_key lk;
+	return tdb_chainunlock(db_ctx->smb_tdb,
+			       get_locking_key(&lk, dev, ino));
 }
 
 /*
@@ -172,6 +175,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 				struct smb_share_mode_entry **pp_list,
 				unsigned char *p_delete_on_close)
 {
+	struct locking_key lk;
 	TDB_DATA db_data;
 	struct smb_share_mode_entry *list = NULL;
 	int num_share_modes = 0;
@@ -183,7 +187,7 @@ int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 	*pp_list = NULL;
 	*p_delete_on_close = 0;
 
-	db_data = tdb_fetch(db_ctx->smb_tdb, get_locking_key(dev, ino));
+	db_data = tdb_fetch(db_ctx->smb_tdb, get_locking_key(&lk, dev, ino));
 	if (!db_data.dptr) {
 		return 0;
 	}
@@ -258,7 +262,8 @@ int smb_create_share_mode_entry_ex(struct smbdb_ctx *db_ctx,
 				const char *filename) /* Must be relative utf8 path. */
 {
 	TDB_DATA db_data;
-	TDB_DATA locking_key =  get_locking_key(dev, ino);
+	struct locking_key lk;
+	TDB_DATA locking_key =  get_locking_key(&lk, dev, ino);
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
@@ -371,7 +376,8 @@ int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 				const struct smb_share_mode_entry *del_entry)
 {
 	TDB_DATA db_data;
-	TDB_DATA locking_key =  get_locking_key(dev, ino);
+	struct locking_key lk;
+	TDB_DATA locking_key =  get_locking_key(&lk, dev, ino);
 	int orig_num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
@@ -473,7 +479,8 @@ int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 				const struct smb_share_mode_entry *new_entry)
 {
 	TDB_DATA db_data;
-	TDB_DATA locking_key =  get_locking_key(dev, ino);
+	struct locking_key lk;
+	TDB_DATA locking_key =  get_locking_key(&lk, dev, ino);
 	int num_share_modes = 0;
 	struct locking_data *ld = NULL; /* internal samba db state. */
 	struct share_mode_entry *shares = NULL;
