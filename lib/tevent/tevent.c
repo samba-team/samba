@@ -65,7 +65,7 @@ struct event_ops_list {
 
 /* list of registered event backends */
 static struct event_ops_list *event_backends = NULL;
-static char *event_default_backend = NULL;
+static char *tevent_default_backend = NULL;
 
 /*
   register an events backend
@@ -94,10 +94,11 @@ bool event_register_backend(const char *name, const struct event_ops *ops)
 /*
   set the default event backend
  */
-void event_set_default_backend(const char *backend)
+void tevent_set_default_backend(const char *backend)
 {
-	if (event_default_backend) free(event_default_backend);
-	event_default_backend = strdup(backend);
+	talloc_free(tevent_default_backend);
+	tevent_default_backend = talloc_strdup(talloc_autofree_context(),
+					       backend);
 }
 
 /*
@@ -177,7 +178,7 @@ struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char
 	event_backend_init();
 
 	if (name == NULL) {
-		name = event_default_backend;
+		name = tevent_default_backend;
 	}
 	if (name == NULL) {
 		name = "standard";
