@@ -183,13 +183,19 @@ sub HeaderUnion($$;$)
 	return if (not defined($union->{ELEMENTS}));
 	pidl " {\n";
 	$tab_depth++;
+	my $needed = 0;
 	foreach my $e (@{$union->{ELEMENTS}}) {
 		if ($e->{TYPE} ne "EMPTY") {
 			if (! defined $done{$e->{NAME}}) {
 				HeaderElement($e);
 			}
 			$done{$e->{NAME}} = 1;
+			$needed++;
 		}
+	}
+	if (!$needed) {
+		# sigh - some compilers don't like empty structures
+		pidl tabs()."int _dummy_element;\n";
 	}
 	$tab_depth--;
 	pidl "}";
