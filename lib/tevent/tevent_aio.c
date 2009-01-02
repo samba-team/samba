@@ -30,12 +30,13 @@
   this is _very_ experimental code
 */
 
-#include "system/filesys.h"
 #include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
+#include "system/select.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
-#include <sys/epoll.h>
 #include <libaio.h>
 
 #define MAX_AIO_QUEUE_DEPTH	100

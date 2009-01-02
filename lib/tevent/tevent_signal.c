@@ -19,10 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <signal.h>
 #include "replace.h"
 #include "system/filesys.h"
-#include "system/select.h"
+#include "system/wait.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"

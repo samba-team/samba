@@ -20,11 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <sys/time.h>
-#include <time.h>
 #include "replace.h"
-#include "system/filesys.h"
-#include "system/select.h"
+#include "system/time.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"

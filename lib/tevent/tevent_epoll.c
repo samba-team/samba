@@ -23,10 +23,10 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "system/select.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
-#include <sys/epoll.h>
 
 struct epoll_event_context {
 	/* a pointer back to the generic event_context */
