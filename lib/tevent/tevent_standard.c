@@ -588,7 +588,7 @@ static int std_event_loop_wait(struct tevent_context *ev)
 	return std_ev->exit_code;
 }
 
-static const struct event_ops std_event_ops = {
+static const struct tevent_ops std_event_ops = {
 	.context_init	= std_event_context_init,
 	.add_fd		= std_event_add_fd,
 	.get_fd_flags	= std_event_get_fd_flags,
@@ -600,8 +600,8 @@ static const struct event_ops std_event_ops = {
 };
 
 
-bool events_standard_init(void)
+bool tevent_standard_init(void)
 {
-	return event_register_backend("standard", &std_event_ops);
+	return tevent_register_backend("standard", &std_event_ops);
 }
 

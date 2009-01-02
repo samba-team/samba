@@ -132,7 +132,7 @@ struct tevent_context {
 };
 
 
-bool event_register_backend(const char *name, const struct tevent_ops *ops);
+bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
 bool ev_timeval_is_zero(const struct timeval *tv);
 struct tevent_timer *common_event_add_timed(struct tevent_context *,
@@ -151,11 +151,11 @@ struct tevent_signal *common_event_add_signal(struct tevent_context *ev,
 int common_event_check_signal(struct tevent_context *ev);
 
 
-bool events_standard_init(void);
-bool events_select_init(void);
+bool tevent_standard_init(void);
+bool tevent_select_init(void);
 #if HAVE_EVENTS_EPOLL
-bool events_epoll_init(void);
+bool tevent_epoll_init(void);
 #endif
 #if HAVE_LINUX_AIO
-bool events_aio_init(void);
+bool tevent_aio_init(void);
 #endif

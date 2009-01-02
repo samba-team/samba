@@ -70,7 +70,7 @@ static char *tevent_default_backend = NULL;
 /*
   register an events backend
 */
-bool event_register_backend(const char *name, const struct tevent_ops *ops)
+bool tevent_register_backend(const char *name, const struct tevent_ops *ops)
 {
 	struct tevent_ops_list *e;
 
@@ -106,13 +106,13 @@ void tevent_set_default_backend(const char *backend)
 */
 static void tevent_backend_init(void)
 {
-	events_select_init();
-	events_standard_init();
+	tevent_select_init();
+	tevent_standard_init();
 #if HAVE_EVENTS_EPOLL
-	events_epoll_init();
+	tevent_epoll_init();
 #endif
 #if HAVE_LINUX_AIO
-	events_aio_init();
+	tevent_aio_init();
 #endif
 }
 

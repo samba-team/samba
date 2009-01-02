@@ -284,7 +284,7 @@ static int select_event_loop_wait(struct tevent_context *ev)
 	return select_ev->exit_code;
 }
 
-static const struct event_ops select_event_ops = {
+static const struct tevent_ops select_event_ops = {
 	.context_init	= select_event_context_init,
 	.add_fd		= select_event_add_fd,
 	.get_fd_flags	= select_event_get_fd_flags,
@@ -295,8 +295,7 @@ static const struct event_ops select_event_ops = {
 	.loop_wait	= select_event_loop_wait,
 };
 
-bool events_select_init(void)
+bool tevent_select_init(void)
 {
-	return event_register_backend("select", &select_event_ops);
+	return tevent_register_backend("select", &select_event_ops);
 }
-

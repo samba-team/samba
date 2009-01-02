@@ -465,7 +465,7 @@ static int epoll_event_loop_wait(struct tevent_context *ev)
 	return 0;
 }
 
-static const struct event_ops epoll_event_ops = {
+static const struct tevent_ops epoll_event_ops = {
 	.context_init	= epoll_event_context_init,
 	.add_fd		= epoll_event_add_fd,
 	.get_fd_flags	= epoll_event_get_fd_flags,
@@ -476,7 +476,7 @@ static const struct event_ops epoll_event_ops = {
 	.loop_wait	= epoll_event_loop_wait,
 };
 
-bool events_epoll_init(void)
+bool tevent_epoll_init(void)
 {
-	return event_register_backend("epoll", &epoll_event_ops);
+	return tevent_register_backend("epoll", &epoll_event_ops);
 }

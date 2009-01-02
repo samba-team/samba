@@ -549,7 +549,7 @@ static struct aio_event *aio_event_add_aio(struct tevent_context *ev,
 	return ae;
 }
 
-static const struct event_ops aio_event_ops = {
+static const struct tevent_ops aio_event_ops = {
 	.context_init	= aio_event_context_init,
 	.add_fd		= aio_event_add_fd,
 	.add_aio        = aio_event_add_aio,
@@ -561,8 +561,8 @@ static const struct event_ops aio_event_ops = {
 	.loop_wait	= aio_event_loop_wait,
 };
 
-bool events_aio_init(void)
+bool tevent_aio_init(void)
 {
-	return event_register_backend("aio", &aio_event_ops);
+	return tevent_register_backend("aio", &aio_event_ops);
 }
 
