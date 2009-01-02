@@ -78,6 +78,7 @@ static bool showacls = false;
 bool lowercase = false;
 
 static struct sockaddr_storage dest_ss;
+static char dest_ss_str[INET6_ADDRSTRLEN];
 
 #define SEPARATORS " \t\n\r"
 
@@ -4043,7 +4044,8 @@ static int process_command_string(const char *cmd_in)
 	/* establish the connection if not already */
 
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost,
+		cli = cli_cm_open(talloc_tos(), NULL,
+				have_ip ? dest_ss_str : desthost,
 				service, true, smb_encrypt);
 		if (!cli) {
 			return 1;
@@ -4508,7 +4510,8 @@ static int process(const char *base_directory)
 	int rc = 0;
 
 	cli = cli_cm_open(talloc_tos(), NULL,
-			desthost, service, true, smb_encrypt);
+			have_ip ? dest_ss_str : desthost,
+			service, true, smb_encrypt);
 	if (!cli) {
 		return 1;
 	}
@@ -4586,7 +4589,8 @@ static int do_tar_op(const char *base_directory)
 	/* do we already have a connection? */
 	if (!cli) {
 		cli = cli_cm_open(talloc_tos(), NULL,
-			desthost, service, true, smb_encrypt);
+			have_ip ? dest_ss_str : desthost,
+			service, true, smb_encrypt);
 		if (!cli)
 			return 1;
 	}
@@ -4792,8 +4796,7 @@ static int do_message_op(struct user_auth_info *auth_info)
 					exit(1);
 				}
 				have_ip = true;
-
-				cli_cm_set_dest_ss(&dest_ss);
+				print_sockaddr(dest_ss_str, sizeof(dest_ss_str), &dest_ss);
 			}
 			break;
 		case 'E':
