@@ -1,12 +1,9 @@
-                   ================================
-                   Release Notes for Samba 3.3.0rc2
-			  December, 15 2008
-                   ================================
+                   =============================
+                   Release Notes for Samba 3.3.0
+			  January, 05 2009
+                   =============================
 
-This is the second release candidate of Samba 3.3.0.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
+This is the first stable release of Samba 3.3.0.
 
 Major enhancements in Samba 3.3.0 include:
 
@@ -183,82 +180,83 @@ smb.conf changes
     winbind reconnect delay		New		30
 
 
-Changes since 3.3.0rc1:
-------------------------
+Changes since 3.3.0rc2:
+-----------------------
 
 
 o   Jeremy Allison <jra@samba.org>
-    * BUG 1254: Fix "write list" in setups using "security = share".
-    * BUG 5937: Fix filenames with "*" char hiding other files.
-    * BUG 5953: Fix segfaults in smbclient.
-    * Fix usrmgr opening a user object as non-root.
+    * BUG 5979: Fix level 2 oplocks being granted improperly.
+    * BUG 5980: Race condition when granting level2 oplocks can cause break
+      notify to be missed.
+    * BUG 5986: Editing a stream is broken (rename problems).
+    * BUG 5990: Strict allocate should be checked before ftruncate.
+    * Fix gcc 4.3.2 warnings.
+    * Fix more asprintf errors and error code paths.
 
 
 o   Michael Adam <obnox@samba.org>
-    * BUG 3661: Add support for trusted domains to idmap_ad.
-    * Fix default backend handling for ad backends.
-    * Fix potential segfault in vfs_tsmsm.
-    * Fix several RHEL CTDB packaging issues.
+    * Fix build of pam_winbind.so on older Linux systems.
+    * Packaging RHEL-CTDB: Fix build of [u]mount.cifs.
+    * Fix uid_to_sid mapping when the idmap cache is empty.
+    * Remove passd check from idmap_backends_unixid_to_sid().
 
 
-o   Günther Deschner <gd@samba.org>
-    * BUG 5957: Do not abort rename process on valid rename script.
-    * Fix various potential memleaks in samr_SetUserInfo.
-    * Fix access bits in netapi.
+o   Kai Blin <kai@samba.org>
+    * BUG 5953: Fix smbclient crashes.
 
 
-o   Steve French <stevef@smf-t60p.smfdom>
-    * BUG 5934: Use USER environment in mount.cifs when no user is specified.
-    * variable
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix "allow trusted domain" so it disables trusted domains.
 
 
-o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
-    * BUG 5688: LPQ process is orphaned if socket address parameter is invalid.
-    * Vars for signals must be volatile sig_atomic_t.
+o   SATOH Fumiyasu <fumiyas@osstech.jp>
+    * Fix gmem->numgids and gmem->maxgids breakage on Solaris 64-bit.
+    * Fix SIGBUS on non-x86 CPUs in libsmbclient.
+    * Fix a compile-time warning.
 
 
-o   Henning Henkel <henning.henkel@fh-furtwangen.de>
-    * BUG 5929: Fix build of vfs_prealloc with option --with-cluster-support and
-      GPFS.
+o   Holger Hetterich <hhetter@novell.com>
+    * Add a simple tdb integrity check to tdbtool.
 
 
-o   Tomasz Krasuski <kr0tki@poczta.onet.pl>
-    * BUG 5928: Fix 'testparm --version'.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Allow mounts to ipv6 capable servers in mount.cifs.
+o   Björn Jacke <bj@sernet.de>
+    * Correct the description of the "ldap timeout" parameter.
 
 
 o   Volker Lendecke <vl@samba.org>
-    * Fix crash bug when freeing a non-malloc'ed buffer if the client sends a
-      non-encrypted packet with the crypto state set.
-    * Fix error code when smbclient puts a file over an existing directory.
-    * Pass the get_real_filename operation through the VFS.
+    * BUG 5913: Fix build error with at least GCC 4.2.2.
+    * BUG 5933: Fix incrementing/decrementing of num_validated_vuids.
+    * BUG 5953: Make cli_send_smb_direct_writeX use writev.
+    * BUG 5969: Optimize smbclient put command.
+    * Fix a spinning smbd when printing.
+    * Fix a memory leak in cups_pull_comment_location.
+    * Fix a valgrind error.
+    * Fix a "ignoring function call result" warning.
+    * Fix some C++ warnings.
+    * Fix an ancient uninitialized variable read.
 
 
 o   Stefan Metzmacher <metze@samba.org>
-    * BUG 5749: Re-set acctflags while joining.
-    * Fix several issues concerning Alternate Data Streams.
-    * Fix valgrind bug lp_parm_const_string().
-    * Fix setting of trust passwords using 'net rpc trustdom add'.
-    * Correctly detect if the current dc is the closest one.
+    * net_status: Use dbwrap to open sessionid.tdb.
+    * Fix dbwrap_store_uint32() to match dbwrap_store_int32().
+    * Make marshalling struct samu from and to a buffer more generic.
+    * Store the next rid counter in passdb.tdb instead of winbind_idmap.tdb.
+    * Register the client connection via CTDB_CONTROL_TCP_ADD.
+    * Don't need to call messaging_reinit() twice.
+
+
+o   Lars Müller <lars@samba.org>
+    * Tweak with pam defines of older Linux versions.
 
 
 o   Tim Prouty <tprouty@samba.org>
-    * Fix a delete on close divergence from windows.
+    * Fix stream marshalling to return the correct streaminfo status.
 
 
-o   Dan Sledz <dsledz@isilon.com>
-    * Fix logging to syslog.
-
-
-o   Yasuma Takeda <yasuma@osstech.co.jp>
-    * BUG 5944: Fix starting of nmbd with "socket address" set to "".
-
-
-o   Bo Yang <boyang@novell.com>
-    * Fix script installmo.sh when no .po file exists.
+o   Karolin Seeger <kseeger@samba.org>
+    * Change default value of "ldap ssl" to "start tls".
+    * Update version number in the manpages.
+    * Fix several small issues and typos in the manpages.
 
 
 ######################################################################
