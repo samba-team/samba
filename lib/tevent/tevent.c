@@ -45,7 +45,7 @@
   'struct tevent_context' that you use in all subsequent calls.
 
   After that you can add/remove events that you are interested in
-  using event_add_*() and talloc_free()
+  using tevent_add_*() and talloc_free()
 
   Finally, you call tevent_loop_wait_once() to block waiting for one of the
   events to occor or tevent_loop_wait() which will loop
@@ -208,12 +208,17 @@ struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx)
   add a fd based event
   return NULL on failure (memory allocation error)
 
-  if flags contains EVENT_FD_AUTOCLOSE then the fd will be closed when
+  if flags contains TEVENT_FD_AUTOCLOSE then the fd will be closed when
   the returned fd_event context is freed
 */
-struct tevent_fd *event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-			      int fd, uint16_t flags, event_fd_handler_t handler,
-			      void *private_data)
+struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
+				 TALLOC_CTX *mem_ctx,
+				 int fd,
+				 uint16_t flags,
+				 tevent_fd_handler_t handler,
+				 void *private_data,
+				 const char *handler_name,
+				 const char *location)
 {
 	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data);
 }
@@ -221,11 +226,13 @@ struct tevent_fd *event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
 /*
   add a disk aio event
 */
-struct aio_event *event_add_aio(struct tevent_context *ev,
-				TALLOC_CTX *mem_ctx,
-				struct iocb *iocb,
-				event_aio_handler_t handler,
-				void *private_data)
+struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
+				   TALLOC_CTX *mem_ctx,
+				   struct iocb *iocb,
+				   tevent_aio_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location)
 {
 	if (ev->ops->add_aio == NULL) return NULL;
 	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data);
@@ -250,13 +257,16 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 }
 
 /*
-  add a timed event
+  add a timer event
   return NULL on failure
 */
-struct tevent_timer *event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-				    struct timeval next_event, 
-				    event_timed_handler_t handler, 
-				    void *private_data)
+struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       struct timeval next_event,
+				       tevent_timer_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location)
 {
 	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data);
 }
@@ -268,11 +278,14 @@ struct tevent_timer *event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_
 
   return NULL on failure
 */
-struct signal_event *event_add_signal(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-				      int signum,
-				      int sa_flags,
-				      event_signal_handler_t handler, 
-				      void *private_data)
+struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
+					 TALLOC_CTX *mem_ctx,
+					 int signum,
+					 int sa_flags,
+					 tevent_signal_handler_t handler,
+					 void *private_data,
+					 const char *handler_name,
+					 const char *location)
 {
 	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data);
 }

@@ -51,30 +51,52 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const cha
 const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
 void tevent_set_default_backend(const char *backend);
 
-struct tevent_fd *tevent_add_fd(struct tevent_context *ev,
-				TALLOC_CTX *mem_ctx,
-				int fd, uint16_t flags,
-				tevent_fd_handler_t handler,
-				void *private_data);
+struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
+				 TALLOC_CTX *mem_ctx,
+				 int fd,
+				 uint16_t flags,
+				 tevent_fd_handler_t handler,
+				 void *private_data,
+				 const char *handler_name,
+				 const char *location);
+#define tevent_add_fd(ev, mem_ctx, fd, flags, handler, private_data) \
+	_tevent_add_fd(ev, mem_ctx, fd, flags, handler, private_data, \
+		       #handler, __location__)
 
-struct tevent_timer *tevent_add_timer(struct tevent_context *ev,
-				      TALLOC_CTX *mem_ctx,
-				      struct timeval next_event,
-				      tevent_timer_handler_t handler,
-				      void *private_data);
+struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       struct timeval next_event,
+				       tevent_timer_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location);
+#define tevent_add_timer(ev, mem_ctx, next_event, handler, private_data) \
+	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
+			  #handler, __location__);
 
-struct tevent_signal *tevent_add_signal(struct tevent_context *ev,
-					TALLOC_CTX *mem_ctx,
-					int signum, int sa_flags,
-					tevent_signal_handler_t handler,
-					void *private_data);
+struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
+					 TALLOC_CTX *mem_ctx,
+					 int signum,
+					 int sa_flags,
+					 tevent_signal_handler_t handler,
+					 void *private_data,
+					 const char *handler_name,
+					 const char *location);
+#define tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data) \
+	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
+			   #handler, __location__)
 
 struct iocb;
-struct tevent_aio *tevent_add_aio(struct tevent_context *ev,
-				  TALLOC_CTX *mem_ctx,
-				  struct iocb *iocb,
-				  tevent_aio_handler_t handler,
-				  void *private_data);
+struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
+				   TALLOC_CTX *mem_ctx,
+				   struct iocb *iocb,
+				   tevent_aio_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location);
+#define tevent_add_aio(ev, mem_ctx, iocb, handler, private_data) \
+	_tevent_add_aio(ev, mem_ctx, iocb, handler, private_data, \
+			#handler, __location__);
 
 int tevent_loop_once(struct tevent_context *ev);
 int tevent_loop_wait(struct tevent_context *ev);
