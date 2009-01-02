@@ -51,7 +51,7 @@ struct registry_key *reg_common_open_file(const char *path,
 	struct registry_context *h = NULL;
 	WERROR error;
 
-	error = reg_open_hive(NULL, path, NULL, creds, ev_ctx, lp_ctx, &hive_root);
+	error = reg_open_hive(ev_ctx, path, NULL, creds, ev_ctx, lp_ctx, &hive_root);
 
 	if(!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to open '%s': %s \n",

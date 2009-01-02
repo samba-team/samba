@@ -55,13 +55,16 @@ static void print_tree(int level, struct registry_key *p,
 								      &keyname,
 								      NULL,
 								      NULL)); i++) {
-		SMB_ASSERT(strlen(keyname) > 0);
+
+	        SMB_ASSERT(strlen(keyname) > 0);
 		if (!W_ERROR_IS_OK(reg_open_key(mem_ctx, p, keyname, &subkey)))
-			continue;
+		        continue;
+
 		print_tree(level+1, subkey, (fullpath && strlen(name))?
-						talloc_asprintf(mem_ctx, "%s\\%s",
-								name, keyname):
-						keyname, fullpath, novals);
+                                               talloc_asprintf(mem_ctx, "%s\\%s",
+                                                               name, keyname):
+                                               keyname, fullpath, novals);
+		talloc_free(subkey);
 	}
 	talloc_free(mem_ctx);
 

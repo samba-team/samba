@@ -543,7 +543,7 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 
 	if (vk->data_length & 0x80000000) {
 		vk->data_length &=~0x80000000;
-		data->data = (uint8_t *)&vk->data_offset;
+		data->data = talloc_memdup(ctx, (uint8_t *)&vk->data_offset, vk->data_length);
 		data->length = vk->data_length;
 	} else {
 		*data = hbin_get(regf, vk->data_offset);
@@ -2045,7 +2045,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	struct tdr_pull *pull;
 	int i;
 
-	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
+	regf = (struct regf_data *)talloc_zero(parent_ctx, struct regf_data);
 
 	regf->iconv_convenience = iconv_convenience;
 
