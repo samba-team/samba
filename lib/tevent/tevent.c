@@ -233,7 +233,7 @@ struct aio_event *event_add_aio(struct tevent_context *ev,
 /*
   return the fd event flags
 */
-uint16_t event_get_fd_flags(struct tevent_fd *fde)
+uint16_t tevent_fd_get_flags(struct tevent_fd *fde)
 {
 	if (!fde) return 0;
 	return fde->event_ctx->ops->get_fd_flags(fde);
@@ -242,7 +242,7 @@ uint16_t event_get_fd_flags(struct tevent_fd *fde)
 /*
   set the fd event flags
 */
-void event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
+void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	if (!fde) return;
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
