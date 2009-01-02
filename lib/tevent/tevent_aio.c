@@ -80,8 +80,8 @@ struct tevent_aio {
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -148,7 +148,7 @@ static void epoll_add_event(struct aio_event_context *aio_ev, struct tevent_fd *
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -193,7 +193,7 @@ static void epoll_mod_event(struct aio_event_context *aio_ev, struct tevent_fd *
 	epoll_ctl(aio_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event);
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -201,8 +201,8 @@ static void epoll_mod_event(struct aio_event_context *aio_ev, struct tevent_fd *
 static void epoll_change_event(struct aio_event_context *aio_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (aio_ev->epoll_fd == -1) return;
 
@@ -328,10 +328,10 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 						epoll_del_event(aio_ev, fde);
 						continue;
 					}
-					flags |= EVENT_FD_READ;
+					flags |= TEVENT_FD_READ;
 				}
-				if (ep->events & EPOLLIN) flags |= EVENT_FD_READ;
-				if (ep->events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+				if (ep->events & EPOLLIN) flags |= TEVENT_FD_READ;
+				if (ep->events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 				if (flags) {
 					fde->handler(aio_ev->ev, fde, flags, fde->private_data);
 				}
@@ -400,7 +400,7 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
 
 	epoll_del_event(aio_ev, fde);
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}

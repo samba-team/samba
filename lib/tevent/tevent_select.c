@@ -103,7 +103,7 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
 	DLIST_REMOVE(select_ev->fd_events, fde);
 	select_ev->destruction_count++;
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -193,10 +193,10 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	/* setup any fd events */
 	for (fde = select_ev->fd_events; fde; fde = fde->next) {
-		if (fde->flags & EVENT_FD_READ) {
+		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
-		if (fde->flags & EVENT_FD_WRITE) {
+		if (fde->flags & TEVENT_FD_WRITE) {
 			FD_SET(fde->fd, &w_fds);
 		}
 	}
@@ -239,8 +239,8 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		for (fde = select_ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= EVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
+			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
 				if (destruction_count != select_ev->destruction_count) {

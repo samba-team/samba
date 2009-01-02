@@ -64,13 +64,13 @@ static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason
 }
 
 /*
-  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+  map from TEVENT_FD_* to EPOLLIN/EPOLLOUT
 */
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -153,7 +153,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -201,7 +201,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -209,8 +209,8 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_change_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (epoll_ev->epoll_fd == -1) return;
 
@@ -293,7 +293,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
 			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
 			/*
-			 * if we only wait for EVENT_FD_WRITE, we should not tell the
+			 * if we only wait for TEVENT_FD_WRITE, we should not tell the
 			 * event handler about it, and remove the epoll_event,
 			 * as we only report errors when waiting for read events,
 			 * to match the select() behavior
@@ -302,10 +302,10 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 				epoll_del_event(epoll_ev, fde);
 				continue;
 			}
-			flags |= EVENT_FD_READ;
+			flags |= TEVENT_FD_READ;
 		}
-		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
-		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
 			if (destruction_count != epoll_ev->destruction_count) {
@@ -358,7 +358,7 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 		
 	epoll_del_event(epoll_ev, fde);
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}

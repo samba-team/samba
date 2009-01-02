@@ -80,13 +80,13 @@ static void epoll_fallback_to_select(struct std_event_context *std_ev, const cha
 }
 
 /*
-  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+  map from TEVENT_FD_* to EPOLLIN/EPOLLOUT
 */
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -166,7 +166,7 @@ static void epoll_add_event(struct std_event_context *std_ev, struct tevent_fd *
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -209,7 +209,7 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct tevent_fd *
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -217,8 +217,8 @@ static void epoll_mod_event(struct std_event_context *std_ev, struct tevent_fd *
 static void epoll_change_event(struct std_event_context *std_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (std_ev->epoll_fd == -1) return;
 
@@ -301,7 +301,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
 			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
 			/*
-			 * if we only wait for EVENT_FD_WRITE, we should not tell the
+			 * if we only wait for TEVENT_FD_WRITE, we should not tell the
 			 * event handler about it, and remove the epoll_event,
 			 * as we only report errors when waiting for read events,
 			 * to match the select() behavior
@@ -310,10 +310,10 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 				epoll_del_event(std_ev, fde);
 				continue;
 			}
-			flags |= EVENT_FD_READ;
+			flags |= TEVENT_FD_READ;
 		}
-		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
-		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(std_ev->ev, fde, flags, fde->private_data);
 			if (destruction_count != std_ev->destruction_count) {
@@ -392,7 +392,7 @@ static int std_event_fd_destructor(struct tevent_fd *fde)
 
 	epoll_del_event(std_ev, fde);
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -489,10 +489,10 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 	/* setup any fd events */
 	for (fde = std_ev->fd_events; fde; fde = fde->next) {
-		if (fde->flags & EVENT_FD_READ) {
+		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
-		if (fde->flags & EVENT_FD_WRITE) {
+		if (fde->flags & TEVENT_FD_WRITE) {
 			FD_SET(fde->fd, &w_fds);
 		}
 	}
@@ -535,8 +535,8 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		for (fde = std_ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= EVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
+			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(std_ev->ev, fde, flags, fde->private_data);
 				if (destruction_count != std_ev->destruction_count) {
