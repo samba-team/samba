@@ -2045,7 +2045,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 	struct tdr_pull *pull;
 	int i;
 
-	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
+	regf = (struct regf_data *)talloc_zero(parent_ctx, struct regf_data);
 
 	regf->iconv_convenience = iconv_convenience;
 
