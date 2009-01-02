@@ -30,7 +30,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/network.h"
-#include "system/select.h" /* needed for HAVE_EVENTS_EPOLL */
+#include "system/select.h"
 #include "tevent.h"
 #include "tevent_util.h"
 #include "tevent_internal.h"
@@ -64,7 +64,7 @@ struct std_event_context {
 };
 
 /* use epoll if it is available */
-#if HAVE_EVENTS_EPOLL
+#if HAVE_EPOLL
 /*
   called when a epoll call fails, and we should fallback
   to using select

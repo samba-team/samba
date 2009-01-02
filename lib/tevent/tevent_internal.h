@@ -153,9 +153,9 @@ int common_event_check_signal(struct tevent_context *ev);
 
 bool tevent_standard_init(void);
 bool tevent_select_init(void);
-#if HAVE_EVENTS_EPOLL
+#ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
 #endif
-#if HAVE_LINUX_AIO
+#ifdef HAVE_LINUX_AIO
 bool tevent_aio_init(void);
 #endif

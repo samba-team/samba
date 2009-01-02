@@ -108,10 +108,10 @@ static void tevent_backend_init(void)
 {
 	tevent_select_init();
 	tevent_standard_init();
-#if HAVE_EVENTS_EPOLL
+#ifdef HAVE_EPOLL
 	tevent_epoll_init();
 #endif
-#if HAVE_LINUX_AIO
+#ifdef HAVE_LINUX_AIO
 	tevent_aio_init();
 #endif
 }
