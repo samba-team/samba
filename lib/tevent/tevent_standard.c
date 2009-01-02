@@ -266,14 +266,14 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 	}
 
 	if (std_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(std_ev->ev)) {
+	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
 
 	if (ret == -1 && errno == EINTR && std_ev->ev->num_signal_handlers) {
-		if (common_event_check_signal(std_ev->ev)) {
+		if (tevent_common_check_signal(std_ev->ev)) {
 			return 0;
 		}
 	}
@@ -285,7 +285,7 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(std_ev->ev);
+		tevent_common_loop_timer_delay(std_ev->ev);
 		return 0;
 	}
 
@@ -405,9 +405,11 @@ static int std_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *std_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					  int fd, uint16_t flags,
+					  tevent_fd_handler_t handler,
+					  void *private_data,
+					  const char *handler_name,
+					  const char *location)
 {
 	struct std_event_context *std_ev = talloc_get_type(ev->additional_data,
 							   struct std_event_context);
@@ -496,7 +498,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	}
 
 	if (std_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(std_ev->ev)) {
+	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
@@ -504,7 +506,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 	if (selrtn == -1 && errno == EINTR && 
 	    std_ev->ev->num_signal_handlers) {
-		common_event_check_signal(std_ev->ev);
+		tevent_common_check_signal(std_ev->ev);
 		return 0;
 	}
 
@@ -522,7 +524,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 
 	if (selrtn == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(std_ev->ev);
+		tevent_common_loop_timer_delay(std_ev->ev);
 		return 0;
 	}
 
@@ -556,7 +558,7 @@ static int std_event_loop_once(struct tevent_context *ev)
 		 					   struct std_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -593,8 +595,8 @@ static const struct tevent_ops std_event_ops = {
 	.add_fd		= std_event_add_fd,
 	.get_fd_flags	= std_event_get_fd_flags,
 	.set_fd_flags	= std_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= std_event_loop_once,
 	.loop_wait	= std_event_loop_wait,
 };

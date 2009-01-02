@@ -220,7 +220,8 @@ struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 				 const char *handler_name,
 				 const char *location)
 {
-	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data);
+	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data,
+			       handler_name, location);
 }
 
 /*
@@ -235,7 +236,8 @@ struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
 				   const char *location)
 {
 	if (ev->ops->add_aio == NULL) return NULL;
-	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data);
+	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data,
+				handler_name, location);
 }
 
 /*
@@ -268,7 +270,8 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 				       const char *handler_name,
 				       const char *location)
 {
-	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data);
+	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data,
+				  handler_name, location);
 }
 
 /*
@@ -287,7 +290,8 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 					 const char *handler_name,
 					 const char *location)
 {
-	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data);
+	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data,
+				   handler_name, location);
 }
 
 /*

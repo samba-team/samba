@@ -67,11 +67,11 @@ struct aio_event_context {
 	pid_t pid;
 };
 
-struct aio_event {
+struct tevent_aio {
 	struct tevent_context *event_ctx;
 	struct iocb iocb;
 	void *private_data;
-	event_aio_handler_t handler;
+	tevent_aio_handler_t handler;
 };
 
 /*
@@ -261,7 +261,7 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 	if (aio_ev->epoll_fd == -1) return -1;
 
 	if (aio_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(aio_ev->ev)) {
+	    tevent_common_check_signal(aio_ev->ev)) {
 		return 0;
 	}
 
@@ -279,14 +279,14 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 
 	if (ret == -EINTR) {
 		if (aio_ev->ev->num_signal_handlers) {
-			common_event_check_signal(aio_ev->ev);
+			tevent_common_check_signal(aio_ev->ev);
 		}
 		return 0;
 	}
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(aio_ev->ev);
+		tevent_common_loop_timer_delay(aio_ev->ev);
 		return 0;
 	}
 
@@ -297,8 +297,8 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 		switch (finished->aio_lio_opcode) {
 		case IO_CMD_PWRITE:
 		case IO_CMD_PREAD: {
-			struct aio_event *ae = talloc_get_type(finished->data, 
-							       struct aio_event);
+			struct tevent_aio *ae = talloc_get_type(finished->data, 
+							       struct tevent_aio);
 			if (ae) {
 				talloc_set_destructor(ae, NULL);
 				ae->handler(ae->event_ctx, ae, 
@@ -412,9 +412,11 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					  int fd, uint16_t flags,
+					  tevent_fd_handler_t handler,
+					  void *private_data,
+					  const char *handler_name,
+					  const char *location)
 {
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
@@ -430,6 +432,8 @@ static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX 
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -480,7 +484,7 @@ static int aio_event_loop_once(struct tevent_context *ev)
 		 					   struct aio_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -509,7 +513,7 @@ static int aio_event_loop_wait(struct tevent_context *ev)
 /*
   called when a disk IO event needs to be cancelled
 */
-static int aio_destructor(struct aio_event *ae)
+static int aio_destructor(struct tevent_aio *ae)
 {
 	struct tevent_context *ev = ae->event_ctx;
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
@@ -521,16 +525,18 @@ static int aio_destructor(struct aio_event *ae)
 }
 
 /* submit an aio disk IO event */
-static struct aio_event *aio_event_add_aio(struct tevent_context *ev, 
-					   TALLOC_CTX *mem_ctx,
-					   struct iocb *iocb,
-					   event_aio_handler_t handler,
-					   void *private_data)
+static struct tevent_aio *aio_event_add_aio(struct tevent_context *ev, 
+					    TALLOC_CTX *mem_ctx,
+					    struct iocb *iocb,
+					    tevent_aio_handler_t handler,
+					    void *private_data,
+					    const char *handler_name,
+					    const char *location)
 {
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
 	struct iocb *iocbp;
-	struct aio_event *ae = talloc(mem_ctx?mem_ctx:ev, struct aio_event);
+	struct tevent_aio *ae = talloc(mem_ctx?mem_ctx:ev, struct tevent_aio);
 	if (ae == NULL) return NULL;
 
 	ae->event_ctx    = ev;
@@ -555,8 +561,8 @@ static const struct tevent_ops aio_event_ops = {
 	.add_aio        = aio_event_add_aio,
 	.get_fd_flags	= aio_event_get_fd_flags,
 	.set_fd_flags	= aio_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= aio_event_loop_once,
 	.loop_wait	= aio_event_loop_wait,
 };

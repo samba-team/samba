@@ -116,9 +116,11 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					     int fd, uint16_t flags,
+					     tevent_fd_handler_t handler,
+					     void *private_data,
+					     const char *handler_name,
+					     const char *location)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 							   struct select_event_context);
@@ -132,6 +134,8 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -198,7 +202,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	}
 
 	if (select_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(select_ev->ev)) {
+	    tevent_common_check_signal(select_ev->ev)) {
 		return 0;
 	}
 
@@ -206,7 +210,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	if (selrtn == -1 && errno == EINTR && 
 	    select_ev->ev->num_signal_handlers) {
-		common_event_check_signal(select_ev->ev);
+		tevent_common_check_signal(select_ev->ev);
 		return 0;
 	}
 
@@ -224,7 +228,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	if (selrtn == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(select_ev->ev);
+		tevent_common_loop_timer_delay(select_ev->ev);
 		return 0;
 	}
 
@@ -258,7 +262,7 @@ static int select_event_loop_once(struct tevent_context *ev)
 		 					   struct select_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -289,8 +293,8 @@ static const struct tevent_ops select_event_ops = {
 	.add_fd		= select_event_add_fd,
 	.get_fd_flags	= select_event_get_fd_flags,
 	.set_fd_flags	= select_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= select_event_loop_once,
 	.loop_wait	= select_event_loop_wait,
 };

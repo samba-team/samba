@@ -258,14 +258,14 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (epoll_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(epoll_ev->ev)) {
+	    tevent_common_check_signal(epoll_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
 
 	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
-		if (common_event_check_signal(epoll_ev->ev)) {
+		if (tevent_common_check_signal(epoll_ev->ev)) {
 			return 0;
 		}
 	}
@@ -277,7 +277,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(epoll_ev->ev);
+		tevent_common_loop_timer_delay(epoll_ev->ev);
 		return 0;
 	}
 
@@ -371,9 +371,11 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					    int fd, uint16_t flags,
+					    tevent_fd_handler_t handler,
+					    void *private_data,
+					    const char *handler_name,
+					    const char *location)
 {
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
@@ -389,6 +391,8 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -439,7 +443,7 @@ static int epoll_event_loop_once(struct tevent_context *ev)
 		 					   struct epoll_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -470,8 +474,8 @@ static const struct tevent_ops epoll_event_ops = {
 	.add_fd		= epoll_event_add_fd,
 	.get_fd_flags	= epoll_event_get_fd_flags,
 	.set_fd_flags	= epoll_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= epoll_event_loop_once,
 	.loop_wait	= epoll_event_loop_wait,
 };
