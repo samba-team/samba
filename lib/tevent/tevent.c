@@ -290,21 +290,3 @@ int event_loop_wait(struct tevent_context *ev)
 {
 	return ev->ops->loop_wait(ev);
 }
-
-/*
-  find an event context that is a parent of the given memory context,
-  or create a new event context as a child of the given context if
-  none is found
-
-  This should be used in preference to event_context_init() in places
-  where you would prefer to use the existing event context if possible
-  (which is most situations)
-*/
-struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
-{
-	struct tevent_context *ev = talloc_find_parent_bytype(mem_ctx, struct tevent_context);
-	if (ev == NULL) {		
-		ev = event_context_init(mem_ctx);
-	}
-	return ev;
-}
