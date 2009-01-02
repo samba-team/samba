@@ -41,7 +41,7 @@
      handler to get another event.
 
   To setup a set of events you first need to create a event_context
-  structure using the function event_context_init(); This returns a
+  structure using the function tevent_context_init(); This returns a
   'struct tevent_context' that you use in all subsequent calls.
 
   After that you can add/remove events that you are interested in
@@ -57,36 +57,36 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
-struct event_ops_list {
-	struct event_ops_list *next, *prev;
+struct tevent_ops_list {
+	struct tevent_ops_list *next, *prev;
 	const char *name;
-	const struct event_ops *ops;
+	const struct tevent_ops *ops;
 };
 
 /* list of registered event backends */
-static struct event_ops_list *event_backends = NULL;
+static struct tevent_ops_list *tevent_backends = NULL;
 static char *tevent_default_backend = NULL;
 
 /*
   register an events backend
 */
-bool event_register_backend(const char *name, const struct event_ops *ops)
+bool event_register_backend(const char *name, const struct tevent_ops *ops)
 {
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	for (e = event_backends; e != NULL; e = e->next) {
+	for (e = tevent_backends; e != NULL; e = e->next) {
 		if (0 == strcmp(e->name, name)) {
 			/* already registered, skip it */
 			return true;
 		}
 	}
 
-	e = talloc(talloc_autofree_context(), struct event_ops_list);
+	e = talloc(talloc_autofree_context(), struct tevent_ops_list);
 	if (e == NULL) return false;
 
 	e->name = name;
 	e->ops = ops;
-	DLIST_ADD(event_backends, e);
+	DLIST_ADD(tevent_backends, e);
 
 	return true;
 }
@@ -104,7 +104,7 @@ void tevent_set_default_backend(const char *backend)
 /*
   initialise backends if not already done
 */
-static void event_backend_init(void)
+static void tevent_backend_init(void)
 {
 	events_select_init();
 	events_standard_init();
@@ -119,14 +119,14 @@ static void event_backend_init(void)
 /*
   list available backends
 */
-const char **event_backend_list(TALLOC_CTX *mem_ctx)
+const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 {
 	const char **list = NULL;
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	event_backend_init();
+	tevent_backend_init();
 
-	for (e=event_backends;e;e=e->next) {
+	for (e=tevent_backends;e;e=e->next) {
 		list = ev_str_list_add(list, e->name);
 	}
 
@@ -144,10 +144,10 @@ const char **event_backend_list(TALLOC_CTX *mem_ctx)
   This function is for allowing third-party-applications to hook in gluecode
   to their own event loop code, so that they can make async usage of our client libs
 
-  NOTE: use event_context_init() inside of samba!
+  NOTE: use tevent_context_init() inside of samba!
 */
-static struct tevent_context *event_context_init_ops(TALLOC_CTX *mem_ctx, 
-						    const struct event_ops *ops)
+static struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
+						      const struct tevent_ops *ops)
 {
 	struct tevent_context *ev;
 	int ret;
@@ -171,11 +171,12 @@ static struct tevent_context *event_context_init_ops(TALLOC_CTX *mem_ctx,
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
+struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
+						  const char *name)
 {
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	event_backend_init();
+	tevent_backend_init();
 
 	if (name == NULL) {
 		name = tevent_default_backend;
@@ -184,9 +185,9 @@ struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char
 		name = "standard";
 	}
 
-	for (e=event_backends;e;e=e->next) {
+	for (e=tevent_backends;e;e=e->next) {
 		if (strcmp(name, e->name) == 0) {
-			return event_context_init_ops(mem_ctx, e->ops);
+			return tevent_context_init_ops(mem_ctx, e->ops);
 		}
 	}
 	return NULL;
@@ -198,9 +199,9 @@ struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct tevent_context *event_context_init(TALLOC_CTX *mem_ctx)
+struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx)
 {
-	return event_context_init_byname(mem_ctx, NULL);
+	return tevent_context_init_byname(mem_ctx, NULL);
 }
 
 /*
