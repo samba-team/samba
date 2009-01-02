@@ -30,12 +30,13 @@
   this is _very_ experimental code
 */
 
-#include "system/filesys.h"
 #include "replace.h"
+#include "system/filesys.h"
+#include "system/network.h"
+#include "system/select.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
-#include <sys/epoll.h>
 #include <libaio.h>
 
 #define MAX_AIO_QUEUE_DEPTH	100
@@ -66,11 +67,11 @@ struct aio_event_context {
 	pid_t pid;
 };
 
-struct aio_event {
+struct tevent_aio {
 	struct tevent_context *event_ctx;
 	struct iocb iocb;
 	void *private_data;
-	event_aio_handler_t handler;
+	tevent_aio_handler_t handler;
 };
 
 /*
@@ -79,8 +80,8 @@ struct aio_event {
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -113,7 +114,8 @@ static void epoll_check_reopen(struct aio_event_context *aio_ev)
 	close(aio_ev->epoll_fd);
 	aio_ev->epoll_fd = epoll_create(MAX_AIO_QUEUE_DEPTH);
 	if (aio_ev->epoll_fd == -1) {
-		ev_debug(aio_ev->ev, EV_DEBUG_FATAL, "Failed to recreate epoll handle after fork\n");
+		tevent_debug(aio_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	aio_ev->pid = getpid();
@@ -146,7 +148,7 @@ static void epoll_add_event(struct aio_event_context *aio_ev, struct tevent_fd *
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -191,7 +193,7 @@ static void epoll_mod_event(struct aio_event_context *aio_ev, struct tevent_fd *
 	epoll_ctl(aio_ev->epoll_fd, EPOLL_CTL_MOD, fde->fd, &event);
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -199,8 +201,8 @@ static void epoll_mod_event(struct aio_event_context *aio_ev, struct tevent_fd *
 static void epoll_change_event(struct aio_event_context *aio_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (aio_ev->epoll_fd == -1) return;
 
@@ -260,7 +262,7 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 	if (aio_ev->epoll_fd == -1) return -1;
 
 	if (aio_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(aio_ev->ev)) {
+	    tevent_common_check_signal(aio_ev->ev)) {
 		return 0;
 	}
 
@@ -278,14 +280,14 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 
 	if (ret == -EINTR) {
 		if (aio_ev->ev->num_signal_handlers) {
-			common_event_check_signal(aio_ev->ev);
+			tevent_common_check_signal(aio_ev->ev);
 		}
 		return 0;
 	}
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(aio_ev->ev);
+		tevent_common_loop_timer_delay(aio_ev->ev);
 		return 0;
 	}
 
@@ -296,8 +298,8 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 		switch (finished->aio_lio_opcode) {
 		case IO_CMD_PWRITE:
 		case IO_CMD_PREAD: {
-			struct aio_event *ae = talloc_get_type(finished->data, 
-							       struct aio_event);
+			struct tevent_aio *ae = talloc_get_type(finished->data, 
+							       struct tevent_aio);
 			if (ae) {
 				talloc_set_destructor(ae, NULL);
 				ae->handler(ae->event_ctx, ae, 
@@ -326,10 +328,10 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 						epoll_del_event(aio_ev, fde);
 						continue;
 					}
-					flags |= EVENT_FD_READ;
+					flags |= TEVENT_FD_READ;
 				}
-				if (ep->events & EPOLLIN) flags |= EVENT_FD_READ;
-				if (ep->events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+				if (ep->events & EPOLLIN) flags |= TEVENT_FD_READ;
+				if (ep->events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 				if (flags) {
 					fde->handler(aio_ev->ev, fde, flags, fde->private_data);
 				}
@@ -398,7 +400,7 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
 
 	epoll_del_event(aio_ev, fde);
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -411,9 +413,11 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					  int fd, uint16_t flags,
+					  tevent_fd_handler_t handler,
+					  void *private_data,
+					  const char *handler_name,
+					  const char *location)
 {
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
@@ -429,6 +433,8 @@ static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX 
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -479,7 +485,7 @@ static int aio_event_loop_once(struct tevent_context *ev)
 		 					   struct aio_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -508,7 +514,7 @@ static int aio_event_loop_wait(struct tevent_context *ev)
 /*
   called when a disk IO event needs to be cancelled
 */
-static int aio_destructor(struct aio_event *ae)
+static int aio_destructor(struct tevent_aio *ae)
 {
 	struct tevent_context *ev = ae->event_ctx;
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
@@ -520,16 +526,18 @@ static int aio_destructor(struct aio_event *ae)
 }
 
 /* submit an aio disk IO event */
-static struct aio_event *aio_event_add_aio(struct tevent_context *ev, 
-					   TALLOC_CTX *mem_ctx,
-					   struct iocb *iocb,
-					   event_aio_handler_t handler,
-					   void *private_data)
+static struct tevent_aio *aio_event_add_aio(struct tevent_context *ev, 
+					    TALLOC_CTX *mem_ctx,
+					    struct iocb *iocb,
+					    tevent_aio_handler_t handler,
+					    void *private_data,
+					    const char *handler_name,
+					    const char *location)
 {
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
 	struct iocb *iocbp;
-	struct aio_event *ae = talloc(mem_ctx?mem_ctx:ev, struct aio_event);
+	struct tevent_aio *ae = talloc(mem_ctx?mem_ctx:ev, struct tevent_aio);
 	if (ae == NULL) return NULL;
 
 	ae->event_ctx    = ev;
@@ -548,20 +556,20 @@ static struct aio_event *aio_event_add_aio(struct tevent_context *ev,
 	return ae;
 }
 
-static const struct event_ops aio_event_ops = {
+static const struct tevent_ops aio_event_ops = {
 	.context_init	= aio_event_context_init,
 	.add_fd		= aio_event_add_fd,
 	.add_aio        = aio_event_add_aio,
 	.get_fd_flags	= aio_event_get_fd_flags,
 	.set_fd_flags	= aio_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= aio_event_loop_once,
 	.loop_wait	= aio_event_loop_wait,
 };
 
-bool events_aio_init(void)
+bool tevent_aio_init(void)
 {
-	return event_register_backend("aio", &aio_event_ops);
+	return tevent_register_backend("aio", &aio_event_ops);
 }
 

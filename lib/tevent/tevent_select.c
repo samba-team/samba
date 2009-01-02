@@ -103,7 +103,7 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
 	DLIST_REMOVE(select_ev->fd_events, fde);
 	select_ev->destruction_count++;
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
+	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -116,9 +116,11 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					     int fd, uint16_t flags,
+					     tevent_fd_handler_t handler,
+					     void *private_data,
+					     const char *handler_name,
+					     const char *location)
 {
 	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
 							   struct select_event_context);
@@ -132,6 +134,8 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 	fde->flags		= flags;
 	fde->handler		= handler;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -189,16 +193,16 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	/* setup any fd events */
 	for (fde = select_ev->fd_events; fde; fde = fde->next) {
-		if (fde->flags & EVENT_FD_READ) {
+		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
-		if (fde->flags & EVENT_FD_WRITE) {
+		if (fde->flags & TEVENT_FD_WRITE) {
 			FD_SET(fde->fd, &w_fds);
 		}
 	}
 
 	if (select_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(select_ev->ev)) {
+	    tevent_common_check_signal(select_ev->ev)) {
 		return 0;
 	}
 
@@ -206,7 +210,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 
 	if (selrtn == -1 && errno == EINTR && 
 	    select_ev->ev->num_signal_handlers) {
-		common_event_check_signal(select_ev->ev);
+		tevent_common_check_signal(select_ev->ev);
 		return 0;
 	}
 
@@ -216,15 +220,15 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-		ev_debug(select_ev->ev, EV_DEBUG_FATAL,
-			 "ERROR: EBADF on select_event_loop_once\n");
+		tevent_debug(select_ev->ev, TEVENT_DEBUG_FATAL,
+			     "ERROR: EBADF on select_event_loop_once\n");
 		select_ev->exit_code = EBADF;
 		return -1;
 	}
 
 	if (selrtn == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(select_ev->ev);
+		tevent_common_loop_timer_delay(select_ev->ev);
 		return 0;
 	}
 
@@ -235,8 +239,8 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		for (fde = select_ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
-			if (FD_ISSET(fde->fd, &r_fds)) flags |= EVENT_FD_READ;
-			if (FD_ISSET(fde->fd, &w_fds)) flags |= EVENT_FD_WRITE;
+			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
+			if (FD_ISSET(fde->fd, &w_fds)) flags |= TEVENT_FD_WRITE;
 			if (flags) {
 				fde->handler(select_ev->ev, fde, flags, fde->private_data);
 				if (destruction_count != select_ev->destruction_count) {
@@ -258,7 +262,7 @@ static int select_event_loop_once(struct tevent_context *ev)
 		 					   struct select_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -284,19 +288,18 @@ static int select_event_loop_wait(struct tevent_context *ev)
 	return select_ev->exit_code;
 }
 
-static const struct event_ops select_event_ops = {
+static const struct tevent_ops select_event_ops = {
 	.context_init	= select_event_context_init,
 	.add_fd		= select_event_add_fd,
 	.get_fd_flags	= select_event_get_fd_flags,
 	.set_fd_flags	= select_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= select_event_loop_once,
 	.loop_wait	= select_event_loop_wait,
 };
 
-bool events_select_init(void)
+bool tevent_select_init(void)
 {
-	return event_register_backend("select", &select_event_ops);
+	return tevent_register_backend("select", &select_event_ops);
 }
-

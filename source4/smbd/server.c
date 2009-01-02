@@ -266,7 +266,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 	umask(0);
 
 	DEBUG(0,("%s version %s started.\n", binary_name, SAMBA_VERSION_STRING));
-	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2008\n"));
+	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team 1992-2009\n"));
 
 	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4 || sizeof(uint64_t) < 8) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));

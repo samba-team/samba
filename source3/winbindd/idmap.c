@@ -735,6 +735,17 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 	maps[0] = id;
 	maps[1] = NULL;
 
+	/*
+	 * Always give passdb a chance first
+	 */
+
+	dom = idmap_init_passdb_domain(NULL);
+	if ((dom != NULL)
+	    && NT_STATUS_IS_OK(dom->methods->unixids_to_sids(dom, maps))
+	    && id->status == ID_MAPPED) {
+		return NT_STATUS_OK;
+	}
+
 	dom = idmap_find_domain(domname);
 	if (dom == NULL) {
 		return NT_STATUS_NONE_MAPPED;

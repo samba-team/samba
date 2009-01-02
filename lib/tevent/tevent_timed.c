@@ -20,11 +20,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <sys/time.h>
-#include <time.h>
 #include "replace.h"
-#include "system/filesys.h"
-#include "system/select.h"
+#include "system/time.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
@@ -109,7 +106,7 @@ bool ev_timeval_is_zero(const struct timeval *tv)
 /*
   destroy a timed event
 */
-static int common_event_timed_destructor(struct tevent_timer *te)
+static int tevent_common_timed_destructor(struct tevent_timer *te)
 {
 	struct tevent_context *ev = talloc_get_type(te->event_ctx,
 						   struct tevent_context);
@@ -117,7 +114,7 @@ static int common_event_timed_destructor(struct tevent_timer *te)
 	return 0;
 }
 
-static int common_event_timed_deny_destructor(struct tevent_timer *te)
+static int tevent_common_timed_deny_destructor(struct tevent_timer *te)
 {
 	return -1;
 }
@@ -126,10 +123,12 @@ static int common_event_timed_deny_destructor(struct tevent_timer *te)
   add a timed event
   return NULL on failure (memory allocation error)
 */
-struct tevent_timer *common_event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					   struct timeval next_event, 
-					   event_timed_handler_t handler, 
-					   void *private_data) 
+struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
+					     struct timeval next_event,
+					     tevent_timer_handler_t handler,
+					     void *private_data,
+					     const char *handler_name,
+					     const char *location)
 {
 	struct tevent_timer *te, *last_te, *cur_te;
 
@@ -140,6 +139,8 @@ struct tevent_timer *common_event_add_timed(struct tevent_context *ev, TALLOC_CT
 	te->next_event		= next_event;
 	te->handler		= handler;
 	te->private_data	= private_data;
+	te->handler_name	= handler_name;
+	te->location		= location;
 	te->additional_data	= NULL;
 
 	/* keep the list ordered */
@@ -155,7 +156,7 @@ struct tevent_timer *common_event_add_timed(struct tevent_context *ev, TALLOC_CT
 
 	DLIST_ADD_AFTER(ev->timer_events, te, last_te);
 
-	talloc_set_destructor(te, common_event_timed_destructor);
+	talloc_set_destructor(te, tevent_common_timed_destructor);
 
 	return te;
 }
@@ -166,7 +167,7 @@ struct tevent_timer *common_event_add_timed(struct tevent_context *ev, TALLOC_CT
   return the delay untill the next timed event,
   or zero if a timed event was triggered
 */
-struct timeval common_event_loop_timer_delay(struct tevent_context *ev)
+struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 {
 	struct timeval current_time = ev_timeval_zero();
 	struct tevent_timer *te = ev->timer_events;
@@ -203,7 +204,7 @@ struct timeval common_event_loop_timer_delay(struct tevent_context *ev)
 	 */
 
 	/* deny the handler to free the event */
-	talloc_set_destructor(te, common_event_timed_deny_destructor);
+	talloc_set_destructor(te, tevent_common_timed_deny_destructor);
 
 	/* We need to remove the timer from the list before calling the
 	 * handler because in a semi-async inner event loop called from the

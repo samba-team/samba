@@ -51,30 +51,52 @@ struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const cha
 const char **tevent_backend_list(TALLOC_CTX *mem_ctx);
 void tevent_set_default_backend(const char *backend);
 
-struct tevent_fd *tevent_add_fd(struct tevent_context *ev,
-				TALLOC_CTX *mem_ctx,
-				int fd, uint16_t flags,
-				tevent_fd_handler_t handler,
-				void *private_data);
+struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
+				 TALLOC_CTX *mem_ctx,
+				 int fd,
+				 uint16_t flags,
+				 tevent_fd_handler_t handler,
+				 void *private_data,
+				 const char *handler_name,
+				 const char *location);
+#define tevent_add_fd(ev, mem_ctx, fd, flags, handler, private_data) \
+	_tevent_add_fd(ev, mem_ctx, fd, flags, handler, private_data, \
+		       #handler, __location__)
 
-struct tevent_timer *tevent_add_timer(struct tevent_context *ev,
-				      TALLOC_CTX *mem_ctx,
-				      struct timeval next_event,
-				      tevent_timer_handler_t handler,
-				      void *private_data);
+struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       struct timeval next_event,
+				       tevent_timer_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location);
+#define tevent_add_timer(ev, mem_ctx, next_event, handler, private_data) \
+	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
+			  #handler, __location__);
 
-struct tevent_signal *tevent_add_signal(struct tevent_context *ev,
-					TALLOC_CTX *mem_ctx,
-					int signum, int sa_flags,
-					tevent_signal_handler_t handler,
-					void *private_data);
+struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
+					 TALLOC_CTX *mem_ctx,
+					 int signum,
+					 int sa_flags,
+					 tevent_signal_handler_t handler,
+					 void *private_data,
+					 const char *handler_name,
+					 const char *location);
+#define tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data) \
+	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
+			   #handler, __location__)
 
 struct iocb;
-struct tevent_aio *tevent_add_aio(struct tevent_context *ev,
-				  TALLOC_CTX *mem_ctx,
-				  struct iocb *iocb,
-				  tevent_aio_handler_t handler,
-				  void *private_data);
+struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
+				   TALLOC_CTX *mem_ctx,
+				   struct iocb *iocb,
+				   tevent_aio_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location);
+#define tevent_add_aio(ev, mem_ctx, iocb, handler, private_data) \
+	_tevent_add_aio(ev, mem_ctx, iocb, handler, private_data, \
+			#handler, __location__);
 
 int tevent_loop_once(struct tevent_context *ev);
 int tevent_loop_wait(struct tevent_context *ev);
@@ -97,10 +119,21 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 #define TEVENT_FD_NOT_READABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_READ)
 
-/* for now always define the compat symbols */
-#ifndef TEVENT_COMPAT_DEFINES
-#define TEVENT_COMPAT_DEFINES 1
-#endif
+/* DEBUG */
+enum tevent_debug_level {
+	TEVENT_DEBUG_FATAL,
+	TEVENT_DEBUG_ERROR,
+	TEVENT_DEBUG_WARNING,
+	TEVENT_DEBUG_TRACE
+};
+
+int tevent_set_debug(struct tevent_context *ev,
+		     void (*debug)(void *context,
+				   enum tevent_debug_level level,
+				   const char *fmt,
+				   va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     void *context);
+int tevent_set_debug_stderr(struct tevent_context *ev);
 
 #ifdef TEVENT_COMPAT_DEFINES
 
@@ -167,6 +200,18 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
 #define EVENT_FD_NOT_READABLE(fde) \
 	TEVENT_FD_NOT_READABLE(fde)
+
+#define ev_debug_level		tevent_debug_level
+
+#define EV_DEBUG_FATAL		TEVENT_DEBUG_FATAL
+#define EV_DEBUG_ERROR		TEVENT_DEBUG_ERROR
+#define EV_DEBUG_WARNING	TEVENT_DEBUG_WARNING
+#define EV_DEBUG_TRACE		TEVENT_DEBUG_TRACE
+
+#define ev_set_debug(ev, debug, context) \
+	tevent_set_debug(ev, debug, context)
+
+#define ev_set_debug_stderr(_ev) tevent_set_debug_stderr(ev)
 
 #endif /* TEVENT_COMPAT_DEFINES */
 

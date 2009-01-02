@@ -24,9 +24,9 @@
 typedef struct {
 	PyObject_HEAD
 	struct tevent_context *ev_ctx;
-} PyEventContextObject;
+} PyTEventContextObject;
 
-PyAPI_DATA(PyTypeObject) PyEventContext;
+PyAPI_DATA(PyTypeObject) PyTEventContext;
 
 static PyObject *py_set_default_backend(PyObject *self, PyObject *args)
 {
@@ -34,13 +34,13 @@ static PyObject *py_set_default_backend(PyObject *self, PyObject *args)
 
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
-    event_set_default_backend(name);
+    tevent_set_default_backend(name);
     return Py_None;
 }
 
 static PyObject *py_backend_list(PyObject *self)
 {
-    const char **backends = event_backend_list(NULL);
+    const char **backends = tevent_backend_list(NULL);
     PyObject *ret;
     int i, len;
 
@@ -66,28 +66,28 @@ static PyObject *py_event_ctx_new(PyTypeObject *type, PyObject *args, PyObject *
     const char *kwnames[] = { "name", NULL };
     char *name = NULL;
     struct tevent_context *ev_ctx;
-    PyEventContextObject *ret;
+    PyTEventContextObject *ret;
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", (char **)kwnames, &name))
         return NULL;
 
     if (name == NULL)
-        ev_ctx = event_context_init(NULL);
+        ev_ctx = tevent_context_init(NULL);
     else
-        ev_ctx = event_context_init_byname(NULL, name);
+        ev_ctx = tevent_context_init_byname(NULL, name);
 
-    ret = (PyEventContextObject *)type->tp_alloc(type, 0);
+    ret = (PyTEventContextObject *)type->tp_alloc(type, 0);
     ret->ev_ctx = ev_ctx;
     return (PyObject *)ret;
 }
 
-static PyObject *py_event_ctx_loop_once(PyEventContextObject *self)
+static PyObject *py_event_ctx_loop_once(PyTEventContextObject *self)
 {
-    return PyInt_FromLong(event_loop_once(self->ev_ctx));
+    return PyInt_FromLong(tevent_loop_once(self->ev_ctx));
 }
 
-static PyObject *py_event_ctx_loop_wait(PyEventContextObject *self)
+static PyObject *py_event_ctx_loop_wait(PyTEventContextObject *self)
 {
-    return PyInt_FromLong(event_loop_wait(self->ev_ctx));
+    return PyInt_FromLong(tevent_loop_wait(self->ev_ctx));
 }
 
 static PyMethodDef py_event_ctx_methods[] = {
@@ -98,16 +98,17 @@ static PyMethodDef py_event_ctx_methods[] = {
     { NULL }
 };
 
-static void py_event_ctx_dealloc(PyEventContextObject * self)
+static void py_event_ctx_dealloc(PyTEventContextObject * self)
 {
 	talloc_free(self->ev_ctx);
 	self->ob_type->tp_free(self);
 }
 
-PyTypeObject PyEventContext = {
-    .tp_name = "EventContext",
+
+PyTypeObject PyTEventContext = {
+    .tp_name = "TEventContext",
     .tp_methods = py_event_ctx_methods,
-    .tp_basicsize = sizeof(PyEventContextObject),
+    .tp_basicsize = sizeof(PyTEventContextObject),
     .tp_dealloc = (destructor)py_event_ctx_dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = py_event_ctx_new,
@@ -117,14 +118,14 @@ void inittevent(void)
 {
     PyObject *m;
 
-    if (PyType_Ready(&PyEventContext) < 0)
+    if (PyType_Ready(&PyTEventContext) < 0)
     	return;
 
     m = Py_InitModule3("tevent", tevent_methods, "Event management.");
     if (m == NULL)
         return;
 
-    Py_INCREF(&PyEventContext);
-    PyModule_AddObject(m, "EventContext", (PyObject *)&PyEventContext);
+    Py_INCREF(&PyTEventContext);
+    PyModule_AddObject(m, "TEventContext", (PyObject *)&PyTEventContext);
 }
 

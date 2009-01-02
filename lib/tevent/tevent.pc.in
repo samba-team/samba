@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: events
+Name: tevent
 Description: An event system library
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltevent

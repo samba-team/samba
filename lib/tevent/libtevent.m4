@@ -26,8 +26,6 @@ if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x
    TEVENT_OBJ="$TEVENT_OBJ tevent_epoll.o"
    SMB_ENABLE(TEVENT_EPOLL,YES)
    AC_DEFINE(HAVE_EPOLL, 1, [Whether epoll available])
-   #TODO: remove HAVE_EVENTS_EPOLL and use HAVE_EPOLL
-   AC_DEFINE(HAVE_EVENTS_EPOLL, 1, [Whether epoll available])
 
    # check for native Linux AIO interface
    AC_CHECK_HEADERS(libaio.h)

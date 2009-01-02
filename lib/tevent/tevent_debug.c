@@ -30,10 +30,12 @@
 /*
   this allows the user to choose their own debug function
 */
-int ev_set_debug(struct tevent_context *ev,
-		 void (*debug)(void *context, enum ev_debug_level level,
-				const char *fmt, va_list ap),
-		 void *context)
+int tevent_set_debug(struct tevent_context *ev,
+		     void (*debug)(void *context,
+				   enum tevent_debug_level level,
+				   const char *fmt,
+				   va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     void *context)
 {
 	ev->debug_ops.debug = debug;
 	ev->debug_ops.context = context;
@@ -43,23 +45,26 @@ int ev_set_debug(struct tevent_context *ev,
 /*
   debug function for ev_set_debug_stderr
 */
-void ev_debug_stderr(void *context, enum ev_debug_level level,
-			    const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
-void ev_debug_stderr(void *context, enum ev_debug_level level,
-			    const char *fmt, va_list ap)
+static void tevent_debug_stderr(void *private_data,
+				enum tevent_debug_level level,
+				const char *fmt,
+				va_list ap) PRINTF_ATTRIBUTE(3,0);
+static void tevent_debug_stderr(void *private_data,
+				enum tevent_debug_level level,
+				const char *fmt, va_list ap)
 {
-	if (level <= EV_DEBUG_WARNING) {
+	if (level <= TEVENT_DEBUG_WARNING) {
 		vfprintf(stderr, fmt, ap);
 	}
 }
 
 /*
   convenience function to setup debug messages on stderr
-  messages of level EV_DEBUG_WARNING and higher are printed
+  messages of level TEVENT_DEBUG_WARNING and higher are printed
 */
-int ev_set_debug_stderr(struct tevent_context *ev)
+int tevent_set_debug_stderr(struct tevent_context *ev)
 {
-	return ev_set_debug(ev, ev_debug_stderr, ev);
+	return tevent_set_debug(ev, tevent_debug_stderr, ev);
 }
 
 /*
@@ -70,7 +75,8 @@ int ev_set_debug_stderr(struct tevent_context *ev)
  * Applications using the library must decide where to
  * redirect debugging messages
 */
-void ev_debug(struct tevent_context *ev, enum ev_debug_level level, const char *fmt, ...)
+void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
+		  const char *fmt, ...)
 {
 	va_list ap;
 	if (ev->debug_ops.debug == NULL) {

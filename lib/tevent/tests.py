@@ -17,15 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import tevent as events
+import tevent
 import unittest
 
 # Just test the bindings are there and that calling them doesn't crash
 # anything.
 
-class EventTestCase(unittest.TestCase):
+class TEventTestCase(unittest.TestCase):
     def test_create(self):
-        self.assertTrue(events.EventContext() is not None)
+        self.assertTrue(tevent.TEventContext() is not None)
 
     def test_loop_wait(self):
-        self.assertEquals(0, events.EventContext().loop_wait())
+        self.assertEquals(0, tevent.TEventContext().loop_wait())
