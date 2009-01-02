@@ -47,8 +47,8 @@
   After that you can add/remove events that you are interested in
   using event_add_*() and talloc_free()
 
-  Finally, you call event_loop_wait_once() to block waiting for one of the
-  events to occor or event_loop_wait() which will loop
+  Finally, you call tevent_loop_wait_once() to block waiting for one of the
+  events to occor or tevent_loop_wait() which will loop
   forever.
 
 */
@@ -279,7 +279,7 @@ struct signal_event *event_add_signal(struct tevent_context *ev, TALLOC_CTX *mem
 /*
   do a single event loop using the events defined in ev 
 */
-int event_loop_once(struct tevent_context *ev)
+int tevent_loop_once(struct tevent_context *ev)
 {
 	return ev->ops->loop_once(ev);
 }
@@ -287,7 +287,7 @@ int event_loop_once(struct tevent_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-int event_loop_wait(struct tevent_context *ev)
+int tevent_loop_wait(struct tevent_context *ev)
 {
 	return ev->ops->loop_wait(ev);
 }
