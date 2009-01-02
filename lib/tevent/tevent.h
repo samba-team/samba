@@ -135,11 +135,6 @@ int tevent_set_debug(struct tevent_context *ev,
 		     void *context);
 int tevent_set_debug_stderr(struct tevent_context *ev);
 
-/* for now always define the compat symbols */
-#ifndef TEVENT_COMPAT_DEFINES
-#define TEVENT_COMPAT_DEFINES 1
-#endif
-
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context
