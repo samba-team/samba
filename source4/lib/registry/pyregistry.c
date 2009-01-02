@@ -357,7 +357,7 @@ static PyObject *py_open_ldb_file(PyObject *self, PyObject *args, PyObject *kwar
 	session_info = NULL; /* FIXME */
 
 	result = reg_open_ldb_file(NULL, location, session_info, credentials,
-							   event_context_init(NULL), lp_ctx, &key);
+							   tevent_context_init(NULL), lp_ctx, &key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	return py_talloc_import(&PyHiveKey, key);
