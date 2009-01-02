@@ -71,9 +71,9 @@ struct std_event_context {
 */
 static void epoll_fallback_to_select(struct std_event_context *std_ev, const char *reason)
 {
-	ev_debug(std_ev->ev, EV_DEBUG_FATAL,
-		 "%s (%s) - falling back to select()\n",
-		 reason, strerror(errno));
+	tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+		     "%s (%s) - falling back to select()\n",
+		     reason, strerror(errno));
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = -1;
 	talloc_set_destructor(std_ev, NULL);
@@ -130,8 +130,8 @@ static void epoll_check_reopen(struct std_event_context *std_ev)
 	close(std_ev->epoll_fd);
 	std_ev->epoll_fd = epoll_create(64);
 	if (std_ev->epoll_fd == -1) {
-		ev_debug(std_ev->ev, EV_DEBUG_FATAL,
-			 "Failed to recreate epoll handle after fork\n");
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	std_ev->pid = getpid();
@@ -516,8 +516,8 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-		ev_debug(std_ev->ev, EV_DEBUG_FATAL,
-			 "ERROR: EBADF on std_event_loop_once\n");
+		tevent_debug(std_ev->ev, TEVENT_DEBUG_FATAL,
+			     "ERROR: EBADF on std_event_loop_once\n");
 		std_ev->exit_code = EBADF;
 		return -1;
 	}

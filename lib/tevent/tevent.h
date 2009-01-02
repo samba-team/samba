@@ -119,6 +119,22 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 #define TEVENT_FD_NOT_READABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) & ~TEVENT_FD_READ)
 
+/* DEBUG */
+enum tevent_debug_level {
+	TEVENT_DEBUG_FATAL,
+	TEVENT_DEBUG_ERROR,
+	TEVENT_DEBUG_WARNING,
+	TEVENT_DEBUG_TRACE
+};
+
+int tevent_set_debug(struct tevent_context *ev,
+		     void (*debug)(void *context,
+				   enum tevent_debug_level level,
+				   const char *fmt,
+				   va_list ap) PRINTF_ATTRIBUTE(3,0),
+		     void *context);
+int tevent_set_debug_stderr(struct tevent_context *ev);
+
 /* for now always define the compat symbols */
 #ifndef TEVENT_COMPAT_DEFINES
 #define TEVENT_COMPAT_DEFINES 1
@@ -189,6 +205,18 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
 #define EVENT_FD_NOT_READABLE(fde) \
 	TEVENT_FD_NOT_READABLE(fde)
+
+#define ev_debug_level		tevent_debug_level
+
+#define EV_DEBUG_FATAL		TEVENT_DEBUG_FATAL
+#define EV_DEBUG_ERROR		TEVENT_DEBUG_ERROR
+#define EV_DEBUG_WARNING	TEVENT_DEBUG_WARNING
+#define EV_DEBUG_TRACE		TEVENT_DEBUG_TRACE
+
+#define ev_set_debug(ev, debug, context) \
+	tevent_set_debug(ev, debug, context)
+
+#define ev_set_debug_stderr(_ev) tevent_set_debug_stderr(ev)
 
 #endif /* TEVENT_COMPAT_DEFINES */
 

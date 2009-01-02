@@ -58,7 +58,7 @@ struct epoll_event_context {
 */
 static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
-	ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
+	tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
 		 "%s (%s) - calling abort()\n", reason, strerror(errno));
 	abort();
 }
@@ -116,8 +116,8 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	close(epoll_ev->epoll_fd);
 	epoll_ev->epoll_fd = epoll_create(64);
 	if (epoll_ev->epoll_fd == -1) {
-		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
-			 "Failed to recreate epoll handle after fork\n");
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	epoll_ev->pid = getpid();
@@ -176,9 +176,9 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
-		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
-			 "epoll_del_event failed! probable early close bug (%s)\n",
-			 strerror(errno));
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "epoll_del_event failed! probable early close bug (%s)\n",
+			     strerror(errno));
 	}
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }

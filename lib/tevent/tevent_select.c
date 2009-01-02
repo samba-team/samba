@@ -220,8 +220,8 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		   made readable and that should have removed
 		   the event, so this must be a bug. This is a
 		   fatal error. */
-		ev_debug(select_ev->ev, EV_DEBUG_FATAL,
-			 "ERROR: EBADF on select_event_loop_once\n");
+		tevent_debug(select_ev->ev, TEVENT_DEBUG_FATAL,
+			     "ERROR: EBADF on select_event_loop_once\n");
 		select_ev->exit_code = EBADF;
 		return -1;
 	}

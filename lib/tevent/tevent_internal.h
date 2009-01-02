@@ -111,22 +111,14 @@ struct tevent_signal {
 	void *additional_data;
 };
 
-/* DEBUG */
-enum ev_debug_level {EV_DEBUG_FATAL, EV_DEBUG_ERROR,
-		      EV_DEBUG_WARNING, EV_DEBUG_TRACE};
-
-struct ev_debug_ops {
-	void (*debug)(void *context, enum ev_debug_level level,
+struct tevent_debug_ops {
+	void (*debug)(void *context, enum tevent_debug_level level,
 		      const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0);
 	void *context;
 };
 
-int ev_set_debug(struct tevent_context *ev,
-		 void (*debug)(void *context, enum ev_debug_level level,
-				const char *fmt, va_list ap) PRINTF_ATTRIBUTE(3,0),
-		 void *context);
-int ev_set_debug_stderr(struct tevent_context *ev);
-void ev_debug(struct tevent_context *ev, enum ev_debug_level level, const char *fmt, ...);
+void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
+		  const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
 /* aio event is private to the aio backend */
 struct tevent_aio;
@@ -148,7 +140,7 @@ struct tevent_context {
 	struct tevent_fd *pipe_fde;
 
 	/* debugging operations */
-	struct ev_debug_ops debug_ops;
+	struct tevent_debug_ops debug_ops;
 };
 
 
