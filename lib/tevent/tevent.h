@@ -37,6 +37,10 @@ typedef void (*tevent_fd_handler_t)(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
 				    void *private_data);
+typedef void (*tevent_fd_close_fn_t)(struct tevent_context *ev,
+				     struct tevent_fd *fde,
+				     int fd,
+				     void *private_data);
 typedef void (*tevent_timer_handler_t)(struct tevent_context *ev,
 				       struct tevent_timer *te,
 				       struct timeval current_time,
@@ -107,6 +111,8 @@ struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
 int tevent_loop_once(struct tevent_context *ev);
 int tevent_loop_wait(struct tevent_context *ev);
 
+void tevent_fd_set_close_fn(struct tevent_fd *fde,
+			    tevent_fd_close_fn_t close_fn);
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 

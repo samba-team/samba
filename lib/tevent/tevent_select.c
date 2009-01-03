@@ -103,7 +103,10 @@ static int select_event_fd_destructor(struct tevent_fd *fde)
 	DLIST_REMOVE(select_ev->fd_events, fde);
 	select_ev->destruction_count++;
 
-	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
+	if (fde->close_fn) {
+		fde->close_fn(ev, fde, fde->fd, fde->private_data);
+		fde->fd = -1;
+	} else if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -266,6 +269,7 @@ static int select_event_loop_wait(struct tevent_context *ev)
 static const struct tevent_ops select_event_ops = {
 	.context_init	= select_event_context_init,
 	.add_fd		= select_event_add_fd,
+	.set_fd_close_fn= tevent_common_fd_set_close_fn,
 	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= tevent_common_fd_set_flags,
 	.add_timer	= tevent_common_add_timer,

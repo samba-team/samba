@@ -33,6 +33,8 @@ struct tevent_ops {
 				    void *private_data,
 				    const char *handler_name,
 				    const char *location);
+	void (*set_fd_close_fn)(struct tevent_fd *fde,
+				tevent_fd_close_fn_t close_fn);
 	uint16_t (*get_fd_flags)(struct tevent_fd *fde);
 	void (*set_fd_flags)(struct tevent_fd *fde, uint16_t flags);
 
@@ -70,8 +72,9 @@ struct tevent_fd {
 	struct tevent_fd *prev, *next;
 	struct tevent_context *event_ctx;
 	int fd;
-	uint16_t flags; /* see EVENT_FD_* flags */
+	uint16_t flags; /* see TEVENT_FD_* flags */
 	tevent_fd_handler_t handler;
+	tevent_fd_close_fn_t close_fn;
 	/* this is private for the specific handler */
 	void *private_data;
 	/* this is for debugging only! */
@@ -146,6 +149,8 @@ struct tevent_context {
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
+void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
+				   tevent_fd_close_fn_t close_fn);
 uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde);
 void tevent_common_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 

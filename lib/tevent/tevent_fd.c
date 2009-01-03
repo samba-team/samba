@@ -34,3 +34,9 @@ void tevent_common_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 	if (fde->flags == flags) return;
 	fde->flags = flags;
 }
+
+void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
+				   tevent_fd_close_fn_t close_fn)
+{
+	fde->close_fn = close_fn;
+}

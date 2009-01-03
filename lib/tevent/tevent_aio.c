@@ -400,7 +400,10 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
 
 	epoll_del_event(aio_ev, fde);
 
-	if (fde->flags & TEVENT_FD_AUTOCLOSE) {
+	if (fde->close_fn) {
+		fde->close_fn(ev, fde, fde->fd, fde->private_data);
+		fde->fd = -1;
+	} else if (fde->flags & TEVENT_FD_AUTOCLOSE) {
 		close(fde->fd);
 		fde->fd = -1;
 	}
@@ -551,6 +554,7 @@ static const struct tevent_ops aio_event_ops = {
 	.context_init	= aio_event_context_init,
 	.add_fd		= aio_event_add_fd,
 	.add_aio        = aio_event_add_aio,
+	.set_fd_close_fn= tevent_common_fd_set_close_fn,
 	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= aio_event_set_fd_flags,
 	.add_timer	= tevent_common_add_timer,

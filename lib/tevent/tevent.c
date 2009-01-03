@@ -241,6 +241,16 @@ struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
 }
 
 /*
+  set a close function on the fd event
+*/
+void tevent_fd_set_close_fn(struct tevent_fd *fde,
+			    tevent_fd_close_fn_t close_fn)
+{
+	if (!fde) return;
+	fde->event_ctx->ops->set_fd_close_fn(fde, close_fn);
+}
+
+/*
   return the fd event flags
 */
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde)
