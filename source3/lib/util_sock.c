@@ -952,10 +952,8 @@ int open_socket_in(int type,
  Create an outgoing socket. timeout is in milliseconds.
 **************************************************************************/
 
-int open_socket_out(int type,
-		const struct sockaddr_storage *pss,
-		uint16_t port,
-		int timeout)
+int open_socket_out(const struct sockaddr_storage *pss,	uint16_t port,
+		    int timeout)
 {
 	char addr[INET6_ADDRSTRLEN];
 	struct sockaddr_storage sock_out = *pss;
@@ -964,14 +962,10 @@ int open_socket_out(int type,
 	int increment = 10;
 
 	/* create a socket to write to */
-	res = socket(pss->ss_family, type, 0);
+	res = socket(pss->ss_family, SOCK_STREAM, 0);
 	if (res == -1) {
                 DEBUG(0,("socket error (%s)\n", strerror(errno)));
 		return -1;
-	}
-
-	if (type != SOCK_STREAM) {
-		return res;
 	}
 
 #if defined(HAVE_IPV6)

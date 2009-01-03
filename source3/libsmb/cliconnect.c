@@ -1499,10 +1499,8 @@ bool cli_session_request(struct cli_state *cli,
 		putip((char *)&dest_ip,cli->inbuf+4);
 		in_addr_to_sockaddr_storage(&cli->dest_ss, dest_ip);
 
-		cli->fd = open_socket_out(SOCK_STREAM,
-				&cli->dest_ss,
-				port,
-				LONG_CONNECT_TIMEOUT);
+		cli->fd = open_socket_out(&cli->dest_ss, port,
+					  LONG_CONNECT_TIMEOUT);
 		if (cli->fd == -1)
 			return False;
 
@@ -1589,11 +1587,11 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		} else {
 			/* try 445 first, then 139 */
 			uint16_t port = cli->port?cli->port:445;
-			cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
-						  port, cli->timeout);
+			cli->fd = open_socket_out(&cli->dest_ss, port,
+						  cli->timeout);
 			if (cli->fd == -1 && cli->port == 0) {
 				port = 139;
-				cli->fd = open_socket_out(SOCK_STREAM, &cli->dest_ss,
+				cli->fd = open_socket_out(&cli->dest_ss,
 							  port, cli->timeout);
 			}
 			if (cli->fd != -1) {

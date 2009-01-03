@@ -428,7 +428,7 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 
 		} else {
 
-			sock = open_socket_out(SOCK_STREAM, &addr, DEFAULT_KPASSWD_PORT, 
+			sock = open_socket_out(&addr, DEFAULT_KPASSWD_PORT,
 					       LONG_CONNECT_TIMEOUT);
 		}
 

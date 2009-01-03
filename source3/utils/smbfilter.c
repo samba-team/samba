@@ -144,7 +144,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 	int s;
 
 	/* we have a connection from a new client, now connect to the server */
-	s = open_socket_out(SOCK_STREAM, dest_ss, 445, LONG_CONNECT_TIMEOUT);
+	s = open_socket_out(dest_ss, 445, LONG_CONNECT_TIMEOUT);
 
 	if (s == -1) {
 		char addr[INET6_ADDRSTRLEN];

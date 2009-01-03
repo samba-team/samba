@@ -1457,8 +1457,7 @@ int open_socket_in(int type,
 		int dlevel,
 		const struct sockaddr_storage *psock,
 		bool rebind);
-int open_socket_out(int type,
-		const struct sockaddr_storage *pss,
+int open_socket_out(const struct sockaddr_storage *pss,
 		uint16_t port,
 		int timeout);
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,

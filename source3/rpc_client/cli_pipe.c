@@ -2618,7 +2618,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 		goto fail;
 	}
 
-	result->trans.sock.fd = open_socket_out(SOCK_STREAM, &addr, port, 60);
+	result->trans.sock.fd = open_socket_out(&addr, port, 60);
 	if (result->trans.sock.fd == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto fail;
