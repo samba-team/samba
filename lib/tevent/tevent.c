@@ -53,6 +53,7 @@
 
 */
 #include "replace.h"
+#include "system/filesys.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
@@ -248,6 +249,19 @@ void tevent_fd_set_close_fn(struct tevent_fd *fde,
 {
 	if (!fde) return;
 	fde->event_ctx->ops->set_fd_close_fn(fde, close_fn);
+}
+
+static void tevent_fd_auto_close_fn(struct tevent_context *ev,
+				    struct tevent_fd *fde,
+				    int fd,
+				    void *private_data)
+{
+	close(fd);
+}
+
+void tevent_fd_set_auto_close(struct tevent_fd *fde)
+{
+	tevent_fd_set_close_fn(fde, tevent_fd_auto_close_fn);
 }
 
 /*

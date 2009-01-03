@@ -113,6 +113,7 @@ int tevent_loop_wait(struct tevent_context *ev);
 
 void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn);
+void tevent_fd_set_auto_close(struct tevent_fd *fde);
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde);
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
