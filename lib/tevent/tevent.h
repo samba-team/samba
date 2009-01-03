@@ -33,18 +33,24 @@ struct tevent_aio;
 struct tevent_signal;
 
 /* event handler types */
-typedef void (*tevent_fd_handler_t)(struct tevent_context *,
-				    struct tevent_fd *,
-				    uint16_t , void *);
-typedef void (*tevent_timer_handler_t)(struct tevent_context *,
-				       struct tevent_timer *,
-				       struct timeval , void *);
-typedef void (*tevent_signal_handler_t)(struct tevent_context *,
-					struct tevent_signal *,
-				        int , int, void *, void *);
-typedef void (*tevent_aio_handler_t)(struct tevent_context *,
-				     struct tevent_aio *,
-				     int, void *);
+typedef void (*tevent_fd_handler_t)(struct tevent_context *ev,
+				    struct tevent_fd *fde,
+				    uint16_t flags,
+				    void *private_data);
+typedef void (*tevent_timer_handler_t)(struct tevent_context *ev,
+				       struct tevent_timer *te,
+				       struct timeval current_time,
+				       void *private_data);
+typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
+					struct tevent_signal *se,
+					int signum,
+					int count,
+					void *siginfo,
+					void *private_data);
+typedef void (*tevent_aio_handler_t)(struct tevent_context *ev,
+				     struct tevent_aio *ae,
+				     int ret,
+				     void *private_data);
 
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
