@@ -32,7 +32,6 @@
 
 #include "replace.h"
 #include "system/filesys.h"
-#include "system/network.h"
 #include "system/select.h"
 #include "tevent.h"
 #include "tevent_internal.h"
