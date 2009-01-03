@@ -636,7 +636,7 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		return NULL;
 	}
 
-	set_blocking(fd, true);
+	set_blocking(fd, false);
 
 	state->result.result_int = connect(fd, address, address_len);
 
