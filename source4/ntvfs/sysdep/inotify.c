@@ -23,8 +23,8 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include <tevent.h>
 #include "ntvfs/sysdep/sys_notify.h"
-#include "lib/events/events.h"
 #include "../lib/util/dlinklist.h"
 #include "libcli/raw/smb.h"
 #include "param/param.h"
@@ -249,8 +249,11 @@ static void inotify_handler(struct tevent_context *ev, struct tevent_fd *fde,
 static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
+	struct tevent_fd *fde;
+
 	in = talloc(ctx, struct inotify_private);
 	NT_STATUS_HAVE_NO_MEMORY(in);
+
 	in->fd = inotify_init();
 	if (in->fd == -1) {
 		DEBUG(0,("Failed to init inotify - %s\n", strerror(errno)));
@@ -263,8 +266,19 @@ static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 	ctx->private_data = in;
 
 	/* add a event waiting for the inotify fd to be readable */
-	event_add_fd(ctx->ev, in, in->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, inotify_handler, in);
-	
+	fde = tevent_add_fd(ctx->ev, in, in->fd,
+			   TEVENT_FD_READ, inotify_handler, in);
+	if (!fde) {
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		DEBUG(0,("Failed to tevent_add_fd() - %s\n", strerror(errno)));
+		talloc_free(in);
+		return map_nt_error_from_unix(errno);
+	}
+
+	tevent_fd_set_auto_close(fde);
+
 	return NT_STATUS_OK;
 }
 
