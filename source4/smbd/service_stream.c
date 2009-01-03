@@ -258,6 +258,7 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
 	struct socket_address *socket_address;
+	struct tevent_fd *fde;
 	int i;
 
 	stream_socket = talloc_zero(event_context, struct stream_socket);
@@ -322,20 +323,24 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 		return status;
 	}
 
-	/* By specifying EVENT_FD_AUTOCLOSE below, we indicate that we
-	 * will close the socket using the events system.  This avoids
-	 * nasty interactions with waiting for talloc to close the socket. */
-
-	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
-
 	/* Add the FD from the newly created socket into the event
 	 * subsystem.  it will call the accept handler whenever we get
 	 * new connections */
 
-	event_add_fd(event_context, stream_socket->sock, 
-		     socket_get_fd(stream_socket->sock), 
-		     EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
-		     stream_accept_handler, stream_socket);
+	fde = tevent_add_fd(event_context, stream_socket->sock,
+			    socket_get_fd(stream_socket->sock),
+			    TEVENT_FD_READ,
+			    stream_accept_handler, stream_socket);
+	if (!fde) {
+		DEBUG(0,("Failed to setup fd event\n"));
+		talloc_free(stream_socket);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* we let events system to the close on the socket. This avoids
+	 * nasty interactions with waiting for talloc to close the socket. */
+	tevent_fd_set_close_fn(fde, socket_tevent_fd_close_fn);
+	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
 
 	stream_socket->private          = talloc_reference(stream_socket, private);
 	stream_socket->ops              = stream_ops;

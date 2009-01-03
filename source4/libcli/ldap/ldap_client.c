@@ -387,14 +387,15 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 				  struct ldap_connection *conn) 
 {
 	/* setup a handler for events on this socket */
-	conn->event.fde = event_add_fd(conn->event.event_ctx, conn->sock, 
-				       socket_get_fd(conn->sock), 
-				       EVENT_FD_READ | EVENT_FD_AUTOCLOSE, ldap_io_handler, conn);
+	conn->event.fde = tevent_add_fd(conn->event.event_ctx, conn->sock,
+					socket_get_fd(conn->sock),
+					TEVENT_FD_READ, ldap_io_handler, conn);
 	if (conn->event.fde == NULL) {
 		composite_error(ctx, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
+	tevent_fd_set_close_fn(conn->event.fde, socket_tevent_fd_close_fn);
 	socket_set_flags(conn->sock, SOCKET_FLAG_NOCLOSE);
 
 	talloc_steal(conn, conn->sock);

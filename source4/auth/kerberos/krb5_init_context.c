@@ -284,11 +284,12 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		 * drop) and mark as AUTOCLOSE along with the fde */
 
 		/* Ths is equivilant to EVENT_FD_READABLE(smb_krb5->fde) */
-		smb_krb5->fde = event_add_fd(ev, smb_krb5->sock, 
-					     socket_get_fd(smb_krb5->sock), 
-					     EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-					     smb_krb5_socket_handler, smb_krb5);
+		smb_krb5->fde = tevent_add_fd(ev, smb_krb5->sock,
+					      socket_get_fd(smb_krb5->sock),
+					      TEVENT_FD_READ,
+					      smb_krb5_socket_handler, smb_krb5);
 		/* its now the job of the event layer to close the socket */
+		tevent_fd_set_close_fn(smb_krb5->fde, socket_tevent_fd_close_fn);
 		socket_set_flags(smb_krb5->sock, SOCKET_FLAG_NOCLOSE);
 
 		event_add_timed(ev, smb_krb5, 
