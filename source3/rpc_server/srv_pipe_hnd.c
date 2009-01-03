@@ -105,8 +105,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 						     const char *pipe_name,
 						     const char *client_address,
-						     struct auth_serversupplied_info *server_info,
-						     uint16_t vuid)
+						     struct auth_serversupplied_info *server_info)
 {
 	pipes_struct *p;
 
@@ -1125,8 +1124,7 @@ NTSTATUS np_open(struct smb_request *smb_req, const char *name,
 
 		p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
 					     conn->client_address,
-					     conn->server_info,
-					     smb_req->vuid);
+					     conn->server_info);
 
 		fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
 		fsp->fake_file_handle->private_data = p;
