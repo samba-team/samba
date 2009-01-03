@@ -402,9 +402,6 @@ static int aio_event_fd_destructor(struct tevent_fd *fde)
 	if (fde->close_fn) {
 		fde->close_fn(ev, fde, fde->fd, fde->private_data);
 		fde->fd = -1;
-	} else if (fde->flags & TEVENT_FD_AUTOCLOSE) {
-		close(fde->fd);
-		fde->fd = -1;
 	}
 
 	return 0;

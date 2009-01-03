@@ -120,7 +120,6 @@ void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 /* bits for file descriptor event flags */
 #define TEVENT_FD_READ 1
 #define TEVENT_FD_WRITE 2
-#define TEVENT_FD_AUTOCLOSE 4
 
 #define TEVENT_FD_WRITEABLE(fde) \
 	tevent_fd_set_flags(fde, tevent_fd_get_flags(fde) | TEVENT_FD_WRITE)
@@ -200,7 +199,6 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
 
 #define EVENT_FD_READ		TEVENT_FD_READ
 #define EVENT_FD_WRITE		TEVENT_FD_WRITE
-#define EVENT_FD_AUTOCLOSE	TEVENT_FD_AUTOCLOSE
 
 #define EVENT_FD_WRITEABLE(fde) \
 	TEVENT_FD_WRITEABLE(fde)
