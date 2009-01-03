@@ -535,63 +535,16 @@ NTSTATUS recvall_recv(struct async_req *req)
 	return async_req_simple_recv(req);
 }
 
-/**
- * fde event handler for connect(2)
- * @param[in] ev	The event context that sent us here
- * @param[in] fde	The file descriptor event associated with the connect
- * @param[in] flags	Indicate read/writeability of the socket
- * @param[in] priv	private data, "struct async_req *" in this case
- */
+struct async_connect_state {
+	int fd;
+	int result;
+	int sys_errno;
+	long old_sockflags;
+};
 
-static void async_connect_callback(struct event_context *ev,
-				   struct fd_event *fde, uint16_t flags,
-				   void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	struct param_connect *p = &state->param.param_connect;
-
-	if (state->syscall_type != ASYNC_SYSCALL_CONNECT) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
-		return;
-	}
-
-	TALLOC_FREE(state->fde);
-
-	/*
-	 * Stevens, Network Programming says that if there's a
-	 * successful connect, the socket is only writable. Upon an
-	 * error, it's both readable and writable.
-	 */
-	if ((flags & (EVENT_FD_READ|EVENT_FD_WRITE))
-	    == (EVENT_FD_READ|EVENT_FD_WRITE)) {
-		int sockerr;
-		socklen_t err_len = sizeof(sockerr);
-
-		if (getsockopt(p->fd, SOL_SOCKET, SO_ERROR,
-			       (void *)&sockerr, &err_len) == 0) {
-			errno = sockerr;
-		}
-
-		state->sys_errno = errno;
-
-		DEBUG(10, ("connect returned %s\n", strerror(errno)));
-
-		sys_fcntl_long(p->fd, F_SETFL, p->old_sockflags);
-
-		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
-		return;
-	}
-
-	sys_fcntl_long(p->fd, F_SETFL, p->old_sockflags);
-
-	state->result.result_int = 0;
-	state->sys_errno = 0;
-
-	async_req_done(req);
-}
+static void async_connect_connected(struct event_context *ev,
+				    struct fd_event *fde, uint16_t flags,
+				    void *priv);
 
 /**
  * @brief async version of connect(2)
@@ -606,48 +559,46 @@ static void async_connect_callback(struct event_context *ev,
  * connect in an async state. This will be reset when the request is finished.
  */
 
-struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				int fd, const struct sockaddr *address,
-				socklen_t address_len)
+struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     int fd, const struct sockaddr *address,
+				     socklen_t address_len)
 {
 	struct async_req *result;
-	struct async_syscall_state *state;
-	struct param_connect *p;
+	struct async_connect_state *state;
+	struct fd_event *fde;
+	NTSTATUS status;
 
-	result = async_syscall_new(mem_ctx, ev, ASYNC_SYSCALL_CONNECT, &state);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
-	p = &state->param.param_connect;
+	state = talloc(result, struct async_connect_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
 
 	/**
 	 * We have to set the socket to nonblocking for async connect(2). Keep
 	 * the old sockflags around.
 	 */
 
-	p->old_sockflags = sys_fcntl_long(fd, F_GETFL, 0);
+	state->fd = fd;
+	state->sys_errno = 0;
 
-	if (p->old_sockflags == -1) {
-		if (async_post_status(result, ev,
-				      map_nt_error_from_unix(errno))) {
-			return result;
-		}
-		TALLOC_FREE(result);
-		return NULL;
+	state->old_sockflags = sys_fcntl_long(fd, F_GETFL, 0);
+	if (state->old_sockflags == -1) {
+		goto post_errno;
 	}
 
 	set_blocking(fd, false);
 
-	state->result.result_int = connect(fd, address, address_len);
-
-	if (state->result.result_int == 0) {
+	state->result = connect(fd, address, address_len);
+	if (state->result == 0) {
 		state->sys_errno = 0;
-		if (async_post_status(result, ev, NT_STATUS_OK)) {
-			return result;
-		}
-		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);
-		TALLOC_FREE(result);
-		return NULL;
+		status = NT_STATUS_OK;
+		goto post_status;
 	}
 
 	/**
@@ -662,32 +613,93 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	      errno == EISCONN ||
 #endif
 	      errno == EAGAIN || errno == EINTR)) {
+		goto post_errno;
+	}
+
+	fde = event_add_fd(ev, state, fd, EVENT_FD_READ | EVENT_FD_WRITE,
+			   async_connect_connected, result);
+	if (fde == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
+	}
+	return result;
+
+ post_errno:
+	state->sys_errno = errno;
+	status = map_nt_error_from_unix(state->sys_errno);
+ post_status:
+	sys_fcntl_long(fd, F_SETFL, state->old_sockflags);
+	if (!async_post_status(result, ev, status)) {
+		goto fail;
+	}
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+/**
+ * fde event handler for connect(2)
+ * @param[in] ev	The event context that sent us here
+ * @param[in] fde	The file descriptor event associated with the connect
+ * @param[in] flags	Indicate read/writeability of the socket
+ * @param[in] priv	private data, "struct async_req *" in this case
+ */
+
+static void async_connect_connected(struct event_context *ev,
+				    struct fd_event *fde, uint16_t flags,
+				    void *priv)
+{
+	struct async_req *req = talloc_get_type_abort(
+		priv, struct async_req);
+	struct async_connect_state *state = talloc_get_type_abort(
+		req->private_data, struct async_connect_state);
+
+	TALLOC_FREE(fde);
+
+	/*
+	 * Stevens, Network Programming says that if there's a
+	 * successful connect, the socket is only writable. Upon an
+	 * error, it's both readable and writable.
+	 */
+	if ((flags & (EVENT_FD_READ|EVENT_FD_WRITE))
+	    == (EVENT_FD_READ|EVENT_FD_WRITE)) {
+		int sockerr;
+		socklen_t err_len = sizeof(sockerr);
+
+		if (getsockopt(state->fd, SOL_SOCKET, SO_ERROR,
+			       (void *)&sockerr, &err_len) == 0) {
+			errno = sockerr;
+		}
 
 		state->sys_errno = errno;
 
-		if (async_post_status(result, ev,
-				      map_nt_error_from_unix(errno))) {
-			return result;
-		}
-		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);
-		TALLOC_FREE(result);
-		return NULL;
+		DEBUG(10, ("connect returned %s\n", strerror(errno)));
+
+		sys_fcntl_long(state->fd, F_SETFL, state->old_sockflags);
+		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
+		return;
 	}
 
-	state->fde = event_add_fd(ev, state, fd,
-				  EVENT_FD_READ | EVENT_FD_WRITE,
-				  async_connect_callback, result);
-	if (state->fde == NULL) {
-		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);
-		TALLOC_FREE(result);
-		return NULL;
-	}
-	result->private_data = state;
-
-	state->param.param_connect.fd = fd;
-	state->param.param_connect.address = address;
-	state->param.param_connect.address_len = address_len;
-
-	return result;
+	state->sys_errno = 0;
+	async_req_done(req);
 }
 
+NTSTATUS async_connect_recv(struct async_req *req, int *perrno)
+{
+	struct async_connect_state *state = talloc_get_type_abort(
+		req->private_data, struct async_connect_state);
+	NTSTATUS status;
+
+	sys_fcntl_long(state->fd, F_SETFL, state->old_sockflags);
+
+	*perrno = state->sys_errno;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	if (state->sys_errno == 0) {
+		return NT_STATUS_OK;
+	}
+	return map_nt_error_from_unix(state->sys_errno);
+}
