@@ -3,7 +3,7 @@ AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
-AC_INIT(tevent, 0.9.1)
+AC_INIT(tevent, 0.9.2)
 AC_CONFIG_SRCDIR([tevent.c])
 AC_CONFIG_HEADER(config.h)
 AC_LIBREPLACE_ALL_CHECKS
