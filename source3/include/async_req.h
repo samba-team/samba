@@ -132,4 +132,14 @@ bool async_req_is_error(struct async_req *req, NTSTATUS *status);
 
 NTSTATUS async_req_simple_recv(struct async_req *req);
 
+bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+			   struct timeval to);
+
+struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct timeval to);
+
+NTSTATUS async_wait_recv(struct async_req *req);
+
+
 #endif

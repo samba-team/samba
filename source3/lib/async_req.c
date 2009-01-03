@@ -194,3 +194,45 @@ NTSTATUS async_req_simple_recv(struct async_req *req)
 	}
 	return NT_STATUS_OK;
 }
+
+static void async_req_timedout(struct event_context *ev,
+			       struct timed_event *te,
+			       const struct timeval *now,
+			       void *priv)
+{
+	struct async_req *req = talloc_get_type_abort(
+		priv, struct async_req);
+	TALLOC_FREE(te);
+	async_req_error(req, NT_STATUS_IO_TIMEOUT);
+}
+
+bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+			   struct timeval to)
+{
+	return (event_add_timed(ev, req,
+				timeval_current_ofs(to.tv_sec, to.tv_usec),
+				"async_req_timedout", async_req_timedout, req)
+		!= NULL);
+}
+
+struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct timeval to)
+{
+	struct async_req *result;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return result;
+	}
+	if (!async_req_set_timeout(result, ev, to)) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+	return result;
+}
+
+NTSTATUS async_wait_recv(struct async_req *req)
+{
+	return NT_STATUS_OK;
+}
