@@ -41,6 +41,6 @@ CFLAGS = -I../lib/tevent
 # End SUBSYSTEM LIBTEVENT
 ################################################
 
-LIBTEVENT_OBJ_FILES = $(addprefix $(libteventsrcdir)/, tevent.o tevent_timed.o tevent_signal.o tevent_debug.o tevent_util.o)
+LIBTEVENT_OBJ_FILES = $(addprefix $(libteventsrcdir)/, tevent.o tevent_fd.o tevent_timed.o tevent_signal.o tevent_debug.o tevent_util.o)
 
 PUBLIC_HEADERS += $(addprefix $(libteventsrcdir)/, tevent.h tevent_internal.h)

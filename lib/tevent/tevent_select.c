@@ -148,31 +148,6 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 	return fde;
 }
 
-
-/*
-  return the fd event flags
-*/
-static uint16_t select_event_get_fd_flags(struct tevent_fd *fde)
-{
-	return fde->flags;
-}
-
-/*
-  set the fd event flags
-*/
-static void select_event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
-{
-	struct tevent_context *ev;
-	struct select_event_context *select_ev;
-
-	if (fde->flags == flags) return;
-
-	ev = fde->event_ctx;
-	select_ev = talloc_get_type(ev->additional_data, struct select_event_context);
-
-	fde->flags = flags;
-}
-
 /*
   event loop handling using select()
 */
@@ -291,8 +266,8 @@ static int select_event_loop_wait(struct tevent_context *ev)
 static const struct tevent_ops select_event_ops = {
 	.context_init	= select_event_context_init,
 	.add_fd		= select_event_add_fd,
-	.get_fd_flags	= select_event_get_fd_flags,
-	.set_fd_flags	= select_event_set_fd_flags,
+	.get_fd_flags	= tevent_common_fd_get_flags,
+	.set_fd_flags	= tevent_common_fd_set_flags,
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,
 	.loop_once	= select_event_loop_once,

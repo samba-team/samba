@@ -447,15 +447,6 @@ static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX 
 	return fde;
 }
 
-
-/*
-  return the fd event flags
-*/
-static uint16_t aio_event_get_fd_flags(struct tevent_fd *fde)
-{
-	return fde->flags;
-}
-
 /*
   set the fd event flags
 */
@@ -560,7 +551,7 @@ static const struct tevent_ops aio_event_ops = {
 	.context_init	= aio_event_context_init,
 	.add_fd		= aio_event_add_fd,
 	.add_aio        = aio_event_add_aio,
-	.get_fd_flags	= aio_event_get_fd_flags,
+	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= aio_event_set_fd_flags,
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,

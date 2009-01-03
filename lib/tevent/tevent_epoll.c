@@ -405,15 +405,6 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	return fde;
 }
 
-
-/*
-  return the fd event flags
-*/
-static uint16_t epoll_event_get_fd_flags(struct tevent_fd *fde)
-{
-	return fde->flags;
-}
-
 /*
   set the fd event flags
 */
@@ -472,7 +463,7 @@ static int epoll_event_loop_wait(struct tevent_context *ev)
 static const struct tevent_ops epoll_event_ops = {
 	.context_init	= epoll_event_context_init,
 	.add_fd		= epoll_event_add_fd,
-	.get_fd_flags	= epoll_event_get_fd_flags,
+	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= epoll_event_set_fd_flags,
 	.add_timer	= tevent_common_add_timer,
 	.add_signal	= tevent_common_add_signal,

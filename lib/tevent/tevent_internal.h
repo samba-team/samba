@@ -146,6 +146,9 @@ struct tevent_context {
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
+uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde);
+void tevent_common_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
+
 bool ev_timeval_is_zero(const struct timeval *tv);
 struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     TALLOC_CTX *mem_ctx,
