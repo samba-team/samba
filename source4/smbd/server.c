@@ -323,7 +323,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	if (opt_interactive) {
 		/* terminate when stdin goes away */
-		stdin_event_flags = EVENT_FD_READ;
+		stdin_event_flags = TEVENT_FD_READ;
 	} else {
 		/* stay alive forever */
 		stdin_event_flags = 0;
@@ -333,15 +333,15 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 #ifdef SIGTTIN
 	signal(SIGTTIN, SIG_IGN);
 #endif
-	event_add_fd(event_ctx, event_ctx, 0, stdin_event_flags,
-		     server_stdin_handler,
-		     discard_const(binary_name));
+	tevent_add_fd(event_ctx, event_ctx, 0, stdin_event_flags,
+		      server_stdin_handler,
+		      discard_const(binary_name));
 
 	if (max_runtime) {
-		event_add_timed(event_ctx, event_ctx, 
-				timeval_current_ofs(max_runtime, 0), 
-				max_runtime_handler,
-				discard_const(binary_name));
+		tevent_add_timer(event_ctx, event_ctx,
+				 timeval_current_ofs(max_runtime, 0),
+				 max_runtime_handler,
+				 discard_const(binary_name));
 	}
 
 	DEBUG(0,("%s: using '%s' process model\n", binary_name, model));
@@ -354,7 +354,7 @@ static int binary_smbd_main(const char *binary_name, int argc, const char *argv[
 
 	/* wait for events - this is where smbd sits for most of its
 	   life */
-	event_loop_wait(event_ctx);
+	tevent_loop_wait(event_ctx);
 
 	/* as everything hangs off this event context, freeing it
 	   should initiate a clean shutdown of all services */

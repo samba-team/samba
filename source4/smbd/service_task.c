@@ -21,7 +21,6 @@
 
 #include "includes.h"
 #include "process_model.h"
-#include "lib/events/events.h"
 #include "smbd/service.h"
 #include "smbd/service_task.h"
 #include "lib/messaging/irpc.h"
