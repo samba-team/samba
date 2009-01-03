@@ -259,14 +259,46 @@ void send_nt_replies(connection_struct *conn,
  An NTFS file name is <path>.<extention>:<stream name>:<stream type>
  $DATA can be used as both a stream name and a stream type. A missing stream
  name or type implies $DATA.
+
+ Both Windows stream names and POSIX files can contain the ':' character.
+ This function first checks for the existence of a colon in the last component
+ of the given name.  If the name contains a colon we differentiate between a
+ stream and POSIX file by checking if the latter exists through a POSIX stat.
+
+ Function assumes we've already chdir() to the "root" directory of fname.
 ****************************************************************************/
 
 bool is_ntfs_stream_name(const char *fname)
 {
+	const char *lastcomp;
+	SMB_STRUCT_STAT sbuf;
+
+	/* If all pathnames are treated as POSIX we ignore streams. */
 	if (lp_posix_pathnames()) {
-		return False;
+		return false;
 	}
-	return (strchr_m(fname, ':') != NULL) ? True : False;
+
+	/* Find the last component of the name. */
+	if ((lastcomp = strrchr_m(fname, '/')) != NULL)
+		++lastcomp;
+	else
+		lastcomp = fname;
+
+	/* If there is no colon in the last component, it's not a stream. */
+	if (strchr_m(lastcomp, ':') == NULL)
+		return false;
+
+	/*
+	 * If file already exists on disk, it's not a stream. The stat must
+	 * bypass the vfs layer so streams modules don't intefere.
+	 */
+	if (sys_stat(fname, &sbuf) == 0) {
+		DEBUG(5, ("is_ntfs_stream_name: file %s contains a ':' but is "
+			"not a stream\n", fname));
+		return false;
+	}
+
+	return true;
 }
 
 /****************************************************************************
