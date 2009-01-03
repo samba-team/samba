@@ -97,13 +97,6 @@ struct async_req {
 	NTSTATUS status;
 
 	/**
-	 * @brief The event context we are using
-	 *
-	 * The event context that this async request works on.
-	 */
-	struct event_context *event_ctx;
-
-	/**
 	 * @brief What to do on completion
 	 *
 	 * This is used for the user of an async request, fn is called when
@@ -122,7 +115,7 @@ struct async_req {
 	} async;
 };
 
-struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev);
+struct async_req *async_req_new(TALLOC_CTX *mem_ctx);
 
 char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
 
@@ -130,7 +123,8 @@ void async_req_done(struct async_req *req);
 
 void async_req_error(struct async_req *req, NTSTATUS status);
 
-bool async_post_status(struct async_req *req, NTSTATUS status);
+bool async_post_status(struct async_req *req, struct event_context *ev,
+		       NTSTATUS status);
 
 bool async_req_nomem(const void *p, struct async_req *req);
 

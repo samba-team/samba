@@ -43,7 +43,7 @@ struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct req_read_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -205,7 +205,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct req_write_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -304,7 +304,7 @@ struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct resp_read_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -458,7 +458,7 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct resp_write_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -564,7 +564,7 @@ struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct wb_trans_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}

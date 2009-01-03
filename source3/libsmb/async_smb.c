@@ -435,7 +435,7 @@ static struct async_req *cli_request_chain(TALLOC_CTX *mem_ctx,
 	req->async = tmp_reqs;
 	req->num_async += 1;
 
-	req->async[req->num_async-1] = async_req_new(mem_ctx, ev);
+	req->async[req->num_async-1] = async_req_new(mem_ctx);
 	if (req->async[req->num_async-1] == NULL) {
 		DEBUG(0, ("async_req_new failed\n"));
 		req->num_async -= 1;

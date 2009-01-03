@@ -106,7 +106,7 @@ static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct async_syscall_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -628,7 +628,8 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	p->old_sockflags = sys_fcntl_long(fd, F_GETFL, 0);
 
 	if (p->old_sockflags == -1) {
-		if (async_post_status(result, map_nt_error_from_unix(errno))) {
+		if (async_post_status(result, ev,
+				      map_nt_error_from_unix(errno))) {
 			return result;
 		}
 		TALLOC_FREE(result);
@@ -641,7 +642,7 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	if (state->result.result_int == 0) {
 		state->sys_errno = 0;
-		if (async_post_status(result, NT_STATUS_OK)) {
+		if (async_post_status(result, ev, NT_STATUS_OK)) {
 			return result;
 		}
 		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);
@@ -664,7 +665,8 @@ struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 		state->sys_errno = errno;
 
-		if (async_post_status(result, map_nt_error_from_unix(errno))) {
+		if (async_post_status(result, ev,
+				      map_nt_error_from_unix(errno))) {
 			return result;
 		}
 		sys_fcntl_long(fd, F_SETFL, p->old_sockflags);

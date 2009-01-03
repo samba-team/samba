@@ -278,7 +278,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	struct cli_pull_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		goto failed;
 	}
@@ -302,7 +302,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	state->top_req = 0;
 
 	if (size == 0) {
-		if (!async_post_status(result, NT_STATUS_OK)) {
+		if (!async_post_status(result, ev, NT_STATUS_OK)) {
 			goto failed;
 		}
 		return result;
@@ -843,7 +843,7 @@ static struct async_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
 	struct async_req *subreq;
 	struct cli_writeall_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		goto fail;
 	}
@@ -969,7 +969,7 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct cli_push_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		goto failed;
 	}
@@ -1034,7 +1034,7 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	if (i == 0) {
-		if (!async_post_status(result, NT_STATUS_OK)) {
+		if (!async_post_status(result, ev, NT_STATUS_OK)) {
 			goto failed;
 		}
 		return result;

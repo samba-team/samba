@@ -49,7 +49,7 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req)
  * The new async request will be initialized in state ASYNC_REQ_IN_PROGRESS
  */
 
-struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev)
+struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 {
 	struct async_req *result;
 
@@ -58,7 +58,6 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev)
 		return NULL;
 	}
 	result->state = ASYNC_REQ_IN_PROGRESS;
-	result->event_ctx = ev;
 	result->print = async_req_print;
 	return result;
 }
@@ -135,12 +134,12 @@ static void async_trigger(struct event_context *ev, struct timed_event *te,
  * conventions, independent of whether the request was actually deferred.
  */
 
-bool async_post_status(struct async_req *req, NTSTATUS status)
+bool async_post_status(struct async_req *req, struct event_context *ev,
+		       NTSTATUS status)
 {
 	req->status = status;
 
-	if (event_add_timed(req->event_ctx, req, timeval_zero(),
-			    "async_trigger",
+	if (event_add_timed(ev, req, timeval_zero(), "async_trigger",
 			    async_trigger, req) == NULL) {
 		return false;
 	}
