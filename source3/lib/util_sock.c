@@ -948,96 +948,208 @@ int open_socket_in(int type,
 	return( res );
  }
 
+struct open_socket_out_state {
+	int fd;
+	struct event_context *ev;
+	struct sockaddr_storage ss;
+	socklen_t salen;
+	uint16_t port;
+	int wait_nsec;
+};
+
+static void open_socket_out_connected(struct async_req *subreq);
+
+static int open_socket_out_state_destructor(struct open_socket_out_state *s)
+{
+	if (s->fd != -1) {
+		close(s->fd);
+	}
+	return 0;
+}
+
 /****************************************************************************
  Create an outgoing socket. timeout is in milliseconds.
 **************************************************************************/
 
-int open_socket_out(const struct sockaddr_storage *pss,	uint16_t port,
-		    int timeout)
+struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       const struct sockaddr_storage *pss,
+				       uint16_t port,
+				       int timeout)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct sockaddr_storage sock_out = *pss;
-	int res,ret;
-	int connect_loop = 10;
-	int increment = 10;
+	struct async_req *result, *subreq;
+	struct open_socket_out_state *state;
+	NTSTATUS status;
 
-	/* create a socket to write to */
-	res = socket(pss->ss_family, SOCK_STREAM, 0);
-	if (res == -1) {
-                DEBUG(0,("socket error (%s)\n", strerror(errno)));
-		return -1;
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct open_socket_out_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->ss = *pss;
+	state->port = port;
+	state->wait_nsec = 10000;
+	state->salen = -1;
+
+	state->fd = socket(state->ss.ss_family, SOCK_STREAM, 0);
+	if (state->fd == -1) {
+		status = map_nt_error_from_unix(errno);
+		goto post_status;
+	}
+	talloc_set_destructor(state, open_socket_out_state_destructor);
+
+	if (!async_req_set_timeout(result, ev, timeval_set(0, timeout*1000))) {
+		goto fail;
 	}
 
 #if defined(HAVE_IPV6)
 	if (pss->ss_family == AF_INET6) {
-		struct sockaddr_in6 *psa6 = (struct sockaddr_in6 *)&sock_out;
+		struct sockaddr_in6 *psa6;
+		psa6 = (struct sockaddr_in6 *)&state->ss;
 		psa6->sin6_port = htons(port);
-		if (psa6->sin6_scope_id == 0 &&
-				IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
-			setup_linklocal_scope_id((struct sockaddr *)&sock_out);
+		if (psa6->sin6_scope_id == 0
+		    && IN6_IS_ADDR_LINKLOCAL(&psa6->sin6_addr)) {
+			setup_linklocal_scope_id(
+				(struct sockaddr *)&(state->ss));
 		}
+		state->salen = sizeof(struct sockaddr_in6);
 	}
 #endif
 	if (pss->ss_family == AF_INET) {
-		struct sockaddr_in *psa = (struct sockaddr_in *)&sock_out;
+		struct sockaddr_in *psa;
+		psa = (struct sockaddr_in *)&state->ss;
 		psa->sin_port = htons(port);
+		state->salen = sizeof(struct sockaddr_in);
 	}
 
-	/* set it non-blocking */
-	set_blocking(res,false);
+	print_sockaddr(addr, sizeof(addr), &state->ss);
+	DEBUG(3,("Connecting to %s at port %u\n", addr,	(unsigned int)port));
 
-	print_sockaddr(addr, sizeof(addr), &sock_out);
-	DEBUG(3,("Connecting to %s at port %u\n",
-				addr,
-				(unsigned int)port));
+	subreq = async_connect_send(state, state->ev, state->fd,
+				    (struct sockaddr *)&state->ss,
+				    state->salen);
+	if ((subreq == NULL)
+	    || !async_req_set_timeout(subreq, state->ev,
+				      timeval_set(0, state->wait_nsec))) {
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
+	}
+	subreq->async.fn = open_socket_out_connected;
+	subreq->async.priv = result;
+	return result;
 
-	/* and connect it to the destination */
-  connect_again:
+ post_status:
+	if (!async_post_status(result, ev, status)) {
+		goto fail;
+	}
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
 
-	ret = sys_connect(res, (struct sockaddr *)&sock_out);
+static void open_socket_out_connected(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct open_socket_out_state *state = talloc_get_type_abort(
+		req->private_data, struct open_socket_out_state);
+	NTSTATUS status;
+	int sys_errno;
 
-	/* Some systems return EAGAIN when they mean EINPROGRESS */
-	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-			errno == EAGAIN) && (connect_loop < timeout) ) {
-		smb_msleep(connect_loop);
-		timeout -= connect_loop;
-		connect_loop += increment;
-		if (increment < 250) {
-			/* After 8 rounds we end up at a max of 255 msec */
-			increment *= 1.5;
+	status = async_connect_recv(subreq, &sys_errno);
+	TALLOC_FREE(subreq);
+	if (NT_STATUS_IS_OK(status)) {
+		async_req_done(req);
+		return;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)
+	    || (sys_errno == EINPROGRESS)
+	    || (sys_errno == EALREADY)
+	    || (sys_errno == EAGAIN)) {
+
+		/*
+		 * retry
+		 */
+
+		if (state->wait_nsec < 250000) {
+			state->wait_nsec *= 1.5;
 		}
-		goto connect_again;
-	}
 
-	if (ret < 0 && (errno == EINPROGRESS || errno == EALREADY ||
-			errno == EAGAIN)) {
-		DEBUG(1,("timeout connecting to %s:%u\n",
-					addr,
-					(unsigned int)port));
-		close(res);
-		return -1;
+		subreq = async_connect_send(state, state->ev, state->fd,
+					    (struct sockaddr *)&state->ss,
+					    state->salen);
+		if (async_req_nomem(subreq, req)) {
+			return;
+		}
+		if (!async_req_set_timeout(subreq, state->ev,
+					   timeval_set(0, state->wait_nsec))) {
+			async_req_error(req, NT_STATUS_NO_MEMORY);
+			return;
+		}
+		subreq->async.fn = open_socket_out_connected;
+		subreq->async.priv = req;
+		return;
 	}
 
 #ifdef EISCONN
-	if (ret < 0 && errno == EISCONN) {
-		errno = 0;
-		ret = 0;
+	if (sys_errno == EISCONN) {
+		async_req_done(req);
+		return;
 	}
 #endif
 
-	if (ret < 0) {
-		DEBUG(2,("error connecting to %s:%d (%s)\n",
-				addr,
-				(unsigned int)port,
-				strerror(errno)));
-		close(res);
-		return -1;
+	/* real error */
+	async_req_error(req, map_nt_error_from_unix(sys_errno));
+}
+
+NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd)
+{
+	struct open_socket_out_state *state = talloc_get_type_abort(
+		req->private_data, struct open_socket_out_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	*pfd = state->fd;
+	state->fd = -1;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
+			 int timeout, int *pfd)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
 	}
 
-	/* set it blocking again */
-	set_blocking(res,true);
+	req = open_socket_out_send(frame, ev, pss, port, timeout);
+	if (req == NULL) {
+		goto fail;
+	}
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
 
-	return res;
+	status = open_socket_out_recv(req, pfd);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /*******************************************************************

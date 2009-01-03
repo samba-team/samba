@@ -1457,9 +1457,14 @@ int open_socket_in(int type,
 		int dlevel,
 		const struct sockaddr_storage *psock,
 		bool rebind);
-int open_socket_out(const struct sockaddr_storage *pss,
-		uint16_t port,
-		int timeout);
+NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
+			 int timeout, int *pfd);
+struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       const struct sockaddr_storage *pss,
+				       uint16_t port,
+				       int timeout);
+NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd);
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd);
 int open_udp_socket(const char *host, int port);

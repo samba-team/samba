@@ -1494,15 +1494,17 @@ bool cli_session_request(struct cli_state *cli,
 		*/
 		uint16_t port = (CVAL(cli->inbuf,8)<<8)+CVAL(cli->inbuf,9);
 		struct in_addr dest_ip;
+		NTSTATUS status;
 
 		/* SESSION RETARGET */
 		putip((char *)&dest_ip,cli->inbuf+4);
 		in_addr_to_sockaddr_storage(&cli->dest_ss, dest_ip);
 
-		cli->fd = open_socket_out(&cli->dest_ss, port,
-					  LONG_CONNECT_TIMEOUT);
-		if (cli->fd == -1)
+		status = open_socket_out(&cli->dest_ss, port,
+					 LONG_CONNECT_TIMEOUT, &cli->fd);
+		if (!NT_STATUS_IS_OK(status)) {
 			return False;
+		}
 
 		DEBUG(3,("Retargeted\n"));
 
@@ -1587,12 +1589,17 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		} else {
 			/* try 445 first, then 139 */
 			uint16_t port = cli->port?cli->port:445;
-			cli->fd = open_socket_out(&cli->dest_ss, port,
-						  cli->timeout);
-			if (cli->fd == -1 && cli->port == 0) {
+			NTSTATUS status;
+
+			cli->fd = -1;
+
+			status = open_socket_out(&cli->dest_ss, port,
+						  cli->timeout, &cli->fd);
+			if (!NT_STATUS_IS_OK(status) && cli->port == 0) {
 				port = 139;
-				cli->fd = open_socket_out(&cli->dest_ss,
-							  port, cli->timeout);
+				status  = open_socket_out(
+					&cli->dest_ss, port, cli->timeout,
+					&cli->fd);
 			}
 			if (cli->fd != -1) {
 				cli->port = port;
