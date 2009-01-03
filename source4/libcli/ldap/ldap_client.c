@@ -23,10 +23,10 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
+#include "lib/socket/socket.h"
 #include "../lib/util/asn1.h"
 #include "../lib/util/dlinklist.h"
-#include "lib/events/events.h"
-#include "lib/socket/socket.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_proto.h"
 #include "libcli/ldap/ldap_client.h"
@@ -229,11 +229,11 @@ static void ldap_io_handler(struct tevent_context *ev, struct tevent_fd *fde,
 {
 	struct ldap_connection *conn = talloc_get_type(private_data, 
 						       struct ldap_connection);
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		packet_queue_run(conn->packet);
 		if (!tls_enabled(conn->sock)) return;
 	}
-	if (flags & EVENT_FD_READ) {
+	if (flags & TEVENT_FD_READ) {
 		ldap_read_io_handler(private_data, flags);
 	}
 }
@@ -622,8 +622,8 @@ _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 		req->state = LDAP_REQUEST_DONE;
 		/* we can't call the async callback now, as it isn't setup, so
 		   call it as next event */
-		event_add_timed(conn->event.event_ctx, req, timeval_zero(),
-				ldap_request_complete, req);
+		tevent_add_timer(conn->event.event_ctx, req, timeval_zero(),
+				 ldap_request_complete, req);
 		return req;
 	}
 
@@ -631,17 +631,17 @@ _PUBLIC_ struct ldap_request *ldap_request_send(struct ldap_connection *conn,
 	DLIST_ADD(conn->pending, req);
 
 	/* put a timeout on the request */
-	req->time_event = event_add_timed(conn->event.event_ctx, req, 
-					  timeval_current_ofs(conn->timeout, 0),
-					  ldap_request_timeout, req);
+	req->time_event = tevent_add_timer(conn->event.event_ctx, req,
+					   timeval_current_ofs(conn->timeout, 0),
+					   ldap_request_timeout, req);
 
 	return req;
 
 failed:
 	req->status = status;
 	req->state = LDAP_REQUEST_ERROR;
-	event_add_timed(conn->event.event_ctx, req, timeval_zero(),
-			ldap_request_complete, req);
+	tevent_add_timer(conn->event.event_ctx, req, timeval_zero(),
+			 ldap_request_complete, req);
 
 	return req;
 }
@@ -654,7 +654,7 @@ failed:
 _PUBLIC_ NTSTATUS ldap_request_wait(struct ldap_request *req)
 {
 	while (req->state < LDAP_REQUEST_DONE) {
-		if (event_loop_once(req->conn->event.event_ctx) != 0) {
+		if (tevent_loop_once(req->conn->event.event_ctx) != 0) {
 			req->status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 			break;
 		}
@@ -769,7 +769,7 @@ _PUBLIC_ NTSTATUS ldap_result_n(struct ldap_request *req, int n, struct ldap_mes
 	NT_STATUS_HAVE_NO_MEMORY(req);
 
 	while (req->state < LDAP_REQUEST_DONE && n >= req->num_replies) {
-		if (event_loop_once(req->conn->event.event_ctx) != 0) {
+		if (tevent_loop_once(req->conn->event.event_ctx) != 0) {
 			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 		}
 	}
