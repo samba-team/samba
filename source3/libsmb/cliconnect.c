@@ -1533,6 +1533,78 @@ bool cli_session_request(struct cli_state *cli,
 	return(True);
 }
 
+static void smb_sock_connected(struct async_req *req)
+{
+	int *pfd = (int *)req->async.priv;
+	int fd;
+	NTSTATUS status;
+
+	status = open_socket_out_defer_recv(req, &fd);
+	if (NT_STATUS_IS_OK(status)) {
+		*pfd = fd;
+	}
+}
+
+static NTSTATUS open_smb_socket(const struct sockaddr_storage *pss,
+				uint16_t *port, int timeout, int *pfd)
+{
+	struct event_context *ev;
+	struct async_req *r139, *r445;
+	int fd139 = -1;
+	int fd445 = -1;
+	NTSTATUS status;
+
+	if (*port != 0) {
+		return open_socket_out(pss, *port, timeout, pfd);
+	}
+
+	ev = event_context_init(talloc_tos());
+	if (ev == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r445 = open_socket_out_defer_send(ev, ev, timeval_set(0, 0),
+					  pss, 445, timeout);
+	r139 = open_socket_out_defer_send(ev, ev, timeval_set(0, 3000),
+					  pss, 139, timeout);
+	if ((r445 == NULL) || (r139 == NULL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+	r445->async.fn = smb_sock_connected;
+	r445->async.priv = &fd445;
+	r139->async.fn = smb_sock_connected;
+	r139->async.priv = &fd139;
+
+	while ((fd139 == -1) && (r139->state < ASYNC_REQ_DONE)
+	       && (fd445 == -1) && (r445->state < ASYNC_REQ_DONE)) {
+		event_loop_once(ev);
+	}
+
+	if ((fd139 != -1) && (fd445 != -1)) {
+		close(fd139);
+		fd139 = -1;
+	}
+
+	if (fd445 != -1) {
+		*port = 445;
+		*pfd = fd445;
+		status = NT_STATUS_OK;
+		goto done;
+	}
+	if (fd139 != -1) {
+		*port = 139;
+		*pfd = fd139;
+		status = NT_STATUS_OK;
+		goto done;
+	}
+
+	status = open_socket_out_defer_recv(r445, &fd445);
+ done:
+	TALLOC_FREE(ev);
+	return status;
+}
+
 /****************************************************************************
  Open the client sockets.
 ****************************************************************************/
@@ -1587,21 +1659,11 @@ NTSTATUS cli_connect(struct cli_state *cli,
 		if (getenv("LIBSMB_PROG")) {
 			cli->fd = sock_exec(getenv("LIBSMB_PROG"));
 		} else {
-			/* try 445 first, then 139 */
-			uint16_t port = cli->port?cli->port:445;
+			uint16_t port = cli->port;
 			NTSTATUS status;
-
-			cli->fd = -1;
-
-			status = open_socket_out(&cli->dest_ss, port,
-						  cli->timeout, &cli->fd);
-			if (!NT_STATUS_IS_OK(status) && cli->port == 0) {
-				port = 139;
-				status  = open_socket_out(
-					&cli->dest_ss, port, cli->timeout,
-					&cli->fd);
-			}
-			if (cli->fd != -1) {
+			status = open_smb_socket(&cli->dest_ss, &port,
+						 cli->timeout, &cli->fd);
+			if (NT_STATUS_IS_OK(status)) {
 				cli->port = port;
 			}
 		}
