@@ -31,6 +31,15 @@ for obj in ${TALLOC_OBJ}; do
 done
 AC_SUBST(LIBTALLOC_OBJ0)
 
+m4_include(../lib/tevent/libtevent.m4)
+
+LIBTEVENT_OBJ0=""
+for obj in ${TEVENT_OBJ}; do
+	LIBTEVENT_OBJ0="${LIBTEVENT_OBJ0} ${teventdir}/${obj}"
+done
+AC_SUBST(LIBTEVENT_OBJ0)
+LIBS="${LIBS} ${TEVENT_LIBS}"
+
 # TODO: These should come from m4_include(lib/tdb/libtdb.m4)
 # but currently this fails: things have to get merged from s4.
 tdbdir="../lib/tdb"
@@ -50,6 +59,7 @@ AC_SUBST(LIBTDB_OBJ0)
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
