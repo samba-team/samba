@@ -707,10 +707,6 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
  Write data to a fd.
 ****************************************************************************/
 
-/****************************************************************************
- Write data to a fd.
-****************************************************************************/
-
 ssize_t write_data(int fd, const char *buffer, size_t N)
 {
 	ssize_t ret;
