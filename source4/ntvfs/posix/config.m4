@@ -30,8 +30,7 @@ if test x"$ac_cv_func_ext_blkid_get_cache" = x"yes"; then
 	SMB_ENABLE(BLKID,YES)
 fi
 
-AC_CHECK_HEADERS(libaio.h)
 SMB_ENABLE(pvfs_aio,NO)
-if test x"$ac_cv_header_libaio_h" = x"yes"; then
+if test x"$tevent_cv_aio_support" = x"yes"; then
 	SMB_ENABLE(pvfs_aio,YES)
 fi
