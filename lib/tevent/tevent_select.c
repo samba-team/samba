@@ -133,6 +133,7 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 	fde->fd			= fd;
 	fde->flags		= flags;
 	fde->handler		= handler;
+	fde->close_fn		= NULL;
 	fde->private_data	= private_data;
 	fde->handler_name	= handler_name;
 	fde->location		= location;
