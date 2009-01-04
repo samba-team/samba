@@ -4630,7 +4630,7 @@ static void free_one_parameter_by_snum(int snum, struct parm_struct parm)
 {
 	void *parm_ptr;
 
-	if (parm.ptr == NULL); {
+	if (parm.ptr == NULL) {
 		return;
 	}
 
