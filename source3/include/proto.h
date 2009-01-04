@@ -528,7 +528,6 @@ bool event_add_to_select_args(struct event_context *event_ctx,
 			      const struct timeval *now,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd);
-bool events_pending(struct event_context *event_ctx);
 bool run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds);
 struct timeval *get_timed_events_timeout(struct event_context *event_ctx,

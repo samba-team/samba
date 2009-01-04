@@ -44,16 +44,6 @@ struct fd_event {
 	void *private_data;
 };
 
-#define EVENT_FD_WRITEABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_WRITE)
-#define EVENT_FD_READABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_READ)
-
-#define EVENT_FD_NOT_WRITEABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
-#define EVENT_FD_NOT_READABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_READ)
-
 struct event_context {
 	struct timed_event *timed_events;
 	struct fd_event *fd_events;
@@ -223,21 +213,6 @@ bool event_add_to_select_args(struct event_context *event_ctx,
 	*timeout = timeval_min(timeout, &diff);
 
 	return True;
-}
-
-bool events_pending(struct event_context *event_ctx)
-{
-	struct fd_event *fde;
-
-	if (event_ctx->timed_events != NULL) {
-		return True;
-	}
-	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
-		if (fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) {
-			return True;
-		}
-	}
-	return False;
 }
 
 bool run_events(struct event_context *event_ctx,
