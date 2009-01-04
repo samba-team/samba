@@ -129,7 +129,7 @@ if opts.interactive:
 		else:
 			print "%s: " % (prompt,),
 		return sys.stdin.readline().rstrip("\n") or default
-	opts.realm = ask("Realm", socket.gethostname().split(".", 1)[1].upper())
+	opts.realm = ask("Realm", socket.getfqdn().split(".", 1)[1].upper())
 	opts.domain = ask("Domain", opts.realm.split(".")[0])
 	opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
 	for i in range(3):
