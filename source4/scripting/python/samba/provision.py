@@ -44,6 +44,7 @@ from samba.dcerpc import security
 import urllib
 from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
+from ms_schema import read_ms_schema
 
 __docformat__ = "restructuredText"
 
@@ -854,9 +855,10 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         message("Setting up sam.ldb Samba4 schema")
         setup_add_ldif(samdb, setup_path("schema_samba4.ldif"), 
                        {"SCHEMADN": names.schemadn })
+
         message("Setting up sam.ldb AD schema")
-        setup_add_ldif(samdb, setup_path("schema.ldif"), 
-                       {"SCHEMADN": names.schemadn})
+        data = get_schema_data(setup_path, {"SCHEMADN": names.schemadn})
+        samdb.add_ldif(data)
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
@@ -1268,8 +1270,9 @@ def provision_backend(setup_dir=None, message=None,
     
     setup_add_ldif(schemadb, setup_path("schema_samba4.ldif"), 
                    {"SCHEMADN": names.schemadn })
-    setup_add_ldif(schemadb, setup_path("schema.ldif"), 
-                   {"SCHEMADN": names.schemadn})
+
+    data = get_schema_data(setup_path, {"SCHEMADN": names.schemadn})
+    schemadb.add_ldif(data)
 
     if ldap_backend_type == "fedora-ds":
         if ldap_backend_port is not None:
@@ -1659,7 +1662,7 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
     :param serverdn: DN of the server
     :param servername: Host name of the server
     """
-    schema_data = open(setup_path("schema.ldif"), 'r').read()
+    schema_data = get_schema_data(setup_path, {"SCHEMADN": schemadn})
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
     schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
     check_all_substituted(schema_data)
@@ -1679,3 +1682,20 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
     check_all_substituted(head_data)
     samdb.attach_schema_from_ldif(head_data, schema_data)
 
+
+def get_schema_data(setup_path, subst_vars = None):
+    """Get schema data from the AD schema files instead of schema.ldif.
+
+    :param setup_path: Setup path function.
+    :param subst_vars: Optional variables to substitute in the file.
+    """ 
+
+    # this data used to be read from schema.ldif
+    
+    data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_Attributes_v20080618.txt'),
+                          setup_path('ad-schema/MS-AD_Schema_Classes_v20080618.txt'))
+
+    if subst_vars is not None:
+        data = substitute_var(data, subst_vars)
+    check_all_substituted(data)
+    return data    
