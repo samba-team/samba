@@ -236,3 +236,81 @@ NTSTATUS async_wait_recv(struct async_req *req)
 {
 	return NT_STATUS_OK;
 }
+
+struct async_queue_entry {
+	struct async_queue_entry *prev, *next;
+	struct async_req_queue *queue;
+	struct async_req *req;
+	void (*trigger)(struct async_req *req);
+};
+
+struct async_req_queue {
+	struct async_queue_entry *queue;
+};
+
+struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx)
+{
+	return TALLOC_ZERO_P(mem_ctx, struct async_req_queue);
+}
+
+static int async_queue_entry_destructor(struct async_queue_entry *e)
+{
+	struct async_req_queue *queue = e->queue;
+
+	DLIST_REMOVE(queue->queue, e);
+
+	if (queue->queue != NULL) {
+		queue->queue->trigger(queue->queue->req);
+	}
+
+	return 0;
+}
+
+static void async_req_immediate_trigger(struct event_context *ev,
+					struct timed_event *te,
+					const struct timeval *now,
+					void *priv)
+{
+	struct async_queue_entry *e = talloc_get_type_abort(
+		priv, struct async_queue_entry);
+
+	TALLOC_FREE(te);
+	e->trigger(e->req);
+}
+
+bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
+		       struct async_req *req,
+		       void (*trigger)(struct async_req *req))
+{
+	struct async_queue_entry *e;
+	bool busy;
+
+	busy = (queue->queue != NULL);
+
+	e = talloc(req, struct async_queue_entry);
+	if (e == NULL) {
+		return false;
+	}
+
+	e->req = req;
+	e->trigger = trigger;
+	e->queue = queue;
+
+	DLIST_ADD_END(queue->queue, e, struct async_queue_entry *);
+	talloc_set_destructor(e, async_queue_entry_destructor);
+
+	if (!busy) {
+		struct timed_event *te;
+
+		te = event_add_timed(ev, e, timeval_zero(),
+				     "async_req_immediate_trigger",
+				     async_req_immediate_trigger,
+				     e);
+		if (te == NULL) {
+			TALLOC_FREE(e);
+			return false;
+		}
+	}
+
+	return true;
+}
