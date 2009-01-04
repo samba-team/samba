@@ -41,52 +41,53 @@
      handler to get another event.
 
   To setup a set of events you first need to create a event_context
-  structure using the function event_context_init(); This returns a
+  structure using the function tevent_context_init(); This returns a
   'struct tevent_context' that you use in all subsequent calls.
 
   After that you can add/remove events that you are interested in
-  using event_add_*() and talloc_free()
+  using tevent_add_*() and talloc_free()
 
-  Finally, you call event_loop_wait_once() to block waiting for one of the
-  events to occor or event_loop_wait() which will loop
+  Finally, you call tevent_loop_wait_once() to block waiting for one of the
+  events to occor or tevent_loop_wait() which will loop
   forever.
 
 */
 #include "replace.h"
+#include "system/filesys.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
-struct event_ops_list {
-	struct event_ops_list *next, *prev;
+struct tevent_ops_list {
+	struct tevent_ops_list *next, *prev;
 	const char *name;
-	const struct event_ops *ops;
+	const struct tevent_ops *ops;
 };
 
 /* list of registered event backends */
-static struct event_ops_list *event_backends = NULL;
-static char *event_default_backend = NULL;
+static struct tevent_ops_list *tevent_backends = NULL;
+static char *tevent_default_backend = NULL;
 
 /*
   register an events backend
 */
-bool event_register_backend(const char *name, const struct event_ops *ops)
+bool tevent_register_backend(const char *name, const struct tevent_ops *ops)
 {
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	for (e = event_backends; e != NULL; e = e->next) {
+	for (e = tevent_backends; e != NULL; e = e->next) {
 		if (0 == strcmp(e->name, name)) {
 			/* already registered, skip it */
 			return true;
 		}
 	}
 
-	e = talloc(talloc_autofree_context(), struct event_ops_list);
+	e = talloc(talloc_autofree_context(), struct tevent_ops_list);
 	if (e == NULL) return false;
 
 	e->name = name;
 	e->ops = ops;
-	DLIST_ADD(event_backends, e);
+	DLIST_ADD(tevent_backends, e);
 
 	return true;
 }
@@ -94,38 +95,39 @@ bool event_register_backend(const char *name, const struct event_ops *ops)
 /*
   set the default event backend
  */
-void event_set_default_backend(const char *backend)
+void tevent_set_default_backend(const char *backend)
 {
-	if (event_default_backend) free(event_default_backend);
-	event_default_backend = strdup(backend);
+	talloc_free(tevent_default_backend);
+	tevent_default_backend = talloc_strdup(talloc_autofree_context(),
+					       backend);
 }
 
 /*
   initialise backends if not already done
 */
-static void event_backend_init(void)
+static void tevent_backend_init(void)
 {
-	events_select_init();
-	events_standard_init();
-#if HAVE_EVENTS_EPOLL
-	events_epoll_init();
+	tevent_select_init();
+	tevent_standard_init();
+#ifdef HAVE_EPOLL
+	tevent_epoll_init();
 #endif
-#if HAVE_LINUX_AIO
-	events_aio_init();
+#ifdef HAVE_LINUX_AIO
+	tevent_aio_init();
 #endif
 }
 
 /*
   list available backends
 */
-const char **event_backend_list(TALLOC_CTX *mem_ctx)
+const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 {
 	const char **list = NULL;
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	event_backend_init();
+	tevent_backend_init();
 
-	for (e=event_backends;e;e=e->next) {
+	for (e=tevent_backends;e;e=e->next) {
 		list = ev_str_list_add(list, e->name);
 	}
 
@@ -143,10 +145,10 @@ const char **event_backend_list(TALLOC_CTX *mem_ctx)
   This function is for allowing third-party-applications to hook in gluecode
   to their own event loop code, so that they can make async usage of our client libs
 
-  NOTE: use event_context_init() inside of samba!
+  NOTE: use tevent_context_init() inside of samba!
 */
-static struct tevent_context *event_context_init_ops(TALLOC_CTX *mem_ctx, 
-						    const struct event_ops *ops)
+static struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
+						      const struct tevent_ops *ops)
 {
 	struct tevent_context *ev;
 	int ret;
@@ -170,22 +172,23 @@ static struct tevent_context *event_context_init_ops(TALLOC_CTX *mem_ctx,
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name)
+struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx,
+						  const char *name)
 {
-	struct event_ops_list *e;
+	struct tevent_ops_list *e;
 
-	event_backend_init();
+	tevent_backend_init();
 
 	if (name == NULL) {
-		name = event_default_backend;
+		name = tevent_default_backend;
 	}
 	if (name == NULL) {
 		name = "standard";
 	}
 
-	for (e=event_backends;e;e=e->next) {
+	for (e=tevent_backends;e;e=e->next) {
 		if (strcmp(name, e->name) == 0) {
-			return event_context_init_ops(mem_ctx, e->ops);
+			return tevent_context_init_ops(mem_ctx, e->ops);
 		}
 	}
 	return NULL;
@@ -197,42 +200,74 @@ struct tevent_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char
   call, and all subsequent calls pass this event_context as the first
   element. Event handlers also receive this as their first argument.
 */
-struct tevent_context *event_context_init(TALLOC_CTX *mem_ctx)
+struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx)
 {
-	return event_context_init_byname(mem_ctx, NULL);
+	return tevent_context_init_byname(mem_ctx, NULL);
 }
 
 /*
   add a fd based event
   return NULL on failure (memory allocation error)
 
-  if flags contains EVENT_FD_AUTOCLOSE then the fd will be closed when
+  if flags contains TEVENT_FD_AUTOCLOSE then the fd will be closed when
   the returned fd_event context is freed
 */
-struct tevent_fd *event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-			      int fd, uint16_t flags, event_fd_handler_t handler,
-			      void *private_data)
+struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
+				 TALLOC_CTX *mem_ctx,
+				 int fd,
+				 uint16_t flags,
+				 tevent_fd_handler_t handler,
+				 void *private_data,
+				 const char *handler_name,
+				 const char *location)
 {
-	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data);
+	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data,
+			       handler_name, location);
 }
 
 /*
   add a disk aio event
 */
-struct aio_event *event_add_aio(struct tevent_context *ev,
-				TALLOC_CTX *mem_ctx,
-				struct iocb *iocb,
-				event_aio_handler_t handler,
-				void *private_data)
+struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
+				   TALLOC_CTX *mem_ctx,
+				   struct iocb *iocb,
+				   tevent_aio_handler_t handler,
+				   void *private_data,
+				   const char *handler_name,
+				   const char *location)
 {
 	if (ev->ops->add_aio == NULL) return NULL;
-	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data);
+	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data,
+				handler_name, location);
+}
+
+/*
+  set a close function on the fd event
+*/
+void tevent_fd_set_close_fn(struct tevent_fd *fde,
+			    tevent_fd_close_fn_t close_fn)
+{
+	if (!fde) return;
+	fde->event_ctx->ops->set_fd_close_fn(fde, close_fn);
+}
+
+static void tevent_fd_auto_close_fn(struct tevent_context *ev,
+				    struct tevent_fd *fde,
+				    int fd,
+				    void *private_data)
+{
+	close(fd);
+}
+
+void tevent_fd_set_auto_close(struct tevent_fd *fde)
+{
+	tevent_fd_set_close_fn(fde, tevent_fd_auto_close_fn);
 }
 
 /*
   return the fd event flags
 */
-uint16_t event_get_fd_flags(struct tevent_fd *fde)
+uint16_t tevent_fd_get_flags(struct tevent_fd *fde)
 {
 	if (!fde) return 0;
 	return fde->event_ctx->ops->get_fd_flags(fde);
@@ -241,22 +276,26 @@ uint16_t event_get_fd_flags(struct tevent_fd *fde)
 /*
   set the fd event flags
 */
-void event_set_fd_flags(struct tevent_fd *fde, uint16_t flags)
+void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	if (!fde) return;
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
 }
 
 /*
-  add a timed event
+  add a timer event
   return NULL on failure
 */
-struct tevent_timer *event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-				    struct timeval next_event, 
-				    event_timed_handler_t handler, 
-				    void *private_data)
+struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       struct timeval next_event,
+				       tevent_timer_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location)
 {
-	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data);
+	return ev->ops->add_timer(ev, mem_ctx, next_event, handler, private_data,
+				  handler_name, location);
 }
 
 /*
@@ -266,19 +305,23 @@ struct tevent_timer *event_add_timed(struct tevent_context *ev, TALLOC_CTX *mem_
 
   return NULL on failure
 */
-struct signal_event *event_add_signal(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-				      int signum,
-				      int sa_flags,
-				      event_signal_handler_t handler, 
-				      void *private_data)
+struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
+					 TALLOC_CTX *mem_ctx,
+					 int signum,
+					 int sa_flags,
+					 tevent_signal_handler_t handler,
+					 void *private_data,
+					 const char *handler_name,
+					 const char *location)
 {
-	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data);
+	return ev->ops->add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data,
+				   handler_name, location);
 }
 
 /*
   do a single event loop using the events defined in ev 
 */
-int event_loop_once(struct tevent_context *ev)
+int tevent_loop_once(struct tevent_context *ev)
 {
 	return ev->ops->loop_once(ev);
 }
@@ -286,25 +329,7 @@ int event_loop_once(struct tevent_context *ev)
 /*
   return on failure or (with 0) if all fd events are removed
 */
-int event_loop_wait(struct tevent_context *ev)
+int tevent_loop_wait(struct tevent_context *ev)
 {
 	return ev->ops->loop_wait(ev);
-}
-
-/*
-  find an event context that is a parent of the given memory context,
-  or create a new event context as a child of the given context if
-  none is found
-
-  This should be used in preference to event_context_init() in places
-  where you would prefer to use the existing event context if possible
-  (which is most situations)
-*/
-struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
-{
-	struct tevent_context *ev = talloc_find_parent_bytype(mem_ctx, struct tevent_context);
-	if (ev == NULL) {		
-		ev = event_context_init(mem_ctx);
-	}
-	return ev;
 }

@@ -115,7 +115,7 @@ NTSTATUS wbsrv_samba3_priv_pipe_dir(struct wbsrv_samba3_call *s3call)
 {
 	const char *path = s3call->wbconn->listen_socket->service->priv_socket_path;
 	s3call->response.result		 = WINBINDD_OK;
-	WBSRV_SAMBA3_SET_STRING(s3call->response.extra_data.data, path);
+	s3call->response.extra_data.data = discard_const(path);
 
 	s3call->response.length += strlen(path) + 1;
 	return NT_STATUS_OK;

@@ -78,6 +78,7 @@ static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
 
 	for (res = ailist; res; res = res->ai_next) {
 		struct sockaddr_storage ss;
+		NTSTATUS status;
 
 		if (!res->ai_addr || res->ai_addrlen == 0) {
 			continue;
@@ -86,8 +87,8 @@ static int smb_traffic_analyzer_connect_inet_socket(vfs_handle_struct *handle,
 		ZERO_STRUCT(ss);
 		memcpy(&ss, res->ai_addr, res->ai_addrlen);
 
-		sockfd = open_socket_out(SOCK_STREAM, &ss, port, 10000);
-		if (sockfd != -1) {
+		status = open_socket_out(&ss, port, 10000, &sockfd);
+		if (NT_STATUS_IS_OK(status)) {
 			break;
 		}
 	}

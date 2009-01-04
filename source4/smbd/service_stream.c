@@ -21,8 +21,8 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include "process_model.h"
-#include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "smbd/service.h"
 #include "smbd/service_stream.h"
@@ -72,7 +72,7 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 		 *
 		 * and we don't want to read or write to the connection...
 		 */
-		event_set_fd_flags(srv_conn->event.fde, 0);
+		tevent_fd_set_flags(srv_conn->event.fde, 0);
 		return;
 	}
 
@@ -88,9 +88,9 @@ void stream_terminate_connection(struct stream_connection *srv_conn, const char 
 static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 {
 	conn->processing++;
-	if (flags & EVENT_FD_WRITE) {
+	if (flags & TEVENT_FD_WRITE) {
 		conn->ops->send_handler(conn, flags);
-	} else if (flags & EVENT_FD_READ) {
+	} else if (flags & TEVENT_FD_READ) {
 		conn->ops->recv_handler(conn, flags);
 	}
 	conn->processing--;
@@ -144,9 +144,14 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 	srv_conn->msg_ctx	= msg_ctx;
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
-	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
-					       EVENT_FD_READ, 
-					       stream_io_handler_fde, srv_conn);
+	srv_conn->event.fde	= tevent_add_fd(ev, srv_conn, socket_get_fd(sock),
+						TEVENT_FD_READ,
+						stream_io_handler_fde, srv_conn);
+	if (!srv_conn->event.fde) {
+		talloc_free(srv_conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	*_srv_conn = srv_conn;
 	return NT_STATUS_OK;
 }
@@ -179,11 +184,16 @@ static void stream_new_connection(struct tevent_context *ev,
 	srv_conn->ops           = stream_socket->ops;
 	srv_conn->event.ctx	= ev;
 	srv_conn->lp_ctx	= lp_ctx;
-	srv_conn->event.fde	= event_add_fd(ev, srv_conn, socket_get_fd(sock),
-					       0, stream_io_handler_fde, srv_conn);
 
 	if (!socket_check_access(sock, "smbd", lp_hostsallow(NULL, lp_default_service(lp_ctx)), lp_hostsdeny(NULL, lp_default_service(lp_ctx)))) {
 		stream_terminate_connection(srv_conn, "denied by access rules");
+		return;
+	}
+
+	srv_conn->event.fde	= tevent_add_fd(ev, srv_conn, socket_get_fd(sock),
+						0, stream_io_handler_fde, srv_conn);
+	if (!srv_conn->event.fde) {
+		stream_terminate_connection(srv_conn, "tevent_add_fd() failed");
 		return;
 	}
 
@@ -214,7 +224,7 @@ static void stream_new_connection(struct tevent_context *ev,
 	talloc_free(s);
 
 	/* we're now ready to start receiving events on this stream */
-	EVENT_FD_READABLE(srv_conn->event.fde);
+	TEVENT_FD_READABLE(srv_conn->event.fde);
 
 	/* call the server specific accept code */
 	stream_socket->ops->accept_connection(srv_conn);
@@ -258,6 +268,7 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
 	struct socket_address *socket_address;
+	struct tevent_fd *fde;
 	int i;
 
 	stream_socket = talloc_zero(event_context, struct stream_socket);
@@ -322,20 +333,24 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 		return status;
 	}
 
-	/* By specifying EVENT_FD_AUTOCLOSE below, we indicate that we
-	 * will close the socket using the events system.  This avoids
-	 * nasty interactions with waiting for talloc to close the socket. */
-
-	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
-
 	/* Add the FD from the newly created socket into the event
 	 * subsystem.  it will call the accept handler whenever we get
 	 * new connections */
 
-	event_add_fd(event_context, stream_socket->sock, 
-		     socket_get_fd(stream_socket->sock), 
-		     EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
-		     stream_accept_handler, stream_socket);
+	fde = tevent_add_fd(event_context, stream_socket->sock,
+			    socket_get_fd(stream_socket->sock),
+			    TEVENT_FD_READ,
+			    stream_accept_handler, stream_socket);
+	if (!fde) {
+		DEBUG(0,("Failed to setup fd event\n"));
+		talloc_free(stream_socket);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* we let events system to the close on the socket. This avoids
+	 * nasty interactions with waiting for talloc to close the socket. */
+	tevent_fd_set_close_fn(fde, socket_tevent_fd_close_fn);
+	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
 
 	stream_socket->private          = talloc_reference(stream_socket, private);
 	stream_socket->ops              = stream_ops;

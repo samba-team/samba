@@ -284,7 +284,7 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 
 	if (CVAL(lenbuf,0) == 0 &&
 			min_recv_size &&
-			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
+			smb_len_large(lenbuf) > (min_recv_size + STANDARD_WRITE_AND_X_HEADER_SIZE) && /* Could be a UNIX large writeX. */
 			!srv_is_signing_active()) {
 
 		return receive_smb_raw_talloc_partial_read(

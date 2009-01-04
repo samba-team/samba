@@ -54,8 +54,6 @@ static void cm_set_password(const char *newpass);
 
 static int port;
 static int name_type = 0x20;
-static bool have_ip;
-static struct sockaddr_storage dest_ss;
 
 static struct client_connection *connections;
 
@@ -133,8 +131,11 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	}
 	sharename = servicename;
 	if (*sharename == '\\') {
-		server = sharename+2;
-		sharename = strchr_m(server,'\\');
+		sharename += 2;
+		if (server == NULL) {
+			server = sharename;
+		}
+		sharename = strchr_m(sharename,'\\');
 		if (!sharename) {
 			return NULL;
 		}
@@ -151,8 +152,6 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
  again:
 	zero_sockaddr(&ss);
-	if (have_ip)
-		ss = dest_ss;
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port)) {
@@ -548,15 +547,6 @@ void cli_cm_set_use_kerberos(void)
 void cli_cm_set_fallback_after_kerberos(void)
 {
 	cm_creds.fallback_after_kerberos = true;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_dest_ss(struct sockaddr_storage *pss)
-{
-	dest_ss = *pss;
-	have_ip = true;
 }
 
 /**********************************************************************

@@ -19,6 +19,7 @@ struct named_pipe_auth_req {
 }/* [gensize,public] */;
 
 union named_pipe_auth_rep_info {
+	int _dummy_element;
 }/* [switch_type(uint32)] */;
 
 struct named_pipe_auth_rep {

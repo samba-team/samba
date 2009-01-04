@@ -757,7 +757,7 @@ _PUBLIC_ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (i=0;i<count;i++) {
 		char *idx=NULL;
-		if (asprintf(&idx, "[%d]", i) == -1) {
+		if (asprintf(&idx, "[%d]", i) != -1) {
 			ndr_print_uint8(ndr, idx, data[i]);
 			free(idx);
 		}

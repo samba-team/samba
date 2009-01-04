@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include <tevent.h>
 #include "lib/socket/socket.h"
 #include "smbd/service.h"
 #include "param/param.h"
@@ -49,7 +49,7 @@ static void named_pipe_handover_connection(void *private_data)
 		private_data, struct named_pipe_connection);
 	struct stream_connection *conn = pipe_conn->connection;
 
-	EVENT_FD_NOT_WRITEABLE(conn->event.fde);
+	TEVENT_FD_NOT_WRITEABLE(conn->event.fde);
 
 	if (!NT_STATUS_IS_OK(pipe_conn->status)) {
 		stream_terminate_connection(conn, nt_errstr(pipe_conn->status));
@@ -64,7 +64,7 @@ static void named_pipe_handover_connection(void *private_data)
 	talloc_free(pipe_conn);
 
 	/* we're now ready to start receiving events on this stream */
-	EVENT_FD_READABLE(conn->event.fde);
+	TEVENT_FD_READABLE(conn->event.fde);
 
 	/*
 	 * hand over to the real pipe implementation,

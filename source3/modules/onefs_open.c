@@ -1,8 +1,8 @@
 /*
  * Unix SMB/CIFS implementation.
  *
- * This file began with some code from source3/smbd/open.c and modified it to
- * work with ifs_createfile.
+ * This file began with some code from source3/smbd/open.c and has been
+ * modified it work with ifs_createfile.
  *
  * ifs_createfile is a CIFS-specific syscall for opening/files and
  * directories.  It adds support for:
@@ -459,7 +459,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		DEBUG(10, ("onefs_open_file_ntcreate: printer open fname=%s\n",
 			  fname));
 
-		return print_fsp_open(req, conn, fname, req->vuid, fsp);
+		return print_fsp_open(req, conn, fname, req->vuid, fsp, psbuf);
 	}
 
 	if (!parent_dirname(talloc_tos(), fname, &parent_dir, &newname)) {

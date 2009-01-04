@@ -1,11 +1,12 @@
-TEVENT_SONAME = libtevent.$(SHLIBEXT).0
-TEVENT_SOLIB = libtevent.$(SHLIBEXT).$(PACKAGE_VERSION)
+TEVENT_SOBASE = libtevent.$(SHLIBEXT)
+TEVENT_SONAME = $(TEVENT_SOBASE).0
+TEVENT_SOLIB = $(TEVENT_SOBASE).$(PACKAGE_VERSION)
 TEVENT_STLIB = libtevent.a
 
 $(TEVENT_STLIB): $(TEVENT_OBJ)
 	ar -rv $(TEVENT_STLIB) $(TEVENT_OBJ)
 
-libtevent.$(SHLIBEXT): $(TEVENT_SOLIB)
+$(TEVENT_SOBASE): $(TEVENT_SOLIB)
 	ln -fs $< $@
 
 $(TEVENT_SONAME): $(TEVENT_SOLIB)
@@ -31,7 +32,7 @@ installlibs:: installdirs
 install:: all installdirs installheaders installlibs $(PYTHON_INSTALL_TARGET)
 
 clean::
-	rm -f $(TEVENT_SONAME) $(TEVENT_SOLIB) $(TEVENT_STLIB) libtevent.$(SHLIBEXT)
+	rm -f $(TEVENT_SOBASE) $(TEVENT_SONAME) $(TEVENT_SOLIB) $(TEVENT_STLIB)
 	rm -f tevent.pc
 	rm -f tevent.$(SHLIBEXT)
 
@@ -45,7 +46,7 @@ build-python:: tevent.$(SHLIBEXT)
 pytevent.o: $(teventdir)/pytevent.c
 	$(CC) $(PICFLAG) -c $(teventdir)/pytevent.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
-tevent.$(SHLIBEXT): libtevent.$(SHLIBEXT) pytevent.o
+tevent.$(SHLIBEXT): $(TEVENT_SOBASE) $(TEVENT_SONAME) pytevent.o
 	$(SHLD) $(SHLD_FLAGS) -o $@ pytevent.o -L. -ltevent `$(PYTHON_CONFIG) --libs`
 
 install-python:: build-python

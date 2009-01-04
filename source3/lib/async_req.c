@@ -49,7 +49,7 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req)
  * The new async request will be initialized in state ASYNC_REQ_IN_PROGRESS
  */
 
-struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev)
+struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 {
 	struct async_req *result;
 
@@ -58,7 +58,6 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx, struct event_context *ev)
 		return NULL;
 	}
 	result->state = ASYNC_REQ_IN_PROGRESS;
-	result->event_ctx = ev;
 	result->print = async_req_print;
 	return result;
 }
@@ -135,12 +134,12 @@ static void async_trigger(struct event_context *ev, struct timed_event *te,
  * conventions, independent of whether the request was actually deferred.
  */
 
-bool async_post_status(struct async_req *req, NTSTATUS status)
+bool async_post_status(struct async_req *req, struct event_context *ev,
+		       NTSTATUS status)
 {
 	req->status = status;
 
-	if (event_add_timed(req->event_ctx, req, timeval_zero(),
-			    "async_trigger",
+	if (event_add_timed(ev, req, timeval_zero(), "async_trigger",
 			    async_trigger, req) == NULL) {
 		return false;
 	}
@@ -194,4 +193,124 @@ NTSTATUS async_req_simple_recv(struct async_req *req)
 		return status;
 	}
 	return NT_STATUS_OK;
+}
+
+static void async_req_timedout(struct event_context *ev,
+			       struct timed_event *te,
+			       const struct timeval *now,
+			       void *priv)
+{
+	struct async_req *req = talloc_get_type_abort(
+		priv, struct async_req);
+	TALLOC_FREE(te);
+	async_req_error(req, NT_STATUS_IO_TIMEOUT);
+}
+
+bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+			   struct timeval to)
+{
+	return (event_add_timed(ev, req,
+				timeval_current_ofs(to.tv_sec, to.tv_usec),
+				"async_req_timedout", async_req_timedout, req)
+		!= NULL);
+}
+
+struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
+				  struct event_context *ev,
+				  struct timeval to)
+{
+	struct async_req *result;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return result;
+	}
+	if (!async_req_set_timeout(result, ev, to)) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+	return result;
+}
+
+NTSTATUS async_wait_recv(struct async_req *req)
+{
+	return NT_STATUS_OK;
+}
+
+struct async_queue_entry {
+	struct async_queue_entry *prev, *next;
+	struct async_req_queue *queue;
+	struct async_req *req;
+	void (*trigger)(struct async_req *req);
+};
+
+struct async_req_queue {
+	struct async_queue_entry *queue;
+};
+
+struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx)
+{
+	return TALLOC_ZERO_P(mem_ctx, struct async_req_queue);
+}
+
+static int async_queue_entry_destructor(struct async_queue_entry *e)
+{
+	struct async_req_queue *queue = e->queue;
+
+	DLIST_REMOVE(queue->queue, e);
+
+	if (queue->queue != NULL) {
+		queue->queue->trigger(queue->queue->req);
+	}
+
+	return 0;
+}
+
+static void async_req_immediate_trigger(struct event_context *ev,
+					struct timed_event *te,
+					const struct timeval *now,
+					void *priv)
+{
+	struct async_queue_entry *e = talloc_get_type_abort(
+		priv, struct async_queue_entry);
+
+	TALLOC_FREE(te);
+	e->trigger(e->req);
+}
+
+bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
+		       struct async_req *req,
+		       void (*trigger)(struct async_req *req))
+{
+	struct async_queue_entry *e;
+	bool busy;
+
+	busy = (queue->queue != NULL);
+
+	e = talloc(req, struct async_queue_entry);
+	if (e == NULL) {
+		return false;
+	}
+
+	e->req = req;
+	e->trigger = trigger;
+	e->queue = queue;
+
+	DLIST_ADD_END(queue->queue, e, struct async_queue_entry *);
+	talloc_set_destructor(e, async_queue_entry_destructor);
+
+	if (!busy) {
+		struct timed_event *te;
+
+		te = event_add_timed(ev, e, timeval_zero(),
+				     "async_req_immediate_trigger",
+				     async_req_immediate_trigger,
+				     e);
+		if (te == NULL) {
+			TALLOC_FREE(e);
+			return false;
+		}
+	}
+
+	return true;
 }

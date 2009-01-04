@@ -22,11 +22,10 @@
 
 #include "replace.h"
 #include "system/filesys.h"
-#include "system/network.h"
+#include "system/select.h"
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
-#include <sys/epoll.h>
 
 struct epoll_event_context {
 	/* a pointer back to the generic event_context */
@@ -58,19 +57,19 @@ struct epoll_event_context {
 */
 static void epoll_panic(struct epoll_event_context *epoll_ev, const char *reason)
 {
-	ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
+	tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
 		 "%s (%s) - calling abort()\n", reason, strerror(errno));
 	abort();
 }
 
 /*
-  map from EVENT_FD_* to EPOLLIN/EPOLLOUT
+  map from TEVENT_FD_* to EPOLLIN/EPOLLOUT
 */
 static uint32_t epoll_map_flags(uint16_t flags)
 {
 	uint32_t ret = 0;
-	if (flags & EVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
-	if (flags & EVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_READ) ret |= (EPOLLIN | EPOLLERR | EPOLLHUP);
+	if (flags & TEVENT_FD_WRITE) ret |= (EPOLLOUT | EPOLLERR | EPOLLHUP);
 	return ret;
 }
 
@@ -116,8 +115,8 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 	close(epoll_ev->epoll_fd);
 	epoll_ev->epoll_fd = epoll_create(64);
 	if (epoll_ev->epoll_fd == -1) {
-		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
-			 "Failed to recreate epoll handle after fork\n");
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "Failed to recreate epoll handle after fork\n");
 		return;
 	}
 	epoll_ev->pid = getpid();
@@ -153,7 +152,7 @@ static void epoll_add_event(struct epoll_event_context *epoll_ev, struct tevent_
 	fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -176,9 +175,9 @@ static void epoll_del_event(struct epoll_event_context *epoll_ev, struct tevent_
 	event.events = epoll_map_flags(fde->flags);
 	event.data.ptr = fde;
 	if (epoll_ctl(epoll_ev->epoll_fd, EPOLL_CTL_DEL, fde->fd, &event) != 0) {
-		ev_debug(epoll_ev->ev, EV_DEBUG_FATAL,
-			 "epoll_del_event failed! probable early close bug (%s)\n",
-			 strerror(errno));
+		tevent_debug(epoll_ev->ev, TEVENT_DEBUG_FATAL,
+			     "epoll_del_event failed! probable early close bug (%s)\n",
+			     strerror(errno));
 	}
 	fde->additional_flags &= ~EPOLL_ADDITIONAL_FD_FLAG_HAS_EVENT;
 }
@@ -201,7 +200,7 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 	}
 
 	/* only if we want to read we want to tell the event handler about errors */
-	if (fde->flags & EVENT_FD_READ) {
+	if (fde->flags & TEVENT_FD_READ) {
 		fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_REPORT_ERROR;
 	}
 }
@@ -209,8 +208,8 @@ static void epoll_mod_event(struct epoll_event_context *epoll_ev, struct tevent_
 static void epoll_change_event(struct epoll_event_context *epoll_ev, struct tevent_fd *fde)
 {
 	bool got_error = (fde->additional_flags & EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR);
-	bool want_read = (fde->flags & EVENT_FD_READ);
-	bool want_write= (fde->flags & EVENT_FD_WRITE);
+	bool want_read = (fde->flags & TEVENT_FD_READ);
+	bool want_write= (fde->flags & TEVENT_FD_WRITE);
 
 	if (epoll_ev->epoll_fd == -1) return;
 
@@ -258,14 +257,14 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 	}
 
 	if (epoll_ev->ev->num_signal_handlers && 
-	    common_event_check_signal(epoll_ev->ev)) {
+	    tevent_common_check_signal(epoll_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
 
 	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
-		if (common_event_check_signal(epoll_ev->ev)) {
+		if (tevent_common_check_signal(epoll_ev->ev)) {
 			return 0;
 		}
 	}
@@ -277,7 +276,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 
 	if (ret == 0 && tvalp) {
 		/* we don't care about a possible delay here */
-		common_event_loop_timer_delay(epoll_ev->ev);
+		tevent_common_loop_timer_delay(epoll_ev->ev);
 		return 0;
 	}
 
@@ -293,7 +292,7 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		if (events[i].events & (EPOLLHUP|EPOLLERR)) {
 			fde->additional_flags |= EPOLL_ADDITIONAL_FD_FLAG_GOT_ERROR;
 			/*
-			 * if we only wait for EVENT_FD_WRITE, we should not tell the
+			 * if we only wait for TEVENT_FD_WRITE, we should not tell the
 			 * event handler about it, and remove the epoll_event,
 			 * as we only report errors when waiting for read events,
 			 * to match the select() behavior
@@ -302,10 +301,10 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 				epoll_del_event(epoll_ev, fde);
 				continue;
 			}
-			flags |= EVENT_FD_READ;
+			flags |= TEVENT_FD_READ;
 		}
-		if (events[i].events & EPOLLIN) flags |= EVENT_FD_READ;
-		if (events[i].events & EPOLLOUT) flags |= EVENT_FD_WRITE;
+		if (events[i].events & EPOLLIN) flags |= TEVENT_FD_READ;
+		if (events[i].events & EPOLLOUT) flags |= TEVENT_FD_WRITE;
 		if (flags) {
 			fde->handler(epoll_ev->ev, fde, flags, fde->private_data);
 			if (destruction_count != epoll_ev->destruction_count) {
@@ -358,8 +357,8 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
 		
 	epoll_del_event(epoll_ev, fde);
 
-	if (fde->flags & EVENT_FD_AUTOCLOSE) {
-		close(fde->fd);
+	if (fde->close_fn) {
+		fde->close_fn(ev, fde, fde->fd, fde->private_data);
 		fde->fd = -1;
 	}
 
@@ -371,9 +370,11 @@ static int epoll_event_fd_destructor(struct tevent_fd *fde)
   return NULL on failure (memory allocation error)
 */
 static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
-					 int fd, uint16_t flags,
-					 event_fd_handler_t handler,
-					 void *private_data)
+					    int fd, uint16_t flags,
+					    tevent_fd_handler_t handler,
+					    void *private_data,
+					    const char *handler_name,
+					    const char *location)
 {
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
@@ -388,7 +389,10 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	fde->fd			= fd;
 	fde->flags		= flags;
 	fde->handler		= handler;
+	fde->close_fn		= NULL;
 	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
 	fde->additional_flags	= 0;
 	fde->additional_data	= NULL;
 
@@ -399,15 +403,6 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 	epoll_add_event(epoll_ev, fde);
 
 	return fde;
-}
-
-
-/*
-  return the fd event flags
-*/
-static uint16_t epoll_event_get_fd_flags(struct tevent_fd *fde)
-{
-	return fde->flags;
 }
 
 /*
@@ -439,7 +434,7 @@ static int epoll_event_loop_once(struct tevent_context *ev)
 		 					   struct epoll_event_context);
 	struct timeval tval;
 
-	tval = common_event_loop_timer_delay(ev);
+	tval = tevent_common_loop_timer_delay(ev);
 	if (ev_timeval_is_zero(&tval)) {
 		return 0;
 	}
@@ -465,18 +460,19 @@ static int epoll_event_loop_wait(struct tevent_context *ev)
 	return 0;
 }
 
-static const struct event_ops epoll_event_ops = {
+static const struct tevent_ops epoll_event_ops = {
 	.context_init	= epoll_event_context_init,
 	.add_fd		= epoll_event_add_fd,
-	.get_fd_flags	= epoll_event_get_fd_flags,
+	.set_fd_close_fn= tevent_common_fd_set_close_fn,
+	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= epoll_event_set_fd_flags,
-	.add_timer	= common_event_add_timed,
-	.add_signal	= common_event_add_signal,
+	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= epoll_event_loop_once,
 	.loop_wait	= epoll_event_loop_wait,
 };
 
-bool events_epoll_init(void)
+bool tevent_epoll_init(void)
 {
-	return event_register_backend("epoll", &epoll_event_ops);
+	return tevent_register_backend("epoll", &epoll_event_ops);
 }

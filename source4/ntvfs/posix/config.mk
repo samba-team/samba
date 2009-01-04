@@ -29,7 +29,7 @@ pvfs_acl_nfs4_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_acl_nfs4.o
 
 ################################################
 [SUBSYSTEM::pvfs_aio]
-PRIVATE_DEPENDENCIES = LIBTEVENT LIBAIO_LINUX
+PRIVATE_DEPENDENCIES = LIBTEVENT LIBTEVENT_EXT
 ################################################
 
 pvfs_aio_OBJ_FILES = $(ntvfssrcdir)/posix/pvfs_aio.o

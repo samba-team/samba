@@ -1457,10 +1457,21 @@ int open_socket_in(int type,
 		int dlevel,
 		const struct sockaddr_storage *psock,
 		bool rebind);
-int open_socket_out(int type,
-		const struct sockaddr_storage *pss,
-		uint16_t port,
-		int timeout);
+NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
+			 int timeout, int *pfd);
+struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
+				       struct event_context *ev,
+				       const struct sockaddr_storage *pss,
+				       uint16_t port,
+				       int timeout);
+NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd);
+struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
+					     struct event_context *ev,
+					     struct timeval wait_time,
+					     const struct sockaddr_storage *pss,
+					     uint16_t port,
+					     int timeout);
+NTSTATUS open_socket_out_defer_recv(struct async_req *req, int *pfd);
 bool open_any_socket_out(struct sockaddr_storage *addrs, int num_addrs,
 			 int timeout, int *fd_index, int *fd);
 int open_udp_socket(const char *host, int port);
@@ -7969,5 +7980,15 @@ NTSTATUS idmap_sid_to_gid(const char *domname, DOM_SID *sid, gid_t *gid);
 /* The following definitions come from winbindd/nss_info_template.c  */
 
 NTSTATUS nss_info_template_init( void );
+
+/* Misc protos */
+
+struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct wb_context *wb_ctx, bool need_priv,
+				const struct winbindd_request *wb_req);
+NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+		       struct winbindd_response **presponse);
+struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx);
+
 
 #endif /*  _PROTO_H_  */

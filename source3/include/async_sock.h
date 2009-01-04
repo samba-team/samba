@@ -24,7 +24,7 @@
 
 ssize_t async_syscall_result_ssize_t(struct async_req *req, int *perrno);
 size_t async_syscall_result_size_t(struct async_req *req, int *perrno);
-ssize_t async_syscall_result_int(struct async_req *req, int *perrno);
+int async_syscall_result_int(struct async_req *req, int *perrno);
 
 struct async_req *async_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			     int fd, const void *buffer, size_t length,
@@ -32,9 +32,11 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			     int fd, void *buffer, size_t length,
 			     int flags);
-struct async_req *async_connect(TALLOC_CTX *mem_ctx, struct event_context *ev,
-				int fd, const struct sockaddr *address,
-				socklen_t address_len);
+struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     int fd, const struct sockaddr *address,
+				     socklen_t address_len);
+NTSTATUS async_connect_recv(struct async_req *req, int *perrno);
 
 struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			       int fd, const void *buffer, size_t length,

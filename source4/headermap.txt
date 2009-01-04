@@ -49,11 +49,8 @@ param/share.h: share.h
 ../lib/util/util_tdb.h: util_tdb.h
 ../lib/util/util_ldb.h: util_ldb.h
 ../lib/util/wrap_xattr.h: wrap_xattr.h
-lib/events/events.h: events/events.h
-lib/events/events_internal.h: events/events_internal.h
 libcli/ldap/ldap_ndr.h: ldap_ndr.h
 lib/events/events.h: events.h
-lib/events/events_internal.h: events_internal.h
 ../lib/tevent/tevent.h: tevent.h
 ../lib/tevent/tevent_internal.h: tevent_internal.h
 auth/session.h: samba/session.h

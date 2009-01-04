@@ -44,12 +44,14 @@ NTSTATUS packet_fd_read_sync(struct packet_context *ctx);
  * Handle an incoming packet:
  * Return False if none is available
  * Otherwise return True and store the callback result in *status
+ * Callback must either talloc_move or talloc_free buf
  */
 bool packet_handler(struct packet_context *ctx,
-		    bool (*full_req)(const DATA_BLOB *data,
+		    bool (*full_req)(const uint8_t *buf,
+				     size_t available,
 				     size_t *length,
 				     void *private_data),
-		    NTSTATUS (*callback)(const DATA_BLOB *data,
+		    NTSTATUS (*callback)(uint8_t *buf, size_t length,
 					 void *private_data),
 		    void *private_data,
 		    NTSTATUS *status);

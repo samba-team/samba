@@ -21,6 +21,7 @@
 #define _SAMBA_SOCKET_H
 
 struct tevent_context;
+struct tevent_fd;
 struct socket_context;
 
 enum socket_type {
@@ -204,6 +205,11 @@ NTSTATUS socket_connect_multi(TALLOC_CTX *mem_ctx, const char *server_address,
 			      uint16_t *port);
 void set_socket_options(int fd, const char *options);
 void socket_set_flags(struct socket_context *socket, unsigned flags);
+
+void socket_tevent_fd_close_fn(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       int fd,
+			       void *private_data);
 
 extern bool testnonblock;
 

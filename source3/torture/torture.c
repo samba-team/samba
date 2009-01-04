@@ -1213,7 +1213,9 @@ static bool run_tcon2_test(int dummy)
 
 	printf("starting tcon2 test\n");
 
-	asprintf(&service, "\\\\%s\\%s", host, share);
+	if (asprintf(&service, "\\\\%s\\%s", host, share) == -1) {
+		return false;
+	}
 
 	status = cli_raw_tcon(cli, service, password, "?????", &max_xmit, &cnum);
 
@@ -5280,8 +5282,13 @@ static bool run_local_rbtree(int dummy)
 	for (i=0; i<1000; i++) {
 		char *key, *value;
 
-		asprintf(&key, "key%ld", random());
-		asprintf(&value, "value%ld", random());
+		if (asprintf(&key, "key%ld", random()) == -1) {
+			goto done;
+		}
+		if (asprintf(&value, "value%ld", random()) == -1) {
+			SAFE_FREE(key);
+			goto done;
+		}
 
 		if (!rbt_testval(db, key, value)) {
 			SAFE_FREE(key);
@@ -5290,7 +5297,10 @@ static bool run_local_rbtree(int dummy)
 		}
 
 		SAFE_FREE(value);
-		asprintf(&value, "value%ld", random());
+		if (asprintf(&value, "value%ld", random()) == -1) {
+			SAFE_FREE(key);
+			goto done;
+		}
 
 		if (!rbt_testval(db, key, value)) {
 			SAFE_FREE(key);
@@ -5483,6 +5493,70 @@ static bool run_local_memcache(int dummy)
 	return ret;
 }
 
+static void wbclient_done(struct async_req *req)
+{
+	NTSTATUS status;
+	struct winbindd_response *wb_resp;
+	int *i = (int *)req->async.priv;
+
+	status = wb_trans_recv(req, req, &wb_resp);
+	TALLOC_FREE(req);
+	*i += 1;
+	d_printf("wb_trans_recv %d returned %s\n", *i, nt_errstr(status));
+}
+
+static bool run_local_wbclient(int dummy)
+{
+	struct event_context *ev;
+	struct wb_context **wb_ctx;
+	struct winbindd_request wb_req;
+	bool result = false;
+	int i, j;
+
+	BlockSignals(True, SIGPIPE);
+
+	ev = event_context_init(talloc_tos());
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	wb_ctx = TALLOC_ARRAY(ev, struct wb_context *, torture_numops);
+	if (wb_ctx == NULL) {
+		goto fail;
+	}
+
+	ZERO_STRUCT(wb_req);
+	wb_req.cmd = WINBINDD_PING;
+
+	for (i=0; i<torture_numops; i++) {
+		wb_ctx[i] = wb_context_init(ev);
+		if (wb_ctx[i] == NULL) {
+			goto fail;
+		}
+		for (j=0; j<5; j++) {
+			struct async_req *req;
+			req = wb_trans_send(ev, ev, wb_ctx[i],
+					    (j % 2) == 0, &wb_req);
+			if (req == NULL) {
+				goto fail;
+			}
+			req->async.fn = wbclient_done;
+			req->async.priv = &i;
+		}
+	}
+
+	i = 0;
+
+	while (i < 5 * torture_numops) {
+		event_loop_once(ev);
+	}
+
+	result = true;
+ fail:
+	TALLOC_FREE(ev);
+	return result;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -5642,6 +5716,7 @@ static struct {
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
+	{ "LOCAL-WBCLIENT", run_local_wbclient, 0},
 	{NULL, NULL, 0}};
 
 

@@ -35,8 +35,6 @@
 #include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
 
-static int failures;
-
 static void usage(void)
 {
 	printf("Usage: ldbmodify <options> <ldif...>\n");
@@ -52,7 +50,8 @@ static void usage(void)
 /*
   process modifies for one file
 */
-static int process_file(struct ldb_context *ldb, FILE *f, int *count)
+static int process_file(struct ldb_context *ldb, FILE *f, int *count,
+			int *failures)
 {
 	struct ldb_ldif *ldif;
 	int ret = LDB_SUCCESS;
@@ -73,7 +72,7 @@ static int process_file(struct ldb_context *ldb, FILE *f, int *count)
 		if (ret != LDB_SUCCESS) {
 			fprintf(stderr, "ERR: \"%s\" on DN %s\n", 
 				ldb_errstring(ldb), ldb_dn_linearize(ldb, ldif->msg->dn));
-			failures++;
+			(*failures)++;
 		} else {
 			(*count)++;
 		}
@@ -87,6 +86,7 @@ int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
 	int count=0;
+	int failures=0;
 	int i, ret=LDB_SUCCESS;
 	struct ldb_cmdline *options;
 
@@ -97,7 +97,7 @@ int main(int argc, const char **argv)
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
 
 	if (options->argc == 0) {
-		ret = process_file(ldb, stdin, &count);
+		ret = process_file(ldb, stdin, &count, &failures);
 	} else {
 		for (i=0;i<options->argc;i++) {
 			const char *fname = options->argv[i];
@@ -107,7 +107,7 @@ int main(int argc, const char **argv)
 				perror(fname);
 				exit(1);
 			}
-			ret = process_file(ldb, f, &count);
+			ret = process_file(ldb, f, &count, &failures);
 		}
 	}
 

@@ -81,8 +81,9 @@ static bool test_event_context(struct torture_context *test,
 	/* create a pipe */
 	pipe(fd);
 
-	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
+	fde = event_add_fd(ev_ctx, ev_ctx, fd[0], EVENT_FD_READ,
 			   fde_handler, fd);
+	tevent_fd_set_auto_close(fde);
 
 	event_add_timed(ev_ctx, ev_ctx, timeval_current_ofs(2,0), 
 			finished_handler, &finished);

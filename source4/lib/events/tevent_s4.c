@@ -17,38 +17,37 @@
 */
 
 #include "includes.h"
-#include <events.h>
-#include <events_internal.h>
+#include "lib/events/events.h"
 
 /*
   this is used to catch debug messages from events
 */
-static void ev_wrap_debug(void *context, enum ev_debug_level level,
+static void ev_wrap_debug(void *context, enum tevent_debug_level level,
 			  const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
 
-static void ev_wrap_debug(void *context, enum ev_debug_level level,
+static void ev_wrap_debug(void *context, enum tevent_debug_level level,
 			  const char *fmt, va_list ap)
 {
 	int samba_level = -1;
 	char *s = NULL;
 	switch (level) {
-	case EV_DEBUG_FATAL:
+	case TEVENT_DEBUG_FATAL:
 		samba_level = 0;
 		break;
-	case EV_DEBUG_ERROR:
+	case TEVENT_DEBUG_ERROR:
 		samba_level = 1;
 		break;
-	case EV_DEBUG_WARNING:
+	case TEVENT_DEBUG_WARNING:
 		samba_level = 2;
 		break;
-	case EV_DEBUG_TRACE:
+	case TEVENT_DEBUG_TRACE:
 		samba_level = 5;
 		break;
 
 	};
 	vasprintf(&s, fmt, ap);
 	if (!s) return;
-	DEBUG(samba_level, ("events: %s\n", s));
+	DEBUG(samba_level, ("tevent: %s\n", s));
 	free(s);
 }
 
@@ -63,10 +62,27 @@ struct tevent_context *s4_event_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct tevent_context *ev;
 
-	ev = event_context_init_byname(mem_ctx, NULL);
+	ev = tevent_context_init_byname(mem_ctx, NULL);
 	if (ev) {
-		ev_set_debug(ev, ev_wrap_debug, NULL);
+		tevent_set_debug(ev, ev_wrap_debug, NULL);
 	}
 	return ev;
 }
 
+/*
+  find an event context that is a parent of the given memory context,
+  or create a new event context as a child of the given context if
+  none is found
+
+  This should be used in preference to event_context_init() in places
+  where you would prefer to use the existing event context if possible
+  (which is most situations)
+*/
+struct tevent_context *event_context_find(TALLOC_CTX *mem_ctx)
+{
+	struct tevent_context *ev = talloc_find_parent_bytype(mem_ctx, struct tevent_context);
+	if (ev == NULL) {		
+		ev = tevent_context_init(mem_ctx);
+	}
+	return ev;
+}

@@ -425,21 +425,28 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 		if (!use_tcp) {
 
 			sock = open_udp_socket(kdc_host, DEFAULT_KPASSWD_PORT);
-
+			if (sock == -1) {
+				int rc = errno;
+				SAFE_FREE(ap_req.data);
+				krb5_auth_con_free(context, auth_context);
+				DEBUG(1,("failed to open kpasswd socket to %s "
+					 "(%s)\n", kdc_host, strerror(errno)));
+				return ADS_ERROR_SYSTEM(rc);
+			}
 		} else {
-
-			sock = open_socket_out(SOCK_STREAM, &addr, DEFAULT_KPASSWD_PORT, 
-					       LONG_CONNECT_TIMEOUT);
+			NTSTATUS status;
+			status = open_socket_out(&addr, DEFAULT_KPASSWD_PORT,
+						 LONG_CONNECT_TIMEOUT, &sock);
+			if (!NT_STATUS_IS_OK(status)) {
+				SAFE_FREE(ap_req.data);
+				krb5_auth_con_free(context, auth_context);
+				DEBUG(1,("failed to open kpasswd socket to %s "
+					 "(%s)\n", kdc_host,
+					 nt_errstr(status)));
+				return ADS_ERROR_NT(status);
+			}
 		}
 
-		if (sock == -1) {
-			int rc = errno;
-			SAFE_FREE(ap_req.data);
-			krb5_auth_con_free(context, auth_context);
-			DEBUG(1,("failed to open kpasswd socket to %s (%s)\n",
-				 kdc_host, strerror(errno)));
-			return ADS_ERROR_SYSTEM(rc);
-		}
 		addr_len = sizeof(remote_addr);
 		if (getpeername(sock, (struct sockaddr *)&remote_addr, &addr_len) != 0) {
 			close(sock);

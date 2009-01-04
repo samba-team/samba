@@ -22,11 +22,11 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
+#include <tevent.h>
 #include "auth/kerberos/kerberos.h"
 #include "lib/socket/socket.h"
 #include "lib/stream/packet.h"
 #include "system/network.h"
-#include "lib/events/events.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
 
@@ -159,9 +159,9 @@ static void smb_krb5_socket_send(struct smb_krb5_socket *smb_krb5)
 
 	if (!NT_STATUS_IS_OK(status)) return;
 	
-	EVENT_FD_READABLE(smb_krb5->fde);
+	TEVENT_FD_READABLE(smb_krb5->fde);
 
-	EVENT_FD_NOT_WRITEABLE(smb_krb5->fde);
+	TEVENT_FD_NOT_WRITEABLE(smb_krb5->fde);
 	return;
 }
 
@@ -175,22 +175,22 @@ static void smb_krb5_socket_handler(struct tevent_context *ev, struct tevent_fd 
 	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
 	switch (smb_krb5->hi->proto) {
 	case KRB5_KRBHST_UDP:
-		if (flags & EVENT_FD_READ) {
+		if (flags & TEVENT_FD_READ) {
 			smb_krb5_socket_recv(smb_krb5);
 			return;
 		}
-		if (flags & EVENT_FD_WRITE) {
+		if (flags & TEVENT_FD_WRITE) {
 			smb_krb5_socket_send(smb_krb5);
 			return;
 		}
 		/* not reached */
 		return;
 	case KRB5_KRBHST_TCP:
-		if (flags & EVENT_FD_READ) {
+		if (flags & TEVENT_FD_READ) {
 			packet_recv(smb_krb5->packet);
 			return;
 		}
-		if (flags & EVENT_FD_WRITE) {
+		if (flags & TEVENT_FD_WRITE) {
 			packet_queue_run(smb_krb5->packet);
 			return;
 		}
@@ -284,24 +284,24 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 		 * drop) and mark as AUTOCLOSE along with the fde */
 
 		/* Ths is equivilant to EVENT_FD_READABLE(smb_krb5->fde) */
-		smb_krb5->fde = event_add_fd(ev, smb_krb5->sock, 
-					     socket_get_fd(smb_krb5->sock), 
-					     EVENT_FD_READ|EVENT_FD_AUTOCLOSE,
-					     smb_krb5_socket_handler, smb_krb5);
+		smb_krb5->fde = tevent_add_fd(ev, smb_krb5->sock,
+					      socket_get_fd(smb_krb5->sock),
+					      TEVENT_FD_READ,
+					      smb_krb5_socket_handler, smb_krb5);
 		/* its now the job of the event layer to close the socket */
+		tevent_fd_set_close_fn(smb_krb5->fde, socket_tevent_fd_close_fn);
 		socket_set_flags(smb_krb5->sock, SOCKET_FLAG_NOCLOSE);
 
-		event_add_timed(ev, smb_krb5, 
-				timeval_current_ofs(timeout, 0),
-				smb_krb5_request_timeout, smb_krb5);
+		tevent_add_timer(ev, smb_krb5,
+				 timeval_current_ofs(timeout, 0),
+				 smb_krb5_request_timeout, smb_krb5);
 
-		
 		smb_krb5->status = NT_STATUS_OK;
 		smb_krb5->reply = data_blob(NULL, 0);
 
 		switch (hi->proto) {
 		case KRB5_KRBHST_UDP:
-			EVENT_FD_WRITEABLE(smb_krb5->fde);
+			TEVENT_FD_WRITEABLE(smb_krb5->fde);
 			smb_krb5->request = send_blob;
 			break;
 		case KRB5_KRBHST_TCP:
@@ -329,7 +329,7 @@ krb5_error_code smb_krb5_send_and_recv_func(krb5_context context,
 			return EINVAL;
 		}
 		while ((NT_STATUS_IS_OK(smb_krb5->status)) && !smb_krb5->reply.length) {
-			if (event_loop_once(ev) != 0) {
+			if (tevent_loop_once(ev) != 0) {
 				talloc_free(smb_krb5);
 				return EINVAL;
 			}

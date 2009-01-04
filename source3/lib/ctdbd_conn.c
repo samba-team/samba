@@ -155,17 +155,17 @@ static NTSTATUS ctdbd_connect(TALLOC_CTX *mem_ctx,
  * Do we have a complete ctdb packet in the queue?
  */
 
-static bool ctdb_req_complete(const DATA_BLOB *data,
+static bool ctdb_req_complete(const uint8_t *buf, size_t available,
 			      size_t *length,
 			      void *private_data)
 {
 	uint32 msglen;
 
-	if (data->length < sizeof(msglen)) {
+	if (available < sizeof(msglen)) {
 		return False;
 	}
 
-	msglen = *((uint32 *)data->data);
+	msglen = *((uint32 *)buf);
 
 	DEBUG(10, ("msglen = %d\n", msglen));
 
@@ -176,12 +176,12 @@ static bool ctdb_req_complete(const DATA_BLOB *data,
 		cluster_fatal("ctdbd protocol error\n");
 	}
 
-	if (data->length >= msglen) {
-		*length = msglen;
-		return True;
+	if (available < msglen) {
+		return false;
 	}
 
-	return False;
+	*length = msglen;
+	return true;
 }
 
 /*
@@ -220,16 +220,13 @@ struct req_pull_state {
  * Pull a ctdb request out of the incoming packet queue
  */
 
-static NTSTATUS ctdb_req_pull(const DATA_BLOB *data,
+static NTSTATUS ctdb_req_pull(uint8_t *buf, size_t length,
 			      void *private_data)
 {
 	struct req_pull_state *state = (struct req_pull_state *)private_data;
 
-	state->req = data_blob_talloc(state->mem_ctx, data->data,
-				      data->length);
-	if (state->req.data == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	state->req.data = talloc_move(state->mem_ctx, &buf);
+	state->req.length = length;
 	return NT_STATUS_OK;
 }
 
@@ -497,7 +494,7 @@ NTSTATUS ctdbd_messaging_connection(TALLOC_CTX *mem_ctx,
 /*
  * Packet handler to receive and handle a ctdb message
  */
-static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
+static NTSTATUS ctdb_handle_message(uint8_t *buf, size_t length,
 				    void *private_data)
 {
 	struct ctdbd_connection *conn = talloc_get_type_abort(
@@ -505,11 +502,12 @@ static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
 	struct ctdb_req_message *msg;
 	struct messaging_rec *msg_rec;
 
-	msg = (struct ctdb_req_message *)data->data;
+	msg = (struct ctdb_req_message *)buf;
 
 	if (msg->hdr.operation != CTDB_REQ_MESSAGE) {
 		DEBUG(0, ("Received async msg of type %u, discarding\n",
 			  msg->hdr.operation));
+		TALLOC_FREE(buf);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -519,6 +517,7 @@ static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
 		DEBUG(10, ("received CTDB_SRVID_RELEASE_IP\n"));
 		conn->release_ip_handler((const char *)msg->data,
 					 conn->release_ip_priv);
+		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
 	}
 
@@ -540,6 +539,8 @@ static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
 		 */
 		message_send_all(conn->msg_ctx, MSG_SMB_UNLOCK, NULL, 0, NULL);
 
+		TALLOC_FREE(buf);
+
 		return NT_STATUS_OK;
 		
 	}
@@ -548,17 +549,20 @@ static NTSTATUS ctdb_handle_message(const DATA_BLOB *data,
 	if (msg->srvid != sys_getpid() && msg->srvid != MSG_SRVID_SAMBA) {
 		DEBUG(0,("Got unexpected message with srvid=%llu\n", 
 			 (unsigned long long)msg->srvid));
+		TALLOC_FREE(buf);
 		return NT_STATUS_OK;
 	}
 
-	if (!(msg_rec = ctdb_pull_messaging_rec(NULL, data->length, msg))) {
+	if (!(msg_rec = ctdb_pull_messaging_rec(NULL, length, msg))) {
 		DEBUG(10, ("ctdb_pull_messaging_rec failed\n"));
+		TALLOC_FREE(buf);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	messaging_dispatch_rec(conn->msg_ctx, msg_rec);
 
 	TALLOC_FREE(msg_rec);
+	TALLOC_FREE(buf);
 	return NT_STATUS_OK;
 }
 
@@ -1025,7 +1029,7 @@ struct ctdbd_traverse_state {
  * Handle a traverse record coming in on the ctdbd connection
  */
 
-static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
+static NTSTATUS ctdb_traverse_handler(uint8_t *buf, size_t length,
 				      void *private_data)
 {
 	struct ctdbd_traverse_state *state =
@@ -1035,11 +1039,11 @@ static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
 	struct ctdb_rec_data *d;
 	TDB_DATA key, data;
 
-	m = (struct ctdb_req_message *)blob->data;
+	m = (struct ctdb_req_message *)buf;
 
-	if (blob->length < sizeof(*m) || m->hdr.length != blob->length) {
-		DEBUG(0, ("Got invalid message of length %d\n",
-			  (int)blob->length));
+	if (length < sizeof(*m) || m->hdr.length != length) {
+		DEBUG(0, ("Got invalid message of length %d\n", (int)length));
+		TALLOC_FREE(buf);
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
@@ -1047,6 +1051,7 @@ static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
 	if (m->datalen < sizeof(uint32_t) || m->datalen != d->length) {
 		DEBUG(0, ("Got invalid traverse data of length %d\n",
 			  (int)m->datalen));
+		TALLOC_FREE(buf);
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 
@@ -1063,6 +1068,7 @@ static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
 	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
 		DEBUG(0, ("Got invalid ltdb header length %d\n",
 			  (int)data.dsize));
+		TALLOC_FREE(buf);
 		return NT_STATUS_UNEXPECTED_IO_ERROR;
 	}
 	data.dsize -= sizeof(struct ctdb_ltdb_header);
@@ -1072,6 +1078,7 @@ static NTSTATUS ctdb_traverse_handler(const DATA_BLOB *blob,
 		state->fn(key, data, state->private_data);
 	}
 
+	TALLOC_FREE(buf);
 	return NT_STATUS_OK;
 }
 

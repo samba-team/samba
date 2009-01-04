@@ -37,6 +37,15 @@ static int socket_destructor(struct socket_context *sock)
 	return 0;
 }
 
+_PUBLIC_ void socket_tevent_fd_close_fn(struct tevent_context *ev,
+					struct tevent_fd *fde,
+					int fd,
+					void *private_data)
+{
+	/* this might be the socket_wrapper swrap_close() */
+	close(fd);
+}
+
 _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socket_ops *ops,
 					 struct socket_context **new_sock, 
 					 enum socket_type type, uint32_t flags)

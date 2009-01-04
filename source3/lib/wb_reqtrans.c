@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "winbindd.h"
+#include "winbindd/winbindd.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -43,7 +43,7 @@ struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct req_read_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -205,7 +205,7 @@ struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct req_write_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -304,7 +304,7 @@ struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct resp_read_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -458,7 +458,7 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct resp_write_state *state;
 
-	result = async_req_new(mem_ctx, ev);
+	result = async_req_new(mem_ctx);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -540,146 +540,3 @@ NTSTATUS wb_resp_write_recv(struct async_req *req)
 {
 	return async_req_simple_recv(req);
 }
-
-struct wb_trans_state {
-	struct event_context *ev;
-	struct timed_event *te;
-	int fd;
-	struct winbindd_response *wb_resp;
-	size_t reply_max_extra_data;
-};
-
-static void wb_trans_timeout(struct event_context *ev, struct timed_event *te,
-			     const struct timeval *now, void *priv);
-static void wb_trans_sent(struct async_req *req);
-static void wb_trans_received(struct async_req *req);
-
-struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				int fd,
-				struct winbindd_request *wb_req,
-				struct timeval timeout,
-				size_t reply_max_extra_data)
-{
-	struct async_req *result, *subreq;
-	struct wb_trans_state *state;
-
-	result = async_req_new(mem_ctx, ev);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state = talloc(result, struct wb_trans_state);
-	if (state == NULL) {
-		goto nomem;
-	}
-	result->private_data = state;
-
-	state->ev = ev;
-	state->fd = fd;
-	state->reply_max_extra_data = reply_max_extra_data;
-
-	state->te = event_add_timed(
-		ev, state,
-		timeval_current_ofs(timeout.tv_sec, timeout.tv_usec),
-		"wb_trans_timeout", wb_trans_timeout, result);
-	if (state->te == NULL) {
-		goto nomem;
-	}
-
-	subreq = wb_req_write_send(state, state->ev, state->fd, wb_req);
-	if (subreq == NULL) {
-		goto nomem;
-	}
-	subreq->async.fn = wb_trans_sent;
-	subreq->async.priv = result;
-
-	return result;
-
- nomem:
-	TALLOC_FREE(result);
-	return NULL;
-}
-
-static void wb_trans_timeout(struct event_context *ev, struct timed_event *te,
-			     const struct timeval *now, void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct wb_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_trans_state);
-
-	TALLOC_FREE(state->te);
-	async_req_error(req, NT_STATUS_IO_TIMEOUT);
-}
-
-static void wb_trans_sent(struct async_req *subreq)
-{
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct wb_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
-
-	status = wb_req_write_recv(subreq);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
-		return;
-	}
-
-	subreq = wb_resp_read_send(state, state->ev, state->fd);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-
-	subreq->async.fn = wb_trans_received;
-	subreq->async.priv = req;
-};
-
-static void wb_trans_received(struct async_req *subreq)
-{
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct wb_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
-
-	TALLOC_FREE(state->te);
-
-	status = wb_resp_read_recv(subreq, state, &state->wb_resp);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
-		return;
-	}
-
-	async_req_done(req);
-}
-
-NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		       struct winbindd_response **presp)
-{
-	struct wb_trans_state *state = talloc_get_type_abort(
-		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
-
-	if (async_req_is_error(req, &status)) {
-		return status;
-	}
-	*presp = talloc_move(mem_ctx, &state->wb_resp);
-	return NT_STATUS_OK;
-}
-
-struct wb_trans_queue_state {
-	struct wb_trans_queue_state *prev, *next;
-	struct wb_trans_queue *queue;
-	struct winbindd_request *req;
-};
-
-struct wb_trans_queue {
-	int fd;
-	struct timeval timeout;
-	size_t max_resp_extra_data;
-	struct wb_trans_queue_state *queued_requests;
-};

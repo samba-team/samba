@@ -2,7 +2,7 @@
 
 [SUBSYSTEM::service]
 PRIVATE_DEPENDENCIES = \
-		LIBEVENTS MESSAGING samba_socket NDR_NAMED_PIPE_AUTH
+		LIBTEVENT MESSAGING samba_socket NDR_NAMED_PIPE_AUTH
 
 service_OBJ_FILES = $(addprefix $(smbdsrcdir)/, \
 		service.o \
@@ -21,6 +21,7 @@ $(eval $(call proto_header_template,$(smbdsrcdir)/pidfile.h,$(PIDFILE_OBJ_FILES:
 [BINARY::samba]
 INSTALLDIR = SBINDIR
 PRIVATE_DEPENDENCIES = \
+		LIBEVENTS \
 		process_model \
 		service \
 		LIBSAMBA-HOSTCONFIG \

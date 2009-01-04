@@ -88,15 +88,6 @@ struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
 				     struct winbindd_response *wb_resp);
 NTSTATUS wb_resp_write_recv(struct async_req *req);
 
-struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				int fd,
-				struct winbindd_request *wb_req,
-				struct timeval timeout,
-				size_t reply_max_extra_data);
-NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		       struct winbindd_response **presp);
-
 /* The following definitions come from winbindd/winbindd_ads.c  */
 
 
