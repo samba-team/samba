@@ -426,6 +426,8 @@ static void set_domain_online(struct winbindd_domain *domain)
 	GetTimeOfDay(&now);
 	set_event_dispatch_time(winbind_event_context(),
 				"krb5_ticket_gain_handler", now);
+	set_event_dispatch_time(winbind_event_context(),
+				"krb5_ticket_refresh_handler", now);
 
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
