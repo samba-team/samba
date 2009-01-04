@@ -1152,6 +1152,117 @@ NTSTATUS open_socket_out(const struct sockaddr_storage *pss, uint16_t port,
 	return status;
 }
 
+struct open_socket_out_defer_state {
+	struct event_context *ev;
+	struct sockaddr_storage ss;
+	uint16_t port;
+	int timeout;
+	int fd;
+};
+
+static void open_socket_out_defer_waited(struct async_req *subreq);
+static void open_socket_out_defer_connected(struct async_req *subreq);
+
+struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
+					     struct event_context *ev,
+					     struct timeval wait_time,
+					     const struct sockaddr_storage *pss,
+					     uint16_t port,
+					     int timeout)
+{
+	struct async_req *result, *subreq;
+	struct open_socket_out_defer_state *state;
+	NTSTATUS status;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct open_socket_out_defer_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->ss = *pss;
+	state->port = port;
+	state->timeout = timeout;
+
+	subreq = async_wait_send(state, ev, wait_time);
+	if (subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
+	}
+	subreq->async.fn = open_socket_out_defer_waited;
+	subreq->async.priv = result;
+	return result;
+
+ post_status:
+	if (!async_post_status(result, ev, status)) {
+		goto fail;
+	}
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void open_socket_out_defer_waited(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct open_socket_out_defer_state *state = talloc_get_type_abort(
+		req->private_data, struct open_socket_out_defer_state);
+	NTSTATUS status;
+
+	status = async_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	subreq = open_socket_out_send(state, state->ev, &state->ss,
+				      state->port, state->timeout);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = open_socket_out_defer_connected;
+	subreq->async.priv = req;
+}
+
+static void open_socket_out_defer_connected(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct open_socket_out_defer_state *state = talloc_get_type_abort(
+		req->private_data, struct open_socket_out_defer_state);
+	NTSTATUS status;
+
+	status = open_socket_out_recv(subreq, &state->fd);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+NTSTATUS open_socket_out_defer_recv(struct async_req *req, int *pfd)
+{
+	struct open_socket_out_defer_state *state = talloc_get_type_abort(
+		req->private_data, struct open_socket_out_defer_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	*pfd = state->fd;
+	state->fd = -1;
+	return NT_STATUS_OK;
+}
+
 /*******************************************************************
  Create an outgoing TCP socket to the first addr that connects.
 
