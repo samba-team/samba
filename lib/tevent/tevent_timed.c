@@ -108,9 +108,9 @@ bool ev_timeval_is_zero(const struct timeval *tv)
 */
 static int tevent_common_timed_destructor(struct tevent_timer *te)
 {
-	struct tevent_context *ev = talloc_get_type(te->event_ctx,
-						   struct tevent_context);
-	DLIST_REMOVE(ev->timer_events, te);
+	if (te->event_ctx) {
+		DLIST_REMOVE(te->event_ctx->timer_events, te);
+	}
 	return 0;
 }
 
