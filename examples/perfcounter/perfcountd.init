@@ -21,15 +21,15 @@
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 
-killproc() 
+killproc()
 {
 	pid=`ps aux | grep $1 | egrep -v '(grep|perfcountd)' | awk '{print $2}'`
-	if [ "$pid" != "" ]; then
+	if [ -z "$pid" ]; then
 		kill $pid
 	fi
 }
 
-# Start/stop processes 
+# Start/stop processes
 
 case "$1" 
 in
