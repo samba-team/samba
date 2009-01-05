@@ -538,7 +538,7 @@ static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 static PyObject *py_ldb_connect(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 {
 	char *url;
-	int flags;
+	int flags = 0;
 	PyObject *py_options = Py_None;
 	int ret;
 	const char **options;
