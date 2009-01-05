@@ -65,9 +65,9 @@ static bool send_message(struct messaging_context *msg_ctx,
 	return ret;
 }
 
-static void timeout_handler(struct event_context *event_ctx,
+static void smbcontrol_timeout(struct event_context *event_ctx,
 			    struct timed_event *te,
-			    const struct timeval *now,
+			    struct timeval now,
 			    void *private_data)
 {
 	bool *timed_out = (bool *)private_data;
@@ -85,8 +85,7 @@ static void wait_replies(struct messaging_context *msg_ctx,
 
 	if (!(te = event_add_timed(messaging_event_context(msg_ctx), NULL,
 				   timeval_current_ofs(timeout, 0),
-				   "smbcontrol_timeout",
-				   timeout_handler, (void *)&timed_out))) {
+				   smbcontrol_timeout, (void *)&timed_out))) {
 		DEBUG(0, ("event_add_timed failed\n"));
 		return;
 	}

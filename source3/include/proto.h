@@ -501,46 +501,6 @@ void display_set_stderr(void);
 NTSTATUS map_nt_error_from_unix(int unix_error);
 int map_errno_from_nt_status(NTSTATUS status);
 
-/* The following definitions come from lib/events.c  */
-
-struct timed_event *event_add_timed(struct event_context *event_ctx,
-				TALLOC_CTX *mem_ctx,
-				struct timeval when,
-				const char *event_name,
-				void (*handler)(struct event_context *event_ctx,
-						struct timed_event *te,
-						const struct timeval *now,
-						void *private_data),
-				void *private_data);
-struct fd_event *event_add_fd(struct event_context *event_ctx,
-			      TALLOC_CTX *mem_ctx,
-			      int fd, uint16_t flags,
-			      void (*handler)(struct event_context *event_ctx,
-					      struct fd_event *event,
-					      uint16 flags,
-					      void *private_data),
-			      void *private_data);
-void event_fd_set_writeable(struct fd_event *fde);
-void event_fd_set_not_writeable(struct fd_event *fde);
-void event_fd_set_readable(struct fd_event *fde);
-void event_fd_set_not_readable(struct fd_event *fde);
-bool event_add_to_select_args(struct event_context *event_ctx,
-			      const struct timeval *now,
-			      fd_set *read_fds, fd_set *write_fds,
-			      struct timeval *timeout, int *maxfd);
-bool events_pending(struct event_context *event_ctx);
-bool run_events(struct event_context *event_ctx,
-		int selrtn, fd_set *read_fds, fd_set *write_fds);
-struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
-					 struct timeval *to_ret);
-int event_loop_once(struct event_context *ev);
-struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when);
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name);
-void dump_event_list(struct event_context *event_ctx);
-
 /* The following definitions come from lib/fault.c  */
 void fault_setup(void (*fn)(void *));
 void dump_core_setup(const char *progname);
@@ -1183,6 +1143,7 @@ int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
 void become_daemon(bool Fork, bool no_process_group);
 bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       struct event_context *ev_ctx,
 		       bool parent_longlived);
 bool yesno(const char *p);
 void *malloc_(size_t size);

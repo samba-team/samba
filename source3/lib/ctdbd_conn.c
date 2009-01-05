@@ -200,7 +200,7 @@ struct deferred_msg_state {
 
 static void deferred_message_dispatch(struct event_context *event_ctx,
 				      struct timed_event *te,
-				      const struct timeval *now,
+				      struct timeval now,
 				      void *private_data)
 {
 	struct deferred_msg_state *state = talloc_get_type_abort(
@@ -383,7 +383,6 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		evt = event_add_timed(conn->msg_ctx->event_ctx,
 				      conn->msg_ctx->event_ctx,
 				      timeval_zero(),
-				      "deferred_message_dispatch",
 				      deferred_message_dispatch,
 				      msg_state);
 		if (evt == NULL) {

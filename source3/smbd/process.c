@@ -583,26 +583,33 @@ struct idle_event {
 	void *private_data;
 };
 
-static void idle_event_handler(struct event_context *ctx,
-			       struct timed_event *te,
-			       const struct timeval *now,
-			       void *private_data)
+static void smbd_idle_event_handler(struct event_context *ctx,
+				    struct timed_event *te,
+				    struct timeval now,
+				    void *private_data)
 {
 	struct idle_event *event =
 		talloc_get_type_abort(private_data, struct idle_event);
 
 	TALLOC_FREE(event->te);
 
-	if (!event->handler(now, event->private_data)) {
+	DEBUG(10,("smbd_idle_event_handler: %s %p called\n",
+		  event->name, event->te));
+
+	if (!event->handler(&now, event->private_data)) {
+		DEBUG(10,("smbd_idle_event_handler: %s %p stopped\n",
+			  event->name, event->te));
 		/* Don't repeat, delete ourselves */
 		TALLOC_FREE(event);
 		return;
 	}
 
+	DEBUG(10,("smbd_idle_event_handler: %s %p rescheduled\n",
+		  event->name, event->te));
+
 	event->te = event_add_timed(ctx, event,
-				    timeval_sum(now, &event->interval),
-				    event->name,
-				    idle_event_handler, event);
+				    timeval_sum(&now, &event->interval),
+				    smbd_idle_event_handler, event);
 
 	/* We can't do much but fail here. */
 	SMB_ASSERT(event->te != NULL);
@@ -637,14 +644,14 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 
 	result->te = event_add_timed(event_ctx, result,
 				     timeval_sum(&now, &interval),
-				     result->name,
-				     idle_event_handler, result);
+				     smbd_idle_event_handler, result);
 	if (result->te == NULL) {
 		DEBUG(0, ("event_add_timed failed\n"));
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
+	DEBUG(10,("event_add_idle: %s %p\n", result->name, result->te));
 	return result;
 }
 

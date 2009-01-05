@@ -53,12 +53,12 @@ bool register_message_flags(bool doreg, uint32 msg_flags);
 
 struct event_context *winbind_event_context(void);
 struct messaging_context *winbind_messaging_context(void);
-void add_fd_event(struct fd_event *ev);
-void remove_fd_event(struct fd_event *ev);
-void setup_async_read(struct fd_event *event, void *data, size_t length,
+void add_fd_event(struct winbindd_fd_event *ev);
+void remove_fd_event(struct winbindd_fd_event *ev);
+void setup_async_read(struct winbindd_fd_event *event, void *data, size_t length,
 		      void (*finished)(void *private_data, bool success),
 		      void *private_data);
-void setup_async_write(struct fd_event *event, void *data, size_t length,
+void setup_async_write(struct winbindd_fd_event *event, void *data, size_t length,
 		       void (*finished)(void *private_data, bool success),
 		       void *private_data);
 void request_error(struct winbindd_cli_state *state);
@@ -243,6 +243,8 @@ bool ccache_entry_exists(const char *username);
 bool ccache_entry_identical(const char *username,
 			    uid_t uid,
 			    const char *ccname);
+void ccache_remove_all_after_fork(void);
+void ccache_regain_all_now(void);
 NTSTATUS add_ccache_to_list(const char *princ_name,
 			    const char *ccname,
 			    const char *service,

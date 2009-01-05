@@ -39,15 +39,11 @@
 
 #define WB_REPLACE_CHAR		'_'
 
-/* bits for fd_event.flags */
-#define EVENT_FD_READ 1
-#define EVENT_FD_WRITE 2
-
-struct fd_event {
-	struct fd_event *next, *prev;
+struct winbindd_fd_event {
+	struct winbindd_fd_event *next, *prev;
 	int fd;
 	int flags; /* see EVENT_FD_* flags */
-	void (*handler)(struct fd_event *fde, int flags);
+	void (*handler)(struct winbindd_fd_event *fde, int flags);
 	void *data;
 	size_t length, done;
 	void (*finished)(void *private_data, bool success);
@@ -65,7 +61,7 @@ struct sid_ctr {
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
-	struct fd_event fd_event;
+	struct winbindd_fd_event fd_event;
 	pid_t pid;                                /* pid of client */
 	bool finished;                            /* Can delete from list */
 	bool write_extra_data;                    /* Write extra_data field */
@@ -151,7 +147,7 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	char *logfilename;
 
-	struct fd_event event;
+	struct winbindd_fd_event event;
 	struct timed_event *lockout_policy_event;
 	struct timed_event *machine_password_change_event;
 	struct winbindd_async_request *requests;
@@ -377,7 +373,34 @@ enum ent_type {
 	LIST_USERS = 0,
 	LIST_GROUPS,
 };
- 
+
+struct WINBINDD_MEMORY_CREDS {
+	struct WINBINDD_MEMORY_CREDS *next, *prev;
+	const char *username; /* lookup key. */
+	uid_t uid;
+	int ref_count;
+	size_t len;
+	uint8_t *nt_hash; /* Base pointer for the following 2 */
+	uint8_t *lm_hash;
+	char *pass;
+};
+
+struct WINBINDD_CCACHE_ENTRY {
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
+	const char *principal_name;
+	const char *ccname;
+	const char *service;
+	const char *username;
+	const char *realm;
+	struct WINBINDD_MEMORY_CREDS *cred_ptr;
+	int ref_count;
+	uid_t uid;
+	time_t create_time;
+	time_t renew_until;
+	time_t refresh_time;
+	struct timed_event *event;
+};
+
 #include "winbindd/winbindd_proto.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30

@@ -173,7 +173,7 @@ static int wcp_file_size_change(files_struct *fsp)
 
 static void update_write_time_handler(struct event_context *ctx,
 				      struct timed_event *te,
-				      const struct timeval *now,
+				      struct timeval now,
 				      void *private_data)
 {
 	files_struct *fsp = (files_struct *)private_data;
@@ -221,7 +221,6 @@ void trigger_write_time_update(struct files_struct *fsp)
 	fsp->update_write_time_event =
 		event_add_timed(smbd_event_context(), NULL,
 				timeval_current_ofs(0, delay),
-				"update_write_time_handler",
 				update_write_time_handler, fsp);
 }
 

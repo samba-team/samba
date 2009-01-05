@@ -248,7 +248,7 @@ static int evt_userdata_tostring(lua_State *L) {
 
 static void evt_userdata_sleep_done(struct event_context *event_ctx,
 				   struct timed_event *te,
-				   const struct timeval *now,
+				   struct timeval now,
 				   void *priv)
 {
 	struct thread_reference *ref = talloc_get_type_abort(
@@ -279,7 +279,7 @@ static int evt_userdata_sleep(lua_State *L)
 	}
 
 	te = event_add_timed(p->ev, ref, timeval_current_ofs(0, usecs),
-			     "evt_userdata_sleep", evt_userdata_sleep_done,
+			     evt_userdata_sleep_done,
 			     ref);
 
 	if (te == NULL) {
