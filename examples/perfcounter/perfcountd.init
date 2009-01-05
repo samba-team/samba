@@ -24,14 +24,14 @@ PATH=/bin:/usr/bin:/sbin:/usr/sbin
 killproc() 
 {
 	pid=`ps aux | grep $1 | egrep -v '(grep|perfcountd)' | awk '{print $2}'`
-	if [ "$pid" != "" ]; then
+	if [ x"$pid" != "x" ]; then
 		kill $pid
 	fi
 }
 
 # Start/stop processes 
 
-case "$1" 
+case "$1"
 in
 start)
 	/opt/samba/bin/perfcount -d -f /var/lib/samba/perfmon 2> /dev/null
@@ -47,7 +47,7 @@ stop)
 
 status)
 	pid=`ps aux | grep perfcount | egrep -v '(grep|perfcountd)' | awk '{print $2}'`
-	if [ "$pid" == "" ]; then
+	if [ x"$pid" = "x" ]; then
 		echo "Dead!"
 		exit 2;
 	fi
