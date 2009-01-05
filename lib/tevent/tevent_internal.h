@@ -152,6 +152,8 @@ struct tevent_context {
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
+int tevent_common_context_destructor(struct tevent_context *ev);
+
 int tevent_common_fd_destructor(struct tevent_fd *fde);
 struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev,
 				       TALLOC_CTX *mem_ctx,

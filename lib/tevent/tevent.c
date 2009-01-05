@@ -136,6 +136,35 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 	return list;
 }
 
+int tevent_common_context_destructor(struct tevent_context *ev)
+{
+	struct tevent_fd *fd;
+	struct tevent_timer *te;
+	struct tevent_signal *se;
+
+	if (ev->pipe_fde) {
+		talloc_free(ev->pipe_fde);
+		ev->pipe_fde = NULL;
+	}
+
+	for (fd=ev->fd_events; fd; fd = fd->next) {
+		fd->event_ctx = NULL;
+		DLIST_REMOVE(ev->fd_events, fd);
+	}
+
+	for (te=ev->timer_events; te; te = te->next) {
+		te->event_ctx = NULL;
+		DLIST_REMOVE(ev->timer_events, te);
+	}
+
+	for (se=ev->signal_events; se; se = se->next) {
+		se->event_ctx = NULL;
+		DLIST_REMOVE(ev->signal_events, se);
+	}
+
+	return 0;
+}
+
 /*
   create a event_context structure for a specific implemementation.
   This must be the first events call, and all subsequent calls pass
@@ -155,6 +184,8 @@ static struct tevent_context *tevent_context_init_ops(TALLOC_CTX *mem_ctx,
 
 	ev = talloc_zero(mem_ctx, struct tevent_context);
 	if (!ev) return NULL;
+
+	talloc_set_destructor(ev, tevent_common_context_destructor);
 
 	ev->ops = ops;
 
