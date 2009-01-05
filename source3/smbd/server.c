@@ -753,7 +753,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 								false);
 
 				if (!reinit_after_fork(
-					    smbd_messaging_context(), true)) {
+					    smbd_messaging_context(),
+					    smbd_event_context(),
+					    true)) {
 					DEBUG(0,("reinit_after_fork() failed\n"));
 					smb_panic("reinit_after_fork() failed");
 				}
@@ -1327,7 +1329,8 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	if (!reinit_after_fork(smbd_messaging_context(), false)) {
+	if (!reinit_after_fork(smbd_messaging_context(),
+			       smbd_event_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

@@ -212,7 +212,8 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	/* Leave messages blocked - we will never process one. */
 
-	if (!reinit_after_fork(winbind_messaging_context(), true)) {
+	if (!reinit_after_fork(winbind_messaging_context(),
+			       winbind_event_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),

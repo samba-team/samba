@@ -534,6 +534,7 @@ bool run_events(struct event_context *event_ctx,
 struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 					 struct timeval *to_ret);
 int event_loop_once(struct event_context *ev);
+void event_context_reinit(struct event_context *ev);
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 int set_event_dispatch_time(struct event_context *event_ctx,
 			    const char *event_name, struct timeval when);
@@ -1183,6 +1184,7 @@ int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
 void become_daemon(bool Fork, bool no_process_group);
 bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       struct event_context *ev_ctx,
 		       bool parent_longlived);
 bool yesno(const char *p);
 void *malloc_(size_t size);
