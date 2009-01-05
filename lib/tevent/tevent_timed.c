@@ -108,9 +108,14 @@ bool ev_timeval_is_zero(const struct timeval *tv)
 */
 static int tevent_common_timed_destructor(struct tevent_timer *te)
 {
+	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+		     "Destroying timer event %p \"%s\"\n",
+		     te, te->handler_name);
+
 	if (te->event_ctx) {
 		DLIST_REMOVE(te->event_ctx->timer_events, te);
 	}
+
 	return 0;
 }
 
@@ -158,6 +163,9 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 
 	talloc_set_destructor(te, tevent_common_timed_destructor);
 
+	tevent_debug(ev, TEVENT_DEBUG_TRACE,
+		     "Added timed event \"%s\": %p\n",
+		     handler_name, te);
 	return te;
 }
 
@@ -223,6 +231,10 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	/* The destructor isn't necessary anymore, we've already removed the
 	 * event from the list. */
 	talloc_set_destructor(te, NULL);
+
+	tevent_debug(te->event_ctx, TEVENT_DEBUG_TRACE,
+		     "Ending timer event %p \"%s\"\n",
+		     te, te->handler_name);
 
 	talloc_free(te);
 
