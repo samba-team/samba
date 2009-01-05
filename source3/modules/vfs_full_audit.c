@@ -852,14 +852,14 @@ static void do_log(vfs_op_type op, bool success, vfs_handle_struct *handle,
 		fstr_sprintf(err_msg, "fail (%s)", strerror(errno));
 
 	va_start(ap, format);
-	op_msg = talloc_vasprintf(NULL, format, ap);
+	op_msg = talloc_vasprintf(talloc_tos(), format, ap);
 	va_end(ap);
 
 	if (!op_msg) {
 		return;
 	}
 
-	audit_pre = audit_prefix(NULL, handle->conn);
+	audit_pre = audit_prefix(talloc_tos(), handle->conn);
 	syslog(audit_syslog_priority(handle), "%s|%s|%s|%s\n",
 		audit_pre ? audit_pre : "",
 		audit_opname(op), err_msg, op_msg);
