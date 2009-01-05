@@ -583,6 +583,7 @@ static struct {
 	{ SMB_VFS_OP_RMDIR,	"rmdir" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
 	{ SMB_VFS_OP_OPEN,	"open" },
+	{ SMB_VFS_OP_CREATE_FILE, "create_file" },
 	{ SMB_VFS_OP_CLOSE,	"close" },
 	{ SMB_VFS_OP_READ,	"read" },
 	{ SMB_VFS_OP_PREAD,	"pread" },

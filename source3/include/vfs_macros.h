@@ -340,7 +340,7 @@
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs_next.ops.streaminfo((handle)->vfs_next.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
-#define SMB_VFS_NEXT_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_next.ops.get_real_filename((conn)->vfs_next.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
+#define SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx, found_name) ((handle)->vfs_next.ops.get_real_filename((handle)->vfs_next.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
