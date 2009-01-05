@@ -133,11 +133,11 @@ struct tevent_context {
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
 
+	/* list of signal events - used by common code */
+	struct tevent_signal *signal_events;
+
 	/* this is private for the events_ops implementation */
 	void *additional_data;
-
-	/* number of signal event handlers */
-	int num_signal_handlers;
 
 	/* pipe hack used with signal handlers */
 	struct tevent_fd *pipe_fde;

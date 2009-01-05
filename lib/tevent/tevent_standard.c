@@ -264,14 +264,14 @@ static int epoll_event_loop(struct std_event_context *std_ev, struct timeval *tv
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
-	if (std_ev->ev->num_signal_handlers && 
+	if (std_ev->ev->signal_events &&
 	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(std_ev->epoll_fd, events, MAXEVENTS, timeout);
 
-	if (ret == -1 && errno == EINTR && std_ev->ev->num_signal_handlers) {
+	if (ret == -1 && errno == EINTR && std_ev->ev->signal_events) {
 		if (tevent_common_check_signal(std_ev->ev)) {
 			return 0;
 		}
@@ -490,7 +490,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 		}
 	}
 
-	if (std_ev->ev->num_signal_handlers && 
+	if (std_ev->ev->signal_events &&
 	    tevent_common_check_signal(std_ev->ev)) {
 		return 0;
 	}
@@ -498,7 +498,7 @@ static int std_event_loop_select(struct std_event_context *std_ev, struct timeva
 	selrtn = select(std_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
 
 	if (selrtn == -1 && errno == EINTR && 
-	    std_ev->ev->num_signal_handlers) {
+	    std_ev->ev->signal_events) {
 		tevent_common_check_signal(std_ev->ev);
 		return 0;
 	}

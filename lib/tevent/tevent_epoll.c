@@ -256,14 +256,14 @@ static int epoll_event_loop(struct epoll_event_context *epoll_ev, struct timeval
 		timeout = ((tvalp->tv_usec+999) / 1000) + (tvalp->tv_sec*1000);
 	}
 
-	if (epoll_ev->ev->num_signal_handlers && 
+	if (epoll_ev->ev->signal_events &&
 	    tevent_common_check_signal(epoll_ev->ev)) {
 		return 0;
 	}
 
 	ret = epoll_wait(epoll_ev->epoll_fd, events, MAXEVENTS, timeout);
 
-	if (ret == -1 && errno == EINTR && epoll_ev->ev->num_signal_handlers) {
+	if (ret == -1 && errno == EINTR && epoll_ev->ev->signal_events) {
 		if (tevent_common_check_signal(epoll_ev->ev)) {
 			return 0;
 		}

@@ -40,12 +40,16 @@ struct sigcounter {
 #define SIG_SEEN(s, n) (s).seen += (n)
 #define SIG_PENDING(s) ((s).seen != (s).count)
 
+struct tevent_common_signal_list {
+	struct tevent_common_signal_list *prev, *next;
+	struct tevent_signal *se;
+};
 
 /*
   the poor design of signals means that this table must be static global
 */
 static struct sig_state {
-	struct tevent_signal *sig_handlers[NUM_SIGNALS+1];
+	struct tevent_common_signal_list *sig_handlers[NUM_SIGNALS+1];
 	struct sigaction *oldact[NUM_SIGNALS+1];
 	struct sigcounter signal_count[NUM_SIGNALS+1];
 	struct sigcounter got_signal;
@@ -104,13 +108,27 @@ static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
 }
 #endif
 
+static int tevent_common_signal_list_destructor(struct tevent_common_signal_list *sl)
+{
+	DLIST_REMOVE(sig_state->sig_handlers[sl->se->signum], sl);
+	return 0;
+}
+
 /*
   destroy a signal event
 */
 static int tevent_signal_destructor(struct tevent_signal *se)
 {
-	se->event_ctx->num_signal_handlers--;
-	DLIST_REMOVE(sig_state->sig_handlers[se->signum], se);
+	struct tevent_common_signal_list *sl;
+	sl = talloc_get_type(se->additional_data,
+			     struct tevent_common_signal_list);
+
+	if (se->event_ctx) {
+		DLIST_REMOVE(se->event_ctx->signal_events, se);
+	}
+
+	talloc_free(sl);
+
 	if (sig_state->sig_handlers[se->signum] == NULL) {
 		/* restore old handler, if any */
 		sigaction(se->signum, sig_state->oldact[se->signum], NULL);
@@ -122,6 +140,7 @@ static int tevent_signal_destructor(struct tevent_signal *se)
 		}
 #endif
 	}
+
 	return 0;
 }
 
@@ -150,8 +169,10 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 					       const char *location)
 {
 	struct tevent_signal *se;
+	struct tevent_common_signal_list *sl;
 
 	if (signum >= NUM_SIGNALS) {
+		errno = EINVAL;
 		return NULL;
 	}
 
@@ -176,8 +197,17 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	se->location		= location;
 	se->additional_data	= NULL;
 
+	sl = talloc(se, struct tevent_common_signal_list);
+	if (!sl) {
+		talloc_free(se);
+		return NULL;
+	}
+	sl->se = se;
+	se->additional_data	= sl;
+
 	/* Ensure, no matter the destruction order, that we always have a handle on the global sig_state */
 	if (!talloc_reference(se, sig_state)) {
+		talloc_free(se);
 		return NULL;
 	}
 
@@ -211,9 +241,11 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		}
 	}
 
-	DLIST_ADD(sig_state->sig_handlers[signum], se);
+	DLIST_ADD(se->event_ctx->signal_events, se);
+	DLIST_ADD(sig_state->sig_handlers[signum], sl);
 
 	talloc_set_destructor(se, tevent_signal_destructor);
+	talloc_set_destructor(sl, tevent_common_signal_list_destructor);
 
 	/* we need to setup the pipe hack handler if not already
 	   setup */
@@ -226,8 +258,11 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 		}
 		ev->pipe_fde = tevent_add_fd(ev, ev, sig_state->pipe_hack[0],
 					     TEVENT_FD_READ, signal_pipe_handler, NULL);
+		if (!ev->pipe_fde) {
+			talloc_free(se);
+			return NULL;
+		}
 	}
-	ev->num_signal_handlers++;
 
 	return se;
 }
@@ -246,15 +281,16 @@ int tevent_common_check_signal(struct tevent_context *ev)
 	}
 	
 	for (i=0;i<NUM_SIGNALS+1;i++) {
-		struct tevent_signal *se, *next;
+		struct tevent_common_signal_list *sl, *next;
 		struct sigcounter counter = sig_state->signal_count[i];
 		uint32_t count = sig_count(counter);
 
 		if (count == 0) {
 			continue;
 		}
-		for (se=sig_state->sig_handlers[i];se;se=next) {
-			next = se->next;
+		for (sl=sig_state->sig_handlers[i];sl;sl=next) {
+			struct tevent_signal *se = sl->se;
+			next = sl->next;
 #ifdef SA_SIGINFO
 			if (se->sa_flags & SA_SIGINFO) {
 				int j;

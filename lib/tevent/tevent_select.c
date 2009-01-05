@@ -177,7 +177,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		}
 	}
 
-	if (select_ev->ev->num_signal_handlers && 
+	if (select_ev->ev->signal_events &&
 	    tevent_common_check_signal(select_ev->ev)) {
 		return 0;
 	}
@@ -185,7 +185,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	selrtn = select(select_ev->maxfd+1, &r_fds, &w_fds, NULL, tvalp);
 
 	if (selrtn == -1 && errno == EINTR && 
-	    select_ev->ev->num_signal_handlers) {
+	    select_ev->ev->signal_events) {
 		tevent_common_check_signal(select_ev->ev);
 		return 0;
 	}

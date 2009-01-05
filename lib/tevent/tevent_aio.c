@@ -260,7 +260,7 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 
 	if (aio_ev->epoll_fd == -1) return -1;
 
-	if (aio_ev->ev->num_signal_handlers && 
+	if (aio_ev->ev->signal_events &&
 	    tevent_common_check_signal(aio_ev->ev)) {
 		return 0;
 	}
@@ -278,7 +278,7 @@ static int aio_event_loop(struct aio_event_context *aio_ev, struct timeval *tval
 			   events, tvalp?&timeout:NULL);
 
 	if (ret == -EINTR) {
-		if (aio_ev->ev->num_signal_handlers) {
+		if (aio_ev->ev->signal_events) {
 			tevent_common_check_signal(aio_ev->ev);
 		}
 		return 0;
