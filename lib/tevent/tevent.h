@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <talloc.h>
+#include <sys/time.h>
 
 struct tevent_context;
 struct tevent_ops;
