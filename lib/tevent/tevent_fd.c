@@ -24,6 +24,49 @@
 #include "tevent_internal.h"
 #include "tevent_util.h"
 
+int tevent_common_fd_destructor(struct tevent_fd *fde)
+{
+	if (fde->event_ctx) {
+		DLIST_REMOVE(fde->event_ctx->fd_events, fde);
+	}
+
+	if (fde->close_fn) {
+		fde->close_fn(fde->event_ctx, fde, fde->fd, fde->private_data);
+		fde->fd = -1;
+	}
+
+	return 0;
+}
+
+struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev, TALLOC_CTX *mem_ctx,
+				       int fd, uint16_t flags,
+				       tevent_fd_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location)
+{
+	struct tevent_fd *fde;
+
+	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
+	if (!fde) return NULL;
+
+	fde->event_ctx		= ev;
+	fde->fd			= fd;
+	fde->flags		= flags;
+	fde->handler		= handler;
+	fde->close_fn		= NULL;
+	fde->private_data	= private_data;
+	fde->handler_name	= handler_name;
+	fde->location		= location;
+	fde->additional_flags	= 0;
+	fde->additional_data	= NULL;
+
+	DLIST_ADD(ev->fd_events, fde);
+
+	talloc_set_destructor(fde, tevent_common_fd_destructor);
+
+	return fde;
+}
 uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde)
 {
 	return fde->flags;

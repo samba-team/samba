@@ -31,12 +31,6 @@ struct epoll_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
 
-	/* list of filedescriptor events */
-	struct tevent_fd *fd_events;
-
-	/* number of registered fd event handlers */
-	int num_fd_events;
-
 	/* this is changed by the destructors for the fd event
 	   type. It is used to detect event destruction by event
 	   handlers, which means the code that is calling the event
@@ -120,7 +114,7 @@ static void epoll_check_reopen(struct epoll_event_context *epoll_ev)
 		return;
 	}
 	epoll_ev->pid = getpid();
-	for (fde=epoll_ev->fd_events;fde;fde=fde->next) {
+	for (fde=epoll_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(epoll_ev, fde);
 	}
 }
@@ -345,24 +339,20 @@ static int epoll_event_context_init(struct tevent_context *ev)
 static int epoll_event_fd_destructor(struct tevent_fd *fde)
 {
 	struct tevent_context *ev = fde->event_ctx;
-	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
-							   struct epoll_event_context);
+	struct epoll_event_context *epoll_ev = NULL;
 
-	epoll_check_reopen(epoll_ev);
+	if (ev) {
+		epoll_ev = talloc_get_type(ev->additional_data,
+					   struct epoll_event_context);
 
-	epoll_ev->num_fd_events--;
-	epoll_ev->destruction_count++;
+		epoll_check_reopen(epoll_ev);
 
-	DLIST_REMOVE(epoll_ev->fd_events, fde);
-		
-	epoll_del_event(epoll_ev, fde);
+		epoll_ev->destruction_count++;
 
-	if (fde->close_fn) {
-		fde->close_fn(ev, fde, fde->fd, fde->private_data);
-		fde->fd = -1;
+		epoll_del_event(epoll_ev, fde);
 	}
 
-	return 0;
+	return tevent_common_fd_destructor(fde);
 }
 
 /*
@@ -382,24 +372,13 @@ static struct tevent_fd *epoll_event_add_fd(struct tevent_context *ev, TALLOC_CT
 
 	epoll_check_reopen(epoll_ev);
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
+	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
+				   handler, private_data,
+				   handler_name, location);
 	if (!fde) return NULL;
 
-	fde->event_ctx		= ev;
-	fde->fd			= fd;
-	fde->flags		= flags;
-	fde->handler		= handler;
-	fde->close_fn		= NULL;
-	fde->private_data	= private_data;
-	fde->handler_name	= handler_name;
-	fde->location		= location;
-	fde->additional_flags	= 0;
-	fde->additional_data	= NULL;
-
-	epoll_ev->num_fd_events++;
 	talloc_set_destructor(fde, epoll_event_fd_destructor);
 
-	DLIST_ADD(epoll_ev->fd_events, fde);
 	epoll_add_event(epoll_ev, fde);
 
 	return fde;
@@ -451,7 +430,7 @@ static int epoll_event_loop_wait(struct tevent_context *ev)
 {
 	struct epoll_event_context *epoll_ev = talloc_get_type(ev->additional_data,
 							   struct epoll_event_context);
-	while (epoll_ev->num_fd_events) {
+	while (epoll_ev->ev->fd_events) {
 		if (epoll_event_loop_once(ev) != 0) {
 			break;
 		}

@@ -130,6 +130,9 @@ struct tevent_context {
 	/* the specific events implementation */
 	const struct tevent_ops *ops;
 
+	/* list of fd events - used by common code */
+	struct tevent_fd *fd_events;
+
 	/* list of timed events - used by common code */
 	struct tevent_timer *timer_events;
 
@@ -149,6 +152,15 @@ struct tevent_context {
 
 bool tevent_register_backend(const char *name, const struct tevent_ops *ops);
 
+int tevent_common_fd_destructor(struct tevent_fd *fde);
+struct tevent_fd *tevent_common_add_fd(struct tevent_context *ev,
+				       TALLOC_CTX *mem_ctx,
+				       int fd,
+				       uint16_t flags,
+				       tevent_fd_handler_t handler,
+				       void *private_data,
+				       const char *handler_name,
+				       const char *location);
 void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
 				   tevent_fd_close_fn_t close_fn);
 uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde);

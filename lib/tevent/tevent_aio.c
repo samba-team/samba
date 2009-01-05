@@ -47,12 +47,6 @@ struct aio_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
 
-	/* list of filedescriptor events */
-	struct tevent_fd *fd_events;
-
-	/* number of registered fd event handlers */
-	int num_fd_events;
-
 	uint32_t destruction_count;
 
 	io_context_t ioctx;
@@ -118,7 +112,7 @@ static void epoll_check_reopen(struct aio_event_context *aio_ev)
 		return;
 	}
 	aio_ev->pid = getpid();
-	for (fde=aio_ev->fd_events;fde;fde=fde->next) {
+	for (fde=aio_ev->ev->fd_events;fde;fde=fde->next) {
 		epoll_add_event(aio_ev, fde);
 	}
 }
@@ -158,8 +152,6 @@ static void epoll_add_event(struct aio_event_context *aio_ev, struct tevent_fd *
 static void epoll_del_event(struct aio_event_context *aio_ev, struct tevent_fd *fde)
 {
 	struct epoll_event event;
-
-	DLIST_REMOVE(aio_ev->fd_events, fde);
 
 	if (aio_ev->epoll_fd == -1) return;
 
@@ -219,7 +211,6 @@ static void epoll_change_event(struct aio_event_context *aio_ev, struct tevent_f
 
 	/* there's no aio_event attached to the fde */
 	if (want_read || (want_write && !got_error)) {
-		DLIST_ADD(aio_ev->fd_events, fde);
 		epoll_add_event(aio_ev, fde);
 		return;
 	}
@@ -389,22 +380,20 @@ static int aio_event_context_init(struct tevent_context *ev)
 static int aio_event_fd_destructor(struct tevent_fd *fde)
 {
 	struct tevent_context *ev = fde->event_ctx;
-	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
-							   struct aio_event_context);
+	struct aio_event_context *aio_ev = NULL;
 
-	epoll_check_reopen(aio_ev);
+	if (ev) {
+		aio_ev = talloc_get_type(ev->additional_data,
+					 struct aio_event_context);
 
-	aio_ev->num_fd_events--;
-	aio_ev->destruction_count++;
+		epoll_check_reopen(aio_ev);
 
-	epoll_del_event(aio_ev, fde);
+		aio_ev->destruction_count++;
 
-	if (fde->close_fn) {
-		fde->close_fn(ev, fde, fde->fd, fde->private_data);
-		fde->fd = -1;
+		epoll_del_event(aio_ev, fde);
 	}
 
-	return 0;
+	return tevent_common_fd_destructor(fde);
 }
 
 /*
@@ -424,24 +413,13 @@ static struct tevent_fd *aio_event_add_fd(struct tevent_context *ev, TALLOC_CTX 
 
 	epoll_check_reopen(aio_ev);
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
+	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
+				   handler, private_data,
+				   handler_name, location);
 	if (!fde) return NULL;
 
-	fde->event_ctx		= ev;
-	fde->fd			= fd;
-	fde->flags		= flags;
-	fde->handler		= handler;
-	fde->close_fn		= NULL;
-	fde->private_data	= private_data;
-	fde->handler_name	= handler_name;
-	fde->location		= location;
-	fde->additional_flags	= 0;
-	fde->additional_data	= NULL;
-
-	aio_ev->num_fd_events++;
 	talloc_set_destructor(fde, aio_event_fd_destructor);
 
-	DLIST_ADD(aio_ev->fd_events, fde);
 	epoll_add_event(aio_ev, fde);
 
 	return fde;
@@ -493,7 +471,7 @@ static int aio_event_loop_wait(struct tevent_context *ev)
 {
 	struct aio_event_context *aio_ev = talloc_get_type(ev->additional_data,
 							   struct aio_event_context);
-	while (aio_ev->num_fd_events) {
+	while (aio_ev->ev->fd_events) {
 		if (aio_event_loop_once(ev) != 0) {
 			break;
 		}

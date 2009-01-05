@@ -18,11 +18,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
-  This is SAMBA's default event loop code
-
-*/
-
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/select.h"
@@ -33,12 +28,6 @@
 struct select_event_context {
 	/* a pointer back to the generic event_context */
 	struct tevent_context *ev;
-
-	/* list of filedescriptor events */
-	struct tevent_fd *fd_events;
-
-	/* list of timed events */
-	struct tevent_timer *timed_events;
 
 	/* the maximum file descriptor number in fd_events */
 	int maxfd;
@@ -74,7 +63,7 @@ static void calc_maxfd(struct select_event_context *select_ev)
 	struct tevent_fd *fde;
 
 	select_ev->maxfd = 0;
-	for (fde = select_ev->fd_events; fde; fde = fde->next) {
+	for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 		if (fde->fd > select_ev->maxfd) {
 			select_ev->maxfd = fde->fd;
 		}
@@ -93,22 +82,20 @@ static void calc_maxfd(struct select_event_context *select_ev)
 static int select_event_fd_destructor(struct tevent_fd *fde)
 {
 	struct tevent_context *ev = fde->event_ctx;
-	struct select_event_context *select_ev = talloc_get_type(ev->additional_data,
-							   struct select_event_context);
+	struct select_event_context *select_ev = NULL;
 
-	if (select_ev->maxfd == fde->fd) {
-		select_ev->maxfd = EVENT_INVALID_MAXFD;
+	if (ev) {
+		select_ev = talloc_get_type(ev->additional_data,
+					    struct select_event_context);
+
+		if (select_ev->maxfd == fde->fd) {
+			select_ev->maxfd = EVENT_INVALID_MAXFD;
+		}
+
+		select_ev->destruction_count++;
 	}
 
-	DLIST_REMOVE(select_ev->fd_events, fde);
-	select_ev->destruction_count++;
-
-	if (fde->close_fn) {
-		fde->close_fn(ev, fde, fde->fd, fde->private_data);
-		fde->fd = -1;
-	}
-
-	return 0;
+	return tevent_common_fd_destructor(fde);
 }
 
 /*
@@ -126,21 +113,11 @@ static struct tevent_fd *select_event_add_fd(struct tevent_context *ev, TALLOC_C
 							   struct select_event_context);
 	struct tevent_fd *fde;
 
-	fde = talloc(mem_ctx?mem_ctx:ev, struct tevent_fd);
+	fde = tevent_common_add_fd(ev, mem_ctx, fd, flags,
+				   handler, private_data,
+				   handler_name, location);
 	if (!fde) return NULL;
 
-	fde->event_ctx		= ev;
-	fde->fd			= fd;
-	fde->flags		= flags;
-	fde->handler		= handler;
-	fde->close_fn		= NULL;
-	fde->private_data	= private_data;
-	fde->handler_name	= handler_name;
-	fde->location		= location;
-	fde->additional_flags	= 0;
-	fde->additional_data	= NULL;
-
-	DLIST_ADD(select_ev->fd_events, fde);
 	if (fde->fd > select_ev->maxfd) {
 		select_ev->maxfd = fde->fd;
 	}
@@ -168,7 +145,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 	FD_ZERO(&w_fds);
 
 	/* setup any fd events */
-	for (fde = select_ev->fd_events; fde; fde = fde->next) {
+	for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 		if (fde->flags & TEVENT_FD_READ) {
 			FD_SET(fde->fd, &r_fds);
 		}
@@ -212,7 +189,7 @@ static int select_event_loop_select(struct select_event_context *select_ev, stru
 		/* at least one file descriptor is ready - check
 		   which ones and call the handler, being careful to allow
 		   the handler to remove itself when called */
-		for (fde = select_ev->fd_events; fde; fde = fde->next) {
+		for (fde = select_ev->ev->fd_events; fde; fde = fde->next) {
 			uint16_t flags = 0;
 
 			if (FD_ISSET(fde->fd, &r_fds)) flags |= TEVENT_FD_READ;
@@ -255,7 +232,7 @@ static int select_event_loop_wait(struct tevent_context *ev)
 							   struct select_event_context);
 	select_ev->exit_code = 0;
 
-	while (select_ev->fd_events && select_ev->exit_code == 0) {
+	while (ev->fd_events && select_ev->exit_code == 0) {
 		if (select_event_loop_once(ev) != 0) {
 			break;
 		}
