@@ -575,6 +575,8 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 
 #include "../talloc/talloc.h"
 
+#include "event.h"
+
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
 #include "../lib/util/asn1.h"
@@ -643,7 +645,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "nsswitch/winbind_client.h"
 #include "spnego.h"
 #include "rpc_client.h"
-#include "event.h"
 #include "dbwrap.h"
 #include "packet.h"
 #include "ctdbd_conn.h"
