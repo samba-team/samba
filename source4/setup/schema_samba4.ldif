@@ -189,6 +189,8 @@ oMSyntax: 20
 #Allocated: (objectClasses) samba4ObjectClasses: 1.3.6.1.4.1.7165.4.255.5
 #Allocated: (ditContentRules) samba4DitContentRules: 1.3.6.1.4.1.7165.4.255.6
 #Allocated: (attributeTypes) samba4AttributeTypes: 1.3.6.1.4.1.7165.4.255.7
+#Allocated: (dynamicObject) samba4DynamicObject: 1.3.6.1.4.1.7165.4.255.8
+#Allocated: (entryTTL) samba4EntryTTL: 1.3.6.1.4.1.7165.4.255.9
 
 #
 # Fedora DS uses this attribute, and we need to set it via our module stack

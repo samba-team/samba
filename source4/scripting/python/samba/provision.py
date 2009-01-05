@@ -1255,12 +1255,12 @@ def provision_backend(setup_dir=None, message=None,
 
     elif ldap_backend_type == "openldap":
         attrs = ["linkID", "lDAPDisplayName"]
-        res = schemadb.search(expression="(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
+        res = schemadb.search(expression="(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1))(objectclass=attributeSchema)(omSyntax=127))", base=names.schemadn, scope=SCOPE_SUBTREE, attrs=attrs)
 
         memberof_config = "# Generated from schema in %s\n" % schemadb_path
         refint_attributes = ""
         for i in range (0, len(res)):
-            expression = "(&(objectclass=attributeSchema)(linkID=%d))" % (int(res[i]["linkID"][0])+1)
+            expression = "(&(objectclass=attributeSchema)(linkID=%d)(omSyntax=127))" % (int(res[i]["linkID"][0])+1)
             target = schemadb.searchone(basedn=names.schemadn, 
                                         expression=expression, 
                                         attribute="lDAPDisplayName", 
