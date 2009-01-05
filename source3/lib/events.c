@@ -21,129 +21,6 @@
 #include "includes.h"
 #include <tevent_internal.h>
 
-struct s3_event_context {
-	struct tevent_context *ev;
-	struct tevent_fd *fd_events;
-};
-
-static int s3_event_timer_destructor(struct tevent_timer *te)
-{
-	DEBUG(10, ("Destroying timer event %p \"%s\"\n",
-		  te, te->handler_name));
-	if (te->event_ctx != NULL) {
-		DLIST_REMOVE(te->event_ctx->timer_events, te);
-	}
-	return 0;
-}
-
-/****************************************************************************
- Add te by time.
-****************************************************************************/
-
-static void add_event_by_time(struct tevent_timer *te)
-{
-	struct tevent_context *ctx = te->event_ctx;
-	struct tevent_timer *last_te, *cur_te;
-
-	/* Keep the list ordered by time. We must preserve this. */
-	last_te = NULL;
-	for (cur_te = ctx->timer_events; cur_te; cur_te = cur_te->next) {
-		/* if the new event comes before the current one break */
-		if (!timeval_is_zero(&cur_te->next_event) &&
-		    timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
-			break;
-		}
-		last_te = cur_te;
-	}
-
-	DLIST_ADD_AFTER(ctx->timer_events, te, last_te);
-}
-
-/****************************************************************************
- Schedule a function for future calling, cancel with TALLOC_FREE().
- It's the responsibility of the handler to call TALLOC_FREE() on the event
- handed to it.
-****************************************************************************/
-
-static struct tevent_timer *s3_event_add_timer(struct tevent_context *event_ctx,
-					       TALLOC_CTX *mem_ctx,
-					       struct timeval when,
-					       tevent_timer_handler_t handler,
-					       void *private_data,
-					       const char *handler_name,
-					       const char *location)
-{
-	struct tevent_timer *te;
-
-	te = TALLOC_P(mem_ctx, struct tevent_timer);
-	if (te == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	te->event_ctx = event_ctx;
-	te->next_event = when;
-	te->handler = handler;
-	te->private_data = private_data;
-	te->handler_name = handler_name;
-	te->location = location;
-	te->additional_data = NULL;
-
-	add_event_by_time(te);
-
-	talloc_set_destructor(te, s3_event_timer_destructor);
-
-	DEBUG(10, ("Added timed event \"%s\": %p\n", handler_name, te));
-	return te;
-}
-
-static int s3_event_fd_destructor(struct tevent_fd *fde)
-{
-	if (fde->event_ctx != NULL) {
-		struct s3_event_context *ev3;
-		ev3 = talloc_get_type(fde->event_ctx->additional_data,
-				      struct s3_event_context);
-		DLIST_REMOVE(ev3->fd_events, fde);
-	}
-	if (fde->close_fn) {
-		fde->close_fn(fde->event_ctx, fde, fde->fd, fde->private_data);
-		fde->fd = -1;
-	}
-	return 0;
-}
-
-static struct tevent_fd *s3_event_add_fd(struct tevent_context *ev,
-					 TALLOC_CTX *mem_ctx,
-					 int fd,
-					 uint16_t flags,
-					 tevent_fd_handler_t handler,
-					 void *private_data,
-					 const char *handler_name,
-					 const char *location)
-{
-	struct s3_event_context *ev3 = talloc_get_type(ev->additional_data,
-						       struct s3_event_context);
-	struct tevent_fd *fde;
-
-	if (!(fde = TALLOC_P(mem_ctx, struct tevent_fd))) {
-		return NULL;
-	}
-
-	fde->event_ctx = ev;
-	fde->fd = fd;
-	fde->flags = flags;
-	fde->handler = handler;
-	fde->close_fn = NULL;
-	fde->private_data = private_data;
-	fde->handler_name = handler_name;
-	fde->location = location;
-
-	DLIST_ADD(ev3->fd_events, fde);
-
-	talloc_set_destructor(fde, s3_event_fd_destructor);
-	return fde;
-}
-
 void event_fd_set_writeable(struct tevent_fd *fde)
 {
 	TEVENT_FD_WRITEABLE(fde);
@@ -173,13 +50,11 @@ bool event_add_to_select_args(struct tevent_context *ev,
 			      fd_set *read_fds, fd_set *write_fds,
 			      struct timeval *timeout, int *maxfd)
 {
-	struct s3_event_context *ev3 = talloc_get_type(ev->additional_data,
-						       struct s3_event_context);
 	struct tevent_fd *fde;
 	struct timeval diff;
 	bool ret = false;
 
-	for (fde = ev3->fd_events; fde; fde = fde->next) {
+	for (fde = ev->fd_events; fde; fde = fde->next) {
 		if (fde->flags & EVENT_FD_READ) {
 			FD_SET(fde->fd, read_fds);
 			ret = true;
@@ -208,8 +83,6 @@ bool event_add_to_select_args(struct tevent_context *ev,
 bool run_events(struct tevent_context *ev,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
-	struct s3_event_context *ev3 = talloc_get_type(ev->additional_data,
-						       struct s3_event_context);
 	bool fired = false;
 	struct tevent_fd *fde, *next;
 
@@ -254,7 +127,7 @@ bool run_events(struct tevent_context *ev,
 		return fired;
 	}
 
-	for (fde = ev3->fd_events; fde; fde = next) {
+	for (fde = ev->fd_events; fde; fde = next) {
 		uint16 flags = 0;
 
 		next = fde->next;
@@ -334,44 +207,19 @@ static int s3_event_loop_wait(struct tevent_context *ev)
 	return ret;
 }
 
-static int s3_event_context_destructor(struct tevent_context *ev)
-{
-	struct s3_event_context *ev3 = talloc_get_type(ev->additional_data,
-						       struct s3_event_context);
-	while (ev3->fd_events != NULL) {
-		ev3->fd_events->event_ctx = NULL;
-		DLIST_REMOVE(ev3->fd_events, ev3->fd_events);
-	}
-	while (ev->timer_events != NULL) {
-		ev->timer_events->event_ctx = NULL;
-		DLIST_REMOVE(ev->timer_events, ev3->ev->timer_events);
-	}
-	return 0;
-}
-
 void event_context_reinit(struct tevent_context *ev)
 {
-	s3_event_context_destructor(ev);
+	tevent_common_context_destructor(ev);
 	return;
 }
 
 static int s3_event_context_init(struct tevent_context *ev)
 {
-	struct s3_event_context *ev3;
-
-	ev3 = talloc_zero(ev, struct s3_event_context);
-	if (!ev3) return -1;
-	ev3->ev = ev;
-
-	ev->additional_data = ev3;
-	talloc_set_destructor(ev, s3_event_context_destructor);
 	return 0;
 }
 
 void dump_event_list(struct tevent_context *ev)
 {
-	struct s3_event_context *ev3 = talloc_get_type(ev->additional_data,
-						       struct s3_event_context);
 	struct tevent_timer *te;
 	struct tevent_fd *fe;
 	struct timeval evt, now;
@@ -395,7 +243,7 @@ void dump_event_list(struct tevent_context *ev)
 			   http_timestring(talloc_tos(), te->next_event.tv_sec)));
 	}
 
-	for (fe = ev3->fd_events; fe; fe = fe->next) {
+	for (fe = ev->fd_events; fe; fe = fe->next) {
 
 		DEBUGADD(10,("FD Event %d %p, flags: 0x%04x\n",
 			   fe->fd,
@@ -406,11 +254,11 @@ void dump_event_list(struct tevent_context *ev)
 
 static const struct tevent_ops s3_event_ops = {
 	.context_init	= s3_event_context_init,
-	.add_fd		= s3_event_add_fd,
+	.add_fd		= tevent_common_add_fd,
 	.set_fd_close_fn= tevent_common_fd_set_close_fn,
 	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= tevent_common_fd_set_flags,
-	.add_timer	= s3_event_add_timer,
+	.add_timer	= tevent_common_add_timer,
 	.loop_once	= s3_event_loop_once,
 	.loop_wait	= s3_event_loop_wait,
 };
