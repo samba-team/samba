@@ -272,7 +272,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 static void check_domain_online_handler(struct event_context *ctx,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *private_data)
 {
         struct winbindd_domain *domain =
@@ -286,7 +286,7 @@ static void check_domain_online_handler(struct event_context *ctx,
 
 	/* Are we still in "startup" mode ? */
 
-	if (domain->startup && (now->tv_sec > domain->startup_time + 30)) {
+	if (domain->startup && (now.tv_sec > domain->startup_time + 30)) {
 		/* No longer in "startup" mode. */
 		DEBUG(10,("check_domain_online_handler: domain %s no longer in 'startup' mode.\n",
 			domain->name ));
@@ -367,7 +367,6 @@ void set_domain_offline(struct winbindd_domain *domain)
 	domain->check_online_event = event_add_timed(winbind_event_context(),
 						NULL,
 						timeval_current_ofs(domain->check_online_timeout,0),
-						"check_domain_online_handler",
 						check_domain_online_handler,
 						domain);
 
@@ -518,7 +517,6 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	domain->check_online_event = event_add_timed(winbind_event_context(),
 						     NULL,
 						     tev,
-						     "check_domain_online_handler",
 						     check_domain_online_handler,
 						     domain);
 

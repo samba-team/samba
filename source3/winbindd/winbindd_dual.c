@@ -175,7 +175,7 @@ static void async_main_request_sent(void *private_data, bool success)
 
 static void async_request_timeout_handler(struct event_context *ctx,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *private_data)
 {
 	struct winbindd_async_request *state =
@@ -247,7 +247,6 @@ static void async_request_sent(void *private_data_data, bool success)
 	state->reply_timeout_event = event_add_timed(winbind_event_context(),
 							NULL,
 							timeval_current_ofs(300,0),
-							"async_request_timeout",
 							async_request_timeout_handler,
 							state);
 	if (!state->reply_timeout_event) {
@@ -827,7 +826,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 
 static void account_lockout_policy_handler(struct event_context *ctx,
 					   struct timed_event *te,
-					   const struct timeval *now,
+					   struct timeval now,
 					   void *private_data)
 {
 	struct winbindd_child *child =
@@ -866,7 +865,6 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 
 	child->lockout_policy_event = event_add_timed(winbind_event_context(), NULL,
 						      timeval_current_ofs(3600, 0),
-						      "account_lockout_policy_handler",
 						      account_lockout_policy_handler,
 						      child);
 }
@@ -919,7 +917,7 @@ static bool calculate_next_machine_pwd_change(const char *domain,
 
 static void machine_password_change_handler(struct event_context *ctx,
 					    struct timed_event *te,
-					    const struct timeval *now,
+					    struct timeval now,
 					    void *private_data)
 {
 	struct winbindd_child *child =
@@ -971,7 +969,6 @@ static void machine_password_change_handler(struct event_context *ctx,
 
 	child->machine_password_change_event = event_add_timed(winbind_event_context(), NULL,
 							      next_change,
-							      "machine_password_change_handler",
 							      machine_password_change_handler,
 							      child);
 }
@@ -1293,7 +1290,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		child->lockout_policy_event = event_add_timed(
 			winbind_event_context(), NULL, timeval_zero(),
-			"account_lockout_policy_handler",
 			account_lockout_policy_handler,
 			child);
 	}
@@ -1308,7 +1304,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 						       &next_change)) {
 			child->machine_password_change_event = event_add_timed(
 				winbind_event_context(), NULL, next_change,
-				"machine_password_change_handler",
 				machine_password_change_handler,
 				child);
 		}

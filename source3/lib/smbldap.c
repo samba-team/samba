@@ -1014,7 +1014,7 @@ static int smbldap_connect_system(struct smbldap_state *ldap_state, LDAP * ldap_
 
 static void smbldap_idle_fn(struct event_context *event_ctx,
 			    struct timed_event *te,
-			    const struct timeval *now,
+			    struct timeval now,
 			    void *private_data);
 
 /**********************************************************************
@@ -1079,7 +1079,7 @@ static int smbldap_open(struct smbldap_state *ldap_state)
 		ldap_state->idle_event = event_add_timed(
 			ldap_state->event_context, NULL,
 			timeval_current_ofs(SMBLDAP_IDLE_TIME, 0),
-			"smbldap_idle_fn", smbldap_idle_fn, ldap_state);
+			smbldap_idle_fn, ldap_state);
 	}
 
 	DEBUG(4,("The LDAP server is successfully connected\n"));
@@ -1572,7 +1572,7 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state,
 
 static void smbldap_idle_fn(struct event_context *event_ctx,
 			    struct timed_event *te,
-			    const struct timeval *now,
+			    struct timeval now,
 			    void *private_data)
 {
 	struct smbldap_state *state = (struct smbldap_state *)private_data;
@@ -1584,13 +1584,13 @@ static void smbldap_idle_fn(struct event_context *event_ctx,
 		return;
 	}
 		
-	if ((state->last_use+SMBLDAP_IDLE_TIME) > now->tv_sec) {
+	if ((state->last_use+SMBLDAP_IDLE_TIME) > now.tv_sec) {
 		DEBUG(10,("ldap connection not idle...\n"));
 
 		state->idle_event = event_add_timed(
 			event_ctx, NULL,
-			timeval_add(now, SMBLDAP_IDLE_TIME, 0),
-			"smbldap_idle_fn", smbldap_idle_fn,
+			timeval_add(&now, SMBLDAP_IDLE_TIME, 0),
+			smbldap_idle_fn,
 			private_data);
 		return;
 	}

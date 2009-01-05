@@ -27,7 +27,7 @@ struct timed_event {
 	const char *event_name;
 	void (*handler)(struct event_context *event_ctx,
 			struct timed_event *te,
-			const struct timeval *now,
+			struct timeval now,
 			void *private_data);
 	void *private_data;
 };
@@ -88,13 +88,13 @@ static void add_event_by_time(struct timed_event *te)
  handed to it.
 ****************************************************************************/
 
-struct timed_event *event_add_timed(struct event_context *event_ctx,
+struct timed_event *_event_add_timed(struct event_context *event_ctx,
 				TALLOC_CTX *mem_ctx,
 				struct timeval when,
 				const char *event_name,
 				void (*handler)(struct event_context *event_ctx,
 						struct timed_event *te,
-						const struct timeval *now,
+						struct timeval now,
 						void *private_data),
 				void *private_data)
 {
@@ -241,7 +241,7 @@ bool run_events(struct event_context *event_ctx,
 
 		event_ctx->timed_events->handler(
 			event_ctx,
-			event_ctx->timed_events, &now,
+			event_ctx->timed_events, now,
 			event_ctx->timed_events->private_data);
 
 		fired = True;

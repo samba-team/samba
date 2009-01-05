@@ -103,12 +103,12 @@ void async_req_error(struct async_req *req, NTSTATUS status)
  * @brief Timed event callback
  * @param[in] ev	Event context
  * @param[in] te	The timed event
- * @param[in] now	current time
+ * @param[in] now	zero time
  * @param[in] priv	The async request to be finished
  */
 
 static void async_trigger(struct event_context *ev, struct timed_event *te,
-			  const struct timeval *now, void *priv)
+			  struct timeval now, void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
 
@@ -139,7 +139,7 @@ bool async_post_status(struct async_req *req, struct event_context *ev,
 {
 	req->status = status;
 
-	if (event_add_timed(ev, req, timeval_zero(), "async_trigger",
+	if (event_add_timed(ev, req, timeval_zero(),
 			    async_trigger, req) == NULL) {
 		return false;
 	}
@@ -197,7 +197,7 @@ NTSTATUS async_req_simple_recv(struct async_req *req)
 
 static void async_req_timedout(struct event_context *ev,
 			       struct timed_event *te,
-			       const struct timeval *now,
+			       struct timeval now,
 			       void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -211,7 +211,7 @@ bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
 {
 	return (event_add_timed(ev, req,
 				timeval_current_ofs(to.tv_sec, to.tv_usec),
-				"async_req_timedout", async_req_timedout, req)
+				async_req_timedout, req)
 		!= NULL);
 }
 
@@ -268,7 +268,7 @@ static int async_queue_entry_destructor(struct async_queue_entry *e)
 
 static void async_req_immediate_trigger(struct event_context *ev,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *priv)
 {
 	struct async_queue_entry *e = talloc_get_type_abort(
@@ -303,7 +303,6 @@ bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
 		struct timed_event *te;
 
 		te = event_add_timed(ev, e, timeval_zero(),
-				     "async_req_immediate_trigger",
 				     async_req_immediate_trigger,
 				     e);
 		if (te == NULL) {

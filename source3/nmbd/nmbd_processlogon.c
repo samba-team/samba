@@ -52,7 +52,7 @@ static bool delay_logon(const char *peer_name, const char *peer_addr)
 
 static void delayed_init_logon_handler(struct event_context *event_ctx,
 				       struct timed_event *te,
-				       const struct timeval *now,
+				       struct timeval now,
 				       void *private_data)
 {
 	struct packet_struct *p = (struct packet_struct *)private_data;
@@ -657,7 +657,6 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					event_add_timed(nmbd_event_context(),
 							NULL,
 							when,
-							"delayed_init_logon",
 							delayed_init_logon_handler,
 							p);
 				} else {

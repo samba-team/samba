@@ -68,7 +68,7 @@ static void process_blocking_lock_queue(void);
 
 static void brl_timeout_fn(struct event_context *event_ctx,
 			   struct timed_event *te,
-			   const struct timeval *now,
+			   struct timeval now,
 			   void *private_data)
 {
 	SMB_ASSERT(brl_timeout == te);
@@ -123,7 +123,7 @@ static bool recalc_brl_timeout(void)
 	}
 
 	if (!(brl_timeout = event_add_timed(smbd_event_context(), NULL,
-					    next_timeout, "brl_timeout",
+					    next_timeout,
 					    brl_timeout_fn, NULL))) {
 		return False;
 	}
