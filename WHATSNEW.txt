@@ -7,6 +7,9 @@ This is the first stable release of Samba 3.3.0.
 
 Major enhancements in Samba 3.3.0 include:
 
+ General changes:
+ o The passdb tdbsam version has been raised.
+
  Configuration/installation:
  o Splitting of library directory into library directory and separate
    modules directory.
@@ -32,6 +35,22 @@ Major enhancements in Samba 3.3.0 include:
  Libraries:
  o NetApi library implements various new calls for User- and Group
    Account Management.
+
+
+General changes
+===============
+
+The passdb tdbsam version has been raised as among other things the RID counter
+has been moved from the winbindd_idmap.tdb to the passdb.tdb file to make
+"passdb backend = tdbsam" working in clustered environments.
+
+Please note that an updated passdb.tdb file is _not_ compatible with Samba
+versions before 3.3.0! Please backup your passdb.tdb file if
+you use "passdb backend = tdbsam". That can be achieved by running
+
+'tdbbackup /etc/samba/passdb.tdb'
+
+before the update.
 
 
 Configure changes
@@ -190,6 +209,7 @@ o   Jeremy Allison <jra@samba.org>
       notify to be missed.
     * BUG 5986: Editing a stream is broken (rename problems).
     * BUG 5990: Strict allocate should be checked before ftruncate.
+    * BUG 6009: Setting "min receivefile size = 1" breaks writes.
     * Fix gcc 4.3.2 warnings.
     * Fix more asprintf errors and error code paths.
 
@@ -197,8 +217,7 @@ o   Jeremy Allison <jra@samba.org>
 o   Michael Adam <obnox@samba.org>
     * Fix build of pam_winbind.so on older Linux systems.
     * Packaging RHEL-CTDB: Fix build of [u]mount.cifs.
-    * Fix uid_to_sid mapping when the idmap cache is empty.
-    * Remove passd check from idmap_backends_unixid_to_sid().
+    * Prevent access to root filesystem when connecting with empty service name.
 
 
 o   Kai Blin <kai@samba.org>
@@ -228,12 +247,15 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5933: Fix incrementing/decrementing of num_validated_vuids.
     * BUG 5953: Make cli_send_smb_direct_writeX use writev.
     * BUG 5969: Optimize smbclient put command.
+    * BUG 6012: Add "get_real_filename" to full_audit.
+    * BUG 6014: Fix segfault when calling mget without arguments.
     * Fix a spinning smbd when printing.
     * Fix a memory leak in cups_pull_comment_location.
     * Fix a valgrind error.
     * Fix a "ignoring function call result" warning.
     * Fix some C++ warnings.
     * Fix an ancient uninitialized variable read.
+    * Fix a bad memleak in vfs_full_audit.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -243,6 +265,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * Store the next rid counter in passdb.tdb instead of winbind_idmap.tdb.
     * Register the client connection via CTDB_CONTROL_TCP_ADD.
     * Don't need to call messaging_reinit() twice.
+    * Raise TDBSAM_VERSION.
 
 
 o   Lars Müller <lars@samba.org>
