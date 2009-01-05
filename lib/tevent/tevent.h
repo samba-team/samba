@@ -82,7 +82,7 @@ struct tevent_timer *_tevent_add_timer(struct tevent_context *ev,
 				       const char *location);
 #define tevent_add_timer(ev, mem_ctx, next_event, handler, private_data) \
 	_tevent_add_timer(ev, mem_ctx, next_event, handler, private_data, \
-			  #handler, __location__);
+			  #handler, __location__)
 
 struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 					 TALLOC_CTX *mem_ctx,
@@ -106,7 +106,7 @@ struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
 				   const char *location);
 #define tevent_add_aio(ev, mem_ctx, iocb, handler, private_data) \
 	_tevent_add_aio(ev, mem_ctx, iocb, handler, private_data, \
-			#handler, __location__);
+			#handler, __location__)
 
 int tevent_loop_once(struct tevent_context *ev);
 int tevent_loop_wait(struct tevent_context *ev);
