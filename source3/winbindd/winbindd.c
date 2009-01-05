@@ -865,6 +865,13 @@ static void process_loop(void)
 	timeout.tv_usec = 0;
 
 	/* Check for any event timeouts. */
+	{
+		struct timeval now;
+		GetTimeOfDay(&now);
+
+		event_add_to_select_args(winbind_event_context(), &now,
+					 &r_fds, &w_fds, &ev_timeout, &maxfd);
+	}
 	if (get_timed_events_timeout(winbind_event_context(), &ev_timeout)) {
 		timeout = timeval_min(&timeout, &ev_timeout);
 	}
@@ -917,6 +924,8 @@ static void process_loop(void)
 	}
 
 	/* selret > 0 */
+
+	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
 
 	ev = fd_events;
 	while (ev != NULL) {
