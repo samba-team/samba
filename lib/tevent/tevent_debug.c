@@ -79,6 +79,9 @@ void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 		  const char *fmt, ...)
 {
 	va_list ap;
+	if (!ev) {
+		return;
+	}
 	if (ev->debug_ops.debug == NULL) {
 		return;
 	}
