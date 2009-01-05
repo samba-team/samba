@@ -1326,6 +1326,11 @@ static int cmd_mget(void)
 		do_list(mget_mask, attribute, do_mget, false, true);
 	}
 
+	if (mget_mask == NULL) {
+		d_printf("nothing to mget\n");
+		return 0;
+	}
+
 	if (!*mget_mask) {
 		mget_mask = talloc_asprintf(ctx,
 					"%s*",
