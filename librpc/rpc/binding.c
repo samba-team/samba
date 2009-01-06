@@ -7,17 +7,17 @@
    Copyright (C) Jelmer Vernooij 2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2005
    Copyright (C) Rafal Szczesniak 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -289,7 +289,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 		}
 
 		talloc_free(type);
-	
+
 		s = p+1;
 	}
 
@@ -365,7 +365,7 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 
 	if (b->options[0] == NULL)
 		b->options = NULL;
-	
+
 	*b_out = b;
 	return NT_STATUS_OK;
 }
@@ -422,7 +422,7 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm
 	case EPM_PROTOCOL_TCP:
 		if (epm_floor->rhs.tcp.port == 0) return NULL;
 		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.tcp.port);
-		
+
 	case EPM_PROTOCOL_UDP:
 		if (epm_floor->rhs.udp.port == 0) return NULL;
 		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.udp.port);
@@ -454,20 +454,20 @@ const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm
 
 	case EPM_PROTOCOL_NCALRPC:
 		return NULL;
-		
+
 	case EPM_PROTOCOL_VINES_SPP:
 		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_spp.port);
-		
+
 	case EPM_PROTOCOL_VINES_IPC:
 		return talloc_asprintf(mem_ctx, "%d", epm_floor->rhs.vines_ipc.port);
-		
+
 	case EPM_PROTOCOL_STREETTALK:
 		return talloc_strdup(mem_ctx, epm_floor->rhs.streettalk.streettalk);
-		
+
 	case EPM_PROTOCOL_UNIX_DS:
 		if (strlen(epm_floor->rhs.unix_ds.path) == 0) return NULL;
 		return talloc_strdup(mem_ctx, epm_floor->rhs.unix_ds.path);
-		
+
 	case EPM_PROTOCOL_NULL:
 		return NULL;
 
@@ -487,7 +487,7 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
 	case EPM_PROTOCOL_TCP:
 		epm_floor->rhs.tcp.port = atoi(data);
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_UDP:
 		epm_floor->rhs.udp.port = atoi(data);
 		return NT_STATUS_OK;
@@ -526,25 +526,25 @@ static NTSTATUS dcerpc_floor_set_rhs_data(TALLOC_CTX *mem_ctx,
 
 	case EPM_PROTOCOL_NCALRPC:
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_VINES_SPP:
 		epm_floor->rhs.vines_spp.port = atoi(data);
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_VINES_IPC:
 		epm_floor->rhs.vines_ipc.port = atoi(data);
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_STREETTALK:
 		epm_floor->rhs.streettalk.streettalk = talloc_strdup(mem_ctx, data);
 		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.streettalk.streettalk);
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_UNIX_DS:
 		epm_floor->rhs.unix_ds.path = talloc_strdup(mem_ctx, data);
 		NT_STATUS_HAVE_NO_MEMORY(epm_floor->rhs.unix_ds.path);
 		return NT_STATUS_OK;
-		
+
 	case EPM_PROTOCOL_NULL:
 		return NT_STATUS_OK;
 
@@ -567,7 +567,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 			return transports[i].transport;
 		}
 	}
-	
+
 	/* Unknown transport */
 	return (unsigned int)-1;
 }
@@ -593,7 +593,7 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tow
 			return transports[i].transport;
 		}
 	}
-	
+
 	/* Unknown transport */
 	return (unsigned int)-1;
 }
@@ -627,14 +627,14 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 
 	/* Set object uuid */
 	status = dcerpc_floor_get_lhs_data(&tower->floors[0], &binding->object);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error pulling object uuid and version: %s", nt_errstr(status)));	
 		return status;
 	}
 
 	/* Ignore floor 1, it contains the NDR version info */
-	
+
 	binding->options = NULL;
 
 	/* Set endpoint */
@@ -661,7 +661,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
 	NTSTATUS status;
-	
+
 	/* Find transport */
 	for (i=0;i<ARRAY_SIZE(transports);i++) {
 		if (transports[i].transport == binding->transport) {
@@ -685,15 +685,15 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 	tower->floors[0].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, &binding->object);
 
 	tower->floors[0].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
-	
+
 	/* Floor 1 */
 	tower->floors[1].lhs.protocol = EPM_PROTOCOL_UUID;
 
 	tower->floors[1].lhs.lhs_data = dcerpc_floor_pack_lhs_data(mem_ctx, 
 								&ndr_transfer_syntax);
-	
+
 	tower->floors[1].rhs.uuid.unknown = data_blob_talloc_zero(mem_ctx, 2);
-	
+
 	/* Floor 2 to num_protocols */
 	for (i = 0; i < num_protocols; i++) {
 		tower->floors[2 + i].lhs.protocol = protseq[i];
@@ -709,7 +709,7 @@ _PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 			return status;
 		}
 	}
-	
+
 	/* The 5th contains the network address */
 	if (num_protocols >= 3 && binding->host) {
 		if (is_ipaddress(binding->host)) {
