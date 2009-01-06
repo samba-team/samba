@@ -402,7 +402,9 @@ static void init_domain_recv_samr(struct composite_context *ctx)
 	talloc_steal(state->domain->libnet_ctx->samr.pipe, state->domain->samr_binding);
 	state->domain->libnet_ctx->samr.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	state->domain->libnet_ctx->samr.name = state->domain->info->name;
-	state->domain->libnet_ctx->samr.sid = state->domain->info->sid;
+	state->domain->libnet_ctx->samr.sid = dom_sid_dup(
+						state->domain->libnet_ctx,
+						state->domain->info->sid);
 
 	composite_done(state->ctx);
 }
