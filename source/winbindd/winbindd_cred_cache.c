@@ -75,6 +75,20 @@ static int ccache_entry_count(void)
 	return i;
 }
 
+void ccache_remove_all_after_fork(void)
+{
+	struct WINBINDD_CCACHE_ENTRY *cur, *next;
+
+	for (cur = ccache_list; cur; cur = next) {
+		next = cur->next;
+		DLIST_REMOVE(ccache_list, cur);
+		TALLOC_FREE(cur->event);
+		TALLOC_FREE(cur);
+	}
+
+	return;
+}
+
 /****************************************************************
  Do the work of refreshing the ticket.
 ****************************************************************/
