@@ -577,7 +577,7 @@ bool create_next_pdu(pipes_struct *p)
 		case PIPE_AUTH_LEVEL_CONNECT:
 			/* This is incorrect for auth level connect. Fixme. JRA */
 			return create_next_pdu_noauth(p);
-		
+
 		default:
 			switch(p->auth.auth_type) {
 				case PIPE_AUTH_TYPE_NTLMSSP:
@@ -751,7 +751,7 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 	 * The following call actually checks the challenge/response data.
 	 * for correctness against the given DOMAIN\user name.
 	 */
-	
+
 	if (!pipe_ntlmssp_verify_final(p, &blob)) {
 		goto err;
 	}
@@ -1040,7 +1040,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
         } else {
                 rpc_lookup = rpc_entry;
         }
-        
+
         rpc_entry = rpc_lookup + (rpc_lookup_size - 1);
         ZERO_STRUCTP(rpc_entry);
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
@@ -1048,7 +1048,7 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
 	rpc_entry->rpc_interface = *interface;
         rpc_entry->cmds = cmds;
         rpc_entry->n_cmds = size;
-        
+
         return NT_STATUS_OK;
 }
 
@@ -2003,7 +2003,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 	unsigned char *full_packet_data = NULL;
 	size_t full_packet_data_len;
 	DATA_BLOB auth_blob;
-	
+
 	*pstatus = NT_STATUS_OK;
 
 	if (p->auth.auth_level == PIPE_AUTH_LEVEL_NONE || p->auth.auth_level == PIPE_AUTH_LEVEL_CONNECT) {
@@ -2053,7 +2053,7 @@ bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
 
 	auth_blob.data = (unsigned char *)prs_data_p(rpc_in) + prs_offset(rpc_in);
 	auth_blob.length = auth_len;
-	
+
 	switch (p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data is encrypted. */
@@ -2137,7 +2137,7 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 
 	data_len = p->hdr.frag_len - RPC_HEADER_LEN - RPC_HDR_REQ_LEN - 
 		RPC_HDR_AUTH_LEN - auth_len;
-	
+
 	DEBUG(5,("data %d auth %d\n", data_len, auth_len));
 
 	if(!prs_set_offset(rpc_in, RPC_HDR_REQ_LEN + data_len)) {
@@ -2202,19 +2202,19 @@ static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 contex
 {
 	PIPE_RPC_FNS *fns = NULL;
 	PIPE_RPC_FNS *tmp = NULL;
-	
+
 	if ( !list ) {
 		DEBUG(0,("find_pipe_fns_by_context: ERROR!  No context list for pipe!\n"));
 		return NULL;
 	}
-	
+
 	for (tmp=list; tmp; tmp=tmp->next ) {
 		if ( tmp->context_id == context_id )
 			break;
 	}
-	
+
 	fns = tmp;
-	
+
 	return fns;
 }
 
@@ -2226,7 +2226,7 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 {
 	PIPE_RPC_FNS *tmp = list;
 	PIPE_RPC_FNS *tmp2;
-		
+
 	while (tmp) {
 		tmp2 = tmp->next;
 		SAFE_FREE(tmp);
@@ -2250,7 +2250,7 @@ bool api_pipe_request(pipes_struct *p)
 	bool ret = False;
 	bool changed_user = False;
 	PIPE_RPC_FNS *pipe_fns;
-	
+
 	if (p->pipe_bound &&
 			((p->auth.auth_type == PIPE_AUTH_TYPE_NTLMSSP) ||
 			 (p->auth.auth_type == PIPE_AUTH_TYPE_SPNEGO_NTLMSSP))) {
@@ -2262,11 +2262,11 @@ bool api_pipe_request(pipes_struct *p)
 	}
 
 	DEBUG(5, ("Requested \\PIPE\\%s\n", p->name));
-	
+
 	/* get the set of RPC functions for this context */
-	
+
 	pipe_fns = find_pipe_fns_by_context(p->contexts, p->hdr_req.context_id);
-	
+
 	if ( pipe_fns ) {
 		TALLOC_CTX *frame = talloc_stackframe();
 		ret = api_rpcTNP(p, p->name, pipe_fns->cmds, pipe_fns->n_cmds);
@@ -2294,7 +2294,7 @@ static bool api_rpcTNP(pipes_struct *p, const char *rpc_name,
 	int fn_num;
 	fstring name;
 	uint32 offset1, offset2;
- 
+
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
