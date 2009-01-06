@@ -152,7 +152,7 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 		return NULL;
 	}
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static void py_msg_callback_wrapper(struct messaging_context *msg, void *private, 
@@ -214,7 +214,7 @@ static PyObject *py_messaging_deregister(PyObject *self, PyObject *args, PyObjec
 
 	Py_DECREF(callback);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_messaging_add_name(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -235,7 +235,7 @@ static PyObject *py_messaging_add_name(PyObject *self, PyObject *args, PyObject 
 		return NULL;
 	}
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 
@@ -252,7 +252,7 @@ static PyObject *py_messaging_remove_name(PyObject *self, PyObject *args, PyObje
 
 	irpc_remove_name(iface->msg_ctx, name);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_messaging_methods[] = {

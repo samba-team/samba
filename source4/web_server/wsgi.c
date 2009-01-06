@@ -90,7 +90,7 @@ static PyObject *start_response(PyObject *self, PyObject *args, PyObject *kwargs
 
 	websrv_output_headers(web, status, headers);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef web_request_methods[] = {
@@ -114,7 +114,7 @@ typedef struct {
 static PyObject *py_error_flush(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	/* Nothing to do here */
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_error_write(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -128,7 +128,7 @@ static PyObject *py_error_write(PyObject *self, PyObject *args, PyObject *kwargs
 
 	DEBUG(0, ("WSGI App: %s", str));
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *kwargs)
@@ -146,7 +146,7 @@ static PyObject *py_error_writelines(PyObject *self, PyObject *args, PyObject *k
 		DEBUG(0, ("WSGI App: %s", str));
 	}
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef error_Stream_methods[] = {

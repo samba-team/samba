@@ -88,7 +88,7 @@ static PyObject *py_ldb_set_credentials(PyObject *self, PyObject *args)
 
     	ldb_set_opaque(ldb, "credentials", creds);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
@@ -109,7 +109,7 @@ static PyObject *py_ldb_set_loadparm(PyObject *self, PyObject *args)
 
     	ldb_set_opaque(ldb, "loadparm", lp_ctx);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 
@@ -131,7 +131,7 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 
     	ldb_set_opaque(ldb, "sessionInfo", info);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
@@ -153,7 +153,7 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 		PyErr_SetString(PyExc_RuntimeError, "set_domain_sid failed");
 		return NULL;
 	} 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
@@ -169,7 +169,7 @@ static PyObject *py_ldb_register_samba_handlers(PyObject *self, PyObject *args)
 	ret = ldb_register_samba_handlers(ldb);
 
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
@@ -189,7 +189,7 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id failed");
 		return NULL;
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
@@ -205,7 +205,7 @@ static PyObject *py_dsdb_set_global_schema(PyObject *self, PyObject *args)
 	ret = dsdb_set_global_schema(ldb);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_dsdb_attach_schema_from_ldif_file(PyObject *self, PyObject *args)
@@ -223,7 +223,7 @@ static PyObject *py_dsdb_attach_schema_from_ldif_file(PyObject *self, PyObject *
 	result = dsdb_attach_schema_from_ldif_file(ldb, pf, df);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_misc_methods[] = {

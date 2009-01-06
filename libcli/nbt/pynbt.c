@@ -363,7 +363,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 
 static PyObject *py_nbt_name_release(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	return Py_None; /* FIXME */
+	Py_RETURN_NONE; /* FIXME */
 }
 
 static PyMethodDef py_nbt_methods[] = {

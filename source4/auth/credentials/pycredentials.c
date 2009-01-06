@@ -37,7 +37,7 @@ struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
 static PyObject *PyString_FromStringOrNULL(const char *str)
 {
 	if (str == NULL)
-		return Py_None;
+		Py_RETURN_NONE;
 	return PyString_FromString(str);
 }
 
@@ -144,7 +144,7 @@ static PyObject *py_creds_is_anonymous(py_talloc_Object *self)
 static PyObject *py_creds_set_anonymous(py_talloc_Object *self)
 {
 	cli_credentials_set_anonymous(self->ptr);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_authentication_requested(py_talloc_Object *self)
@@ -170,7 +170,7 @@ static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
 		return NULL;
 
 	cli_credentials_parse_string(self->ptr, newval, obt);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_get_nt_hash(py_talloc_Object *self)
@@ -187,7 +187,7 @@ static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *a
 		return NULL;
 
         cli_credentials_set_kerberos_state(self->ptr, state);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
@@ -203,7 +203,7 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 
 	cli_credentials_guess(self->ptr, lp_ctx);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *args)
@@ -221,7 +221,7 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	status = cli_credentials_set_machine_account(self->ptr, lp_ctx);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_creds_methods[] = {

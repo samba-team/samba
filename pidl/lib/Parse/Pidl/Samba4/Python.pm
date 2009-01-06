@@ -283,7 +283,7 @@ sub PythonStruct($$$$$$)
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
-		$self->pidl("return Py_None;");
+		$self->pidl("Py_RETURN_NONE;");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");

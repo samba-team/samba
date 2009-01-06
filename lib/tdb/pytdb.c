@@ -61,7 +61,7 @@ static TDB_DATA PyString_AsTDB_DATA(PyObject *data)
 static PyObject *PyString_FromTDB_DATA(TDB_DATA data)
 {
 	if (data.dptr == NULL && data.dsize == 0) {
-		return Py_None;
+		Py_RETURN_NONE;
 	} else {
 		PyObject *ret = PyString_FromStringAndSize((const char *)data.dptr, 
 												   data.dsize);
@@ -103,74 +103,74 @@ static PyObject *obj_transaction_cancel(PyTdbObject *self)
 {
 	int ret = tdb_transaction_cancel(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_transaction_commit(PyTdbObject *self)
 {
 	int ret = tdb_transaction_commit(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_transaction_recover(PyTdbObject *self)
 {
 	int ret = tdb_transaction_recover(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_transaction_start(PyTdbObject *self)
 {
 	int ret = tdb_transaction_start(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_reopen(PyTdbObject *self)
 {
 	int ret = tdb_reopen(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_lockall(PyTdbObject *self)
 {
 	int ret = tdb_lockall(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_unlockall(PyTdbObject *self)
 {
 	int ret = tdb_unlockall(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_lockall_read(PyTdbObject *self)
 {
 	int ret = tdb_lockall_read(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_unlockall_read(PyTdbObject *self)
 {
 	int ret = tdb_unlockall_read(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_close(PyTdbObject *self)
 {
 	int ret;
 	if (self->closed)
-		return Py_None;
+		Py_RETURN_NONE;
 	ret = tdb_close(self->ctx);
 	self->closed = true;
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_get(PyTdbObject *self, PyObject *args)
@@ -198,7 +198,7 @@ static PyObject *obj_append(PyTdbObject *self, PyObject *args)
 
 	ret = tdb_append(self->ctx, key, data);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_firstkey(PyTdbObject *self)
@@ -229,7 +229,7 @@ static PyObject *obj_delete(PyTdbObject *self, PyObject *args)
 	key = PyString_AsTDB_DATA(py_key);
 	ret = tdb_delete(self->ctx, key);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *obj_has_key(PyTdbObject *self, PyObject *args)
@@ -264,7 +264,7 @@ static PyObject *obj_store(PyTdbObject *self, PyObject *args)
 
 	ret = tdb_store(self->ctx, key, value, flag);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 
@@ -316,7 +316,7 @@ static PyObject *obj_clear(PyTdbObject *self)
 {
 	int ret = tdb_wipe_all(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef tdb_object_methods[] = {

@@ -35,7 +35,7 @@ static PyObject *py_set_default_backend(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
     tevent_set_default_backend(name);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static PyObject *py_backend_list(PyObject *self)

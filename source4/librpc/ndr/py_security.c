@@ -100,7 +100,7 @@ static PyObject *py_descriptor_sacl_add(PyObject *self, PyObject *args)
 	ace = py_talloc_get_ptr(py_ace);
 	status = security_descriptor_sacl_add(desc, ace);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
@@ -117,7 +117,7 @@ static PyObject *py_descriptor_dacl_add(PyObject *self, PyObject *args)
 
 	status = security_descriptor_dacl_add(desc, ace);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_descriptor_dacl_del(PyObject *self, PyObject *args)
@@ -133,7 +133,7 @@ static PyObject *py_descriptor_dacl_del(PyObject *self, PyObject *args)
 	sid = py_talloc_get_ptr(py_sid);
 	status = security_descriptor_dacl_del(desc, sid);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
@@ -149,7 +149,7 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 	sid = py_talloc_get_ptr(py_sid);
 	status = security_descriptor_sacl_del(desc, sid);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
@@ -252,7 +252,7 @@ static PyObject *py_token_set_privilege(PyObject *self, PyObject *args)
 		return NULL;
 
 	security_token_set_privilege(token, priv);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_token_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)

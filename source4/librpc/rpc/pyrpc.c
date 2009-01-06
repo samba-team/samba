@@ -144,7 +144,7 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 	
 	server_name = dcerpc_server_name(iface->pipe);
 	if (server_name == NULL)
-		return Py_None;
+		Py_RETURN_NONE;
 
 	return PyString_FromString(server_name);
 }
@@ -284,7 +284,7 @@ static PyObject *py_iface_alter_context(PyObject *self, PyObject *args, PyObject
 		return NULL;
 	}
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, PyObject *kwargs, const struct ndr_interface_table *table)

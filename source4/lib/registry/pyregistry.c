@@ -60,7 +60,7 @@ static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
 	result = reg_key_del_abs(ctx, path);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_get_predefined_key(PyObject *self, PyObject *args)
@@ -90,7 +90,7 @@ static PyObject *py_diff_apply(PyObject *self, PyObject *args)
 	result = reg_diff_apply(ctx, py_iconv_convenience(NULL), filename);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None; 
+	Py_RETURN_NONE; 
 }
 
 static PyObject *py_mount_hive(PyObject *self, PyObject *args)
@@ -123,7 +123,7 @@ static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 	result = reg_mount_hive(ctx, py_talloc_get_ptr(py_hivekey), hkey, elements);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *registry_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -172,7 +172,7 @@ static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None; 
+	Py_RETURN_NONE; 
 }
 
 static PyObject *py_hive_key_flush(PyObject *self)
@@ -183,7 +183,7 @@ static PyObject *py_hive_key_flush(PyObject *self)
 	result = hive_key_flush(key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_hive_key_del_value(PyObject *self, PyObject *args)
@@ -199,7 +199,7 @@ static PyObject *py_hive_key_del_value(PyObject *self, PyObject *args)
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None; 
+	Py_RETURN_NONE; 
 }
 
 static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
@@ -220,7 +220,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
-	return Py_None; 
+	Py_RETURN_NONE; 
 }
 
 static PyMethodDef hive_key_methods[] = {
@@ -238,7 +238,7 @@ static PyMethodDef hive_key_methods[] = {
 static PyObject *hive_open(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	/* reg_open_hive */
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 PyTypeObject PyHiveKey = {
@@ -383,7 +383,7 @@ static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
 
 	str = reg_get_predef_name(hkey);
 	if (str == NULL)
-		return Py_None;
+		Py_RETURN_NONE;
 	return PyString_FromString(str);
 }
 

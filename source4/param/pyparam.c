@@ -150,7 +150,7 @@ static PyObject *py_lp_ctx_load(py_talloc_Object *self, PyObject *args)
 		PyErr_Format(PyExc_RuntimeError, "Unable to load file %s", filename);
 		return NULL;
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_lp_ctx_load_default(py_talloc_Object *self)
@@ -162,7 +162,7 @@ static PyObject *py_lp_ctx_load_default(py_talloc_Object *self)
 		PyErr_SetString(PyExc_RuntimeError, "Unable to load default file");
 		return NULL;
 	}
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_lp_ctx_get(py_talloc_Object *self, PyObject *args)
@@ -175,7 +175,7 @@ static PyObject *py_lp_ctx_get(py_talloc_Object *self, PyObject *args)
 
 	ret = py_lp_ctx_get_helper(self->ptr, section_name, param_name);
 	if (ret == NULL)
-		return Py_None;
+		Py_RETURN_NONE;
 	return ret;
 }
 
@@ -210,7 +210,7 @@ static PyObject *py_lp_ctx_set(py_talloc_Object *self, PyObject *args)
 		return NULL;
         }
 
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_lp_ctx_private_path(py_talloc_Object *self, PyObject *args)
