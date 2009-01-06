@@ -500,27 +500,6 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	   because network manager seems to lie.
 	   Wait at least 5 seconds. Heuristics suck... */
 
-	if (!domain->check_online_event) {
-		/* If we've come from being globally offline we
-		   don't have a check online event handler set.
-		   We need to add one now we're trying to go
-		   back online. */
-
-		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
-			domain->name ));
-
-		domain->check_online_event = event_add_timed(winbind_event_context(),
-								NULL,
-								timeval_current_ofs(5, 0),
-								"check_domain_online_handler",
-								check_domain_online_handler,
-								domain);
-
-		/* The above *has* to succeed for winbindd to work. */
-		if (!domain->check_online_event) {
-			smb_panic("set_domain_online_request: failed to add online handler");
-		}
-	}
 
 	GetTimeOfDay(&tev);
 
@@ -530,7 +509,29 @@ void set_domain_online_request(struct winbindd_domain *domain)
 
 	tev.tv_sec += 5;
 
-	set_event_dispatch_time(winbind_event_context(), "check_domain_online_handler", tev);
+	if (!domain->check_online_event) {
+		/* If we've come from being globally offline we
+		   don't have a check online event handler set.
+		   We need to add one now we're trying to go
+		   back online. */
+
+		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
+			domain->name ));
+	}
+
+	TALLOC_FREE(domain->check_online_event);
+
+	domain->check_online_event = event_add_timed(winbind_event_context(),
+						     NULL,
+						     tev,
+						     "check_domain_online_handler",
+						     check_domain_online_handler,
+						     domain);
+
+	/* The above *has* to succeed for winbindd to work. */
+	if (!domain->check_online_event) {
+		smb_panic("set_domain_online_request: failed to add online handler");
+	}
 }
 
 /****************************************************************
