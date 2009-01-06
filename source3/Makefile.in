@@ -795,7 +795,7 @@ DISPLAY_SEC_OBJ= lib/display_sec.o
 RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 	         rpcclient/cmd_samr.o rpcclient/cmd_spoolss.o \
 		 rpcclient/cmd_netlogon.o rpcclient/cmd_srvsvc.o \
-		 rpcclient/cmd_dfs.o \
+		 rpcclient/cmd_dfs.o rpcclient/cmd_epmapper.o \
 		 rpcclient/cmd_dssetup.o rpcclient/cmd_echo.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
 		 rpcclient/cmd_wkssvc.o rpcclient/cmd_ntsvcs.o \
