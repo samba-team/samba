@@ -179,6 +179,9 @@ static error_status_t dcesrv_epm_Map(struct dcesrv_call_state *dce_call, TALLOC_
 
 	ZERO_STRUCT(*r->out.entry_handle);
 	r->out.num_towers = talloc(mem_ctx, uint32_t);
+	if (!r->out.num_towers) {
+		return EPMAPPER_STATUS_NO_MEMORY;
+	}
 	*r->out.num_towers = 1;
 	r->out.towers = talloc(mem_ctx, struct epm_twr_p_t);
 	if (!r->out.towers) {
