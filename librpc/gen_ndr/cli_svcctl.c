@@ -509,8 +509,8 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    uint32_t type /* [in]  */,
-					    uint32_t start /* [in]  */,
-					    uint32_t error /* [in]  */,
+					    enum svcctl_StartType start_type /* [in]  */,
+					    enum svcctl_ErrorControl error_control /* [in]  */,
 					    const char *binary_path /* [in] [unique,charset(UTF16)] */,
 					    const char *load_order_group /* [in] [unique,charset(UTF16)] */,
 					    uint32_t *tag_id /* [out] [ref] */,
@@ -526,8 +526,8 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
-	r.in.start = start;
-	r.in.error = error;
+	r.in.start_type = start_type;
+	r.in.error_control = error_control;
 	r.in.binary_path = binary_path;
 	r.in.load_order_group = load_order_group;
 	r.in.dependencies = dependencies;
@@ -575,8 +575,8 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli,
 				      const char *DisplayName /* [in] [unique,charset(UTF16)] */,
 				      uint32_t desired_access /* [in]  */,
 				      uint32_t type /* [in]  */,
-				      uint32_t start_type /* [in]  */,
-				      uint32_t error_control /* [in]  */,
+				      enum svcctl_StartType start_type /* [in]  */,
+				      enum svcctl_ErrorControl error_control /* [in]  */,
 				      const char *binary_path /* [in] [charset(UTF16)] */,
 				      const char *LoadOrderGroupKey /* [in] [unique,charset(UTF16)] */,
 				      uint32_t *TagId /* [in,out] [unique] */,
@@ -701,7 +701,7 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t type /* [in]  */,
-					   uint32_t state /* [in]  */,
+					   enum svcctl_ServiceState state /* [in]  */,
 					   uint8_t *service /* [out] [ref,size_is(buf_size)] */,
 					   uint32_t buf_size /* [in] [range(0,262144)] */,
 					   uint32_t *bytes_needed /* [out] [ref,range(0,262144)] */,
@@ -1157,8 +1157,8 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
 					    struct policy_handle *handle /* [in] [ref] */,
 					    uint32_t type /* [in]  */,
-					    uint32_t start /* [in]  */,
-					    uint32_t error /* [in]  */,
+					    enum svcctl_StartType start_type /* [in]  */,
+					    enum svcctl_ErrorControl error_control /* [in]  */,
 					    const char *binary_path /* [in] [unique,charset(UTF16)] */,
 					    const char *load_order_group /* [in] [unique,charset(UTF16)] */,
 					    uint32_t *tag_id /* [out] [ref] */,
@@ -1174,8 +1174,8 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
-	r.in.start = start;
-	r.in.error = error;
+	r.in.start_type = start_type;
+	r.in.error_control = error_control;
 	r.in.binary_path = binary_path;
 	r.in.load_order_group = load_order_group;
 	r.in.dependencies = dependencies;
@@ -1223,8 +1223,8 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli,
 				      const char *DisplayName /* [in] [unique,charset(UTF16)] */,
 				      uint32_t desired_access /* [in]  */,
 				      uint32_t type /* [in]  */,
-				      uint32_t start_type /* [in]  */,
-				      uint32_t error_control /* [in]  */,
+				      enum svcctl_StartType start_type /* [in]  */,
+				      enum svcctl_ErrorControl error_control /* [in]  */,
 				      const char *binary_path /* [in] [unique,charset(UTF16)] */,
 				      const char *LoadOrderGroupKey /* [in] [unique,charset(UTF16)] */,
 				      uint32_t *TagId /* [out] [unique] */,
