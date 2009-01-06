@@ -985,6 +985,7 @@ static void child_msg_offline(struct messaging_context *msg,
 			      DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)data->data;
 
 	if (data->data == NULL || data->length == 0) {
@@ -998,6 +999,8 @@ static void child_msg_offline(struct messaging_context *msg,
 		return;
 	}
 
+	primary_domain = find_our_domain();
+
 	/* Mark the requested domain offline. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
@@ -1007,6 +1010,11 @@ static void child_msg_offline(struct messaging_context *msg,
 		if (strequal(domain->name, domainname)) {
 			DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
 			set_domain_offline(domain);
+			/* we are in the trusted domain, set the primary domain 
+			 * offline too */
+			if (domain != primary_domain) {
+				set_domain_offline(primary_domain);
+			}
 		}
 	}
 }
@@ -1020,6 +1028,7 @@ static void child_msg_online(struct messaging_context *msg,
 			     DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)data->data;
 
 	if (data->data == NULL || data->length == 0) {
@@ -1032,6 +1041,8 @@ static void child_msg_online(struct messaging_context *msg,
 		DEBUG(10,("child_msg_online: rejecting online message.\n"));
 		return;
 	}
+
+	primary_domain = find_our_domain();
 
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
@@ -1047,6 +1058,16 @@ static void child_msg_online(struct messaging_context *msg,
 			DEBUG(5,("child_msg_online: requesting %s to go online.\n", domain->name));
 			winbindd_flush_negative_conn_cache(domain);
 			set_domain_online_request(domain);
+
+			/* we can be in trusted domain, which will contact primary domain
+			 * we have to bring primary domain online in trusted domain process
+			 * see, winbindd_dual_pam_auth() --> winbindd_dual_pam_auth_samlogon()
+			 * --> contact_domain = find_our_domain()
+			 * */
+			if (domain != primary_domain) {
+				winbindd_flush_negative_conn_cache(primary_domain);
+				set_domain_online_request(primary_domain);
+			}
 		}
 	}
 }
