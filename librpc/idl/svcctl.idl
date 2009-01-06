@@ -28,6 +28,12 @@ import "misc.idl", "security.idl";
 		uint32 wait_hint;
 	} SERVICE_STATUS;
 
+	typedef [public] struct {
+		SERVICE_STATUS status;
+		uint32 process_id;
+		uint32 service_flags;
+	} SERVICE_STATUS_PROCESS;
+
 	typedef struct {
 		[relative] astring *service_name;
 		[relative] astring *display_name;
