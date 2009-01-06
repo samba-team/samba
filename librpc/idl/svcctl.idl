@@ -172,11 +172,27 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0b */
+
+	typedef [v1_enum] enum {
+		SVCCTL_SVC_ERROR_IGNORE		= 0x00000000,
+		SVCCTL_SVC_ERROR_NORMAL		= 0x00000001,
+		SVCCTL_SVC_ERROR_CRITICAL	= 0x00000002,
+		SVCCTL_SVC_ERROR_SEVERE		= 0x00000003
+	} svcctl_ErrorControl;
+
+	typedef [v1_enum] enum {
+		SVCCTL_BOOT_START		= 0x00000000,
+		SVCCTL_SYSTEM_START		= 0x00000001,
+		SVCCTL_AUTO_START		= 0x00000002,
+		SVCCTL_DEMAND_START		= 0x00000003,
+		SVCCTL_DISABLED			= 0x00000004
+	} svcctl_StartType;
+
 	WERROR svcctl_ChangeServiceConfigW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 start,
-		[in] uint32 error,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *load_order_group,
 		[out,ref] uint32 *tag_id,
@@ -194,8 +210,8 @@ import "misc.idl", "security.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *DisplayName,
 		[in] uint32 desired_access,
 		[in] uint32 type,
-		[in] uint32 start_type,
-		[in] uint32 error_control,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in] [string,charset(UTF16)] uint16 binary_path[],
 		[in,unique] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
 		[in,out,unique] uint32 *TagId,
@@ -320,8 +336,8 @@ import "misc.idl", "security.idl";
 
 	typedef [public,gensize] struct {
 		uint32 service_type;
-		uint32 start_type;
-		uint32 error_control;
+		svcctl_StartType start_type;
+		svcctl_ErrorControl error_control;
 		[string,charset(UTF16)] [range(0,8192)] uint16 *executablepath;
 		[string,charset(UTF16)] [range(0,8192)] uint16 *loadordergroup;
 		uint32 tag_id;
@@ -386,8 +402,8 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_ChangeServiceConfigA(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 start,
-		[in] uint32 error,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *load_order_group,
 		[out,ref] uint32 *tag_id,
@@ -405,8 +421,8 @@ import "misc.idl", "security.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *DisplayName,
 		[in] uint32 desired_access,
 		[in] uint32 type,
-		[in] uint32 start_type,
-		[in] uint32 error_control,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
 		[out,unique] uint32 *TagId,

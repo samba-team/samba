@@ -77,13 +77,6 @@
 #define SVCCTL_ACCEPT_HARDWAREPROFILECHANGE	0x00000020
 #define SVCCTL_ACCEPT_POWEREVENT		0x00000040
 
-/* SERVER_STATUS - ControlAccepted */
-#define SVCCTL_SVC_ERROR_IGNORE                 0x00000000
-#define SVCCTL_SVC_ERROR_NORMAL                 0x00000001
-#define SVCCTL_SVC_ERROR_CRITICAL               0x00000002
-#define SVCCTL_SVC_ERROR_SEVERE                 0x00000003
-
-
 /* Service Config - values for ServiceType field*/
 
 #define SVCCTL_KERNEL_DRVR                         0x00000001  /* doubtful we'll have these */
@@ -91,13 +84,6 @@
 #define SVCCTL_WIN32_OWN_PROC                      0x00000010
 #define SVCCTL_WIN32_SHARED_PROC                   0x00000020
 #define SVCCTL_WIN32_INTERACTIVE                   0x00000100 
-
-/* Service Config - values for StartType field */
-#define SVCCTL_BOOT_START                          0x00000000
-#define SVCCTL_SYSTEM_START                        0x00000001
-#define SVCCTL_AUTO_START                          0x00000002
-#define SVCCTL_DEMAND_START                        0x00000003
-#define SVCCTL_DISABLED                            0x00000004
 
 #define SVC_HANDLE_IS_SCM			0x0000001
 #define SVC_HANDLE_IS_SERVICE			0x0000002
