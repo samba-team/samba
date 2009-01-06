@@ -1002,10 +1002,9 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
  Register commands to an RPC pipe
 *******************************************************************/
 
-NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
-				    const char *srv,
-				    const struct ndr_syntax_id *interface,
-				    const struct api_struct *cmds, int size)
+NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
+			  const struct ndr_interface_table *iface,
+			  const struct api_struct *cmds, int size)
 {
         struct rpc_table *rpc_entry;
 
@@ -1045,21 +1044,11 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
         ZERO_STRUCTP(rpc_entry);
         rpc_entry->pipe.clnt = SMB_STRDUP(clnt);
         rpc_entry->pipe.srv = SMB_STRDUP(srv);
-	rpc_entry->rpc_interface = *interface;
+	rpc_entry->rpc_interface = iface->syntax_id;
         rpc_entry->cmds = cmds;
         rpc_entry->n_cmds = size;
 
         return NT_STATUS_OK;
-}
-
-NTSTATUS rpc_srv_register(int version, const char *clnt,
-			  const char *srv,
-			  const struct ndr_interface_table *iface,
-			  const struct api_struct *cmds, int size)
-{
-	return rpc_pipe_register_commands(version, clnt, srv,
-					  &iface->syntax_id,
-					  cmds, size);
 }
 
 /**
