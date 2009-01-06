@@ -370,13 +370,19 @@ _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struc
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax)
+_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
+					    struct ndr_syntax_id *syntax)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("floor_get_lhs_data");
-	struct ndr_pull *ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx, NULL);
+	struct ndr_pull *ndr;
 	enum ndr_err_code ndr_err;
 	uint16_t if_version=0;
 
+	ndr = ndr_pull_init_blob(&epm_floor->lhs.lhs_data, mem_ctx, NULL);
+	if (ndr == NULL) {
+		talloc_free(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
 	ndr->flags |= LIBNDR_FLAG_NOALIGN;
 
 	ndr_err = ndr_pull_GUID(ndr, NDR_SCALARS | NDR_BUFFERS, &syntax->uuid);

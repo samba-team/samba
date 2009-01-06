@@ -2288,7 +2288,8 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid);
 const char *epm_floor_string(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_binding *b);
 _PUBLIC_ NTSTATUS dcerpc_parse_binding(TALLOC_CTX *mem_ctx, const char *s, struct dcerpc_binding **b_out);
-_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
+_PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
+					    struct ndr_syntax_id *syntax);
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower);
