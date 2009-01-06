@@ -354,6 +354,19 @@ int event_loop_once(struct event_context *ev)
 	return 0;
 }
 
+static int event_context_destructor(struct event_context *ev)
+{
+	while (ev->fd_events != NULL) {
+		ev->fd_events->event_ctx = NULL;
+		DLIST_REMOVE(ev->fd_events, ev->fd_events);
+	}
+	while (ev->timed_events != NULL) {
+		ev->timed_events->event_ctx = NULL;
+		DLIST_REMOVE(ev->timed_events, ev->timed_events);
+	}
+	return 0;
+}
+
 void event_context_reinit(struct event_context *ev)
 {
 	event_context_destructor(ev);
@@ -362,7 +375,15 @@ void event_context_reinit(struct event_context *ev)
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
-	return TALLOC_ZERO_P(NULL, struct event_context);
+	struct event_context *result;
+
+	result = TALLOC_ZERO_P(mem_ctx, struct event_context);
+	if (result == NULL) {
+		return NULL;
+	}
+
+	talloc_set_destructor(result, event_context_destructor);
+	return result;
 }
 
 int set_event_dispatch_time(struct event_context *event_ctx,
