@@ -2201,21 +2201,17 @@ bool api_pipe_schannel_process(pipes_struct *p, prs_struct *rpc_in, uint32 *p_ss
 static PIPE_RPC_FNS* find_pipe_fns_by_context( PIPE_RPC_FNS *list, uint32 context_id )
 {
 	PIPE_RPC_FNS *fns = NULL;
-	PIPE_RPC_FNS *tmp = NULL;
 
 	if ( !list ) {
 		DEBUG(0,("find_pipe_fns_by_context: ERROR!  No context list for pipe!\n"));
 		return NULL;
 	}
 
-	for (tmp=list; tmp; tmp=tmp->next ) {
-		if ( tmp->context_id == context_id )
-			break;
+	for (fns=list; fns; fns=fns->next ) {
+		if ( fns->context_id == context_id )
+			return fns;
 	}
-
-	fns = tmp;
-
-	return fns;
+	return NULL;
 }
 
 /****************************************************************************
