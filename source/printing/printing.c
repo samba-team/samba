@@ -1421,7 +1421,8 @@ void start_background_queue(void)
 		close(pause_pipe[0]);
 		pause_pipe[0] = -1;
 
-		if (!reinit_after_fork(smbd_messaging_context(), true)) {
+		if (!reinit_after_fork(smbd_messaging_context(),
+				       smbd_event_context(), true)) {
 			DEBUG(0,("reinit_after_fork() failed\n"));
 			smb_panic("reinit_after_fork() failed");
 		}
