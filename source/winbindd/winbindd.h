@@ -377,7 +377,34 @@ enum ent_type {
 	LIST_USERS = 0,
 	LIST_GROUPS,
 };
- 
+
+struct WINBINDD_MEMORY_CREDS {
+	struct WINBINDD_MEMORY_CREDS *next, *prev;
+	const char *username; /* lookup key. */
+	uid_t uid;
+	int ref_count;
+	size_t len;
+	uint8_t *nt_hash; /* Base pointer for the following 2 */
+	uint8_t *lm_hash;
+	char *pass;
+};
+
+struct WINBINDD_CCACHE_ENTRY {
+	struct WINBINDD_CCACHE_ENTRY *next, *prev;
+	const char *principal_name;
+	const char *ccname;
+	const char *service;
+	const char *username;
+	const char *realm;
+	struct WINBINDD_MEMORY_CREDS *cred_ptr;
+	int ref_count;
+	uid_t uid;
+	time_t create_time;
+	time_t renew_until;
+	time_t refresh_time;
+	struct timed_event *event;
+};
+
 #include "winbindd/winbindd_proto.h"
 
 #define WINBINDD_ESTABLISH_LOOP 30
