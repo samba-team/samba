@@ -657,6 +657,7 @@ typedef char fstring[FSTRING_LEN];
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
 
+#include "event.h"
 #include "nt_status.h"
 #include "ads.h"
 #include "ads_dns.h"
@@ -717,7 +718,6 @@ typedef char fstring[FSTRING_LEN];
 #include "nsswitch/winbind_client.h"
 #include "spnego.h"
 #include "rpc_client.h"
-#include "event.h"
 #include "dbwrap.h"
 #include "packet.h"
 #include "ctdbd_conn.h"

@@ -384,9 +384,6 @@ struct fd_handle {
 	unsigned long gen_id;
 };
 
-struct event_context;
-struct fd_event;
-struct timed_event;
 struct idle_event;
 struct share_mode_entry;
 struct uuid;
