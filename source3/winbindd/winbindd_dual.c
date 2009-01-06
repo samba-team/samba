@@ -1142,12 +1142,85 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
+static void winbindd_reinit_after_fork(struct winbindd_child *child)
+{
+	struct winbindd_domain *domain;
+	struct winbindd_child *cl;
+
+	if (!reinit_after_fork(winbind_messaging_context(),
+			       winbind_event_context(), true)) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
+		_exit(0);
+	}
+
+	close_conns_after_fork();
+
+	if (!override_logfile) {
+		lp_set_logfile(child->logfilename);
+		reopen_logs();
+	}
+
+	/* Don't handle the same messages as our parent. */
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SMB_CONF_UPDATED, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SHUTDOWN, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_OFFLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINESTATUS, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DUMP_EVENT_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DEBUG, NULL);
+
+	/* Handle online/offline messages. */
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_OFFLINE, child_msg_offline);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINE, child_msg_online);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DEBUG, debug_message);
+
+	/* We have destroyed all events in the winbindd_event_context
+	 * in reinit_after_fork(), so clean out all possible pending
+	 * event pointers. */
+
+	/* Deal with check_online_events. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	/* Ensure we're not handling a credential cache event inherited
+	 * from our parent. */
+
+	ccache_remove_all_after_fork();
+
+	/* Destroy all possible events in child list. */
+	for (cl = children; cl != NULL; cl = cl->next) {
+		struct winbindd_async_request *request;
+
+		for (request = cl->requests; request; request = request->next) {
+			TALLOC_FREE(request->reply_timeout_event);
+		}
+		TALLOC_FREE(cl->lockout_policy_event);
+		TALLOC_FREE(cl->machine_password_change_event);
+        }
+}
 
 static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
-	struct winbindd_domain *domain;
 	struct winbindd_domain *primary_domain = NULL;
 
 	if (child->domain) {
@@ -1195,63 +1268,14 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!reinit_after_fork(winbind_messaging_context(),
-			       winbind_event_context(), true)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		_exit(0);
-	}
-
-	close_conns_after_fork();
-
-	/* Ensure we're not handling an event inherited from
-	   our parent. */
-	ccache_remove_all_after_fork();
-
-	if (!override_logfile) {
-		lp_set_logfile(child->logfilename);
-		reopen_logs();
-	}
-
-	/* Don't handle the same messages as our parent. */
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_SMB_CONF_UPDATED, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_SHUTDOWN, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_OFFLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_ONLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_ONLINESTATUS, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_DUMP_EVENT_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_DEBUG, NULL);
-
-	/* Handle online/offline messages. */
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_OFFLINE, child_msg_offline);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DEBUG, debug_message);
+	winbindd_reinit_after_fork(child);
 
 	primary_domain = find_our_domain();
 
 	if (primary_domain == NULL) {
 		smb_panic("no primary domain found");
 	}
-	/* we have destroy all time event in reinit_after_fork()
-	 * set check_online_event to NULL */
-	for (domain = domain_list(); domain; domain = domain->next) {
-		domain->check_online_event = NULL;
-	}
+
 	/* It doesn't matter if we allow cache login,
 	 * try to bring domain online after fork. */
 	if ( child->domain ) {
