@@ -39,15 +39,11 @@
 
 #define WB_REPLACE_CHAR		'_'
 
-/* bits for fd_event.flags */
-#define EVENT_FD_READ 1
-#define EVENT_FD_WRITE 2
-
-struct fd_event {
-	struct fd_event *next, *prev;
+struct winbindd_fd_event {
+	struct winbindd_fd_event *next, *prev;
 	int fd;
 	int flags; /* see EVENT_FD_* flags */
-	void (*handler)(struct fd_event *fde, int flags);
+	void (*handler)(struct winbindd_fd_event *fde, int flags);
 	void *data;
 	size_t length, done;
 	void (*finished)(void *private_data, bool success);
@@ -65,7 +61,7 @@ struct sid_ctr {
 struct winbindd_cli_state {
 	struct winbindd_cli_state *prev, *next;   /* Linked list pointers */
 	int sock;                                 /* Open socket from client */
-	struct fd_event fd_event;
+	struct winbindd_fd_event fd_event;
 	pid_t pid;                                /* pid of client */
 	bool finished;                            /* Can delete from list */
 	bool write_extra_data;                    /* Write extra_data field */
@@ -151,7 +147,7 @@ struct winbindd_child {
 	struct winbindd_domain *domain;
 	char *logfilename;
 
-	struct fd_event event;
+	struct winbindd_fd_event event;
 	struct timed_event *lockout_policy_event;
 	struct timed_event *machine_password_change_event;
 	struct winbindd_async_request *requests;

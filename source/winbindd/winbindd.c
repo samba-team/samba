@@ -415,16 +415,16 @@ static void process_request(struct winbindd_cli_state *state)
 
 /*
  * A list of file descriptors being monitored by select in the main processing
- * loop. fd_event->handler is called whenever the socket is readable/writable.
+ * loop. winbindd_fd_event->handler is called whenever the socket is readable/writable.
  */
 
-static struct fd_event *fd_events = NULL;
+static struct winbindd_fd_event *fd_events = NULL;
 
-void add_fd_event(struct fd_event *ev)
+void add_fd_event(struct winbindd_fd_event *ev)
 {
-	struct fd_event *match;
+	struct winbindd_fd_event *match;
 
-	/* only add unique fd_event structs */
+	/* only add unique winbindd_fd_event structs */
 
 	for (match=fd_events; match; match=match->next ) {
 #ifdef DEVELOPER
@@ -438,17 +438,17 @@ void add_fd_event(struct fd_event *ev)
 	DLIST_ADD(fd_events, ev);
 }
 
-void remove_fd_event(struct fd_event *ev)
+void remove_fd_event(struct winbindd_fd_event *ev)
 {
 	DLIST_REMOVE(fd_events, ev);
 }
 
 /*
- * Handler for fd_events to complete a read/write request, set up by
+ * Handler for winbindd_fd_events to complete a read/write request, set up by
  * setup_async_read/setup_async_write.
  */
 
-static void rw_callback(struct fd_event *event, int flags)
+static void rw_callback(struct winbindd_fd_event *event, int flags)
 {
 	size_t todo;
 	ssize_t done = 0;
@@ -489,11 +489,11 @@ static void rw_callback(struct fd_event *event, int flags)
 }
 
 /*
- * Request an async read/write on a fd_event structure. (*finished) is called
+ * Request an async read/write on a winbindd_fd_event structure. (*finished) is called
  * when the request is completed or an error had occurred.
  */
 
-void setup_async_read(struct fd_event *event, void *data, size_t length,
+void setup_async_read(struct winbindd_fd_event *event, void *data, size_t length,
 		      void (*finished)(void *private_data, bool success),
 		      void *private_data)
 {
@@ -507,7 +507,7 @@ void setup_async_read(struct fd_event *event, void *data, size_t length,
 	event->flags = EVENT_FD_READ;
 }
 
-void setup_async_write(struct fd_event *event, void *data, size_t length,
+void setup_async_write(struct winbindd_fd_event *event, void *data, size_t length,
 		       void (*finished)(void *private_data, bool success),
 		       void *private_data)
 {
@@ -826,7 +826,7 @@ void winbind_check_sigterm(bool is_parent)
 static void process_loop(void)
 {
 	struct winbindd_cli_state *state;
-	struct fd_event *ev;
+	struct winbindd_fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd, listen_sock, listen_priv_sock, selret;
 	struct timeval timeout, ev_timeout;
@@ -920,7 +920,7 @@ static void process_loop(void)
 
 	ev = fd_events;
 	while (ev != NULL) {
-		struct fd_event *next = ev->next;
+		struct winbindd_fd_event *next = ev->next;
 		int flags = 0;
 		if (FD_ISSET(ev->fd, &r_fds))
 			flags |= EVENT_FD_READ;
