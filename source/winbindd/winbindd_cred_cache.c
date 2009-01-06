@@ -281,6 +281,9 @@ done:
 		return;
 	}
 
+	if (entry->refresh_time == 0) {
+		entry->refresh_time = new_start;
+	}
 	entry->event = event_add_timed(winbind_event_context(), entry,
 				       timeval_set(new_start, 0),
 				       "krb5_ticket_refresh_handler",
@@ -368,6 +371,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
 #endif
 
+	entry->refresh_time = 0;
 	entry->event = event_add_timed(winbind_event_context(),
 				       entry,
 				       t,
@@ -385,6 +389,9 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	t = timeval_set(KRB5_EVENT_REFRESH_TIME(entry->refresh_time), 0);
 #endif
 
+	if (entry->refresh_time == 0) {
+		entry->refresh_time = t.tv_sec;
+	}
 	entry->event = event_add_timed(winbind_event_context(),
 				       entry,
 				       t,
@@ -394,6 +401,45 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 
 	return;
 #endif
+}
+
+void ccache_regain_all_now(void)
+{
+	struct WINBINDD_CCACHE_ENTRY *cur;
+	struct timeval t = timeval_current();
+
+	for (cur = ccache_list; cur; cur = cur->next) {
+		struct timed_event *new_event;
+
+		/*
+		 * if refresh_time is 0, we know that the
+		 * the event has the krb5_ticket_gain_handler
+		 */
+		if (cur->refresh_time == 0) {
+			new_event = event_add_timed(winbind_event_context(),
+						    cur,
+						    t,
+						    "krb5_ticket_gain_handler",
+						    krb5_ticket_gain_handler,
+						    cur);
+		} else {
+			new_event = event_add_timed(winbind_event_context(),
+						    cur,
+						    t,
+						    "krb5_ticket_refresh_handler",
+						    krb5_ticket_refresh_handler,
+						    cur);
+		}
+
+		if (!new_event) {
+			continue;
+		}
+
+		TALLOC_FREE(cur->event);
+		cur->event = new_event;
+	}
+
+	return;
 }
 
 /****************************************************************
@@ -594,6 +640,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	if (postponed_request) {
 		t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
+		entry->refresh_time = 0;
 		entry->event = event_add_timed(winbind_event_context(),
 					       entry,
 					       t,
@@ -607,6 +654,9 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #else
 		t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
 #endif
+		if (entry->refresh_time == 0) {
+			entry->refresh_time = t.tv_sec;
+		}
 		entry->event = event_add_timed(winbind_event_context(),
 					       entry,
 					       t,

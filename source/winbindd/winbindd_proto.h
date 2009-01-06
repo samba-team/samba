@@ -225,6 +225,7 @@ bool ccache_entry_identical(const char *username,
 			    uid_t uid,
 			    const char *ccname);
 void ccache_remove_all_after_fork(void);
+void ccache_regain_all_now(void);
 NTSTATUS add_ccache_to_list(const char *princ_name,
 			    const char *ccname,
 			    const char *service,
