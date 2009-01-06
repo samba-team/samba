@@ -287,11 +287,6 @@ struct api_struct {
 	bool (*fn) (pipes_struct *);
 };
 
-typedef struct {  
-	uint32 rid;
-	const char *name;
-} rid_name;
-
 /*
  * higher order functions for use with msrpc client code
  */

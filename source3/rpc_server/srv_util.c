@@ -42,6 +42,12 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 #if 0	/* these aren't used currently but are here if you need them */
+
+typedef struct {
+	uint32 rid;
+	const char *name;
+} rid_name;
+
 /*
  * A list of the rids of well known BUILTIN and Domain users
  * and groups.
