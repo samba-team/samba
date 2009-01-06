@@ -1038,6 +1038,7 @@ void become_daemon(bool Fork, bool no_process_group)
 }
 
 bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       struct event_context *ev_ctx,
 		       bool parent_longlived)
 {
 	NTSTATUS status;
@@ -1064,6 +1065,8 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 			 nt_errstr(status)));
 		return false;
 	}
+
+	event_context_reinit(ev_ctx);
 
 	return true;
 }
