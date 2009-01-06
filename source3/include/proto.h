@@ -2296,7 +2296,9 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tow
 _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out);
-_PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
+_PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
+					     const struct dcerpc_binding *binding,
+					     struct epm_tower *tower);
 
 /* The following definitions come from librpc/rpc/dcerpc.c  */
 

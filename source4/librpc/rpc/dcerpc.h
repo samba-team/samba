@@ -353,7 +353,9 @@ void dcerpc_log_packet(const char *lockdir,
 					   const struct ndr_interface_table *ndr,
 					   uint32_t opnum, uint32_t flags, 
 					   DATA_BLOB *pkt);
-NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
+NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
+				    const struct dcerpc_binding *binding,
+				    struct epm_tower *tower);
 
 NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 

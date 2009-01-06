@@ -654,7 +654,9 @@ _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-_PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower)
+_PUBLIC_ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
+					     const struct dcerpc_binding *binding,
+					     struct epm_tower *tower)
 {
 	const enum epm_protocol *protseq = NULL;
 	int num_protocols = -1, i;
