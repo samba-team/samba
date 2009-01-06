@@ -477,7 +477,7 @@ static int save_reload(int snum)
 	}
 
 	write_config(f, False);
-	if (snum)
+	if (snum >= 0)
 		lp_dump_one(f, False, snum);
 	fclose(f);
 
