@@ -148,7 +148,8 @@ rekinit:
 
 				/* Don't break the ticket refresh chain: retry 
 				 * refreshing ticket sometime later when KDC is 
-				 * unreachable -- BoYang 
+				 * unreachable -- BoYang. More error code handling
+				 * here? 
 				 * */
 
 				if ((ret == KRB5_KDC_UNREACH)
@@ -159,6 +160,7 @@ rekinit:
 					new_start = time(NULL) +
 						    MAX(30, lp_winbind_cache_time());
 #endif
+					entry->refresh_time = 0;
 					/* try to regain ticket here */
 					entry->event = event_add_timed(winbind_event_context(),
 								       entry, 
@@ -227,7 +229,8 @@ rekinit:
 		/* avoid breaking the renewal chain: retry in
 		 * lp_winbind_cache_time() seconds when the KDC was not
 		 * available right now. 
-		 * the return code can be KRB5_REALM_CANT_RESOLVE*/
+		 * the return code can be KRB5_REALM_CANT_RESOLVE. 
+		 * More error code handling here? */
 
 		if ((ret == KRB5_KDC_UNREACH) 
 		    || (ret == KRB5_REALM_CANT_RESOLVE)) {
@@ -239,6 +242,7 @@ rekinit:
 #endif
 			/* ticket is destroyed here, we have to regain it
 			 * if it is possible */
+			entry->refresh_time = 0;
 			entry->event = event_add_timed(winbind_event_context(),
 							entry,
 							timeval_set(new_start, 0),
@@ -273,6 +277,7 @@ done:
 	     && (entry->renew_until <= expire_time)) {
 		/* try to regain ticket 10 seconds beforre expiration */
 		expire_time -= 10;
+		entry->refresh_time = 0;
 		entry->event = event_add_timed(winbind_event_context(), entry,
 						timeval_set(expire_time, 0),
 						"krb5_ticket_gain_handler",
@@ -553,6 +558,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		if (!entry->event) {
 			if (postponed_request) {
 				t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
+				entry->refresh_time = 0;
 				entry->event = event_add_timed(winbind_event_context(),
 							       entry,
 							       t,
@@ -566,6 +572,9 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #else
 				t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
 #endif
+				if (!entry->refresh_time) {
+					entry->refresh_time = t.tv_sec;
+				}
 				entry->event = event_add_timed(winbind_event_context(),
 							       entry,
 							       t,
