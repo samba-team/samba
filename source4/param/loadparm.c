@@ -2429,10 +2429,19 @@ const char *lp_configfile(struct loadparm_context *lp_ctx)
 
 bool lp_load_default(struct loadparm_context *lp_ctx)
 {
+    const char *path;
     if (getenv("SMB_CONF_PATH"))
-        return lp_load(lp_ctx, getenv("SMB_CONF_PATH"));
+        path = getenv("SMB_CONF_PATH");
     else
-        return lp_load(lp_ctx, dyn_CONFIGFILE);
+        path = dyn_CONFIGFILE;
+
+    if (!file_exist(path)) {
+	    /* We allow the default smb.conf file to not exist, 
+	     * basically the equivalent of an empty file. */
+	    return true;
+    }
+
+    return lp_load(lp_ctx, path);
 }
 
 /**
