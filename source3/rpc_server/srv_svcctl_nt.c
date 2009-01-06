@@ -580,7 +580,7 @@ WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
 	switch ( r->in.info_level ) {
 		case SVC_STATUS_PROCESS_INFO:
 		{
-			SERVICE_STATUS_PROCESS svc_stat_proc;
+			struct SERVICE_STATUS_PROCESS svc_stat_proc;
 			enum ndr_err_code ndr_err;
 			DATA_BLOB blob;
 
@@ -597,7 +597,7 @@ WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
 			}
 
 			r->out.buffer = blob.data;
-	                buffer_size = sizeof(SERVICE_STATUS_PROCESS);
+	                buffer_size = sizeof(struct SERVICE_STATUS_PROCESS);
 			break;
 		}
 

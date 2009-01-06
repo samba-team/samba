@@ -98,13 +98,6 @@
 typedef struct SERVICE_STATUS SERVICE_STATUS;
 
 typedef struct {
-	SERVICE_STATUS status;
-	uint32 process_id;
-	uint32 service_flags;
-} SERVICE_STATUS_PROCESS;
-
-
-typedef struct {
 	UNISTR servicename;
 	UNISTR displayname;
 	SERVICE_STATUS status;
@@ -163,20 +156,6 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_CONFIG2;
 
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-        uint32 level;
-	uint32 buffer_size;
-} SVCCTL_Q_QUERY_SERVICE_STATUSEX;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_STATUSEX;
 
 #endif /* _RPC_SVCCTL_H */
 

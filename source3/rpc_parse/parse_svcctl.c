@@ -79,29 +79,6 @@ bool svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enu
 /*******************************************************************
 ********************************************************************/
 
-bool svcctl_io_service_status_process( const char *desc, SERVICE_STATUS_PROCESS *status, RPC_BUFFER *buffer, int depth )
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "svcctl_io_service_status_process");
-	depth++;
-
-	if ( !svcctl_io_service_status("status", &status->status, ps, depth) )
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("process_id", ps, depth, &status->process_id))
-		return False;
-	if(!prs_uint32("service_flags", ps, depth, &status->service_flags))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
 uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
 {
 	uint32 size = 0;
@@ -356,60 +333,6 @@ bool svcctl_io_r_query_service_config2(const char *desc, SVCCTL_R_QUERY_SERVICE_
 		return False;
 
 	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_q_query_service_status_ex(const char *desc, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_query_service_status_ex");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
-		return False;
-
-	if(!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-
-	if(!prs_uint32("buffer_size", ps, depth, &q_u->buffer_size))
-		return False;
-
-	return True;
-
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u, prs_struct *ps, int depth)
-{
-	if ( !r_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_query_service_status_ex");
-	depth++;
-
-	if (!prs_rpcbuffer("", ps, depth, &r_u->buffer))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
 
 	if(!prs_werror("status", ps, depth, &r_u->status))
