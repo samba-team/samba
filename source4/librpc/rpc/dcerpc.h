@@ -355,7 +355,7 @@ void dcerpc_log_packet(const char *lockdir,
 					   DATA_BLOB *pkt);
 NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx, struct dcerpc_binding *binding, struct epm_tower *tower);
 
-NTSTATUS dcerpc_floor_get_lhs_data(struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
+NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 
 enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower);
 
