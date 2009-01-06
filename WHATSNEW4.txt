@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha5
+What's new in Samba 4 alpha6
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -6,13 +6,13 @@ developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
 by Windows 2000 and above.
 
-Samba4 alpha5 follows on from the alpha release series we have been
+Samba4 alpha6 follows on from the alpha release series we have been
 publishing since September 2007
 
 WARNINGS
 ========
 
-Samba4 alpha5 is not a final Samba release.  That is more a reference
+Samba4 alpha6 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -62,32 +62,15 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE Alpha4
+CHANGES SINCE Alpha5
 =====================
 
-In the time since Samba4 Alpha4 was released in June 2008, Samba has
+In the time since Samba4 Alpha5 was released in June 2008, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  LDAP backend support restored (issues preventing the use of the LDAP
-  backend in alpha4 have been addressed).
-
-  SMB2 Support:  The SMB2 server, while still disabled, has improved,
-  and now supports SMB2 signing. 
-
-  OpenChange support:  Updates have been made since alpha4 to better
-  support OpenChange's use of Samba4's libraries. 
-
-  Faster ldb loading:  A fix to avoid calling 'init_module' (which was
-  not defined by Samba modules, but was by the C library) will fix
-  some of the slowness in authentication. 
-
-  SWAT Remains Disabled: Due to a lack of developer time and without a
-  long-term web developer to maintain it, the SWAT web UI remains been
-  disabled (and would need to be rewritten in python in any case).
-
-  GNU Make: To try and simplfy our build system, we rely on GNU Make
-  to avoid autogenerating a massive single makefile. 
-
+ The source code for various libraries that are used by both Samba 3 and 
+ Samba 4 are now shared between the two rather than duplicated 
+ (and being slightly diverged).
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
@@ -116,11 +99,11 @@ KNOWN ISSUES
   and server.  (The NTP work in the previous alpha is partly to assist
   with this problem).
 
-- Samba4 alpha5 is currently only portable to recent Linux
+- Samba4 alpha6 is currently only portable to recent Linux
   distributions.  Work to return support for other Unix varients is
   expected during the next alpha cycle
 
-- Samba4 alpha5 is incompatible with GnuTLS 2.0, found in Fedora 9 and
+- Samba4 alpha6 is incompatible with GnuTLS 2.0, found in Fedora 9 and
   recent Ubuntu releases.  GnuTLS use may be disabled using the
   --disable-gnutls argument to ./configure. (otherwise 'make test' and
   LDAPS operations will hang).
