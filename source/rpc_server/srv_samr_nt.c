@@ -454,7 +454,7 @@ static void free_samr_info(void *ptr)
 
 static void disp_info_cache_idle_timeout_handler(struct event_context *ev_ctx,
 						 struct timed_event *te,
-						 const struct timeval *now,
+						 struct timeval now,
 						 void *private_data)
 {
 	DISP_INFO *disp_info = (DISP_INFO *)private_data;
@@ -483,7 +483,6 @@ static void set_disp_info_cache_timeout(DISP_INFO *disp_info, time_t secs_fromno
 	disp_info->cache_timeout_event = event_add_timed(
 		smbd_event_context(), NULL,
 		timeval_current_ofs(secs_fromnow, 0),
-		"disp_info_cache_idle_timeout_handler",
 		disp_info_cache_idle_timeout_handler, (void *)disp_info);
 }
 

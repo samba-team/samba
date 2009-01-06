@@ -36,7 +36,7 @@
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
 static void krb5_ticket_gain_handler(struct event_context *,
 				     struct timed_event *,
-				     const struct timeval *,
+				     struct timeval,
 				     void *);
 
 /* The Krb5 ticket refresh handler should be scheduled
@@ -95,7 +95,7 @@ void ccache_remove_all_after_fork(void)
 
 static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *private_data)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
@@ -165,7 +165,6 @@ rekinit:
 					entry->event = event_add_timed(winbind_event_context(),
 								       entry, 
 								       timeval_set(new_start, 0),
-								       "krb5_ticket_gain_handler",
 								       krb5_ticket_gain_handler,
 								       entry);
 					return;
@@ -246,7 +245,6 @@ rekinit:
 			entry->event = event_add_timed(winbind_event_context(),
 							entry,
 							timeval_set(new_start, 0),
-							"krb5_ticket_gain_handler",
 							krb5_ticket_gain_handler,
 							entry);
 			return;
@@ -280,7 +278,6 @@ done:
 		entry->refresh_time = 0;
 		entry->event = event_add_timed(winbind_event_context(), entry,
 						timeval_set(expire_time, 0),
-						"krb5_ticket_gain_handler",
 						krb5_ticket_gain_handler,
 						entry);
 		return;
@@ -291,7 +288,6 @@ done:
 	}
 	entry->event = event_add_timed(winbind_event_context(), entry,
 				       timeval_set(new_start, 0),
-				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
 				       entry);
 
@@ -304,7 +300,7 @@ done:
 
 static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 				     struct timed_event *te,
-				     const struct timeval *now,
+				     struct timeval now,
 				     void *private_data)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
@@ -380,7 +376,6 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	entry->event = event_add_timed(winbind_event_context(),
 				       entry,
 				       t,
-				       "krb5_ticket_gain_handler",
 				       krb5_ticket_gain_handler,
 				       entry);
 
@@ -400,7 +395,6 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	entry->event = event_add_timed(winbind_event_context(),
 				       entry,
 				       t,
-				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
 				       entry);
 
@@ -424,14 +418,12 @@ void ccache_regain_all_now(void)
 			new_event = event_add_timed(winbind_event_context(),
 						    cur,
 						    t,
-						    "krb5_ticket_gain_handler",
 						    krb5_ticket_gain_handler,
 						    cur);
 		} else {
 			new_event = event_add_timed(winbind_event_context(),
 						    cur,
 						    t,
-						    "krb5_ticket_refresh_handler",
 						    krb5_ticket_refresh_handler,
 						    cur);
 		}
@@ -562,7 +554,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 				entry->event = event_add_timed(winbind_event_context(),
 							       entry,
 							       t,
-							       "krb5_ticket_gain_handler",
 							       krb5_ticket_gain_handler,
 							       entry);
 			} else {
@@ -578,7 +569,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 				entry->event = event_add_timed(winbind_event_context(),
 							       entry,
 							       t,
-							       "krb5_ticket_refresh_handler",
 							       krb5_ticket_refresh_handler,
 							       entry);
 			}
@@ -653,7 +643,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		entry->event = event_add_timed(winbind_event_context(),
 					       entry,
 					       t,
-					       "krb5_ticket_gain_handler",
 					       krb5_ticket_gain_handler,
 					       entry);
 	} else {
@@ -669,7 +658,6 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		entry->event = event_add_timed(winbind_event_context(),
 					       entry,
 					       t,
-					       "krb5_ticket_refresh_handler",
 					       krb5_ticket_refresh_handler,
 					       entry);
 	}
