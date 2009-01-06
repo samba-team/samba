@@ -38,6 +38,8 @@ static void krb5_ticket_gain_handler(struct event_context *,
 				     struct timed_event *,
 				     struct timeval,
 				     void *);
+static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *,
+				     struct timeval);
 
 /* The Krb5 ticket refresh handler should be scheduled
    at one-half of the period from now till the tkt
@@ -160,13 +162,8 @@ rekinit:
 					new_start = time(NULL) +
 						    MAX(30, lp_winbind_cache_time());
 #endif
-					entry->refresh_time = 0;
-					/* try to regain ticket here */
-					entry->event = event_add_timed(winbind_event_context(),
-								       entry, 
-								       timeval_set(new_start, 0),
-								       krb5_ticket_gain_handler,
-								       entry);
+					add_krb5_ticket_gain_handler_event(entry,
+							timeval_set(new_start, 0));
 					return;
 				}
 				TALLOC_FREE(entry->event);
@@ -241,12 +238,8 @@ rekinit:
 #endif
 			/* ticket is destroyed here, we have to regain it
 			 * if it is possible */
-			entry->refresh_time = 0;
-			entry->event = event_add_timed(winbind_event_context(),
-							entry,
-							timeval_set(new_start, 0),
-							krb5_ticket_gain_handler,
-							entry);
+			add_krb5_ticket_gain_handler_event(entry,
+						timeval_set(new_start, 0));
 			return;
 		}
 
@@ -275,11 +268,8 @@ done:
 	     && (entry->renew_until <= expire_time)) {
 		/* try to regain ticket 10 seconds beforre expiration */
 		expire_time -= 10;
-		entry->refresh_time = 0;
-		entry->event = event_add_timed(winbind_event_context(), entry,
-						timeval_set(expire_time, 0),
-						krb5_ticket_gain_handler,
-						entry);
+		add_krb5_ticket_gain_handler_event(entry,
+					timeval_set(expire_time, 0));
 		return;
 	}
 
@@ -372,13 +362,7 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
 #endif
 
-	entry->refresh_time = 0;
-	entry->event = event_add_timed(winbind_event_context(),
-				       entry,
-				       t,
-				       krb5_ticket_gain_handler,
-				       entry);
-
+	add_krb5_ticket_gain_handler_event(entry, t);
 	return;
 
   got_ticket:
@@ -400,6 +384,22 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 
 	return;
 #endif
+}
+
+/**************************************************************
+ The gain initial ticket case is recognised as entry->refresh_time
+ is always zero.
+**************************************************************/
+
+static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *entry,
+				     struct timeval t)
+{
+	entry->refresh_time = 0;
+	entry->event = event_add_timed(winbind_event_context(),
+				       entry,
+				       t,
+				       krb5_ticket_gain_handler,
+				       entry);
 }
 
 void ccache_regain_all_now(void)
@@ -550,12 +550,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 		if (!entry->event) {
 			if (postponed_request) {
 				t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
-				entry->refresh_time = 0;
-				entry->event = event_add_timed(winbind_event_context(),
-							       entry,
-							       t,
-							       krb5_ticket_gain_handler,
-							       entry);
+				add_krb5_ticket_gain_handler_event(entry, t);
 			} else {
 				/* Renew at 1/2 the ticket expiration time */
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
@@ -639,12 +634,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	if (postponed_request) {
 		t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
-		entry->refresh_time = 0;
-		entry->event = event_add_timed(winbind_event_context(),
-					       entry,
-					       t,
-					       krb5_ticket_gain_handler,
-					       entry);
+		add_krb5_ticket_gain_handler_event(entry, t);
 	} else {
 		/* Renew at 1/2 the ticket expiration time */
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
