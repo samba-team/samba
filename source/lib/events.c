@@ -354,6 +354,12 @@ int event_loop_once(struct event_context *ev)
 	return 0;
 }
 
+void event_context_reinit(struct event_context *ev)
+{
+	event_context_destructor(ev);
+	return;
+}
+
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
 	return TALLOC_ZERO_P(NULL, struct event_context);

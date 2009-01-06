@@ -1070,7 +1070,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!reinit_after_fork(winbind_messaging_context(), true)) {
+	if (!reinit_after_fork(winbind_messaging_context(),
+			       winbind_event_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		_exit(0);
 	}
@@ -1119,20 +1120,32 @@ static bool fork_domain_child(struct winbindd_child *child)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_DEBUG, debug_message);
 
+	primary_domain = find_our_domain();
+
+	if (primary_domain == NULL) {
+		smb_panic("no primary domain found");
+	}
+	/* we have destroy all time event in reinit_after_fork()
+	 * set check_online_event to NULL */
+	for (domain = domain_list(); domain; domain = domain->next) {
+		domain->check_online_event = NULL;
+	}
+
+	/* It doesn't matter if we allow cache login,
+	 * try to bring domain online after fork. */
 	if ( child->domain ) {
 		child->domain->startup = True;
 		child->domain->startup_time = time(NULL);
-	}
-
-	/* Ensure we have no pending check_online events other
-	   than one for this domain or the primary domain. */
-
-	for (domain = domain_list(); domain; domain = domain->next) {
-		if (domain->primary) {
-			primary_domain = domain;
-		}
-		if ((domain != child->domain) && !domain->primary) {
-			TALLOC_FREE(domain->check_online_event);
+		/* we can be in primary domain or in trusted domain
+		 * If we are in trusted domain, set the primary domain
+		 * in start-up mode */
+		if (!(child->domain->internal)) {
+			set_domain_online_request(child->domain);
+			if (!(child->domain->primary)) {
+				primary_domain->startup = True;
+				primary_domain->startup_time = time(NULL);
+				set_domain_online_request(primary_domain);
+			}
 		}
 	}
 
