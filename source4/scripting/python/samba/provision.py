@@ -1249,7 +1249,7 @@ def provision_backend(setup_dir=None, message=None,
         mapping = "schema-map-fedora-ds-1.0"
         backend_schema = "99_ad.ldif"
         
-        slapdcommand="Initailise Fedora DS with: setup-ds.pl --file=%s" % paths.fedoradsinf
+        slapdcommand="Initialise Fedora DS with: setup-ds.pl --file=%s" % paths.fedoradsinf
        
         ldapuser = "--simple-bind-dn=" + names.ldapmanagerdn
 
