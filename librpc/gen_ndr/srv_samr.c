@@ -5478,5 +5478,5 @@ void samr_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_samr_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "samr", "samr", &ndr_table_samr.syntax_id, api_samr_cmds, sizeof(api_samr_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "samr", "samr", &ndr_table_samr, api_samr_cmds, sizeof(api_samr_cmds) / sizeof(struct api_struct));
 }

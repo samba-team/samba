@@ -6385,5 +6385,5 @@ void lsarpc_get_pipe_fns(struct api_struct **fns, int *n_fns)
 
 NTSTATUS rpc_lsarpc_init(void)
 {
-	return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsarpc", &ndr_table_lsarpc.syntax_id, api_lsarpc_cmds, sizeof(api_lsarpc_cmds) / sizeof(struct api_struct));
+	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "lsarpc", "lsarpc", &ndr_table_lsarpc, api_lsarpc_cmds, sizeof(api_lsarpc_cmds) / sizeof(struct api_struct));
 }

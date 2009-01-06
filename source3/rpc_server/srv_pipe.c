@@ -1052,6 +1052,16 @@ NTSTATUS rpc_pipe_register_commands(int version, const char *clnt,
         return NT_STATUS_OK;
 }
 
+NTSTATUS rpc_srv_register(int version, const char *clnt,
+			  const char *srv,
+			  const struct ndr_interface_table *iface,
+			  const struct api_struct *cmds, int size)
+{
+	return rpc_pipe_register_commands(version, clnt, srv,
+					  &iface->syntax_id,
+					  cmds, size);
+}
+
 /**
  * Is a named pipe known?
  * @param[in] cli_filename	The pipe name requested by the client
