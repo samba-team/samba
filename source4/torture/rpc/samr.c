@@ -30,6 +30,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 #include <unistd.h>
 
@@ -2642,7 +2643,6 @@ static bool test_SamLogon_Creds(struct dcerpc_pipe *p, struct torture_context *t
 	uint8_t authoritative;
 	struct netr_NetworkInfo ninfo;
 	DATA_BLOB names_blob, chal, lm_resp, nt_resp;
-	int i;
 	int flags = CLI_CRED_NTLM_AUTH;
 
 	if (lp_client_lanman_auth(tctx->lp_ctx)) {
@@ -2786,7 +2786,6 @@ static bool test_SetPassword_level(struct dcerpc_pipe *p,
 {
 	const char *fields = NULL;
 	bool ret = true;
-	struct cli_credentials *test_credentials;
 
 	switch (level) {
 	case 21:
