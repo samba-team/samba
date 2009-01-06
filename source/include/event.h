@@ -28,15 +28,17 @@ struct timed_event;
 
 /* The following definitions come from lib/events.c  */
 
-struct timed_event *event_add_timed(struct event_context *event_ctx,
+struct timed_event *_event_add_timed(struct event_context *event_ctx,
 				TALLOC_CTX *mem_ctx,
 				struct timeval when,
 				const char *event_name,
 				void (*handler)(struct event_context *event_ctx,
 						struct timed_event *te,
-						const struct timeval *now,
+						struct timeval now,
 						void *private_data),
 				void *private_data);
+#define event_add_timed(event_ctx, mem_ctx, when, handler, private_data) \
+	_event_add_timed(event_ctx, mem_ctx, when, #handler, handler, private_data)
 struct fd_event *event_add_fd(struct event_context *event_ctx,
 			      TALLOC_CTX *mem_ctx,
 			      int fd, uint16_t flags,

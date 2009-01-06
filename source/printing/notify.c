@@ -221,7 +221,7 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
 
 static void print_notify_event_send_messages(struct event_context *event_ctx,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *private_data)
 {
 	/* Remove this timed event handler. */
@@ -326,7 +326,6 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 		/* Add an event for 1 second's time to send this queue. */
 		notify_event = event_add_timed(smbd_event_context(), NULL,
 					timeval_current_ofs(1,0),
-					"print_notify",
 					print_notify_event_send_messages, NULL);
 	}
 

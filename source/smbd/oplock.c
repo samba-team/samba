@@ -346,7 +346,7 @@ static files_struct *initial_break_processing(struct file_id id, unsigned long f
 
 static void oplock_timeout_handler(struct event_context *ctx,
 				   struct timed_event *te,
-				   const struct timeval *now,
+				   struct timeval now,
 				   void *private_data)
 {
 	files_struct *fsp = (files_struct *)private_data;
@@ -373,7 +373,6 @@ static void add_oplock_timeout_handler(files_struct *fsp)
 	fsp->oplock_timeout =
 		event_add_timed(smbd_event_context(), NULL,
 				timeval_current_ofs(OPLOCK_BREAK_TIMEOUT, 0),
-				"oplock_timeout_handler",
 				oplock_timeout_handler, fsp);
 
 	if (fsp->oplock_timeout == NULL) {
