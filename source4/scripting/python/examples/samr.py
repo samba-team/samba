@@ -26,6 +26,9 @@ sys.path.insert(0, "bin/python")
 
 from samba.dcerpc import samr, security, lsa
 
+def display_lsa_string(str):
+    return str.string
+
 def FillUserInfo(samr, dom_handle, users, level):
     """fill a user array with user information from samrQueryUserInfo"""
     for i in range(len(users)):
@@ -86,9 +89,9 @@ def test_EnumDomains(samr, handle):
     domains = toArray(samr.EnumDomains(handle, 0, -1))
     print "Found %d domains" % len(domains)
     for idx, domain in domains:
-        print "\t%s (%d)" % (domain, idx)
+        print "\t%s (%d)" % (display_lsa_string(domain), idx)
     for idx, domain in domains:
-        print "Testing domain %s" % domain
+        print "Testing domain %s" % display_lsa_string(domain)
         sid = samr.LookupDomain(handle, domain)
         dom_handle = test_OpenDomain(samr, handle, sid)
         test_domain_ops(samr, dom_handle)
