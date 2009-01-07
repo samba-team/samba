@@ -102,9 +102,7 @@ static int init_lsa_ref_domain_list(TALLOC_CTX *mem_ctx,
 
 static void free_lsa_info(void *ptr)
 {
-	struct lsa_info *lsa = (struct lsa_info *)ptr;
-
-	SAFE_FREE(lsa);
+	TALLOC_FREE(ptr);
 }
 
 /***************************************************************************
@@ -400,10 +398,11 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 		acc_granted = LSA_POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
+	info = TALLOC_ZERO_P(NULL, struct lsa_info);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCTP(info);
 	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
@@ -448,10 +447,11 @@ NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
+	info = TALLOC_ZERO_P(NULL, struct lsa_info);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCTP(info);
 	sid_copy(&info->sid,get_global_sam_sid());
 	info->access = acc_granted;
 
@@ -1555,10 +1555,11 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 	/* associate the user/group SID with the (unique) handle. */
 
-	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
+	info = TALLOC_ZERO_P(NULL, struct lsa_info);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCTP(info);
 	info->sid = *r->in.sid;
 	info->access = r->in.access_mask;
 
@@ -1599,10 +1600,11 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	#endif
 	/* associate the user/group SID with the (unique) handle. */
-	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
+	info = TALLOC_ZERO_P(NULL, struct lsa_info);
+	if (info == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	ZERO_STRUCTP(info);
 	info->sid = *r->in.sid;
 	info->access = r->in.access_mask;
 
