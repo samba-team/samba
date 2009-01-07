@@ -333,13 +333,6 @@ struct winbindd_methods {
 				    DOM_SID **dom_sids);
 };
 
-/* Used to glue a policy handle and cli_state together */
-
-typedef struct {
-	struct cli_state *cli;
-	POLICY_HND pol;
-} CLI_POLICY_HND;
-
 /* Filled out by IDMAP backends */
 struct winbindd_idmap_methods {
   /* Called when backend is first loaded */
