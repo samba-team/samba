@@ -1282,7 +1282,8 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	 * Samba3 doesn't currently support renaming a stream to the default
 	 * stream.  This test does pass on windows.
 	 */
-	if (torture_setting_bool(tctx, "samba3", false)) {
+	if (torture_setting_bool(tctx, "samba3", false) ||
+	    torture_setting_bool(tctx, "samba4", false)) {
 		goto done;
 	}
 

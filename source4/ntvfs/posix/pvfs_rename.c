@@ -464,6 +464,59 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 
 
 /*
+  rename a stream
+*/
+static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
+				   struct ntvfs_request *req, union smb_rename *ren,
+				   struct pvfs_filename *name1)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	NTSTATUS status;
+	struct odb_lock *lck = NULL;
+
+	if (name1->has_wildcard) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (ren->ntrename.in.new_name[0] != ':') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!name1->exists) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	if (ren->ntrename.in.flags != RENAME_FLAG_RENAME) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = pvfs_can_rename(pvfs, req, name1, &lck);
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	 */
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_rename_setup_retry(pvfs->ntvfs, req, ren, lck, status);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_access_check_simple(pvfs, req, name1, SEC_FILE_WRITE_ATTRIBUTE);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = pvfs_stream_rename(pvfs, name1, -1, 
+				    ren->ntrename.in.new_name+1);
+	NT_STATUS_NOT_OK_RETURN(status);
+	
+	return NT_STATUS_OK;
+}
+
+/*
   rename a set of files - ntrename interface
 */
 static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
@@ -486,9 +539,14 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.old_name, 
-				   PVFS_RESOLVE_WILDCARD, &name1);
+				   PVFS_RESOLVE_WILDCARD | PVFS_RESOLVE_STREAMS, &name1);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	if (name1->stream_name) {
+		/* stream renames need to be handled separately */
+		return pvfs_rename_stream(ntvfs, req, ren, name1);
 	}
 
 	status = pvfs_resolve_name(pvfs, req, ren->ntrename.in.new_name, 

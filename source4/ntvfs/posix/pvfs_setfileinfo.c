@@ -77,11 +77,46 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 }
 
 /*
+  rename_information level for streams
+*/
+static NTSTATUS pvfs_setfileinfo_rename_stream(struct pvfs_state *pvfs, 
+					       struct ntvfs_request *req, 
+					       struct pvfs_filename *name,
+					       int fd,
+					       DATA_BLOB *odb_locking_key,
+					       union smb_setfileinfo *info)
+{
+	NTSTATUS status;
+	struct odb_lock *lck = NULL;
+
+	if (info->rename_information.in.new_name[0] != ':') {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = pvfs_access_check_simple(pvfs, req, name, SEC_FILE_WRITE_ATTRIBUTE);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	lck = odb_lock(req, pvfs->odb_context, odb_locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+
+	status = pvfs_stream_rename(pvfs, name, fd, 
+				    info->rename_information.in.new_name+1);
+	return status;
+}
+
+/*
   rename_information level
 */
 static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
 					struct ntvfs_request *req, 
 					struct pvfs_filename *name,
+					int fd,
 					DATA_BLOB *odb_locking_key,
 					union smb_setfileinfo *info)
 {
@@ -96,9 +131,10 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	/* don't allow stream renames for now */
+	/* handle stream renames specially */
 	if (name->stream_name) {
-		return NT_STATUS_INVALID_PARAMETER;
+		return pvfs_setfileinfo_rename_stream(pvfs, req, name, fd, 
+						      odb_locking_key, info);
 	}
 
 	/* w2k3 does not appear to allow relative rename. On SMB2, vista sends it sometimes,
@@ -393,7 +429,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
-		return pvfs_setfileinfo_rename(pvfs, req, h->name,
+		return pvfs_setfileinfo_rename(pvfs, req, h->name, f->handle->fd,
 					       &h->odb_locking_key,
 					       info);
 
@@ -737,7 +773,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		status = pvfs_locking_key(name, name, &odb_locking_key);
 		NT_STATUS_NOT_OK_RETURN(status);
-		status = pvfs_setfileinfo_rename(pvfs, req, name,
+		status = pvfs_setfileinfo_rename(pvfs, req, name, -1,
 						 &odb_locking_key, info);
 		NT_STATUS_NOT_OK_RETURN(status);
 		return NT_STATUS_OK;
