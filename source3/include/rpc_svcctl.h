@@ -103,25 +103,6 @@ typedef struct {
 	SERVICE_STATUS status;
 } ENUM_SERVICES_STATUS;
 
-typedef struct {
-	uint32 unknown;	
-        UNISTR description;
-} SERVICE_DESCRIPTION;
-
-typedef struct {
-        uint32 type;
-        uint32 delay;
-} SC_ACTION;
-
-typedef struct {
-        uint32 reset_period;
-        UNISTR2 *rebootmsg;	/* i have no idea if these are UNISTR2's.  I can't get a good trace */
-        UNISTR2 *command;
-        uint32  num_actions;
-        SC_ACTION *actions;
-} SERVICE_FAILURE_ACTIONS;
-
-
 /* rpc structures */
 
 /**************************/
@@ -141,21 +122,6 @@ typedef struct {
 	uint32 *resume;
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-	uint32 level;
-	uint32 buffer_size;
-} SVCCTL_Q_QUERY_SERVICE_CONFIG2;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_CONFIG2;
-
 
 #endif /* _RPC_SVCCTL_H */
 
