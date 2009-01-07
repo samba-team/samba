@@ -156,7 +156,7 @@ static bool api_svcctl_control_service(pipes_struct *p)
 
 static bool api_svcctl_query_service_config(pipes_struct *p)
 {
-	return proxy_svcctl_call(p, SVCCTL_QUERY_SERVICE_CONFIG_W);
+	return proxy_svcctl_call(p, NDR_SVCCTL_QUERYSERVICECONFIGW);
 }
 
 /*******************************************************************
