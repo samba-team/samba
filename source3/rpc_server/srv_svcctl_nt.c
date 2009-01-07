@@ -609,8 +609,9 @@ WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
         buffer_size += buffer_size % 4;
 	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
-        if (buffer_size > r->in.buf_size )
-                return WERR_MORE_DATA;
+        if (buffer_size > r->in.buf_size ) {
+                return WERR_INSUFFICIENT_BUFFER;
+	}
 
 	return WERR_OK;
 }
