@@ -616,7 +616,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
             ldb.delete("cn=ldaptestcontainer2," + self.base_dn)
             self.fail()
         except LdbError, (num, _):
-            self.assertEquals(num, NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
         print "Testing base ldb.search for CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn
         res = ldb.search(expression="(objectclass=*)", base=("CN=ldaptestuser4,CN=ldaptestcontainer2," + self.base_dn), scope=SCOPE_BASE)
