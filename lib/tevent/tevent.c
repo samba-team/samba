@@ -279,6 +279,7 @@ void tevent_fd_set_close_fn(struct tevent_fd *fde,
 			    tevent_fd_close_fn_t close_fn)
 {
 	if (!fde) return;
+	if (!fde->event_ctx) return;
 	fde->event_ctx->ops->set_fd_close_fn(fde, close_fn);
 }
 
@@ -301,6 +302,7 @@ void tevent_fd_set_auto_close(struct tevent_fd *fde)
 uint16_t tevent_fd_get_flags(struct tevent_fd *fde)
 {
 	if (!fde) return 0;
+	if (!fde->event_ctx) return 0;
 	return fde->event_ctx->ops->get_fd_flags(fde);
 }
 
@@ -310,6 +312,7 @@ uint16_t tevent_fd_get_flags(struct tevent_fd *fde)
 void tevent_fd_set_flags(struct tevent_fd *fde, uint16_t flags)
 {
 	if (!fde) return;
+	if (!fde->event_ctx) return;
 	fde->event_ctx->ops->set_fd_flags(fde, flags);
 }
 
