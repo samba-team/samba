@@ -1142,7 +1142,7 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
-static void winbindd_reinit_after_fork(struct winbindd_child *child)
+bool winbindd_reinit_after_fork(const char *logfilename)
 {
 	struct winbindd_domain *domain;
 	struct winbindd_child *cl;
@@ -1150,13 +1150,13 @@ static void winbindd_reinit_after_fork(struct winbindd_child *child)
 	if (!reinit_after_fork(winbind_messaging_context(),
 			       winbind_event_context(), true)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
-		_exit(0);
+		return false;
 	}
 
 	close_conns_after_fork();
 
-	if (!override_logfile) {
-		lp_set_logfile(child->logfilename);
+	if (!override_logfile && logfilename) {
+		lp_set_logfile(logfilename);
 		reopen_logs();
 	}
 
@@ -1177,18 +1177,6 @@ static void winbindd_reinit_after_fork(struct winbindd_child *child)
 			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_DEBUG, NULL);
-
-	/* Handle online/offline messages. */
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_OFFLINE, child_msg_offline);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DEBUG, debug_message);
 
 	/* We have destroyed all events in the winbindd_event_context
 	 * in reinit_after_fork(), so clean out all possible pending
@@ -1215,6 +1203,8 @@ static void winbindd_reinit_after_fork(struct winbindd_child *child)
 		TALLOC_FREE(cl->lockout_policy_event);
 		TALLOC_FREE(cl->machine_password_change_event);
         }
+
+	return true;
 }
 
 static bool fork_domain_child(struct winbindd_child *child)
@@ -1268,7 +1258,21 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	winbindd_reinit_after_fork(child);
+	if (!winbindd_reinit_after_fork(child->logfilename)) {
+		_exit(0);
+	}
+
+	/* Handle online/offline messages. */
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_OFFLINE, child_msg_offline);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINE, child_msg_online);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_DEBUG, debug_message);
 
 	primary_domain = find_our_domain();
 
