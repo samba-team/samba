@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include "scripting/python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc.h"

@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"

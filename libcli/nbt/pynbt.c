@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include "libcli/util/pyerrors.h"
 #include "scripting/python/modules.h"
 #include "../libcli/nbt/libnbt.h"

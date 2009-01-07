@@ -26,6 +26,7 @@
 */
 
 #include "ldb_includes.h"
+#include "../lib/util/python_util.h"
 #include "pyldb.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */

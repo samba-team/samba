@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include "lib/com/com.h"
 #include "librpc/ndr/libndr.h"
 #include "libcli/util/pyerrors.h"

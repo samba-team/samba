@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */

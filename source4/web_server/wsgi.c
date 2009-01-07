@@ -25,7 +25,7 @@
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/data_blob.h"
 #include "lib/tls/tls.h"
-#include <Python.h>
+#include "../lib/util/python_util.h"
 
 typedef struct {
 	PyObject_HEAD

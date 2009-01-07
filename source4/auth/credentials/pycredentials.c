@@ -17,6 +17,7 @@
 */
 
 #include "includes.h"
+#include "../lib/util/python_util.h"
 #include "pycredentials.h"
 #include "param/param.h"
 #include "lib/cmdline/credentials.h"

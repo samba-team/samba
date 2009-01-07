@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "param/param.h"
 #include "param/loadparm.h"
+#include "../lib/util/python_util.h"
 #include "pytalloc.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */

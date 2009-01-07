@@ -16,7 +16,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Python.h>
+#include "../lib/util/python_util.h"
 #include <tevent.h>
 #include <stdbool.h>
 #include <tevent_util.h>
