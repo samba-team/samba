@@ -6188,7 +6188,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
 bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name);
-bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr);
+bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr);
 bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
 void close_policy_by_pipe(pipes_struct *p);

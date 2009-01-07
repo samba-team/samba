@@ -227,11 +227,6 @@ static int printer_entry_destructor(Printer_entry *Printer)
 	return 0;
 }
 
-static void free_printer_entry(void *Printer)
-{
-	TALLOC_FREE(Printer);
-}
-
 /****************************************************************************
  Functions to duplicate a SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
 ****************************************************************************/
@@ -597,8 +592,8 @@ static bool open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	}
 	talloc_set_destructor(new_printer, printer_entry_destructor);
 
-	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
-		SAFE_FREE(new_printer);
+	if (!create_policy_hnd(p, hnd, new_printer)) {
+		TALLOC_FREE(new_printer);
 		return False;
 	}
 

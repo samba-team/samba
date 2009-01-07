@@ -26,16 +26,6 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 /******************************************************************
- free() function for struct registry_key
- *****************************************************************/
- 
-static void free_regkey(void *ptr)
-{
-	struct registry_key *key = (struct registry_key *)ptr;
-	TALLOC_FREE(key);
-}
-
-/******************************************************************
  Find a registry key handle and return a struct registry_key *
  *****************************************************************/
 
@@ -69,19 +59,19 @@ static WERROR open_registry_key( pipes_struct *p, POLICY_HND *hnd,
 	struct registry_key *key;
 
 	if (parent == NULL) {
-		result = reg_openhive(NULL, subkeyname, access_desired,
+		result = reg_openhive(p->mem_ctx, subkeyname, access_desired,
 				      p->server_info->ptok, &key);
 	}
 	else {
-		result = reg_openkey(NULL, parent, subkeyname, access_desired,
-				     &key);
+		result = reg_openkey(p->mem_ctx, parent, subkeyname,
+				     access_desired, &key);
 	}
 
 	if ( !W_ERROR_IS_OK(result) ) {
 		return result;
 	}
 	
-	if ( !create_policy_hnd( p, hnd, free_regkey, key ) ) {
+	if ( !create_policy_hnd( p, hnd, key ) ) {
 		return WERR_BADFILE; 
 	}
 	
@@ -755,7 +745,7 @@ WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r)
 		return result;
 	}
 
-	if (!create_policy_hnd(p, r->out.new_handle, free_regkey, new_key)) {
+	if (!create_policy_hnd(p, r->out.new_handle, new_key)) {
 		TALLOC_FREE(new_key);
 		return WERR_BADFILE;
 	}

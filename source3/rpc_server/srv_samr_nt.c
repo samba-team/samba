@@ -358,7 +358,8 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
 
 static int samr_info_destructor(struct samr_info *info);
 
-static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
+static struct samr_info *get_samr_info_by_sid(TALLOC_CTX *mem_ctx,
+					      DOM_SID *psid)
 {
 	struct samr_info *info;
 	fstring sid_str;
@@ -369,7 +370,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 		fstrcpy(sid_str,"(NULL)");
 	}
 
-	if ((info = TALLOC_ZERO_P(NULL, struct samr_info)) == NULL) {
+	if ((info = TALLOC_ZERO_P(mem_ctx, struct samr_info)) == NULL) {
 		return NULL;
 	}
 	talloc_set_destructor(info, samr_info_destructor);
@@ -441,15 +442,6 @@ static int samr_info_destructor(struct samr_info *info)
 		free_samr_cache(info->disp_info);
 	}
 	return 0;
-}
-
-/*******************************************************************
- Function to free the per handle data.
- ********************************************************************/
-
-static void free_samr_info(void *ptr)
-{
-	TALLOC_FREE(ptr);
 }
 
 /*******************************************************************
@@ -653,12 +645,12 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = get_samr_info_by_sid(r->in.sid))==NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, r->in.sid))==NULL)
 		return NT_STATUS_NO_MEMORY;
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.domain_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.domain_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	DEBUG(5,("_samr_OpenDomain: %d\n", __LINE__));
@@ -2196,12 +2188,12 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	TALLOC_FREE(sampass);
 
 	/* associate the user's SID and access bits with the new handle. */
-	if ((info = get_samr_info_by_sid(&sid)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, user_pol, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -3161,7 +3153,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	}
 
 	/* associate the user's SID with the new handle. */
-	if ((info = get_samr_info_by_sid(&sid)) == NULL) {
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &sid)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3170,7 +3162,7 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info)) {
+	if (!create_policy_hnd(p, user_pol, info)) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
@@ -3222,7 +3214,7 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	/* set up the SAMR connect_anon response */
 
 	/* associate the user's SID with the new handle. */
-	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* don't give away the farm but this is probably ok.  The SAMR_ACCESS_ENUM_DOMAINS
@@ -3235,7 +3227,7 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 	info->acc_granted = des_access & (SAMR_ACCESS_ENUM_DOMAINS|SAMR_ACCESS_OPEN_DOMAIN);
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.connect_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -3289,14 +3281,14 @@ NTSTATUS _samr_Connect2(pipes_struct *p,
 		return nt_status;
 
 	/* associate the user's SID and access granted with the new handle. */
-	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, NULL)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	info->acc_granted = acc_granted;
 	info->status = r->in.access_mask; /* this looks so wrong... - gd */
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.connect_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	DEBUG(5,("%s: %d\n", fn, __LINE__));
@@ -3526,13 +3518,13 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 	}
 
 	/* associate the alias SID with the new handle. */
-	if ((info = get_samr_info_by_sid(&sid)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, alias_pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, alias_pol, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -4947,7 +4939,7 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 
 	sid_compose(&info_sid, get_global_sam_sid(), *r->out.rid);
 
-	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* they created it; let the user do what he wants with it */
@@ -4955,7 +4947,7 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 	info->acc_granted = GENERIC_RIGHTS_GROUP_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.group_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.group_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	force_flush_samr_cache(disp_info);
@@ -5039,7 +5031,7 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	/* they created it; let the user do what he wants with it */
@@ -5047,7 +5039,7 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.alias_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.alias_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	force_flush_samr_cache(disp_info);
@@ -5418,7 +5410,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 	sid_append_rid(&info_sid, r->in.rid);
 	sid_to_fstring(sid_string, &info_sid);
 
-	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
+	if ((info = get_samr_info_by_sid(p->mem_ctx, &info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	info->acc_granted = acc_granted;
@@ -5433,7 +5425,7 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, r->out.group_handle, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.group_handle, info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;

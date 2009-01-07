@@ -45,11 +45,6 @@ static int eventlog_info_destructor(EVENTLOG_INFO *elog)
 	return 0;
 }
 
-static void free_eventlog_info( void *ptr )
-{
-	TALLOC_FREE(ptr);
-}
-
 /********************************************************************
  ********************************************************************/
 
@@ -238,9 +233,8 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 
 	/* create the policy handle */
 
-	if ( !create_policy_hnd
-	     ( p, hnd, free_eventlog_info, ( void * ) elog ) ) {
-		free_eventlog_info( elog );
+	if ( !create_policy_hnd( p, hnd, elog ) ) {
+		TALLOC_FREE(elog);
 		return NT_STATUS_NO_MEMORY;
 	}
 

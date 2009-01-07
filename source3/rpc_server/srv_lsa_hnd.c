@@ -103,9 +103,13 @@ bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
+
+  If "data_ptr" is given, this must be a talloc'ed object, create_policy_hnd
+  talloc_moves this into the handle. If the policy_hnd is closed,
+  data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *), void *data_ptr)
+bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr)
 {
 	static uint32 pol_hnd_low  = 0;
 	static uint32 pol_hnd_high = 0;
@@ -119,16 +123,15 @@ bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void (*free_fn)(void *)
 		return False;
 	}
 
-	pol = SMB_MALLOC_P(struct policy);
+	pol = TALLOC_ZERO_P(NULL, struct policy);
 	if (!pol) {
 		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
 		return False;
 	}
 
-	ZERO_STRUCTP(pol);
-
-	pol->data_ptr = data_ptr;
-	pol->free_fn = free_fn;
+	if (data_ptr != NULL) {
+		pol->data_ptr = talloc_move(pol, &data_ptr);
+	}
 
 	pol_hnd_low++;
 	if (pol_hnd_low == 0)
@@ -211,16 +214,11 @@ bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd)
 
 	DEBUG(3,("Closed policy\n"));
 
-	if (pol->free_fn && pol->data_ptr)
-		(*pol->free_fn)(pol->data_ptr);
-
 	p->pipe_handles->count--;
 
 	DLIST_REMOVE(p->pipe_handles->Policy, pol);
 
-	ZERO_STRUCTP(pol);
-
-	SAFE_FREE(pol);
+	TALLOC_FREE(pol);
 
 	return True;
 }

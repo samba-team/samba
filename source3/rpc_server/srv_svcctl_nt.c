@@ -167,15 +167,6 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 }
 
 /******************************************************************
- free() function for REGISTRY_KEY
- *****************************************************************/
-
-static void free_service_handle_info(void *ptr)
-{
-	TALLOC_FREE( ptr );
-}
-
-/******************************************************************
  Find a registry key handle and return a SERVICE_INFO
  *****************************************************************/
 
@@ -244,14 +235,14 @@ static WERROR create_open_service_handle( pipes_struct *p, POLICY_HND *handle, u
 
 	/* store the SERVICE_INFO and create an open handle */
 
-	if ( !create_policy_hnd( p, handle, free_service_handle_info, info ) ) {
+	if ( !create_policy_hnd( p, handle, info ) ) {
 		result = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
 done:
 	if ( !W_ERROR_IS_OK(result) )
-		free_service_handle_info( info );
+		TALLOC_FREE(info);
 
 	return result;
 }

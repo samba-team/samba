@@ -123,7 +123,6 @@ struct policy {
 	POLICY_HND pol_hnd;
 
 	void *data_ptr;
-	void (*free_fn)(void *);
 };
 
 struct handle_list {
