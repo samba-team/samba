@@ -3190,7 +3190,7 @@ static int do_message_op(const char *netbios_name, const char *desthost,
 		exit(1);
 	}
 
-	ctx = talloc(mem_ctx, struct smbclient_context);
+	ctx = talloc_zero(mem_ctx, struct smbclient_context);
 	ctx->io_bufsize = 64512;
 
 	pc = poptGetContext("smbclient", argc, (const char **) argv, long_options, 0);
