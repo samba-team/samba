@@ -848,6 +848,12 @@ static PyObject *py_ldb_search(PyLdbObject *self, PyObject *args, PyObject *kwar
 
 	talloc_free(req);
 
+	if (ret != LDB_SUCCESS) {
+		talloc_free(res);
+		PyErr_LDB_ERROR_IS_ERR_RAISE(ret, ldb_ctx);
+		return NULL;
+	}
+
 	return PyLdbResult_FromResult(res);
 }
 
