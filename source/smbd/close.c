@@ -67,10 +67,20 @@ static void check_magic(struct files_struct *fsp)
 		return;
 	}
 
-	chmod(fsp->fsp_name,0755);
-	ret = smbrun(fsp->fsp_name,&tmp_fd);
+	/* Ensure we don't depend on user's PATH. */
+	p = talloc_asprintf(ctx, "./%s", fsp->fsp_name);
+	if (!p) {
+		TALLOC_FREE(ctx);
+		return;
+	}
+
+	if (chmod(fsp->fsp_name,0755) == -1) {
+		TALLOC_FREE(ctx);
+		return;
+	}
+	ret = smbrun(p,&tmp_fd);
 	DEBUG(3,("Invoking magic command %s gave %d\n",
-		fsp->fsp_name,ret));
+		p,ret));
 
 	unlink(fsp->fsp_name);
 	if (ret != 0 || tmp_fd == -1) {
