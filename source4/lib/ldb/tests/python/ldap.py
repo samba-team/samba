@@ -650,7 +650,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestuser,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestuser")
         self.assertEquals(str(res[0]["name"]), "ldaptestuser")
-        self.assertEquals(str(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user"])
+        self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
         self.assertEquals(str(res[0]["objectCategory"]), ("CN=Person,CN=Schema,CN=Configuration," + self.base_dn))
@@ -694,10 +694,10 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         self.assertEquals(str(res[0].dn), ("CN=ldaptestcomputer,CN=Computers," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestcomputer")
         self.assertEquals(str(res[0]["name"]), "ldaptestcomputer")
-        self.assertEquals(str(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user", "computer"])
+        self.assertEquals(set(res[0]["objectClass"]), set(["top", "person", "organizationalPerson", "user", "computer"]))
         self.assertTrue("objectGUID" in res[0])
         self.assertTrue("whenCreated" in res[0])
-        self.assertEquals(res[0]["objectCategory"], ("CN=Computer,CN=Schema,CN=Configuration," + self.base_dn))
+        self.assertEquals(str(res[0]["objectCategory"]), ("CN=Computer,CN=Schema,CN=Configuration," + self.base_dn))
         self.assertEquals(int(res[0]["primaryGroupID"][0]), 513)
         self.assertEquals(int(res[0]["sAMAccountType"][0]), 805306368)
         self.assertEquals(int(res[0]["userAccountControl"][0]), 546)
@@ -754,7 +754,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         res = ldb.search(expression="(&(cn=ldaptest2computer)(objectClass=user))")
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptest2computer)(objectClass=user))")
 
-        self.assertEquals(res[0].dn, ("CN=ldaptest2computer,CN=Computers," + self.base_dn))
+        self.assertEquals(str(res[0].dn), "CN=ldaptest2computer,CN=Computers," + self.base_dn)
         self.assertEquals(str(res[0]["cn"]), "ldaptest2computer")
         self.assertEquals(str(res[0]["name"]), "ldaptest2computer")
         self.assertEquals(list(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user", "computer"])
@@ -771,7 +771,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         res_user = ldb.search(self.base_dn, expression="(&(cn=ldaptestUSer2)(objectClass=user))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res_user), 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))")
 
-        self.assertEquals(res_user[0].dn, ("CN=ldaptestuser2,CN=Users," + self.base_dn))
+        self.assertEquals(str(res_user[0].dn), ("CN=ldaptestuser2,CN=Users," + self.base_dn))
         self.assertEquals(str(res_user[0]["cn"]), "ldaptestuser2")
         self.assertEquals(str(res_user[0]["name"]), "ldaptestuser2")
         self.assertEquals(list(res_user[0]["objectClass"]), ["top", "person", "organizationalPerson", "user"])
@@ -791,7 +791,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + self.base_dn + """
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))")
 
-        self.assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestgroup2")
         self.assertEquals(str(res[0]["name"]), "ldaptestgroup2")
         self.assertEquals(list(res[0]["objectClass"]), ["top", "group"])
@@ -871,7 +871,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))")
 
-        self.assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
         self.assertEquals(res[0]["member"][0], ("CN=ldaptestuser2,CN=Users," + self.base_dn))
         self.assertEquals(len(res[0]["member"]), 1)
 
@@ -884,7 +884,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(self.base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete")
 
-        self.assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestgroup2,CN=Users," + self.base_dn))
         self.assertTrue("member" not in res[0])
 
         print "Testing ldb.search for (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))"
