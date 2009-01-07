@@ -46,35 +46,38 @@ static bool is_samr_lsa_pipe(const char *pipe_name)
 
 bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 {
-	pipes_struct *plist = get_first_internal_pipe();
-	struct handle_list *hl = NULL;
+	pipes_struct *plist;
+	struct handle_list *hl;
 
-	for (plist = get_first_internal_pipe(); plist; plist = get_next_internal_pipe(plist)) {
-		if (strequal( plist->name, pipe_name) ||
-				(is_samr_lsa_pipe(plist->name) && is_samr_lsa_pipe(pipe_name))) {
-			if (!plist->pipe_handles) {
-				char *msg;
-				if (asprintf(&msg, "init_pipe_handles: NULL "
-						 "pipe_handle pointer in pipe %s",
-						 pipe_name) != -1) {
-					smb_panic(msg);
-				} else {
-					smb_panic("init_pipe_handle_list");
-				}
-			}
-			hl = plist->pipe_handles;
+	for (plist = get_first_internal_pipe();
+	     plist;
+	     plist = get_next_internal_pipe(plist)) {
+		if (strequal(plist->name, pipe_name)) {
+			break;
+		}
+		if (is_samr_lsa_pipe(plist->name)
+		    && is_samr_lsa_pipe(pipe_name)) {
+			/*
+			 * samr and lsa share a handle space (same process
+			 * under Windows?)
+			 */
 			break;
 		}
 	}
 
-	if (!hl) {
+	if (plist != NULL) {
+		hl = plist->pipe_handles;
+		if (hl == NULL) {
+			return false;
+		}
+	} else {
 		/*
-		 * No handle list for this pipe (first open of pipe).
-		 * Create list.
+		 * First open, we have to create the handle list
 		 */
-
-		if ((hl = SMB_MALLOC_P(struct handle_list)) == NULL)
-			return False;
+		hl = SMB_MALLOC_P(struct handle_list);
+		if (hl == NULL) {
+			return false;
+		}
 		ZERO_STRUCTP(hl);
 
 		DEBUG(10,("init_pipe_handles: created handle list for pipe %s\n", pipe_name ));
