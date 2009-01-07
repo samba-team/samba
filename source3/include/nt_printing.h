@@ -452,7 +452,6 @@ typedef struct _Printer{
 	bool page_started;
 	uint32 jobid; /* jobid in printing backend */
 	int printer_type;
-	TALLOC_CTX *ctx;
 	fstring servername;
 	fstring sharename;
 	uint32 type;

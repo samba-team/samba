@@ -195,10 +195,8 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
  Functions to free a printer entry datastruct.
 ****************************************************************************/
 
-static void free_printer_entry(void *ptr)
+static int printer_entry_destructor(Printer_entry *Printer)
 {
-	Printer_entry *Printer = (Printer_entry *)ptr;
-
 	if (Printer->notify.client_connected==True) {
 		int snum = -1;
 
@@ -224,12 +222,14 @@ static void free_printer_entry(void *ptr)
 	free_nt_devicemode( &Printer->nt_devmode );
 	free_a_printer( &Printer->printer_info, 2 );
 
-	talloc_destroy( Printer->ctx );
-
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
+	return 0;
+}
 
-	SAFE_FREE(Printer);
+static void free_printer_entry(void *Printer)
+{
+	TALLOC_FREE(Printer);
 }
 
 /****************************************************************************
@@ -591,10 +591,11 @@ static bool open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 
 	DEBUG(10,("open_printer_hnd: name [%s]\n", name));
 
-	if((new_printer=SMB_MALLOC_P(Printer_entry)) == NULL)
-		return False;
-
-	ZERO_STRUCTP(new_printer);
+	new_printer = TALLOC_ZERO_P(NULL, Printer_entry);
+	if (new_printer == NULL) {
+		return false;
+	}
+	talloc_set_destructor(new_printer, printer_entry_destructor);
 
 	if (!create_policy_hnd(p, hnd, free_printer_entry, new_printer)) {
 		SAFE_FREE(new_printer);
@@ -605,12 +606,6 @@ static bool open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name, uint3
 	DLIST_ADD(printers_list, new_printer);
 
 	new_printer->notify.option=NULL;
-
-	if ( !(new_printer->ctx = talloc_init("Printer Entry [%p]", hnd)) ) {
-		DEBUG(0,("open_printer_hnd: talloc_init() failed!\n"));
-		close_printer_handle(p, hnd);
-		return False;
-	}
 
 	if (!set_printer_hnd_printertype(new_printer, name)) {
 		close_printer_handle(p, hnd);
