@@ -172,6 +172,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	int num_dcs = 0;
 	TALLOC_CTX *mem_ctx = NULL;
 	pid_t parent_pid = sys_getpid();
+	char *lfile = NULL;
 
 	/* Stop zombies */
 	CatchChild();
@@ -212,9 +213,14 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	/* Leave messages blocked - we will never process one. */
 
-	if (!reinit_after_fork(winbind_messaging_context(),
-			       winbind_event_context(), true)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
+	if (!override_logfile) {
+		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) == -1) {
+			DEBUG(0, ("fork_child_dc_connect: out of memory.\n"));
+			return false;
+		}
+	}
+
+	if (!winbindd_reinit_after_fork(lfile)) {
 		messaging_send_buf(winbind_messaging_context(),
 				   pid_to_procid(parent_pid),
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
@@ -222,17 +228,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 				   strlen(domain->name)+1);
 		_exit(0);
 	}
-
-	close_conns_after_fork();
-
-	if (!override_logfile) {
-		char *lfile;
-		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
-			lp_set_logfile(lfile);
-			SAFE_FREE(lfile);
-			reopen_logs();
-		}
-	}
+	SAFE_FREE(lfile);
 
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {

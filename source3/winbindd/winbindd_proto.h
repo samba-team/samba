@@ -350,6 +350,7 @@ void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
 				  uint32_t msg_type,
 				  struct server_id server_id,
 				  DATA_BLOB *data);
+bool winbindd_reinit_after_fork(const char *logfilename);
 
 /* The following definitions come from winbindd/winbindd_group.c  */
 
