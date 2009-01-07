@@ -73,7 +73,6 @@ struct samr_info {
 	uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 	uint32 acc_granted;
 	DISP_INFO *disp_info;
-	TALLOC_CTX *mem_ctx;
 };
 
 static const struct generic_mapping sam_generic_mapping = {
@@ -357,11 +356,12 @@ static DISP_INFO *get_samr_dispinfo_by_sid(DOM_SID *psid)
  Create a samr_info struct.
 ********************************************************************/
 
+static int samr_info_destructor(struct samr_info *info);
+
 static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 {
 	struct samr_info *info;
 	fstring sid_str;
-	TALLOC_CTX *mem_ctx;
 
 	if (psid) {
 		sid_to_fstring(sid_str, psid);
@@ -369,10 +369,10 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 		fstrcpy(sid_str,"(NULL)");
 	}
 
-	mem_ctx = talloc_init("samr_info for domain sid %s", sid_str);
-
-	if ((info = TALLOC_ZERO_P(mem_ctx, struct samr_info)) == NULL)
+	if ((info = TALLOC_ZERO_P(NULL, struct samr_info)) == NULL) {
 		return NULL;
+	}
+	talloc_set_destructor(info, samr_info_destructor);
 
 	DEBUG(10,("get_samr_info_by_sid: created new info for sid %s\n", sid_str));
 	if (psid) {
@@ -382,7 +382,6 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 		DEBUG(10,("get_samr_info_by_sid: created new info for NULL sid.\n"));
 		info->builtin_domain = False;
 	}
-	info->mem_ctx = mem_ctx;
 
 	info->disp_info = get_samr_dispinfo_by_sid(psid);
 
@@ -433,22 +432,24 @@ static void free_samr_cache(DISP_INFO *disp_info)
 	unbecome_root();
 }
 
-/*******************************************************************
- Function to free the per handle data.
- ********************************************************************/
-
-static void free_samr_info(void *ptr)
+static int samr_info_destructor(struct samr_info *info)
 {
-	struct samr_info *info=(struct samr_info *) ptr;
-
 	/* Only free the dispinfo cache if no one bothered to set up
 	   a timeout. */
 
 	if (info->disp_info && info->disp_info->cache_timeout_event == NULL) {
 		free_samr_cache(info->disp_info);
 	}
+	return 0;
+}
 
-	talloc_destroy(info->mem_ctx);
+/*******************************************************************
+ Function to free the per handle data.
+ ********************************************************************/
+
+static void free_samr_info(void *ptr)
+{
+	TALLOC_FREE(ptr);
 }
 
 /*******************************************************************
