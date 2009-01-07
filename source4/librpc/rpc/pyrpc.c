@@ -38,12 +38,16 @@ static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct Py
 	}
 
 	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL)
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
 
 	r = talloc_zero_size(mem_ctx, md->table->calls[md->opnum].struct_size);
-	if (r == NULL)
+	if (r == NULL) {
+		PyErr_NoMemory();
 		return NULL;
+	}
 
 	if (!md->pack_in_data(args, kwargs, r)) {
 		talloc_free(mem_ctx);
