@@ -556,6 +556,30 @@ import "misc.idl", "security.idl";
 		SERVICE_CONFIG_FAILURE_ACTIONS	= 0x00000002
 	} svcctl_ConfigLevel;
 
+	typedef [gensize,public] struct {
+		[relative] nstring *description;
+	} SERVICE_DESCRIPTION;
+
+	typedef [v1_enum] enum {
+		SC_ACTION_NONE		= 0,
+		SC_ACTION_RESTART	= 1,
+		SC_ACTION_REBOOT	= 2,
+		SC_ACTION_RUN_COMMAND	= 3
+	} SC_ACTION_TYPE;
+
+	typedef struct {
+		SC_ACTION_TYPE type;
+		uint32 delay;
+	} SC_ACTION;
+
+	typedef [public,gensize] struct {
+		uint32 reset_period;
+		[relative] nstring *rebootmsg;
+		[relative] nstring *command;
+		[range(0,1024)] uint32 num_actions;
+		[relative] [size_is(num_actions)] SC_ACTION *actions;
+	} SERVICE_FAILURE_ACTIONS;
+
 	WERROR svcctl_QueryServiceConfig2A(
 		[in,ref] policy_handle *handle,
 		[in] svcctl_ConfigLevel info_level,
