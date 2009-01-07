@@ -148,6 +148,7 @@ ssize_t sys_recvfile(int fromfd,
 	static int pipefd[2] = { -1, -1 };
 	static bool try_splice_call = false;
 	size_t total_written = 0;
+	loff_t splice_offset = offset;
 
 	DEBUG(10,("sys_recvfile: from = %d, to = %d, "
 		"offset=%.0f, count = %lu\n",
@@ -180,7 +181,8 @@ ssize_t sys_recvfile(int fromfd,
 	while (count > 0) {
 		int nread, to_write;
 
-		nread = splice(fromfd, NULL, pipefd[1], NULL, count, 0);
+		nread = splice(fromfd, NULL, pipefd[1], NULL,
+			       MIN(count, 16384), SPLICE_F_MOVE);
 		if (nread == -1) {
 			if (errno == EINTR) {
 				continue;
@@ -197,12 +199,12 @@ ssize_t sys_recvfile(int fromfd,
 		to_write = nread;
 		while (to_write > 0) {
 			int thistime;
-			thistime = splice(pipefd[0], NULL, tofd, &offset,
-					  to_write, 0);
+			thistime = splice(pipefd[0], NULL, tofd,
+					  &splice_offset, to_write,
+					  SPLICE_F_MOVE);
 			if (thistime == -1) {
 				goto done;
 			}
-			offset += thistime;
 			to_write -= thistime;
 		}
 
