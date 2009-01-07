@@ -242,10 +242,17 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0e */
+
+	typedef [v1_enum] enum {
+		SVCCTL_STATE_ACTIVE	= 0x00000001,
+		SVCCTL_STATE_INACTIVE	= 0x00000002,
+		SVCCTL_STATE_ALL	= ( SVCCTL_STATE_ACTIVE | SVCCTL_STATE_INACTIVE )
+	} svcctl_ServiceState;
+
 	WERROR svcctl_EnumServicesStatusW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 state,
+		[in] svcctl_ServiceState state,
 		[out,ref,size_is(buf_size)] uint8 *service,
 		[in] [range(0,262144)] uint32 buf_size,
 		[out,ref] [range(0,262144)] uint32 *bytes_needed,
