@@ -253,4 +253,8 @@
 /* Windows minimum lock resolution timeout in ms */
 #define WINDOWS_MINIMUM_LOCK_TIMEOUT_MS 200
 
+/* When strict allocate = partial, define the limit on how far
+ * ahead we will write. */
+#define STRICT_ALLOCATE_PARTIAL_LIMIT 0x200000
+
 #endif
