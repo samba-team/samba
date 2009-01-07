@@ -1966,4 +1966,10 @@ struct smb_extended_info {
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
 
+enum smb_strict_allocate_options {
+	STRICT_ALLOCATE_OFF=0,
+	STRICT_ALLOCATE_ON=1,
+	STRICT_ALLOCATE_PARTIAL=2
+};
+
 #endif /* _SMB_H */

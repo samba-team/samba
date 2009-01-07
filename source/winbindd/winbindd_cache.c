@@ -486,7 +486,9 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	time_diff = t - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
-	if (!force && (time_diff < cache_time)) {
+	if (!force && (time_diff < cache_time) &&
+			(domain->sequence_number != DOM_SEQUENCE_NONE) &&
+			NT_STATUS_IS_OK(domain->last_status)) {
 		DEBUG(10, ("refresh_sequence_number: %s time ok\n", domain->name));
 		goto done;
 	}
@@ -495,8 +497,11 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	/* this will update the timestamp as well */
 	
 	status = fetch_cache_seqnum( domain, t );
-	if ( NT_STATUS_IS_OK(status) )
-		goto done;	
+	if (NT_STATUS_IS_OK(status) &&
+			(domain->sequence_number != DOM_SEQUENCE_NONE) &&
+			NT_STATUS_IS_OK(domain->last_status)) {
+		goto done;
+	}
 
 	/* important! make sure that we know if this is a native 
 	   mode domain or not.  And that we can contact it. */

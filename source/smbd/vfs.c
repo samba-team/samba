@@ -545,8 +545,9 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 
 	/* Grow - we need to test if we have enough space. */
 
-	if (!lp_strict_allocate(SNUM(fsp->conn)))
+	if (lp_strict_allocate(SNUM(fsp->conn)) == STRICT_ALLOCATE_OFF) {
 		return 0;
+	}
 
 	len -= st.st_size;
 	len /= 1024; /* Len is now number of 1k blocks needed. */
@@ -600,7 +601,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 static char *sparse_buf;
 #define SPARSE_BUF_WRITE_SIZE (32*1024)
 
-int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
+int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len, enum smb_strict_allocate_options sa_options)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
@@ -616,6 +617,14 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	}
 
 	if (len <= st.st_size) {
+		return 0;
+	}
+
+	/* If strict allocate is set to "partial", ignore all allocate
+ 	 * retquests over the STRICT_ALLOCATE_PARTIAL_LIMIT. */
+
+	if ((sa_options == STRICT_ALLOCATE_PARTIAL) &&
+			(len - st.st_size > STRICT_ALLOCATE_PARTIAL_LIMIT)) {
 		return 0;
 	}
 
