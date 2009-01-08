@@ -58,10 +58,6 @@
 #define SVCCTL_WIN32_SHARED_PROC                   0x00000020
 #define SVCCTL_WIN32_INTERACTIVE                   0x00000100 
 
-#define SVC_HANDLE_IS_SCM			0x0000001
-#define SVC_HANDLE_IS_SERVICE			0x0000002
-#define SVC_HANDLE_IS_DBLOCK			0x0000003
-
 /* utility structures for RPCs */
 
 /*

@@ -44,5 +44,9 @@ typedef struct _ServiceInfo {
 	SERVICE_CONTROL_OPS	*ops;
 } SERVICE_INFO;
 
+#define SVC_HANDLE_IS_SCM			0x0000001
+#define SVC_HANDLE_IS_SERVICE			0x0000002
+#define SVC_HANDLE_IS_DBLOCK			0x0000003
+
 #endif /* _SERICES_H */
 
