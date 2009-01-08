@@ -25,7 +25,7 @@ struct fake_file_type {
 	void *(*init_pd)(TALLOC_CTX *mem_ctx);
 };
 
-static struct fake_file_type fake_files[] = {
+static const struct fake_file_type fake_files[] = {
 #ifdef WITH_QUOTAS
 	{FAKE_FILE_NAME_QUOTA_UNIX, FAKE_FILE_TYPE_QUOTA, init_quota_handle},
 #endif /* WITH_QUOTAS */
