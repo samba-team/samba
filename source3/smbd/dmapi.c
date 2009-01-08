@@ -52,7 +52,7 @@ struct smbd_dmapi_context {
 	unsigned session_num;
 };
 
-static struct smbd_dmapi_context *dmapi_ctx;
+struct smbd_dmapi_context *dmapi_ctx;
 
 /* 
    Initialise DMAPI session. The session is persistant kernel state, 
