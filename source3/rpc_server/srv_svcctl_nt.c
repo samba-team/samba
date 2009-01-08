@@ -650,7 +650,7 @@ static WERROR fill_svc_config( TALLOC_CTX *ctx, const char *name,
 	/* loadordergroup and dependencies are empty */
 
 	config->tag_id           = 0x00000000;			/* unassigned loadorder group */
-	config->service_type     = SVCCTL_WIN32_OWN_PROC;
+	config->service_type     = SERVICE_TYPE_WIN32_OWN_PROCESS;
 	config->error_control    = SVCCTL_SVC_ERROR_NORMAL;
 
 	/* set the start type.  NetLogon and WINS are disabled to prevent

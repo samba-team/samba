@@ -224,7 +224,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 		return werror_to_ntstatus(result);
 	}
 
-	result = rpccli_svcctl_enumerate_services(pipe_hnd, mem_ctx, &hSCM, SVCCTL_TYPE_WIN32,
+	result = rpccli_svcctl_enumerate_services(pipe_hnd, mem_ctx, &hSCM, SERVICE_TYPE_WIN32,
 		SVCCTL_STATE_ALL, &num_services, &services );
 
 	if ( !W_ERROR_IS_OK(result) ) {

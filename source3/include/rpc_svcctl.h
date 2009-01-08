@@ -45,19 +45,6 @@
 #define SVCCTL_OPEN_SCMANAGER_A			0x1b
 */
 
-/* SERVER_STATUS - type */
-
-#define SVCCTL_TYPE_WIN32		0x00000030
-#define SVCCTL_TYPE_DRIVER		0x0000000f
-
-/* Service Config - values for ServiceType field*/
-
-#define SVCCTL_KERNEL_DRVR                         0x00000001  /* doubtful we'll have these */
-#define SVCCTL_FILE_SYSTEM_DRVR                    0x00000002  
-#define SVCCTL_WIN32_OWN_PROC                      0x00000010
-#define SVCCTL_WIN32_SHARED_PROC                   0x00000020
-#define SVCCTL_WIN32_INTERACTIVE                   0x00000100 
-
 /* utility structures for RPCs */
 
 /*

@@ -260,7 +260,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 	dword = SVCCTL_AUTO_START;
 	regval_ctr_addvalue( values, "Start", REG_DWORD, (char*)&dword, sizeof(uint32));
 
-	dword = SVCCTL_WIN32_OWN_PROC;
+	dword = SERVICE_TYPE_WIN32_OWN_PROCESS;
 	regval_ctr_addvalue( values, "Type", REG_DWORD, (char*)&dword, sizeof(uint32));
 
 	dword = SVCCTL_SVC_ERROR_NORMAL;
