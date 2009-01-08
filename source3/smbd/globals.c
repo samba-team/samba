@@ -202,6 +202,8 @@ bool exit_firsttime = true;
 struct child_pid *children = 0;
 int num_children = 0;
 
+struct smbd_server_connection *smbd_server_conn = NULL;
+
 void smbd_init_globals(void)
 {
 	ZERO_STRUCT(char_flags);

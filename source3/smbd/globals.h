@@ -216,4 +216,10 @@ struct child_pid;
 extern struct child_pid *children;
 extern int num_children;
 
+struct smbd_server_connection {
+	struct fd_event *fde;
+	uint64_t num_requests;
+};
+extern struct smbd_server_connection *smbd_server_conn;
+
 void smbd_init_globals(void);

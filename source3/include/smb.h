@@ -690,7 +690,7 @@ struct interface {
 struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
-	struct timeval end_time; /* When does this time out? */
+	struct timed_event *te;
 	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;

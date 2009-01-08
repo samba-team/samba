@@ -392,6 +392,36 @@ void init_smb_request(struct smb_request *req,
 	req->outbuf = NULL;
 }
 
+static void process_smb(struct smbd_server_connection *conn,
+			uint8_t *inbuf, size_t nread, size_t unread_bytes,
+			bool encrypted);
+
+static void smbd_deferred_open_timer(struct event_context *ev,
+				     struct timed_event *te,
+				     struct timeval _tval,
+				     void *private_data)
+{
+	struct pending_message_list *msg = talloc_get_type(private_data,
+					   struct pending_message_list);
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	uint8_t *inbuf;
+
+	inbuf = talloc_memdup(mem_ctx, msg->buf.data,
+			      msg->buf.length);
+	if (inbuf == NULL) {
+		exit_server("smbd_deferred_open_timer: talloc failed\n");
+		return;
+	}
+
+	/* We leave this message on the queue so the open code can
+	   know this is a retry. */
+	DEBUG(5,("smbd_deferred_open_timer: trigger mid %u.\n",
+		(unsigned int)SVAL(msg->buf.data,smb_mid)));
+
+	process_smb(smbd_server_conn, inbuf,
+		    msg->buf.length, 0,
+		    msg->encrypted);
+}
 
 /****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
@@ -421,7 +451,6 @@ static bool push_queued_message(struct smb_request *req,
 	}
 
 	msg->request_time = request_time;
-	msg->end_time = end_time;
 	msg->encrypted = req->encrypted;
 
 	if (private_data) {
@@ -432,6 +461,17 @@ static bool push_queued_message(struct smb_request *req,
 			TALLOC_FREE(msg);
 			return False;
 		}
+	}
+
+	msg->te = event_add_timed(smbd_event_context(),
+				  msg,
+				  end_time,
+				  smbd_deferred_open_timer,
+				  msg);
+	if (!msg->te) {
+		DEBUG(0,("push_message: event_add_timed failed\n"));
+		TALLOC_FREE(msg);
+		return false;
 	}
 
 	DLIST_ADD_END(deferred_open_queue, msg, struct pending_message_list *);
@@ -475,13 +515,29 @@ void schedule_deferred_open_smb_message(uint16 mid)
 
 	for (pml = deferred_open_queue; pml; pml = pml->next) {
 		uint16 msg_mid = SVAL(pml->buf.data,smb_mid);
+
 		DEBUG(10,("schedule_deferred_open_smb_message: [%d] msg_mid = %u\n", i++,
 			(unsigned int)msg_mid ));
+
 		if (mid == msg_mid) {
+			struct timed_event *te;
+
 			DEBUG(10,("schedule_deferred_open_smb_message: scheduling mid %u\n",
 				mid ));
-			pml->end_time.tv_sec = 0;
-			pml->end_time.tv_usec = 0;
+
+			te = event_add_timed(smbd_event_context(),
+					     pml,
+					     timeval_zero(),
+					     smbd_deferred_open_timer,
+					     pml);
+			if (!te) {
+				DEBUG(10,("schedule_deferred_open_smb_message: "
+					  "event_add_timed() failed, skipping mid %u\n",
+					  mid ));
+			}
+
+			TALLOC_FREE(pml->te);
+			pml->te = te;
 			DLIST_PROMOTE(deferred_open_queue, pml);
 			return;
 		}
@@ -701,18 +757,12 @@ static int select_on_fd(int fd, int maxfd, fd_set *fds)
 The timeout is in milliseconds
 ****************************************************************************/
 
-static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
-				       size_t *buffer_len,
-				       size_t *p_unread, bool *p_encrypted)
+static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
 	fd_set r_fds, w_fds;
 	int selrtn;
 	struct timeval to;
 	int maxfd = 0;
-	size_t len = 0;
-	NTSTATUS status;
-
-	*p_unread = 0;
 
 	to.tv_sec = SMBD_SELECT_TIMEOUT;
 	to.tv_usec = 0;
@@ -723,53 +773,6 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	 * we may have sent to ourselves from the previous SMB.
 	 */
 	message_dispatch(smbd_messaging_context());
-
-	/*
-	 * Check to see if we already have a message on the deferred open queue
-	 * and it's time to schedule.
-	 */
-  	if(deferred_open_queue != NULL) {
-		bool pop_message = False;
-		struct pending_message_list *msg = deferred_open_queue;
-
-		if (timeval_is_zero(&msg->end_time)) {
-			pop_message = True;
-		} else {
-			struct timeval tv;
-			int64_t tdif;
-
-			GetTimeOfDay(&tv);
-			tdif = usec_time_diff(&msg->end_time, &tv);
-			if (tdif <= 0) {
-				/* Timed out. Schedule...*/
-				pop_message = True;
-				DEBUG(10,("receive_message_or_smb: queued message timed out.\n"));
-			} else {
-				/* Make a more accurate select timeout. */
-				to.tv_sec = tdif / 1000000;
-				to.tv_usec = tdif % 1000000;
-				DEBUG(10,("receive_message_or_smb: select with timeout of [%u.%06u]\n",
-					(unsigned int)to.tv_sec, (unsigned int)to.tv_usec ));
-			}
-		}
-
-		if (pop_message) {
-
-			*buffer = (char *)talloc_memdup(mem_ctx, msg->buf.data,
-							msg->buf.length);
-			if (*buffer == NULL) {
-				DEBUG(0, ("talloc failed\n"));
-				return NT_STATUS_NO_MEMORY;
-			}
-			*buffer_len = msg->buf.length;
-			*p_encrypted = msg->encrypted;
-
-			/* We leave this message on the queue so the open code can
-			   know this is a retry. */
-			DEBUG(5,("receive_message_or_smb: returning deferred open smb message.\n"));
-			return NT_STATUS_OK;
-		}
-	}
 
 	/*
 	 * Setup the select fd sets.
@@ -822,7 +825,6 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 		int sav;
 		START_PROFILE(smbd_idle);
 
-		maxfd = select_on_fd(smbd_server_fd(), maxfd, &r_fds);
 		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &r_fds);
 
 		selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&to);
@@ -885,15 +887,6 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	 * JRA.
 	 */
 	message_dispatch(smbd_messaging_context());
-
-	status = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0,
-				    p_unread, p_encrypted, &len);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	*buffer_len = len;
 
 	return NT_STATUS_OK;
 }
@@ -1519,7 +1512,9 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
  Process an smb from the client
 ****************************************************************************/
 
-static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool encrypted)
+static void process_smb(struct smbd_server_connection *conn,
+			uint8_t *inbuf, size_t nread, size_t unread_bytes,
+			bool encrypted)
 {
 	int msg_type = CVAL(inbuf,0);
 
@@ -1535,15 +1530,31 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool enc
 		/*
 		 * NetBIOS session request, keepalive, etc.
 		 */
-		reply_special(inbuf);
-		return;
+		reply_special((char *)inbuf);
+		goto done;
 	}
 
-	show_msg(inbuf);
+	show_msg((char *)inbuf);
 
-	construct_reply(inbuf,nread,unread_bytes,encrypted);
+	construct_reply((char *)inbuf,nread,unread_bytes,encrypted);
 
 	trans_num++;
+
+done:
+	conn->num_requests++;
+
+	/* The timeout_processing function isn't run nearly
+	   often enough to implement 'max log size' without
+	   overrunning the size of the file by many megabytes.
+	   This is especially true if we are running at debug
+	   level 10.  Checking every 50 SMBs is a nice
+	   tradeoff of performance vs log file size overrun. */
+
+	if ((conn->num_requests % 50) == 0 &&
+	    need_to_check_log_size()) {
+		change_to_root_user();
+		check_log_size();
+	}
 }
 
 /****************************************************************************
@@ -1856,17 +1867,63 @@ void check_reload(time_t t)
 	}
 }
 
+static void smbd_server_connection_write_handler(struct smbd_server_connection *conn)
+{
+	/* TODO: make write nonblocking */
+}
+
+static void smbd_server_connection_read_handler(struct smbd_server_connection *conn)
+{
+	uint8_t *inbuf = NULL;
+	size_t inbuf_len = 0;
+	size_t unread_bytes = 0;
+	bool encrypted = false;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	NTSTATUS status;
+
+	/* TODO: make this completely nonblocking */
+
+	status = receive_smb_talloc(mem_ctx, smbd_server_fd(),
+				    (char **)&inbuf,
+				    0, /* timeout */
+				    &unread_bytes,
+				    &encrypted,
+				    &inbuf_len);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		goto process;
+	}
+	if (NT_STATUS_IS_ERR(status)) {
+		exit_server_cleanly("failed to receive smb request");
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+process:
+	process_smb(conn, inbuf, inbuf_len, unread_bytes, encrypted);
+}
+
+static void smbd_server_connection_handler(struct event_context *ev,
+					   struct fd_event *fde,
+					   uint16_t flags,
+					   void *private_data)
+{
+	struct smbd_server_connection *conn = talloc_get_type(private_data,
+					      struct smbd_server_connection);
+
+	if (flags & EVENT_FD_WRITE) {
+		smbd_server_connection_write_handler(conn);
+	} else if (flags & EVENT_FD_READ) {
+		smbd_server_connection_read_handler(conn);
+	}
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
-	unsigned int num_smbs = 0;
-	size_t unread_bytes = 0;
-
-	char addr[INET6_ADDRSTRLEN];
-
 	/*
 	 * Before the first packet, check the global hosts allow/ hosts deny
 	 * parameters before doing any parsing of packets passed to us by the
@@ -1876,6 +1933,8 @@ void smbd_process(void)
 
 	if (!check_access(smbd_server_fd(), lp_hostsallow(-1),
 			  lp_hostsdeny(-1))) {
+		char addr[INET6_ADDRSTRLEN];
+
 		/*
 		 * send a negative session response "not listening on calling
 		 * name"
@@ -1889,46 +1948,34 @@ void smbd_process(void)
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
+	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
+	if (!smbd_server_conn) {
+		exit_server("failed to create smbd_server_connection");
+	}
+	smbd_server_conn->fde = event_add_fd(smbd_event_context(),
+					     smbd_server_conn,
+					     smbd_server_fd(),
+					     EVENT_FD_READ,
+					     smbd_server_connection_handler,
+					     smbd_server_conn);
+	if (!smbd_server_conn->fde) {
+		exit_server("failed to create smbd_server_connection fde");
+	}
+
 	while (True) {
 		NTSTATUS status;
-		char *inbuf = NULL;
-		size_t inbuf_len = 0;
-		bool encrypted = false;
 		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
 
 		errno = 0;
 
-		run_events(smbd_event_context(), 0, NULL, NULL);
-
-		status = NT_STATUS_RETRY;
-
-		while (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
-			status = receive_message_or_smb(
-				talloc_tos(), &inbuf, &inbuf_len,
-				&unread_bytes, &encrypted);
-		}
-
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(3, ("receive_message_or_smb failed: %s, "
-				  "exiting\n", nt_errstr(status)));
+		status = smbd_server_connection_loop_once(smbd_server_conn);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_RETRY) &&
+		    !NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
+				  " exiting\n", nt_errstr(status)));
 			return;
 		}
 
-		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
-
-		num_smbs++;
-
-		/* The timeout_processing function isn't run nearly
-		   often enough to implement 'max log size' without
-		   overrunning the size of the file by many megabytes.
-		   This is especially true if we are running at debug
-		   level 10.  Checking every 50 SMBs is a nice
-		   tradeoff of performance vs log file size overrun. */
-
-		if ((num_smbs % 50) == 0 && need_to_check_log_size()) {
-			change_to_root_user();
-			check_log_size();
-		}
 		TALLOC_FREE(frame);
 	}
 }
