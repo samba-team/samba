@@ -1190,6 +1190,7 @@ char *lib_path(const char *name);
 char *modules_path(const char *name);
 char *data_path(const char *name);
 char *state_path(const char *name);
+char *cache_path(const char *name);
 const char *shlib_ext(void);
 bool parent_dirname(TALLOC_CTX *mem_ctx, const char *dir, char **parent,
 		    const char **name);
@@ -3872,6 +3873,8 @@ char *lp_addprinter_cmd(void);
 char *lp_deleteprinter_cmd(void);
 char *lp_os2_driver_map(void);
 char *lp_lockdir(void);
+char *lp_statedir(void);
+char *lp_cachedir(void);
 char *lp_piddir(void);
 char *lp_mangling_method(void);
 int lp_mangle_prefix(void);

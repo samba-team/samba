@@ -76,30 +76,9 @@ DEFINE_DYN_CONFIG_PARAM(LIBDIR)
 DEFINE_DYN_CONFIG_PARAM(MODULESDIR)
 DEFINE_DYN_CONFIG_PARAM(SHLIBEXT)
 DEFINE_DYN_CONFIG_PARAM(LOCKDIR)
+DEFINE_DYN_CONFIG_PARAM(STATEDIR) /** Persistent state files. Default LOCKDIR */
+DEFINE_DYN_CONFIG_PARAM(CACHEDIR) /** Temporary cache files. Default LOCKDIR */
 DEFINE_DYN_CONFIG_PARAM(PIDDIR)
 DEFINE_DYN_CONFIG_PARAM(NCALRPCDIR)
 DEFINE_DYN_CONFIG_PARAM(SMB_PASSWD_FILE)
 DEFINE_DYN_CONFIG_PARAM(PRIVATE_DIR)
-
-/* In non-FHS mode, these should be configurable using 'lock dir =';
-   but in FHS mode, they are their own directory.  Implement as wrapper
-   functions so that everything can still be kept in dynconfig.c.
- */
-
-const char *get_dyn_STATEDIR(void)
-{
-#ifdef FHS_COMPATIBLE
-	return STATEDIR;
-#else
-	return lp_lockdir();
-#endif
-}
-
-const char *get_dyn_CACHEDIR(void)
-{
-#ifdef FHS_COMPATIBLE
-	return CACHEDIR;
-#else
-	return lp_lockdir();
-#endif
-}

@@ -140,6 +140,8 @@ cat >$COMMONCONFFILE<<EOF
 	private dir = $PRIVATEDIR
 	pid directory = $PIDDIR
 	lock directory = $LOCKDIR
+	state directory = $LOCKDIR
+	cache directory = $LOCKDIR
 	log file = $LOGDIR/log.%m
 	log level = 0
 

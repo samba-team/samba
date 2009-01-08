@@ -90,6 +90,8 @@ BEGIN {
 	print "       output(screen,\"   SHLIBEXT: %s\\n\",get_dyn_SHLIBEXT());";
 
 	print "       output(screen,\"   LOCKDIR: %s\\n\",get_dyn_LOCKDIR());";
+	print "       output(screen,\"   STATEDIR: %s\\n\",get_dyn_STATEDIR());";
+	print "       output(screen,\"   CACHEDIR: %s\\n\",get_dyn_CACHEDIR());";
 	print "       output(screen,\"   PIDDIR: %s\\n\", get_dyn_PIDDIR());";
 
 	print "       output(screen,\"   SMB_PASSWD_FILE: %s\\n\",get_dyn_SMB_PASSWD_FILE());";

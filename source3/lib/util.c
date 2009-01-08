@@ -2232,9 +2232,14 @@ char *myhostname(void)
 	return ret;
 }
 
-/*****************************************************************
- A useful function for returning a path in the Samba pid directory.
-*****************************************************************/
+/**
+ * @brief Returns an absolute path to a file concatenating the provided
+ * @a rootpath and @a basename
+ *
+ * @param name Filename, relative to @a rootpath
+ *
+ * @retval Pointer to a string containing the full path.
+ **/
 
 static char *xx_path(const char *name, const char *rootpath)
 {
@@ -2247,7 +2252,9 @@ static char *xx_path(const char *name, const char *rootpath)
 	trim_string(fname,"","/");
 
 	if (!directory_exist(fname)) {
-		mkdir(fname,0755);
+		if (!mkdir(fname,0755))
+			DEBUG(1, ("Unable to create directory %s for file %s. "
+			      "Error was %s\n", fname, name, strerror(errno)));
 	}
 
 	return talloc_asprintf(talloc_tos(),
@@ -2256,18 +2263,26 @@ static char *xx_path(const char *name, const char *rootpath)
 				name);
 }
 
-/*****************************************************************
- A useful function for returning a path in the Samba lock directory.
-*****************************************************************/
+/**
+ * @brief Returns an absolute path to a file in the Samba lock directory.
+ *
+ * @param name File to find, relative to LOCKDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
 
 char *lock_path(const char *name)
 {
 	return xx_path(name, lp_lockdir());
 }
 
-/*****************************************************************
- A useful function for returning a path in the Samba pid directory.
-*****************************************************************/
+/**
+ * @brief Returns an absolute path to a file in the Samba pid directory.
+ *
+ * @param name File to find, relative to PIDDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
 
 char *pid_path(const char *name)
 {
@@ -2313,13 +2328,30 @@ char *data_path(const char *name)
 	return talloc_asprintf(talloc_tos(), "%s/%s", get_dyn_CODEPAGEDIR(), name);
 }
 
-/*****************************************************************
-a useful function for returning a path in the Samba state directory
- *****************************************************************/
+/**
+ * @brief Returns an absolute path to a file in the Samba state directory.
+ *
+ * @param name File to find, relative to STATEDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
 
 char *state_path(const char *name)
 {
-	return xx_path(name, get_dyn_STATEDIR());
+	return xx_path(name, lp_statedir());
+}
+
+/**
+ * @brief Returns an absolute path to a file in the Samba cache directory.
+ *
+ * @param name File to find, relative to CACHEDIR.
+ *
+ * @retval Pointer to a talloc'ed string containing the full path.
+ **/
+
+char *cache_path(const char *name)
+{
+	return xx_path(name, lp_cachedir());
 }
 
 /**

@@ -66,6 +66,26 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 		ret = 1;
 	}
 
+	if (!directory_exist_stat(lp_statedir(), &st)) {
+		fprintf(stderr, "ERROR: state directory %s does not exist\n",
+		       lp_statedir());
+		ret = 1;
+	} else if ((st.st_mode & 0777) != 0755) {
+		fprintf(stderr, "WARNING: state directory %s should have permissions 0755 for browsing to work\n",
+		       lp_statedir());
+		ret = 1;
+	}
+
+	if (!directory_exist_stat(lp_cachedir(), &st)) {
+		fprintf(stderr, "ERROR: cache directory %s does not exist\n",
+		       lp_cachedir());
+		ret = 1;
+	} else if ((st.st_mode & 0777) != 0755) {
+		fprintf(stderr, "WARNING: cache directory %s should have permissions 0755 for browsing to work\n",
+		       lp_cachedir());
+		ret = 1;
+	}
+
 	if (!directory_exist_stat(lp_piddir(), &st)) {
 		fprintf(stderr, "ERROR: pid directory %s does not exist\n",
 		       lp_piddir());

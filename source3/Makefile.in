@@ -147,7 +147,7 @@ LOCALEDIR= @localedir@
 # the directory where lock files go
 LOCKDIR = @lockdir@
 
-# FHS directories; equal to LOCKDIR if not using --with-fhs
+# FHS directories; equal to LOCKDIR if not using --with-fhs, but also settable
 CACHEDIR = @cachedir@
 STATEDIR = @statedir@
 
@@ -2641,7 +2641,10 @@ install-everything:: install installmodules
 # is not used
 
 installdirs::
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR) $(LOCALEDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) \
+		$(DESTDIR) $(prefix) $(BINDIR) $(SBINDIR) $(LIBDIR) \
+		$(VARDIR) $(PRIVATEDIR) $(PIDDIR) $(LOCKDIR) $(STATEDIR) \
+		$(CACHEDIR) $(MANDIR) $(CODEPAGEDIR) $(MODULESDIR) $(LOCALEDIR)
 
 installservers:: all installdirs
 	@$(SHELL) script/installbin.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(SBINDIR) $(SBIN_PROGS)
@@ -2724,6 +2727,8 @@ showlayout::
 	@echo "  privatedir:  $(PRIVATE_DIR)"
 	@echo "  configdir:   $(CONFIGDIR)"
 	@echo "  lockdir:     $(LOCKDIR)"
+	@echo "  statedir:    $(STATEDIR)"
+	@echo "  cachedir:    $(CACHEDIR)"
 	@echo "  piddir:      $(PIDDIR)"
 	@echo "  swatdir:     $(SWATDIR)"
 	@echo "  codepagedir: $(CODEPAGEDIR)"

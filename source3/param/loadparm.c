@@ -119,6 +119,8 @@ struct global {
 	char *szDeletePrinterCommand;
 	char *szOs2DriverMap;
 	char *szLockDir;
+	char *szStateDir;
+	char *szCacheDir;
 	char *szPidDir;
 	char *szRootdir;
 	char *szDefaultService;
@@ -3728,6 +3730,24 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_HIDE,
 	},
 	{
+		.label		= "state directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.szStateDir,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "cache directory",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.szCacheDir,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "pid directory",
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
@@ -4747,8 +4767,10 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szWorkgroup, lp_workgroup());
 
 	string_set(&Globals.szPasswdProgram, "");
-	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
 	string_set(&Globals.szLockDir, get_dyn_LOCKDIR());
+	string_set(&Globals.szStateDir, get_dyn_STATEDIR());
+	string_set(&Globals.szCacheDir, get_dyn_CACHEDIR());
+	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 
 	if (asprintf(&s, "Samba %s", SAMBA_VERSION_STRING) < 0) {
@@ -5027,8 +5049,8 @@ static char *lp_string(const char *s)
 }
 
 /*
-   In this section all the functions that are used to access the 
-   parameters from the rest of the program are defined 
+   In this section all the functions that are used to access the
+   parameters from the rest of the program are defined
 */
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
@@ -5080,6 +5102,27 @@ FN_GLOBAL_STRING(lp_addprinter_cmd, &Globals.szAddPrinterCommand)
 FN_GLOBAL_STRING(lp_deleteprinter_cmd, &Globals.szDeletePrinterCommand)
 FN_GLOBAL_STRING(lp_os2_driver_map, &Globals.szOs2DriverMap)
 FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
+/* If lp_statedir() and lp_cachedir() are explicitely set during the
+ * build process or in smb.conf, we use that value.  Otherwise they
+ * default to the value of lp_lockdir(). */
+char *lp_statedir(void) {
+	if ((strcmp(get_dyn_STATEDIR(), get_dyn_LOCKDIR()) != 0) ||
+	    (strcmp(get_dyn_STATEDIR(), Globals.szStateDir) != 0))
+		return(lp_string(*(char **)(&Globals.szStateDir) ?
+		    *(char **)(&Globals.szStateDir) : ""));
+	else
+		return(lp_string(*(char **)(&Globals.szLockDir) ?
+		    *(char **)(&Globals.szLockDir) : ""));
+}
+char *lp_cachedir(void) {
+	if ((strcmp(get_dyn_CACHEDIR(), get_dyn_LOCKDIR()) != 0) ||
+	    (strcmp(get_dyn_CACHEDIR(), Globals.szCacheDir) != 0))
+		return(lp_string(*(char **)(&Globals.szCacheDir) ?
+		    *(char **)(&Globals.szCacheDir) : ""));
+	else
+		return(lp_string(*(char **)(&Globals.szLockDir) ?
+		    *(char **)(&Globals.szLockDir) : ""));
+}
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)

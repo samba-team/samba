@@ -67,6 +67,14 @@ const char *get_dyn_LOCKDIR(void);
 const char *set_dyn_LOCKDIR(const char *newpath);
 bool is_default_dyn_LOCKDIR(void);
 
+const char *get_dyn_STATEDIR(void);
+const char *set_dyn_STATEDIR(const char *newpath);
+bool is_default_dyn_STATEDIR(void);
+
+const char *get_dyn_CACHEDIR(void);
+const char *set_dyn_CACHEDIR(const char *newpath);
+bool is_default_dyn_CACHEDIR(void);
+
 const char *get_dyn_PIDDIR(void);
 const char *set_dyn_PIDDIR(const char *newpath);
 bool is_default_dyn_PIDDIR(void);
@@ -82,12 +90,3 @@ bool is_default_dyn_SMB_PASSWD_FILE(void);
 const char *get_dyn_PRIVATE_DIR(void);
 const char *set_dyn_PRIVATE_DIR(const char *newpath);
 bool is_default_dyn_PRIVATE_DIR(void);
-
-/*
- * For STATEDIR and CACHEDIR, there are only getter functions.
- * In non-FHS-mode, these are configurable via LOCKDIR.
- * In FHS-mode, these are their own fixed directories.
- */
-const char *get_dyn_STATEDIR(void);
-
-const char *get_dyn_CACHEDIR(void);

@@ -102,6 +102,38 @@ AC_ARG_WITH(lockdir,
   esac])
 
 #################################################
+# set state directory location
+AC_ARG_WITH(statedir,
+[AS_HELP_STRING([--with-statedir=DIR], [Where to put persistent state files ($ac_default_prefix/var/locks)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-statedir called without argument - will use default])
+  ;;
+  * )
+    statedir="$withval"
+    ;;
+  esac])
+
+#################################################
+# set cache directory location
+AC_ARG_WITH(cachedir,
+[AS_HELP_STRING([--with-cachedir=DIR], [Where to put temporary cache files ($ac_default_prefix/var/locks)])],
+[ case "$withval" in
+  yes|no)
+  #
+  # Just in case anybody calls it without argument
+  #
+    AC_MSG_WARN([--with-cachedir called without argument - will use default])
+  ;;
+  * )
+    cachedir="$withval"
+    ;;
+  esac])
+
+#################################################
 # set pid directory location
 AC_ARG_WITH(piddir,
 [AS_HELP_STRING([--with-piddir=DIR], [Where to put pid files ($ac_default_prefix/var/locks)])],

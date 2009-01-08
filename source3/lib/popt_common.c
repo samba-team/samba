@@ -187,6 +187,8 @@ struct poptOption popt_common_debuglevel[] = {
  *		--modulesdir
  *		--shlibext
  *		--lockdir
+ *		--statedir
+ *		--cachedir
  *		--piddir
  *		--smb-passwd-file
  *		--private-dir
@@ -201,6 +203,8 @@ enum dyn_item{
 	DYN_MODULESDIR,
 	DYN_SHLIBEXT,
 	DYN_LOCKDIR,
+	DYN_STATEDIR,
+	DYN_CACHEDIR,
 	DYN_PIDDIR,
 	DYN_SMB_PASSWD_FILE,
 	DYN_PRIVATE_DIR,
@@ -262,6 +266,18 @@ static void popt_dynconfig_callback(poptContext con,
 		}
 		break;
 
+	case DYN_STATEDIR:
+		if (arg) {
+			set_dyn_STATEDIR(arg);
+		}
+		break;
+
+	case DYN_CACHEDIR:
+		if (arg) {
+			set_dyn_CACHEDIR(arg);
+		}
+		break;
+
 	case DYN_PIDDIR:
 		if (arg) {
 			set_dyn_PIDDIR(arg);
@@ -303,6 +319,10 @@ const struct poptOption popt_common_dynconfig[] = {
 	    "Shared library extension", "SHLIBEXT" },
 	{ "lockdir", '\0' , POPT_ARG_STRING, NULL, DYN_LOCKDIR,
 	    "Path to lock file directory", "LOCKDIR" },
+	{ "statedir", '\0' , POPT_ARG_STRING, NULL, DYN_STATEDIR,
+	    "Path to persistent state file directory", "STATEDIR" },
+	{ "cachedir", '\0' , POPT_ARG_STRING, NULL, DYN_CACHEDIR,
+	    "Path to temporary cache file directory", "CACHEDIR" },
 	{ "piddir", '\0' , POPT_ARG_STRING, NULL, DYN_PIDDIR,
 	    "Path to PID file directory", "PIDDIR" },
 	{ "smb-passwd-file", '\0' , POPT_ARG_STRING, NULL, DYN_SMB_PASSWD_FILE,
