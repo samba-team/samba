@@ -705,9 +705,11 @@ NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
 }
 
 /********************************************************************
+ _eventlog_CloseEventLog
  ********************************************************************/
 
-NTSTATUS _eventlog_CloseEventLog( pipes_struct * p, struct eventlog_CloseEventLog *r )
+NTSTATUS _eventlog_CloseEventLog(pipes_struct * p,
+				 struct eventlog_CloseEventLog *r)
 {
 	return elog_close( p, r->in.handle );
 }
