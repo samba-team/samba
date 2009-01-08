@@ -61,7 +61,7 @@ testit () {
 	if [ x$status = x0 ]; then
 		subunit_pass_test "$name"
 	else
-		echo $output | subunit_fail_test "$name"
+		echo "$output" | subunit_fail_test "$name"
 	fi
 	return $status
 }
