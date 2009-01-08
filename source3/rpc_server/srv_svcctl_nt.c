@@ -6,7 +6,7 @@
  *
  *  Largely Rewritten (Again) by:
  *  Copyright (C) Gerald (Jerry) Carter             2005.
- *  Copyright (C) Guenther Deschner                 2008.
+ *  Copyright (C) Guenther Deschner                 2008,2009.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -257,6 +257,7 @@ done:
 }
 
 /********************************************************************
+ _svcctl_OpenSCManagerW
 ********************************************************************/
 
 WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
@@ -319,9 +320,11 @@ WERROR _svcctl_OpenServiceW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_CloseServiceHandle
 ********************************************************************/
 
-WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHandle *r)
+WERROR _svcctl_CloseServiceHandle(pipes_struct *p,
+				  struct svcctl_CloseServiceHandle *r)
 {
 	if ( !close_policy_hnd( p, r->in.handle ) )
 		return  WERR_BADFID;
