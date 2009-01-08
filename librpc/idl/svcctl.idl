@@ -71,10 +71,6 @@ import "misc.idl", "security.idl";
 	const int SERVICE_TYPE_WIN32_SHARE_PROCESS = 0x20;
 	const int SERVICE_TYPE_WIN32=SERVICE_TYPE_WIN32_OWN_PROCESS|SERVICE_TYPE_WIN32_SHARE_PROCESS;
 
-	const int SERVICE_STATE_ACTIVE   = 0x01;
-	const int SERVICE_STATE_INACTIVE = 0x02;
-	const int SERVICE_STATE_ALL      = 0x03;
-
 	typedef [public,bitmap32bit] bitmap {
 		SV_TYPE_WORKSTATION       = 0x00000001,
 		SV_TYPE_SERVER            = 0x00000002,
@@ -266,9 +262,9 @@ import "misc.idl", "security.idl";
 	/* Function 0x0e */
 
 	typedef [v1_enum] enum {
-		SVCCTL_STATE_ACTIVE	= 0x00000001,
-		SVCCTL_STATE_INACTIVE	= 0x00000002,
-		SVCCTL_STATE_ALL	= ( SVCCTL_STATE_ACTIVE | SVCCTL_STATE_INACTIVE )
+		SERVICE_STATE_ACTIVE	= 0x00000001,
+		SERVICE_STATE_INACTIVE	= 0x00000002,
+		SERVICE_STATE_ALL	= ( SERVICE_STATE_ACTIVE | SERVICE_STATE_INACTIVE )
 	} svcctl_ServiceState;
 
 	WERROR svcctl_EnumServicesStatusW(
