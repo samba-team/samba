@@ -164,6 +164,7 @@ cat >$SAMBA4CONFFILE<<EOF
 	interfaces = $TORTURE_INTERFACES
 	panic action = $SCRIPTDIR/gdb_backtrace %PID% %PROG%
 	include = $COMMONCONFFILE
+	modules dir = $SRCDIR/bin/modules
 EOF
 
 cat >$SERVERCONFFILE<<EOF
