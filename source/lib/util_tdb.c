@@ -86,7 +86,7 @@ static int tdb_chainlock_with_timeout_internal( TDB_CONTEXT *tdb, TDB_DATA key, 
 		alarm(0);
 		tdb_setalarm_sigptr(tdb, NULL);
 		CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
-		if (gotalarm) {
+		if (gotalarm && (ret == -1)) {
 			DEBUG(0,("tdb_chainlock_with_timeout_internal: alarm (%u) timed out for key %s in tdb %s\n",
 				timeout, key.dptr, tdb_name(tdb)));
 			/* TODO: If we time out waiting for a lock, it might
