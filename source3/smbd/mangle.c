@@ -18,8 +18,7 @@
 */
 
 #include "includes.h"
-
-static const struct mangle_fns *mangle_fns;
+#include "smbd/globals.h"
 
 /* this allows us to add more mangling backends */
 static const struct {

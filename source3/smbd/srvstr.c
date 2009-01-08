@@ -19,7 +19,7 @@
 */
 
 #include "includes.h"
-extern int max_send;
+#include "smbd/globals.h"
 
 /* Make sure we can't write a string past the end of the buffer */
 

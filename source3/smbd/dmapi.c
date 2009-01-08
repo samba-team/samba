@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_DMAPI

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /******************************************************************************
  Server side encryption.
@@ -31,9 +32,6 @@ struct smb_srv_trans_enc_ctx {
 	struct smb_trans_enc_state *es;
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state; /* Must be kept in sync with pointer in ec->ntlmssp_state. */
 };
-
-static struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx;
-static struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx;
 
 /******************************************************************************
  Return global enc context - this must change if we ever do multiple contexts.

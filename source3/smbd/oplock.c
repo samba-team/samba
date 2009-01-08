@@ -21,15 +21,7 @@
 
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
-
-/* Current number of oplocks we have outstanding. */
-static int32 exclusive_oplocks_open = 0;
-static int32 level_II_oplocks_open = 0;
-bool global_client_failed_oplock_break = False;
-
-extern uint32 global_client_caps;
-
-static struct kernel_oplocks *koplocks;
+#include "smbd/globals.h"
 
 /****************************************************************************
  Get the number of current exclusive oplocks.

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 extern userdom_struct current_user_info;
 
@@ -167,8 +168,6 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 
 bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 {
-	static connection_struct *last_conn;
-	static uint16 last_flags;
 	int snum;
 
 	if (!conn)  {

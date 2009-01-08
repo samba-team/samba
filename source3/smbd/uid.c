@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -348,16 +349,6 @@ bool unbecome_authenticated_pipe_user(void)
 /****************************************************************************
  Utility functions used by become_xxx/unbecome_xxx.
 ****************************************************************************/
-
-struct conn_ctx {
-	connection_struct *conn;
-	uint16 vuid;
-};
-
-/* A stack of current_user connection contexts. */
-
-static struct conn_ctx conn_ctx_stack[MAX_SEC_CTX_DEPTH];
-static int conn_ctx_stack_ndx;
 
 static void push_conn_ctx(void)
 {

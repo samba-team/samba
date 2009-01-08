@@ -51,6 +51,7 @@
 
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #if 1
 #define M_DEBUG(level, x) DEBUG(level, x)
@@ -81,21 +82,10 @@
 /*the following number is a fnv1 of the string: idra@samba.org 2002 */
 #define FNV1_INIT  0xa6b93095
 
-/* these tables are used to provide fast tests for characters */
-static unsigned char char_flags[256];
-
 #define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
-
-/*
-  this determines how many characters are used from the original filename
-  in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
-  The largest possible value is 6.
-*/
-static unsigned mangle_prefix;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
 static const char * const basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static unsigned char base_reverse[256];
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */

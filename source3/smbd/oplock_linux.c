@@ -19,12 +19,9 @@
 
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
+#include "smbd/globals.h"
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
-
-static SIG_ATOMIC_T signals_received;
-#define FD_PENDING_SIZE 100
-static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 
 #ifndef F_SETLEASE
 #define F_SETLEASE	1024
@@ -52,9 +49,9 @@ static SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
 
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	if (signals_received < FD_PENDING_SIZE - 1) {
-		fd_pending_array[signals_received] = (SIG_ATOMIC_T)info->si_fd;
-		signals_received++;
+	if (oplock_signals_received < FD_PENDING_SIZE - 1) {
+		fd_pending_array[oplock_signals_received] = (SIG_ATOMIC_T)info->si_fd;
+		oplock_signals_received++;
 	} /* Else signal is lost. */
 	sys_select_signal(RT_SIGNAL_LEASE);
 }
@@ -113,11 +110,11 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 	fd = fd_pending_array[0];
 	fsp = file_find_fd(fd);
 	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
-	if (signals_received > 1)
+	if (oplock_signals_received > 1)
                 memmove(CONST_DISCARD(void *, &fd_pending_array[0]),
                         CONST_DISCARD(void *, &fd_pending_array[1]),
-			sizeof(SIG_ATOMIC_T)*(signals_received-1));
-	signals_received--;
+			sizeof(SIG_ATOMIC_T)*(oplock_signals_received-1));
+	oplock_signals_received--;
 	/* now we can receive more signals */
 	BlockSignals(False, RT_SIGNAL_LEASE);
 
@@ -186,7 +183,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 
 static bool linux_oplock_msg_waiting(fd_set *fds)
 {
-	return signals_received != 0;
+	return oplock_signals_received != 0;
 }
 
 /****************************************************************************
@@ -210,7 +207,6 @@ static bool linux_oplocks_available(void)
 
 struct kernel_oplocks *linux_init_kernel_oplocks(void) 
 {
-	static struct kernel_oplocks koplocks;
         struct sigaction act;
 
 	if (!linux_oplocks_available()) {
@@ -229,18 +225,18 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 		return NULL;
 	}
 
-	koplocks.receive_message = linux_oplock_receive_message;
-	koplocks.set_oplock = linux_set_kernel_oplock;
-	koplocks.release_oplock = linux_release_kernel_oplock;
-	koplocks.msg_waiting = linux_oplock_msg_waiting;
-	koplocks.notification_fd = -1;
+	linux_koplocks.receive_message = linux_oplock_receive_message;
+	linux_koplocks.set_oplock = linux_set_kernel_oplock;
+	linux_koplocks.release_oplock = linux_release_kernel_oplock;
+	linux_koplocks.msg_waiting = linux_oplock_msg_waiting;
+	linux_koplocks.notification_fd = -1;
 
 	/* the signal can start off blocked due to a bug in bash */
 	BlockSignals(False, RT_SIGNAL_LEASE);
 
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 
-	return &koplocks;
+	return &linux_koplocks;
 }
 #else
  void oplock_linux_dummy(void);

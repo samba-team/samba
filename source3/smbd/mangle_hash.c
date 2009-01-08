@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /* -------------------------------------------------------------------------- **
  * Other stuff...
@@ -55,13 +56,9 @@
 static const char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
-static unsigned char *chartest;
-
 #define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
 #define isbasechar(C) ( (chartest[ ((C) & 0xff) ]) & BASECHAR_MASK )
-
-static TDB_CONTEXT *tdb_mangled_cache;
 
 /* -------------------------------------------------------------------- */
 

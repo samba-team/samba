@@ -22,27 +22,13 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 static_decl_rpc;
-
-static int am_parent = 1;
-
-extern struct auth_context *negprot_global_auth_context;
-extern SIG_ATOMIC_T got_sig_term;
-extern SIG_ATOMIC_T reload_after_sighup;
-static SIG_ATOMIC_T got_sig_cld;
 
 #ifdef WITH_DFS
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
-
-/* really we should have a top level context structure that has the
-   client file descriptor as an element. That would require a major rewrite :(
-
-   the following 2 functions are an alternative - they make the file
-   descriptor private to smbd
- */
-static int server_fd = -1;
 
 int smbd_server_fd(void)
 {
@@ -81,39 +67,39 @@ static int client_get_tcp_info(struct sockaddr_storage *server,
 
 struct event_context *smbd_event_context(void)
 {
-	static struct event_context *ctx;
-
-	if (!ctx && !(ctx = event_context_init(talloc_autofree_context()))) {
+	if (!smbd_event_ctx) {
+		smbd_event_ctx = event_context_init(talloc_autofree_context());
+	}
+	if (!smbd_event_ctx) {
 		smb_panic("Could not init smbd event context");
 	}
-	return ctx;
+	return smbd_event_ctx;
 }
 
 struct messaging_context *smbd_messaging_context(void)
 {
-	static struct messaging_context *ctx;
-
-	if (ctx == NULL) {
-		ctx = messaging_init(talloc_autofree_context(), server_id_self(),
-				     smbd_event_context());
+	if (smbd_msg_ctx == NULL) {
+		smbd_msg_ctx = messaging_init(talloc_autofree_context(),
+					      server_id_self(),
+					      smbd_event_context());
 	}
-	if (ctx == NULL) {
+	if (smbd_msg_ctx == NULL) {
 		DEBUG(0, ("Could not init smbd messaging context.\n"));
 	}
-	return ctx;
+	return smbd_msg_ctx;
 }
 
 struct memcache *smbd_memcache(void)
 {
-	static struct memcache *cache;
-
-	if (!cache
-	    && !(cache = memcache_init(talloc_autofree_context(),
-				       lp_max_stat_cache_size()*1024))) {
-
+	if (!smbd_memcache_ctx) {
+		smbd_memcache_ctx = memcache_init(talloc_autofree_context(),
+						  lp_max_stat_cache_size()*1024);
+	}
+	if (!smbd_memcache_ctx) {
 		smb_panic("Could not init smbd memcache");
 	}
-	return cache;
+
+	return smbd_memcache_ctx;
 }
 
 /*******************************************************************
@@ -268,9 +254,6 @@ struct child_pid {
 	struct child_pid *prev, *next;
 	pid_t pid;
 };
-
-static struct child_pid *children;
-static int num_children;
 
 static void add_child_pid(pid_t pid)
 {
@@ -891,12 +874,11 @@ static void exit_server_common(enum server_exit_reason how,
 static void exit_server_common(enum server_exit_reason how,
 	const char *const reason)
 {
-	static int firsttime=1;
 	bool had_open_conn;
 
-	if (!firsttime)
+	if (!exit_firsttime)
 		exit(0);
-	firsttime = 0;
+	exit_firsttime = false;
 
 	change_to_root_user();
 
@@ -1135,6 +1117,8 @@ extern void build_options(bool screen);
 	POPT_TABLEEND
 	};
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
+
+	smbd_init_globals();
 
 	TimeInit();
 

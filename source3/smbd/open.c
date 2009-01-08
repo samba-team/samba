@@ -20,10 +20,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 extern const struct generic_mapping file_generic_mapping;
-extern bool global_client_failed_oplock_break;
-extern uint32 global_client_caps;
 
 struct deferred_open_record {
 	bool delayed_for_oplocks;

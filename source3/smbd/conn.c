@@ -19,18 +19,13 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /* The connections bitmap is expanded in increments of BITMAP_BLOCK_SZ. The
  * maximum size of the bitmap is the largest positive integer, but you will hit
  * the "max connections" limit, looong before that.
  */
 #define BITMAP_BLOCK_SZ 128
-
-static connection_struct *Connections;
-
-/* number of open connections */
-static struct bitmap *bmap;
-static int num_open;
 
 /****************************************************************************
 init the conn structures

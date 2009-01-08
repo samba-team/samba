@@ -18,24 +18,11 @@
 */
 
 #include "includes.h"
-
-static int real_max_open_files;
+#include "smbd/globals.h"
 
 #define VALID_FNUM(fnum)   (((fnum) >= 0) && ((fnum) < real_max_open_files))
 
 #define FILE_HANDLE_OFFSET 0x1000
-
-static struct bitmap *file_bmap;
-
-static files_struct *Files;
-
-static int files_used;
-
-/* A singleton cache to speed up searching by dev/inode. */
-static struct fsp_singleton_cache {
-	files_struct *fsp;
-	struct file_id id;
-} fsp_fi_cache;
 
 /****************************************************************************
  Return a unique number identifying this fsp over the life of this pid.
@@ -43,8 +30,6 @@ static struct fsp_singleton_cache {
 
 static unsigned long get_gen_count(void)
 {
-	static unsigned long file_gen_counter;
-
 	if ((++file_gen_counter) == 0)
 		return ++file_gen_counter;
 	return file_gen_counter;
@@ -58,7 +43,6 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result)
 {
 	int i;
-	static int first_file;
 	files_struct *fsp;
 
 	/* we want to give out file handles differently on each new

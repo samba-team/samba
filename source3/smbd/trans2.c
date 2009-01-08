@@ -24,10 +24,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-extern int max_send;
 extern enum protocol_types Protocol;
-extern uint32 global_client_caps;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
@@ -7220,7 +7219,6 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 				       char **ppdata, int total_data,
 				       unsigned int max_data_bytes)
 {
-	static uint16 fnf_handle = 257;
 	char *params = *pparams;
 	uint16 info_level;
 

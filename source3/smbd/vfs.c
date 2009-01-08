@@ -23,6 +23,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -34,8 +35,6 @@ struct vfs_init_function_entry {
 	const vfs_op_tuple *vfs_op_tuples;
 	struct vfs_init_function_entry *prev, *next;
 };
-
-static struct vfs_init_function_entry *backends = NULL;
 
 /****************************************************************************
     maintain the list of available backends
@@ -597,7 +596,6 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
  Returns 0 on success, -1 on failure.
 ****************************************************************************/
 
-static char *sparse_buf;
 #define SPARSE_BUF_WRITE_SIZE (32*1024)
 
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
@@ -718,7 +716,6 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 int vfs_ChDir(connection_struct *conn, const char *path)
 {
 	int res;
-	static char *LastDir = NULL;
 
 	if (!LastDir) {
 		LastDir = SMB_STRDUP("");

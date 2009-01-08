@@ -25,13 +25,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-/* look in server.c for some explanation of these variables */
 extern enum protocol_types Protocol;
-extern int max_recv;
-extern uint32 global_client_caps;
-
-extern bool global_encrypted_passwords_negotiated;
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -423,8 +419,6 @@ void reply_special(char *inbuf)
 	 * header.
 	 */
 	char outbuf[smb_size];
-
-	static bool already_got_session = False;
 
 	*name1 = *name2 = 0;
 

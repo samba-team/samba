@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 static bool setup_write_cache(files_struct *, SMB_OFF_T);
 
@@ -108,9 +109,6 @@ tryagain:
 
 	return(ret);
 }
-
-/* how many write cache buffers have been allocated */
-static unsigned int allocated_write_caches;
 
 /****************************************************************************
  *Really* write to a file.
