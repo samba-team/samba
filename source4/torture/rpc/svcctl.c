@@ -157,6 +157,24 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 		torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfig2W failed!");
 	}
 
+	r.in.info_level = SERVICE_CONFIG_FAILURE_ACTIONS;
+	r.in.buf_size = buf_size;
+	r.out.buffer = buffer;
+	r.out.bytes_needed = &bytes_needed;
+
+	status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
+
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		r.in.buf_size = bytes_needed;
+		buffer = talloc_array(tctx, uint8_t, bytes_needed);
+		r.out.buffer = buffer;
+
+		status = dcerpc_svcctl_QueryServiceConfig2W(p, tctx, &r);
+		torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfig2W failed!");
+		torture_assert_werr_ok(tctx, r.out.result, "QueryServiceConfig2W failed!");
+	}
+
 	if (!test_CloseServiceHandle(p, tctx, &s))
 		return false;
 
