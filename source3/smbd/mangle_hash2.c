@@ -679,7 +679,7 @@ static void init_tables(void)
 /*
   the following provides the abstraction layer to make it easier
   to drop in an alternative mangling implementation */
-static struct mangle_fns mangle_fns = {
+static const struct mangle_fns mangle_hash2_fns = {
 	mangle_reset,
 	is_mangled,
 	must_mangle,
@@ -689,7 +689,7 @@ static struct mangle_fns mangle_fns = {
 };
 
 /* return the methods for this mangling implementation */
-struct mangle_fns *mangle_hash2_init(void)
+const struct mangle_fns *mangle_hash2_init(void)
 {
 	/* the mangle prefix can only be in the mange 1 to 6 */
 	mangle_prefix = lp_mangle_prefix();
@@ -703,7 +703,7 @@ struct mangle_fns *mangle_hash2_init(void)
 	init_tables();
 	mangle_reset();
 
-	return &mangle_fns;
+	return &mangle_hash2_fns;
 }
 
 static void posix_mangle_reset(void)
@@ -746,7 +746,7 @@ static bool posix_name_to_8_3(const char *in,
 }
 
 /* POSIX paths backend - no mangle. */
-static struct mangle_fns posix_mangle_fns = {
+static const struct mangle_fns posix_mangle_fns = {
 	posix_mangle_reset,
 	posix_is_mangled,
 	posix_must_mangle,
@@ -755,7 +755,7 @@ static struct mangle_fns posix_mangle_fns = {
 	posix_name_to_8_3
 };
 
-struct mangle_fns *posix_mangle_init(void)
+const struct mangle_fns *posix_mangle_init(void)
 {
 	return &posix_mangle_fns;
 }

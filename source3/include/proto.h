@@ -6814,12 +6814,12 @@ bool name_to_8_3(const char *in,
 
 /* The following definitions come from smbd/mangle_hash.c  */
 
-struct mangle_fns *mangle_hash_init(void);
+const struct mangle_fns *mangle_hash_init(void);
 
 /* The following definitions come from smbd/mangle_hash2.c  */
 
-struct mangle_fns *mangle_hash2_init(void);
-struct mangle_fns *posix_mangle_init(void);
+const struct mangle_fns *mangle_hash2_init(void);
+const struct mangle_fns *posix_mangle_init(void);
 
 /* The following definitions come from smbd/map_username.c  */
 

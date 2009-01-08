@@ -673,7 +673,7 @@ static bool hash_name_to_8_3(const char *in,
   the following provides the abstraction layer to make it easier
   to drop in an alternative mangling implementation
 */
-static struct mangle_fns mangle_fns = {
+static const struct mangle_fns mangle_hash_fns = {
 	mangle_reset,
 	is_mangled,
 	must_mangle,
@@ -683,7 +683,7 @@ static struct mangle_fns mangle_fns = {
 };
 
 /* return the methods for this mangling implementation */
-struct mangle_fns *mangle_hash_init(void)
+const struct mangle_fns *mangle_hash_init(void)
 {
 	mangle_reset();
 
@@ -691,5 +691,5 @@ struct mangle_fns *mangle_hash_init(void)
 	tdb_mangled_cache = tdb_open_ex("mangled_cache", 1031, TDB_INTERNAL,
 				(O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
 
-	return &mangle_fns;
+	return &mangle_hash_fns;
 }
