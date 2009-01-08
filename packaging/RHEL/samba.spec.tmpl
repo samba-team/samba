@@ -222,8 +222,7 @@ install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss
 # Samba 3.2.2 installs them into /usr/lib{,64}/samba/ .
 # This step will become unnecessary in 3.3.0.
 #
-for library in libsmbclient libsmbsharemodes libwbclient libtalloc libtdb
-libnetapi
+for library in libsmbclient libsmbsharemodes libwbclient libtalloc libtdb libnetapi
 do
 	mv -f ${RPM_BUILD_ROOT}%{_libarchdir}/samba/${library}.* \
 		${RPM_BUILD_ROOT}%{_libarchdir}/
