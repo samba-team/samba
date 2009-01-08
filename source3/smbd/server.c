@@ -360,13 +360,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	}
 
 #ifdef HAVE_ATEXIT
-	{
-		static int atexit_set;
-		if(atexit_set == 0) {
-			atexit_set=1;
-			atexit(killkids);
-		}
-	}
+	atexit(killkids);
 #endif
 
 	/* Stop zombies */
