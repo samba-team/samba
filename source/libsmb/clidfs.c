@@ -306,10 +306,11 @@ static void cli_cm_set_mntpoint(struct cli_state *c, const char *mnt)
 	}
 
 	if (p) {
-		char *name = clean_name(NULL, p->mount);
+		char *name = clean_name(NULL, mnt);
 		if (!name) {
 			return;
 		}
+		TALLOC_FREE(p->mount);
 		p->mount = talloc_strdup(p, name);
 		TALLOC_FREE(name);
 	}
