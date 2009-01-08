@@ -225,7 +225,7 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 	}
 
 	result = rpccli_svcctl_enumerate_services(pipe_hnd, mem_ctx, &hSCM, SERVICE_TYPE_WIN32,
-		SVCCTL_STATE_ALL, &num_services, &services );
+		SERVICE_STATE_ALL, &num_services, &services );
 
 	if ( !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Failed to enumerate services.  [%s]\n", win_errstr(result));
