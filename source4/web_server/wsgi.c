@@ -25,7 +25,11 @@
 #include "../lib/util/dlinklist.h"
 #include "../lib/util/data_blob.h"
 #include "lib/tls/tls.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 typedef struct {
 	PyObject_HEAD

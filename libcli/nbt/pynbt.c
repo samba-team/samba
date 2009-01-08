@@ -18,11 +18,15 @@
 */
 
 #include "includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "scripting/python/modules.h"
 #include "../libcli/nbt/libnbt.h"
 #include "lib/events/events.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 PyAPI_DATA(PyTypeObject) nbt_node_Type;
 

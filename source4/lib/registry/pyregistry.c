@@ -18,13 +18,17 @@
 */
 
 #include "includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */
 #include <pytalloc.h>
 #include <tevent.h>
 #include "param/pyparam.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 

@@ -16,7 +16,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "../lib/util/python_util.h"
+#include <Python.h>
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
+
 #include <tevent.h>
 #include <stdbool.h>
 #include <tevent_util.h>

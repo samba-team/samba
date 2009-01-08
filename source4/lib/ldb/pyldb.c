@@ -26,7 +26,7 @@
 */
 
 #include "ldb_includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "pyldb.h"
 
 /* There's no Py_ssize_t in 2.4, apparently */
@@ -34,6 +34,10 @@
 typedef int Py_ssize_t;
 typedef inquiry lenfunc;
 typedef intargfunc ssizeargfunc;
+#endif
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
 /* Picked out of thin air. To do this properly, we should probably have some part of the 

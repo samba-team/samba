@@ -16,8 +16,12 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "libcli/security/security.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 {

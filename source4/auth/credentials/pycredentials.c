@@ -17,13 +17,17 @@
 */
 
 #include "includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "pycredentials.h"
 #include "param/param.h"
 #include "lib/cmdline/credentials.h"
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
 {

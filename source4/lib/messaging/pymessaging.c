@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "scripting/python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc.h"
@@ -29,6 +29,10 @@
 #include "lib/events/events.h"
 #include "cluster/cluster.h"
 #include "param/param.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 PyAPI_DATA(PyTypeObject) messaging_Type;
 PyAPI_DATA(PyTypeObject) irpc_ClientConnectionType;

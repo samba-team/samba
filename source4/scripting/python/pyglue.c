@@ -25,12 +25,16 @@
 #include "lib/ldb-samba/ldif_handlers.h"
 #include "librpc/ndr/libndr.h"
 #include "version.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include "lib/ldb/pyldb.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
 #include "auth/pyauth.h"
 #include "param/pyparam.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 /* FIXME: These should be in a header file somewhere, once we finish moving
  * away from SWIG .. */

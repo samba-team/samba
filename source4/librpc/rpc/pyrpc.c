@@ -18,12 +18,16 @@
 */
 
 #include "includes.h"
-#include "../lib/util/python_util.h"
+#include <Python.h>
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
 #include "librpc/rpc/dcerpc.h"
 #include "lib/events/events.h"
 #include "param/pyparam.h"
+
+#ifndef Py_RETURN_NONE
+#define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
+#endif
 
 static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct PyNdrRpcMethodDef *md, PyObject *args, PyObject *kwargs)
 {
