@@ -445,7 +445,7 @@ struct service {
 	bool bWidelinks;
 	bool bSymlinks;
 	bool bSyncAlways;
-	int iStrictAllocate;
+	bool bStrictAllocate;
 	bool bStrictSync;
 	char magic_char;
 	struct bitmap *copymap;
@@ -588,7 +588,7 @@ static struct service sDefault = {
 	True,			/* bWidelinks */
 	True,			/* bSymlinks */
 	False,			/* bSyncAlways */
-	STRICT_ALLOCATE_OFF,	/* iStrictAllocate */
+	False,			/* bStrictAllocate */
 	False,			/* bStrictSync */
 	'~',			/* magic char */
 	NULL,			/* copymap */
@@ -858,21 +858,6 @@ static const struct enum_list enum_map_to_guest[] = {
 static const struct enum_list enum_config_backend[] = {
 	{CONFIG_BACKEND_FILE, "file"},
 	{CONFIG_BACKEND_REGISTRY, "registry"},
-	{-1, NULL}
-};
-
-static const struct enum_list enum_strict_allocate[] = {
-	{STRICT_ALLOCATE_OFF, "No"},
-	{STRICT_ALLOCATE_OFF, "False"},
-	{STRICT_ALLOCATE_OFF, "0"},
-	{STRICT_ALLOCATE_OFF, "Off"},
-	{STRICT_ALLOCATE_OFF, "disabled"},
-	{STRICT_ALLOCATE_ON, "Yes"},
-	{STRICT_ALLOCATE_ON, "True"},
-	{STRICT_ALLOCATE_ON, "1"},
-	{STRICT_ALLOCATE_ON, "On"},
-	{STRICT_ALLOCATE_ON, "enabled"},
-	{STRICT_ALLOCATE_PARTIAL, "partial"},
 	{-1, NULL}
 };
 
@@ -2409,11 +2394,11 @@ static struct parm_struct parm_table[] = {
 	},
 	{
 		.label		= "strict allocate",
-		.type		= P_ENUM,
+		.type		= P_BOOL,
 		.p_class	= P_LOCAL,
-		.ptr		= &sDefault.iStrictAllocate,
+		.ptr		= &sDefault.bStrictAllocate,
 		.special	= NULL,
-		.enum_list	= enum_strict_allocate,
+		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED | FLAG_SHARE,
 	},
 	{
@@ -5289,7 +5274,7 @@ FN_LOCAL_PARM_BOOL(lp_manglednames, bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks, bWidelinks)
 FN_LOCAL_BOOL(lp_symlinks, bSymlinks)
 FN_LOCAL_BOOL(lp_syncalways, bSyncAlways)
-FN_LOCAL_INTEGER(lp_strict_allocate, iStrictAllocate)
+FN_LOCAL_BOOL(lp_strict_allocate, bStrictAllocate)
 FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
 FN_LOCAL_BOOL(lp_map_system, bMap_system)
 FN_LOCAL_BOOL(lp_delete_readonly, bDeleteReadonly)

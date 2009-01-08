@@ -127,10 +127,9 @@ static ssize_t real_write_file(struct smb_request *req,
         if (pos == -1) {
                 ret = vfs_write_data(req, fsp, data, n);
         } else {
-		enum smb_strict_allocate_options sa_options = lp_strict_allocate(SNUM(fsp->conn));
 		fsp->fh->pos = pos;
-		if (pos && (sa_options != STRICT_ALLOCATE_OFF)) {
-			if (vfs_fill_sparse(fsp, pos, sa_options) == -1) {
+		if (pos && lp_strict_allocate(SNUM(fsp->conn))) {
+			if (vfs_fill_sparse(fsp, pos) == -1) {
 				return -1;
 			}
 		}
