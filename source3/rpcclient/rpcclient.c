@@ -521,6 +521,7 @@ extern struct cmd_set test_commands[];
 extern struct cmd_set wkssvc_commands[];
 extern struct cmd_set ntsvcs_commands[];
 extern struct cmd_set drsuapi_commands[];
+extern struct cmd_set eventlog_commands[];
 
 static struct cmd_set *rpcclient_command_list[] = {
 	rpcclient_commands,
@@ -537,6 +538,7 @@ static struct cmd_set *rpcclient_command_list[] = {
 	wkssvc_commands,
 	ntsvcs_commands,
 	drsuapi_commands,
+	eventlog_commands,
 	NULL
 };
 

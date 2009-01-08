@@ -800,7 +800,7 @@ RPCCLIENT_OBJ1 = rpcclient/rpcclient.o rpcclient/cmd_lsarpc.o \
 		 rpcclient/cmd_dssetup.o rpcclient/cmd_echo.o \
 		 rpcclient/cmd_shutdown.o rpcclient/cmd_test.o \
 		 rpcclient/cmd_wkssvc.o rpcclient/cmd_ntsvcs.o \
-		 rpcclient/cmd_drsuapi.o \
+		 rpcclient/cmd_drsuapi.o rpcclient/cmd_eventlog.o \
 		 $(DISPLAY_SEC_OBJ)
 
 RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
