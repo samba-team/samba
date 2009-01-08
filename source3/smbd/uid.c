@@ -28,13 +28,11 @@ extern struct current_user current_user;
 
 bool change_to_guest(void)
 {
-	static struct passwd *pass=NULL;
+	struct passwd *pass;
 
+	pass = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
 	if (!pass) {
-		/* Don't need to free() this as its stored in a static */
-		pass = getpwnam_alloc(talloc_autofree_context(), lp_guestaccount());
-		if (!pass)
-			return(False);
+		return false;
 	}
 
 #ifdef AIX
@@ -49,9 +47,8 @@ bool change_to_guest(void)
 	current_user.vuid = UID_FIELD_INVALID;
 
 	TALLOC_FREE(pass);
-	pass = NULL;
 
-	return True;
+	return true;
 }
 
 /*******************************************************************
