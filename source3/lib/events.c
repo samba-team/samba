@@ -274,8 +274,49 @@ static bool s3_tevent_init(void)
 	return initialized;
 }
 
+/*
+  this is used to catch debug messages from events
+*/
+static void s3_event_debug(void *context, enum tevent_debug_level level,
+			   const char *fmt, va_list ap)  PRINTF_ATTRIBUTE(3,0);
+
+static void s3_event_debug(void *context, enum tevent_debug_level level,
+			   const char *fmt, va_list ap)
+{
+	int samba_level = -1;
+	char *s = NULL;
+	switch (level) {
+	case TEVENT_DEBUG_FATAL:
+		samba_level = 0;
+		break;
+	case TEVENT_DEBUG_ERROR:
+		samba_level = 1;
+		break;
+	case TEVENT_DEBUG_WARNING:
+		samba_level = 2;
+		break;
+	case TEVENT_DEBUG_TRACE:
+		samba_level = 5;
+		break;
+
+	};
+	vasprintf(&s, fmt, ap);
+	if (!s) return;
+	DEBUG(samba_level, ("s3_event: %s", s));
+	free(s);
+}
+
 struct tevent_context *s3_tevent_context_init(TALLOC_CTX *mem_ctx)
 {
+	struct tevent_context *ev;
+
 	s3_tevent_init();
-	return tevent_context_init_byname(mem_ctx, "s3");
+
+	ev = tevent_context_init_byname(mem_ctx, "s3");
+	if (ev) {
+		tevent_set_debug(ev, s3_event_debug, NULL);
+	}
+
+	return ev;
 }
+
