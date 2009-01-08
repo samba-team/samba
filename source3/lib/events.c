@@ -189,6 +189,9 @@ static int s3_event_loop_once(struct tevent_context *ev)
 	ret = sys_select(maxfd+1, &r_fds, &w_fds, NULL, &to);
 
 	if (ret == -1 && errno != EINTR) {
+		tevent_debug(ev, TEVENT_DEBUG_FATAL,
+			     "sys_select() failed: %d:%s\n",
+			     errno, strerror(errno));
 		return -1;
 	}
 
