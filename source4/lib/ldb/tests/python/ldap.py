@@ -891,7 +891,7 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + self.base_dn + """
         res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
         self.assertEquals(len(res), 1, "Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
 
-        self.assertEquals(res[0].dn, ("CN=ldaptestutf8user èùéìòà,CN=Users," + self.base_dn))
+        self.assertEquals(str(res[0].dn), ("CN=ldaptestutf8user èùéìòà,CN=Users," + self.base_dn))
         self.assertEquals(str(res[0]["cn"]), "ldaptestutf8user èùéìòà")
         self.assertEquals(str(res[0]["name"]), "ldaptestutf8user èùéìòà")
         self.assertEquals(list(res[0]["objectClass"]), ["top", "person", "organizationalPerson", "user"])
