@@ -52,8 +52,6 @@
  *
  */
 
-static char magic_char = '~';
-
 static const char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
@@ -281,6 +279,7 @@ static bool is_8_3(const char *fname, bool check_case, bool allow_wildcards,
 	smb_ucs2_t *ucs2name;
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	size_t size;
+	char magic_char;
 
 	magic_char = lp_magicchar(p);
 
@@ -362,6 +361,7 @@ static void init_chartest( void )
 static bool is_mangled(const char *s, const struct share_params *p)
 {
 	char *magic;
+	char magic_char;
 
 	magic_char = lp_magicchar(p);
 
@@ -468,6 +468,7 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 	TDB_DATA data_val;
 	char *saved_ext = NULL;
 	char *s = talloc_strdup(ctx, in);
+	char magic_char;
 
 	magic_char = lp_magicchar(p);
 
@@ -525,7 +526,7 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
  Do the actual mangling to 8.3 format.
 *****************************************************************************/
 
-static bool to_8_3(const char *in, char out[13], int default_case)
+static bool to_8_3(char magic_char, const char *in, char out[13], int default_case)
 {
 	int csum;
 	char *p;
@@ -604,6 +605,7 @@ static bool must_mangle(const char *name,
 	smb_ucs2_t *name_ucs2 = NULL;
 	NTSTATUS status;
 	size_t converted_size;
+	char magic_char;
 
 	magic_char = lp_magicchar(p);
 
@@ -639,6 +641,7 @@ static bool hash_name_to_8_3(const char *in,
 {
 	smb_ucs2_t *in_ucs2 = NULL;
 	size_t converted_size;
+	char magic_char;
 
 	magic_char = lp_magicchar(p);
 
@@ -659,7 +662,7 @@ static bool hash_name_to_8_3(const char *in,
 	}
 
 	SAFE_FREE(in_ucs2);
-	if (!to_8_3(in, out, default_case)) {
+	if (!to_8_3(magic_char, in, out, default_case)) {
 		return False;
 	}
 
