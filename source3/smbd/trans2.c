@@ -94,7 +94,7 @@ uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const S
 
 static bool samba_private_attr_name(const char *unix_ea_name)
 {
-	static const char *prohibited_ea_names[] = {
+	static const char * const prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,
 		SAMBA_XATTR_DOS_ATTRIB,
 		NULL
