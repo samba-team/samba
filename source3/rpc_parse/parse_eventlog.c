@@ -51,6 +51,70 @@ bool eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u
 
 	return True;
 }
+
+static bool smb_io_eventlog_entry(const char *name, prs_struct *ps, int depth, Eventlog_entry *entry)
+{
+	if(entry == NULL)
+		return False;
+
+	prs_debug(ps, depth, name, "smb_io_eventlog_entry");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!(prs_uint32("length", ps, depth, &(entry->record.length))))
+		return False;
+	if(!(prs_uint32("reserved", ps, depth, &(entry->record.reserved1))))
+		return False;
+	if(!(prs_uint32("record number", ps, depth, &(entry->record.record_number))))
+		return False;
+	if(!(prs_uint32("time generated", ps, depth, &(entry->record.time_generated))))
+		return False;
+	if(!(prs_uint32("time written", ps, depth, &(entry->record.time_written))))
+		return False;
+	if(!(prs_uint32("event id", ps, depth, &(entry->record.event_id))))
+		return False;
+	if(!(prs_uint16("event type", ps, depth, &(entry->record.event_type))))
+		return False;
+	if(!(prs_uint16("num strings", ps, depth, &(entry->record.num_strings))))
+		return False;
+	if(!(prs_uint16("event category", ps, depth, &(entry->record.event_category))))
+		return False;
+	if(!(prs_uint16("reserved2", ps, depth, &(entry->record.reserved2))))
+		return False;
+	if(!(prs_uint32("closing record", ps, depth, &(entry->record.closing_record_number))))
+		return False;
+	if(!(prs_uint32("string offset", ps, depth, &(entry->record.string_offset))))
+		return False;
+	if(!(prs_uint32("user sid length", ps, depth, &(entry->record.user_sid_length))))
+		return False;
+	if(!(prs_uint32("user sid offset", ps, depth, &(entry->record.user_sid_offset))))
+		return False;
+	if(!(prs_uint32("data length", ps, depth, &(entry->record.data_length))))
+		return False;
+	if(!(prs_uint32("data offset", ps, depth, &(entry->record.data_offset))))
+		return False;
+	if(!(prs_align(ps)))
+		return False;
+
+	/* Now encoding data */
+
+	if(!(prs_uint8s(False, "buffer", ps, depth, entry->data,
+		entry->record.length - sizeof(Eventlog_record) - sizeof(entry->record.length))))
+	{
+		return False;
+	}
+
+	if(!(prs_align(ps)))
+		return False;
+
+	if(!(prs_uint32("length 2", ps, depth, &(entry->record.length))))
+			return False;
+
+	return True;
+}
+
 /** Structure of response seems to be:
    DWORD num_bytes_in_resp -- MUST be the same as q_u->max_read_size
    for i=0..n
@@ -110,53 +174,8 @@ bool eventlog_io_r_read_eventlog(const char *desc,
 
 		/* Encode the actual eventlog record record */
 
-		if(!(prs_uint32("length", ps, depth, &(entry->record.length))))
-			return False;
-		if(!(prs_uint32("reserved", ps, depth, &(entry->record.reserved1))))
-			return False;
-		if(!(prs_uint32("record number", ps, depth, &(entry->record.record_number))))
-			return False;
-		if(!(prs_uint32("time generated", ps, depth, &(entry->record.time_generated))))
-			return False;
-		if(!(prs_uint32("time written", ps, depth, &(entry->record.time_written))))
-			return False;
-		if(!(prs_uint32("event id", ps, depth, &(entry->record.event_id))))
-			return False;
-		if(!(prs_uint16("event type", ps, depth, &(entry->record.event_type))))
-			return False;
-		if(!(prs_uint16("num strings", ps, depth, &(entry->record.num_strings))))
-			return False;
-		if(!(prs_uint16("event category", ps, depth, &(entry->record.event_category))))
-			return False;
-		if(!(prs_uint16("reserved2", ps, depth, &(entry->record.reserved2))))
-			return False;
-		if(!(prs_uint32("closing record", ps, depth, &(entry->record.closing_record_number))))
-			return False;
-		if(!(prs_uint32("string offset", ps, depth, &(entry->record.string_offset))))
-			return False;
-		if(!(prs_uint32("user sid length", ps, depth, &(entry->record.user_sid_length))))
-			return False;
-		if(!(prs_uint32("user sid offset", ps, depth, &(entry->record.user_sid_offset))))
-			return False;
-		if(!(prs_uint32("data length", ps, depth, &(entry->record.data_length))))
-			return False;
-		if(!(prs_uint32("data offset", ps, depth, &(entry->record.data_offset))))
-			return False;
-		if(!(prs_align(ps)))
-			return False;
-	
-		/* Now encoding data */
-
-		if(!(prs_uint8s(False, "buffer", ps, depth, entry->data, 
-			entry->record.length - sizeof(Eventlog_record) - sizeof(entry->record.length))))
-		{
-			return False;
-		}
-
-		if(!(prs_align(ps)))
-			return False;
-		if(!(prs_uint32("length 2", ps, depth, &(entry->record.length))))
-			return False;
+		if (!(smb_io_eventlog_entry("entry", ps, depth, entry)))
+			return false;
 
 		entry = entry->next;
 		record_written++;
