@@ -107,7 +107,14 @@ void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, const str
 enum ndr_err_code ndr_push_SERVICE_STATUS_PROCESS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_STATUS_PROCESS *r);
 enum ndr_err_code ndr_pull_SERVICE_STATUS_PROCESS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_STATUS_PROCESS *r);
 void ndr_print_SERVICE_STATUS_PROCESS(struct ndr_print *ndr, const char *name, const struct SERVICE_STATUS_PROCESS *r);
-void ndr_print_ENUM_SERVICE_STATUS(struct ndr_print *ndr, const char *name, const struct ENUM_SERVICE_STATUS *r);
+enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSW(struct ndr_push *ndr, int ndr_flags, const struct ENUM_SERVICE_STATUSW *r);
+enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSW(struct ndr_pull *ndr, int ndr_flags, struct ENUM_SERVICE_STATUSW *r);
+void ndr_print_ENUM_SERVICE_STATUSW(struct ndr_print *ndr, const char *name, const struct ENUM_SERVICE_STATUSW *r);
+size_t ndr_size_ENUM_SERVICE_STATUSW(const struct ENUM_SERVICE_STATUSW *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_ENUM_SERVICE_STATUSA(struct ndr_push *ndr, int ndr_flags, const struct ENUM_SERVICE_STATUSA *r);
+enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUSA(struct ndr_pull *ndr, int ndr_flags, struct ENUM_SERVICE_STATUSA *r);
+void ndr_print_ENUM_SERVICE_STATUSA(struct ndr_print *ndr, const char *name, const struct ENUM_SERVICE_STATUSA *r);
+size_t ndr_size_ENUM_SERVICE_STATUSA(const struct ENUM_SERVICE_STATUSA *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_svcctl_ServerType(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_svcctl_ServerType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_svcctl_ServerType(struct ndr_print *ndr, const char *name, uint32_t r);

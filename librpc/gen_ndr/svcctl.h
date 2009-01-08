@@ -15,9 +15,6 @@
 #define SERVICE_TYPE_WIN32_OWN_PROCESS	( 0x10 )
 #define SERVICE_TYPE_WIN32_SHARE_PROCESS	( 0x20 )
 #define SERVICE_TYPE_WIN32	( SERVICE_TYPE_WIN32_OWN_PROCESS|SERVICE_TYPE_WIN32_SHARE_PROCESS )
-#define SERVICE_STATE_ACTIVE	( 0x01 )
-#define SERVICE_STATE_INACTIVE	( 0x02 )
-#define SERVICE_STATE_ALL	( 0x03 )
 #define SV_TYPE_ALL	( 0xFFFFFFFF )
 #define SC_MANAGER_READ_ACCESS	( (SEC_STD_READ_CONTROL|SC_RIGHT_MGR_CONNECT|SC_RIGHT_MGR_ENUMERATE_SERVICE|SC_RIGHT_MGR_QUERY_LOCK_STATUS) )
 #define SC_MANAGER_EXECUTE_ACCESS	( SC_MANAGER_READ_ACCESS )
@@ -84,11 +81,17 @@ struct SERVICE_STATUS_PROCESS {
 	uint32_t service_flags;
 }/* [public] */;
 
-struct ENUM_SERVICE_STATUS {
+struct ENUM_SERVICE_STATUSW {
+	const char * service_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct SERVICE_STATUS status;
+}/* [gensize,public] */;
+
+struct ENUM_SERVICE_STATUSA {
 	const char * service_name;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	struct SERVICE_STATUS status;
-};
+}/* [gensize,public] */;
 
 /* bitmap svcctl_ServerType */
 #define SV_TYPE_WORKSTATION ( 0x00000001 )
@@ -177,15 +180,15 @@ enum svcctl_StartType
 enum svcctl_ServiceState
 #ifndef USE_UINT_ENUMS
  {
-	SVCCTL_STATE_ACTIVE=0x00000001,
-	SVCCTL_STATE_INACTIVE=0x00000002,
-	SVCCTL_STATE_ALL=(SVCCTL_STATE_ACTIVE|SVCCTL_STATE_INACTIVE)
+	SERVICE_STATE_ACTIVE=0x00000001,
+	SERVICE_STATE_INACTIVE=0x00000002,
+	SERVICE_STATE_ALL=(SERVICE_STATE_ACTIVE|SERVICE_STATE_INACTIVE)
 }
 #else
  { __donnot_use_enum_svcctl_ServiceState=0x7FFFFFFF}
-#define SVCCTL_STATE_ACTIVE ( 0x00000001 )
-#define SVCCTL_STATE_INACTIVE ( 0x00000002 )
-#define SVCCTL_STATE_ALL ( (SVCCTL_STATE_ACTIVE|SVCCTL_STATE_INACTIVE) )
+#define SERVICE_STATE_ACTIVE ( 0x00000001 )
+#define SERVICE_STATE_INACTIVE ( 0x00000002 )
+#define SERVICE_STATE_ALL ( (SERVICE_STATE_ACTIVE|SERVICE_STATE_INACTIVE) )
 #endif
 ;
 
@@ -491,14 +494,14 @@ struct svcctl_EnumServicesStatusW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
 		enum svcctl_ServiceState state;
-		uint32_t buf_size;/* [range(0,262144)] */
+		uint32_t buf_size;/* [range(0,0x40000)] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
 
 	struct {
 		uint8_t *service;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,262144)] */
-		uint32_t *services_returned;/* [ref,range(0,262144)] */
+		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint32_t *services_returned;/* [ref,range(0,0x40000)] */
 		uint32_t *resume_handle;/* [unique] */
 		WERROR result;
 	} out;
@@ -681,7 +684,7 @@ struct svcctl_EnumDependentServicesA {
 	} in;
 
 	struct {
-		struct ENUM_SERVICE_STATUS *service_status;/* [unique] */
+		struct ENUM_SERVICE_STATUSA *service_status;/* [unique] */
 		uint32_t *bytes_needed;/* [ref] */
 		uint32_t *services_returned;/* [ref] */
 		WERROR result;
@@ -694,7 +697,7 @@ struct svcctl_EnumServicesStatusA {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
-		uint32_t state;
+		enum svcctl_ServiceState state;
 		uint32_t buf_size;
 		uint32_t *resume_handle;/* [unique] */
 	} in;
@@ -912,7 +915,7 @@ struct EnumServicesStatusExA {
 		struct policy_handle *scmanager;/* [ref] */
 		uint32_t info_level;
 		uint32_t type;
-		uint32_t state;
+		enum svcctl_ServiceState state;
 		uint32_t buf_size;
 		uint32_t *resume_handle;/* [unique] */
 	} in;
@@ -934,17 +937,17 @@ struct EnumServicesStatusExW {
 		struct policy_handle *scmanager;/* [ref] */
 		uint32_t info_level;
 		uint32_t type;
-		uint32_t state;
-		uint32_t buf_size;/* [range(0,262144)] */
+		enum svcctl_ServiceState state;
+		uint32_t buf_size;/* [range(0,0x40000)] */
 		const char *group_name;/* [unique,charset(UTF16)] */
-		uint32_t *resume_handle;/* [unique,range(0,262144)] */
+		uint32_t *resume_handle;/* [unique,range(0,0x40000)] */
 	} in;
 
 	struct {
 		uint8_t *services;/* [ref,size_is(buf_size)] */
-		uint32_t *bytes_needed;/* [ref,range(0,262144)] */
-		uint32_t *service_returned;/* [ref,range(0,262144)] */
-		uint32_t *resume_handle;/* [unique,range(0,262144)] */
+		uint32_t *bytes_needed;/* [ref,range(0,0x40000)] */
+		uint32_t *service_returned;/* [ref,range(0,0x40000)] */
+		uint32_t *resume_handle;/* [unique,range(0,0x40000)] */
 		WERROR result;
 	} out;
 

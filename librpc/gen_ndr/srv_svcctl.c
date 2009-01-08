@@ -2032,7 +2032,7 @@ static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.service_status = talloc_zero(r, struct ENUM_SERVICE_STATUS);
+	r->out.service_status = talloc_zero(r, struct ENUM_SERVICE_STATUSA);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
 		return false;
