@@ -759,14 +759,10 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	SMB_STRUCT_STAT st;
 	char c = 0;
 	SMB_OFF_T currpos;
-	enum smb_strict_allocate_options sa_options = lp_strict_allocate(SNUM(fsp->conn));
 
 	START_PROFILE(syscall_ftruncate);
 
-	/* Only use allocation truncate if strict allocate
- 	 * is set "on", not off or partial.
- 	 */
-	if (sa_options == STRICT_ALLOCATE_ON) {
+	if (lp_strict_allocate(SNUM(fsp->conn))) {
 		result = strict_allocate_ftruncate(handle, fsp, len);
 		END_PROFILE(syscall_ftruncate);
 		return result;
