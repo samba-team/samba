@@ -24,7 +24,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_stop( const char *service, SERVICE_STATUS *service_status )
+static WERROR spoolss_stop( const char *service, struct SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 	
@@ -57,7 +57,7 @@ static WERROR spoolss_start( const char *service )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR spoolss_status( const char *service, SERVICE_STATUS *service_status )
+static WERROR spoolss_status( const char *service, struct SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 

@@ -24,7 +24,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR wins_status( const char *service, SERVICE_STATUS *service_status )
+static WERROR wins_status( const char *service, struct SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 
@@ -44,7 +44,7 @@ static WERROR wins_status( const char *service, SERVICE_STATUS *service_status )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR wins_stop( const char *service, SERVICE_STATUS *service_status )
+static WERROR wins_stop( const char *service, struct SERVICE_STATUS *service_status )
 {
 	wins_status( service, service_status );
 

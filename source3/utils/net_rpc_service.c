@@ -66,7 +66,7 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 				uint32 *state )
 {
 	POLICY_HND hService;
-	SERVICE_STATUS service_status;
+	struct SERVICE_STATUS service_status;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
 
@@ -145,7 +145,7 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 	POLICY_HND hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
-	SERVICE_STATUS service_status;
+	struct SERVICE_STATUS service_status;
 	uint32 state = 0;
 
 	/* Open the Service */
@@ -263,7 +263,7 @@ static NTSTATUS rpc_service_status_internal(struct net_context *c,
 	POLICY_HND hSCM, hService;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
-	SERVICE_STATUS service_status;
+	struct SERVICE_STATUS service_status;
 	struct QUERY_SERVICE_CONFIG config;
 	uint32_t buf_size = sizeof(config);
 	uint32_t ret_size = 0;

@@ -47,16 +47,10 @@
 
 /* utility structures for RPCs */
 
-/*
- * "struct SERVICE_STATUS" comes from librpc/gen_ndr/svcctl.h
- */
-
-typedef struct SERVICE_STATUS SERVICE_STATUS;
-
 typedef struct {
 	UNISTR servicename;
 	UNISTR displayname;
-	SERVICE_STATUS status;
+	struct SERVICE_STATUS status;
 } ENUM_SERVICES_STATUS;
 
 /* rpc structures */

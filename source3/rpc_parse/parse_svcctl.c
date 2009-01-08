@@ -25,7 +25,7 @@
 /*******************************************************************
 ********************************************************************/
 
-static bool svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
+static bool svcctl_io_service_status( const char *desc, struct SERVICE_STATUS *status, prs_struct *ps, int depth )
 {
 
 	prs_debug(ps, depth, desc, "svcctl_io_service_status");
@@ -85,7 +85,7 @@ uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status )
 	
 	size += size_of_relative_string( &status->servicename );
 	size += size_of_relative_string( &status->displayname );
-	size += sizeof(SERVICE_STATUS);
+	size += sizeof(struct SERVICE_STATUS);
 
 	return size;
 }

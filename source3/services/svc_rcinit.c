@@ -22,7 +22,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR rcinit_stop( const char *service, SERVICE_STATUS *status )
+static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 {
 	char *command = NULL;
 	int ret, fd;
@@ -81,7 +81,7 @@ static WERROR rcinit_start( const char *service )
 /*********************************************************************
 *********************************************************************/
 
-static WERROR rcinit_status( const char *service, SERVICE_STATUS *status )
+static WERROR rcinit_status( const char *service, struct SERVICE_STATUS *status )
 {
 	char *command = NULL;
 	int ret, fd;

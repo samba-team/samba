@@ -24,7 +24,7 @@
 /*********************************************************************
 *********************************************************************/
 
-static WERROR netlogon_status( const char *service, SERVICE_STATUS *service_status )
+static WERROR netlogon_status( const char *service, struct SERVICE_STATUS *service_status )
 {
 	ZERO_STRUCTP( service_status );
 
@@ -44,7 +44,7 @@ static WERROR netlogon_status( const char *service, SERVICE_STATUS *service_stat
 /*********************************************************************
 *********************************************************************/
 
-static WERROR netlogon_stop( const char *service, SERVICE_STATUS *service_status )
+static WERROR netlogon_stop( const char *service, struct SERVICE_STATUS *service_status )
 {
 	netlogon_status( service, service_status );
 
