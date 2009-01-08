@@ -52,8 +52,6 @@ struct smbd_dmapi_context {
 	unsigned session_num;
 };
 
-struct smbd_dmapi_context *dmapi_ctx;
-
 /* 
    Initialise DMAPI session. The session is persistant kernel state, 
    so it might already exist, in which case we merely want to 
