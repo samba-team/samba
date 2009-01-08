@@ -101,6 +101,8 @@ extern const struct ndr_interface_table ndr_table_svcctl;
 
 #define NDR_SVCCTL_CALL_COUNT (44)
 void ndr_print_SERVICE_LOCK_STATUS(struct ndr_print *ndr, const char *name, const struct SERVICE_LOCK_STATUS *r);
+void ndr_print_svcctl_ServiceStatus(struct ndr_print *ndr, const char *name, enum svcctl_ServiceStatus r);
+void ndr_print_svcctl_ControlsAccepted(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, const struct SERVICE_STATUS *r);
 enum ndr_err_code ndr_push_SERVICE_STATUS_PROCESS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_STATUS_PROCESS *r);
 enum ndr_err_code ndr_pull_SERVICE_STATUS_PROCESS(struct ndr_pull *ndr, int ndr_flags, struct SERVICE_STATUS_PROCESS *r);

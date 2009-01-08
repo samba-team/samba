@@ -71,13 +71,73 @@ _PUBLIC_ void ndr_print_SERVICE_LOCK_STATUS(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_svcctl_ServiceStatus(struct ndr_push *ndr, int ndr_flags, enum svcctl_ServiceStatus r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_ServiceStatus(struct ndr_pull *ndr, int ndr_flags, enum svcctl_ServiceStatus *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_ServiceStatus(struct ndr_print *ndr, const char *name, enum svcctl_ServiceStatus r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SVCCTL_STATE_UNKNOWN: val = "SVCCTL_STATE_UNKNOWN"; break;
+		case SVCCTL_STOPPED: val = "SVCCTL_STOPPED"; break;
+		case SVCCTL_START_PENDING: val = "SVCCTL_START_PENDING"; break;
+		case SVCCTL_STOP_PENDING: val = "SVCCTL_STOP_PENDING"; break;
+		case SVCCTL_RUNNING: val = "SVCCTL_RUNNING"; break;
+		case SVCCTL_CONTINUE_PENDING: val = "SVCCTL_CONTINUE_PENDING"; break;
+		case SVCCTL_PAUSE_PENDING: val = "SVCCTL_PAUSE_PENDING"; break;
+		case SVCCTL_PAUSED: val = "SVCCTL_PAUSED"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_svcctl_ControlsAccepted(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_svcctl_ControlsAccepted(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_svcctl_ControlsAccepted(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_NONE", SVCCTL_ACCEPT_NONE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_STOP", SVCCTL_ACCEPT_STOP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_PAUSE_CONTINUE", SVCCTL_ACCEPT_PAUSE_CONTINUE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_SHUTDOWN", SVCCTL_ACCEPT_SHUTDOWN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_PARAMCHANGE", SVCCTL_ACCEPT_PARAMCHANGE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_NETBINDCHANGE", SVCCTL_ACCEPT_NETBINDCHANGE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_HARDWAREPROFILECHANGE", SVCCTL_ACCEPT_HARDWAREPROFILECHANGE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SVCCTL_ACCEPT_POWEREVENT", SVCCTL_ACCEPT_POWEREVENT, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_SERVICE_STATUS(struct ndr_push *ndr, int ndr_flags, const struct SERVICE_STATUS *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->type));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->state));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->controls_accepted));
+		NDR_CHECK(ndr_push_svcctl_ServiceStatus(ndr, NDR_SCALARS, r->state));
+		NDR_CHECK(ndr_push_svcctl_ControlsAccepted(ndr, NDR_SCALARS, r->controls_accepted));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->win32_exit_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->service_exit_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->check_point));
@@ -93,8 +153,8 @@ static enum ndr_err_code ndr_pull_SERVICE_STATUS(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->type));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->state));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->controls_accepted));
+		NDR_CHECK(ndr_pull_svcctl_ServiceStatus(ndr, NDR_SCALARS, &r->state));
+		NDR_CHECK(ndr_pull_svcctl_ControlsAccepted(ndr, NDR_SCALARS, &r->controls_accepted));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->win32_exit_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->service_exit_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->check_point));
@@ -110,8 +170,8 @@ _PUBLIC_ void ndr_print_SERVICE_STATUS(struct ndr_print *ndr, const char *name, 
 	ndr_print_struct(ndr, name, "SERVICE_STATUS");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "type", r->type);
-	ndr_print_uint32(ndr, "state", r->state);
-	ndr_print_uint32(ndr, "controls_accepted", r->controls_accepted);
+	ndr_print_svcctl_ServiceStatus(ndr, "state", r->state);
+	ndr_print_svcctl_ControlsAccepted(ndr, "controls_accepted", r->controls_accepted);
 	ndr_print_WERROR(ndr, "win32_exit_code", r->win32_exit_code);
 	ndr_print_uint32(ndr, "service_exit_code", r->service_exit_code);
 	ndr_print_uint32(ndr, "check_point", r->check_point);
