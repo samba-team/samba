@@ -173,7 +173,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 	int i;
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
-	struct ENUM_SERVICE_STATUS *service = NULL;
+	struct ENUM_SERVICE_STATUSW *service = NULL;
 	uint32_t bytes_needed = 0;
 	uint32_t services_returned = 0;
 
@@ -203,7 +203,7 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 		torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 		torture_assert_werr_ok(tctx, r.out.result, "EnumServicesStatus failed");
 
-		service = (struct ENUM_SERVICE_STATUS *)r.out.service;
+		service = (struct ENUM_SERVICE_STATUSW *)r.out.service;
 	}
 
 	for(i = 0; i < services_returned; i++) {
