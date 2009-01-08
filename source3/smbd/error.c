@@ -18,11 +18,10 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /* From lib/error.c */
 extern struct unix_error_map unix_dos_nt_errmap[];
-
-extern uint32 global_client_caps;
 
 bool use_nt_status(void)
 {

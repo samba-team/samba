@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 extern userdom_struct current_user_info;
 
@@ -31,8 +32,6 @@ struct msg_state {
 	char *to;
 	char *msg;
 };
-
-static struct msg_state *smbd_msg_state;
 
 /****************************************************************************
  Deliver the message.

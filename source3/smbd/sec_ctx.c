@@ -18,19 +18,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 extern struct current_user current_user;
-
-struct sec_ctx {
-	UNIX_USER_TOKEN ut;
-	NT_USER_TOKEN *token;
-};
-
-/* A stack of security contexts.  We include the current context as being
-   the first one, so there is room for another MAX_SEC_CTX_DEPTH more. */
-
-static struct sec_ctx sec_ctx_stack[MAX_SEC_CTX_DEPTH + 1];
-static int sec_ctx_stack_ndx;
 
 /****************************************************************************
  Are two UNIX tokens equal ?
@@ -59,12 +49,10 @@ static bool become_uid(uid_t uid)
 
 	if (uid == (uid_t)-1 || 
 	    ((sizeof(uid_t) == 2) && (uid == (uid_t)65535))) {
-		static int done;
- 
-		if (!done) {
+		if (!become_uid_done) {
 			DEBUG(1,("WARNING: using uid %d is a security risk\n",
 				 (int)uid));
-			done = 1;
+			become_uid_done = true;
 		}
 	}
 
@@ -86,12 +74,10 @@ static bool become_gid(gid_t gid)
 
 	if (gid == (gid_t)-1 || ((sizeof(gid_t) == 2) && 
 				 (gid == (gid_t)65535))) {
-		static int done;
-		
-		if (!done) {
+		if (!become_gid_done) {
 			DEBUG(1,("WARNING: using gid %d is a security risk\n",
 				 (int)gid));  
-			done = 1;
+			become_gid_done = true;
 		}
 	}
   

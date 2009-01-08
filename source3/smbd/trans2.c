@@ -24,10 +24,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-extern int max_send;
 extern enum protocol_types Protocol;
-extern uint32 global_client_caps;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
@@ -94,7 +93,7 @@ uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const S
 
 static bool samba_private_attr_name(const char *unix_ea_name)
 {
-	static const char *prohibited_ea_names[] = {
+	static const char * const prohibited_ea_names[] = {
 		SAMBA_POSIX_INHERITANCE_EA_NAME,
 		SAMBA_XATTR_DOS_ATTRIB,
 		NULL
@@ -7220,7 +7219,6 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 				       char **ppdata, int total_data,
 				       unsigned int max_data_bytes)
 {
-	static uint16 fnf_handle = 257;
 	char *params = *pparams;
 	uint16 info_level;
 

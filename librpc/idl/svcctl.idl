@@ -28,6 +28,12 @@ import "misc.idl", "security.idl";
 		uint32 wait_hint;
 	} SERVICE_STATUS;
 
+	typedef [public] struct {
+		SERVICE_STATUS status;
+		uint32 process_id;
+		uint32 service_flags;
+	} SERVICE_STATUS_PROCESS;
+
 	typedef struct {
 		[relative] astring *service_name;
 		[relative] astring *display_name;
@@ -172,11 +178,27 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0b */
+
+	typedef [v1_enum] enum {
+		SVCCTL_SVC_ERROR_IGNORE		= 0x00000000,
+		SVCCTL_SVC_ERROR_NORMAL		= 0x00000001,
+		SVCCTL_SVC_ERROR_CRITICAL	= 0x00000002,
+		SVCCTL_SVC_ERROR_SEVERE		= 0x00000003
+	} svcctl_ErrorControl;
+
+	typedef [v1_enum] enum {
+		SVCCTL_BOOT_START		= 0x00000000,
+		SVCCTL_SYSTEM_START		= 0x00000001,
+		SVCCTL_AUTO_START		= 0x00000002,
+		SVCCTL_DEMAND_START		= 0x00000003,
+		SVCCTL_DISABLED			= 0x00000004
+	} svcctl_StartType;
+
 	WERROR svcctl_ChangeServiceConfigW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 start,
-		[in] uint32 error,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *load_order_group,
 		[out,ref] uint32 *tag_id,
@@ -194,8 +216,8 @@ import "misc.idl", "security.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *DisplayName,
 		[in] uint32 desired_access,
 		[in] uint32 type,
-		[in] uint32 start_type,
-		[in] uint32 error_control,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in] [string,charset(UTF16)] uint16 binary_path[],
 		[in,unique] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
 		[in,out,unique] uint32 *TagId,
@@ -220,10 +242,17 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0e */
+
+	typedef [v1_enum] enum {
+		SVCCTL_STATE_ACTIVE	= 0x00000001,
+		SVCCTL_STATE_INACTIVE	= 0x00000002,
+		SVCCTL_STATE_ALL	= ( SVCCTL_STATE_ACTIVE | SVCCTL_STATE_INACTIVE )
+	} svcctl_ServiceState;
+
 	WERROR svcctl_EnumServicesStatusW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 state,
+		[in] svcctl_ServiceState state,
 		[out,ref,size_is(buf_size)] uint8 *service,
 		[in] [range(0,262144)] uint32 buf_size,
 		[out,ref] [range(0,262144)] uint32 *bytes_needed,
@@ -320,8 +349,8 @@ import "misc.idl", "security.idl";
 
 	typedef [public,gensize] struct {
 		uint32 service_type;
-		uint32 start_type;
-		uint32 error_control;
+		svcctl_StartType start_type;
+		svcctl_ErrorControl error_control;
 		[string,charset(UTF16)] [range(0,8192)] uint16 *executablepath;
 		[string,charset(UTF16)] [range(0,8192)] uint16 *loadordergroup;
 		uint32 tag_id;
@@ -386,8 +415,8 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_ChangeServiceConfigA(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
-		[in] uint32 start,
-		[in] uint32 error,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *load_order_group,
 		[out,ref] uint32 *tag_id,
@@ -405,8 +434,8 @@ import "misc.idl", "security.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *DisplayName,
 		[in] uint32 desired_access,
 		[in] uint32 type,
-		[in] uint32 start_type,
-		[in] uint32 error_control,
+		[in] svcctl_StartType start_type,
+		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *LoadOrderGroupKey,
 		[out,unique] uint32 *TagId,
@@ -528,9 +557,39 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x26 */
+
+	typedef [v1_enum] enum {
+		SERVICE_CONFIG_DESCRIPTION	= 0x00000001,
+		SERVICE_CONFIG_FAILURE_ACTIONS	= 0x00000002
+	} svcctl_ConfigLevel;
+
+	typedef [gensize,public] struct {
+		[relative] nstring *description;
+	} SERVICE_DESCRIPTION;
+
+	typedef [v1_enum] enum {
+		SC_ACTION_NONE		= 0,
+		SC_ACTION_RESTART	= 1,
+		SC_ACTION_REBOOT	= 2,
+		SC_ACTION_RUN_COMMAND	= 3
+	} SC_ACTION_TYPE;
+
+	typedef struct {
+		SC_ACTION_TYPE type;
+		uint32 delay;
+	} SC_ACTION;
+
+	typedef [public,gensize] struct {
+		uint32 reset_period;
+		[relative] nstring *rebootmsg;
+		[relative] nstring *command;
+		[range(0,1024)] uint32 num_actions;
+		[relative] [size_is(num_actions)] SC_ACTION *actions;
+	} SERVICE_FAILURE_ACTIONS;
+
 	WERROR svcctl_QueryServiceConfig2A(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_ConfigLevel info_level,
 		[out] uint8 buffer[buf_size],
 		[in] uint32 buf_size,
 		[out,ref] uint32 *bytes_needed
@@ -540,7 +599,7 @@ import "misc.idl", "security.idl";
 	/* Function 0x27 */
 	WERROR svcctl_QueryServiceConfig2W(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_ConfigLevel info_level,
 		[out,ref,size_is(buf_size)] uint8 *buffer,
 		[in] [range(0,8192)] uint32 buf_size,
 		[out,ref] [range(0,8192)] uint32 *bytes_needed
@@ -548,9 +607,14 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x28 */
+
+	typedef [v1_enum] enum {
+		SVC_STATUS_PROCESS_INFO		= 0x00000000
+	} svcctl_StatusLevel;
+
 	WERROR svcctl_QueryServiceStatusEx(
 		[in,ref] policy_handle *handle,
-		[in] uint32 info_level,
+		[in] svcctl_StatusLevel info_level,
 		[out,ref,size_is(buf_size)] uint8 *buffer,
 		[in] [range(0,8192)] uint32 buf_size,
 		[out,ref] [range(0,8192)] uint32 *bytes_needed

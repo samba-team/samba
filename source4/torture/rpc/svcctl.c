@@ -3,6 +3,7 @@
    test suite for srvsvc rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Guenther Deschner 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -77,7 +78,7 @@ static bool test_QueryServiceStatusEx(struct torture_context *tctx, struct dcerp
 	struct policy_handle h, s;
 	NTSTATUS status;
 
-	uint32_t info_level = 0;
+	uint32_t info_level = SVC_STATUS_PROCESS_INFO;
 	uint8_t *buffer;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;
@@ -124,7 +125,7 @@ static bool test_QueryServiceConfig2W(struct torture_context *tctx, struct dcerp
 	struct policy_handle h, s;
 	NTSTATUS status;
 
-	uint32_t info_level = 1;
+	uint32_t info_level = SERVICE_CONFIG_DESCRIPTION;
 	uint8_t *buffer;
 	uint32_t buf_size = 0;
 	uint32_t bytes_needed = 0;

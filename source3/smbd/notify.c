@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 struct notify_change_request {
 	struct notify_change_request *prev, *next;
@@ -32,8 +33,6 @@ struct notify_change_request {
 };
 
 static void notify_fsp(files_struct *fsp, uint32 action, const char *name);
-
-static struct notify_mid_map *notify_changes_by_mid;
 
 /*
  * For NTCancel, we need to find the notify_change_request indexed by

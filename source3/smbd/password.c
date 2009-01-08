@@ -19,16 +19,7 @@
 */
 
 #include "includes.h"
-
-/* users from session setup */
-static char *session_userlist = NULL;
-/* workgroup from session setup. */
-static char *session_workgroup = NULL;
-
-/* this holds info on user ids that are already validated for this VC */
-static user_struct *validated_users;
-static uint16_t next_vuid = VUID_OFFSET;
-static int num_validated_vuids;
+#include "smbd/globals.h"
 
 enum server_allocated_state { SERVER_ALLOCATED_REQUIRED_YES,
 				SERVER_ALLOCATED_REQUIRED_NO,
@@ -403,21 +394,20 @@ const char *get_session_workgroup(void)
 bool user_in_netgroup(const char *user, const char *ngname)
 {
 #ifdef HAVE_NETGROUP
-	static char *mydomain = NULL;
 	fstring lowercase_user;
 
-	if (mydomain == NULL)
-		yp_get_default_domain(&mydomain);
+	if (my_yp_domain == NULL)
+		yp_get_default_domain(&my_yp_domain);
 
-	if(mydomain == NULL) {
+	if(my_yp_domain == NULL) {
 		DEBUG(5,("Unable to get default yp domain, "
 			"let's try without specifying it\n"));
 	}
 
 	DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-		user, mydomain?mydomain:"(ANY)", ngname));
+		user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
 
-	if (innetgr(ngname, NULL, user, mydomain)) {
+	if (innetgr(ngname, NULL, user, my_yp_domain)) {
 		DEBUG(5,("user_in_netgroup: Found\n"));
 		return (True);
 	} else {
@@ -431,9 +421,9 @@ bool user_in_netgroup(const char *user, const char *ngname)
 		strlower_m(lowercase_user);
 
 		DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
-			lowercase_user, mydomain?mydomain:"(ANY)", ngname));
+			lowercase_user, my_yp_domain?my_yp_domain:"(ANY)", ngname));
 
-		if (innetgr(ngname, NULL, lowercase_user, mydomain)) {
+		if (innetgr(ngname, NULL, lowercase_user, my_yp_domain)) {
 			DEBUG(5,("user_in_netgroup: Found\n"));
 			return (True);
 		}

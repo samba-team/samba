@@ -25,8 +25,7 @@
    */
 
 #include "includes.h"
-
-extern int max_send;
+#include "smbd/globals.h"
 
 #define NERR_notsupported 50
 

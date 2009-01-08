@@ -555,11 +555,13 @@ WERROR _svcctl_EnumDependentServicesW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_QueryServiceStatusEx
 ********************************************************************/
 
-WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u )
+WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
+				    struct svcctl_QueryServiceStatusEx *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	uint32 buffer_size;
 
 	/* perform access checks */
@@ -573,21 +575,29 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure) */
 
-	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
-	r_u->needed = q_u->buffer_size;
+	*r->out.bytes_needed = r->in.buf_size;
 
-	switch ( q_u->level ) {
+	switch ( r->in.info_level ) {
 		case SVC_STATUS_PROCESS_INFO:
 		{
-			SERVICE_STATUS_PROCESS svc_stat_proc;
+			struct SERVICE_STATUS_PROCESS svc_stat_proc;
+			enum ndr_err_code ndr_err;
+			DATA_BLOB blob;
 
 			/* Get the status of the service.. */
 			info->ops->service_status( info->name, &svc_stat_proc.status );
 			svc_stat_proc.process_id     = sys_getpid();
 			svc_stat_proc.service_flags  = 0x0;
 
-			svcctl_io_service_status_process( "", &svc_stat_proc, &r_u->buffer, 0 );
-	                buffer_size = sizeof(SERVICE_STATUS_PROCESS);
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
+						       &svc_stat_proc,
+						       (ndr_push_flags_fn_t)ndr_push_SERVICE_STATUS_PROCESS);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			r->out.buffer = blob.data;
+	                buffer_size = sizeof(struct SERVICE_STATUS_PROCESS);
 			break;
 		}
 
@@ -597,10 +607,11 @@ WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_
 
 
         buffer_size += buffer_size % 4;
-	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
+	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
-        if (buffer_size > q_u->buffer_size )
-                return WERR_MORE_DATA;
+        if (buffer_size > r->in.buf_size ) {
+                return WERR_INSUFFICIENT_BUFFER;
+	}
 
 	return WERR_OK;
 }
@@ -700,11 +711,13 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_QueryServiceConfig2W
 ********************************************************************/
 
-WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u )
+WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p,
+				    struct svcctl_QueryServiceConfig2W *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	uint32 buffer_size;
 
 	/* perform access checks */
@@ -718,36 +731,53 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
 
-	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
-	r_u->needed = q_u->buffer_size;
+	*r->out.bytes_needed = r->in.buf_size;
 
-	switch ( q_u->level ) {
+	switch ( r->in.info_level ) {
 	case SERVICE_CONFIG_DESCRIPTION:
 		{
-			SERVICE_DESCRIPTION desc_buf;
+			struct SERVICE_DESCRIPTION desc_buf;
 			const char *description;
+			enum ndr_err_code ndr_err;
+			DATA_BLOB blob;
 
 			description = svcctl_lookup_description(
 				p->mem_ctx, info->name, p->server_info->ptok);
 
-			ZERO_STRUCTP( &desc_buf );
+			desc_buf.description = description;
 
-			init_service_description_buffer( &desc_buf, description ? description : "");
-			svcctl_io_service_description( "", &desc_buf, &r_u->buffer, 0 );
-	                buffer_size = svcctl_sizeof_service_description( &desc_buf );
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
+						       &desc_buf,
+						       (ndr_push_flags_fn_t)ndr_push_SERVICE_DESCRIPTION);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			buffer_size = ndr_size_SERVICE_DESCRIPTION(&desc_buf, NULL, 0);
+			r->out.buffer = blob.data;
 
 			break;
 		}
 		break;
 	case SERVICE_CONFIG_FAILURE_ACTIONS:
 		{
-			SERVICE_FAILURE_ACTIONS actions;
+			struct SERVICE_FAILURE_ACTIONS actions;
+			enum ndr_err_code ndr_err;
+			DATA_BLOB blob;
 
 			/* nothing to say...just service the request */
 
-			ZERO_STRUCTP( &actions );
-			svcctl_io_service_fa( "", &actions, &r_u->buffer, 0 );
-	                buffer_size = svcctl_sizeof_service_fa( &actions );
+			ZERO_STRUCT( actions );
+
+			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL,
+						       &actions,
+						       (ndr_push_flags_fn_t)ndr_push_SERVICE_FAILURE_ACTIONS);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				return WERR_INVALID_PARAM;
+			}
+
+			buffer_size = ndr_size_SERVICE_FAILURE_ACTIONS(&actions, NULL, 0);
+			r->out.buffer = blob.data;
 
 			break;
 		}
@@ -758,9 +788,9 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	}
 
 	buffer_size += buffer_size % 4;
-	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
+	*r->out.bytes_needed = (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
 
-        if (buffer_size > q_u->buffer_size )
+        if (buffer_size > r->in.buf_size )
                 return WERR_INSUFFICIENT_BUFFER;
 
 	return WERR_OK;
@@ -1067,18 +1097,6 @@ WERROR _svcctl_ChangeServiceConfig2W(pipes_struct *p, struct svcctl_ChangeServic
 }
 
 WERROR _svcctl_QueryServiceConfig2A(pipes_struct *p, struct svcctl_QueryServiceConfig2A *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p, struct svcctl_QueryServiceConfig2W *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p, struct svcctl_QueryServiceStatusEx *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;

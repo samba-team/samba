@@ -19,8 +19,8 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-extern int max_send;
 extern enum protocol_types Protocol;
 extern const struct generic_mapping file_generic_mapping;
 
@@ -1770,7 +1770,6 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	files_struct *fsp;
 	uint8 isFSctl;
 	uint8 compfilter;
-	static bool logged_message;
 	char *pdata = *ppdata;
 
 	if (setup_count != 8) {
@@ -2030,8 +2029,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		return;
 	}
 	default:
-		if (!logged_message) {
-			logged_message = True; /* Only print this once... */
+		if (!logged_ioctl_message) {
+			logged_ioctl_message = true; /* Only print this once... */
 			DEBUG(0,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
 				 function));
 		}

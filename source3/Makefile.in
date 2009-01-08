@@ -698,7 +698,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       $(AFS_SETTOKEN_OBJ) smbd/aio.o smbd/statvfs.o \
 	       smbd/dmapi.o \
 	       smbd/file_access.o \
-	       smbd/dnsregister.o \
+	       smbd/dnsregister.o smbd/globals.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@
 
 SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \

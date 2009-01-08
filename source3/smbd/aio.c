@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #if defined(WITH_AIO)
 
@@ -52,8 +53,6 @@ struct aio_extra {
 
 static int handle_aio_read_complete(struct aio_extra *aio_ex);
 static int handle_aio_write_complete(struct aio_extra *aio_ex);
-
-static struct aio_extra *aio_list_head;
 
 static int aio_extra_destructor(struct aio_extra *aio_ex)
 {
@@ -109,20 +108,15 @@ static struct aio_extra *find_aio_ex(uint16 mid)
  We can have these many aio buffers in flight.
 *****************************************************************************/
 
-static int aio_pending_size;
-static sig_atomic_t signals_received;
-static int outstanding_aio_calls;
-static uint16 *aio_pending_array;
-
 /****************************************************************************
  Signal handler when an aio request completes.
 *****************************************************************************/
 
 void aio_request_done(uint16_t mid)
 {
-	if (signals_received < aio_pending_size) {
-		aio_pending_array[signals_received] = mid;
-		signals_received++;
+	if (aio_signals_received < aio_pending_size) {
+		aio_pending_array[aio_signals_received] = mid;
+		aio_signals_received++;
 	}
 	/* Else signal is lost. */
 }
@@ -139,7 +133,7 @@ static void signal_handler(int sig, siginfo_t *info, void *unused)
 
 bool aio_finished(void)
 {
-	return (signals_received != 0);
+	return (aio_signals_received != 0);
 }
 
 /****************************************************************************
@@ -587,17 +581,17 @@ int process_aio_queue(void)
 	BlockSignals(True, RT_SIGNAL_AIO);
 
 	DEBUG(10,("process_aio_queue: signals_received = %d\n",
-		  (int)signals_received));
+		  (int)aio_signals_received));
 	DEBUG(10,("process_aio_queue: outstanding_aio_calls = %d\n",
 		  outstanding_aio_calls));
 
-	if (!signals_received) {
+	if (!aio_signals_received) {
 		BlockSignals(False, RT_SIGNAL_AIO);
 		return 0;
 	}
 
 	/* Drain all the complete aio_reads. */
-	for (i = 0; i < signals_received; i++) {
+	for (i = 0; i < aio_signals_received; i++) {
 		uint16 mid = aio_pending_array[i];
 		files_struct *fsp = NULL;
 		struct aio_extra *aio_ex = find_aio_ex(mid);
@@ -626,8 +620,8 @@ int process_aio_queue(void)
 		TALLOC_FREE(aio_ex);
 	}
 
-	outstanding_aio_calls -= signals_received;
-	signals_received = 0;
+	outstanding_aio_calls -= aio_signals_received;
+	aio_signals_received = 0;
 	BlockSignals(False, RT_SIGNAL_AIO);
 	return ret;
 }

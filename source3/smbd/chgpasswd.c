@@ -712,7 +712,7 @@ bool check_lanman_password(char *user, uchar * pass1,
 
 bool change_lanman_password(struct samu *sampass, uchar *pass2)
 {
-	static uchar null_pw[16];
+	uchar null_pw[16];
 	uchar unenc_new_pw[16];
 	bool ret;
 	uint32 acct_ctrl;
@@ -735,19 +735,20 @@ bool change_lanman_password(struct samu *sampass, uchar *pass2)
 	if (pwd == NULL) { 
 		if (acct_ctrl & ACB_PWNOTREQ) {
 			uchar no_pw[14];
-			memset(no_pw, '\0', 14);
+
+			ZERO_STRUCT(no_pw);
+
 			E_P16(no_pw, null_pw);
 
-			/* Get the new lanman hash. */
-			D_P16(null_pw, pass2, unenc_new_pw);
+			pwd = null_pw;
 		} else {
 			DEBUG(0,("change_lanman_password: no lanman password !\n"));
 			return False;
 		}
-	} else {
-		/* Get the new lanman hash. */
-		D_P16(pwd, pass2, unenc_new_pw);
 	}
+
+	/* Get the new lanman hash. */
+	D_P16(pwd, pass2, unenc_new_pw);
 
 	if (!pdb_set_lanman_passwd(sampass, unenc_new_pw, PDB_CHANGED)) {
 		return False;
@@ -826,8 +827,8 @@ static NTSTATUS check_oem_password(const char *user,
 				   struct samu **hnd,
 				   char **pp_new_passwd)
 {
-	static uchar null_pw[16];
-	static uchar null_ntpw[16];
+	uchar null_pw[16];
+	uchar null_ntpw[16];
 	struct samu *sampass = NULL;
 	uint8 *password_encrypted;
 	const uint8 *encryption_key;

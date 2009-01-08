@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /*
    This module implements directory related functions for Samba.
@@ -61,9 +62,6 @@ struct dptr_struct {
 	bool did_stat; /* Optimisation for non-wcard searches. */
 };
 
-static struct bitmap *dptr_bmap;
-static struct dptr_struct *dirptrs;
-static int dirhandles_open = 0;
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -119,17 +117,13 @@ bool make_dir_struct(TALLOC_CTX *ctx,
 
 void init_dptrs(void)
 {
-	static bool dptrs_init=False;
-
-	if (dptrs_init)
+	if (dptr_bmap)
 		return;
 
 	dptr_bmap = bitmap_allocate(MAX_DIRECTORY_HANDLES);
 
 	if (!dptr_bmap)
 		exit_server("out of memory in init_dptrs");
-
-	dptrs_init = True;
 }
 
 /****************************************************************************

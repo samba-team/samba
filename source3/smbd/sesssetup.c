@@ -23,14 +23,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-extern struct auth_context *negprot_global_auth_context;
-extern bool global_encrypted_passwords_negotiated;
-extern bool global_spnego_negotiated;
 extern enum protocol_types Protocol;
-extern int max_send;
-
-uint32 global_client_caps = 0;
 
 /*
   on a logon error possibly map the error to success if "map to guest"
@@ -953,12 +948,6 @@ static void reply_spnego_auth(struct smb_request *req,
 }
 
 /****************************************************************************
- List to store partial SPNEGO auth fragments.
-****************************************************************************/
-
-static struct pending_auth_data *pd_list;
-
-/****************************************************************************
  Delete an entry on the list.
 ****************************************************************************/
 
@@ -1406,7 +1395,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	const char *native_os;
 	const char *native_lanman;
 	const char *primary_domain;
-	static bool done_sesssetup = False;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	uint16 smb_flag2 = req->flags2;

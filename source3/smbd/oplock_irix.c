@@ -19,11 +19,9 @@
 
 #define DBGC_CLASS DBGC_LOCKING
 #include "includes.h"
+#include "smbd/globals.h"
 
 #if HAVE_KERNEL_OPLOCKS_IRIX
-
-static int oplock_pipe_write = -1;
-static int oplock_pipe_read = -1;
 
 /****************************************************************************
  Test to see if IRIX kernel oplocks work.
@@ -273,7 +271,6 @@ static bool irix_oplock_msg_waiting(fd_set *fds)
 struct kernel_oplocks *irix_init_kernel_oplocks(void) 
 {
 	int pfd[2];
-	static struct kernel_oplocks koplocks;
 
 	if (!irix_oplocks_available())
 		return NULL;
@@ -287,13 +284,13 @@ struct kernel_oplocks *irix_init_kernel_oplocks(void)
 	oplock_pipe_read = pfd[0];
 	oplock_pipe_write = pfd[1];
 
-	koplocks.receive_message = irix_oplock_receive_message;
-	koplocks.set_oplock = irix_set_kernel_oplock;
-	koplocks.release_oplock = irix_release_kernel_oplock;
-	koplocks.msg_waiting = irix_oplock_msg_waiting;
-	koplocks.notification_fd = oplock_pipe_read;
+	irix_koplocks.receive_message = irix_oplock_receive_message;
+	irix_koplocks.set_oplock = irix_set_kernel_oplock;
+	irix_koplocks.release_oplock = irix_release_kernel_oplock;
+	irix_koplocks.msg_waiting = irix_oplock_msg_waiting;
+	irix_koplocks.notification_fd = oplock_pipe_read;
 
-	return &koplocks;
+	return &irix_koplocks;
 }
 #else
  void oplock_irix_dummy(void);

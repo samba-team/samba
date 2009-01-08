@@ -77,17 +77,6 @@
 #define SVCCTL_ACCEPT_HARDWAREPROFILECHANGE	0x00000020
 #define SVCCTL_ACCEPT_POWEREVENT		0x00000040
 
-/* SERVER_STATUS - ControlAccepted */
-#define SVCCTL_SVC_ERROR_IGNORE                 0x00000000
-#define SVCCTL_SVC_ERROR_NORMAL                 0x00000001
-#define SVCCTL_SVC_ERROR_CRITICAL               0x00000002
-#define SVCCTL_SVC_ERROR_SEVERE                 0x00000003
-
-/* QueryServiceConfig2 options */
-#define SERVICE_CONFIG_DESCRIPTION              0x00000001
-#define SERVICE_CONFIG_FAILURE_ACTIONS          0x00000002
-
-
 /* Service Config - values for ServiceType field*/
 
 #define SVCCTL_KERNEL_DRVR                         0x00000001  /* doubtful we'll have these */
@@ -96,18 +85,9 @@
 #define SVCCTL_WIN32_SHARED_PROC                   0x00000020
 #define SVCCTL_WIN32_INTERACTIVE                   0x00000100 
 
-/* Service Config - values for StartType field */
-#define SVCCTL_BOOT_START                          0x00000000
-#define SVCCTL_SYSTEM_START                        0x00000001
-#define SVCCTL_AUTO_START                          0x00000002
-#define SVCCTL_DEMAND_START                        0x00000003
-#define SVCCTL_DISABLED                            0x00000004
-
 #define SVC_HANDLE_IS_SCM			0x0000001
 #define SVC_HANDLE_IS_SERVICE			0x0000002
 #define SVC_HANDLE_IS_DBLOCK			0x0000003
-
-#define SVC_STATUS_PROCESS_INFO                 0x00000000
 
 /* utility structures for RPCs */
 
@@ -118,36 +98,10 @@
 typedef struct SERVICE_STATUS SERVICE_STATUS;
 
 typedef struct {
-	SERVICE_STATUS status;
-	uint32 process_id;
-	uint32 service_flags;
-} SERVICE_STATUS_PROCESS;
-
-
-typedef struct {
 	UNISTR servicename;
 	UNISTR displayname;
 	SERVICE_STATUS status;
 } ENUM_SERVICES_STATUS;
-
-typedef struct {
-	uint32 unknown;	
-        UNISTR description;
-} SERVICE_DESCRIPTION;
-
-typedef struct {
-        uint32 type;
-        uint32 delay;
-} SC_ACTION;
-
-typedef struct {
-        uint32 reset_period;
-        UNISTR2 *rebootmsg;	/* i have no idea if these are UNISTR2's.  I can't get a good trace */
-        UNISTR2 *command;
-        uint32  num_actions;
-        SC_ACTION *actions;
-} SERVICE_FAILURE_ACTIONS;
-
 
 /* rpc structures */
 
@@ -168,35 +122,6 @@ typedef struct {
 	uint32 *resume;
 	WERROR status;
 } SVCCTL_R_ENUM_SERVICES_STATUS;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-	uint32 level;
-	uint32 buffer_size;
-} SVCCTL_Q_QUERY_SERVICE_CONFIG2;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_CONFIG2;
-
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-        uint32 level;
-	uint32 buffer_size;
-} SVCCTL_Q_QUERY_SERVICE_STATUSEX;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_STATUSEX;
 
 #endif /* _RPC_SVCCTL_H */
 

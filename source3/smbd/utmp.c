@@ -142,7 +142,7 @@ void sys_utmp_yield(const char *username, const char *hostname,
 
 #ifdef	HAVE_UTMPX_H
 
-static const char *ux_pathname =
+static const char * const ux_pathname =
 # if defined (UTMPX_FILE)
 	UTMPX_FILE ;
 # elif defined (_UTMPX_FILE)
@@ -153,7 +153,7 @@ static const char *ux_pathname =
 	"" ;
 # endif
 
-static const char *wx_pathname =
+static const char * const wx_pathname =
 # if defined (WTMPX_FILE)
 	WTMPX_FILE ;
 # elif defined (_WTMPX_FILE)
@@ -166,7 +166,7 @@ static const char *wx_pathname =
 
 #endif	/* HAVE_UTMPX_H */
 
-static const char *ut_pathname =
+static const char * const ut_pathname =
 # if defined (UTMP_FILE)
 	UTMP_FILE ;
 # elif defined (_UTMP_FILE)
@@ -177,7 +177,7 @@ static const char *ut_pathname =
 	"" ;
 # endif
 
-static const char *wt_pathname =
+static const char * const wt_pathname =
 # if defined (WTMP_FILE)
 	WTMP_FILE ;
 # elif defined (_WTMP_FILE)

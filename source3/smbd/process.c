@@ -19,23 +19,9 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
-/*
- * Size of data we can send to client. Set
- *  by the client for all protocols above CORE.
- *  Set by us for CORE protocol.
- */
-int max_send = BUFFER_SIZE;
-/*
- * Size of the data we can receive. Set by us.
- * Can be modified by the max xmit parameter.
- */
-int max_recv = BUFFER_SIZE;
-
-SIG_ATOMIC_T reload_after_sighup = 0;
-SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
-extern int max_send;
 
 static void construct_reply_common(struct smb_request *req, const char *inbuf,
 				   char *outbuf);
@@ -406,12 +392,6 @@ void init_smb_request(struct smb_request *req,
 	req->outbuf = NULL;
 }
 
-/****************************************************************************
- structure to hold a linked list of queued messages.
- for processing.
-****************************************************************************/
-
-static struct pending_message_list *deferred_open_queue;
 
 /****************************************************************************
  Function to push a message onto the tail of a linked list of smb messages ready
@@ -1351,8 +1331,6 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 	uint16 session_tag;
 	connection_struct *conn = NULL;
 
-	static uint16 last_session_tag = UID_FIELD_INVALID;
-
 	errno = 0;
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
@@ -1543,7 +1521,6 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 
 static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool encrypted)
 {
-	static int trans_num;
 	int msg_type = CVAL(inbuf,0);
 
 	DO_PROFILE_INC(smb_count);
@@ -1587,8 +1564,6 @@ const char *smb_fn_name(int type)
  Helper functions for contruct_reply.
 ****************************************************************************/
 
-static uint32 common_flags2 = FLAGS2_LONG_PATH_COMPONENTS|FLAGS2_32_BIT_ERROR_CODES;
-
 void add_to_common_flags2(uint32 v)
 {
 	common_flags2 |= v;
@@ -1629,8 +1604,6 @@ void construct_reply_common_req(struct smb_request *req, char *outbuf)
 
 void chain_reply(struct smb_request *req)
 {
-	static char *orig_inbuf;
-
 	/*
 	 * Dirty little const_discard: We mess with req->inbuf, which is
 	 * declared as const. If maybe at some point this routine gets
@@ -1839,9 +1812,6 @@ void chain_reply(struct smb_request *req)
 
 void check_reload(time_t t)
 {
-	static pid_t mypid = 0;
-	static time_t last_smb_conf_reload_time = 0;
-	static time_t last_printer_reload_time = 0;
 	time_t printcap_cache_time = (time_t)lp_printcap_cache_time();
 
 	if(last_smb_conf_reload_time == 0) {

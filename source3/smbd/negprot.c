@@ -19,14 +19,10 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 extern fstring remote_proto;
 extern enum protocol_types Protocol;
-extern int max_recv;
-
-bool global_encrypted_passwords_negotiated = False;
-bool global_spnego_negotiated = False;
-struct auth_context *negprot_global_auth_context = NULL;
 
 static void get_challenge(uint8 buff[8])
 {
@@ -515,8 +511,6 @@ void reply_negprot(struct smb_request *req)
 	char **cliprotos;
 	int i;
 	size_t converted_size;
-
-	static bool done_negprot = False;
 
 	START_PROFILE(SMBnegprot);
 

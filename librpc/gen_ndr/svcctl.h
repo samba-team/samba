@@ -43,6 +43,12 @@ struct SERVICE_STATUS {
 	uint32_t wait_hint;
 };
 
+struct SERVICE_STATUS_PROCESS {
+	struct SERVICE_STATUS status;
+	uint32_t process_id;
+	uint32_t service_flags;
+}/* [public] */;
+
 struct ENUM_SERVICE_STATUS {
 	const char * service_name;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * display_name;/* [relative,flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
@@ -97,6 +103,57 @@ enum SERVICE_CONTROL
 #endif
 ;
 
+enum svcctl_ErrorControl
+#ifndef USE_UINT_ENUMS
+ {
+	SVCCTL_SVC_ERROR_IGNORE=0x00000000,
+	SVCCTL_SVC_ERROR_NORMAL=0x00000001,
+	SVCCTL_SVC_ERROR_CRITICAL=0x00000002,
+	SVCCTL_SVC_ERROR_SEVERE=0x00000003
+}
+#else
+ { __donnot_use_enum_svcctl_ErrorControl=0x7FFFFFFF}
+#define SVCCTL_SVC_ERROR_IGNORE ( 0x00000000 )
+#define SVCCTL_SVC_ERROR_NORMAL ( 0x00000001 )
+#define SVCCTL_SVC_ERROR_CRITICAL ( 0x00000002 )
+#define SVCCTL_SVC_ERROR_SEVERE ( 0x00000003 )
+#endif
+;
+
+enum svcctl_StartType
+#ifndef USE_UINT_ENUMS
+ {
+	SVCCTL_BOOT_START=0x00000000,
+	SVCCTL_SYSTEM_START=0x00000001,
+	SVCCTL_AUTO_START=0x00000002,
+	SVCCTL_DEMAND_START=0x00000003,
+	SVCCTL_DISABLED=0x00000004
+}
+#else
+ { __donnot_use_enum_svcctl_StartType=0x7FFFFFFF}
+#define SVCCTL_BOOT_START ( 0x00000000 )
+#define SVCCTL_SYSTEM_START ( 0x00000001 )
+#define SVCCTL_AUTO_START ( 0x00000002 )
+#define SVCCTL_DEMAND_START ( 0x00000003 )
+#define SVCCTL_DISABLED ( 0x00000004 )
+#endif
+;
+
+enum svcctl_ServiceState
+#ifndef USE_UINT_ENUMS
+ {
+	SVCCTL_STATE_ACTIVE=0x00000001,
+	SVCCTL_STATE_INACTIVE=0x00000002,
+	SVCCTL_STATE_ALL=(SVCCTL_STATE_ACTIVE|SVCCTL_STATE_INACTIVE)
+}
+#else
+ { __donnot_use_enum_svcctl_ServiceState=0x7FFFFFFF}
+#define SVCCTL_STATE_ACTIVE ( 0x00000001 )
+#define SVCCTL_STATE_INACTIVE ( 0x00000002 )
+#define SVCCTL_STATE_ALL ( (SVCCTL_STATE_ACTIVE|SVCCTL_STATE_INACTIVE) )
+#endif
+;
+
 /* bitmap svcctl_MgrAccessMask */
 #define SC_RIGHT_MGR_CONNECT ( 0x0001 )
 #define SC_RIGHT_MGR_CREATE_SERVICE ( 0x0002 )
@@ -118,8 +175,8 @@ enum SERVICE_CONTROL
 
 struct QUERY_SERVICE_CONFIG {
 	uint32_t service_type;
-	uint32_t start_type;
-	uint32_t error_control;
+	enum svcctl_StartType start_type;
+	enum svcctl_ErrorControl error_control;
 	const char *executablepath;/* [unique,range(0,8192),charset(UTF16)] */
 	const char *loadordergroup;/* [unique,range(0,8192),charset(UTF16)] */
 	uint32_t tag_id;
@@ -127,6 +184,64 @@ struct QUERY_SERVICE_CONFIG {
 	const char *startname;/* [unique,range(0,8192),charset(UTF16)] */
 	const char *displayname;/* [unique,range(0,8192),charset(UTF16)] */
 }/* [gensize,public] */;
+
+enum svcctl_ConfigLevel
+#ifndef USE_UINT_ENUMS
+ {
+	SERVICE_CONFIG_DESCRIPTION=0x00000001,
+	SERVICE_CONFIG_FAILURE_ACTIONS=0x00000002
+}
+#else
+ { __donnot_use_enum_svcctl_ConfigLevel=0x7FFFFFFF}
+#define SERVICE_CONFIG_DESCRIPTION ( 0x00000001 )
+#define SERVICE_CONFIG_FAILURE_ACTIONS ( 0x00000002 )
+#endif
+;
+
+struct SERVICE_DESCRIPTION {
+	const char * description;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,public] */;
+
+enum SC_ACTION_TYPE
+#ifndef USE_UINT_ENUMS
+ {
+	SC_ACTION_NONE=0,
+	SC_ACTION_RESTART=1,
+	SC_ACTION_REBOOT=2,
+	SC_ACTION_RUN_COMMAND=3
+}
+#else
+ { __donnot_use_enum_SC_ACTION_TYPE=0x7FFFFFFF}
+#define SC_ACTION_NONE ( 0 )
+#define SC_ACTION_RESTART ( 1 )
+#define SC_ACTION_REBOOT ( 2 )
+#define SC_ACTION_RUN_COMMAND ( 3 )
+#endif
+;
+
+struct SC_ACTION {
+	enum SC_ACTION_TYPE type;
+	uint32_t delay;
+};
+
+struct SERVICE_FAILURE_ACTIONS {
+	uint32_t reset_period;
+	const char * rebootmsg;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * command;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t num_actions;/* [range(0,1024)] */
+	struct SC_ACTION *actions;/* [relative,size_is(num_actions)] */
+}/* [gensize,public] */;
+
+enum svcctl_StatusLevel
+#ifndef USE_UINT_ENUMS
+ {
+	SVC_STATUS_PROCESS_INFO=0x00000000
+}
+#else
+ { __donnot_use_enum_svcctl_StatusLevel=0x7FFFFFFF}
+#define SVC_STATUS_PROCESS_INFO ( 0x00000000 )
+#endif
+;
 
 
 struct svcctl_CloseServiceHandle {
@@ -273,8 +388,8 @@ struct svcctl_ChangeServiceConfigW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
-		uint32_t start;
-		uint32_t error;
+		enum svcctl_StartType start_type;
+		enum svcctl_ErrorControl error_control;
 		const char *binary_path;/* [unique,charset(UTF16)] */
 		const char *load_order_group;/* [unique,charset(UTF16)] */
 		const char *dependencies;/* [unique,charset(UTF16)] */
@@ -298,8 +413,8 @@ struct svcctl_CreateServiceW {
 		const char *DisplayName;/* [unique,charset(UTF16)] */
 		uint32_t desired_access;
 		uint32_t type;
-		uint32_t start_type;
-		uint32_t error_control;
+		enum svcctl_StartType start_type;
+		enum svcctl_ErrorControl error_control;
 		const char *binary_path;/* [charset(UTF16)] */
 		const char *LoadOrderGroupKey;/* [unique,charset(UTF16)] */
 		uint8_t *dependencies;/* [unique,size_is(dependencies_size)] */
@@ -340,7 +455,7 @@ struct svcctl_EnumServicesStatusW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
-		uint32_t state;
+		enum svcctl_ServiceState state;
 		uint32_t buf_size;/* [range(0,262144)] */
 		uint32_t *resume_handle;/* [unique] */
 	} in;
@@ -481,8 +596,8 @@ struct svcctl_ChangeServiceConfigA {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t type;
-		uint32_t start;
-		uint32_t error;
+		enum svcctl_StartType start_type;
+		enum svcctl_ErrorControl error_control;
 		const char *binary_path;/* [unique,charset(UTF16)] */
 		const char *load_order_group;/* [unique,charset(UTF16)] */
 		const char *dependencies;/* [unique,charset(UTF16)] */
@@ -506,8 +621,8 @@ struct svcctl_CreateServiceA {
 		const char *DisplayName;/* [unique,charset(UTF16)] */
 		uint32_t desired_access;
 		uint32_t type;
-		uint32_t start_type;
-		uint32_t error_control;
+		enum svcctl_StartType start_type;
+		enum svcctl_ErrorControl error_control;
 		const char *binary_path;/* [unique,charset(UTF16)] */
 		const char *LoadOrderGroupKey;/* [unique,charset(UTF16)] */
 		const char *dependencies;/* [unique,charset(UTF16)] */
@@ -712,7 +827,7 @@ struct svcctl_ChangeServiceConfig2W {
 struct svcctl_QueryServiceConfig2A {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_ConfigLevel info_level;
 		uint32_t buf_size;
 	} in;
 
@@ -728,7 +843,7 @@ struct svcctl_QueryServiceConfig2A {
 struct svcctl_QueryServiceConfig2W {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_ConfigLevel info_level;
 		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 
@@ -744,7 +859,7 @@ struct svcctl_QueryServiceConfig2W {
 struct svcctl_QueryServiceStatusEx {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t info_level;
+		enum svcctl_StatusLevel info_level;
 		uint32_t buf_size;/* [range(0,8192)] */
 	} in;
 

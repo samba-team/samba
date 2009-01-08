@@ -22,8 +22,7 @@
 
 #define DBGC_CLASS DBGC_MSDFS
 #include "includes.h"
-
-extern uint32 global_client_caps;
+#include "smbd/globals.h"
 
 /**********************************************************************
  Parse a DFS pathname of the form \hostname\service\reqpath

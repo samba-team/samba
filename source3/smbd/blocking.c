@@ -18,6 +18,8 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
@@ -40,15 +42,6 @@ typedef struct blocking_lock_record {
 	enum brl_type lock_type;
 	struct smb_request *req;
 } blocking_lock_record;
-
-/* dlink list we store pending lock records on. */
-static blocking_lock_record *blocking_lock_queue;
-
-/* dlink list we move cancelled lock records onto. */
-static blocking_lock_record *blocking_lock_cancelled_queue;
-
-/* The event that makes us process our blocking lock queue */
-static struct timed_event *brl_timeout;
 
 /****************************************************************************
  Determine if this is a secondary element of a chained SMB.
@@ -148,7 +141,6 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t count,
 		uint32_t blocking_pid)
 {
-	static bool set_lock_msg;
 	blocking_lock_record *blr;
 	NTSTATUS status;
 
@@ -211,10 +203,10 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	recalc_brl_timeout();
 
 	/* Ensure we'll receive messages when this is unlocked. */
-	if (!set_lock_msg) {
+	if (!blocking_lock_unlock_state) {
 		messaging_register(smbd_messaging_context(), NULL,
 				   MSG_SMB_UNLOCK, received_unlock_msg);
-		set_lock_msg = True;
+		blocking_lock_unlock_state = true;
 	}
 
 	DEBUG(3,("push_blocking_lock_request: lock request blocked with "
@@ -784,17 +776,16 @@ bool blocking_lock_cancel(files_struct *fsp,
 			unsigned char locktype,
                         NTSTATUS err)
 {
-	static bool initialized;
 	char msg[MSG_BLOCKING_LOCK_CANCEL_SIZE];
 	blocking_lock_record *blr;
 
-	if (!initialized) {
+	if (!blocking_lock_cancel_state) {
 		/* Register our message. */
 		messaging_register(smbd_messaging_context(), NULL,
 				   MSG_SMB_BLOCKING_LOCK_CANCEL,
 				   process_blocking_lock_cancel_message);
 
-		initialized = True;
+		blocking_lock_cancel_state = True;
 	}
 
 	for (blr = blocking_lock_queue; blr; blr = blr->next) {

@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /****************************************************************************
  Normalise for DOS usage.
@@ -150,10 +151,9 @@ uint64_t sys_disk_free(connection_struct *conn, const char *path, bool small_que
 	}
 
 	if ((*dsize)<1) {
-		static bool done = false;
-		if (!done) {
+		if (!dfree_broken) {
 			DEBUG(0,("WARNING: dfree is broken on this system\n"));
-			done=true;
+			dfree_broken=true;
 		}
 		*dsize = 20*1024*1024/(*bsize);
 		*dfree = MAX(1,*dfree);

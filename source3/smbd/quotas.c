@@ -413,8 +413,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #include <rpc/nettype.h>
 #include <rpc/xdr.h>
 
-static int quotastat;
-
 static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 {
 	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
@@ -426,10 +424,14 @@ static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 
 static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
+	int quotastat;
+
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
 	}
+	gqr->status = quotastat;
+
 	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
 		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
 		return 0;
@@ -503,14 +505,14 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	}
 
 	/*
-	 * quotastat returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
+	 * gqr.status returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
 	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
 	 * something sensible.
 	 */
 
-	switch ( quotastat ) {
+	switch (gqr.status) {
 	case 0:
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", gqr.status));
 		ret = False;
 		goto out;
 
@@ -525,16 +527,16 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	case 3:
 		D.dqb_bsoftlimit = 1;
 		D.dqb_curblocks = 1;
-		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", gqr.status));
 		break;
 
 	default:
-		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", gqr.status ));
 		break;
 	}
 
 	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
-			quotastat,
+			gqr.status,
 			gqr.getquota_rslt_u.gqr_rquota.rq_bsize,
 			gqr.getquota_rslt_u.gqr_rquota.rq_active,
 			gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit,
@@ -968,8 +970,6 @@ bool disk_quotas(const char *path, uint64_t *bsize, uint64_t *dfree, uint64_t *d
 #endif
 #include <rpc/xdr.h>
 
-static int quotastat;
-
 static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 {
 	if (!xdr_string(xdrsp, &args->gqa_pathp, RQ_PATHLEN ))
@@ -981,10 +981,14 @@ static int my_xdr_getquota_args(XDR *xdrsp, struct getquota_args *args)
 
 static int my_xdr_getquota_rslt(XDR *xdrsp, struct getquota_rslt *gqr)
 {
+	int quotastat;
+
 	if (!xdr_int(xdrsp, &quotastat)) {
 		DEBUG(6,("nfs_quotas: Status bad or zero\n"));
 		return 0;
 	}
+	gqr->status = quotastat;
+
 	if (!xdr_int(xdrsp, &gqr->getquota_rslt_u.gqr_rquota.rq_bsize)) {
 		DEBUG(6,("nfs_quotas: Block size bad or zero\n"));
 		return 0;
@@ -1058,14 +1062,14 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	}
 
 	/* 
-	 * quotastat returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
+	 * gqr->status returns 0 if the rpc call fails, 1 if quotas exist, 2 if there is
 	 * no quota set, and 3 if no permission to get the quota.  If 0 or 3 return
 	 * something sensible.
 	 */   
 
-	switch ( quotastat ) {
+	switch (gqr.status) {
 	case 0:
-		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas Failed!  Error \"%i\" \n", gqr.status));
 		ret = False;
 		goto out;
 
@@ -1080,16 +1084,16 @@ static bool nfs_quotas(char *nfspath, uid_t euser_id, uint64_t *bsize, uint64_t 
 	case 3:
 		D.dqb_bsoftlimit = 1;
 		D.dqb_curblocks = 1;
-		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas returned \"%i\" \n", gqr.status));
 		break;
 
 	default:
-		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", quotastat ));
+		DEBUG(9,("nfs_quotas: Remote Quotas Questionable!  Error \"%i\" \n", gqr.status));
 		break;
 	}
 
 	DEBUG(10,("nfs_quotas: Let`s look at D a bit closer... status \"%i\" bsize \"%i\" active? \"%i\" bhard \"%i\" bsoft \"%i\" curb \"%i\" \n",
-			quotastat,
+			gqr.status,
 			gqr.getquota_rslt_u.gqr_rquota.rq_bsize,
 			gqr.getquota_rslt_u.gqr_rquota.rq_active,
 			gqr.getquota_rslt_u.gqr_rquota.rq_bhardlimit,

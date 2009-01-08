@@ -51,6 +51,7 @@
 
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 #if 1
 #define M_DEBUG(level, x) DEBUG(level, x)
@@ -81,25 +82,14 @@
 /*the following number is a fnv1 of the string: idra@samba.org 2002 */
 #define FNV1_INIT  0xa6b93095
 
-/* these tables are used to provide fast tests for characters */
-static unsigned char char_flags[256];
-
 #define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
 
-/*
-  this determines how many characters are used from the original filename
-  in the 8.3 mangled name. A larger value leads to a weaker hash and more collisions.
-  The largest possible value is 6.
-*/
-static unsigned mangle_prefix;
-
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
-static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-static unsigned char base_reverse[256];
+static const char * const basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */
-static const char *reserved_names[] = 
+static const char * const reserved_names[] =
 { "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
   "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
 
@@ -679,7 +669,7 @@ static void init_tables(void)
 /*
   the following provides the abstraction layer to make it easier
   to drop in an alternative mangling implementation */
-static struct mangle_fns mangle_fns = {
+static const struct mangle_fns mangle_hash2_fns = {
 	mangle_reset,
 	is_mangled,
 	must_mangle,
@@ -689,7 +679,7 @@ static struct mangle_fns mangle_fns = {
 };
 
 /* return the methods for this mangling implementation */
-struct mangle_fns *mangle_hash2_init(void)
+const struct mangle_fns *mangle_hash2_init(void)
 {
 	/* the mangle prefix can only be in the mange 1 to 6 */
 	mangle_prefix = lp_mangle_prefix();
@@ -703,7 +693,7 @@ struct mangle_fns *mangle_hash2_init(void)
 	init_tables();
 	mangle_reset();
 
-	return &mangle_fns;
+	return &mangle_hash2_fns;
 }
 
 static void posix_mangle_reset(void)
@@ -746,7 +736,7 @@ static bool posix_name_to_8_3(const char *in,
 }
 
 /* POSIX paths backend - no mangle. */
-static struct mangle_fns posix_mangle_fns = {
+static const struct mangle_fns posix_mangle_fns = {
 	posix_mangle_reset,
 	posix_is_mangled,
 	posix_must_mangle,
@@ -755,7 +745,7 @@ static struct mangle_fns posix_mangle_fns = {
 	posix_name_to_8_3
 };
 
-struct mangle_fns *posix_mangle_init(void)
+const struct mangle_fns *posix_mangle_init(void)
 {
 	return &posix_mangle_fns;
 }

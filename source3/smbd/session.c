@@ -27,21 +27,20 @@
 */
 
 #include "includes.h"
+#include "smbd/globals.h"
 
 /********************************************************************
 ********************************************************************/
 
 static struct db_context *session_db_ctx(void)
 {
-	static struct db_context *ctx;
+	if (session_db_ctx_ptr)
+		return session_db_ctx_ptr;
 
-	if (ctx)
-		return ctx;
-
-	ctx = db_open(NULL, lock_path("sessionid.tdb"), 0,
-		      TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-		      O_RDWR | O_CREAT, 0644);
-	return ctx;
+	session_db_ctx_ptr = db_open(NULL, lock_path("sessionid.tdb"), 0,
+				     TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				     O_RDWR | O_CREAT, 0644);
+	return session_db_ctx_ptr;
 }
 
 bool session_init(void)
