@@ -32,7 +32,7 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node 0 "ctdb listnodes | wc -l"
+try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
 
 get_stat ()
@@ -61,15 +61,15 @@ n=0
 while [ $n -lt $num_nodes ] ; do
     echo "Getting initial statistics for node ${n}..."
     
-    try_command_on_node -v $n ctdb statistics
+    try_command_on_node -v $n $CTDB statistics
 
     before_req_control=$(get_stat "req_control" "$out")
     before_reply_control=$(get_stat "reply_control" "$out")
     before_node_packets_recv=$(get_stat "node_packets_recv" "$out")
 
-    try_command_on_node $n ctdb statisticsreset
+    try_command_on_node $n $CTDB statisticsreset
 
-    try_command_on_node -v $n ctdb statistics
+    try_command_on_node -v $n $CTDB statistics
 
     after_req_control=$(get_stat "req_control" "$out")
     after_reply_control=$(get_stat "reply_control" "$out")

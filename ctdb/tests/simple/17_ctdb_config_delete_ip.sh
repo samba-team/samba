@@ -39,7 +39,7 @@ set -e
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 0 'ctdb ip -n all | sed -e "1d"'
+try_command_on_node -v 0 "$CTDB ip -n all | sed -e '1d'"
 
 # Select an IP/node to remove.
 num_ips=$(echo "$out" | wc -l)
@@ -53,7 +53,7 @@ while [ $i -le $num_to_remove ] ; do
 done <<<"$out"
 
 echo "Attempting to remove ${ip_to_remove} from node ${test_node}."
-try_command_on_node $test_node ctdb delip $ip_to_remove
+try_command_on_node $test_node $CTDB delip $ip_to_remove
 
 echo "Sleeping..."
 sleep_for 1

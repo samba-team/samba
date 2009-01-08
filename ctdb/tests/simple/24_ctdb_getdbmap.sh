@@ -41,7 +41,7 @@ make_temp_db_filename ()
     awk '{printf "%s.tdb\n", $1}'
 }
 
-try_command_on_node -v 0 "ctdb getdbmap"
+try_command_on_node -v 0 "$CTDB getdbmap"
 
 db_map_pattern='^(Number of databases:[[:digit:]]+|dbid:0x[[:xdigit:]]+ name:[^[:space:]]+ path:[^[:space:]]+)$'
 
@@ -52,8 +52,8 @@ num_db_init=$(echo "$out" | sed -n -e '1s/.*://p')
 for i in $(seq 1 5) ; do
     f=$(make_temp_db_filename)
     echo "Creating test database: $f"
-    try_command_on_node 0 ctdb attach "$f"
-    try_command_on_node 0 ctdb getdbmap
+    try_command_on_node 0 $CTDB attach "$f"
+    try_command_on_node 0 $CTDB getdbmap
     sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern" "$out"
     num=$(echo "$out" | sed -n -e '1s/^.*://p')
     if [ $num = $(($num_db_init + $i)) ] ; then

@@ -34,25 +34,25 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 # This is an attempt at being independent of the number of nodes
 # reported by "ctdb getpid -n all".
-try_command_on_node 0 "ctdb listnodes | wc -l"
+try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
 echo "There are $num_nodes nodes..."
 
 # Call getpid a few different ways and make sure the answer is always the same.
 
-try_command_on_node -v 0 "onnode -q all ctdb getpid"
+try_command_on_node -v 0 "onnode -q all $CTDB getpid | sort"
 pids_onnode="$out"
 
-try_command_on_node -v 0 "ctdb getpid -n all"
+try_command_on_node -v 0 "$CTDB getpid -n all | sort"
 pids_getpid_all="$out"
 
 cmd=""
 n=0
 while [ $n -lt $num_nodes ] ; do
-    cmd="${cmd}${cmd:+; }ctdb getpid -n $n"
+    cmd="${cmd}${cmd:+; }$CTDB getpid -n $n"
     n=$(($n + 1))
 done
-try_command_on_node -v 0 "$cmd"
+try_command_on_node -v 0 "( $cmd ) | sort"
 pids_getpid_n="$out"
 
 if [ "$pids_onnode" = "$pids_getpid_all" -a \
@@ -73,6 +73,9 @@ while [ $n -lt $num_nodes ] ; do
     echo -n "Node ${n}, PID ${pid} looks to be running \"$out\" - "
     if [ "$out" = "ctdbd" ] ; then
 	echo "GOOD!"
+    elif [ -n "$VALGRIND" -a "$out" = "memcheck" ] ; then
+	# We could check cmdline too if this isn't good enough.
+	echo "GOOD enough!"
     else
 	echo "BAD!"
 	testfailures=1

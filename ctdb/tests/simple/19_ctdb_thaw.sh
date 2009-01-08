@@ -44,13 +44,13 @@ test_node=1
 
 echo "Freezing node $test_node"
 
-try_command_on_node 0 ctdb freeze -n $test_node
+try_command_on_node 0 $CTDB freeze -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node frozen
 
 echo "That worked!  Now thawing node $test_node"
 
-try_command_on_node 0 ctdb thaw -n $test_node
+try_command_on_node 0 $CTDB thaw -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unfrozen
 

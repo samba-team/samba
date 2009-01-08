@@ -3,12 +3,12 @@
 test_info()
 {
     cat <<EOF
-Verify the operation of the 'ctdb ban' command.
+Verify the operation of the 'ctdb unban' command.
 
-This is a superficial test of the 'ctdb ban' command.  It trusts
-information from CTDB that indicates that the IP failover has
-happened correctly.  Another test should check that the failover
-has actually happened at the networking level.
+This is a superficial test of the 'ctdb uban' command.  It trusts
+information from CTDB that indicates that the IP failover and failback
+has happened correctly.  Another test should check that the failover
+and failback has actually happened at the networking level.
 
 Prerequisites:
 
@@ -22,14 +22,14 @@ Steps:
    node changes to 'banned'.
 4. Verify that the public IP addresses that were being served by
    the node are failed over to one of the other nodes.
-5. When the ban expires ensure that the status of the node changes
-   back to 'OK' and that the public IP addresses move back to the
+5. Before the ban timeout expires, use 'ctdb unban' to unban the
    node.
+6. Verify that the status of the node changes back to 'OK' and that
+   the public IP addresses move back to the node.
 
 Expected results:
 
-* The status of the banned nodes changes as expected and IP addresses
-  failover as expected.
+* The 'ctdb unban' command successfully unbans a banned node.
 EOF
 }
 
@@ -41,26 +41,29 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-echo "Getting list of public IPs..."
-try_command_on_node 0 'ctdb ip -n all | sed -e "1d"'
+echo "Finding out which node is the recovery master..."
+try_command_on_node -v 0 "$CTDB recmaster"
+recmaster=$out
 
-# When selecting test_node we just want a node that has public IPs.
-# This will work and is economically semi-randomly.  :-)
-read x test_node <<<"$out"
+echo "Getting list of public IPs..."
+try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
+
+# See 41_ctdb_ban.sh for an explanation of why test_node is chosen
+# like this.
+test_node=""
 
 ips=""
 while read ip pnn ; do
-    if [ "$pnn" = "$test_node" ] ; then
-	ips="${ips}${ips:+ }${ip}"
-    fi
+    [ -z "$test_node" -a $recmaster -ne $pnn ] && test_node=$pnn
+    [ "$pnn" = "$test_node" ] && ips="${ips}${ips:+ }${ip}"
 done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
 echo "Selected node ${test_node} with IPs: $ips"
 
-ban_time=15
+ban_time=60
 
 echo "Banning node $test_node for $ban_time seconds"
-try_command_on_node 1 ctdb ban $ban_time -n $test_node
+try_command_on_node 1 $CTDB ban $ban_time -n $test_node
 
 # Avoid a potential race condition...
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node banned
@@ -72,8 +75,8 @@ else
     testfailures=1
 fi
 
-echo "Sleeping until ban expires..."
-sleep_for $ban_time
+echo "Unbanning node $test_node"
+try_command_on_node 1 $CTDB unban -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node unbanned
 

@@ -30,7 +30,7 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node -v 0 "ctdb dumpmemory"
+try_command_on_node -v 0 "$CTDB dumpmemory"
 
 pat='^([[:space:]].+[[:space:]]+contains[[:space:]]+[[:digit:]]+ bytes in[[:space:]]+[[:digit:]]+ blocks \(ref [[:digit:]]+\)[[:space:]]+0x[[:xdigit:]]+|[[:space:]]+reference to: .+|full talloc report on .+ \(total[[:space:]]+[[:digit:]]+ bytes in [[:digit:]]+ blocks\))$'
 
@@ -38,10 +38,10 @@ sanity_check_output 10 "$pat" "$out"
 
 echo "Checking output using '-n all'..."
 
-try_command_on_node 0 "ctdb listnodes"
+try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
-try_command_on_node 0 "ctdb dumpmemory" -n all
+try_command_on_node 0 "$CTDB dumpmemory" -n all
 sanity_check_output 10 "$pat" "$out"
 
 if [ $(fgrep -c 'full talloc report on' <<<"$out") -eq  $num_nodes ] ; then

@@ -40,7 +40,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 var="RecoverTimeout"
 
-try_command_on_node -v 0 ctdb getvar $var
+try_command_on_node -v 0 $CTDB getvar $var
 
 val="${out#*= }"
 
@@ -48,11 +48,11 @@ echo "Going to try incrementing it..."
 
 incr=$(($val + 1))
 
-try_command_on_node 0 ctdb setvar $var $incr
+try_command_on_node 0 $CTDB setvar $var $incr
 
 echo "That seemed to work, let's check the value..."
 
-try_command_on_node -v 0 ctdb getvar $var
+try_command_on_node -v 0 $CTDB getvar $var
 
 newval="${out#*= }"
 
@@ -62,7 +62,7 @@ if [ "$incr" != "$newval" ] ; then
 fi
 
 echo "Look's good!  Now verifying with \"ctdb listvars\""
-try_command_on_node -v 0 "ctdb listvars | grep '^$var'"
+try_command_on_node -v 0 "$CTDB listvars | grep '^$var'"
 
 check="${out#*= }"
 
@@ -73,7 +73,7 @@ if [ "$incr" != "$check" ] ; then
 fi
 
 echo "Look's good!  Putting the old value back..."
-cmd="ctdb setvar $var $val"
+cmd="$CTDB setvar $var $val"
 try_command_on_node 0 $cmd
 
 echo "All done..."

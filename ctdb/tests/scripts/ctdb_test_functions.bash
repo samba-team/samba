@@ -8,8 +8,6 @@ fail ()
 
 ######################################################################
 
-#. /root/SOFS/autosofs/scripts/tester.bash
-
 ctdb_test_begin ()
 {
     local name="$1"
@@ -391,17 +389,17 @@ daemons_stop ()
     echo "Sleeping for a while..."
     sleep_for 1
 
-    if pidof $CTDB_DIR/bin/ctdbd >/dev/null ; then
+    if pgrep -f $CTDB_DIR/bin/ctdbd >/dev/null ; then
 	echo "Killing remaining daemons..."
-	killall $CTDB_DIR/bin/ctdbd
+	pkill -f $CTDB_DIR/bin/ctdbd
 
-	if pidof $CTDB_DIR/bin/ctdbd >/dev/null ; then
+	if pgrep -f $CTDB_DIR/bin/ctdbd >/dev/null ; then
 	    echo "Once more with feeling.."
-	    killall -9 $CTDB_DIR/bin/ctdbd
+	    pkill -9 $CTDB_DIR/bin/ctdbd
 	fi
     fi
 
-    var_dir=$CTDB_DIR/tests/var
+    local var_dir=$CTDB_DIR/tests/var
     rm -rf $var_dir/test.db
 }
 
@@ -472,7 +470,8 @@ daemons_start ()
 	    ctdb_options="$ctdb_options --public-addresses=$public_addresses"
 	fi
 
-	$VALGRIND bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" || return 1
+	# Need the $PWD so we can use "pkill -f" to kill the daemons.
+	$VALGRIND $PWD/bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" ||return 1
     done
 
     if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 

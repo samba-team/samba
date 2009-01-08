@@ -32,7 +32,7 @@ set -e
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 1 ctdb ip -n all
+try_command_on_node -v 1 $CTDB ip -n all
 ips=$(echo "$out" | sed -e '1d')
 colons=$(echo "$ips" | sed -e 's@^@:@' -e 's@$@:@' -e 's@ @:@')
 
@@ -48,7 +48,7 @@ done <<<"$ips" # bashism to avoid problem setting variable in pipeline.
 
 [ "$testfailures" != 1 ] && echo "Looks good!"
 
-cmd="ctdb -Y ip -n all | sed -e '1d'"
+cmd="$CTDB -Y ip -n all | sed -e '1d'"
 echo "Checking that \"$cmd\" produces expected output..."
 
 try_command_on_node 1 "$cmd"

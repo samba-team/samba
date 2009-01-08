@@ -40,7 +40,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 test_node=1
 
-try_command_on_node -v 0 ctdb getmonmode -n $test_node
+try_command_on_node -v 0 $CTDB getmonmode -n $test_node
 
 sanity_check_output \
     1 \
@@ -49,7 +49,7 @@ sanity_check_output \
 
 colons=$(printf ':mode:\n:0:')
 
-try_command_on_node -v 0 ctdb -Y getmonmode -n $test_node
+try_command_on_node -v 0 $CTDB -Y getmonmode -n $test_node
 
 if [ "$out" = "$colons" ] ; then
     echo "Looks OK"
@@ -58,7 +58,7 @@ else
     testfailures=1
 fi
 
-try_command_on_node -v 0 ctdb disablemonitor -n $test_node
+try_command_on_node -v 0 $CTDB disablemonitor -n $test_node
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node monoff
 

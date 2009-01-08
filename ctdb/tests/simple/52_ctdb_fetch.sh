@@ -3,7 +3,7 @@
 test_info()
 {
     cat <<EOF
-Run the ctdb_bench test and sanity check the output.
+Run the ctdb_fetch test and sanity check the output.
 
 This doesn't test for performance regressions or similarly anything
 useful.  Only vague sanity checking of results is done.
@@ -15,14 +15,14 @@ Prerequisites:
 Steps:
 
 1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Run ctdb_bench on all nodes with default options.
+2. Run ctdb_fetch on all nodes with default options.
 3. Ensure that the number of +ve and -ive messages are within 1% of
    each other.
 4. Ensure that the number of messages per second is greater than 10.
 
 Expected results:
 
-* ctdb_bench runs without error and prints reasonable results.
+* ctdb_fetch runs without error and prints reasonable results.
 EOF
 }
 
@@ -37,8 +37,8 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
-echo "Running ctdb_bench on all $num_nodes nodes."
-try_command_on_node -v -pq all $VALGRIND ctdb_bench -n $num_nodes
+echo "Running ctdb_fetch on all $num_nodes nodes."
+try_command_on_node -v -pq all $VALGRIND ctdb_fetch -n $num_nodes
 
 # Get the last line of output.
 while read line ; do
@@ -89,6 +89,5 @@ else
     echo "BAD: percentage difference between +ive and -ive ($perc_diff%) > 1%"
     exit 1
 fi
-
 
 ctdb_test_exit

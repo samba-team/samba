@@ -40,7 +40,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 # Restart when done since things are likely to be broken.
 ctdb_test_exit_hook="restart_ctdb"
 
-try_command_on_node 0 "ctdb listnodes | wc -l"
+try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
 echo "There are $num_nodes nodes..."
 
@@ -50,7 +50,7 @@ if [ $num_nodes -lt 2 ] ; then
 fi
 
 echo "Getting list of public IPs..."
-try_command_on_node -v 0 'ctdb ip -n all | sed -e "1d"'
+try_command_on_node -v 0 "$CTDB ip -n all | sed -e '1d'"
 
 # Select an IP/node to move.
 num_ips=$(echo "$out" | wc -l)
@@ -76,13 +76,13 @@ while [ $test_node -eq $to_node ] ; do
 done
 
 echo "Turning off DeterministicIPs..."
-try_command_on_node 0 ctdb setvar DeterministicIPs 0 -n all
+try_command_on_node 0 $CTDB setvar DeterministicIPs 0 -n all
 
 echo "Turning on NoIPFailback..."
-try_command_on_node 0 ctdb setvar NoIPFailback 1 -n all
+try_command_on_node 0 $CTDB setvar NoIPFailback 1 -n all
 
 echo "Attempting to move ${ip_to_move} from node ${test_node} to node ${to_node}."
-try_command_on_node $test_node ctdb moveip $ip_to_move $to_node
+try_command_on_node $test_node $CTDB moveip $ip_to_move $to_node
 
 if wait_until_ips_are_on_nodeglob "[!${test_node}]" $ip_to_move ; then
     echo "IP moved from ${test_node}."

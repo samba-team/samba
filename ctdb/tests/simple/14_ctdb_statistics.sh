@@ -35,11 +35,11 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 pattern='^(CTDB version 1|Gathered statistics for [[:digit:]]+ nodes|[[:space:]]+[[:alpha:]_]+[[:space:]]+[[:digit:]]+|[[:space:]]+(node|client|timeouts)|[[:space:]]+[[:alpha:]_]+_latency[[:space:]]+[[:digit:]]+\.[[:digit:]]+[[:space:]]sec)$'
 
-try_command_on_node -v 0 "onnode -q 1 ctdb statistics"
+try_command_on_node -v 1 "$CTDB statistics"
 
 sanity_check_output 38 "$pattern" "$out"
 
-try_command_on_node -v 0 "onnode -q 1 ctdb statistics -n all"
+try_command_on_node -v 1 "$CTDB statistics -n all"
 
 sanity_check_output 38 "$pattern" "$out"
 

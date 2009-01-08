@@ -17,7 +17,9 @@ EOF
 
 ######################################################################
 
-temp=$(getopt -n "$prog" -o "xh" -l help -- "$@")
+with_summary=false
+
+temp=$(getopt -n "$prog" -o "xhs" -l help -- "$@")
 
 [ $? != 0 ] && usage
 
@@ -26,6 +28,7 @@ eval set -- "$temp"
 while true ; do
     case "$1" in
 	-x) set -x; shift ;;
+	-s) with_summary=true ; shift ;;
 	--) shift ; break ;;
 	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
     esac
@@ -33,9 +36,29 @@ done
 
 ######################################################################
 
+tests_total=0
+tests_passed=0
+summary=""
+
+rows=$(if tty -s ; then stty size ; else echo x 80 ; fi | sed -e 's@.* @@')
+ww=$((rows - 7))
+
 for f; do
     [ -x $f ] || fail "test \"$f\" is not executable"
-    ctdb_test_run "$f"
+    tests_total=$(($tests_total + 1))
+    if ctdb_test_run "$f" ; then
+	tests_passed=$(($tests_passed + 1))
+	t="PASSED"
+    else
+	t="FAILED"
+    fi
+    summary=$(printf "%s\n%-${ww}s%s" "$summary" "$f" "$t")
 done
+
+if $with_summary ; then
+    echo "$summary"
+    echo
+    echo "${tests_passed}/${tests_total} tests passed"
+fi
 
 test_exit

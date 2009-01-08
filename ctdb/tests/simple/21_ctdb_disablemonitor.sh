@@ -47,7 +47,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 test_node=1
 
 # We need this for later, so we know how long to sleep.
-try_command_on_node -v 0 ctdb getvar MonitorInterval -n $test_node
+try_command_on_node -v 0 $CTDB getvar MonitorInterval -n $test_node
 monitor_interval="${out#*= }"
 echo "Monitor interval on node $test_node is $monitor_interval seconds."
 
@@ -71,7 +71,7 @@ try_command_on_node -v $test_node ls -l "$detected"
 echo "Waiting until recovery is complete..."
 wait_until 30 onnode $test_node ! test -e "$recovered_flag"
 
-try_command_on_node -v 0 ctdb disablemonitor -n $test_node
+try_command_on_node -v 0 $CTDB disablemonitor -n $test_node
 
 sanity_check_output \
     1 \

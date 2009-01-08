@@ -43,7 +43,7 @@ set -e
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 echo "Getting list of public IPs..."
-try_command_on_node 0 'ctdb ip -n all | sed -e "1d"'
+try_command_on_node 0 "$CTDB ip -n all | sed -e '1d'"
 
 # When selecting test_node we just want a node that has public IPs.
 # This will work and is economically semi-randomly.  :-)
@@ -101,7 +101,7 @@ done
 
 if [ -n "$add_ip" ] ; then
     echo "Adding IP: ${add_ip/:/ on interface }"
-    try_command_on_node $test_node ctdb addip ${add_ip/:/ }
+    try_command_on_node $test_node $CTDB addip ${add_ip/:/ }
 
     echo "Waiting for IP to be added..."
     wait_until 60 ips_are_on_nodeglob $test_node $test_node_ips ${add_ip%/*}

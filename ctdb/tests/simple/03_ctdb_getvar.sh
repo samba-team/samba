@@ -34,13 +34,13 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node -v 0 "ctdb listvars"
+try_command_on_node -v 0 "$CTDB listvars"
 
 echo "Veryifying all variable values using \"ctdb getvar\"..."
 
 echo "$out" |
 while read var x val ; do
-    try_command_on_node 0 "ctdb getvar $var"
+    try_command_on_node 0 "$CTDB getvar $var"
 
     val2=$(echo $out | sed -e 's@.*[[:space:]]@@')
 

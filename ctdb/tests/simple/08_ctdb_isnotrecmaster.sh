@@ -32,7 +32,7 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-cmd='ctdb isnotrecmaster || true'
+cmd="$CTDB isnotrecmaster || true"
 try_command_on_node all "$cmd"
 echo "Output of \"$cmd\":"
 echo "$out"

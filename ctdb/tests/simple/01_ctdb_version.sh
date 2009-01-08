@@ -39,7 +39,7 @@ if ! try_command_on_node -v 0 "rpm -q ctdb" ; then
 fi
 rpm_ver="${out#ctdb-}"
 
-try_command_on_node -v 0 "ctdb version"
+try_command_on_node -v 0 "$CTDB version"
 ctdb_ver="${out#CTDB version: }"
 
 if [ "$ctdb_ver" = "$rpm_ver" ] ; then

@@ -30,7 +30,7 @@ set -e
 
 onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
-try_command_on_node -v 0 "ctdb listnodes"
+try_command_on_node -v 0 "$CTDB listnodes"
 
 num_nodes=$(echo "$out" | wc -l)
 
@@ -47,7 +47,7 @@ echo "Checking other nodes..."
 n=1
 while [ $n -lt $num_nodes ] ; do
     echo -n "Node ${n}: "
-    try_command_on_node $n "ctdb listnodes"
+    try_command_on_node $n "$CTDB listnodes"
     if [ "$out_0" = "$out" ] ; then
 	echo "OK"
     else

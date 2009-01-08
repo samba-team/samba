@@ -22,6 +22,8 @@ else
 fi
 export CTDB_TEST_WRAPPER
 
+# If we're not running on a real cluster then we need a local copy of
+# ctdb (and other stuff) in $PATH and we will use local daemons.
 if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     export CTDB_TEST_NUM_DAEMONS=3
 
@@ -34,5 +36,10 @@ if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
     PATH="${ctdb_bin_dir}:${PATH}"
 fi
 
+# If $VALGRIND is set then use it whenever ctdb is called, but only if
+# $CTDB is not already set.
+[ -n "$CTDB" ] || export CTDB="${VALGRIND}${VALGRIND:+ }ctdb"
+
+######################################################################
 
 "$@"

@@ -45,7 +45,7 @@ get_debug ()
 
     local out
     
-    try_command_on_node -v 0 "onnode -q ${node} ctdb getdebug"
+    try_command_on_node -v $node "$CTDB getdebug"
     check_debug=$(echo "$out" |
 	sed -r -e 's@Node [[:digit:]] is at debug level ([[:alpha:]]+) \(-?[[:digit:]]\)$@\1@')
 }
@@ -56,7 +56,7 @@ set_and_check_debug ()
     local level="$2"
 
     echo "Setting debug level on node ${node} to ${level}."
-    try_command_on_node 0 "onnode -q ${node} ctdb setdebug ${level}"
+    try_command_on_node $node "$CTDB setdebug ${level}"
 
     local check_debug
     get_debug $node

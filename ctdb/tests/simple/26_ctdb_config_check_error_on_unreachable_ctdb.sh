@@ -42,21 +42,19 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 
 test_node=1
 
-try_command_on_node 0 "ctdb listnodes"
+try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 echo "There are $num_nodes nodes."
 
 echo "Shutting down node ${test_node}..."
-try_command_on_node $test_node ctdb shutdown
+try_command_on_node $test_node $CTDB shutdown
 
 onnode 0 $CTDB_TEST_WRAPPER wait_until_node_has_status $test_node disconnected
 
-msg="ctdb_control error: 'ctdb_control to disconnected node'"
+pat="ctdb_control error: 'ctdb_control to disconnected node'|Node $test_node is DISCONNECTED"
 
 for i in ip disable enable "ban 0" unban listvars ; do
-    try_command_on_node -v 0 ! ctdb $i -n $test_node
-
-    pat="ctdb_control error: 'ctdb_control to disconnected node'|Node $test_node is DISCONNECTED"
+    try_command_on_node -v 0 ! $CTDB $i -n $test_node
 
     if egrep -q "$pat" <<<"$out" ; then
 	echo "OK: \"ctdb ${i}\" fails with \"disconnected node\""
