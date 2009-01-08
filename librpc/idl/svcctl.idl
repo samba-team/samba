@@ -18,10 +18,32 @@ import "misc.idl", "security.idl";
 		uint32 lock_duration;
 	} SERVICE_LOCK_STATUS;
 
+	typedef [v1_enum] enum {
+		SVCCTL_STATE_UNKNOWN		= 0x00000000,	/* only used internally to smbd */
+		SVCCTL_STOPPED			= 0x00000001,
+		SVCCTL_START_PENDING		= 0x00000002,
+		SVCCTL_STOP_PENDING		= 0x00000003,
+		SVCCTL_RUNNING			= 0x00000004,
+		SVCCTL_CONTINUE_PENDING		= 0x00000005,
+		SVCCTL_PAUSE_PENDING		= 0x00000006,
+		SVCCTL_PAUSED			= 0x00000007
+	} svcctl_ServiceStatus;
+
+	typedef [bitmap32bit] bitmap {
+		SVCCTL_ACCEPT_NONE			= 0x00000000,
+		SVCCTL_ACCEPT_STOP			= 0x00000001,
+		SVCCTL_ACCEPT_PAUSE_CONTINUE		= 0x00000002,
+		SVCCTL_ACCEPT_SHUTDOWN			= 0x00000004,
+		SVCCTL_ACCEPT_PARAMCHANGE		= 0x00000008,
+		SVCCTL_ACCEPT_NETBINDCHANGE		= 0x00000010,
+		SVCCTL_ACCEPT_HARDWAREPROFILECHANGE	= 0x00000020,
+		SVCCTL_ACCEPT_POWEREVENT		= 0x00000040
+	} svcctl_ControlsAccepted;
+
 	typedef struct {
 		uint32 type;
-		uint32 state;
-		uint32 controls_accepted;
+		svcctl_ServiceStatus state;
+		svcctl_ControlsAccepted controls_accepted;
 		WERROR win32_exit_code;
 		uint32 service_exit_code;
 		uint32 check_point;
