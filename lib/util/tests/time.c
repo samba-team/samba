@@ -43,18 +43,21 @@ static bool test_null_nttime(struct torture_context *tctx)
 static bool test_http_timestring(struct torture_context *tctx)
 {
 	const char *start = "Thu, 01 Jan 1970";
-	torture_assert(tctx, !strncmp(start, http_timestring(tctx, 42), 
-										 strlen(start)), "42");
+	char *result;
+	result = http_timestring(tctx, 42);
+	torture_assert(tctx, !strncmp(start, result, 
+				      strlen(start)), result);
 	torture_assert_str_equal(tctx, "never", 
-							 http_timestring(tctx, get_time_t_max()), "42");
+				 http_timestring(tctx, get_time_t_max()), "42");
 	return true;
 }
 
 static bool test_timestring(struct torture_context *tctx)
 {
 	const char *start = "Thu Jan  1";
-	torture_assert(tctx, !strncmp(start, timestring(tctx, 42), strlen(start)),
-				   "42");
+	char *result = timestring(tctx, 42);
+	torture_assert(tctx, !strncmp(start, result, strlen(start)),
+				   result);
 	return true;
 }
 
