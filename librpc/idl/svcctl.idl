@@ -56,11 +56,17 @@ import "misc.idl", "security.idl";
 		uint32 service_flags;
 	} SERVICE_STATUS_PROCESS;
 
-	typedef struct {
+	typedef [public,gensize] struct {
+		[relative] nstring *service_name;
+		[relative] nstring *display_name;
+		SERVICE_STATUS status;
+	} ENUM_SERVICE_STATUSW;
+
+	typedef [public,gensize] struct {
 		[relative] astring *service_name;
 		[relative] astring *display_name;
 		SERVICE_STATUS status;
-	} ENUM_SERVICE_STATUS;
+	} ENUM_SERVICE_STATUSA;
 
 	const int SERVICE_TYPE_KERNEL_DRIVER       = 0x01;
 	const int SERVICE_TYPE_FS_DRIVER           = 0x02;
@@ -467,7 +473,7 @@ import "misc.idl", "security.idl";
 	WERROR svcctl_EnumDependentServicesA(
 		[in,ref] policy_handle *service,
 		[in] uint32 state,
-		[out,unique] ENUM_SERVICE_STATUS *service_status,
+		[out,unique] ENUM_SERVICE_STATUSA *service_status,
 		[in] uint32 buf_size,
 		[out,ref] uint32 *bytes_needed,
 		[out,ref] uint32 *services_returned
