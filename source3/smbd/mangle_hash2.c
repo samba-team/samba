@@ -94,12 +94,12 @@ static unsigned char char_flags[256];
 static unsigned mangle_prefix;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
-static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char * const basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static unsigned char base_reverse[256];
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */
-static const char *reserved_names[] = 
+static const char * const reserved_names[] =
 { "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
   "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
 
