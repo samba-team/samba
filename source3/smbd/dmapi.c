@@ -46,15 +46,19 @@ const void * dmapi_get_current_session(void) { return NULL; }
 #define DMAPI_SESSION_NAME "samba"
 #define DMAPI_TRACE 10
 
-static dm_sessid_t samba_dmapi_session = DM_NO_SESSION;
-static unsigned session_num;
+struct smbd_dmapi_context {
+	dm_sessid_t session;
+	unsigned session_num;
+};
+
+static struct smbd_dmapi_context *dmapi_ctx;
 
 /* 
    Initialise DMAPI session. The session is persistant kernel state, 
    so it might already exist, in which case we merely want to 
    reconnect to it. This function should be called as root.
 */
-static int dmapi_init_session(void)
+static int dmapi_init_session(struct smbd_dmapi_context *ctx)
 {
 	char	buf[DM_SESSION_INFO_LEN];
 	size_t	buflen;
@@ -66,11 +70,11 @@ static int dmapi_init_session(void)
 
 	int i, err;
 
-	if (session_num == 0) {
-		session_name = DMAPI_SESSION_NAME;
+	if (ctx->session_num == 0) {
+		session_name = talloc_strdup(tmp_ctx, DMAPI_SESSION_NAME);
 	} else {
 		session_name = talloc_asprintf(tmp_ctx, "%s%u", DMAPI_SESSION_NAME,
-					       session_num);
+					       ctx->session_num);
 	}
 
 	if (session_name == NULL) {
@@ -116,7 +120,7 @@ static int dmapi_init_session(void)
 		err = dm_query_session(sessions[i], sizeof(buf), buf, &buflen);
 		buf[sizeof(buf) - 1] = '\0';
 		if (err == 0 && strcmp(session_name, buf) == 0) {
-			samba_dmapi_session = sessions[i];
+			ctx->session = sessions[i];
 			DEBUGADD(DMAPI_TRACE,
 				("attached to existing DMAPI session "
 				 "named '%s'\n", buf));
@@ -125,15 +129,15 @@ static int dmapi_init_session(void)
 	}
 
 	/* No session already defined. */
-	if (samba_dmapi_session == DM_NO_SESSION) {
+	if (ctx->session == DM_NO_SESSION) {
 		err = dm_create_session(DM_NO_SESSION, 
 					session_name,
-					&samba_dmapi_session);
+					&ctx->session);
 		if (err < 0) {
 			DEBUGADD(DMAPI_TRACE,
 				("failed to create new DMAPI session: %s\n",
 				strerror(errno)));
-			samba_dmapi_session = DM_NO_SESSION;
+			ctx->session = DM_NO_SESSION;
 			talloc_free(tmp_ctx);
 			return -1;
 		}
@@ -142,7 +146,7 @@ static int dmapi_init_session(void)
 			  session_name, version));
 	}
 
-	if (samba_dmapi_session != DM_NO_SESSION) {
+	if (ctx->session != DM_NO_SESSION) {
 		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
 	}
 
@@ -165,11 +169,15 @@ static int dmapi_init_session(void)
 */
 const void *dmapi_get_current_session(void)
 {
-	if (samba_dmapi_session == DM_NO_SESSION) {
+	if (!dmapi_ctx) {
 		return NULL;
 	}
 
-	return (void *)&samba_dmapi_session;
+	if (dmapi_ctx->session == DM_NO_SESSION) {
+		return NULL;
+	}
+
+	return (void *)&dmapi_ctx->session;
 }
 	
 /*
@@ -180,17 +188,22 @@ const void *dmapi_get_current_session(void)
 
 bool dmapi_have_session(void)
 {
-	static bool initialized;
-	if (!initialized) {
-		initialized = true;
+	if (!dmapi_ctx) {
+		dmapi_ctx = talloc(talloc_autofree_context(),
+				   struct smbd_dmapi_context);
+		if (!dmapi_ctx) {
+			exit_server("unable to allocate smbd_dmapi_context");
+		}
+		dmapi_ctx->session = DM_NO_SESSION;
+		dmapi_ctx->session_num = 0;
 
 		become_root();
-		dmapi_init_session();
+		dmapi_init_session(dmapi_ctx);
 		unbecome_root();
 
 	}
 
-	return samba_dmapi_session != DM_NO_SESSION;
+	return dmapi_ctx->session != DM_NO_SESSION;
 }
 
 /*
@@ -202,14 +215,14 @@ bool dmapi_new_session(void)
 {
 	if (dmapi_have_session()) {
 		/* try to destroy the old one - this may not succeed */
-		dm_destroy_session(samba_dmapi_session);
+		dm_destroy_session(dmapi_ctx->session);
 	}
-	samba_dmapi_session = DM_NO_SESSION;
+	dmapi_ctx->session = DM_NO_SESSION;
 	become_root();
-	session_num++;
-	dmapi_init_session();
+	dmapi_ctx->session_num++;
+	dmapi_init_session(dmapi_ctx);
 	unbecome_root();
-	return samba_dmapi_session != DM_NO_SESSION;    
+	return dmapi_ctx->session != DM_NO_SESSION;
 }
 
 /* 
@@ -221,18 +234,21 @@ bool dmapi_new_session(void)
 */
 bool dmapi_destroy_session(void)
 {
-	if (samba_dmapi_session != DM_NO_SESSION) {
+	if (!dmapi_ctx) {
+		return true;
+	}
+	if (dmapi_ctx->session != DM_NO_SESSION) {
 		become_root();
-		if (0 == dm_destroy_session(samba_dmapi_session)) {
-			session_num--;
-			samba_dmapi_session = DM_NO_SESSION;
+		if (0 == dm_destroy_session(dmapi_ctx->session)) {
+			dmapi_ctx->session_num--;
+			dmapi_ctx->session = DM_NO_SESSION;
 		} else {
 			DEBUG(0,("Couldn't destroy DMAPI session: %s\n",
 				 strerror(errno)));
 		}
 		unbecome_root();
 	}
-	return samba_dmapi_session == DM_NO_SESSION;
+	return dmapi_ctx->session == DM_NO_SESSION;
 }
 
 
