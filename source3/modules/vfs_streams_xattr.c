@@ -950,8 +950,6 @@ static vfs_op_tuple streams_xattr_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_xattr_pwrite), SMB_VFS_OP_PWRITE,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(streams_xattr_lstat), SMB_VFS_OP_LSTAT,
-	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_xattr_unlink), SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_xattr_rename), SMB_VFS_OP_RENAME,
