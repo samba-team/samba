@@ -9,6 +9,7 @@ import "misc.idl", "security.idl";
   version(2.0),
   pointer_default(unique),
   endpoint("ncacn_np:[\\pipe\\svcctl]", "ncalrpc:"),
+  helper("../librpc/ndr/ndr_svcctl.h"),
   helpstring("Service Control")
 ] interface svcctl
 {
