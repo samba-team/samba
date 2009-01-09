@@ -9,7 +9,7 @@ if eval "test x$enable_infiniband = xyes"; then
 
 	INFINIBAND_WRAPPER_OBJ="ib/ibwrapper.o ib/ibw_ctdb.o ib/ibw_ctdb_init.o"
 	INFINIBAND_LIBS="-lrdmacm -libverbs"
-	INFINIBAND_BINS="bin/ibwrapper_test"
+	INFINIBAND_BINS="tests/bin/ibwrapper_test"
 
 	AC_CHECK_HEADERS(infiniband/verbs.h, [], [
 		echo "ERROR: you need infiniband/verbs.h when ib enabled!"

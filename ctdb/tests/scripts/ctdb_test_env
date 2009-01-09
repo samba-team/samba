@@ -6,7 +6,6 @@ var_dir=$CTDB_DIR/tests/var
 
 ######################################################################
 
-ctdb_bin_dir=$CTDB_DIR/bin
 ctdb_tools_dir=$CTDB_DIR/tools
 
 PATH="${ctdb_test_scripts_dir}:${ctdb_tools_dir}:${PATH}"
@@ -32,8 +31,7 @@ if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
 	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
     done
 
-
-    PATH="${ctdb_bin_dir}:${PATH}"
+    PATH="${CTDB_DIR}/bin:${CTDB_DIR}/tests/bin:${PATH}"
 fi
 
 # If $VALGRIND is set then use it whenever ctdb is called, but only if
