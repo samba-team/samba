@@ -380,27 +380,27 @@ WERROR _svcctl_QueryServiceStatus(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-static int enumerate_status( TALLOC_CTX *ctx, ENUM_SERVICES_STATUS **status, NT_USER_TOKEN *token )
+static int enumerate_status( TALLOC_CTX *ctx, struct ENUM_SERVICE_STATUSW **status, NT_USER_TOKEN *token )
 {
 	int num_services = 0;
 	int i;
-	ENUM_SERVICES_STATUS *st;
+	struct ENUM_SERVICE_STATUSW *st;
 	const char *display_name;
 
 	/* just count */
 	while ( svcctl_ops[num_services].name )
 		num_services++;
 
-	if ( !(st = TALLOC_ARRAY( ctx, ENUM_SERVICES_STATUS, num_services )) ) {
+	if ( !(st = TALLOC_ARRAY( ctx, struct ENUM_SERVICE_STATUSW, num_services )) ) {
 		DEBUG(0,("enumerate_status: talloc() failed!\n"));
 		return -1;
 	}
 
 	for ( i=0; i<num_services; i++ ) {
-		init_unistr( &st[i].servicename, svcctl_ops[i].name );
+		st[i].service_name = talloc_strdup(st, svcctl_ops[i].name );
 
 		display_name = svcctl_lookup_dispname(ctx, svcctl_ops[i].name, token );
-		init_unistr( &st[i].displayname, display_name ? display_name : "");
+		st[i].display_name = talloc_strdup(st, display_name ? display_name : "");
 
 		svcctl_ops[i].ops->service_status( svcctl_ops[i].name, &st[i].status );
 	}
@@ -411,17 +411,20 @@ static int enumerate_status( TALLOC_CTX *ctx, ENUM_SERVICES_STATUS **status, NT_
 }
 
 /********************************************************************
+ _svcctl_EnumServicesStatusW
 ********************************************************************/
 
-WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u)
+WERROR _svcctl_EnumServicesStatusW(pipes_struct *p,
+				   struct svcctl_EnumServicesStatusW *r)
 {
-	ENUM_SERVICES_STATUS *services = NULL;
+	struct ENUM_SERVICE_STATUSW *services = NULL;
 	int num_services;
 	int i = 0;
 	size_t buffer_size = 0;
 	WERROR result = WERR_OK;
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	NT_USER_TOKEN *token = p->server_info->ptok;
+	DATA_BLOB blob = data_blob_null;
 
 	/* perform access checks */
 
@@ -438,30 +441,39 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 	}
 
         for ( i=0; i<num_services; i++ ) {
-		buffer_size += svcctl_sizeof_enum_services_status(&services[i]);
+		buffer_size += ndr_size_ENUM_SERVICE_STATUSW(&services[i], NULL, 0);
 	}
 
 	buffer_size += buffer_size % 4;
 
-	if (buffer_size > q_u->buffer_size ) {
+	if (buffer_size > r->in.buf_size ) {
 		num_services = 0;
 		result = WERR_MORE_DATA;
 	}
 
-	rpcbuf_init(&r_u->buffer, q_u->buffer_size, p->mem_ctx);
-
 	if ( W_ERROR_IS_OK(result) ) {
-		for ( i=0; i<num_services; i++ )
-			svcctl_io_enum_services_status( "", &services[i], &r_u->buffer, 0 );
+
+		enum ndr_err_code ndr_err;
+		struct ndr_push *ndr;
+
+		ndr = ndr_push_init_ctx(p->mem_ctx, NULL);
+		if (ndr == NULL) {
+			return WERR_INVALID_PARAM;
+		}
+
+		ndr_err = ndr_push_ENUM_SERVICE_STATUSW_array(
+			ndr, num_services, services);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ntstatus_to_werror(ndr_map_error2ntstatus(ndr_err));
+		}
+
+		blob = ndr_push_blob(ndr);
 	}
 
-	r_u->needed      = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
-	r_u->returned    = (uint32)num_services;
-
-	if ( !(r_u->resume = TALLOC_P( p->mem_ctx, uint32 )) )
-		return WERR_NOMEM;
-
-	*r_u->resume = 0x0;
+	r->out.service			= blob.data;
+	*r->out.bytes_needed		= (buffer_size > r->in.buf_size) ? buffer_size : r->in.buf_size;
+	*r->out.services_returned	= (uint32)num_services;
+	*r->out.resume_handle		= 0x0;
 
 	return result;
 }
@@ -971,12 +983,6 @@ WERROR _svcctl_ChangeServiceConfigW(pipes_struct *p, struct svcctl_ChangeService
 }
 
 WERROR _svcctl_CreateServiceW(pipes_struct *p, struct svcctl_CreateServiceW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_EnumServicesStatusW(pipes_struct *p, struct svcctl_EnumServicesStatusW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
