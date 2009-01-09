@@ -449,8 +449,11 @@ static NTSTATUS rpc_rights_grant_internal(struct net_context *c,
 	}
 
 	result = name_to_sid(pipe_hnd, mem_ctx, &sid, argv[0]);
+	if (NT_STATUS_EQUAL(result, NT_STATUS_NONE_MAPPED))
+		result = NT_STATUS_NO_SUCH_USER;
+
 	if (!NT_STATUS_IS_OK(result))
-		return result;
+		goto done;
 
 	result = rpccli_lsa_open_policy2(pipe_hnd, mem_ctx, true,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
