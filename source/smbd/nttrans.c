@@ -1305,13 +1305,6 @@ void reply_ntrename(struct smb_request *req)
 		return;
 	}
 
-	if( is_ntfs_stream_name(oldname)) {
-		/* Can't rename a stream. */
-		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
-		END_PROFILE(SMBntrename);
-		return;
-	}
-
 	if (ms_has_wild(oldname)) {
 		reply_nterror(req, NT_STATUS_OBJECT_PATH_SYNTAX_BAD);
 		END_PROFILE(SMBntrename);
@@ -1356,6 +1349,13 @@ void reply_ntrename(struct smb_request *req)
 			return;
 		}
 		reply_nterror(req, status);
+		END_PROFILE(SMBntrename);
+		return;
+	}
+
+	/* The new name must begin with a ':' if the old name is a stream. */
+	if (is_ntfs_stream_name(oldname) && (newname[0] != ':')) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBntrename);
 		return;
 	}
