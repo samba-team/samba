@@ -76,6 +76,7 @@ import "misc.idl", "security.idl";
 	const int SERVICE_TYPE_WIN32_OWN_PROCESS   = 0x10;
 	const int SERVICE_TYPE_WIN32_SHARE_PROCESS = 0x20;
 	const int SERVICE_TYPE_WIN32=SERVICE_TYPE_WIN32_OWN_PROCESS|SERVICE_TYPE_WIN32_SHARE_PROCESS;
+	const int SERVICE_TYPE_INTERACTIVE_PROCESS = 0x100;
 
 	typedef [public,bitmap32bit] bitmap {
 		SV_TYPE_WORKSTATION       = 0x00000001,
