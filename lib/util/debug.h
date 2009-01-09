@@ -75,7 +75,7 @@ extern int DEBUGLEVEL;
 #define DEBUGTAB(n) do_debug_tab(n)
 
 /** Possible destinations for the debug log */
-enum debug_logtype {DEBUG_STDOUT = 0, DEBUG_FILE = 1, DEBUG_STDERR = 2};
+enum debug_logtype {DEBUG_FILE = 0, DEBUG_STDOUT = 1, DEBUG_STDERR = 2};
 
 /**
   the backend for debug messages. Note that the DEBUG() macro has already
