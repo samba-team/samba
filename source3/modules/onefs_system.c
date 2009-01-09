@@ -152,7 +152,7 @@ int onefs_sys_create_file(connection_struct *conn,
 
 		secinfo = (get_sec_info(sd) & IFS_SEC_INFO_KNOWN_MASK);
 
-		status = onefs_samba_sd_to_sd(secinfo, sd, &ifs_sd);
+		status = onefs_samba_sd_to_sd(secinfo, sd, &ifs_sd, SNUM(conn));
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("SD initialization failure: %s",

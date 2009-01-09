@@ -35,7 +35,8 @@ const struct enum_list enum_onefs_acl_wire_format[] = {
  * Turn SID into UID/GID and setup a struct ifs_identity
  */
 static bool
-onefs_sid_to_identity(const DOM_SID *sid, struct ifs_identity *id, bool is_group)
+onefs_sid_to_identity(const DOM_SID *sid, struct ifs_identity *id,
+    bool is_group)
 {
 	enum ifs_identity_type type = IFS_ID_TYPE_LAST+1;
 	uid_t uid = 0;
@@ -111,17 +112,136 @@ onefs_identity_to_sid(struct ifs_identity *id, DOM_SID *sid)
 	return true;
 }
 
+static bool
+onefs_og_to_identity(DOM_SID *sid, struct ifs_identity * ident,
+    bool is_group, int snum)
+{
+	const DOM_SID *b_admin_sid = &global_sid_Builtin_Administrators;
+
+	if (!onefs_sid_to_identity(sid, ident, is_group)) {
+		if (!lp_parm_bool(snum, PARM_ONEFS_TYPE,
+		     PARM_UNMAPPABLE_SIDS_IGNORE,
+		     PARM_UNMAPPABLE_SIDS_IGNORE_DEFAULT)) {
+			DEBUG(3, ("Unresolvable SID (%s) found.\n",
+				sid_string_dbg(sid)));
+			return false;
+		}
+		if (!onefs_sid_to_identity(b_admin_sid, ident, is_group)) {
+			return false;
+		}
+		DEBUG(3, ("Mapping unresolvable owner SID (%s) to Builtin "
+			"Administrators group.\n",
+			sid_string_dbg(sid)));
+	}
+	return true;
+}
+
+static bool
+sid_in_ignore_list(DOM_SID * sid, int snum)
+{
+	const char ** sid_list = NULL;
+	DOM_SID match;
+
+	sid_list = lp_parm_string_list(snum, PARM_ONEFS_TYPE,
+	    PARM_UNMAPPABLE_SIDS_IGNORE_LIST,
+	    PARM_UNMAPPABLE_SIDS_IGNORE_LIST_DEFAULT);
+
+	/* Fast path a NULL list */
+	if (!sid_list || *sid_list == NULL)
+		return false;
+
+	while (*sid_list) {
+		if (string_to_sid(&match, *sid_list))
+			if (sid_equal(sid, &match))
+				return true;
+		sid_list++;
+	}
+
+	return false;
+}
+
+/**
+ * Convert a trustee to a struct identity
+ */
+static bool
+onefs_samba_ace_to_ace(SEC_ACE * samba_ace, struct ifs_ace * ace,
+    bool *mapped, int snum)
+{
+	struct ifs_identity ident = {.type=IFS_ID_TYPE_LAST, .id.uid=0};
+
+	SMB_ASSERT(ace);
+	SMB_ASSERT(mapped);
+	SMB_ASSERT(samba_ace);
+
+	if (onefs_sid_to_identity(&samba_ace->trustee, &ident, false)) {
+		*mapped = true;
+	} else {
+
+		SMB_ASSERT(ident.id.uid >= 0);
+
+		/* Ignore the sid if it's in the list */
+		if (sid_in_ignore_list(&samba_ace->trustee, snum)) {
+			DEBUG(3, ("Silently failing to set ACE for SID (%s) "
+				"because it is in the ignore sids list\n",
+				sid_string_dbg(&samba_ace->trustee)));
+			*mapped = false;
+		} else if ((samba_ace->type == SEC_ACE_TYPE_ACCESS_DENIED) &&
+		    lp_parm_bool(snum, PARM_ONEFS_TYPE,
+		    PARM_UNMAPPABLE_SIDS_DENY_EVERYONE,
+		    PARM_UNMAPPABLE_SIDS_DENY_EVERYONE_DEFAULT)) {
+			/* If the ace is deny translated to Everyone */
+			DEBUG(3, ("Mapping unresolvable deny ACE SID (%s) "
+				"to Everyone.\n",
+				sid_string_dbg(&samba_ace->trustee)));
+			if (aclu_initialize_identity(&ident,
+				IFS_ID_TYPE_EVERYONE, 0, 0, False) != 0) {
+				DEBUG(2, ("aclu_initialize_identity() "
+					"failed making Everyone\n"));
+				return false;
+			}
+			*mapped = true;
+		} else if (lp_parm_bool(snum, PARM_ONEFS_TYPE,
+			   PARM_UNMAPPABLE_SIDS_IGNORE,
+			   PARM_UNMAPPABLE_SIDS_IGNORE_DEFAULT)) {
+			DEBUG(3, ("Silently failing to set ACE for SID (%s) "
+				"because it is unresolvable\n",
+				sid_string_dbg(&samba_ace->trustee)));
+			*mapped = false;
+		} else {
+			/* Fail for lack of a better option */
+			return false;
+		}
+	}
+
+	if (*mapped) {
+		if (aclu_initialize_ace(ace, samba_ace->type,
+			samba_ace->access_mask, samba_ace->flags, 0,
+			&ident))
+			return false;
+
+		if ((ace->trustee.type == IFS_ID_TYPE_CREATOR_OWNER ||
+			ace->trustee.type == IFS_ID_TYPE_CREATOR_GROUP) &&
+		    nt4_compatible_acls())
+			ace->flags |= SEC_ACE_FLAG_INHERIT_ONLY;
+	}
+
+	return true;
+}
+
 /**
  * Convert a SEC_ACL to a struct ifs_security_acl
  */
 static bool
-onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl)
+onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl,
+    bool * ignore_aces, int snum)
 {
 	int num_aces = 0;
 	struct ifs_ace *aces = NULL;
-	struct ifs_identity temp;
 	SEC_ACE *samba_aces;
+	bool mapped;
 	int i, j;
+
+	SMB_ASSERT(ignore_aces);
 
 	if ((!acl) || (!samba_acl))
 		return false;
@@ -134,39 +254,30 @@ onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl)
 		aces = SMB_MALLOC_ARRAY(struct ifs_ace, num_aces);
 
 		for (i = 0, j = 0; j < num_aces; i++, j++) {
-			if (!onefs_sid_to_identity(&samba_aces[j].trustee,
-			    &temp, false))
+			if (!onefs_samba_ace_to_ace(&samba_aces[j],
+				&aces[i], &mapped, snum))
 				goto err_free;
 
-			/*
-			 * XXX Act like we did pre-Thai: Silently fail setting
-			 * ACEs for BUILTIN accounts.
-			 */
-			if (temp.id.uid == -1) {
-				DEBUG(3, ("Silently failing to set ACE "
-				    "because our id was == -1.\n"));
+			if (!mapped)
 				i--;
-				continue;
-			}
-
-			if (aclu_initialize_ace(&aces[i], samba_aces[i].type,
-			    samba_aces[i].access_mask, samba_aces[i].flags,
-			    0, &temp))
-				goto err_free;
-
-			if ((aces[i].trustee.type == IFS_ID_TYPE_CREATOR_OWNER ||
-			    aces[i].trustee.type == IFS_ID_TYPE_CREATOR_GROUP) &&
-			    nt4_compatible_acls())
-				aces[i].flags |= IFS_ACE_FLAG_INHERIT_ONLY;
 		}
 		num_aces = i;
 	}
 
+	/* If aces are given but we cannot apply them due to the reasons
+	 * above we do not change the SD.  However, if we are told to
+	 * explicitly set an SD with 0 aces we honor this operation */
+	*ignore_aces = samba_acl->num_aces > 0 && num_aces < 1;
+
+	if (*ignore_aces == false)
+		if (aclu_initialize_acl(acl, aces, num_aces))
+			goto err_free;
+
 	if (aclu_initialize_acl(acl, aces, num_aces))
 		goto err_free;
 
-	/* Currently aclu_initialize_acl should copy the aces over, allowing us
-	 * to immediately free */
+	/* Currently aclu_initialize_acl should copy the aces over, allowing
+	 * us to immediately free */
 	free(aces);
 	return true;
 
@@ -697,10 +808,11 @@ onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
  * @return NTSTATUS_OK if successful
  */
 NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
-			      struct ifs_security_descriptor *sd)
+			      struct ifs_security_descriptor *sd, int snum)
 {
-	struct ifs_security_acl dacl, sacl, *daclp, *saclp;
+	struct ifs_security_acl *daclp, *saclp;
 	struct ifs_identity owner, group, *ownerp, *groupp;
+	bool ignore_aces;
 
 	ownerp = NULL;
 	groupp = NULL;
@@ -709,58 +821,53 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 
 	/* Setup owner */
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
-		if (!onefs_sid_to_identity(psd->owner_sid, &owner, false))
+		if (!onefs_og_to_identity(psd->owner_sid, &owner, false, snum))
 			return NT_STATUS_UNSUCCESSFUL;
 
-		/*
-		 * XXX Act like we did pre-Thai: Silently fail setting the
-		 * owner to a BUILTIN account.
-		 */
-		if (owner.id.uid == -1) {
-			DEBUG(3, ("Silently failing to set owner because our "
-			    "id was == -1.\n"));
-			security_info_sent &= ~OWNER_SECURITY_INFORMATION;
-			if (!security_info_sent)
-				return NT_STATUS_OK;
-		}
-		else
-			ownerp = &owner;
+		SMB_ASSERT(owner.id.uid >= 0);
+
+		ownerp = &owner;
 	}
 
 	/* Setup group */
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
-		if (!onefs_sid_to_identity(psd->group_sid, &group, true))
+		if (!onefs_og_to_identity(psd->group_sid, &group, true, snum))
 			return NT_STATUS_UNSUCCESSFUL;
 
-		/*
-		 * XXX Act like we did pre-Thai: Silently fail setting the
-		 * group to a BUILTIN account.
-		 */
-		if (group.id.gid == -1) {
-			DEBUG(3, ("Silently failing to set group because our "
-			    "id was == -1.\n"));
-			security_info_sent &= ~GROUP_SECURITY_INFORMATION;
-			if (!security_info_sent)
-				return NT_STATUS_OK;
-		}
-		else
-			groupp = &group;
+		SMB_ASSERT(group.id.gid >= 0);
+
+		groupp = &group;
 	}
 
 	/* Setup DACL */
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) && (psd->dacl)) {
-		daclp = &dacl;
-
-		if (!onefs_samba_acl_to_acl(psd->dacl, &daclp))
+		if (!onefs_samba_acl_to_acl(psd->dacl, &daclp, &ignore_aces,
+			snum))
 			return NT_STATUS_UNSUCCESSFUL;
+
+		if (ignore_aces == true)
+			security_info_sent &= ~DACL_SECURITY_INFORMATION;
 	}
 
 	/* Setup SACL */
-	if ((security_info_sent & SACL_SECURITY_INFORMATION) && (psd->sacl)) {
-		saclp = &sacl;
+	if (security_info_sent & SACL_SECURITY_INFORMATION) {
 
-		if (!onefs_samba_acl_to_acl(psd->sacl, &saclp))
-			return NT_STATUS_UNSUCCESSFUL;
+		if (lp_parm_bool(snum, PARM_ONEFS_TYPE,
+			    PARM_IGNORE_SACL, PARM_IGNORE_SACL_DEFAULT)) {
+			DEBUG(5, ("Ignoring SACLs.\n"));
+			security_info_sent &= ~SACL_SECURITY_INFORMATION;
+		} else {
+			if (psd->sacl) {
+				if (!onefs_samba_acl_to_acl(psd->sacl,
+					&saclp, &ignore_aces, snum))
+					return NT_STATUS_UNSUCCESSFUL;
+
+				if (ignore_aces == true) {
+					security_info_sent &=
+					    ~SACL_SECURITY_INFORMATION;
+				}
+			}
+		}
 	}
 
 	/* Setup ifs_security_descriptor */
@@ -789,7 +896,8 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
-	status = onefs_samba_sd_to_sd(security_info_sent, psd, &sd);
+	status = onefs_samba_sd_to_sd(security_info_sent, psd, &sd,
+				      SNUM(handle->conn));
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));

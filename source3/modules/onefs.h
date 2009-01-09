@@ -45,6 +45,14 @@ enum onefs_acl_wire_format
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT false
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL "creator owner gets full control"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
+#define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE "unmappable sids deny everyone"
+#define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE_DEFAULT false
+#define PARM_UNMAPPABLE_SIDS_IGNORE "ignore unmappable sids"
+#define PARM_UNMAPPABLE_SIDS_IGNORE_DEFAULT false
+#define PARM_UNMAPPABLE_SIDS_IGNORE_LIST "unmappable sids ignore list"
+#define PARM_UNMAPPABLE_SIDS_IGNORE_LIST_DEFAULT NULL
+#define PARM_IGNORE_SACL "ignore sacl"
+#define PARM_IGNORE_SACL_DEFAULT false
 
 /*
  * vfs interface handlers
@@ -105,7 +113,7 @@ NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
  * Utility functions
  */
 NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
-			      struct ifs_security_descriptor *sd);
+			      struct ifs_security_descriptor *sd, int snum);
 
 NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				      char **pbase, char **pstream);
