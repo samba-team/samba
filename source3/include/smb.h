@@ -1671,14 +1671,21 @@ enum smbd_capability {
     LEASE_CAPABILITY
 };
 
+struct kernel_oplocks_ops;
+struct kernel_oplocks {
+	const struct kernel_oplocks_ops *ops;
+	void *private_data;
+};
+
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
-struct kernel_oplocks {
-	files_struct * (*receive_message)(fd_set *fds);
-	bool (*set_oplock)(files_struct *fsp, int oplock_type);
-	void (*release_oplock)(files_struct *fsp);
-	bool (*msg_waiting)(fd_set *fds);
-	int notification_fd;
+struct kernel_oplocks_ops {
+	files_struct * (*receive_message)(struct kernel_oplocks *ctx);
+	bool (*set_oplock)(struct kernel_oplocks *ctx,
+			   files_struct *fsp, int oplock_type);
+	void (*release_oplock)(struct kernel_oplocks *ctx,
+			       files_struct *fsp);
+	bool (*msg_waiting)(struct kernel_oplocks *ctx);
 };
 
 #include "smb_macros.h"

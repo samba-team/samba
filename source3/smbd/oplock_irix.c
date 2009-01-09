@@ -23,6 +23,14 @@
 
 #if HAVE_KERNEL_OPLOCKS_IRIX
 
+struct irix_oplocks_context {
+	struct kernel_oplocks *ctx;
+	int write_fd;
+	int read_fd;
+	struct fd_event *read_fde;
+	bool pending;
+};
+
 /****************************************************************************
  Test to see if IRIX kernel oplocks work.
 ****************************************************************************/
@@ -100,22 +108,27 @@ static bool irix_oplocks_available(void)
  * oplock break protocol.
 ****************************************************************************/
 
-static files_struct *irix_oplock_receive_message(fd_set *fds)
+static files_struct *irix_oplock_receive_message(struct kernel_oplocks *_ctx)
 {
+	struct irix_oplocks_context *ctx = talloc_get_type(_ctx->private_data,
+					   struct irix_oplocks_context);
 	oplock_stat_t os;
 	char dummy;
 	struct file_id fileid;
 	files_struct *fsp;
 
-	/* Ensure we only get one call per select fd set. */
-	FD_CLR(oplock_pipe_read, fds);
+	/*
+	 * TODO: is it correct to assume we only get one
+	 * oplock break, for each byte we read from the pipe?
+	 */
+	ctx->pending = false;
 
 	/*
 	 * Read one byte of zero to clear the
 	 * kernel break notify message.
 	 */
 
-	if(read(oplock_pipe_read, &dummy, 1) != 1) {
+	if(read(ctx->read_fd, &dummy, 1) != 1) {
 		DEBUG(0,("irix_oplock_receive_message: read of kernel "
 			 "notification failed. Error was %s.\n",
 			 strerror(errno) ));
@@ -128,7 +141,7 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
 	 * request outstanding.
 	 */
 
-	if(sys_fcntl_ptr(oplock_pipe_read, F_OPLKSTAT, &os) < 0) {
+	if(sys_fcntl_ptr(ctx->read_fd, F_OPLKSTAT, &os) < 0) {
 		DEBUG(0,("irix_oplock_receive_message: fcntl of kernel "
 			 "notification failed. Error was %s.\n",
 			 strerror(errno) ));
@@ -170,9 +183,13 @@ static files_struct *irix_oplock_receive_message(fd_set *fds)
  Attempt to set an kernel oplock on a file.
 ****************************************************************************/
 
-static bool irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
+static bool irix_set_kernel_oplock(struct kernel_oplocks *_ctx,
+				   files_struct *fsp, int oplock_type)
 {
-	if (sys_fcntl_long(fsp->fh->fd, F_OPLKREG, oplock_pipe_write) == -1) {
+	struct irix_oplocks_context *ctx = talloc_get_type(_ctx->private_data,
+					   struct irix_oplocks_context);
+
+	if (sys_fcntl_long(fsp->fh->fd, F_OPLKREG, ctx->write_fd) == -1) {
 		if(errno != EAGAIN) {
 			DEBUG(0,("irix_set_kernel_oplock: Unable to get "
 				 "kernel oplock on file %s, file_id %s "
@@ -204,7 +221,8 @@ static bool irix_set_kernel_oplock(files_struct *fsp, int oplock_type)
  Release a kernel oplock on a file.
 ****************************************************************************/
 
-static void irix_release_kernel_oplock(files_struct *fsp)
+static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
+				       files_struct *fsp)
 {
 	if (DEBUGLVL(10)) {
 		/*
@@ -234,63 +252,77 @@ static void irix_release_kernel_oplock(files_struct *fsp)
 	}
 }
 
-/****************************************************************************
- See if there is a message waiting in this fd set.
- Note that fds MAY BE NULL ! If so we must do our own select.
-****************************************************************************/
-
-static bool irix_oplock_msg_waiting(fd_set *fds)
+static bool irix_oplock_msg_waiting(struct kernel_oplocks *_ctx)
 {
-	int selrtn;
-	fd_set myfds;
-	struct timeval to;
+	struct irix_oplocks_context *ctx = talloc_get_type(_ctx->private_data,
+					   struct irix_oplocks_context);
+	return ctx->pending;
+}
 
-	if (oplock_pipe_read == -1)
-		return False;
+static void irix_oplocks_read_fde_handler(struct event_context *ev,
+					  struct fd_event *fde,
+					  uint16_t flags,
+					  void *private_data)
+{
+	struct irix_oplocks_context *ctx = talloc_get_type(private_data,
+					   struct irix_oplocks_context);
 
-	if (fds) {
-		return FD_ISSET(oplock_pipe_read, fds);
-	}
-
-	/* Do a zero-time select. We just need to find out if there
-	 * are any outstanding messages. We use sys_select_intr as
-	 * we need to ignore any signals. */
-
-	FD_ZERO(&myfds);
-	FD_SET(oplock_pipe_read, &myfds);
-
-	to = timeval_set(0, 0);
-	selrtn = sys_select_intr(oplock_pipe_read+1,&myfds,NULL,NULL,&to);
-	return (selrtn == 1) ? True : False;
+	ctx->pending = true;
+	process_kernel_oplocks(smbd_messaging_context());
+	ctx->pending = false;
 }
 
 /****************************************************************************
  Setup kernel oplocks.
 ****************************************************************************/
 
-struct kernel_oplocks *irix_init_kernel_oplocks(void) 
+static const struct kernel_oplocks_ops irix_koplocks = {
+	.receive_message	= irix_oplock_receive_message,
+	.set_oplock		= irix_set_kernel_oplock,
+	.release_oplock		= irix_release_kernel_oplock,
+	.msg_waiting		= irix_oplock_msg_waiting
+};
+
+struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 {
+	struct kernel_oplocks *_ctx;
+	struct irix_oplocks_context *ctx;
 	int pfd[2];
 
 	if (!irix_oplocks_available())
 		return NULL;
 
+	_ctx = talloc_zero(mem_ctx, struct kernel_oplocks);
+	if (!_ctx) {
+		return NULL;
+	}
+
+	ctx = talloc_zero(_ctx, struct irix_oplocks_context);
+	if (!ctx) {
+		talloc_free(_ctx);
+		return NULL;
+	}
+	_ctx->ops = &irix_koplocks;
+	_ctx->private_data = ctx;
+	ctx->ctx = _ctx;
+
 	if(pipe(pfd) != 0) {
+		talloc_free(_ctx);
 		DEBUG(0,("setup_kernel_oplock_pipe: Unable to create pipe. "
 			 "Error was %s\n", strerror(errno) ));
 		return False;
 	}
 
-	oplock_pipe_read = pfd[0];
-	oplock_pipe_write = pfd[1];
+	ctx->read_fd = pfd[0];
+	ctx->write_fd = pfd[1];
 
-	irix_koplocks.receive_message = irix_oplock_receive_message;
-	irix_koplocks.set_oplock = irix_set_kernel_oplock;
-	irix_koplocks.release_oplock = irix_release_kernel_oplock;
-	irix_koplocks.msg_waiting = irix_oplock_msg_waiting;
-	irix_koplocks.notification_fd = oplock_pipe_read;
-
-	return &irix_koplocks;
+	ctx->read_fde = event_add_fd(smbd_event_context(),
+				     ctx,
+				     ctx->read_fd,
+				     EVENT_FD_READ,
+				     irix_oplocks_read_fde_handler,
+				     ctx);
+	return _ctx;
 }
 #else
  void oplock_irix_dummy(void);

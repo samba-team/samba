@@ -7026,8 +7026,8 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-bool oplock_message_waiting(fd_set *fds);
-void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds);
+bool oplock_message_waiting();
+void process_kernel_oplocks(struct messaging_context *msg_ctx);
 bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
@@ -7041,14 +7041,14 @@ bool init_oplocks(struct messaging_context *msg_ctx);
 
 /* The following definitions come from smbd/oplock_irix.c  */
 
-struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
+struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx) ;
 
 /* The following definitions come from smbd/oplock_linux.c  */
 
 void linux_set_lease_capability(void);
 int linux_set_lease_sighandler(int fd);
 int linux_setlease(int fd, int leasetype);
-struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
+struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx) ;
 
 /* The following definitions come from smbd/password.c  */
 

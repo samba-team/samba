@@ -175,20 +175,13 @@ char *LastDir = NULL;
 #if HAVE_KERNEL_OPLOCKS_LINUX
 SIG_ATOMIC_T oplock_signals_received = 0;
 SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-struct kernel_oplocks linux_koplocks;
-#endif
-
-#if HAVE_KERNEL_OPLOCKS_IRIX
-int oplock_pipe_write = -1;
-int oplock_pipe_read = -1;
-struct kernel_oplocks irix_koplocks;
 #endif
 
 /* Current number of oplocks we have outstanding. */
 int32_t exclusive_oplocks_open = 0;
 int32_t level_II_oplocks_open = 0;
 bool global_client_failed_oplock_break = false;
-const struct kernel_oplocks *koplocks = NULL;
+struct kernel_oplocks *koplocks = NULL;
 
 struct notify_mid_map *notify_changes_by_mid = NULL;
 
@@ -215,9 +208,5 @@ void smbd_init_globals(void)
 
 #if HAVE_KERNEL_OPLOCKS_LINUX
 	ZERO_STRUCT(fd_pending_array);
-	ZERO_STRUCT(linux_koplocks);
-#endif
-#if HAVE_KERNEL_OPLOCKS_IRIX
-	ZERO_STRUCT(irix_koplocks);
 #endif
 }

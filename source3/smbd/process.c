@@ -700,13 +700,13 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
  notify events etc.
 ****************************************************************************/
 
-static void async_processing(fd_set *pfds)
+static void async_processing(void)
 {
 	DEBUG(10,("async_processing: Doing async processing.\n"));
 
 	process_aio_queue();
 
-	process_kernel_oplocks(smbd_messaging_context(), pfds);
+	process_kernel_oplocks(smbd_messaging_context());
 
 	/* Do the aio check again after receive_local_message as it does a
 	   select and may have eaten our signal. */
@@ -724,20 +724,6 @@ static void async_processing(fd_set *pfds)
 		reload_services(False);
 		reload_after_sighup = 0;
 	}
-}
-
-/****************************************************************************
- Add a fd to the set we will be select(2)ing on.
-****************************************************************************/
-
-static int select_on_fd(int fd, int maxfd, fd_set *fds)
-{
-	if (fd != -1) {
-		FD_SET(fd, fds);
-		maxfd = MAX(maxfd, fd);
-	}
-
-	return maxfd;
 }
 
 /****************************************************************************
@@ -794,9 +780,9 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
 	 */
 
-	if (oplock_message_waiting(&r_fds)) {
+	if (oplock_message_waiting()) {
 		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing(&r_fds);
+		async_processing();
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -827,8 +813,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		int sav;
 		START_PROFILE(smbd_idle);
 
-		maxfd = select_on_fd(oplock_notify_fd(), maxfd, &r_fds);
-
 		selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&to);
 		sav = errno;
 
@@ -845,7 +829,7 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	   is the best we can do until the oplock code knows more about
 	   signals */
 	if (selrtn == -1 && errno == EINTR) {
-		async_processing(&r_fds);
+		async_processing();
 		/*
 		 * After async processing we must go and do the select again, as
 		 * the state of the flag in fds for the server file descriptor is
@@ -862,22 +846,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		return NT_STATUS_RETRY;
-	}
-
-	/*
-	 * Ensure we process oplock break messages by preference.
-	 * This is IMPORTANT ! Otherwise we can starve other processes
-	 * sending us an oplock break message. JRA.
-	 */
-
-	if (oplock_message_waiting(&r_fds)) {
-		async_processing(&r_fds);
-		/*
-		 * After async processing we must go and do the select again, as
-		 * the state of the flag in fds for the server file descriptor is
-		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
-		 */
 		return NT_STATUS_RETRY;
 	}
 
@@ -935,7 +903,7 @@ void respond_to_all_remaining_local_messages(void)
 		return;
 	}
 
-	process_kernel_oplocks(smbd_messaging_context(), NULL);
+	process_kernel_oplocks(smbd_messaging_context());
 
 	return;
 }
