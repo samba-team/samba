@@ -6,6 +6,7 @@
 #ifndef _HEADER_NDR_svcctl
 #define _HEADER_NDR_svcctl
 
+#include "../librpc/ndr/ndr_svcctl.h"
 #define NDR_SVCCTL_UUID "367abb81-9844-35f1-ad32-98f038001003"
 #define NDR_SVCCTL_VERSION 2.0
 #define NDR_SVCCTL_NAME "svcctl"
