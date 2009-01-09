@@ -408,7 +408,8 @@ LIBNBT_OBJ = ../libcli/nbt/nbtname.o \
 	     ../libcli/netlogon.o \
 	     ../libcli/ndr_netlogon.o \
 	     ../librpc/gen_ndr/ndr_nbt.o \
-	     ../librpc/gen_ndr/ndr_svcctl.o
+	     ../librpc/gen_ndr/ndr_svcctl.o \
+	     ../librpc/ndr/ndr_svcctl.o
 
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o libsmb/conncache.o libads/dns.o
