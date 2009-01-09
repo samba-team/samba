@@ -1,13 +1,13 @@
 #!/bin/bash
 
-export CTDB_DIR=$(cd $(dirname $(dirname $(dirname $0))) ; pwd)
+ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
+export CTDB_DIR=$(dirname $(dirname $ctdb_test_scripts_dir))
 var_dir=$CTDB_DIR/tests/var
 
 ######################################################################
 
 ctdb_bin_dir=$CTDB_DIR/bin
 ctdb_tools_dir=$CTDB_DIR/tools
-ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
 
 PATH="${ctdb_test_scripts_dir}:${ctdb_tools_dir}:${PATH}"
 
@@ -15,8 +15,8 @@ export CTDB_TIMEOUT=60
 
 ######################################################################
 
-if [ -n "$CTDB_TEST_REMOTE_SCRIPTS_DIR" ] ; then
-    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_SCRIPTS_DIR}/test_wrap"
+if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
+    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
 else
     CTDB_TEST_WRAPPER="${ctdb_test_scripts_dir}/test_wrap"
 fi

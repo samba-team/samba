@@ -452,7 +452,7 @@ daemons_start ()
     local no_public_ips=-1
     [ -r $no_public_addresses ] && read no_public_ips <$no_public_addresses
 
-    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
+    local ctdb_options="--reclock=$var_dir/rec.lock --nlist $nodes --nopublicipcheck --event-script-dir=$CTDB_DIR/tests/events.d --logfile=$var_dir/daemons.log -d 0 --dbdir=$var_dir/test.db --dbdir-persistent=$var_dir/test.db/persistent"
 
     echo "Starting $num_nodes ctdb daemons..."
     if  [ "$no_public_ips" != -1 ] ; then
@@ -470,8 +470,8 @@ daemons_start ()
 	    ctdb_options="$ctdb_options --public-addresses=$public_addresses"
 	fi
 
-	# Need the $PWD so we can use "pkill -f" to kill the daemons.
-	$VALGRIND $PWD/bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" ||return 1
+	# Need full path so we can use "pkill -f" to kill the daemons.
+	$VALGRIND $CTDB_DIR/bin/ctdbd --socket=$var_dir/sock.$i $ctdb_options "$@" ||return 1
     done
 
     if [ -L /tmp/ctdb.socket -o ! -S /tmp/ctdb.socket ] ; then 

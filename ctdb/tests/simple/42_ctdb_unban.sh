@@ -58,6 +58,11 @@ while read ip pnn ; do
     [ "$pnn" = "$test_node" ] && ips="${ips}${ips:+ }${ip}"
 done <<<"$out" # bashism to avoid problem setting variable in pipeline.
 
+if [ -z "$test_node" ] ; then
+    echo "BAD: unable to select a suitable node for banning."
+    exit 1
+fi
+
 echo "Selected node ${test_node} with IPs: $ips"
 
 ban_time=60

@@ -30,7 +30,7 @@ while true ; do
 	-x) set -x; shift ;;
 	-s) with_summary=true ; shift ;;
 	--) shift ; break ;;
-	-h|--help|*) usage ;; # * shouldn't happen, so this is reasonable.
+	*) usage ;;
     esac
 done
 
