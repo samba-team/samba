@@ -201,8 +201,9 @@ CEOF
 
 for ac_var in $ac_subst_vars
 do
-    eval ac_val=\$$ac_var
-	echo "$ac_var => '$ac_val'," >> $1
+	eval ac_val=\$$ac_var
+	# quote ' (\x27) inside '...' and make sure \ isn't eaten by shells, so use perl:
+	perl -e '$myval="$ENV{ac_val}"; $myval =~ s/\x27/\\\x27/g ; print $ENV{ac_var}." => \x27$myval\x27,\n"' >> $1
 done
 
 cat >>$1<<CEOF
