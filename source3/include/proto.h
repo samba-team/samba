@@ -5451,8 +5451,6 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    const char *localmachine, uint32 printerlocal,
 			    SPOOL_NOTIFY_OPTION *option);
 
-/* The following definitions come from rpc_client/cli_svcctl.c  */
-
 /* The following definitions come from rpc_client/init_lsa.c  */
 
 void init_lsa_String(struct lsa_String *name, const char *s);
@@ -6150,8 +6148,6 @@ bool spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_st
 bool make_monitorui_buf( RPC_BUFFER *buf, const char *dllname );
 bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 
-/* The following definitions come from rpc_parse/parse_svcctl.c  */
-
 /* The following definitions come from rpc_server/srv_eventlog.c  */
 
 NTSTATUS rpc_eventlog2_init(void);
@@ -6380,11 +6376,6 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 
 char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
-
-/* The following definitions come from rpc_server/srv_svcctl.c  */
-
-void svcctl2_get_pipe_fns( struct api_struct **fns, int *n_fns );
-NTSTATUS rpc_svcctl2_init(void);
 
 /* The following definitions come from rpc_server/srv_svcctl_nt.c  */
 
