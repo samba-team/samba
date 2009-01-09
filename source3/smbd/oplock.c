@@ -91,7 +91,7 @@ void release_file_oplock(files_struct *fsp)
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks) {
-		koplocks->ops->release_oplock(koplocks, fsp);
+		koplocks->ops->release_oplock(koplocks, fsp, NO_OPLOCK);
 	}
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
@@ -123,7 +123,7 @@ void release_file_oplock(files_struct *fsp)
 static void downgrade_file_oplock(files_struct *fsp)
 {
 	if (koplocks) {
-		koplocks->ops->release_oplock(koplocks, fsp);
+		koplocks->ops->release_oplock(koplocks, fsp, LEVEL_II_OPLOCK);
 	}
 	fsp->oplock_type = LEVEL_II_OPLOCK;
 	exclusive_oplocks_open--;

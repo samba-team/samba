@@ -222,7 +222,7 @@ static bool irix_set_kernel_oplock(struct kernel_oplocks *_ctx,
 ****************************************************************************/
 
 static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
-				       files_struct *fsp)
+				       files_struct *fsp, int oplock_type)
 {
 	if (DEBUGLVL(10)) {
 		/*

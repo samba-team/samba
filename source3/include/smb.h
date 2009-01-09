@@ -1701,7 +1701,7 @@ struct kernel_oplocks_ops {
 	bool (*set_oplock)(struct kernel_oplocks *ctx,
 			   files_struct *fsp, int oplock_type);
 	void (*release_oplock)(struct kernel_oplocks *ctx,
-			       files_struct *fsp);
+			       files_struct *fsp, int oplock_type);
 };
 
 #include "smb_macros.h"

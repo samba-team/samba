@@ -130,7 +130,7 @@ static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 ****************************************************************************/
 
 static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
-					files_struct *fsp)
+					files_struct *fsp, int oplock_type)
 {
 	if (DEBUGLVL(10)) {
 		/*
