@@ -89,7 +89,7 @@ to be specified as part of the username.
 
 		<listitem><para>specifies the CIFS password. If this
 option is not given then the environment variable
-<emphasis>PASSWD</emphasis> is used. If the password is not specified 
+<emphasis>PASSWD</emphasis> is used. If the password is not specified
 directly or indirectly via an argument to mount, <emphasis>mount.cifs</emphasis> will prompt
 for a password, unless the guest option is specified.
 </para>
@@ -106,14 +106,16 @@ below) or entered at the password prompt will be read correctly.
 
 		<listitem><para>
 				specifies a file that contains a username
-				and/or password. The format of the file is:
+				and/or password and optionally the name of the
+				workgroup. The format of the file is:
 			</para>
 
 <programlisting>
 		username=<replaceable>value</replaceable>
 		password=<replaceable>value</replaceable>
+		workgroup=<replaceable>value</replaceable>
 </programlisting>
-		
+
 		<para>
 This is preferred over having passwords in plaintext in a
 shared file, such as <filename>/etc/fstab</filename>. Be sure to protect any
