@@ -784,10 +784,9 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     if serverrole == "domain controller":
         samdb.set_invocation_id(invocationid)
 
-    load_schema(setup_path, samdb, names.schemadn, names.netbiosname, 
-                names.configdn, names.sitename, names.serverdn,
-                names.hostname)
-
+    schema_data = load_schema(setup_path, samdb, names.schemadn, names.netbiosname, 
+                              names.configdn, names.sitename, names.serverdn,
+                              names.hostname)
     samdb.transaction_start()
         
     try:
@@ -852,13 +851,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "PREFIXMAP_B64": b64encode(prefixmap)
             })
 
-        message("Setting up sam.ldb Samba4 schema")
-        setup_add_ldif(samdb, setup_path("schema_samba4.ldif"), 
-                       {"SCHEMADN": names.schemadn })
-
-        message("Setting up sam.ldb AD schema")
-        data = get_schema_data(setup_path, {"SCHEMADN": names.schemadn})
-        samdb.add_ldif(data)
+        message("Setting up sam.ldb schema")
+        samdb.add_ldif(schema_data)
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"), 
                        {"SCHEMADN": names.schemadn})
 
@@ -1661,6 +1655,8 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
     :param configdn: DN of the configuration
     :param serverdn: DN of the server
     :param servername: Host name of the server
+
+    Returns the schema data loaded, to avoid double-parsing when then needing to add it to the db
     """
     schema_data = get_schema_data(setup_path, {"SCHEMADN": schemadn})
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
@@ -1681,7 +1677,7 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename,
     })
     check_all_substituted(head_data)
     samdb.attach_schema_from_ldif(head_data, schema_data)
-
+    return schema_data;
 
 def get_schema_data(setup_path, subst_vars = None):
     """Get schema data from the AD schema files instead of schema.ldif.
