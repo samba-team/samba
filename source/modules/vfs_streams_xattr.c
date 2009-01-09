@@ -511,11 +511,6 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 	}
 
-	if (!(o_is_stream && n_is_stream)) {
-		errno = ENOSYS;
-		goto fail;
-	}
-
 	frame = talloc_stackframe();
 	if (!frame) {
 		goto fail;
@@ -540,12 +535,6 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	}
 
 	if (nstream == NULL) {
-		errno = ENOSYS;
-		goto fail;
-	}
-
-	/* the new base should be empty */
-	if (StrCaseCmp(obase, nbase) != 0) {
 		errno = ENOSYS;
 		goto fail;
 	}
