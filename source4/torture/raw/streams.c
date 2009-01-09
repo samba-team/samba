@@ -1306,6 +1306,171 @@ static bool test_stream_rename2(struct torture_context *tctx,
 	return ret;
 }
 
+static bool create_file_with_stream(struct torture_context *tctx,
+				    struct smbcli_state *cli,
+				    TALLOC_CTX *mem_ctx,
+				    const char *base_fname,
+				    const char *stream)
+{
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+
+	/* Create a file with a stream */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_CREATE;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = stream;
+
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+ done:
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	return ret;
+}
+
+/* Test how streams interact with create dispositions */
+static bool test_stream_create_disposition(struct torture_context *tctx,
+					   struct smbcli_state *cli,
+					   TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	union smb_open io;
+	const char *fname = BASEDIR "\\stream.txt";
+	const char *stream = "Stream One:$DATA";
+	const char *fname_stream;
+	const char *default_stream_name = "::$DATA";
+	const char *stream_list[2];
+	bool ret = true;
+	int fnum = -1;
+
+	fname_stream = talloc_asprintf(mem_ctx, "%s:%s", fname, stream);
+
+	stream_list[0] = talloc_asprintf(mem_ctx, ":%s", stream);
+	stream_list[1] = default_stream_name;
+
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
+				     fname_stream)) {
+		goto done;
+	}
+
+	/* Open the base file with OPEN */
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.flags = 0;
+	io.ntcreatex.in.access_mask = (SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+	    SEC_FILE_APPEND_DATA|SEC_STD_READ_CONTROL);
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = 0;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	/*
+	 * check ntcreatex open: sanity check
+	 */
+	printf("(%s) Checking ntcreatex disp: open\n", __location__);
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	if (!check_stream_list(cli, fname, 2, stream_list)) {
+		goto done;
+	}
+
+	/*
+	 * check ntcreatex overwrite
+	 */
+	printf("(%s) Checking ntcreatex disp: overwrite\n", __location__);
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+		goto done;
+	}
+
+	/*
+	 * check ntcreatex overwrite_if
+	 */
+	printf("(%s) Checking ntcreatex disp: overwrite_if\n", __location__);
+	smbcli_unlink(cli->tree, fname);
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
+				     fname_stream)) {
+		goto done;
+	}
+
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+		goto done;
+	}
+
+	/*
+	 * check ntcreatex supersede
+	 */
+	printf("(%s) Checking ntcreatex disp: supersede\n", __location__);
+	smbcli_unlink(cli->tree, fname);
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
+				     fname_stream)) {
+		goto done;
+	}
+
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_SUPERSEDE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+		goto done;
+	}
+
+	/*
+	 * check openx overwrite_if
+	 */
+	printf("(%s) Checking openx disp: overwrite_if\n", __location__);
+	smbcli_unlink(cli->tree, fname);
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
+				     fname_stream)) {
+		goto done;
+	}
+
+	io.openx.level = RAW_OPEN_OPENX;
+	io.openx.in.flags = OPENX_FLAGS_ADDITIONAL_INFO;
+	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR;
+	io.openx.in.search_attrs = 0;
+	io.openx.in.file_attrs = 0;
+	io.openx.in.write_time = 0;
+	io.openx.in.size = 1024*1024;
+	io.openx.in.timeout = 0;
+	io.openx.in.fname = fname;
+
+	io.openx.in.open_func = OPENX_OPEN_FUNC_TRUNC | OPENX_OPEN_FUNC_CREATE;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.openx.out.file.fnum);
+	if (!check_stream_list(cli, fname, 1, &default_stream_name)) {
+		goto done;
+	}
+
+ done:
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
+	return ret;
+}
 
 /* 
    basic testing of streams calls
@@ -1336,8 +1501,9 @@ bool torture_raw_streams(struct torture_context *torture,
 	smb_raw_exit(cli->session);
 	ret &= test_stream_rename2(torture, cli, torture);
 	smb_raw_exit(cli->session);
-
+	ret &= test_stream_create_disposition(torture, cli, torture);
 	smb_raw_exit(cli->session);
+
 	smbcli_deltree(cli->tree, BASEDIR);
 
 	return ret;
