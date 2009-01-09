@@ -22,7 +22,9 @@
 #include "includes.h"
 #include "torture/torture.h"
 #include "librpc/gen_ndr/ndr_svcctl_c.h"
+#include "librpc/gen_ndr/ndr_svcctl.h"
 #include "torture/rpc/rpc.h"
+#include "param/param.h"
 
 static bool test_OpenSCManager(struct dcerpc_pipe *p, struct torture_context *tctx, struct policy_handle *h)
 {
@@ -220,12 +222,36 @@ static bool test_EnumServicesStatus(struct torture_context *tctx, struct dcerpc_
 
 		torture_assert_ntstatus_ok(tctx, status, "EnumServicesStatus failed!");
 		torture_assert_werr_ok(tctx, r.out.result, "EnumServicesStatus failed");
+	}
 
-		service = (struct ENUM_SERVICE_STATUSW *)r.out.service;
+	if (services_returned > 0) {
+
+		enum ndr_err_code ndr_err;
+		DATA_BLOB blob;
+		struct ndr_pull *ndr;
+
+		blob.length = r.in.buf_size;
+		blob.data = talloc_steal(tctx, r.out.service);
+
+		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
+
+		service = talloc_array(tctx, struct ENUM_SERVICE_STATUSW, services_returned);
+		if (!service) {
+			return false;
+		}
+
+		ndr_err = ndr_pull_ENUM_SERVICE_STATUSW_array(
+				ndr, services_returned, service);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return false;
+		}
 	}
 
 	for(i = 0; i < services_returned; i++) {
-		printf("Type: %d, State: %d\n", service[i].status.type, service[i].status.state);
+
+		printf("%-20s   \"%s\", Type: %d, State: %d\n",
+			service[i].service_name, service[i].display_name,
+			service[i].status.type, service[i].status.state);
 	}
 
 	if (!test_CloseServiceHandle(p, tctx, &h))

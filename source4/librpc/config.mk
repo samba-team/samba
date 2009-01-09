@@ -197,7 +197,7 @@ NDR_SRVSVC_OBJ_FILES = ../librpc/gen_ndr/ndr_srvsvc.o
 [SUBSYSTEM::NDR_SVCCTL]
 PUBLIC_DEPENDENCIES = LIBNDR
 
-NDR_SVCCTL_OBJ_FILES = ../librpc/gen_ndr/ndr_svcctl.o
+NDR_SVCCTL_OBJ_FILES = ../librpc/gen_ndr/ndr_svcctl.o ../librpc/ndr/ndr_svcctl.o
 
 PUBLIC_HEADERS += $(addprefix ../librpc/gen_ndr/, ndr_svcctl.h svcctl.h)
 
