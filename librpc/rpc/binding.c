@@ -176,11 +176,7 @@ _PUBLIC_ char *dcerpc_binding_string(TALLOC_CTX *mem_ctx, const struct dcerpc_bi
 	const char *t_name = NULL;
 
 	if (b->transport != NCA_UNKNOWN) {
-		for (i=0;i<ARRAY_SIZE(transports);i++) {
-			if (transports[i].transport == b->transport) {
-				t_name = transports[i].name;
-			}
-		}
+		t_name = derpc_transport_string_by_transport(b->transport);
 		if (!t_name) {
 			return NULL;
 		}
@@ -572,7 +568,7 @@ enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot)
 	return (unsigned int)-1;
 }
 
-_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower)
+_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower)
 {
 	int i;
 
@@ -596,6 +592,18 @@ _PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tow
 
 	/* Unknown transport */
 	return (unsigned int)-1;
+}
+
+_PUBLIC_ const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t)
+{
+	int i;
+
+	for (i=0; i<ARRAY_SIZE(transports); i++) {
+		if (t == transports[i].transport) {
+			return transports[i].name;
+		}
+	}
+	return NULL;
 }
 
 _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 

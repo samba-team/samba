@@ -359,7 +359,8 @@ NTSTATUS dcerpc_binding_build_tower(TALLOC_CTX *mem_ctx,
 
 NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor, struct ndr_syntax_id *syntax);
 
-enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower);
+enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
+const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
 
 NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 			    const struct GUID *object,

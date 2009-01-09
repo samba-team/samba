@@ -2292,7 +2292,8 @@ _PUBLIC_ NTSTATUS dcerpc_floor_get_lhs_data(const struct epm_floor *epm_floor,
 					    struct ndr_syntax_id *syntax);
 const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
-_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(struct epm_tower *tower);
+_PUBLIC_ enum dcerpc_transport_t dcerpc_transport_by_tower(const struct epm_tower *tower);
+_PUBLIC_ const char *derpc_transport_string_by_transport(enum dcerpc_transport_t t);
 _PUBLIC_ NTSTATUS dcerpc_binding_from_tower(TALLOC_CTX *mem_ctx, 
 				   struct epm_tower *tower, 
 				   struct dcerpc_binding **b_out);
