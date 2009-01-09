@@ -200,6 +200,7 @@ def __transform_entry(entry, objectClass):
     for l in entry:
         key = l[0].lower()
         l[1] = l[1].lstrip()
+        l[1] = l[1].rstrip()
 
         if not cn and key == "cn":
             cn = l[1]
