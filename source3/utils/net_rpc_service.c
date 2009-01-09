@@ -200,13 +200,16 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 					const char **argv )
 {
 	POLICY_HND hSCM;
-	ENUM_SERVICES_STATUS *services;
+	struct ENUM_SERVICE_STATUSW *services = NULL;
 	WERROR result = WERR_GENERAL_FAILURE;
 	NTSTATUS status;
-	fstring servicename;
-	fstring displayname;
-	uint32 num_services = 0;
 	int i;
+
+	uint8_t *buffer = NULL;
+	uint32_t buf_size = 0;
+	uint32_t bytes_needed = 0;
+	uint32_t num_services = 0;
+	uint32_t resume_handle = 0;
 
 	if (argc != 0 ) {
 		d_printf("Usage: net rpc service list\n");
@@ -224,28 +227,74 @@ static NTSTATUS rpc_service_list_internal(struct net_context *c,
 		return werror_to_ntstatus(result);
 	}
 
-	result = rpccli_svcctl_enumerate_services(pipe_hnd, mem_ctx, &hSCM, SERVICE_TYPE_WIN32,
-		SERVICE_STATE_ALL, &num_services, &services );
+	do {
+		status = rpccli_svcctl_EnumServicesStatusW(pipe_hnd, mem_ctx,
+							   &hSCM,
+							   SERVICE_TYPE_WIN32,
+							   SERVICE_STATE_ALL,
+							   buffer,
+							   buf_size,
+							   &bytes_needed,
+							   &num_services,
+							   &resume_handle,
+							   &result);
 
-	if ( !W_ERROR_IS_OK(result) ) {
-		d_fprintf(stderr, "Failed to enumerate services.  [%s]\n", win_errstr(result));
-		goto done;
-	}
+		if (NT_STATUS_IS_ERR(status)) {
+			d_fprintf(stderr, "Failed to enumerate services.  [%s]\n",
+				win_errstr(result));
+			break;
+		}
 
-	if ( num_services == 0 )
-		d_printf("No services returned\n");
+		if (W_ERROR_EQUAL(result, WERR_MORE_DATA) && bytes_needed > 0) {
+			buffer = talloc_array(mem_ctx, uint8_t, bytes_needed);
+			buf_size = bytes_needed;
+			continue;
+		}
 
-	for ( i=0; i<num_services; i++ ) {
-		rpcstr_pull( servicename, services[i].servicename.buffer, sizeof(servicename), -1, STR_TERMINATE );
-		rpcstr_pull( displayname, services[i].displayname.buffer, sizeof(displayname), -1, STR_TERMINATE );
+		if ( num_services == 0 ) {
+			d_printf("No services returned\n");
+			break;
+		}
 
-		d_printf("%-20s    \"%s\"\n", servicename, displayname);
-	}
+		{
+			enum ndr_err_code ndr_err;
+			DATA_BLOB blob;
+			struct ndr_pull *ndr;
 
-done:
+			blob.length = buf_size;
+			blob.data = talloc_steal(mem_ctx, buffer);
+
+			services = talloc_array(mem_ctx, struct ENUM_SERVICE_STATUSW, num_services);
+			if (!services) {
+				status = NT_STATUS_NO_MEMORY;
+				break;
+			}
+
+			ndr = ndr_pull_init_blob(&blob, mem_ctx, NULL);
+			if (ndr == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				break;
+			}
+
+			ndr_err = ndr_pull_ENUM_SERVICE_STATUSW_array(
+				ndr, num_services, services);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				status = ndr_map_error2ntstatus(ndr_err);
+				break;
+			}
+
+			for ( i=0; i<num_services; i++ ) {
+				d_printf("%-20s    \"%s\"\n",
+					services[i].service_name,
+					services[i].display_name);
+			}
+		}
+
+	} while (W_ERROR_EQUAL(result, WERR_MORE_DATA));
+
 	rpccli_svcctl_CloseServiceHandle(pipe_hnd, mem_ctx, &hSCM, NULL);
 
-	return werror_to_ntstatus(result);
+	return status;
 }
 
 /********************************************************************
