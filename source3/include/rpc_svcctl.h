@@ -45,33 +45,5 @@
 #define SVCCTL_OPEN_SCMANAGER_A			0x1b
 */
 
-/* utility structures for RPCs */
-
-typedef struct {
-	UNISTR servicename;
-	UNISTR displayname;
-	struct SERVICE_STATUS status;
-} ENUM_SERVICES_STATUS;
-
-/* rpc structures */
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
-	uint32 type;
-	uint32 state;
-	uint32 buffer_size;
-	uint32 *resume;
-} SVCCTL_Q_ENUM_SERVICES_STATUS;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	uint32 returned;
-	uint32 *resume;
-	WERROR status;
-} SVCCTL_R_ENUM_SERVICES_STATUS;
-
 #endif /* _RPC_SVCCTL_H */
 

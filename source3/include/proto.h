@@ -5453,10 +5453,6 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from rpc_client/cli_svcctl.c  */
 
-WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                      POLICY_HND *hSCM, uint32 type, uint32 state, 
-				      uint32 *returned, ENUM_SERVICES_STATUS **service_array  );
-
 /* The following definitions come from rpc_client/init_lsa.c  */
 
 void init_lsa_String(struct lsa_String *name, const char *s);
@@ -6156,11 +6152,6 @@ bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 
 /* The following definitions come from rpc_parse/parse_svcctl.c  */
 
-bool svcctl_io_enum_services_status( const char *desc, ENUM_SERVICES_STATUS *enum_status, RPC_BUFFER *buffer, int depth );
-uint32 svcctl_sizeof_enum_services_status( ENUM_SERVICES_STATUS *status );
-bool svcctl_io_q_enum_services_status(const char *desc, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, prs_struct *ps, int depth);
-bool svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_STATUS *r_u, prs_struct *ps, int depth);
-
 /* The following definitions come from rpc_server/srv_eventlog.c  */
 
 NTSTATUS rpc_eventlog2_init(void);
@@ -6398,7 +6389,6 @@ NTSTATUS rpc_svcctl2_init(void);
 /* The following definitions come from rpc_server/srv_svcctl_nt.c  */
 
 bool init_service_op_table( void );
-WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u);
 
 /* The following definitions come from rpcclient/cmd_dfs.c  */
 
