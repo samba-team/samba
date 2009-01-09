@@ -1,18 +1,18 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Service Control API Implementation
  *  Copyright (C) Gerald Carter                   2005.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -44,9 +44,11 @@ static WERROR rcinit_stop( const char *service, struct SERVICE_STATUS *status )
 	SAFE_FREE(command);
 
 	ZERO_STRUCTP( status );
-	status->type = 0x0020;
-	status->state = (ret == 0 ) ? 0x0001 : 0x0004;
-	status->controls_accepted = 0x0005;
+
+	status->type			= SERVICE_TYPE_WIN32_SHARE_PROCESS;
+	status->state			= (ret == 0 ) ? SVCCTL_STOPPED : SVCCTL_RUNNING;
+	status->controls_accepted	= SVCCTL_ACCEPT_STOP |
+					  SVCCTL_ACCEPT_SHUTDOWN;
 
 	return ( ret == 0 ) ? WERR_OK : WERR_ACCESS_DENIED;
 }
@@ -105,9 +107,11 @@ static WERROR rcinit_status( const char *service, struct SERVICE_STATUS *status 
 	SAFE_FREE(command);
 
 	ZERO_STRUCTP( status );
-	status->type = 0x0020;
-	status->state = (ret == 0 ) ? 0x0004 : 0x0001;
-	status->controls_accepted = 0x0005;
+
+	status->type			= SERVICE_TYPE_WIN32_SHARE_PROCESS;
+	status->state			= (ret == 0 ) ? SVCCTL_RUNNING : SVCCTL_STOPPED;
+	status->controls_accepted	= SVCCTL_ACCEPT_STOP |
+					  SVCCTL_ACCEPT_SHUTDOWN;
 
 	return WERR_OK;
 }
