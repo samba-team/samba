@@ -173,6 +173,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	TALLOC_CTX *mem_ctx = NULL;
 	pid_t child_pid;
 	pid_t parent_pid = sys_getpid();
+	char *lfile = NULL;
 
 	/* Stop zombies */
 	CatchChild();
@@ -199,22 +200,24 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 
 	/* Leave messages blocked - we will never process one. */
 
-	if (!reinit_after_fork(winbind_messaging_context(),
-			       winbind_event_context(), true)) {
+	if (!override_logfile) {
+		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) == -1) {
+			DEBUG(0, ("fork_child_dc_connect: out of memory!\n"));
+			return false;
+		}
+	}
+
+	if (!winbindd_reinit_after_fork(lfile)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
+		messaging_send_buf(winbind_messaging_context(),
+				   pid_to_procid(parent_pid),
+				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
+				   (uint8 *)domain->name,
+				   strlen(domain->name) + 1);
 		_exit(0);
 	}
 
-	close_conns_after_fork();
-
-	if (!override_logfile) {
-		char *logfile;
-		if (asprintf(&logfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) > 0) {
-			lp_set_logfile(logfile);
-			SAFE_FREE(logfile);
-			reopen_logs();
-		}
-	}
+	SAFE_FREE(lfile);
 
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
@@ -378,9 +381,10 @@ void set_domain_offline(struct winbindd_domain *domain)
  Set domain online - if allowed.
 ****************************************************************/
 
+void ccache_regain_all_now(void);
+
 static void set_domain_online(struct winbindd_domain *domain)
 {
-	struct timeval now;
 
 	DEBUG(10,("set_domain_online: called for domain %s\n",
 		domain->name ));
@@ -400,10 +404,8 @@ static void set_domain_online(struct winbindd_domain *domain)
 	winbindd_set_locator_kdc_envs(domain);
 
 	/* If we are waiting to get a krb5 ticket, trigger immediately. */
-	GetTimeOfDay(&now);
-	set_event_dispatch_time(winbind_event_context(),
-				"krb5_ticket_gain_handler", now);
-
+	ccache_regain_all_now();
+	
 	/* Ok, we're out of any startup mode now... */
 	domain->startup = False;
 
@@ -475,28 +477,6 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	   because network manager seems to lie.
 	   Wait at least 5 seconds. Heuristics suck... */
 
-	if (!domain->check_online_event) {
-		/* If we've come from being globally offline we
-		   don't have a check online event handler set.
-		   We need to add one now we're trying to go
-		   back online. */
-
-		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
-			domain->name ));
-
-		domain->check_online_event = event_add_timed(winbind_event_context(),
-								NULL,
-								timeval_current_ofs(5, 0),
-								"check_domain_online_handler",
-								check_domain_online_handler,
-								domain);
-
-		/* The above *has* to succeed for winbindd to work. */
-		if (!domain->check_online_event) {
-			smb_panic("set_domain_online_request: failed to add online handler");
-		}
-	}
-
 	GetTimeOfDay(&tev);
 
 	/* Go into "startup" mode again. */
@@ -504,8 +484,28 @@ void set_domain_online_request(struct winbindd_domain *domain)
 	domain->startup = True;
 
 	tev.tv_sec += 5;
-
-	set_event_dispatch_time(winbind_event_context(), "check_domain_online_handler", tev);
+	if (!domain->check_online_event) {
+		/* If we've come from being globally offline we
+		   don't have a check online event handler set.
+		   We need to add one now we're trying to go
+		   back online. */
+		DEBUG(10,("set_domain_online_request: domain %s was globally offline.\n",
+			domain->name ));
+	}
+	
+	TALLOC_FREE(domain->check_online_event);
+	
+	domain->check_online_event = event_add_timed(winbind_event_context(),
+							NULL,
+							tev,
+							"check_domain_online_handler",
+							check_domain_online_handler,
+							domain);
+	
+	/* The above *has* to succeed for winbindd to work. */
+	if (!domain->check_online_event) {
+		smb_panic("set_domain_online_request: failed to add online handler");
+	}
 }
 
 /****************************************************************
