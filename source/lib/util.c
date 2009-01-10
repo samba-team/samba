@@ -3309,3 +3309,16 @@ void *talloc_zeronull(const void *context, size_t size, const char *name)
 	}
 	return talloc_named_const(context, size, name);
 }
+
+bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       struct event_context *ev_ctx,
+		       bool parent_longlived)
+{
+	set_need_random_reseed();
+	if (tdb_reopen_all(parent_longlived ? 1 : 0) == -1) {
+		DEBUG(0, ("tdb_reopen_all failed.\n"));
+		return false;
+	}
+	event_context_reinit(ev_ctx);
+	return true;
+}

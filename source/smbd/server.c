@@ -300,6 +300,10 @@ static BOOL allowable_number_of_smbd_processes(void)
  Open the socket communication.
 ****************************************************************************/
 
+bool reinit_after_fork(struct messaging_context *msg_ctx,
+			struct event_context *ev_ctx,
+			bool parent_longlived);
+
 static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_ports)
 {
 	int num_interfaces = iface_count();
@@ -560,17 +564,11 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				set_remote_machine_name(get_peer_addr(smbd_server_fd()),
 							False);
 				
-				/* Reset the state of the random
-				 * number generation system, so
-				 * children do not get the same random
-				 * numbers as each other */
-
-				set_need_random_reseed();
-				/* tdb needs special fork handling - remove
-				 * CLEAR_IF_FIRST flags */
-				if (tdb_reopen_all(1) == -1) {
-					DEBUG(0,("tdb_reopen_all failed.\n"));
-					smb_panic("tdb_reopen_all failed.");
+				if (!reinit_after_fork(smbd_messaging_context(),
+						       smbd_event_context(),
+						       true)) {
+					DEBUG(0, ("reinit_after_fork failed.\n"));
+					smb_panic("reinit_after_fork failed.\n");
 				}
 
 				return True; 

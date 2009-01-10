@@ -297,39 +297,34 @@ struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
 	return to_ret;
 }
 
+static int event_context_destructor(struct event_context *ev)
+{
+	while (ev->fd_events != NULL) {
+		ev->fd_events->event_ctx = NULL;
+		DLIST_REMOVE(ev->fd_events, ev->fd_events);
+	}
+	while (ev->timed_events != NULL) {
+		ev->timed_events->event_ctx = NULL;
+		DLIST_REMOVE(ev->timed_events, ev->timed_events);
+	}
+	return 0;
+}
+
+void event_context_reinit(struct event_context *ev)
+{
+	event_context_destructor(ev);
+	return;
+}
+
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
-	return TALLOC_ZERO_P(NULL, struct event_context);
-}
+	struct event_context *result;
 
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			DLIST_REMOVE(event_ctx->timed_events, te);
-			te->when = when;
-			add_event_by_time(te);
-			return 1;
-		}
+	result = TALLOC_ZERO_P(mem_ctx, struct event_context);
+	if (result == NULL) {
+		return NULL;
 	}
-	return 0;
-}
 
-/* Returns 1 if event was found and cancelled, 0 otherwise. */
-
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			TALLOC_FREE(te);
-			return 1;
-		}
-	}
-	return 0;
+	talloc_set_destructor(result, event_context_destructor);
+	return result;
 }

@@ -779,6 +779,7 @@ static void child_msg_offline(int msg_type, struct process_id src,
 			      void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)buf;
 
 	if (buf == NULL || len == 0) {
@@ -798,6 +799,8 @@ static void child_msg_offline(int msg_type, struct process_id src,
 		return;
 	}
 
+	primary_domain = find_our_domain();
+
 	/* Mark the requested domain offline. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
@@ -807,6 +810,11 @@ static void child_msg_offline(int msg_type, struct process_id src,
 		if (strequal(domain->name, domainname)) {
 			DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
 			set_domain_offline(domain);
+			/* we are in the trusted domain, set the primary domain 
+			 * offline too */
+			if (domain != primary_domain) {
+				set_domain_offline(primary_domain);
+			}
 		}
 	}
 }
@@ -817,6 +825,7 @@ static void child_msg_online(int msg_type, struct process_id src,
 			     void *buf, size_t len, void *private_data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)buf;
 
 	if (buf == NULL || len == 0) {
@@ -829,6 +838,8 @@ static void child_msg_online(int msg_type, struct process_id src,
 		DEBUG(10,("child_msg_online: rejecting online message.\n"));
 		return;
 	}
+
+	primary_domain = find_our_domain();
 
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
@@ -844,6 +855,16 @@ static void child_msg_online(int msg_type, struct process_id src,
 			DEBUG(5,("child_msg_online: requesting %s to go online.\n", domain->name));
 			winbindd_flush_negative_conn_cache(domain);
 			set_domain_online_request(domain);
+
+			/* we can be in trusted domain, which will contact primary domain
+			 * we have to bring primary domain online in trusted domain process
+			 * see, winbindd_dual_pam_auth() --> winbindd_dual_pam_auth_samlogon()
+			 * --> contact_domain = find_our_domain()
+			 * */
+			if (domain != primary_domain) {
+				winbindd_flush_negative_conn_cache(primary_domain);
+				set_domain_online_request(primary_domain);
+			}
 		}
 	}
 }
@@ -907,11 +928,58 @@ static void child_msg_onlinestatus(int msg_type, struct process_id src,
 	talloc_destroy(mem_ctx);
 }
 
+bool reinit_after_fork(struct messaging_context *msg_ctx,
+			struct event_context *ev_ctx,
+			bool parent_longlived);
+void ccache_remove_all_after_fork(void);
+
+bool winbindd_reinit_after_fork(const char *logfile)
+{
+	struct winbindd_domain *dom;
+	struct winbindd_child *cl;
+
+	if (!reinit_after_fork(NULL,
+				winbind_event_context(), true)) {
+		DEBUG(0, ("reinit_after_fork failed.\n"));
+		return false;
+	}
+
+	close_conns_after_fork();
+
+	if (!override_logfile && logfile) {
+		lp_set_logfile(logfile);
+		reopen_logs();
+	}
+
+	/* Don't handle the same messages as our parent. */
+	message_deregister(MSG_SMB_CONF_UPDATED);
+	message_deregister(MSG_SHUTDOWN);
+	message_deregister(MSG_WINBIND_OFFLINE);
+	message_deregister(MSG_WINBIND_ONLINE);
+	message_deregister(MSG_WINBIND_ONLINESTATUS);
+
+	ccache_remove_all_after_fork();
+	
+	for (dom = domain_list(); dom; dom = dom->next) {
+		TALLOC_FREE(dom->check_online_event);
+	}
+
+	for (cl = children; cl; cl = cl->next) {
+		struct winbindd_async_request *request;
+
+		for (request = cl->requests; request; request = request->next) {
+			TALLOC_FREE(request->reply_timeout_event);
+		}
+		TALLOC_FREE(cl->lockout_policy_event);
+	}
+
+	return true;
+}
+
 static BOOL fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
-	struct winbindd_domain *domain;
 	struct winbindd_domain *primary_domain = NULL;
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fdpair) != 0) {
@@ -957,24 +1025,10 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	close(fdpair[1]);
 
 	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("tdb_reopen_all failed.\n"));
+	if (!winbindd_reinit_after_fork(child->logfilename)) {
+		DEBUG(0, ("winbindd_reinit_after_fork failed.\n"));
 		_exit(0);
 	}
-
-	close_conns_after_fork();
-
-	if (!override_logfile) {
-		lp_set_logfile(child->logfilename);
-		reopen_logs();
-	}
-
-	/* Don't handle the same messages as our parent. */
-	message_deregister(MSG_SMB_CONF_UPDATED);
-	message_deregister(MSG_SHUTDOWN);
-	message_deregister(MSG_WINBIND_OFFLINE);
-	message_deregister(MSG_WINBIND_ONLINE);
-	message_deregister(MSG_WINBIND_ONLINESTATUS);
 
 	/* The child is ok with online/offline messages now. */
 	message_unblock();
@@ -985,28 +1039,29 @@ static BOOL fork_domain_child(struct winbindd_child *child)
 	message_register(MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus,
 			 NULL);
 
+	primary_domain = find_our_domain();
+
+	if (primary_domain == NULL) {
+		smb_panic("no primary domain found");
+	}
+
+	/* It doesn't matter if we allow cache login,
+	 * try to bring domain online after fork. */
 	if ( child->domain ) {
 		child->domain->startup = True;
 		child->domain->startup_time = time(NULL);
-	}
-
-	/* Ensure we have no pending check_online events other
-	   than one for this domain or the primary domain. */
-
-	for (domain = domain_list(); domain; domain = domain->next) {
-		if (domain->primary) {
-			primary_domain = domain;
+		/* we can be in primary domain or in trusted domain
+		 * If we are in trusted domain, set the primary domain
+		 * in start-up mode */
+		if (!(child->domain->internal)) {
+			set_domain_online_request(child->domain);
+			if (!(child->domain->primary)) {
+				primary_domain->startup = True;
+				primary_domain->startup_time = time(NULL);
+				set_domain_online_request(primary_domain);
+			}
 		}
-		if ((domain != child->domain) && !domain->primary) {
-			TALLOC_FREE(domain->check_online_event);
-		}
 	}
-
-	/* Ensure we're not handling an event inherited from
-	   our parent. */
-
-	cancel_named_event(winbind_event_context(),
-			   "krb5_ticket_refresh_handler");
 
 	/* We might be in the idmap child...*/
 	if (child->domain && !(child->domain->internal) &&
