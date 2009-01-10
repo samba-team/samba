@@ -1884,7 +1884,7 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	/* TODO: make this completely nonblocking */
 
 	status = receive_smb_talloc(mem_ctx, smbd_server_fd(),
-				    (char **)&inbuf,
+				    (char **)(void *)&inbuf,
 				    0, /* timeout */
 				    &unread_bytes,
 				    &encrypted,
