@@ -1243,7 +1243,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		DLIST_ADD(children, child);
 		child->event.fd = fdpair[1];
 		child->event.flags = 0;
-		child->requests = NULL;
 		add_fd_event(&child->event);
 		return True;
 	}
