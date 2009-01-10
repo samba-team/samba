@@ -406,8 +406,8 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	uint8_t *inbuf;
 
-	inbuf = talloc_memdup(mem_ctx, msg->buf.data,
-			      msg->buf.length);
+	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
+					 msg->buf.length);
 	if (inbuf == NULL) {
 		exit_server("smbd_deferred_open_timer: talloc failed\n");
 		return;
