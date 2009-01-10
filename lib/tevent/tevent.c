@@ -147,19 +147,25 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 		ev->pipe_fde = NULL;
 	}
 
-	for (fd=ev->fd_events; fd; fd = fd->next) {
+	fd = ev->fd_events;
+	while (fd) {
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(ev->fd_events, fd);
+		fd = ev->fd_events;
 	}
 
-	for (te=ev->timer_events; te; te = te->next) {
+	te = ev->timer_events;
+	while (te) {
 		te->event_ctx = NULL;
-		DLIST_REMOVE(ev->timer_events, te);
+		DLIST_REMOVE(te->timer_events, te);
+		te = ev->timer_events;
 	}
 
-	for (se=ev->signal_events; se; se = se->next) {
+	se = ev->signal_events;
+	while (se) {
 		se->event_ctx = NULL;
 		DLIST_REMOVE(ev->signal_events, se);
+		se = ev->signal_events;
 	}
 
 	return 0;
