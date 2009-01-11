@@ -32,7 +32,7 @@
  */
 
 /**
- * @page page_principal The principal handing functions.
+ * @page krb5_principal_intro The principal handing functions.
  *
  * A Kerberos principal is a email address looking string that
  * contains to parts separeted by a @.  The later part is the kerbero
