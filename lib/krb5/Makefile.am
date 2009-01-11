@@ -245,7 +245,6 @@ man_MANS =					\
 	krb5_init_context.3			\
 	krb5_is_thread_safe.3			\
 	krb5_keyblock.3				\
-	krb5_keytab.3				\
 	krb5_krbhst_init.3			\
 	krb5_kuserok.3				\
 	krb5_mk_req.3				\
