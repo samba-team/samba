@@ -100,25 +100,32 @@ void ccache_regain_all_now(void)
 	struct WINBINDD_CCACHE_ENTRY *cur;
 	struct timeval t = timeval_current();
 
-	cur = ccache_list;
-	while (cur) {
-		TALLOC_FREE(cur->event);
-		if (cur->refresh_time) {
-			cur->event = event_add_timed(winbind_event_context(),
-						     cur, t,
-						     "krb5_ticket_refresh_handler",
-						     krb5_ticket_refresh_handler,
-						     cur);
+	for (cur = ccache_list; cur; cur = cur->next) {
+		struct timed_event *new_event;
+
+		/*
+		 * if refresh_time is 0, we know that the
+		 * the event has the krb5_ticket_gain_handler
+		 */
+		if (cur->refresh_time == 0) {
+			new_event = event_add_timed(winbind_event_context(),
+						cur, t,
+						"krb5_ticket_gain_handler",
+						krb5_ticket_gain_handler,
+						cur);
 		} else {
-			cur->event = event_add_timed(winbind_event_context(),
-						      cur, t,
-						      "krb5_ticket_gain_handler",
-						      krb5_ticket_gain_handler,
-						      cur);
+			new_event = event_add_timed(winbind_event_context(),
+						cur, t,
+						"krb5_ticket_refresh_handler",
+						krb5_ticket_refresh_handler,
+						cur);
 		}
-		if (!cur->event) {
-			DEBUG(0, ("ccache_regain_all_now: out of memory!!\n"));
+		if (!new_event) {
+			continue;
 		}
+
+		TALLOC_FREE(cur->event);
+		cur->event = new_event;
 	}
 	return;
 }
