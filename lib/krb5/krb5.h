@@ -278,13 +278,13 @@ typedef HostAddress krb5_address;
 typedef HostAddresses krb5_addresses;
 
 typedef enum krb5_keytype {
-    KEYTYPE_NULL	= 0,
-    KEYTYPE_DES		= 1,
-    KEYTYPE_DES3	= 7,
-    KEYTYPE_AES128	= 17,
-    KEYTYPE_AES256	= 18,
-    KEYTYPE_ARCFOUR	= 23,
-    KEYTYPE_ARCFOUR_56	= 24
+    KEYTYPE_NULL	= ETYPE_NULL,
+    KEYTYPE_DES		= ETYPE_DES_CBC_CRC,
+    KEYTYPE_DES3	= ETYPE_OLD_DES3_CBC_SHA1,
+    KEYTYPE_AES128	= ETYPE_AES128_CTS_HMAC_SHA1_96,
+    KEYTYPE_AES256	= ETYPE_AES256_CTS_HMAC_SHA1_96,
+    KEYTYPE_ARCFOUR	= ETYPE_ARCFOUR_HMAC_MD5,
+    KEYTYPE_ARCFOUR_56	= ETYPE_ARCFOUR_HMAC_MD5_56
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
