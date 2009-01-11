@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -34,8 +34,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
-RCSID("$Id$");
 
 #define HC_DEPRECATED
 #define HC_DEPRECATED_CRYPTO
