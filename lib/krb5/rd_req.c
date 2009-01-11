@@ -533,7 +533,7 @@ struct krb5_rd_req_out_ctx_data {
  * krb5_rd_req_in_ctx_free() when done with the context.
  *
  * @param context Keberos 5 context.
- * @param in in ctx to krb5_rd_req_ctx().
+ * @param ctx in ctx to krb5_rd_req_ctx().
  *
  * @return Kerberos 5 error code, see krb5_get_error_message().
  *
