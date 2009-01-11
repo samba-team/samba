@@ -22,29 +22,6 @@
 #include "includes.h"
 
 /****************************************************************************
- Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
-****************************************************************************/
-
-bool cli_api_pipe(struct cli_state *cli, const char *pipe_name,
-                  uint16 *setup, uint32 setup_count, uint32 max_setup_count,
-                  char *params, uint32 param_count, uint32 max_param_count,
-                  char *data, uint32 data_count, uint32 max_data_count,
-                  char **rparam, uint32 *rparam_count,
-                  char **rdata, uint32 *rdata_count)
-{
-	cli_send_trans(cli, SMBtrans,
-                 pipe_name,
-                 0,0,                         /* fid, flags */
-                 setup, setup_count, max_setup_count,
-                 params, param_count, max_param_count,
-                 data, data_count, max_data_count);
-
-	return (cli_receive_trans(cli, SMBtrans,
-                            rparam, (unsigned int *)rparam_count,
-                            rdata, (unsigned int *)rdata_count));
-}
-
-/****************************************************************************
  Call a remote api
 ****************************************************************************/
 
