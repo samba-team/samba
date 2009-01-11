@@ -555,7 +555,7 @@ good idea.
 @node Incremental propagation, Encryption types and salting, Slave Servers, Setting up a realm
 @section Incremental propagation
 
-There is also a newer, and still somewhat experimental, mechanism for
+There is also a newer mechanism for
 doing incremental propagation in Heimdal.  Instead of sending the whole
 database regularly, it sends the changes as they happen on the master to
 the slaves.  The master keeps track of all the changes by assigning a
@@ -571,6 +571,14 @@ master then responds by sending all the changes between that version and
 the current version at the master (a series of @samp{FORYOU} messages)
 or the whole database in a @samp{TELLYOUEVERYTHING} message.  There is
 also a keep-alive protocol that makes sure all slaves are up and running.
+
+In addition on listening on the network to get connection from new
+slaves, the ipropd-master also listens on a status unix
+socket. kadmind and kpasswdd both open that socket when a transation
+is done and written a notification to the socket. That cause
+ipropd-master to check for new version in the log file. As a fallback in
+case a notification is lost by the unix socket, the log file is
+checked after 30 seconds of no event.
 
 @subsection Configuring incremental propagation
 
