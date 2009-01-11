@@ -61,7 +61,8 @@ krb5_kt_register(krb5_context context,
     tmp = realloc(context->kt_types,
 		  (context->num_kt_types + 1) * sizeof(*context->kt_types));
     if(tmp == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
     memcpy(&tmp[context->num_kt_types], ops,
@@ -196,7 +197,6 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
 
 /**
  * Set `id' to the default keytab.
- * Return 0 or an error.
  *
  * @param context a Keberos context.
  * @param id the new default keytab.
@@ -257,14 +257,14 @@ krb5_kt_read_service_key(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Return the type of the `keytab' in the string `prefix of length
  * `prefixsize'.
  *
  * @param context a Keberos context.
- * @param keytab
- * @param prefix
- * @param prefixsize
+ * @param keytab the keytab to get the prefix for
+ * @param prefix prefix buffer
+ * @param prefixsize length of prefix buffer
  *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
@@ -281,13 +281,13 @@ krb5_kt_get_type(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Retrieve the name of the keytab `keytab' into `name', `namesize'
  *
  * @param context a Keberos context.
- * @param keytab
- * @param name
- * @param namesize
+ * @param keytab the keytab to get the name for.
+ * @param name name buffer.
+ * @param namesize size of name buffer.
  *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
@@ -345,7 +345,7 @@ krb5_kt_get_full_name(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Finish using the keytab in `id'.  All resources will be released,
  * even on errors.
  *
@@ -369,16 +369,16 @@ krb5_kt_close(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * Compare `entry' against `principal, vno, enctype'.
  * Any of `principal, vno, enctype' might be 0 which acts as a wildcard.
  * Return TRUE if they compare the same, FALSE otherwise.
  *
  * @param context a Keberos context.
- * @param entry an entry to match
- * @param principal NULL matches all principals
- * @param vno 0 matches all key version numbers
- * @param enctype 0 matches all enctypes
+ * @param entry an entry to match with.
+ * @param principal principal to match, NULL matches all principals.
+ * @param vno key version to match, 0 matches all key version numbers.
+ * @param enctype encryption type to match, 0 matches all encryption types.
  *
  * @return Return TRUE or match, FALSE if not matched.
  *
@@ -435,11 +435,20 @@ _krb5_kt_principal_not_found(krb5_context context,
 }
 
 
-/*
+/**
  * Retrieve the keytab entry for `principal, kvno, enctype' into `entry'
- * from the keytab `id'.
- * kvno == 0 is a wildcard and gives the keytab with the highest vno.
- * Return 0 or an error.
+ * from the keytab `id'. Matching is done like krb5_kt_compare().
+ *
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param principal principal to match, NULL matches all principals.
+ * @param vno key version to match, 0 matches all key version numbers.
+ * @param enctype encryption type to match, 0 matches all encryption types.
+ * @param entry the returned entry, free with krb5_kt_free_entry().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -491,9 +500,18 @@ krb5_kt_get_entry(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Copy the contents of `in' into `out'.
- * Return 0 or an error.  */
+ *
+ * @param context a Keberos context.
+ * @param in the keytab entry to copy.
+ * @param out the copy of the keytab entry, free with krb5_kt_free_entry().
+ * @param cursor the cursor of the iteration.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_copy_entry_contents(krb5_context context,
@@ -520,8 +538,15 @@ fail:
     return ret;
 }
 
-/*
+/**
  * Free the contents of `entry'.
+ *
+ * @param context a Keberos context.
+ * @param entry the entry to free
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -534,9 +559,16 @@ krb5_kt_free_entry(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Set `cursor' to point at the beginning of `id'.
- * Return 0 or an error.
+ *
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param cursor a newly allocated cursor, free with krb5_kt_end_seq_get().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -555,7 +587,8 @@ krb5_kt_start_seq_get(krb5_context context,
 }
 
 /**
- * Get the next entry from keytab, advance the cursor.
+ * Get the next entry from keytab, advance the cursor.  On last entry
+ * the function will return KRB5_KT_END.
  *
  * @param context a Keberos context.
  * @param id a keytab.
@@ -583,8 +616,16 @@ krb5_kt_next_entry(krb5_context context,
     return (*id->next_entry)(context, id, entry, cursor);
 }
 
-/*
+/**
  * Release all resources associated with `cursor'.
+ *
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param cursor the cursor to free.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -601,9 +642,16 @@ krb5_kt_end_seq_get(krb5_context context,
     return (*id->end_seq_get)(context, id, cursor);
 }
 
-/*
+/**
  * Add the entry in `entry' to the keytab `id'.
- * Return 0 or an error.
+ *
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param entry the entry to add
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -621,9 +669,17 @@ krb5_kt_add_entry(krb5_context context,
     return (*id->add)(context, id,entry);
 }
 
-/*
- * Remove the entry `entry' from the keytab `id'.
- * Return 0 or an error.
+/**
+ * Remove an entry from the keytab, matching is done using
+ * krb5_kt_compare().
+
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param entry the entry to remove
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
