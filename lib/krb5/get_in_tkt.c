@@ -38,43 +38,6 @@ RCSID("$Id$");
 #undef __attribute__
 #define __attribute__(x)
 
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_init_etype (krb5_context context,
-		 unsigned *len,
-		 krb5_enctype **val,
-		 const krb5_enctype *etypes)
-{
-    unsigned int i;
-    krb5_error_code ret;
-    krb5_enctype *tmp = NULL;
-
-    ret = 0;
-    if (etypes == NULL) {
-	ret = krb5_get_default_in_tkt_etypes(context,
-					     &tmp);
-	if (ret)
-	    return ret;
-	etypes = tmp;
-    }
-
-    for (i = 0; etypes[i]; ++i)
-	;
-    *len = i;
-    *val = malloc(i * sizeof(**val));
-    if (i != 0 && *val == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
-	goto cleanup;
-    }
-    memmove (*val,
-	     etypes,
-	     i * sizeof(*tmp));
-cleanup:
-    if (tmp != NULL)
-	free (tmp);
-    return ret;
-}
-
 static krb5_error_code
 check_server_referral(krb5_context context,
 		      krb5_kdc_rep *rep,
