@@ -187,14 +187,8 @@ test_uint32(krb5_context context, krb5_storage *sp)
 
 
 static void
-test_storage(krb5_context context)
+test_storage(krb5_context context, krb5_storage *sp)
 {
-    krb5_storage *sp;
-
-    sp = krb5_storage_emem();
-    if (sp == NULL)
-	krb5_errx(context, 1, "krb5_storage_emem: no mem");
-
     test_int8(context, sp);
     test_int16(context, sp);
     test_int32(context, sp);
@@ -204,6 +198,31 @@ test_storage(krb5_context context)
 
     krb5_storage_free(sp);
 }
+
+
+static void
+test_truncate(krb5_context context, krb5_storage *sp, int fd)
+{
+    struct stat sb;
+
+    krb5_store_string(sp, "hej");
+    krb5_storage_truncate(sp, 2);
+    
+    if (fstat(fd, &sb) != 0)
+	krb5_err(context, 1, errno, "fstat");
+    if (sb.st_size != 2)
+	krb5_errx(context, 1, "length not 2");
+
+    krb5_storage_truncate(sp, 1024);
+    
+    if (fstat(fd, &sb) != 0)
+	krb5_err(context, 1, errno, "fstat");
+    if (sb.st_size != 1024)
+	krb5_errx(context, 1, "length not 2");
+
+    krb5_storage_free(sp);
+}
+
 
 /*
  *
@@ -234,7 +253,9 @@ main(int argc, char **argv)
 {
     krb5_context context;
     krb5_error_code ret;
-    int optidx = 0;
+    int fd, optidx = 0;
+    krb5_storage *sp;
+    const char *fn = "test-store-data";
 
     setprogname(argv[0]);
 
@@ -256,7 +277,43 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
-    test_storage(context);
+    /*
+     * Test encoding/decoding of primotive types on diffrent backends
+     */
+
+    sp = krb5_storage_emem();
+    if (sp == NULL)
+	krb5_errx(context, 1, "krb5_storage_emem: no mem");
+
+    test_storage(context, sp);
+
+    fd = open(fn, O_RDWR|O_CREAT|O_TRUNC, 0600);
+    if (fd < 0)
+	krb5_err(context, 1, errno, "open(%s", fn);
+
+    sp = krb5_storage_from_fd(fd);
+    close(fd);
+    if (sp == NULL)
+	krb5_errx(context, 1, "krb5_storage_from_fd: %s no mem", fn);
+
+    test_storage(context, sp);
+    unlink(fn);
+
+    /*
+     * test truncate behavior
+     */
+
+    fd = open(fn, O_RDWR|O_CREAT|O_TRUNC, 0600);
+    if (fd < 0)
+	krb5_err(context, 1, errno, "open(%s", fn);
+
+    sp = krb5_storage_from_fd(fd);
+    if (sp == NULL)
+	krb5_errx(context, 1, "krb5_storage_from_fd: %s no mem", fn);
+
+    test_truncate(context, sp, fd);
+    close(fd);
+    unlink(fn);
 
     krb5_free_context(context);
 
