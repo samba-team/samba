@@ -3530,7 +3530,7 @@ krb5_decrypt_iov_ivec(krb5_context context,
  * @param usage Key usage for this buffer
  * @param data array of buffers to process
  * @param num_data length of array
- * @param result output data
+ * @param type output data
  *
  * @return Return an error code or 0.
  * @ingroup krb5_crypto
