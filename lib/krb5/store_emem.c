@@ -67,7 +67,7 @@ emem_store(krb5_storage *sp, const void *data, size_t size)
 	    sz *= 2;
 	base = realloc(s->base, sz);
 	if(base == NULL)
-	    return 0;
+	    return -1;
 	s->size = sz;
 	s->base = base;
 	s->ptr = (unsigned char*)base + off;
@@ -112,8 +112,10 @@ emem_trunc(krb5_storage *sp, off_t offset)
      * If offset is larget then current size, or current size is
      * shrunk more then half of the current size, adjust buffer.
      */
-    if (offset > s->size || s->size / 2 > offset ) {
+    if (offset > s->size || (s->size / 2) > offset) {
 	void *base;
+	size_t off;
+	off = s->ptr - s->base;
 	base = realloc(s->base, offset);
 	if(base == NULL)
 	    return ENOMEM;
@@ -121,6 +123,7 @@ emem_trunc(krb5_storage *sp, off_t offset)
 	    memset((char *)base + s->size, 0, offset - s->size);
 	s->size = offset;
 	s->base = base;
+	s->ptr = (unsigned char *)base + off;
     }
     s->len = offset;
     if ((s->ptr - s->base) > offset)
