@@ -654,6 +654,22 @@ struct proc {
     { "setkey principal v3", NULL }
 };
 
+static krb5_error_code
+copyheader(krb5_storage *sp, krb5_data *data)
+{
+    off_t off;
+    ssize_t sret;
+
+    off = krb5_storage_seek(sp, 0, SEEK_CUR);
+
+    CHECK(krb5_data_alloc(data, off));
+    INSIST(off == data->length);
+    krb5_storage_seek(sp, 0, SEEK_SET);
+    sret = krb5_storage_read(sp, data->data, data->length);
+    INSIST(sret == off);
+    INSIST(off == krb5_storage_seek(sp, 0, SEEK_CUR));
+}
+
 struct gctx {
     krb5_data handle;
     gss_ctx_id_t ctx;
@@ -690,10 +706,13 @@ process_stream(krb5_context context,
 	struct call_header chdr;
 	struct gcred gcred;
 	uint32_t mtype;
+	krb5_data headercopy;
 
 	krb5_storage_truncate(dreply, 0);
 	krb5_storage_truncate(reply, 0);
 	krb5_storage_truncate(msg, 0);
+
+	krb5_data_zero(&headercopy);
 
 	/*
 	 * This is very icky to handle the the auto-detection between
@@ -768,6 +787,7 @@ process_stream(krb5_context context,
 	CHECK(krb5_ret_uint32(msg, &chdr.vers));
 	CHECK(krb5_ret_uint32(msg, &chdr.proc));
 	CHECK(ret_auth_opaque(msg, &chdr.cred));
+	CHECK(copyheader(msg, &headercopy));
 	CHECK(ret_auth_opaque(msg, &chdr.verf));
 
 	INSIST(chdr.rpcvers == RPC_VERSION);
@@ -781,15 +801,15 @@ process_stream(krb5_context context,
 
 	if (gctx.done) {
 	    INSIST(chdr.verf.flavor == FLAVOR_GSS);
-#if 0
-	    gin.value = chdr.cred.data.data;
-	    gin.length = chdr.cred.data.length;
+
+	    /* from first byte to last of credential */
+	    gin.value = headercopy.data;
+	    gin.length = headercopy.length;
 	    gout.value = chdr.verf.data.data;
 	    gout.length = chdr.verf.data.length;
 
 	    maj_stat = gss_verify_mic(&min_stat, gctx.ctx, &gin, &gout, NULL);
 	    INSIST(maj_stat == GSS_S_COMPLETE);
-#endif
 	}
 
 	switch(gcred.proc) {
@@ -922,6 +942,7 @@ process_stream(krb5_context context,
 	krb5_data_free(&gcred.handle);
 	krb5_data_free(&chdr.cred.data);
 	krb5_data_free(&chdr.verf.data);
+	krb5_data_free(&headercopy);
 
 	CHECK(krb5_store_uint32(reply, chdr.xid));
 	CHECK(krb5_store_uint32(reply, 1)); /* REPLY */
