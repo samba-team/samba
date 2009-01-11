@@ -790,6 +790,20 @@ typedef struct krb5_crypto_iov {
 } krb5_crypto_iov;
 
 
+/* Glue for MIT */
+
+typedef struct {
+    int32_t lr_type;
+    krb5_timestamp value;
+} krb5_last_req_entry;
+
+typedef krb5_error_code
+(*krb5_gic_process_last_req)(krb5_context, krb5_last_req_entry **, void *);
+
+/*
+ *
+ */
+
 #include <krb5-protos.h>
 
 /* variables */
