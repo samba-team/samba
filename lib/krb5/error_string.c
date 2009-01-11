@@ -35,8 +35,8 @@
 
 RCSID("$Id$");
 
-#undef __attribute__
-#define __attribute__(X)
+#undef KRB5_DEPRECATED
+#define KRB5_DEPRECATED
 
 /**
  * Clears the error message from the Kerberos 5 context.
@@ -216,7 +216,7 @@ krb5_free_error_message(krb5_context context, const char *msg)
 
 void KRB5_LIB_FUNCTION
 krb5_free_error_string(krb5_context context, char *str)
-    __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     krb5_free_error_message(context, str);
 }
@@ -272,7 +272,7 @@ krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
 
 void KRB5_LIB_FUNCTION
 krb5_clear_error_string(krb5_context context)
-     __attribute__((deprecated))
+     KRB5_DEPRECATED
 {
     return krb5_clear_error_message(context);
 }
