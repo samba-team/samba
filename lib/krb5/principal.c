@@ -78,8 +78,6 @@ RCSID("$Id$");
  * @ingroup krb5_principal
  */
 
-
-
 void KRB5_LIB_FUNCTION
 krb5_free_principal(krb5_context context,
 		    krb5_principal p)
@@ -89,6 +87,18 @@ krb5_free_principal(krb5_context context,
 	free(p);
     }
 }
+
+/**
+ * Set the type of the principal
+ *
+ * @param context A Kerberos context.
+ * @param principal principal to set the type for
+ * @param type the new type
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_principal_set_type(krb5_context context,
@@ -127,8 +137,10 @@ krb5_principal_get_comp_string(krb5_context context,
  *
  * @param context Kerberos 5 context
  * @param principal principal to query
+ *
  * @return number of components in string
- * @ingroup krb5
+ *
+ * @ingroup krb5_principal
  */
 
 unsigned int KRB5_LIB_FUNCTION
