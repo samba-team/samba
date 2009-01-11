@@ -59,6 +59,7 @@ struct hx509_verify_ctx_data {
 #define HX509_VERIFY_CTX_F_REQUIRE_RFC3280		4
 #define HX509_VERIFY_CTX_F_CHECK_TRUST_ANCHORS		8
 #define HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS		16
+#define HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK		32
     time_t time_now;
     unsigned int max_depth;
 #define HX509_VERIFY_MAX_DEPTH 30
@@ -567,6 +568,16 @@ hx509_verify_ctx_f_allow_default_trustanchors(hx509_verify_ctx ctx, int boolean)
 	ctx->flags &= ~HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
     else
 	ctx->flags |= HX509_VERIFY_CTX_F_NO_DEFAULT_ANCHORS;
+}
+
+void
+hx509_verify_ctx_f_allow_best_before_signature_algs(hx509_context ctx, 
+						    int boolean)
+{
+    if (boolean)
+	ctx->flags &= ~HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK;
+    else
+	ctx->flags |= HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK;
 }
 
 static const Extension *
@@ -2263,8 +2274,14 @@ hx509_verify_path(hx509_context context,
 				   "Failed to verify signature of certificate");
 	    goto out;
 	}
-	/* verify that the creation date is before the best before date */
-	if (i + 1 < path.len) {
+	/* 
+	 * Verify that the sigature algorithm "best-before" date is
+	 * before the creation date of the certificate, do this for
+	 * trust anchors too, since any trust anchor that is created
+	 * after a algorithm is known to be bad deserved to be invalid
+	 */
+
+	if ((ctx->flags & HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK) == 0) {
 	    time_t notBefore = 
 		_hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
 	    ret = _hx509_signature_best_before(context,
