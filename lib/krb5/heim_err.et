@@ -18,6 +18,7 @@ error_code EOF,			"End of file"
 error_code BAD_MKEY,		"Failed to get the master key"
 error_code SERVICE_NOMATCH,	"Unacceptable service used"
 error_code NOT_SEEKABLE,	"File descriptor not seekable"
+error_code TOO_BIG,		"Offset too large"
 
 index 64
 prefix HEIM_PKINIT
