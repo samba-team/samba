@@ -137,6 +137,21 @@ emem_free(krb5_storage *sp)
     free(s->base);
 }
 
+/**
+ * Create a elastic (allocating) memory storage backend. Memory is
+ * allocated on demand. Free returned krb5_storage with
+ * krb5_storage_free().
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_fd()
+ * @sa krb5_storage_from_data()
+ */
+
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_emem(void)
 {

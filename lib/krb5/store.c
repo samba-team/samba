@@ -63,7 +63,7 @@ krb5_storage_clear_flags(krb5_storage *sp, krb5_flags flags)
  *
  * @return true if all the flags are set, false if not.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 krb5_boolean KRB5_LIB_FUNCTION
@@ -81,7 +81,7 @@ krb5_storage_is_flags(krb5_storage *sp, krb5_flags flags)
  * The byte order are: KRB5_STORAGE_BYTEORDER_BE,
  * KRB5_STORAGE_BYTEORDER_LE and KRB5_STORAGE_BYTEORDER_HOST.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 void KRB5_LIB_FUNCTION
@@ -94,7 +94,7 @@ krb5_storage_set_byteorder(krb5_storage *sp, krb5_flags byteorder)
 /**
  * Return the current byteorder for the buffer. See krb5_storage_set_byteorder() for the list or byte order contants.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 krb5_flags KRB5_LIB_FUNCTION
@@ -113,7 +113,7 @@ krb5_storage_get_byteorder(krb5_storage *sp)
  *
  * @return The new current offset
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 off_t KRB5_LIB_FUNCTION
@@ -130,10 +130,10 @@ krb5_storage_seek(krb5_storage *sp, off_t offset, int whence)
  *
  * @return An Kerberos 5 error code.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
-krb5_error_code KRB5_LIB_FUNCTION
+int KRB5_LIB_FUNCTION
 krb5_storage_truncate(krb5_storage *sp, off_t offset)
 {
     return (*sp->trunc)(sp, offset);
@@ -148,7 +148,7 @@ krb5_storage_truncate(krb5_storage *sp, off_t offset)
  *
  * @return The length of data read (can be shorter then len), or negative on error.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 krb5_ssize_t KRB5_LIB_FUNCTION
@@ -166,7 +166,7 @@ krb5_storage_read(krb5_storage *sp, void *buf, size_t len)
  *
  * @return The length of data written (can be shorter then len), or negative on error.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 krb5_ssize_t KRB5_LIB_FUNCTION
@@ -212,7 +212,7 @@ _krb5_get_int(void *buffer, unsigned long *value, size_t size)
  *
  * @return An Kerberos 5 error code.
  *
- * @ingroup krb5_support
+ * @ingroup krb5_storage
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -437,6 +437,42 @@ krb5_store_data(krb5_storage *sp,
     return 0;
 }
 
+/**
+ * Store a XDR opaque from the storage (data padded up a 4 byte
+ * aligned offset).
+ *
+ * @param sp the storage buffer to write to
+ * @param data the buffer to store.
+ *
+ * @return 0 on success, a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_store_data_xdr(krb5_storage *sp,
+		    krb5_data data)
+{
+    krb5_error_code ret;
+
+    ret = krb5_store_data(sp, data);
+    if (ret)
+	return ret;
+    if ((data.length % 4) != 0) {
+	static const char zero[4] = { 0, 0, 0, 0 };
+	size_t res;
+
+	res = 4 - (data.length % 4);
+	if (res != 4) {
+	    ret = sp->store(sp, zero, res);
+	    if(ret != res)
+		return (ret < 0)? errno : sp->eof_code;
+	}
+    }
+    return 0;
+}
+
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_ret_data(krb5_storage *sp,
 	      krb5_data *data)
@@ -454,6 +490,41 @@ krb5_ret_data(krb5_storage *sp,
 	ret = sp->fetch(sp, data->data, size);
 	if(ret != size)
 	    return (ret < 0)? errno : sp->eof_code;
+    }
+    return 0;
+}
+
+/**
+ * Parse a XDR opaque from the storage (data padded up a 4 byte
+ * aligned offset).
+ *
+ * @param sp the storage buffer to read from
+ * @param data the buffer to parse.
+ *
+ * @return 0 on success, a Kerberos 5 error code on failure.
+ *
+ * @ingroup krb5_storage
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_ret_data_xdr(krb5_storage *sp,
+		  krb5_data *data)
+{
+    krb5_error_code ret;
+    ret = krb5_ret_data(sp, data);
+    if (ret)
+	return ret;
+
+    if ((data->length % 4) != 0) {
+	char buf[4];
+	size_t res;
+
+	res = 4 - (data->length % 4);
+	if (res != 4) {
+	    ret = sp->fetch(sp, buf, res);
+	    if(ret != res)
+		return (ret < 0)? errno : sp->eof_code;
+	}
     }
     return 0;
 }

@@ -60,10 +60,12 @@ fd_seek(krb5_storage * sp, off_t offset, int whence)
     return lseek(FD(sp), offset, whence);
 }
 
-static off_t
+static int
 fd_trunc(krb5_storage * sp, off_t offset)
 {
-    return ftruncate(FD(sp), offset);
+    if (ftruncate(FD(sp), offset) == -1)
+	return errno;
+    return 0;
 }
 
 static void
@@ -71,6 +73,19 @@ fd_free(krb5_storage * sp)
 {
     close(FD(sp));
 }
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_data()
+ */
 
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_fd(int fd)

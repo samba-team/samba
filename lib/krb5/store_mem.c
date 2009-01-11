@@ -93,8 +93,8 @@ mem_seek(krb5_storage *sp, off_t offset, int whence)
     return s->ptr - s->base;
 }
 
-static ssize_t
-mem_trunc(krb5_storage *sp, size_t offset)
+static int
+mem_trunc(krb5_storage *sp, off_t offset)
 {
     mem_storage *s = (mem_storage*)sp->data;
     if(offset > s->size)
@@ -105,11 +105,24 @@ mem_trunc(krb5_storage *sp, size_t offset)
     return 0;
 }
 
-static krb5_error_code
+static int
 mem_no_trunc(krb5_storage *sp, off_t offset)
 {
     return EINVAL;
 }
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_data()
+ * @sa krb5_storage_from_fd()
+ */
 
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_mem(void *buf, size_t len)
@@ -137,11 +150,37 @@ krb5_storage_from_mem(void *buf, size_t len)
     return sp;
 }
 
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_readonly_mem()
+ * @sa krb5_storage_from_fd()
+ */
+
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_data(krb5_data *data)
 {
     return krb5_storage_from_mem(data->data, data->length);
 }
+
+/**
+ * 
+ *
+ * @return A krb5_storage on success, or NULL on out of memory error.
+ *
+ * @ingroup krb5_storage
+ *
+ * @sa krb5_storage_from_emem()
+ * @sa krb5_storage_from_mem()
+ * @sa krb5_storage_from_data()
+ * @sa krb5_storage_from_fd()
+ */
 
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_readonly_mem(const void *buf, size_t len)

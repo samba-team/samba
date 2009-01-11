@@ -75,6 +75,7 @@ RCSID("$Id$");
 /** @defgroup krb5_ticket Heimdal Kerberos 5 ticket functions */
 /** @defgroup krb5_pac Heimdal Kerberos 5 PAC handling functions */
 /** @defgroup krb5_v4compat Heimdal Kerberos 4 compatiblity functions */
+/** @defgroup krb5_storage Heimdal Kerberos 5 storage functions */
 /** @defgroup krb5_support Heimdal Kerberos 5 support functions */
 
 
