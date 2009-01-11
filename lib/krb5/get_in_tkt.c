@@ -538,7 +538,8 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_const_pointer decryptarg,
 		krb5_creds *creds,
 		krb5_ccache ccache,
-		krb5_kdc_rep *ret_as_reply) KRB5_DEPRECATED
+		krb5_kdc_rep *ret_as_reply)
+    KRB5_DEPRECATED
 {
     krb5_error_code ret;
 
