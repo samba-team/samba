@@ -558,20 +558,18 @@ krb5_store_data_xdr(krb5_storage *sp,
 		    krb5_data data)
 {
     krb5_error_code ret;
+    size_t res;
 
     ret = krb5_store_data(sp, data);
     if (ret)
 	return ret;
-    if ((data.length % 4) != 0) {
+    res = 4 - (data.length % 4);
+    if (res != 4) {
 	static const char zero[4] = { 0, 0, 0, 0 };
-	size_t res;
 
-	res = 4 - (data.length % 4);
-	if (res != 4) {
-	    ret = sp->store(sp, zero, res);
-	    if(ret != res)
-		return (ret < 0)? errno : sp->eof_code;
-	}
+	ret = sp->store(sp, zero, res);
+	if(ret != res)
+	    return (ret < 0)? errno : sp->eof_code;
     }
     return 0;
 }
