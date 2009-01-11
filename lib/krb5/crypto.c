@@ -35,8 +35,8 @@
 RCSID("$Id$");
 #include <pkinit_asn1.h>
 
-#undef __attribute__
-#define __attribute__(X)
+#undef KRB5_DEPRECATED
+#define KRB5_DEPRECATED
 
 #define WEAK_ENCTYPES 1
 
@@ -4605,117 +4605,12 @@ krb5_crypto_prf(krb5_context context,
 
 #ifndef HEIMDAL_SMALLER
 
-static struct key_type *keytypes[] = {
-    &keytype_null,
-    &keytype_des,
-    &keytype_des3_derived,
-#ifdef DES3_OLD_ENCTYPE
-    &keytype_des3,
-#endif
-    &keytype_aes128,
-    &keytype_aes256,
-    &keytype_arcfour
-};
-
-static int num_keytypes = sizeof(keytypes) / sizeof(keytypes[0]);
-
-
-static struct key_type *
-_find_keytype(krb5_keytype type)
-{
-    int i;
-    for(i = 0; i < num_keytypes; i++)
-	if(keytypes[i]->type == type)
-	    return keytypes[i];
-    return NULL;
-}
-
-/*
- * First take the configured list of etypes for `keytype' if available,
- * else, do `krb5_keytype_to_enctypes'.
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_keytype_to_enctypes_default (krb5_context context,
-				  krb5_keytype keytype,
-				  unsigned *len,
-				  krb5_enctype **val)
-    __attribute__((deprecated))
-{
-    unsigned int i, n;
-    krb5_enctype *ret;
-
-    if (keytype != KEYTYPE_DES || context->etypes_des == NULL)
-	return krb5_keytype_to_enctypes (context, keytype, len, val);
-
-    for (n = 0; context->etypes_des[n]; ++n)
-	;
-    ret = malloc (n * sizeof(*ret));
-    if (ret == NULL && n != 0) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
-    for (i = 0; i < n; ++i)
-	ret[i] = context->etypes_des[i];
-    *len = n;
-    *val = ret;
-    return 0;
-}
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_keytype_to_string(krb5_context context,
-		       krb5_keytype keytype,
-		       char **string)
-    __attribute__((deprecated))
-{
-    struct key_type *kt = _find_keytype(keytype);
-    if(kt == NULL) {
-	krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
-			       "key type %d not supported", keytype);
-	return KRB5_PROG_KEYTYPE_NOSUPP;
-    }
-    *string = strdup(kt->name);
-    if(*string == NULL) {
-	krb5_set_error_message(context, ENOMEM, N_("malloc: out of memory", ""));
-	return ENOMEM;
-    }
-    return 0;
-}
-
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_string_to_keytype(krb5_context context,
-		       const char *string,
-		       krb5_keytype *keytype)
-    __attribute__((deprecated))
-{
-    char *end;
-    int i;
-
-    for(i = 0; i < num_keytypes; i++)
-	if(strcasecmp(keytypes[i]->name, string) == 0){
-	    *keytype = keytypes[i]->type;
-	    return 0;
-	}
-
-    /* check if the enctype is a number */
-    *keytype = strtol(string, &end, 0);
-    if(*end == '\0' && *keytype != 0) {
-	if (krb5_enctype_valid(context, *keytype) == 0)
-	    return 0;
-    }
-
-    krb5_set_error_message(context, KRB5_PROG_KEYTYPE_NOSUPP,
-			   "key type %s not supported", string);
-    return KRB5_PROG_KEYTYPE_NOSUPP;
-}
-
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_keytype_to_enctypes (krb5_context context,
 			  krb5_keytype keytype,
 			  unsigned *len,
 			  krb5_enctype **val)
-    __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     int i;
     unsigned n = 0;
@@ -4755,7 +4650,7 @@ krb5_boolean KRB5_LIB_FUNCTION
 krb5_enctypes_compatible_keys(krb5_context context,
 			      krb5_enctype etype1,
 			      krb5_enctype etype2)
-  __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     struct encryption_type *e1 = _find_enctype(etype1);
     struct encryption_type *e2 = _find_enctype(etype2);
