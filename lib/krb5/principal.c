@@ -162,7 +162,7 @@ krb5_parse_name_flags(krb5_context context,
 
     *principal = NULL;
 
-#define RFLAGS (KRB5_PRINCIPAL_PARSE_NO_REALM|KRB5_PRINCIPAL_PARSE_MUST_REALM)
+#define RFLAGS (KRB5_PRINCIPAL_PARSE_NO_REALM|KRB5_PRINCIPAL_PARSE_REQUIRE_REALM)
 
     if ((flags & RFLAGS) == RFLAGS) {
 	krb5_set_error_message(context, KRB5_ERR_NO_SERVICE,
@@ -276,7 +276,7 @@ krb5_parse_name_flags(krb5_context context,
 	memcpy(realm, start, q - start);
 	realm[q - start] = 0;
     }else{
-	if (flags & KRB5_PRINCIPAL_PARSE_MUST_REALM) {
+	if (flags & KRB5_PRINCIPAL_PARSE_REQUIRE_REALM) {
 	    ret = KRB5_PARSE_MALFORMED;
 	    krb5_set_error_message(context, ret,
 				   N_("realm NOT found in principal "

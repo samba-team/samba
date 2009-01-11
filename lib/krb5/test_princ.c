@@ -206,14 +206,14 @@ test_princ(krb5_context context)
     free(princ_unparsed);
 
     ret = krb5_parse_name_flags(context, princ_short,
-				KRB5_PRINCIPAL_PARSE_MUST_REALM,
+				KRB5_PRINCIPAL_PARSE_REQUIRE_REALM,
 				&p2);
     if (!ret)
 	krb5_err(context, 1, ret, "Should have failed to parse %s "
 		 "because it lacked a realm", princ_short);
 
     ret = krb5_parse_name_flags(context, princ,
-				KRB5_PRINCIPAL_PARSE_MUST_REALM,
+				KRB5_PRINCIPAL_PARSE_REQUIRE_REALM,
 				&p2);
     if (ret)
 	krb5_err(context, 1, ret, "krb5_parse_name");

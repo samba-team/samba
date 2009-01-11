@@ -736,8 +736,8 @@ typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
 
 /** flags for krb5_parse_name_flags */
 enum {
-    KRB5_PRINCIPAL_PARSE_NO_REALM = 1, /**< Reqire that there are no realm */
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2, /**< Require a realm present */
+    KRB5_PRINCIPAL_PARSE_NO_REALM = 1, /**< Require that there are no realm */
+    KRB5_PRINCIPAL_PARSE_REQUIRE_REALM = 2, /**< Require a realm present */
     KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4 /**< Parse as a NT-ENTERPRISE name */
 };
 
