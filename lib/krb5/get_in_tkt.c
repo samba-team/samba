@@ -31,12 +31,11 @@
  * SUCH DAMAGE.
  */
 
+#define KRB5_DEPRECATED
+
 #include "krb5_locl.h"
 
 RCSID("$Id$");
-
-#undef __attribute__
-#define __attribute__(x)
 
 #ifndef HEIMDAL_SMALLER
 
@@ -375,7 +374,7 @@ krb5_get_in_cred(krb5_context context,
 		 krb5_const_pointer decryptarg,
 		 krb5_creds *creds,
 		 krb5_kdc_rep *ret_as_reply)
-  __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     krb5_error_code ret;
     AS_REQ a;
@@ -539,8 +538,7 @@ krb5_get_in_tkt(krb5_context context,
 		krb5_const_pointer decryptarg,
 		krb5_creds *creds,
 		krb5_ccache ccache,
-		krb5_kdc_rep *ret_as_reply)
-  __attribute__((deprecated))
+		krb5_kdc_rep *ret_as_reply) KRB5_DEPRECATED
 {
     krb5_error_code ret;
 
