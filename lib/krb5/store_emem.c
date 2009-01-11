@@ -118,7 +118,7 @@ emem_trunc(krb5_storage *sp, off_t offset)
 	if(base == NULL)
 	    return ENOMEM;
 	if (offset > s->size)
-	    memset(s->len, 0, offset);
+	    memset((char *)base + s->size, 0, offset - s->size);
 	s->size = offset;
 	s->base = base;
     }
