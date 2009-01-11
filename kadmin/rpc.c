@@ -236,13 +236,55 @@ collect_framents(krb5_storage *sp, krb5_storage *msg)
     return 0;
 }
 
+krb5_error_code KRB5_LIB_FUNCTION
+store_data_xdr(krb5_storage *sp, krb5_data data)
+{
+    krb5_error_code ret;
+    size_t res;
+
+    ret = krb5_store_data(sp, data);
+    if (ret)
+	return ret;
+    res = 4 - (data.length % 4);
+    if (res != 4) {
+	static const char zero[4] = { 0, 0, 0, 0 };
+
+	ret = krb5_storage_write(sp, zero, res);
+	if(ret != res)
+	    return (ret < 0)? errno : krb5_storage_get_eof_code(sp);
+    }
+    return 0;
+}
+
+krb5_error_code KRB5_LIB_FUNCTION
+ret_data_xdr(krb5_storage *sp, krb5_data *data)
+{
+    krb5_error_code ret;
+    ret = krb5_ret_data(sp, data);
+    if (ret)
+	return ret;
+
+    if ((data->length % 4) != 0) {
+	char buf[4];
+	size_t res;
+
+	res = 4 - (data->length % 4);
+	if (res != 4) {
+	    ret = krb5_storage_read(sp, buf, res);
+	    if(ret != res)
+		return (ret < 0)? errno : krb5_storage_get_eof_code(sp);
+	}
+    }
+    return 0;
+}
+
 static krb5_error_code
 ret_auth_opaque(krb5_storage *msg, struct opaque_auth *ao)
 {
     krb5_error_code ret;
     ret = krb5_ret_uint32(msg, &ao->flavor);
     if (ret) return ret;
-    ret = krb5_ret_data_xdr(msg, &ao->data);
+    ret = ret_data_xdr(msg, &ao->data);
     return ret;
 }
 
@@ -260,7 +302,7 @@ ret_gcred(krb5_data *data, struct gcred *gcred)
     CHECK(krb5_ret_uint32(sp, &gcred->proc));
     CHECK(krb5_ret_uint32(sp, &gcred->seq_num));
     CHECK(krb5_ret_uint32(sp, &gcred->service));
-    CHECK(krb5_ret_data_xdr(sp, &gcred->handle));
+    CHECK(ret_data_xdr(sp, &gcred->handle));
 
     krb5_storage_free(sp);
 
@@ -278,13 +320,13 @@ store_gss_init_res(krb5_storage *sp, krb5_data handle,
     out.data = gout->value;
     out.length = gout->length;
 
-    ret = krb5_store_data_xdr(sp, handle);
+    ret = store_data_xdr(sp, handle);
     if (ret) return ret;
     ret = krb5_store_uint32(sp, maj_stat);
     if (ret) return ret;
     ret = krb5_store_uint32(sp, min_stat);
     if (ret) return ret;
-    ret = krb5_store_data_xdr(sp, out);
+    ret = store_data_xdr(sp, out);
     return ret;
 }
 
@@ -298,7 +340,7 @@ store_string_xdr(krb5_storage *sp, const char *str)
     } else
 	krb5_data_zero(&c);
 	
-    return krb5_store_data_xdr(sp, c);
+    return store_data_xdr(sp, c);
 }
 
 static int
@@ -306,7 +348,7 @@ ret_string_xdr(krb5_storage *sp, char **str)
 {
     krb5_data c;
     *str = NULL;
-    CHECK(krb5_ret_data_xdr(sp, &c));
+    CHECK(ret_data_xdr(sp, &c));
     if (c.length) {
 	*str = malloc(c.length + 1);
 	INSIST(*str != NULL);
@@ -382,7 +424,7 @@ store_principal_ent(krb5_context context,
 
 	    CHECK(krb5_store_int32(sp, 0)); /* last item */
 	    CHECK(krb5_store_int32(sp, tp->tl_data_type));
-	    CHECK(krb5_store_data_xdr(sp, c));
+	    CHECK(store_data_xdr(sp, c));
 	}
 	CHECK(krb5_store_int32(sp, 1)); /* last item */
     }
@@ -457,7 +499,7 @@ ret_principal_ent(krb5_context context,
 	    INSIST(*tp != NULL);
 	    CHECK(krb5_ret_uint32(sp, &flag));
 	    (*tp)->tl_data_type = flag;
-	    CHECK(krb5_ret_data_xdr(sp, &c));
+	    CHECK(ret_data_xdr(sp, &c));
 	    (*tp)->tl_data_length = c.length;
 	    (*tp)->tl_data_contents = c.data;
 	    tp = &(*tp)->tl_data_next;
@@ -624,7 +666,7 @@ proc_chrand_principal_v2(kadm5_server_context *context,
 
 	for(i = 0; i < n_keys; i++){
 	    CHECK(krb5_store_uint32(out, new_keys[i].keytype));
-	    CHECK(krb5_store_data_xdr(out, new_keys[i].keyvalue));
+	    CHECK(store_data_xdr(out, new_keys[i].keyvalue));
 	    krb5_free_keyblock_contents(context->context, &new_keys[i]);
 	}
 	free(new_keys);
@@ -837,7 +879,7 @@ process_stream(krb5_context context,
 
 	    INSIST(krb5_data_cmp(&gcred.handle, &gctx.handle) == 0);
 	    
-	    CHECK(krb5_ret_data_xdr(msg, &data));
+	    CHECK(ret_data_xdr(msg, &data));
 
 	    gin.value = data.data;
 	    gin.length = data.length;
@@ -894,7 +936,7 @@ process_stream(krb5_context context,
 
 	    INSIST(gctx.inprogress);
 
-	    CHECK(krb5_ret_data_xdr(msg, &in));
+	    CHECK(ret_data_xdr(msg, &in));
 
 	    gin.value = in.data;
 	    gin.length = in.length;
@@ -999,7 +1041,7 @@ process_stream(krb5_context context,
 	    data.length = gout.length;
 
 	    CHECK(krb5_store_uint32(reply, FLAVOR_GSS));
-	    CHECK(krb5_store_data_xdr(reply, data));
+	    CHECK(store_data_xdr(reply, data));
 	    gss_release_buffer(&min_stat, &gout);
 
 	    CHECK(krb5_store_uint32(reply, 0)); /* SUCCESS */
@@ -1027,7 +1069,7 @@ process_stream(krb5_context context,
 		data.data = gout.value;
 		data.length = gout.length;
 		
-		krb5_store_data_xdr(reply, data);
+		store_data_xdr(reply, data);
 		gss_release_buffer(&min_stat, &gout);
 	    }
 	}
