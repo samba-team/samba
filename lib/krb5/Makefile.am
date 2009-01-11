@@ -286,6 +286,7 @@ build_HEADERZ = \
 	krb_err.h
 
 CLEANFILES = \
+	test-store-data \
 	krb5_err.c krb5_err.h \
 	krb_err.c krb_err.h \
 	heim_err.c heim_err.h \
