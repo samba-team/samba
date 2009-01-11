@@ -52,11 +52,12 @@ RCSID("$Id$");
  * Therefore they cannot be used for authentication purposes.
  *
  *
- * - @ref page_introduction
- * - @ref page_principal
+ * - @ref krb5_introduction
+ * - @ref krb5_principal_intro
+ * - @ref krb5_keytab_intro
  *
  * If you want to know more about the file formats that is used by
- * Heimdal, please see: @ref page_fileformats
+ * Heimdal, please see: @ref krb5_fileformats
  *
  * The project web page: http://www.h5l.org/
  *
@@ -81,7 +82,7 @@ RCSID("$Id$");
 
 
 /**
- * @page page_introduction Introduction to the Kerberos 5 API
+ * @page krb5_introduction Introduction to the Kerberos 5 API
  * @section api_overview Kerberos 5 API Overview
  *
  * All functions are documented in manual pages.  This section tries
@@ -123,7 +124,7 @@ RCSID("$Id$");
  * The are several ways to create a principal (with different degree of
  * portability), and one way to free it.
  *
- * See also the page @ref page_principal for more information and also
+ * See also the page @ref krb5_principal_intro for more information and also
  * module @ref krb5_principal.
  *
  * @subsection intro_krb5_ccache Credential cache
@@ -445,7 +446,7 @@ RCSID("$Id$");
 /**
  *
  *
- * @page page_fileformats File formats
+ * @page krb5_fileformats File formats
  *
  * @section fileformats File formats
  *
