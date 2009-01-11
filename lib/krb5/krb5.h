@@ -51,6 +51,10 @@
 #define KRB5KDC_ERR_KEY_EXP KRB5KDC_ERR_KEY_EXPIRED
 #endif
 
+#ifndef KRB5_DEPRECATED
+#define KRB5_DEPRECATED __attribute__((deprecated))
+#endif
+
 /* simple constants */
 
 #ifndef TRUE
