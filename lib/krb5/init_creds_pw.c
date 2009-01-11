@@ -1290,8 +1290,7 @@ krb5_init_creds_init(krb5_context context,
  * special initial tickets, by default the a krbtgt is fetched in the default realm.
  *
  * @param context a Kerberos 5 context.
- * @param context ctx krb5_init_creds_context context.
- *
+ * @param ctx a krb5_init_creds_context context.
  * @param service the service given as a string, for example
  *        "kadmind/admin". If NULL, the default krbtgt in the clients
  *        realm is set.
@@ -1330,15 +1329,11 @@ krb5_init_creds_set_service(krb5_context context,
 }
 
 /**
- * Sets the service that the is requested. This call is only neede for
- * special initial tickets, by default the a krbtgt is fetched in the default realm.
+ * Sets the password that will use for the request.
  *
  * @param context a Kerberos 5 context.
- * @param context ctx krb5_init_creds_context context.
- *
- * @param service the service given as a string, for example
- *        "kadmind/admin". If NULL, the default krbtgt in the clients
- *        realm is set.
+ * @param ctx ctx krb5_init_creds_context context.
+ * @param password the password to use.
  *
  * @return 0 for success, or an Kerberos 5 error code, see krb5_get_error_message().
  * @ingroup krb5_credential
