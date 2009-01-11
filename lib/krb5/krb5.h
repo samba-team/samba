@@ -734,18 +734,18 @@ typedef krb5_error_code (*krb5_send_to_kdc_func)(krb5_context,
 						 const krb5_data *,
 						 krb5_data *);
 
-/* flags for krb5_parse_name_flags */
+/** flags for krb5_parse_name_flags */
 enum {
-    KRB5_PRINCIPAL_PARSE_NO_REALM = 1,
-    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2,
-    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4
+    KRB5_PRINCIPAL_PARSE_NO_REALM = 1, /**< Reqire that there are no realm */
+    KRB5_PRINCIPAL_PARSE_MUST_REALM = 2, /**< Require a realm present */
+    KRB5_PRINCIPAL_PARSE_ENTERPRISE = 4 /**< Parse as a NT-ENTERPRISE name */
 };
 
-/* flags for krb5_unparse_name_flags */
+/** flags for krb5_unparse_name_flags */
 enum {
-    KRB5_PRINCIPAL_UNPARSE_SHORT = 1,
-    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2,
-    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4
+    KRB5_PRINCIPAL_UNPARSE_SHORT = 1, /**< No realm if it is the default realm */
+    KRB5_PRINCIPAL_UNPARSE_NO_REALM = 2, /**< No realm */
+    KRB5_PRINCIPAL_UNPARSE_DISPLAY = 4 /**< No quoting */
 };
 
 typedef struct krb5_sendto_ctx_data *krb5_sendto_ctx;
