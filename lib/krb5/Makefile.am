@@ -118,8 +118,6 @@ dist_libnkrb5_la_SOURCES =			\
 	get_for_creds.c				\
 	get_host_realm.c			\
 	get_in_tkt.c				\
-	get_in_tkt_with_keytab.c		\
-	get_in_tkt_with_skey.c			\
 	get_port.c				\
 	heim_threads.h				\
 	init_creds.c				\
