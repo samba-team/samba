@@ -54,11 +54,35 @@ krb5_storage_clear_flags(krb5_storage *sp, krb5_flags flags)
     sp->flags &= ~flags;
 }
 
+/**
+ * Return true or false depending on if the storage flags is set or
+ * not. NB testing for the flag 0 always return true.
+ *
+ * @param sp the storage buffer to check flags on
+ * @param flags The flags to test for
+ *
+ * @return true if all the flags are set, false if not.
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_boolean KRB5_LIB_FUNCTION
 krb5_storage_is_flags(krb5_storage *sp, krb5_flags flags)
 {
     return (sp->flags & flags) == flags;
 }
+
+/**
+ * Set the new byte order of the storage buffer.
+ *
+ * @param sp the storage buffer to set the byte order for.
+ * @param byteorder the new byte order.
+ *
+ * The byte order are: KRB5_STORAGE_BYTEORDER_BE,
+ * KRB5_STORAGE_BYTEORDER_LE and KRB5_STORAGE_BYTEORDER_HOST.
+ *
+ * @ingroup krb5_support
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_storage_set_byteorder(krb5_storage *sp, krb5_flags byteorder)
@@ -67,11 +91,30 @@ krb5_storage_set_byteorder(krb5_storage *sp, krb5_flags byteorder)
     sp->flags |= byteorder;
 }
 
+/**
+ * Return the current byteorder for the buffer. See krb5_storage_set_byteorder() for the list or byte order contants.
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_flags KRB5_LIB_FUNCTION
-krb5_storage_get_byteorder(krb5_storage *sp, krb5_flags byteorder)
+krb5_storage_get_byteorder(krb5_storage *sp)
 {
     return sp->flags & KRB5_STORAGE_BYTEORDER_MASK;
 }
+
+/**
+ * Seek to a new offset.
+ *
+ * @param sp the storage buffer to seek in.
+ * @param offset the offset to seek
+ * @param whence relateive searching, SEEK_CUR from the current
+ * position, SEEK_END from the end, SEEK_SET absolute from the start.
+ *
+ * @return The new current offset
+ *
+ * @ingroup krb5_support
+ */
 
 off_t KRB5_LIB_FUNCTION
 krb5_storage_seek(krb5_storage *sp, off_t offset, int whence)
@@ -79,11 +122,52 @@ krb5_storage_seek(krb5_storage *sp, off_t offset, int whence)
     return (*sp->seek)(sp, offset, whence);
 }
 
+/**
+ * Truncate the storage buffer in sp to offset.
+ *
+ * @param sp the storage buffer to truncate.
+ * @param offset the offset to truncate too.
+ *
+ * @return An Kerberos 5 error code.
+ *
+ * @ingroup krb5_support
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_storage_truncate(krb5_storage *sp, off_t offset)
+{
+    return (*sp->trunc)(sp, offset);
+}
+
+/**
+ * Read to the storage buffer.
+ *
+ * @param sp the storage buffer to read from
+ * @param buf the buffer to store the data in
+ * @param len the length to read
+ *
+ * @return The length of data read (can be shorter then len), or negative on error.
+ *
+ * @ingroup krb5_support
+ */
+
 krb5_ssize_t KRB5_LIB_FUNCTION
 krb5_storage_read(krb5_storage *sp, void *buf, size_t len)
 {
     return sp->fetch(sp, buf, len);
 }
+
+/**
+ * Write to the storage buffer.
+ *
+ * @param sp the storage buffer to write to
+ * @param buf the buffer to write to the storage buffer
+ * @param len the length to write
+ *
+ * @return The length of data written (can be shorter then len), or negative on error.
+ *
+ * @ingroup krb5_support
+ */
 
 krb5_ssize_t KRB5_LIB_FUNCTION
 krb5_storage_write(krb5_storage *sp, const void *buf, size_t len)
@@ -120,6 +204,16 @@ _krb5_get_int(void *buffer, unsigned long *value, size_t size)
     *value = v;
     return size;
 }
+
+/**
+ * Free a krb5 storage.
+ *
+ * @param sp the storage to free.
+ *
+ * @return An Kerberos 5 error code.
+ *
+ * @ingroup krb5_support
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_storage_free(krb5_storage *sp)
