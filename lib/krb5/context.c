@@ -332,7 +332,7 @@ out:
  * Make a copy for the Kerberos 5 context, allocated krb5_contex shoud
  * be freed with krb5_free_context().
  *
- * @param in the Kerberos context to copy
+ * @param context the Kerberos context to copy
  * @param out the copy of the Kerberos, set to NULL error.
  *
  * @return Returns 0 to indicate success.  Otherwise an kerberos et
