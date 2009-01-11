@@ -101,6 +101,7 @@ dist_libnkrb5_la_SOURCES =			\
 	crypto.c				\
 	doxygen.c				\
 	data.c					\
+	deprecated.c				\
 	digest.c				\
 	eai_to_heim_errno.c			\
 	error_string.c				\
@@ -117,7 +118,6 @@ dist_libnkrb5_la_SOURCES =			\
 	get_for_creds.c				\
 	get_host_realm.c			\
 	get_in_tkt.c				\
-	get_in_tkt_pw.c				\
 	get_in_tkt_with_keytab.c		\
 	get_in_tkt_with_skey.c			\
 	get_port.c				\
