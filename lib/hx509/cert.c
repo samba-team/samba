@@ -2278,10 +2278,12 @@ hx509_verify_path(hx509_context context,
 	 * Verify that the sigature algorithm "best-before" date is
 	 * before the creation date of the certificate, do this for
 	 * trust anchors too, since any trust anchor that is created
-	 * after a algorithm is known to be bad deserved to be invalid
+	 * after a algorithm is known to be bad deserved to be invalid.
+	 *
+	 * Skip the leaf certificate for now...
 	 */
 
-	if ((ctx->flags & HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK) == 0) {
+	if (i != 0 && (ctx->flags & HX509_VERIFY_CTX_F_NO_BEST_BEFORE_CHECK) == 0) {
 	    time_t notBefore = 
 		_hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
 	    ret = _hx509_signature_best_before(context,
