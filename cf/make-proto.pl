@@ -100,13 +100,16 @@ while(<>) {
 	s/^\s*//;
 	s/\s*$//;
 	s/\s+/ /g;
-	if($_ =~ /\)$/){
+	if($_ =~ /\)$/ or $_ =~ /DEPRECATED$/){
 	    if(!/^static/ && !/^PRIVATE/){
-		if(/(.*)(__attribute__\s?\(.*\))/) {
-		    $attr = $2;
+		$attr = "";
+		if(m/(.*)(__attribute__\s?\(.*\))/) {
+		    $attr .= " $2";
 		    $_ = $1;
-		} else {
-		    $attr = "";
+		}
+		if(m/(.*)\s(\w+DEPRECATED)/) {
+		    $attr .= " $2";
+		    $_ = $1;
 		}
 		# remove outer ()
 		s/\s*\(/</;
