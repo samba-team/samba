@@ -104,6 +104,29 @@ emem_seek(krb5_storage *sp, off_t offset, int whence)
     return s->ptr - s->base;
 }
 
+static int
+emem_trunc(krb5_storage *sp, off_t offset)
+{
+    emem_storage *s = (emem_storage*)sp->data;
+    /*
+     * If offset is larget then current size, or current size is
+     * shrunk more then half of the current size, adjust buffer.
+     */
+    if (offset > s->size || s->size / 2 > offset ) {
+	void *base;
+	base = realloc(s->base, offset);
+	if(base == NULL)
+	    return ENOMEM;
+	if (offset > s->size)
+	    memset(s->len, 0, offset);
+	s->size = offset;
+	s->base = base;
+    }
+    s->len = offset;
+    return 0;
+}
+
+
 static void
 emem_free(krb5_storage *sp)
 {
@@ -142,6 +165,7 @@ krb5_storage_emem(void)
     sp->fetch = emem_fetch;
     sp->store = emem_store;
     sp->seek = emem_seek;
+    sp->trunc = emem_trunc;
     sp->free = emem_free;
     return sp;
 }

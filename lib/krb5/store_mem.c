@@ -93,6 +93,24 @@ mem_seek(krb5_storage *sp, off_t offset, int whence)
     return s->ptr - s->base;
 }
 
+static ssize_t
+mem_trunc(krb5_storage *sp, size_t offset)
+{
+    mem_storage *s = (mem_storage*)sp->data;
+    if(offset > s->size)
+	return ERANGE;
+    s->size = offset;
+    if ((s->ptr - s->base) > offset)
+	s->ptr = s->base + offset;
+    return 0;
+}
+
+static krb5_error_code
+mem_no_trunc(krb5_storage *sp, off_t offset)
+{
+    return EINVAL;
+}
+
 krb5_storage * KRB5_LIB_FUNCTION
 krb5_storage_from_mem(void *buf, size_t len)
 {
@@ -114,6 +132,7 @@ krb5_storage_from_mem(void *buf, size_t len)
     sp->fetch = mem_fetch;
     sp->store = mem_store;
     sp->seek = mem_seek;
+    sp->trunc = mem_trunc;
     sp->free = NULL;
     return sp;
 }
@@ -145,6 +164,7 @@ krb5_storage_from_readonly_mem(const void *buf, size_t len)
     sp->fetch = mem_fetch;
     sp->store = mem_no_store;
     sp->seek = mem_seek;
+    sp->trunc = mem_no_trunc;
     sp->free = NULL;
     return sp;
 }

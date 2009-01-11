@@ -60,6 +60,12 @@ fd_seek(krb5_storage * sp, off_t offset, int whence)
     return lseek(FD(sp), offset, whence);
 }
 
+static off_t
+fd_trunc(krb5_storage * sp, off_t offset)
+{
+    return ftruncate(FD(sp), offset);
+}
+
 static void
 fd_free(krb5_storage * sp)
 {
@@ -93,6 +99,7 @@ krb5_storage_from_fd(int fd)
     sp->fetch = fd_fetch;
     sp->store = fd_store;
     sp->seek = fd_seek;
+    sp->trunc = fd_trunc;
     sp->free = fd_free;
     return sp;
 }
