@@ -318,9 +318,9 @@ krb5_c_enctype_compare(krb5_context context,
 		       krb5_enctype e1,
 		       krb5_enctype e2,
 		       krb5_boolean *similar)
-  __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
-    *similar = krb5_enctypes_compatible_keys(context, e1, e2);
+    *similar = (e1 == e2)
     return 0;
 }
 
