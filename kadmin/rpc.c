@@ -236,7 +236,7 @@ collect_framents(krb5_storage *sp, krb5_storage *msg)
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+static krb5_error_code
 store_data_xdr(krb5_storage *sp, krb5_data data)
 {
     krb5_error_code ret;
@@ -256,7 +256,7 @@ store_data_xdr(krb5_storage *sp, krb5_data data)
     return 0;
 }
 
-krb5_error_code KRB5_LIB_FUNCTION
+static krb5_error_code
 ret_data_xdr(krb5_storage *sp, krb5_data *data)
 {
     krb5_error_code ret;
