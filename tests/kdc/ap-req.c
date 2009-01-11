@@ -43,12 +43,15 @@ RCSID("$Id$");
 #include <roken.h>
 
 static int verify_pac = 0;
+static int server_any = 0;
 static int version_flag = 0;
 static int help_flag	= 0;
 
 static struct getargs args[] = {
     {"verify-pac",0,	arg_flag,	&verify_pac,
      "verify the PAC", NULL },
+    {"server-any",0,	arg_flag,	&server_any,
+     "let server pick the principal", NULL },
     {"version",	0,	arg_flag,	&version_flag,
      "print version", NULL },
     {"help",	0,	arg_flag,	&help_flag,
@@ -65,7 +68,8 @@ usage (int ret)
 
 static void
 test_ap(krb5_context context,
-	krb5_principal sprincipal,
+	krb5_principal target,
+	krb5_principal server,
 	krb5_keytab keytab,
 	krb5_ccache ccache,
 	const krb5_flags client_flags)
@@ -80,7 +84,7 @@ test_ap(krb5_context context,
     ret = krb5_mk_req_exact(context,
 			    &client_ac,
 			    client_flags,
-			    sprincipal,
+			    target,
 			    NULL,
 			    ccache,
 			    &data);
@@ -90,7 +94,7 @@ test_ap(krb5_context context,
     ret = krb5_rd_req(context,
 		      &server_ac,
 		      &data,
-		      sprincipal,
+		      server,
 		      keytab,
 		      &server_flags,
 		      &ticket);
@@ -167,7 +171,7 @@ main(int argc, char **argv)
     const char *principal, *keytab, *ccache;
     krb5_ccache id;
     krb5_keytab kt;
-    krb5_principal sprincipal;
+    krb5_principal sprincipal, server;
 
     setprogname(argv[0]);
 
@@ -208,8 +212,13 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "krb5_kt_resolve");
 
-    test_ap(context, sprincipal, kt, id, 0);
-    test_ap(context, sprincipal, kt, id, AP_OPTS_MUTUAL_REQUIRED);
+    if (server_any)
+	server = NULL;
+    else
+	server = sprincipal;
+
+    test_ap(context, sprincipal, server, kt, id, 0);
+    test_ap(context, sprincipal, server, kt, id, AP_OPTS_MUTUAL_REQUIRED);
 
     krb5_cc_close(context, id);
     krb5_kt_close(context, kt);
