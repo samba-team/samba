@@ -53,6 +53,9 @@ kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.test.h5l.se
 server2=host/computer.example.com
+alias1=host/datan.example.com
+alias2=host/datan
+aliaskeytab=host/datan
 cache="FILE:${objdir}/cache.krb5"
 ocache="FILE:${objdir}/ocache.krb5"
 o2cache="FILE:${objdir}/o2cache.krb5"
@@ -114,6 +117,10 @@ ${kadmin} ext -k ${keytab} ${ps} || exit 1
 ${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
 ${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
 ${kadmin} add -p foo --use-defaults remove2@${R2} || exit 1
+
+${kadmin} add -p kaka --use-defaults ${alias1}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${alias1}@${R} || exit 1
+${kadmin} modify --alias=${alias2}@${R} ${alias1}@${R}
 
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
@@ -414,6 +421,26 @@ ${kinit} --renewable --password-file=${objdir}/foopassword foo@$R || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "test_renew"
 env KRB5CCNAME=${cache} ${test_renew} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "checking server aliases"; > messages.log
+${kinit} --password-file=${objdir}/foopassword foo@$R || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "Getting tickets"; > messages.log
+${kgetcred} ${alias1}@${R} || { ec=1 ; eval "${testfailed}"; }
+${kgetcred} ${alias2}@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "   verify entry in keytab"
+./ap-req ${alias1}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "   verify entry in keytab with any"
+./ap-req --server-any ${alias1}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "   verify failure with alias entry"
+./ap-req ${alias2}@${R} ${keytab} ${cache} 2>/dev/null && \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "   verify alias entry in keytab with any"
+./ap-req --server-any ${alias2}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
