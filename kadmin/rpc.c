@@ -319,8 +319,8 @@ ret_string_xdr(krb5_storage *sp, char **str)
 	INSIST(*str != NULL);
 	memcpy(*str, c.data, c.length);
 	(*str)[c.length] = '\0';
-	krb5_data_free(&c);
     }
+    krb5_data_free(&c);
     return 0;
 }
 
