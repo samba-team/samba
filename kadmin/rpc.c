@@ -50,6 +50,8 @@ static krb5_context dcontext;
 
 #define VERSION2 0x12345702
 
+#define LAST_FRAGMENT 0x80000000
+
 #define RPC_VERSION 2
 #define KADM_SERVER 2112
 #define VVERSION 2
@@ -69,14 +71,6 @@ struct call_header {
     uint32_t proc;
     struct opaque_auth cred;
     struct opaque_auth verf;
-};
-
-struct reply_header {
-    uint32_t xid;
-    /* MSG_ACCEPTED = 0 */
-    /* struct opaque_auth */
-    /* SUCCESS = 0 */
-    krb5_data data;
 };
 
 enum {
@@ -193,7 +187,6 @@ gss_print_errors (krb5_context context,
 {
     gss_error(context, GSS_C_NO_OID, GSS_C_GSS_CODE, maj_stat);
     gss_error(context, GSS_C_NO_OID, GSS_C_MECH_CODE, min_stat);
-    exit(1);
 }
 
 static int
@@ -232,13 +225,13 @@ collect_framents(krb5_storage *sp, krb5_storage *msg)
 	if (ret)
 	    return ret;
 	
-	last_fragment = (len & 0x80000000) != 0;
-	len &= ~0x80000000;
+	last_fragment = (len & LAST_FRAGMENT);
+	len &= ~LAST_FRAGMENT;
 
 	CHECK(read_data(sp, msg, len));
 	total_len += len;
 
-    } while(last_fragment == 0 || total_len == 0);
+    } while(!last_fragment || total_len == 0);
 
     return 0;
 }
@@ -702,6 +695,11 @@ process_stream(krb5_context context,
 	krb5_storage_truncate(reply, 0);
 	krb5_storage_truncate(msg, 0);
 
+	/*
+	 * This is very icky to handle the the auto-detection between
+	 * the Heimdal protocol and the MIT ONC-RPC based protocol.
+	 */
+
 	if (ilen) {
 	    int last_fragment;
 	    unsigned long len;
@@ -719,8 +717,8 @@ process_stream(krb5_context context,
 	    INSIST(ilen >= 4);
 	    
 	    _krb5_get_int(buf, &len, 4);
-	    last_fragment = (len & 0x80000000) != 0;
-	    len &= ~0x80000000;
+	    last_fragment = (len & LAST_FRAGMENT) != 0;
+	    len &= ~LAST_FRAGMENT;
 	    
 	    ilen -= 4;
 	    buf += 4;
@@ -740,7 +738,7 @@ process_stream(krb5_context context,
 
 	    CHECK(read_data(sp, msg, len));
 	    
-	    if (last_fragment == 0) {
+	    if (!last_fragment) {
 		ret = collect_framents(sp, msg);
 		if (ret == HEIM_ERR_EOF)
 		    krb5_errx(context, 1, "client disconnected");
@@ -760,7 +758,7 @@ process_stream(krb5_context context,
 	 * first in the block, so add it here before users data is
 	 * added.
 	 */
-	if (gctx.done && gctx.inprogress == 0)
+	if (gctx.done != 0 && gctx.inprogress == 0)
 	    krb5_store_uint32(dreply, gctx.seq_num);
 
 	CHECK(krb5_ret_uint32(msg, &chdr.xid));
@@ -778,7 +776,21 @@ process_stream(krb5_context context,
 	INSIST(chdr.cred.flavor == FLAVOR_GSS);
 
 	CHECK(ret_gcred(&chdr.cred.data, &gcred));
+
 	INSIST(gcred.version == FLAVOR_GSS_VERSION);
+
+	if (gctx.done) {
+	    INSIST(chdr.verf.flavor == FLAVOR_GSS);
+#if 0
+	    gin.value = chdr.cred.data.data;
+	    gin.length = chdr.cred.data.length;
+	    gout.value = chdr.verf.data.data;
+	    gout.length = chdr.verf.data.length;
+
+	    maj_stat = gss_verify_mic(&min_stat, gctx.ctx, &gin, &gout, NULL);
+	    INSIST(maj_stat == GSS_S_COMPLETE);
+#endif
+	}
 
 	switch(gcred.proc) {
 	case RPG_DATA: {
@@ -786,6 +798,8 @@ process_stream(krb5_context context,
 	    int conf_state;
 	    uint32_t seq;
 	    krb5_storage *sp;
+
+	    INSIST(gcred.service == rpg_privacy);
 
 	    INSIST(gctx.done);
 
@@ -824,18 +838,23 @@ process_stream(krb5_context context,
 	    break;
 	}
 	case RPG_INIT:
-	    gctx.inprogress = 1;
+	    INSIST(gctx.inprogress == 0);
 	    INSIST(gctx.ctx == NULL);
+
+	    gctx.inprogress = 1;
 	    /* FALL THOUGH */
 	case RPG_CONTINUE_INIT: {
 	    gss_name_t src_name = GSS_C_NO_NAME;
 	    krb5_data in;
+
+	    INSIST(gctx.inprogress);
 
 	    CHECK(krb5_ret_data_xdr(msg, &in));
 
 	    gin.value = in.data;
 	    gin.length = in.length;
 	    gout.value = NULL;
+	    gout.length = 0;
 
 	    maj_stat = gss_accept_sec_context(&min_stat,
 					      &gctx.ctx, 
@@ -848,11 +867,11 @@ process_stream(krb5_context context,
 					      NULL,
 					      NULL,
 					      NULL);
-	    if (GSS_ERROR(maj_stat))
+	    if (GSS_ERROR(maj_stat)) {
 		gss_print_errors(context, maj_stat, min_stat);
-	    if (maj_stat & GSS_S_CONTINUE_NEEDED)
-		;
-	    else {
+		krb5_errx(context, 1, "gss error, exit");
+	    }
+	    if ((maj_stat & GSS_S_CONTINUE_NEEDED) == 0) {
 		kadm5_config_params realm_params;
 		gss_buffer_desc buf;
 		char *client;
@@ -881,7 +900,9 @@ process_stream(krb5_context context,
 		INSIST(ret == 0);
 	    }
 
-	    CHECK(krb5_store_uint32(dreply, 0));  /* error code */
+	    INSIST(gctx.ctx != GSS_C_NO_CONTEXT);
+
+	    CHECK(krb5_store_uint32(dreply, 0));
 	    CHECK(store_gss_init_res(dreply, gctx.handle, 
 				     maj_stat, min_stat, 1, &gout));
 	    if (gout.value)
@@ -968,7 +989,7 @@ process_stream(krb5_context context,
 	    krb5_data data;
 	    CHECK(krb5_storage_to_data(reply, &data));
 	    if (data.length) {
-		CHECK(krb5_store_uint32(sp, data.length | 0x80000000));
+		CHECK(krb5_store_uint32(sp, data.length | LAST_FRAGMENT));
 		INSIST(krb5_storage_write(sp, data.data, data.length) == data.length);
 		krb5_data_free(&data);
 	    }
