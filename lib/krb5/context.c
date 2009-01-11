@@ -1213,3 +1213,53 @@ krb5_set_max_time_skew (krb5_context context, time_t t)
 {
     context->max_skew = t;
 }
+
+/**
+ * Init encryption types in len, val with etypes.
+ *
+ * @param context Kerberos 5 context.
+ * @param len output length of val.
+ * @param val output array of enctypes.
+ * @param etypes etypes to set val and len to, if NULL, use default enctypes.
+
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_init_etype (krb5_context context,
+		 unsigned *len,
+		 krb5_enctype **val,
+		 const krb5_enctype *etypes)
+{
+    unsigned int i;
+    krb5_error_code ret;
+    krb5_enctype *tmp = NULL;
+
+    ret = 0;
+    if (etypes == NULL) {
+	ret = krb5_get_default_in_tkt_etypes(context, &tmp);
+	if (ret)
+	    return ret;
+	etypes = tmp;
+    }
+
+    for (i = 0; etypes[i]; ++i)
+	;
+    *len = i;
+    *val = malloc(i * sizeof(**val));
+    if (i != 0 && *val == NULL) {
+	ret = ENOMEM;
+	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	goto cleanup;
+    }
+    memmove (*val,
+	     etypes,
+	     i * sizeof(*tmp));
+cleanup:
+    if (tmp != NULL)
+	free (tmp);
+    return ret;
+}
