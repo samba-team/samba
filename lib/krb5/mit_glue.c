@@ -34,8 +34,8 @@
 #include "krb5_locl.h"
 RCSID("$Id$");
 
-#undef __attribute__
-#define __attribute__(X)
+#undef KRB5_DEPRECATED
+#define KRB5_DEPRECATED
 
 #ifndef HEIMDAL_SMALLER
 
