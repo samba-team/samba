@@ -172,6 +172,9 @@ krb5_get_error_message(krb5_context context, krb5_error_code code)
     }
     HEIMDAL_MUTEX_unlock(context->mutex);
 
+    if (code == 0)
+	return strdup("Success");
+
     cstr = krb5_get_err_text(context, code);
     if (cstr)
 	return strdup(cstr);
