@@ -47,10 +47,10 @@ kadmin-commands.c kadmin-commands.h: kadmin-commands.in
 	$(SLC) $(srcdir)/kadmin-commands.in
 
 kadmind_SOURCES =				\
-	kadmind.c				\
+	rpc.c					\
 	server.c				\
+	kadmind.c				\
 	kadmin_locl.h				\
-	$(version4_c)				\
 	kadm_conn.c
 
 add_random_users_SOURCES = add-random-users.c
@@ -71,6 +71,7 @@ LDADD_common = \
 	$(DBLIB)
 
 kadmind_LDADD = $(top_builddir)/lib/kadm5/libkadm5srv.la \
+	../lib/gssapi/libgssapi.la \
 	$(LDADD_common) \
 	$(LIB_pidfile) \
 	$(LIB_dlopen)

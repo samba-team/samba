@@ -158,30 +158,37 @@ main(int argc, char **argv)
     if (ret)
 	krb5_err(context, 1, ret, "kadm5_add_passwd_quality_verifier");
 
-    {
-	int fd = 0;
+    if(debug_flag) {
+	int debug_port;
+	
+	if(port_str == NULL)
+	    debug_port = krb5_getportbyname (context, "kerberos-adm",
+					     "tcp", 749);
+	else
+	    debug_port = htons(atoi(port_str));
+	mini_inetd(debug_port);
+    } else {
 	struct sockaddr_storage __ss;
 	struct sockaddr *sa = (struct sockaddr *)&__ss;
 	socklen_t sa_size = sizeof(__ss);
-	krb5_auth_context ac = NULL;
-	int debug_port;
 
-	if(debug_flag) {
-	    if(port_str == NULL)
-		debug_port = krb5_getportbyname (context, "kerberos-adm",
-						 "tcp", 749);
-	    else
-		debug_port = htons(atoi(port_str));
-	    mini_inetd(debug_port);
-	} else if(roken_getsockname(STDIN_FILENO, sa, &sa_size) < 0 &&
-		   errno == ENOTSOCK) {
+	/*
+	 * Check if we are running inside inetd or not, if not, start
+	 * our own server.
+	 */
+	
+	if(roken_getsockname(STDIN_FILENO, sa, &sa_size) < 0 &&
+	       errno == ENOTSOCK) {
 	    parse_ports(context, port_str ? port_str : "+");
 	    pidfile(NULL);
 	    start_server(context);
 	}
-	if(realm)
-	    krb5_set_default_realm(context, realm); /* XXX */
-	kadmind_loop(context, ac, keytab, fd);
     }
+    
+    if(realm)
+	krb5_set_default_realm(context, realm); /* XXX */
+
+    kadmind_loop(context, keytab, STDIN_FILENO);
+
     return 0;
 }

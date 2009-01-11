@@ -367,6 +367,7 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 		krb5_store_keyblock(sp, new_keys[i]);
 		krb5_free_keyblock_contents(context->context, &new_keys[i]);
 	    }
+	    free(new_keys);
 	}
 	break;
     }
@@ -471,33 +472,20 @@ match_appl_version(const void *data, const char *appl_version)
 
 static void
 handle_v5(krb5_context context,
-	  krb5_auth_context ac,
 	  krb5_keytab keytab,
-	  int len,
 	  int fd)
 {
     krb5_error_code ret;
-    u_char version[sizeof(KRB5_SENDAUTH_VERSION)];
     krb5_ticket *ticket;
     char *server_name;
     char *client;
     void *kadm_handle;
-    ssize_t n;
     krb5_boolean initial;
+    krb5_auth_context ac = NULL;
 
     unsigned kadm_version;
     kadm5_config_params realm_params;
 
-    if (len != sizeof(KRB5_SENDAUTH_VERSION))
-	krb5_errx(context, 1, "bad sendauth len %d", len);
-    n = krb5_net_read(context, &fd, version, len);
-    if (n < 0)
-	krb5_err (context, 1, errno, "reading sendauth version");
-    if (n == 0)
-	krb5_errx (context, 1, "EOF reading sendauth version");
-    if(memcmp(version, KRB5_SENDAUTH_VERSION, len) != 0)
-	krb5_errx(context, 1, "bad sendauth version %.8s", version);
-	
     ret = krb5_recvauth_match_version(context, &ac, &fd,
 				      match_appl_version, &kadm_version,
 				      NULL, KRB5_RECVAUTH_IGNORE_VERSION,
@@ -547,31 +535,37 @@ handle_v5(krb5_context context,
 
 krb5_error_code
 kadmind_loop(krb5_context context,
-	     krb5_auth_context ac,
 	     krb5_keytab keytab,
 	     int fd)
 {
-    unsigned char tmp[4];
+    u_char buf[sizeof(KRB5_SENDAUTH_VERSION) + 4];
     ssize_t n;
     unsigned long len;
 
-    n = krb5_net_read(context, &fd, tmp, 4);
+    n = krb5_net_read(context, &fd, buf, 4);
     if(n == 0)
 	exit(0);
     if(n < 0)
 	krb5_err(context, 1, errno, "read");
-    _krb5_get_int(tmp, &len, 4);
-    /* this v4 test could probably also go away */
-    if(len > 0xffff && (len & 0xffff) == ('K' << 8) + 'A') {
-	unsigned char v4reply[] = {
-	    0x00, 0x0c,
-	    'K', 'Y', 'O', 'U', 'L', 'O', 'S', 'E',
-	    0x95, 0xb7, 0xa7, 0x08 /* KADM_BAD_VER */
-	};
-	krb5_net_write(context, &fd, v4reply, sizeof(v4reply));
-	krb5_errx(context, 1, "packet appears to be version 4");
-    } else {
-	handle_v5(context, ac, keytab, len, fd);
-    }
+    _krb5_get_int(buf, &len, 4);
+
+    if (len == sizeof(KRB5_SENDAUTH_VERSION)) {
+
+	n = krb5_net_read(context, &fd, buf + 4, len);
+	if (n < 0)
+	    krb5_err (context, 1, errno, "reading sendauth version");
+	if (n == 0)
+	    krb5_errx (context, 1, "EOF reading sendauth version");
+
+	if(memcmp(buf + 4, KRB5_SENDAUTH_VERSION, len) == 0) {
+	    handle_v5(context, keytab, fd);
+	    return 0;
+	}
+	len += 4;
+    } else
+	len = 4;
+
+    handle_mit(context, buf, len, fd);
+
     return 0;
 }

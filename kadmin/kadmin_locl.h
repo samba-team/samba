@@ -132,11 +132,6 @@ foreach_principal(const char *, int (*)(krb5_principal, void*),
 
 int parse_des_key (const char *, krb5_key_data *, const char **);
 
-/* server.c */
-
-krb5_error_code
-kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
-
 /* random_password.c */
 
 void
@@ -152,6 +147,12 @@ int start_server(krb5_context);
 /* server.c */
 
 krb5_error_code
-kadmind_loop (krb5_context, krb5_auth_context, krb5_keytab, int);
+kadmind_loop (krb5_context, krb5_keytab, int);
+
+/* rpc.c */
+
+int
+handle_mit(krb5_context, void *, size_t, int);
+
 
 #endif /* __ADMIN_LOCL_H__ */
