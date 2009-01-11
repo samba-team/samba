@@ -315,6 +315,39 @@ krb5_kt_compare(krb5_context context,
     return TRUE;
 }
 
+krb5_error_code
+_krb5_kt_principal_not_found(krb5_context context,
+			     krb5_error_code ret,
+			     krb5_keytab id,
+			     krb5_const_principal principal,
+			     krb5_enctype enctype,
+			     int kvno)
+{
+    char princ[256], kvno_str[25], *kt_name;
+    char *enctype_str = NULL;
+    
+    krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
+    krb5_kt_get_full_name (context, id, &kt_name);
+    krb5_enctype_to_string(context, enctype, &enctype_str);
+    
+    if (kvno)
+	snprintf(kvno_str, sizeof(kvno_str), "(kvno %d)", kvno);
+    else
+	kvno_str[0] = '\0';
+    
+    krb5_set_error_message (context, ret,
+			    N_("Failed to find %s%s in keytab %s (%s)",
+			       "principal, kvno, keytab file, enctype"),
+			    princ,
+			    kvno_str,
+			    kt_name ? kt_name : "unknown keytab",
+			    enctype_str ? enctype_str : "unknown enctype");
+    free(kt_name);
+    free(enctype_str);
+    return ret;
+}
+
+
 /*
  * Retrieve the keytab entry for `principal, kvno, enctype' into `entry'
  * from the keytab `id'.
@@ -365,32 +398,10 @@ krb5_kt_get_entry(krb5_context context,
 	krb5_kt_free_entry(context, &tmp);
     }
     krb5_kt_end_seq_get (context, id, &cursor);
-    if (entry->vno) {
-	return 0;
-    } else {
-	char princ[256], kvno_str[25], *kt_name;
-	char *enctype_str = NULL;
-
-	krb5_unparse_name_fixed (context, principal, princ, sizeof(princ));
-	krb5_kt_get_full_name (context, id, &kt_name);
-	krb5_enctype_to_string(context, enctype, &enctype_str);
-
-	if (kvno)
-	    snprintf(kvno_str, sizeof(kvno_str), "(kvno %d)", kvno);
-	else
-	    kvno_str[0] = '\0';
-
-	krb5_set_error_message (context, KRB5_KT_NOTFOUND,
-				N_("Failed to find %s%s in keytab %s (%s)",
-				   "principal, kvno, keytab file, enctype"),
-				princ,
-				kvno_str,
-				kt_name ? kt_name : "unknown keytab",
-				enctype_str ? enctype_str : "unknown enctype");
-	free(kt_name);
-	free(enctype_str);
-	return KRB5_KT_NOTFOUND;
-    }
+    if (entry->vno == 0)
+	return _krb5_kt_principal_not_found(context, KRB5_KT_NOTFOUND,
+					    id, principal, enctype, kvno);
+    return 0;
 }
 
 /*
@@ -456,10 +467,17 @@ krb5_kt_start_seq_get(krb5_context context,
     return (*id->start_seq_get)(context, id, cursor);
 }
 
-/*
- * Get the next entry from `id' pointed to by `cursor' and advance the
- * `cursor'.
- * Return 0 or an error.
+/**
+ * Get the next entry from keytab, advance the cursor.
+ *
+ * @param context a Keberos context.
+ * @param id a keytab.
+ * @param entry the returned entry, free with krb5_kt_free_entry().
+ * @param cursor the cursor of the iteration.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
