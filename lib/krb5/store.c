@@ -190,6 +190,22 @@ krb5_storage_set_eof_code(krb5_storage *sp, int code)
     sp->eof_code = code;
 }
 
+/**
+ * Get the return code that will be used when end of storage is reached.
+ *
+ * @param sp the storage
+ *
+ * @return storage error code
+ *
+ * @ingroup krb5_storage
+ */
+
+int KRB5_LIB_FUNCTION
+krb5_storage_get_eof_code(krb5_storage *sp)
+{
+    sp->eof_code = code;
+}
+
 krb5_ssize_t KRB5_LIB_FUNCTION
 _krb5_put_int(void *buffer, unsigned long value, size_t size)
 {
@@ -542,39 +558,6 @@ krb5_store_data(krb5_storage *sp,
 }
 
 /**
- * Store a XDR opaque from the storage (data padded up a 4 byte
- * aligned offset).
- *
- * @param sp the storage buffer to write to
- * @param data the buffer to store.
- *
- * @return 0 on success, a Kerberos 5 error code on failure.
- *
- * @ingroup krb5_storage
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_store_data_xdr(krb5_storage *sp,
-		    krb5_data data)
-{
-    krb5_error_code ret;
-    size_t res;
-
-    ret = krb5_store_data(sp, data);
-    if (ret)
-	return ret;
-    res = 4 - (data.length % 4);
-    if (res != 4) {
-	static const char zero[4] = { 0, 0, 0, 0 };
-
-	ret = sp->store(sp, zero, res);
-	if(ret != res)
-	    return (ret < 0)? errno : sp->eof_code;
-    }
-    return 0;
-}
-
-/**
  * Parse a data from the storage.
  *
  * @param sp the storage buffer to read from
@@ -602,41 +585,6 @@ krb5_ret_data(krb5_storage *sp,
 	ret = sp->fetch(sp, data->data, size);
 	if(ret != size)
 	    return (ret < 0)? errno : sp->eof_code;
-    }
-    return 0;
-}
-
-/**
- * Parse a XDR opaque from the storage (data padded up a 4 byte
- * aligned offset).
- *
- * @param sp the storage buffer to read from
- * @param data the buffer to parse.
- *
- * @return 0 on success, a Kerberos 5 error code on failure.
- *
- * @ingroup krb5_storage
- */
-
-krb5_error_code KRB5_LIB_FUNCTION
-krb5_ret_data_xdr(krb5_storage *sp,
-		  krb5_data *data)
-{
-    krb5_error_code ret;
-    ret = krb5_ret_data(sp, data);
-    if (ret)
-	return ret;
-
-    if ((data->length % 4) != 0) {
-	char buf[4];
-	size_t res;
-
-	res = 4 - (data->length % 4);
-	if (res != 4) {
-	    ret = sp->fetch(sp, buf, res);
-	    if(ret != res)
-		return (ret < 0)? errno : sp->eof_code;
-	}
     }
     return 0;
 }
