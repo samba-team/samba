@@ -1452,7 +1452,7 @@ krb5_cc_last_change_time(krb5_context context,
  * and mtime is 0, there was no credentials in the caches.
  *
  * @param context A Kerberos 5 context
- * @param id The credential cache to probe
+ * @param type The credential cache to probe, if NULL, all type are traversed.
  * @param mtime the last modification time, set to 0 on error.
 
  * @return Return 0 or and error. See krb5_get_error_message().
