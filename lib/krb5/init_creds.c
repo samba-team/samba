@@ -346,6 +346,25 @@ krb5_get_init_creds_opt_set_win2k(krb5_context context,
     return 0;
 }
 
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
+					     krb5_get_init_creds_opt *opt,
+					     krb5_gic_process_last_req func,
+					     void *ctx)
+{
+    krb5_error_code ret;
+    ret = require_ext_opt(context, opt, "init_creds_opt_set_win2k");
+    if (ret)
+	return ret;
+
+    opt->opt_private->lr.func = func;
+    opt->opt_private->lr.ctx = ctx;
+
+    return 0;
+}
+
+
 #ifndef HEIMDAL_SMALLER
 
 void KRB5_LIB_FUNCTION
