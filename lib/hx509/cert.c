@@ -2263,6 +2263,16 @@ hx509_verify_path(hx509_context context,
 				   "Failed to verify signature of certificate");
 	    goto out;
 	}
+	/* verify that the creation date is before the best before date */
+	if (i + 1 < path.len) {
+	    time_t notBefore = 
+		_hx509_Time2time_t(&c->tbsCertificate.validity.notBefore);
+	    ret = _hx509_signature_best_before(context,
+					       &c->signatureAlgorithm,
+					       notBefore);
+	    if (ret)
+		goto out;
+	}
     }
 
 out:
