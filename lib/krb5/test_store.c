@@ -44,6 +44,8 @@ test_int8(krb5_context context, krb5_storage *sp)
 	0, 1, -1, 128, -127
     }, v;
 
+    krb5_storage_truncate(sp, 0);
+
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
 	ret = krb5_store_int8(sp, val[i]);
@@ -66,6 +68,8 @@ test_int16(krb5_context context, krb5_storage *sp)
     int16_t val[] = {
 	0, 1, -1, 32768, -32767
     }, v;
+
+    krb5_storage_truncate(sp, 0);
 
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
@@ -90,6 +94,8 @@ test_int32(krb5_context context, krb5_storage *sp)
 	0, 1, -1, 2147483647, -2147483646
     }, v;
 
+    krb5_storage_truncate(sp, 0);
+
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
 	ret = krb5_store_int32(sp, val[i]);
@@ -112,6 +118,8 @@ test_uint8(krb5_context context, krb5_storage *sp)
     uint8_t val[] = {
 	0, 1, 255
     }, v;
+
+    krb5_storage_truncate(sp, 0);
 
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
@@ -136,6 +144,8 @@ test_uint16(krb5_context context, krb5_storage *sp)
 	0, 1, 65535
     }, v;
 
+    krb5_storage_truncate(sp, 0);
+
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
 	ret = krb5_store_uint16(sp, val[i]);
@@ -158,6 +168,8 @@ test_uint32(krb5_context context, krb5_storage *sp)
     uint32_t val[] = {
 	0, 1, 4294967295UL
     }, v;
+
+    krb5_storage_truncate(sp, 0);
 
     for (i = 0; i < sizeof(val[0])/sizeof(val); i++) {
 
