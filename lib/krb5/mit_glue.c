@@ -320,7 +320,7 @@ krb5_c_enctype_compare(krb5_context context,
 		       krb5_boolean *similar)
     KRB5_DEPRECATED
 {
-    *similar = (e1 == e2)
+    *similar = (e1 == e2);
     return 0;
 }
 
