@@ -69,6 +69,7 @@ char *pk_user_id	= NULL;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
+static int enterprise_flag = 0;
 static int ok_as_delegate_flag = 0;
 static int use_referrals_flag = 0;
 static int windows_flag = 0;
@@ -154,6 +155,9 @@ static struct getargs args[] = {
 
     { "canonicalize",0,   arg_flag, &canonicalize_flag,
       NP_("canonicalize client principal", "") },
+
+    { "enterprise",0,   arg_flag, &enterprise_flag,
+      NP_("parse principal as a KRB5-NT-ENTERPRISE name", "") },
 #ifdef PKINIT
     { "pk-user",	'C',	arg_string,	&pk_user_id,
       NP_("principal's public/private/certificate identifier", ""), "id" },
@@ -749,7 +753,7 @@ main (int argc, char **argv)
     argc -= optidx;
     argv += optidx;
 
-    if (canonicalize_flag)
+    if (canonicalize_flag || enterprise_flag)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
     if (argv[0]) {
