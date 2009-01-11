@@ -803,8 +803,7 @@ out:
  *        that will verify the reply.
  * @param inctx control the behavior of the function, if NULL, the
  *        default behavior is used.
- * @param outctx the return outctx,can be NULL. If set and function
- *        returns 0, free with krb5_rd_req_out_ctx_free()
+ * @param outctx the return outctx, free with krb5_rd_req_out_ctx_free().
  * @return Kerberos 5 error code, see krb5_get_error_message().
  *
  * @ingroup krb5_auth
@@ -840,6 +839,14 @@ krb5_rd_req_ctx(krb5_context context,
 
     ret = krb5_decode_ap_req(context, inbuf, &ap_req);
     if(ret)
+	goto out;
+
+    /* Save that principal that was in the request */
+    ret = _krb5_principalname2krb5_principal(context,
+					     &o->server,
+					     ap_req.ticket.sname,
+					     ap_req.ticket.realm);
+    if (ret)
 	goto out;
 
     if (ap_req.ap_options.use_session_key &&
@@ -879,10 +886,11 @@ krb5_rd_req_ctx(krb5_context context,
 	    goto out;
     }
 
-    /*
-     * If we got an exact keymatch, use that.
-     */
     if (o->keyblock) {
+	/*
+	 * We got an exact keymatch, use that.
+	 */
+
 	ret = krb5_verify_ap_req2(context,
 				  auth_context,
 				  &ap_req,
@@ -897,6 +905,10 @@ krb5_rd_req_ctx(krb5_context context,
 	    goto out;
 
     } else {
+	/*
+	 * Interate over keytab to find a key that can decrypt the request.
+	 */
+
 	krb5_keytab_entry entry;
 	krb5_kt_cursor cursor;
 	krb5_keytab id = NULL;
@@ -921,17 +933,17 @@ krb5_rd_req_ctx(krb5_context context,
 	if (ret)
 	    goto out;
 
-	/*
-	 * Interate over keytab to find a key that can decrypt the request.
-	 */
-
 	done = 0;
 	while (!done) { 
 	    krb5_principal p;
 
 	    ret = krb5_kt_next_entry(context, id, &entry, &cursor);
-	    if (ret)
+	    if (ret) {
+		_krb5_kt_principal_not_found(context, ret, id, o->server,
+					     ap_req.ticket.enc_part.etype,
+					     kvno);
 		goto out;
+	    }
 
 	    if (entry.keyblock.keytype != ap_req.ticket.enc_part.etype ||
 		(kvno && kvno != entry.vno)) {
@@ -981,15 +993,6 @@ krb5_rd_req_ctx(krb5_context context,
 	}
 	krb5_kt_end_seq_get (context, id, &cursor);
     }
-
-    /* Save that principal that was in the request */
-    ret = _krb5_principalname2krb5_principal(context,
-					     &o->server,
-					     ap_req.ticket.sname,
-					     ap_req.ticket.realm);
-    if (ret)
-	goto out;
-
 
     /* If there is a PAC, verify its server signature */
     if (inctx == NULL || inctx->check_pac) {
