@@ -37,6 +37,8 @@ RCSID("$Id$");
 
 #undef KRB5_DEPRECATED
 #define KRB5_DEPRECATED
+#undef __attribute__(x)
+#define __attribute__(x)
 
 /**
  * Clears the error message from the Kerberos 5 context.
