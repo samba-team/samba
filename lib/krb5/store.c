@@ -203,7 +203,7 @@ krb5_storage_set_eof_code(krb5_storage *sp, int code)
 int KRB5_LIB_FUNCTION
 krb5_storage_get_eof_code(krb5_storage *sp)
 {
-    sp->eof_code = code;
+    return sp->eof_code;
 }
 
 krb5_ssize_t KRB5_LIB_FUNCTION
