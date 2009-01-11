@@ -35,9 +35,15 @@
 
 RCSID("$Id$");
 
-/*
- * Register a new keytab in `ops'
- * Return 0 or an error.
+/**
+ * Register a new keytab backend.
+ *
+ * @param context a Keberos context.
+ * @param ops a backend to register.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -65,11 +71,19 @@ krb5_kt_register(krb5_context context,
     return 0;
 }
 
-/*
+/**
  * Resolve the keytab name (of the form `type:residual') in `name'
  * into a keytab in `id'.
- * Return 0 or an error
+ *
+ * @param context a Keberos context.
+ * @param name name to resolve
+ * @param id resulting keytab, free with krb5_kt_close().
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_kt_resolve(krb5_context context,
@@ -120,9 +134,16 @@ krb5_kt_resolve(krb5_context context,
     return ret;
 }
 
-/*
+/**
  * copy the name of the default keytab into `name'.
- * Return 0 or KRB5_CONFIG_NOTENUFSPACE if `namesize' is too short.
+ *
+ * @param context a Keberos context.
+ * @param name buffer where the name will be written
+ * @param namesize length of name
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -135,9 +156,16 @@ krb5_kt_default_name(krb5_context context, char *name, size_t namesize)
     return 0;
 }
 
-/*
- * copy the name of the default modify keytab into `name'.
- * Return 0 or KRB5_CONFIG_NOTENUFSPACE if `namesize' is too short.
+/**
+ * Copy the name of the default modify keytab into `name'.
+ *
+ * @param context a Keberos context.
+ * @param name buffer where the name will be written
+ * @param namesize length of name
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -166,9 +194,16 @@ krb5_kt_default_modify_name(krb5_context context, char *name, size_t namesize)
     return 0;
 }
 
-/*
+/**
  * Set `id' to the default keytab.
  * Return 0 or an error.
+ *
+ * @param context a Keberos context.
+ * @param id the new default keytab.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -177,10 +212,20 @@ krb5_kt_default(krb5_context context, krb5_keytab *id)
     return krb5_kt_resolve (context, context->default_keytab, id);
 }
 
-/*
+/**
  * Read the key identified by `(principal, vno, enctype)' from the
  * keytab in `keyprocarg' (the default if == NULL) into `*key'.
- * Return 0 or an error.
+ *
+ * @param context a Keberos context.
+ * @param keyprocarg
+ * @param principal
+ * @param vno
+ * @param enctype
+ * @param key
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -215,6 +260,15 @@ krb5_kt_read_service_key(krb5_context context,
 /*
  * Return the type of the `keytab' in the string `prefix of length
  * `prefixsize'.
+ *
+ * @param context a Keberos context.
+ * @param keytab
+ * @param prefix
+ * @param prefixsize
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -229,7 +283,15 @@ krb5_kt_get_type(krb5_context context,
 
 /*
  * Retrieve the name of the keytab `keytab' into `name', `namesize'
- * Return 0 or an error.
+ *
+ * @param context a Keberos context.
+ * @param keytab
+ * @param name
+ * @param namesize
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -241,10 +303,18 @@ krb5_kt_get_name(krb5_context context,
     return (*keytab->get_name)(context, keytab, name, namesize);
 }
 
-/*
+/**
  * Retrieve the full name of the keytab `keytab' and store the name in
- * `str'. `str' needs to be freed by the caller using free(3).
- * Returns 0 or an error. On error, *str is set to NULL.
+ * `str'.
+ *
+ * @param context a Keberos context.
+ * @param keytab keytab to get name for.
+ * @param str the name of the keytab name, usee krb5_xfree() to free
+ *        the string.  On error, *str is set to NULL.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -277,7 +347,14 @@ krb5_kt_get_full_name(krb5_context context,
 
 /*
  * Finish using the keytab in `id'.  All resources will be released,
- * even on errors.  Return 0 or an error.
+ * even on errors.
+ *
+ * @param context a Keberos context.
+ * @param id keytab to get name for.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -296,6 +373,16 @@ krb5_kt_close(krb5_context context,
  * Compare `entry' against `principal, vno, enctype'.
  * Any of `principal, vno, enctype' might be 0 which acts as a wildcard.
  * Return TRUE if they compare the same, FALSE otherwise.
+ *
+ * @param context a Keberos context.
+ * @param entry an entry to match
+ * @param principal NULL matches all principals
+ * @param vno 0 matches all key version numbers
+ * @param enctype 0 matches all enctypes
+ *
+ * @return Return TRUE or match, FALSE if not matched.
+ *
+ * @ingroup krb5_keytab
  */
 
 krb5_boolean KRB5_LIB_FUNCTION
