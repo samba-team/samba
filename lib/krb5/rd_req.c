@@ -527,8 +527,17 @@ struct krb5_rd_req_out_ctx_data {
     krb5_principal server;
 };
 
-/*
+/**
+ * Allocate a krb5_rd_req_in_ctx as an input parameter to
+ * krb5_rd_req_ctx(). The caller should free the context with
+ * krb5_rd_req_in_ctx_free() when done with the context.
  *
+ * @param context Keberos 5 context.
+ * @param in in ctx to krb5_rd_req_ctx().
+ *
+ * @return Kerberos 5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_auth
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
@@ -544,12 +553,26 @@ krb5_rd_req_in_ctx_alloc(krb5_context context, krb5_rd_req_in_ctx *ctx)
     return 0;
 }
 
+/**
+ * Set the keytab that krb5_rd_req_ctx() will use.
+ *
+ * @param context Keberos 5 context.
+ * @param in in ctx to krb5_rd_req_ctx().
+ * @param keytab keytab that krb5_rd_req_ctx() will use, only copy the
+ *        pointer, so the caller must free they keytab after
+ *        krb5_rd_req_in_ctx_free() is called.
+ *
+ * @return Kerberos 5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_auth
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_rd_req_in_set_keytab(krb5_context context,
 			  krb5_rd_req_in_ctx in,
 			  krb5_keytab keytab)
 {
-    in->keytab = keytab; /* XXX should make copy */
+    in->keytab = keytab;
     return 0;
 }
 
