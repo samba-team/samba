@@ -116,7 +116,7 @@ main (int argc, char **argv)
 	krb5_err(context, 1, ret, "krb5_kt_start_seq_get");
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
 	krb5_unparse_name_short(context, entry.principal, &principal);
-	printf("principal: %s\\n", principal);
+	printf("principal: %s\n", principal);
 	free(principal);
 	krb5_kt_free_entry(context, &entry);
     }
