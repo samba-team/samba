@@ -218,6 +218,10 @@ struct _krb5_get_init_creds_opt_private {
     int flags;
 #define KRB5_INIT_CREDS_CANONICALIZE		1
 #define KRB5_INIT_CREDS_NO_C_CANON_CHECK	2
+    struct {
+        krb5_gic_process_last_req func;
+        void *ctx;
+    } lr;
 };
 
 typedef struct krb5_context_data {
