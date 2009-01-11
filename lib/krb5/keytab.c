@@ -61,8 +61,7 @@ RCSID("$Id$");
  * /etc/krb5.conf by setting the variable
  * [defaults]default_keytab_name.
  *
- * The keytab types that are implemented in Heimdal
- *
+ * The keytab types that are implemented in Heimdal are:
  * - file 
  *   store the keytab in a file, the type's name is FILE .  The
  *   residual part is a filename. For compatibility with other
@@ -71,24 +70,24 @@ RCSID("$Id$");
  *   compatible with older versions of MIT kerberos and SUN's Java
  *   based installation.  They store a truncted kvno, so when the knvo
  *   excess 255, they are truncted in this format.
- *   .
+ *
  * - keytab
  *   store the keytab in a AFS keyfile (usually /usr/afs/etc/KeyFile ),
  *   the type's name is AFSKEYFILE. The residual part is a filename.
- *   .
+ *
  * - krb4
  *   the keytab is a Kerberos 4 srvtab that is on-the-fly converted to
  *   a keytab. The type's name is krb4 The residual part is a
  *   filename.
- *   .
- *  - memory
- *    The keytab is stored in a memory segment. This allows sensitive
- *    and/or temporary data not to be stored on disk. The type's name
- *    is MEMORY. Each MEMORY keytab is referenced counted by and
- *    opened by the residual name, so two handles can point to the
- *    same memory area.  When the last user closes the entry, it
- *    disappears.
- *    .
+ *
+ * - memory
+ *   The keytab is stored in a memory segment. This allows sensitive
+ *   and/or temporary data not to be stored on disk. The type's name
+ *   is MEMORY. Each MEMORY keytab is referenced counted by and
+ *   opened by the residual name, so two handles can point to the
+ *   same memory area.  When the last user closes the entry, it
+ *   disappears.
+ *
  *
  * @subsection krb5_keytab_example Keytab example
  *
