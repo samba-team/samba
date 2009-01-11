@@ -693,7 +693,7 @@ krb5_change_password (krb5_context	context,
 		      int		*result_code,
 		      krb5_data		*result_code_string,
 		      krb5_data		*result_string)
-    __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     struct kpwd_proc *p = find_chpw_proto("change password");
 
