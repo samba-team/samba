@@ -232,8 +232,6 @@ collect_framents(krb5_storage *sp, krb5_storage *msg)
 	if (ret)
 	    return ret;
 	
-	krb5_warnx(dcontext, "collect len: %08x", (unsigned)len);
-
 	last_fragment = (len & 0x80000000) != 0;
 	len &= ~0x80000000;
 
@@ -241,9 +239,6 @@ collect_framents(krb5_storage *sp, krb5_storage *msg)
 	total_len += len;
 
     } while(last_fragment == 0 || total_len == 0);
-    krb5_storage_seek(msg, 0, SEEK_SET);
-
-    krb5_warnx(dcontext, "collect total_len: %08x", (unsigned)total_len);
 
     return 0;
 }
@@ -706,15 +701,12 @@ process_stream(krb5_context context,
 	krb5_storage_truncate(dreply, 0);
 	krb5_storage_truncate(reply, 0);
 	krb5_storage_truncate(msg, 0);
-	krb5_storage_seek(msg, 0, SEEK_SET);
 
 	if (ilen) {
 	    int last_fragment;
 	    unsigned long len;
 	    ssize_t slen;
 	    unsigned char tmp[4];
-
-	    krb5_warnx(dcontext, "ilen %d", (int)ilen);
 
 	    if (ilen < 4) {
 		memcpy(tmp, buf, ilen);
@@ -748,8 +740,6 @@ process_stream(krb5_context context,
 
 	    CHECK(read_data(sp, msg, len));
 	    
-	    krb5_warnx(dcontext, "len %d", (int)len);
-
 	    if (last_fragment == 0) {
 		ret = collect_framents(sp, msg);
 		if (ret == HEIM_ERR_EOF)
@@ -758,16 +748,11 @@ process_stream(krb5_context context,
 	    }
 	} else {
 
-	    krb5_warnx(dcontext, "collect");
 	    ret = collect_framents(sp, msg);
 	    if (ret == HEIM_ERR_EOF)
 		krb5_errx(context, 1, "client disconnected");
 	    INSIST(ret == 0);
 	}
-	krb5_storage_seek(msg, 0, SEEK_SET);
-
-	krb5_warnx(context, "msg size: %d", 
-		   (int)krb5_storage_seek(msg, 0, SEEK_END));
 	krb5_storage_seek(msg, 0, SEEK_SET);
 
 	/* 
