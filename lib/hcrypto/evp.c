@@ -1650,6 +1650,11 @@ EVP_CIPHER_CTX_rand_key(EVP_CIPHER_CTX *ctx, void *key)
 /**
  * Perform a operation on a ctx
  *
+ * @param ctx context to perform operation on.
+ * @param type type of operation.
+ * @param arg argument to operation.
+ * @param data addition data to operation.
+
  * @return 1 for success, 0 for failure.
  *
  * @ingroup hcrypto_core
