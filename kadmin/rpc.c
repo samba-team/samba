@@ -380,11 +380,11 @@ store_principal_ent(krb5_context context,
 	    c.length = tp->tl_data_length;
 	    c.data = tp->tl_data_contents;
 
-	    CHECK(krb5_store_int32(sp, 0)); /* more */
+	    CHECK(krb5_store_int32(sp, 0)); /* last item */
 	    CHECK(krb5_store_int32(sp, tp->tl_data_type));
 	    CHECK(krb5_store_data_xdr(sp, c));
 	}
-	CHECK(krb5_store_int32(sp, 1)); /* more */
+	CHECK(krb5_store_int32(sp, 1)); /* last item */
     }
 
     CHECK(krb5_store_int32(sp, ent->n_key_data));
@@ -445,17 +445,28 @@ ret_principal_ent(krb5_context context,
     ent->n_tl_data = flag;
     CHECK(krb5_ret_uint32(sp, &flag));
     if (flag == 0) {
-	//	krb5_tl_data *tp;
+	krb5_tl_data **tp = &ent->tl_data;
+	size_t count = 0;
 
 	while(1) {
 	    krb5_data c;
-	    CHECK(krb5_ret_uint32(sp, &flag));
+	    CHECK(krb5_ret_uint32(sp, &flag)); /* last item */
 	    if (flag)
 		break;
-	    CHECK(krb5_ret_uint32(sp, &num));
+	    *tp = calloc(1, sizeof(**tp));
+	    INSIST(*tp != NULL);
+	    CHECK(krb5_ret_uint32(sp, &flag));
+	    (*tp)->tl_data_type = flag;
 	    CHECK(krb5_ret_data_xdr(sp, &c));
-	    krb5_data_free(&c);
+	    (*tp)->tl_data_length = c.length;
+	    (*tp)->tl_data_contents = c.data;
+	    tp = &(*tp)->tl_data_next;
+
+	    count++;
 	}
+	INSIST(ent->n_tl_data == count);
+    } else {
+	INSIST(ent->n_tl_data == 0);
     }
 	  
     CHECK(krb5_ret_uint32(sp, &num));
@@ -569,6 +580,8 @@ proc_get_principal(kadm5_server_context *context,
     ret = kadm5_get_principal(context, princ, &ent, mask);
 
  fail:
+    krb5_warn(context->context, ret, "get principal principal");
+
     CHECK(krb5_store_uint32(out, VERSION2)); /* api version */
     CHECK(krb5_store_uint32(out, ret)); /* code */
     if (ret == 0) {
@@ -601,6 +614,8 @@ proc_chrand_principal_v2(kadm5_server_context *context,
 				  &new_keys, &n_keys);
 
  fail:
+    krb5_warn(context->context, ret, "rand key principal");
+
     CHECK(krb5_store_uint32(out, VERSION2)); /* api version */
     CHECK(krb5_store_uint32(out, ret));
     if (ret == 0) {
@@ -623,6 +638,7 @@ proc_init(kadm5_server_context *context,
 	  krb5_storage *out)
 {
     CHECK(krb5_store_uint32(out, VERSION2)); /* api version */
+    CHECK(krb5_store_uint32(out, 0)); /* code */
     CHECK(krb5_store_uint32(out, 0)); /* code */
 }
 
@@ -668,6 +684,8 @@ copyheader(krb5_storage *sp, krb5_data *data)
     sret = krb5_storage_read(sp, data->data, data->length);
     INSIST(sret == off);
     INSIST(off == krb5_storage_seek(sp, 0, SEEK_CUR));
+
+    return 0;
 }
 
 struct gctx {
@@ -713,6 +731,8 @@ process_stream(krb5_context context,
 	krb5_storage_truncate(msg, 0);
 
 	krb5_data_zero(&headercopy);
+	memset(&chdr, 0, sizeof(chdr));
+	memset(&gcred, 0, sizeof(gcred));
 
 	/*
 	 * This is very icky to handle the the auto-detection between
@@ -760,25 +780,17 @@ process_stream(krb5_context context,
 	    if (!last_fragment) {
 		ret = collect_framents(sp, msg);
 		if (ret == HEIM_ERR_EOF)
-		    krb5_errx(context, 1, "client disconnected");
+		    krb5_errx(context, 0, "client disconnected");
 		INSIST(ret == 0);
 	    }
 	} else {
 
 	    ret = collect_framents(sp, msg);
 	    if (ret == HEIM_ERR_EOF)
-		krb5_errx(context, 1, "client disconnected");
+		krb5_errx(context, 0, "client disconnected");
 	    INSIST(ret == 0);
 	}
 	krb5_storage_seek(msg, 0, SEEK_SET);
-
-	/* 
-	 * If context is setup, priv data have the seq_num stored
-	 * first in the block, so add it here before users data is
-	 * added.
-	 */
-	if (gctx.done != 0 && gctx.inprogress == 0)
-	    krb5_store_uint32(dreply, gctx.seq_num);
 
 	CHECK(krb5_ret_uint32(msg, &chdr.xid));
 	CHECK(krb5_ret_uint32(msg, &mtype));
@@ -840,7 +852,20 @@ process_stream(krb5_context context,
 	    INSIST(sp != NULL);
 
 	    CHECK(krb5_ret_uint32(sp, &seq));
-	    INSIST(seq == gctx.seq_num);
+	    INSIST (seq == gcred.seq_num);
+
+	    /*
+	     * Check sequence number
+	     */
+	    INSIST(seq > gctx.seq_num);
+	    gctx.seq_num = seq;
+
+	    /* 
+	     * If context is setup, priv data have the seq_num stored
+	     * first in the block, so add it here before users data is
+	     * added.
+	     */
+	    CHECK(krb5_store_uint32(dreply, gctx.seq_num));
 
 	    if (chdr.proc < sizeof(procs[0])/sizeof(procs)) {
 		krb5_warnx(context, "proc number out of array");
@@ -947,6 +972,7 @@ process_stream(krb5_context context,
 	CHECK(krb5_store_uint32(reply, chdr.xid));
 	CHECK(krb5_store_uint32(reply, 1)); /* REPLY */
 	CHECK(krb5_store_uint32(reply, 0)); /* MSG_ACCEPTED */
+
 	if (!gctx.done) {
 	    krb5_data data;
 
@@ -963,8 +989,6 @@ process_stream(krb5_context context,
 	    uint32_t seqnum = htonl(gctx.seq_num);
 	    krb5_data data;
 
-	    gctx.seq_num++;
-
 	    gin.value = &seqnum;
 	    gin.length = sizeof(seqnum);
 
@@ -980,11 +1004,13 @@ process_stream(krb5_context context,
 
 	    CHECK(krb5_store_uint32(reply, 0)); /* SUCCESS */
 
-	    krb5_storage_to_data(dreply, &data);
+	    CHECK(krb5_storage_to_data(dreply, &data));
 
 	    if (gctx.inprogress) {
+		ssize_t sret;
 		gctx.inprogress = 0;
-		krb5_storage_write(reply, data.data, data.length);
+		sret = krb5_storage_write(reply, data.data, data.length);
+		INSIST(sret == data.length);
 		krb5_data_free(&data);
 	    } else {
 		int conf_state;
@@ -1008,12 +1034,12 @@ process_stream(krb5_context context,
 
 	{
 	    krb5_data data;
+	    ssize_t sret;
 	    CHECK(krb5_storage_to_data(reply, &data));
-	    if (data.length) {
-		CHECK(krb5_store_uint32(sp, data.length | LAST_FRAGMENT));
-		INSIST(krb5_storage_write(sp, data.data, data.length) == data.length);
-		krb5_data_free(&data);
-	    }
+	    CHECK(krb5_store_uint32(sp, data.length | LAST_FRAGMENT));
+	    sret = krb5_storage_write(sp, data.data, data.length);
+	    INSIST(sret == data.length);
+	    krb5_data_free(&data);
 	}
 
     }
