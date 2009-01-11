@@ -36,6 +36,106 @@
 RCSID("$Id$");
 
 /**
+ * @page page_keytab The keytab handing functions.
+ * @section section_krb5_keytab Kerberos Keytabs
+ *
+ * See the library functions here: @ref krb5_keytab
+ *
+ * Keytabs are long term key storage for servers, their equvalment of
+ * password files.
+ *
+ * Normally the only function that useful for server are to specify
+ * what keytab to use to other core functions like krb5_rd_req()
+ * krb5_kt_resolve(), and krb5_kt_close().
+ *
+ * @subsection krb5_keytab_names Keytab names
+ *
+ * A keytab name is on the form type:residual. The residual part is
+ * specific to each keytab-type.
+ * 
+ * When a keytab-name is resolved, the type is matched with an internal
+ * list of keytab types. If there is no matching keytab type,
+ * the default keytab is used. The current default type is FILE.
+ *
+ * The default value can be changed in the configuration file
+ * /etc/krb5.conf by setting the variable
+ * [defaults]default_keytab_name.
+ *
+ * The keytab types that are implemented in Heimdal
+ *
+ * - file 
+ *   store the keytab in a file, the type's name is FILE .  The
+ *   residual part is a filename. For compatibility with other
+ *   Kerberos implemtation WRFILE and JAVA14 is also accepted.  WRFILE
+ *   has the same format as FILE. JAVA14 have a format that is
+ *   compatible with older versions of MIT kerberos and SUN's Java
+ *   based installation.  They store a truncted kvno, so when the knvo
+ *   excess 255, they are truncted in this format.
+ *   .
+ * - keytab
+ *   store the keytab in a AFS keyfile (usually /usr/afs/etc/KeyFile ),
+ *   the type's name is AFSKEYFILE. The residual part is a filename.
+ *   .
+ * - krb4
+ *   the keytab is a Kerberos 4 srvtab that is on-the-fly converted to
+ *   a keytab. The type's name is krb4 The residual part is a
+ *   filename.
+ *   .
+ *  - memory
+ *    The keytab is stored in a memory segment. This allows sensitive
+ *    and/or temporary data not to be stored on disk. The type's name
+ *    is MEMORY. Each MEMORY keytab is referenced counted by and
+ *    opened by the residual name, so two handles can point to the
+ *    same memory area.  When the last user closes the entry, it
+ *    disappears.
+ *    .
+ *
+ * @subsection krb5_keytab_example Keytab example
+ *
+ *  This is a minimalistic version of ktutil.
+ *
+ * @code
+int
+main (int argc, char **argv)
+{
+    krb5_context context;
+    krb5_keytab keytab;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+    krb5_error_code ret;
+    char *principal;
+
+    if (krb5_init_context (&context) != 0)
+	errx(1, "krb5_context");
+
+    ret = krb5_kt_default (context, &keytab);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_default");
+
+    ret = krb5_kt_start_seq_get(context, keytab, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_start_seq_get");
+    while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
+	krb5_unparse_name_short(context, entry.principal, &principal);
+	printf("principal: %s\\n", principal);
+	free(principal);
+	krb5_kt_free_entry(context, &entry);
+    }
+    ret = krb5_kt_end_seq_get(context, keytab, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_end_seq_get");
+    ret = krb5_kt_close(context, keytab);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_kt_close");
+    krb5_free_context(context);
+    return 0;
+}
+ * @endcode
+ *
+ */
+
+
+/**
  * Register a new keytab backend.
  *
  * @param context a Keberos context.
@@ -442,7 +542,7 @@ _krb5_kt_principal_not_found(krb5_context context,
  * @param context a Keberos context.
  * @param id a keytab.
  * @param principal principal to match, NULL matches all principals.
- * @param vno key version to match, 0 matches all key version numbers.
+ * @param kvno key version to match, 0 matches all key version numbers.
  * @param enctype encryption type to match, 0 matches all encryption types.
  * @param entry the returned entry, free with krb5_kt_free_entry().
  *
@@ -506,7 +606,6 @@ krb5_kt_get_entry(krb5_context context,
  * @param context a Keberos context.
  * @param in the keytab entry to copy.
  * @param out the copy of the keytab entry, free with krb5_kt_free_entry().
- * @param cursor the cursor of the iteration.
  *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
