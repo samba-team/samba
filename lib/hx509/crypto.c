@@ -74,16 +74,6 @@ struct hx509_private_key_ops {
 		const heim_octet_string *,
 		AlgorithmIdentifier *,
 		heim_octet_string *);
-#if 0
-    const AlgorithmIdentifier *(*preferred_sig_alg)
-	(const hx509_private_key,
-	 const hx509_peer_info);
-    int (*unwrap)(hx509_context context,
-		  const hx509_private_key,
-		  const AlgorithmIdentifier *,
-		  const heim_octet_string *,
-		  heim_octet_string *);
-#endif
 };
 
 struct hx509_private_key {
@@ -118,6 +108,7 @@ struct signature_alg {
 
 #define RA_RSA_USES_DIGEST_INFO 0x1000000
 
+    time_t best_before; /* refuse signature made after best before date */
 
     int (*verify_signature)(hx509_context context,
 			    const struct signature_alg *,
@@ -878,6 +869,7 @@ static const struct signature_alg heim_rsa_pkcs1_x509 = {
     oid_id_pkcs1_rsaEncryption,
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    0,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -889,6 +881,7 @@ static const struct signature_alg pkcs1_rsa_sha1_alg = {
     oid_id_pkcs1_rsaEncryption,
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    0,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -900,6 +893,7 @@ static const struct signature_alg rsa_with_sha256_alg = {
     oid_id_pkcs1_rsaEncryption,
     oid_id_sha256,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    0,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -911,6 +905,7 @@ static const struct signature_alg rsa_with_sha1_alg = {
     oid_id_pkcs1_rsaEncryption,
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    0,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -922,6 +917,7 @@ static const struct signature_alg rsa_with_md5_alg = {
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md5,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    1230739889,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -933,6 +929,7 @@ static const struct signature_alg rsa_with_md2_alg = {
     oid_id_pkcs1_rsaEncryption,
     oid_id_rsa_digest_md2,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    1230739889,
     rsa_verify_signature,
     rsa_create_signature
 };
@@ -944,6 +941,7 @@ static const struct signature_alg dsa_sha1_alg = {
     oid_id_dsa,
     oid_id_secsig_sha_1,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
+    0,
     dsa_verify_signature,
     /* create_signature */ NULL,
 };
@@ -955,6 +953,7 @@ static const struct signature_alg sha256_alg = {
     NULL,
     NULL,
     SIG_DIGEST,
+    0,
     sha256_verify_signature,
     sha256_create_signature
 };
@@ -966,6 +965,7 @@ static const struct signature_alg sha1_alg = {
     NULL,
     NULL,
     SIG_DIGEST,
+    0,
     sha1_verify_signature,
     sha1_create_signature
 };
@@ -977,6 +977,7 @@ static const struct signature_alg md5_alg = {
     NULL,
     NULL,
     SIG_DIGEST,
+    0,
     md5_verify_signature
 };
 
@@ -987,6 +988,7 @@ static const struct signature_alg md2_alg = {
     NULL,
     NULL,
     SIG_DIGEST,
+    0,
     md2_verify_signature
 };
 
@@ -1042,6 +1044,31 @@ find_private_alg(const heim_oid *oid)
     return NULL;
 }
 
+/*
+ * Check if the algorithm `alg' have a best before date, and if it
+ * des, make sure the its before the time `t'.
+ */
+
+int
+_hx509_signature_best_before(hx509_context context,
+			     const AlgorithmIdentifier *alg,
+			     time_t t)
+{
+    const struct signature_alg *md;
+
+    md = find_sig_alg(&alg->algorithm);
+    if (md == NULL) {
+	hx509_clear_error_string(context);
+	return HX509_SIG_ALG_NO_SUPPORTED;
+    }
+    if (md->best_before && md->best_before < t) {
+	hx509_set_error_string(context, 0, HX509_CRYPTO_ALGORITHM_BEST_BEFORE,
+			       "Algorithm %s has passed it best before date",
+			       md->name);
+	return HX509_CRYPTO_ALGORITHM_BEST_BEFORE;
+    }
+    return 0;
+}
 
 int
 _hx509_verify_signature(hx509_context context,
