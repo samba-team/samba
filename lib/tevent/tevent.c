@@ -157,7 +157,7 @@ int tevent_common_context_destructor(struct tevent_context *ev)
 	te = ev->timer_events;
 	while (te) {
 		te->event_ctx = NULL;
-		DLIST_REMOVE(te->timer_events, te);
+		DLIST_REMOVE(ev->timer_events, te);
 		te = ev->timer_events;
 	}
 
