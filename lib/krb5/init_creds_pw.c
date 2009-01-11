@@ -210,19 +210,19 @@ report_expiration (krb5_context context,
     free (p);
 }
 
-/**
+/*
  * Check the context, and in the case there is a expiration warning,
  * use the prompter to print the warning.
  *
  * @param context A Kerberos 5 context.
+ * @param options An GIC options structure
  * @param ctx The krb5_init_creds_context check for expiration.
- *
- * @ingroup krb5_credential
  */
 
-void KRB5_LIB_FUNCTION
-krb5_init_creds_prompt_expire(krb5_context context,
-			      krb5_init_creds_context ctx)
+static krb5_error_code KRB5_LIB_FUNCTION
+process_last_request(krb5_context context,
+		     krb5_get_init_creds_opt *options,
+		     krb5_init_creds_context ctx)
 {
     krb5_const_realm realm;
     LastReq *lr;
@@ -232,10 +232,35 @@ krb5_init_creds_prompt_expire(krb5_context context,
     size_t i;
 
     if (ctx->prompter == NULL)
-        return;
+        return 0;
 
     realm = krb5_principal_get_realm (context, ctx->cred.client);
     lr = &ctx->enc_part.last_req;
+
+    if (options && options->opt_private && options->opt_private->lr.func) {
+	krb5_last_req_entry **lre;
+
+	lre = calloc(lr->len + 1, sizeof(**lre));
+	if (lre) {
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
+	    return ENOMEM;
+	}
+	for (i = 0; i < lr->len; i++) {
+	    lre[i] = calloc(1, sizeof(*lre[i]));
+	    if (lre[i] == NULL)
+		break;
+	    lre[i]->lr_type = lr->val[i].lr_type;
+	    lre[i]->value = lr->val[i].lr_value;
+	}
+
+	(*options->opt_private->lr.func)(context, lre,
+					 options->opt_private->lr.ctx);
+
+	for (i = 0; i < lr->len; i++)
+	    free(lre[i]);
+	free(lre);
+    }
 
     krb5_timeofday (context, &sec);
 
@@ -273,6 +298,7 @@ krb5_init_creds_prompt_expire(krb5_context context,
 			  "Your password/account will expire at ",
 			  *ctx->enc_part.key_expiration);
     }
+    return 0;
 }
 
 static krb5_addresses no_addrs = { 0, NULL };
@@ -1735,7 +1761,7 @@ krb5_get_init_creds_password(krb5_context context,
     ret = krb5_init_creds_get(context, ctx);
     
     if (ret == 0)
-        krb5_init_creds_prompt_expire(context, ctx);
+	process_last_request(context, options, ctx);
 
 
     if (ret == KRB5KDC_ERR_KEY_EXPIRED && chpw == 0) {
@@ -1804,7 +1830,7 @@ krb5_get_init_creds_keyblock(krb5_context context,
     ret = krb5_init_creds_get(context, ctx);
 
     if (ret == 0)
-        krb5_init_creds_prompt_expire(context, ctx);
+        process_last_request(context, options, ctx);
 
  out:
     if (ret == 0)
@@ -1848,7 +1874,7 @@ krb5_get_init_creds_keytab(krb5_context context,
 
     ret = krb5_init_creds_get(context, ctx);
     if (ret == 0)
-        krb5_init_creds_prompt_expire(context, ctx);
+        process_last_request(context, options, ctx);
 
  out:
     if (ret == 0)
