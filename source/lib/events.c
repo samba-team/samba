@@ -63,7 +63,9 @@ static int timed_event_destructor(struct timed_event *te)
 {
 	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
 		te->event_name));
-	DLIST_REMOVE(te->event_ctx->timed_events, te);
+	if (te->event_ctx) {
+		DLIST_REMOVE(te->event_ctx->timed_events, te);
+	}
 	return 0;
 }
 
@@ -133,7 +135,9 @@ static int fd_event_destructor(struct fd_event *fde)
 {
 	struct event_context *event_ctx = fde->event_ctx;
 
-	DLIST_REMOVE(event_ctx->fd_events, fde);
+	if (event_ctx) {
+		DLIST_REMOVE(event_ctx->fd_events, fde);
+	}
 	return 0;
 }
 
