@@ -28,10 +28,10 @@ struct eventlog_OpenUnknown0 {
 
 struct eventlog_Record {
 	uint32_t size;
-	uint32_t reserved;
+	uint32_t reserved;/* [value(0x654c664C)] */
 	uint32_t record_number;
-	uint32_t time_generated;
-	uint32_t time_written;
+	time_t time_generated;
+	time_t time_written;
 	uint32_t event_id;
 	uint16_t event_type;
 	uint16_t num_of_strings;
@@ -39,14 +39,17 @@ struct eventlog_Record {
 	uint16_t reserved_flags;
 	uint32_t closing_record_number;
 	uint32_t stringoffset;
-	uint32_t sid_length;
+	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
 	uint32_t sid_offset;
 	uint32_t data_length;
 	uint32_t data_offset;
 	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
 	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * raw_data;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB _padding;/* [flag(LIBNDR_FLAG_ALIGN4)] */
+	uint32_t size2;/* [value(size)] */
 }/* [public] */;
 
 

@@ -69,10 +69,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x654c664C));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->record_number));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->time_generated));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->time_written));
+		NDR_CHECK(ndr_push_time_t(ndr, NDR_SCALARS, r->time_generated));
+		NDR_CHECK(ndr_push_time_t(ndr, NDR_SCALARS, r->time_written));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->event_id));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->event_type));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->num_of_strings));
@@ -80,7 +80,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int nd
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->reserved_flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->closing_record_number));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->stringoffset));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sid_length));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_dom_sid0(&r->sid, ndr->flags)));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sid_offset));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->data_length));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->data_offset));
@@ -97,6 +97,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int nd
 			ndr->flags = _flags_save_string;
 		}
 		{
+			struct ndr_push *_ndr_sid;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
+			NDR_CHECK(ndr_push_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_sid, 0, ndr_size_dom_sid0(&r->sid, ndr->flags)));
+		}
+		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			for (cntr_strings_0 = 0; cntr_strings_0 < r->num_of_strings; cntr_strings_0++) {
@@ -110,6 +116,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int nd
 			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->raw_data));
 			ndr->flags = _flags_save_string;
 		}
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->_padding));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -125,8 +138,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->record_number));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->time_generated));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->time_written));
+		NDR_CHECK(ndr_pull_time_t(ndr, NDR_SCALARS, &r->time_generated));
+		NDR_CHECK(ndr_pull_time_t(ndr, NDR_SCALARS, &r->time_written));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->event_id));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->event_type));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_of_strings));
@@ -134,7 +147,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->reserved_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->closing_record_number));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->stringoffset));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_length));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sid_offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data_length));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->data_offset));
@@ -149,6 +162,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->computer_name));
 			ndr->flags = _flags_save_string;
+		}
+		{
+			struct ndr_pull *_ndr_sid;
+			NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_sid, 0, r->sid_size));
+			NDR_CHECK(ndr_pull_dom_sid0(_ndr_sid, NDR_SCALARS|NDR_BUFFERS, &r->sid));
+			NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_sid, 0, r->sid_size));
 		}
 		{
 			uint32_t _flags_save_string = ndr->flags;
@@ -168,6 +187,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->raw_data));
 			ndr->flags = _flags_save_string;
 		}
+		{
+			uint32_t _flags_save_DATA_BLOB = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_ALIGN4);
+			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->_padding));
+			ndr->flags = _flags_save_DATA_BLOB;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -180,10 +206,10 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr_print_struct(ndr, name, "eventlog_Record");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "size", r->size);
-	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_uint32(ndr, "reserved", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x654c664C:r->reserved);
 	ndr_print_uint32(ndr, "record_number", r->record_number);
-	ndr_print_uint32(ndr, "time_generated", r->time_generated);
-	ndr_print_uint32(ndr, "time_written", r->time_written);
+	ndr_print_time_t(ndr, "time_generated", r->time_generated);
+	ndr_print_time_t(ndr, "time_written", r->time_written);
 	ndr_print_uint32(ndr, "event_id", r->event_id);
 	ndr_print_uint16(ndr, "event_type", r->event_type);
 	ndr_print_uint16(ndr, "num_of_strings", r->num_of_strings);
@@ -191,12 +217,13 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr_print_uint16(ndr, "reserved_flags", r->reserved_flags);
 	ndr_print_uint32(ndr, "closing_record_number", r->closing_record_number);
 	ndr_print_uint32(ndr, "stringoffset", r->stringoffset);
-	ndr_print_uint32(ndr, "sid_length", r->sid_length);
+	ndr_print_uint32(ndr, "sid_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_dom_sid0(&r->sid, ndr->flags):r->sid_size);
 	ndr_print_uint32(ndr, "sid_offset", r->sid_offset);
 	ndr_print_uint32(ndr, "data_length", r->data_length);
 	ndr_print_uint32(ndr, "data_offset", r->data_offset);
 	ndr_print_string(ndr, "source_name", r->source_name);
 	ndr_print_string(ndr, "computer_name", r->computer_name);
+	ndr_print_dom_sid0(ndr, "sid", &r->sid);
 	ndr->print(ndr, "%s: ARRAY(%d)", "strings", (int)r->num_of_strings);
 	ndr->depth++;
 	for (cntr_strings_0=0;cntr_strings_0<r->num_of_strings;cntr_strings_0++) {
@@ -208,6 +235,8 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	}
 	ndr->depth--;
 	ndr_print_string(ndr, "raw_data", r->raw_data);
+	ndr_print_DATA_BLOB(ndr, "_padding", r->_padding);
+	ndr_print_uint32(ndr, "size2", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->size:r->size2);
 	ndr->depth--;
 }
 
