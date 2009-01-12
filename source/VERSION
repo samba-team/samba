@@ -95,5 +95,5 @@ SAMBA_VERSION_IS_GIT_SNAPSHOT=yes
 # e.g. SAMBA_VERSION_VENDOR_SUFFIX=vendor_version()    #
 #  ->  "CVS 3.0.0rc2-VendorVersion"                    #
 ########################################################
-SAMBA_VERSION_VENDOR_SUFFIX=
+SAMBA_VERSION_VENDOR_SUFFIX="test"
 SAMBA_VERSION_VENDOR_PATCH=
