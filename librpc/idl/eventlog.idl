@@ -34,10 +34,10 @@ import "lsa.idl", "security.idl";
 	
 	typedef [public] struct { 
 		uint32 size;
-		uint32 reserved;
+		[value(0x654c664C)] uint32 reserved; /* "eLfL" */
 		uint32 record_number;
-		uint32 time_generated;
-		uint32 time_written;
+		time_t time_generated;
+		time_t time_written;
 		uint32 event_id;
 		uint16 event_type;
 		uint16 num_of_strings;
@@ -45,14 +45,17 @@ import "lsa.idl", "security.idl";
 		uint16 reserved_flags;
 		uint32 closing_record_number;
 		uint32 stringoffset;
-		uint32 sid_length;
+		[value(ndr_size_dom_sid0(&sid, ndr->flags))] uint32 sid_size;
 		uint32 sid_offset;
 		uint32 data_length;
 		uint32 data_offset;
 		nstring source_name;
 		nstring computer_name;
+		[subcontext(0),subcontext_size(sid_size)] dom_sid0 sid;
 		nstring strings[num_of_strings];
 		astring raw_data;
+		[flag(NDR_ALIGN4)] DATA_BLOB _padding;
+		[value(size)] uint32 size2;
 	} eventlog_Record;
 
 	/******************/
