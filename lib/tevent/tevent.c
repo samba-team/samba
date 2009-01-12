@@ -138,34 +138,31 @@ const char **tevent_backend_list(TALLOC_CTX *mem_ctx)
 
 int tevent_common_context_destructor(struct tevent_context *ev)
 {
-	struct tevent_fd *fd;
-	struct tevent_timer *te;
-	struct tevent_signal *se;
+	struct tevent_fd *fd, *fn;
+	struct tevent_timer *te, *tn;
+	struct tevent_signal *se, *sn;
 
 	if (ev->pipe_fde) {
 		talloc_free(ev->pipe_fde);
 		ev->pipe_fde = NULL;
 	}
 
-	fd = ev->fd_events;
-	while (fd) {
+	for (fd = ev->fd_events; fd; fd = fn) {
+		fn = fd->next;
 		fd->event_ctx = NULL;
 		DLIST_REMOVE(ev->fd_events, fd);
-		fd = ev->fd_events;
 	}
 
-	te = ev->timer_events;
-	while (te) {
+	for (te = ev->timer_events; te; te = tn) {
+		tn = te->next;
 		te->event_ctx = NULL;
 		DLIST_REMOVE(ev->timer_events, te);
-		te = ev->timer_events;
 	}
 
-	se = ev->signal_events;
-	while (se) {
+	for (se = ev->signal_events; se; se = sn) {
+		sn = se->next;
 		se->event_ctx = NULL;
 		DLIST_REMOVE(ev->signal_events, se);
-		se = ev->signal_events;
 	}
 
 	return 0;
