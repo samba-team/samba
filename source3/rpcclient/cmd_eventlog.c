@@ -66,9 +66,13 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 	uint32_t sent_size = 0;
 	uint32_t real_size = 0;
 
-	if (argc != 2) {
-		printf("Usage: %s logname\n", argv[0]);
+	if (argc < 2 || argc > 4) {
+		printf("Usage: %s logname [offset]\n", argv[0]);
 		return NT_STATUS_OK;
+	}
+
+	if (argc >= 3) {
+		offset = atoi(argv[2]);
 	}
 
 	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
@@ -85,14 +89,17 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 						       data,
 						       &sent_size,
 						       &real_size);
-		if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL) &&
+		    real_size > 0 ) {
 			number_of_bytes = real_size;
 			data = talloc_array(mem_ctx, uint8_t, real_size);
 			continue;
 		}
 
+		number_of_bytes = 0;
+
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 
 		{
@@ -106,7 +113,8 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 						       &rec,
 						       (ndr_pull_flags_fn_t)ndr_pull_eventlog_Record);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-				return ndr_map_error2ntstatus(ndr_err);
+				status = ndr_map_error2ntstatus(ndr_err);
+				goto done;
 			}
 
 			NDR_PRINT_DEBUG(eventlog_Record, &rec);
@@ -114,6 +122,9 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 
 		offset++;
 	}
+
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
 
 	return status;
 }
@@ -141,12 +152,15 @@ static NTSTATUS cmd_eventlog_numrecords(struct rpc_pipe_client *cli,
 					       &handle,
 					       &number);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	printf("number of records: %d\n", number);
 
-	return NT_STATUS_OK;
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+
+	return status;
 }
 
 static NTSTATUS cmd_eventlog_oldestrecord(struct rpc_pipe_client *cli,
@@ -172,12 +186,15 @@ static NTSTATUS cmd_eventlog_oldestrecord(struct rpc_pipe_client *cli,
 						 &handle,
 						 &oldest_entry);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto done;
 	}
 
 	printf("oldest entry: %d\n", oldest_entry);
 
-	return NT_STATUS_OK;
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+
+	return status;
 }
 
 struct cmd_set eventlog_commands[] = {
