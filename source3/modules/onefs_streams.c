@@ -132,7 +132,8 @@ int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 {
 	TALLOC_CTX *frame = NULL;
 	int ret = -1;
-	int dir_fd, saved_errno;
+	int dir_fd = -1;
+	int saved_errno;
 	bool old_is_stream;
 	bool new_is_stream;
 	char *obase = NULL;
@@ -182,7 +183,9 @@ int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 
  done:
 	saved_errno = errno;
-	close(dir_fd);
+	if (dir_fd >= 0) {
+		close(dir_fd);
+	}
 	errno = saved_errno;
 	TALLOC_FREE(frame);
 	return ret;
