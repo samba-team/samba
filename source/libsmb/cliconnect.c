@@ -538,7 +538,7 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 
 #define BASE_SESSSETUP_BLOB_PACKET_SIZE (35 + 24 + 22)
 
-static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_BLOB session_key_krb5)
+static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 {
 	int32 remaining = blob.length;
 	int32 cur = 0;
@@ -562,13 +562,8 @@ static BOOL cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 			send_blob.length = max_blob_size;
 			remaining -= max_blob_size;
 		} else {
-			DATA_BLOB null_blob = data_blob(NULL, 0);
-
 			send_blob.length = remaining; 
                         remaining = 0;
-
-			/* This is the last packet in the sequence - turn signing on. */
-			cli_simple_set_signing(cli, session_key_krb5, null_blob); 
 		}
 
 		send_blob.data =  &blob.data[cur];
@@ -616,7 +611,12 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 {
 	DATA_BLOB negTokenTarg;
 	DATA_BLOB session_key_krb5;
+	DATA_BLOB null_blob = data_blob(NULL, 0);
+	NTSTATUS nt_status;
+	BOOL res;
 	int rc;
+
+	cli_temp_set_signing(cli);
 
 	DEBUG(2,("Doing kerberos session setup\n"));
 
@@ -633,23 +633,43 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	file_save("negTokenTarg.dat", negTokenTarg.data, negTokenTarg.length);
 #endif
 
-	if (!cli_session_setup_blob(cli, negTokenTarg, session_key_krb5)) {
-		data_blob_free(&negTokenTarg);
-		data_blob_free(&session_key_krb5);
-		return ADS_ERROR_NT(cli_nt_error(cli));
+	if (!cli_session_setup_blob(cli, negTokenTarg)) {
+		nt_status = cli_nt_error(cli);
+		goto nt_error;
+	}
+
+	if (cli_is_error(cli)) {
+		nt_status = cli_nt_error(cli);
+		if (NT_STATUS_IS_OK(nt_status)) {
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		}
+		goto nt_error;
 	}
 
 	cli_set_session_key(cli, session_key_krb5);
 
+	res = cli_simple_set_signing(cli, session_key_krb5, null_blob);
+	if (res) {
+		/* 'resign' the last message, so we get the right sequence numbers
+		   for checking the first reply from the server */
+		cli_calculate_sign_mac(cli);
+
+		if (!cli_check_sign_mac(cli)) {
+			nt_status = NT_STATUS_ACCESS_DENIED;
+			goto nt_error;
+		}
+	}
+
 	data_blob_free(&negTokenTarg);
 	data_blob_free(&session_key_krb5);
 
-	if (cli_is_error(cli)) {
-		if (NT_STATUS_IS_OK(cli_nt_error(cli))) {
-			return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
-		}
-	} 
-	return ADS_ERROR_NT(cli_nt_error(cli));
+	return ADS_ERROR_NT(NT_STATUS_OK);
+
+nt_error:
+	data_blob_free(&negTokenTarg);
+	data_blob_free(&session_key_krb5);
+	cli->vuid = 0;
+	return ADS_ERROR_NT(nt_status);
 }
 #endif	/* HAVE_KRB5 */
 
