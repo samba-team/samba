@@ -171,7 +171,7 @@ sub passwd_remove_entry($$)
 {
 	my ($passwd, $eref) = @_;
 
-	for(my $i; defined($passwd->{array}[$i]); $i++) {
+	for (my $i = 0; defined($passwd->{array}[$i]); $i++) {
 		if ($eref == $passwd->{array}[$i]) {
 			$passwd->{array}[$i] = undef;
 		}
