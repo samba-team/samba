@@ -583,7 +583,7 @@ bool initialise_wins(void)
 	}
 
 	/* Open the wins.tdb. */
-	wins_tdb = tdb_open_log(lock_path("wins.tdb"), 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0600);
+	wins_tdb = tdb_open_log(state_path("wins.tdb"), 0, TDB_DEFAULT|TDB_CLEAR_IF_FIRST, O_CREAT|O_RDWR, 0600);
 	if (!wins_tdb) {
 		DEBUG(0,("initialise_wins: failed to open wins.tdb. Error was %s\n",
 			strerror(errno) ));

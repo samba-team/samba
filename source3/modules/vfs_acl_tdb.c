@@ -44,7 +44,7 @@ static bool acl_tdb_init(struct db_context **pp_db)
 		return true;
 	}
 
-	dbname = lock_path("file_ntacls.tdb");
+	dbname = state_path("file_ntacls.tdb");
 
 	if (dbname == NULL) {
 		errno = ENOSYS;
