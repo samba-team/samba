@@ -2366,7 +2366,7 @@ void wins_write_database(time_t t, bool background)
 		}
 	}
 
-	if (asprintf(&fname, "%s/%s", get_dyn_STATEDIR(), WINS_LIST) < 0) {
+	if (!(fname = state_path(WINS_LIST))) {
 		goto err_exit;
 	}
 	/* This is safe as the 0 length means "don't expand". */
@@ -2394,8 +2394,8 @@ void wins_write_database(time_t t, bool background)
 
   err_exit:
 
-	SAFE_FREE(fname);
 	SAFE_FREE(fnamenew);
+	/* fname is talloced and doesn't need to be freed */
 
 	if (background) {
 		_exit(0);
