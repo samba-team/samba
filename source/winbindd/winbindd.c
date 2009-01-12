@@ -1222,6 +1222,11 @@ int main(int argc, char **argv, char **envp)
 
 	TimeInit();
 
+	/* Don't use winbindd_reinit_after_fork here as
+	 * we're just starting up and haven't created any
+	 * winbindd-specific resources we must free yet. JRA.
+	 */
+
 	if (!reinit_after_fork(winbind_messaging_context(),
 			       winbind_event_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));

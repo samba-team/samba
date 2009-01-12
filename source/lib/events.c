@@ -63,7 +63,9 @@ static int timed_event_destructor(struct timed_event *te)
 {
 	DEBUG(10, ("Destroying timed event %lx \"%s\"\n", (unsigned long)te,
 		te->event_name));
-	DLIST_REMOVE(te->event_ctx->timed_events, te);
+	if (te->event_ctx) {
+		DLIST_REMOVE(te->event_ctx->timed_events, te);
+	}
 	return 0;
 }
 
@@ -133,7 +135,9 @@ static int fd_event_destructor(struct fd_event *fde)
 {
 	struct event_context *event_ctx = fde->event_ctx;
 
-	DLIST_REMOVE(event_ctx->fd_events, fde);
+	if (event_ctx) {
+		DLIST_REMOVE(event_ctx->fd_events, fde);
+	}
 	return 0;
 }
 
@@ -384,38 +388,6 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 
 	talloc_set_destructor(result, event_context_destructor);
 	return result;
-}
-
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			DLIST_REMOVE(event_ctx->timed_events, te);
-			te->when = when;
-			add_event_by_time(te);
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Returns 1 if event was found and cancelled, 0 otherwise. */
-
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			TALLOC_FREE(te);
-			return 1;
-		}
-	}
-	return 0;
 }
 
 void dump_event_list(struct event_context *event_ctx)

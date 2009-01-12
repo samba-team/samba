@@ -1,206 +1,31 @@
-                   ==============================
-                   Release Notes for Samba 3.2.6
-			 December 10, 2008
-                   ==============================
+                   =============================
+                   Release Notes for Samba 3.2.7
+			 January 05, 2009
+                   =============================
 
 
-This is a bug fix release of the Samba 3.2 series.
+This is a security release in order to address CVE-2009-0022.
 
-Major enhancements included in Samba 3.2.6 are:
+   o CVE-2009-0022
+     In Samba 3.2.0 to 3.2.6, in setups with registry shares enabled,
+     access to the root filesystem ("/") is granted
+     when connecting to a share called "" (empty string)
+     using old versions of smbclient (before 3.0.28).
 
-  o Fix Winbind crash bugs.
-  o Fix moving of readonly files.
-  o Fix "write list" in setups using "security = share".
-  o Fix access to cups-printers with cups 1.3.4.
-  o Fix timeouts in setups with large groups.
-  o Fix several bugs concerning Alternate Data Streams.
-  o Add new SMB traffic analyzer VFS module.
+The original security announcement for this and past advisories can
+be found http://www.samba.org/samba/security/
 
 
 ######################################################################
 Changes
 #######
 
-Changes since 3.2.5
+Changes since 3.2.6
 -------------------
 
 
 o   Michael Adam <obnox@samba.org>
-    * BUG 5677: Fix test_{shlibs,nss_modules,pam_modules} on Solaris.
-    * BUG 5765: Fix installlibs on solaris by using portable "test -r".
-    * Fix potential segfault in vfs_tsmsm.
-    * Don't list the domain twice when expanding internal aliases.
-    * Fix the output of "getent group" when "winbind use default domain = yes"
-      with "security = ads".
-    * Add domain prefix to username in lookup_groupmem().
-    * Prevent negative GM/ cache entries due to broken connections.
-    * Fix crash in sync_eventlog_params().
-    * Fix timeouts when calling 'getgrent'.
-    * Fix smbd hanging on Solaris when winbindd closes socket.
-
-
-o   Jeremy Allison <jra@samba.org>
-    * BUG 1254: Fix "write list" in setups using "security = share".
-    * BUG 5080: Fix access to cups-printers with cups 1.3.4.
-    * BUG 5737: Fix Winbind crash in an unusual failure mode.
-    * BUG 5783: Fix FindFirst where search pattern equals the mangled filename.
-    * BUG 5790: Fix returning of STATUS_OBJECT_NAME_NOT_FOUND on set file
-      disposition.
-    * BUG 5797: Fix moving of readonly files.
-    * BUG 5814: Fix Winbind crash bug while doing "rescan_trusted_domain".
-    * BUG 5818: Sort ACEs in smbcacl output properly and honor inheritance.
-    * BUG 5825: Fix account locking with LDAP backend.
-    * BUG 5826: Fix truncated filenames when accessing old servers.
-    * BUG 5889: Fix "delete veto files = no".
-    * BUG 5891: Fix smbd crash when viewing the eventlog exported by "eventlog
-      list".
-    * BUG 5900: Fix vfs_readonly.
-    * BUG 5903: Fix vfs_streams_xattr breaking contents of files.
-    * BUG 5904: Fix libnss_wins causing SIGABRT while servicing getaddrinfo()
-      request.
-    * BUG 5914: Fix build failure: redefinition of struct name_list.
-    * BUG 5937: Fix filenames with "*" char hiding other files.
-    * BUG 5953: Fix smbclient crashes.
-    * Fix rename_open_files.
-    * Restructure VFS SMB traffic analyzer VFS module.
-    * Correctly fix smbclient to terminate on eof from server.
-    * Unify access checks for lsa server functions.
-    * Remove the requirement for ldap call made as root.
-    * Cope with MAXIMUM_ALLOWED_ACCESS requests when opening handles.
-    * Fix net rpc vampire, based on an *amazing* piece of debugging work by
-      "Cooper S. Blake" <the_analogkid@yahoo.com>.
-    * Fix Coverity IDs 456, 574, 592, 606 and 607.
-    * Fix net rpc vampire.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Use the same prerequisite for DDNS update as Windows XP.
-    * Make "lwinet ads dns register" honor the "interfaces" parameter.
-
-
-o   Steven Danneman <steven.danneman@isilon.com>
-    * Fix extended DN parse error when AD object does not have a SID.
-
-
-o   Guenther Deschner <gd@samba.org>
-    * BUG 5888: Fix PNP_GetHwProfInfo().
-    * BUG 5957: Do not abort rename process on valid rename script.
-    * BUG 5898: Fix 'net rpc shutdown'.
-    * Fix duplicate installation of cifs.upcall.
-    * Fix _srvsvc_NetShareAdd segfault.
-    * Ensure consistency when reporting password complexity.
-    * Fix _lsa_GetUserName.
-    * Fix access check in _samr_QuerySecurity().
-    * _samr_DeleteUser needs to wipe out the user_handle on success.
-    * NetGroupEnum_r needs to handle servers with no groups.
-
-
-o   Mathias Dietz <MDIETZ@de.ibm.com>
-    * Search for gpfs functions in both libgpfs_gpl.so an libgpfs.so.
-
-
-o   Dina Fine <dina@exanet.com>
-    * BUG 5908: Fix internal change notify on shared directory.
-
-
-o   Nils Goroll <nils.goroll@hamburg.de>
-    * BUG 5135 and 5446: Prevent calling POSIX ACL vfs methods on zfs share.
-
-
-o   Henning Henkel <henning.henkel@fh-furtwangen.de>
-    * BUG 5929: Fix building of vfs_prealloc with option --with-cluster-support
-      and GPFS.
-
-
-o   Holger Hetterich <hhetter@novell.com>
-    * Add new VFS module to analyze SMB traffic
-
-
-o   Tomasz Krasuski <kr0tki@poczta.onet.pl>
-    * BUG 5928: Fix 'testparm --version'.
-
-
-o   Jeff Layton <jlayton@redhat.com>
-    * Have uppercase_string return success on NULL pointer in mount.cifs.
-    * Make mount.cifs return codes match the return codes for /bin/mount.
-    * Use lock/unlock_mtab scheme from util-linux-ng mount prog in mount.cifs.
-
-
-o   Volker Lendecke <vl@samba.org>
-    * BUG 5691: Fig smbd panic on Solaris.
-    * BUG 5778: Check if strlcpy and strlcat are already defined.
-    * BUG 5840: Fix segfault in "rpcclient lsaaddacctrights".
-    * BUG 5860: Fix nasty error message for overlong strings in safe_strcpy.
-    * Fix a potential NULL deref in found by the IBM Checker.
-    * Fix an uninitialized variable found by the IBM Checker.
-    * Fix an unlikely memleak found by the IBM Checker.
-    * Fix some missing error handlings.
-    * Add workaround for domain joins using a netbios name which is different
-      from the hostname.
-    * Fix crash bug when freeing a non-malloc'ed buffer if the client sends a
-      non-encrypted packet with the crypto state set.
-    * Fix trans2findfirst for the large directory optimization.
-    * Fix checking for presence of cups-devel and correct cups-devel test for
-      HAVE_IPRINT.
-
-
-o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
-    * BUG 5805: Don't close stdout when calling setup_logging multiple times.
-
-
-o   Stefan Metzmacher <metze@samba.org>
-    * Fix setting of trust password using 'net rpc trustdom add'.
-    * Fix several issues in vfs_streams_xattr and vfs_stream_depot.
-    * Return an error instead of crashing when no realm is given (trigerred by
-      "net ads info -S 127.8.7.6" (where 127.8.7.6 doesn't exist)
-      and "disable netbios = yes").
-
-
-o   Jim McDonough <jmcd@samba.org>
-    * Fix the new vfs_smb_traffic_analyzer build for static links.
-
-
-o   TAKAHASHI Motonobu <monyo@samba.gr.jp>
-    * BUG 5901: Fix default for streams_depot location.
-
-
-o   Tim Prouty <tim.prouty@isilon.com>
-    * Fix several build warnings.
-
-
-o   Andreas Schneider <mail@cynapses.org>
-    * Delete the krb5 ccname variable from the PAM environment if set.
-    * Fix circular dependency error with autoconf 2.6.3.
-
-
-o   Martin Schwenke <martin@meltin.net>
-    * Add @CIFSUPCALL_PROGS@ to "all" target so cifs.upcall gets built at
-      compile time rather than install time.
-
-
-o   Davide Sfriso <sfriso@virgilio.it>
-    * BUG 5906: Fix Winbind crash when calling 'getent group'.
-
-
-o   Dan Sledz <dsledz@isilon.com>
-    * Add FreeBSD configure check for backtrace_symbols.
-    * Fix logging to syslog.
-    * Allow SYSLOG_FACILITY to be modified with a new configure option called
-      --with-syslog-facility.
-
-
-o   Yasuma Takeda <yasuma@osstech.co.jp>
-    * BUG 5909: Fix MS-DFS on Vista clients.
-    * BUG 5944: Fix starting of nmbd with "socket address" set to "".
-
-
-o   Andrew Tridgell <tridge@samba.org>
-    * Fix segfault on startup with trusted domains.
-    * Re-add "winbind:ignore domains" parameter.
-
-
-o   Jelmer Vernooij <jelmer@samba.org>
-    * Avoid freeing fsp twice when opening new_file fails (Debian #431696).
+    * Fix for CVE-2009-0022.
 
 
 ######################################################################

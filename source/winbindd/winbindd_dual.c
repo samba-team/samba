@@ -880,6 +880,7 @@ static void child_msg_offline(struct messaging_context *msg,
 			      DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)data->data;
 
 	if (data->data == NULL || data->length == 0) {
@@ -893,6 +894,8 @@ static void child_msg_offline(struct messaging_context *msg,
 		return;
 	}
 
+	primary_domain = find_our_domain();
+
 	/* Mark the requested domain offline. */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
@@ -902,6 +905,11 @@ static void child_msg_offline(struct messaging_context *msg,
 		if (strequal(domain->name, domainname)) {
 			DEBUG(5,("child_msg_offline: marking %s offline.\n", domain->name));
 			set_domain_offline(domain);
+			/* we are in the trusted domain, set the primary domain 
+			 * offline too */
+			if (domain != primary_domain) {
+				set_domain_offline(primary_domain);
+			}
 		}
 	}
 }
@@ -915,6 +923,7 @@ static void child_msg_online(struct messaging_context *msg,
 			     DATA_BLOB *data)
 {
 	struct winbindd_domain *domain;
+	struct winbindd_domain *primary_domain = NULL;
 	const char *domainname = (const char *)data->data;
 
 	if (data->data == NULL || data->length == 0) {
@@ -927,6 +936,8 @@ static void child_msg_online(struct messaging_context *msg,
 		DEBUG(10,("child_msg_online: rejecting online message.\n"));
 		return;
 	}
+
+	primary_domain = find_our_domain();
 
 	/* Set our global state as online. */
 	set_global_winbindd_state_online();
@@ -942,6 +953,16 @@ static void child_msg_online(struct messaging_context *msg,
 			DEBUG(5,("child_msg_online: requesting %s to go online.\n", domain->name));
 			winbindd_flush_negative_conn_cache(domain);
 			set_domain_online_request(domain);
+
+			/* we can be in trusted domain, which will contact primary domain
+			 * we have to bring primary domain online in trusted domain process
+			 * see, winbindd_dual_pam_auth() --> winbindd_dual_pam_auth_samlogon()
+			 * --> contact_domain = find_our_domain()
+			 * */
+			if (domain != primary_domain) {
+				winbindd_flush_negative_conn_cache(primary_domain);
+				set_domain_online_request(primary_domain);
+			}
 		}
 	}
 }
@@ -1019,12 +1040,76 @@ static void child_msg_dump_event_list(struct messaging_context *msg,
 	dump_event_list(winbind_event_context());
 }
 
+void ccache_remove_all_after_fork(void);
+
+bool winbindd_reinit_after_fork(const char *logfilename)
+{
+	struct winbindd_domain *domain;
+	struct winbindd_child *cl;
+
+	if (!reinit_after_fork(winbind_messaging_context(),
+			       winbind_event_context(), true)) {
+		DEBUG(0,("reinit_after_fork() failed\n"));
+		return false;
+	}
+
+	close_conns_after_fork();
+
+	if (!override_logfile && logfilename) {
+		lp_set_logfile(logfilename);
+		reopen_logs();
+	}
+
+	/* Don't handle the same messages as our parent. */
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SMB_CONF_UPDATED, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_SHUTDOWN, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_OFFLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINE, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_ONLINESTATUS, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DUMP_EVENT_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_DEBUG, NULL);
+
+	/* We have destroyed all events in the winbindd_event_context
+	 * in reinit_after_fork(), so clean out all possible pending
+	 * event pointers. */
+
+	/* Deal with check_online_events. */
+
+	for (domain = domain_list(); domain; domain = domain->next) {
+		TALLOC_FREE(domain->check_online_event);
+	}
+
+	/* Ensure we're not handling a credential cache event inherited
+	 * from our parent. */
+
+	ccache_remove_all_after_fork();
+
+	/* Destroy all possible events in child list. */
+	for (cl = children; cl != NULL; cl = cl->next) {
+		struct winbindd_async_request *request;
+
+		for (request = cl->requests; request; request = request->next) {
+			TALLOC_FREE(request->reply_timeout_event);
+		}
+		TALLOC_FREE(cl->lockout_policy_event);
+        }
+
+	return true;
+}
 
 static bool fork_domain_child(struct winbindd_child *child)
 {
 	int fdpair[2];
 	struct winbindd_cli_state state;
-	struct winbindd_domain *domain;
 	struct winbindd_domain *primary_domain = NULL;
 
 	if (child->domain) {
@@ -1057,7 +1142,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		DLIST_ADD(children, child);
 		child->event.fd = fdpair[1];
 		child->event.flags = 0;
-		child->requests = NULL;
 		add_fd_event(&child->event);
 		return True;
 	}
@@ -1070,65 +1154,27 @@ static bool fork_domain_child(struct winbindd_child *child)
 	state.sock = fdpair[0];
 	close(fdpair[1]);
 
-	if (!reinit_after_fork(winbind_messaging_context(),
-			       winbind_event_context(), true)) {
-		DEBUG(0,("reinit_after_fork() failed\n"));
-		_exit(0);
-	}
-
-	close_conns_after_fork();
-
-	if (!override_logfile) {
-		lp_set_logfile(child->logfilename);
-		reopen_logs();
-	}
-
-	/*
-	 * For clustering, we need to re-init our ctdbd connection after the
-	 * fork
-	 */
-	if (!NT_STATUS_IS_OK(messaging_reinit(winbind_messaging_context())))
-		exit(1);
-
-	/* Don't handle the same messages as our parent. */
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_SMB_CONF_UPDATED, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_SHUTDOWN, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_OFFLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_ONLINE, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_ONLINESTATUS, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_DUMP_EVENT_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
-	messaging_deregister(winbind_messaging_context(),
-			     MSG_DEBUG, NULL);
-
-	/* Handle online/offline messages. */
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_OFFLINE, child_msg_offline);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINE, child_msg_online);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
-	messaging_register(winbind_messaging_context(), NULL,
-			   MSG_DEBUG, debug_message);
-
+ 	if (!winbindd_reinit_after_fork(child->logfilename)) {
+		DEBUG(0, ("winbindd_reinit_after_fork failed.\n"));
+ 		_exit(0);
+ 	}
+ 
+ 	/* Handle online/offline messages. */
+ 	messaging_register(winbind_messaging_context(), NULL,
+ 			   MSG_WINBIND_OFFLINE, child_msg_offline);
+ 	messaging_register(winbind_messaging_context(), NULL,
+ 			   MSG_WINBIND_ONLINE, child_msg_online);
+ 	messaging_register(winbind_messaging_context(), NULL,
+ 			   MSG_WINBIND_ONLINESTATUS, child_msg_onlinestatus);
+ 	messaging_register(winbind_messaging_context(), NULL,
+ 			   MSG_DUMP_EVENT_LIST, child_msg_dump_event_list);
+ 	messaging_register(winbind_messaging_context(), NULL,
+ 			   MSG_DEBUG, debug_message);
+	
 	primary_domain = find_our_domain();
 
 	if (primary_domain == NULL) {
 		smb_panic("no primary domain found");
-	}
-	/* we have destroy all time event in reinit_after_fork()
-	 * set check_online_event to NULL */
-	for (domain = domain_list(); domain; domain = domain->next) {
-		domain->check_online_event = NULL;
 	}
 
 	/* It doesn't matter if we allow cache login,
@@ -1148,12 +1194,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 			}
 		}
 	}
-
-	/* Ensure we're not handling an event inherited from
-	   our parent. */
-
-	cancel_named_event(winbind_event_context(),
-			   "krb5_ticket_refresh_handler");
 
 	/* We might be in the idmap child...*/
 	if (child->domain && !(child->domain->internal) &&

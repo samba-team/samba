@@ -547,6 +547,12 @@ bool convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		return false;
 	}
 	if (srclen == 0) {
+		ob = ((ctx != NULL) ? talloc_strdup(ctx, "") : SMB_STRDUP(""));
+		if (ob == NULL) {
+			errno = ENOMEM;
+			return false;
+		}
+		*dest = ob;
 		*converted_size = 0;
 		return true;
 	}
