@@ -86,6 +86,11 @@ bool run_events(struct tevent_context *ev,
 	bool fired = false;
 	struct tevent_fd *fde, *next;
 
+	if (ev->signal_events &&
+	    tevent_common_check_signal(ev)) {
+		return true;
+	}
+
 	/* Run all events that are pending, not just one (as we
 	   did previously. */
 
@@ -262,6 +267,7 @@ static const struct tevent_ops s3_event_ops = {
 	.get_fd_flags	= tevent_common_fd_get_flags,
 	.set_fd_flags	= tevent_common_fd_set_flags,
 	.add_timer	= tevent_common_add_timer,
+	.add_signal	= tevent_common_add_signal,
 	.loop_once	= s3_event_loop_once,
 	.loop_wait	= s3_event_loop_wait,
 };
