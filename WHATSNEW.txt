@@ -1,4 +1,159 @@
                    ==============================
+                   Release Notes for Samba 3.0.34
+                         January, 20 2009
+                   ==============================
+
+
+This is a bug fix release of the Samba 3.0 series.
+
+Major enhancements included in Samba 3.0.34 are:
+
+  o Fix update of machine account passwords.
+  o Fix SMB signing issue on Windows Vista with MS Hotfix KB955302.
+  o Fix Winbind crashes.
+  o Correctly detect if the current dc is the closest one.
+  o Add saf_join_store() function to memorize the dc used at join time.
+    This avoids problems caused by replication delays shortly after domain
+    joins.
+  o Fix write list in setups using "security = share".
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.33
+--------------------
+
+
+o   Michael Adam <obnox@samba.org>
+    * Fix linking cifs.upcall when nscd_flush_cache() is found.
+    * Fix smbd hanging on Solaris when winbindd closes socket.
+    * Use the reconnect methods instead of the rpc methods directly.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 1254: Fix write list in setups using "security = share".
+    * BUG 5052: Not work cancel inheritance on share.
+    * BUG 5729: Explicitly allow "-valid" parameter.
+    * BUG 5737: Fix Winbind crash in an unusual failure mode.
+    * BUG 5750: Fix SMB signing issue on Windows Vista with MS Hotfix KB955302.
+    * BUG 5751: Backport to fix showing of ACLson DFS with smbclient.
+    * BUG 5790: Fix returning STATUS_OBJECT_NAME_NOT_FOUND on set file
+      disposition call.
+    * BUG 5814: Fix core dump of Winbind while doing "rescan_trusted_domain".
+    * BUG 5873: Fix ACL inheritance.
+    * BUG 5914: Fix build failure (redefinition of struct name_list).
+    * BUG 5937: Fix filenames with "*" char hiding other files.
+    * Remove unecessary msync.
+    * Rename cifs.spnego to cifs.upcall.
+    * Fix segfault when execution cifs.upcall without any arguments.
+    * Ensure we emit the notify message before renaming the open files.
+    * Fix use of DLIST_REMOVE.
+    * Cope with bad trans2mkdir requests from System in QNTC IBM SMB client.
+    * Fix memory leak in error path.
+    * Fix logic bug introduce in backport of ccache_regain_all_now.
+
+
+o   Kai Blin <kai@samba.org>
+    * Reformat the WBFLAGS defines to prepare for adding a new flag.
+    * Put huge NTLMv2 blobs into extra_data on CRAP auth.
+
+
+o   Günther Deschner <gd@samba.org>
+    * BUG 5710: Fix update of machine account passwords.
+    * Define NET_SRVPWSET2 call.
+    * Net should just use machine account creds when changing passwords.
+    * Fix net_io_q_srv_pwset2.
+
+
+o   Carsten Dumke <carsten@cdumke.de>
+    * BUG 5892: Fix documentation of net rap printq info.
+
+
+o   Dina Fine <dina@exanet.com>
+    * BUG 5908: Fix failing of internal change notify on share directory.
+
+
+o   Steve French <stevef@smf-t60p.smfdom>
+    * Fix compile warning in cifs.upcall.
+    * Fix cifs.upcall manpage and comments.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Build cifs.upcall by default on Linux.
+    * Fix negatively instantiate keys on error in cifs.upcall.
+    * Handle handle MSKRB5 OID properly in cifs.upcall.
+    * Bump SPNEGO msg version number and don't reject old versions in
+      cifs.upcall.
+    * Fix several problems when mounting subdirectories of shares in
+      mount.cifs.
+    * Don't prompt for password on krb5 mounts in mount.cifs.
+    * Have uppercase_string return success on NULL pointer in mount.cifs.
+    * Make return codes match the return codes for /bin/mount in mount.cifs.
+    * Use lock/unlock_mtab scheme from util-linux-ng mount prog.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * BUG 5965: Fix creation of the first share using SWAT.
+    * Fix bug triggered by the RAW-SAMBA3OPLOCKLOGOFF test.
+
+
+o   David Leonard <David.Leonard@quest.com>
+    * BUG 4516: No IPv6 on Solaris 2.6.
+
+
+o   Igor Mammedov <niallain@gmail.com>
+    * Add support for cifs.spnego helper into configure and Makefile.in.
+    * Add checks for spnego prereq keyutils.h and kerberos in configure.in.
+    * Add helper source for handling cifs kernel module upcall for kerberos
+      authorization.
+    * Add -c option to set service prefix to "cifs" in service principal by
+      default service prefix "host" is used.
+    * Add support for cifs.resolver upcall.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Correctly detect if the current dc is the closest one.
+    * For CLDAP we need to use get_sorted_dc_list() to avoid recursion.
+    * Add fallback to return all dcs, when none is available in the requested
+      site.
+    * Add saf_join_store() function to memorize the dc used at join time.
+    * Return an error instead of crashing when no realm is given.
+
+
+o   Andreas Schneider <mail@cynapses.org>
+    * Delete the krb5 ccname variable from the PAM environment if set.
+    * Fix the build of pam_winbind.
+    * Fix circular dependency error with autoconf 2.6.3.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Fix an ifdef check.
+    * Fix warning.
+
+
+o   Yasuma Takeda <yasuma@osstech.co.jp>
+    * BUG 5909: Fix MS-DFS links inlcuding multibyte characters on Vista.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Avoid a race condition in glibc between AIO and setresuid().
+    * Become root for AIO operations.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Don't set child->requests to NULL in parent after fork.
+
+
+o   Qiao Yang <geoyang@ironport.com>
+    * Fix a memleak.
+
+
+
+Release notes for older releases follow:
+      --------------------------------------------------
+                   ==============================
                    Release Notes for Samba 3.0.33
                          November, 27 2008
                    ==============================
@@ -26,10 +181,6 @@ Changes since 3.0.32
 o   Volker Lendecke <vl@samba.org>
     * Fix for CVE-2008-4314.
 
-
-
-
-Release notes for older releases follow:
 
       --------------------------------------------------
                    ===============================
