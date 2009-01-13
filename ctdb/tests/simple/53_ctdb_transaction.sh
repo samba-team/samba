@@ -33,7 +33,7 @@ onnode 0 $CTDB_TEST_WRAPPER cluster_is_healthy
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
-t="$VALGRIND ctdb_transaction --timelimit=30"
+t="$CTDB_TEST_WRAPPER $VALGRIND ctdb_transaction --timelimit=30"
 
 echo "Running ctdb_transaction on all $num_nodes nodes."
 try_command_on_node -v -pq all "$t & $t"

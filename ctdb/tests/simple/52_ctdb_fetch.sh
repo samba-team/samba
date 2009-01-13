@@ -38,7 +38,7 @@ try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)
 
 echo "Running ctdb_fetch on all $num_nodes nodes."
-try_command_on_node -v -pq all $VALGRIND ctdb_fetch -n $num_nodes
+try_command_on_node -v -pq all $CTDB_TEST_WRAPPER $VALGRIND ctdb_fetch -n $num_nodes
 
 # Get the last line of output.
 while read line ; do
