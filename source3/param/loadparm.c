@@ -3493,7 +3493,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.bShareModes,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED,
 	},
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR},
