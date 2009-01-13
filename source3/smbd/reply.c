@@ -3179,9 +3179,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
-			/* Returning ENOSYS or EINVAL means no data at all was sent. 
+			/* Returning ENOSYS means no data at all was sent.
 			   Do this as a normal read. */
-			if (errno == ENOSYS || errno == EINVAL) {
+			if (errno == ENOSYS) {
 				goto normal_read;
 			}
 
