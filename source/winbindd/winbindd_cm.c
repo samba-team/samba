@@ -203,7 +203,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	if (!override_logfile) {
 		if (asprintf(&lfile, "%s/log.winbindd-dc-connect", get_dyn_LOGFILEBASE()) == -1) {
 			DEBUG(0, ("fork_child_dc_connect: out of memory!\n"));
-			return false;
+			_exit(1);
 		}
 	}
 
@@ -214,7 +214,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 				   MSG_WINBIND_FAILED_TO_GO_ONLINE,
 				   (uint8 *)domain->name,
 				   strlen(domain->name) + 1);
-		_exit(0);
+		_exit(1);
 	}
 
 	SAFE_FREE(lfile);
@@ -222,7 +222,7 @@ static bool fork_child_dc_connect(struct winbindd_domain *domain)
 	mem_ctx = talloc_init("fork_child_dc_connect");
 	if (!mem_ctx) {
 		DEBUG(0,("talloc_init failed.\n"));
-		_exit(0);
+		_exit(1);
 	}
 
 	if ((!get_dcs(mem_ctx, domain, &dcs, &num_dcs)) || (num_dcs == 0)) {
