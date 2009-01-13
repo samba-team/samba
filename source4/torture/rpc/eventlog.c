@@ -107,7 +107,12 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	ZERO_STRUCT(r);
 	r.in.offset = 0;
 	r.in.handle = &handle;
-	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
+	r.in.flags = 0;
+
+	status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
+
+	torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_INVALID_PARAMETER,
+			"ReadEventLog failed");
 
 	while (1) {
 		DATA_BLOB blob;
@@ -120,6 +125,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		/* Read first for number of bytes in record */
 
 		r.in.number_of_bytes = 0;
+		r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
 		r.out.data = NULL;
 		r.out.sent_size = &sent_size;
 		r.out.real_size = &real_size;
