@@ -78,8 +78,12 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 			}
 			return -1;
 		}
-		if (nwritten == 0)
-			return -1; /* I think we're at EOF here... */
+		if (nwritten == 0) {
+			/*
+			 * EOF, return a short read
+			 */
+			return hdr_len + (count - total);
+		}
 		total -= nwritten;
 	}
 	return count + hdr_len;
@@ -156,8 +160,12 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 			}
 			return -1;
 		}
-		if (nwritten == 0)
-			return -1; /* I think we're at EOF here... */
+		if (nwritten == 0) {
+			/*
+			 * EOF, return a short read
+			 */
+			return hdr_len + (((uint32)count) - small_total);
+		}
 		small_total -= nwritten;
 	}
 	return count + hdr_len;

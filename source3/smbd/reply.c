@@ -2654,6 +2654,63 @@ static ssize_t fake_sendfile(files_struct *fsp, SMB_OFF_T startpos,
 }
 
 /****************************************************************************
+ Deal with the case of sendfile reading less bytes from the file than
+ requested. Fill with zeros (all we can do).
+****************************************************************************/
+
+static void sendfile_short_send(files_struct *fsp,
+				ssize_t nread,
+				size_t headersize,
+				size_t smb_maxcnt)
+{
+	if (nread < headersize) {
+		DEBUG(0,("sendfile_short_send: sendfile failed to send "
+			"header for file %s (%s). Terminating\n",
+			fsp->fsp_name, strerror(errno) ));
+		exit_server_cleanly("sendfile_short_send failed");
+	}
+
+	nread -= headersize;
+
+	if (nread < smb_maxcnt) {
+		char *buf = SMB_CALLOC_ARRAY(char, 1024);
+		if (!buf) {
+			exit_server_cleanly("sendfile_short_send: "
+				"malloc failed");
+		}
+
+		DEBUG(0,("sendfile_short_send: filling truncated file %s "
+			"with zeros !\n", fsp->fsp_name));
+
+		while (nread < smb_maxcnt) {
+			/*
+			 * We asked for the real file size and told sendfile
+			 * to not go beyond the end of the file. But it can
+			 * happen that in between our fstat call and the
+			 * sendfile call the file was truncated. This is very
+			 * bad because we have already announced the larger
+			 * number of bytes to the client.
+			 *
+			 * The best we can do now is to send 0-bytes, just as
+			 * a read from a hole in a sparse file would do.
+			 *
+			 * This should happen rarely enough that I don't care
+			 * about efficiency here :-)
+			 */
+			size_t to_write;
+
+			to_write = MIN(sizeof(buf), smb_maxcnt - nread);
+			if (write_data(smbd_server_fd(), buf, to_write) != to_write) {
+				exit_server_cleanly("sendfile_short_send: "
+					"write_data failed");
+			}
+			nread += to_write;
+		}
+		SAFE_FREE(buf);
+	}
+}
+
+/****************************************************************************
  Return a readbraw error (4 bytes of zero).
 ****************************************************************************/
 
@@ -2689,14 +2746,15 @@ void send_file_readbraw(connection_struct *conn,
 
 	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
+		ssize_t sendfile_read = -1;
 		char header[4];
 		DATA_BLOB header_blob;
 
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if (SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
-				&header_blob, startpos, nread) == -1) {
+		if ((sendfile_read = SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
+				&header_blob, startpos, nread)) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
 			if (errno == ENOSYS) {
@@ -2726,6 +2784,8 @@ void send_file_readbraw(connection_struct *conn,
 			exit_server_cleanly("send_file_readbraw sendfile failed");
 		}
 
+		/* Deal with possible short send. */
+		sendfile_short_send(fsp, sendfile_read, 4, nread);
 		return;
 	}
 #endif
@@ -3216,6 +3276,10 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
+
+		/* Deal with possible short send. */
+		sendfile_short_send(fsp, nread, sizeof(headerbuf), smb_maxcnt);
+
 		/* No outbuf here means successful sendfile. */
 		TALLOC_FREE(req->outbuf);
 		return;
