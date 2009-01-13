@@ -223,10 +223,34 @@ static NTSTATUS rpc_read_np(struct cli_state *cli, const char *pipe_name,
        return NT_STATUS_OK;
 }
 
+/*
+ * Realloc pdu to have a least "size" bytes
+ */
+
+static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
+{
+	size_t extra_size;
+
+	if (prs_data_size(pdu) >= size) {
+		return true;
+	}
+
+	extra_size = size - prs_data_size(pdu);
+
+	if (!prs_force_grow(pdu, extra_size)) {
+		DEBUG(0, ("rpc_grow_buffer: Failed to grow parse struct by "
+			  "%d bytes.\n", (int)extra_size));
+		return false;
+	}
+
+	DEBUG(5, ("rpc_grow_buffer: grew buffer by %d bytes to %u\n",
+		  (int)extra_size, prs_data_size(pdu)));
+	return true;
+}
+
 
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
- Will expand the current_pdu struct to the correct size.
  ********************************************************************/
 
 static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
@@ -238,22 +262,10 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 	uint32 stream_offset = 0;
 	ssize_t num_read = 0;
 	char *pdata;
-	ssize_t extra_data_size = ((ssize_t)*current_pdu_offset) + ((ssize_t)data_to_read) - (ssize_t)prs_data_size(current_pdu);
 
-	DEBUG(5,("rpc_read: data_to_read: %u current_pdu offset: %u extra_data_size: %d\n",
-		(unsigned int)data_to_read, (unsigned int)*current_pdu_offset, (int)extra_data_size ));
-
-	/*
-	 * Grow the buffer if needed to accommodate the data to be read.
-	 */
-
-	if (extra_data_size > 0) {
-		if(!prs_force_grow(current_pdu, (uint32)extra_data_size)) {
-			DEBUG(0,("rpc_read: Failed to grow parse struct by %d bytes.\n", (int)extra_data_size ));
-			return NT_STATUS_NO_MEMORY;
-		}
-		DEBUG(5,("rpc_read: grew buffer by %d bytes to %u\n", (int)extra_data_size, prs_data_size(current_pdu) ));
-	}
+	DEBUG(5, ("rpc_read: data_to_read: %u current_pdu offset: %d\n",
+		  (unsigned int)data_to_read,
+		  (unsigned int)*current_pdu_offset));
 
 	pdata = prs_data_p(current_pdu) + *current_pdu_offset;
 
@@ -315,7 +327,9 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	/* Ensure we have at least RPC_HEADER_LEN worth of data to parse. */
 	if (current_pdu_len < RPC_HEADER_LEN) {
-		/* rpc_read expands the current_pdu struct as neccessary. */
+		if (!rpc_grow_buffer(current_pdu, RPC_HEADER_LEN)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		ret = rpc_read(cli, current_pdu, RPC_HEADER_LEN - current_pdu_len, &current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
@@ -331,7 +345,9 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 
 	/* Ensure we have frag_len bytes of data. */
 	if (current_pdu_len < prhdr->frag_len) {
-		/* rpc_read expands the current_pdu struct as neccessary. */
+		if (!rpc_grow_buffer(current_pdu, prhdr->frag_len)) {
+			return NT_STATUS_NO_MEMORY;
+		}
 		ret = rpc_read(cli, current_pdu, (uint32)prhdr->frag_len - current_pdu_len, &current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
