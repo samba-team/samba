@@ -176,15 +176,15 @@ static uint32 get_rpc_call_id(void)
  Read from a RPC named pipe
  ********************************************************************/
 static NTSTATUS rpc_read_np(struct cli_state *cli, const char *pipe_name,
-			    int fnum, char *buf, off_t offset, size_t size,
+			    int fnum, char *buf, size_t size,
 			    ssize_t *pnum_read)
 {
        ssize_t num_read;
 
-       num_read = cli_read(cli, fnum, buf, offset, size);
+       num_read = cli_read(cli, fnum, buf, 0, size);
 
-       DEBUG(5,("rpc_read_np: num_read = %d, read offset: %u, to read: %u\n",
-		(int)num_read, (unsigned int)offset, (unsigned int)size));
+       DEBUG(5,("rpc_read_np: num_read = %d, to read: %u\n", (int)num_read,
+		(unsigned int)size));
 
        /*
 	* A dos error of ERRDOS/ERRmoredata is not an error.
@@ -270,8 +270,7 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			status = rpc_read_np(cli->trans.np.cli,
 					     cli->trans.np.pipe_name,
 					     cli->trans.np.fnum, pdata,
-					     (off_t)stream_offset, size,
-					     &num_read);
+					     size, &num_read);
 			break;
 		case NCACN_IP_TCP:
 		case NCACN_UNIX_STREAM:
