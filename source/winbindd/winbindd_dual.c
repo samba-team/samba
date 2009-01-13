@@ -1277,7 +1277,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 			DEBUG(0,("select error occured\n"));
 			TALLOC_FREE(frame);
 			perror("select");
-			return False;
+			_exit(1);
 		}
 
 		/* fetch a request from the main daemon */
@@ -1285,7 +1285,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 
 		if (state.finished) {
 			/* we lost contact with our parent */
-			exit(0);
+			_exit(0);
 		}
 
 		DEBUG(4,("child daemon request %d\n", (int)state.request.cmd));
