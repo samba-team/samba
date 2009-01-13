@@ -13,13 +13,26 @@
 #define EVENTLOG_FORWARDS_READ ( 0x0004 )
 #define EVENTLOG_BACKWARDS_READ ( 0x0008 )
 
-/* bitmap eventlogEventTypes */
+enum eventlogEventTypes
+#ifndef USE_UINT_ENUMS
+ {
+	EVENTLOG_SUCCESS=0x0000,
+	EVENTLOG_ERROR_TYPE=0x0001,
+	EVENTLOG_WARNING_TYPE=0x0002,
+	EVENTLOG_INFORMATION_TYPE=0x0004,
+	EVENTLOG_AUDIT_SUCCESS=0x0008,
+	EVENTLOG_AUDIT_FAILURE=0x0010
+}
+#else
+ { __donnot_use_enum_eventlogEventTypes=0x7FFFFFFF}
 #define EVENTLOG_SUCCESS ( 0x0000 )
 #define EVENTLOG_ERROR_TYPE ( 0x0001 )
 #define EVENTLOG_WARNING_TYPE ( 0x0002 )
 #define EVENTLOG_INFORMATION_TYPE ( 0x0004 )
 #define EVENTLOG_AUDIT_SUCCESS ( 0x0008 )
 #define EVENTLOG_AUDIT_FAILURE ( 0x0010 )
+#endif
+;
 
 struct eventlog_OpenUnknown0 {
 	uint16_t unknown0;
@@ -28,13 +41,13 @@ struct eventlog_OpenUnknown0 {
 
 struct eventlog_Record {
 	uint32_t size;
-	uint32_t reserved;/* [value(0x654c664C)] */
+	const char *reserved;/* [value("eLfL"),charset(DOS)] */
 	uint32_t record_number;
 	time_t time_generated;
 	time_t time_written;
 	uint32_t event_id;
-	uint16_t event_type;
-	uint16_t num_of_strings;
+	enum eventlogEventTypes event_type;
+	uint16_t num_of_strings;/* [range(0,256)] */
 	uint16_t event_category;
 	uint16_t reserved_flags;
 	uint32_t closing_record_number;
@@ -50,7 +63,7 @@ struct eventlog_Record {
 	const char * raw_data;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
 	DATA_BLOB _padding;/* [flag(LIBNDR_FLAG_ALIGN4)] */
 	uint32_t size2;/* [value(size)] */
-}/* [public] */;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
 
 struct eventlog_ClearEventLogW {
