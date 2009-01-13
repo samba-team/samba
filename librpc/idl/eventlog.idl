@@ -18,7 +18,7 @@ import "lsa.idl", "security.idl";
 		EVENTLOG_BACKWARDS_READ  = 0x0008
 	} eventlogReadFlags;
 
-	typedef bitmap {
+	typedef [public] enum {
 		EVENTLOG_SUCCESS          = 0x0000,
 		EVENTLOG_ERROR_TYPE       = 0x0001,
 		EVENTLOG_WARNING_TYPE     = 0x0002,
@@ -32,15 +32,15 @@ import "lsa.idl", "security.idl";
 		uint16 unknown1;
 	} eventlog_OpenUnknown0;
 	
-	typedef [public] struct { 
+	typedef [flag(NDR_NOALIGN),public] struct {
 		uint32 size;
-		[value(0x654c664C)] uint32 reserved; /* "eLfL" */
+		[charset(DOS),value("eLfL")] uint8 reserved[4];
 		uint32 record_number;
 		time_t time_generated;
 		time_t time_written;
 		uint32 event_id;
-		uint16 event_type;
-		uint16 num_of_strings;
+		eventlogEventTypes event_type;
+		[range(0,256)] uint16 num_of_strings;
 		uint16 event_category;
 		uint16 reserved_flags;
 		uint32 closing_record_number;
