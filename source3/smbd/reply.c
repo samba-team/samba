@@ -2785,7 +2785,9 @@ void send_file_readbraw(connection_struct *conn,
 		}
 
 		/* Deal with possible short send. */
-		sendfile_short_send(fsp, sendfile_read, 4, nread);
+		if (sendfile_read != 4+nread) {
+			sendfile_short_send(fsp, sendfile_read, 4, nread);
+		}
 		return;
 	}
 #endif
@@ -3278,7 +3280,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 
 		/* Deal with possible short send. */
-		sendfile_short_send(fsp, nread, sizeof(headerbuf), smb_maxcnt);
+		if (nread != smb_maxcnt + sizeof(headerbuf)) {
+			sendfile_short_send(fsp, nread, sizeof(headerbuf), smb_maxcnt);
+		}
 
 		/* No outbuf here means successful sendfile. */
 		TALLOC_FREE(req->outbuf);
