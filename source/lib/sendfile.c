@@ -66,7 +66,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 #endif
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1) {
-			if (errno == ENOSYS) {
+			if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
 				 * the header, but the sendfile failed. We have to
 				 * emulate the sendfile at an upper layer before we
@@ -144,7 +144,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 			nwritten = sendfile(tofd, fromfd, &small_offset, small_total);
 		} while (nwritten == -1 && errno == EINTR);
 		if (nwritten == -1) {
-			if (errno == ENOSYS) {
+			if (errno == ENOSYS || errno == EINVAL) {
 				/* Ok - we're in a world of pain here. We just sent
 				 * the header, but the sendfile failed. We have to
 				 * emulate the sendfile at an upper layer before we
