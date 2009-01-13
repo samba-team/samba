@@ -202,7 +202,10 @@ CEOF
 for ac_var in $ac_subst_vars
 do
     eval ac_val=\$$ac_var
-	echo "$ac_var => '$ac_val'," >> $1
+	if test "$ac_var" != "ECHO_C" 
+	then
+		echo "$ac_var => '$ac_val'," >> $1
+	fi
 done
 
 cat >>$1<<CEOF
