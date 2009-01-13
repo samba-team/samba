@@ -34,12 +34,10 @@ Parse::Pidl::Test - Utility functions for use in pidl's testsuite
 
 -- Samba NDR --
 Parse::Pidl::Samba4::NDR::Client - Generates client call functions in C using the NDR parser
-Parse::Pidl::Samba4::SWIG - Generates SWIG interface files (.i)
 Parse::Pidl::Samba4::NDR::Parser - Generates pull/push functions for parsing NDR
 Parse::Pidl::Samba4::NDR::Server - Generates server side implementation in C
 Parse::Pidl::Samba4::TDR - Parser generator for the "Trivial Data Representation"
 Parse::Pidl::Samba4::Template - Generates stubs in C for server implementation
-Parse::Pidl::Samba4::EJS - Generates bindings for Embedded JavaScript (EJS)
 Parse::Pidl::Samba4::Python - Generates bindings for Python
 
 -- Samba COM / DCOM --
