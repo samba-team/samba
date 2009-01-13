@@ -22,7 +22,6 @@
 
 #include "ctdb.h"
 #include <sys/socket.h>
-#include <netinet/in.h>
 
 /* location of daemon socket */
 #define CTDB_PATH	"/tmp/ctdb.socket"
@@ -45,17 +44,6 @@ struct rd_memdump_reply {
 	uint32_t pnn;
 	uint64_t srvid;
 };
-
-/*
-  definitions for different socket structures
- */
-typedef struct sockaddr_in ctdb_addr_in;
-typedef struct sockaddr_in6 ctdb_addr_in6;
-typedef union {
-	struct sockaddr sa;
-	ctdb_addr_in	ip;
-	ctdb_addr_in6	ip6;
-} ctdb_sock_addr;
 
 /*
   a tcp connection description
@@ -571,15 +559,6 @@ struct ctdb_control_set_call {
 	uint32_t db_id;
 	ctdb_fn_t fn;
 	uint32_t id;
-};
-
-/*
-  struct for tcp_client control
-  used by samba   can not modify
- */
-struct ctdb_control_tcp {
-	struct sockaddr_in src; // samba uses this
-	struct sockaddr_in dest;// samba uses this
 };
 
 /*
