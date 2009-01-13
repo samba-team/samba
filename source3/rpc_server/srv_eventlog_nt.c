@@ -721,7 +721,6 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
 	Eventlog_entry *entry = NULL, *ee_new = NULL;
 	uint32 num_records_read = 0;
-	prs_struct *ps;
 	int bytes_left, record_number;
 	uint32 elog_read_type, elog_read_dir;
 
@@ -760,7 +759,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* assume that when the record fetch fails, that we are done */
 
-		entry = get_eventlog_record (ps->mem_ctx, ELOG_TDB_CTX(info->etdb), record_number);
+		entry = get_eventlog_record (p->mem_ctx, ELOG_TDB_CTX(info->etdb), record_number);
 		if (!entry) {
 			break;
 		}
@@ -769,7 +768,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* Now see if there is enough room to add */
 
-		if ( !(ee_new = read_package_entry( ps->mem_ctx, entry )) )
+		if ( !(ee_new = read_package_entry( p->mem_ctx, entry )) )
 			return NT_STATUS_NO_MEMORY;
 
 		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
