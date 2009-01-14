@@ -1203,25 +1203,27 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		TALLOC_FREE(cl->lockout_policy_event);
 		TALLOC_FREE(cl->machine_password_change_event);
 
-		/* Children should never be able to send 
-		 * each other messages, all meesages must
+		/* Children should never be able to send
+		 * each other messages, all messages must
 		 * go through the parent.
 		 */
 		cl->pid = (pid_t)0;
         }
 	/*
-	 * This is a little tricky, we don't want child
-	 * to send MSG_WINBIND_ONLINE to idmap_child().
-	 * If we are in the child of trusted domain or
-	 * in the process created by fork_child_dc_connect().
-	 * And the trusted domain cannot go online,
-	 * fork_child_dc_connection() sends MSG_WINBIND_ONLINE 
+	 * This is a little tricky, children must not
+	 * send an MSG_WINBIND_ONLINE message to idmap_child().
+	 * If we are in a child of our primary domain or
+	 * in the process created by fork_child_dc_connect(),
+	 * and the primary domain cannot go online,
+	 * fork_child_dc_connection() sends MSG_WINBIND_ONLINE
 	 * periodically to idmap_child().
-	 * look, fork_child_dc_connect() ---> getdcs() --->
+	 *
+	 * The sequence is, fork_child_dc_connect() ---> getdcs() --->
 	 * get_dc_name_via_netlogon() ---> cm_connect_netlogon()
 	 * ---> init_dc_connection() ---> cm_open_connection --->
-	 * set_domain_online(), here send MSG_WINBIND_ONLINE to
-	 * idmap_child().
+	 * set_domain_online(), sends MSG_WINBIND_ONLINE to
+	 * idmap_child(). Disallow children sending messages
+	 * to each other, all messages must go through the parent.
 	 */
 	cl = idmap_child();
 	cl->pid = (pid_t)0;
