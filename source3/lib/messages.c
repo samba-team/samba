@@ -235,13 +235,21 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx,
  */
 NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 {
-#ifdef CLUSTER_SUPPORT
+	NTSTATUS status;
 
+	TALLOC_FREE(msg_ctx->local);
+
+	status = messaging_tdb_init(msg_ctx, msg_ctx, &msg_ctx->local);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("messaging_tdb_init failed: %s\n",
+			  nt_errstr(status)));
+		return status;
+	}
+
+#ifdef CLUSTER_SUPPORT
 	TALLOC_FREE(msg_ctx->remote);
 
 	if (lp_clustering()) {
-		NTSTATUS status;
-
 		status = messaging_ctdbd_init(msg_ctx, msg_ctx,
 					      &msg_ctx->remote);
 
