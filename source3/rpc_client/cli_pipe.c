@@ -267,25 +267,26 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 
 	pdata = prs_data_p(current_pdu) + current_pdu_offset;
 
-	do {
+	while (num_read < size) {
+		ssize_t thistime = 0;
 		NTSTATUS status;
 
 		switch (cli->transport_type) {
 		case NCACN_NP:
 			status = rpc_read_np(cli->trans.np.cli,
 					     cli->trans.np.pipe_name,
-					     cli->trans.np.fnum, pdata,
-					     size, &num_read);
+					     cli->trans.np.fnum,
+					     pdata + num_read,
+					     size - num_read, &thistime);
 			break;
 		case NCACN_IP_TCP:
 		case NCACN_UNIX_STREAM:
 			status = NT_STATUS_OK;
-			num_read = sys_read(cli->trans.sock.fd, pdata, size);
-			if (num_read == -1) {
+			thistime = sys_read(cli->trans.sock.fd,
+					    pdata + num_read,
+					    size - num_read);
+			if (thistime == -1) {
 				status = map_nt_error_from_unix(errno);
-			}
-			if (num_read == 0) {
-				status = NT_STATUS_END_OF_FILE;
 			}
 			break;
 		default:
@@ -294,11 +295,17 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		size -= num_read;
-		pdata += num_read;
+		if (thistime == 0) {
+			status = NT_STATUS_END_OF_FILE;
+		}
 
-	} while (num_read > 0 && size > 0);
-	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		num_read += thistime;
+
+	}
 
 	return NT_STATUS_OK;
 }
