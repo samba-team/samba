@@ -178,7 +178,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	EVENTLOG_INFO *elog;
 
 	/* first thing is to validate the eventlog name */
-	
+
 	if ( !elog_validate_logname( logname ) )
 		return NT_STATUS_OBJECT_PATH_INVALID;
 
@@ -610,36 +610,26 @@ static bool add_record_to_resp( Eventlog_entry *entry,
 NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
 				 struct eventlog_OpenEventLogW *r)
 {
-	const char *servername = "";
-	const char *logname = "";
 	EVENTLOG_INFO *info;
 	NTSTATUS result;
 
-	if (r->in.servername->string) {
-		servername = r->in.servername->string;
-	}
-
-	if (r->in.logname->string) {
-		logname = r->in.logname->string;
-	}
-
-	DEBUG( 10,("_eventlog_open_eventlog: Server [%s], Log [%s]\n",
-		servername, logname ));
+	DEBUG( 10,("_eventlog_OpenEventLogW: Server [%s], Log [%s]\n",
+		r->in.servername->string, r->in.logname->string ));
 
 	/* according to MSDN, if the logfile cannot be found, we should
 	  default to the "Application" log */
 
-	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, r->out.handle )) )
+	if ( !NT_STATUS_IS_OK( result = elog_open( p, r->in.logname->string, r->out.handle )) )
 		return result;
 
 	if ( !(info = find_eventlog_info_by_hnd( p, r->out.handle )) ) {
-		DEBUG(0,("_eventlog_open_eventlog: eventlog (%s) opened but unable to find handle!\n",
-			logname ));
+		DEBUG(0,("_eventlog_OpenEventLogW: eventlog (%s) opened but unable to find handle!\n",
+			r->in.logname->string ));
 		elog_close( p, r->out.handle );
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(10,("_eventlog_open_eventlog: Size [%d]\n", elog_size( info )));
+	DEBUG(10,("_eventlog_OpenEventLogW: Size [%d]\n", elog_size( info )));
 
 	sync_eventlog_params( info );
 	prune_eventlog( ELOG_TDB_CTX(info->etdb) );
@@ -669,18 +659,15 @@ NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
 				  struct eventlog_ClearEventLogW *r)
 {
 	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
-	const char *backup_file_name = NULL;
 
 	if ( !info )
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (r->in.backupfile && r->in.backupfile->string) {
 
-		backup_file_name = r->in.backupfile->string;
-
-		DEBUG(8,( "_eventlog_clear_eventlog: Using [%s] as the backup "
+		DEBUG(8,( "_eventlog_ClearEventLogW: Using [%s] as the backup "
 			"file name for log [%s].",
-			 backup_file_name, info->logname ) );
+			 r->in.backupfile->string, info->logname ) );
 	}
 
 	/* check for WRITE access to the file */
@@ -740,7 +727,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 	elog_read_type = q_u->flags & (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ);
 	elog_read_dir = q_u->flags & (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ);
 
-	if ( elog_read_type == (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ) 
+	if ( elog_read_type == (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ)
 		||  elog_read_dir == (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ) )
 	{
 		DEBUG(3,("_eventlog_read_eventlog: Invalid flags [0x%x] for ReadEventLog\n", q_u->flags));
