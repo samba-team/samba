@@ -75,7 +75,7 @@ static uint32_t sig_count(struct sigcounter s)
 /*
   signal handler - redirects to registered signals
 */
-static void signal_handler(int signum)
+static void tevent_common_signal_handler(int signum)
 {
 	char c = 0;
 	SIG_INCREMENT(sig_state->signal_count[signum]);
@@ -88,12 +88,13 @@ static void signal_handler(int signum)
 /*
   signal handler with SA_SIGINFO - redirects to registered signals
 */
-static void signal_handler_info(int signum, siginfo_t *info, void *uctx)
+static void tevent_common_signal_handler_info(int signum, siginfo_t *info,
+					      void *uctx)
 {
 	uint32_t count = sig_count(sig_state->signal_count[signum]);
 	sig_state->sig_info[signum][count] = *info;
 
-	signal_handler(signum);
+	tevent_common_signal_handler(signum);
 
 	/* handle SA_SIGINFO */
 	if (count+1 == SA_INFO_QUEUE_COUNT) {
@@ -215,12 +216,12 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	if (sig_state->sig_handlers[signum] == NULL) {
 		struct sigaction act;
 		ZERO_STRUCT(act);
-		act.sa_handler   = signal_handler;
+		act.sa_handler = tevent_common_signal_handler;
 		act.sa_flags = sa_flags;
 #ifdef SA_SIGINFO
 		if (sa_flags & SA_SIGINFO) {
 			act.sa_handler   = NULL;
-			act.sa_sigaction = signal_handler_info;
+			act.sa_sigaction = tevent_common_signal_handler_info;
 			if (sig_state->sig_info[signum] == NULL) {
 				sig_state->sig_info[signum] = talloc_array(sig_state, siginfo_t, SA_INFO_QUEUE_COUNT);
 				if (sig_state->sig_info[signum] == NULL) {
