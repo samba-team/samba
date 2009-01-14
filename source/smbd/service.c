@@ -693,7 +693,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		char *found_username = NULL;
 
 		guest = True;
-		pass = getpwnam_alloc(NULL, guestname);
+		pass = getpwnam_alloc(talloc_tos(), guestname);
 		if (!pass) {
 			DEBUG(0,("make_connection_snum: Invalid guest "
 				 "account %s??\n",guestname));
