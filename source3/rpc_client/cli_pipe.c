@@ -255,17 +255,11 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
  ********************************************************************/
 
 static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
-			prs_struct *current_pdu,
-			size_t size,
-			uint32 current_pdu_offset)
+			 char *pdata, size_t size)
 {
 	ssize_t num_read = 0;
-	char *pdata;
 
-	DEBUG(5, ("rpc_read: data_to_read: %u current_pdu offset: %d\n",
-		  (unsigned int)size, (unsigned int)current_pdu_offset));
-
-	pdata = prs_data_p(current_pdu) + current_pdu_offset;
+	DEBUG(5, ("rpc_read: data_to_read: %u\n", (unsigned int)size));
 
 	while (num_read < size) {
 		ssize_t thistime = 0;
@@ -295,12 +289,11 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		if (thistime == 0) {
-			status = NT_STATUS_END_OF_FILE;
-		}
-
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
+		}
+		if (thistime == 0) {
+			return NT_STATUS_END_OF_FILE;
 		}
 
 		num_read += thistime;
@@ -325,9 +318,9 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		if (!rpc_grow_buffer(current_pdu, RPC_HEADER_LEN)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = rpc_read(cli, current_pdu,
-			       RPC_HEADER_LEN - current_pdu_len,
-			       current_pdu_len);
+		ret = rpc_read(cli,
+			       prs_data_p(current_pdu) + current_pdu_len,
+			       RPC_HEADER_LEN - current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
@@ -353,9 +346,9 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		if (!rpc_grow_buffer(current_pdu, prhdr->frag_len)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = rpc_read(cli, current_pdu,
-			       (uint32)prhdr->frag_len - current_pdu_len,
-			       current_pdu_len);
+		ret = rpc_read(cli,
+			       prs_data_p(current_pdu) + current_pdu_len,
+			       prhdr->frag_len - current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
