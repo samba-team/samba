@@ -45,6 +45,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5873: Fix ACL inheritance.
     * BUG 5914: Fix build failure (redefinition of struct name_list).
     * BUG 5937: Fix filenames with "*" char hiding other files.
+    * BUG 6019: File corruption in Clustered SMB/NFS environment
+      managed via CTDB.
     * Remove unecessary msync.
     * Rename cifs.spnego to cifs.upcall.
     * Fix segfault when execution cifs.upcall without any arguments.
