@@ -51,12 +51,19 @@ knownfail() {
         return $status
 }
 
-
+# List users
 testit "wbinfo -u against $TARGET" $wbinfo -u || failed=`expr $failed + 1`
+# List groups
 # Does not work yet
 knownfail "wbinfo -g against $TARGET" $wbinfo -g || failed=`expr $failed + 1`
-knownfail "wbinfo -N against $TARGET" $wbinfo -N || failed=`expr $failed + 1`
-knownfail "wbinfo -I against $TARGET" $wbinfo -I || failed=`expr $failed + 1`
+# Convert netbios name to IP
+# Does not work yet
+knownfail "wbinfo -N against $TARGET" $wbinfo -N $NETBIOSNAME || failed=`expr $failed + 1`
+# Convert IP to netbios name
+# Does not work yet
+knownfail "wbinfo -I against $TARGET" $wbinfo -I $SERVER_IP || failed=`expr $failed + 1`
+
+# Convert name to SID
 testit "wbinfo -n against $TARGET" $wbinfo -n "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 admin_sid=`$wbinfo -n "$DOMAIN/$USERNAME" | cut -d " " -f1`
 echo "$DOMAIN/$USERNAME resolved to $admin_sid"
@@ -100,7 +107,7 @@ else
 	echo "success: wbinfo -U check for sane mapping"
 fi
 
-admin_uid=`$wbinfo -U $admin_sid`
+admin_uid=`$wbinfo -S $admin_sid`
 
 testit "wbinfo -G against $TARGET" $wbinfo -G 30000 || failed=`expr $failed + 1`
 
@@ -163,8 +170,9 @@ knownfail "wbinfo -D against $TARGET" $wbinfo -D $DOMAIN || failed=`expr $failed
 
 testit "wbinfo -i against $TARGET" $wbinfo -i "$DOMAIN/$USERNAME" || failed=`expr $failed + 1`
 
+testit "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_uid
+
 # this does not work
-knownfail "wbinfo --uid-info against $TARGET" $wbinfo --uid-info $admin_sid
 knownfail "wbinfo --group-info against $TARGET" $wbinfo --group-info "S-1-22-2-0"
 knownfail "wbinfo -r against $TARGET" $wbinfo -r "$DOMAIN/$USERNAME"
 
