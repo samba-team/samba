@@ -129,8 +129,18 @@ if opts.interactive:
 		else:
 			print "%s: " % (prompt,),
 		return sys.stdin.readline().rstrip("\n") or default
-	opts.realm = ask("Realm", socket.getfqdn().split(".", 1)[1].upper())
-	opts.domain = ask("Domain", opts.realm.split(".")[0])
+	try:
+		opts.realm = ask("Realm", socket.getfqdn().split(".", 1)[1].upper())
+	except IndexError:
+		print >>sys.stderr, "Cannot guess realm from %s" % ( socket.getfqdn())
+		sys.exit(1)
+
+	try:
+		opts.domain = ask("Domain", opts.realm.split(".")[0])
+	except IndexError:
+		print >>sys.stderr, "Cannot guess domain from %s" % ( opts.realm())
+		sys.exit(1)
+
 	opts.server_role = ask("Server Role (dc, member, standalone)", "dc")
 	for i in range(3):
 		opts.adminpass = getpass("Administrator password: ")
