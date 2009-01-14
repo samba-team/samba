@@ -343,6 +343,13 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
+	if (prhdr->frag_len > cli->max_recv_frag) {
+		DEBUG(0, ("cli_pipe_get_current_pdu: Server sent fraglen %d,"
+			  " we only allow %d\n", (int)prhdr->frag_len,
+			  (int)cli->max_recv_frag));
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+
 	/* Ensure we have frag_len bytes of data. */
 	if (current_pdu_len < prhdr->frag_len) {
 		if (!rpc_grow_buffer(current_pdu, prhdr->frag_len)) {
@@ -2937,6 +2944,9 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
 		TALLOC_FREE(result);
