@@ -2,7 +2,7 @@
 
 if [ ! -d ".git" -o `dirname $0` != "./source4/script" ]; then
 	echo "Run this script from the top-level directory in the"
-	echo "repository as: ./source/script/mkrelease.sh"
+	echo "repository as: ./source4/script/mkrelease.sh"
 	exit 1
 fi
 
