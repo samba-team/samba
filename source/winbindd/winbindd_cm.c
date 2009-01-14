@@ -627,7 +627,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 						  DS_RETURN_DNS_NAME,
 						  &domain_info,
 						  &werr);
-		if (W_ERROR_IS_OK(werr)) {
+		if (NT_STATUS_IS_OK(result) && W_ERROR_IS_OK(werr)) {
 			tmp = talloc_strdup(
 				mem_ctx, domain_info->dc_unc);
 			if (tmp == NULL) {
