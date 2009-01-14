@@ -45,7 +45,7 @@ const char *cmd_ptr = NULL;
 static int io_bufsize = 524288;
 
 static int name_type = 0x20;
-extern int max_protocol;
+static int max_protocol = PROTOCOL_NT1;
 
 static int process_tok(char *tok);
 static int cmd_help(void);
@@ -4051,7 +4051,8 @@ static int process_command_string(const char *cmd_in)
 	if (!cli) {
 		cli = cli_cm_open(talloc_tos(), NULL,
 				have_ip ? dest_ss_str : desthost,
-				service, true, smb_encrypt);
+				service, true, smb_encrypt,
+				max_protocol);
 		if (!cli) {
 			return 1;
 		}
@@ -4516,7 +4517,8 @@ static int process(const char *base_directory)
 
 	cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
-			service, true, smb_encrypt);
+			service, true, smb_encrypt,
+			max_protocol);
 	if (!cli) {
 		return 1;
 	}
@@ -4548,7 +4550,8 @@ static int do_host_query(const char *query_host)
 	struct sockaddr_storage ss;
 
 	cli = cli_cm_open(talloc_tos(), NULL,
-			query_host, "IPC$", true, smb_encrypt);
+			query_host, "IPC$", true, smb_encrypt,
+			max_protocol);
 	if (!cli)
 		return 1;
 
@@ -4568,7 +4571,8 @@ static int do_host_query(const char *query_host)
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
 		cli = cli_cm_open(talloc_tos(), NULL,
-				query_host, "IPC$", true, smb_encrypt);
+				query_host, "IPC$", true, smb_encrypt,
+				max_protocol);
 	}
 
 	if (cli == NULL) {
@@ -4595,7 +4599,8 @@ static int do_tar_op(const char *base_directory)
 	if (!cli) {
 		cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
-			service, true, smb_encrypt);
+			service, true, smb_encrypt,
+			max_protocol);
 		if (!cli)
 			return 1;
 	}

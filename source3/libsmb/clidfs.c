@@ -38,9 +38,6 @@ struct client_connection {
 	char *mount;
 };
 
-/* global state....globals reek! */
-int max_protocol = PROTOCOL_NT1;
-
 static struct cm_cred_struct {
 	char *username;
 	char *password;
@@ -111,7 +108,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
 					bool show_sessetup,
-					bool force_encrypt)
+					bool force_encrypt,
+					int max_protocol)
 {
 	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
@@ -264,7 +262,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 				lp_workgroup())) {
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
-				newshare, false, force_encrypt);
+				newshare, false,
+				force_encrypt, max_protocol);
 	}
 
 	/* must be a normal share */
@@ -348,7 +347,8 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 	 				const char *server,
 					const char *share,
 					bool show_hdr,
-					bool force_encrypt)
+					bool force_encrypt,
+					int max_protocol)
 {
 	struct client_connection *node;
 
@@ -358,7 +358,8 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	node->cli = do_connect(ctx, server, share, show_hdr, force_encrypt);
+	node->cli = do_connect(ctx, server, share,
+				show_hdr, force_encrypt, max_protocol);
 
 	if ( !node->cli ) {
 		TALLOC_FREE( node );
@@ -411,7 +412,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				const char *server,
 				const char *share,
 				bool show_hdr,
-				bool force_encrypt)
+				bool force_encrypt,
+				int max_protocol)
 {
 	struct cli_state *c;
 
@@ -420,7 +422,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 	c = cli_cm_find(server, share);
 	if (!c) {
 		c = cli_cm_connect(ctx, referring_cli,
-				server, share, show_hdr, force_encrypt);
+				server, share, show_hdr, force_encrypt,
+				max_protocol);
 	}
 
 	return c;
@@ -900,7 +903,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	if (!(cli_ipc = cli_cm_open(ctx, rootcli,
 					rootcli->desthost,
 					"IPC$", false,
-					(rootcli->trans_enc_state != NULL)))) {
+					(rootcli->trans_enc_state != NULL),
+					rootcli->protocol))) {
 		return false;
 	}
 
@@ -945,7 +949,8 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 					server,
 					share,
 					false,
-					(rootcli->trans_enc_state != NULL))) == NULL) {
+					(rootcli->trans_enc_state != NULL),
+					rootcli->protocol)) == NULL) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
 		return false;

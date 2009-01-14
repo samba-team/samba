@@ -2383,7 +2383,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				const char *server,
 				const char *share,
 				bool show_hdr,
-				bool force_encrypt);
+				bool force_encrypt,
+				int max_protocol);
 void cli_cm_shutdown(void);
 void cli_cm_display(void);
 void cli_cm_set_credentials(struct user_auth_info *auth_info);
