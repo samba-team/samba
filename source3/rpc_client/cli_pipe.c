@@ -251,22 +251,21 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
 
 /*******************************************************************
  Use SMBreadX to get rest of one fragment's worth of rpc data.
+ Reads the whole size or give an error message
  ********************************************************************/
 
 static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			prs_struct *current_pdu,
 			size_t size,
-			uint32 *current_pdu_offset)
+			uint32 current_pdu_offset)
 {
-	uint32 stream_offset = 0;
 	ssize_t num_read = 0;
 	char *pdata;
 
 	DEBUG(5, ("rpc_read: data_to_read: %u current_pdu offset: %d\n",
-		  (unsigned int)size,
-		  (unsigned int)*current_pdu_offset));
+		  (unsigned int)size, (unsigned int)current_pdu_offset));
 
-	pdata = prs_data_p(current_pdu) + *current_pdu_offset;
+	pdata = prs_data_p(current_pdu) + current_pdu_offset;
 
 	do {
 		NTSTATUS status;
@@ -296,16 +295,11 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 		}
 
 		size -= num_read;
-		stream_offset += num_read;
 		pdata += num_read;
 
 	} while (num_read > 0 && size > 0);
 	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
 
-	/*
-	 * Update the current offset into current_pdu by the amount read.
-	 */
-	*current_pdu_offset += stream_offset;
 	return NT_STATUS_OK;
 }
 
@@ -324,10 +318,13 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		if (!rpc_grow_buffer(current_pdu, RPC_HEADER_LEN)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = rpc_read(cli, current_pdu, RPC_HEADER_LEN - current_pdu_len, &current_pdu_len);
+		ret = rpc_read(cli, current_pdu,
+			       RPC_HEADER_LEN - current_pdu_len,
+			       current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
+		current_pdu_len = RPC_HEADER_LEN;
 	}
 
 	/* This next call sets the endian bit correctly in current_pdu. */
@@ -349,14 +346,12 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		if (!rpc_grow_buffer(current_pdu, prhdr->frag_len)) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		ret = rpc_read(cli, current_pdu, (uint32)prhdr->frag_len - current_pdu_len, &current_pdu_len);
+		ret = rpc_read(cli, current_pdu,
+			       (uint32)prhdr->frag_len - current_pdu_len,
+			       current_pdu_len);
 		if (!NT_STATUS_IS_OK(ret)) {
 			return ret;
 		}
-	}
-
-	if (current_pdu_len < prhdr->frag_len) {
-		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
 	return NT_STATUS_OK;
