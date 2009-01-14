@@ -12,7 +12,7 @@ TMPDIR=`mktemp -d samba-XXXXX`
 #Prepare the tarball for a Samba4 release, with some generated files,
 #but without Samba3 stuff (to avoid confusion)
 ( cd $TMPDIR/ || exit 1
- rm -rf source3 packaging docs-xml examples swat WHATSNEW.txt MAINTAINERS || exit 1
+ rm -rf README Manifest Read-Manifest-Now Roadmap source3 packaging docs-xml examples swat WHATSNEW.txt MAINTAINERS || exit 1
  cd source4 || exit 1
  ./autogen.sh || exit 1
  ./configure || exit 1
