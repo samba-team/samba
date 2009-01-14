@@ -1480,9 +1480,7 @@ extern void build_options(bool screen);
 
 			status = ctdbd_register_ips(
 				messaging_ctdbd_connection(),
-				(struct sockaddr *)&srv,
-				(struct sockaddr *)&clnt,
-				release_ip, NULL);
+				&srv, &clnt, release_ip, NULL);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
