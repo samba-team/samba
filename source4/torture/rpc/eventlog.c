@@ -101,6 +101,9 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
 
+	uint32_t sent_size = 0;
+	uint32_t real_size = 0;
+
 	if (!get_policy_handle(tctx, p, &handle))
 		return false;
 
@@ -108,6 +111,9 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	r.in.offset = 0;
 	r.in.handle = &handle;
 	r.in.flags = 0;
+	r.out.data = NULL;
+	r.out.sent_size = &sent_size;
+	r.out.real_size = &real_size;
 
 	status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 
@@ -119,8 +125,6 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		struct eventlog_Record rec;
 		struct ndr_pull *ndr;
 		enum ndr_err_code ndr_err;
-		uint32_t sent_size = 0;
-		uint32_t real_size = 0;
 
 		/* Read first for number of bytes in record */
 
