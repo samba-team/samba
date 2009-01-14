@@ -100,7 +100,7 @@ static bool do_file_lock(int fd, int waitsecs, int type)
 	alarm(0);
 	CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
 
-	if (gotalarm) {
+	if (gotalarm && ret == -1) {
 		DEBUG(0, ("do_file_lock: failed to %s file.\n",
 			type == F_UNLCK ? "unlock" : "lock"));
 		return False;
