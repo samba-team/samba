@@ -255,27 +255,21 @@ static bool rpc_grow_buffer(prs_struct *pdu, size_t size)
 
 static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			prs_struct *current_pdu,
-			uint32 data_to_read,
+			size_t size,
 			uint32 *current_pdu_offset)
 {
-	size_t size = (size_t)cli->max_recv_frag;
 	uint32 stream_offset = 0;
 	ssize_t num_read = 0;
 	char *pdata;
 
 	DEBUG(5, ("rpc_read: data_to_read: %u current_pdu offset: %d\n",
-		  (unsigned int)data_to_read,
+		  (unsigned int)size,
 		  (unsigned int)*current_pdu_offset));
 
 	pdata = prs_data_p(current_pdu) + *current_pdu_offset;
 
 	do {
 		NTSTATUS status;
-
-		/* read data using SMBreadX */
-		if (size > (size_t)data_to_read) {
-			size = (size_t)data_to_read;
-		}
 
 		switch (cli->transport_type) {
 		case NCACN_NP:
@@ -301,11 +295,11 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
-		data_to_read -= num_read;
+		size -= num_read;
 		stream_offset += num_read;
 		pdata += num_read;
 
-	} while (num_read > 0 && data_to_read > 0);
+	} while (num_read > 0 && size > 0);
 	/* && err == (0x80000000 | STATUS_BUFFER_OVERFLOW)); */
 
 	/*
