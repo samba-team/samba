@@ -52,7 +52,7 @@ o   Jeremy Allison <jra@samba.org>
     * Fix use of DLIST_REMOVE.
     * Cope with bad trans2mkdir requests from System in QNTC IBM SMB client.
     * Fix memory leak in error path.
-    * Fix logic bug introduce in backport of ccache_regain_all_now.
+    * Fix logic bug introduced in backport of ccache_regain_all_now.
 
 
 o   Kai Blin <kai@samba.org>
@@ -120,6 +120,7 @@ o   Stefan Metzmacher <metze@samba.org>
       site.
     * Add saf_join_store() function to memorize the dc used at join time.
     * Return an error instead of crashing when no realm is given.
+    * Handle the SMB signing states the same in the krb5 and ntlmssp cases.
 
 
 o   Andreas Schneider <mail@cynapses.org>
@@ -144,6 +145,9 @@ o   Andrew Tridgell <tridge@samba.org>
 
 o   Bo Yang <boyang@novell.com>
     * Don't set child->requests to NULL in parent after fork.
+    * Backport of the clean event context after fork and krb5
+      refresh chain fixes.
+    * Fix null pointer refrence in event context in backport from v3-3-test.
 
 
 o   Qiao Yang <geoyang@ironport.com>
