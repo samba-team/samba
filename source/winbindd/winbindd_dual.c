@@ -1202,7 +1202,31 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		}
 		TALLOC_FREE(cl->lockout_policy_event);
 		TALLOC_FREE(cl->machine_password_change_event);
-        }
+
+		/* Children should never be able to send
+		 * each other messages, all messages must
+		 * go through the parent.
+		 */
+		cl->pid = (pid_t)0;
+	}
+	/*
+	 * This is a little tricky, children must not
+	 * send an MSG_WINBIND_ONLINE message to idmap_child().
+	 * If we are in a child of our primary domain or
+	 * in the process created by fork_child_dc_connect(),
+	 * and the primary domain cannot go online,
+	 * fork_child_dc_connection() sends MSG_WINBIND_ONLINE
+	 * periodically to idmap_child().
+	 *
+	 * The sequence is, fork_child_dc_connect() ---> getdcs() --->
+	 * get_dc_name_via_netlogon() ---> cm_connect_netlogon()
+	 * ---> init_dc_connection() ---> cm_open_connection --->
+	 * set_domain_online(), sends MSG_WINBIND_ONLINE to
+	 * idmap_child(). Disallow children sending messages
+	 * to each other, all messages must go through the parent.
+	 */
+	cl = idmap_child();
+	cl->pid = (pid_t)0;
 
 	return true;
 }
@@ -1295,6 +1319,14 @@ static bool fork_domain_child(struct winbindd_child *child)
 				set_domain_online_request(primary_domain);
 			}
 		}
+	}
+	
+	/*
+	 * We are in idmap child, make sure that we set the
+	 * check_online_event to bring primary domain online.
+	 */
+	if (child == idmap_child()) {
+		set_domain_online_request(primary_domain);
 	}
 
 	/* We might be in the idmap child...*/
