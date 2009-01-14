@@ -729,7 +729,6 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 	}
 
 	info->flags = q_u->flags;
-	ps = &p->out_data.rdata;
 
 	bytes_left = q_u->max_read_size;
 
