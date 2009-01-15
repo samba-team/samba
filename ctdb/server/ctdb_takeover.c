@@ -1030,6 +1030,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
 	struct ctdb_control_tcp *old_addr = NULL;
+	struct ctdb_control_tcp_addr new_addr;
 	struct ctdb_control_tcp_addr *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_control_tcp_vnn t;
@@ -1042,6 +1043,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	switch (indata.dsize) {
 	case sizeof(struct ctdb_control_tcp):
 		old_addr = (struct ctdb_control_tcp *)indata.dptr;
+		ZERO_STRUCT(new_addr);
+		tcp_sock = &new_addr;
 		tcp_sock->src.ip  = old_addr->src;
 		tcp_sock->dest.ip = old_addr->dest;
 		break;
