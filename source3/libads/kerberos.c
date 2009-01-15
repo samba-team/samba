@@ -847,7 +847,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 						const char *sitename,
 						struct sockaddr_storage *pss)
 {
-	char *dname = talloc_asprintf(NULL, "%s/smb_krb5", lp_lockdir());
+	char *dname = lock_path("smb_krb5");
 	char *tmpname = NULL;
 	char *fname = NULL;
 	char *file_contents = NULL;
@@ -868,7 +868,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		goto done;
 	}
 
-	tmpname = talloc_asprintf(dname, "%s/smb_tmp_krb5.XXXXXX", lp_lockdir());
+	tmpname = lock_path("smb_tmp_krb5.XXXXXX");
 	if (!tmpname) {
 		goto done;
 	}
@@ -1003,6 +1003,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 #endif
 
 done:
+	TALLOC_FREE(tmpname);
 	TALLOC_FREE(dname);
 
 	return result;
