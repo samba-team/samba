@@ -139,7 +139,7 @@ import "lsa.idl", "security.idl";
 	);
 
 	typedef struct {
-		[value(strlen_m_term(name)*2)] uint16 length; 
+		[value(strlen_m_term_null(name)*2)] uint16 length;
 		/* size cannot be auto-set by value() as it is the
 		   amount of space the server is allowed to use for this
 		   string in the reply, not its current size */
@@ -157,13 +157,22 @@ import "lsa.idl", "security.idl";
 		[in,out,unique] NTTIME           *last_changed_time
 	);
 
+	typedef struct {
+		[value(strlen_m_term(name)*2)] uint16 length;
+		/* size cannot be auto-set by value() as it is the
+		   amount of space the server is allowed to use for this
+		   string in the reply, not its current size */
+		uint16 size;
+		[size_is(size/2),length_is(length/2),charset(UTF16)] uint16 *name;
+	} winreg_ValNameBuf;
+
 	/******************/
 	/* Function: 0x0a */
 
 	[public] WERROR winreg_EnumValue(
 		[in,ref]        policy_handle *handle,
 		[in]            uint32 enum_index,
-		[in,out,ref]    winreg_StringBuf *name,
+		[in,out,ref]    winreg_ValNameBuf *name,
 		[in,out,unique] winreg_Type *type,
 		[in,out,unique,size_is(*size),length_is(*length)] uint8 *value,
 		[in,out,unique] uint32 *size,
