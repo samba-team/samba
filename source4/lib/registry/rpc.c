@@ -193,7 +193,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 {
 	struct rpc_key *mykeydata = talloc_get_type(parent, struct rpc_key);
 	struct winreg_EnumValue r;
-	struct winreg_StringBuf name;
+	struct winreg_ValNameBuf name;
 	uint8_t value;
 	uint32_t val_size = MAX_VALSIZE;
 	uint32_t zero = 0;

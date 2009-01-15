@@ -1564,7 +1564,7 @@ static bool test_EnumValue(struct dcerpc_pipe *p, struct torture_context *tctx,
 	uint32_t size = max_valbufsize, zero = 0;
 	bool ret = true;
 	uint8_t buf8;
-	struct winreg_StringBuf name;
+	struct winreg_ValNameBuf name;
 
 	name.name   = "";
 	name.size   = 1024;

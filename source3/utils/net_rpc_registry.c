@@ -272,7 +272,7 @@ static NTSTATUS registry_enumvalues(TALLOC_CTX *ctx,
 		uint32 value_length;
 
 		char n;
-		struct winreg_StringBuf name_buf;
+		struct winreg_ValNameBuf name_buf;
 		WERROR err;
 
 		n = '\0';
