@@ -61,10 +61,12 @@ static bool acl_tdb_init(struct db_context **pp_db)
 #else
 		errno = ENOSYS;
 #endif
+		TALLOC_FREE(dbname);
 		return false;
 	}
 
 	ref_count++;
+	TALLOC_FREE(dbname);
 	return true;
 }
 
