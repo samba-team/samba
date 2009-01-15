@@ -1940,11 +1940,12 @@ bool is_myname_or_ipaddr(const char *s)
 	if (!is_ipaddress(servername)) {
 		/* Use DNS to resolve the name, but only the first address */
 		struct sockaddr_storage ss;
-		if (interpret_string_addr(&ss, servername,0)) {
-			print_sockaddr(name,
-					sizeof(name),
+		if (interpret_string_addr(&ss, servername, 0)) {
+			char addr[INET6_ADDRSTRLEN];
+			print_sockaddr(addr,
+					sizeof(addr),
 					&ss);
-			servername = name;
+			servername = addr;
 		}
 	}
 
