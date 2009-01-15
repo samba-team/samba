@@ -47,6 +47,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 5937: Fix filenames with "*" char hiding other files.
     * BUG 6019: File corruption in Clustered SMB/NFS environment
       managed via CTDB.
+    * BUG 6035: Fix possible race between fcntl F_SETLKW and alarm delivery.
     * Remove unecessary msync.
     * Rename cifs.spnego to cifs.upcall.
     * Fix segfault when execution cifs.upcall without any arguments.
