@@ -326,14 +326,7 @@ void write_browse_list(time_t t, bool force_write)
 
 	updatecount++;
 
-	fname = talloc_strdup(ctx, lp_lockdir());
-	if (!fname) {
-		return;
-	}
-	trim_char(fname,'\0' ,'/');
-	fname = talloc_asprintf_append(fname,
-			"/%s",
-			SERVER_LIST);
+	fname = cache_path(SERVER_LIST);
 	if (!fname) {
 		return;
 	}
