@@ -59,7 +59,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 
 	if ((path = talloc_asprintf(mem_ctx,
 					"%s/%s",
-					lock_path(GPO_CACHE_DIR),
+					cache_path(GPO_CACHE_DIR),
 					file_sys_path)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -82,7 +82,7 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 static NTSTATUS gpo_prepare_local_store(TALLOC_CTX *mem_ctx,
 					const char *unix_path)
 {
-	const char *top_dir = lock_path(GPO_CACHE_DIR);
+	const char *top_dir = cache_path(GPO_CACHE_DIR);
 	char *current_dir;
 	char *tok;
 
