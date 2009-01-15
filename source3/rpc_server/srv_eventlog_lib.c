@@ -1,20 +1,20 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Eventlog utility  routines
  *  Copyright (C) Marcin Krzysztof Porwit    2005,
  *  Copyright (C) Brian Moran                2005.
  *  Copyright (C) Gerald (Jerry) Carter      2005.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -26,7 +26,7 @@
 static ELOG_TDB *open_elog_list;
 
 /********************************************************************
- Init an Eventlog TDB, and return it. If null, something bad 
+ Init an Eventlog TDB, and return it. If null, something bad
  happened.
 ********************************************************************/
 
@@ -37,7 +37,7 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 	DEBUG(10,("elog_init_tdb: Initializing eventlog tdb (%s)\n",
 		tdbfilename));
 
-	tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT, 
+	tdb = tdb_open_log( tdbfilename, 0, TDB_DEFAULT,
 		O_RDWR|O_CREAT|O_TRUNC, 0660 );
 
 	if ( !tdb ) {
@@ -58,7 +58,7 @@ TDB_CONTEXT *elog_init_tdb( char *tdbfilename )
 }
 
 /********************************************************************
- make the tdb file name for an event log, given destination buffer 
+ make the tdb file name for an event log, given destination buffer
  and size. Caller must free memory.
 ********************************************************************/
 
@@ -76,7 +76,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name )
 
 
 /********************************************************************
- this function is used to count up the number of bytes in a 
+ this function is used to count up the number of bytes in a
  particular TDB
 ********************************************************************/
 
@@ -89,27 +89,27 @@ static int eventlog_tdb_size_fn( TDB_CONTEXT * tdb, TDB_DATA key, TDB_DATA data,
 			  void *state )
 {
 	struct trav_size_struct	 *tsize = (struct trav_size_struct *)state;
-	
+
 	tsize->size += data.dsize;
 	tsize->rec_count++;
-	
+
 	return 0;
 }
 
 /********************************************************************
- returns the size of the eventlog, and if MaxSize is a non-null 
- ptr, puts the MaxSize there. This is purely a way not to have yet 
- another function that solely reads the maxsize of the eventlog. 
+ returns the size of the eventlog, and if MaxSize is a non-null
+ ptr, puts the MaxSize there. This is purely a way not to have yet
+ another function that solely reads the maxsize of the eventlog.
  Yeah, that's it.
 ********************************************************************/
 
 int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 {
 	struct trav_size_struct tsize;
-	
+
 	if ( !tdb )
 		return 0;
-		
+
 	ZERO_STRUCT( tsize );
 
 	tdb_traverse( tdb, eventlog_tdb_size_fn, &tsize );
@@ -130,13 +130,13 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
 
 /********************************************************************
  Discard early event logs until we have enough for 'needed' bytes...
- NO checking done beforehand to see that we actually need to do 
- this, and it's going to pluck records one-by-one. So, it's best 
- to determine that this needs to be done before doing it.  
+ NO checking done beforehand to see that we actually need to do
+ this, and it's going to pluck records one-by-one. So, it's best
+ to determine that this needs to be done before doing it.
 
- Setting whack_by_date to True indicates that eventlogs falling 
+ Setting whack_by_date to True indicates that eventlogs falling
  outside of the retention range need to go...
- 
+
  return True if we made enough room to accommodate needed bytes
 ********************************************************************/
 
@@ -210,8 +210,8 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 		SAFE_FREE( ret.dptr );
 
 		/* note that other servers may just stop writing records when the size limit
-		   is reached, and there are no records older than 'retention'. This doesn't 
-		   like a very useful thing to do, so instead we whack (as in sleeps with the 
+		   is reached, and there are no records older than 'retention'. This doesn't
+		   like a very useful thing to do, so instead we whack (as in sleeps with the
 		   fishes) just enough records to fit the what we need.  This behavior could
 		   be changed to 'match', if the need arises. */
 
@@ -240,8 +240,8 @@ static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32_t needed,
 }
 
 /********************************************************************
-  some hygiene for an eventlog - see how big it is, and then 
-  calculate how many bytes we need to remove                   
+  some hygiene for an eventlog - see how big it is, and then
+  calculate how many bytes we need to remove
 ********************************************************************/
 
 bool prune_eventlog( TDB_CONTEXT * tdb )
@@ -330,8 +330,8 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 
 			/* trick to alow clearing of the eventlog tdb.
 			   The force_clear flag should imply that someone
-			   has done a force close.  So make sure the tdb 
-			   is NULL.  If this is a normal open, then just 
+			   has done a force close.  So make sure the tdb
+			   is NULL.  If this is a normal open, then just
 			   return the existing reference */
 
 			if ( force_clear ) {
@@ -375,12 +375,12 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 			}
 		}
 	}
-	
+
 	if ( !tdb )
 		tdb = elog_init_tdb( tdbpath );
-	
+
 	/* if we got a valid context, then add it to the list */
-	
+
 	if ( tdb ) {
 		/* on a forced clear, just reset the tdb context if we already
 		   have an open entry in the list */
@@ -395,11 +395,11 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 			tdb_close( tdb );
 			return NULL;
 		}
-		
+
 		tdb_node->name = talloc_strdup( tdb_node, logname );
 		tdb_node->tdb = tdb;
 		tdb_node->ref_count = 1;
-		
+
 		DLIST_ADD( open_elog_list, tdb_node );
 	}
 
@@ -416,9 +416,9 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 
 	if ( !etdb )
 		return 0;
-		
+
 	etdb->ref_count--;
-	
+
 	SMB_ASSERT( etdb->ref_count >= 0 );
 
 	if ( etdb->ref_count == 0 ) {
@@ -427,7 +427,7 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 		TALLOC_FREE( etdb );
 		return tdb_close( tdb );
 	}
-	
+
 	if ( force_close ) {
 		tdb = etdb->tdb;
 		etdb->tdb = NULL;
@@ -439,15 +439,15 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 
 
 /*******************************************************************
- write an eventlog entry. Note that we have to lock, read next 
- eventlog, increment, write, write the record, unlock 
- 
- coming into this, ee has the eventlog record, and the auxilliary date 
- (computer name, etc.) filled into the other structure. Before packing 
- into a record, this routine will calc the appropriate padding, etc., 
+ write an eventlog entry. Note that we have to lock, read next
+ eventlog, increment, write, write the record, unlock
+
+ coming into this, ee has the eventlog record, and the auxilliary date
+ (computer name, etc.) filled into the other structure. Before packing
+ into a record, this routine will calc the appropriate padding, etc.,
  and then blast out the record in a form that can be read back in
 *******************************************************************/
- 
+
 #define MARGIN 512
 
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
@@ -580,10 +580,10 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
 }
 
 /********************************************************************
- Note that it's a pretty good idea to initialize the Eventlog_entry 
- structure to zero's before calling parse_logentry on an batch of 
- lines that may resolve to a record.  ALSO, it's a good idea to 
- remove any linefeeds (that's EOL to you and me) on the lines 
+ Note that it's a pretty good idea to initialize the Eventlog_entry
+ structure to zero's before calling parse_logentry on an batch of
+ lines that may resolve to a record.  ALSO, it's a good idea to
+ remove any linefeeds (that's EOL to you and me) on the lines
  going in.
 ********************************************************************/
 
