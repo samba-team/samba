@@ -748,3 +748,58 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 	}
 	return true;
 }
+
+/********************************************************************
+ ********************************************************************/
+
+struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
+						  TDB_CONTEXT *tdb,
+						  uint32_t record_number)
+{
+	struct eventlog_Record_tdb *r;
+	TDB_DATA data, key;
+
+	int32_t srecno;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	srecno = record_number;
+	key.dptr = (unsigned char *)&srecno;
+	key.dsize = sizeof(int32_t);
+
+	data = tdb_fetch(tdb, key);
+	if (data.dsize == 0) {
+		DEBUG(8,("evlog_pull_record_tdb: "
+			"Can't find a record for the key, record %d\n",
+			record_number));
+		return NULL;
+	}
+
+	r = talloc_zero(mem_ctx, struct eventlog_Record_tdb);
+	if (!r) {
+		goto done;
+	}
+
+	blob = data_blob_const(data.dptr, data.dsize);
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, r,
+			   (ndr_pull_flags_fn_t)ndr_pull_eventlog_Record_tdb);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10,("evlog_pull_record_tdb: failed to decode record %d\n",
+			record_number));
+		TALLOC_FREE(r);
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(eventlog_Record_tdb, r);
+	}
+
+	DEBUG(10,("evlog_pull_record_tdb: retrieved entry for record %d\n",
+		record_number));
+ done:
+	SAFE_FREE(data.dptr);
+
+	return r;
+}

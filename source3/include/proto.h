@@ -6263,6 +6263,9 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee );
 void fixup_eventlog_entry( Eventlog_entry * ee );
 bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bool * eor );
+struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
+						  TDB_CONTEXT *tdb,
+						  uint32_t record_number);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
