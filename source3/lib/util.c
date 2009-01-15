@@ -966,18 +966,22 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 		return false;
 	}
 
-	/*
-	 * For clustering, we need to re-init our ctdbd connection after the
-	 * fork
-	 */
-	status = messaging_reinit(msg_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("messaging_reinit() failed: %s\n",
-			 nt_errstr(status)));
-		return false;
+	if (msg_ctx) {
+		/*
+		 * For clustering, we need to re-init our ctdbd connection after the
+		 * fork
+		 */
+		status = messaging_reinit(msg_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("messaging_reinit() failed: %s\n",
+				 nt_errstr(status)));
+			return false;
+		}
 	}
 
-	event_context_reinit(ev_ctx);
+	if (ev_ctx) {
+		event_context_reinit(ev_ctx);
+	}
 
 	return true;
 }
