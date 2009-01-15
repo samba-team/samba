@@ -63,27 +63,7 @@ static bool api_eventlog_get_oldest_entry(pipes_struct *p)
 
 static bool api_eventlog_read_eventlog(pipes_struct *p)
 {
-	EVENTLOG_Q_READ_EVENTLOG q_u;
-	EVENTLOG_R_READ_EVENTLOG r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!(eventlog_io_q_read_eventlog("", &q_u, data, 0))) {
-		DEBUG(0, ("eventlog_io_q_read_eventlog: unable to unmarshall EVENTLOG_Q_READ_EVENTLOG.\n"));
-		return False;
-	}
-
-	r_u.status = _eventlog_read_eventlog(p, &q_u, &r_u);
-
-	if (!(eventlog_io_r_read_eventlog("", &q_u, &r_u, rdata, 0))) {
-		DEBUG(0, ("eventlog_io_r_read_eventlog: unable to marshall EVENTLOG_R_READ_EVENTLOG.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_eventlog_call(p, NDR_EVENTLOG_READEVENTLOGW);
 }
 
 static bool api_eventlog_clear_eventlog(pipes_struct *p)

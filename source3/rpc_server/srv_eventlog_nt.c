@@ -706,98 +706,117 @@ NTSTATUS _eventlog_CloseEventLog(pipes_struct * p,
 }
 
 /********************************************************************
+ _eventlog_ReadEventLogW
  ********************************************************************/
 
-NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
-				EVENTLOG_Q_READ_EVENTLOG * q_u,
-				EVENTLOG_R_READ_EVENTLOG * r_u )
+NTSTATUS _eventlog_ReadEventLogW(pipes_struct *p,
+				 struct eventlog_ReadEventLogW *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
-	Eventlog_entry *entry = NULL, *ee_new = NULL;
-	uint32 num_records_read = 0;
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
+	uint32_t num_records_read = 0;
 	int bytes_left, record_number;
-	uint32 elog_read_type, elog_read_dir;
+	uint32_t elog_read_type, elog_read_dir;
 
-	if (info == NULL) {
+	if (!info) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	info->flags = q_u->flags;
+	info->flags	= r->in.flags;
+	bytes_left	= r->in.number_of_bytes;
 
-	bytes_left = q_u->max_read_size;
-
-	if ( !info->etdb )
+	if (!info->etdb) {
 		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* check for valid flags.  Can't use the sequential and seek flags together */
 
-	elog_read_type = q_u->flags & (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ);
-	elog_read_dir = q_u->flags & (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ);
+	elog_read_type = r->in.flags & (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ);
+	elog_read_dir  = r->in.flags & (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ);
 
-	if ( elog_read_type == (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ)
-		||  elog_read_dir == (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ) )
+	if (r->in.flags == 0 ||
+	    elog_read_type == (EVENTLOG_SEQUENTIAL_READ|EVENTLOG_SEEK_READ) ||
+	    elog_read_dir == (EVENTLOG_FORWARDS_READ|EVENTLOG_BACKWARDS_READ))
 	{
-		DEBUG(3,("_eventlog_read_eventlog: Invalid flags [0x%x] for ReadEventLog\n", q_u->flags));
+		DEBUG(3,("_eventlog_ReadEventLogW: "
+			"Invalid flags [0x%08x] for ReadEventLog\n",
+			r->in.flags));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* a sequential read should ignore the offset */
 
-	if ( elog_read_type & EVENTLOG_SEQUENTIAL_READ )
+	if (elog_read_type & EVENTLOG_SEQUENTIAL_READ) {
 		record_number = info->current_record;
-	else
-		record_number = q_u->offset;
+	} else {
+		record_number = r->in.offset;
+	}
 
-	while ( bytes_left > 0 ) {
+	if (r->in.number_of_bytes == 0) {
+		struct EVENTLOGRECORD *e;
+		e = evlog_pull_record(p->mem_ctx, ELOG_TDB_CTX(info->etdb),
+				      record_number);
+		if (!e) {
+			return NT_STATUS_END_OF_FILE;
+		}
+		*r->out.real_size = e->Length;
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
 
-		/* assume that when the record fetch fails, that we are done */
+	while (bytes_left > 0) {
 
-		entry = get_eventlog_record (p->mem_ctx, ELOG_TDB_CTX(info->etdb), record_number);
-		if (!entry) {
+		DATA_BLOB blob;
+		enum ndr_err_code ndr_err;
+		struct EVENTLOGRECORD *e;
+
+		e = evlog_pull_record(p->mem_ctx, ELOG_TDB_CTX(info->etdb),
+				      record_number);
+		if (!e) {
 			break;
 		}
 
-		DEBUG( 8, ( "Retrieved record %d\n", record_number ) );
+		ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, NULL, e,
+			      (ndr_push_flags_fn_t)ndr_push_EVENTLOGRECORD);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
 
-		/* Now see if there is enough room to add */
+		if (DEBUGLEVEL >= 10) {
+			NDR_PRINT_DEBUG(EVENTLOGRECORD, e);
+		}
 
-		if ( !(ee_new = read_package_entry( p->mem_ctx, entry )) )
-			return NT_STATUS_NO_MEMORY;
+		if (blob.length > r->in.number_of_bytes) {
+			*r->out.real_size = blob.length;
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
 
-		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
-			r_u->bytes_in_next_record = ee_new->record.length;
-
-			/* response would be too big to fit in client-size buffer */
-
-			bytes_left = 0;
+		if (*r->out.sent_size + blob.length > r->in.number_of_bytes) {
 			break;
 		}
 
-		add_record_to_resp( r_u, ee_new );
-		bytes_left -= ee_new->record.length;
-		TALLOC_FREE(entry);
-		num_records_read = r_u->num_records - num_records_read;
+		bytes_left -= blob.length;
 
-		DEBUG( 10, ( "_eventlog_read_eventlog: read [%d] records for a total "
-			"of [%d] records using [%d] bytes out of a max of [%d].\n",
-			 num_records_read, r_u->num_records,
-			 r_u->num_bytes_in_resp,
-			 q_u->max_read_size ) );
-
-		if ( info->flags & EVENTLOG_FORWARDS_READ )
+		if (info->flags & EVENTLOG_FORWARDS_READ) {
 			record_number++;
-		else
+		} else {
 			record_number--;
+		}
 
 		/* update the eventlog record pointer */
 
 		info->current_record = record_number;
+
+		memcpy(&r->out.data[*(r->out.sent_size)],
+		       blob.data, blob.length);
+		*(r->out.sent_size) += blob.length;
+
+		num_records_read++;
 	}
 
-	/* crazy by WinXP uses NT_STATUS_BUFFER_TOO_SMALL to
-	   say when there are no more records */
+	if (r->in.offset == 0 && record_number == 0 && *r->out.sent_size == 0) {
+		return NT_STATUS_END_OF_FILE;
+	}
 
-	return (num_records_read ? NT_STATUS_OK : NT_STATUS_BUFFER_TOO_SMALL);
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
@@ -867,12 +886,6 @@ NTSTATUS _eventlog_RegisterEventSourceW(pipes_struct *p, struct eventlog_Registe
 }
 
 NTSTATUS _eventlog_OpenBackupEventLogW(pipes_struct *p, struct eventlog_OpenBackupEventLogW *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_ReadEventLogW(pipes_struct *p, struct eventlog_ReadEventLogW *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
