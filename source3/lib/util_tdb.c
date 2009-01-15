@@ -275,28 +275,28 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 
 	while (*fmt) {
 		switch ((c=*fmt++)) {
-		case 'b':
+		case 'b': /* unsigned 8-bit integer */
 			len = 1;
 			bt = va_arg(ap, uint8 *);
 			if (bufsize < len)
 				goto no_space;
 			*bt = SVAL(buf, 0);
 			break;
-		case 'w':
+		case 'w': /* unsigned 16-bit integer */
 			len = 2;
 			w = va_arg(ap, uint16 *);
 			if (bufsize < len)
 				goto no_space;
 			*w = SVAL(buf, 0);
 			break;
-		case 'd':
+		case 'd': /* signed 32-bit integer (standard int in most systems) */
 			len = 4;
 			d = va_arg(ap, uint32 *);
 			if (bufsize < len)
 				goto no_space;
 			*d = IVAL(buf, 0);
 			break;
-		case 'p':
+		case 'p': /* pointer */
 			len = 4;
 			p = va_arg(ap, void **);
 			if (bufsize < len)
@@ -308,20 +308,20 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 
 			*p = (void *)(IVAL(buf, 0) ? (void *)1 : NULL);
 			break;
-		case 'P':
+		case 'P': /* null-terminated string */
 			/* Return malloc'ed string. */
 			ps = va_arg(ap,char **);
 			len = strlen((const char *)buf) + 1;
 			*ps = SMB_STRDUP((const char *)buf);
 			break;
-		case 'f':
+		case 'f': /* null-terminated string */
 			s = va_arg(ap,char *);
 			len = strlen((const char *)buf) + 1;
 			if (bufsize < len || len > sizeof(fstring))
 				goto no_space;
 			memcpy(s, buf, len);
 			break;
-		case 'B':
+		case 'B': /* fixed-length string */
 			i = va_arg(ap, int *);
 			b = va_arg(ap, char **);
 			len = 4;
