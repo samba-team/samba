@@ -35,7 +35,7 @@ static TDB_CONTEXT *netsamlogon_tdb = NULL;
 bool netsamlogon_cache_init(void)
 {
 	if (!netsamlogon_tdb) {
-		netsamlogon_tdb = tdb_open_log(lock_path(NETSAMLOGON_TDB), 0,
+		netsamlogon_tdb = tdb_open_log(cache_path(NETSAMLOGON_TDB), 0,
 					       TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
 	}
 
