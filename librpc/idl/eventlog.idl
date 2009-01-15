@@ -40,7 +40,7 @@ import "lsa.idl", "security.idl";
 		time_t time_written;
 		uint32 event_id;
 		eventlogEventTypes event_type;
-		[range(0,256)] uint16 num_of_strings;
+		[max(256)] uint16 num_of_strings;
 		uint16 event_category;
 		uint16 reserved_flags;
 		uint32 closing_record_number;
