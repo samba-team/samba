@@ -6,7 +6,7 @@ EXTERNAL_READLINE=no
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
-[  --with-readline[=DIR]   Look for readline include/libs in DIR (default=auto) ],
+[AS_HELP_STRING([--with-readline[=DIR]], [Look for readline include/libs in DIR (default=auto)])],
 [  case "$with_readline" in
   yes)
     AC_MSG_RESULT(yes)

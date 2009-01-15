@@ -6,7 +6,7 @@ SMB_ENABLE(process_model_thread,NO)
 # check for pthread support
 AC_MSG_CHECKING(whether to use pthreads)
 AC_ARG_WITH(pthreads,
-[  --with-pthreads              Include pthreads (default=no) ],
+[AS_HELP_STRING([--with-pthreads],[Include pthreads (default=no)])],
 [ case "$withval" in
 	yes)
 		AC_MSG_RESULT(yes)
@@ -27,7 +27,7 @@ SMB_EXT_LIB(PTHREAD,[-lpthread])
 
 AC_MSG_CHECKING(whether to search for setproctitle support)
 AC_ARG_WITH(setproctitle,
-[  --with-setproctitle          Search for setproctitle support (default=no)],
+[AS_HELP_STRING([--with-setproctitle], [Search for setproctitle support (default=no)])],
 [ case "$withval" in
 	yes)
 		AC_MSG_RESULT(yes)
