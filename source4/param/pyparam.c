@@ -263,7 +263,11 @@ static PyObject *py_lp_ctx_default_service(py_talloc_Object *self, void *closure
 
 static PyObject *py_lp_ctx_config_file(py_talloc_Object *self, void *closure)
 {
-	return PyString_FromString(lp_configfile(self->ptr));
+	const char *configfile = lp_configfile(self->ptr);
+	if (configfile == NULL)
+		Py_RETURN_NONE;
+	else
+		return PyString_FromString(configfile);
 }
 
 static PyGetSetDef py_lp_ctx_getset[] = {
