@@ -54,8 +54,7 @@ knownfail() {
 # List users
 testit "wbinfo -u against $TARGET" $wbinfo -u || failed=`expr $failed + 1`
 # List groups
-# Does not work yet
-knownfail "wbinfo -g against $TARGET" $wbinfo -g || failed=`expr $failed + 1`
+testit "wbinfo -g against $TARGET" $wbinfo -g || failed=`expr $failed + 1`
 # Convert netbios name to IP
 # Does not work yet
 knownfail "wbinfo -N against $TARGET" $wbinfo -N $NETBIOSNAME || failed=`expr $failed + 1`

@@ -46,6 +46,7 @@ WINBIND_OBJ_FILES = $(addprefix $(winbindsrcdir)/, \
 		wb_cmd_getpwuid.o \
 		wb_cmd_userdomgroups.o \
 		wb_cmd_usersids.o \
+		wb_cmd_list_groups.o \
 		wb_cmd_list_trustdom.o \
 		wb_cmd_list_users.o \
 		wb_cmd_setpwent.o \
