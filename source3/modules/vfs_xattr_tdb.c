@@ -574,14 +574,17 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 {
 	struct db_context *db;
 	const char *dbname;
+	char *def_dbname;
 
-	dbname = lp_parm_const_string(snum, "xattr_tdb", "file",
-				      state_path("xattr.tdb"));
-
-	if (dbname == NULL) {
+	def_dbname = state_path("xattr.tdb");
+	if (def_dbname == NULL) {
 		errno = ENOSYS;
 		return false;
 	}
+
+	dbname = lp_parm_const_string(snum, "xattr_tdb", "file", def_dbname);
+
+	/* now we know dbname is not NULL */
 
 	become_root();
 	db = db_open(NULL, dbname, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
@@ -593,10 +596,12 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 #else
 		errno = ENOSYS;
 #endif
+		TALLOC_FREE(def_dbname);
 		return false;
 	}
 
 	*p_db = db;
+	TALLOC_FREE(def_dbname);
 	return true;
 }
 
