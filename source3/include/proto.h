@@ -2384,7 +2384,9 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				const char *share,
 				bool show_hdr,
 				bool force_encrypt,
-				int max_protocol);
+				int max_protocol,
+				int port,
+				int name_type);
 void cli_cm_shutdown(void);
 void cli_cm_display(void);
 void cli_cm_set_credentials(struct user_auth_info *auth_info);
@@ -2435,7 +2437,7 @@ bool receive_getdc_response(TALLOC_CTX *mem_ctx,
 
 int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
-int cli_set_port(struct cli_state *cli, int port);
+void cli_set_port(struct cli_state *cli, int port);
 bool cli_receive_smb(struct cli_state *cli);
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len);
 bool cli_receive_smb_readX_header(struct cli_state *cli);

@@ -50,10 +50,9 @@ unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
  Change the port number used to call on.
 ****************************************************************************/
 
-int cli_set_port(struct cli_state *cli, int port)
+void cli_set_port(struct cli_state *cli, int port)
 {
 	cli->port = port;
-	return port;
 }
 
 /****************************************************************************

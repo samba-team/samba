@@ -4052,7 +4052,7 @@ static int process_command_string(const char *cmd_in)
 		cli = cli_cm_open(talloc_tos(), NULL,
 				have_ip ? dest_ss_str : desthost,
 				service, true, smb_encrypt,
-				max_protocol);
+				max_protocol, port, name_type);
 		if (!cli) {
 			return 1;
 		}
@@ -4518,7 +4518,7 @@ static int process(const char *base_directory)
 	cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
 			service, true, smb_encrypt,
-			max_protocol);
+			max_protocol, port, name_type);
 	if (!cli) {
 		return 1;
 	}
@@ -4551,7 +4551,7 @@ static int do_host_query(const char *query_host)
 
 	cli = cli_cm_open(talloc_tos(), NULL,
 			query_host, "IPC$", true, smb_encrypt,
-			max_protocol);
+			max_protocol, port, name_type);
 	if (!cli)
 		return 1;
 
@@ -4569,10 +4569,9 @@ static int do_host_query(const char *query_host)
 		   else but port 139... */
 
 		cli_cm_shutdown();
-		cli_cm_set_port( 139 );
 		cli = cli_cm_open(talloc_tos(), NULL,
 				query_host, "IPC$", true, smb_encrypt,
-				max_protocol);
+				max_protocol, 139, name_type);
 	}
 
 	if (cli == NULL) {
@@ -4600,7 +4599,7 @@ static int do_tar_op(const char *base_directory)
 		cli = cli_cm_open(talloc_tos(), NULL,
 			have_ip ? dest_ss_str : desthost,
 			service, true, smb_encrypt,
-			max_protocol);
+			max_protocol, port, name_type);
 		if (!cli)
 			return 1;
 	}
@@ -4650,10 +4649,11 @@ static int do_message_op(struct user_auth_info *auth_info)
 
 	msg_port = port ? port : 139;
 
-	if (!(cli=cli_initialise()) || (cli_set_port(cli, msg_port) != msg_port)) {
+	if (!(cli=cli_initialise())) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
+	cli_set_port(cli, msg_port);
 
 	status = cli_connect(cli, server_name, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -4791,13 +4791,12 @@ static int do_message_op(struct user_auth_info *auth_info)
 			 * to port 139 instead of port 445. srl,crh
 			 */
 			name_type = 0x03;
-			cli_cm_set_dest_name_type( name_type );
 			desthost = talloc_strdup(frame,poptGetOptArg(pc));
 			if (!desthost) {
 				exit(ENOMEM);
 			}
 			if( !port )
-				cli_cm_set_port( 139 );
+				port = 139;
  			message = true;
  			break;
 		case 'I':
@@ -4892,11 +4891,6 @@ static int do_message_op(struct user_auth_info *auth_info)
 		set_cmdline_auth_info_password(auth_info,
 					       poptGetArg(pc));
 	}
-
-	/* check for the -P option */
-
-	if ( port != 0 )
-		cli_cm_set_port( port );
 
 	/*
 	 * Don't load debug level from smb.conf. It should be
@@ -5004,7 +4998,6 @@ static int do_message_op(struct user_auth_info *auth_info)
 			*p = 0;
 			p++;
 			sscanf(p, "%x", &name_type);
-			cli_cm_set_dest_name_type( name_type );
 		}
 
 		return do_host_query(qhost);

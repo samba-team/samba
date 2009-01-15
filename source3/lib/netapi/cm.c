@@ -57,7 +57,8 @@ static WERROR libnetapi_open_ipc_connection(struct libnetapi_ctx *ctx,
 	cli_ipc = cli_cm_open(ctx, NULL,
 			      server_name, "IPC$",
 			      false, false,
-			      PROTOCOL_NT1);
+			      PROTOCOL_NT1,
+			      0, 0x20);
 	if (!cli_ipc) {
 		libnetapi_set_error_string(ctx,
 			"Failed to connect to IPC$ share on %s", server_name);

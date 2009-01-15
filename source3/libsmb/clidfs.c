@@ -49,9 +49,6 @@ static struct cm_cred_struct {
 
 static void cm_set_password(const char *newpass);
 
-static int port;
-static int name_type = 0x20;
-
 static struct client_connection *connections;
 
 static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
@@ -109,7 +106,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					const char *share,
 					bool show_sessetup,
 					bool force_encrypt,
-					int max_protocol)
+					int max_protocol,
+					int port,
+					int name_type)
 {
 	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
@@ -152,13 +151,17 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	zero_sockaddr(&ss);
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port)) {
+	if (!(c=cli_initialise())) {
 		d_printf("Connection to %s failed\n", server_n);
 		if (c) {
 			cli_shutdown(c);
 		}
 		return NULL;
 	}
+	if (port) {
+		cli_set_port(c, port);
+	}
+
 	status = cli_connect(c, server_n, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to %s failed (Error %s)\n",
@@ -168,6 +171,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
+	if (max_protocol == 0) {
+		max_protocol = PROTOCOL_NT1;
+	}
 	c->protocol = max_protocol;
 	c->use_kerberos = cm_creds.use_kerberos;
 	c->fallback_after_kerberos = cm_creds.fallback_after_kerberos;
@@ -263,7 +269,8 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		cli_shutdown(c);
 		return do_connect(ctx, newserver,
 				newshare, false,
-				force_encrypt, max_protocol);
+				force_encrypt, max_protocol,
+				port, name_type);
 	}
 
 	/* must be a normal share */
@@ -348,7 +355,9 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					const char *share,
 					bool show_hdr,
 					bool force_encrypt,
-					int max_protocol)
+					int max_protocol,
+					int port,
+					int name_type)
 {
 	struct client_connection *node;
 
@@ -359,7 +368,8 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 	}
 
 	node->cli = do_connect(ctx, server, share,
-				show_hdr, force_encrypt, max_protocol);
+				show_hdr, force_encrypt, max_protocol,
+				port, name_type);
 
 	if ( !node->cli ) {
 		TALLOC_FREE( node );
@@ -413,7 +423,9 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				const char *share,
 				bool show_hdr,
 				bool force_encrypt,
-				int max_protocol)
+				int max_protocol,
+				int port,
+				int name_type)
 {
 	struct cli_state *c;
 
@@ -423,7 +435,7 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 	if (!c) {
 		c = cli_cm_connect(ctx, referring_cli,
 				server, share, show_hdr, force_encrypt,
-				max_protocol);
+				max_protocol, port, name_type);
 	}
 
 	return c;
@@ -490,22 +502,6 @@ void cli_cm_set_credentials(struct user_auth_info *auth_info)
 	cm_creds.use_kerberos = get_cmdline_auth_info_use_kerberos(auth_info);
 	cm_creds.fallback_after_kerberos = false;
 	cm_creds.signing_state = get_cmdline_auth_info_signing_state(auth_info);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_port(int port_number)
-{
-	port = port_number;
-}
-
-/****************************************************************************
-****************************************************************************/
-
-void cli_cm_set_dest_name_type(int type)
-{
-	name_type = type;
 }
 
 /****************************************************************************
@@ -904,7 +900,9 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 					rootcli->desthost,
 					"IPC$", false,
 					(rootcli->trans_enc_state != NULL),
-					rootcli->protocol))) {
+					rootcli->protocol,
+					0,
+					0x20))) {
 		return false;
 	}
 
@@ -950,7 +948,9 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 					share,
 					false,
 					(rootcli->trans_enc_state != NULL),
-					rootcli->protocol)) == NULL) {
+					rootcli->protocol,
+					0,
+					0x20)) == NULL) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
 		return false;

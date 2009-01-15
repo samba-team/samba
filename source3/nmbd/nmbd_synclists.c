@@ -80,10 +80,7 @@ static void sync_child(char *name, int nm_type,
 		return;
 	}
 
-	if (!cli_set_port(cli, 139)) {
-		cli_shutdown(cli);
-		return;
-	}
+	cli_set_port(cli, 139);
 
 	in_addr_to_sockaddr_storage(&ss, ip);
 	status = cli_connect(cli, name, &ss);

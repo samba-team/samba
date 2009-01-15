@@ -1747,11 +1747,7 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	make_nmb_name(&calling, my_name, 0x0);
 	make_nmb_name(&called , dest_host, 0x20);
 
-	if (cli_set_port(cli, port) != port) {
-		cli_shutdown(cli);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
+	cli_set_port(cli, port);
 	cli_set_timeout(cli, 10000); /* 10 seconds. */
 
 	if (dest_ss) {
