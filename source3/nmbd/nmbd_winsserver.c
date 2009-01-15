@@ -2395,7 +2395,7 @@ void wins_write_database(time_t t, bool background)
   err_exit:
 
 	SAFE_FREE(fnamenew);
-	/* fname is talloced and doesn't need to be freed */
+	TALLOC_FREE(fname);
 
 	if (background) {
 		_exit(0);
