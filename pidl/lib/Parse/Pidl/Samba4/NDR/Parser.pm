@@ -862,6 +862,12 @@ sub ParseDataPull($$$$$$$)
 			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
 			$self->pidl("}");
 		}
+		if (my $max = has_property($e, "max")) {
+			$var_name = get_value_of($var_name);
+			$self->pidl("if ($var_name > $max) {");
+			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
+			$self->pidl("}");
+		}
 	} else {
 		$self->ParseTypePull($l->{DATA_TYPE}, $ndr, $var_name, $primitives, $deferred);
 	}

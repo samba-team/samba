@@ -67,6 +67,7 @@ my %supported_properties = (
 
 	# array
 	"range"			=> ["ELEMENT"],
+	"max"			=> ["ELEMENT"],
 	"size_is"		=> ["ELEMENT"],
 	"string"		=> ["ELEMENT"],
 	"noheader"		=> ["ELEMENT"],
