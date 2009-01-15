@@ -84,6 +84,7 @@ struct smb_iconv_convenience;
 
 char *strchr_m(const char *s, char c);
 size_t strlen_m_term(const char *s);
+size_t strlen_m_term_null(const char *s);
 size_t strlen_m(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
 void string_replace_m(char *s, char oldc, char newc);

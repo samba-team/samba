@@ -297,6 +297,25 @@ _PUBLIC_ size_t strlen_m_term(const char *s)
 	return strlen_m(s) + 1;
 }
 
+/*
+ * Weird helper routine for the winreg pipe: If nothing is around, return 0,
+ * if a string is there, include the terminator.
+ */
+
+_PUBLIC_ size_t strlen_m_term_null(const char *s)
+{
+	size_t len;
+	if (!s) {
+		return 0;
+	}
+	len = strlen_m(s);
+	if (len == 0) {
+		return 0;
+	}
+
+	return len+1;
+}
+
 /**
  Strchr and strrchr_m are a bit complex on general multi-byte strings. 
 **/
