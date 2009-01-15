@@ -71,7 +71,7 @@ static int push_signature(uint8 **outbuf)
 	if (tmp == -1) return -1;
 	result += tmp;
 
-	if (asprintf(&lanman, "Samba %s", SAMBA_VERSION_STRING) != -1) {
+	if (asprintf(&lanman, "Samba %s", samba_version_string()) != -1) {
 		tmp = message_push_string(outbuf, lanman, STR_TERMINATE);
 		SAFE_FREE(lanman);
 	}

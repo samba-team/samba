@@ -4974,7 +4974,7 @@ static int do_message_op(struct user_auth_info *auth_info)
 
 	cli_cm_set_credentials(auth_info);
 
-	DEBUG(3,("Client started (version %s).\n", SAMBA_VERSION_STRING));
+	DEBUG(3,("Client started (version %s).\n", samba_version_string()));
 
 	if (tar_type) {
 		if (cmdstr)

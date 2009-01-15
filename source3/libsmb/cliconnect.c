@@ -224,7 +224,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	char *p;
 	fstring lanman;
 	
-	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
+	fstr_sprintf( lanman, "Samba %s", samba_version_string());
 
 	memset(cli->outbuf, '\0', smb_size);
 	cli_set_message(cli->outbuf,13,0,True);

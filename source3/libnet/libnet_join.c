@@ -470,7 +470,7 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 
-	os_sp = talloc_asprintf(mem_ctx, "Samba %s", SAMBA_VERSION_STRING);
+	os_sp = talloc_asprintf(mem_ctx, "Samba %s", samba_version_string());
 	if (!os_sp) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}

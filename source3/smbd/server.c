@@ -1231,7 +1231,7 @@ extern void build_options(bool screen);
 
 	reopen_logs();
 
-	DEBUG(0,("smbd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUG(0,("smbd version %s started.\n", samba_version_string()));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",

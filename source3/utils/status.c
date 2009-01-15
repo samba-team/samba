@@ -406,7 +406,7 @@ static int traverse_sessionid(struct db_record *db, void *state)
 		if (!db) {
 			d_printf("sessionid.tdb not initialised\n");
 		} else {
-			d_printf("\nSamba version %s\n",SAMBA_VERSION_STRING);
+			d_printf("\nSamba version %s\n",samba_version_string());
 			d_printf("PID     Username      Group         Machine                        \n");
 			d_printf("-------------------------------------------------------------------\n");
 

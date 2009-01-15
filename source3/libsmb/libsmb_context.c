@@ -619,7 +619,7 @@ smbc_init_context(SMBCCTX *context)
 const char *
 smbc_version(void)
 {
-        return SAMBA_VERSION_STRING;
+        return samba_version_string();
 }
 
 

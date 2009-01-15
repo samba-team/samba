@@ -1121,7 +1121,7 @@ int main(int argc, char **argv, char **envp)
 	setup_logging("winbindd", log_stdout);
 	reopen_logs();
 
-	DEBUG(0,("winbindd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUG(0,("winbindd version %s started.\n", samba_version_string()));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {

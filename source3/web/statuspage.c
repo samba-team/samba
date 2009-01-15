@@ -345,7 +345,7 @@ void status_page(void)
 
 	printf("<table>\n");
 
-	printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), SAMBA_VERSION_STRING);
+	printf("<tr><td>%s</td><td>%s</td></tr>", _("version:"), samba_version_string());
 
 	fflush(stdout);
 	printf("<tr><td>%s</td><td>%s</td>\n", _("smbd:"), smbd_running()?_("running"):_("not running"));

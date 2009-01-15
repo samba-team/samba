@@ -73,7 +73,7 @@ static void popt_common_callback(poptContext con,
 	if (reason == POPT_CALLBACK_REASON_POST) {
 
 		if (PrintSambaVersionString) {
-			printf( "Version %s\n", SAMBA_VERSION_STRING);
+			printf( "Version %s\n", samba_version_string());
 			exit(0);
 		}
 

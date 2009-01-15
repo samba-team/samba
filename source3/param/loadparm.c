@@ -4773,7 +4773,7 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szPidDir, get_dyn_PIDDIR());
 	string_set(&Globals.szSocketAddress, "0.0.0.0");
 
-	if (asprintf(&s, "Samba %s", SAMBA_VERSION_STRING) < 0) {
+	if (asprintf(&s, "Samba %s", samba_version_string()) < 0) {
 		smb_panic("init_globals: ENOMEM");
 	}
 	string_set(&Globals.szServerString, s);

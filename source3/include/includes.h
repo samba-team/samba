@@ -594,7 +594,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "dynconfig.h"
 #include "util_getent.h"
 #include "debugparse.h"
-#include "version.h"
 #include "privileges.h"
 #include "messages.h"
 #include "locking.h"

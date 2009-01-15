@@ -659,7 +659,7 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 						      : "");
 			break;
 		case 'v' :
-			a_string = realloc_string_sub(a_string, "%v", SAMBA_VERSION_STRING);
+			a_string = realloc_string_sub(a_string, "%v", samba_version_string());
 			break;
 		case 'w' :
 			a_string = realloc_string_sub(a_string, "%w", lp_winbind_separator());

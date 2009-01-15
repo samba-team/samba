@@ -847,7 +847,7 @@ static bool open_sockets(bool isdaemon, int port)
 
 	reopen_logs();
 
-	DEBUG(0,("nmbd version %s started.\n", SAMBA_VERSION_STRING));
+	DEBUG(0,("nmbd version %s started.\n", samba_version_string()));
 	DEBUGADD(0,("%s\n", COPYRIGHT_STARTUP_MESSAGE));
 
 	if (!lp_load_initial_only(get_dyn_CONFIGFILE())) {

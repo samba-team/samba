@@ -24,6 +24,7 @@
 */
 
 #include "includes.h"
+#include "version.h"
 #include "smbd/globals.h"
 
 extern enum protocol_types Protocol;
