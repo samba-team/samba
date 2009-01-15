@@ -58,6 +58,38 @@ import "lsa.idl", "security.idl";
 		[value(size)] uint32 size2;
 	} eventlog_Record;
 
+	/* compat structure for samba3 on-disc eventlog format,
+	   this is *NOT* used on the wire. - gd */
+
+	typedef [flag(NDR_NOALIGN|NDR_PAHEX),public] struct {
+		uint32 size;
+		[charset(DOS),value("eLfL")] uint8 reserved[4];
+		uint32 record_number;
+		time_t time_generated;
+		time_t time_written;
+		uint32 event_id;
+		eventlogEventTypes event_type;
+		[range(0,256)] uint16 num_of_strings;
+		uint16 event_category;
+		uint16 reserved_flags;
+		uint32 closing_record_number;
+		uint32 stringoffset;
+		[value(sid.length)] uint32 sid_length;
+		uint32 sid_offset;
+		[value(data.length)] uint32 data_length;
+		uint32 data_offset;
+		[value(2*strlen_m_term(source_name))] uint32 source_name_len;
+		nstring source_name;
+		[value(2*strlen_m_term(computer_name))] uint32 computer_name_len;
+		nstring computer_name;
+		uint32 sid_padding;
+		DATA_BLOB sid;
+		[value(2*ndr_size_string_array(strings, num_of_strings, STR_NULLTERM))] uint32 strings_len;
+		nstring strings[num_of_strings];
+		DATA_BLOB data;
+		uint32 padding;
+	} eventlog_Record_tdb;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS eventlog_ClearEventLogW(
