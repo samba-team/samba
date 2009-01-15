@@ -59,7 +59,12 @@ bool change_to_root_user(void)
 
 struct event_context *smbd_event_context(void)
 {
-	return NULL;
+	static struct event_context *ev;
+
+	if (!ev) {
+		ev = event_context_init(NULL);
+	}
+	return ev;
 }
 
 struct messaging_context *smbd_messaging_context(void)
