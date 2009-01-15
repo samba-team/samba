@@ -180,7 +180,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->event_id));
 			NDR_CHECK(ndr_pull_eventlogEventTypes(ndr, NDR_SCALARS, &r->event_type));
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->num_of_strings));
-			if (r->num_of_strings < 0 || r->num_of_strings > 256) {
+			if (r->num_of_strings > 256) {
 				return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 			}
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->event_category));

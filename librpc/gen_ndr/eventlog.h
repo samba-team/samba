@@ -47,7 +47,7 @@ struct eventlog_Record {
 	time_t time_written;
 	uint32_t event_id;
 	enum eventlogEventTypes event_type;
-	uint16_t num_of_strings;/* [range(0,256)] */
+	uint16_t num_of_strings;/* [max(256)] */
 	uint16_t event_category;
 	uint16_t reserved_flags;
 	uint32_t closing_record_number;
