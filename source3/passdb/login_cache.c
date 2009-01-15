@@ -35,7 +35,8 @@ bool login_cache_init(void)
 	/* skip file open if it's already opened */
 	if (cache) return True;
 
-	if (asprintf(&cache_fname, "%s/%s", lp_lockdir(), LOGIN_CACHE_FILE) == -1) {
+	cache_fname = cache_path(LOGIN_CACHE_FILE);
+	if (cache_fname == NULL) {
 		DEBUG(0, ("Filename allocation failed.\n"));
 		return False;
 	}
@@ -48,7 +49,7 @@ bool login_cache_init(void)
 	if (!cache)
 		DEBUG(5, ("Attempt to open %s failed.\n", cache_fname));
 
-	SAFE_FREE(cache_fname);
+	TALLOC_FREE(cache_fname);
 
 	return (cache ? True : False);
 }
