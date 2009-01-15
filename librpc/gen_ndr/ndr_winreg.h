@@ -93,6 +93,7 @@ void ndr_print_KeySecurityData(struct ndr_print *ndr, const char *name, const st
 void ndr_print_winreg_SecBuf(struct ndr_print *ndr, const char *name, const struct winreg_SecBuf *r);
 void ndr_print_winreg_CreateAction(struct ndr_print *ndr, const char *name, enum winreg_CreateAction r);
 void ndr_print_winreg_StringBuf(struct ndr_print *ndr, const char *name, const struct winreg_StringBuf *r);
+void ndr_print_winreg_ValNameBuf(struct ndr_print *ndr, const char *name, const struct winreg_ValNameBuf *r);
 enum ndr_err_code ndr_push_winreg_NotifyChangeType(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_winreg_NotifyChangeType(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_winreg_NotifyChangeType(struct ndr_print *ndr, const char *name, uint32_t r);
