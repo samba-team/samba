@@ -856,28 +856,26 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	ssize_t ret;
 	int fd;
 	char *realm_upper = NULL;
+	bool result = false;
 
 	if (!dname) {
-		return False;
+		return false;
 	}
 	if ((mkdir(dname, 0755)==-1) && (errno != EEXIST)) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 			"failed to create directory %s. Error was %s\n",
 			dname, strerror(errno) ));
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	tmpname = talloc_asprintf(dname, "%s/smb_tmp_krb5.XXXXXX", lp_lockdir());
 	if (!tmpname) {
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	fname = talloc_asprintf(dname, "%s/krb5.conf.%s", dname, domain);
 	if (!fname) {
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	DEBUG(10,("create_local_private_krb5_conf_for_domain: fname = %s, realm = %s, domain = %s\n",
@@ -888,8 +886,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 	kdc_ip_string = get_kdc_ip_string(dname, realm, sitename, pss);
 	if (!kdc_ip_string) {
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	file_contents = talloc_asprintf(fname,
@@ -902,8 +899,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 					realm_upper, realm_upper, kdc_ip_string);
 
 	if (!file_contents) {
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	flen = strlen(file_contents);
@@ -913,8 +909,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: smb_mkstemp failed,"
 			" for file %s. Errno %s\n",
 			tmpname, strerror(errno) ));
-		TALLOC_FREE(dname);
-		return false;
+		goto done;
 	}
 
 	if (fchmod(fd, 0644)==-1) {
@@ -923,8 +918,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			tmpname, strerror(errno) ));
 		unlink(tmpname);
 		close(fd);
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	ret = write(fd, file_contents, flen);
@@ -934,15 +928,13 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			(int)ret, (unsigned int)flen, strerror(errno) ));
 		unlink(tmpname);
 		close(fd);
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 	if (close(fd)==-1) {
 		DEBUG(0,("create_local_private_krb5_conf_for_domain: close failed."
 			" Errno %s\n", strerror(errno) ));
 		unlink(tmpname);
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	if (rename(tmpname, fname) == -1) {
@@ -950,8 +942,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 			"of %s to %s failed. Errno %s\n",
 			tmpname, fname, strerror(errno) ));
 		unlink(tmpname);
-		TALLOC_FREE(dname);
-		return False;
+		goto done;
 	}
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
@@ -960,6 +951,8 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
+
+	result = true;
 
 #if defined(OVERWRITE_SYSTEM_KRB5_CONF)
 
@@ -977,8 +970,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 
 		if (lret != -1 || strcmp(linkpath, fname) == 0) {
 			/* Symlink already exists. */
-			TALLOC_FREE(dname);
-			return True;
+			goto done;
 		}
 
 		/* Try and replace with a symlink. */
@@ -988,8 +980,7 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: symlink "
 					"of %s to %s failed. Errno %s\n",
 					fname, SYSTEM_KRB5_CONF_PATH, strerror(errno) ));
-				TALLOC_FREE(dname);
-				return True; /* Not a fatal error. */
+				goto done; /* Not a fatal error. */
 			}
 
 			/* Yes, this is a race conditon... too bad. */
@@ -998,23 +989,22 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 					"of %s to %s failed. Errno %s\n",
 					SYSTEM_KRB5_CONF_PATH, newpath,
 					strerror(errno) ));
-				TALLOC_FREE(dname);
-				return True; /* Not a fatal error. */
+				goto done; /* Not a fatal error. */
 			}
 
 			if (symlink(fname, SYSTEM_KRB5_CONF_PATH) == -1) {
 				DEBUG(0,("create_local_private_krb5_conf_for_domain: "
 					"forced symlink of %s to /etc/krb5.conf failed. Errno %s\n",
 					fname, strerror(errno) ));
-				TALLOC_FREE(dname);
-				return True; /* Not a fatal error. */
+				goto done; /* Not a fatal error. */
 			}
 		}
 	}
 #endif
 
+done:
 	TALLOC_FREE(dname);
 
-	return True;
+	return result;
 }
 #endif
