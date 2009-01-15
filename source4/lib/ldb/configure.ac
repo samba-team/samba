@@ -37,7 +37,7 @@ AC_PATH_PROG(SLAPD,slapd)
 AC_CHECK_HEADERS(stdint.h dlfcn.h)
 AC_CONFIG_HEADER(include/config.h)
 
-AC_DEFINE_UNQUOTED(LDB_MODULESDIR, LIBDIR "/ldb" , [Modules directory] )
+LDB_MODULESDIR="${libdir}/ldb"
 AC_SUBST(LDB_MODULESDIR)
 
 TESTS=""
