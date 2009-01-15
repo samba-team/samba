@@ -183,8 +183,8 @@ bool print_backend_init(struct messaging_context *msg_ctx)
 	int services = lp_numservices();
 	int snum;
 
-	unlink(lock_path("printing.tdb"));
-	mkdir(lock_path("printing"),0755);
+	unlink(cache_path("printing.tdb"));
+	mkdir(cache_path("printing"),0755);
 
 	/* handle a Samba upgrade */
 
