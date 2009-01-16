@@ -2435,6 +2435,44 @@ const char *lp_default_path(void)
         return dyn_CONFIGFILE;
 }
 
+/**
+ * Update the internal state of a loadparm context after settings 
+ * have changed.
+ */
+static bool lp_update(struct loadparm_context *lp_ctx)
+{
+	lp_add_auto_services(lp_ctx, lp_auto_services(lp_ctx));
+
+	lp_add_hidden(lp_ctx, "IPC$", "IPC");
+	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
+
+	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
+		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
+	}
+
+	panic_action = lp_ctx->globals->panic_action;
+
+	reload_charcnv(lp_ctx);
+
+	/* FIXME: ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx); */
+
+	/* FIXME: This is a bit of a hack, but we can't use a global, since 
+	 * not everything that uses lp also uses the socket library */
+	if (lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
+		setenv("SOCKET_TESTNONBLOCK", "1", 1);
+	} else {
+		unsetenv("SOCKET_TESTNONBLOCK");
+	}
+
+	/* FIXME: Check locale in environment for this: */
+	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
+		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)));
+	else
+		d_set_iconv((smb_iconv_t)-1);
+
+	return true;
+}
+
 bool lp_load_default(struct loadparm_context *lp_ctx)
 {
     const char *path;
@@ -2444,7 +2482,7 @@ bool lp_load_default(struct loadparm_context *lp_ctx)
     if (!file_exist(path)) {
 	    /* We allow the default smb.conf file to not exist, 
 	     * basically the equivalent of an empty file. */
-	    return true;
+	    return lp_update(lp_ctx);
     }
 
     return lp_load(lp_ctx, path);
@@ -2480,34 +2518,7 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 		if (lp_ctx->currentService != NULL)
 			bRetval = service_ok(lp_ctx->currentService);
 
-	lp_add_auto_services(lp_ctx, lp_auto_services(lp_ctx));
-
-	lp_add_hidden(lp_ctx, "IPC$", "IPC");
-	lp_add_hidden(lp_ctx, "ADMIN$", "DISK");
-
-	if (!lp_ctx->globals->szWINSservers && lp_ctx->globals->bWINSsupport) {
-		lp_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");
-	}
-
-	panic_action = lp_ctx->globals->panic_action;
-
-	reload_charcnv(lp_ctx);
-
-	/* FIXME: ntstatus_check_dos_mapping = lp_nt_status_support(lp_ctx); */
-
-	/* FIXME: This is a bit of a hack, but we can't use a global, since 
-	 * not everything that uses lp also uses the socket library */
-	if (lp_parm_bool(lp_ctx, NULL, "socket", "testnonblock", false)) {
-		setenv("SOCKET_TESTNONBLOCK", "1", 1);
-	} else {
-		unsetenv("SOCKET_TESTNONBLOCK");
-	}
-
-	/* FIXME: Check locale in environment for this: */
-	if (strcmp(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)) != 0)
-		d_set_iconv(smb_iconv_open(lp_display_charset(lp_ctx), lp_unix_charset(lp_ctx)));
-	else
-		d_set_iconv((smb_iconv_t)-1);
+	bRetval = bRetval && lp_update(lp_ctx);
 
 	return bRetval;
 }
