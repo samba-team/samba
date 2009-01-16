@@ -20,6 +20,8 @@
 #ifndef _CTDB_H
 #define _CTDB_H
 
+#include <netinet/in.h>
+
 #define CTDB_IMMEDIATE_MIGRATION	0x00000001
 struct ctdb_call {
 	int call_id;
@@ -519,6 +521,33 @@ struct ctdb_uptime {
 	struct timeval ctdbd_start_time;
 	struct timeval last_recovery_started;
 	struct timeval last_recovery_finished;
+};
+
+/*
+  definitions for different socket structures
+ */
+typedef struct sockaddr_in ctdb_addr_in;
+typedef struct sockaddr_in6 ctdb_addr_in6;
+typedef union {
+	struct sockaddr sa;
+	ctdb_addr_in	ip;
+	ctdb_addr_in6	ip6;
+} ctdb_sock_addr;
+
+/*
+  struct for tcp_client control
+  this is an ipv4 only version of this structure used by samba
+  samba will later be migrated over to use the 
+  ctdb_control_tcp_addr structure instead
+ */
+struct ctdb_control_tcp {
+	struct sockaddr_in src; // samba uses this
+	struct sockaddr_in dest;// samba uses this
+};
+/* new style structure */
+struct ctdb_control_tcp_addr {
+	ctdb_sock_addr src;
+	ctdb_sock_addr dest;
 };
 
 int ctdb_socket_connect(struct ctdb_context *ctdb);

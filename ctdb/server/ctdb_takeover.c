@@ -1022,15 +1022,16 @@ static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
 /*
   called by a client to inform us of a TCP connection that it is managing
   that should tickled with an ACK when IP takeover is done
+  we handle both the old ipv4 style of packets as well as the new ipv4/6
+  pdus.
  */
-//qqq we need a new version of this control that takes ctdb_sock_addr
-//and have samba move to that instead.
-// This is IPV4 ONLY
 int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				TDB_DATA indata)
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
-	struct ctdb_control_tcp *p = (struct ctdb_control_tcp *)indata.dptr;
+	struct ctdb_control_tcp *old_addr = NULL;
+	struct ctdb_control_tcp_addr new_addr;
+	struct ctdb_control_tcp_addr *tcp_sock = NULL;
 	struct ctdb_tcp_list *tcp;
 	struct ctdb_control_tcp_vnn t;
 	int ret;
@@ -1039,20 +1040,52 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	struct ctdb_vnn *vnn;
 	ctdb_sock_addr addr;
 
+	switch (indata.dsize) {
+	case sizeof(struct ctdb_control_tcp):
+		old_addr = (struct ctdb_control_tcp *)indata.dptr;
+		ZERO_STRUCT(new_addr);
+		tcp_sock = &new_addr;
+		tcp_sock->src.ip  = old_addr->src;
+		tcp_sock->dest.ip = old_addr->dest;
+		break;
+	case sizeof(struct ctdb_control_tcp_addr):
+		tcp_sock = (struct ctdb_control_tcp_addr *)indata.dptr;
+		break;
+	default:
+		DEBUG(DEBUG_ERR,(__location__ " Invalid data structure passed to ctdb_control_tcp_client. size was %d but only allowed sizes are %lu and %lu\n", (int)indata.dsize, sizeof(struct ctdb_control_tcp), sizeof(struct ctdb_control_tcp_addr)));
+		return -1;
+	}
+
+	addr = tcp_sock->src;
+	ctdb_canonicalize_ip(&addr,  &tcp_sock->src);
+	addr = tcp_sock->dest;
+	ctdb_canonicalize_ip(&addr, &tcp_sock->dest);
+
 	ZERO_STRUCT(addr);
-	addr.ip = p->dest;
+	memcpy(&addr, &tcp_sock->dest, sizeof(addr));
 	vnn = find_public_ip_vnn(ctdb, &addr);
 	if (vnn == NULL) {
-		if (ntohl(p->dest.sin_addr.s_addr) != INADDR_LOOPBACK) {
-			DEBUG(DEBUG_INFO,("Could not add client IP %s. This is not a public address.\n", 
-				ctdb_addr_to_str((ctdb_sock_addr *)&p->dest)));
+		switch (addr.sa.sa_family) {
+		case AF_INET:
+			if (ntohl(addr.ip.sin_addr.s_addr) != INADDR_LOOPBACK) {
+				DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public address.\n", 
+					ctdb_addr_to_str(&addr)));
+			}
+			break;
+		case AF_INET6:
+			DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public ipv6 address.\n", 
+				ctdb_addr_to_str(&addr)));
+			break;
+		default:
+			DEBUG(DEBUG_ERR,(__location__ " Unknown family type %d\n", addr.sa.sa_family));
 		}
+
 		return 0;
 	}
 
 	if (vnn->pnn != ctdb->pnn) {
 		DEBUG(DEBUG_ERR,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
-			ctdb_addr_to_str((ctdb_sock_addr *)&p->dest),
+			ctdb_addr_to_str(&addr),
 			client_id, client->pid));
 		/* failing this call will tell smbd to die */
 		return -1;
@@ -1062,7 +1095,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	CTDB_NO_MEMORY(ctdb, ip);
 
 	ip->ctdb      = ctdb;
-	ip->addr.ip   = p->dest;
+	ip->addr      = addr;
 	ip->client_id = client_id;
 	talloc_set_destructor(ip, ctdb_client_ip_destructor);
 	DLIST_ADD(ctdb->client_ip_list, ip);
@@ -1070,21 +1103,34 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	tcp = talloc(client, struct ctdb_tcp_list);
 	CTDB_NO_MEMORY(ctdb, tcp);
 
-	tcp->connection.src_addr.ip = p->src;
-	tcp->connection.dst_addr.ip = p->dest;
+	tcp->connection.src_addr = tcp_sock->src;
+	tcp->connection.dst_addr = tcp_sock->dest;
 
 	DLIST_ADD(client->tcp_list, tcp);
 
-	t.src.ip  = p->src;
-	t.dest.ip = p->dest;
+	t.src  = tcp_sock->src;
+	t.dest = tcp_sock->dest;
 
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
-		(unsigned)ntohs(p->dest.sin_port), 
-		ctdb_addr_to_str((ctdb_sock_addr *)&p->src),
-		(unsigned)ntohs(p->src.sin_port), client_id, client->pid));
+	switch (addr.sa.sa_family) {
+	case AF_INET:
+		DEBUG(DEBUG_ERR,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
+			(unsigned)ntohs(tcp_sock->dest.ip.sin_port), 
+			ctdb_addr_to_str(&tcp_sock->src),
+			(unsigned)ntohs(tcp_sock->src.ip.sin_port), client_id, client->pid));
+		break;
+	case AF_INET6:
+		DEBUG(DEBUG_ERR,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
+			(unsigned)ntohs(tcp_sock->dest.ip6.sin6_port), 
+			ctdb_addr_to_str(&tcp_sock->src),
+			(unsigned)ntohs(tcp_sock->src.ip6.sin6_port), client_id, client->pid));
+		break;
+	default:
+		DEBUG(DEBUG_ERR,(__location__ " Unknown family %d\n", addr.sa.sa_family));
+	}
+
 
 	/* tell all nodes about this tcp connection */
 	ret = ctdb_daemon_send_control(ctdb, CTDB_BROADCAST_CONNECTED, 0, 
