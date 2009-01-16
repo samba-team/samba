@@ -348,11 +348,6 @@ The following parameters have been added:
 
 	Default: no
 	
-+ js include (G)
-	Path to JavaScript library. 
-
-	Default: Set at compile-time
-	
 + setup directory
 	Path to data used by provisioning script.
 
