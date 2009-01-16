@@ -13,6 +13,20 @@ loadconfig() {
     fi
 }
 
+##############################################################
+# determine on what type of system (init style) we are running
+detect_init_style() {
+    # only do detection if not already set:
+    test "x$CTDB_INIT_STYLE" != "x" && return
+
+    if [ -x /sbin/startproc ]; then
+        CTDB_INIT_STYLE="suse"
+    elif [ -x /sbin/start-stop-daemon ]; then
+        CTDB_INIT_STYLE="ubuntu"
+    else
+        CTDB_INIT_STYLE="redhat"
+    fi
+}
 
 ######################################################
 # simulate /sbin/service on platforms that don't have it
