@@ -342,34 +342,6 @@ static NTSTATUS rpc_read_recv(struct async_req *req)
 	return async_req_simple_recv(req);
 }
 
-static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
-			 char *pdata, size_t size)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
-
-	ev = event_context_init(frame);
-	if (ev == NULL) {
-		goto fail;
-	}
-
-	req = rpc_read_send(frame, ev, cli, pdata, size);
-	if (req == NULL) {
-		goto fail;
-	}
-
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
-
-	status = rpc_read_recv(req);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
 				 struct rpc_hdr_info *prhdr,
 				 prs_struct *pdu)
