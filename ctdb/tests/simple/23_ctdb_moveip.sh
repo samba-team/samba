@@ -52,6 +52,8 @@ fi
 echo "Getting list of public IPs..."
 try_command_on_node -v 0 "$CTDB ip -n all | sed -e '1d'"
 
+sanity_check_ips "$out"
+
 # Select an IP/node to move.
 num_ips=$(echo "$out" | wc -l)
 num_to_move=$(($RANDOM % $num_ips))

@@ -215,6 +215,28 @@ sanity_check_output ()
     return $ret
 }
 
+sanity_check_ips ()
+{
+    local ips="$1" # Output of "ctdb ip -n all"
+
+    echo "Sanity checking IPs..."
+
+    local x ipp prev
+    prev=""
+    while read x ipp ; do
+	[ "$ipp" = "-1" ] && break
+	if [ -n "$prev" -a "$ipp" != "$prev" ] ; then
+	    echo "OK"
+	    return 0
+	fi
+	prev="$ipp"
+    done <<<"$ips"
+
+    echo "BAD: a node was -1 or IPs are only assigned to one node"
+    echo "Are you running an old version of CTDB?"
+    return 1
+}
+
 #######################################
 
 # Wait until either timeout expires or command succeeds.  The command
