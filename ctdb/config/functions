@@ -33,6 +33,10 @@ detect_init_style() {
 service() { 
   service_name="$1"
   op="$2"
+
+  # do nothing, when no service was specified
+  test "x$service_name" = "x" && return
+
   if [ -x /sbin/service ]; then
       /sbin/service "$service_name" "$op"
   elif [ -x /etc/init.d/$service_name ]; then
@@ -47,6 +51,10 @@ service() {
 nice_service() { 
   service_name="$1"
   op="$2"
+
+  # do nothing, when no service was specified
+  test "x$service_name" = "x" && return
+
   if [ -x /sbin/service ]; then
       nice /sbin/service "$service_name" "$op"
   elif [ -x /etc/init.d/$service_name ]; then
