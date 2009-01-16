@@ -581,9 +581,20 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		TALLOC_FREE(s);
 	}
 
-	if (ads->server.ldap_server &&
-	    ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {
-		goto got_connection;
+	if (ads->server.ldap_server)
+	{
+		if (ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {
+			goto got_connection;
+		}
+
+		/* The choice of which GC use is handled one level up in
+		   ads_connect_gc().  If we continue on from here with
+		   ads_find_dc() we will get GC searches on port 389 which
+		   doesn't work.   --jerry */
+
+		if (ads->server.gc == true) {
+			return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+		}
 	}
 
 	ntstatus = ads_find_dc(ads);
