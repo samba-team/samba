@@ -1041,26 +1041,202 @@ static NTSTATUS cli_pipe_reset_current_pdu(struct rpc_pipe_client *cli, RPC_HDR 
  Call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
 ****************************************************************************/
 
-static bool cli_api_pipe(struct cli_state *cli, const char *pipe_name,
-			 uint16 *setup, uint32 setup_count,
-			 uint32 max_setup_count,
-			 char *params, uint32 param_count,
-			 uint32 max_param_count,
-			 char *data, uint32 data_count,
-			 uint32 max_data_count,
-			 char **rparam, uint32 *rparam_count,
-			 char **rdata, uint32 *rdata_count)
-{
-	cli_send_trans(cli, SMBtrans,
-                 pipe_name,
-                 0,0,                         /* fid, flags */
-                 setup, setup_count, max_setup_count,
-                 params, param_count, max_param_count,
-                 data, data_count, max_data_count);
+struct cli_api_pipe_state {
+	struct event_context *ev;
+	struct rpc_pipe_client *cli;
+	uint32_t max_rdata_len;
+	uint8_t *rdata;
+	uint32_t rdata_len;
+};
 
-	return (cli_receive_trans(cli, SMBtrans,
-                            rparam, (unsigned int *)rparam_count,
-                            rdata, (unsigned int *)rdata_count));
+static void cli_api_pipe_np_trans_done(struct async_req *subreq);
+static void cli_api_pipe_sock_send_done(struct async_req *subreq);
+static void cli_api_pipe_sock_read_done(struct async_req *subreq);
+
+static struct async_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
+					   struct event_context *ev,
+					   struct rpc_pipe_client *cli,
+					   uint8_t *data, size_t data_len,
+					   uint32_t max_rdata_len)
+{
+	struct async_req *result, *subreq;
+	struct cli_api_pipe_state *state;
+	NTSTATUS status;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct cli_api_pipe_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->cli = cli;
+	state->max_rdata_len = max_rdata_len;
+
+	if (state->max_rdata_len < RPC_HEADER_LEN) {
+		/*
+		 * For a RPC reply we always need at least RPC_HEADER_LEN
+		 * bytes. We check this here because we will receive
+		 * RPC_HEADER_LEN bytes in cli_trans_sock_send_done.
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto post_status;
+	}
+
+	if (cli->transport_type == NCACN_NP) {
+
+		uint16_t setup[2];
+		SSVAL(setup+0, 0, TRANSACT_DCERPCCMD);
+		SSVAL(setup+1, 0, cli->trans.np.fnum);
+
+		subreq = cli_trans_send(
+			state, ev, cli->trans.np.cli, SMBtrans,
+			"\\PIPE\\", 0, 0, 0, setup, 2, 0,
+			NULL, 0, 0, data, data_len, max_rdata_len);
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq->async.fn = cli_api_pipe_np_trans_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	if ((cli->transport_type == NCACN_IP_TCP)
+	    || (cli->transport_type == NCACN_UNIX_STREAM)) {
+		subreq = sendall_send(state, ev, cli->trans.sock.fd,
+				      data, data_len, 0);
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq->async.fn = cli_api_pipe_sock_send_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	status = NT_STATUS_INVALID_PARAMETER;
+
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void cli_api_pipe_np_trans_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct cli_api_pipe_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_api_pipe_state);
+	NTSTATUS status;
+
+	status = cli_trans_recv(subreq, state, NULL, NULL, NULL, NULL,
+				&state->rdata, &state->rdata_len);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+static void cli_api_pipe_sock_send_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct cli_api_pipe_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_api_pipe_state);
+	NTSTATUS status;
+
+	status = sendall_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	state->rdata = TALLOC_ARRAY(state, uint8_t, RPC_HEADER_LEN);
+	if (async_req_nomem(state->rdata, req)) {
+		return;
+	}
+	state->rdata_len = RPC_HEADER_LEN;
+
+	subreq = recvall_send(state, state->ev, state->cli->trans.sock.fd,
+			      state->rdata, RPC_HEADER_LEN, 0);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = cli_api_pipe_sock_read_done;
+	subreq->async.priv = req;
+}
+
+static void cli_api_pipe_sock_read_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = recvall_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+static NTSTATUS cli_api_pipe_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+				  uint8_t **prdata, uint32_t *prdata_len)
+{
+	struct cli_api_pipe_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_api_pipe_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+
+	*prdata = talloc_move(mem_ctx, &state->rdata);
+	*prdata_len = state->rdata_len;
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS cli_api_pipe(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
+			     uint8_t *data, uint32_t data_len,
+			     uint32_t max_rdata_len,
+			     uint8_t **prdata, uint32_t *prdata_len)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = cli_api_pipe_send(frame, ev, cli, data, data_len, max_rdata_len);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_api_pipe_recv(req, mem_ctx, prdata, prdata_len);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -1094,13 +1270,11 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 			prs_struct *rbuf, /* Incoming reply - return as an NDR stream. */
 			uint8 expected_pkt_type)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	char *rparam = NULL;
-	uint32 rparam_len = 0;
-	char *pdata = prs_data_p(data);
+	NTSTATUS ret;
 	uint32 data_len = prs_offset(data);
-	char *prdata = NULL;
-	uint32 rdata_len = 0;
+	uint8_t *rdata = NULL;
+	uint8_t *rdata_copy;
+	uint32_t rdata_len = 0;
 	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
 	uint32 current_rbuf_offset = 0;
 	prs_struct current_pdu;
@@ -1115,78 +1289,17 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
 
-	switch (cli->transport_type) {
-	case NCACN_NP: {
-		uint16 setup[2];
-		/* Create setup parameters - must be in native byte order. */
-		setup[0] = TRANSACT_DCERPCCMD;
-		setup[1] = cli->trans.np.fnum; /* Pipe file handle. */
-
-		/*
-		 * Send the last (or only) fragment of an RPC request. For
-		 * small amounts of data (about 1024 bytes or so) the RPC
-		 * request and response appears in a SMBtrans request and
-		 * response.
-		 */
-
-		if (!cli_api_pipe(cli->trans.np.cli, "\\PIPE\\",
-				  setup, 2, 0,     /* Setup, length, max */
-				  NULL, 0, 0,      /* Params, length, max */
-				  pdata, data_len, max_data, /* data, length,
-							      * max */
-				  &rparam, &rparam_len, /* return params,
-							 * len */
-				  &prdata, &rdata_len)) /* return data, len */
-		{
-			DEBUG(0, ("rpc_api_pipe: %s returned critical error. "
-				  "Error was %s\n",
-				  rpccli_pipe_txt(debug_ctx(), cli),
-				  cli_errstr(cli->trans.np.cli)));
-			ret = cli_get_nt_error(cli->trans.np.cli);
-			SAFE_FREE(rparam);
-			SAFE_FREE(prdata);
-			goto err;
-		}
-		break;
-	}
-	case NCACN_IP_TCP:
-	case NCACN_UNIX_STREAM:
-	{
-		ssize_t nwritten, nread;
-		nwritten = write_data(cli->trans.sock.fd, pdata, data_len);
-		if (nwritten == -1) {
-			ret = map_nt_error_from_unix(errno);
-			DEBUG(0, ("rpc_api_pipe: write_data returned %s\n",
-				  strerror(errno)));
-			goto err;
-		}
-		rparam = NULL;
-		prdata = SMB_MALLOC_ARRAY(char, 1);
-		if (prdata == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		nread = sys_read(cli->trans.sock.fd, prdata, 1);
-		if (nread == 0) {
-			SAFE_FREE(prdata);
-		}
-		if (nread == -1) {
-			ret = NT_STATUS_END_OF_FILE;
-			goto err;
-		}
-		rdata_len = nread;
-		break;
-	}
-	default:
-		DEBUG(0, ("unknown transport type %d\n",
-			  cli->transport_type));
-		return NT_STATUS_INTERNAL_ERROR;
+	ret = cli_api_pipe(talloc_tos(), cli,
+			   (uint8_t *)prs_data_p(data), prs_offset(data),
+			   cli->max_recv_frag
+			   ? cli->max_recv_frag : RPC_MAX_PDU_FRAG_LEN,
+			   &rdata, &rdata_len);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(5, ("cli_api_pipe failed: %s\n", nt_errstr(ret)));
+		return ret;
 	}
 
-	/* Throw away returned params - we know we won't use them. */
-
-	SAFE_FREE(rparam);
-
-	if (prdata == NULL) {
+	if (rdata == NULL) {
 		DEBUG(3,("rpc_api_pipe: %s failed to return data.\n",
 			 rpccli_pipe_txt(debug_ctx(), cli)));
 		/* Yes - some calls can truely return no data... */
@@ -1195,10 +1308,16 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	}
 
 	/*
-	 * Give this memory as dynamic to the current pdu.
+	 * Give this memory as dynamic to the current pdu. Duplicating it
+	 * sucks, but prs_struct doesn't know about talloc :-(
 	 */
-
-	prs_give_memory(&current_pdu, prdata, rdata_len, True);
+	rdata_copy = (uint8_t *)memdup(rdata, rdata_len);
+	TALLOC_FREE(rdata);
+	if (rdata_copy == NULL) {
+		prs_mem_free(&current_pdu);
+		return NT_STATUS_NO_MEMORY;
+	}
+	prs_give_memory(&current_pdu, (char *)rdata_copy, rdata_len, true);
 
 	/* Ensure we can mess with the return prs_struct. */
 	SMB_ASSERT(UNMARSHALLING(rbuf));
