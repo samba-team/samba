@@ -695,7 +695,16 @@ NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
 NTSTATUS _eventlog_CloseEventLog(pipes_struct * p,
 				 struct eventlog_CloseEventLog *r)
 {
-	return elog_close( p, r->in.handle );
+	NTSTATUS status;
+
+	status = elog_close( p, r->in.handle );
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ZERO_STRUCTP(r->out.handle);
+
+	return NT_STATUS_OK;
 }
 
 /********************************************************************
