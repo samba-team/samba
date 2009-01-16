@@ -40,7 +40,6 @@ base.charset.*.Testing partial surrogate
 .*net.api.delshare.*				# DelShare isn't implemented yet
 rap.*netservergetinfo
 smb2.persistent.handles1
-samba4.winbind.struct.*.LIST_GROUPS       # Not yet working in winbind
 samba4.winbind.struct.*.SHOW_SEQUENCE     # Not yet working in winbind
 samba4.winbind.struct.*.GETPWENT          # Not yet working in winbind
 samba4.winbind.struct.*.SETPWENT          # Not yet working in winbind
