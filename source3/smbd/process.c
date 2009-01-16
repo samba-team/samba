@@ -1610,218 +1610,6 @@ void construct_reply_common_req(struct smb_request *req, char *outbuf)
 	construct_reply_common(req, (char *)req->inbuf, outbuf);
 }
 
-/****************************************************************************
- Construct a chained reply and add it to the already made reply
-****************************************************************************/
-
-#if 0
-
-void chain_reply(struct smb_request *req)
-{
-	/*
-	 * Dirty little const_discard: We mess with req->inbuf, which is
-	 * declared as const. If maybe at some point this routine gets
-	 * rewritten, this const_discard could go away.
-	 */
-	char *inbuf = CONST_DISCARD(char *, req->inbuf);
-	int size = smb_len(req->inbuf)+4;
-
-	int smb_com1, smb_com2 = CVAL(inbuf,smb_vwv0);
-	unsigned smb_off2 = SVAL(inbuf,smb_vwv1);
-	char *inbuf2;
-	int outsize2;
-	int new_size;
-	char inbuf_saved[smb_wct];
-	char *outbuf = (char *)req->outbuf;
-	size_t outsize = smb_len(outbuf) + 4;
-	size_t outsize_padded;
-	size_t padding;
-	size_t ofs, to_move;
-
-	struct smb_request *req2;
-	size_t caller_outputlen;
-	char *caller_output;
-
-	/* Maybe its not chained, or it's an error packet. */
-	if (smb_com2 == 0xFF || SVAL(outbuf,smb_rcls) != 0) {
-		SCVAL(outbuf,smb_vwv0,0xFF);
-		return;
-	}
-
-	if (chain_size == 0) {
-		/* this is the first part of the chain */
-		orig_inbuf = inbuf;
-	}
-
-	/*
-	 * We need to save the output the caller added to the chain so that we
-	 * can splice it into the final output buffer later.
-	 */
-
-	caller_outputlen = outsize - smb_wct;
-
-	caller_output = (char *)memdup(outbuf + smb_wct, caller_outputlen);
-
-	if (caller_output == NULL) {
-		/* TODO: NT_STATUS_NO_MEMORY */
-		smb_panic("could not dup outbuf");
-	}
-
-	/*
-	 * The original Win95 redirector dies on a reply to
-	 * a lockingX and read chain unless the chain reply is
-	 * 4 byte aligned. JRA.
-	 */
-
-	outsize_padded = (outsize + 3) & ~3;
-	padding = outsize_padded - outsize;
-
-	/*
-	 * remember how much the caller added to the chain, only counting
-	 * stuff after the parameter words
-	 */
-	chain_size += (outsize_padded - smb_wct);
-
-	/*
-	 * work out pointers into the original packets. The
-	 * headers on these need to be filled in
-	 */
-	inbuf2 = orig_inbuf + smb_off2 + 4 - smb_wct;
-
-	/* remember the original command type */
-	smb_com1 = CVAL(orig_inbuf,smb_com);
-
-	/* save the data which will be overwritten by the new headers */
-	memcpy(inbuf_saved,inbuf2,smb_wct);
-
-	/* give the new packet the same header as the last part of the SMB */
-	memmove(inbuf2,inbuf,smb_wct);
-
-	/* create the in buffer */
-	SCVAL(inbuf2,smb_com,smb_com2);
-
-	/* work out the new size for the in buffer. */
-	new_size = size - (inbuf2 - inbuf);
-	if (new_size < 0) {
-		DEBUG(0,("chain_reply: chain packet size incorrect "
-			 "(orig size = %d, offset = %d)\n",
-			 size, (int)(inbuf2 - inbuf) ));
-		exit_server_cleanly("Bad chained packet");
-		return;
-	}
-
-	/* And set it in the header. */
-	smb_setlen(inbuf2, new_size - 4);
-
-	DEBUG(3,("Chained message\n"));
-	show_msg(inbuf2);
-
-	if (!(req2 = talloc(talloc_tos(), struct smb_request))) {
-		smb_panic("could not allocate smb_request");
-	}
-	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
-	req2->inbuf = (uint8_t *)inbuf2;
-	req2->chain_fsp = req->chain_fsp;
-
-	/* process the request */
-	switch_message(smb_com2, req2, new_size);
-
-	/*
-	 * We don't accept deferred operations in chained requests.
-	 */
-	SMB_ASSERT(req2->outbuf != NULL);
-	outsize2 = smb_len(req2->outbuf)+4;
-
-	/*
-	 * Move away the new command output so that caller_output fits in,
-	 * copy in the caller_output saved above.
-	 */
-
-	SMB_ASSERT(outsize_padded >= smb_wct);
-
-	/*
-	 * "ofs" is the space we need for caller_output. Equal to
-	 * caller_outputlen plus the padding.
-	 */
-
-	ofs = outsize_padded - smb_wct;
-
-	/*
-	 * "to_move" is the amount of bytes the secondary routine gave us
-	 */
-
-	to_move = outsize2 - smb_wct;
-
-	if (to_move + ofs + smb_wct + chain_size > max_send) {
-		smb_panic("replies too large -- would have to cut");
-	}
-
-	/*
-	 * In the "new" API "outbuf" is allocated via reply_outbuf, just for
-	 * the first request in the chain. So we have to re-allocate it. In
-	 * the "old" API the only outbuf ever used is the global OutBuffer
-	 * which is always large enough.
-	 */
-
-	outbuf = TALLOC_REALLOC_ARRAY(NULL, outbuf, char,
-				      to_move + ofs + smb_wct);
-	if (outbuf == NULL) {
-		smb_panic("could not realloc outbuf");
-	}
-
-	req->outbuf = (uint8 *)outbuf;
-
-	memmove(outbuf + smb_wct + ofs, req2->outbuf + smb_wct, to_move);
-	memcpy(outbuf + smb_wct, caller_output, caller_outputlen);
-
-	/*
-	 * copy the new reply header over the old one but preserve the smb_com
-	 * field
-	 */
-	memmove(outbuf, req2->outbuf, smb_wct);
-	SCVAL(outbuf, smb_com, smb_com1);
-
-	/*
-	 * We've just copied in the whole "wct" area from the secondary
-	 * function. Fix up the chaining: com2 and the offset need to be
-	 * readjusted.
-	 */
-
-	SCVAL(outbuf, smb_vwv0, smb_com2);
-	SSVAL(outbuf, smb_vwv1, chain_size + smb_wct - 4);
-
-	if (padding != 0) {
-
-		/*
-		 * Due to padding we have some uninitialized bytes after the
-		 * caller's output
-		 */
-
-		memset(outbuf + outsize, 0, padding);
-	}
-
-	smb_setlen(outbuf, outsize2 + caller_outputlen + padding - 4);
-
-	/*
-	 * restore the saved data, being careful not to overwrite any data
-	 * from the reply header
-	 */
-	memcpy(inbuf2,inbuf_saved,smb_wct);
-
-	SAFE_FREE(caller_output);
-	TALLOC_FREE(req2);
-
-	/*
-	 * Reset the chain_size for our caller's offset calculations
-	 */
-
-	chain_size -= (outsize_padded - smb_wct);
-
-	return;
-}
-
-#else
-
 /*
  * How many bytes have we already accumulated up to the current wct field
  * offset?
@@ -1855,6 +1643,10 @@ static void fixup_chain_error_packet(struct smb_request *req)
 	TALLOC_FREE(outbuf);
 	SCVAL(req->outbuf, smb_vwv0, 0xff);
 }
+
+/****************************************************************************
+ Construct a chained reply and add it to the already made reply
+****************************************************************************/
 
 void chain_reply(struct smb_request *req)
 {
@@ -2050,8 +1842,6 @@ void chain_reply(struct smb_request *req)
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
 }
-
-#endif
 
 /****************************************************************************
  Check if services need reloading.
