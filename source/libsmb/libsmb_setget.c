@@ -193,6 +193,20 @@ smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level)
         c->internal->smb_encryption_level = level;
 }
 
+/** Get whether to treat file names as case-sensitive. */
+smbc_bool
+smbc_getOptionCaseSensitive(SMBCCTX *c)
+{
+        return c->internal->case_sensitive;
+}
+
+/** Set whether to treat file names as case-sensitive. */
+void
+smbc_setOptionCaseSensitive(SMBCCTX *c, smbc_bool b)
+{
+        c->internal->case_sensitive = b;
+}
+
 /**
  * Get from how many local master browsers should the list of workgroups be
  * retrieved.  It can take up to 12 minutes or longer after a server becomes a
