@@ -35,7 +35,7 @@ num_nodes=$(echo "$out" | wc -l)
 
 t="$CTDB_TEST_WRAPPER $VALGRIND ctdb_persistent --unsafe-writes --timelimit=30"
 
-echo "Running ctdb_persistent on all $num_nodes nodes."
+echo "Running ctdb_persistent --unsafe-writes on all $num_nodes nodes."
 try_command_on_node -v -pq all "$t & $t"
 
 ctdb_test_exit
