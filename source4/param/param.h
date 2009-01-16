@@ -279,6 +279,7 @@ void lp_killunused(struct loadparm_context *lp_ctx,
 struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx);
 const char *lp_configfile(struct loadparm_context *lp_ctx);
 bool lp_load_default(struct loadparm_context *lp_ctx);
+const char *lp_default_path(void);
 
 /**
  * Load the services array from the services file.

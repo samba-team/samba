@@ -344,6 +344,9 @@ def guess_names(lp=None, hostname=None, domain=None, dnsdomain=None, serverrole=
 
 def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole, 
                  targetdir):
+    """Create a new smb.conf file based on a couple of basic settings.
+    """
+    assert smbconf is not None
     if hostname is None:
         hostname = socket.gethostname().split(".")[0].lower()
 
@@ -947,6 +950,8 @@ def provision(setup_dir, message, session_info,
         if (not os.path.exists(os.path.join(targetdir, "etc"))):
             os.makedirs(os.path.join(targetdir, "etc"))
         smbconf = os.path.join(targetdir, "etc", "smb.conf")
+    elif smbconf is None:
+        smbconf = param.default_path()
 
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):
@@ -1178,6 +1183,9 @@ def provision_backend(setup_dir=None, message=None,
         if (not os.path.exists(os.path.join(targetdir, "etc"))):
             os.makedirs(os.path.join(targetdir, "etc"))
         smbconf = os.path.join(targetdir, "etc", "smb.conf")
+    elif smbconf is None:
+        smbconf = param.default_path()
+        assert smbconf is not None
 
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(smbconf):

@@ -358,6 +358,17 @@ struct loadparm_context *py_default_loadparm_context(TALLOC_CTX *mem_ctx)
     return ret;
 }
 
+static PyObject *py_default_path(PyObject *self)
+{
+    return PyString_FromString(lp_default_path());
+}
+
+static PyMethodDef pyparam_methods[] = {
+    { "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
+        "Returns the default smb.conf path." },
+    { NULL }
+};
+
 void initparam(void)
 {
 	PyObject *m;
@@ -365,7 +376,7 @@ void initparam(void)
 	if (PyType_Ready(&PyLoadparmContext) < 0)
 		return;
 
-	m = Py_InitModule3("param", NULL, "Parsing and writing Samba configuration files.");
+	m = Py_InitModule3("param", pyparam_methods, "Parsing and writing Samba configuration files.");
 	if (m == NULL)
 		return;
 
