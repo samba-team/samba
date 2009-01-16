@@ -36,7 +36,7 @@ static struct db_context *acl_db;
 
 static bool acl_tdb_init(struct db_context **pp_db)
 {
-	const char *dbname;
+	char *dbname;
 
 	if (acl_db) {
 		*pp_db = acl_db;
