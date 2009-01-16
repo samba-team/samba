@@ -89,7 +89,7 @@ else
 	init_style="$CTDB_INIT_STYLE"
 fi
 
-reset_retval() {
+set_retval() {
 	return $1
 }
 
