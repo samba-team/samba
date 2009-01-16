@@ -356,6 +356,13 @@ again:
 		return NULL;
 	}
 
+ 	/* POSIX-like - always request case-sensitivity by default. */        
+        if (smbc_getOptionCaseSensitive(context)) {
+            cli_set_case_sensitive(c, True);
+        } else {
+            cli_set_case_sensitive(c, False);
+        }
+
         if (smbc_getOptionUseKerberos(context)) {
 		c->use_kerberos = True;
 	}
