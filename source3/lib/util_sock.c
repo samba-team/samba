@@ -1889,6 +1889,7 @@ const char *get_mydnsfullname(void)
 bool is_myname_or_ipaddr(const char *s)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	char addr[INET6_ADDRSTRLEN];
 	char *name = NULL;
 	const char *dnsname;
 	char *servername = NULL;
@@ -1941,7 +1942,6 @@ bool is_myname_or_ipaddr(const char *s)
 		/* Use DNS to resolve the name, but only the first address */
 		struct sockaddr_storage ss;
 		if (interpret_string_addr(&ss, servername, 0)) {
-			char addr[INET6_ADDRSTRLEN];
 			print_sockaddr(addr,
 					sizeof(addr),
 					&ss);
