@@ -504,7 +504,7 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 				      struct libnet_JoinCtx *r)
 {
-	if (!lp_use_kerberos_keytab()) {
+	if (!USE_SYSTEM_KEYTAB) {
 		return true;
 	}
 

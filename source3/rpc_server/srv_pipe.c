@@ -1147,7 +1147,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	}
 	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
-	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
+	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || USE_KERBEROS_KEYTAB) ) {
 		bool ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
 		data_blob_free(&secblob);
 		data_blob_free(&blob);

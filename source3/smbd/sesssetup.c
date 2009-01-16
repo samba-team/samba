@@ -795,7 +795,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 
 #ifdef HAVE_KRB5
 	if (kerb_mech && ((lp_security()==SEC_ADS) ||
-				lp_use_kerberos_keytab()) ) {
+				USE_KERBEROS_KEYTAB) ) {
 		bool destroy_vuid = True;
 		reply_spnego_kerberos(req, &secblob, kerb_mech,
 				      vuid, &destroy_vuid);
@@ -887,7 +887,7 @@ static void reply_spnego_auth(struct smb_request *req,
 				(unsigned long)secblob.length));
 #ifdef HAVE_KRB5
 		if (kerb_mech && ((lp_security()==SEC_ADS) ||
-					lp_use_kerberos_keytab()) ) {
+					USE_KERBEROS_KEYTAB)) {
 			bool destroy_vuid = True;
 			reply_spnego_kerberos(req, &secblob, kerb_mech,
 					      vuid, &destroy_vuid);

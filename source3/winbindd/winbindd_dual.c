@@ -1360,7 +1360,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	if (child->domain && child->domain->primary &&
-	    !lp_use_kerberos_keytab() &&
+	    !USE_KERBEROS_KEYTAB &&
 	    lp_server_role() == ROLE_DOMAIN_MEMBER) {
 
 		struct timeval next_change;

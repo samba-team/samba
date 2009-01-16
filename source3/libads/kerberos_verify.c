@@ -31,6 +31,86 @@
 const krb5_data *krb5_princ_component(krb5_context, krb5_principal, int );
 #endif
 
+static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
+					  krb5_auth_context auth_context,
+					  const DATA_BLOB *ticket,
+					  krb5_ticket **pp_tkt,
+					  krb5_keyblock **keyblock,
+					  krb5_error_code *perr)
+{
+	krb5_error_code ret = 0;
+	bool auth_ok = false;
+	krb5_keytab keytab = NULL;
+	krb5_keytab_entry kt_entry;
+	krb5_ticket *dec_ticket = NULL;
+
+	krb5_data packet;
+
+	*pp_tkt = NULL;
+	*keyblock = NULL;
+	*perr = 0;
+
+	ZERO_STRUCT(kt_entry);
+
+	ret = smb_krb5_open_keytab(context, lp_dedicated_keytab_file(), true,
+	    &keytab);
+	if (ret) {
+		DEBUG(1, ("smb_krb5_open_keytab failed (%s)\n",
+			error_message(ret)));
+		goto out;
+	}
+
+	packet.length = ticket->length;
+	packet.data = (char *)ticket->data;
+	*pp_tkt = NULL;
+
+	ret = krb5_rd_req(context, &auth_context, &packet, NULL, keytab,
+	    NULL, &dec_ticket);
+	if (ret) {
+		DEBUG(0, ("krb5_rd_req failed (%s)\n", error_message(ret)));
+		goto out;
+	}
+
+	/* Get the key for checking the pac signature */
+	ret = krb5_kt_get_entry(context, keytab, dec_ticket->server,
+	    dec_ticket->enc_part.kvno, dec_ticket->enc_part.enctype,
+	    &kt_entry);
+	if (ret) {
+		DEBUG(0, ("krb5_kt_get_entry failed (%s)\n",
+			  error_message(ret)));
+		goto out;
+	}
+
+#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK /* Heimdal */
+	ret = krb5_copy_keyblock(context, &kt_entry.keyblock, keyblock);
+#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) /* MIT */
+	ret = krb5_copy_keyblock(context, &kt_entry.key, keyblock);
+#else
+#error UNKNOWN_KRB5_KEYTAB_ENTRY_FORMAT
+#endif
+	smb_krb5_kt_free_entry(context, &kt_entry);
+
+	if (ret) {
+		DEBUG(0, ("failed to copy key: %s\n",
+			  error_message(ret)));
+		goto out;
+	}
+
+	auth_ok = true;
+	*pp_tkt = dec_ticket;
+	dec_ticket = NULL;
+
+  out:
+	if (dec_ticket)
+		krb5_free_ticket(context, dec_ticket);
+
+	if (keytab)
+		krb5_kt_close(context, keytab);
+
+	*perr = ret;
+	return auth_ok;
+}
+
 /**********************************************************************************
  Try to verify a ticket using the system keytab... the system keytab has kvno -1 entries, so
  it's more like what microsoft does... see comment in utils/net_ads.c in the
@@ -437,22 +517,38 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Try secrets.tdb first and fallback to the krb5.keytab if
-	   necessary */
+	switch (lp_kerberos_method()) {
+	default:
+	case KERBEROS_VERIFY_SECRETS:
+		auth_ok = ads_secrets_verify_ticket(context, auth_context,
+		    host_princ, ticket, &tkt, &keyblock, &ret);
+		break;
+	case KERBEROS_VERIFY_SYSTEM_KEYTAB:
+		auth_ok = ads_keytab_verify_ticket(context, auth_context,
+		    ticket, &tkt, &keyblock, &ret);
+		break;
+	case KERBEROS_VERIFY_DEDICATED_KEYTAB:
+		auth_ok = ads_dedicated_keytab_verify_ticket(context,
+		    auth_context, ticket, &tkt, &keyblock, &ret);
+		break;
+	case KERBEROS_VERIFY_SECRETS_AND_KEYTAB:
+		/* First try secrets.tdb and fallback to the krb5.keytab if
+		   necessary.  This is the pre 3.4 behavior when
+		   "use kerberos keytab" was true.*/
+		auth_ok = ads_secrets_verify_ticket(context, auth_context,
+		    host_princ, ticket, &tkt, &keyblock, &ret);
 
-	auth_ok = ads_secrets_verify_ticket(context, auth_context, host_princ,
-					    ticket, &tkt, &keyblock, &ret);
-
-	if (!auth_ok &&
-	    (ret == KRB5KRB_AP_ERR_TKT_NYV ||
-	     ret == KRB5KRB_AP_ERR_TKT_EXPIRED ||
-	     ret == KRB5KRB_AP_ERR_SKEW)) {
-		goto auth_failed;
-	}
-
-	if (!auth_ok && lp_use_kerberos_keytab()) {
-		auth_ok = ads_keytab_verify_ticket(context, auth_context, 
-						   ticket, &tkt, &keyblock, &ret);
+		if (!auth_ok) {
+			/* Only fallback if we failed to decrypt the ticket */
+			if (ret != KRB5KRB_AP_ERR_TKT_NYV &&
+			    ret != KRB5KRB_AP_ERR_TKT_EXPIRED &&
+			    ret != KRB5KRB_AP_ERR_SKEW) {
+				auth_ok = ads_keytab_verify_ticket(context,
+				    auth_context, ticket, &tkt, &keyblock,
+				    &ret);
+			}
+		}
+		break;
 	}
 
 	if ( use_replay_cache ) {		
@@ -465,7 +561,6 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 #endif
 	}	
 
- auth_failed:
 	if (!auth_ok) {
 		DEBUG(3,("ads_verify_ticket: krb5_rd_req with auth failed (%s)\n", 
 			 error_message(ret)));

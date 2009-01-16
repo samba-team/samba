@@ -879,8 +879,25 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
-#if defined(HAVE_KRB5)
+/*
+ * This should be under the HAVE_KRB5 flag but since they're used
+ * in lp_kerberos_method(), they ned to be always available
+ */
+#define KERBEROS_VERIFY_SECRETS 0
+#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
+#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
+#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
 
+/*
+ * If you add any entries to the above, please modify the below expressions
+ * so they remain accurate.
+ */
+#define USE_KERBEROS_KEYTAB (KERBEROS_VERIFY_SECRETS != lp_kerberos_method())
+#define USE_SYSTEM_KEYTAB \
+    ((KERBEROS_VERIFY_SECRETS_AND_KEYTAB == lp_kerberos_method()) || \
+     (KERBEROS_VERIFY_SYSTEM_KEYTAB == lp_kerberos_method()))
+
+#if defined(HAVE_KRB5)
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);

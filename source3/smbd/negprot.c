@@ -212,7 +212,7 @@ static DATA_BLOB negprot_spnego(void)
 
 	*/
 
-	if (lp_security() != SEC_ADS && !lp_use_kerberos_keytab()) {
+	if (lp_security() != SEC_ADS && !USE_KERBEROS_KEYTAB) {
 #if 0
 		/* Code for PocketPC client */
 		blob = data_blob(guid, 16);

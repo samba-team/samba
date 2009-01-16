@@ -322,7 +322,8 @@ struct global {
 	bool bHostnameLookups;
 	bool bUnixExtensions;
 	bool bDisableNetbios;
-	bool bUseKerberosKeytab;
+	char * szDedicatedKeytabFile;
+	int  iKerberosMethod;
 	bool bDeferSharingViolations;
 	bool bEnablePrivileges;
 	bool bASUSupport;
@@ -858,6 +859,17 @@ static const struct enum_list enum_map_to_guest[] = {
 static const struct enum_list enum_config_backend[] = {
 	{CONFIG_BACKEND_FILE, "file"},
 	{CONFIG_BACKEND_REGISTRY, "registry"},
+	{-1, NULL}
+};
+
+/* ADS kerberos ticket verification options */
+
+static const struct enum_list enum_kerberos_method[] = {
+	{KERBEROS_VERIFY_SECRETS, "default"},
+	{KERBEROS_VERIFY_SECRETS, "secrets only"},
+	{KERBEROS_VERIFY_SYSTEM_KEYTAB, "system keytab"},
+	{KERBEROS_VERIFY_DEDICATED_KEYTAB, "dedicated keytab"},
+	{KERBEROS_VERIFY_SECRETS_AND_KEYTAB, "secrets and keytab"},
 	{-1, NULL}
 };
 
@@ -1745,14 +1757,24 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 	{
-		.label		= "use kerberos keytab",
-		.type		= P_BOOL,
+		.label		= "dedicated keytab file",
+		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bUseKerberosKeytab,
+		.ptr		= &Globals.szDedicatedKeytabFile,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "kerberos method",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.iKerberosMethod,
+		.special	= NULL,
+		.enum_list	= enum_kerberos_method,
+		.flags		= FLAG_ADVANCED,
+	},
+
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR},
 
@@ -5322,7 +5344,8 @@ FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_LOCAL_PARM_BOOL(lp_change_notify, bChangeNotify)
 FN_LOCAL_PARM_BOOL(lp_kernel_change_notify, bKernelChangeNotify)
-FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
+FN_GLOBAL_STRING(lp_dedicated_keytab_file, &Globals.szDedicatedKeytabFile)
+FN_GLOBAL_INTEGER(lp_kerberos_method, &Globals.iKerberosMethod)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
 FN_GLOBAL_BOOL(lp_enable_asu_support, &Globals.bASUSupport)
