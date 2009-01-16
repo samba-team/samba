@@ -286,7 +286,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
                 DEBUG(4, ("Found options '%s'", q));
                 
 		/* Copy the options */
-		if (*pp_options != NULL) {
+		if (pp_options && *pp_options != NULL) {
 			TALLOC_FREE(*pp_options);
 			*pp_options = talloc_strdup(ctx, q);
 		}
