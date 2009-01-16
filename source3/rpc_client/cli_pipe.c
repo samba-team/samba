@@ -370,34 +370,17 @@ static NTSTATUS rpc_read(struct rpc_pipe_client *cli,
 	return status;
 }
 
-/****************************************************************************
- Try and get a PDU's worth of data from current_pdu. If not, then read more
- from the wire.
- ****************************************************************************/
-
-static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *prhdr, prs_struct *current_pdu)
+static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
+				 struct rpc_hdr_info *prhdr,
+				 prs_struct *pdu)
 {
-	NTSTATUS ret = NT_STATUS_OK;
-	uint32 current_pdu_len = prs_data_size(current_pdu);
+	/*
+	 * This next call sets the endian bit correctly in current_pdu. We
+	 * will propagate this to rbuf later.
+	 */
 
-	/* Ensure we have at least RPC_HEADER_LEN worth of data to parse. */
-	if (current_pdu_len < RPC_HEADER_LEN) {
-		if (!rpc_grow_buffer(current_pdu, RPC_HEADER_LEN)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		ret = rpc_read(cli,
-			       prs_data_p(current_pdu) + current_pdu_len,
-			       RPC_HEADER_LEN - current_pdu_len);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
-		}
-		current_pdu_len = RPC_HEADER_LEN;
-	}
-
-	/* This next call sets the endian bit correctly in current_pdu. */
-	/* We will propagate this to rbuf later. */
-	if(!smb_io_rpc_hdr("rpc_hdr   ", prhdr, current_pdu, 0)) {
-		DEBUG(0,("cli_pipe_get_current_pdu: Failed to unmarshall RPC_HDR.\n"));
+	if(!smb_io_rpc_hdr("rpc_hdr   ", prhdr, pdu, 0)) {
+		DEBUG(0, ("get_current_pdu: Failed to unmarshall RPC_HDR.\n"));
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
@@ -408,20 +391,191 @@ static NTSTATUS cli_pipe_get_current_pdu(struct rpc_pipe_client *cli, RPC_HDR *p
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	/* Ensure we have frag_len bytes of data. */
-	if (current_pdu_len < prhdr->frag_len) {
-		if (!rpc_grow_buffer(current_pdu, prhdr->frag_len)) {
-			return NT_STATUS_NO_MEMORY;
+	return NT_STATUS_OK;
+}
+
+/****************************************************************************
+ Try and get a PDU's worth of data from current_pdu. If not, then read more
+ from the wire.
+ ****************************************************************************/
+
+struct get_complete_pdu_state {
+	struct event_context *ev;
+	struct rpc_pipe_client *cli;
+	struct rpc_hdr_info *prhdr;
+	prs_struct *pdu;
+};
+
+static void get_complete_pdu_got_header(struct async_req *subreq);
+static void get_complete_pdu_got_rest(struct async_req *subreq);
+
+static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct rpc_pipe_client *cli,
+					       struct rpc_hdr_info *prhdr,
+					       prs_struct *pdu)
+{
+	struct async_req *result, *subreq;
+	struct get_complete_pdu_state *state;
+	uint32_t pdu_len;
+	NTSTATUS status;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct get_complete_pdu_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->cli = cli;
+	state->prhdr = prhdr;
+	state->pdu = pdu;
+
+	pdu_len = prs_data_size(pdu);
+	if (pdu_len < RPC_HEADER_LEN) {
+		if (!rpc_grow_buffer(pdu, RPC_HEADER_LEN)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
 		}
-		ret = rpc_read(cli,
-			       prs_data_p(current_pdu) + current_pdu_len,
-			       prhdr->frag_len - current_pdu_len);
-		if (!NT_STATUS_IS_OK(ret)) {
-			return ret;
+		subreq = rpc_read_send(state, state->ev, state->cli,
+				       prs_data_p(state->pdu) + pdu_len,
+				       RPC_HEADER_LEN - pdu_len);
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
 		}
+		subreq->async.fn = get_complete_pdu_got_header;
+		subreq->async.priv = result;
+		return result;
 	}
 
-	return NT_STATUS_OK;
+	status = parse_rpc_header(cli, prhdr, pdu);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto post_status;
+	}
+
+	/*
+	 * Ensure we have frag_len bytes of data.
+	 */
+	if (pdu_len < prhdr->frag_len) {
+		if (!rpc_grow_buffer(pdu, prhdr->frag_len)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq = rpc_read_send(state, state->ev, state->cli,
+				       prs_data_p(pdu) + pdu_len,
+				       prhdr->frag_len - pdu_len);
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq->async.fn = get_complete_pdu_got_rest;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	status = NT_STATUS_OK;
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void get_complete_pdu_got_header(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct get_complete_pdu_state *state = talloc_get_type_abort(
+		req->private_data, struct get_complete_pdu_state);
+	NTSTATUS status;
+
+	status = rpc_read_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	status = parse_rpc_header(state->cli, state->prhdr, state->pdu);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	if (!rpc_grow_buffer(state->pdu, state->prhdr->frag_len)) {
+		async_req_error(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+
+	/*
+	 * We're here in this piece of code because we've read exactly
+	 * RPC_HEADER_LEN bytes into state->pdu.
+	 */
+
+	subreq = rpc_read_send(state, state->ev, state->cli,
+			       prs_data_p(state->pdu) + RPC_HEADER_LEN,
+			       state->prhdr->frag_len - RPC_HEADER_LEN);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = get_complete_pdu_got_rest;
+	subreq->async.priv = req;
+}
+
+static void get_complete_pdu_got_rest(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = rpc_read_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+static NTSTATUS get_complete_pdu_recv(struct async_req *req)
+{
+	return async_req_simple_recv(req);
+}
+
+static NTSTATUS get_complete_pdu(struct rpc_pipe_client *cli,
+				 struct rpc_hdr_info *prhdr,
+				 prs_struct *pdu)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = get_complete_pdu_send(frame, ev, cli, prhdr, pdu);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = get_complete_pdu_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -1087,7 +1241,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 		uint32 ret_data_len = 0;
 
 		/* Ensure we have enough data for a pdu. */
-		ret = cli_pipe_get_current_pdu(cli, &rhdr, &current_pdu);
+		ret = get_complete_pdu(cli, &rhdr, &current_pdu);
 		if (!NT_STATUS_IS_OK(ret)) {
 			goto err;
 		}
