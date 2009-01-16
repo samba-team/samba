@@ -1275,14 +1275,13 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	uint8_t *rdata = NULL;
 	uint8_t *rdata_copy;
 	uint32_t rdata_len = 0;
-	uint32 max_data = cli->max_xmit_frag ? cli->max_xmit_frag : RPC_MAX_PDU_FRAG_LEN;
 	uint32 current_rbuf_offset = 0;
 	prs_struct current_pdu;
 
-#ifdef DEVELOPER
-	/* Ensure we're not sending too much. */
-	SMB_ASSERT(data_len <= max_data);
-#endif
+	if (data_len > cli->max_xmit_frag) {
+		/* Ensure we're not sending too much. */
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* Set up the current pdu parse struct. */
 	prs_init_empty(&current_pdu, prs_get_mem_context(rbuf), UNMARSHALL);
@@ -1291,9 +1290,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 
 	ret = cli_api_pipe(talloc_tos(), cli,
 			   (uint8_t *)prs_data_p(data), prs_offset(data),
-			   cli->max_recv_frag
-			   ? cli->max_recv_frag : RPC_MAX_PDU_FRAG_LEN,
-			   &rdata, &rdata_len);
+			   cli->max_recv_frag, &rdata, &rdata_len);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(5, ("cli_api_pipe failed: %s\n", nt_errstr(ret)));
 		return ret;
