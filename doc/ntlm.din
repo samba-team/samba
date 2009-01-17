@@ -2,7 +2,7 @@
 
 PROJECT_NAME           = Heimdal ntlm library
 PROJECT_NUMBER         = @PACKAGE_VERSION@
-OUTPUT_DIRECTORY       = @objdir@/ntlm
+OUTPUT_DIRECTORY       = @srcdir@/ntlm
 INPUT                  = @srcdir@/../lib/ntlm
 EXAMPLE_PATH	       = @srcdir@/../lib/ntlm
 

@@ -2,7 +2,7 @@
 
 PROJECT_NAME           = "Heimdal crypto library"
 PROJECT_NUMBER         = @PACKAGE_VERSION@
-OUTPUT_DIRECTORY       = @objdir@/hcrypto
+OUTPUT_DIRECTORY       = @srcdir@/hcrypto
 INPUT                  = @srcdir@/../lib/hcrypto
 EXAMPLE_PATH	       = @srcdir@/../lib/hcrypto
 

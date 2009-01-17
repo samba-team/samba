@@ -2,7 +2,7 @@
 
 PROJECT_NAME           = Heimdal wind library
 PROJECT_NUMBER         = @PACKAGE_VERSION@
-OUTPUT_DIRECTORY       = @objdir@/wind
+OUTPUT_DIRECTORY       = @srcdir@/wind
 INPUT                  = @srcdir@/../lib/wind
 
 WARN_IF_UNDOCUMENTED   = YES
