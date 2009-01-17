@@ -342,6 +342,137 @@ static NTSTATUS rpc_read_recv(struct async_req *req)
 	return async_req_simple_recv(req);
 }
 
+struct rpc_write_state {
+	struct event_context *ev;
+	struct rpc_pipe_client *cli;
+	const char *data;
+	size_t size;
+	size_t num_written;
+};
+
+static void rpc_write_np_done(struct async_req *subreq);
+static void rpc_write_sock_done(struct async_req *subreq);
+
+static struct async_req *rpc_write_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct rpc_pipe_client *cli,
+					const char *data, size_t size)
+{
+	struct async_req *result, *subreq;
+	struct rpc_write_state *state;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct rpc_write_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->cli = cli;
+	state->data = data;
+	state->size = size;
+	state->num_written = 0;
+
+	DEBUG(5, ("rpc_write_send: data_to_write: %u\n", (unsigned int)size));
+
+	if (cli->transport_type == NCACN_NP) {
+		subreq = cli_write_andx_send(
+			state, ev, cli->trans.np.cli,
+			cli->trans.np.fnum, 8, /* 8 means message mode. */
+			(uint8_t *)data, 0, size);
+		if (subreq == NULL) {
+			DEBUG(10, ("cli_write_andx_send failed\n"));
+			goto fail;
+		}
+		subreq->async.fn = rpc_write_np_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	if ((cli->transport_type == NCACN_IP_TCP)
+	    || (cli->transport_type == NCACN_UNIX_STREAM)) {
+		subreq = sendall_send(state, ev, cli->trans.sock.fd,
+				      data, size, 0);
+		if (subreq == NULL) {
+			DEBUG(10, ("sendall_send failed\n"));
+			goto fail;
+		}
+		subreq->async.fn = rpc_write_sock_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	if (async_post_status(result, ev, NT_STATUS_INVALID_PARAMETER)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void rpc_write_np_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_write_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_write_state);
+	NTSTATUS status;
+	size_t written;
+
+	status = cli_write_andx_recv(subreq, &written);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	state->num_written += written;
+
+	if (state->num_written == state->size) {
+		async_req_done(req);
+		return;
+	}
+
+	subreq = cli_write_andx_send(
+		state, state->ev, state->cli->trans.np.cli,
+		state->cli->trans.np.fnum, 8,
+		(uint8_t *)(state->data + state->num_written),
+		0, state->size - state->num_written);
+
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+
+	subreq->async.fn = rpc_write_np_done;
+	subreq->async.priv = req;
+}
+
+static void rpc_write_sock_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = sendall_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	async_req_done(req);
+}
+
+static NTSTATUS rpc_write_recv(struct async_req *req)
+{
+	return async_req_simple_recv(req);
+}
+
+
 static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
 				 struct rpc_hdr_info *prhdr,
 				 prs_struct *pdu)
