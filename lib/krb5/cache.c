@@ -36,6 +36,71 @@
 RCSID("$Id$");
 
 /**
+ * @page krb5_ccache_intro The credential cache functions
+ * @section section_krb5_ccache Kerberos credential caches
+ * 
+ * krb5_ccache structure holds a Kerberos credential cache.
+ *
+ * Heimdal support the follow types of credential caches:
+ *
+ * - SDB
+ *   Store the credential in a database
+ * - FILE
+ *   Store the credential in memory
+ * - MEMORY
+ *   Store the credential in memory
+ * - API
+ *   A credential cache server based solution for Mac OS X
+ * - KCM
+ *   A credential cache server based solution for all platforms
+ *
+ * @subsection Example
+ *
+ * This is a minimalistic version of klist:
+@code
+#include <krb5.h>
+
+int
+main (int argc, char **argv)
+{
+    krb5_context context;
+    krb5_cc_cursor cursor;
+    krb5_error_code ret;
+    krb5_ccache id;
+    krb5_creds creds;
+
+    if (krb5_init_context (&context) != 0)
+	errx(1, "krb5_context");
+
+    ret = krb5_cc_default (context, &id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_default");
+
+    ret = krb5_cc_start_seq_get(context, id, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_start_seq_get");
+
+    while((ret = krb5_cc_next_cred(context, id, &cursor, &creds)) == 0){
+        char *principal;
+
+	krb5_unparse_name_short(context, creds.server, &principal);
+	printf("principal: %s\\n", principal);
+	free(principal);
+	krb5_free_cred_contents (context, &creds);
+    }
+    ret = krb5_cc_end_seq_get(context, id, &cursor);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_end_seq_get");
+
+    krb5_cc_close(context, id);
+
+    krb5_free_context(context);
+    return 0;
+}
+* @endcode
+*/
+
+/**
  * Add a new ccache type with operations `ops', overwriting any
  * existing one if `override'.
  *
