@@ -343,7 +343,9 @@ get_init_creds_common(krb5_context context,
     if (ctx->keyproc == NULL)
 	ctx->keyproc = default_s2k_func;
 
-    if (ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE)
+    /* Enterprise name implicitly turns on canonicalize */
+    if ((ctx->ic_flags & KRB5_INIT_CREDS_CANONICALIZE) || 
+	krb5_principal_get_type(context, client) == KRB5_NT_ENTERPRISE_PRINCIPAL)
 	ctx->flags.canonicalize = 1;
 
     ctx->pre_auth_types = NULL;
@@ -1489,7 +1491,7 @@ krb5_init_creds_step(krb5_context context,
 	}
     }
 
-#define MAX_PA_COUNTER 3
+#define MAX_PA_COUNTER 10
     if (ctx->pa_counter > MAX_PA_COUNTER) {
 	krb5_set_error_message(context, KRB5_GET_IN_TKT_LOOP,
 			       N_("Looping %d times while getting "
@@ -1584,6 +1586,16 @@ krb5_init_creds_step(krb5_context context,
 					   N_("Preauth required but no preauth "
 					      "options send by KDC", ""));
 		}
+	    } else if (ret == KRB5_KDC_ERR_WRONG_REALM) {
+	        /* client referal to a new realm */
+		if (ctx->error.crealm) {
+		    krb5_set_error_message(context, ret,
+					   N_("Got a client referral, not but no realm", ""));
+		    goto out;
+		}
+		ret = krb5_principal_set_realm(context, 
+					       ctx->cred.client,
+					       *ctx->error.crealm);
 	    }
 	    if (ret)
 		goto out;
