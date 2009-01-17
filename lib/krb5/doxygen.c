@@ -54,6 +54,7 @@ RCSID("$Id$");
  *
  * - @ref krb5_introduction
  * - @ref krb5_principal_intro
+ * - @ref krb5_ccache_intro
  * - @ref krb5_keytab_intro
  *
  * If you want to know more about the file formats that is used by
