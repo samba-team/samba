@@ -741,7 +741,7 @@ krb5_cc_get_principal(krb5_context context,
 
 /**
  * Start iterating over `id', `cursor' is initialized to the
- * beginning.
+ * beginning.  Caller must free the cursor with krb5_cc_end_seq_get().
  *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
