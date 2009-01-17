@@ -1265,7 +1265,7 @@ static NTSTATUS cli_api_pipe(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 
  ****************************************************************************/
 
-static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
+static NTSTATUS rpc_api_pipe(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			prs_struct *data, /* Outgoing pdu fragment, already formatted for send. */
 			prs_struct *rbuf, /* Incoming reply - return as an NDR stream. */
 			uint8 expected_pkt_type)
@@ -1284,7 +1284,7 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	}
 
 	/* Set up the current pdu parse struct. */
-	prs_init_empty(&current_pdu, prs_get_mem_context(rbuf), UNMARSHALL);
+	prs_init_empty(&current_pdu, talloc_tos(), UNMARSHALL);
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
 
@@ -1316,9 +1316,8 @@ static NTSTATUS rpc_api_pipe(struct rpc_pipe_client *cli,
 	}
 	prs_give_memory(&current_pdu, (char *)rdata_copy, rdata_len, true);
 
-	/* Ensure we can mess with the return prs_struct. */
-	SMB_ASSERT(UNMARSHALLING(rbuf));
-	SMB_ASSERT(prs_data_size(rbuf) == 0);
+	/* Initialize the incoming PDU */
+	prs_init_empty(rbuf, mem_ctx, UNMARSHALL);
 
 	/* Make rbuf dynamic with no memory. */
 	prs_give_memory(rbuf, 0, 0, True);
@@ -1952,7 +1951,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
  and deals with signing/sealing details.
  ********************************************************************/
 
-NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
+NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
 			prs_struct *out_data)
@@ -2055,7 +2054,8 @@ NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
 		/* Actually send the packet. */
 		if (flags & RPC_FLG_LAST) {
 			/* Last packet - send the data, get the reply and return. */
-			ret = rpc_api_pipe(cli, &outgoing_pdu, out_data, RPC_RESPONSE);
+			ret = rpc_api_pipe(mem_ctx, cli, &outgoing_pdu,
+					   out_data, RPC_RESPONSE);
 			prs_mem_free(&outgoing_pdu);
 
 			if ((DEBUGLEVEL >= 50)
@@ -2481,9 +2481,9 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	/* Initialize the returning data struct. */
 	prs_mem_free(rbuf);
-	prs_init_empty(rbuf, talloc_tos(), UNMARSHALL);
 
-	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
+	nt_status = rpc_api_pipe(talloc_tos(), cli, &rpc_out, rbuf,
+				 RPC_ALTCONTRESP);
 	prs_mem_free(&rpc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
@@ -2559,11 +2559,8 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	/* Initialize the incoming data struct. */
-	prs_init_empty(&rbuf, talloc_tos(), UNMARSHALL);
-
 	/* send data on \PIPE\.  receive a response */
-	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);
+	status = rpc_api_pipe(talloc_tos(), cli, &rpc_out, &rbuf, RPC_BINDACK);
 	prs_mem_free(&rpc_out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

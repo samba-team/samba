@@ -5197,7 +5197,7 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
-NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
+NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
 			prs_struct *out_data);

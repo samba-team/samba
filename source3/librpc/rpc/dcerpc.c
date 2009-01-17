@@ -84,7 +84,8 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 
 	prs_init_empty( &r_ps, req, UNMARSHALL );
 
-	status = rpc_api_pipe_req(req->pipe->rpc_cli, req->opnum, &req->q_ps, &r_ps); 
+	status = rpc_api_pipe_req(req, req->pipe->rpc_cli, req->opnum,
+				  &req->q_ps, &r_ps);
 
 	prs_mem_free( &req->q_ps );
 
