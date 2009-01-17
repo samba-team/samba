@@ -219,7 +219,7 @@ report_expiration (krb5_context context,
  * @param ctx The krb5_init_creds_context check for expiration.
  */
 
-static krb5_error_code KRB5_LIB_FUNCTION
+static krb5_error_code
 process_last_request(krb5_context context,
 		     krb5_get_init_creds_opt *options,
 		     krb5_init_creds_context ctx)
@@ -1229,11 +1229,9 @@ process_pa_data_to_key(krb5_context context,
  * Start a new context to get a new initial credential.
  *
  * @param context A Kerberos 5 context.
-
  * @param client The Kerberos principal to get the credential for, if
  *     NULL is given, the default principal is used as determined by
  *     krb5_get_default_principal().
- *
  * @param prompter
  * @param prompter_data
  * @param start_time the time the ticket should start to be valid or 0 for now.
@@ -1394,6 +1392,17 @@ keytab_key_proc(krb5_context context, krb5_enctype enctype,
 }
 
 
+/**
+ * Set the keytab to use for authentication.
+ *
+ * @param context a Kerberos 5 context.
+ * @param ctx ctx krb5_init_creds_context context.
+ * @param keytab the keytab to read the key from.
+ *
+ * @return 0 for success, or an Kerberos 5 error code, see krb5_get_error_message().
+ * @ingroup krb5_credential
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_creds_set_keytab(krb5_context context,
 			   krb5_init_creds_context ctx,
@@ -1437,6 +1446,26 @@ krb5_init_creds_set_keyblock(krb5_context context,
     return 0;
 }
 
+/**
+ * The core loop if krb5_get_init_creds() function family. Create the
+ * packets and have the caller send them off to the KDC. 
+ *
+ * If the caller want all work been done for them, use
+ * krb5_init_creds_get() instead.
+ *
+ * @param context a Kerberos 5 context.
+ * @param ctx ctx krb5_init_creds_context context.
+ * @param in input data from KDC, first round it should be reset by krb5_data_zer().
+ * @param out reply to KDC.
+ * @param hostinfo KDC address info, first round it can be NULL.
+ * @param flags status of the round, if 1 is set, continue one more round.
+ *
+ * @return 0 for success, or an Kerberos 5 error code, see
+ *     krb5_get_error_message().
+ *
+ * @ingroup krb5_credential
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_creds_step(krb5_context context,
 		     krb5_init_creds_context ctx,
@@ -1472,11 +1501,11 @@ krb5_init_creds_step(krb5_context context,
 
     /* Lets process the input packet */
     if (in && in->length) {
-	krb5_kdc_rep rep;
+	AS_REP rep;
 
 	memset(&rep, 0, sizeof(rep));
 
-	ret = decode_AS_REP(in->data, in->length, &rep.kdc_rep, &size);
+	ret = decode_AS_REP(in->data, in->length, &rep, &size);
 	if (ret == 0) {
 	    krb5_keyblock *key = NULL;
 	    unsigned eflags = EXTRACT_TICKET_AS_REQ;
@@ -1491,10 +1520,11 @@ krb5_init_creds_step(krb5_context context,
 		eflags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
 
 	    ret = process_pa_data_to_key(context, ctx, &ctx->cred,
-					 &ctx->as_req, &rep.kdc_rep, 
-					 hostinfo, &key);
-	    if (ret)
+					 &ctx->as_req, &rep, hostinfo, &key);
+	    if (ret) {
+		free_AS_REP(&rep);
 		goto out;
+	    }
 
 	    ret = _krb5_extract_ticket(context,
 				       &rep,
@@ -1514,7 +1544,7 @@ krb5_init_creds_step(krb5_context context,
 	    if (ret == 0)
 		ret = copy_EncKDCRepPart(&rep.enc_part, &ctx->enc_part);
 
-	    krb5_free_kdc_rep (context, &rep);
+	    free_AS_REP(&rep);
 
 	    return ret;
 
@@ -1597,7 +1627,8 @@ krb5_init_creds_step(krb5_context context,
 }
 
 /**
- * Extract the newly acquired credentials from krb5_init_creds_context context.
+ * Extract the newly acquired credentials from krb5_init_creds_context
+ * context.
  *
  * @param context A Kerberos 5 context.
  * @param ctx
@@ -1653,7 +1684,14 @@ krb5_init_creds_free(krb5_context context,
     free(ctx);
 }
 
-
+/**
+ * Get new credentials as setup by the krb5_init_creds_context.
+ *
+ * @param context A Kerberos 5 context.
+ * @param ctx The krb5_init_creds_context to process.
+ *
+ * @ingroup krb5_credential
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
@@ -1695,6 +1733,13 @@ krb5_init_creds_get(krb5_context context, krb5_init_creds_context ctx)
 
     return ret;
 }
+
+/**
+ * Get new credentials using password.
+ *
+ * @ingroup krb5_credential
+ */
+
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_password(krb5_context context,
@@ -1796,6 +1841,12 @@ krb5_get_init_creds_password(krb5_context context,
     return ret;
 }
 
+/**
+ * Get new credentials using keyblock.
+ *
+ * @ingroup krb5_credential
+ */
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_keyblock(krb5_context context,
 			     krb5_creds *creds,
@@ -1838,7 +1889,9 @@ krb5_get_init_creds_keyblock(krb5_context context,
 }
 
 /**
+ * Get new credentials using keytab.
  *
+ * @ingroup krb5_credential
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
