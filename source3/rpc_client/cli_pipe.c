@@ -2170,6 +2170,8 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
  and deals with signing/sealing details.
  ********************************************************************/
 
+#if 0
+
 NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
@@ -2335,6 +2337,312 @@ NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 		}
 	}
 }
+
+#endif
+
+struct rpc_api_pipe_req_state {
+	struct event_context *ev;
+	struct rpc_pipe_client *cli;
+	uint8_t op_num;
+	uint32_t call_id;
+	prs_struct *req_data;
+	uint32_t req_data_sent;
+	prs_struct outgoing_frag;
+	prs_struct reply_pdu;
+};
+
+static int rpc_api_pipe_req_state_destructor(struct rpc_api_pipe_req_state *s)
+{
+	prs_mem_free(&s->outgoing_frag);
+	prs_mem_free(&s->reply_pdu);
+	return 0;
+}
+
+static void rpc_api_pipe_req_write_done(struct async_req *subreq);
+static void rpc_api_pipe_req_done(struct async_req *subreq);
+static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
+				  bool *is_last_frag);
+
+struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct rpc_pipe_client *cli,
+					uint8_t op_num,
+					prs_struct *req_data)
+{
+	struct async_req *result, *subreq;
+	struct rpc_api_pipe_req_state *state;
+	NTSTATUS status;
+	bool is_last_frag;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct rpc_api_pipe_req_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	state->ev = ev;
+	state->cli = cli;
+	state->op_num = op_num;
+	state->req_data = req_data;
+	state->req_data_sent = 0;
+	state->call_id = get_rpc_call_id();
+
+	if (cli->max_xmit_frag
+	    < RPC_HEADER_LEN + RPC_HDR_REQ_LEN + RPC_MAX_SIGN_SIZE) {
+		/* Server is screwed up ! */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto post_status;
+	}
+
+	prs_init_empty(&state->reply_pdu, state, UNMARSHALL);
+
+	if (!prs_init(&state->outgoing_frag, cli->max_xmit_frag,
+		      state, MARSHALL)) {
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
+	}
+
+	talloc_set_destructor(state, rpc_api_pipe_req_state_destructor);
+
+	status = prepare_next_frag(state, &is_last_frag);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto post_status;
+	}
+
+	if (is_last_frag) {
+		subreq = rpc_api_pipe_send(state, ev, state->cli,
+					   &state->outgoing_frag,
+					   RPC_RESPONSE);
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq->async.fn = rpc_api_pipe_req_done;
+		subreq->async.priv = result;
+	} else {
+		subreq = rpc_write_send(state, ev, cli,
+					prs_data_p(&state->outgoing_frag),
+					prs_offset(&state->outgoing_frag));
+		if (subreq == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto post_status;
+		}
+		subreq->async.fn = rpc_api_pipe_req_write_done;
+		subreq->async.priv = result;
+	}
+	return result;
+
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static NTSTATUS prepare_next_frag(struct rpc_api_pipe_req_state *state,
+				  bool *is_last_frag)
+{
+	RPC_HDR hdr;
+	RPC_HDR_REQ hdr_req;
+	uint32_t data_sent_thistime;
+	uint16_t auth_len;
+	uint16_t frag_len;
+	uint8_t flags = 0;
+	uint32_t ss_padding;
+	uint32_t data_left;
+	char pad[8] = { 0, };
+	NTSTATUS status;
+
+	data_left = prs_offset(state->req_data) - state->req_data_sent;
+
+	data_sent_thistime = calculate_data_len_tosend(
+		state->cli, data_left, &frag_len, &auth_len, &ss_padding);
+
+	if (state->req_data_sent == 0) {
+		flags = RPC_FLG_FIRST;
+	}
+
+	if (data_sent_thistime == data_left) {
+		flags |= RPC_FLG_LAST;
+	}
+
+	if (!prs_set_offset(&state->outgoing_frag, 0)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Create and marshall the header and request header. */
+	init_rpc_hdr(&hdr, RPC_REQUEST, flags, state->call_id, frag_len,
+		     auth_len);
+
+	if (!smb_io_rpc_hdr("hdr    ", &hdr, &state->outgoing_frag, 0)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Create the rpc request RPC_HDR_REQ */
+	init_rpc_hdr_req(&hdr_req, prs_offset(state->req_data),
+			 state->op_num);
+
+	if (!smb_io_rpc_hdr_req("hdr_req", &hdr_req,
+				&state->outgoing_frag, 0)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Copy in the data, plus any ss padding. */
+	if (!prs_append_some_prs_data(&state->outgoing_frag,
+				      state->req_data, state->req_data_sent,
+				      data_sent_thistime)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Copy the sign/seal padding data. */
+	if (!prs_copy_data_in(&state->outgoing_frag, pad, ss_padding)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* Generate any auth sign/seal and add the auth footer. */
+	switch (state->cli->auth->auth_type) {
+	case PIPE_AUTH_TYPE_NONE:
+		status = NT_STATUS_OK;
+		break;
+	case PIPE_AUTH_TYPE_NTLMSSP:
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		status = add_ntlmssp_auth_footer(state->cli, &hdr, ss_padding,
+						 &state->outgoing_frag);
+		break;
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		status = add_schannel_auth_footer(state->cli, &hdr, ss_padding,
+						  &state->outgoing_frag);
+		break;
+	default:
+		status = NT_STATUS_INVALID_PARAMETER;
+		break;
+	}
+
+	state->req_data_sent += data_sent_thistime;
+	*is_last_frag = ((flags & RPC_FLG_LAST) != 0);
+
+	return status;
+}
+
+static void rpc_api_pipe_req_write_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_api_pipe_req_state);
+	NTSTATUS status;
+	bool is_last_frag;
+
+	status = rpc_write_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	status = prepare_next_frag(state, &is_last_frag);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	if (is_last_frag) {
+		subreq = rpc_api_pipe_send(state, state->ev, state->cli,
+					   &state->outgoing_frag,
+					   RPC_RESPONSE);
+		if (async_req_nomem(subreq, req)) {
+			return;
+		}
+		subreq->async.fn = rpc_api_pipe_req_done;
+		subreq->async.priv = req;
+	} else {
+		subreq = rpc_write_send(state, state->ev, state->cli,
+					prs_data_p(&state->outgoing_frag),
+					prs_offset(&state->outgoing_frag));
+		if (async_req_nomem(subreq, req)) {
+			return;
+		}
+		subreq->async.fn = rpc_api_pipe_req_write_done;
+		subreq->async.priv = req;
+	}
+}
+
+static void rpc_api_pipe_req_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_api_pipe_req_state);
+	NTSTATUS status;
+
+	status = rpc_api_pipe_recv(subreq, state, &state->reply_pdu);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+			       prs_struct *reply_pdu)
+{
+	struct rpc_api_pipe_req_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_api_pipe_req_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+
+	*reply_pdu = state->reply_pdu;
+	reply_pdu->mem_ctx = mem_ctx;
+
+	/*
+	 * Prevent state->req_pdu from being freed in
+	 * rpc_api_pipe_req_state_destructor()
+	 */
+	prs_init_empty(&state->reply_pdu, state, UNMARSHALL);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
+			uint8 op_num,
+			prs_struct *in_data,
+			prs_struct *out_data)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = rpc_api_pipe_req_send(frame, ev, cli, op_num, in_data);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = rpc_api_pipe_req_recv(req, mem_ctx, out_data);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 #if 0
 /****************************************************************************
  Set the handle state.
