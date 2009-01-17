@@ -369,7 +369,7 @@ krb5_get_init_creds_opt_set_process_last_req(krb5_context context,
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_init(krb5_get_init_creds_opt *opt)
-    __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     memset (opt, 0, sizeof(*opt));
 }
@@ -385,7 +385,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_get_error(krb5_context context,
 				  krb5_get_init_creds_opt *opt,
 				  KRB_ERROR **error)
-  __attribute__((deprecated))
+    KRB5_DEPRECATED
 {
     *error = calloc(1, sizeof(**error));
     if (*error == NULL) {
