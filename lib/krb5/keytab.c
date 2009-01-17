@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 /**
- * @page krb5_keytab_intro The keytab handing functions.
+ * @page krb5_keytab_intro The keytab handing functions
  * @section section_krb5_keytab Kerberos Keytabs
  *
  * See the library functions here: @ref krb5_keytab
