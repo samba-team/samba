@@ -153,7 +153,8 @@ failed:
 /*
   return a DN for a nbt_name
 */
-static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, struct nbt_name *name)
+static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
+				const struct nbt_name *name)
 {
 	struct ldb_dn *dn;
 
@@ -167,7 +168,7 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb, st
 	return dn;
 }
 
-static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct nbt_name **_name)
+static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, const struct ldb_dn *dn, struct nbt_name **_name)
 {
 	NTSTATUS status;
 	struct nbt_name *name;
@@ -568,7 +569,7 @@ const char **winsdb_addr_string_list(TALLOC_CTX *mem_ctx, struct winsdb_addr **a
   load a WINS entry from the database
 */
 NTSTATUS winsdb_lookup(struct winsdb_handle *h, 
-		       struct nbt_name *name,
+		       const struct nbt_name *name,
 		       TALLOC_CTX *mem_ctx,
 		       struct winsdb_record **_rec)
 {
