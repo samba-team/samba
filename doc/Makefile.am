@@ -48,12 +48,43 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
+PROJECTS = hcrypto hx509 krb5 ntlm wind
+
 doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
-	doxygen hcrypto.dxy
-	doxygen hx509.dxy
-	doxygen krb5.dxy
-	doxygen ntlm.dxy
-	doxygen wind.dxy
+	@for a in $(PROJECTS) ; do \
+		echo $$a ; \
+		rm -rf $(srcdir)/$$a ; \
+		doxygen $$a.dxy; \
+		(cd $(srcdir) && find $$a/man -type f > $$a/manpages ) ; \
+	done
+
+install-data-hook: install-doxygen-manpage
+uninstall-hook: uninstall-doxygen-manpage
+
+install-doxygen-manpage:
+	for a in $(PROJECTS) ; do \
+		f="$(srcdir)/$$a/manpages" ; \
+		test -f $$f || continue ; \
+		echo "install $$a manual pages" ; \
+		while read x ; do \
+			section=`echo "$$x" | sed 's/.*\.\([0-9]\)/\1/'` ; \
+			$(mkinstalldirs) "$(DESTDIR)$(mandir)/man$$section" ; \
+			$(INSTALL_DATA) $(srcdir)/$$x "$(DESTDIR)$(mandir)/man$$section" ; \
+		done < $$f ; \
+	done ; exit 0
+
+uninstall-doxygen-manpage:
+	@for a in $(PROJECTS) ; do \
+		f="$(srcdir)/$$a/manpages" ; \
+		test -f $$f || continue ; \
+		echo "removing $$a manual pages" ; \
+		while read x ; do \
+			section=`echo "$$x" | sed 's/.*\.\([0-9]\)/\1/'` ; \
+			base=`basename $$x` ; \
+			rm "$(DESTDIR)$(mandir)/man$$section/$$base" ; \
+		done < $$f ; \
+	done
+
 
 heimdal_TEXINFOS = \
 	ack.texi \
@@ -72,6 +103,7 @@ heimdal_TEXINFOS = \
 	win2k.texi
 
 EXTRA_DIST = \
+	$(PROJECTS) \
 	krb5.din \
 	ntlm.din \
 	hx509.din \
@@ -91,4 +123,3 @@ CLEANFILES = \
 	hcrypto.dxy* \
 	wind.dxy* \
 	vars.texi*
-
