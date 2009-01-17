@@ -148,7 +148,7 @@ RCSID("$Id$");
  * cache. krb5_cc_destroy() will zero out the cache, remove the cache
  * so it can no longer be referenced.
  *
- * See also module @ref krb5_ccache .
+ * See also @ref krb5_ccache_intro and @ref krb5_ccache .
  *
  * @subsection intro_krb5_error_code Kerberos errors
  *
@@ -180,7 +180,7 @@ RCSID("$Id$");
  *
  * Keytabs are used for servers and long-running services.
  *
- * See also module @ref krb5_keytab .
+ * See also @ref krb5_keytab_intro and @ref krb5_keytab .
  *
  * @subsection intro_krb5_crypto Kerberos crypto
  *
