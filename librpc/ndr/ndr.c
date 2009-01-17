@@ -211,6 +211,8 @@ _PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 {
 	struct ndr_print *ndr;
 
+	DEBUG(0,(""));
+
 	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return;
 	ndr->print = ndr_print_debug_helper;
@@ -226,6 +228,8 @@ _PUBLIC_ void ndr_print_debug(ndr_print_fn_t fn, const char *name, void *ptr)
 _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_t level, void *ptr)
 {
 	struct ndr_print *ndr;
+
+	DEBUG(0,(""));
 
 	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return;
@@ -243,6 +247,8 @@ _PUBLIC_ void ndr_print_union_debug(ndr_print_fn_t fn, const char *name, uint32_
 _PUBLIC_ void ndr_print_function_debug(ndr_print_function_t fn, const char *name, int flags, void *ptr)
 {
 	struct ndr_print *ndr;
+
+	DEBUG(0,(""));
 
 	ndr = talloc_zero(NULL, struct ndr_print);
 	if (!ndr) return;
