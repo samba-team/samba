@@ -2148,6 +2148,7 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 						RPC_HDR_AUTH_LEN - *p_auth_len;
 
 			data_len = MIN(data_space, data_left);
+			*p_ss_padding = 0;
 			if (data_len % 8) {
 				*p_ss_padding = 8 - (data_len % 8);
 			}
