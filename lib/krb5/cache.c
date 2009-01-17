@@ -1583,7 +1583,7 @@ krb5_cc_get_friendly_name(krb5_context context,
 	ret = krb5_unparse_name(context, principal, name);
 	krb5_free_principal(context, principal);
     } else {
-	ret = asprintf(name, "%.*s", (int)data.length, data.data);
+	ret = asprintf(name, "%.*s", (int)data.length, (char *)data.data);
 	krb5_data_free(&data);
 	if (ret <= 0) {
 	    ret = ENOMEM;
