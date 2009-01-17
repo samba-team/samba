@@ -498,7 +498,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_security_acl(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_security_acl_revision(ndr, NDR_SCALARS, &r->revision));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_aces));
-		if (r->num_aces < 0 || r->num_aces > 1000) {
+		if (r->num_aces > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->aces, r->num_aces);
@@ -797,7 +797,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_sec_desc_buf(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sd_size));
-		if (r->sd_size < 0 || r->sd_size > 0x40000) {
+		if (r->sd_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sd));

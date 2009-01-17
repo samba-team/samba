@@ -13751,7 +13751,7 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesW(struct ndr_pull *n
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
-		if (r->in.count < 0 || r->in.count > 32000) {
+		if (r->in.count > 32000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.addresses));
@@ -14294,7 +14294,7 @@ static enum ndr_err_code ndr_pull_netr_DsRAddressToSitenamesExW(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.count));
-		if (r->in.count < 0 || r->in.count > 32000) {
+		if (r->in.count > 32000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.addresses));
