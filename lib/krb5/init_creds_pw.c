@@ -1501,11 +1501,11 @@ krb5_init_creds_step(krb5_context context,
 
     /* Lets process the input packet */
     if (in && in->length) {
-	AS_REP rep;
+	krb5_kdc_rep rep;
 
 	memset(&rep, 0, sizeof(rep));
 
-	ret = decode_AS_REP(in->data, in->length, &rep, &size);
+	ret = decode_AS_REP(in->data, in->length, &rep.kdc_rep, &size);
 	if (ret == 0) {
 	    krb5_keyblock *key = NULL;
 	    unsigned eflags = EXTRACT_TICKET_AS_REQ;
@@ -1520,9 +1520,9 @@ krb5_init_creds_step(krb5_context context,
 		eflags |= EXTRACT_TICKET_ALLOW_CNAME_MISMATCH;
 
 	    ret = process_pa_data_to_key(context, ctx, &ctx->cred,
-					 &ctx->as_req, &rep, hostinfo, &key);
+					 &ctx->as_req, &rep.kdc_rep, hostinfo, &key);
 	    if (ret) {
-		free_AS_REP(&rep);
+		free_AS_REP(&rep.kdc_rep);
 		goto out;
 	    }
 
@@ -1544,7 +1544,7 @@ krb5_init_creds_step(krb5_context context,
 	    if (ret == 0)
 		ret = copy_EncKDCRepPart(&rep.enc_part, &ctx->enc_part);
 
-	    free_AS_REP(&rep);
+	    free_AS_REP(&rep.kdc_rep);
 
 	    return ret;
 
