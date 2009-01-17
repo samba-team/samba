@@ -894,7 +894,7 @@ smbc_readdir_internal(SMBCCTX * context,
 
                 /* url-encode the name.  get back remaining buffer space */
                 max_namebuf_len =
-                        SMBC_urlencode(dest->name, src->name, max_namebuf_len);
+                        smbc_urlencode(dest->name, src->name, max_namebuf_len);
 
                 /* We now know the name length */
                 dest->namelen = strlen(dest->name);
