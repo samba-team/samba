@@ -550,11 +550,23 @@ smbc_getOptionSmbEncryptionLevel(SMBCCTX *c);
 void
 smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level);
 
-/** Get whether to treat file names as case-sensitive. */
+/**
+ * Get whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
 smbc_bool
 smbc_getOptionCaseSensitive(SMBCCTX *c);
 
-/** Set whether to treat file names as case-sensitive. */
+/**
+ * Set whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
 void
 smbc_setOptionCaseSensitive(SMBCCTX *c, smbc_bool b);
 
