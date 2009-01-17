@@ -41,7 +41,7 @@ hex2int( unsigned int _char )
 }
 
 /*
- * SMBC_urldecode()
+ * smbc_urldecode()
  * and urldecode_talloc() (internal fn.)
  *
  * Convert strings of %xx to their single character equivalent.  Each 'x' must
@@ -122,7 +122,7 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 }
 
 int
-SMBC_urldecode(char *dest,
+smbc_urldecode(char *dest,
                char *src,
                size_t max_dest_len)
 {
@@ -138,7 +138,7 @@ SMBC_urldecode(char *dest,
 }
 
 /*
- * SMBC_urlencode()
+ * smbc_urlencode()
  *
  * Convert any characters not specifically allowed in a URL into their %xx
  * equivalent.
@@ -146,7 +146,7 @@ SMBC_urldecode(char *dest,
  * Returns the remaining buffer length.
  */
 int
-SMBC_urlencode(char *dest,
+smbc_urlencode(char *dest,
                char *src,
                int max_dest_len)
 {
