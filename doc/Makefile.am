@@ -60,6 +60,7 @@ doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
 
 install-data-hook: install-doxygen-manpage
 uninstall-hook: uninstall-doxygen-manpage
+dist-hook: doxygen
 
 install-doxygen-manpage:
 	for a in $(PROJECTS) ; do \
