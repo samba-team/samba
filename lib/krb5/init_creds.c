@@ -36,7 +36,19 @@
 #undef __attribute__
 #define __attribute__(x)
 
-RCSID("$Id$");
+/**
+ * @page krb5_init_creds_intro The initial credential handing functions
+ * @section section_krb5_init_creds Initial credential
+ *
+ * Functions to get initial credentials: @ref krb5_credential .
+ */
+
+/**
+ * Allocate a new krb5_get_init_creds_opt structure, free with
+ * krb5_get_init_creds_opt_free().
+ *
+ * @ingroup krb5_credential
+ */
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_alloc(krb5_context context,
@@ -63,6 +75,12 @@ krb5_get_init_creds_opt_alloc(krb5_context context,
     *opt = o;
     return 0;
 }
+
+/**
+ * Free krb5_get_init_creds_opt structure.
+ *
+ * @ingroup krb5_credential
+ */
 
 void KRB5_LIB_FUNCTION
 krb5_get_init_creds_opt_free(krb5_context context,
