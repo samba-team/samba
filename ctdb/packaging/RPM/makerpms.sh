@@ -28,7 +28,7 @@ RPMBUILD="rpmbuild"
 VERSION=$(grep ^Version ${DIRNAME}/${SPECFILE} | sed -e 's/^Version:\ \+//')
 RELEASE=$(grep ^Release ${DIRNAME}/${SPECFILE} | sed -e 's/^Release:\ \+//')
 
-if gzip --rsyncable 2>&1 ; then
+if echo | gzip -c --rsyncable - > /dev/null 2>&1 ; then
 	GZIP="gzip -9 --rsyncable"
 else
 	GZIP="gzip -9"
