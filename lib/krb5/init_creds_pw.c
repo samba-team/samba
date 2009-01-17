@@ -1586,7 +1586,7 @@ krb5_init_creds_step(krb5_context context,
 					   N_("Preauth required but no preauth "
 					      "options send by KDC", ""));
 		}
-	    } else if (ret == KRB5_KDC_ERR_WRONG_REALM) {
+	    } else if (ret == KRB5_KDC_ERR_WRONG_REALM && ctx->flags.canonicalize) {
 	        /* client referal to a new realm */
 		if (ctx->error.crealm) {
 		    krb5_set_error_message(context, ret,
