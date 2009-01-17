@@ -371,24 +371,24 @@ static NTSTATUS parse_rpc_header(struct rpc_pipe_client *cli,
  from the wire.
  ****************************************************************************/
 
-struct get_complete_pdu_state {
+struct get_complete_frag_state {
 	struct event_context *ev;
 	struct rpc_pipe_client *cli;
 	struct rpc_hdr_info *prhdr;
 	prs_struct *pdu;
 };
 
-static void get_complete_pdu_got_header(struct async_req *subreq);
-static void get_complete_pdu_got_rest(struct async_req *subreq);
+static void get_complete_frag_got_header(struct async_req *subreq);
+static void get_complete_frag_got_rest(struct async_req *subreq);
 
-static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
+static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 					       struct event_context *ev,
 					       struct rpc_pipe_client *cli,
 					       struct rpc_hdr_info *prhdr,
 					       prs_struct *pdu)
 {
 	struct async_req *result, *subreq;
-	struct get_complete_pdu_state *state;
+	struct get_complete_frag_state *state;
 	uint32_t pdu_len;
 	NTSTATUS status;
 
@@ -396,7 +396,7 @@ static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
 	if (result == NULL) {
 		return NULL;
 	}
-	state = talloc(result, struct get_complete_pdu_state);
+	state = talloc(result, struct get_complete_frag_state);
 	if (state == NULL) {
 		goto fail;
 	}
@@ -420,7 +420,7 @@ static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
-		subreq->async.fn = get_complete_pdu_got_header;
+		subreq->async.fn = get_complete_frag_got_header;
 		subreq->async.priv = result;
 		return result;
 	}
@@ -445,7 +445,7 @@ static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_NO_MEMORY;
 			goto post_status;
 		}
-		subreq->async.fn = get_complete_pdu_got_rest;
+		subreq->async.fn = get_complete_frag_got_rest;
 		subreq->async.priv = result;
 		return result;
 	}
@@ -460,12 +460,12 @@ static struct async_req *get_complete_pdu_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void get_complete_pdu_got_header(struct async_req *subreq)
+static void get_complete_frag_got_header(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
-	struct get_complete_pdu_state *state = talloc_get_type_abort(
-		req->private_data, struct get_complete_pdu_state);
+	struct get_complete_frag_state *state = talloc_get_type_abort(
+		req->private_data, struct get_complete_frag_state);
 	NTSTATUS status;
 
 	status = rpc_read_recv(subreq);
@@ -497,11 +497,11 @@ static void get_complete_pdu_got_header(struct async_req *subreq)
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
-	subreq->async.fn = get_complete_pdu_got_rest;
+	subreq->async.fn = get_complete_frag_got_rest;
 	subreq->async.priv = req;
 }
 
-static void get_complete_pdu_got_rest(struct async_req *subreq)
+static void get_complete_frag_got_rest(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
@@ -516,7 +516,7 @@ static void get_complete_pdu_got_rest(struct async_req *subreq)
 	async_req_done(req);
 }
 
-static NTSTATUS get_complete_pdu_recv(struct async_req *req)
+static NTSTATUS get_complete_frag_recv(struct async_req *req)
 {
 	return async_req_simple_recv(req);
 }
@@ -535,7 +535,7 @@ static NTSTATUS get_complete_pdu(struct rpc_pipe_client *cli,
 		goto fail;
 	}
 
-	req = get_complete_pdu_send(frame, ev, cli, prhdr, pdu);
+	req = get_complete_frag_send(frame, ev, cli, prhdr, pdu);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -544,7 +544,7 @@ static NTSTATUS get_complete_pdu(struct rpc_pipe_client *cli,
 		event_loop_once(ev);
 	}
 
-	status = get_complete_pdu_recv(req);
+	status = get_complete_frag_recv(req);
  fail:
 	TALLOC_FREE(frame);
 	return status;
