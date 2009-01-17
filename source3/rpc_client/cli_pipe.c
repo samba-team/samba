@@ -2175,12 +2175,10 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 	prs_init_empty(rbuf, talloc_tos(), UNMARSHALL);
 
 	nt_status = rpc_api_pipe(cli, &rpc_out, rbuf, RPC_ALTCONTRESP);
+	prs_mem_free(&rpc_out);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		prs_mem_free(&rpc_out);
 		return nt_status;
 	}
-
-	prs_mem_free(&rpc_out);
 
 	/* Get the auth blob from the reply. */
 	if(!smb_io_rpc_hdr("rpc_hdr   ", phdr, rbuf, 0)) {
@@ -2257,12 +2255,10 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	/* send data on \PIPE\.  receive a response */
 	status = rpc_api_pipe(cli, &rpc_out, &rbuf, RPC_BINDACK);
+	prs_mem_free(&rpc_out);
 	if (!NT_STATUS_IS_OK(status)) {
-		prs_mem_free(&rpc_out);
 		return status;
 	}
-
-	prs_mem_free(&rpc_out);
 
 	DEBUG(3,("rpc_pipe_bind: %s bind request returned ok.\n",
 		 rpccli_pipe_txt(debug_ctx(), cli)));
