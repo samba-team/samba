@@ -181,6 +181,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	torture_comment(tctx, "release the name\n");
 	release.in.name = *name;
+	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = nb_flags;
