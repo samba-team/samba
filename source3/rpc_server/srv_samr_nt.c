@@ -1918,6 +1918,7 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 	uint32 reject_reason;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct samr_ChangeReject *reject = NULL;
+	uint32_t tmp;
 
 	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
@@ -1967,11 +1968,11 @@ NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 
 		/* AS ROOT !!! */
 
-		pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
-				       (uint32_t *)&dominfo->min_password_length);
+		pdb_get_account_policy(AP_MIN_PASSWORD_LEN, &tmp);
+		dominfo->min_password_length = tmp;
 
-		pdb_get_account_policy(AP_PASSWORD_HISTORY,
-				       (uint32_t *)&dominfo->password_history_length);
+		pdb_get_account_policy(AP_PASSWORD_HISTORY, &tmp);
+		dominfo->password_history_length = tmp;
 
 		pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
 				       &dominfo->password_properties);
@@ -2833,10 +2834,11 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			/* AS ROOT !!! */
 
 			pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
-			       (uint32_t *)&dom_info->info1.min_password_length);
+					       &account_policy_temp);
+			dom_info->info1.min_password_length = account_policy_temp;
 
-			pdb_get_account_policy(AP_PASSWORD_HISTORY,
-				(uint32_t *)&dom_info->info1.password_history_length);
+			pdb_get_account_policy(AP_PASSWORD_HISTORY, &account_policy_temp);
+			dom_info->info1.password_history_length = account_policy_temp;
 
 			pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
 				&dom_info->info1.password_properties);
@@ -2965,7 +2967,8 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 			u_reset_time = account_policy_temp * 60;
 
 			pdb_get_account_policy(AP_BAD_ATTEMPT_LOCKOUT,
-				(uint32_t *)&dom_info->info12.lockout_threshold);
+					       &account_policy_temp);
+			dom_info->info12.lockout_threshold = account_policy_temp;
 
 			/* !AS ROOT */
 
