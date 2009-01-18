@@ -8,7 +8,7 @@ package Parse::Pidl::Typelist;
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(hasType getType resolveType mapTypeName scalar_is_reference expandAlias
-			    mapScalarType addType typeIs is_scalar enum_type_fn
+			    mapScalarType addType typeIs is_signed is_scalar enum_type_fn
 				bitmap_type_fn mapType typeHasBody
 );
 use vars qw($VERSION);
@@ -143,6 +143,19 @@ sub hasType($)
 	}
 	return 1 if defined($types{$t});
 	return 0;
+}
+
+sub is_signed($)
+{
+    my $t = shift;
+
+    return ($t eq "int8"
+	    or $t eq "int16"
+	    or $t eq "int32"
+	    or $t eq "dlong"
+	    or $t eq "int"
+	    or $t eq "long"
+	    or $t eq "short");
 }
 
 sub is_scalar($)

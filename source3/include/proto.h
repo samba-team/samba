@@ -5197,10 +5197,22 @@ NTSTATUS rpccli_netlogon_set_trust_password(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_client/cli_pipe.c  */
 
-NTSTATUS rpc_api_pipe_req(struct rpc_pipe_client *cli,
+struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
+					struct event_context *ev,
+					struct rpc_pipe_client *cli,
+					uint8_t op_num,
+					prs_struct *req_data);
+NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+			       prs_struct *reply_pdu);
+NTSTATUS rpc_api_pipe_req(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			uint8 op_num,
 			prs_struct *in_data,
 			prs_struct *out_data);
+struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct rpc_pipe_client *cli,
+				     struct cli_pipe_auth_data *auth);
+NTSTATUS rpc_pipe_bind_recv(struct async_req *req);
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct cli_pipe_auth_data *auth);
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,

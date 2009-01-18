@@ -361,13 +361,10 @@ uint32 prs_offset(prs_struct *ps)
 
 bool prs_set_offset(prs_struct *ps, uint32 offset)
 {
-	if(offset <= ps->data_offset) {
-		ps->data_offset = offset;
-		return True;
-	}
-
-	if(!prs_grow(ps, offset - ps->data_offset))
+	if ((offset > ps->data_offset)
+	    && !prs_grow(ps, offset - ps->data_offset)) {
 		return False;
+	}
 
 	ps->data_offset = offset;
 	return True;

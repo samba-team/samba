@@ -1819,7 +1819,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_SidArray(struct ndr_pull *ndr, int ndr_f
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_sids));
-		if (r->num_sids < 0 || r->num_sids > 1000) {
+		if (r->num_sids > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sids));
@@ -2060,7 +2060,7 @@ static enum ndr_err_code ndr_pull_lsa_TransSidArray(struct ndr_pull *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sids));
@@ -2147,7 +2147,7 @@ static enum ndr_err_code ndr_pull_lsa_RefDomainList(struct ndr_pull *ndr, int nd
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
@@ -2306,7 +2306,7 @@ static enum ndr_err_code ndr_pull_lsa_TransNameArray(struct ndr_pull *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_names));
@@ -2422,7 +2422,7 @@ static enum ndr_err_code ndr_pull_lsa_PrivilegeSet(struct ndr_pull *ndr, int ndr
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->set));
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown));
@@ -2580,7 +2580,7 @@ static enum ndr_err_code ndr_pull_lsa_DATA_BUF2(struct ndr_pull *ndr, int ndr_fl
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
-			if (r->size < 0 || r->size > 65536) {
+			if (r->size > 65536) {
 				return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 			}
 			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
@@ -3924,7 +3924,7 @@ static enum ndr_err_code ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_fla
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 256) {
+		if (r->count > 256) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_names));
@@ -4338,7 +4338,7 @@ static enum ndr_err_code ndr_pull_lsa_TransNameArray2(struct ndr_pull *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_names));
@@ -4463,7 +4463,7 @@ static enum ndr_err_code ndr_pull_lsa_TransSidArray2(struct ndr_pull *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sids));
@@ -4609,7 +4609,7 @@ static enum ndr_err_code ndr_pull_lsa_TransSidArray3(struct ndr_pull *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1000) {
+		if (r->count > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sids));
@@ -4690,7 +4690,7 @@ static enum ndr_err_code ndr_pull_lsa_ForestTrustBinaryData(struct ndr_pull *ndr
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
-		if (r->length < 0 || r->length > 131072) {
+		if (r->length > 131072) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
@@ -5021,7 +5021,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_ForestTrustInformation(struct ndr_pull *
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 4000) {
+		if (r->count > 4000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
@@ -6032,7 +6032,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.resume_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_entries));
-		if (r->in.num_entries < 0 || r->in.num_entries > 8192) {
+		if (r->in.num_entries > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC(ndr, r->out.resume_handle);
@@ -6375,7 +6375,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int fl
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_names));
-		if (r->in.num_names < 0 || r->in.num_names > 1000) {
+		if (r->in.num_names > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.names));
@@ -10842,7 +10842,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_names));
-		if (r->in.num_names < 0 || r->in.num_names > 1000) {
+		if (r->in.num_names > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.names));
@@ -11496,7 +11496,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_names));
-		if (r->in.num_names < 0 || r->in.num_names > 1000) {
+		if (r->in.num_names > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.names));
@@ -12234,7 +12234,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		ZERO_STRUCT(r->out);
 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_names));
-		if (r->in.num_names < 0 || r->in.num_names > 1000) {
+		if (r->in.num_names > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.names));

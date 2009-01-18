@@ -176,6 +176,11 @@ struct SMBC_internal_data {
          */
         smbc_smb_encrypt_level                  smb_encryption_level;
 
+        /*
+         * Should we request case sensitivity of file names?
+         */
+        bool                                    case_sensitive;
+
         struct smbc_server_cache * server_cache;
 
         /* POSIX emulation functions */
@@ -396,16 +401,6 @@ SMBC_errno(SMBCCTX *context,
 
 
 /* Functions in libsmb_path.c */
-int
-SMBC_urldecode(char *dest,
-               char *src,
-               size_t max_dest_len);
-
-int
-SMBC_urlencode(char *dest,
-               char *src,
-               int max_dest_len);
-
 int
 SMBC_parse_path(TALLOC_CTX *ctx,
 		SMBCCTX *context,

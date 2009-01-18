@@ -194,6 +194,32 @@ smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level)
 }
 
 /**
+ * Get whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+smbc_bool
+smbc_getOptionCaseSensitive(SMBCCTX *c)
+{
+        return c->internal->case_sensitive;
+}
+
+/**
+ * Set whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+void
+smbc_setOptionCaseSensitive(SMBCCTX *c, smbc_bool b)
+{
+        c->internal->case_sensitive = b;
+}
+
+/**
  * Get from how many local master browsers should the list of workgroups be
  * retrieved.  It can take up to 12 minutes or longer after a server becomes a
  * local master browser, for it to have the entire browse list (the list of

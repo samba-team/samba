@@ -857,14 +857,16 @@ sub ParseDataPull($$$$$$$)
 
 		if (my $range = has_property($e, "range")) {
 			$var_name = get_value_of($var_name);
+			my $signed = Parse::Pidl::Typelist::is_signed($l->{DATA_TYPE});
 			my ($low, $high) = split(/,/, $range, 2);
-			$self->pidl("if ($var_name < $low || $var_name > $high) {");
-			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
-			$self->pidl("}");
-		}
-		if (my $max = has_property($e, "max")) {
-			$var_name = get_value_of($var_name);
-			$self->pidl("if ($var_name > $max) {");
+			if ($low < 0 and not $signed) {
+				warning(0, "$low is invalid for the range of an unsigned type");
+			}
+			if ($low == 0 and not $signed) {
+				$self->pidl("if ($var_name > $high) {");
+			} else {
+				$self->pidl("if ($var_name < $low || $var_name > $high) {");
+			}
 			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
 			$self->pidl("}");
 		}

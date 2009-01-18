@@ -811,7 +811,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursorCtrEx(struct ndr_pull *
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 0x100000) {
+		if (r->count > 0x100000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved2));
@@ -1166,7 +1166,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaOIDMapping_Ctr(struct ndr_p
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_mappings));
-		if (r->num_mappings < 0 || r->num_mappings > 0x100000) {
+		if (r->num_mappings > 0x100000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_mappings));
@@ -1700,7 +1700,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaCursor2CtrEx(struct ndr_pull 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 0x100000) {
+		if (r->count > 0x100000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved2));
@@ -1764,7 +1764,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAttributeValue(struct ndr_pull *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->__ndr_size));
-		if (r->__ndr_size < 0 || r->__ndr_size > 10485760) {
+		if (r->__ndr_size > 10485760) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_blob));
@@ -1830,7 +1830,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAttributeValueCtr(struct ndr_pull *n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_values));
-		if (r->num_values < 0 || r->num_values > 10485760) {
+		if (r->num_values > 10485760) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_values));
@@ -2074,7 +2074,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaAttributeCtr(struct ndr_pull 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_attributes));
-		if (r->num_attributes < 0 || r->num_attributes > 1048576) {
+		if (r->num_attributes > 1048576) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_attributes));
@@ -2278,7 +2278,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsReplicaMetaDataCtr(struct ndr_pull
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->meta_data));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1048576) {
+		if (r->count > 1048576) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->meta_data, ndr_get_array_size(ndr, &r->meta_data));
@@ -2710,7 +2710,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_drsuapi_DsGetNCChangesCtr6(struct ndr_pull *
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nc_object_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->nc_linked_attributes_count));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->linked_attributes_count));
-		if (r->linked_attributes_count < 0 || r->linked_attributes_count > 1048576) {
+		if (r->linked_attributes_count > 1048576) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_linked_attributes));
@@ -3837,11 +3837,11 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetMembershipsCtr1(struct ndr_pull *
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->status));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_memberships));
-		if (r->num_memberships < 0 || r->num_memberships > 10000) {
+		if (r->num_memberships > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_sids));
-		if (r->num_sids < 0 || r->num_sids > 10000) {
+		if (r->num_sids > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info_array));
@@ -4324,7 +4324,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogRequest1(struct ndr_p
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
-		if (r->length < 0 || r->length > 0x00A00000) {
+		if (r->length > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
@@ -4479,11 +4479,11 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetNT4ChangeLogInfo1(struct ndr_pull
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length1));
-		if (r->length1 < 0 || r->length1 > 0x00A00000) {
+		if (r->length1 > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length2));
-		if (r->length2 < 0 || r->length2 > 0x00A00000) {
+		if (r->length2 > 0x00A00000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown1));
@@ -5320,7 +5320,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsWriteAccountSpnRequest1(struct ndr_p
 			r->object_dn = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_spn_names));
@@ -6217,7 +6217,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCInfoCtr1(struct ndr_pull *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_array));
@@ -6585,7 +6585,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCInfoCtr2(struct ndr_pull *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_array));
@@ -6956,7 +6956,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCInfoCtr3(struct ndr_pull *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_array));
@@ -7133,7 +7133,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsGetDCConnectionCtr01(struct ndr_pull
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_array));
@@ -7537,7 +7537,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryExtraErrorBuffer(struct ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
-		if (r->size < 0 || r->size > 10485760) {
+		if (r->size > 10485760) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
@@ -8097,7 +8097,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryCtr2(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
 		NDR_CHECK(ndr_pull_drsuapi_DsAddEntryErrorInfoX(ndr, NDR_SCALARS, &r->error));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_objects));
@@ -8227,7 +8227,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsAddEntryCtr3(struct ndr_pull *ndr, i
 			r->error = NULL;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_objects));
@@ -10709,7 +10709,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplicaConnection04Ctr(struct ndr_pu
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 10000) {
+		if (r->count > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
@@ -10858,7 +10858,7 @@ static enum ndr_err_code ndr_pull_drsuapi_DsReplica06Ctr(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->array));
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 256) {
+		if (r->count > 256) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
@@ -11863,7 +11863,7 @@ static enum ndr_err_code ndr_pull_drsuapi_QuerySitesByCostCtr1(struct ndr_pull *
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_info));
-		if (r->num_info < 0 || r->num_info > 10000) {
+		if (r->num_info > 10000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));

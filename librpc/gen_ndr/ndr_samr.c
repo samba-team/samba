@@ -1191,7 +1191,7 @@ static enum ndr_err_code ndr_pull_samr_Ids(struct ndr_pull *ndr, int ndr_flags, 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
-		if (r->count < 0 || r->count > 1024) {
+		if (r->count > 1024) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ids));
@@ -7211,7 +7211,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_samr_LookupNames(struct ndr_pull *ndr, int f
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_names));
-		if (r->in.num_names < 0 || r->in.num_names > 1000) {
+		if (r->in.num_names > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.names));
@@ -7353,7 +7353,7 @@ static enum ndr_err_code ndr_pull_samr_LookupRids(struct ndr_pull *ndr, int flag
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.domain_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.num_rids));
-		if (r->in.num_rids < 0 || r->in.num_rids > 1000) {
+		if (r->in.num_rids > 1000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.rids));

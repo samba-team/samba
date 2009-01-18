@@ -1164,7 +1164,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_SERVICE_FAILURE_ACTIONS(struct ndr_pull *ndr
 			ndr->flags = _flags_save_string;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->num_actions));
-		if (r->num_actions < 0 || r->num_actions > 1024) {
+		if (r->num_actions > 1024) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_actions));
@@ -1627,7 +1627,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buffer_size));
-		if (r->in.buffer_size < 0 || r->in.buffer_size > 0x40000) {
+		if (r->in.buffer_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buffer_size);
@@ -1647,7 +1647,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceObjectSecurity(struct ndr_p
 		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
-		if (*r->out.needed < 0 || *r->out.needed > 0x40000) {
+		if (*r->out.needed > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -2729,7 +2729,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 0x40000) {
+		if (r->in.buf_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.service_status, r->in.buf_size);
@@ -2751,7 +2751,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull 
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 0x40000) {
+		if (*r->out.bytes_needed > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -2761,7 +2761,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumDependentServicesW(struct ndr_pull 
 		_mem_save_services_returned_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.services_returned, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.services_returned));
-		if (*r->out.services_returned < 0 || *r->out.services_returned > 0x40000) {
+		if (*r->out.services_returned > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_services_returned_0, LIBNDR_FLAG_REF_ALLOC);
@@ -2870,7 +2870,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *nd
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_svcctl_ServiceState(ndr, NDR_SCALARS, &r->in.state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 0x40000) {
+		if (r->in.buf_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_resume_handle));
@@ -2904,7 +2904,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *nd
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 0x40000) {
+		if (*r->out.bytes_needed > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -2914,7 +2914,7 @@ static enum ndr_err_code ndr_pull_svcctl_EnumServicesStatusW(struct ndr_pull *nd
 		_mem_save_services_returned_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.services_returned, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.services_returned));
-		if (*r->out.services_returned < 0 || *r->out.services_returned > 0x40000) {
+		if (*r->out.services_returned > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_services_returned_0, LIBNDR_FLAG_REF_ALLOC);
@@ -3251,7 +3251,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfigW(struct ndr_pull *nd
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 8192) {
+		if (r->in.buf_size > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC(ndr, r->out.query);
@@ -3273,7 +3273,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfigW(struct ndr_pull *nd
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 8192) {
+		if (*r->out.bytes_needed > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -6087,7 +6087,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_svcctl_ConfigLevel(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 8192) {
+		if (r->in.buf_size > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buf_size);
@@ -6107,7 +6107,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceConfig2W(struct ndr_pull *n
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 8192) {
+		if (*r->out.bytes_needed > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -6195,7 +6195,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *n
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_svcctl_StatusLevel(ndr, NDR_SCALARS, &r->in.info_level));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 8192) {
+		if (r->in.buf_size > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buf_size);
@@ -6215,7 +6215,7 @@ static enum ndr_err_code ndr_pull_svcctl_QueryServiceStatusEx(struct ndr_pull *n
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 8192) {
+		if (*r->out.bytes_needed > 8192) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -6536,7 +6536,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
 		NDR_CHECK(ndr_pull_svcctl_ServiceState(ndr, NDR_SCALARS, &r->in.state));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buf_size));
-		if (r->in.buf_size < 0 || r->in.buf_size > 0x40000) {
+		if (r->in.buf_size > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_resume_handle));
@@ -6549,7 +6549,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 			_mem_save_resume_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.resume_handle, 0);
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.resume_handle));
-			if (*r->in.resume_handle < 0 || *r->in.resume_handle > 0x40000) {
+			if (*r->in.resume_handle > 0x40000) {
 				return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, 0);
@@ -6591,7 +6591,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 		_mem_save_bytes_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.bytes_needed, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.bytes_needed));
-		if (*r->out.bytes_needed < 0 || *r->out.bytes_needed > 0x40000) {
+		if (*r->out.bytes_needed > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_bytes_needed_0, LIBNDR_FLAG_REF_ALLOC);
@@ -6601,7 +6601,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 		_mem_save_service_returned_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.service_returned, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.service_returned));
-		if (*r->out.service_returned < 0 || *r->out.service_returned > 0x40000) {
+		if (*r->out.service_returned > 0x40000) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_returned_0, LIBNDR_FLAG_REF_ALLOC);
@@ -6615,7 +6615,7 @@ static enum ndr_err_code ndr_pull_EnumServicesStatusExW(struct ndr_pull *ndr, in
 			_mem_save_resume_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.resume_handle, 0);
 			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.resume_handle));
-			if (*r->out.resume_handle < 0 || *r->out.resume_handle > 0x40000) {
+			if (*r->out.resume_handle > 0x40000) {
 				return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, 0);

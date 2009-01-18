@@ -974,7 +974,7 @@ static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_eventlogReadFlags(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.number_of_bytes));
-		if (r->in.number_of_bytes < 0 || r->in.number_of_bytes > 0x7FFFF) {
+		if (r->in.number_of_bytes > 0x7FFFF) {
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.data, r->in.number_of_bytes);
