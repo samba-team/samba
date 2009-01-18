@@ -122,8 +122,6 @@ struct nbt_name_socket {
 				struct socket_address *);
 		void *private_data;
 	} unexpected;
-
-	uint32_t wack_timeout;
 };
 
 
