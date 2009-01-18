@@ -113,7 +113,6 @@ static NTSTATUS libnetapi_samr_open_alias_queryinfo(TALLOC_CTX *mem_ctx,
 WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupAdd *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -152,7 +151,6 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -227,10 +225,6 @@ WERROR NetLocalGroupAdd_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
@@ -260,7 +254,6 @@ WERROR NetLocalGroupAdd_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 			  struct NetLocalGroupDel *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -278,7 +271,6 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -349,10 +341,6 @@ WERROR NetLocalGroupDel_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
@@ -427,7 +415,6 @@ static WERROR map_alias_info_to_buffer(TALLOC_CTX *mem_ctx,
 WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupGetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -456,7 +443,6 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -530,10 +516,6 @@ WERROR NetLocalGroupGetInfo_r(struct libnetapi_ctx *ctx,
 					r->out.buffer);
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
@@ -603,7 +585,6 @@ static WERROR map_buffer_to_alias_info(TALLOC_CTX *mem_ctx,
 WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			      struct NetLocalGroupSetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -633,7 +614,6 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -710,10 +690,6 @@ WERROR NetLocalGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}
@@ -742,7 +718,6 @@ WERROR NetLocalGroupSetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 			   struct NetLocalGroupEnum *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -781,7 +756,6 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -911,10 +885,6 @@ WERROR NetLocalGroupEnum_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (ctx->disable_policy_handle_cache) {
 		libnetapi_samr_close_domain_handle(ctx, &domain_handle);
 		libnetapi_samr_close_builtin_handle(ctx, &builtin_handle);
@@ -997,7 +967,6 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 {
 	struct NetLocalGroupAddMembers *r = NULL;
 
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct rpc_pipe_client *lsa_pipe = NULL;
 	NTSTATUS status;
@@ -1074,7 +1043,6 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	if (r->in.level == 3) {
 		werr = libnetapi_open_pipe(ctx, r->in.server_name,
 					   &ndr_table_lsarpc.syntax_id,
-					   &cli,
 					   &lsa_pipe);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
@@ -1094,7 +1062,6 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1267,10 +1234,6 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&alias_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &alias_handle);
 	}

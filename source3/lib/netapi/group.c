@@ -30,7 +30,6 @@
 WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupAdd *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -73,7 +72,6 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -195,10 +193,6 @@ WERROR NetGroupAdd_r(struct libnetapi_ctx *ctx,
 				      &group_handle);
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -226,7 +220,6 @@ WERROR NetGroupAdd_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 		     struct NetGroupDel *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -250,7 +243,6 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -362,10 +354,6 @@ WERROR NetGroupDel_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -393,7 +381,6 @@ WERROR NetGroupDel_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupSetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -421,7 +408,6 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -547,10 +533,6 @@ WERROR NetGroupSetInfo_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -639,7 +621,6 @@ static WERROR map_group_info_to_buffer(TALLOC_CTX *mem_ctx,
 WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupGetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -662,7 +643,6 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -732,10 +712,6 @@ WERROR NetGroupGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -763,7 +739,6 @@ WERROR NetGroupGetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupAddUser *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -784,7 +759,6 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -859,10 +833,6 @@ WERROR NetGroupAddUser_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -890,7 +860,6 @@ WERROR NetGroupAddUser_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 			 struct NetGroupDelUser *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -911,7 +880,6 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -985,10 +953,6 @@ WERROR NetGroupDelUser_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -1166,7 +1130,6 @@ static WERROR convert_samr_disp_groups_to_GROUP_INFO_buffer(TALLOC_CTX *mem_ctx,
 WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 		      struct NetGroupEnum *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct policy_handle connect_handle;
 	struct dom_sid2 *domain_sid = NULL;
@@ -1195,7 +1158,6 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1260,10 +1222,6 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	/* if last query */
 	if (NT_STATUS_IS_OK(status) ||
 	    NT_STATUS_IS_ERR(status)) {
@@ -1294,7 +1252,6 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 {
 	/* FIXME: this call needs to cope with large replies */
 
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_account_name;
@@ -1331,7 +1288,6 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1419,10 +1375,6 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}
@@ -1450,7 +1402,6 @@ WERROR NetGroupGetUsers_l(struct libnetapi_ctx *ctx,
 WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 			  struct NetGroupSetUsers *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct policy_handle connect_handle, domain_handle, group_handle;
 	struct lsa_String lsa_account_name;
@@ -1494,7 +1445,6 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_samr.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1665,10 +1615,6 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 	werr = WERR_OK;
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	if (is_valid_policy_hnd(&group_handle)) {
 		rpccli_samr_Close(pipe_cli, ctx, &group_handle);
 	}

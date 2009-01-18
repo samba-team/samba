@@ -181,7 +181,6 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 
@@ -201,7 +200,6 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -227,10 +225,6 @@ WERROR NetShareAdd_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -251,7 +245,6 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 
 	if (!r->in.net_name) {
@@ -260,7 +253,6 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -277,10 +269,6 @@ WERROR NetShareDel_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -301,7 +289,6 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct srvsvc_NetShareInfoCtr info_ctr;
 	struct srvsvc_NetShareCtr0 ctr0;
@@ -329,7 +316,6 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -387,10 +373,6 @@ WERROR NetShareEnum_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -411,7 +393,6 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 	uint32_t num_entries = 0;
@@ -436,7 +417,6 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -463,10 +443,6 @@ WERROR NetShareGetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -487,7 +463,6 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetShareInfo info;
 
@@ -512,7 +487,6 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -539,10 +513,6 @@ WERROR NetShareSetInfo_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 

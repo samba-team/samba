@@ -161,7 +161,6 @@ static NTSTATUS map_server_info_to_SERVER_INFO_buffer(TALLOC_CTX *mem_ctx,
 WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerGetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -183,7 +182,6 @@ WERROR NetServerGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -274,7 +272,6 @@ WERROR NetServerSetInfo_l(struct libnetapi_ctx *ctx,
 WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 			  struct NetServerSetInfo *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -282,7 +279,6 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -318,7 +314,6 @@ WERROR NetServerSetInfo_r(struct libnetapi_ctx *ctx,
 WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 		      struct NetRemoteTOD *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -326,7 +321,6 @@ WERROR NetRemoteTOD_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

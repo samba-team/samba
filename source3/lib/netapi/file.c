@@ -32,12 +32,10 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -53,10 +51,6 @@ WERROR NetFileClose_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -118,7 +112,6 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	union srvsvc_NetFileInfo info;
 	uint32_t num_entries = 0;
@@ -137,7 +130,6 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -163,10 +155,6 @@ WERROR NetFileGetInfo_r(struct libnetapi_ctx *ctx,
 		goto done;
 	}
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
@@ -187,7 +175,6 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct srvsvc_NetFileInfoCtr info_ctr;
 	struct srvsvc_NetFileCtr2 ctr2;
@@ -209,7 +196,6 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_srvsvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -273,10 +259,6 @@ WERROR NetFileEnum_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (!cli) {
-		return werr;
-	}
-
 	return werr;
 }
 
