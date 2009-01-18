@@ -407,6 +407,9 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	uint8_t *inbuf;
 
+	/* TODO: remove this hack */
+	message_dispatch(smbd_messaging_context());
+
 	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
 					 msg->buf.length);
 	if (inbuf == NULL) {
@@ -1906,6 +1909,9 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	bool encrypted = false;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
+
+	/* TODO: remove this hack */
+	message_dispatch(smbd_messaging_context());
 
 	/* TODO: make this completely nonblocking */
 
