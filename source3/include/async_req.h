@@ -150,4 +150,11 @@ bool async_req_enqueue(struct async_req_queue *queue,
 		       struct async_req *req,
 		       void (*trigger)(struct async_req *req));
 
+bool _async_req_setup(TALLOC_CTX *mem_ctx, struct async_req **preq,
+		      void *pstate, size_t state_size, const char *typename);
+
+#define async_req_setup(_mem_ctx, _preq, _pstate, type) \
+	_async_req_setup((_mem_ctx), (_preq), (_pstate), sizeof(type), #type)
+
+
 #endif

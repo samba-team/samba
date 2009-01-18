@@ -222,16 +222,10 @@ static struct async_req *rpc_read_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct rpc_read_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_read_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct rpc_read_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->data = data;
@@ -361,16 +355,10 @@ static struct async_req *rpc_write_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result, *subreq;
 	struct rpc_write_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_write_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct rpc_write_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->data = data;
@@ -523,16 +511,10 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	uint32_t pdu_len;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct get_complete_frag_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct get_complete_frag_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->prhdr = prhdr;
@@ -586,7 +568,6 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 	if (async_post_status(result, ev, status)) {
 		return result;
 	}
- fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
@@ -1165,16 +1146,10 @@ static struct async_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	struct cli_api_pipe_state *state;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct cli_api_pipe_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct cli_api_pipe_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->max_rdata_len = max_rdata_len;
@@ -1227,7 +1202,6 @@ static struct async_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	if (async_post_status(result, ev, status)) {
 		return result;
 	}
- fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
@@ -1370,16 +1344,10 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	uint16_t max_recv_frag;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_api_pipe_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct rpc_api_pipe_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->expected_pkt_type = expected_pkt_type;
@@ -1423,7 +1391,6 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	if (async_post_status(result, ev, status)) {
 		return result;
 	}
- fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
@@ -2184,16 +2151,10 @@ struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	bool is_last_frag;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_api_pipe_req_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct rpc_api_pipe_req_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->op_num = op_num;
@@ -2250,7 +2211,6 @@ struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	if (async_post_status(result, ev, status)) {
 		return result;
 	}
- fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
@@ -2667,15 +2627,10 @@ struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_bind_state *state;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_pipe_bind_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct rpc_pipe_bind_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
 
 	DEBUG(5,("Bind RPC Pipe: %s auth_type %u, auth_level %u\n",
 		rpccli_pipe_txt(debug_ctx(), cli),
@@ -2717,7 +2672,6 @@ struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	if (async_post_status(result, ev, status)) {
 		return result;
 	}
- fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
