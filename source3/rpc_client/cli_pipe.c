@@ -1585,6 +1585,7 @@ static NTSTATUS rpc_api_pipe_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+#if 0
 static NTSTATUS rpc_api_pipe(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 			     prs_struct *data, /* Outgoing pdu fragment,
 						* already formatted for
@@ -1617,6 +1618,7 @@ static NTSTATUS rpc_api_pipe(TALLOC_CTX *mem_ctx, struct rpc_pipe_client *cli,
 	TALLOC_FREE(frame);
 	return status;
 }
+#endif
 
 /*******************************************************************
  Creates krb5 auth bind.
@@ -2613,6 +2615,7 @@ static NTSTATUS create_rpc_bind_auth3(struct rpc_pipe_client *cli,
  Create and send the third packet in an RPC auth.
 ****************************************************************************/
 
+#if 0
 static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 				RPC_HDR *phdr,
 				prs_struct *rbuf,
@@ -2709,6 +2712,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	data_blob_free(&server_response);
 	return NT_STATUS_OK;
 }
+#endif
 
 /*******************************************************************
  Creates a DCE/RPC bind alter context authentication request which
@@ -2756,6 +2760,7 @@ static NTSTATUS create_rpc_alter_context(uint32 rpc_call_id,
  and gets a response.
  ********************************************************************/
 
+#if 0
 static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
                                 RPC_HDR *phdr,
                                 prs_struct *rbuf,
@@ -2879,11 +2884,13 @@ static NTSTATUS rpc_finish_spnego_ntlmssp_bind(struct rpc_pipe_client *cli,
 
 	return NT_STATUS_OK;
 }
+#endif
 
 /****************************************************************************
  Do an rpc bind.
 ****************************************************************************/
 
+#if 0
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 		       struct cli_pipe_auth_data *auth)
 {
@@ -3012,6 +3019,446 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 
 	prs_mem_free(&rbuf);
 	return NT_STATUS_OK;
+}
+#endif
+
+struct rpc_pipe_bind_state {
+	struct event_context *ev;
+	struct rpc_pipe_client *cli;
+	prs_struct rpc_out;
+	uint32_t rpc_call_id;
+};
+
+static int rpc_pipe_bind_state_destructor(struct rpc_pipe_bind_state *state)
+{
+	prs_mem_free(&state->rpc_out);
+	return 0;
+}
+
+static void rpc_pipe_bind_step_one_done(struct async_req *subreq);
+static NTSTATUS rpc_finish_auth3_bind_send(struct async_req *req,
+					   struct rpc_pipe_bind_state *state,
+					   struct rpc_hdr_info *phdr,
+					   prs_struct *reply_pdu);
+static void rpc_bind_auth3_write_done(struct async_req *subreq);
+static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct async_req *req,
+						    struct rpc_pipe_bind_state *state,
+						    struct rpc_hdr_info *phdr,
+						    prs_struct *reply_pdu);
+static void rpc_bind_ntlmssp_api_done(struct async_req *subreq);
+
+struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct rpc_pipe_client *cli,
+				     struct cli_pipe_auth_data *auth)
+{
+	struct async_req *result, *subreq;
+	struct rpc_pipe_bind_state *state;
+	NTSTATUS status;
+
+	result = async_req_new(mem_ctx);
+	if (result == NULL) {
+		return NULL;
+	}
+	state = talloc(result, struct rpc_pipe_bind_state);
+	if (state == NULL) {
+		goto fail;
+	}
+	result->private_data = state;
+
+	DEBUG(5,("Bind RPC Pipe: %s auth_type %u, auth_level %u\n",
+		rpccli_pipe_txt(debug_ctx(), cli),
+		(unsigned int)auth->auth_type,
+		(unsigned int)auth->auth_level ));
+
+	state->ev = ev;
+	state->cli = cli;
+	state->rpc_call_id = get_rpc_call_id();
+
+	prs_init_empty(&state->rpc_out, state, MARSHALL);
+	talloc_set_destructor(state, rpc_pipe_bind_state_destructor);
+
+	cli->auth = talloc_move(cli, &auth);
+
+	/* Marshall the outgoing data. */
+	status = create_rpc_bind_req(cli, &state->rpc_out,
+				     state->rpc_call_id,
+				     &cli->abstract_syntax,
+				     &cli->transfer_syntax,
+				     cli->auth->auth_type,
+				     cli->auth->auth_level);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto post_status;
+	}
+
+	subreq = rpc_api_pipe_send(state, ev, cli, &state->rpc_out,
+				   RPC_BINDACK);
+	if (subreq == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto post_status;
+	}
+	subreq->async.fn = rpc_pipe_bind_step_one_done;
+	subreq->async.priv = result;
+	return result;
+
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_pipe_bind_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_pipe_bind_state);
+	prs_struct reply_pdu;
+	struct rpc_hdr_info hdr;
+	struct rpc_hdr_ba_info hdr_ba;
+	NTSTATUS status;
+
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
+			  rpccli_pipe_txt(debug_ctx(), state->cli),
+			  nt_errstr(status)));
+		async_req_error(req, status);
+		return;
+	}
+
+	/* Unmarshall the RPC header */
+	if (!smb_io_rpc_hdr("hdr", &hdr, &reply_pdu, 0)) {
+		DEBUG(0, ("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
+		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		return;
+	}
+
+	if (!smb_io_rpc_hdr_ba("", &hdr_ba, &reply_pdu, 0)) {
+		DEBUG(0, ("rpc_pipe_bind: Failed to unmarshall "
+			  "RPC_HDR_BA.\n"));
+		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		return;
+	}
+
+	if (!check_bind_response(&hdr_ba, &state->cli->transfer_syntax)) {
+		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
+		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		return;
+	}
+
+	state->cli->max_xmit_frag = hdr_ba.bba.max_tsize;
+	state->cli->max_recv_frag = hdr_ba.bba.max_rsize;
+
+	/*
+	 * For authenticated binds we may need to do 3 or 4 leg binds.
+	 */
+
+	switch(state->cli->auth->auth_type) {
+
+	case PIPE_AUTH_TYPE_NONE:
+	case PIPE_AUTH_TYPE_SCHANNEL:
+		/* Bind complete. */
+		async_req_done(req);
+		break;
+
+	case PIPE_AUTH_TYPE_NTLMSSP:
+		/* Need to send AUTH3 packet - no reply. */
+		status = rpc_finish_auth3_bind_send(req, state, &hdr,
+						    &reply_pdu);
+		if (!NT_STATUS_IS_OK(status)) {
+			async_req_error(req, status);
+		}
+		break;
+
+	case PIPE_AUTH_TYPE_SPNEGO_NTLMSSP:
+		/* Need to send alter context request and reply. */
+		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &hdr,
+							     &reply_pdu);
+		if (!NT_STATUS_IS_OK(status)) {
+			async_req_error(req, status);
+		}
+		break;
+
+	case PIPE_AUTH_TYPE_KRB5:
+		/* */
+
+	default:
+		DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
+			 (unsigned int)state->cli->auth->auth_type));
+		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+	}
+}
+
+static NTSTATUS rpc_finish_auth3_bind_send(struct async_req *req,
+					   struct rpc_pipe_bind_state *state,
+					   struct rpc_hdr_info *phdr,
+					   prs_struct *reply_pdu)
+{
+	DATA_BLOB server_response = data_blob_null;
+	DATA_BLOB client_reply = data_blob_null;
+	struct rpc_hdr_auth_info hdr_auth;
+	struct async_req *subreq;
+	NTSTATUS status;
+
+	if ((phdr->auth_len == 0)
+	    || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!prs_set_offset(
+		    reply_pdu,
+		    phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, reply_pdu, 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* TODO - check auth_type/auth_level match. */
+
+	server_response = data_blob_talloc(talloc_tos(), NULL, phdr->auth_len);
+	prs_copy_data_out((char *)server_response.data, reply_pdu,
+			  phdr->auth_len);
+
+	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
+				server_response, &client_reply);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("rpc_finish_auth3_bind: NTLMSSP update using server "
+			  "blob failed: %s.\n", nt_errstr(status)));
+		return status;
+	}
+
+	prs_init_empty(&state->rpc_out, talloc_tos(), MARSHALL);
+
+	status = create_rpc_bind_auth3(state->cli, state->rpc_call_id,
+				       state->cli->auth->auth_type,
+				       state->cli->auth->auth_level,
+				       &client_reply, &state->rpc_out);
+	data_blob_free(&client_reply);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	subreq = rpc_write_send(state, state->ev, state->cli,
+				prs_data_p(&state->rpc_out),
+				prs_offset(&state->rpc_out));
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	subreq->async.fn = rpc_bind_auth3_write_done;
+	subreq->async.priv = req;
+	return NT_STATUS_OK;
+}
+
+static void rpc_bind_auth3_write_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = rpc_write_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+static NTSTATUS rpc_finish_spnego_ntlmssp_bind_send(struct async_req *req,
+						    struct rpc_pipe_bind_state *state,
+						    struct rpc_hdr_info *phdr,
+						    prs_struct *reply_pdu)
+{
+	DATA_BLOB server_spnego_response = data_blob_null;
+	DATA_BLOB server_ntlm_response = data_blob_null;
+	DATA_BLOB client_reply = data_blob_null;
+	DATA_BLOB tmp_blob = data_blob_null;
+	RPC_HDR_AUTH hdr_auth;
+	struct async_req *subreq;
+	NTSTATUS status;
+
+	if ((phdr->auth_len == 0)
+	    || (phdr->frag_len < phdr->auth_len + RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Process the returned NTLMSSP blob first. */
+	if (!prs_set_offset(
+		    reply_pdu,
+		    phdr->frag_len - phdr->auth_len - RPC_HDR_AUTH_LEN)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, reply_pdu, 0)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	server_spnego_response = data_blob(NULL, phdr->auth_len);
+	prs_copy_data_out((char *)server_spnego_response.data,
+			  reply_pdu, phdr->auth_len);
+
+	/*
+	 * The server might give us back two challenges - tmp_blob is for the
+	 * second.
+	 */
+	if (!spnego_parse_challenge(server_spnego_response,
+				    &server_ntlm_response, &tmp_blob)) {
+		data_blob_free(&server_spnego_response);
+		data_blob_free(&server_ntlm_response);
+		data_blob_free(&tmp_blob);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* We're finished with the server spnego response and the tmp_blob. */
+	data_blob_free(&server_spnego_response);
+	data_blob_free(&tmp_blob);
+
+	status = ntlmssp_update(state->cli->auth->a_u.ntlmssp_state,
+				server_ntlm_response, &client_reply);
+
+	/* Finished with the server_ntlm response */
+	data_blob_free(&server_ntlm_response);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("rpc_finish_spnego_ntlmssp_bind: NTLMSSP update "
+			  "using server blob failed.\n"));
+		data_blob_free(&client_reply);
+		return status;
+	}
+
+	/* SPNEGO wrap the client reply. */
+	tmp_blob = spnego_gen_auth(client_reply);
+	data_blob_free(&client_reply);
+	client_reply = tmp_blob;
+	tmp_blob = data_blob_null;
+
+	/* Now prepare the alter context pdu. */
+	prs_init_empty(&state->rpc_out, state, MARSHALL);
+
+	status = create_rpc_alter_context(state->rpc_call_id,
+					  &state->cli->abstract_syntax,
+					  &state->cli->transfer_syntax,
+					  state->cli->auth->auth_level,
+					  &client_reply,
+					  &state->rpc_out);
+	data_blob_free(&client_reply);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	subreq = rpc_api_pipe_send(state, state->ev, state->cli,
+				   &state->rpc_out, RPC_ALTCONTRESP);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	subreq->async.fn = rpc_bind_ntlmssp_api_done;
+	subreq->async.priv = req;
+	return NT_STATUS_OK;
+}
+
+static void rpc_bind_ntlmssp_api_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_pipe_bind_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_pipe_bind_state);
+	DATA_BLOB server_spnego_response = data_blob_null;
+	DATA_BLOB tmp_blob = data_blob_null;
+	prs_struct reply_pdu;
+	struct rpc_hdr_info hdr;
+	struct rpc_hdr_auth_info hdr_auth;
+	NTSTATUS status;
+
+	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+
+	/* Get the auth blob from the reply. */
+	if (!smb_io_rpc_hdr("rpc_hdr   ", &hdr, &reply_pdu, 0)) {
+		DEBUG(0, ("rpc_finish_spnego_ntlmssp_bind: Failed to "
+			  "unmarshall RPC_HDR.\n"));
+		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		return;
+	}
+
+	if (!prs_set_offset(
+		    &reply_pdu,
+		    hdr.frag_len - hdr.auth_len - RPC_HDR_AUTH_LEN)) {
+		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &reply_pdu, 0)) {
+		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	server_spnego_response = data_blob(NULL, hdr.auth_len);
+	prs_copy_data_out((char *)server_spnego_response.data, &reply_pdu,
+			  hdr.auth_len);
+
+	/* Check we got a valid auth response. */
+	if (!spnego_parse_auth_response(server_spnego_response, NT_STATUS_OK,
+					OID_NTLMSSP, &tmp_blob)) {
+		data_blob_free(&server_spnego_response);
+		data_blob_free(&tmp_blob);
+		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+
+	data_blob_free(&server_spnego_response);
+	data_blob_free(&tmp_blob);
+
+	DEBUG(5,("rpc_finish_spnego_ntlmssp_bind: alter context request to "
+		 "%s.\n", rpccli_pipe_txt(debug_ctx(), state->cli)));
+	async_req_done(req);
+}
+
+NTSTATUS rpc_pipe_bind_recv(struct async_req *req)
+{
+	return async_req_simple_recv(req);
+}
+
+NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
+		       struct cli_pipe_auth_data *auth)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	req = rpc_pipe_bind_send(frame, ev, cli, auth);
+	if (req == NULL) {
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = rpc_pipe_bind_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
