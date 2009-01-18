@@ -278,15 +278,10 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	struct cli_pull_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
-		goto failed;
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct cli_pull_state)) {
+		return NULL;
 	}
-	state = talloc(result, struct cli_pull_state);
-	if (state == NULL) {
-		goto failed;
-	}
-	result->private_data = state;
 	result->print = cli_pull_print;
 	state->req = result;
 
@@ -843,16 +838,10 @@ static struct async_req *cli_writeall_send(TALLOC_CTX *mem_ctx,
 	struct async_req *subreq;
 	struct cli_writeall_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
-		goto fail;
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct cli_writeall_state)) {
+		return NULL;
 	}
-	state = talloc(result, struct cli_writeall_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->cli = cli;
 	state->fnum = fnum;
@@ -969,15 +958,10 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct cli_push_state *state;
 	int i;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
-		goto failed;
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct cli_push_state)) {
+		return NULL;
 	}
-	state = talloc(result, struct cli_push_state);
-	if (state == NULL) {
-		goto failed;
-	}
-	result->private_data = state;
 	state->req = result;
 
 	state->cli = cli;

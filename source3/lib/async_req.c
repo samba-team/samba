@@ -313,3 +313,28 @@ bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
 
 	return true;
 }
+
+bool _async_req_setup(TALLOC_CTX *mem_ctx, struct async_req **preq,
+		      void *pstate, size_t state_size, const char *typename)
+{
+	struct async_req *req;
+	void **ppstate = (void **)pstate;
+	void *state;
+
+	req = async_req_new(mem_ctx);
+	if (req == NULL) {
+		return false;
+	}
+	state = talloc_size(req, state_size);
+	if (state == NULL) {
+		TALLOC_FREE(req);
+		return false;
+	}
+	talloc_set_name(state, typename);
+	req->private_data = state;
+
+	*preq = req;
+	*ppstate = state;
+
+	return true;
+}

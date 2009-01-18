@@ -106,17 +106,10 @@ static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct async_syscall_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct async_syscall_state)) {
 		return NULL;
 	}
-
-	state = talloc(result, struct async_syscall_state);
-	if (state == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
 	state->syscall_type = type;
 
 	result->private_data = state;
@@ -569,15 +562,10 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	struct fd_event *fde;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct async_connect_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct async_connect_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
 
 	/**
 	 * We have to set the socket to nonblocking for async connect(2). Keep
