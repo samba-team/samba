@@ -1367,6 +1367,7 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 {
 	struct async_req *result, *subreq;
 	struct rpc_api_pipe_state *state;
+	uint16_t max_recv_frag;
 	NTSTATUS status;
 
 	result = async_req_new(mem_ctx);
@@ -1402,9 +1403,14 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5,("rpc_api_pipe: %s\n", rpccli_pipe_txt(debug_ctx(), cli)));
 
-	subreq = cli_api_pipe_send(state, ev, cli,
-				   (uint8_t *)prs_data_p(data),
-				   prs_offset(data), cli->max_recv_frag);
+	max_recv_frag = cli->max_recv_frag;
+
+#ifdef DEVELOPER
+	max_recv_frag = RPC_HEADER_LEN + 10 + (sys_random() % 32);
+#endif
+
+	subreq = cli_api_pipe_send(state, ev, cli, (uint8_t *)prs_data_p(data),
+				   prs_offset(data), max_recv_frag);
 	if (subreq == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto post_status;
@@ -2084,6 +2090,12 @@ static uint32 calculate_data_len_tosend(struct rpc_pipe_client *cli,
 					uint32 *p_ss_padding)
 {
 	uint32 data_space, data_len;
+
+#ifdef DEVELOPER
+	if ((data_left > 0) && (sys_random() % 2)) {
+		data_left = MAX(data_left/2, 1);
+	}
+#endif
 
 	switch (cli->auth->auth_level) {
 		case PIPE_AUTH_LEVEL_NONE:
