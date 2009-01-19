@@ -431,12 +431,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(s, ':');
-	if (p == NULL) {
-		ret = parse_ipv4(s, port, &saddr->ip);
-	} else {
-		ret = parse_ipv6(s, port, saddr);
-	}
+	ret = parse_ip(s, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -497,12 +492,7 @@ bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(s, ':');
-	if (p == NULL) {
-		ret = parse_ipv4(s, 0, &addr->ip);
-	} else {
-		ret = parse_ipv6(s, 0, addr);
-	}
+	ret = parse_ip(s, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;
