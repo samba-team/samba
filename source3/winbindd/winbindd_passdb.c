@@ -333,14 +333,16 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	}
 
 	if (!pdb_get_account_policy(AP_MIN_PASSWORD_LEN,
-				    (uint32_t *)&p->min_password_length)) {
+				    &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+	p->min_password_length = account_policy_temp;
 
 	if (!pdb_get_account_policy(AP_PASSWORD_HISTORY,
-				    (uint32_t *)&p->password_history_length)) {
+				    &account_policy_temp)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
+	p->password_history_length = account_policy_temp;
 
 	if (!pdb_get_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
 				    &p->password_properties)) {
