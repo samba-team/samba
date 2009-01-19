@@ -42,6 +42,7 @@ struct db_context {
 				      void *private_data),
 			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
+	int (*get_flags)(struct db_context *db);
 	int (*transaction_start)(struct db_context *db);
 	int (*transaction_commit)(struct db_context *db);
 	int (*transaction_cancel)(struct db_context *db);
@@ -82,6 +83,11 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 				int open_flags, mode_t mode);
 
 
+NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key);
+NTSTATUS dbwrap_store(struct db_context *db, TDB_DATA key,
+		      TDB_DATA data, int flags);
+TDB_DATA dbwrap_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
+		      TDB_DATA key);
 NTSTATUS dbwrap_delete_bystring(struct db_context *db, const char *key);
 NTSTATUS dbwrap_store_bystring(struct db_context *db, const char *key,
 			       TDB_DATA data, int flags);

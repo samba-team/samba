@@ -129,6 +129,16 @@ continued to evolve, but you may particularly notice these areas
 
  Auxiliary classes in LDAP schema conversion are now collapsed.
 
+ Several tests have been added to the SMB testsuite.
+
+ Object GUIDs in DCE/RPC connections are now dealt with properly.
+
+ The correctness of the LSA and NETLOGON implementations has been 
+ improved.
+
+ Multi Master Replication configuration can now be generated 
+ for OpenLDAP.
+
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.
 
