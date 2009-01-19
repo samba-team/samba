@@ -6,12 +6,14 @@ if [ ! -d ".git" -o `dirname $0` != "./source4/script" ]; then
 	exit 1
 fi
 
-TMPDIR=`mktemp -d samba-XXXXX`
-(git archive --format=tar HEAD | (cd $TMPDIR/ && tar xf -))
+OUTDIR=`mktemp -d samba-XXXXX`
+(git archive --format=tar HEAD | (cd $OUTDIR/ && tar xf -))
+
+echo SAMBA_VERSION_IS_GIT_SNAPSHOT=no >> $OUTDIR/source4/VERSION
 
 #Prepare the tarball for a Samba4 release, with some generated files,
 #but without Samba3 stuff (to avoid confusion)
-( cd $TMPDIR/ || exit 1
+( cd $OUTDIR/ || exit 1
  rm -rf README Manifest Read-Manifest-Now Roadmap source3 packaging docs-xml examples swat WHATSNEW.txt MAINTAINERS || exit 1
  cd source4 || exit 1
  ./autogen.sh || exit 1
@@ -19,14 +21,15 @@ TMPDIR=`mktemp -d samba-XXXXX`
  make dist  || exit 1
 ) || exit 1
 
-VERSION_FILE=$TMPDIR/source4/version.h
+VERSION_FILE=$OUTDIR/source4/version.h
 if [ ! -f $VERSION_FILE ]; then
     echo "Cannot find version.h at $VERSION_FILE"
     exit 1;
 fi
 
 VERSION=`sed -n 's/^SAMBA_VERSION_STRING=//p' $VERSION_FILE`
-mv $TMPDIR samba-$VERSION || exit 1
+echo "Version: $VERSION"
+mv $OUTDIR samba-$VERSION || exit 1
 tar -cf samba-$VERSION.tar samba-$VERSION || (rm -rf samba-$VERSION; exit 1)
 rm -rf samba-$VERSION || exit 1
 echo "Now run: "
