@@ -413,10 +413,12 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 
   ifname, if non-NULL, will return the name of the interface this ip is tied to
  */
-bool ctdb_sys_have_ip(ctdb_sock_addr *addr)
+bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 {
 	int s;
 	int ret;
+	ctdb_sock_addr __addr = *_addr;
+	ctdb_sock_addr *addr = &__addr;
 
 	switch (addr->sa.sa_family) {
 	case AF_INET:
