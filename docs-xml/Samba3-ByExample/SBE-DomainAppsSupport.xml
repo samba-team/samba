@@ -477,7 +477,7 @@ Password for ADMINISTRATOR@LONDON.ABMAS.BIZ:
 <screen>
 &rootprompt; smbd -D
 &rootprompt; nmbd -D
-&rootprompt; winbindd -B
+&rootprompt; winbindd -D
 </screen>
 		</para></step>
 
