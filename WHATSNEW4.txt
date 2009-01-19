@@ -112,9 +112,6 @@ continued to evolve, but you may particularly notice these areas
 
  A simple script for setting the expiration of a user was added.
 
- It is now possible to use the system-installed Heimdal using the 
- experimental --enable-external-heimdal option to configure.
-
  The LDB library is now completely asynchronous internally.
 
  Various unknowns and correctness issues in the drsblobs and drsuapi RPC 
