@@ -34,7 +34,14 @@ ctdb is the clustered database used by samba
 
 %build
 
-CC="gcc"
+## check for ccache
+if ccache -h >/dev/null 2>&1 ; then
+	CC="ccache gcc"
+else
+	CC="gcc"
+fi
+
+export CC
 
 ## always run autogen.sh
 ./autogen.sh
