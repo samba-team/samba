@@ -492,9 +492,9 @@ netbios-ns dgram udp wait root /usr/local/samba/sbin/nmbd nmbd
 
 <para><programlisting>
 #!/bin/sh
-/usr/local/samba/sbin/smbd -D 
-/usr/local/samba/sbin/winbindd -B
-/usr/local/samba/sbin/nmbd -D 
+/usr/local/samba/sbin/smbd -D
+/usr/local/samba/sbin/winbindd -D
+/usr/local/samba/sbin/nmbd -D
 </programlisting></para>
 
 	<para>
