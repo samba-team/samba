@@ -1405,7 +1405,7 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
-    message("Run provision with:  --ldap-backend=ldapi --ldap-backend-type=" + ldap_backend_type + " --password=" + adminpass + " " + ldapuser)
+    message("Run provision with:  --ldap-backend=ldapi --ldap-backend-type=" + ldap_backend_type + " --password=" + adminpass + " " + ldapuser + "--realm=" + names.dnsdomain + " --domain=" + names.domain + " --server-role='" + serverrole + "'")
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
