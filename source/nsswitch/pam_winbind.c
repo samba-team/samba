@@ -2428,7 +2428,7 @@ out:
 	 * Delete the krb5 ccname variable from the PAM environment
 	 * if it was set by winbind.
 	 */
-	if (ctx->ctrl & WINBIND_KRB5_AUTH) {
+	if ((ctx->ctrl & WINBIND_KRB5_AUTH) && pam_getenv(pamh, "KRB5CCNAME")) {
 		pam_putenv(pamh, "KRB5CCNAME");
 	}
 
