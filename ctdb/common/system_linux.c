@@ -418,7 +418,14 @@ bool ctdb_sys_have_ip(ctdb_sock_addr *addr)
 	int s;
 	int ret;
 
-	addr->ip.sin_port = 0;
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		addr->ip.sin_port = 0;
+		break;
+	case AF_INET6:
+		addr->ip6.sin6_port = 0;
+		break;
+	}
 	s = socket(addr->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;
