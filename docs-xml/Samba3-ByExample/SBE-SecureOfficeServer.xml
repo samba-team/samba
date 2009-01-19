@@ -1910,8 +1910,8 @@ Loaded services file OK.
 14290 ?        S      0:00 /usr/sbin/smbd -D
 
 $rootprompt; ps ax | grep winbind
-14293 ?        S     0:00 /usr/sbin/winbindd -B
-14295 ?        S     0:00 /usr/sbin/winbindd -B
+14293 ?        S     0:00 /usr/sbin/winbindd -D
+14295 ?        S     0:00 /usr/sbin/winbindd -D
 </screen>
 			The <command>winbindd</command> daemon is running in split mode (normal), so there are also
 			two instances<footnote><para>For more information regarding winbindd, see <emphasis>TOSHARG2</emphasis>, 
