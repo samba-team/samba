@@ -978,16 +978,10 @@ struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	struct open_socket_out_state *state;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct open_socket_out_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct open_socket_out_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->ss = *pss;
 	state->port = port;
@@ -1170,16 +1164,10 @@ struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
 	struct open_socket_out_defer_state *state;
 	NTSTATUS status;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct open_socket_out_defer_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct open_socket_out_defer_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->ev = ev;
 	state->ss = *pss;
 	state->port = port;

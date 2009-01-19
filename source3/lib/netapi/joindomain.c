@@ -98,7 +98,6 @@ WERROR NetJoinDomain_l(struct libnetapi_ctx *mem_ctx,
 WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 		       struct NetJoinDomain *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
@@ -107,7 +106,6 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server,
 				   &ndr_table_wkssvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -116,11 +114,11 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &cli->user_session_key,
+						   &pipe_cli->auth->user_session_key,
 						   &encrypted_password);
 	}
 
-	old_timeout = cli_set_timeout(cli, 600000);
+	old_timeout = rpccli_set_timeout(pipe_cli, 600000);
 
 	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, ctx,
 					       r->in.server,
@@ -136,10 +134,8 @@ WERROR NetJoinDomain_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		if (old_timeout) {
-			cli_set_timeout(cli, old_timeout);
-		}
+	if (pipe_cli && old_timeout) {
+		rpccli_set_timeout(pipe_cli, old_timeout);
 	}
 
 	return werr;
@@ -227,7 +223,6 @@ WERROR NetUnjoinDomain_l(struct libnetapi_ctx *mem_ctx,
 WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 			 struct NetUnjoinDomain *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
@@ -236,7 +231,6 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -245,11 +239,11 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &cli->user_session_key,
+						   &pipe_cli->auth->user_session_key,
 						   &encrypted_password);
 	}
 
-	old_timeout = cli_set_timeout(cli, 60000);
+	old_timeout = rpccli_set_timeout(pipe_cli, 60000);
 
 	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
 						 r->in.server_name,
@@ -263,10 +257,8 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 	}
 
  done:
-	if (cli) {
-		if (old_timeout) {
-			cli_set_timeout(cli, old_timeout);
-		}
+	if (pipe_cli && old_timeout) {
+		rpccli_set_timeout(pipe_cli, old_timeout);
 	}
 
 	return werr;
@@ -278,7 +270,6 @@ WERROR NetUnjoinDomain_r(struct libnetapi_ctx *ctx,
 WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 			       struct NetGetJoinInformation *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
@@ -286,7 +277,6 @@ WERROR NetGetJoinInformation_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -410,7 +400,6 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 			   struct NetGetJoinableOUs *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
@@ -418,7 +407,6 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -427,7 +415,7 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &cli->user_session_key,
+						   &pipe_cli->auth->user_session_key,
 						   &encrypted_password);
 	}
 
@@ -454,7 +442,6 @@ WERROR NetGetJoinableOUs_r(struct libnetapi_ctx *ctx,
 WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 				  struct NetRenameMachineInDomain *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
@@ -462,7 +449,6 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_wkssvc.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -471,7 +457,7 @@ WERROR NetRenameMachineInDomain_r(struct libnetapi_ctx *ctx,
 	if (r->in.password) {
 		encode_wkssvc_join_password_buffer(ctx,
 						   r->in.password,
-						   &cli->user_session_key,
+						   &pipe_cli->auth->user_session_key,
 						   &encrypted_password);
 	}
 

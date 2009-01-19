@@ -25,13 +25,6 @@
 #include "talloc.h" /* for tdb_wrap_open() */
 #include "../libcli/util/ntstatus.h" /* for map_nt_error_from_tdb() */
 
-/* single node of a list returned by tdb_search_keys */
-typedef struct keys_node 
-{
-	struct keys_node *prev, *next;
-	TDB_DATA node_key;
-} TDB_LIST_NODE;
-
 struct tdb_wrap {
 	struct tdb_context *tdb;
 	const char *name;
@@ -51,9 +44,6 @@ typedef int (*tdb_validate_data_func)(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_D
 TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize);
 TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
-
-TDB_LIST_NODE *tdb_search_keys(struct tdb_context*, const char*);
-void tdb_search_list_free(TDB_LIST_NODE*);
 
 int tdb_chainlock_with_timeout( struct tdb_context *tdb, TDB_DATA key,
 				unsigned int timeout);

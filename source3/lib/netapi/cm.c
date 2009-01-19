@@ -165,7 +165,6 @@ static NTSTATUS pipe_cm_open(TALLOC_CTX *ctx,
 WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 			   const char *server_name,
 			   const struct ndr_syntax_id *interface,
-			   struct cli_state **pcli,
 			   struct rpc_pipe_client **presult)
 {
 	struct rpc_pipe_client *result = NULL;
@@ -192,7 +191,6 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 	}
 
 	*presult = result;
-	*pcli = cli;
 
 	return WERR_OK;
 }

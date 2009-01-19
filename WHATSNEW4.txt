@@ -66,11 +66,71 @@ CHANGES SINCE Alpha5
 =====================
 
 In the time since Samba4 Alpha5 was released in June 2008, Samba has
-continued to evolve, but you may particularly notice these areas:
+continued to evolve, but you may particularly notice these areas 
+(in no particular order):
 
  The source code for various libraries that are used by both Samba 3 and 
  Samba 4 are now shared between the two rather than duplicated 
  (and being slightly diverged).
+
+ The tevent library has been split out and is now usable on its own.
+
+ Several crash bugs and memory leaks in the registry library have been fixed.
+
+ The Python modules have been extended and are no longer generated using SWIG.
+
+ Stream renames are now supported.
+
+ The provision script now has an interactive mode.
+
+ The (broken) copy of CTDB has been removed.
+
+ More work towards supporting an OpenLDAP backend. 
+
+ Initial work on using the Microsoft LDAP schema.
+
+ The storage of schemas in LDB is now much more efficient.
+
+ Support for extended DNs in LDB has been added.
+
+ Incoming trusts are now supported.
+
+ Compatibility of the registry server with several Windows versions has been 
+ improved.
+
+ Improvements to LSA.idl for better functionality in the usrmgr.exe.
+
+ Improved handling of non-standard characters in passwords.
+
+ The embedded JavaScript library has been removed in favor of Python.
+
+ The WMI implementation has been re-added, but does not completely work yet.
+
+ xpress compression is now supported in the NDR layer.
+
+ The main binary is now named "samba" rather than "smbd".
+
+ A simple script for setting the expiration of a user was added.
+
+ It is now possible to use the system-installed Heimdal using the 
+ experimental --enable-external-heimdal option to configure.
+
+ The LDB library is now completely asynchronous internally.
+
+ Various unknowns and correctness issues in the drsblobs and drsuapi RPC 
+ interface implementations have been fixed.
+
+ It is now possible to connect to an LDAP backend using SASL credentials.
+
+ Multi-fragment NTtrans request support has been added.
+
+ The DCE/RPC server can now listen on a separate pipe to allow DCE/RPC 
+ connections forwarded from Samba 3. The user credentials are provided 
+ by the client.
+
+ A large number of bugs in the SMB2 implementation have been fixed.
+
+ Auxiliary classes in LDAP schema conversion are now collapsed.
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our GIT history.

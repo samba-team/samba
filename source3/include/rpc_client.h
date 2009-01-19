@@ -49,9 +49,8 @@
 	if (!prs_init( &q_ps, RPC_MAX_PDU_FRAG_LEN, ctx, MARSHALL )) { \
 		return WERR_NOMEM;\
 	}\
-	prs_init_empty( &r_ps, ctx, UNMARSHALL );\
 	if ( q_io_fn("", &q_in, &q_ps, 0) ) {\
-		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(pcli, opnum, &q_ps, &r_ps); \
+		NTSTATUS _smb_pipe_stat_ = rpc_api_pipe_req(ctx, pcli, opnum, &q_ps, &r_ps); \
 		if (!NT_STATUS_IS_OK(_smb_pipe_stat_)) {\
 			prs_mem_free( &q_ps );\
 			prs_mem_free( &r_ps );\

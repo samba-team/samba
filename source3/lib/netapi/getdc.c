@@ -40,14 +40,12 @@ WERROR NetGetDCName_l(struct libnetapi_ctx *ctx,
 WERROR NetGetDCName_r(struct libnetapi_ctx *ctx,
 		      struct NetGetDCName *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_netlogon.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -82,14 +80,12 @@ WERROR NetGetAnyDCName_l(struct libnetapi_ctx *ctx,
 WERROR NetGetAnyDCName_r(struct libnetapi_ctx *ctx,
 			 struct NetGetAnyDCName *r)
 {
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_netlogon.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -141,12 +137,10 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 
 	werr = libnetapi_open_pipe(ctx, r->in.server_name,
 				   &ndr_table_netlogon.syntax_id,
-				   &cli,
 				   &pipe_cli);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;

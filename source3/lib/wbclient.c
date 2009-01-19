@@ -289,15 +289,10 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	struct async_req *subreq;
 	struct wb_int_trans_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct wb_int_trans_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct wb_int_trans_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
 
 	if (winbind_closed_fd(fd)) {
 		if (!async_post_status(result, ev,
@@ -420,16 +415,10 @@ static struct async_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
 	struct async_req *subreq;
 	struct wb_open_pipe_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct wb_open_pipe_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct wb_open_pipe_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->wb_ctx = wb_ctx;
 	state->ev = ev;
 	state->need_priv = need_priv;
@@ -617,16 +606,10 @@ struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	struct async_req *result;
 	struct wb_trans_state *state;
 
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct wb_trans_state)) {
 		return NULL;
 	}
-	state = talloc(result, struct wb_trans_state);
-	if (state == NULL) {
-		goto fail;
-	}
-	result->private_data = state;
-
 	state->wb_ctx = wb_ctx;
 	state->ev = ev;
 	state->wb_req = winbindd_request_copy(state, wb_req);
