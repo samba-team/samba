@@ -1016,7 +1016,7 @@ start() {
 in the example above with:
 
 <programlisting>
-        daemon /usr/local/samba/sbin/winbindd -B
+        daemon /usr/local/samba/sbin/winbindd -D
 </programlisting>.
 </para>
 
@@ -1125,7 +1125,7 @@ Again, if you would like to run Samba in dual daemon mode, replace:
 </programlisting>
 in the script above with:
 <programlisting>
-/usr/local/samba/sbin/winbindd -B
+/usr/local/samba/sbin/winbindd -D
 </programlisting>
 </para>
 
