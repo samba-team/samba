@@ -1417,7 +1417,7 @@ done:
 
 		addrs = (krb5_address **)SMB_MALLOC(sizeof(krb5_address *) * num_addr);
 		if (addrs == NULL) {
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1426,7 +1426,7 @@ done:
 		addrs[0] = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
 		if (addrs[0] == NULL) {
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1437,7 +1437,7 @@ done:
 		if (addrs[0]->contents == NULL) {
 			SAFE_FREE(addrs[0]);
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1449,7 +1449,7 @@ done:
 	{
 		addrs = (krb5_addresses *)SMB_MALLOC(sizeof(krb5_addresses));
 		if (addrs == NULL) {
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1469,7 +1469,7 @@ done:
 		if (addrs->val[0].address.data == NULL) {
 			SAFE_FREE(addrs->val);
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 

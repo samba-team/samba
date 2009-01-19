@@ -30,14 +30,15 @@
 /**********************************************************************
  Initialize a new spoolss buff for use by a client rpc
 **********************************************************************/
-void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
+bool rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx)
 {
 	buffer->size = size;
 	buffer->string_at_end = size;
-	if (prs_init(&buffer->prs, size, ctx, MARSHALL))
-		buffer->struct_start = prs_offset(&buffer->prs);
-	else
-		buffer->struct_start = 0;
+	if (!prs_init(&buffer->prs, size, ctx, MARSHALL))
+		return false;
+
+	buffer->struct_start = prs_offset(&buffer->prs);
+	return true;
 }
 
 /*******************************************************************

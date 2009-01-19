@@ -580,7 +580,6 @@ WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p,
 
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure) */
-
 	*r->out.bytes_needed = r->in.buf_size;
 
 	switch ( r->in.info_level ) {
@@ -736,7 +735,6 @@ WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p,
 
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
-
 	*r->out.bytes_needed = r->in.buf_size;
 
 	switch ( r->in.info_level ) {

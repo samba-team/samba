@@ -527,7 +527,13 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 	DEBUG(10,("uid2sid_recv: uid %lu has sid %s\n",
 		  (unsigned long)(state->request.data.uid), sid));
 
-	string_to_sid(&user_sid, sid);
+	if (!string_to_sid(&user_sid, sid)) {
+		DEBUG(1,("uid2sid_recv: Could not convert sid %s "
+			"from string\n,", sid));
+		request_error(state);
+		return;
+	}
+
 	winbindd_getpwsid(state, &user_sid);
 }
 

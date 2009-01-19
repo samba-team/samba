@@ -352,8 +352,11 @@ int psec_setsec(char *printer)
 		goto done;
 	}
 
-	prs_init(&ps, (uint32)sec_desc_size(sdb->sec) + 
-		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
+	if (!prs_init(&ps, (uint32)sec_desc_size(sdb->sec) +
+		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL)) {
+		printf("prs_init() failed\n");
+		goto done;
+	}
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &sdb, &ps, 1)) {
 		printf("sec_io_desc_buf failed\n");

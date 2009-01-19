@@ -521,7 +521,8 @@ WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_enumprinters( &in, flags, name, level, &buffer, offered );
 
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERS,
@@ -537,7 +538,8 @@ WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_enumprinters( &in, flags, name, level, &buffer, offered );
 
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPRINTERS,
@@ -601,7 +603,8 @@ WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
         strupper_m(server);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_enumports( &in, server, level, &buffer, offered );
 	
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPORTS,
@@ -617,7 +620,8 @@ WERROR rpccli_spoolss_enum_ports(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_enumports( &in, server, level, &buffer, offered );
 
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMPORTS,
@@ -670,7 +674,8 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 	/* Initialise input parameters */
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
 	
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTER,
@@ -686,7 +691,8 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getprinter( mem_ctx, &in, pol, level, &buffer, offered );
 
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTER,
@@ -781,7 +787,8 @@ WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
 	strupper_m(server);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
 		version, 2, &buffer, offered);
 
@@ -798,7 +805,8 @@ WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getprinterdriver2( &in, pol, env, level, 
 			version, 2, &buffer, offered);
 
@@ -859,7 +867,8 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
         strupper_m(server);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_enumprinterdrivers( &in, server, env, level, 
 		&buffer, offered);
 	
@@ -876,7 +885,8 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_enumprinterdrivers( &in, server, env, level, 
 			&buffer, offered);
 	
@@ -942,7 +952,8 @@ WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli,
         strupper_m(server);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
 		&buffer, offered );
 
@@ -959,7 +970,8 @@ WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
 			&buffer, offered );
 
@@ -1125,7 +1137,8 @@ WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getprintprocessordirectory( &in, name, 
 		environment, level, &buffer, offered );
 
@@ -1142,7 +1155,8 @@ WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getprintprocessordirectory( &in, name, 
 			environment, level, &buffer, offered );
 
@@ -1230,7 +1244,8 @@ WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
 	
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETFORM,
@@ -1246,7 +1261,8 @@ WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
 	
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETFORM,
@@ -1309,7 +1325,8 @@ WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
 
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMFORMS,
@@ -1325,7 +1342,8 @@ WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_enumforms( &in, handle, level, &buffer, offered );
 
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENUMFORMS,
@@ -1365,7 +1383,8 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
 		&buffer, offered );
 
@@ -1382,7 +1401,8 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_enumjobs( &in, hnd, firstjob, num_jobs, level, 
 			&buffer, offered );
 
@@ -1461,7 +1481,8 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(out);
 
 	offered = 0;
-	rpcbuf_init(&buffer, offered, mem_ctx);
+	if (!rpcbuf_init(&buffer, offered, mem_ctx))
+		return WERR_NOMEM;
 	make_spoolss_q_getjob( &in, hnd, jobid, level, &buffer, offered );
 
 	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETJOB,
@@ -1477,7 +1498,8 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		ZERO_STRUCT(in);
 		ZERO_STRUCT(out);
 		
-		rpcbuf_init(&buffer, offered, mem_ctx);
+		if (!rpcbuf_init(&buffer, offered, mem_ctx))
+			return WERR_NOMEM;
 		make_spoolss_q_getjob( &in, hnd, jobid, level, &buffer, offered );
 
 		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETJOB,

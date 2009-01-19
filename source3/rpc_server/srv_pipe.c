@@ -706,7 +706,7 @@ static int rpc_lookup_size;
 bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 {
 	RPC_HDR_AUTH auth_info;
-	uint32 pad;
+	uint32 pad = 0;
 	DATA_BLOB blob;
 
 	ZERO_STRUCT(blob);
@@ -1838,6 +1838,8 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 		prs_mem_free(&out_hdr_ba);
 		return False;
 	}
+
+	ZERO_STRUCT(hdr_rb);
 
 	DEBUG(5,("api_pipe_alter_context: decode request. %d\n", __LINE__));
 

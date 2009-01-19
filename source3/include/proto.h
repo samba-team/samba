@@ -5581,7 +5581,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_parse/parse_buffer.c  */
 
-void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
+bool rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
 bool prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buffer);
 bool prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **buffer);
 bool rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size);

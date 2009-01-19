@@ -9927,7 +9927,8 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	/* Allocate the outgoing buffer */
 
-	rpcbuf_init( &r_u->outdata, q_u->offered, p->mem_ctx );
+	if (!rpcbuf_init( &r_u->outdata, q_u->offered, p->mem_ctx ))
+		return WERR_NOMEM;
 
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:

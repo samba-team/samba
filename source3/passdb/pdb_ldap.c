@@ -4221,6 +4221,7 @@ const char **talloc_attrs(TALLOC_CTX *mem_ctx, ...)
 		result[i] = talloc_strdup(result, va_arg(ap, const char*));
 		if (result[i] == NULL) {
 			talloc_free(result);
+			va_end(ap);
 			return NULL;
 		}
 	}

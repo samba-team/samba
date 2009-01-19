@@ -128,7 +128,7 @@ struct server_record *create_server_on_workgroup(struct work_record *work,
 		return (NULL);
 	}
   
-	if((servrec = find_server_in_workgroup(work, name)) != NULL) {
+	if(find_server_in_workgroup(work, name) != NULL) {
 		DEBUG(0,("create_server_on_workgroup: Server %s already exists on \
 workgroup %s. This is a bug.\n", name, work->work_group));
 		return NULL;
