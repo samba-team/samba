@@ -1195,6 +1195,9 @@ def provision_backend(setup_dir=None, message=None,
     lp = param.LoadParm()
     lp.load(smbconf)
 
+    if serverrole is None:
+        serverrole = lp.get("server role")
+
     names = guess_names(lp=lp, hostname=hostname, domain=domain, 
                         dnsdomain=realm, serverrole=serverrole, 
                         rootdn=rootdn, domaindn=domaindn, configdn=configdn, 
@@ -1405,7 +1408,20 @@ def provision_backend(setup_dir=None, message=None,
 
     message("LDAP admin password: %s" % adminpass)
     message(slapdcommand)
-    message("Run provision with:  --ldap-backend=ldapi --ldap-backend-type=" + ldap_backend_type + " --password=" + adminpass + " " + ldapuser + "--realm=" + names.dnsdomain + " --domain=" + names.domain + " --server-role='" + serverrole + "'")
+    assert isinstance(ldap_backend_type, str)
+    assert isinstance(ldapuser, str)
+    assert isinstance(adminpass, str)
+    assert isinstance(names.dnsdomain, str)
+    assert isinstance(names.domain, str)
+    assert isinstance(serverrole, str)
+    args = ["--ldap-backend=ldapi",
+            "--ldap-backend-type=" + ldap_backend_type,
+            "--password=" + adminpass,
+            ldapuser,
+            "--realm=" + names.dnsdomain,
+            "--domain=" + names.domain,
+            "--server-role='" + serverrole + "'"]
+    message("Run provision with: " + " ".join(args))
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.

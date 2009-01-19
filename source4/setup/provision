@@ -160,7 +160,7 @@ if opts.server_role == "dc":
 elif opts.server_role == "member":
 	server_role = "member server"
 else:
-        server_role = opts.server_role
+	server_role = opts.server_role
 
 creds = credopts.get_credentials(lp)
 
