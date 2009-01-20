@@ -126,7 +126,13 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x09 */
-	[todo] NTSTATUS eventlog_OpenBackupEventLogW();
+	NTSTATUS eventlog_OpenBackupEventLogW(
+		[in,unique] eventlog_OpenUnknown0 *unknown0,
+		[in,ref] lsa_String *backup_logname,
+		[in] uint32 major_version,
+		[in] uint32 minor_version,
+		[out] policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x0a */
