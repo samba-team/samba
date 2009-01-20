@@ -400,6 +400,61 @@ static NTSTATUS cmd_eventlog_backuplog(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_eventlog_loginfo(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     int argc,
+				     const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle;
+	uint8_t *buffer = NULL;
+	uint32_t buf_size = 0;
+	uint32_t bytes_needed = 0;
+
+	if (argc != 2) {
+		printf("Usage: %s logname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = rpccli_eventlog_GetLogIntormation(cli, mem_ctx,
+						   &handle,
+						   0, /* level */
+						   buffer,
+						   buf_size,
+						   &bytes_needed);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_BUFFER_TOO_SMALL)) {
+		goto done;
+	}
+
+	buf_size = bytes_needed;
+	buffer = talloc_array(mem_ctx, uint8_t, bytes_needed);
+	if (!buffer) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	status = rpccli_eventlog_GetLogIntormation(cli, mem_ctx,
+						   &handle,
+						   0, /* level */
+						   buffer,
+						   buf_size,
+						   &bytes_needed);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+
+	return status;
+}
+
 
 struct cmd_set eventlog_commands[] = {
 	{ "EVENTLOG" },
@@ -410,5 +465,6 @@ struct cmd_set eventlog_commands[] = {
 	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event and source", "" },
 	{ "eventlog_registerevsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_registerevsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Register event source", "" },
 	{ "eventlog_backuplog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_backuplog,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Backup Eventlog File", "" },
+	{ "eventlog_loginfo",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_loginfo,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get Eventlog Information", "" },
 	{ NULL }
 };
