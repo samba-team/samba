@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter 2003,2005
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Guenther Deschner 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
