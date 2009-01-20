@@ -27,6 +27,8 @@
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
 
+#define TEST_BACKUP_NAME "samrtorturetest"
+
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
 	name->string = s;
@@ -347,6 +349,72 @@ static bool test_OpenEventLog(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_BackupLog(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct policy_handle handle, backup_handle;
+	struct eventlog_BackupEventLogW r;
+	struct eventlog_OpenBackupEventLogW b;
+	struct eventlog_CloseEventLog cr;
+	const char *tmp;
+	struct lsa_String backup_filename;
+	struct eventlog_OpenUnknown0 unknown0;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	tmp = talloc_asprintf(tctx, "C:\\%s", TEST_BACKUP_NAME);
+	init_lsa_String(&backup_filename, tmp);
+
+	r.in.handle = &handle;
+	r.in.backup_filename = &backup_filename;
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status,
+		NT_STATUS_OBJECT_PATH_SYNTAX_BAD, "BackupEventLogW failed");
+
+	tmp = talloc_asprintf(tctx, "\\??\\C:\\%s", TEST_BACKUP_NAME);
+	init_lsa_String(&backup_filename, tmp);
+
+	r.in.handle = &handle;
+	r.in.backup_filename = &backup_filename;
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "BackupEventLogW failed");
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status,
+		NT_STATUS_OBJECT_NAME_COLLISION, "BackupEventLogW failed");
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"BackupLog failed");
+
+	unknown0.unknown0 = 0x005c;
+	unknown0.unknown1 = 0x0001;
+
+	b.in.unknown0 = &unknown0;
+	b.in.backup_logname = &backup_filename;
+	b.in.major_version = 1;
+	b.in.minor_version = 1;
+	b.out.handle = &backup_handle;
+
+	status = dcerpc_eventlog_OpenBackupEventLogW(p, tctx, &b);
+
+	torture_assert_ntstatus_ok(tctx, status, "OpenBackupEventLogW failed");
+
+	cr.in.handle = cr.out.handle = &backup_handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"CloseEventLog failed");
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite;
@@ -366,6 +434,7 @@ struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 	torture_rpc_tcase_add_test(tcase, "ReportEventLog", test_ReportEventLog);
 	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);
 	torture_rpc_tcase_add_test(tcase, "GetLogIntormation", test_GetLogInformation);
+	torture_rpc_tcase_add_test(tcase, "BackupLog", test_BackupLog);
 
 	return suite;
 }
