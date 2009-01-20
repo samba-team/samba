@@ -21,8 +21,25 @@
 
 	<para>The idmap_ldap plugin provides a means for Winbind to
 	store and retrieve SID/uid/gid mapping tables in an LDAP directory
-	service.  The module implements both the &quot;idmap&quot; and
-	&quot;idmap alloc&quot; APIs.
+	service.
+	In contrast to read only backends like idmap_rid, it is an allocating
+	backend: This means that it needs to allocate new user and group IDs to
+	create new mappings as requests to yet unmapped users are answered.
+	</para>
+
+	<para>
+	Note that in order for this (or any other allocating) backend to
+	function at all, the default backend needs to be writeable.
+	The ranges used for uid and gid allocation are the default ranges
+	configured by &quot;idmap uid&quot; and &quot;idmap gid&quot;.
+	</para>
+
+	<para>
+	Furthermore, since there is only one global allocating backend
+	responsible for all domains using writeable idmap backends,
+	any explicitly configured domain with idmap backend ldap
+	should have the same range as the default range, since it needs
+	to use the global uid / gid allocator. See the example below.
 	</para>
 </refsynopsisdiv>
 
@@ -60,11 +77,10 @@
 		<term>range = low - high</term>
                 <listitem><para>
 			Defines the available matching uid and gid range for which the
-			backend is authoritative.  Note that the range commonly matches
-			the allocation range due to the fact that the same backend will
-			store and retrieve SID/uid/gid mapping entries.  If the parameter
-			is absent, Winbind fail over to use the &quot;idmap uid&quot; and
-			&quot;idmap gid&quot; options from smb.conf.
+			backend is authoritative.
+			If the parameter is absent, Winbind fails over to use the
+			&quot;idmap uid&quot; and &quot;idmap gid&quot; options
+			from smb.conf.
                 </para></listitem>
                 </varlistentry>
 	</variablelist>
