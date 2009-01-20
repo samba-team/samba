@@ -883,9 +883,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		(*p->auth.auth_data_free_func)(&p->auth);
 	}
 
-	if (p->mem_ctx) {
-		talloc_destroy(p->mem_ctx);
-	}
+	TALLOC_FREE(p->mem_ctx);
 
 	free_pipe_rpc_context( p->contexts );
 
