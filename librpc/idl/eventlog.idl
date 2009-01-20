@@ -110,7 +110,14 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x08 */
-	[todo] NTSTATUS eventlog_RegisterEventSourceW();
+	NTSTATUS eventlog_RegisterEventSourceW(
+		[in,unique] eventlog_OpenUnknown0 *unknown0,
+		[in,ref] lsa_String *module_name,
+		[in,ref] lsa_String *reg_module_name,
+		[in] uint32 major_version,
+		[in] uint32 minor_version,
+		[out] policy_handle *log_handle
+		);
 
 	/******************/
 	/* Function: 0x09 */
