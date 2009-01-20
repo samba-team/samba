@@ -901,7 +901,7 @@ static int swrap_get_pcap_fd(const char *fname)
 
 		if (write(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 			close(fd);
-			return -1;
+			fd = -1;
 		}
 		return fd;
 	}
@@ -1194,11 +1194,9 @@ static void swrap_dump_packet(struct socket_info *si,
 	fd = swrap_get_pcap_fd(file_name);
 	if (fd != -1) {
 		if (write(fd, packet, packet_len) != packet_len) {
-			close(fd);
 			free(packet);
 			return;
 		}
-		close(fd);
 	}
 
 	free(packet);
