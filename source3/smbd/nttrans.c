@@ -316,7 +316,7 @@ static void nt_open_pipe(char *fname, connection_struct *conn,
 	/* Strip \\ off the name. */
 	fname++;
 
-	status = np_open(req, fname, &fsp);
+	status = open_np_file(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,

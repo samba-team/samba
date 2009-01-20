@@ -32,6 +32,40 @@
 
 #define MAX_PIPE_NAME_LEN	24
 
+NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
+		      struct files_struct **pfsp)
+{
+	struct connection_struct *conn = smb_req->conn;
+	struct files_struct *fsp;
+	NTSTATUS status;
+
+	status = file_new(smb_req, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("file_new failed: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	fsp->conn = conn;
+	fsp->fh->fd = -1;
+	fsp->vuid = smb_req->vuid;
+	fsp->can_lock = false;
+	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;
+	string_set(&fsp->fsp_name, name);
+
+	status = np_open(NULL, name, conn->client_address,
+			 conn->server_info, &fsp->fake_file_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("np_open(%s) returned %s\n", name,
+			   nt_errstr(status)));
+		file_free(smb_req, fsp);
+		return status;
+	}
+
+	*pfsp = fsp;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to an open and X on a named pipe.
  This code is basically stolen from reply_open_and_X with some
@@ -77,7 +111,7 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
 	}
 #endif
 
-	status = np_open(req, fname, &fsp);
+	status = open_np_file(req, fname, &fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			reply_botherror(req, NT_STATUS_OBJECT_NAME_NOT_FOUND,
@@ -133,7 +167,14 @@ void reply_pipe_write(struct smb_request *req)
 		nwritten = 0;
 	} else {
 		NTSTATUS status;
-		status = np_write(fsp, data, numtowrite, &nwritten);
+		if (!fsp_is_np(fsp)) {
+			reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+			return;
+		}
+		DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n",
+			  (int)fsp->fnum, fsp->fsp_name, (int)numtowrite));
+		status = np_write(fsp->fake_file_handle, data, numtowrite,
+				  &nwritten);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -183,6 +224,9 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		return;
 	}
 
+	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
+		  (int)fsp->fnum, fsp->fsp_name, (int)numtowrite));
+
 	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
 
 	if (numtowrite == 0) {
@@ -208,7 +252,8 @@ void reply_pipe_write_and_X(struct smb_request *req)
 			data += 2;
 			numtowrite -= 2;
 		}                        
-		status = np_write(fsp, data, numtowrite, &nwritten);
+		status = np_write(fsp->fake_file_handle, data, numtowrite,
+				  &nwritten);
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);
 			return;
@@ -268,7 +313,8 @@ void reply_pipe_read_and_X(struct smb_request *req)
 
 	data = (uint8_t *)smb_buf(req->outbuf);
 
-	status = np_read(fsp, data, smb_maxcnt, &nread, &unused);
+	status = np_read(fsp->fake_file_handle, data, smb_maxcnt, &nread,
+			 &unused);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_doserror(req, ERRDOS, ERRnoaccess);

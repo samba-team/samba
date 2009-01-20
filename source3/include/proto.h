@@ -6226,11 +6226,13 @@ pipes_struct *get_next_internal_pipe(pipes_struct *p);
 void init_rpc_pipe_hnd(void);
 
 bool fsp_is_np(struct files_struct *fsp);
-NTSTATUS np_open(struct smb_request *smb_req, const char *name,
-		 struct files_struct **pfsp);
-NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
-		  ssize_t *nwritten);
-NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
+		 const char *client_address,
+		 struct auth_serversupplied_info *server_info,
+		 struct fake_file_handle **phandle);
+NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
+		  size_t len, ssize_t *nwritten);
+NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding);
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
@@ -7068,6 +7070,8 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 
 /* The following definitions come from smbd/pipes.c  */
 
+NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
+		      struct files_struct **pfsp);
 void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req);
 void reply_pipe_write(struct smb_request *req);
 void reply_pipe_write_and_X(struct smb_request *req);

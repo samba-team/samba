@@ -220,8 +220,14 @@ static void api_rpc_trans_reply(connection_struct *conn,
 		return;
 	}
 
-	status = np_read(fsp, rdata, max_trans_reply, &data_len,
-			 &is_data_outstanding);
+	if (!fsp_is_np(fsp)) {
+		SAFE_FREE(rdata);
+		api_no_reply(conn,req);
+		return;
+	}
+
+	status = np_read(fsp->fake_file_handle, rdata, max_trans_reply,
+			 &data_len, &is_data_outstanding);
 	if (!NT_STATUS_IS_OK(status)) {
 		SAFE_FREE(rdata);
 		api_no_reply(conn,req);
@@ -355,7 +361,8 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	case TRANSACT_DCERPCCMD: {
 		/* dce/rpc command */
 		ssize_t nwritten;
-		status = np_write(fsp, data, tdscnt, &nwritten);
+		status = np_write(fsp->fake_file_handle, data, tdscnt,
+				  &nwritten);
 		if (!NT_STATUS_IS_OK(status)) {
 			api_no_reply(conn, req);
 			return;

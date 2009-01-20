@@ -1075,92 +1075,69 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-NTSTATUS np_open(struct smb_request *smb_req, const char *name,
-		 struct files_struct **pfsp)
+NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
+		 const char *client_address,
+		 struct auth_serversupplied_info *server_info,
+		 struct fake_file_handle **phandle)
 {
-	struct connection_struct *conn = smb_req->conn;
-	NTSTATUS status;
-	struct files_struct *fsp;
 	const char **proxy_list;
+	struct fake_file_handle *handle;
 
-	proxy_list = lp_parm_string_list(SNUM(conn), "np", "proxy", NULL);
+	proxy_list = lp_parm_string_list(-1, "np", "proxy", NULL);
 
-	status = file_new(smb_req, conn, &fsp);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("file_new failed: %s\n", nt_errstr(status)));
-		return status;
-	}
-
-	fsp->conn = conn;
-	fsp->fh->fd = -1;
-	fsp->vuid = smb_req->vuid;
-	fsp->can_lock = false;
-	fsp->access_mask = FILE_READ_DATA | FILE_WRITE_DATA;
-	string_set(&fsp->fsp_name, name);
-
-	fsp->fake_file_handle = talloc(NULL, struct fake_file_handle);
-	if (fsp->fake_file_handle == NULL) {
-		file_free(smb_req, fsp);
+	handle = talloc(mem_ctx, struct fake_file_handle);
+	if (handle == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if ((proxy_list != NULL) && str_list_check_ci(proxy_list, name)) {
 		struct np_proxy_state *p;
 
-		p = make_external_rpc_pipe_p(fsp->fake_file_handle, name,
-					     conn->server_info);
+		p = make_external_rpc_pipe_p(handle, name, server_info);
 
-		fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
-		fsp->fake_file_handle->private_data = p;
+		handle->type = FAKE_FILE_TYPE_NAMED_PIPE_PROXY;
+		handle->private_data = p;
 	} else {
 		struct pipes_struct *p;
 
 		if (!is_known_pipename(name)) {
-			file_free(smb_req, fsp);
+			TALLOC_FREE(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		p = make_internal_rpc_pipe_p(fsp->fake_file_handle, name,
-					     conn->client_address,
-					     conn->server_info);
+		p = make_internal_rpc_pipe_p(handle, name, client_address,
+					     server_info);
 
-		fsp->fake_file_handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
-		fsp->fake_file_handle->private_data = p;
+		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;
+		handle->private_data = p;
 	}
 
-	if (fsp->fake_file_handle->private_data == NULL) {
-		file_free(smb_req, fsp);
+	if (handle->private_data == NULL) {
+		TALLOC_FREE(handle);
 		return NT_STATUS_PIPE_NOT_AVAILABLE;
 	}
 
-	*pfsp = fsp;
+	*phandle = handle;
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
-		  ssize_t *nwritten)
+NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
+		  size_t len, ssize_t *nwritten)
 {
-	if (!fsp_is_np(fsp)) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	DEBUG(6, ("np_write: %x name: %s len: %d\n", (int)fsp->fnum,
-		  fsp->fsp_name, (int)len));
+	DEBUG(6, ("np_write: len: %d\n", (int)len));
 	dump_data(50, data, len);
 
-	switch (fsp->fake_file_handle->type) {
+	switch (handle->type) {
 	case FAKE_FILE_TYPE_NAMED_PIPE: {
 		struct pipes_struct *p = talloc_get_type_abort(
-			fsp->fake_file_handle->private_data,
-			struct pipes_struct);
+			handle->private_data, struct pipes_struct);
 		*nwritten = write_to_internal_pipe(p, (char *)data, len);
 		break;
 	}
 	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
 		struct np_proxy_state *p = talloc_get_type_abort(
-			fsp->fake_file_handle->private_data,
-			struct np_proxy_state);
+			handle->private_data, struct np_proxy_state);
 		*nwritten = write_data(p->fd, (char *)data, len);
 		break;
 	}
@@ -1173,26 +1150,20 @@ NTSTATUS np_write(struct files_struct *fsp, const uint8_t *data, size_t len,
 		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
 }
 
-NTSTATUS np_read(struct files_struct *fsp, uint8_t *data, size_t len,
+NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding)
 {
-	if (!fsp_is_np(fsp)) {
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	switch (fsp->fake_file_handle->type) {
+	switch (handle->type) {
 	case FAKE_FILE_TYPE_NAMED_PIPE: {
 		struct pipes_struct *p = talloc_get_type_abort(
-			fsp->fake_file_handle->private_data,
-			struct pipes_struct);
+			handle->private_data, struct pipes_struct);
 		*nread = read_from_internal_pipe(p, (char *)data, len,
 						 is_data_outstanding);
 		break;
 	}
 	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
 		struct np_proxy_state *p = talloc_get_type_abort(
-			fsp->fake_file_handle->private_data,
-			struct np_proxy_state);
+			handle->private_data, struct np_proxy_state);
 		int available = 0;
 
 		*nread = sys_read(p->fd, (char *)data, len);
