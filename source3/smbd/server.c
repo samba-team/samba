@@ -1008,9 +1008,6 @@ static bool init_structs(void )
 
 	file_init();
 
-	/* for RPC pipes */
-	init_rpc_pipe_hnd();
-
 	init_dptrs();
 
 	if (!secrets_init())

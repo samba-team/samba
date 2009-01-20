@@ -28,7 +28,6 @@
 static int pipes_open;
 
 static pipes_struct *InternalPipes;
-static struct bitmap *bmap;
 
 /* TODO
  * the following prototypes are declared here to avoid
@@ -54,18 +53,6 @@ pipes_struct *get_first_internal_pipe(void)
 pipes_struct *get_next_internal_pipe(pipes_struct *p)
 {
 	return p->next;
-}
-
-/****************************************************************************
- Initialise pipe handle states.
-****************************************************************************/
-
-void init_rpc_pipe_hnd(void)
-{
-	bmap = bitmap_allocate(MAX_OPEN_PIPES);
-	if (!bmap) {
-		exit_server("out of memory in init_rpc_pipe_hnd");
-	}
 }
 
 /****************************************************************************
