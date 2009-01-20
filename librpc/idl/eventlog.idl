@@ -206,5 +206,25 @@ import "lsa.idl", "security.idl";
 	/* Function 0x17 */
 	NTSTATUS eventlog_FlushEventLog(
 		[in] policy_handle *handle
-	);	
+	);
+
+	/*****************/
+	/* Function 0x18 */
+	NTSTATUS eventlog_ReportEventAndSourceW(
+		[in] policy_handle *handle,
+		[in] time_t timestamp,
+		[in] eventlogEventTypes event_type,
+		[in] uint16 event_category,
+		[in] uint32 event_id,
+		[in,ref] lsa_String *sourcename,
+		[in] [range(0,256)] uint16 num_of_strings,
+		[in] [range(0,0x3FFFF)] uint32 data_size,
+		[in,ref] lsa_String *servername,
+		[in,unique] dom_sid *user_sid,
+		[in,unique] [size_is(num_of_strings)] lsa_String **strings,
+		[in,unique] [size_is(data_size)] uint8 *data,
+		[in] uint16 flags,
+		[in,out,unique] uint32 *record_number,
+		[in,out,unique] time_t *time_written
+		);
 }
