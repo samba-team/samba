@@ -1052,6 +1052,10 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 		return false;
 	}
 
+	if (ev_ctx) {
+		event_context_reinit(ev_ctx);
+	}
+
 	if (msg_ctx) {
 		/*
 		 * For clustering, we need to re-init our ctdbd connection after the
@@ -1063,10 +1067,6 @@ bool reinit_after_fork(struct messaging_context *msg_ctx,
 				 nt_errstr(status)));
 			return false;
 		}
-	}
-
-	if (ev_ctx) {
-		event_context_reinit(ev_ctx);
 	}
 
 	return true;
