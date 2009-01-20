@@ -2362,7 +2362,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 &sbuf);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("open_file_ntcreate failed: %s\n",
+		DEBUG(10, ("create_file_unixpath failed: %s\n",
 			   nt_errstr(status)));
 		return status;
 	}
