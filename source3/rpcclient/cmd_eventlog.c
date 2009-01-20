@@ -362,6 +362,44 @@ static NTSTATUS cmd_eventlog_registerevsource(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_eventlog_backuplog(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       int argc,
+				       const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle;
+	struct lsa_String backup_filename;
+	const char *tmp;
+
+	if (argc != 3) {
+		printf("Usage: %s logname backupname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	tmp = talloc_asprintf(mem_ctx, "\\??\\%s", argv[2]);
+	if (!tmp) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	init_lsa_String(&backup_filename, tmp);
+
+	status = rpccli_eventlog_BackupEventLogW(cli, mem_ctx,
+						 &handle,
+						 &backup_filename);
+
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+
+	return status;
+}
+
 
 struct cmd_set eventlog_commands[] = {
 	{ "EVENTLOG" },
@@ -371,5 +409,6 @@ struct cmd_set eventlog_commands[] = {
 	{ "eventlog_reportevent",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reportevent,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event", "" },
 	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event and source", "" },
 	{ "eventlog_registerevsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_registerevsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Register event source", "" },
+	{ "eventlog_backuplog",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_backuplog,		NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Backup Eventlog File", "" },
 	{ NULL }
 };
