@@ -93,7 +93,7 @@ The samba-swat package includes the new SWAT (Samba Web Administration
 Tool), for remotely managing Samba's smb.conf file using your favorite
 Web browser.
 
-%ifarch i386 i486 i586 i686 ppc s390
+%ifarch x86_64 ppc64
 %package winbind-32bit
 Summary:        Samba winbind compatibility package for 32bit apps on 64bit archs
 Group:          Applications/System
@@ -143,6 +143,80 @@ export CC
 
 ## always run autogen.sh
 ./autogen.sh
+
+
+##
+## build the files for the winbind-32bit compat package
+## and copy them to a safe location
+##
+%ifarch x86_64 ppc64
+
+# a directory to store the 32bit compatibility modules for later install
+%define _32bit_tmp_dir %{_tmppath}/%{name}-%{version}-32bit
+
+CC_SAVE="$CC"
+CC="$CC -m32"
+
+CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32" ./configure \
+	--prefix=%{_prefix} \
+	--localstatedir=/var \
+        --with-configdir=%{_sysconfdir}/samba \
+        --with-libdir=/usr/lib/samba \
+	--with-pammodulesdir=/lib/security \
+        --with-lockdir=/var/lib/samba \
+        --with-logfilebase=/var/log/samba \
+        --with-mandir=%{_mandir} \
+        --with-piddir=/var/run \
+	--with-privatedir=%{_sysconfdir}/samba \
+	--disable-cups \
+        --with-acl-support \
+	--with-ads \
+        --with-automount \
+        --with-fhs \
+	--with-pam_smbpass \
+	--with-libsmbclient \
+	--with-libsmbsharemodes \
+        --without-smbwrapper \
+	--with-pam \
+	--with-quotas \
+	--with-syslog \
+	--with-utmp \
+	--with-cluster-support \
+	--with-ctdb=/usr/include \
+	--without-ldb \
+	--without-dnsupdate \
+	--with-aio-support
+
+make showlayout
+
+make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32"  proto
+
+## check for gcc 3.4 or later
+CC_VERSION=`${CC} --version | head -1 | awk '{print $3}'`
+CC_MAJOR=`echo ${CC_VERSION} | cut -d. -f 1`
+CC_MINOR=`echo ${CC_VERSION} | cut -d. -f 2`
+if [ ${CC_MAJOR} -ge 3 ]; then
+        if [ ${CC_MAJOR} -gt 3 -o ${CC_MINOR} -ge 4 ]; then
+                make pch
+        fi
+fi
+
+make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -m32" %{?_smp_mflags} \
+	nss_modules pam_modules
+
+rm -rf %{_32bit_tmp_dir}
+mkdir %{_32bit_tmp_dir}
+
+mv nsswitch/libnss_winbind.so %{_32bit_tmp_dir}/
+mv bin/pam_winbind.so %{_32bit_tmp_dir}/
+mv bin/libtalloc.so* %{_32bit_tmp_dir}/
+mv bin/libtdb.so* %{_32bit_tmp_dir}/
+
+make clean
+
+CC="$CC_SAVE"
+
+%endif
 
 CFLAGS="$RPM_OPT_FLAGS $EXTRA -D_GNU_SOURCE" ./configure \
 	--prefix=%{_prefix} \
@@ -209,6 +283,7 @@ mkdir -p $RPM_BUILD_ROOT%{_initrddir}
 mkdir -p $RPM_BUILD_ROOT{%{_libarchdir},%{_includedir}}
 mkdir -p $RPM_BUILD_ROOT%{_libarchdir}/samba/{auth,charset,idmap,vfs,pdb}
 mkdir -p $RPM_BUILD_ROOT/%{_libarch}/security
+mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%{_mandir}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT%{_prefix}/lib
@@ -237,6 +312,20 @@ install -m 755 source/nsswitch/libnss_winbind.so $RPM_BUILD_ROOT/%{_libarch}/lib
 #install -m 755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/%{_libarch}/libnss_wins.so
 # ( cd $RPM_BUILD_ROOT/%{_libarch}; ln -sf libnss_wins.so  libnss_wins.so.2 )
 
+
+# install files for winbind-32bit package
+%ifarch x86_64 ppc64
+
+install -m 755 %{_32bit_tmp_dir}/libnss_winbind.so ${RPM_BUILD_ROOT}/lib/libnss_winbind.so.2
+( cd ${RPM_BUILD_ROOT}/lib; ln -sf libnss_winbind.so.2  libnss_winbind.so )
+
+mv %{_32bit_tmp_dir}/libtalloc* ${RPM_BUILD_ROOT}/usr/lib
+mv %{_32bit_tmp_dir}/libtdb* ${RPM_BUILD_ROOT}/usr/lib
+mv %{_32bit_tmp_dir}/pam_winbind.so ${RPM_BUILD_ROOT}/lib/security
+
+rm -rf %{_32bit_tmp_dir}
+
+%endif
 
 ## cleanup
 /bin/rm -rf $RPM_BUILD_ROOT/usr/lib*/samba/security
@@ -509,13 +598,13 @@ exit 0
 %{_mandir}/man1/ldbmodify.1*
 %{_mandir}/man1/ldbsearch.1*
 
-%ifarch i386 i486 i586 i686 ppc s390
+%ifarch x86_64 ppc64
 %files winbind-32bit
-%attr(755,root,root) /%{_libarch}/libnss_winbind.so*
-#%attr(755,root,root) /%{_libarch}/libnss_wins.so*
-%attr(755,root,root) /%{_libarchdir}/libtalloc.so*
-%attr(755,root,root) /%{_libarchdir}/libtdb.so*
-%attr(755,root,root) /%{_libarch}/security/pam_winbind.so
+%attr(755,root,root) /lib/libnss_winbind.so*
+#%attr(755,root,root) /lib/libnss_wins.so*
+%attr(755,root,root) /usr/lib/libtalloc.so*
+%attr(755,root,root) /usr/lib/libtdb.so*
+%attr(755,root,root) /lib/security/pam_winbind.so
 %endif
 
 
