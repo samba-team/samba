@@ -189,7 +189,18 @@ import "lsa.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x16 */
-	[todo] NTSTATUS eventlog_GetLogIntormation();
+
+	typedef struct {
+		boolean32 full;
+	} EVENTLOG_FULL_INFORMATION;
+
+	NTSTATUS eventlog_GetLogIntormation(
+		[in] policy_handle *handle,
+		[in] uint32 level,
+		[out,ref] [size_is(buf_size)] uint8 *buffer,
+		[in] [range(0,1024)] uint32 buf_size,
+		[out,ref] uint32 *bytes_needed
+		);
 
 	/*****************/
 	/* Function 0x17 */
