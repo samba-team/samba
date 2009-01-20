@@ -309,7 +309,6 @@ int register_existing_vuid(uint16 vuid,
 	set_current_user_info(
 		vuser->server_info->sanitized_username,
 		vuser->server_info->unix_name,
-		pdb_get_fullname(vuser->server_info->sam_account),
 		pdb_get_domain(vuser->server_info->sam_account));
 
 	return vuser->vuid;

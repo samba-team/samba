@@ -647,7 +647,6 @@ struct smb_request {
 typedef struct {
 	fstring smb_name; /* user name from the client */
 	fstring unix_name; /* unix user name of a validated user */
-	fstring full_name; /* to store full name (such as "Joe Bloggs") from gecos field of password file */
 	fstring domain; /* domain that the client specified */
 } userdom_struct;
 

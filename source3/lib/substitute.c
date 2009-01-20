@@ -216,11 +216,10 @@ static const char *get_smb_user_name(void)
 ********************************************************************/
 
 void set_current_user_info(const char *smb_name, const char *unix_name,
-			   const char *full_name, const char *domain)
+			   const char *domain)
 {
 	fstrcpy(current_user_info.smb_name, smb_name);
 	fstrcpy(current_user_info.unix_name, unix_name);
-	fstrcpy(current_user_info.full_name, full_name);
 	fstrcpy(current_user_info.domain, domain);
 
 	/* The following is safe as current_user_info.smb_name
