@@ -818,13 +818,11 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 					 &r_fds, &w_fds, &to, &maxfd);
 	}
 
-	if (timeval_is_zero(&to)) {
-		/* Process a timed event now... */
-		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
-			return NT_STATUS_RETRY;
-		}
+	/* Process a signal and timed events now... */
+	if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+		return NT_STATUS_RETRY;
 	}
-	
+
 	{
 		int sav;
 		START_PROFILE(smbd_idle);

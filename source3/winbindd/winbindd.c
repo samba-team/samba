@@ -980,6 +980,8 @@ static void process_loop(void)
 
  no_fds_ready:
 
+	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
+
 #if 0
 	winbindd_check_cache_size(time(NULL));
 #endif

@@ -1371,7 +1371,9 @@ static bool fork_domain_child(struct winbindd_child *child)
 	while (1) {
 
 		int ret;
-		fd_set read_fds;
+		fd_set r_fds;
+		fd_set w_fds;
+		int maxfd;
 		struct timeval t;
 		struct timeval *tp;
 		struct timeval now;
@@ -1382,7 +1384,14 @@ static bool fork_domain_child(struct winbindd_child *child)
 		winbind_check_sighup(override_logfile ? NULL :
 				child->logfilename);
 
-		run_events(winbind_event_context(), 0, NULL, NULL);
+		/* Handle messages */
+
+		message_dispatch(winbind_messaging_context());
+
+		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
+			TALLOC_FREE(frame);
+			continue;
+		}
 
 		GetTimeOfDay(&now);
 
@@ -1394,20 +1403,26 @@ static bool fork_domain_child(struct winbindd_child *child)
 			child->domain->startup = False;
 		}
 
+		FD_ZERO(&r_fds);
+		FD_ZERO(&w_fds);
+		FD_SET(state.sock, &r_fds);
+		maxfd = state.sock;
+
+		event_add_to_select_args(winbind_event_context(), &now,
+					 &r_fds, &w_fds, &t, &maxfd);
 		tp = get_timed_events_timeout(winbind_event_context(), &t);
 		if (tp) {
 			DEBUG(11,("select will use timeout of %u.%u seconds\n",
 				(unsigned int)tp->tv_sec, (unsigned int)tp->tv_usec ));
 		}
 
-		/* Handle messages */
+		ret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, tp);
 
-		message_dispatch(winbind_messaging_context());
-
-		FD_ZERO(&read_fds);
-		FD_SET(state.sock, &read_fds);
-
-		ret = sys_select(state.sock + 1, &read_fds, NULL, NULL, tp);
+		if (run_events(winbind_event_context(), ret, &r_fds, &w_fds)) {
+			/* We got a signal - continue. */
+			TALLOC_FREE(frame);
+			continue;
+		}
 
 		if (ret == 0) {
 			DEBUG(11,("nothing is ready yet, continue\n"));

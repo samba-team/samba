@@ -602,6 +602,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			}
 		}
 
+		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+			continue;
+		}
+
 		idle_timeout = timeval_zero();
 
 		memcpy((char *)&r_fds, (char *)&listen_set,
@@ -622,6 +626,10 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		num = sys_select(maxfd+1,&r_fds,&w_fds,NULL,
 				 timeval_is_zero(&idle_timeout) ?
 				 NULL : &idle_timeout);
+
+		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
+			continue;
+		}
 
 		if (num == -1 && errno == EINTR) {
 			if (got_sig_term) {
@@ -651,10 +659,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		/* process pending nDNS responses */
 		if (dns_register_smbd_reply(dns_reg, &r_fds, &idle_timeout)) {
 			--num;
-		}
-
-		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
-			continue;
 		}
 
 		/* check if we need to reload services */
