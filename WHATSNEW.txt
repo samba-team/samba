@@ -1,6 +1,6 @@
                    =============================
                    Release Notes for Samba 3.3.0
-			  January, 05 2009
+			  January, 27 2009
                    =============================
 
 This is the first stable release of Samba 3.3.0.
@@ -17,6 +17,8 @@ Major enhancements in Samba 3.3.0 include:
 
  File Serving:
  o Extended Cluster support.
+ o New experimental VFS modules "vfs_acl_xattr" and "vfs_acl_tdb"
+   to store NTFS ACLs on Samba file servers.
 
  Winbind:
  o Simplified idmap configuration.
@@ -192,6 +194,7 @@ smb.conf changes
     Parameter Name                      Description     Default
     --------------                      -----------     -------
     cups connection timeout		New		30
+    idmap config DOM:range		Removed
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
