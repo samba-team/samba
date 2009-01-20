@@ -260,6 +260,70 @@ static NTSTATUS cmd_eventlog_reportevent(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       int argc,
+					       const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle handle;
+
+	uint16_t num_of_strings = 1;
+	uint32_t data_size = 0;
+	struct lsa_String servername, sourcename;
+	struct lsa_String *strings;
+	uint8_t *data = NULL;
+	uint32_t record_number = 0;
+	time_t time_written = 0;
+
+	if (argc != 2) {
+		printf("Usage: %s logname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	strings = talloc_array(mem_ctx, struct lsa_String, num_of_strings);
+	if (!strings) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	init_lsa_String(&strings[0], "test event written by rpcclient\n");
+	init_lsa_String(&servername, NULL);
+	init_lsa_String(&sourcename, "rpcclient");
+
+	status = rpccli_eventlog_ReportEventAndSourceW(cli, mem_ctx,
+						       &handle,
+						       time(NULL),
+						       EVENTLOG_INFORMATION_TYPE,
+						       0, /* event_category */
+						       0, /* event_id */
+						       &sourcename,
+						       num_of_strings,
+						       data_size,
+						       &servername,
+						       NULL, /* user_sid */
+						       &strings,
+						       data,
+						       0, /* flags */
+						       &record_number,
+						       &time_written);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	printf("entry: %d written at %s\n", record_number,
+		http_timestring(talloc_tos(), time_written));
+
+ done:
+	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);
+
+	return status;
+}
+
 
 struct cmd_set eventlog_commands[] = {
 	{ "EVENTLOG" },
@@ -267,5 +331,6 @@ struct cmd_set eventlog_commands[] = {
 	{ "eventlog_numrecord",		RPC_RTYPE_NTSTATUS,	cmd_eventlog_numrecords,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get number of records", "" },
 	{ "eventlog_oldestrecord",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_oldestrecord,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get oldest record", "" },
 	{ "eventlog_reportevent",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reportevent,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event", "" },
+	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event and source", "" },
 	{ NULL }
 };
