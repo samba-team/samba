@@ -180,6 +180,55 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ReportEventLog(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct eventlog_ReportEventW r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
+
+	uint32_t record_number = 0;
+	time_t time_written = 0;
+	struct lsa_String servername, *strings;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	init_lsa_String(&servername, NULL);
+
+	strings = talloc_array(tctx, struct lsa_String, 1);
+	init_lsa_String(&strings[0], "Currently tortured by samba 4");
+
+	ZERO_STRUCT(r);
+
+	r.in.handle = &handle;
+	r.in.timestamp = time(NULL);
+	r.in.event_type = EVENTLOG_INFORMATION_TYPE;
+	r.in.event_category = 0;
+	r.in.event_id = 0;
+	r.in.num_of_strings = 1;
+	r.in.data_size = 0;
+	r.in.servername = &servername;
+	r.in.user_sid = NULL;
+	r.in.strings = &strings;
+	r.in.data = NULL;
+	r.in.flags = 0;
+	r.out.record_number = &record_number;
+	r.out.time_written = &time_written;
+
+	status = dcerpc_eventlog_ReportEventW(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ReportEventW failed");
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"CloseEventLog failed");
+	return true;
+}
+
 static bool test_FlushEventLog(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
@@ -267,6 +316,7 @@ struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "GetNumRecords", test_GetNumRecords);
 	torture_rpc_tcase_add_test(tcase, "ReadEventLog", test_ReadEventLog);
+	torture_rpc_tcase_add_test(tcase, "ReportEventLog", test_ReportEventLog);
 	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);
 
 	return suite;
