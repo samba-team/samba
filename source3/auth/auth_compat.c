@@ -2,17 +2,17 @@
    Unix SMB/CIFS implementation.
    Password and authentication handling
    Copyright (C) Andrew Bartlett         2001-2002
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -44,18 +44,18 @@ NTSTATUS check_plaintext_password(const char *smb_name, DATA_BLOB plaintext_pass
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&plaintext_auth_context))) {
 		return nt_status;
 	}
-	
+
 	chal = plaintext_auth_context->get_ntlm_challenge(plaintext_auth_context);
-	
+
 	if (!make_user_info_for_reply(&user_info, 
 				      smb_name, lp_workgroup(), chal,
 				      plaintext_password)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	nt_status = plaintext_auth_context->check_ntlm_password(plaintext_auth_context, 
 								user_info, server_info); 
-	
+
 	(plaintext_auth_context->free)(&plaintext_auth_context);
 	free_user_info(&user_info);
 	return nt_status;
@@ -97,7 +97,7 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob)
 
 	DATA_BLOB null_password = data_blob_null;
 	bool encrypted = (global_encrypted_passwords_negotiated && (password_blob.length == 24 || password_blob.length > 46));
-	
+
 	if (encrypted) {
 		/* 
 		 * The password could be either NTLM or plain LM.  Try NTLM first, 
@@ -116,7 +116,7 @@ bool password_ok(const char *smb_name, DATA_BLOB password_blob)
 		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), null_password, password_blob, null_password, encrypted))) {
 			return True;
 		}
-		
+
 		if (NT_STATUS_IS_OK(pass_check_smb(smb_name, lp_workgroup(), password_blob, null_password, null_password, encrypted))) {
 			return True;
 		}

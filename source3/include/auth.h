@@ -4,17 +4,17 @@
    Unix SMB/CIFS implementation.
    Standardised Authentication types
    Copyright (C) Andrew Bartlett 2001
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -25,9 +25,9 @@ typedef struct auth_usersupplied_info {
  	DATA_BLOB lm_interactive_pwd;
 	DATA_BLOB nt_interactive_pwd;
  	DATA_BLOB plaintext_password;
-	
+
 	bool encrypted;
-	
+
 	bool was_mapped;	      /* Did the username map actually match? */
 	char *client_domain;          /* domain name string */
 	char *domain;                 /* domain name after mapping */
@@ -35,7 +35,7 @@ typedef struct auth_usersupplied_info {
 	char *smb_name;               /* username before mapping */
 	char *wksta_name;             /* workstation name (netbios calling
 				       * name) unicode string */
-	
+
 	uint32 logon_parameters;
 
 } auth_usersupplied_info;
@@ -50,16 +50,16 @@ typedef struct auth_serversupplied_info {
 	struct unix_user_token utok;
 
 	/* NT group information taken from the info3 structure */
-	
+
 	NT_USER_TOKEN *ptok;
-	
+
 	DATA_BLOB user_session_key;
 	DATA_BLOB lm_session_key;
 
         char *login_server; /* which server authorized the login? */
-	
+
 	struct samu *sam_account;
-	
+
 	void *pam_handle;
 
 	/*
@@ -118,7 +118,7 @@ typedef struct auth_methods
 	DATA_BLOB (*get_chal)(const struct auth_context *auth_context,
 			      void **my_private_data, 
 			      TALLOC_CTX *mem_ctx);
-	
+
 	/* Used to keep tabs on things like the cli for SMB server authentication */
 	void *private_data;
 
