@@ -324,6 +324,44 @@ static NTSTATUS cmd_eventlog_reporteventsource(struct rpc_pipe_client *cli,
 	return status;
 }
 
+static NTSTATUS cmd_eventlog_registerevsource(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv)
+{
+	NTSTATUS status;
+	struct policy_handle log_handle;
+	struct lsa_String module_name, reg_module_name;
+	struct eventlog_OpenUnknown0 unknown0;
+
+	unknown0.unknown0 = 0x005c;
+	unknown0.unknown1 = 0x0001;
+
+	if (argc != 2) {
+		printf("Usage: %s logname\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	init_lsa_String(&module_name, "rpcclient");
+	init_lsa_String(&reg_module_name, NULL);
+
+	status = rpccli_eventlog_RegisterEventSourceW(cli, mem_ctx,
+						      &unknown0,
+						      &module_name,
+						      &reg_module_name,
+						      1, /* major_version */
+						      1, /* minor_version */
+						      &log_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+ done:
+	rpccli_eventlog_DeregisterEventSource(cli, mem_ctx, &log_handle);
+
+	return status;
+}
+
 
 struct cmd_set eventlog_commands[] = {
 	{ "EVENTLOG" },
@@ -332,5 +370,6 @@ struct cmd_set eventlog_commands[] = {
 	{ "eventlog_oldestrecord",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_oldestrecord,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Get oldest record", "" },
 	{ "eventlog_reportevent",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reportevent,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event", "" },
 	{ "eventlog_reporteventsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_reporteventsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Report event and source", "" },
+	{ "eventlog_registerevsource",	RPC_RTYPE_NTSTATUS,	cmd_eventlog_registerevsource,	NULL,	&ndr_table_eventlog.syntax_id,	NULL,	"Register event source", "" },
 	{ NULL }
 };
