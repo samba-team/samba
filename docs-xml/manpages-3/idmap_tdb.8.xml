@@ -21,10 +21,16 @@
 
 	<para>
 	The idmap_tdb plugin is the default backend used by winbindd
-	for storing SID/uid/gid mapping tables. In contrast to read only
-	backends like idmap_rid, it is an allocating backend:
-	This means that it needs to allocate new user and group IDs
-	to create new mappings as requests to yet unmapped users are answered.
+	for storing SID/uid/gid mapping tables.
+	</para>
+
+	<para>
+	In contrast to read only backends like idmap_rid, it is an allocating
+	backend: This means that it needs to allocate new user and group IDs in
+	order to create new mappings. The allocator can be provided by the
+	idmap_tdb backend itself or by any other allocating backend like
+	idmap_ldap or idmap_tdb2. This is configured with the
+	parameter <parameter>idmap alloc backend</parameter>.
 	</para>
 
 	<para>
