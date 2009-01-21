@@ -3310,6 +3310,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 
 	result->desthost = talloc_strdup(result, host);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3517,6 +3518,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 
 	result->desthost = talloc_get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3602,6 +3604,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	result->trans.np.cli = cli;
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);

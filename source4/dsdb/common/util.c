@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "events.h"
+#include "events/events.h"
 #include "ldb.h"
 #include "ldb_errors.h"
 #include "../lib/util/util_ldb.h"

@@ -23,7 +23,7 @@ NTSTATUS rpccli_samr_Connect(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Connect, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT,
@@ -62,7 +62,7 @@ NTSTATUS rpccli_samr_Close(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Close, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CLOSE,
@@ -105,7 +105,7 @@ NTSTATUS rpccli_samr_SetSecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetSecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETSECURITY,
@@ -146,7 +146,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QuerySecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYSECURITY,
@@ -185,7 +185,7 @@ NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Shutdown, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SHUTDOWN,
@@ -226,7 +226,7 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_LookupDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPDOMAIN,
@@ -271,7 +271,7 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_EnumDomains, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINS,
@@ -317,7 +317,7 @@ NTSTATUS rpccli_samr_OpenDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_OpenDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_OPENDOMAIN,
@@ -359,7 +359,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryDomainInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDOMAININFO,
@@ -402,7 +402,7 @@ NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetDomainInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETDOMAININFO,
@@ -446,7 +446,7 @@ NTSTATUS rpccli_samr_CreateDomainGroup(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_CreateDomainGroup, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEDOMAINGROUP,
@@ -492,7 +492,7 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_EnumDomainGroups, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINGROUPS,
@@ -539,7 +539,7 @@ NTSTATUS rpccli_samr_CreateUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_CreateUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEUSER,
@@ -587,7 +587,7 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_EnumDomainUsers, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINUSERS,
@@ -634,7 +634,7 @@ NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_CreateDomAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEDOMALIAS,
@@ -680,7 +680,7 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_EnumDomainAliases, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ENUMDOMAINALIASES,
@@ -724,7 +724,7 @@ NTSTATUS rpccli_samr_GetAliasMembership(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetAliasMembership, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETALIASMEMBERSHIP,
@@ -769,7 +769,7 @@ NTSTATUS rpccli_samr_LookupNames(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_LookupNames, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPNAMES,
@@ -815,7 +815,7 @@ NTSTATUS rpccli_samr_LookupRids(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_LookupRids, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_LOOKUPRIDS,
@@ -860,7 +860,7 @@ NTSTATUS rpccli_samr_OpenGroup(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_OpenGroup, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_OPENGROUP,
@@ -902,7 +902,7 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryGroupInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYGROUPINFO,
@@ -945,7 +945,7 @@ NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetGroupInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETGROUPINFO,
@@ -987,7 +987,7 @@ NTSTATUS rpccli_samr_AddGroupMember(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_AddGroupMember, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ADDGROUPMEMBER,
@@ -1025,7 +1025,7 @@ NTSTATUS rpccli_samr_DeleteDomainGroup(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_DeleteDomainGroup, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEDOMAINGROUP,
@@ -1066,7 +1066,7 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_DeleteGroupMember, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEGROUPMEMBER,
@@ -1105,7 +1105,7 @@ NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryGroupMember, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYGROUPMEMBER,
@@ -1148,7 +1148,7 @@ NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetMemberAttributesOfGroup, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP,
@@ -1191,7 +1191,7 @@ NTSTATUS rpccli_samr_OpenAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_OpenAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_OPENALIAS,
@@ -1233,7 +1233,7 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryAliasInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYALIASINFO,
@@ -1276,7 +1276,7 @@ NTSTATUS rpccli_samr_SetAliasInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetAliasInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETALIASINFO,
@@ -1314,7 +1314,7 @@ NTSTATUS rpccli_samr_DeleteDomAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_DeleteDomAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEDOMALIAS,
@@ -1355,7 +1355,7 @@ NTSTATUS rpccli_samr_AddAliasMember(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_AddAliasMember, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ADDALIASMEMBER,
@@ -1395,7 +1395,7 @@ NTSTATUS rpccli_samr_DeleteAliasMember(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_DeleteAliasMember, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEALIASMEMBER,
@@ -1434,7 +1434,7 @@ NTSTATUS rpccli_samr_GetMembersInAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetMembersInAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETMEMBERSINALIAS,
@@ -1478,7 +1478,7 @@ NTSTATUS rpccli_samr_OpenUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_OpenUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_OPENUSER,
@@ -1517,7 +1517,7 @@ NTSTATUS rpccli_samr_DeleteUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_DeleteUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_DELETEUSER,
@@ -1559,7 +1559,7 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryUserInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYUSERINFO,
@@ -1602,7 +1602,7 @@ NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetUserInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETUSERINFO,
@@ -1660,7 +1660,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER,
@@ -1699,7 +1699,7 @@ NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetGroupsForUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETGROUPSFORUSER,
@@ -1749,7 +1749,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO,
@@ -1795,7 +1795,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetDisplayEnumerationIndex, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX,
@@ -1834,7 +1834,7 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_TestPrivateFunctionsDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN,
@@ -1872,7 +1872,7 @@ NTSTATUS rpccli_samr_TestPrivateFunctionsUser(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_TestPrivateFunctionsUser, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_TESTPRIVATEFUNCTIONSUSER,
@@ -1911,7 +1911,7 @@ NTSTATUS rpccli_samr_GetUserPwInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetUserPwInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETUSERPWINFO,
@@ -1952,7 +1952,7 @@ NTSTATUS rpccli_samr_RemoveMemberFromForeignDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_RemoveMemberFromForeignDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN,
@@ -1993,7 +1993,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryDomainInfo2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDOMAININFO2,
@@ -2035,7 +2035,7 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryUserInfo2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYUSERINFO2,
@@ -2085,7 +2085,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO2,
@@ -2131,7 +2131,7 @@ NTSTATUS rpccli_samr_GetDisplayEnumerationIndex2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetDisplayEnumerationIndex2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETDISPLAYENUMERATIONINDEX2,
@@ -2179,7 +2179,7 @@ NTSTATUS rpccli_samr_CreateUser2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_CreateUser2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CREATEUSER2,
@@ -2231,7 +2231,7 @@ NTSTATUS rpccli_samr_QueryDisplayInfo3(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_QueryDisplayInfo3, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_QUERYDISPLAYINFO3,
@@ -2274,7 +2274,7 @@ NTSTATUS rpccli_samr_AddMultipleMembersToAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_AddMultipleMembersToAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS,
@@ -2314,7 +2314,7 @@ NTSTATUS rpccli_samr_RemoveMultipleMembersFromAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_RemoveMultipleMembersFromAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS,
@@ -2358,7 +2358,7 @@ NTSTATUS rpccli_samr_OemChangePasswordUser2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_OemChangePasswordUser2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_OEMCHANGEPASSWORDUSER2,
@@ -2408,7 +2408,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER2,
@@ -2447,7 +2447,7 @@ NTSTATUS rpccli_samr_GetDomPwInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetDomPwInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETDOMPWINFO,
@@ -2489,7 +2489,7 @@ NTSTATUS rpccli_samr_Connect2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Connect2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT2,
@@ -2532,7 +2532,7 @@ NTSTATUS rpccli_samr_SetUserInfo2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetUserInfo2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETUSERINFO2,
@@ -2576,7 +2576,7 @@ NTSTATUS rpccli_samr_SetBootKeyInformation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetBootKeyInformation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETBOOTKEYINFORMATION,
@@ -2615,7 +2615,7 @@ NTSTATUS rpccli_samr_GetBootKeyInformation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_GetBootKeyInformation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_GETBOOTKEYINFORMATION,
@@ -2659,7 +2659,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Connect3, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT3,
@@ -2703,7 +2703,7 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Connect4, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT4,
@@ -2758,7 +2758,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_ChangePasswordUser3, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CHANGEPASSWORDUSER3,
@@ -2807,7 +2807,7 @@ NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_Connect5, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_CONNECT5,
@@ -2851,7 +2851,7 @@ NTSTATUS rpccli_samr_RidToSid(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_RidToSid, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_RIDTOSID,
@@ -2894,7 +2894,7 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_SetDsrmPassword, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_SETDSRMPASSWORD,
@@ -2935,7 +2935,7 @@ NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(samr_ValidatePassword, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_samr,
 				NDR_SAMR_VALIDATEPASSWORD,

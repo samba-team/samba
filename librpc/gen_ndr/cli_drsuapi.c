@@ -24,7 +24,7 @@ NTSTATUS rpccli_drsuapi_DsBind(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsBind, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSBIND,
@@ -71,7 +71,7 @@ NTSTATUS rpccli_drsuapi_DsUnbind(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsUnbind, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSUNBIND,
@@ -119,7 +119,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaSync(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaSync, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICASYNC,
@@ -168,7 +168,7 @@ NTSTATUS rpccli_drsuapi_DsGetNCChanges(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsGetNCChanges, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETNCCHANGES,
@@ -217,7 +217,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaUpdateRefs(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaUpdateRefs, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICAUPDATEREFS,
@@ -258,7 +258,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_ADD(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_ADD, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_ADD,
@@ -299,7 +299,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_DEL(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_DEL, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_DEL,
@@ -340,7 +340,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_MODIFY(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_MODIFY, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_MODIFY,
@@ -381,7 +381,7 @@ NTSTATUS rpccli_DRSUAPI_VERIFY_NAMES(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_VERIFY_NAMES, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_VERIFY_NAMES,
@@ -430,7 +430,7 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsGetMemberships, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS,
@@ -473,7 +473,7 @@ NTSTATUS rpccli_DRSUAPI_INTER_DOMAIN_MOVE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_INTER_DOMAIN_MOVE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_INTER_DOMAIN_MOVE,
@@ -522,7 +522,7 @@ NTSTATUS rpccli_drsuapi_DsGetNT4ChangeLog(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsGetNT4ChangeLog, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETNT4CHANGELOG,
@@ -573,7 +573,7 @@ NTSTATUS rpccli_drsuapi_DsCrackNames(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsCrackNames, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSCRACKNAMES,
@@ -624,7 +624,7 @@ NTSTATUS rpccli_drsuapi_DsWriteAccountSpn(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsWriteAccountSpn, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSWRITEACCOUNTSPN,
@@ -675,7 +675,7 @@ NTSTATUS rpccli_drsuapi_DsRemoveDSServer(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsRemoveDSServer, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREMOVEDSSERVER,
@@ -718,7 +718,7 @@ NTSTATUS rpccli_DRSUAPI_REMOVE_DS_DOMAIN(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_REMOVE_DS_DOMAIN, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REMOVE_DS_DOMAIN,
@@ -767,7 +767,7 @@ NTSTATUS rpccli_drsuapi_DsGetDomainControllerInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsGetDomainControllerInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETDOMAINCONTROLLERINFO,
@@ -818,7 +818,7 @@ NTSTATUS rpccli_drsuapi_DsAddEntry(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsAddEntry, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSADDENTRY,
@@ -861,7 +861,7 @@ NTSTATUS rpccli_DRSUAPI_EXECUTE_KCC(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_EXECUTE_KCC, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_EXECUTE_KCC,
@@ -910,7 +910,7 @@ NTSTATUS rpccli_drsuapi_DsReplicaGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsReplicaGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSREPLICAGETINFO,
@@ -953,7 +953,7 @@ NTSTATUS rpccli_DRSUAPI_ADD_SID_HISTORY(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_ADD_SID_HISTORY, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_ADD_SID_HISTORY,
@@ -1002,7 +1002,7 @@ NTSTATUS rpccli_drsuapi_DsGetMemberships2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_DsGetMemberships2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_DSGETMEMBERSHIPS2,
@@ -1045,7 +1045,7 @@ NTSTATUS rpccli_DRSUAPI_REPLICA_VERIFY_OBJECTS(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_REPLICA_VERIFY_OBJECTS, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_REPLICA_VERIFY_OBJECTS,
@@ -1086,7 +1086,7 @@ NTSTATUS rpccli_DRSUAPI_GET_OBJECT_EXISTENCE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(DRSUAPI_GET_OBJECT_EXISTENCE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_GET_OBJECT_EXISTENCE,
@@ -1135,7 +1135,7 @@ NTSTATUS rpccli_drsuapi_QuerySitesByCost(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(drsuapi_QuerySitesByCost, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_drsuapi,
 				NDR_DRSUAPI_QUERYSITESBYCOST,

@@ -24,7 +24,7 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_Insert, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_INSERT,
@@ -64,7 +64,7 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_Delete, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_DELETE,
@@ -114,7 +114,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_Lookup, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_LOOKUP,
@@ -163,7 +163,7 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_Map, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_MAP,
@@ -204,7 +204,7 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_LOOKUPHANDLEFREE,
@@ -243,7 +243,7 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_InqObject, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_INQOBJECT,
@@ -285,7 +285,7 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_MGMTDELETE,
@@ -321,7 +321,7 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(epm_MapAuth, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_epmapper,
 				NDR_EPM_MAPAUTH,

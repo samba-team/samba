@@ -24,7 +24,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETWKSTAGETINFO,
@@ -74,7 +74,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaSetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaSetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETWKSTASETINFO,
@@ -125,7 +125,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaEnumUsers(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaEnumUsers, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETWKSTAENUMUSERS,
@@ -176,7 +176,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRWKSTAUSERGETINFO,
@@ -226,7 +226,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaUserSetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaUserSetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRWKSTAUSERSETINFO,
@@ -279,7 +279,7 @@ NTSTATUS rpccli_wkssvc_NetWkstaTransportEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetWkstaTransportEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETWKSTATRANSPORTENUM,
@@ -333,7 +333,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportAdd(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportAdd, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRWKSTATRANSPORTADD,
@@ -383,7 +383,7 @@ NTSTATUS rpccli_wkssvc_NetrWkstaTransportDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrWkstaTransportDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRWKSTATRANSPORTDEL,
@@ -432,7 +432,7 @@ NTSTATUS rpccli_wkssvc_NetrUseAdd(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseAdd, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUSEADD,
@@ -483,7 +483,7 @@ NTSTATUS rpccli_wkssvc_NetrUseGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUSEGETINFO,
@@ -531,7 +531,7 @@ NTSTATUS rpccli_wkssvc_NetrUseDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUSEDEL,
@@ -581,7 +581,7 @@ NTSTATUS rpccli_wkssvc_NetrUseEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUseEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUSEENUM,
@@ -637,7 +637,7 @@ NTSTATUS rpccli_wkssvc_NetrMessageBufferSend(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrMessageBufferSend, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRMESSAGEBUFFERSEND,
@@ -687,7 +687,7 @@ NTSTATUS rpccli_wkssvc_NetrWorkstationStatisticsGet(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrWorkstationStatisticsGet, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET,
@@ -731,7 +731,7 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameAdd(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameAdd, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRLOGONDOMAINNAMEADD,
@@ -774,7 +774,7 @@ NTSTATUS rpccli_wkssvc_NetrLogonDomainNameDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrLogonDomainNameDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL,
@@ -827,7 +827,7 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRJOINDOMAIN,
@@ -876,7 +876,7 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUNJOINDOMAIN,
@@ -927,7 +927,7 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN,
@@ -978,7 +978,7 @@ NTSTATUS rpccli_wkssvc_NetrValidateName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRVALIDATENAME,
@@ -1024,7 +1024,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinInformation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinInformation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRGETJOININFORMATION,
@@ -1078,7 +1078,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRGETJOINABLEOUS,
@@ -1133,7 +1133,7 @@ NTSTATUS rpccli_wkssvc_NetrJoinDomain2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrJoinDomain2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRJOINDOMAIN2,
@@ -1182,7 +1182,7 @@ NTSTATUS rpccli_wkssvc_NetrUnjoinDomain2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrUnjoinDomain2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRUNJOINDOMAIN2,
@@ -1233,7 +1233,7 @@ NTSTATUS rpccli_wkssvc_NetrRenameMachineInDomain2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRenameMachineInDomain2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2,
@@ -1284,7 +1284,7 @@ NTSTATUS rpccli_wkssvc_NetrValidateName2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrValidateName2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRVALIDATENAME2,
@@ -1336,7 +1336,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrGetJoinableOus2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRGETJOINABLEOUS2,
@@ -1389,7 +1389,7 @@ NTSTATUS rpccli_wkssvc_NetrAddAlternateComputerName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrAddAlternateComputerName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME,
@@ -1440,7 +1440,7 @@ NTSTATUS rpccli_wkssvc_NetrRemoveAlternateComputerName(struct rpc_pipe_client *c
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrRemoveAlternateComputerName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME,
@@ -1491,7 +1491,7 @@ NTSTATUS rpccli_wkssvc_NetrSetPrimaryComputername(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrSetPrimaryComputername, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME,
@@ -1539,7 +1539,7 @@ NTSTATUS rpccli_wkssvc_NetrEnumerateComputerNames(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(wkssvc_NetrEnumerateComputerNames, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_wkssvc,
 				NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES,

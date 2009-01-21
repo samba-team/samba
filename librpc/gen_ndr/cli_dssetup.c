@@ -22,7 +22,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetPrimaryDomainInformation(struct rpc_pipe_client
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetPrimaryDomainInformation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION,
@@ -66,7 +66,7 @@ NTSTATUS rpccli_dssetup_DsRoleDnsNameToFlatName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDnsNameToFlatName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME,
@@ -107,7 +107,7 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsDc(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsDc, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASDC,
@@ -148,7 +148,7 @@ NTSTATUS rpccli_dssetup_DsRoleDcAsReplica(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDcAsReplica, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDCASREPLICA,
@@ -189,7 +189,7 @@ NTSTATUS rpccli_dssetup_DsRoleDemoteDc(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleDemoteDc, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEDEMOTEDC,
@@ -230,7 +230,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationProgress(struct rpc_pipe_client *cli
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationProgress, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS,
@@ -271,7 +271,7 @@ NTSTATUS rpccli_dssetup_DsRoleGetDcOperationResults(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleGetDcOperationResults, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS,
@@ -312,7 +312,7 @@ NTSTATUS rpccli_dssetup_DsRoleCancel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleCancel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLECANCEL,
@@ -353,7 +353,7 @@ NTSTATUS rpccli_dssetup_DsRoleServerSaveStateForUpgrade(struct rpc_pipe_client *
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleServerSaveStateForUpgrade, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE,
@@ -394,7 +394,7 @@ NTSTATUS rpccli_dssetup_DsRoleUpgradeDownlevelServer(struct rpc_pipe_client *cli
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleUpgradeDownlevelServer, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER,
@@ -435,7 +435,7 @@ NTSTATUS rpccli_dssetup_DsRoleAbortDownlevelServerUpgrade(struct rpc_pipe_client
 		NDR_PRINT_IN_DEBUG(dssetup_DsRoleAbortDownlevelServerUpgrade, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_dssetup,
 				NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE,

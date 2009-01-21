@@ -19,7 +19,7 @@ NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_Disconnect, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DISCONNECT,
@@ -60,7 +60,7 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_Connect, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_CONNECT,
@@ -102,7 +102,7 @@ NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetVersion, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETVERSION,
@@ -144,7 +144,7 @@ NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetGlobalState, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETGLOBALSTATE,
@@ -185,7 +185,7 @@ NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_InitDetection, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_INITDETECTION,
@@ -226,7 +226,7 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_ReportLogOn, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REPORTLOGON,
@@ -271,7 +271,7 @@ NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_ValidateDeviceInstance, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_VALIDATEDEVICEINSTANCE,
@@ -312,7 +312,7 @@ NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetRootDeviceInstance, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETROOTDEVICEINSTANCE,
@@ -353,7 +353,7 @@ NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetRelatedDeviceInstance, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETRELATEDDEVICEINSTANCE,
@@ -394,7 +394,7 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_EnumerateSubKeys, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_ENUMERATESUBKEYS,
@@ -442,7 +442,7 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceList, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETDEVICELIST,
@@ -490,7 +490,7 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETDEVICELISTSIZE,
@@ -532,7 +532,7 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetDepth, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETDEPTH,
@@ -586,7 +586,7 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETDEVICEREGPROP,
@@ -631,7 +631,7 @@ NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_SetDeviceRegProp, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_SETDEVICEREGPROP,
@@ -672,7 +672,7 @@ NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetClassInstance, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETCLASSINSTANCE,
@@ -713,7 +713,7 @@ NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_CreateKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_CREATEKEY,
@@ -754,7 +754,7 @@ NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_DeleteRegistryKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DELETEREGISTRYKEY,
@@ -795,7 +795,7 @@ NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetClassCount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETCLASSCOUNT,
@@ -836,7 +836,7 @@ NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetClassName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETCLASSNAME,
@@ -877,7 +877,7 @@ NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_DeleteClassKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DELETECLASSKEY,
@@ -918,7 +918,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceAlias, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETINTERFACEDEVICEALIAS,
@@ -959,7 +959,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceList, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETINTERFACEDEVICELIST,
@@ -1000,7 +1000,7 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceListSize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETINTERFACEDEVICELISTSIZE,
@@ -1041,7 +1041,7 @@ NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RegisterDeviceClassAssociation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REGISTERDEVICECLASSASSOCIATION,
@@ -1082,7 +1082,7 @@ NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli
 		NDR_PRINT_IN_DEBUG(PNP_UnregisterDeviceClassAssociation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION,
@@ -1123,7 +1123,7 @@ NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetClassRegProp, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETCLASSREGPROP,
@@ -1164,7 +1164,7 @@ NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_SetClassRegProp, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_SETCLASSREGPROP,
@@ -1205,7 +1205,7 @@ NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_CreateDevInst, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_CREATEDEVINST,
@@ -1246,7 +1246,7 @@ NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_DeviceInstanceAction, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DEVICEINSTANCEACTION,
@@ -1287,7 +1287,7 @@ NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceStatus, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETDEVICESTATUS,
@@ -1328,7 +1328,7 @@ NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_SetDeviceProblem, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_SETDEVICEPROBLEM,
@@ -1369,7 +1369,7 @@ NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_DisableDevInst, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DISABLEDEVINST,
@@ -1410,7 +1410,7 @@ NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_UninstallDevInst, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_UNINSTALLDEVINST,
@@ -1451,7 +1451,7 @@ NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_AddID, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_ADDID,
@@ -1492,7 +1492,7 @@ NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RegisterDriver, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REGISTERDRIVER,
@@ -1533,7 +1533,7 @@ NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_QueryRemove, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_QUERYREMOVE,
@@ -1574,7 +1574,7 @@ NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RequestDeviceEject, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REQUESTDEVICEEJECT,
@@ -1615,7 +1615,7 @@ NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_IsDockStationPresent, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_ISDOCKSTATIONPRESENT,
@@ -1656,7 +1656,7 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RequestEjectPC, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REQUESTEJECTPC,
@@ -1714,7 +1714,7 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_HWPROFFLAGS,
@@ -1770,7 +1770,7 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETHWPROFINFO,
@@ -1812,7 +1812,7 @@ NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_AddEmptyLogConf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_ADDEMPTYLOGCONF,
@@ -1853,7 +1853,7 @@ NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_FreeLogConf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_FREELOGCONF,
@@ -1894,7 +1894,7 @@ NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetFirstLogConf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETFIRSTLOGCONF,
@@ -1935,7 +1935,7 @@ NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetNextLogConf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETNEXTLOGCONF,
@@ -1976,7 +1976,7 @@ NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetLogConfPriority, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETLOGCONFPRIORITY,
@@ -2017,7 +2017,7 @@ NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_AddResDes, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_ADDRESDES,
@@ -2058,7 +2058,7 @@ NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_FreeResDes, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_FREERESDES,
@@ -2099,7 +2099,7 @@ NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetNextResDes, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETNEXTRESDES,
@@ -2140,7 +2140,7 @@ NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetResDesData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETRESDESDATA,
@@ -2181,7 +2181,7 @@ NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetResDesDataSize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETRESDESDATASIZE,
@@ -2222,7 +2222,7 @@ NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_ModifyResDes, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_MODIFYRESDES,
@@ -2263,7 +2263,7 @@ NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_DetectResourceLimit, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_DETECTRESOURCELIMIT,
@@ -2304,7 +2304,7 @@ NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_QueryResConfList, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_QUERYRESCONFLIST,
@@ -2345,7 +2345,7 @@ NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_SetHwProf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_SETHWPROF,
@@ -2386,7 +2386,7 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_QUERYARBITRATORFREEDATA,
@@ -2427,7 +2427,7 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeSize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_QUERYARBITRATORFREESIZE,
@@ -2468,7 +2468,7 @@ NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RunDetection, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_RUNDETECTION,
@@ -2509,7 +2509,7 @@ NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_RegisterNotification, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_REGISTERNOTIFICATION,
@@ -2550,7 +2550,7 @@ NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_UnregisterNotification, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_UNREGISTERNOTIFICATION,
@@ -2591,7 +2591,7 @@ NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetCustomDevProp, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETCUSTOMDEVPROP,
@@ -2632,7 +2632,7 @@ NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetVersionInternal, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETVERSIONINTERNAL,
@@ -2673,7 +2673,7 @@ NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetBlockedDriverInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETBLOCKEDDRIVERINFO,
@@ -2714,7 +2714,7 @@ NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(PNP_GetServerSideDeviceInstallFlags, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_ntsvcs,
 				NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS,
