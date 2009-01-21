@@ -48,7 +48,7 @@ AC_PATH_PROG(YAPP, yapp, false)
 
 m4_include(build/m4/check_cc.m4)
 m4_include(build/m4/check_ld.m4)
-m4_include(build/m4/check_make.m4)
+m4_include(../m4/check_make.m4)
 
 AC_SAMBA_GNU_MAKE([AC_MSG_RESULT(found)], [AC_MSG_ERROR([Unable to find GNU make])])
 AC_SAMBA_GNU_MAKE_VERSION()

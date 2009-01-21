@@ -6281,7 +6281,7 @@ if test x$enable_merged_build = xauto; then
 	merged_build_possible=yes
 
 	# Check for GNU make
-	m4_include(../source4/build/m4/check_make.m4)
+	m4_include(../source4/m4/check_make.m4)
 	AC_SAMBA_GNU_MAKE([true], [merged_build_possible=no])
 
 	# Check for perl
