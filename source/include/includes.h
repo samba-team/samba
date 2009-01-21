@@ -730,6 +730,9 @@ typedef char fstring[FSTRING_LEN];
 #include "async_sock.h"
 
 #include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
+#include "lib/smbconf/smbconf_txt.h"
 
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
