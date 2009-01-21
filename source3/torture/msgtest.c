@@ -39,11 +39,12 @@ static void pong_message(struct messaging_context *msg_ctx,
 
  int main(int argc, char *argv[])
 {
-	struct event_context *evt_ctx;
+	struct tevent_context *evt_ctx;
 	struct messaging_context *msg_ctx;
 	pid_t pid;
 	int i, n;
 	char buf[12];
+	int ret;
 
 	load_case_tables();
 
@@ -51,7 +52,7 @@ static void pong_message(struct messaging_context *msg_ctx,
 	
 	lp_load(get_dyn_CONFIGFILE(),False,False,False,True);
 
-	if (!(evt_ctx = event_context_init(NULL)) ||
+	if (!(evt_ctx = tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		exit(1);
@@ -74,8 +75,10 @@ static void pong_message(struct messaging_context *msg_ctx,
 	}
 
 	while (pong_count < i) {
-		message_dispatch(msg_ctx);
-		smb_msleep(1);
+		ret = tevent_loop_once(evt_ctx);
+		if (ret != 0) {
+			break;
+		}
 	}
 
 	/* Now test that the duplicate filtering code works. */
@@ -91,8 +94,10 @@ static void pong_message(struct messaging_context *msg_ctx,
 	}
 
 	for (i=0;i<n;i++) {
-		message_dispatch(msg_ctx);
-		smb_msleep(1);
+		ret = tevent_loop_once(evt_ctx);
+		if (ret != 0) {
+			break;
+		}
 	}
 
 	if (pong_count != 2) {
@@ -121,14 +126,20 @@ static void pong_message(struct messaging_context *msg_ctx,
 			   ping_count++;
 
 			while (ping_count > pong_count + 20) {
-				message_dispatch(msg_ctx);
+				ret = tevent_loop_once(evt_ctx);
+				if (ret != 0) {
+					break;
+				}
 			}
 		}
 		
 		printf("waiting for %d remaining replies (done %d)\n", 
 		       (int)(ping_count - pong_count), pong_count);
 		while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
-			message_dispatch(msg_ctx);
+			ret = tevent_loop_once(evt_ctx);
+			if (ret != 0) {
+				break;
+			}
 		}
 		
 		if (ping_count != pong_count) {
