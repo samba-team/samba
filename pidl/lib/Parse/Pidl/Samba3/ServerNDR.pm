@@ -48,9 +48,9 @@ sub DeclLevel($$)
 	return $res;
 }
 
-sub AllocOutVar($$$$)
+sub AllocOutVar($$$$$)
 {
-	my ($e, $mem_ctx, $name, $env) = @_;
+	my ($e, $mem_ctx, $name, $env, $fail) = @_;
 
 	my $l = $e->{LEVELS}[0];
 
@@ -76,10 +76,52 @@ sub AllocOutVar($$$$)
 	}
 
 	pidl "if ($name == NULL) {";
-	pidl "\ttalloc_free($mem_ctx);";
-	pidl "\treturn false;";
+	$fail->();
 	pidl "}";
 	pidl "";
+}
+
+sub CallWithStruct($$$$)
+{
+	my ($pipes_struct, $mem_ctx, $fn, $fail) = @_;
+	my $env = GenerateFunctionOutEnv($fn);
+	my $hasout = 0;
+	foreach (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/, @{$_->{DIRECTION}})) { $hasout = 1; }
+	}
+
+	pidl "ZERO_STRUCT(r->out);" if ($hasout);
+
+	my $proto = "_$fn->{NAME}(pipes_struct *p, struct $fn->{NAME} *r";
+	my $ret = "_$fn->{NAME}($pipes_struct, r";
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
+		}
+	}
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			# noop
+		} elsif (grep(/out/, @dir) and not
+				 has_property($_, "represent_as")) {
+			AllocOutVar($_, $mem_ctx, "r->out.$_->{NAME}", $env, $fail);
+		}
+	}
+	$ret .= ")";
+	$proto .= ");";
+
+	if ($fn->{RETURN_TYPE}) {
+		$ret = "r->out.result = $ret";
+		$proto = "$fn->{RETURN_TYPE} $proto";
+	} else {
+		$proto = "void $proto";
+	}
+
+	pidl_hdr "$proto";
+	pidl "$ret;";
 }
 
 sub ParseFunction($$)
@@ -128,44 +170,12 @@ sub ParseFunction($$)
 	pidl "}";
 	pidl "";
 
-	my $env = GenerateFunctionOutEnv($fn);
-	my $hasout = 0;
-	foreach (@{$fn->{ELEMENTS}}) {
-		if (grep(/out/, @{$_->{DIRECTION}})) { $hasout = 1; }
-	}
-
-	pidl "ZERO_STRUCT(r->out);" if ($hasout);
-
-	my $proto = "_$fn->{NAME}(pipes_struct *p, struct $fn->{NAME} *r";
-	my $ret = "_$fn->{NAME}(p, r";
-	foreach (@{$fn->{ELEMENTS}}) {
-		my @dir = @{$_->{DIRECTION}};
-		if (grep(/in/, @dir) and grep(/out/, @dir)) {
-			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
+	CallWithStruct("p", "r", $fn, 
+	sub { 
+			pidl "\ttalloc_free(r);";
+			pidl "\treturn false;";
 		}
-	}
-
-	foreach (@{$fn->{ELEMENTS}}) {
-		my @dir = @{$_->{DIRECTION}};
-		if (grep(/in/, @dir) and grep(/out/, @dir)) {
-			# noop
-		} elsif (grep(/out/, @dir) and not
-				 has_property($_, "represent_as")) {
-			AllocOutVar($_, "r", "r->out.$_->{NAME}", $env);
-		}
-	}
-	$ret .= ")";
-	$proto .= ");";
-
-	if ($fn->{RETURN_TYPE}) {
-		$ret = "r->out.result = $ret";
-		$proto = "$fn->{RETURN_TYPE} $proto";
-	} else {
-		$proto = "void $proto";
-	}
-
-	pidl_hdr "$proto";
-	pidl "$ret;";
+	);
 
 	pidl "";
 	pidl "if (p->rng_fault_state) {";
@@ -201,6 +211,45 @@ sub ParseFunction($$)
 	pidl "return true;";
 	deindent;
 	pidl "}";
+	pidl "";
+}
+
+sub ParseDispatchFunction($)
+{
+	my ($if) = @_;
+
+	pidl_hdr "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r);";
+	pidl "NTSTATUS rpc_$if->{NAME}_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)";
+	pidl "{";
+	indent;
+	pidl "if (cli->pipes_struct == NULL) {";
+	pidl "\treturn NT_STATUS_INVALID_PARAMETER;";
+	pidl "}";
+	pidl "";
+	pidl "switch (opnum)";
+	pidl "{";
+	indent;
+	foreach my $fn (@{$if->{FUNCTIONS}}) {
+		next if ($fn->{PROPERTIES}{noopnum});
+		my $op = "NDR_".uc($fn->{NAME});
+		pidl "case $op: {";
+		indent;
+		pidl "struct $fn->{NAME} *r = _r;";
+		CallWithStruct("cli->pipes_struct", "mem_ctx", $fn, 
+			sub { pidl "return NT_STATUS_NO_MEMORY;"; });
+		pidl "return NT_STATUS_OK;";
+		deindent;
+		pidl "}";
+		pidl "";
+	}
+
+	pidl "default:";
+	pidl "\treturn NT_STATUS_NOT_IMPLEMENTED;";
+	deindent;
+	pidl "}";
+	deindent;
+	pidl "}";
+
 	pidl "";
 }
 
@@ -243,6 +292,8 @@ sub ParseInterface($)
 	deindent;
 	pidl "}";
 	pidl "";
+
+	ParseDispatchFunction($if);
 
 	pidl_hdr "NTSTATUS rpc_$if->{NAME}_init(void);";
 	pidl "NTSTATUS rpc_$if->{NAME}_init(void)";

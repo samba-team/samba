@@ -20,7 +20,7 @@ NTSTATUS rpccli_lsa_Close(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_Close, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CLOSE,
@@ -59,7 +59,7 @@ NTSTATUS rpccli_lsa_Delete(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_Delete, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_DELETE,
@@ -102,7 +102,7 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumPrivs, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMPRIVS,
@@ -145,7 +145,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QuerySecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYSECURITY,
@@ -188,7 +188,7 @@ NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETSECOBJ,
@@ -224,7 +224,7 @@ NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_ChangePassword, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CHANGEPASSWORD,
@@ -267,7 +267,7 @@ NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENPOLICY,
@@ -309,7 +309,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYINFOPOLICY,
@@ -352,7 +352,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETINFOPOLICY,
@@ -388,7 +388,7 @@ NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_ClearAuditLog, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CLEARAUDITLOG,
@@ -431,7 +431,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CreateAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREATEACCOUNT,
@@ -475,7 +475,7 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumAccounts, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTS,
@@ -520,7 +520,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAIN,
@@ -564,7 +564,7 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumTrustDom, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMTRUSTDOM,
@@ -615,7 +615,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES,
@@ -665,7 +665,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS,
@@ -711,7 +711,7 @@ NTSTATUS rpccli_lsa_CreateSecret(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CreateSecret, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREATESECRET,
@@ -755,7 +755,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENACCOUNT,
@@ -795,7 +795,7 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumPrivsAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMPRIVSACCOUNT,
@@ -836,7 +836,7 @@ NTSTATUS rpccli_lsa_AddPrivilegesToAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_AddPrivilegesToAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ADDPRIVILEGESTOACCOUNT,
@@ -878,7 +878,7 @@ NTSTATUS rpccli_lsa_RemovePrivilegesFromAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_RemovePrivilegesFromAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT,
@@ -914,7 +914,7 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_GetQuotasForAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_GETQUOTASFORACCOUNT,
@@ -950,7 +950,7 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetQuotasForAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETQUOTASFORACCOUNT,
@@ -989,7 +989,7 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_GETSYSTEMACCESSACCOUNT,
@@ -1030,7 +1030,7 @@ NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETSYSTEMACCESSACCOUNT,
@@ -1073,7 +1073,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENTRUSTEDDOMAIN,
@@ -1115,7 +1115,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFO,
@@ -1158,7 +1158,7 @@ NTSTATUS rpccli_lsa_SetInformationTrustedDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetInformationTrustedDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETINFORMATIONTRUSTEDDOMAIN,
@@ -1201,7 +1201,7 @@ NTSTATUS rpccli_lsa_OpenSecret(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenSecret, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENSECRET,
@@ -1244,7 +1244,7 @@ NTSTATUS rpccli_lsa_SetSecret(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetSecret, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETSECRET,
@@ -1290,7 +1290,7 @@ NTSTATUS rpccli_lsa_QuerySecret(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QuerySecret, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYSECRET,
@@ -1343,7 +1343,7 @@ NTSTATUS rpccli_lsa_LookupPrivValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVVALUE,
@@ -1385,7 +1385,7 @@ NTSTATUS rpccli_lsa_LookupPrivName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVNAME,
@@ -1432,7 +1432,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPPRIVDISPLAYNAME,
@@ -1472,7 +1472,7 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_DELETEOBJECT,
@@ -1514,7 +1514,7 @@ NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumAccountsWithUserRight, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTSWITHUSERRIGHT,
@@ -1556,7 +1556,7 @@ NTSTATUS rpccli_lsa_EnumAccountRights(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumAccountRights, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMACCOUNTRIGHTS,
@@ -1599,7 +1599,7 @@ NTSTATUS rpccli_lsa_AddAccountRights(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_AddAccountRights, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ADDACCOUNTRIGHTS,
@@ -1643,7 +1643,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_RemoveAccountRights, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_REMOVEACCOUNTRIGHTS,
@@ -1686,7 +1686,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoBySid, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFOBYSID,
@@ -1731,7 +1731,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETTRUSTEDDOMAININFO,
@@ -1771,7 +1771,7 @@ NTSTATUS rpccli_lsa_DeleteTrustedDomain(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_DeleteTrustedDomain, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_DELETETRUSTEDDOMAIN,
@@ -1807,7 +1807,7 @@ NTSTATUS rpccli_lsa_StorePrivateData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_StorePrivateData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_STOREPRIVATEDATA,
@@ -1843,7 +1843,7 @@ NTSTATUS rpccli_lsa_RetrievePrivateData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_RetrievePrivateData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_RETRIEVEPRIVATEDATA,
@@ -1886,7 +1886,7 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenPolicy2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENPOLICY2,
@@ -1929,7 +1929,7 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_GetUserName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_GETUSERNAME,
@@ -1974,7 +1974,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryInfoPolicy2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYINFOPOLICY2,
@@ -2017,7 +2017,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETINFOPOLICY2,
@@ -2060,7 +2060,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryTrustedDomainInfoByName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYTRUSTEDDOMAININFOBYNAME,
@@ -2105,7 +2105,7 @@ NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetTrustedDomainInfoByName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETTRUSTEDDOMAININFOBYNAME,
@@ -2148,7 +2148,7 @@ NTSTATUS rpccli_lsa_EnumTrustedDomainsEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_EnumTrustedDomainsEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_ENUMTRUSTEDDOMAINSEX,
@@ -2195,7 +2195,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAINEX,
@@ -2234,7 +2234,7 @@ NTSTATUS rpccli_lsa_CloseTrustedDomainEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CloseTrustedDomainEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CLOSETRUSTEDDOMAINEX,
@@ -2276,7 +2276,7 @@ NTSTATUS rpccli_lsa_QueryDomainInformationPolicy(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_QueryDomainInformationPolicy, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_QUERYDOMAININFORMATIONPOLICY,
@@ -2319,7 +2319,7 @@ NTSTATUS rpccli_lsa_SetDomainInformationPolicy(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_SetDomainInformationPolicy, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_SETDOMAININFORMATIONPOLICY,
@@ -2362,7 +2362,7 @@ NTSTATUS rpccli_lsa_OpenTrustedDomainByName(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_OpenTrustedDomainByName, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_OPENTRUSTEDDOMAINBYNAME,
@@ -2399,7 +2399,7 @@ NTSTATUS rpccli_lsa_TestCall(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_TestCall, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_TESTCALL,
@@ -2450,7 +2450,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS2,
@@ -2506,7 +2506,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES2,
@@ -2554,7 +2554,7 @@ NTSTATUS rpccli_lsa_CreateTrustedDomainEx2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CreateTrustedDomainEx2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREATETRUSTEDDOMAINEX2,
@@ -2591,7 +2591,7 @@ NTSTATUS rpccli_lsa_CREDRWRITE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRWRITE,
@@ -2627,7 +2627,7 @@ NTSTATUS rpccli_lsa_CREDRREAD(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREAD, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRREAD,
@@ -2663,7 +2663,7 @@ NTSTATUS rpccli_lsa_CREDRENUMERATE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRENUMERATE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRENUMERATE,
@@ -2699,7 +2699,7 @@ NTSTATUS rpccli_lsa_CREDRWRITEDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRWRITEDOMAINCREDENTIALS, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRWRITEDOMAINCREDENTIALS,
@@ -2735,7 +2735,7 @@ NTSTATUS rpccli_lsa_CREDRREADDOMAINCREDENTIALS(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRREADDOMAINCREDENTIALS, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRREADDOMAINCREDENTIALS,
@@ -2771,7 +2771,7 @@ NTSTATUS rpccli_lsa_CREDRDELETE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRDELETE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRDELETE,
@@ -2807,7 +2807,7 @@ NTSTATUS rpccli_lsa_CREDRGETTARGETINFO(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETTARGETINFO, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRGETTARGETINFO,
@@ -2843,7 +2843,7 @@ NTSTATUS rpccli_lsa_CREDRPROFILELOADED(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRPROFILELOADED, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRPROFILELOADED,
@@ -2896,7 +2896,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames3, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES3,
@@ -2935,7 +2935,7 @@ NTSTATUS rpccli_lsa_CREDRGETSESSIONTYPES(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRGETSESSIONTYPES, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRGETSESSIONTYPES,
@@ -2971,7 +2971,7 @@ NTSTATUS rpccli_lsa_LSARREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSARREGISTERAUDITEVENT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARREGISTERAUDITEVENT,
@@ -3007,7 +3007,7 @@ NTSTATUS rpccli_lsa_LSARGENAUDITEVENT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSARGENAUDITEVENT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARGENAUDITEVENT,
@@ -3043,7 +3043,7 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSARUNREGISTERAUDITEVENT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARUNREGISTERAUDITEVENT,
@@ -3086,7 +3086,7 @@ NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION,
@@ -3123,7 +3123,7 @@ NTSTATUS rpccli_lsa_LSARSETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSARSETFORESTTRUSTINFORMATION, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARSETFORESTTRUSTINFORMATION,
@@ -3159,7 +3159,7 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_CREDRRENAME, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_CREDRRENAME,
@@ -3208,7 +3208,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupSids3, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPSIDS3,
@@ -3262,7 +3262,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LookupNames4, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LOOKUPNAMES4,
@@ -3301,7 +3301,7 @@ NTSTATUS rpccli_lsa_LSAROPENPOLICYSCE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSAROPENPOLICYSCE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSAROPENPOLICYSCE,
@@ -3337,7 +3337,7 @@ NTSTATUS rpccli_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client *c
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREGISTERSECURITYEVENTSOURCE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTREGISTERSECURITYEVENTSOURCE,
@@ -3373,7 +3373,7 @@ NTSTATUS rpccli_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct rpc_pipe_client 
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE,
@@ -3409,7 +3409,7 @@ NTSTATUS rpccli_lsa_LSARADTREPORTSECURITYEVENT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(lsa_LSARADTREPORTSECURITYEVENT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_lsarpc,
 				NDR_LSA_LSARADTREPORTSECURITYEVENT,

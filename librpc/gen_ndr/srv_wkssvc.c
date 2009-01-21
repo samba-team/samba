@@ -2406,6 +2406,288 @@ void wkssvc_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_wkssvc_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_WKSSVC_NETWKSTAGETINFO: {
+			struct wkssvc_NetWkstaGetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetWkstaInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetWkstaGetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETWKSTASETINFO: {
+			struct wkssvc_NetWkstaSetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.parm_error = r->in.parm_error;
+			r->out.result = _wkssvc_NetWkstaSetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETWKSTAENUMUSERS: {
+			struct wkssvc_NetWkstaEnumUsers *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.entries_read = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.entries_read == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetWkstaEnumUsers(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRWKSTAUSERGETINFO: {
+			struct wkssvc_NetrWkstaUserGetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetrWkstaUserInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrWkstaUserGetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRWKSTAUSERSETINFO: {
+			struct wkssvc_NetrWkstaUserSetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.parm_err = r->in.parm_err;
+			r->out.result = _wkssvc_NetrWkstaUserSetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETWKSTATRANSPORTENUM: {
+			struct wkssvc_NetWkstaTransportEnum *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetWkstaTransportEnum(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRWKSTATRANSPORTADD: {
+			struct wkssvc_NetrWkstaTransportAdd *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.parm_err = r->in.parm_err;
+			r->out.result = _wkssvc_NetrWkstaTransportAdd(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRWKSTATRANSPORTDEL: {
+			struct wkssvc_NetrWkstaTransportDel *r = _r;
+			r->out.result = _wkssvc_NetrWkstaTransportDel(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUSEADD: {
+			struct wkssvc_NetrUseAdd *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.parm_err = r->in.parm_err;
+			r->out.result = _wkssvc_NetrUseAdd(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUSEGETINFO: {
+			struct wkssvc_NetrUseGetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.ctr = talloc_zero(mem_ctx, union wkssvc_NetrUseGetInfoCtr);
+			if (r->out.ctr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrUseGetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUSEDEL: {
+			struct wkssvc_NetrUseDel *r = _r;
+			r->out.result = _wkssvc_NetrUseDel(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUSEENUM: {
+			struct wkssvc_NetrUseEnum *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.entries_read = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.entries_read == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrUseEnum(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRMESSAGEBUFFERSEND: {
+			struct wkssvc_NetrMessageBufferSend *r = _r;
+			r->out.result = _wkssvc_NetrMessageBufferSend(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET: {
+			struct wkssvc_NetrWorkstationStatisticsGet *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct wkssvc_NetrWorkstationStatistics *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrWorkstationStatisticsGet(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRLOGONDOMAINNAMEADD: {
+			struct wkssvc_NetrLogonDomainNameAdd *r = _r;
+			r->out.result = _wkssvc_NetrLogonDomainNameAdd(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL: {
+			struct wkssvc_NetrLogonDomainNameDel *r = _r;
+			r->out.result = _wkssvc_NetrLogonDomainNameDel(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRJOINDOMAIN: {
+			struct wkssvc_NetrJoinDomain *r = _r;
+			r->out.result = _wkssvc_NetrJoinDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUNJOINDOMAIN: {
+			struct wkssvc_NetrUnjoinDomain *r = _r;
+			r->out.result = _wkssvc_NetrUnjoinDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN: {
+			struct wkssvc_NetrRenameMachineInDomain *r = _r;
+			r->out.result = _wkssvc_NetrRenameMachineInDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRVALIDATENAME: {
+			struct wkssvc_NetrValidateName *r = _r;
+			r->out.result = _wkssvc_NetrValidateName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRGETJOININFORMATION: {
+			struct wkssvc_NetrGetJoinInformation *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.name_buffer = r->in.name_buffer;
+			r->out.name_type = talloc_zero(mem_ctx, enum wkssvc_NetJoinStatus);
+			if (r->out.name_type == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrGetJoinInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRGETJOINABLEOUS: {
+			struct wkssvc_NetrGetJoinableOus *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.num_ous = r->in.num_ous;
+			r->out.ous = talloc_zero(mem_ctx, const char **);
+			if (r->out.ous == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrGetJoinableOus(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRJOINDOMAIN2: {
+			struct wkssvc_NetrJoinDomain2 *r = _r;
+			r->out.result = _wkssvc_NetrJoinDomain2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRUNJOINDOMAIN2: {
+			struct wkssvc_NetrUnjoinDomain2 *r = _r;
+			r->out.result = _wkssvc_NetrUnjoinDomain2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2: {
+			struct wkssvc_NetrRenameMachineInDomain2 *r = _r;
+			r->out.result = _wkssvc_NetrRenameMachineInDomain2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRVALIDATENAME2: {
+			struct wkssvc_NetrValidateName2 *r = _r;
+			r->out.result = _wkssvc_NetrValidateName2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRGETJOINABLEOUS2: {
+			struct wkssvc_NetrGetJoinableOus2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.num_ous = r->in.num_ous;
+			r->out.ous = talloc_zero(mem_ctx, const char **);
+			if (r->out.ous == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrGetJoinableOus2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME: {
+			struct wkssvc_NetrAddAlternateComputerName *r = _r;
+			r->out.result = _wkssvc_NetrAddAlternateComputerName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME: {
+			struct wkssvc_NetrRemoveAlternateComputerName *r = _r;
+			r->out.result = _wkssvc_NetrRemoveAlternateComputerName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME: {
+			struct wkssvc_NetrSetPrimaryComputername *r = _r;
+			r->out.result = _wkssvc_NetrSetPrimaryComputername(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES: {
+			struct wkssvc_NetrEnumerateComputerNames *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.ctr = talloc_zero(mem_ctx, struct wkssvc_ComputerNamesCtr *);
+			if (r->out.ctr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _wkssvc_NetrEnumerateComputerNames(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_wkssvc_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "wkssvc", "wkssvc", &ndr_table_wkssvc, api_wkssvc_cmds, sizeof(api_wkssvc_cmds) / sizeof(struct api_struct));

@@ -24,7 +24,7 @@ NTSTATUS rpccli_winreg_OpenHKCR(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCR, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCR,
@@ -71,7 +71,7 @@ NTSTATUS rpccli_winreg_OpenHKCU(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCU, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCU,
@@ -118,7 +118,7 @@ NTSTATUS rpccli_winreg_OpenHKLM(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKLM, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKLM,
@@ -165,7 +165,7 @@ NTSTATUS rpccli_winreg_OpenHKPD(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPD, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPD,
@@ -212,7 +212,7 @@ NTSTATUS rpccli_winreg_OpenHKU(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKU, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKU,
@@ -256,7 +256,7 @@ NTSTATUS rpccli_winreg_CloseKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_CloseKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_CLOSEKEY,
@@ -313,7 +313,7 @@ NTSTATUS rpccli_winreg_CreateKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_CreateKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_CREATEKEY,
@@ -362,7 +362,7 @@ NTSTATUS rpccli_winreg_DeleteKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_DeleteKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_DELETEKEY,
@@ -407,7 +407,7 @@ NTSTATUS rpccli_winreg_DeleteValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_DeleteValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_DELETEVALUE,
@@ -458,7 +458,7 @@ NTSTATUS rpccli_winreg_EnumKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_EnumKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_ENUMKEY,
@@ -520,7 +520,7 @@ NTSTATUS rpccli_winreg_EnumValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_EnumValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_ENUMVALUE,
@@ -576,7 +576,7 @@ NTSTATUS rpccli_winreg_FlushKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_FlushKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_FLUSHKEY,
@@ -623,7 +623,7 @@ NTSTATUS rpccli_winreg_GetKeySecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_GetKeySecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_GETKEYSECURITY,
@@ -671,7 +671,7 @@ NTSTATUS rpccli_winreg_LoadKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_LoadKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_LOADKEY,
@@ -726,7 +726,7 @@ NTSTATUS rpccli_winreg_NotifyChangeKeyValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_NotifyChangeKeyValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_NOTIFYCHANGEKEYVALUE,
@@ -776,7 +776,7 @@ NTSTATUS rpccli_winreg_OpenKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENKEY,
@@ -830,7 +830,7 @@ NTSTATUS rpccli_winreg_QueryInfoKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_QueryInfoKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_QUERYINFOKEY,
@@ -892,7 +892,7 @@ NTSTATUS rpccli_winreg_QueryValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_QueryValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_QUERYVALUE,
@@ -945,7 +945,7 @@ NTSTATUS rpccli_winreg_ReplaceKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_ReplaceKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_REPLACEKEY,
@@ -992,7 +992,7 @@ NTSTATUS rpccli_winreg_RestoreKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_RestoreKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_RESTOREKEY,
@@ -1039,7 +1039,7 @@ NTSTATUS rpccli_winreg_SaveKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_SaveKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_SAVEKEY,
@@ -1086,7 +1086,7 @@ NTSTATUS rpccli_winreg_SetKeySecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_SetKeySecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_SETKEYSECURITY,
@@ -1137,7 +1137,7 @@ NTSTATUS rpccli_winreg_SetValue(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_SetValue, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_SETVALUE,
@@ -1178,7 +1178,7 @@ NTSTATUS rpccli_winreg_UnLoadKey(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_UnLoadKey, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_UNLOADKEY,
@@ -1229,7 +1229,7 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdown(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdown, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_INITIATESYSTEMSHUTDOWN,
@@ -1272,7 +1272,7 @@ NTSTATUS rpccli_winreg_AbortSystemShutdown(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_AbortSystemShutdown, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_ABORTSYSTEMSHUTDOWN,
@@ -1316,7 +1316,7 @@ NTSTATUS rpccli_winreg_GetVersion(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_GetVersion, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_GETVERSION,
@@ -1363,7 +1363,7 @@ NTSTATUS rpccli_winreg_OpenHKCC(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKCC, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKCC,
@@ -1410,7 +1410,7 @@ NTSTATUS rpccli_winreg_OpenHKDD(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKDD, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKDD,
@@ -1462,7 +1462,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_QUERYMULTIPLEVALUES,
@@ -1520,7 +1520,7 @@ NTSTATUS rpccli_winreg_InitiateSystemShutdownEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_InitiateSystemShutdownEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_INITIATESYSTEMSHUTDOWNEX,
@@ -1561,7 +1561,7 @@ NTSTATUS rpccli_winreg_SaveKeyEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_SaveKeyEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_SAVEKEYEX,
@@ -1607,7 +1607,7 @@ NTSTATUS rpccli_winreg_OpenHKPT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPT,
@@ -1654,7 +1654,7 @@ NTSTATUS rpccli_winreg_OpenHKPN(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_OpenHKPN, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_OPENHKPN,
@@ -1696,7 +1696,7 @@ NTSTATUS rpccli_winreg_QueryMultipleValues2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(winreg_QueryMultipleValues2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_winreg,
 				NDR_WINREG_QUERYMULTIPLEVALUES2,

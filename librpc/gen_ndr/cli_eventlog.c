@@ -22,7 +22,7 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLEAREVENTLOGW,
@@ -58,7 +58,7 @@ NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_BACKUPEVENTLOGW,
@@ -96,7 +96,7 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLOSEEVENTLOG,
@@ -133,7 +133,7 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_DEREGISTEREVENTSOURCE,
@@ -172,7 +172,7 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETNUMRECORDS,
@@ -212,7 +212,7 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETOLDESTRECORD,
@@ -249,7 +249,7 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CHANGENOTIFY,
@@ -296,7 +296,7 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENEVENTLOGW,
@@ -333,7 +333,7 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEW,
@@ -369,7 +369,7 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGW,
@@ -416,7 +416,7 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_READEVENTLOGW,
@@ -455,7 +455,7 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REPORTEVENTW,
@@ -491,7 +491,7 @@ NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_CLEAREVENTLOGA,
@@ -527,7 +527,7 @@ NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_BACKUPEVENTLOGA,
@@ -563,7 +563,7 @@ NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENEVENTLOGA,
@@ -599,7 +599,7 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTEREVENTSOURCEA,
@@ -635,7 +635,7 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_OPENBACKUPEVENTLOGA,
@@ -671,7 +671,7 @@ NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_READEVENTLOGA,
@@ -707,7 +707,7 @@ NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REPORTEVENTA,
@@ -743,7 +743,7 @@ NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_REGISTERCLUSTERSVC,
@@ -779,7 +779,7 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_DEREGISTERCLUSTERSVC,
@@ -815,7 +815,7 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_WRITECLUSTEREVENTS,
@@ -851,7 +851,7 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_GETLOGINTORMATION,
@@ -889,7 +889,7 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_eventlog,
 				NDR_EVENTLOG_FLUSHEVENTLOG,

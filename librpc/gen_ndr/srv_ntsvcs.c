@@ -4871,6 +4871,447 @@ void ntsvcs_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_ntsvcs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_PNP_DISCONNECT: {
+			struct PNP_Disconnect *r = _r;
+			r->out.result = _PNP_Disconnect(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_CONNECT: {
+			struct PNP_Connect *r = _r;
+			r->out.result = _PNP_Connect(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETVERSION: {
+			struct PNP_GetVersion *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.version = talloc_zero(mem_ctx, uint16_t);
+			if (r->out.version == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _PNP_GetVersion(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETGLOBALSTATE: {
+			struct PNP_GetGlobalState *r = _r;
+			r->out.result = _PNP_GetGlobalState(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_INITDETECTION: {
+			struct PNP_InitDetection *r = _r;
+			r->out.result = _PNP_InitDetection(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REPORTLOGON: {
+			struct PNP_ReportLogOn *r = _r;
+			r->out.result = _PNP_ReportLogOn(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_VALIDATEDEVICEINSTANCE: {
+			struct PNP_ValidateDeviceInstance *r = _r;
+			r->out.result = _PNP_ValidateDeviceInstance(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETROOTDEVICEINSTANCE: {
+			struct PNP_GetRootDeviceInstance *r = _r;
+			r->out.result = _PNP_GetRootDeviceInstance(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETRELATEDDEVICEINSTANCE: {
+			struct PNP_GetRelatedDeviceInstance *r = _r;
+			r->out.result = _PNP_GetRelatedDeviceInstance(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_ENUMERATESUBKEYS: {
+			struct PNP_EnumerateSubKeys *r = _r;
+			r->out.result = _PNP_EnumerateSubKeys(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETDEVICELIST: {
+			struct PNP_GetDeviceList *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.length = r->in.length;
+			r->out.buffer = talloc_zero_array(mem_ctx, uint16_t, *r->out.length);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _PNP_GetDeviceList(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETDEVICELISTSIZE: {
+			struct PNP_GetDeviceListSize *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _PNP_GetDeviceListSize(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETDEPTH: {
+			struct PNP_GetDepth *r = _r;
+			r->out.result = _PNP_GetDepth(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETDEVICEREGPROP: {
+			struct PNP_GetDeviceRegProp *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.reg_data_type = r->in.reg_data_type;
+			r->out.buffer_size = r->in.buffer_size;
+			r->out.needed = r->in.needed;
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, *r->out.buffer_size);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _PNP_GetDeviceRegProp(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_SETDEVICEREGPROP: {
+			struct PNP_SetDeviceRegProp *r = _r;
+			r->out.result = _PNP_SetDeviceRegProp(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETCLASSINSTANCE: {
+			struct PNP_GetClassInstance *r = _r;
+			r->out.result = _PNP_GetClassInstance(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_CREATEKEY: {
+			struct PNP_CreateKey *r = _r;
+			r->out.result = _PNP_CreateKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_DELETEREGISTRYKEY: {
+			struct PNP_DeleteRegistryKey *r = _r;
+			r->out.result = _PNP_DeleteRegistryKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETCLASSCOUNT: {
+			struct PNP_GetClassCount *r = _r;
+			r->out.result = _PNP_GetClassCount(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETCLASSNAME: {
+			struct PNP_GetClassName *r = _r;
+			r->out.result = _PNP_GetClassName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_DELETECLASSKEY: {
+			struct PNP_DeleteClassKey *r = _r;
+			r->out.result = _PNP_DeleteClassKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETINTERFACEDEVICEALIAS: {
+			struct PNP_GetInterfaceDeviceAlias *r = _r;
+			r->out.result = _PNP_GetInterfaceDeviceAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETINTERFACEDEVICELIST: {
+			struct PNP_GetInterfaceDeviceList *r = _r;
+			r->out.result = _PNP_GetInterfaceDeviceList(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETINTERFACEDEVICELISTSIZE: {
+			struct PNP_GetInterfaceDeviceListSize *r = _r;
+			r->out.result = _PNP_GetInterfaceDeviceListSize(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REGISTERDEVICECLASSASSOCIATION: {
+			struct PNP_RegisterDeviceClassAssociation *r = _r;
+			r->out.result = _PNP_RegisterDeviceClassAssociation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_UNREGISTERDEVICECLASSASSOCIATION: {
+			struct PNP_UnregisterDeviceClassAssociation *r = _r;
+			r->out.result = _PNP_UnregisterDeviceClassAssociation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETCLASSREGPROP: {
+			struct PNP_GetClassRegProp *r = _r;
+			r->out.result = _PNP_GetClassRegProp(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_SETCLASSREGPROP: {
+			struct PNP_SetClassRegProp *r = _r;
+			r->out.result = _PNP_SetClassRegProp(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_CREATEDEVINST: {
+			struct PNP_CreateDevInst *r = _r;
+			r->out.result = _PNP_CreateDevInst(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_DEVICEINSTANCEACTION: {
+			struct PNP_DeviceInstanceAction *r = _r;
+			r->out.result = _PNP_DeviceInstanceAction(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETDEVICESTATUS: {
+			struct PNP_GetDeviceStatus *r = _r;
+			r->out.result = _PNP_GetDeviceStatus(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_SETDEVICEPROBLEM: {
+			struct PNP_SetDeviceProblem *r = _r;
+			r->out.result = _PNP_SetDeviceProblem(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_DISABLEDEVINST: {
+			struct PNP_DisableDevInst *r = _r;
+			r->out.result = _PNP_DisableDevInst(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_UNINSTALLDEVINST: {
+			struct PNP_UninstallDevInst *r = _r;
+			r->out.result = _PNP_UninstallDevInst(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_ADDID: {
+			struct PNP_AddID *r = _r;
+			r->out.result = _PNP_AddID(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REGISTERDRIVER: {
+			struct PNP_RegisterDriver *r = _r;
+			r->out.result = _PNP_RegisterDriver(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_QUERYREMOVE: {
+			struct PNP_QueryRemove *r = _r;
+			r->out.result = _PNP_QueryRemove(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REQUESTDEVICEEJECT: {
+			struct PNP_RequestDeviceEject *r = _r;
+			r->out.result = _PNP_RequestDeviceEject(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_ISDOCKSTATIONPRESENT: {
+			struct PNP_IsDockStationPresent *r = _r;
+			r->out.result = _PNP_IsDockStationPresent(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REQUESTEJECTPC: {
+			struct PNP_RequestEjectPC *r = _r;
+			r->out.result = _PNP_RequestEjectPC(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_HWPROFFLAGS: {
+			struct PNP_HwProfFlags *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.profile_flags = r->in.profile_flags;
+			r->out.veto_type = r->in.veto_type;
+			r->out.unknown5a = talloc_zero(mem_ctx, const char *);
+			if (r->out.unknown5a == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _PNP_HwProfFlags(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETHWPROFINFO: {
+			struct PNP_GetHwProfInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.result = _PNP_GetHwProfInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_ADDEMPTYLOGCONF: {
+			struct PNP_AddEmptyLogConf *r = _r;
+			r->out.result = _PNP_AddEmptyLogConf(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_FREELOGCONF: {
+			struct PNP_FreeLogConf *r = _r;
+			r->out.result = _PNP_FreeLogConf(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETFIRSTLOGCONF: {
+			struct PNP_GetFirstLogConf *r = _r;
+			r->out.result = _PNP_GetFirstLogConf(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETNEXTLOGCONF: {
+			struct PNP_GetNextLogConf *r = _r;
+			r->out.result = _PNP_GetNextLogConf(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETLOGCONFPRIORITY: {
+			struct PNP_GetLogConfPriority *r = _r;
+			r->out.result = _PNP_GetLogConfPriority(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_ADDRESDES: {
+			struct PNP_AddResDes *r = _r;
+			r->out.result = _PNP_AddResDes(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_FREERESDES: {
+			struct PNP_FreeResDes *r = _r;
+			r->out.result = _PNP_FreeResDes(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETNEXTRESDES: {
+			struct PNP_GetNextResDes *r = _r;
+			r->out.result = _PNP_GetNextResDes(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETRESDESDATA: {
+			struct PNP_GetResDesData *r = _r;
+			r->out.result = _PNP_GetResDesData(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETRESDESDATASIZE: {
+			struct PNP_GetResDesDataSize *r = _r;
+			r->out.result = _PNP_GetResDesDataSize(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_MODIFYRESDES: {
+			struct PNP_ModifyResDes *r = _r;
+			r->out.result = _PNP_ModifyResDes(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_DETECTRESOURCELIMIT: {
+			struct PNP_DetectResourceLimit *r = _r;
+			r->out.result = _PNP_DetectResourceLimit(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_QUERYRESCONFLIST: {
+			struct PNP_QueryResConfList *r = _r;
+			r->out.result = _PNP_QueryResConfList(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_SETHWPROF: {
+			struct PNP_SetHwProf *r = _r;
+			r->out.result = _PNP_SetHwProf(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_QUERYARBITRATORFREEDATA: {
+			struct PNP_QueryArbitratorFreeData *r = _r;
+			r->out.result = _PNP_QueryArbitratorFreeData(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_QUERYARBITRATORFREESIZE: {
+			struct PNP_QueryArbitratorFreeSize *r = _r;
+			r->out.result = _PNP_QueryArbitratorFreeSize(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_RUNDETECTION: {
+			struct PNP_RunDetection *r = _r;
+			r->out.result = _PNP_RunDetection(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_REGISTERNOTIFICATION: {
+			struct PNP_RegisterNotification *r = _r;
+			r->out.result = _PNP_RegisterNotification(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_UNREGISTERNOTIFICATION: {
+			struct PNP_UnregisterNotification *r = _r;
+			r->out.result = _PNP_UnregisterNotification(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETCUSTOMDEVPROP: {
+			struct PNP_GetCustomDevProp *r = _r;
+			r->out.result = _PNP_GetCustomDevProp(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETVERSIONINTERNAL: {
+			struct PNP_GetVersionInternal *r = _r;
+			r->out.result = _PNP_GetVersionInternal(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETBLOCKEDDRIVERINFO: {
+			struct PNP_GetBlockedDriverInfo *r = _r;
+			r->out.result = _PNP_GetBlockedDriverInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_PNP_GETSERVERSIDEDEVICEINSTALLFLAGS: {
+			struct PNP_GetServerSideDeviceInstallFlags *r = _r;
+			r->out.result = _PNP_GetServerSideDeviceInstallFlags(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_ntsvcs_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "ntsvcs", "ntsvcs", &ndr_table_ntsvcs, api_ntsvcs_cmds, sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct));

@@ -25,7 +25,7 @@
 NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
 			const struct ndr_interface_table *table,
-			uint32 opnum, void *r)
+			uint32_t opnum, void *r)
 {
 	prs_struct q_ps, r_ps;
 	const struct ndr_interface_call *call;

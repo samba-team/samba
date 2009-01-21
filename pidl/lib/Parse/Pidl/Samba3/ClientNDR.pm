@@ -153,7 +153,7 @@ sub ParseFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
-	$self->pidl("status = cli_do_rpc_ndr(cli,");
+	$self->pidl("status = cli->dispatch(cli,");
 	$self->pidl("\t\t\tmem_ctx,");
 	$self->pidl("\t\t\t&ndr_table_$if,");
 	$self->pidl("\t\t\t$ufn,");

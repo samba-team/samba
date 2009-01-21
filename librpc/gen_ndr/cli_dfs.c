@@ -19,7 +19,7 @@ NTSTATUS rpccli_dfs_GetManagerVersion(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_GetManagerVersion, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_GETMANAGERVERSION,
@@ -67,7 +67,7 @@ NTSTATUS rpccli_dfs_Add(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Add, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ADD,
@@ -114,7 +114,7 @@ NTSTATUS rpccli_dfs_Remove(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Remove, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_REMOVE,
@@ -165,7 +165,7 @@ NTSTATUS rpccli_dfs_SetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_SETINFO,
@@ -215,7 +215,7 @@ NTSTATUS rpccli_dfs_GetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_GetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_GETINFO,
@@ -265,7 +265,7 @@ NTSTATUS rpccli_dfs_Enum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Enum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ENUM,
@@ -312,7 +312,7 @@ NTSTATUS rpccli_dfs_Rename(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Rename, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_RENAME,
@@ -353,7 +353,7 @@ NTSTATUS rpccli_dfs_Move(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Move, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_MOVE,
@@ -394,7 +394,7 @@ NTSTATUS rpccli_dfs_ManagerGetConfigInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_ManagerGetConfigInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_MANAGERGETCONFIGINFO,
@@ -435,7 +435,7 @@ NTSTATUS rpccli_dfs_ManagerSendSiteInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_ManagerSendSiteInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_MANAGERSENDSITEINFO,
@@ -494,7 +494,7 @@ NTSTATUS rpccli_dfs_AddFtRoot(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_AddFtRoot, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ADDFTROOT,
@@ -550,7 +550,7 @@ NTSTATUS rpccli_dfs_RemoveFtRoot(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_RemoveFtRoot, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_REMOVEFTROOT,
@@ -602,7 +602,7 @@ NTSTATUS rpccli_dfs_AddStdRoot(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRoot, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ADDSTDROOT,
@@ -649,7 +649,7 @@ NTSTATUS rpccli_dfs_RemoveStdRoot(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_RemoveStdRoot, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_REMOVESTDROOT,
@@ -694,7 +694,7 @@ NTSTATUS rpccli_dfs_ManagerInitialize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_ManagerInitialize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_MANAGERINITIALIZE,
@@ -743,7 +743,7 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_AddStdRootForced, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ADDSTDROOTFORCED,
@@ -792,7 +792,7 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_GETDCADDRESS,
@@ -844,7 +844,7 @@ NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_SETDCADDRESS,
@@ -889,7 +889,7 @@ NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_FlushFtTable, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_FLUSHFTTABLE,
@@ -930,7 +930,7 @@ NTSTATUS rpccli_dfs_Add2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Add2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ADD2,
@@ -971,7 +971,7 @@ NTSTATUS rpccli_dfs_Remove2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_Remove2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_REMOVE2,
@@ -1022,7 +1022,7 @@ NTSTATUS rpccli_dfs_EnumEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_EnumEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_ENUMEX,
@@ -1069,7 +1069,7 @@ NTSTATUS rpccli_dfs_SetInfo2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(dfs_SetInfo2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_netdfs,
 				NDR_DFS_SETINFO2,

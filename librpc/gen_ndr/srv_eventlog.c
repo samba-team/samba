@@ -1836,6 +1836,199 @@ void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_eventlog_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_EVENTLOG_CLEAREVENTLOGW: {
+			struct eventlog_ClearEventLogW *r = _r;
+			r->out.result = _eventlog_ClearEventLogW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_BACKUPEVENTLOGW: {
+			struct eventlog_BackupEventLogW *r = _r;
+			r->out.result = _eventlog_BackupEventLogW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_CLOSEEVENTLOG: {
+			struct eventlog_CloseEventLog *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = r->in.handle;
+			r->out.result = _eventlog_CloseEventLog(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_DEREGISTEREVENTSOURCE: {
+			struct eventlog_DeregisterEventSource *r = _r;
+			r->out.result = _eventlog_DeregisterEventSource(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_GETNUMRECORDS: {
+			struct eventlog_GetNumRecords *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.number = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.number == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _eventlog_GetNumRecords(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_GETOLDESTRECORD: {
+			struct eventlog_GetOldestRecord *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.oldest_entry = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.oldest_entry == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _eventlog_GetOldestRecord(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_CHANGENOTIFY: {
+			struct eventlog_ChangeNotify *r = _r;
+			r->out.result = _eventlog_ChangeNotify(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_OPENEVENTLOGW: {
+			struct eventlog_OpenEventLogW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _eventlog_OpenEventLogW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_REGISTEREVENTSOURCEW: {
+			struct eventlog_RegisterEventSourceW *r = _r;
+			r->out.result = _eventlog_RegisterEventSourceW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_OPENBACKUPEVENTLOGW: {
+			struct eventlog_OpenBackupEventLogW *r = _r;
+			r->out.result = _eventlog_OpenBackupEventLogW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_READEVENTLOGW: {
+			struct eventlog_ReadEventLogW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.number_of_bytes);
+			if (r->out.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.sent_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.sent_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.real_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.real_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _eventlog_ReadEventLogW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_REPORTEVENTW: {
+			struct eventlog_ReportEventW *r = _r;
+			r->out.result = _eventlog_ReportEventW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_CLEAREVENTLOGA: {
+			struct eventlog_ClearEventLogA *r = _r;
+			r->out.result = _eventlog_ClearEventLogA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_BACKUPEVENTLOGA: {
+			struct eventlog_BackupEventLogA *r = _r;
+			r->out.result = _eventlog_BackupEventLogA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_OPENEVENTLOGA: {
+			struct eventlog_OpenEventLogA *r = _r;
+			r->out.result = _eventlog_OpenEventLogA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_REGISTEREVENTSOURCEA: {
+			struct eventlog_RegisterEventSourceA *r = _r;
+			r->out.result = _eventlog_RegisterEventSourceA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_OPENBACKUPEVENTLOGA: {
+			struct eventlog_OpenBackupEventLogA *r = _r;
+			r->out.result = _eventlog_OpenBackupEventLogA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_READEVENTLOGA: {
+			struct eventlog_ReadEventLogA *r = _r;
+			r->out.result = _eventlog_ReadEventLogA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_REPORTEVENTA: {
+			struct eventlog_ReportEventA *r = _r;
+			r->out.result = _eventlog_ReportEventA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_REGISTERCLUSTERSVC: {
+			struct eventlog_RegisterClusterSvc *r = _r;
+			r->out.result = _eventlog_RegisterClusterSvc(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_DEREGISTERCLUSTERSVC: {
+			struct eventlog_DeregisterClusterSvc *r = _r;
+			r->out.result = _eventlog_DeregisterClusterSvc(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_WRITECLUSTEREVENTS: {
+			struct eventlog_WriteClusterEvents *r = _r;
+			r->out.result = _eventlog_WriteClusterEvents(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_GETLOGINTORMATION: {
+			struct eventlog_GetLogIntormation *r = _r;
+			r->out.result = _eventlog_GetLogIntormation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EVENTLOG_FLUSHEVENTLOG: {
+			struct eventlog_FlushEventLog *r = _r;
+			r->out.result = _eventlog_FlushEventLog(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_eventlog_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "eventlog", "eventlog", &ndr_table_eventlog, api_eventlog_cmds, sizeof(api_eventlog_cmds) / sizeof(struct api_struct));

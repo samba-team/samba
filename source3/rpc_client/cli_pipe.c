@@ -3310,6 +3310,7 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 
 	result->desthost = talloc_strdup(result, host);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3517,6 +3518,7 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 
 	result->desthost = talloc_get_myname(result);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
@@ -3602,6 +3604,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	result->trans.np.cli = cli;
 	result->abstract_syntax = *abstract_syntax;
 	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
 	result->desthost = talloc_strdup(result, cli->desthost);
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
@@ -4167,3 +4170,42 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/**
+ * Create a new RPC client context which uses a local dispatch function.
+ */
+NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax, 
+				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r),
+				struct auth_serversupplied_info *serversupplied_info,
+				struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+
+	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->transport_type = NCACN_INTERNAL; 
+
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = dispatch;
+
+	result->pipes_struct = TALLOC_ZERO_P(mem_ctx, pipes_struct);
+	if (result->pipes_struct == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->pipes_struct->mem_ctx = mem_ctx;
+	result->pipes_struct->server_info = serversupplied_info;
+	result->pipes_struct->pipe_bound = true;
+
+	result->max_xmit_frag = -1;
+	result->max_recv_frag = -1;
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
+

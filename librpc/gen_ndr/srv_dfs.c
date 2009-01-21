@@ -1748,6 +1748,183 @@ void netdfs_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_netdfs_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_netdfs_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_DFS_GETMANAGERVERSION: {
+			struct dfs_GetManagerVersion *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.version = talloc_zero(mem_ctx, enum dfs_ManagerVersion);
+			if (r->out.version == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			_dfs_GetManagerVersion(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ADD: {
+			struct dfs_Add *r = _r;
+			r->out.result = _dfs_Add(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_REMOVE: {
+			struct dfs_Remove *r = _r;
+			r->out.result = _dfs_Remove(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_SETINFO: {
+			struct dfs_SetInfo *r = _r;
+			r->out.result = _dfs_SetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_GETINFO: {
+			struct dfs_GetInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union dfs_Info);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _dfs_GetInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ENUM: {
+			struct dfs_Enum *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.total = r->in.total;
+			r->out.result = _dfs_Enum(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_RENAME: {
+			struct dfs_Rename *r = _r;
+			r->out.result = _dfs_Rename(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_MOVE: {
+			struct dfs_Move *r = _r;
+			r->out.result = _dfs_Move(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_MANAGERGETCONFIGINFO: {
+			struct dfs_ManagerGetConfigInfo *r = _r;
+			r->out.result = _dfs_ManagerGetConfigInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_MANAGERSENDSITEINFO: {
+			struct dfs_ManagerSendSiteInfo *r = _r;
+			r->out.result = _dfs_ManagerSendSiteInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ADDFTROOT: {
+			struct dfs_AddFtRoot *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.unknown2 = r->in.unknown2;
+			r->out.result = _dfs_AddFtRoot(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_REMOVEFTROOT: {
+			struct dfs_RemoveFtRoot *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.unknown = r->in.unknown;
+			r->out.result = _dfs_RemoveFtRoot(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ADDSTDROOT: {
+			struct dfs_AddStdRoot *r = _r;
+			r->out.result = _dfs_AddStdRoot(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_REMOVESTDROOT: {
+			struct dfs_RemoveStdRoot *r = _r;
+			r->out.result = _dfs_RemoveStdRoot(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_MANAGERINITIALIZE: {
+			struct dfs_ManagerInitialize *r = _r;
+			r->out.result = _dfs_ManagerInitialize(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ADDSTDROOTFORCED: {
+			struct dfs_AddStdRootForced *r = _r;
+			r->out.result = _dfs_AddStdRootForced(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_GETDCADDRESS: {
+			struct dfs_GetDcAddress *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.server_fullname = r->in.server_fullname;
+			r->out.is_root = r->in.is_root;
+			r->out.ttl = r->in.ttl;
+			r->out.result = _dfs_GetDcAddress(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_SETDCADDRESS: {
+			struct dfs_SetDcAddress *r = _r;
+			r->out.result = _dfs_SetDcAddress(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_FLUSHFTTABLE: {
+			struct dfs_FlushFtTable *r = _r;
+			r->out.result = _dfs_FlushFtTable(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ADD2: {
+			struct dfs_Add2 *r = _r;
+			r->out.result = _dfs_Add2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_REMOVE2: {
+			struct dfs_Remove2 *r = _r;
+			r->out.result = _dfs_Remove2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_ENUMEX: {
+			struct dfs_EnumEx *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = r->in.info;
+			r->out.total = r->in.total;
+			r->out.result = _dfs_EnumEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DFS_SETINFO2: {
+			struct dfs_SetInfo2 *r = _r;
+			r->out.result = _dfs_SetInfo2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_netdfs_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netdfs", "netdfs", &ndr_table_netdfs, api_netdfs_cmds, sizeof(api_netdfs_cmds) / sizeof(struct api_struct));

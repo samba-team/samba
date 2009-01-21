@@ -3890,6 +3890,639 @@ void netlogon_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_netlogon_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_NETR_LOGONUASLOGON: {
+			struct netr_LogonUasLogon *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct netr_UasInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonUasLogon(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONUASLOGOFF: {
+			struct netr_LogonUasLogoff *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct netr_UasLogoffInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonUasLogoff(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONSAMLOGON: {
+			struct netr_LogonSamLogon *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
+			if (r->out.validation == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
+			if (r->out.authoritative == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonSamLogon(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONSAMLOGOFF: {
+			struct netr_LogonSamLogoff *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.result = _netr_LogonSamLogoff(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERREQCHALLENGE: {
+			struct netr_ServerReqChallenge *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
+			if (r->out.return_credentials == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerReqChallenge(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERAUTHENTICATE: {
+			struct netr_ServerAuthenticate *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
+			if (r->out.return_credentials == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerAuthenticate(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERPASSWORDSET: {
+			struct netr_ServerPasswordSet *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerPasswordSet(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DATABASEDELTAS: {
+			struct netr_DatabaseDeltas *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.sequence_num = r->in.sequence_num;
+			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
+			if (r->out.delta_enum_array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DatabaseDeltas(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DATABASESYNC: {
+			struct netr_DatabaseSync *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.sync_context = r->in.sync_context;
+			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
+			if (r->out.delta_enum_array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DatabaseSync(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_ACCOUNTDELTAS: {
+			struct netr_AccountDeltas *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.buffer = talloc_zero(mem_ctx, struct netr_AccountBuffer);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.count_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.count_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.recordid = talloc_zero(mem_ctx, struct netr_UAS_INFO_0);
+			if (r->out.recordid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_AccountDeltas(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_ACCOUNTSYNC: {
+			struct netr_AccountSync *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.recordid = r->in.recordid;
+			r->out.buffer = talloc_zero(mem_ctx, struct netr_AccountBuffer);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.count_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.count_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.total_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.next_reference = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.next_reference == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_AccountSync(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_GETDCNAME: {
+			struct netr_GetDcName *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.dcname = talloc_zero(mem_ctx, const char *);
+			if (r->out.dcname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_GetDcName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONCONTROL: {
+			struct netr_LogonControl *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonControl(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_GETANYDCNAME: {
+			struct netr_GetAnyDCName *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.dcname = talloc_zero(mem_ctx, const char *);
+			if (r->out.dcname == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_GetAnyDCName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONCONTROL2: {
+			struct netr_LogonControl2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
+			if (r->out.query == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonControl2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERAUTHENTICATE2: {
+			struct netr_ServerAuthenticate2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.negotiate_flags = r->in.negotiate_flags;
+			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
+			if (r->out.return_credentials == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerAuthenticate2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DATABASESYNC2: {
+			struct netr_DatabaseSync2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.sync_context = r->in.sync_context;
+			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
+			if (r->out.delta_enum_array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DatabaseSync2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DATABASEREDO: {
+			struct netr_DatabaseRedo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
+			if (r->out.delta_enum_array == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DatabaseRedo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONCONTROL2EX: {
+			struct netr_LogonControl2Ex *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
+			if (r->out.query == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonControl2Ex(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRENUMERATETRUSTEDDOMAINS: {
+			struct netr_NetrEnumerateTrustedDomains *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.trusted_domains_blob = talloc_zero(mem_ctx, struct netr_Blob);
+			if (r->out.trusted_domains_blob == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_NetrEnumerateTrustedDomains(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETDCNAME: {
+			struct netr_DsRGetDCName *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRGetDCName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONDUMMYROUTINE1: {
+			struct netr_NETRLOGONDUMMYROUTINE1 *r = _r;
+			r->out.result = _netr_NETRLOGONDUMMYROUTINE1(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONSETSERVICEBITS: {
+			struct netr_NETRLOGONSETSERVICEBITS *r = _r;
+			r->out.result = _netr_NETRLOGONSETSERVICEBITS(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONGETTRUSTRID: {
+			struct netr_LogonGetTrustRid *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonGetTrustRid(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST: {
+			struct netr_NETRLOGONCOMPUTESERVERDIGEST *r = _r;
+			r->out.result = _netr_NETRLOGONCOMPUTESERVERDIGEST(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST: {
+			struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r = _r;
+			r->out.result = _netr_NETRLOGONCOMPUTECLIENTDIGEST(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERAUTHENTICATE3: {
+			struct netr_ServerAuthenticate3 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.negotiate_flags = r->in.negotiate_flags;
+			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
+			if (r->out.return_credentials == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerAuthenticate3(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETDCNAMEEX: {
+			struct netr_DsRGetDCNameEx *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRGetDCNameEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETSITENAME: {
+			struct netr_DsRGetSiteName *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.site = talloc_zero(mem_ctx, const char *);
+			if (r->out.site == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRGetSiteName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONGETDOMAININFO: {
+			struct netr_LogonGetDomainInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.info = talloc_zero(mem_ctx, union netr_DomainInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonGetDomainInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERPASSWORDSET2: {
+			struct netr_ServerPasswordSet2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerPasswordSet2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERPASSWORDGET: {
+			struct netr_ServerPasswordGet *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.password = talloc_zero(mem_ctx, struct samr_Password);
+			if (r->out.password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerPasswordGet(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONSENDTOSAM: {
+			struct netr_NETRLOGONSENDTOSAM *r = _r;
+			r->out.result = _netr_NETRLOGONSENDTOSAM(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRADDRESSTOSITENAMESW: {
+			struct netr_DsRAddressToSitenamesW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesWCtr *);
+			if (r->out.ctr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRAddressToSitenamesW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETDCNAMEEX2: {
+			struct netr_DsRGetDCNameEx2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRGetDCNameEx2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN: {
+			struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r = _r;
+			r->out.result = _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_NETRENUMERATETRUSTEDDOMAINSEX: {
+			struct netr_NetrEnumerateTrustedDomainsEx *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.dom_trust_list = talloc_zero(mem_ctx, struct netr_DomainTrustList);
+			if (r->out.dom_trust_list == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_NetrEnumerateTrustedDomainsEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRADDRESSTOSITENAMESEXW: {
+			struct netr_DsRAddressToSitenamesExW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr *);
+			if (r->out.ctr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRAddressToSitenamesExW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETDCSITECOVERAGEW: {
+			struct netr_DsrGetDcSiteCoverageW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.ctr = talloc_zero(mem_ctx, struct DcSitesCtr *);
+			if (r->out.ctr == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsrGetDcSiteCoverageW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONSAMLOGONEX: {
+			struct netr_LogonSamLogonEx *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.flags = r->in.flags;
+			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
+			if (r->out.validation == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
+			if (r->out.authoritative == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonSamLogonEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRENUMERATEDOMAINTRUSTS: {
+			struct netr_DsrEnumerateDomainTrusts *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
+			if (r->out.trusts == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsrEnumerateDomainTrusts(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS: {
+			struct netr_DsrDeregisterDNSHostRecords *r = _r;
+			r->out.result = _netr_DsrDeregisterDNSHostRecords(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERTRUSTPASSWORDSGET: {
+			struct netr_ServerTrustPasswordsGet *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.password = talloc_zero(mem_ctx, struct samr_Password);
+			if (r->out.password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.password2 = talloc_zero(mem_ctx, struct samr_Password);
+			if (r->out.password2 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerTrustPasswordsGet(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_DSRGETFORESTTRUSTINFORMATION: {
+			struct netr_DsRGetForestTrustInformation *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
+			if (r->out.forest_trust_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_DsRGetForestTrustInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_GETFORESTTRUSTINFORMATION: {
+			struct netr_GetForestTrustInformation *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
+			if (r->out.forest_trust_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_GetForestTrustInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_LOGONSAMLOGONWITHFLAGS: {
+			struct netr_LogonSamLogonWithFlags *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = r->in.return_authenticator;
+			r->out.flags = r->in.flags;
+			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
+			if (r->out.validation == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.authoritative = talloc_zero(mem_ctx, uint8_t);
+			if (r->out.authoritative == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_LogonSamLogonWithFlags(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_NETR_SERVERGETTRUSTINFO: {
+			struct netr_ServerGetTrustInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
+			if (r->out.return_authenticator == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.new_owf_password = talloc_zero(mem_ctx, struct samr_Password);
+			if (r->out.new_owf_password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.old_owf_password = talloc_zero(mem_ctx, struct samr_Password);
+			if (r->out.old_owf_password == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.trust_info = talloc_zero(mem_ctx, struct netr_TrustInfo *);
+			if (r->out.trust_info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _netr_ServerGetTrustInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_netlogon_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "netlogon", "netlogon", &ndr_table_netlogon, api_netlogon_cmds, sizeof(api_netlogon_cmds) / sizeof(struct api_struct));

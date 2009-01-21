@@ -640,6 +640,93 @@ void epmapper_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_epmapper_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_EPM_INSERT: {
+			struct epm_Insert *r = _r;
+			r->out.result = _epm_Insert(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_DELETE: {
+			struct epm_Delete *r = _r;
+			r->out.result = _epm_Delete(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_LOOKUP: {
+			struct epm_Lookup *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.entry_handle = r->in.entry_handle;
+			r->out.num_ents = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_ents == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.entries = talloc_zero_array(mem_ctx, struct epm_entry_t, r->in.max_ents);
+			if (r->out.entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _epm_Lookup(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_MAP: {
+			struct epm_Map *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.entry_handle = r->in.entry_handle;
+			r->out.num_towers = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_towers == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.towers = talloc_zero_array(mem_ctx, struct epm_twr_p_t, r->in.max_towers);
+			if (r->out.towers == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _epm_Map(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_LOOKUPHANDLEFREE: {
+			struct epm_LookupHandleFree *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.entry_handle = r->in.entry_handle;
+			r->out.result = _epm_LookupHandleFree(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_INQOBJECT: {
+			struct epm_InqObject *r = _r;
+			r->out.result = _epm_InqObject(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_MGMTDELETE: {
+			struct epm_MgmtDelete *r = _r;
+			r->out.result = _epm_MgmtDelete(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_EPM_MAPAUTH: {
+			struct epm_MapAuth *r = _r;
+			r->out.result = _epm_MapAuth(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_epmapper_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "epmapper", "epmapper", &ndr_table_epmapper, api_epmapper_cmds, sizeof(api_epmapper_cmds) / sizeof(struct api_struct));

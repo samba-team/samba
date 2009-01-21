@@ -28,7 +28,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVENUM,
@@ -81,7 +81,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVGETINFO,
@@ -129,7 +129,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevControl, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVCONTROL,
@@ -181,7 +181,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVQENUM,
@@ -236,7 +236,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVQGETINFO,
@@ -288,7 +288,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQSetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVQSETINFO,
@@ -336,7 +336,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQPurge, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVQPURGE,
@@ -383,7 +383,7 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQPurgeSelf, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCHARDEVQPURGESELF,
@@ -435,7 +435,7 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetConnEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETCONNENUM,
@@ -494,7 +494,7 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETFILEENUM,
@@ -547,7 +547,7 @@ NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETFILEGETINFO,
@@ -593,7 +593,7 @@ NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileClose, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETFILECLOSE,
@@ -647,7 +647,7 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSessEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSESSENUM,
@@ -699,7 +699,7 @@ NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSessDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSESSDEL,
@@ -748,7 +748,7 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareAdd, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREADD,
@@ -801,7 +801,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnumAll, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREENUMALL,
@@ -854,7 +854,7 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREGETINFO,
@@ -906,7 +906,7 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareSetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHARESETINFO,
@@ -956,7 +956,7 @@ NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREDEL,
@@ -1003,7 +1003,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelSticky, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREDELSTICKY,
@@ -1049,7 +1049,7 @@ NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareCheck, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHARECHECK,
@@ -1096,7 +1096,7 @@ NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvGetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSRVGETINFO,
@@ -1146,7 +1146,7 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvSetInfo, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSRVSETINFO,
@@ -1201,7 +1201,7 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetDiskEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETDISKENUM,
@@ -1256,7 +1256,7 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerStatisticsGet, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSERVERSTATISTICSGET,
@@ -1304,7 +1304,7 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportAdd, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETTRANSPORTADD,
@@ -1354,7 +1354,7 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETTRANSPORTENUM,
@@ -1406,7 +1406,7 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportDel, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETTRANSPORTDEL,
@@ -1450,7 +1450,7 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetRemoteTOD, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETREMOTETOD,
@@ -1500,7 +1500,7 @@ NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSetServiceBits, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSETSERVICEBITS,
@@ -1548,7 +1548,7 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathType, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETPATHTYPE,
@@ -1603,7 +1603,7 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathCanonicalize, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETPATHCANONICALIZE,
@@ -1656,7 +1656,7 @@ NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathCompare, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETPATHCOMPARE,
@@ -1705,7 +1705,7 @@ NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetNameValidate, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETNAMEVALIDATE,
@@ -1746,7 +1746,7 @@ NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRPRNAMECANONICALIZE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRPRNAMECANONICALIZE,
@@ -1797,7 +1797,7 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPRNameCompare, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETPRNAMECOMPARE,
@@ -1847,7 +1847,7 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREENUM,
@@ -1900,7 +1900,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelStart, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREDELSTART,
@@ -1946,7 +1946,7 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelCommit, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSHAREDELCOMMIT,
@@ -1999,7 +1999,7 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetGetFileSecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETGETFILESECURITY,
@@ -2051,7 +2051,7 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSetFileSecurity, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSETFILESECURITY,
@@ -2098,7 +2098,7 @@ NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerTransportAddEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSERVERTRANSPORTADDEX,
@@ -2151,7 +2151,7 @@ NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerSetServiceBitsEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETSERVERSETSERVICEBITSEX,
@@ -2192,7 +2192,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSGETVERSION, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSGETVERSION,
@@ -2233,7 +2233,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSCREATELOCALPARTITION, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSCREATELOCALPARTITION,
@@ -2274,7 +2274,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSDELETELOCALPARTITION, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSDELETELOCALPARTITION,
@@ -2315,7 +2315,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSSETLOCALVOLUMESTATE, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE,
@@ -2356,7 +2356,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSSETSERVERINFO, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSSETSERVERINFO,
@@ -2397,7 +2397,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSCREATEEXITPOINT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSCREATEEXITPOINT,
@@ -2438,7 +2438,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSDELETEEXITPOINT, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSDELETEEXITPOINT,
@@ -2479,7 +2479,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSMODIFYPREFIX, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSMODIFYPREFIX,
@@ -2520,7 +2520,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSFIXLOCALVOLUME, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSFIXLOCALVOLUME,
@@ -2561,7 +2561,7 @@ NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSMANAGERREPORTSITEINFO, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO,
@@ -2602,7 +2602,7 @@ NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRSERVERTRANSPORTDELEX, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_srvsvc,
 				NDR_SRVSVC_NETRSERVERTRANSPORTDELEX,

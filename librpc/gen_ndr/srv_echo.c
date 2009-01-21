@@ -799,6 +799,115 @@ void rpcecho_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_rpcecho_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_ECHO_ADDONE: {
+			struct echo_AddOne *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.out_data = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.out_data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			_echo_AddOne(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_ECHODATA: {
+			struct echo_EchoData *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.out_data = talloc_zero_array(mem_ctx, uint8_t, r->in.len);
+			if (r->out.out_data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			_echo_EchoData(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_SINKDATA: {
+			struct echo_SinkData *r = _r;
+			_echo_SinkData(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_SOURCEDATA: {
+			struct echo_SourceData *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.len);
+			if (r->out.data == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			_echo_SourceData(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTCALL: {
+			struct echo_TestCall *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.s2 = talloc_zero(mem_ctx, const char *);
+			if (r->out.s2 == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			_echo_TestCall(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTCALL2: {
+			struct echo_TestCall2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union echo_Info);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _echo_TestCall2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTSLEEP: {
+			struct echo_TestSleep *r = _r;
+			r->out.result = _echo_TestSleep(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTENUM: {
+			struct echo_TestEnum *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.foo1 = r->in.foo1;
+			r->out.foo2 = r->in.foo2;
+			r->out.foo3 = r->in.foo3;
+			_echo_TestEnum(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTSURROUNDING: {
+			struct echo_TestSurrounding *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.data = r->in.data;
+			_echo_TestSurrounding(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ECHO_TESTDOUBLEPOINTER: {
+			struct echo_TestDoublePointer *r = _r;
+			r->out.result = _echo_TestDoublePointer(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_rpcecho_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "rpcecho", "rpcecho", &ndr_table_rpcecho, api_rpcecho_cmds, sizeof(api_rpcecho_cmds) / sizeof(struct api_struct));

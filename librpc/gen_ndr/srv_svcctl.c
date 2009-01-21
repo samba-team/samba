@@ -3609,6 +3609,569 @@ void svcctl_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_svcctl_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_SVCCTL_CLOSESERVICEHANDLE: {
+			struct svcctl_CloseServiceHandle *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = r->in.handle;
+			r->out.result = _svcctl_CloseServiceHandle(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CONTROLSERVICE: {
+			struct svcctl_ControlService *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
+			if (r->out.service_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_ControlService(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_DELETESERVICE: {
+			struct svcctl_DeleteService *r = _r;
+			r->out.result = _svcctl_DeleteService(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_LOCKSERVICEDATABASE: {
+			struct svcctl_LockServiceDatabase *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.lock = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.lock == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_LockServiceDatabase(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY: {
+			struct svcctl_QueryServiceObjectSecurity *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buffer_size);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceObjectSecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_SETSERVICEOBJECTSECURITY: {
+			struct svcctl_SetServiceObjectSecurity *r = _r;
+			r->out.result = _svcctl_SetServiceObjectSecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICESTATUS: {
+			struct svcctl_QueryServiceStatus *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
+			if (r->out.service_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceStatus(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_SETSERVICESTATUS: {
+			struct svcctl_SetServiceStatus *r = _r;
+			r->out.result = _svcctl_SetServiceStatus(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_UNLOCKSERVICEDATABASE: {
+			struct svcctl_UnlockServiceDatabase *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.lock = r->in.lock;
+			r->out.result = _svcctl_UnlockServiceDatabase(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS: {
+			struct svcctl_NotifyBootConfigStatus *r = _r;
+			r->out.result = _svcctl_NotifyBootConfigStatus(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_SCSETSERVICEBITSW: {
+			struct svcctl_SCSetServiceBitsW *r = _r;
+			r->out.result = _svcctl_SCSetServiceBitsW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CHANGESERVICECONFIGW: {
+			struct svcctl_ChangeServiceConfigW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.tag_id = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.tag_id == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_ChangeServiceConfigW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CREATESERVICEW: {
+			struct svcctl_CreateServiceW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.TagId = r->in.TagId;
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_CreateServiceW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_ENUMDEPENDENTSERVICESW: {
+			struct svcctl_EnumDependentServicesW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.service_status = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.service_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.services_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.services_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_EnumDependentServicesW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_ENUMSERVICESSTATUSW: {
+			struct svcctl_EnumServicesStatusW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.service == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.services_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.services_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_EnumServicesStatusW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_OPENSCMANAGERW: {
+			struct svcctl_OpenSCManagerW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_OpenSCManagerW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_OPENSERVICEW: {
+			struct svcctl_OpenServiceW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_OpenServiceW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICECONFIGW: {
+			struct svcctl_QueryServiceConfigW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.query = talloc_zero(mem_ctx, struct QUERY_SERVICE_CONFIG);
+			if (r->out.query == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceConfigW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICELOCKSTATUSW: {
+			struct svcctl_QueryServiceLockStatusW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
+			if (r->out.lock_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.required_buf_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceLockStatusW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_STARTSERVICEW: {
+			struct svcctl_StartServiceW *r = _r;
+			r->out.result = _svcctl_StartServiceW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_GETSERVICEDISPLAYNAMEW: {
+			struct svcctl_GetServiceDisplayNameW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.display_name_length = r->in.display_name_length;
+			r->out.display_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.display_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_GetServiceDisplayNameW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_GETSERVICEKEYNAMEW: {
+			struct svcctl_GetServiceKeyNameW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.display_name_length = r->in.display_name_length;
+			r->out.key_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.key_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_GetServiceKeyNameW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_SCSETSERVICEBITSA: {
+			struct svcctl_SCSetServiceBitsA *r = _r;
+			r->out.result = _svcctl_SCSetServiceBitsA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CHANGESERVICECONFIGA: {
+			struct svcctl_ChangeServiceConfigA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.tag_id = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.tag_id == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_ChangeServiceConfigA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CREATESERVICEA: {
+			struct svcctl_CreateServiceA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.TagId = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.TagId == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_CreateServiceA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_ENUMDEPENDENTSERVICESA: {
+			struct svcctl_EnumDependentServicesA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.service_status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUSA);
+			if (r->out.service_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.services_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.services_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_EnumDependentServicesA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_ENUMSERVICESSTATUSA: {
+			struct svcctl_EnumServicesStatusA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.service == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.services_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.services_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_EnumServicesStatusA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_OPENSCMANAGERA: {
+			struct svcctl_OpenSCManagerA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_OpenSCManagerA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_OPENSERVICEA: {
+			struct svcctl_OpenServiceA *r = _r;
+			r->out.result = _svcctl_OpenServiceA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICECONFIGA: {
+			struct svcctl_QueryServiceConfigA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.query = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.query == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceConfigA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICELOCKSTATUSA: {
+			struct svcctl_QueryServiceLockStatusA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
+			if (r->out.lock_status == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.required_buf_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.required_buf_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceLockStatusA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_STARTSERVICEA: {
+			struct svcctl_StartServiceA *r = _r;
+			r->out.result = _svcctl_StartServiceA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_GETSERVICEDISPLAYNAMEA: {
+			struct svcctl_GetServiceDisplayNameA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.display_name_length = r->in.display_name_length;
+			r->out.display_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.display_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_GetServiceDisplayNameA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_GETSERVICEKEYNAMEA: {
+			struct svcctl_GetServiceKeyNameA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.display_name_length = r->in.display_name_length;
+			r->out.key_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.key_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_GetServiceKeyNameA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_GETCURRENTGROUPESTATEW: {
+			struct svcctl_GetCurrentGroupeStateW *r = _r;
+			r->out.result = _svcctl_GetCurrentGroupeStateW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_ENUMSERVICEGROUPW: {
+			struct svcctl_EnumServiceGroupW *r = _r;
+			r->out.result = _svcctl_EnumServiceGroupW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CHANGESERVICECONFIG2A: {
+			struct svcctl_ChangeServiceConfig2A *r = _r;
+			r->out.result = _svcctl_ChangeServiceConfig2A(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_CHANGESERVICECONFIG2W: {
+			struct svcctl_ChangeServiceConfig2W *r = _r;
+			r->out.result = _svcctl_ChangeServiceConfig2W(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICECONFIG2A: {
+			struct svcctl_QueryServiceConfig2A *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceConfig2A(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICECONFIG2W: {
+			struct svcctl_QueryServiceConfig2W *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceConfig2W(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_QUERYSERVICESTATUSEX: {
+			struct svcctl_QueryServiceStatusEx *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.buffer == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _svcctl_QueryServiceStatusEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ENUMSERVICESSTATUSEXA: {
+			struct EnumServicesStatusExA *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.services == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.service_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.service_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.group_name = talloc_zero(mem_ctx, const char *);
+			if (r->out.group_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _EnumServicesStatusExA(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_ENUMSERVICESSTATUSEXW: {
+			struct EnumServicesStatusExW *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
+			if (r->out.services == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.bytes_needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.bytes_needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.service_returned = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.service_returned == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _EnumServicesStatusExW(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SVCCTL_SCSENDTSMESSAGE: {
+			struct svcctl_SCSendTSMessage *r = _r;
+			r->out.result = _svcctl_SCSendTSMessage(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_svcctl_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "svcctl", "svcctl", &ndr_table_svcctl, api_svcctl_cmds, sizeof(api_svcctl_cmds) / sizeof(struct api_struct));

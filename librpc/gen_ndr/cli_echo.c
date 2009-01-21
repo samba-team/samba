@@ -21,7 +21,7 @@ NTSTATUS rpccli_echo_AddOne(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_AddOne, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_ADDONE,
@@ -63,7 +63,7 @@ NTSTATUS rpccli_echo_EchoData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_EchoData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_ECHODATA,
@@ -104,7 +104,7 @@ NTSTATUS rpccli_echo_SinkData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_SinkData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_SINKDATA,
@@ -143,7 +143,7 @@ NTSTATUS rpccli_echo_SourceData(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_SourceData, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_SOURCEDATA,
@@ -183,7 +183,7 @@ NTSTATUS rpccli_echo_TestCall(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestCall, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTCALL,
@@ -223,7 +223,7 @@ NTSTATUS rpccli_echo_TestCall2(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestCall2, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTCALL2,
@@ -262,7 +262,7 @@ NTSTATUS rpccli_echo_TestSleep(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestSleep, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTSLEEP,
@@ -304,7 +304,7 @@ NTSTATUS rpccli_echo_TestEnum(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestEnum, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTENUM,
@@ -345,7 +345,7 @@ NTSTATUS rpccli_echo_TestSurrounding(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestSurrounding, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTSURROUNDING,
@@ -384,7 +384,7 @@ NTSTATUS rpccli_echo_TestDoublePointer(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(echo_TestDoublePointer, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_rpcecho,
 				NDR_ECHO_TESTDOUBLEPOINTER,

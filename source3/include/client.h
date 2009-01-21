@@ -80,6 +80,11 @@ struct rpc_pipe_client {
 	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id transfer_syntax;
 
+	NTSTATUS (*dispatch) (struct rpc_pipe_client *cli,
+			TALLOC_CTX *mem_ctx,
+			const struct ndr_interface_table *table,
+			uint32_t opnum, void *r);
+
 	char *desthost;
 	char *srv_name_slash;
 
@@ -90,6 +95,9 @@ struct rpc_pipe_client {
 
 	/* The following is only non-null on a netlogon pipe. */
 	struct dcinfo *dc;
+
+	/* Used by internal rpc_pipe_client */
+	pipes_struct *pipes_struct;
 };
 
 /* Transport encryption state. */

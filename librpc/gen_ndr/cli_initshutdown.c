@@ -29,7 +29,7 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_INIT,
@@ -72,7 +72,7 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_ABORT,
@@ -125,7 +125,7 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
 		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
 	}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_initshutdown,
 				NDR_INITSHUTDOWN_INITEX,
