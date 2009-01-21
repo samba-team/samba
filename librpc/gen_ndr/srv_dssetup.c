@@ -839,6 +839,91 @@ void dssetup_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_dssetup_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_dssetup_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION: {
+			struct dssetup_DsRoleGetPrimaryDomainInformation *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union dssetup_DsRoleInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _dssetup_DsRoleGetPrimaryDomainInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME: {
+			struct dssetup_DsRoleDnsNameToFlatName *r = _r;
+			r->out.result = _dssetup_DsRoleDnsNameToFlatName(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEDCASDC: {
+			struct dssetup_DsRoleDcAsDc *r = _r;
+			r->out.result = _dssetup_DsRoleDcAsDc(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEDCASREPLICA: {
+			struct dssetup_DsRoleDcAsReplica *r = _r;
+			r->out.result = _dssetup_DsRoleDcAsReplica(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEDEMOTEDC: {
+			struct dssetup_DsRoleDemoteDc *r = _r;
+			r->out.result = _dssetup_DsRoleDemoteDc(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS: {
+			struct dssetup_DsRoleGetDcOperationProgress *r = _r;
+			r->out.result = _dssetup_DsRoleGetDcOperationProgress(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS: {
+			struct dssetup_DsRoleGetDcOperationResults *r = _r;
+			r->out.result = _dssetup_DsRoleGetDcOperationResults(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLECANCEL: {
+			struct dssetup_DsRoleCancel *r = _r;
+			r->out.result = _dssetup_DsRoleCancel(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE: {
+			struct dssetup_DsRoleServerSaveStateForUpgrade *r = _r;
+			r->out.result = _dssetup_DsRoleServerSaveStateForUpgrade(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER: {
+			struct dssetup_DsRoleUpgradeDownlevelServer *r = _r;
+			r->out.result = _dssetup_DsRoleUpgradeDownlevelServer(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE: {
+			struct dssetup_DsRoleAbortDownlevelServerUpgrade *r = _r;
+			r->out.result = _dssetup_DsRoleAbortDownlevelServerUpgrade(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_dssetup_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "dssetup", "dssetup", &ndr_table_dssetup, api_dssetup_cmds, sizeof(api_dssetup_cmds) / sizeof(struct api_struct));

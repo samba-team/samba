@@ -95,6 +95,9 @@ struct rpc_pipe_client {
 
 	/* The following is only non-null on a netlogon pipe. */
 	struct dcinfo *dc;
+
+	/* Used by internal rpc_pipe_client */
+	pipes_struct *pipes_struct;
 };
 
 /* Transport encryption state. */

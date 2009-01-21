@@ -5476,6 +5476,791 @@ void samr_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_samr_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_SAMR_CONNECT: {
+			struct samr_Connect *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.connect_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_Connect(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CLOSE: {
+			struct samr_Close *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = r->in.handle;
+			r->out.result = _samr_Close(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETSECURITY: {
+			struct samr_SetSecurity *r = _r;
+			r->out.result = _samr_SetSecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYSECURITY: {
+			struct samr_QuerySecurity *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.sdbuf = talloc_zero(mem_ctx, struct sec_desc_buf *);
+			if (r->out.sdbuf == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QuerySecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SHUTDOWN: {
+			struct samr_Shutdown *r = _r;
+			r->out.result = _samr_Shutdown(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_LOOKUPDOMAIN: {
+			struct samr_LookupDomain *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.sid = talloc_zero(mem_ctx, struct dom_sid2 *);
+			if (r->out.sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_LookupDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ENUMDOMAINS: {
+			struct samr_EnumDomains *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
+			if (r->out.sam == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.num_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_EnumDomains(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_OPENDOMAIN: {
+			struct samr_OpenDomain *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.domain_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.domain_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_OpenDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYDOMAININFO: {
+			struct samr_QueryDomainInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_DomainInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryDomainInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETDOMAININFO: {
+			struct samr_SetDomainInfo *r = _r;
+			r->out.result = _samr_SetDomainInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CREATEDOMAINGROUP: {
+			struct samr_CreateDomainGroup *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.group_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.group_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_CreateDomainGroup(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ENUMDOMAINGROUPS: {
+			struct samr_EnumDomainGroups *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
+			if (r->out.sam == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.num_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_EnumDomainGroups(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CREATEUSER: {
+			struct samr_CreateUser *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.user_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_CreateUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ENUMDOMAINUSERS: {
+			struct samr_EnumDomainUsers *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
+			if (r->out.sam == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.num_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_EnumDomainUsers(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CREATEDOMALIAS: {
+			struct samr_CreateDomAlias *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.alias_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.alias_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_CreateDomAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ENUMDOMAINALIASES: {
+			struct samr_EnumDomainAliases *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.resume_handle = r->in.resume_handle;
+			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
+			if (r->out.sam == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.num_entries = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_entries == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_EnumDomainAliases(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETALIASMEMBERSHIP: {
+			struct samr_GetAliasMembership *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rids = talloc_zero(mem_ctx, struct samr_Ids);
+			if (r->out.rids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetAliasMembership(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_LOOKUPNAMES: {
+			struct samr_LookupNames *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rids = talloc_zero(mem_ctx, struct samr_Ids);
+			if (r->out.rids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.types = talloc_zero(mem_ctx, struct samr_Ids);
+			if (r->out.types == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_LookupNames(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_LOOKUPRIDS: {
+			struct samr_LookupRids *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.names = talloc_zero(mem_ctx, struct lsa_Strings);
+			if (r->out.names == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.types = talloc_zero(mem_ctx, struct samr_Ids);
+			if (r->out.types == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_LookupRids(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_OPENGROUP: {
+			struct samr_OpenGroup *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.group_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.group_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_OpenGroup(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYGROUPINFO: {
+			struct samr_QueryGroupInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_GroupInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryGroupInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETGROUPINFO: {
+			struct samr_SetGroupInfo *r = _r;
+			r->out.result = _samr_SetGroupInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ADDGROUPMEMBER: {
+			struct samr_AddGroupMember *r = _r;
+			r->out.result = _samr_AddGroupMember(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_DELETEDOMAINGROUP: {
+			struct samr_DeleteDomainGroup *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.group_handle = r->in.group_handle;
+			r->out.result = _samr_DeleteDomainGroup(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_DELETEGROUPMEMBER: {
+			struct samr_DeleteGroupMember *r = _r;
+			r->out.result = _samr_DeleteGroupMember(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYGROUPMEMBER: {
+			struct samr_QueryGroupMember *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rids = talloc_zero(mem_ctx, struct samr_RidTypeArray *);
+			if (r->out.rids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryGroupMember(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP: {
+			struct samr_SetMemberAttributesOfGroup *r = _r;
+			r->out.result = _samr_SetMemberAttributesOfGroup(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_OPENALIAS: {
+			struct samr_OpenAlias *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.alias_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.alias_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_OpenAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYALIASINFO: {
+			struct samr_QueryAliasInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_AliasInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryAliasInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETALIASINFO: {
+			struct samr_SetAliasInfo *r = _r;
+			r->out.result = _samr_SetAliasInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_DELETEDOMALIAS: {
+			struct samr_DeleteDomAlias *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.alias_handle = r->in.alias_handle;
+			r->out.result = _samr_DeleteDomAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ADDALIASMEMBER: {
+			struct samr_AddAliasMember *r = _r;
+			r->out.result = _samr_AddAliasMember(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_DELETEALIASMEMBER: {
+			struct samr_DeleteAliasMember *r = _r;
+			r->out.result = _samr_DeleteAliasMember(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETMEMBERSINALIAS: {
+			struct samr_GetMembersInAlias *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
+			if (r->out.sids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetMembersInAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_OPENUSER: {
+			struct samr_OpenUser *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.user_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_OpenUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_DELETEUSER: {
+			struct samr_DeleteUser *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.user_handle = r->in.user_handle;
+			r->out.result = _samr_DeleteUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYUSERINFO: {
+			struct samr_QueryUserInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_UserInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryUserInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETUSERINFO: {
+			struct samr_SetUserInfo *r = _r;
+			r->out.result = _samr_SetUserInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CHANGEPASSWORDUSER: {
+			struct samr_ChangePasswordUser *r = _r;
+			r->out.result = _samr_ChangePasswordUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETGROUPSFORUSER: {
+			struct samr_GetGroupsForUser *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rids = talloc_zero(mem_ctx, struct samr_RidWithAttributeArray *);
+			if (r->out.rids == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetGroupsForUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYDISPLAYINFO: {
+			struct samr_QueryDisplayInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.returned_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.returned_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info = talloc_zero(mem_ctx, union samr_DispInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryDisplayInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETDISPLAYENUMERATIONINDEX: {
+			struct samr_GetDisplayEnumerationIndex *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.idx = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.idx == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetDisplayEnumerationIndex(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN: {
+			struct samr_TestPrivateFunctionsDomain *r = _r;
+			r->out.result = _samr_TestPrivateFunctionsDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_TESTPRIVATEFUNCTIONSUSER: {
+			struct samr_TestPrivateFunctionsUser *r = _r;
+			r->out.result = _samr_TestPrivateFunctionsUser(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETUSERPWINFO: {
+			struct samr_GetUserPwInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetUserPwInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN: {
+			struct samr_RemoveMemberFromForeignDomain *r = _r;
+			r->out.result = _samr_RemoveMemberFromForeignDomain(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYDOMAININFO2: {
+			struct samr_QueryDomainInfo2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_DomainInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryDomainInfo2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYUSERINFO2: {
+			struct samr_QueryUserInfo2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union samr_UserInfo *);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryUserInfo2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYDISPLAYINFO2: {
+			struct samr_QueryDisplayInfo2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.returned_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.returned_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info = talloc_zero(mem_ctx, union samr_DispInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryDisplayInfo2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETDISPLAYENUMERATIONINDEX2: {
+			struct samr_GetDisplayEnumerationIndex2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.idx = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.idx == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetDisplayEnumerationIndex2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CREATEUSER2: {
+			struct samr_CreateUser2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.user_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.access_granted = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.access_granted == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.rid = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.rid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_CreateUser2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_QUERYDISPLAYINFO3: {
+			struct samr_QueryDisplayInfo3 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.total_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.returned_size = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.returned_size == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info = talloc_zero(mem_ctx, union samr_DispInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_QueryDisplayInfo3(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS: {
+			struct samr_AddMultipleMembersToAlias *r = _r;
+			r->out.result = _samr_AddMultipleMembersToAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS: {
+			struct samr_RemoveMultipleMembersFromAlias *r = _r;
+			r->out.result = _samr_RemoveMultipleMembersFromAlias(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_OEMCHANGEPASSWORDUSER2: {
+			struct samr_OemChangePasswordUser2 *r = _r;
+			r->out.result = _samr_OemChangePasswordUser2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CHANGEPASSWORDUSER2: {
+			struct samr_ChangePasswordUser2 *r = _r;
+			r->out.result = _samr_ChangePasswordUser2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETDOMPWINFO: {
+			struct samr_GetDomPwInfo *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetDomPwInfo(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CONNECT2: {
+			struct samr_Connect2 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.connect_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_Connect2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETUSERINFO2: {
+			struct samr_SetUserInfo2 *r = _r;
+			r->out.result = _samr_SetUserInfo2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETBOOTKEYINFORMATION: {
+			struct samr_SetBootKeyInformation *r = _r;
+			r->out.result = _samr_SetBootKeyInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_GETBOOTKEYINFORMATION: {
+			struct samr_GetBootKeyInformation *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.unknown = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.unknown == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_GetBootKeyInformation(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CONNECT3: {
+			struct samr_Connect3 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.connect_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_Connect3(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CONNECT4: {
+			struct samr_Connect4 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.connect_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_Connect4(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CHANGEPASSWORDUSER3: {
+			struct samr_ChangePasswordUser3 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.dominfo = talloc_zero(mem_ctx, struct samr_DomInfo1 *);
+			if (r->out.dominfo == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.reject = talloc_zero(mem_ctx, struct samr_ChangeReject *);
+			if (r->out.reject == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_ChangePasswordUser3(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_CONNECT5: {
+			struct samr_Connect5 *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.level_out = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.level_out == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.info_out = talloc_zero(mem_ctx, union samr_ConnectInfo);
+			if (r->out.info_out == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.connect_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_Connect5(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_RIDTOSID: {
+			struct samr_RidToSid *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.sid = talloc_zero(mem_ctx, struct dom_sid2 *);
+			if (r->out.sid == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_RidToSid(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_SETDSRMPASSWORD: {
+			struct samr_SetDsrmPassword *r = _r;
+			r->out.result = _samr_SetDsrmPassword(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_SAMR_VALIDATEPASSWORD: {
+			struct samr_ValidatePassword *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.rep = talloc_zero(mem_ctx, union samr_ValidatePasswordRep *);
+			if (r->out.rep == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _samr_ValidatePassword(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_samr_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "samr", "samr", &ndr_table_samr, api_samr_cmds, sizeof(api_samr_cmds) / sizeof(struct api_struct));

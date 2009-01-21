@@ -240,6 +240,37 @@ void initshutdown_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_initshutdown_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_initshutdown_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_INITSHUTDOWN_INIT: {
+			struct initshutdown_Init *r = _r;
+			r->out.result = _initshutdown_Init(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_INITSHUTDOWN_ABORT: {
+			struct initshutdown_Abort *r = _r;
+			r->out.result = _initshutdown_Abort(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_INITSHUTDOWN_INITEX: {
+			struct initshutdown_InitEx *r = _r;
+			r->out.result = _initshutdown_InitEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_initshutdown_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "initshutdown", "initshutdown", &ndr_table_initshutdown, api_initshutdown_cmds, sizeof(api_initshutdown_cmds) / sizeof(struct api_struct));

@@ -2766,6 +2766,367 @@ void winreg_get_pipe_fns(struct api_struct **fns, int *n_fns)
 	*n_fns = sizeof(api_winreg_cmds) / sizeof(struct api_struct);
 }
 
+NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *_r)
+{
+	if (cli->pipes_struct == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	switch (opnum)
+	{
+		case NDR_WINREG_OPENHKCR: {
+			struct winreg_OpenHKCR *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKCR(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKCU: {
+			struct winreg_OpenHKCU *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKCU(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKLM: {
+			struct winreg_OpenHKLM *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKLM(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKPD: {
+			struct winreg_OpenHKPD *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKPD(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKU: {
+			struct winreg_OpenHKU *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKU(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_CLOSEKEY: {
+			struct winreg_CloseKey *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = r->in.handle;
+			r->out.result = _winreg_CloseKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_CREATEKEY: {
+			struct winreg_CreateKey *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.action_taken = r->in.action_taken;
+			r->out.new_handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.new_handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_CreateKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_DELETEKEY: {
+			struct winreg_DeleteKey *r = _r;
+			r->out.result = _winreg_DeleteKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_DELETEVALUE: {
+			struct winreg_DeleteValue *r = _r;
+			r->out.result = _winreg_DeleteValue(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_ENUMKEY: {
+			struct winreg_EnumKey *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.name = r->in.name;
+			r->out.keyclass = r->in.keyclass;
+			r->out.last_changed_time = r->in.last_changed_time;
+			r->out.result = _winreg_EnumKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_ENUMVALUE: {
+			struct winreg_EnumValue *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.name = r->in.name;
+			r->out.type = r->in.type;
+			r->out.value = r->in.value;
+			r->out.size = r->in.size;
+			r->out.length = r->in.length;
+			r->out.result = _winreg_EnumValue(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_FLUSHKEY: {
+			struct winreg_FlushKey *r = _r;
+			r->out.result = _winreg_FlushKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_GETKEYSECURITY: {
+			struct winreg_GetKeySecurity *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.sd = r->in.sd;
+			r->out.result = _winreg_GetKeySecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_LOADKEY: {
+			struct winreg_LoadKey *r = _r;
+			r->out.result = _winreg_LoadKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_NOTIFYCHANGEKEYVALUE: {
+			struct winreg_NotifyChangeKeyValue *r = _r;
+			r->out.result = _winreg_NotifyChangeKeyValue(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENKEY: {
+			struct winreg_OpenKey *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_QUERYINFOKEY: {
+			struct winreg_QueryInfoKey *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.classname = r->in.classname;
+			r->out.num_subkeys = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_subkeys == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.max_subkeylen = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.max_subkeylen == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.max_classlen = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.max_classlen == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.num_values = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.num_values == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.max_valnamelen = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.max_valnamelen == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.max_valbufsize = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.max_valbufsize == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.secdescsize = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.secdescsize == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.last_changed_time = talloc_zero(mem_ctx, NTTIME);
+			if (r->out.last_changed_time == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_QueryInfoKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_QUERYVALUE: {
+			struct winreg_QueryValue *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.type = r->in.type;
+			r->out.data = r->in.data;
+			r->out.data_size = r->in.data_size;
+			r->out.data_length = r->in.data_length;
+			r->out.result = _winreg_QueryValue(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_REPLACEKEY: {
+			struct winreg_ReplaceKey *r = _r;
+			r->out.result = _winreg_ReplaceKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_RESTOREKEY: {
+			struct winreg_RestoreKey *r = _r;
+			r->out.result = _winreg_RestoreKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_SAVEKEY: {
+			struct winreg_SaveKey *r = _r;
+			r->out.result = _winreg_SaveKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_SETKEYSECURITY: {
+			struct winreg_SetKeySecurity *r = _r;
+			r->out.result = _winreg_SetKeySecurity(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_SETVALUE: {
+			struct winreg_SetValue *r = _r;
+			r->out.result = _winreg_SetValue(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_UNLOADKEY: {
+			struct winreg_UnLoadKey *r = _r;
+			r->out.result = _winreg_UnLoadKey(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_INITIATESYSTEMSHUTDOWN: {
+			struct winreg_InitiateSystemShutdown *r = _r;
+			r->out.result = _winreg_InitiateSystemShutdown(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_ABORTSYSTEMSHUTDOWN: {
+			struct winreg_AbortSystemShutdown *r = _r;
+			r->out.result = _winreg_AbortSystemShutdown(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_GETVERSION: {
+			struct winreg_GetVersion *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.version = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.version == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_GetVersion(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKCC: {
+			struct winreg_OpenHKCC *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKCC(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKDD: {
+			struct winreg_OpenHKDD *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKDD(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_QUERYMULTIPLEVALUES: {
+			struct winreg_QueryMultipleValues *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.values = r->in.values;
+			r->out.buffer = r->in.buffer;
+			r->out.buffer_size = r->in.buffer_size;
+			r->out.result = _winreg_QueryMultipleValues(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_INITIATESYSTEMSHUTDOWNEX: {
+			struct winreg_InitiateSystemShutdownEx *r = _r;
+			r->out.result = _winreg_InitiateSystemShutdownEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_SAVEKEYEX: {
+			struct winreg_SaveKeyEx *r = _r;
+			r->out.result = _winreg_SaveKeyEx(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKPT: {
+			struct winreg_OpenHKPT *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKPT(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_OPENHKPN: {
+			struct winreg_OpenHKPN *r = _r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _winreg_OpenHKPN(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		case NDR_WINREG_QUERYMULTIPLEVALUES2: {
+			struct winreg_QueryMultipleValues2 *r = _r;
+			r->out.result = _winreg_QueryMultipleValues2(cli->pipes_struct, r);
+			return NT_STATUS_OK;
+		}
+
+		default:
+			return NT_STATUS_NOT_IMPLEMENTED;
+	}
+}
+
 NTSTATUS rpc_winreg_init(void)
 {
 	return rpc_srv_register(SMB_RPC_INTERFACE_VERSION, "winreg", "winreg", &ndr_table_winreg, api_winreg_cmds, sizeof(api_winreg_cmds) / sizeof(struct api_struct));
