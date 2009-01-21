@@ -10,16 +10,24 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 
-sub new($$$$) {
-	my ($classname, $bindir, $ldap, $setupdir) = @_;
+sub new($$$$$) {
+	my ($classname, $bindir, $ldap, $setupdir, $exeext) = @_;
+	$exeext = "" unless defined($exeext);
 	my $self = { 
 		vars => {}, 
 		ldap => $ldap, 
 		bindir => $bindir, 
-		setupdir => $setupdir 
+		setupdir => $setupdir,
+		exeext => $exeext
 	};
 	bless $self;
 	return $self;
+}
+
+sub bindir_path($$) {
+	my ($self, $path) = @_;
+
+	return "$self->{bindir}/$path$self->{exeext}";
 }
 
 sub openldap_start($$$) {
@@ -50,7 +58,8 @@ sub slapd_start($$)
 	} elsif ($self->{ldap} eq "openldap") {
 	        openldap_start($env_vars->{SLAPD_CONF}, $uri, "$env_vars->{LDAPDIR}/logs");
 	}
-	while (system("$self->{bindir}/ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
+	my $ldbsearch = $self->bindir_path("ldbsearch");
+	while (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
 	        $count++;
 		if ($count > 40) {
 		    $self->slapd_stop($env_vars);
@@ -116,20 +125,21 @@ sub check_or_start($$$)
 		if (defined($ENV{SMBD_OPTIONS})) {
 			$optarg.= " $ENV{SMBD_OPTIONS}";
 		}
-		my $ret = system("$valgrind $self->{bindir}/samba $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
+		my $samba = $self->bindir_path("samba");
+		my $ret = system("$valgrind $samba $optarg $env_vars->{CONFIGURATION} -M single -i --leak-report-full");
 		if ($? == -1) {
-			print "Unable to start samba: $ret: $!\n";
+			print "Unable to start $samba: $ret: $!\n";
 			exit 1;
 		}
 		unlink($env_vars->{SMBD_TEST_FIFO});
 		my $exit = $? >> 8;
 		if ( $ret == 0 ) {
-			print "samba exits with status $exit\n";
+			print "$samba exits with status $exit\n";
 		} elsif ( $ret & 127 ) {
-			print "samba got signal ".($ret & 127)." and exits with $exit!\n";
+			print "$samba got signal ".($ret & 127)." and exits with $exit!\n";
 		} else {
 			$ret = $? >> 8;
-			print "samba failed with status $exit!\n";
+			print "$samba failed with status $exit!\n";
 		}
 		exit $exit;
 	}
@@ -169,7 +179,8 @@ sub write_ldb_file($$$)
 {
 	my ($self, $file, $ldif) = @_;
 
-	open(LDIF, "|$self->{bindir}/ldbadd -H $file >/dev/null");
+	my $ldbadd = $self->bindir_path("ldbadd");
+	open(LDIF, "|$ldbadd -H $file >/dev/null");
 	print LDIF $ldif;
 	return close(LDIF);
 }
@@ -690,12 +701,13 @@ nogroup:x:65534:nobody
 	close(GRP);
 
 #Ensure the config file is valid before we start
-	if (system("$self->{bindir}/testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
-		system("$self->{bindir}/testparm -v --suppress-prompt $configuration >&2");
-		die("Failed to create a valid smb.conf configuration!");
+	my $testparm = $self->bindir_path("testparm");
+	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
+		system("$testparm -v --suppress-prompt $configuration >&2");
+		die("Failed to create a valid smb.conf configuration $testparm!");
 	}
 
-	(system("($self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
+	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
 
 	my @provision_options = ();
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
@@ -792,10 +804,11 @@ sub provision_member($$$)
 
 	$ret or die("Unable to provision");
 
+	my $net = $self->bindir_path("net");
 	my $cmd = "";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
-	$cmd .= "$self->{bindir}/net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
 	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
 
 	system($cmd) == 0 or die("Join failed\n$cmd");

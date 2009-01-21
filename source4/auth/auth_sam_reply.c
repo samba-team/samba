@@ -147,3 +147,142 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }	
 
+/**
+ * Make a server_info struct from the info3 returned by a domain logon 
+ */
+NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
+					      const char *account_name,
+					      uint16_t validation_level,
+					      union netr_Validation *validation,
+					      struct auth_serversupplied_info **_server_info)
+{
+	struct auth_serversupplied_info *server_info;
+	struct netr_SamBaseInfo *base = NULL;
+	int i;
+
+	switch (validation_level) {
+	case 2:
+		if (!validation || !validation->sam2) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam2->base;
+		break;
+	case 3:
+		if (!validation || !validation->sam3) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam3->base;
+		break;
+	case 6:
+		if (!validation || !validation->sam6) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam6->base;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
+
+	/*
+	   Here is where we should check the list of
+	   trusted domains, and verify that the SID 
+	   matches.
+	*/
+	server_info->account_sid = dom_sid_add_rid(server_info, base->domain_sid, base->rid);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
+
+
+	server_info->primary_group_sid = dom_sid_add_rid(server_info, base->domain_sid, base->primary_gid);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+
+	server_info->n_domain_groups = base->groups.count;
+	if (base->groups.count) {
+		server_info->domain_groups = talloc_array(server_info, struct dom_sid*, base->groups.count);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups);
+	} else {
+		server_info->domain_groups = NULL;
+	}
+
+	for (i = 0; i < base->groups.count; i++) {
+		server_info->domain_groups[i] = dom_sid_add_rid(server_info, base->domain_sid, base->groups.rids[i].rid);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups[i]);
+	}
+
+	/* Copy 'other' sids.  We need to do sid filtering here to
+ 	   prevent possible elevation of privileges.  See:
+
+           http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
+         */
+
+	if (validation_level == 3) {
+		struct dom_sid **dgrps = server_info->domain_groups;
+		size_t sidcount = server_info->n_domain_groups + validation->sam3->sidcount;
+		size_t n_dgrps = server_info->n_domain_groups;
+
+		if (validation->sam3->sidcount > 0) {
+			dgrps = talloc_realloc(server_info, dgrps, struct dom_sid*, sidcount);
+			NT_STATUS_HAVE_NO_MEMORY(dgrps);
+
+			for (i = 0; i < validation->sam3->sidcount; i++) {
+				dgrps[n_dgrps + i] = talloc_reference(dgrps, validation->sam3->sids[i].sid);
+			}
+		}
+
+		server_info->n_domain_groups = sidcount;
+		server_info->domain_groups = dgrps;
+
+		/* Where are the 'global' sids?... */
+	}
+
+	if (base->account_name.string) {
+		server_info->account_name = talloc_reference(server_info, base->account_name.string);
+	} else {
+		server_info->account_name = talloc_strdup(server_info, account_name);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
+	}
+
+	server_info->domain_name = talloc_reference(server_info, base->domain.string);
+	server_info->full_name = talloc_reference(server_info, base->full_name.string);
+	server_info->logon_script = talloc_reference(server_info, base->logon_script.string);
+	server_info->profile_path = talloc_reference(server_info, base->profile_path.string);
+	server_info->home_directory = talloc_reference(server_info, base->home_directory.string);
+	server_info->home_drive = talloc_reference(server_info, base->home_drive.string);
+	server_info->logon_server = talloc_reference(server_info, base->logon_server.string);
+	server_info->last_logon = base->last_logon;
+	server_info->last_logoff = base->last_logoff;
+	server_info->acct_expiry = base->acct_expiry;
+	server_info->last_password_change = base->last_password_change;
+	server_info->allow_password_change = base->allow_password_change;
+	server_info->force_password_change = base->force_password_change;
+	server_info->logon_count = base->logon_count;
+	server_info->bad_password_count = base->bad_password_count;
+	server_info->acct_flags = base->acct_flags;
+
+	server_info->authenticated = true;
+
+	/* ensure we are never given NULL session keys */
+
+	if (all_zero(base->key.key, sizeof(base->key.key))) {
+		server_info->user_session_key = data_blob(NULL, 0);
+	} else {
+		server_info->user_session_key = data_blob_talloc(server_info, base->key.key, sizeof(base->key.key));
+		NT_STATUS_HAVE_NO_MEMORY(server_info->user_session_key.data);
+	}
+
+	if (all_zero(base->LMSessKey.key, sizeof(base->LMSessKey.key))) {
+		server_info->lm_session_key = data_blob(NULL, 0);
+	} else {
+		server_info->lm_session_key = data_blob_talloc(server_info, base->LMSessKey.key, sizeof(base->LMSessKey.key));
+		NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
+	}
+
+	ZERO_STRUCT(server_info->pac_srv_sig);
+	ZERO_STRUCT(server_info->pac_kdc_sig);
+
+	*_server_info = server_info;
+	return NT_STATUS_OK;
+}
+

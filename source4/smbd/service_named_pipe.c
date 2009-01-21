@@ -25,6 +25,7 @@
 #include "smbd/service.h"
 #include "param/param.h"
 #include "auth/session.h"
+#include "auth/auth_sam_reply.h"
 #include "lib/stream/packet.h"
 #include "librpc/gen_ndr/ndr_named_pipe_auth.h"
 #include "system/passwd.h"

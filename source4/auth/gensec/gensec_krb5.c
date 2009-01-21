@@ -30,7 +30,6 @@
 #include "auth/auth.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth_sam.h"
-#include "system/network.h"
 #include "lib/socket/socket.h"
 #include "librpc/rpc/dcerpc.h"
 #include "auth/credentials/credentials.h"
@@ -39,6 +38,7 @@
 #include "auth/gensec/gensec_proto.h"
 #include "param/param.h"
 #include "auth/session_proto.h"
+#include "auth/auth_sam_reply.h"
 
 enum GENSEC_KRB5_STATE {
 	GENSEC_KRB5_SERVER_START,
