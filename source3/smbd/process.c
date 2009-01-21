@@ -407,9 +407,6 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	uint8_t *inbuf;
 
-	/* TODO: remove this hack */
-	message_dispatch(smbd_messaging_context());
-
 	inbuf = (uint8_t *)talloc_memdup(mem_ctx, msg->buf.data,
 					 msg->buf.length);
 	if (inbuf == NULL) {
@@ -758,13 +755,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	to.tv_usec = 0;
 
 	/*
-	 * Note that this call must be before processing any SMB
-	 * messages as we need to synchronously process any messages
-	 * we may have sent to ourselves from the previous SMB.
-	 */
-	message_dispatch(smbd_messaging_context());
-
-	/*
 	 * Setup the select fd sets.
 	 */
 
@@ -849,16 +839,8 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 		return NT_STATUS_RETRY;
 	}
 
-	/*
-	 * We've just woken up from a protentially long select sleep.
-	 * Ensure we process local messages as we need to synchronously
-	 * process any messages from other smbd's to avoid file rename race
-	 * conditions. This call is cheap if there are no messages waiting.
-	 * JRA.
-	 */
-	message_dispatch(smbd_messaging_context());
-
-	return NT_STATUS_OK;
+	/* should not be reached */
+	return NT_STATUS_INTERNAL_ERROR;
 }
 
 /*
@@ -1873,9 +1855,6 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	bool encrypted = false;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	NTSTATUS status;
-
-	/* TODO: remove this hack */
-	message_dispatch(smbd_messaging_context());
 
 	/* TODO: make this completely nonblocking */
 

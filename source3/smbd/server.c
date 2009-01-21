@@ -573,9 +573,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		fd_set r_fds, w_fds;
 		int num;
 
-		/* Ensure we respond to PING and DEBUG messages from the main smbd. */
-		message_dispatch(smbd_messaging_context());
-
 		if (got_sig_cld) {
 			pid_t pid;
 			int status;
