@@ -1439,15 +1439,47 @@ void start_background_queue(void)
 
 		DEBUG(5,("start_background_queue: background LPQ thread waiting for messages\n"));
 		while (1) {
-			fd_set pause_fds;
-			int pause_select;
+			fd_set r_fds, w_fds;
+			int ret;
+			struct timeval to;
+			int maxfd = 0;
 
-			FD_ZERO(&pause_fds);
-			FD_SET(pause_pipe[1], &pause_fds);
-			pause_select = sys_select(pause_pipe[1]+1, &pause_fds, NULL, NULL, NULL);
-			/* If pause_pipe[0] is closed it means the parent smbd
+			/* Process a signal and timed events now... */
+			if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+				continue;
+			}
+
+			to.tv_sec = SMBD_SELECT_TIMEOUT;
+			to.tv_usec = 0;
+
+			/*
+			 * Setup the select fd sets.
+			 */
+
+			FD_ZERO(&r_fds);
+			FD_ZERO(&w_fds);
+
+			/*
+			 * Are there any timed events waiting ? If so, ensure we don't
+			 * select for longer than it would take to wait for them.
+			 */
+
+			{
+				struct timeval now;
+				GetTimeOfDay(&now);
+
+				event_add_to_select_args(smbd_event_context(), &now,
+							 &r_fds, &w_fds, &to, &maxfd);
+			}
+
+			FD_SET(pause_pipe[1], &r_fds);
+			maxfd = MAX(pause_pipe[1], maxfd);
+
+			ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
+
+			/* If pause_pipe[1] is closed it means the parent smbd
 			 * and children exited or aborted. */
-			if (pause_select == 1) {
+			if (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds)) {
                                 exit_server_cleanly(NULL);
 			}
 
@@ -1464,15 +1496,9 @@ void start_background_queue(void)
                                 reload_after_sighup = 0;
                         }
 
-			/* now check for messages */
-
-			DEBUG(10,("start_background_queue: background LPQ thread got a message\n"));
-			message_dispatch(smbd_messaging_context());
-
-			/* process any pending print change notify messages */
-
-			print_notify_send_messages(smbd_messaging_context(),
-						   0);
+			if (run_events(smbd_event_context(), ret, &r_fds, &w_fds)) {
+				continue;
+			}
 		}
 	}
 
