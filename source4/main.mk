@@ -47,3 +47,4 @@ mkinclude client/config.mk
 mkinclude libcli/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
+mkinclude ../lib/smbconf/config.mk
