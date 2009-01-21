@@ -183,6 +183,10 @@ function main
     if [ -n "$vendor_version" ]; then
 	version="$version-$vendor_version"
     fi
+    vendor_patch=`grep "define SAMBA_VERSION_VENDOR_PATCH" $VER_H | awk '{print $3}'`
+    if [ -n "$vendor_patch" ]; then
+	version="$version-$vendor_patch"
+    fi
     version=`echo $version | sed 's/\"//g'`
 
     echo "Creating release tarball for Samba $version"

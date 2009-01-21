@@ -13,7 +13,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--exeext=EXT][--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -34,6 +34,10 @@ Source directory.
 =item I<--builddir=DIR>
 
 Build directory.
+
+=item I<--exeext=EXT>
+
+Executable extention
 
 =item I<--prefix=DIR>
 
@@ -156,6 +160,7 @@ my @testlists = ();
 
 my $srcdir = ".";
 my $builddir = ".";
+my $exeext = "";
 my $prefix = "./st";
 
 my @expected_failures = ();
@@ -294,6 +299,7 @@ Paths:
  --prefix=DIR               prefix to run tests in [st]
  --srcdir=DIR               source directory [.]
  --builddir=DIR             output directory [.]
+ --exeext=EXT               executable extention []
 
 Target Specific:
  --socket-wrapper-pcap	    save traffic to pcap directories
@@ -334,6 +340,7 @@ my $result = GetOptions (
 		'include=s' => \@opt_include,
 		'srcdir=s' => \$srcdir,
 		'builddir=s' => \$builddir,
+		'exeext=s' => \$exeext,
 		'verbose' => \$opt_verbose,
 		'testenv' => \$opt_testenv,
 		'ldap:s' => \$ldap,
@@ -443,9 +450,10 @@ my $testenv_default = "none";
 if ($opt_target eq "samba4") {
 	$testenv_default = "member";
 	require target::Samba4;
-	$target = new Samba4($opt_bindir or "$srcdir/bin", $ldap, "$srcdir/setup");
+	$target = new Samba4($opt_bindir or "$builddir/bin",
+			     $ldap, "$srcdir/setup", $exeext);
 } elsif ($opt_target eq "samba3") {
-	my $bindir = ($opt_bindir or "$srcdir/bin");
+	my $bindir = ($opt_bindir or "$builddir/bin");
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}

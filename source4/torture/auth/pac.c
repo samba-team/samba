@@ -28,7 +28,7 @@
 #include "samba3/samba3.h"
 #include "libcli/security/security.h"
 #include "torture/torture.h"
-#include "auth/session_proto.h"
+#include "auth/auth_sam_reply.h"
 
 static bool torture_pac_self_check(struct torture_context *tctx)
 {

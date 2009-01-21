@@ -170,8 +170,11 @@ everything:: $(patsubst %,%4,$(BINARIES))
 setup:
 	@ln -sf ../source4/setup setup
 
-SELFTEST4 = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
+LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin/shared"
+
+SELFTEST4 = $(LD_LIBPATH_OVERRIDE) EXEEXT="4" $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
     --builddir=$(builddir) --srcdir=$(samba4srcdir) \
+    --exeext=4 \
     --expected-failures=$(samba4srcdir)/selftest/knownfail \
 	--format=$(SELFTEST_FORMAT) \
     --exclude=$(samba4srcdir)/selftest/skip --testlist="$(samba4srcdir)/selftest/tests.sh|" \

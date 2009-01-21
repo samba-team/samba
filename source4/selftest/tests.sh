@@ -54,10 +54,10 @@ plansmbtorturetest() {
 	plantest "$modname" "$env" $cmdline
 }
 
-bin/smbtorture -V
-
 samba4srcdir=.
 samba4bindir=$samba4srcdir/bin
+smb4torture="$samba4bindir/smbtorture${EXEEXT}"
+$smb4torture -V
 
 prefix_abs="$SELFTEST_PREFIX/s4client"
 
@@ -76,7 +76,7 @@ TORTURE_OPTIONS="$TORTURE_OPTIONS --format=subunit"
 if [ -n "$SELFTEST_QUICK" ]; then
 	TORTURE_OPTIONS="$TORTURE_OPTIONS --option=torture:quick=yes"
 fi
-smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
+smb4torture="$smb4torture $TORTURE_OPTIONS"
 
 echo "OPTIONS $TORTURE_OPTIONS"
 
@@ -264,9 +264,10 @@ for t in `$smb4torture --list | grep "^LOCAL-" | xargs`; do
 	plansmbtorturetest "$t" none ncalrpc: "$*"
 done
 
-if test -f $samba4bindir/tdbtorture
+tdbtorture4="$samba4bindir/tdbtorture${EXEEXT}"
+if test -f $tdbtorture4
 then
-	plantest "tdb.stress" none $VALGRIND $samba4bindir/tdbtorture
+	plantest "tdb.stress" none $VALGRIND $tdbtorture4
 fi
 
 # Pidl tests
@@ -379,9 +380,10 @@ for env in dc member; do
 	done
 done
 
-if test -f $samba4bindir/nsstest 
+nsstest4="$samba4bindir/nsstest${EXEEXT}"
+if test -f $nsstest4
 then
-	plantest "nss.test using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
+	plantest "nss.test using winbind" member $VALGRIND $nsstest4 $samba4bindir/shared/libnss_winbind.so
 fi
 
 PYTHON=/usr/bin/python
