@@ -803,3 +803,77 @@ struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 
 	return r;
 }
+
+/********************************************************************
+ write an eventlog entry. Note that we have to lock, read next
+ eventlog, increment, write, write the record, unlock
+
+ coming into this, ee has the eventlog record, and the auxilliary date
+ (computer name, etc.) filled into the other structure. Before packing
+ into a record, this routine will calc the appropriate padding, etc.,
+ and then blast out the record in a form that can be read back in
+ ********************************************************************/
+
+NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
+			       TDB_CONTEXT *tdb,
+			       struct eventlog_Record_tdb *r,
+			       uint32_t *record_number)
+{
+	TDB_DATA kbuf, ebuf;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	int ret;
+
+	if (!r) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!can_write_to_eventlog(tdb, r->size)) {
+		return NT_STATUS_EVENTLOG_CANT_START;
+	}
+
+	/* need to read the record number and insert it into the entry here */
+
+	/* lock */
+	ret = tdb_lock_bystring_with_timeout(tdb, EVT_NEXT_RECORD, 1);
+	if (ret == -1) {
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
+
+	/* read */
+	r->record_number = tdb_fetch_int32(tdb, EVT_NEXT_RECORD);
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, r,
+		      (ndr_push_flags_fn_t)ndr_push_eventlog_Record_tdb);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	/* increment the record count */
+
+	kbuf.dsize = sizeof(int32_t);
+	kbuf.dptr = (uint8_t *)&r->record_number;
+
+	ebuf.dsize = blob.length;
+	ebuf.dptr  = blob.data;
+
+	ret = tdb_store(tdb, kbuf, ebuf, 0);
+	if (ret == -1) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
+	}
+
+	ret = tdb_store_int32(tdb, EVT_NEXT_RECORD, r->record_number + 1);
+	if (ret == -1) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
+	}
+	tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+
+	if (record_number) {
+		*record_number = r->record_number;
+	}
+
+	return NT_STATUS_OK;
+}
