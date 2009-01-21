@@ -60,37 +60,11 @@ bool smbconf_is_writeable(struct smbconf_ctx *ctx)
 }
 
 /**
- * utitlity function:
- * check whether a config source is writeable,
- * given only the name of the config source.
- */
-bool smbconf_is_writeable_bystring(const char *configsource)
-{
-	struct smbconf_ctx *conf_ctx;
-	WERROR err;
-	bool ret;
-	TALLOC_CTX *mem_ctx = talloc_stackframe;
-
-	err = smbconf_init_reg(mem_ctx, &conf_ctx, configsource);
-	if (!W_ERROR_IS_OK(err)) {
-		      ret = false;
-		      goto done;
-	}
-
-	ret = smbconf_is_writeable(conf_ctx);
-
-done:
-	smbconf_shutdown(conf_ctx);
-	TALLOC_FREE(mem_ctx);
-	return ret;
-}
-
-/**
  * Close the configuration.
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx)
 {
-	TALLOC_FREE(ctx);
+	talloc_free(ctx);
 }
 
 /**
@@ -183,7 +157,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 

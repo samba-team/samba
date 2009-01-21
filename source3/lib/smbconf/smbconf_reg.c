@@ -18,7 +18,7 @@
  */
 
 #include "includes.h"
-#include "smbconf_private.h"
+#include "lib/smbconf/smbconf_private.h"
 
 #define INCLUDES_VALNAME "includes"
 
@@ -145,7 +145,7 @@ static WERROR smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 	werr = smbconf_reg_open_path(mem_ctx, ctx, path, desired_access, key);
 
 done:
-	TALLOC_FREE(path);
+	talloc_free(path);
 	return werr;
 }
 
@@ -176,7 +176,7 @@ static bool smbconf_value_exists(struct registry_key *key, const char *param)
 		ret = true;
 	}
 
-	TALLOC_FREE(ctx);
+	talloc_free(ctx);
 	return ret;
 }
 
@@ -216,7 +216,7 @@ static WERROR smbconf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	TALLOC_FREE(create_ctx);
+	talloc_free(create_ctx);
 	return werr;
 }
 
@@ -331,7 +331,7 @@ static WERROR smbconf_reg_set_multi_sz_value(struct registry_key *key,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -436,7 +436,7 @@ static WERROR smbconf_reg_get_includes_internal(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -533,7 +533,7 @@ static WERROR smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -592,7 +592,7 @@ static WERROR smbconf_reg_delete_values(struct registry_key *key)
 	werr = WERR_OK;
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -748,7 +748,7 @@ static WERROR smbconf_reg_drop(struct smbconf_ctx *ctx)
 			     &new_key, &action);
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -833,7 +833,7 @@ static WERROR smbconf_reg_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -854,7 +854,7 @@ static bool smbconf_reg_share_exists(struct smbconf_ctx *ctx,
 		ret = true;
 	}
 
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -876,7 +876,7 @@ static WERROR smbconf_reg_create_share(struct smbconf_ctx *ctx,
 						      servicename, &key);
 	}
 
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -923,7 +923,7 @@ static WERROR smbconf_reg_get_share(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -949,7 +949,7 @@ static WERROR smbconf_reg_delete_share(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -974,7 +974,7 @@ static WERROR smbconf_reg_set_parameter(struct smbconf_ctx *ctx,
 	werr = smbconf_reg_set_value(key, param, valstr);
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -1019,8 +1019,8 @@ static WERROR smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(key);
-	TALLOC_FREE(value);
+	talloc_free(key);
+	talloc_free(value);
 	return werr;
 }
 
@@ -1054,7 +1054,7 @@ static WERROR smbconf_reg_delete_parameter(struct smbconf_ctx *ctx,
 	werr = reg_deletevalue(key, param);
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return werr;
 }
 
@@ -1078,7 +1078,7 @@ static WERROR smbconf_reg_get_includes(struct smbconf_ctx *ctx,
 						 includes);
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -1108,7 +1108,7 @@ static WERROR smbconf_reg_set_includes(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -1133,7 +1133,7 @@ static WERROR smbconf_reg_delete_includes(struct smbconf_ctx *ctx,
 
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 

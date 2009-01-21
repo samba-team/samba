@@ -856,9 +856,10 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
              $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ)
 
-LIBSMBCONF_OBJ = lib/smbconf/smbconf.o lib/smbconf/smbconf_util.o \
+LIBSMBCONF_OBJ = ../lib/smbconf/smbconf.o \
+		 ../lib/smbconf/smbconf_util.o \
+		 ../lib/smbconf/smbconf_txt.o \
 		 lib/smbconf/smbconf_reg.o \
-		 lib/smbconf/smbconf_txt.o \
 		 lib/smbconf/smbconf_init.o
 
 SMBCONFTORT_OBJ0 = lib/smbconf/testsuite.o

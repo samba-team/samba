@@ -35,7 +35,7 @@
 #include "ldb/include/includes.h"
 #include "ldb/tools/cmdline.h"
 
-static int ldb_delete_recursive(struct ldb_context *ldb, const struct ldb_dn *dn)
+static int ldb_delete_recursive(struct ldb_context *ldb, struct ldb_dn *dn)
 {
 	int ret, i, total=0;
 	const char *attrs[] = { NULL };
@@ -90,7 +90,7 @@ int main(int argc, const char **argv)
 	}
 
 	for (i=0;i<options->argc;i++) {
-		const struct ldb_dn *dn;
+		struct ldb_dn *dn;
 
 		dn = ldb_dn_explode(ldb, options->argv[i]);
 		if (dn == NULL) {

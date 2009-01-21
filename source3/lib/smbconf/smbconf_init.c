@@ -18,7 +18,9 @@
  */
 
 #include "includes.h"
-#include "smbconf_private.h"
+#include "lib/smbconf/smbconf_private.h"
+#include "lib/smbconf/smbconf_txt.h"
+#include "lib/smbconf/smbconf_reg.h"
 
 /**
  * smbconf initialization dispatcher
@@ -88,6 +90,6 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
