@@ -73,7 +73,7 @@ AC_SUBST(automatic_dependencies)
 
 m4_include(build/m4/check_doc.m4)
 
-m4_include(build/m4/check_python.m4)
+m4_include(../m4/check_python.m4)
 
 AC_SAMBA_PYTHON_DEVEL([
 SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
