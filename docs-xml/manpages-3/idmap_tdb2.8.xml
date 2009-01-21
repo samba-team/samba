@@ -26,10 +26,12 @@
 	</para>
 
 	<para>
-	In contrast to read only
-	backends like idmap_rid, it is an allocating backend:
-	This means that it needs to allocate new user and group IDs
-	to create new mappings as requests to yet unmapped users are answered.
+	In contrast to read only backends like idmap_rid, it is an allocating
+	backend: This means that it needs to allocate new user and group IDs in
+	order to create new mappings. The allocator can be provided by the
+	idmap_tdb2 backend itself or by any other allocating backend like
+	idmap_tdb or idmap_ldap. This is configured with the
+	parameter <parameter>idmap alloc backend</parameter>.
 	</para>
 
 	<para>
