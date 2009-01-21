@@ -654,6 +654,9 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "eventlog.h"
 
 #include "lib/smbconf/smbconf.h"
+#include "lib/smbconf/smbconf_init.h"
+#include "lib/smbconf/smbconf_reg.h"
+#include "lib/smbconf/smbconf_txt.h"
 
 /* Defines for wisXXX functions. */
 #define UNI_UPPER    0x1
