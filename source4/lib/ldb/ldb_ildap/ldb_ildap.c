@@ -389,9 +389,9 @@ static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 	talloc_free(req->time_event);
 	req->time_event = NULL;
 	if (ac->req->timeout) {
-		req->time_event = event_add_timed(ac->ildb->event_ctx, ac,
-						  timeval_current_ofs(ac->req->timeout, 0),
-						  ildb_request_timeout, ac);
+		req->time_event = tevent_add_timer(ac->ildb->event_ctx, ac,
+						   timeval_current_ofs(ac->req->timeout, 0),
+						   ildb_request_timeout, ac);
 	}
 
 	req->async.fn = ildb_callback;
@@ -683,9 +683,9 @@ static int ildb_handle_request(struct ldb_module *module, struct ldb_request *re
 
 	if (ildb_dn_is_special(req)) {
 
-		te = event_add_timed(ac->ildb->event_ctx,
-					ac, timeval_zero(),
-					ildb_auto_done_callback, ac);
+		te = tevent_add_timer(ac->ildb->event_ctx,
+				      ac, timeval_zero(),
+				      ildb_auto_done_callback, ac);
 		if (NULL == te) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

@@ -48,7 +48,7 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 	/* FIXME: Hack a new event context so that CMD line utilities work
 	 * until we have them all converted */
 	if (ev_ctx == NULL) {
-		ev_ctx = event_context_init(talloc_autofree_context());
+		ev_ctx = tevent_context_init(talloc_autofree_context());
 	}
 
 	ret = ldb_setup_wellknown_attributes(ldb);
@@ -394,6 +394,7 @@ static int ldb_autotransaction_request(struct ldb_context *ldb,
 int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	struct tevent_context *ev;
+	int ret;
 
 	if (!handle) {
 		return LDB_ERR_UNAVAILABLE;
@@ -410,7 +411,10 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 	switch (type) {
 	case LDB_WAIT_NONE:
-		event_loop_once(ev);
+		ret = tevent_loop_once(ev);
+		if (ret != 0) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 		if (handle->state == LDB_ASYNC_DONE ||
 		    handle->status != LDB_SUCCESS) {
 			return handle->status;
@@ -419,7 +423,10 @@ int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 	case LDB_WAIT_ALL:
 		while (handle->state != LDB_ASYNC_DONE) {
-			event_loop_once(ev);
+			ret = tevent_loop_once(ev);
+			if (ret != 0) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			if (handle->status != LDB_SUCCESS) {
 				return handle->status;
 			}

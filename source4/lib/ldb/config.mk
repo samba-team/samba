@@ -1,7 +1,7 @@
 ################################################
 # Start MODULE ldb_asq
 [MODULE::ldb_asq]
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 CFLAGS = -I$(ldbsrcdir)/include
 INIT_FUNCTION = LDB_MODULE(asq)
 SUBSYSTEM = LIBLDB
@@ -13,7 +13,7 @@ ldb_asq_OBJ_FILES = $(ldbsrcdir)/modules/asq.o
 ################################################
 # Start MODULE ldb_server_sort
 [MODULE::ldb_server_sort]
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 CFLAGS = -I$(ldbsrcdir)/include
 INIT_FUNCTION = LDB_MODULE(server_sort)
 SUBSYSTEM = LIBLDB
@@ -27,7 +27,7 @@ ldb_server_sort_OBJ_FILES = $(ldbsrcdir)/modules/sort.o
 [MODULE::ldb_paged_results]
 INIT_FUNCTION = LDB_MODULE(paged_results)
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_paged_results
 ################################################
@@ -39,7 +39,7 @@ ldb_paged_results_OBJ_FILES = $(ldbsrcdir)/modules/paged_results.o
 [MODULE::ldb_paged_searches]
 INIT_FUNCTION = LDB_MODULE(paged_searches)
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 SUBSYSTEM = LIBLDB
 # End MODULE ldb_paged_results
 ################################################
@@ -51,7 +51,7 @@ ldb_paged_searches_OBJ_FILES = $(ldbsrcdir)/modules/paged_searches.o
 [MODULE::ldb_operational]
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 INIT_FUNCTION = LDB_MODULE(operational)
 # End MODULE ldb_operational
 ################################################
@@ -63,7 +63,7 @@ ldb_operational_OBJ_FILES = $(ldbsrcdir)/modules/operational.o
 [MODULE::ldb_rdn_name]
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 INIT_FUNCTION = LDB_MODULE(rdn_name)
 # End MODULE ldb_rdn_name
 ################################################
@@ -79,7 +79,7 @@ $(ldb_map_OBJ_FILES): CFLAGS+=-I$(ldbsrcdir)/ldb_map
 [MODULE::ldb_skel]
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBTEVENT
 INIT_FUNCTION = LDB_MODULE(skel)
 # End MODULE ldb_skel
 ################################################
@@ -91,7 +91,7 @@ ldb_skel_OBJ_FILES = $(ldbsrcdir)/modules/skel.o
 [MODULE::ldb_sqlite3]
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include
-PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBEVENTS
+PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTEVENT
 INIT_FUNCTION = LDB_BACKEND(sqlite3)
 # End MODULE ldb_sqlite3
 ################################################
@@ -104,7 +104,7 @@ ldb_sqlite3_OBJ_FILES = $(ldbsrcdir)/ldb_sqlite3/ldb_sqlite3.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -I$(ldbsrcdir)/include -I$(ldbsrcdir)/ldb_tdb
 PRIVATE_DEPENDENCIES = \
-		LIBTDB LIBTALLOC LIBEVENTS
+		LIBTDB LIBTALLOC LIBTEVENT
 INIT_FUNCTION = LDB_BACKEND(tdb)
 # End MODULE ldb_tdb
 ################################################
@@ -117,7 +117,7 @@ ldb_tdb_OBJ_FILES = $(addprefix $(ldbsrcdir)/ldb_tdb/, ldb_tdb.o ldb_search.o ld
 [LIBRARY::LIBLDB]
 CFLAGS = -I$(ldbsrcdir)/include
 PUBLIC_DEPENDENCIES = \
-		LIBTALLOC LIBEVENTS
+		LIBTALLOC LIBTEVENT
 PRIVATE_DEPENDENCIES = \
 		SOCKET_WRAPPER
 

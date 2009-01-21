@@ -1122,13 +1122,13 @@ static int ltdb_handle_request(struct ldb_module *module,
 
 	tv.tv_sec = 0;
 	tv.tv_usec = 0;
-	te = event_add_timed(ev, ac, tv, ltdb_callback, ac);
+	te = tevent_add_timer(ev, ac, tv, ltdb_callback, ac);
 	if (NULL == te) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	tv.tv_sec = req->starttime + req->timeout;
-	ac->timeout_event = event_add_timed(ev, ac, tv, ltdb_timeout, ac);
+	ac->timeout_event = tevent_add_timer(ev, ac, tv, ltdb_timeout, ac);
 	if (NULL == ac->timeout_event) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

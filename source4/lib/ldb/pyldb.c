@@ -525,7 +525,7 @@ static PyObject *py_ldb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 {
 	PyLdbObject *ret;
 	struct ldb_context *ldb;
-	ldb = ldb_init(NULL, event_context_init(NULL)); 
+	ldb = ldb_init(NULL, NULL);
 	if (ldb == NULL) {
 		PyErr_NoMemory();
 		return NULL;
