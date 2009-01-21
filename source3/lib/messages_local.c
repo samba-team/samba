@@ -57,6 +57,7 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
 				   const DATA_BLOB *data,
 				   struct messaging_backend *backend);
+static void message_dispatch(struct messaging_context *msg_ctx);
 
 static void messaging_tdb_signal_handler(struct tevent_context *ev_ctx,
 					 struct tevent_signal *se,
@@ -429,7 +430,7 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
  messages on an *odd* byte boundary.
 ****************************************************************************/
 
-void message_dispatch(struct messaging_context *msg_ctx)
+static void message_dispatch(struct messaging_context *msg_ctx)
 {
 	struct messaging_tdb_context *ctx = talloc_get_type(msg_ctx->local->private_data,
 					    struct messaging_tdb_context);
