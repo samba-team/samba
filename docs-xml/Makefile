@@ -320,7 +320,10 @@ xslt/man.xsl:
 xslt/pearson.xsl:
 
 distclean clobber:: clean
-	rm Makefile.settings config.status config.log configure
+	rm -f Makefile.settings config.status config.log configure
+
+realdistclean:: distclean
+	rm -f configure
 	rm -rf autom4te.cache
 
 
