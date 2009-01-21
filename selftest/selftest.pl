@@ -443,9 +443,10 @@ my $testenv_default = "none";
 if ($opt_target eq "samba4") {
 	$testenv_default = "member";
 	require target::Samba4;
-	$target = new Samba4($opt_bindir or "$srcdir/bin", $ldap, "$srcdir/setup");
+	$target = new Samba4($opt_bindir or "$builddir/bin",
+			     $ldap, "$srcdir/setup", $exeext);
 } elsif ($opt_target eq "samba3") {
-	my $bindir = ($opt_bindir or "$srcdir/bin");
+	my $bindir = ($opt_bindir or "$builddir/bin");
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
