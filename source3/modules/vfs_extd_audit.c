@@ -132,8 +132,11 @@ static int audit_connect(vfs_handle_struct *handle, const char *svc, const char 
 
 	openlog("smbd_audit", LOG_PID, audit_syslog_facility(handle));
 
-	syslog(audit_syslog_priority(handle), "connect to service %s by user %s\n", 
-	       svc, user);
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle),
+		       "connect to service %s by user %s\n",
+		       svc, user);
+	}
 	DEBUG(10, ("Connected to service %s as user %s\n",
 	       svc, user));
 
@@ -144,7 +147,9 @@ static int audit_connect(vfs_handle_struct *handle, const char *svc, const char 
 
 static void audit_disconnect(vfs_handle_struct *handle)
 {
-	syslog(audit_syslog_priority(handle), "disconnected\n");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "disconnected\n");
+	}
 	DEBUG(10, ("Disconnected from VFS module extd_audit\n"));
 	SMB_VFS_NEXT_DISCONNECT(handle);
 
@@ -157,10 +162,12 @@ static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fnam
 
 	result = SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
 
-	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
-	       fname,
-	       (result == NULL) ? "failed: " : "",
-	       (result == NULL) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
+		       fname,
+		       (result == NULL) ? "failed: " : "",
+		       (result == NULL) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: opendir %s %s %s\n",
 	       fname,
 	       (result == NULL) ? "failed: " : "",
@@ -172,13 +179,15 @@ static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fnam
 static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_MKDIR(handle, path, mode);
-	
-	syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n", 
-	       path,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "mkdir %s %s%s\n",
+		       path,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(0, ("vfs_extd_audit: mkdir %s %s %s\n",
 	       path,
 	       (result < 0) ? "failed: " : "",
@@ -190,13 +199,15 @@ static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 static int audit_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_RMDIR(handle, path);
 
-	syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n", 
-	       path, 
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "rmdir %s %s%s\n",
+		       path,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(0, ("vfs_extd_audit: rmdir %s %s %s\n",
                path,
 	       (result < 0) ? "failed: " : "",
@@ -208,14 +219,16 @@ static int audit_rmdir(vfs_handle_struct *handle, const char *path)
 static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 
-	syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n", 
-	       fname, result,
-	       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "", 
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "open %s (fd %d) %s%s%s\n",
+		       fname, result,
+		       ((flags & O_WRONLY) || (flags & O_RDWR)) ? "for writing " : "",
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(2, ("vfs_extd_audit: open %s %s %s\n",
 	       fname,
 	       (result < 0) ? "failed: " : "",
@@ -227,13 +240,15 @@ static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct
 static int audit_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_CLOSE(handle, fsp);
 
-	syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
-	       fsp->fh->fd,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
+		       fsp->fh->fd,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(2, ("vfs_extd_audit: close fd %d %s %s\n",
 	       fsp->fh->fd,
 	       (result < 0) ? "failed: " : "",
@@ -245,31 +260,35 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp)
 static int audit_rename(vfs_handle_struct *handle, const char *oldname, const char *newname)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 
-	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
-	       oldname, newname,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
+		       oldname, newname,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: rename old: %s newname: %s  %s %s\n",
 	       oldname, newname,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : ""));
 
-	return result;    
+	return result;
 }
 
 static int audit_unlink(vfs_handle_struct *handle, const char *path)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_UNLINK(handle, path);
 
-	syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
-	       path,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
+		       path,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(0, ("vfs_extd_audit: unlink %s %s %s\n",
 	       path,
 	       (result < 0) ? "failed: " : "",
@@ -284,10 +303,12 @@ static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 
 	result = SMB_VFS_NEXT_CHMOD(handle, path, mode);
 
-	syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
-	       path, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "chmod %s mode 0x%x %s%s\n",
+		       path, mode,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: chmod %s mode 0x%x %s %s\n",
 	       path, mode,
 	       (result < 0) ? "failed: " : "",
@@ -299,13 +320,15 @@ static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 static int audit_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_CHMOD_ACL(handle, path, mode);
 
-	syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
-	       path, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "chmod_acl %s mode 0x%x %s%s\n",
+		       path, mode,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: chmod_acl %s mode 0x%x %s %s\n",
 	        path, mode,
 	       (result < 0) ? "failed: " : "",
@@ -317,13 +340,15 @@ static int audit_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t m
 static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 
-	syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
-	       fsp->fsp_name, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "fchmod %s mode 0x%x %s%s\n",
+		       fsp->fsp_name, mode,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: fchmod %s mode 0x%x %s %s",
 	       fsp->fsp_name,  mode,
 	       (result < 0) ? "failed: " : "",
@@ -335,13 +360,15 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
-	
+
 	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 
-	syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
-	       fsp->fsp_name, mode,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
+	if (lp_syslog() > 0) {
+		syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
+		       fsp->fsp_name, mode,
+		       (result < 0) ? "failed: " : "",
+		       (result < 0) ? strerror(errno) : "");
+	}
 	DEBUG(1, ("vfs_extd_audit: fchmod_acl %s mode 0x%x %s %s",
 	       fsp->fsp_name,  mode,
 	       (result < 0) ? "failed: " : "",
