@@ -130,7 +130,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 		goto done;
 	}
 
-	tmp_services = TALLOC_ARRAY(tmp_ctx, struct smbconf_service *,
+	tmp_services = talloc_array(tmp_ctx, struct smbconf_service *,
 				    tmp_num_shares);
 
 	if (tmp_services == NULL) {

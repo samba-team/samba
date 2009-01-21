@@ -79,7 +79,7 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 	cache->current_share = cache->num_shares;
 	cache->num_shares++;
 
-	cache->param_names = TALLOC_REALLOC_ARRAY(cache,
+	cache->param_names = talloc_realloc(cache,
 						  cache->param_names,
 						  char **,
 						  cache->num_shares);
@@ -88,7 +88,7 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 	}
 	cache->param_names[cache->current_share] = NULL;
 
-	cache->param_values = TALLOC_REALLOC_ARRAY(cache,
+	cache->param_values = talloc_realloc(cache,
 						   cache->param_values,
 						   char **,
 						   cache->num_shares);
@@ -97,7 +97,7 @@ static bool smbconf_txt_do_section(const char *section, void *private_data)
 	}
 	cache->param_values[cache->current_share] = NULL;
 
-	cache->num_params = TALLOC_REALLOC_ARRAY(cache,
+	cache->num_params = talloc_realloc(cache,
 						 cache->num_params,
 						 uint32_t,
 						 cache->num_shares);
@@ -170,7 +170,7 @@ static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
 		smbconf_txt_flush_cache(ctx);
 	}
 
-	pd(ctx)->cache = TALLOC_ZERO_P(pd(ctx), struct txt_cache);
+	pd(ctx)->cache = talloc_zero(pd(ctx), struct txt_cache);
 
 	if (pd(ctx)->cache == NULL) {
 		return WERR_NOMEM;
@@ -229,7 +229,7 @@ static WERROR smbconf_txt_init(struct smbconf_ctx *ctx, const char *path)
 		return WERR_NOMEM;
 	}
 
-	ctx->data = TALLOC_ZERO_P(ctx, struct txt_private_data);
+	ctx->data = talloc_zero(ctx, struct txt_private_data);
 	if (ctx->data == NULL) {
 		return WERR_NOMEM;
 	}
@@ -420,7 +420,7 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 
 	tmp_ctx = talloc_stackframe();
 
-	tmp_service = TALLOC_ZERO_P(tmp_ctx, struct smbconf_service);
+	tmp_service = talloc_zero(tmp_ctx, struct smbconf_service);
 	if (tmp_service == NULL) {
 		werr = WERR_NOMEM;
 		goto done;

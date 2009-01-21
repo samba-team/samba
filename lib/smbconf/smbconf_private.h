@@ -20,6 +20,12 @@
 #ifndef __LIBSMBCONF_PRIVATE_H__
 #define __LIBSMBCONF_PRIVATE_H__
 
+#ifndef GLOBAL_NAME
+#define GLOBAL_NAME "global"
+#endif
+
+#include "lib/smbconf/smbconf.h"
+
 struct smbconf_ops {
 	WERROR (*init)(struct smbconf_ctx *ctx, const char *path);
 	int (*shutdown)(struct smbconf_ctx *ctx);

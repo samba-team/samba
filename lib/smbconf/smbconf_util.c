@@ -49,7 +49,7 @@ WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	ctx = TALLOC_ZERO_P(mem_ctx, struct smbconf_ctx);
+	ctx = talloc_zero(mem_ctx, struct smbconf_ctx);
 	if (ctx == NULL) {
 		return WERR_NOMEM;
 	}
@@ -86,7 +86,7 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	new_array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, count + 1);
+	new_array = talloc_realloc(mem_ctx, *array, char *, count + 1);
 	if (new_array == NULL) {
 		return WERR_NOMEM;
 	}
