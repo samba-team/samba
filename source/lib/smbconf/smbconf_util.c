@@ -67,7 +67,7 @@ WERROR smbconf_init_internal(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	return werr;
 
 fail:
-	TALLOC_FREE(ctx);
+	talloc_free(ctx);
 	return werr;
 }
 
@@ -96,7 +96,7 @@ WERROR smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	} else {
 		new_array[count] = talloc_strdup(new_array, string);
 		if (new_array[count] == NULL) {
-			TALLOC_FREE(new_array);
+			talloc_free(new_array);
 			return WERR_NOMEM;
 		}
 	}
