@@ -138,7 +138,7 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 	if (!(tpd->verbatim) &&
 	    smbconf_find_in_array(param_name, param_names, num_params, &idx))
 	{
-		TALLOC_FREE(param_values[idx]);
+		talloc_free(param_values[idx]);
 		param_values[idx] = talloc_strdup(cache, param_value);
 		if (param_values[idx] == NULL) {
 			return false;
@@ -160,7 +160,8 @@ static bool smbconf_txt_do_parameter(const char *param_name,
 
 static void smbconf_txt_flush_cache(struct smbconf_ctx *ctx)
 {
-	TALLOC_FREE(pd(ctx)->cache);
+	talloc_free(pd(ctx)->cache);
+	pd(ctx)->cache = NULL;
 }
 
 static WERROR smbconf_txt_init_cache(struct smbconf_ctx *ctx)
@@ -359,7 +360,7 @@ static WERROR smbconf_txt_get_share_names(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -458,7 +459,7 @@ static WERROR smbconf_txt_get_share(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
@@ -593,7 +594,7 @@ static WERROR smbconf_txt_get_includes(struct smbconf_ctx *ctx,
 	werr = WERR_OK;
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
