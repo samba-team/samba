@@ -113,7 +113,6 @@ NSS_STATUS _nss_ldb_getpwent_r(struct passwd *result_buf,
 NSS_STATUS _nss_ldb_getpwuid_r(uid_t uid, struct passwd *result_buf, char *buffer, size_t buflen, int *errnop)
 {
 	int ret;
-	char *filter;
 	struct ldb_result *res;
 
 	if (uid == 0) { /* we don't serve root uid by policy */
@@ -126,22 +125,12 @@ NSS_STATUS _nss_ldb_getpwuid_r(uid_t uid, struct passwd *result_buf, char *buffe
 		return ret;
 	}
 
-	/* build the filter for this uid */
-	filter = talloc_asprintf(_ldb_nss_ctx, _LDB_NSS_PWUID_FILTER, uid);
-	if (filter == NULL) {
-		/* this is a fatal error */
-		*errnop = errno = ENOMEM;
-		ret = NSS_STATUS_UNAVAIL;
-		goto done;
-	}
-
 	/* search the entry */
 	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &res, 
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
 			 _ldb_nss_pw_attrs,
-			 filter
-			 );
+			 _LDB_NSS_PWUID_FILTER, uid);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -171,7 +160,6 @@ NSS_STATUS _nss_ldb_getpwuid_r(uid_t uid, struct passwd *result_buf, char *buffe
 				   res->msgs[0]);
 
 done:
-	talloc_free(filter);
 	talloc_free(res);
 	return ret;
 }
@@ -179,7 +167,6 @@ done:
 NSS_STATUS _nss_ldb_getpwnam_r(const char *name, struct passwd *result_buf, char *buffer, size_t buflen, int *errnop)
 {
 	int ret;
-	char *filter;
 	struct ldb_result *res;
 
 	ret = _ldb_nss_init();
@@ -187,21 +174,12 @@ NSS_STATUS _nss_ldb_getpwnam_r(const char *name, struct passwd *result_buf, char
 		return ret;
 	}
 
-	/* build the filter for this name */
-	filter = talloc_asprintf(_ldb_nss_ctx, _LDB_NSS_PWNAM_FILTER, name);
-	if (filter == NULL) {
-		/* this is a fatal error */
-		*errnop = errno = ENOENT;
-		ret = NSS_STATUS_UNAVAIL;
-		goto done;
-	}
-
 	/* search the entry */
 	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
 			 _ldb_nss_pw_attrs,
-			 filter);
+			 _LDB_NSS_PWNAM_FILTER, name);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -231,7 +209,6 @@ NSS_STATUS _nss_ldb_getpwnam_r(const char *name, struct passwd *result_buf, char
 				   res->msgs[0]);
 
 done:
-	talloc_free(filter);
 	talloc_free(res);
 	return ret;
 }

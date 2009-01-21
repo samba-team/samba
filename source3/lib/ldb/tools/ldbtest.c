@@ -220,20 +220,18 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 
 	for (i=0;i<nsearches;i++) {
 		int uid = (i * 700 + 17) % (nrecords * 2);
-		char *expr;
 		struct ldb_result *res = NULL;
 		int ret;
 
-		expr = talloc_asprintf(ldb, "(uid=TEST%d)", uid);
-		ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, expr);
+		ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, "(uid=TEST%d)", uid);
 
 		if (ret != LDB_SUCCESS || (uid < nrecords && res->count != 1)) {
-			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
+			printf("Failed to find TEST%d - %s\n", uid, ldb_errstring(ldb));
 			exit(1);
 		}
 
 		if (uid >= nrecords && res->count > 0) {
-			printf("Found %s !? - %d\n", expr, ret);
+			printf("Found TEST%d !? - %d\n", uid, ret);
 			exit(1);
 		}
 

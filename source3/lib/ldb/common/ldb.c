@@ -745,7 +745,7 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
   note that ldb_search() will automatically replace a NULL 'base' value with the 
   defaultNamingContext from the rootDSE if available.
 */
-int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+static int _ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			   struct ldb_result **_res,
 			   const struct ldb_dn *base,
 			   enum ldb_scope scope,
@@ -799,7 +799,7 @@ done:
  takes a memory context where results are allocated
 */
 
-int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_result **result,
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_result **result,
                         struct ldb_dn *base, enum ldb_scope scope, const char * const *attrs,
                         const char *exp_fmt, ...)
 {
@@ -819,7 +819,7 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(ldb, ldb, &res, base, scope, attrs, expression);
+	ret = _ldb_search(ldb, ldb, &res, base, scope, attrs, expression);
 
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res);

@@ -118,12 +118,10 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 		struct ldb_result *res;
 		const char *name = ldb_msg_find_attr_as_string(search_from->msgs[i], 
 							       "lDAPDisplayname", NULL);
-		char *filter = talloc_asprintf(mem_ctx, "(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))", 
-					       name, name);
 
 		ret = ldb_search(ldb, ldb, &res, schemadn, LDB_SCOPE_SUBTREE, 
-				 oc_attrs, filter);
-		talloc_free(filter);
+				 oc_attrs, "(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))", 
+					       name, name);
 		if (ret != LDB_SUCCESS) {
 			printf("Search failed: %s\n", ldb_errstring(ldb));
 			return ret;

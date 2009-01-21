@@ -243,24 +243,16 @@ failed:
 static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	int ret;
-	char *expr;
 	struct ldb_result *res=NULL;
 
-	expr = talloc_asprintf(ldb, "(&(gidNumber=%u)(objectClass=groupMap))", 
-			       (unsigned)gid);
-	if (expr == NULL) goto failed;
-
-	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, expr);
-	talloc_steal(expr, res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(&(gidNumber=%u)(objectClass=groupMap))", (unsigned)gid);
 	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
 	
 	if (!msg_to_group_map(res->msgs[0], map)) goto failed;
 
-	talloc_free(expr);
 	return True;
 
 failed:
-	talloc_free(expr);
 	return False;
 }
 
@@ -270,23 +262,16 @@ failed:
 static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 {
 	int ret;
-	char *expr;
 	struct ldb_result *res=NULL;
 
-	expr = talloc_asprintf(ldb, "(&(ntName=%s)(objectClass=groupMap))", name);
-	if (expr == NULL) goto failed;
-
-	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, expr);
-	talloc_steal(expr, res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, "(&(ntName=%s)(objectClass=groupMap))", name);
 	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
 	
 	if (!msg_to_group_map(res->msgs[0], map)) goto failed;
 
-	talloc_free(expr);
 	return True;
 
 failed:
-	talloc_free(expr);
 	return False;
 }
 
@@ -317,7 +302,6 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 			       size_t *p_num_entries, bool unix_only)
 {
 	int i, ret;
-	char *expr;
 	fstring name;
 	struct ldb_result *res = NULL;
 	struct ldb_dn *basedn=NULL;
@@ -326,14 +310,6 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 	tmp_ctx = talloc_new(ldb);
 	if (tmp_ctx == NULL) goto failed;
 
-	if (sid_name_use == SID_NAME_UNKNOWN) {
-		expr = talloc_asprintf(tmp_ctx, "(&(objectClass=groupMap))");
-	} else {
-		expr = talloc_asprintf(tmp_ctx, "(&(sidNameUse=%u)(objectClass=groupMap))",
-				       sid_name_use);
-	}
-	if (expr == NULL) goto failed;
-
 	/* we do a subtree search on the domain */
 	if (domsid != NULL) {
 		sid_to_fstring(name, domsid);
@@ -341,7 +317,15 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 		if (basedn == NULL) goto failed;
 	}
 
-	ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, expr);
+	if (sid_name_use == SID_NAME_UNKNOWN) {
+		ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, 
+						 "(&(objectClass=groupMap))");
+	} else {
+		ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, 
+						 "(&(sidNameUse=%u)(objectClass=groupMap))",
+						 sid_name_use);
+	}
+
 	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) goto failed;
 
@@ -380,7 +364,6 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		NULL
 	};
 	DOM_SID alias;
-	char *expr;
 	int ret, i;
 	struct ldb_result *res=NULL;
 	fstring string_sid;
@@ -390,12 +373,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	expr = talloc_asprintf(ldb, "(&(member=%s)(objectClass=groupMap))", 
-			       string_sid);
-	if (expr == NULL) goto failed;
-
-	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, attrs, expr);
-	talloc_steal(expr, res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, attrs, "(&(member=%s)(objectClass=groupMap))", string_sid);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
@@ -414,11 +392,9 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		}
 	}
 
-	talloc_free(expr);
 	return NT_STATUS_OK;
 
 failed:
-	talloc_free(expr);
 	return status;
 }
 

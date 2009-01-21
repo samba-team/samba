@@ -56,7 +56,6 @@ static int vprintf_fn(void *private_data, const char *fmt, ...)
 int main(int argc, const char **argv)
 {
 	struct ldb_context *ldb;
-	const char *expression = "(dn=*)";
 	struct ldb_result *resultMsg;
 	int i;
 
@@ -89,7 +88,7 @@ int main(int argc, const char **argv)
 	  confusing to start with. See RFC2254.
 	*/
 	if (LDB_SUCCESS != ldb_search(ldb, ldb, &resultMsg, NULL, LDB_SCOPE_DEFAULT,
-				      NULL, expression) ) {
+				      NULL, "(dn=*)") ) {
 		printf("Problem in search\n");
 		exit(-1);
 	}

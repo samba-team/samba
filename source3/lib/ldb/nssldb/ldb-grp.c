@@ -151,7 +151,6 @@ NSS_STATUS _nss_ldb_getgrent_r(struct group *result_buf, char *buffer, size_t bu
 NSS_STATUS _nss_ldb_getgrnam_r(const char *name, struct group *result_buf, char *buffer, size_t buflen, int *errnop)
 {
 	int ret;
-	char *filter;
 	TALLOC_CTX *ctx;
 	struct ldb_result *gr_res;
 	struct ldb_result *mem_res;
@@ -167,21 +166,12 @@ NSS_STATUS _nss_ldb_getgrnam_r(const char *name, struct group *result_buf, char 
 		return NSS_STATUS_UNAVAIL;
 	}
 
-	/* build the filter for this uid */
-	filter = talloc_asprintf(ctx, _LDB_NSS_GRNAM_FILTER, name);
-	if (filter == NULL) {
-		/* this is a fatal error */
-		*errnop = errno = ENOMEM;
-		ret = NSS_STATUS_UNAVAIL;
-		goto done;
-	}
-
 	/* search the entry */
 	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &gr_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
 			 _ldb_nss_gr_attrs,
-			 filter);
+			 _LDB_NSS_GRNAM_FILTER, name);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -242,7 +232,6 @@ done:
 NSS_STATUS _nss_ldb_getgrgid_r(gid_t gid, struct group *result_buf, char *buffer, size_t buflen, int *errnop)
 {
 	int ret;
-	char *filter;
 	TALLOC_CTX *ctx;
 	struct ldb_result *gr_res;
 	struct ldb_result *mem_res;
@@ -263,21 +252,12 @@ NSS_STATUS _nss_ldb_getgrgid_r(gid_t gid, struct group *result_buf, char *buffer
 		return NSS_STATUS_UNAVAIL;
 	}
 
-	/* build the filter for this uid */
-	filter = talloc_asprintf(ctx, _LDB_NSS_GRGID_FILTER, gid);
-	if (filter == NULL) {
-		/* this is a fatal error */
-		*errnop = errno = ENOMEM;
-		ret = NSS_STATUS_UNAVAIL;
-		goto done;
-	}
-
 	/* search the entry */
 	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &gr_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
 			 _ldb_nss_gr_attrs,
-			 filter);
+			 _LDB_NSS_GRGID_FILTER, gid);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -338,7 +318,6 @@ done:
 NSS_STATUS _nss_ldb_initgroups_dyn(const char *user, gid_t group, long int *start, long int *size, gid_t **groups, long int limit, int *errnop)
 {
 	int ret;
-	char *filter;
 	const char * attrs[] = { "uidNumber", "gidNumber", NULL };
 	struct ldb_result *uid_res;
 	struct ldb_result *mem_res;
@@ -354,21 +333,12 @@ NSS_STATUS _nss_ldb_initgroups_dyn(const char *user, gid_t group, long int *star
 		return NSS_STATUS_UNAVAIL;
 	}
 
-	/* build the filter for this name */
-	filter = talloc_asprintf(mem_res, _LDB_NSS_PWNAM_FILTER, user);
-	if (filter == NULL) {
-		/* this is a fatal error */
-		*errnop = errno = ENOENT;
-		ret = NSS_STATUS_UNAVAIL;
-		goto done;
-	}
-
 	/* search the entry */
 	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &uid_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
 			 attrs,
-			 filter);
+			 _LDB_NSS_PWNAM_FILTER, user);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
