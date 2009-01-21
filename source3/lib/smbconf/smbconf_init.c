@@ -18,9 +18,9 @@
  */
 
 #include "includes.h"
-#include "smbconf_private.h"
-#include "smbconf_txt.h"
-#include "smbconf_reg.h"
+#include "lib/smbconf/smbconf_private.h"
+#include "lib/smbconf/smbconf_txt.h"
+#include "lib/smbconf/smbconf_reg.h"
 
 /**
  * smbconf initialization dispatcher
