@@ -3,9 +3,13 @@
 # Copyright (C) 2009 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPLv3 or later
 
+my $depth = 0;
+
 sub process($)
 {
 	my ($f) = @_;
+	$depth++;
+	die("Recursion in $f?") if ($depth > 100);
 	open(IN, $f) or die("Unable to open $f: $!");
 	foreach (<IN>) {
 		my $l = $_;
@@ -15,6 +19,7 @@ sub process($)
 			print $l;
 		}
 	}
+	$depth--;
 }
 
 my $path = shift;
