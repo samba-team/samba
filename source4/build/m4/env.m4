@@ -40,7 +40,7 @@ if test -n "${SAMBA_VERSION_GIT_COMMIT_TIME}";then
 fi
 
 m4_include(build/m4/check_path.m4)
-m4_include(build/m4/check_perl.m4)
+m4_include(../m4/check_perl.m4)
 
 AC_SAMBA_PERL([], [AC_MSG_ERROR([Please install perl from http://www.perl.com/])])
 

@@ -227,10 +227,17 @@ AC_ARG_WITH(profiling-data,
 )
 
 dnl Checks for programs.
+merged_build_possible=yes
 
 AC_PROG_INSTALL
 AC_PROG_AWK
-AC_PATH_PROG(PERL, perl)
+# Check for GNU make
+m4_include(../m4/check_make.m4)
+AC_SAMBA_GNU_MAKE([true], [merged_build_possible=no])
+
+# Check for perl
+m4_include(../m4/check_perl.m4)
+AC_SAMBA_PERL([true], [merged_build_possible=no])
 
 AC_CHECK_TOOL(AR, ar)
 
@@ -6278,16 +6285,6 @@ AC_ARG_ENABLE(merged-build,
 m4_include(../lib/zlib/zlib.m4)
 
 if test x$enable_merged_build = xauto; then
-	merged_build_possible=yes
-
-	# Check for GNU make
-	m4_include(../source4/m4/check_make.m4)
-	AC_SAMBA_GNU_MAKE([true], [merged_build_possible=no])
-
-	# Check for perl
-	m4_include(../source4/build/m4/check_perl.m4)
-	AC_SAMBA_PERL([true], [merged_build_possible=no])
-
 	# Check for python
 	m4_include(../source4/build/m4/check_python.m4)
 	AC_SAMBA_PYTHON_DEVEL([true], [merged_build_possible=no])
