@@ -10,13 +10,15 @@ use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;
 
-sub new($$$$) {
-	my ($classname, $bindir, $ldap, $setupdir) = @_;
+sub new($$$$$) {
+	my ($classname, $bindir, $ldap, $setupdir, $exeext) = @_;
+	$exeext = "" unless defined($exeext);
 	my $self = { 
 		vars => {}, 
 		ldap => $ldap, 
 		bindir => $bindir, 
-		setupdir => $setupdir 
+		setupdir => $setupdir,
+		exeext => $exeext
 	};
 	bless $self;
 	return $self;
@@ -25,7 +27,7 @@ sub new($$$$) {
 sub bindir_path($$) {
 	my ($self, $path) = @_;
 
-	return "$self->{bindir}/$path";
+	return "$self->{bindir}/$path$self->{exeext}";
 }
 
 sub openldap_start($$$) {
