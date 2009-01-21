@@ -4722,7 +4722,6 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 /* The following definitions come from printing/notify.c  */
 
 int print_queue_snum(const char *qname);
-bool print_notify_messages_pending(void);
 void print_notify_send_messages(struct messaging_context *msg_ctx,
 				unsigned int timeout);
 void notify_printer_status_byname(const char *sharename, uint32 status);
@@ -4745,7 +4744,6 @@ void notify_printer_printername(int snum, char *printername);
 void notify_printer_port(int snum, char *port_name);
 void notify_printer_location(int snum, char *location);
 void notify_printer_byname( const char *printername, uint32 change, const char *value );
-bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list);
 
 /* The following definitions come from printing/nt_printing.c  */
 
