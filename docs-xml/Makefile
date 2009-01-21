@@ -66,6 +66,7 @@ clean::
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
+	rm -f build/catalog.xml
 
 # Output format targets
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))
