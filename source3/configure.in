@@ -6374,7 +6374,17 @@ else
 	fi
 fi
 
-AC_OUTPUT(Makefile
+AC_SUBST(MAKEFILE)
+if test x$samba_cv_gnu_make = xyes; then
+	MAKEFILE=Makefile
+else
+	# When we don't have GNU Make, generate a copy of Makefile.in 
+	# that doesn't have the "include " statements but just includes 
+	# the files verbatim.
+	MAKEFILE=Makefile-noincludes
+	$PERL ./script/expand-includes.pl Makefile.in > $MAKEFILE.in
+fi
+AC_OUTPUT($MAKEFILE
 	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
 	  lib/netapi/examples/Makefile
 	  lib/netapi/tests/Makefile
@@ -6384,6 +6394,12 @@ AC_OUTPUT(Makefile
 	  pkgconfig/smbsharemodes.pc
 	  ../examples/libsmbclient/Makefile.internal
 	  )
+dnl If we had to expand the includes, make tsure the output file is moved back
+AC_OUTPUT_COMMANDS([
+if test x$MAKEFILE != Makefile; then
+	mv $MAKEFILE Makefile
+fi
+])
 
 #################################################
 # Print very concise instructions on building/use
