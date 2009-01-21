@@ -90,6 +90,6 @@ WERROR smbconf_init(TALLOC_CTX *mem_ctx, struct smbconf_ctx **conf_ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
