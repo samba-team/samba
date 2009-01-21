@@ -125,8 +125,6 @@ int max_send = BUFFER_SIZE;
  * Can be modified by the max xmit parameter.
  */
 int max_recv = BUFFER_SIZE;
-SIG_ATOMIC_T reload_after_sighup = 0;
-SIG_ATOMIC_T got_sig_term = 0;
 uint16 last_session_tag = UID_FIELD_INVALID;
 int trans_num = 0;
 char *orig_inbuf = NULL;
@@ -186,7 +184,6 @@ struct kernel_oplocks *koplocks = NULL;
 struct notify_mid_map *notify_changes_by_mid = NULL;
 
 int am_parent = 1;
-SIG_ATOMIC_T got_sig_cld = 0;
 int server_fd = -1;
 struct event_context *smbd_event_ctx = NULL;
 struct messaging_context *smbd_msg_ctx = NULL;

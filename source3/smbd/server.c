@@ -114,35 +114,6 @@ static void smb_stat_cache_delete(struct messaging_context *msg,
 }
 
 /****************************************************************************
- Terminate signal.
-****************************************************************************/
-
-static void sig_term(void)
-{
-	got_sig_term = 1;
-	sys_select_signal(SIGTERM);
-}
-
-/****************************************************************************
- Catch a sighup.
-****************************************************************************/
-
-static void sig_hup(int sig)
-{
-	reload_after_sighup = 1;
-	sys_select_signal(SIGHUP);
-}
-
-/****************************************************************************
- Catch a sigcld
-****************************************************************************/
-static void sig_cld(int sig)
-{
-	got_sig_cld = 1;
-	sys_select_signal(SIGCLD);
-}
-
-/****************************************************************************
   Send a SIGTERM to our process group.
 *****************************************************************************/
 
@@ -298,6 +269,50 @@ static bool allowable_number_of_smbd_processes(void)
 	return num_children < max_processes;
 }
 
+static void smbd_sig_chld_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	pid_t pid;
+	int status;
+
+	while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
+		bool unclean_shutdown = False;
+
+		/* If the child terminated normally, assume
+		   it was an unclean shutdown unless the
+		   status is 0
+		*/
+		if (WIFEXITED(status)) {
+			unclean_shutdown = WEXITSTATUS(status);
+		}
+		/* If the child terminated due to a signal
+		   we always assume it was unclean.
+		*/
+		if (WIFSIGNALED(status)) {
+			unclean_shutdown = True;
+		}
+		remove_child_pid(pid, unclean_shutdown);
+	}
+}
+
+static void smbd_setup_sig_chld_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGCHLD, 0,
+			       smbd_sig_chld_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGCHLD handler");
+	}
+}
+
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
@@ -324,7 +339,7 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 #endif
 
 	/* Stop zombies */
-	CatchSignal(SIGCLD, sig_cld);
+	smbd_setup_sig_chld_handler();
 
 	FD_ZERO(&listen_set);
 
@@ -550,32 +565,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		fd_set r_fds, w_fds;
 		int num;
 
-		if (got_sig_cld) {
-			pid_t pid;
-			int status;
-
-			got_sig_cld = False;
-
-			while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
-				bool unclean_shutdown = False;
-				
-				/* If the child terminated normally, assume
-				   it was an unclean shutdown unless the
-				   status is 0 
-				*/
-				if (WIFEXITED(status)) {
-					unclean_shutdown = WEXITSTATUS(status);
-				}
-				/* If the child terminated due to a signal
-				   we always assume it was unclean.
-				*/
-				if (WIFSIGNALED(status)) {
-					unclean_shutdown = True;
-				}
-				remove_child_pid(pid, unclean_shutdown);
-			}
-		}
-
 		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
 			continue;
 		}
@@ -604,23 +593,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
 			continue;
 		}
-
-		if (num == -1 && errno == EINTR) {
-			if (got_sig_term) {
-				exit_server_cleanly(NULL);
-			}
-
-			/* check for sighup processing */
-			if (reload_after_sighup) {
-				change_to_root_user();
-				DEBUG(1,("Reloading services after SIGHUP\n"));
-				reload_services(False);
-				reload_after_sighup = 0;
-			}
-
-			continue;
-		}
-		
 
 		/* If the idle timeout fired and we don't have any connected
 		 * users, exit gracefully. We should be running under a process
@@ -697,6 +669,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					DEBUG(0,("reinit_after_fork() failed\n"));
 					smb_panic("reinit_after_fork() failed");
 				}
+
+				smbd_setup_sig_term_handler();
+				smbd_setup_sig_hup_handler();
 
 				return True;
 			}
@@ -1078,9 +1053,6 @@ extern void build_options(bool screen);
 	fault_setup((void (*)(void *))exit_server_fault);
 	dump_core_setup("smbd");
 
-	CatchSignal(SIGTERM , SIGNAL_CAST sig_term);
-	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
-	
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);
 
@@ -1189,6 +1161,9 @@ extern void build_options(bool screen);
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
+
+	smbd_setup_sig_term_handler();
+	smbd_setup_sig_hup_handler();
 
 	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 

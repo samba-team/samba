@@ -7115,6 +7115,8 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 /* The following definitions come from smbd/process.c  */
 
+void smbd_setup_sig_term_handler(void);
+void smbd_setup_sig_hup_handler(void);
 bool srv_send_smb(int fd, char *buffer, bool do_encrypt);
 int srv_set_message(char *buf,
                         int num_words,

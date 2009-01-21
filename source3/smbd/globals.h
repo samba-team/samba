@@ -124,8 +124,6 @@ extern int max_send;
  * Can be modified by the max xmit parameter.
  */
 extern int max_recv;
-extern SIG_ATOMIC_T reload_after_sighup;
-extern SIG_ATOMIC_T got_sig_term;
 extern uint16 last_session_tag;
 extern int trans_num;
 extern char *orig_inbuf;
@@ -199,7 +197,6 @@ extern struct kernel_oplocks *koplocks;
 extern struct notify_mid_map *notify_changes_by_mid;
 
 extern int am_parent;
-extern SIG_ATOMIC_T got_sig_cld;
 extern int server_fd;
 extern struct event_context *smbd_event_ctx;
 extern struct messaging_context *smbd_msg_ctx;

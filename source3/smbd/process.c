@@ -692,6 +692,56 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 	return result;
 }
 
+static void smbd_sig_term_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	exit_server_cleanly("termination signal");
+}
+
+void smbd_setup_sig_term_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGTERM, 0,
+			       smbd_sig_term_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGTERM handler");
+	}
+}
+
+static void smbd_sig_hup_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	change_to_root_user();
+	DEBUG(1,("Reloading services after SIGHUP\n"));
+	reload_services(False);
+}
+
+void smbd_setup_sig_hup_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGHUP, 0,
+			       smbd_sig_hup_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGHUP handler");
+	}
+}
+
 /****************************************************************************
  Do all async processing in here. This includes kernel oplock messages, change
  notify events etc.
@@ -709,18 +759,6 @@ static void async_processing(void)
 	   select and may have eaten our signal. */
 	/* Is this till true? -- vl */
 	process_aio_queue();
-
-	if (got_sig_term) {
-		exit_server_cleanly("termination signal");
-	}
-
-	/* check for sighup processing */
-	if (reload_after_sighup) {
-		change_to_root_user();
-		DEBUG(1,("Reloading services after SIGHUP\n"));
-		reload_services(False);
-		reload_after_sighup = 0;
-	}
 }
 
 /****************************************************************************
@@ -1830,9 +1868,8 @@ void check_reload(time_t t)
 		mypid = getpid();
 	}
 
-	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
+	if (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK) {
 		reload_services(True);
-		reload_after_sighup = False;
 		last_smb_conf_reload_time = t;
 	}
 
