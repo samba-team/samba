@@ -195,7 +195,7 @@ sub PythonStruct($$$$$$)
 			$self->pidl("static PyObject *py_$name\_get_$e->{NAME}(PyObject *obj, void *closure)");
 			$self->pidl("{");
 			$self->indent;
-			$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
+			$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(obj);");
 			$self->pidl("PyObject *py_$e->{NAME};");
 			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}", "return NULL;");
 			$self->pidl("return py_$e->{NAME};");
@@ -206,7 +206,7 @@ sub PythonStruct($$$$$$)
 			$self->pidl("static int py_$name\_set_$e->{NAME}(PyObject *py_obj, PyObject *value, void *closure)");
 			$self->pidl("{");
 			$self->indent;
-			$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+			$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
 			my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
 			my $l = $e->{LEVELS}[0];
 			my $nl = GetNextLevel($e, $l);
@@ -250,7 +250,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+		$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
 		$self->pidl("DATA_BLOB blob;");
 		$self->pidl("enum ndr_err_code err;");
 		$self->pidl("err = ndr_push_struct_blob(&blob, py_talloc_get_mem_ctx(py_obj), NULL, object, (ndr_push_flags_fn_t)ndr_push_$name);");
@@ -269,7 +269,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("static PyObject *py_$name\_ndr_unpack(PyObject *py_obj, PyObject *args)");
 		$self->pidl("{");
 		$self->indent;
-		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+		$self->pidl("$cname *object = ($cname *)py_talloc_get_ptr(py_obj);");
 		$self->pidl("DATA_BLOB blob;");
 		$self->pidl("enum ndr_err_code err;");
 		$self->pidl("if (!PyArg_ParseTuple(args, \"s#:__ndr_unpack__\", &blob.data, &blob.length))");
