@@ -64,7 +64,7 @@ bool smbconf_is_writeable(struct smbconf_ctx *ctx)
  */
 void smbconf_shutdown(struct smbconf_ctx *ctx)
 {
-	TALLOC_FREE(ctx);
+	talloc_free(ctx);
 }
 
 /**
@@ -157,7 +157,7 @@ WERROR smbconf_get_config(struct smbconf_ctx *ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	talloc_free(tmp_ctx);
 	return werr;
 }
 
