@@ -58,13 +58,15 @@ clean::
 	rm -rf $(OUTPUTDIR)/* $(DOCBOOKDIR)
 	rm -f $(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-dia))) \
 			$(patsubst %.svg,%.pdf,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
-			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
+			$(patsubst %.svg,%.eps,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg))) \
+			$(patsubst %.svg,%.png,$(foreach DOC,$(MAIN_DOCS),$($(DOC)-images-latex-svg)))
 	rm -f *-attributions.xml *.d *.tpt *.tex *.loc *.toc *.lof *.glo *.idx *.aux
 	rm -f *-images-html*
 	rm -f *-images-latex-* $(LATEX_FIGURES)
 	rm -f xslt/figures/*pdf
 	rm -f $(SMBDOTCONFDOC)/parameters.*.xml
 	rm -f $(addsuffix .*,$(MAIN_DOCS))
+	rm -f build/catalog.xml
 
 # Output format targets
 pdf:: $(patsubst %,$(PDFDIR)/%.pdf,$(MAIN_DOCS))

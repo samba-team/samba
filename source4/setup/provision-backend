@@ -94,7 +94,7 @@ else:
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = "setup"
+	setup_dir = os.path.dirname(__file__)
 
 provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetdir=opts.targetdir,
 		  realm=opts.realm, domain=opts.domain,

@@ -71,7 +71,7 @@ message("Provisioning\n")
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = "setup"
+	setup_dir = os.path.dirname(__file__)
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile

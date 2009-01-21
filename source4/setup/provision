@@ -168,7 +168,7 @@ creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = "setup"
+	setup_dir = os.path.dirname(__file__)
 
 samdb_fill = FILL_FULL
 if opts.blank:
