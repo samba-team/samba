@@ -53,11 +53,6 @@ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				    struct auth_serversupplied_info *server_info, 
 				    struct auth_session_info **_session_info) ;
 
-NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
-					      const char *account_name,
-					      uint16_t validation_level,
-					      union netr_Validation *validation,
-					      struct auth_serversupplied_info **_server_info);
 NTSTATUS auth_anonymous_session_info(TALLOC_CTX *parent_ctx, 
 				     struct tevent_context *ev_ctx,
 				     struct loadparm_context *lp_ctx,
