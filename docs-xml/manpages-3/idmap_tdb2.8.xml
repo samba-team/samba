@@ -111,7 +111,6 @@
 
 	<programlisting>
 	[global]
-	# "idmap backend = tdb2" is redundant here since it is the default
 	idmap backend = tdb2
 	idmap uid = 1000000-2000000
 	idmap gid = 1000000-2000000
