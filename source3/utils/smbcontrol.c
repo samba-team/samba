@@ -65,10 +65,10 @@ static bool send_message(struct messaging_context *msg_ctx,
 	return ret;
 }
 
-static void smbcontrol_timeout(struct event_context *event_ctx,
-			    struct timed_event *te,
-			    struct timeval now,
-			    void *private_data)
+static void smbcontrol_timeout(struct tevent_context *event_ctx,
+			       struct tevent_timer *te,
+			       struct timeval now,
+			       void *private_data)
 {
 	bool *timed_out = (bool *)private_data;
 	TALLOC_FREE(te);
@@ -80,21 +80,24 @@ static void smbcontrol_timeout(struct event_context *event_ctx,
 static void wait_replies(struct messaging_context *msg_ctx,
 			 bool multiple_replies)
 {
-	struct timed_event *te;
+	struct tevent_timer *te;
 	bool timed_out = False;
 
-	if (!(te = event_add_timed(messaging_event_context(msg_ctx), NULL,
-				   timeval_current_ofs(timeout, 0),
-				   smbcontrol_timeout, (void *)&timed_out))) {
-		DEBUG(0, ("event_add_timed failed\n"));
+	if (!(te = tevent_add_timer(messaging_event_context(msg_ctx), NULL,
+				    timeval_current_ofs(timeout, 0),
+				    smbcontrol_timeout, (void *)&timed_out))) {
+		DEBUG(0, ("tevent_add_timer failed\n"));
 		return;
 	}
 
 	while (!timed_out) {
-		message_dispatch(msg_ctx);
+		int ret;
 		if (num_replies > 0 && !multiple_replies)
 			break;
-		event_loop_once(messaging_event_context(msg_ctx));
+		ret = tevent_loop_once(messaging_event_context(msg_ctx));
+		if (ret != 0) {
+			break;
+		}
 	}
 }
 
@@ -1324,7 +1327,7 @@ int main(int argc, const char **argv)
 {
 	poptContext pc;
 	int opt;
-	struct event_context *evt_ctx;
+	struct tevent_context *evt_ctx;
 	struct messaging_context *msg_ctx;
 
 	static struct poptOption long_options[] = {
@@ -1387,7 +1390,7 @@ int main(int argc, const char **argv)
          * routines mostly return True==1 for success, but
          * shell needs 0. */ 
 	
-	if (!(evt_ctx = event_context_init(NULL)) ||
+	if (!(evt_ctx = tevent_context_init(NULL)) ||
 	    !(msg_ctx = messaging_init(NULL, server_id_self(), evt_ctx))) {
 		fprintf(stderr, "could not init messaging context\n");
 		TALLOC_FREE(frame);
