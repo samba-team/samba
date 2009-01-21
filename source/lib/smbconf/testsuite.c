@@ -57,7 +57,7 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 	ret = true;
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -114,7 +114,7 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 	ret = true;
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -235,7 +235,7 @@ static bool torture_smbconf_txt(void)
 	printf("%s: text backend\n", ret ? "success" : "failure");
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -266,7 +266,7 @@ static bool torture_smbconf_reg(void)
 	printf("%s: registry backend\n", ret ? "success" : "failure");
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret;
 }
 
@@ -315,6 +315,6 @@ int main(int argc, const char **argv)
 	ret = torture_smbconf();
 
 done:
-	TALLOC_FREE(mem_ctx);
+	talloc_free(mem_ctx);
 	return ret ? 0 : -1;
 }
