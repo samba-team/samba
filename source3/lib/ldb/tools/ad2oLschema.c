@@ -84,9 +84,8 @@ static int fetch_attrs_schema(struct ldb_context *ldb, struct ldb_dn *schemadn,
 	}
 	
 	/* Downlaod schema */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "objectClass=attributeSchema", 
-			 attrs, attrs_res);
+	ret = ldb_search(ldb, ldb, attrs_res, schemadn, LDB_SCOPE_SUBTREE, 
+			 attrs, "objectClass=attributeSchema");
 	if (ret != LDB_SUCCESS) {
 		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -122,9 +121,8 @@ static int fetch_oc_recursive(struct ldb_context *ldb, struct ldb_dn *schemadn,
 		char *filter = talloc_asprintf(mem_ctx, "(&(&(objectClass=classSchema)(subClassOf=%s))(!(lDAPDisplayName=%s)))", 
 					       name, name);
 
-		ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-				 filter,
-				 oc_attrs, &res);
+		ret = ldb_search(ldb, ldb, &res, schemadn, LDB_SCOPE_SUBTREE, 
+				 oc_attrs, filter);
 		talloc_free(filter);
 		if (ret != LDB_SUCCESS) {
 			printf("Search failed: %s\n", ldb_errstring(ldb));
@@ -165,9 +163,8 @@ static int fetch_objectclass_schema(struct ldb_context *ldb, struct ldb_dn *sche
 	}
 	
 	/* Downlaod 'top' */
-	ret = ldb_search(ldb, schemadn, LDB_SCOPE_SUBTREE, 
-			 "(&(objectClass=classSchema)(lDAPDisplayName=top))", 
-			 oc_attrs, &top_res);
+	ret = ldb_search(ldb, ldb, &top_res, schemadn, LDB_SCOPE_SUBTREE, 
+			 oc_attrs, "(&(objectClass=classSchema)(lDAPDisplayName=top))");
 	if (ret != LDB_SUCCESS) {
 		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -207,7 +204,7 @@ static struct ldb_dn *find_schema_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ct
 	}
 	
 	/* Search for rootdse */
-	ldb_ret = ldb_search(ldb, basedn, LDB_SCOPE_BASE, NULL, rootdse_attrs, &rootdse_res);
+	ldb_ret = ldb_search(ldb, ldb, &rootdse_res, basedn, LDB_SCOPE_BASE, rootdse_attrs, NULL);
 	if (ldb_ret != LDB_SUCCESS) {
 		printf("Search failed: %s\n", ldb_errstring(ldb));
 		return NULL;

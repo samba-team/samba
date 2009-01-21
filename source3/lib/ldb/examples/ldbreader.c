@@ -88,8 +88,8 @@ int main(int argc, const char **argv)
 	  quite fine grained results with the LDAP search syntax, however it is a bit
 	  confusing to start with. See RFC2254.
 	*/
-	if (LDB_SUCCESS != ldb_search(ldb, NULL, LDB_SCOPE_DEFAULT,
-				      expression, NULL, &resultMsg) ) {
+	if (LDB_SUCCESS != ldb_search(ldb, ldb, &resultMsg, NULL, LDB_SCOPE_DEFAULT,
+				      NULL, expression) ) {
 		printf("Problem in search\n");
 		exit(-1);
 	}

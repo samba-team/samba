@@ -59,12 +59,12 @@ NSS_STATUS _nss_ldb_setgrent(void)
 		_ldb_nss_ctx->gr_res = NULL;
 	}
 
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb,
+			 &_ldb_nss_ctx->gr_res,
 			 _ldb_nss_ctx->base,
-			 LDB_SCOPE_SUBTREE,
-			 _LDB_NSS_GRENT_FILTER,
+			 LDB_SCOPE_SUBTREE, 
 			 _ldb_nss_gr_attrs,
-			 &_ldb_nss_ctx->gr_res);
+			 _LDB_NSS_GRENT_FILTER);
 	if (ret != LDB_SUCCESS) {
 		return NSS_STATUS_UNAVAIL;
 	}
@@ -177,12 +177,11 @@ NSS_STATUS _nss_ldb_getgrnam_r(const char *name, struct group *result_buf, char 
 	}
 
 	/* search the entry */
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &gr_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 filter,
 			 _ldb_nss_gr_attrs,
-			 &gr_res);
+			 filter);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -274,12 +273,11 @@ NSS_STATUS _nss_ldb_getgrgid_r(gid_t gid, struct group *result_buf, char *buffer
 	}
 
 	/* search the entry */
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &gr_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 filter,
 			 _ldb_nss_gr_attrs,
-			 &gr_res);
+			 filter);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -366,12 +364,11 @@ NSS_STATUS _nss_ldb_initgroups_dyn(const char *user, gid_t group, long int *star
 	}
 
 	/* search the entry */
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &uid_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 filter,
 			 attrs,
-			 &uid_res);
+			 filter);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;

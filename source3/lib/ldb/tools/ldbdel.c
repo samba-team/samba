@@ -41,7 +41,7 @@ static int ldb_delete_recursive(struct ldb_context *ldb, const struct ldb_dn *dn
 	const char *attrs[] = { NULL };
 	struct ldb_result *res;
 	
-	ret = ldb_search(ldb, dn, LDB_SCOPE_SUBTREE, "distinguishedName=*", attrs, &res);
+	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_SUBTREE, attrs, "distinguishedName=*");
 	if (ret != LDB_SUCCESS) return -1;
 
 	for (i = 0; i < res->count; i++) {

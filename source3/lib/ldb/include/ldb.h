@@ -987,11 +987,12 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
 
   \note use talloc_free() to free the ldb_result returned
 */
-int ldb_search(struct ldb_context *ldb, 
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+		   struct ldb_result **_res,
 	       const struct ldb_dn *base,
 	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, struct ldb_result **_res);
+	       const char * const *attrs,
+	       const char *expression);
 
 /*
  * a useful search function where you can easily define the expression and

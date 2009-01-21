@@ -225,7 +225,7 @@ static void search_uid(struct ldb_context *ldb, struct ldb_dn *basedn, int nreco
 		int ret;
 
 		expr = talloc_asprintf(ldb, "(uid=TEST%d)", uid);
-		ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+		ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, expr);
 
 		if (ret != LDB_SUCCESS || (uid < nrecords && res->count != 1)) {
 			printf("Failed to find %s - %s\n", expr, ldb_errstring(ldb));
@@ -345,7 +345,7 @@ static void start_test_index(struct ldb_context **ldb)
 		exit(1);
 	}
 
-	ret = ldb_search(*ldb, basedn, LDB_SCOPE_SUBTREE, "uid=test", NULL, &res);
+	ret = ldb_search(*ldb, *ldb, basedn, LDB_SCOPE_SUBTREE, NULL, "uid=test");
 	if (ret != LDB_SUCCESS) { 
 		printf("Search with (uid=test) filter failed!\n");
 		exit(1);

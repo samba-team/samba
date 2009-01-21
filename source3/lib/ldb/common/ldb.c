@@ -166,8 +166,8 @@ static const struct ldb_dn *ldb_set_default_basedn(struct ldb_context *ldb)
 	}
 
 	tmp_ctx = talloc_new(ldb);
-	ret = ldb_search(ldb, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
-			 "(objectClass=*)", attrs, &res);
+	ret = ldb_search(ldb, ldb, &res, ldb_dn_new(tmp_ctx), LDB_SCOPE_BASE, 
+			 attrs, "(objectClass=*)");
 	if (ret == LDB_SUCCESS) {
 		if (res->count == 1) {
 			basedn = ldb_msg_find_attr_as_dn(ldb, res->msgs[0], "defaultNamingContext");
@@ -745,12 +745,12 @@ int ldb_build_rename_req(struct ldb_request **ret_req,
   note that ldb_search() will automatically replace a NULL 'base' value with the 
   defaultNamingContext from the rootDSE if available.
 */
-int ldb_search(struct ldb_context *ldb, 
-	       const struct ldb_dn *base,
-	       enum ldb_scope scope,
-	       const char *expression,
-	       const char * const *attrs, 
-	       struct ldb_result **_res)
+int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
+			   struct ldb_result **_res,
+			   const struct ldb_dn *base,
+			   enum ldb_scope scope,
+			   const char * const *attrs, 
+			   const char *expression)
 {
 	struct ldb_request *req;
 	int ret;
@@ -758,12 +758,12 @@ int ldb_search(struct ldb_context *ldb,
 
 	*_res = NULL;
 
-	res = talloc_zero(ldb, struct ldb_result);
+	res = talloc_zero(mem_ctx, struct ldb_result);
 	if (!res) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&req, ldb, ldb,
+	ret = ldb_build_search_req(&req, ldb, mem_ctx,
 					base?base:ldb_get_default_basedn(ldb),
 	       				scope,
 					expression,
@@ -819,7 +819,7 @@ int ldb_search_exp_fmt(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(ldb, base, scope, expression, attrs, &res);
+	ret = ldb_search(ldb, ldb, &res, base, scope, attrs, expression);
 
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res);

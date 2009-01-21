@@ -221,7 +221,7 @@ static bool get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	dn = mapping_dn(ldb, &sid);
 	if (dn == NULL) goto failed;
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	talloc_steal(dn, res);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		goto failed;
@@ -250,7 +250,7 @@ static bool get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 			       (unsigned)gid);
 	if (expr == NULL) goto failed;
 
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, expr);
 	talloc_steal(expr, res);
 	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
 	
@@ -276,7 +276,7 @@ static bool get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 	expr = talloc_asprintf(ldb, "(&(ntName=%s)(objectClass=groupMap))", name);
 	if (expr == NULL) goto failed;
 
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, NULL, expr);
 	talloc_steal(expr, res);
 	if (ret != LDB_SUCCESS || res->count != 1) goto failed;
 	
@@ -341,7 +341,7 @@ static bool enum_group_mapping(const DOM_SID *domsid, enum lsa_SidType sid_name_
 		if (basedn == NULL) goto failed;
 	}
 
-	ret = ldb_search(ldb, basedn, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	ret = ldb_search(ldb, ldb, &res, basedn, LDB_SCOPE_SUBTREE, NULL, expr);
 	talloc_steal(tmp_ctx, res);
 	if (ret != LDB_SUCCESS) goto failed;
 
@@ -394,7 +394,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 			       string_sid);
 	if (expr == NULL) goto failed;
 
-	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, attrs, &res);
+	ret = ldb_search(ldb, ldb, &res, NULL, LDB_SCOPE_SUBTREE, attrs, expr);
 	talloc_steal(expr, res);
 	if (ret != LDB_SUCCESS) {
 		goto failed;
@@ -515,7 +515,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, attrs, &res);
+	ret = ldb_search(ldb, ldb, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	talloc_steal(dn, res);
 	if (ret == LDB_SUCCESS && res->count == 0) {
 		talloc_free(dn);

@@ -46,12 +46,12 @@ NSS_STATUS _nss_ldb_setpwent(void)
 		_ldb_nss_ctx->pw_res = NULL;
 	}
 
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, 
+					 &_ldb_nss_ctx->pw_res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 _LDB_NSS_PWENT_FILTER,
 			 _ldb_nss_pw_attrs,
-			 &_ldb_nss_ctx->pw_res);
+			 _LDB_NSS_PWENT_FILTER);
 	if (ret != LDB_SUCCESS) {
 		return NSS_STATUS_UNAVAIL;
 	}
@@ -136,12 +136,12 @@ NSS_STATUS _nss_ldb_getpwuid_r(uid_t uid, struct passwd *result_buf, char *buffe
 	}
 
 	/* search the entry */
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &res, 
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 filter,
 			 _ldb_nss_pw_attrs,
-			 &res);
+			 filter
+			 );
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
@@ -197,12 +197,11 @@ NSS_STATUS _nss_ldb_getpwnam_r(const char *name, struct passwd *result_buf, char
 	}
 
 	/* search the entry */
-	ret = ldb_search(_ldb_nss_ctx->ldb,
+	ret = ldb_search(_ldb_nss_ctx->ldb, _ldb_nss_ctx->ldb, &res,
 			 _ldb_nss_ctx->base,
 			 LDB_SCOPE_SUBTREE,
-			 filter,
 			 _ldb_nss_pw_attrs,
-			 &res);
+			 filter);
 	if (ret != LDB_SUCCESS) {
 		/* this is a fatal error */
 		*errnop = errno = ENOENT;
