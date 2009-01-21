@@ -1384,10 +1384,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		winbind_check_sighup(override_logfile ? NULL :
 				child->logfilename);
 
-		/* Handle messages */
-
-		message_dispatch(winbind_messaging_context());
-
 		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
 			TALLOC_FREE(frame);
 			continue;
