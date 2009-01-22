@@ -40,6 +40,18 @@
 		</arg>
 
 	</cmdsynopsis>
+	<cmdsynopsis>
+		<command>eventlogadm</command>
+		<arg><option>-d</option></arg>
+		<arg><option>-h</option></arg>
+		<arg choice="plain"><option>-o</option>
+		<literal>dump</literal>
+		<replaceable>EVENTLOG</replaceable>
+		<replaceable>RECORD_NUMBER</replaceable>
+		</arg>
+
+	</cmdsynopsis>
+
 </refsynopsisdiv>
 
 <refsect1>
@@ -93,6 +105,20 @@
 		The <command>-o write</command> reads event log
 		records from standard input and writes them to the Samba
 		event log store named by EVENTLOG.
+		</para> </listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>
+		<option>-o</option>
+		<literal>write</literal>
+		<replaceable>EVENTLOG</replaceable>
+		<replaceable>RECORD_NUMBER</replaceable>
+		</term>
+		<listitem><para>
+		The <command>-o dump</command> reads event log
+		records from a EVENTLOG tdb and dumps them to standard
+		output on screen.
 		</para> </listitem>
 		</varlistentry>
 
