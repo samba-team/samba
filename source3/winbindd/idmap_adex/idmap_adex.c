@@ -268,15 +268,6 @@ static NTSTATUS _idmap_adex_set_mapping(struct
 /**********************************************************************
  *********************************************************************/
 
-static NTSTATUS _idmap_adex_dump(struct idmap_domain
-				     *dom, struct id_map **maps, int *num_map)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/**********************************************************************
- *********************************************************************/
-
 static NTSTATUS _idmap_adex_close(struct idmap_domain
 				      *dom)
 {
@@ -406,7 +397,6 @@ static struct idmap_methods adex_idmap_methods = {
 	.unixids_to_sids  = _idmap_adex_get_sid_from_id,
 	.sids_to_unixids  = _idmap_adex_get_id_from_sid,
 	.set_mapping      = _idmap_adex_set_mapping,
-	.dump_data        = _idmap_adex_dump,
 	.close_fn         = _idmap_adex_close
 };
 static struct nss_info_methods adex_nss_methods = {

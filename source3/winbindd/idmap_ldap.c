@@ -1520,7 +1520,6 @@ static struct idmap_alloc_methods idmap_ldap_alloc_methods = {
 	.get_id_hwm = idmap_ldap_get_hwm,
 	.set_id_hwm = idmap_ldap_set_hwm,
 	.close_fn = idmap_ldap_alloc_close,
-	/* .dump_data = TODO */
 };
 
 static NTSTATUS idmap_alloc_ldap_init(void)

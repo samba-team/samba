@@ -934,22 +934,11 @@ static NTSTATUS idmap_tdb2_close(struct idmap_domain *dom)
 	return NT_STATUS_OK;
 }
 
-
-/*
-  Dump all mappings out
-*/
-static NTSTATUS idmap_tdb2_dump_data(struct idmap_domain *dom, struct id_map **maps, int *num_maps)
-{
-	DEBUG(0,("idmap_tdb2_dump_data not supported\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
 static struct idmap_methods db_methods = {
 	.init            = idmap_tdb2_db_init,
 	.unixids_to_sids = idmap_tdb2_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb2_sids_to_unixids,
 	.set_mapping     = idmap_tdb2_set_mapping,
-	.dump_data       = idmap_tdb2_dump_data,
 	.close_fn        = idmap_tdb2_close
 };
 
