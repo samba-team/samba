@@ -761,7 +761,7 @@ SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
 	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
-             rpc_client/cli_pipe.o ../librpc/rpc/binding.o $(RPC_PARSE_OBJ2) \
+             $(RPC_CLIENT_OBJ) ../librpc/rpc/binding.o $(RPC_PARSE_OBJ2) \
              $(RPC_CLIENT_OBJ1) \
 	     $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(LDB_OBJ) $(GROUPDB_OBJ) \
 	     $(LIBMSRPC_GEN_OBJ)
@@ -844,7 +844,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
 
-CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
+CLIENT_OBJ1 = client/client.o client/clitar.o $(RPC_CLIENT_OBJ) \
 	      ../librpc/rpc/binding.o \
 	      client/dnsbrowse.o \
 	      $(RPC_CLIENT_OBJ1) \
