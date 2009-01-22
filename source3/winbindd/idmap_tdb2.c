@@ -926,17 +926,6 @@ done:
 }
 
 /*
-  remove a mapping. 
-*/
-static NTSTATUS idmap_tdb2_remove_mapping(struct idmap_domain *dom, const struct id_map *map)
-{
-	/* not supported as it would invalidate the cache tdb on other
-	   nodes */
-	DEBUG(0,("idmap_tdb2_remove_mapping not supported\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
   Close the idmap tdb instance
 */
 static NTSTATUS idmap_tdb2_close(struct idmap_domain *dom)
@@ -960,7 +949,6 @@ static struct idmap_methods db_methods = {
 	.unixids_to_sids = idmap_tdb2_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb2_sids_to_unixids,
 	.set_mapping     = idmap_tdb2_set_mapping,
-	.remove_mapping  = idmap_tdb2_remove_mapping,
 	.dump_data       = idmap_tdb2_dump_data,
 	.close_fn        = idmap_tdb2_close
 };
