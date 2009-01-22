@@ -6016,7 +6016,6 @@ void idmap_close(void);
 NTSTATUS idmap_init_cache(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);
-NTSTATUS idmap_set_gid_hwm(struct unixid *id);
 NTSTATUS idmap_backends_unixid_to_sid(const char *domname,
 				      struct id_map *id);
 NTSTATUS idmap_backends_sid_to_unixid(const char *domname,
