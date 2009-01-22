@@ -512,103 +512,6 @@ done:
 }
 
 /**********************************
- Get current highest id.
-**********************************/
-
-static NTSTATUS idmap_ldap_get_hwm(struct unixid *xid)
-{
-	TALLOC_CTX *memctx;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	int rc = LDAP_SERVER_DOWN;
-	int count = 0;
-	LDAPMessage *result = NULL;
-	LDAPMessage *entry = NULL;
-	char *id_str;
-	char *filter = NULL;
-	const char **attr_list;
-	const char *type;
-
-	/* Only do query if we are online */
-	if (idmap_is_offline())	{
-		return NT_STATUS_FILE_IS_OFFLINE;
-	}
-
-	if ( ! idmap_alloc_ldap) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	memctx = talloc_new(idmap_alloc_ldap);
-	if ( ! memctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* get type */
-	switch (xid->type) {
-
-	case ID_TYPE_UID:
-		type = get_attr_key2string(idpool_attr_list,
-					   LDAP_ATTR_UIDNUMBER);
-	       	break;
-
-	case ID_TYPE_GID:
-		type = get_attr_key2string(idpool_attr_list,
-					   LDAP_ATTR_GIDNUMBER);
-		break;
-
-	default:
-		DEBUG(2, ("Invalid ID type (0x%x)\n", xid->type));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	filter = talloc_asprintf(memctx, "(objectClass=%s)", LDAP_OBJ_IDPOOL);
-	CHECK_ALLOC_DONE(filter);
-
-	attr_list = get_attr_list(memctx, idpool_attr_list);
-	CHECK_ALLOC_DONE(attr_list);
-
-	rc = smbldap_search(idmap_alloc_ldap->smbldap_state,
-			    idmap_alloc_ldap->suffix,
-			    LDAP_SCOPE_SUBTREE, filter,
-			    attr_list, 0, &result);
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0,("%s object not found\n", LDAP_OBJ_IDPOOL));
-		goto done;
-	}
-
-	talloc_autofree_ldapmsg(memctx, result);
-
-	count = ldap_count_entries(idmap_alloc_ldap->smbldap_state->ldap_struct,
-				   result);
-	if (count != 1) {
-		DEBUG(0,("Single %s object not found\n", LDAP_OBJ_IDPOOL));
-		goto done;
-	}
-
-	entry = ldap_first_entry(idmap_alloc_ldap->smbldap_state->ldap_struct,
-				 result);
-
-	id_str = smbldap_talloc_single_attribute(idmap_alloc_ldap->smbldap_state->ldap_struct,
-			entry, type, memctx);
-	if ( ! id_str) {
-		DEBUG(0,("%s attribute not found\n", type));
-		goto done;
-	}
-	if ( ! id_str) {
-		DEBUG(0,("Out of memory\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	xid->id	= strtoul(id_str, NULL, 10);
-
-	ret = NT_STATUS_OK;
-done:
-	talloc_free(memctx);
-	return ret;
-}
-/**********************************
  Set highest id.
 **********************************/
 
@@ -1517,7 +1420,6 @@ static struct idmap_alloc_methods idmap_ldap_alloc_methods = {
 
 	.init = idmap_ldap_alloc_init,
 	.allocate_id = idmap_ldap_allocate_id,
-	.get_id_hwm = idmap_ldap_get_hwm,
 	.set_id_hwm = idmap_ldap_set_hwm,
 	.close_fn = idmap_ldap_alloc_close,
 };

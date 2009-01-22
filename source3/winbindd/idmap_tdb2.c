@@ -298,54 +298,6 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 }
 
 /*
-  Get current highest id. 
-*/
-static NTSTATUS idmap_tdb2_get_hwm(struct unixid *xid)
-{
-	const char *hwmkey;
-	const char *hwmtype;
-	uint32_t hwm;
-	uint32_t high_hwm;
-	NTSTATUS status;
-
-	status = idmap_tdb2_open_db();
-	NT_STATUS_NOT_OK_RETURN(status);
-
-	/* Get current high water mark */
-	switch (xid->type) {
-
-	case ID_TYPE_UID:
-		hwmkey = HWM_USER;
-		hwmtype = "UID";
-		high_hwm = idmap_tdb2_state.high_uid;
-		break;
-
-	case ID_TYPE_GID:
-		hwmkey = HWM_GROUP;
-		hwmtype = "GID";
-		high_hwm = idmap_tdb2_state.high_gid;
-		break;
-
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if ((hwm = dbwrap_fetch_int32(idmap_tdb2, hwmkey)) == -1) {
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	xid->id = hwm;
-
-	/* Warn if it is out of range */
-	if (hwm >= high_hwm) {
-		DEBUG(0, ("Warning: %s range full!! (max: %lu)\n", 
-			  hwmtype, (unsigned long)high_hwm));
-	}
-
-	return NT_STATUS_OK;
-}
-
-/*
   Set high id. 
 */
 static NTSTATUS idmap_tdb2_set_hwm(struct unixid *xid)
@@ -945,7 +897,6 @@ static struct idmap_methods db_methods = {
 static struct idmap_alloc_methods db_alloc_methods = {
 	.init        = idmap_tdb2_alloc_init,
 	.allocate_id = idmap_tdb2_allocate_id,
-	.get_id_hwm  = idmap_tdb2_get_hwm,
 	.set_id_hwm  = idmap_tdb2_set_hwm,
 	.close_fn    = idmap_tdb2_alloc_close
 };
