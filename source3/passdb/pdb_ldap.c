@@ -5655,11 +5655,34 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	}
 
 	if (num_result == 0) {
+		is_new_entry = true;
+	}
+
+	if (!NT_STATUS_IS_OK((ret = ldapsam_new_rid_internal(my_methods, rid)))) {
+		DEBUG(1, ("ldapsam_create_group: Could not allocate a new RID\n"));
+		return ret;
+	}
+
+	sid_compose(&group_sid, get_global_sam_sid(), *rid);
+
+	groupsidstr = talloc_strdup(tmp_ctx, sid_string_talloc(tmp_ctx,
+							       &group_sid));
+	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
+
+	if (!groupsidstr || !grouptype) {
+		DEBUG(0,("ldapsam_create_group: Out of memory!\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
+	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
+
+	if (is_new_entry) {
 		char *escape_name;
 
 		DEBUG(3,("ldapsam_create_user: Creating new posix group\n"));
-
-		is_new_entry = True;
 
 		/* lets allocate a new groupid for this group */
 		if (!winbind_allocate_gid(&gid)) {
@@ -5689,26 +5712,6 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "gidNumber", gidstr);
 	}
 
-	if (!NT_STATUS_IS_OK((ret = ldapsam_new_rid_internal(my_methods, rid)))) {
-		DEBUG(1, ("ldapsam_create_group: Could not allocate a new RID\n"));
-		return ret;
-	}
-
-	sid_compose(&group_sid, get_global_sam_sid(), *rid);
-
-	groupsidstr = talloc_strdup(tmp_ctx, sid_string_talloc(tmp_ctx,
-							       &group_sid));
-	grouptype = talloc_asprintf(tmp_ctx, "%d", SID_NAME_DOM_GRP);
-
-	if (!groupsidstr || !grouptype) {
-		DEBUG(0,("ldapsam_create_group: Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_GROUPMAP);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaSid", groupsidstr);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "sambaGroupType", grouptype);
-	smbldap_set_mod(&mods, LDAP_MOD_ADD, "displayName", name);
 	talloc_autofree_ldapmod(tmp_ctx, mods);
 
 	if (is_new_entry) {	
