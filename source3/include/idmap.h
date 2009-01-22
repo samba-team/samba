@@ -62,7 +62,6 @@ struct idmap_alloc_methods {
 	NTSTATUS (*init)(const char *compat_params);
 
 	NTSTATUS (*allocate_id)(struct unixid *id);
-	NTSTATUS (*set_id_hwm)(struct unixid *id);
 
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(void);

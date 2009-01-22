@@ -476,50 +476,6 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 }
 
 /**********************************
- Set high id. 
-**********************************/
-
-static NTSTATUS idmap_tdb_set_hwm(struct unixid *xid)
-{
-	const char *hwmkey;
-	const char *hwmtype;
-	uint32_t hwm;
-	uint32_t high_hwm;
-	NTSTATUS ret;
-
-	/* Get current high water mark */
-	switch (xid->type) {
-
-	case ID_TYPE_UID:
-		hwmkey = HWM_USER;
-		hwmtype = "UID";
-		high_hwm = idmap_tdb_state.high_uid;
-		break;
-
-	case ID_TYPE_GID:
-		hwmkey = HWM_GROUP;
-		hwmtype = "GID";
-		high_hwm = idmap_tdb_state.high_gid;
-		break;
-
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	hwm = xid->id;
-
-	/* Warn if it is out of range */
-	if (hwm >= high_hwm) {
-		DEBUG(0, ("Warning: %s range full!! (max: %lu)\n", 
-			  hwmtype, (unsigned long)high_hwm));
-	}
-
-	ret = dbwrap_trans_store_uint32(idmap_alloc_db, hwmkey, hwm);
-
-	return ret;
-}
-
-/**********************************
  Close the alloc tdb 
 **********************************/
 
@@ -973,7 +929,6 @@ static struct idmap_alloc_methods db_alloc_methods = {
 
 	.init = idmap_tdb_alloc_init,
 	.allocate_id = idmap_tdb_allocate_id,
-	.set_id_hwm = idmap_tdb_set_hwm,
 	.close_fn = idmap_tdb_alloc_close
 };
 
