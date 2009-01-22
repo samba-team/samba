@@ -486,20 +486,21 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 		return NT_STATUS_ALIAS_EXISTS;
 	}
 
-	if (!winbind_allocate_gid(&gid)) {
-		DEBUG(3, ("Could not get a gid out of winbind\n"));
+	if (!pdb_new_rid(&new_rid)) {
+		DEBUG(0, ("Could not allocate a RID.\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!pdb_new_rid(&new_rid)) {
-		DEBUG(0, ("Could not allocate a RID -- wasted a gid :-(\n"));
+	sid_compose(&sid, get_global_sam_sid(), new_rid);
+
+	if (!winbind_allocate_gid(&gid)) {
+		DEBUG(3, ("Could not get a gid out of winbind - "
+			  "wasted a rid :-(\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	DEBUG(10, ("Creating alias %s with gid %u and rid %u\n",
 		   name, (unsigned int)gid, (unsigned int)new_rid));
-
-	sid_compose(&sid, get_global_sam_sid(), new_rid);
 
 	map.gid = gid;
 	sid_copy(&map.sid, &sid);
