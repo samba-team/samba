@@ -62,27 +62,6 @@ bool namecache_enable(void)
 }
 
 /**
- * Shutdown namecache. Routine calls gencache close function
- * to safely close gencache file.
- *
- * @return true upon successful shutdown of the cache or
- *         false on failure
- **/
-
-bool namecache_shutdown(void)
-{
-	if (!gencache_shutdown()) {
-		DEBUG(2, ("namecache_shutdown: "
-			"Couldn't close namecache on top of gencache.\n"));
-		return False;
-	}
-
-	DEBUG(5, ("namecache_shutdown: "
-		"netbios namecache closed successfully.\n"));
-	return True;
-}
-
-/**
  * Generates a key for netbios name lookups on basis of
  * netbios name and type.
  * The caller must free returned key string when finished.

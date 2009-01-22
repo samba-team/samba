@@ -1476,8 +1476,6 @@ extern void build_options(bool screen);
 
 	smbd_process();
 
-	namecache_shutdown();
-
 	exit_server_cleanly(NULL);
 	return(0);
 }

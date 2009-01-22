@@ -2944,7 +2944,6 @@ NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor);
 /* The following definitions come from libsmb/namecache.c  */
 
 bool namecache_enable(void);
-bool namecache_shutdown(void);
 bool namecache_store(const char *name,
 			int name_type,
 			int num_names,
