@@ -3899,7 +3899,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	switch (opnum)
 	{
 		case NDR_NETR_LOGONUASLOGON: {
-			struct netr_LogonUasLogon *r = _r;
+			struct netr_LogonUasLogon *r = (struct netr_LogonUasLogon *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_UasInfo *);
 			if (r->out.info == NULL) {
@@ -3911,7 +3911,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONUASLOGOFF: {
-			struct netr_LogonUasLogoff *r = _r;
+			struct netr_LogonUasLogoff *r = (struct netr_LogonUasLogoff *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_UasLogoffInfo);
 			if (r->out.info == NULL) {
@@ -3923,7 +3923,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONSAMLOGON: {
-			struct netr_LogonSamLogon *r = _r;
+			struct netr_LogonSamLogon *r = (struct netr_LogonSamLogon *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
@@ -3941,7 +3941,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONSAMLOGOFF: {
-			struct netr_LogonSamLogoff *r = _r;
+			struct netr_LogonSamLogoff *r = (struct netr_LogonSamLogoff *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.result = _netr_LogonSamLogoff(cli->pipes_struct, r);
@@ -3949,7 +3949,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERREQCHALLENGE: {
-			struct netr_ServerReqChallenge *r = _r;
+			struct netr_ServerReqChallenge *r = (struct netr_ServerReqChallenge *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
@@ -3961,7 +3961,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERAUTHENTICATE: {
-			struct netr_ServerAuthenticate *r = _r;
+			struct netr_ServerAuthenticate *r = (struct netr_ServerAuthenticate *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
 			if (r->out.return_credentials == NULL) {
@@ -3973,7 +3973,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERPASSWORDSET: {
-			struct netr_ServerPasswordSet *r = _r;
+			struct netr_ServerPasswordSet *r = (struct netr_ServerPasswordSet *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
@@ -3985,7 +3985,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DATABASEDELTAS: {
-			struct netr_DatabaseDeltas *r = _r;
+			struct netr_DatabaseDeltas *r = (struct netr_DatabaseDeltas *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.sequence_num = r->in.sequence_num;
@@ -3999,7 +3999,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DATABASESYNC: {
-			struct netr_DatabaseSync *r = _r;
+			struct netr_DatabaseSync *r = (struct netr_DatabaseSync *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.sync_context = r->in.sync_context;
@@ -4013,7 +4013,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_ACCOUNTDELTAS: {
-			struct netr_AccountDeltas *r = _r;
+			struct netr_AccountDeltas *r = (struct netr_AccountDeltas *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.buffer = talloc_zero(mem_ctx, struct netr_AccountBuffer);
@@ -4041,7 +4041,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_ACCOUNTSYNC: {
-			struct netr_AccountSync *r = _r;
+			struct netr_AccountSync *r = (struct netr_AccountSync *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.recordid = r->in.recordid;
@@ -4070,7 +4070,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_GETDCNAME: {
-			struct netr_GetDcName *r = _r;
+			struct netr_GetDcName *r = (struct netr_GetDcName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.dcname = talloc_zero(mem_ctx, const char *);
 			if (r->out.dcname == NULL) {
@@ -4082,7 +4082,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONCONTROL: {
-			struct netr_LogonControl *r = _r;
+			struct netr_LogonControl *r = (struct netr_LogonControl *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.info == NULL) {
@@ -4094,7 +4094,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_GETANYDCNAME: {
-			struct netr_GetAnyDCName *r = _r;
+			struct netr_GetAnyDCName *r = (struct netr_GetAnyDCName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.dcname = talloc_zero(mem_ctx, const char *);
 			if (r->out.dcname == NULL) {
@@ -4106,7 +4106,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONCONTROL2: {
-			struct netr_LogonControl2 *r = _r;
+			struct netr_LogonControl2 *r = (struct netr_LogonControl2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.query == NULL) {
@@ -4118,7 +4118,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERAUTHENTICATE2: {
-			struct netr_ServerAuthenticate2 *r = _r;
+			struct netr_ServerAuthenticate2 *r = (struct netr_ServerAuthenticate2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.negotiate_flags = r->in.negotiate_flags;
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
@@ -4131,7 +4131,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DATABASESYNC2: {
-			struct netr_DatabaseSync2 *r = _r;
+			struct netr_DatabaseSync2 *r = (struct netr_DatabaseSync2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.sync_context = r->in.sync_context;
@@ -4145,7 +4145,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DATABASEREDO: {
-			struct netr_DatabaseRedo *r = _r;
+			struct netr_DatabaseRedo *r = (struct netr_DatabaseRedo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.delta_enum_array = talloc_zero(mem_ctx, struct netr_DELTA_ENUM_ARRAY *);
@@ -4158,7 +4158,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONCONTROL2EX: {
-			struct netr_LogonControl2Ex *r = _r;
+			struct netr_LogonControl2Ex *r = (struct netr_LogonControl2Ex *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, union netr_CONTROL_QUERY_INFORMATION);
 			if (r->out.query == NULL) {
@@ -4170,7 +4170,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_NETRENUMERATETRUSTEDDOMAINS: {
-			struct netr_NetrEnumerateTrustedDomains *r = _r;
+			struct netr_NetrEnumerateTrustedDomains *r = (struct netr_NetrEnumerateTrustedDomains *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trusted_domains_blob = talloc_zero(mem_ctx, struct netr_Blob);
 			if (r->out.trusted_domains_blob == NULL) {
@@ -4182,7 +4182,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETDCNAME: {
-			struct netr_DsRGetDCName *r = _r;
+			struct netr_DsRGetDCName *r = (struct netr_DsRGetDCName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
@@ -4194,19 +4194,19 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_NETRLOGONDUMMYROUTINE1: {
-			struct netr_NETRLOGONDUMMYROUTINE1 *r = _r;
+			struct netr_NETRLOGONDUMMYROUTINE1 *r = (struct netr_NETRLOGONDUMMYROUTINE1 *)_r;
 			r->out.result = _netr_NETRLOGONDUMMYROUTINE1(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_NETRLOGONSETSERVICEBITS: {
-			struct netr_NETRLOGONSETSERVICEBITS *r = _r;
+			struct netr_NETRLOGONSETSERVICEBITS *r = (struct netr_NETRLOGONSETSERVICEBITS *)_r;
 			r->out.result = _netr_NETRLOGONSETSERVICEBITS(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_LOGONGETTRUSTRID: {
-			struct netr_LogonGetTrustRid *r = _r;
+			struct netr_LogonGetTrustRid *r = (struct netr_LogonGetTrustRid *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rid = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.rid == NULL) {
@@ -4218,19 +4218,19 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST: {
-			struct netr_NETRLOGONCOMPUTESERVERDIGEST *r = _r;
+			struct netr_NETRLOGONCOMPUTESERVERDIGEST *r = (struct netr_NETRLOGONCOMPUTESERVERDIGEST *)_r;
 			r->out.result = _netr_NETRLOGONCOMPUTESERVERDIGEST(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST: {
-			struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r = _r;
+			struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r = (struct netr_NETRLOGONCOMPUTECLIENTDIGEST *)_r;
 			r->out.result = _netr_NETRLOGONCOMPUTECLIENTDIGEST(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_SERVERAUTHENTICATE3: {
-			struct netr_ServerAuthenticate3 *r = _r;
+			struct netr_ServerAuthenticate3 *r = (struct netr_ServerAuthenticate3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.negotiate_flags = r->in.negotiate_flags;
 			r->out.return_credentials = talloc_zero(mem_ctx, struct netr_Credential);
@@ -4248,7 +4248,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETDCNAMEEX: {
-			struct netr_DsRGetDCNameEx *r = _r;
+			struct netr_DsRGetDCNameEx *r = (struct netr_DsRGetDCNameEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
@@ -4260,7 +4260,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETSITENAME: {
-			struct netr_DsRGetSiteName *r = _r;
+			struct netr_DsRGetSiteName *r = (struct netr_DsRGetSiteName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.site = talloc_zero(mem_ctx, const char *);
 			if (r->out.site == NULL) {
@@ -4272,7 +4272,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONGETDOMAININFO: {
-			struct netr_LogonGetDomainInfo *r = _r;
+			struct netr_LogonGetDomainInfo *r = (struct netr_LogonGetDomainInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.info = talloc_zero(mem_ctx, union netr_DomainInfo);
@@ -4285,7 +4285,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERPASSWORDSET2: {
-			struct netr_ServerPasswordSet2 *r = _r;
+			struct netr_ServerPasswordSet2 *r = (struct netr_ServerPasswordSet2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
@@ -4297,7 +4297,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERPASSWORDGET: {
-			struct netr_ServerPasswordGet *r = _r;
+			struct netr_ServerPasswordGet *r = (struct netr_ServerPasswordGet *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
@@ -4314,13 +4314,13 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_NETRLOGONSENDTOSAM: {
-			struct netr_NETRLOGONSENDTOSAM *r = _r;
+			struct netr_NETRLOGONSENDTOSAM *r = (struct netr_NETRLOGONSENDTOSAM *)_r;
 			r->out.result = _netr_NETRLOGONSENDTOSAM(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_DSRADDRESSTOSITENAMESW: {
-			struct netr_DsRAddressToSitenamesW *r = _r;
+			struct netr_DsRAddressToSitenamesW *r = (struct netr_DsRAddressToSitenamesW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesWCtr *);
 			if (r->out.ctr == NULL) {
@@ -4332,7 +4332,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETDCNAMEEX2: {
-			struct netr_DsRGetDCNameEx2 *r = _r;
+			struct netr_DsRGetDCNameEx2 *r = (struct netr_DsRGetDCNameEx2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct netr_DsRGetDCNameInfo *);
 			if (r->out.info == NULL) {
@@ -4344,13 +4344,13 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN: {
-			struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r = _r;
+			struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r = (struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *)_r;
 			r->out.result = _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_NETRENUMERATETRUSTEDDOMAINSEX: {
-			struct netr_NetrEnumerateTrustedDomainsEx *r = _r;
+			struct netr_NetrEnumerateTrustedDomainsEx *r = (struct netr_NetrEnumerateTrustedDomainsEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.dom_trust_list = talloc_zero(mem_ctx, struct netr_DomainTrustList);
 			if (r->out.dom_trust_list == NULL) {
@@ -4362,7 +4362,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRADDRESSTOSITENAMESEXW: {
-			struct netr_DsRAddressToSitenamesExW *r = _r;
+			struct netr_DsRAddressToSitenamesExW *r = (struct netr_DsRAddressToSitenamesExW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct netr_DsRAddressToSitenamesExWCtr *);
 			if (r->out.ctr == NULL) {
@@ -4374,7 +4374,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETDCSITECOVERAGEW: {
-			struct netr_DsrGetDcSiteCoverageW *r = _r;
+			struct netr_DsrGetDcSiteCoverageW *r = (struct netr_DsrGetDcSiteCoverageW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct DcSitesCtr *);
 			if (r->out.ctr == NULL) {
@@ -4386,7 +4386,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONSAMLOGONEX: {
-			struct netr_LogonSamLogonEx *r = _r;
+			struct netr_LogonSamLogonEx *r = (struct netr_LogonSamLogonEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.flags = r->in.flags;
 			r->out.validation = talloc_zero(mem_ctx, union netr_Validation);
@@ -4404,7 +4404,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRENUMERATEDOMAINTRUSTS: {
-			struct netr_DsrEnumerateDomainTrusts *r = _r;
+			struct netr_DsrEnumerateDomainTrusts *r = (struct netr_DsrEnumerateDomainTrusts *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trusts = talloc_zero(mem_ctx, struct netr_DomainTrustList);
 			if (r->out.trusts == NULL) {
@@ -4416,13 +4416,13 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS: {
-			struct netr_DsrDeregisterDNSHostRecords *r = _r;
+			struct netr_DsrDeregisterDNSHostRecords *r = (struct netr_DsrDeregisterDNSHostRecords *)_r;
 			r->out.result = _netr_DsrDeregisterDNSHostRecords(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_NETR_SERVERTRUSTPASSWORDSGET: {
-			struct netr_ServerTrustPasswordsGet *r = _r;
+			struct netr_ServerTrustPasswordsGet *r = (struct netr_ServerTrustPasswordsGet *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
@@ -4444,7 +4444,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_DSRGETFORESTTRUSTINFORMATION: {
-			struct netr_DsRGetForestTrustInformation *r = _r;
+			struct netr_DsRGetForestTrustInformation *r = (struct netr_DsRGetForestTrustInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
 			if (r->out.forest_trust_info == NULL) {
@@ -4456,7 +4456,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_GETFORESTTRUSTINFORMATION: {
-			struct netr_GetForestTrustInformation *r = _r;
+			struct netr_GetForestTrustInformation *r = (struct netr_GetForestTrustInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {
@@ -4473,7 +4473,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_LOGONSAMLOGONWITHFLAGS: {
-			struct netr_LogonSamLogonWithFlags *r = _r;
+			struct netr_LogonSamLogonWithFlags *r = (struct netr_LogonSamLogonWithFlags *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = r->in.return_authenticator;
 			r->out.flags = r->in.flags;
@@ -4492,7 +4492,7 @@ NTSTATUS rpc_netlogon_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_NETR_SERVERGETTRUSTINFO: {
-			struct netr_ServerGetTrustInfo *r = _r;
+			struct netr_ServerGetTrustInfo *r = (struct netr_ServerGetTrustInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.return_authenticator = talloc_zero(mem_ctx, struct netr_Authenticator);
 			if (r->out.return_authenticator == NULL) {

@@ -249,19 +249,19 @@ NTSTATUS rpc_initshutdown_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	switch (opnum)
 	{
 		case NDR_INITSHUTDOWN_INIT: {
-			struct initshutdown_Init *r = _r;
+			struct initshutdown_Init *r = (struct initshutdown_Init *)_r;
 			r->out.result = _initshutdown_Init(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_INITSHUTDOWN_ABORT: {
-			struct initshutdown_Abort *r = _r;
+			struct initshutdown_Abort *r = (struct initshutdown_Abort *)_r;
 			r->out.result = _initshutdown_Abort(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_INITSHUTDOWN_INITEX: {
-			struct initshutdown_InitEx *r = _r;
+			struct initshutdown_InitEx *r = (struct initshutdown_InitEx *)_r;
 			r->out.result = _initshutdown_InitEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

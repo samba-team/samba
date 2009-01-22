@@ -649,19 +649,19 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	switch (opnum)
 	{
 		case NDR_EPM_INSERT: {
-			struct epm_Insert *r = _r;
+			struct epm_Insert *r = (struct epm_Insert *)_r;
 			r->out.result = _epm_Insert(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EPM_DELETE: {
-			struct epm_Delete *r = _r;
+			struct epm_Delete *r = (struct epm_Delete *)_r;
 			r->out.result = _epm_Delete(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EPM_LOOKUP: {
-			struct epm_Lookup *r = _r;
+			struct epm_Lookup *r = (struct epm_Lookup *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.entry_handle = r->in.entry_handle;
 			r->out.num_ents = talloc_zero(mem_ctx, uint32_t);
@@ -679,7 +679,7 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EPM_MAP: {
-			struct epm_Map *r = _r;
+			struct epm_Map *r = (struct epm_Map *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.entry_handle = r->in.entry_handle;
 			r->out.num_towers = talloc_zero(mem_ctx, uint32_t);
@@ -697,7 +697,7 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EPM_LOOKUPHANDLEFREE: {
-			struct epm_LookupHandleFree *r = _r;
+			struct epm_LookupHandleFree *r = (struct epm_LookupHandleFree *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.entry_handle = r->in.entry_handle;
 			r->out.result = _epm_LookupHandleFree(cli->pipes_struct, r);
@@ -705,19 +705,19 @@ NTSTATUS rpc_epmapper_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EPM_INQOBJECT: {
-			struct epm_InqObject *r = _r;
+			struct epm_InqObject *r = (struct epm_InqObject *)_r;
 			r->out.result = _epm_InqObject(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EPM_MGMTDELETE: {
-			struct epm_MgmtDelete *r = _r;
+			struct epm_MgmtDelete *r = (struct epm_MgmtDelete *)_r;
 			r->out.result = _epm_MgmtDelete(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EPM_MAPAUTH: {
-			struct epm_MapAuth *r = _r;
+			struct epm_MapAuth *r = (struct epm_MapAuth *)_r;
 			r->out.result = _epm_MapAuth(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

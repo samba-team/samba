@@ -1845,19 +1845,19 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	switch (opnum)
 	{
 		case NDR_EVENTLOG_CLEAREVENTLOGW: {
-			struct eventlog_ClearEventLogW *r = _r;
+			struct eventlog_ClearEventLogW *r = (struct eventlog_ClearEventLogW *)_r;
 			r->out.result = _eventlog_ClearEventLogW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_BACKUPEVENTLOGW: {
-			struct eventlog_BackupEventLogW *r = _r;
+			struct eventlog_BackupEventLogW *r = (struct eventlog_BackupEventLogW *)_r;
 			r->out.result = _eventlog_BackupEventLogW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_CLOSEEVENTLOG: {
-			struct eventlog_CloseEventLog *r = _r;
+			struct eventlog_CloseEventLog *r = (struct eventlog_CloseEventLog *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _eventlog_CloseEventLog(cli->pipes_struct, r);
@@ -1865,13 +1865,13 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EVENTLOG_DEREGISTEREVENTSOURCE: {
-			struct eventlog_DeregisterEventSource *r = _r;
+			struct eventlog_DeregisterEventSource *r = (struct eventlog_DeregisterEventSource *)_r;
 			r->out.result = _eventlog_DeregisterEventSource(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_GETNUMRECORDS: {
-			struct eventlog_GetNumRecords *r = _r;
+			struct eventlog_GetNumRecords *r = (struct eventlog_GetNumRecords *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.number = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.number == NULL) {
@@ -1883,7 +1883,7 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EVENTLOG_GETOLDESTRECORD: {
-			struct eventlog_GetOldestRecord *r = _r;
+			struct eventlog_GetOldestRecord *r = (struct eventlog_GetOldestRecord *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.oldest_entry = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.oldest_entry == NULL) {
@@ -1895,13 +1895,13 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EVENTLOG_CHANGENOTIFY: {
-			struct eventlog_ChangeNotify *r = _r;
+			struct eventlog_ChangeNotify *r = (struct eventlog_ChangeNotify *)_r;
 			r->out.result = _eventlog_ChangeNotify(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_OPENEVENTLOGW: {
-			struct eventlog_OpenEventLogW *r = _r;
+			struct eventlog_OpenEventLogW *r = (struct eventlog_OpenEventLogW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -1913,19 +1913,19 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EVENTLOG_REGISTEREVENTSOURCEW: {
-			struct eventlog_RegisterEventSourceW *r = _r;
+			struct eventlog_RegisterEventSourceW *r = (struct eventlog_RegisterEventSourceW *)_r;
 			r->out.result = _eventlog_RegisterEventSourceW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_OPENBACKUPEVENTLOGW: {
-			struct eventlog_OpenBackupEventLogW *r = _r;
+			struct eventlog_OpenBackupEventLogW *r = (struct eventlog_OpenBackupEventLogW *)_r;
 			r->out.result = _eventlog_OpenBackupEventLogW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_READEVENTLOGW: {
-			struct eventlog_ReadEventLogW *r = _r;
+			struct eventlog_ReadEventLogW *r = (struct eventlog_ReadEventLogW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.number_of_bytes);
 			if (r->out.data == NULL) {
@@ -1947,79 +1947,79 @@ NTSTATUS rpc_eventlog_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 		}
 
 		case NDR_EVENTLOG_REPORTEVENTW: {
-			struct eventlog_ReportEventW *r = _r;
+			struct eventlog_ReportEventW *r = (struct eventlog_ReportEventW *)_r;
 			r->out.result = _eventlog_ReportEventW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_CLEAREVENTLOGA: {
-			struct eventlog_ClearEventLogA *r = _r;
+			struct eventlog_ClearEventLogA *r = (struct eventlog_ClearEventLogA *)_r;
 			r->out.result = _eventlog_ClearEventLogA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_BACKUPEVENTLOGA: {
-			struct eventlog_BackupEventLogA *r = _r;
+			struct eventlog_BackupEventLogA *r = (struct eventlog_BackupEventLogA *)_r;
 			r->out.result = _eventlog_BackupEventLogA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_OPENEVENTLOGA: {
-			struct eventlog_OpenEventLogA *r = _r;
+			struct eventlog_OpenEventLogA *r = (struct eventlog_OpenEventLogA *)_r;
 			r->out.result = _eventlog_OpenEventLogA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_REGISTEREVENTSOURCEA: {
-			struct eventlog_RegisterEventSourceA *r = _r;
+			struct eventlog_RegisterEventSourceA *r = (struct eventlog_RegisterEventSourceA *)_r;
 			r->out.result = _eventlog_RegisterEventSourceA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_OPENBACKUPEVENTLOGA: {
-			struct eventlog_OpenBackupEventLogA *r = _r;
+			struct eventlog_OpenBackupEventLogA *r = (struct eventlog_OpenBackupEventLogA *)_r;
 			r->out.result = _eventlog_OpenBackupEventLogA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_READEVENTLOGA: {
-			struct eventlog_ReadEventLogA *r = _r;
+			struct eventlog_ReadEventLogA *r = (struct eventlog_ReadEventLogA *)_r;
 			r->out.result = _eventlog_ReadEventLogA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_REPORTEVENTA: {
-			struct eventlog_ReportEventA *r = _r;
+			struct eventlog_ReportEventA *r = (struct eventlog_ReportEventA *)_r;
 			r->out.result = _eventlog_ReportEventA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_REGISTERCLUSTERSVC: {
-			struct eventlog_RegisterClusterSvc *r = _r;
+			struct eventlog_RegisterClusterSvc *r = (struct eventlog_RegisterClusterSvc *)_r;
 			r->out.result = _eventlog_RegisterClusterSvc(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_DEREGISTERCLUSTERSVC: {
-			struct eventlog_DeregisterClusterSvc *r = _r;
+			struct eventlog_DeregisterClusterSvc *r = (struct eventlog_DeregisterClusterSvc *)_r;
 			r->out.result = _eventlog_DeregisterClusterSvc(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_WRITECLUSTEREVENTS: {
-			struct eventlog_WriteClusterEvents *r = _r;
+			struct eventlog_WriteClusterEvents *r = (struct eventlog_WriteClusterEvents *)_r;
 			r->out.result = _eventlog_WriteClusterEvents(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_GETLOGINTORMATION: {
-			struct eventlog_GetLogIntormation *r = _r;
+			struct eventlog_GetLogIntormation *r = (struct eventlog_GetLogIntormation *)_r;
 			r->out.result = _eventlog_GetLogIntormation(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_EVENTLOG_FLUSHEVENTLOG: {
-			struct eventlog_FlushEventLog *r = _r;
+			struct eventlog_FlushEventLog *r = (struct eventlog_FlushEventLog *)_r;
 			r->out.result = _eventlog_FlushEventLog(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

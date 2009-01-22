@@ -808,7 +808,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 	switch (opnum)
 	{
 		case NDR_ECHO_ADDONE: {
-			struct echo_AddOne *r = _r;
+			struct echo_AddOne *r = (struct echo_AddOne *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.out_data = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.out_data == NULL) {
@@ -820,7 +820,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_ECHODATA: {
-			struct echo_EchoData *r = _r;
+			struct echo_EchoData *r = (struct echo_EchoData *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.out_data = talloc_zero_array(mem_ctx, uint8_t, r->in.len);
 			if (r->out.out_data == NULL) {
@@ -832,13 +832,13 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_SINKDATA: {
-			struct echo_SinkData *r = _r;
+			struct echo_SinkData *r = (struct echo_SinkData *)_r;
 			_echo_SinkData(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_ECHO_SOURCEDATA: {
-			struct echo_SourceData *r = _r;
+			struct echo_SourceData *r = (struct echo_SourceData *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.len);
 			if (r->out.data == NULL) {
@@ -850,7 +850,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_TESTCALL: {
-			struct echo_TestCall *r = _r;
+			struct echo_TestCall *r = (struct echo_TestCall *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.s2 = talloc_zero(mem_ctx, const char *);
 			if (r->out.s2 == NULL) {
@@ -862,7 +862,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_TESTCALL2: {
-			struct echo_TestCall2 *r = _r;
+			struct echo_TestCall2 *r = (struct echo_TestCall2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union echo_Info);
 			if (r->out.info == NULL) {
@@ -874,13 +874,13 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_TESTSLEEP: {
-			struct echo_TestSleep *r = _r;
+			struct echo_TestSleep *r = (struct echo_TestSleep *)_r;
 			r->out.result = _echo_TestSleep(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_ECHO_TESTENUM: {
-			struct echo_TestEnum *r = _r;
+			struct echo_TestEnum *r = (struct echo_TestEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.foo1 = r->in.foo1;
 			r->out.foo2 = r->in.foo2;
@@ -890,7 +890,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_TESTSURROUNDING: {
-			struct echo_TestSurrounding *r = _r;
+			struct echo_TestSurrounding *r = (struct echo_TestSurrounding *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.data = r->in.data;
 			_echo_TestSurrounding(cli->pipes_struct, r);
@@ -898,7 +898,7 @@ NTSTATUS rpc_rpcecho_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		}
 
 		case NDR_ECHO_TESTDOUBLEPOINTER: {
-			struct echo_TestDoublePointer *r = _r;
+			struct echo_TestDoublePointer *r = (struct echo_TestDoublePointer *)_r;
 			r->out.result = _echo_TestDoublePointer(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

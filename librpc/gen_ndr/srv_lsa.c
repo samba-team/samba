@@ -6392,7 +6392,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 	switch (opnum)
 	{
 		case NDR_LSA_CLOSE: {
-			struct lsa_Close *r = _r;
+			struct lsa_Close *r = (struct lsa_Close *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _lsa_Close(cli->pipes_struct, r);
@@ -6400,13 +6400,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_DELETE: {
-			struct lsa_Delete *r = _r;
+			struct lsa_Delete *r = (struct lsa_Delete *)_r;
 			r->out.result = _lsa_Delete(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_ENUMPRIVS: {
-			struct lsa_EnumPrivs *r = _r;
+			struct lsa_EnumPrivs *r = (struct lsa_EnumPrivs *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.privs = talloc_zero(mem_ctx, struct lsa_PrivArray);
@@ -6419,7 +6419,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_QUERYSECURITY: {
-			struct lsa_QuerySecurity *r = _r;
+			struct lsa_QuerySecurity *r = (struct lsa_QuerySecurity *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sdbuf = talloc_zero(mem_ctx, struct sec_desc_buf *);
 			if (r->out.sdbuf == NULL) {
@@ -6431,19 +6431,19 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETSECOBJ: {
-			struct lsa_SetSecObj *r = _r;
+			struct lsa_SetSecObj *r = (struct lsa_SetSecObj *)_r;
 			r->out.result = _lsa_SetSecObj(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CHANGEPASSWORD: {
-			struct lsa_ChangePassword *r = _r;
+			struct lsa_ChangePassword *r = (struct lsa_ChangePassword *)_r;
 			r->out.result = _lsa_ChangePassword(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_OPENPOLICY: {
-			struct lsa_OpenPolicy *r = _r;
+			struct lsa_OpenPolicy *r = (struct lsa_OpenPolicy *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -6455,7 +6455,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_QUERYINFOPOLICY: {
-			struct lsa_QueryInfoPolicy *r = _r;
+			struct lsa_QueryInfoPolicy *r = (struct lsa_QueryInfoPolicy *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_PolicyInformation *);
 			if (r->out.info == NULL) {
@@ -6467,19 +6467,19 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETINFOPOLICY: {
-			struct lsa_SetInfoPolicy *r = _r;
+			struct lsa_SetInfoPolicy *r = (struct lsa_SetInfoPolicy *)_r;
 			r->out.result = _lsa_SetInfoPolicy(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CLEARAUDITLOG: {
-			struct lsa_ClearAuditLog *r = _r;
+			struct lsa_ClearAuditLog *r = (struct lsa_ClearAuditLog *)_r;
 			r->out.result = _lsa_ClearAuditLog(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREATEACCOUNT: {
-			struct lsa_CreateAccount *r = _r;
+			struct lsa_CreateAccount *r = (struct lsa_CreateAccount *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.acct_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.acct_handle == NULL) {
@@ -6491,7 +6491,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ENUMACCOUNTS: {
-			struct lsa_EnumAccounts *r = _r;
+			struct lsa_EnumAccounts *r = (struct lsa_EnumAccounts *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
@@ -6504,7 +6504,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREATETRUSTEDDOMAIN: {
-			struct lsa_CreateTrustedDomain *r = _r;
+			struct lsa_CreateTrustedDomain *r = (struct lsa_CreateTrustedDomain *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
@@ -6516,7 +6516,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ENUMTRUSTDOM: {
-			struct lsa_EnumTrustDom *r = _r;
+			struct lsa_EnumTrustDom *r = (struct lsa_EnumTrustDom *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_DomainList);
@@ -6529,7 +6529,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPNAMES: {
-			struct lsa_LookupNames *r = _r;
+			struct lsa_LookupNames *r = (struct lsa_LookupNames *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = r->in.sids;
 			r->out.count = r->in.count;
@@ -6543,7 +6543,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPSIDS: {
-			struct lsa_LookupSids *r = _r;
+			struct lsa_LookupSids *r = (struct lsa_LookupSids *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.names = r->in.names;
 			r->out.count = r->in.count;
@@ -6557,7 +6557,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREATESECRET: {
-			struct lsa_CreateSecret *r = _r;
+			struct lsa_CreateSecret *r = (struct lsa_CreateSecret *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sec_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.sec_handle == NULL) {
@@ -6569,7 +6569,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_OPENACCOUNT: {
-			struct lsa_OpenAccount *r = _r;
+			struct lsa_OpenAccount *r = (struct lsa_OpenAccount *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.acct_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.acct_handle == NULL) {
@@ -6581,7 +6581,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ENUMPRIVSACCOUNT: {
-			struct lsa_EnumPrivsAccount *r = _r;
+			struct lsa_EnumPrivsAccount *r = (struct lsa_EnumPrivsAccount *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.privs = talloc_zero(mem_ctx, struct lsa_PrivilegeSet *);
 			if (r->out.privs == NULL) {
@@ -6593,31 +6593,31 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ADDPRIVILEGESTOACCOUNT: {
-			struct lsa_AddPrivilegesToAccount *r = _r;
+			struct lsa_AddPrivilegesToAccount *r = (struct lsa_AddPrivilegesToAccount *)_r;
 			r->out.result = _lsa_AddPrivilegesToAccount(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT: {
-			struct lsa_RemovePrivilegesFromAccount *r = _r;
+			struct lsa_RemovePrivilegesFromAccount *r = (struct lsa_RemovePrivilegesFromAccount *)_r;
 			r->out.result = _lsa_RemovePrivilegesFromAccount(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_GETQUOTASFORACCOUNT: {
-			struct lsa_GetQuotasForAccount *r = _r;
+			struct lsa_GetQuotasForAccount *r = (struct lsa_GetQuotasForAccount *)_r;
 			r->out.result = _lsa_GetQuotasForAccount(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_SETQUOTASFORACCOUNT: {
-			struct lsa_SetQuotasForAccount *r = _r;
+			struct lsa_SetQuotasForAccount *r = (struct lsa_SetQuotasForAccount *)_r;
 			r->out.result = _lsa_SetQuotasForAccount(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_GETSYSTEMACCESSACCOUNT: {
-			struct lsa_GetSystemAccessAccount *r = _r;
+			struct lsa_GetSystemAccessAccount *r = (struct lsa_GetSystemAccessAccount *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.access_mask = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.access_mask == NULL) {
@@ -6629,13 +6629,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETSYSTEMACCESSACCOUNT: {
-			struct lsa_SetSystemAccessAccount *r = _r;
+			struct lsa_SetSystemAccessAccount *r = (struct lsa_SetSystemAccessAccount *)_r;
 			r->out.result = _lsa_SetSystemAccessAccount(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_OPENTRUSTEDDOMAIN: {
-			struct lsa_OpenTrustedDomain *r = _r;
+			struct lsa_OpenTrustedDomain *r = (struct lsa_OpenTrustedDomain *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
@@ -6647,7 +6647,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_QUERYTRUSTEDDOMAININFO: {
-			struct lsa_QueryTrustedDomainInfo *r = _r;
+			struct lsa_QueryTrustedDomainInfo *r = (struct lsa_QueryTrustedDomainInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
@@ -6659,13 +6659,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETINFORMATIONTRUSTEDDOMAIN: {
-			struct lsa_SetInformationTrustedDomain *r = _r;
+			struct lsa_SetInformationTrustedDomain *r = (struct lsa_SetInformationTrustedDomain *)_r;
 			r->out.result = _lsa_SetInformationTrustedDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_OPENSECRET: {
-			struct lsa_OpenSecret *r = _r;
+			struct lsa_OpenSecret *r = (struct lsa_OpenSecret *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sec_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.sec_handle == NULL) {
@@ -6677,13 +6677,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETSECRET: {
-			struct lsa_SetSecret *r = _r;
+			struct lsa_SetSecret *r = (struct lsa_SetSecret *)_r;
 			r->out.result = _lsa_SetSecret(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_QUERYSECRET: {
-			struct lsa_QuerySecret *r = _r;
+			struct lsa_QuerySecret *r = (struct lsa_QuerySecret *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.new_val = r->in.new_val;
 			r->out.new_mtime = r->in.new_mtime;
@@ -6694,7 +6694,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPPRIVVALUE: {
-			struct lsa_LookupPrivValue *r = _r;
+			struct lsa_LookupPrivValue *r = (struct lsa_LookupPrivValue *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.luid = talloc_zero(mem_ctx, struct lsa_LUID);
 			if (r->out.luid == NULL) {
@@ -6706,7 +6706,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPPRIVNAME: {
-			struct lsa_LookupPrivName *r = _r;
+			struct lsa_LookupPrivName *r = (struct lsa_LookupPrivName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.name = talloc_zero(mem_ctx, struct lsa_StringLarge *);
 			if (r->out.name == NULL) {
@@ -6718,7 +6718,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPPRIVDISPLAYNAME: {
-			struct lsa_LookupPrivDisplayName *r = _r;
+			struct lsa_LookupPrivDisplayName *r = (struct lsa_LookupPrivDisplayName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.disp_name = talloc_zero(mem_ctx, struct lsa_StringLarge *);
 			if (r->out.disp_name == NULL) {
@@ -6735,7 +6735,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_DELETEOBJECT: {
-			struct lsa_DeleteObject *r = _r;
+			struct lsa_DeleteObject *r = (struct lsa_DeleteObject *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _lsa_DeleteObject(cli->pipes_struct, r);
@@ -6743,7 +6743,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ENUMACCOUNTSWITHUSERRIGHT: {
-			struct lsa_EnumAccountsWithUserRight *r = _r;
+			struct lsa_EnumAccountsWithUserRight *r = (struct lsa_EnumAccountsWithUserRight *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
 			if (r->out.sids == NULL) {
@@ -6755,7 +6755,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ENUMACCOUNTRIGHTS: {
-			struct lsa_EnumAccountRights *r = _r;
+			struct lsa_EnumAccountRights *r = (struct lsa_EnumAccountRights *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rights = talloc_zero(mem_ctx, struct lsa_RightSet);
 			if (r->out.rights == NULL) {
@@ -6767,19 +6767,19 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_ADDACCOUNTRIGHTS: {
-			struct lsa_AddAccountRights *r = _r;
+			struct lsa_AddAccountRights *r = (struct lsa_AddAccountRights *)_r;
 			r->out.result = _lsa_AddAccountRights(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_REMOVEACCOUNTRIGHTS: {
-			struct lsa_RemoveAccountRights *r = _r;
+			struct lsa_RemoveAccountRights *r = (struct lsa_RemoveAccountRights *)_r;
 			r->out.result = _lsa_RemoveAccountRights(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_QUERYTRUSTEDDOMAININFOBYSID: {
-			struct lsa_QueryTrustedDomainInfoBySid *r = _r;
+			struct lsa_QueryTrustedDomainInfoBySid *r = (struct lsa_QueryTrustedDomainInfoBySid *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
@@ -6791,31 +6791,31 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETTRUSTEDDOMAININFO: {
-			struct lsa_SetTrustedDomainInfo *r = _r;
+			struct lsa_SetTrustedDomainInfo *r = (struct lsa_SetTrustedDomainInfo *)_r;
 			r->out.result = _lsa_SetTrustedDomainInfo(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_DELETETRUSTEDDOMAIN: {
-			struct lsa_DeleteTrustedDomain *r = _r;
+			struct lsa_DeleteTrustedDomain *r = (struct lsa_DeleteTrustedDomain *)_r;
 			r->out.result = _lsa_DeleteTrustedDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_STOREPRIVATEDATA: {
-			struct lsa_StorePrivateData *r = _r;
+			struct lsa_StorePrivateData *r = (struct lsa_StorePrivateData *)_r;
 			r->out.result = _lsa_StorePrivateData(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_RETRIEVEPRIVATEDATA: {
-			struct lsa_RetrievePrivateData *r = _r;
+			struct lsa_RetrievePrivateData *r = (struct lsa_RetrievePrivateData *)_r;
 			r->out.result = _lsa_RetrievePrivateData(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_OPENPOLICY2: {
-			struct lsa_OpenPolicy2 *r = _r;
+			struct lsa_OpenPolicy2 *r = (struct lsa_OpenPolicy2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -6827,7 +6827,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_GETUSERNAME: {
-			struct lsa_GetUserName *r = _r;
+			struct lsa_GetUserName *r = (struct lsa_GetUserName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.account_name = r->in.account_name;
 			r->out.authority_name = r->in.authority_name;
@@ -6836,7 +6836,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_QUERYINFOPOLICY2: {
-			struct lsa_QueryInfoPolicy2 *r = _r;
+			struct lsa_QueryInfoPolicy2 *r = (struct lsa_QueryInfoPolicy2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_PolicyInformation *);
 			if (r->out.info == NULL) {
@@ -6848,13 +6848,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETINFOPOLICY2: {
-			struct lsa_SetInfoPolicy2 *r = _r;
+			struct lsa_SetInfoPolicy2 *r = (struct lsa_SetInfoPolicy2 *)_r;
 			r->out.result = _lsa_SetInfoPolicy2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_QUERYTRUSTEDDOMAININFOBYNAME: {
-			struct lsa_QueryTrustedDomainInfoByName *r = _r;
+			struct lsa_QueryTrustedDomainInfoByName *r = (struct lsa_QueryTrustedDomainInfoByName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_TrustedDomainInfo *);
 			if (r->out.info == NULL) {
@@ -6866,13 +6866,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETTRUSTEDDOMAININFOBYNAME: {
-			struct lsa_SetTrustedDomainInfoByName *r = _r;
+			struct lsa_SetTrustedDomainInfoByName *r = (struct lsa_SetTrustedDomainInfoByName *)_r;
 			r->out.result = _lsa_SetTrustedDomainInfoByName(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_ENUMTRUSTEDDOMAINSEX: {
-			struct lsa_EnumTrustedDomainsEx *r = _r;
+			struct lsa_EnumTrustedDomainsEx *r = (struct lsa_EnumTrustedDomainsEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.domains = talloc_zero(mem_ctx, struct lsa_DomainListEx);
@@ -6885,7 +6885,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREATETRUSTEDDOMAINEX: {
-			struct lsa_CreateTrustedDomainEx *r = _r;
+			struct lsa_CreateTrustedDomainEx *r = (struct lsa_CreateTrustedDomainEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
@@ -6897,7 +6897,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CLOSETRUSTEDDOMAINEX: {
-			struct lsa_CloseTrustedDomainEx *r = _r;
+			struct lsa_CloseTrustedDomainEx *r = (struct lsa_CloseTrustedDomainEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _lsa_CloseTrustedDomainEx(cli->pipes_struct, r);
@@ -6905,7 +6905,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_QUERYDOMAININFORMATIONPOLICY: {
-			struct lsa_QueryDomainInformationPolicy *r = _r;
+			struct lsa_QueryDomainInformationPolicy *r = (struct lsa_QueryDomainInformationPolicy *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union lsa_DomainInformationPolicy *);
 			if (r->out.info == NULL) {
@@ -6917,13 +6917,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_SETDOMAININFORMATIONPOLICY: {
-			struct lsa_SetDomainInformationPolicy *r = _r;
+			struct lsa_SetDomainInformationPolicy *r = (struct lsa_SetDomainInformationPolicy *)_r;
 			r->out.result = _lsa_SetDomainInformationPolicy(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_OPENTRUSTEDDOMAINBYNAME: {
-			struct lsa_OpenTrustedDomainByName *r = _r;
+			struct lsa_OpenTrustedDomainByName *r = (struct lsa_OpenTrustedDomainByName *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
@@ -6935,13 +6935,13 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_TESTCALL: {
-			struct lsa_TestCall *r = _r;
+			struct lsa_TestCall *r = (struct lsa_TestCall *)_r;
 			r->out.result = _lsa_TestCall(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LOOKUPSIDS2: {
-			struct lsa_LookupSids2 *r = _r;
+			struct lsa_LookupSids2 *r = (struct lsa_LookupSids2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.names = r->in.names;
 			r->out.count = r->in.count;
@@ -6955,7 +6955,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPNAMES2: {
-			struct lsa_LookupNames2 *r = _r;
+			struct lsa_LookupNames2 *r = (struct lsa_LookupNames2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = r->in.sids;
 			r->out.count = r->in.count;
@@ -6969,7 +6969,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREATETRUSTEDDOMAINEX2: {
-			struct lsa_CreateTrustedDomainEx2 *r = _r;
+			struct lsa_CreateTrustedDomainEx2 *r = (struct lsa_CreateTrustedDomainEx2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.trustdom_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.trustdom_handle == NULL) {
@@ -6981,55 +6981,55 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREDRWRITE: {
-			struct lsa_CREDRWRITE *r = _r;
+			struct lsa_CREDRWRITE *r = (struct lsa_CREDRWRITE *)_r;
 			r->out.result = _lsa_CREDRWRITE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRREAD: {
-			struct lsa_CREDRREAD *r = _r;
+			struct lsa_CREDRREAD *r = (struct lsa_CREDRREAD *)_r;
 			r->out.result = _lsa_CREDRREAD(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRENUMERATE: {
-			struct lsa_CREDRENUMERATE *r = _r;
+			struct lsa_CREDRENUMERATE *r = (struct lsa_CREDRENUMERATE *)_r;
 			r->out.result = _lsa_CREDRENUMERATE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRWRITEDOMAINCREDENTIALS: {
-			struct lsa_CREDRWRITEDOMAINCREDENTIALS *r = _r;
+			struct lsa_CREDRWRITEDOMAINCREDENTIALS *r = (struct lsa_CREDRWRITEDOMAINCREDENTIALS *)_r;
 			r->out.result = _lsa_CREDRWRITEDOMAINCREDENTIALS(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRREADDOMAINCREDENTIALS: {
-			struct lsa_CREDRREADDOMAINCREDENTIALS *r = _r;
+			struct lsa_CREDRREADDOMAINCREDENTIALS *r = (struct lsa_CREDRREADDOMAINCREDENTIALS *)_r;
 			r->out.result = _lsa_CREDRREADDOMAINCREDENTIALS(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRDELETE: {
-			struct lsa_CREDRDELETE *r = _r;
+			struct lsa_CREDRDELETE *r = (struct lsa_CREDRDELETE *)_r;
 			r->out.result = _lsa_CREDRDELETE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRGETTARGETINFO: {
-			struct lsa_CREDRGETTARGETINFO *r = _r;
+			struct lsa_CREDRGETTARGETINFO *r = (struct lsa_CREDRGETTARGETINFO *)_r;
 			r->out.result = _lsa_CREDRGETTARGETINFO(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRPROFILELOADED: {
-			struct lsa_CREDRPROFILELOADED *r = _r;
+			struct lsa_CREDRPROFILELOADED *r = (struct lsa_CREDRPROFILELOADED *)_r;
 			r->out.result = _lsa_CREDRPROFILELOADED(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LOOKUPNAMES3: {
-			struct lsa_LookupNames3 *r = _r;
+			struct lsa_LookupNames3 *r = (struct lsa_LookupNames3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = r->in.sids;
 			r->out.count = r->in.count;
@@ -7043,31 +7043,31 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_CREDRGETSESSIONTYPES: {
-			struct lsa_CREDRGETSESSIONTYPES *r = _r;
+			struct lsa_CREDRGETSESSIONTYPES *r = (struct lsa_CREDRGETSESSIONTYPES *)_r;
 			r->out.result = _lsa_CREDRGETSESSIONTYPES(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARREGISTERAUDITEVENT: {
-			struct lsa_LSARREGISTERAUDITEVENT *r = _r;
+			struct lsa_LSARREGISTERAUDITEVENT *r = (struct lsa_LSARREGISTERAUDITEVENT *)_r;
 			r->out.result = _lsa_LSARREGISTERAUDITEVENT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARGENAUDITEVENT: {
-			struct lsa_LSARGENAUDITEVENT *r = _r;
+			struct lsa_LSARGENAUDITEVENT *r = (struct lsa_LSARGENAUDITEVENT *)_r;
 			r->out.result = _lsa_LSARGENAUDITEVENT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARUNREGISTERAUDITEVENT: {
-			struct lsa_LSARUNREGISTERAUDITEVENT *r = _r;
+			struct lsa_LSARUNREGISTERAUDITEVENT *r = (struct lsa_LSARUNREGISTERAUDITEVENT *)_r;
 			r->out.result = _lsa_LSARUNREGISTERAUDITEVENT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION: {
-			struct lsa_lsaRQueryForestTrustInformation *r = _r;
+			struct lsa_lsaRQueryForestTrustInformation *r = (struct lsa_lsaRQueryForestTrustInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.forest_trust_info = talloc_zero(mem_ctx, struct lsa_ForestTrustInformation *);
 			if (r->out.forest_trust_info == NULL) {
@@ -7079,19 +7079,19 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LSARSETFORESTTRUSTINFORMATION: {
-			struct lsa_LSARSETFORESTTRUSTINFORMATION *r = _r;
+			struct lsa_LSARSETFORESTTRUSTINFORMATION *r = (struct lsa_LSARSETFORESTTRUSTINFORMATION *)_r;
 			r->out.result = _lsa_LSARSETFORESTTRUSTINFORMATION(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_CREDRRENAME: {
-			struct lsa_CREDRRENAME *r = _r;
+			struct lsa_CREDRRENAME *r = (struct lsa_CREDRRENAME *)_r;
 			r->out.result = _lsa_CREDRRENAME(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LOOKUPSIDS3: {
-			struct lsa_LookupSids3 *r = _r;
+			struct lsa_LookupSids3 *r = (struct lsa_LookupSids3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.names = r->in.names;
 			r->out.count = r->in.count;
@@ -7105,7 +7105,7 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LOOKUPNAMES4: {
-			struct lsa_LookupNames4 *r = _r;
+			struct lsa_LookupNames4 *r = (struct lsa_LookupNames4 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = r->in.sids;
 			r->out.count = r->in.count;
@@ -7119,25 +7119,25 @@ NTSTATUS rpc_lsarpc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_LSA_LSAROPENPOLICYSCE: {
-			struct lsa_LSAROPENPOLICYSCE *r = _r;
+			struct lsa_LSAROPENPOLICYSCE *r = (struct lsa_LSAROPENPOLICYSCE *)_r;
 			r->out.result = _lsa_LSAROPENPOLICYSCE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARADTREGISTERSECURITYEVENTSOURCE: {
-			struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r = _r;
+			struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r = (struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *)_r;
 			r->out.result = _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE: {
-			struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r = _r;
+			struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r = (struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *)_r;
 			r->out.result = _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_LSA_LSARADTREPORTSECURITYEVENT: {
-			struct lsa_LSARADTREPORTSECURITYEVENT *r = _r;
+			struct lsa_LSARADTREPORTSECURITYEVENT *r = (struct lsa_LSARADTREPORTSECURITYEVENT *)_r;
 			r->out.result = _lsa_LSARADTREPORTSECURITYEVENT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

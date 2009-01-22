@@ -3618,7 +3618,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 	switch (opnum)
 	{
 		case NDR_SVCCTL_CLOSESERVICEHANDLE: {
-			struct svcctl_CloseServiceHandle *r = _r;
+			struct svcctl_CloseServiceHandle *r = (struct svcctl_CloseServiceHandle *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _svcctl_CloseServiceHandle(cli->pipes_struct, r);
@@ -3626,7 +3626,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_CONTROLSERVICE: {
-			struct svcctl_ControlService *r = _r;
+			struct svcctl_ControlService *r = (struct svcctl_ControlService *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
 			if (r->out.service_status == NULL) {
@@ -3638,13 +3638,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_DELETESERVICE: {
-			struct svcctl_DeleteService *r = _r;
+			struct svcctl_DeleteService *r = (struct svcctl_DeleteService *)_r;
 			r->out.result = _svcctl_DeleteService(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_LOCKSERVICEDATABASE: {
-			struct svcctl_LockServiceDatabase *r = _r;
+			struct svcctl_LockServiceDatabase *r = (struct svcctl_LockServiceDatabase *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.lock = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.lock == NULL) {
@@ -3656,7 +3656,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY: {
-			struct svcctl_QueryServiceObjectSecurity *r = _r;
+			struct svcctl_QueryServiceObjectSecurity *r = (struct svcctl_QueryServiceObjectSecurity *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buffer_size);
 			if (r->out.buffer == NULL) {
@@ -3673,13 +3673,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_SETSERVICEOBJECTSECURITY: {
-			struct svcctl_SetServiceObjectSecurity *r = _r;
+			struct svcctl_SetServiceObjectSecurity *r = (struct svcctl_SetServiceObjectSecurity *)_r;
 			r->out.result = _svcctl_SetServiceObjectSecurity(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_QUERYSERVICESTATUS: {
-			struct svcctl_QueryServiceStatus *r = _r;
+			struct svcctl_QueryServiceStatus *r = (struct svcctl_QueryServiceStatus *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.service_status = talloc_zero(mem_ctx, struct SERVICE_STATUS);
 			if (r->out.service_status == NULL) {
@@ -3691,13 +3691,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_SETSERVICESTATUS: {
-			struct svcctl_SetServiceStatus *r = _r;
+			struct svcctl_SetServiceStatus *r = (struct svcctl_SetServiceStatus *)_r;
 			r->out.result = _svcctl_SetServiceStatus(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_UNLOCKSERVICEDATABASE: {
-			struct svcctl_UnlockServiceDatabase *r = _r;
+			struct svcctl_UnlockServiceDatabase *r = (struct svcctl_UnlockServiceDatabase *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.lock = r->in.lock;
 			r->out.result = _svcctl_UnlockServiceDatabase(cli->pipes_struct, r);
@@ -3705,19 +3705,19 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS: {
-			struct svcctl_NotifyBootConfigStatus *r = _r;
+			struct svcctl_NotifyBootConfigStatus *r = (struct svcctl_NotifyBootConfigStatus *)_r;
 			r->out.result = _svcctl_NotifyBootConfigStatus(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_SCSETSERVICEBITSW: {
-			struct svcctl_SCSetServiceBitsW *r = _r;
+			struct svcctl_SCSetServiceBitsW *r = (struct svcctl_SCSetServiceBitsW *)_r;
 			r->out.result = _svcctl_SCSetServiceBitsW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_CHANGESERVICECONFIGW: {
-			struct svcctl_ChangeServiceConfigW *r = _r;
+			struct svcctl_ChangeServiceConfigW *r = (struct svcctl_ChangeServiceConfigW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.tag_id = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.tag_id == NULL) {
@@ -3729,7 +3729,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_CREATESERVICEW: {
-			struct svcctl_CreateServiceW *r = _r;
+			struct svcctl_CreateServiceW *r = (struct svcctl_CreateServiceW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.TagId = r->in.TagId;
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
@@ -3742,7 +3742,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_ENUMDEPENDENTSERVICESW: {
-			struct svcctl_EnumDependentServicesW *r = _r;
+			struct svcctl_EnumDependentServicesW *r = (struct svcctl_EnumDependentServicesW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.service_status = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.service_status == NULL) {
@@ -3764,7 +3764,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_ENUMSERVICESSTATUSW: {
-			struct svcctl_EnumServicesStatusW *r = _r;
+			struct svcctl_EnumServicesStatusW *r = (struct svcctl_EnumServicesStatusW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
@@ -3787,7 +3787,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_OPENSCMANAGERW: {
-			struct svcctl_OpenSCManagerW *r = _r;
+			struct svcctl_OpenSCManagerW *r = (struct svcctl_OpenSCManagerW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3799,7 +3799,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_OPENSERVICEW: {
-			struct svcctl_OpenServiceW *r = _r;
+			struct svcctl_OpenServiceW *r = (struct svcctl_OpenServiceW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3811,7 +3811,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICECONFIGW: {
-			struct svcctl_QueryServiceConfigW *r = _r;
+			struct svcctl_QueryServiceConfigW *r = (struct svcctl_QueryServiceConfigW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero(mem_ctx, struct QUERY_SERVICE_CONFIG);
 			if (r->out.query == NULL) {
@@ -3828,7 +3828,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICELOCKSTATUSW: {
-			struct svcctl_QueryServiceLockStatusW *r = _r;
+			struct svcctl_QueryServiceLockStatusW *r = (struct svcctl_QueryServiceLockStatusW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
 			if (r->out.lock_status == NULL) {
@@ -3845,13 +3845,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_STARTSERVICEW: {
-			struct svcctl_StartServiceW *r = _r;
+			struct svcctl_StartServiceW *r = (struct svcctl_StartServiceW *)_r;
 			r->out.result = _svcctl_StartServiceW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_GETSERVICEDISPLAYNAMEW: {
-			struct svcctl_GetServiceDisplayNameW *r = _r;
+			struct svcctl_GetServiceDisplayNameW *r = (struct svcctl_GetServiceDisplayNameW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.display_name_length = r->in.display_name_length;
 			r->out.display_name = talloc_zero(mem_ctx, const char *);
@@ -3864,7 +3864,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_GETSERVICEKEYNAMEW: {
-			struct svcctl_GetServiceKeyNameW *r = _r;
+			struct svcctl_GetServiceKeyNameW *r = (struct svcctl_GetServiceKeyNameW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.display_name_length = r->in.display_name_length;
 			r->out.key_name = talloc_zero(mem_ctx, const char *);
@@ -3877,13 +3877,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_SCSETSERVICEBITSA: {
-			struct svcctl_SCSetServiceBitsA *r = _r;
+			struct svcctl_SCSetServiceBitsA *r = (struct svcctl_SCSetServiceBitsA *)_r;
 			r->out.result = _svcctl_SCSetServiceBitsA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_CHANGESERVICECONFIGA: {
-			struct svcctl_ChangeServiceConfigA *r = _r;
+			struct svcctl_ChangeServiceConfigA *r = (struct svcctl_ChangeServiceConfigA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.tag_id = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.tag_id == NULL) {
@@ -3895,7 +3895,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_CREATESERVICEA: {
-			struct svcctl_CreateServiceA *r = _r;
+			struct svcctl_CreateServiceA *r = (struct svcctl_CreateServiceA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.TagId = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.TagId == NULL) {
@@ -3907,7 +3907,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_ENUMDEPENDENTSERVICESA: {
-			struct svcctl_EnumDependentServicesA *r = _r;
+			struct svcctl_EnumDependentServicesA *r = (struct svcctl_EnumDependentServicesA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.service_status = talloc_zero(mem_ctx, struct ENUM_SERVICE_STATUSA);
 			if (r->out.service_status == NULL) {
@@ -3929,7 +3929,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_ENUMSERVICESSTATUSA: {
-			struct svcctl_EnumServicesStatusA *r = _r;
+			struct svcctl_EnumServicesStatusA *r = (struct svcctl_EnumServicesStatusA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.service = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
@@ -3952,7 +3952,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_OPENSCMANAGERA: {
-			struct svcctl_OpenSCManagerA *r = _r;
+			struct svcctl_OpenSCManagerA *r = (struct svcctl_OpenSCManagerA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3964,13 +3964,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_OPENSERVICEA: {
-			struct svcctl_OpenServiceA *r = _r;
+			struct svcctl_OpenServiceA *r = (struct svcctl_OpenServiceA *)_r;
 			r->out.result = _svcctl_OpenServiceA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_QUERYSERVICECONFIGA: {
-			struct svcctl_QueryServiceConfigA *r = _r;
+			struct svcctl_QueryServiceConfigA *r = (struct svcctl_QueryServiceConfigA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.query = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.query == NULL) {
@@ -3987,7 +3987,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICELOCKSTATUSA: {
-			struct svcctl_QueryServiceLockStatusA *r = _r;
+			struct svcctl_QueryServiceLockStatusA *r = (struct svcctl_QueryServiceLockStatusA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.lock_status = talloc_zero(mem_ctx, struct SERVICE_LOCK_STATUS);
 			if (r->out.lock_status == NULL) {
@@ -4004,13 +4004,13 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_STARTSERVICEA: {
-			struct svcctl_StartServiceA *r = _r;
+			struct svcctl_StartServiceA *r = (struct svcctl_StartServiceA *)_r;
 			r->out.result = _svcctl_StartServiceA(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_GETSERVICEDISPLAYNAMEA: {
-			struct svcctl_GetServiceDisplayNameA *r = _r;
+			struct svcctl_GetServiceDisplayNameA *r = (struct svcctl_GetServiceDisplayNameA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.display_name_length = r->in.display_name_length;
 			r->out.display_name = talloc_zero(mem_ctx, const char *);
@@ -4023,7 +4023,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_GETSERVICEKEYNAMEA: {
-			struct svcctl_GetServiceKeyNameA *r = _r;
+			struct svcctl_GetServiceKeyNameA *r = (struct svcctl_GetServiceKeyNameA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.display_name_length = r->in.display_name_length;
 			r->out.key_name = talloc_zero(mem_ctx, const char *);
@@ -4036,31 +4036,31 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_GETCURRENTGROUPESTATEW: {
-			struct svcctl_GetCurrentGroupeStateW *r = _r;
+			struct svcctl_GetCurrentGroupeStateW *r = (struct svcctl_GetCurrentGroupeStateW *)_r;
 			r->out.result = _svcctl_GetCurrentGroupeStateW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_ENUMSERVICEGROUPW: {
-			struct svcctl_EnumServiceGroupW *r = _r;
+			struct svcctl_EnumServiceGroupW *r = (struct svcctl_EnumServiceGroupW *)_r;
 			r->out.result = _svcctl_EnumServiceGroupW(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_CHANGESERVICECONFIG2A: {
-			struct svcctl_ChangeServiceConfig2A *r = _r;
+			struct svcctl_ChangeServiceConfig2A *r = (struct svcctl_ChangeServiceConfig2A *)_r;
 			r->out.result = _svcctl_ChangeServiceConfig2A(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_CHANGESERVICECONFIG2W: {
-			struct svcctl_ChangeServiceConfig2W *r = _r;
+			struct svcctl_ChangeServiceConfig2W *r = (struct svcctl_ChangeServiceConfig2W *)_r;
 			r->out.result = _svcctl_ChangeServiceConfig2W(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SVCCTL_QUERYSERVICECONFIG2A: {
-			struct svcctl_QueryServiceConfig2A *r = _r;
+			struct svcctl_QueryServiceConfig2A *r = (struct svcctl_QueryServiceConfig2A *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.buffer == NULL) {
@@ -4077,7 +4077,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICECONFIG2W: {
-			struct svcctl_QueryServiceConfig2W *r = _r;
+			struct svcctl_QueryServiceConfig2W *r = (struct svcctl_QueryServiceConfig2W *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.buffer == NULL) {
@@ -4094,7 +4094,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_QUERYSERVICESTATUSEX: {
-			struct svcctl_QueryServiceStatusEx *r = _r;
+			struct svcctl_QueryServiceStatusEx *r = (struct svcctl_QueryServiceStatusEx *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
 			if (r->out.buffer == NULL) {
@@ -4111,7 +4111,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_ENUMSERVICESSTATUSEXA: {
-			struct EnumServicesStatusExA *r = _r;
+			struct EnumServicesStatusExA *r = (struct EnumServicesStatusExA *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
@@ -4139,7 +4139,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_ENUMSERVICESSTATUSEXW: {
-			struct EnumServicesStatusExW *r = _r;
+			struct EnumServicesStatusExW *r = (struct EnumServicesStatusExW *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.services = talloc_zero_array(mem_ctx, uint8_t, r->in.buf_size);
@@ -4162,7 +4162,7 @@ NTSTATUS rpc_svcctl_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SVCCTL_SCSENDTSMESSAGE: {
-			struct svcctl_SCSendTSMessage *r = _r;
+			struct svcctl_SCSendTSMessage *r = (struct svcctl_SCSendTSMessage *)_r;
 			r->out.result = _svcctl_SCSendTSMessage(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

@@ -2775,7 +2775,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 	switch (opnum)
 	{
 		case NDR_WINREG_OPENHKCR: {
-			struct winreg_OpenHKCR *r = _r;
+			struct winreg_OpenHKCR *r = (struct winreg_OpenHKCR *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2787,7 +2787,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKCU: {
-			struct winreg_OpenHKCU *r = _r;
+			struct winreg_OpenHKCU *r = (struct winreg_OpenHKCU *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2799,7 +2799,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKLM: {
-			struct winreg_OpenHKLM *r = _r;
+			struct winreg_OpenHKLM *r = (struct winreg_OpenHKLM *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2811,7 +2811,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKPD: {
-			struct winreg_OpenHKPD *r = _r;
+			struct winreg_OpenHKPD *r = (struct winreg_OpenHKPD *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2823,7 +2823,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKU: {
-			struct winreg_OpenHKU *r = _r;
+			struct winreg_OpenHKU *r = (struct winreg_OpenHKU *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2835,7 +2835,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_CLOSEKEY: {
-			struct winreg_CloseKey *r = _r;
+			struct winreg_CloseKey *r = (struct winreg_CloseKey *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _winreg_CloseKey(cli->pipes_struct, r);
@@ -2843,7 +2843,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_CREATEKEY: {
-			struct winreg_CreateKey *r = _r;
+			struct winreg_CreateKey *r = (struct winreg_CreateKey *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.action_taken = r->in.action_taken;
 			r->out.new_handle = talloc_zero(mem_ctx, struct policy_handle);
@@ -2856,19 +2856,19 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_DELETEKEY: {
-			struct winreg_DeleteKey *r = _r;
+			struct winreg_DeleteKey *r = (struct winreg_DeleteKey *)_r;
 			r->out.result = _winreg_DeleteKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_DELETEVALUE: {
-			struct winreg_DeleteValue *r = _r;
+			struct winreg_DeleteValue *r = (struct winreg_DeleteValue *)_r;
 			r->out.result = _winreg_DeleteValue(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_ENUMKEY: {
-			struct winreg_EnumKey *r = _r;
+			struct winreg_EnumKey *r = (struct winreg_EnumKey *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.name = r->in.name;
 			r->out.keyclass = r->in.keyclass;
@@ -2878,7 +2878,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_ENUMVALUE: {
-			struct winreg_EnumValue *r = _r;
+			struct winreg_EnumValue *r = (struct winreg_EnumValue *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.name = r->in.name;
 			r->out.type = r->in.type;
@@ -2890,13 +2890,13 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_FLUSHKEY: {
-			struct winreg_FlushKey *r = _r;
+			struct winreg_FlushKey *r = (struct winreg_FlushKey *)_r;
 			r->out.result = _winreg_FlushKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_GETKEYSECURITY: {
-			struct winreg_GetKeySecurity *r = _r;
+			struct winreg_GetKeySecurity *r = (struct winreg_GetKeySecurity *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sd = r->in.sd;
 			r->out.result = _winreg_GetKeySecurity(cli->pipes_struct, r);
@@ -2904,19 +2904,19 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_LOADKEY: {
-			struct winreg_LoadKey *r = _r;
+			struct winreg_LoadKey *r = (struct winreg_LoadKey *)_r;
 			r->out.result = _winreg_LoadKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_NOTIFYCHANGEKEYVALUE: {
-			struct winreg_NotifyChangeKeyValue *r = _r;
+			struct winreg_NotifyChangeKeyValue *r = (struct winreg_NotifyChangeKeyValue *)_r;
 			r->out.result = _winreg_NotifyChangeKeyValue(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_OPENKEY: {
-			struct winreg_OpenKey *r = _r;
+			struct winreg_OpenKey *r = (struct winreg_OpenKey *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -2928,7 +2928,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_QUERYINFOKEY: {
-			struct winreg_QueryInfoKey *r = _r;
+			struct winreg_QueryInfoKey *r = (struct winreg_QueryInfoKey *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.classname = r->in.classname;
 			r->out.num_subkeys = talloc_zero(mem_ctx, uint32_t);
@@ -2976,7 +2976,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_QUERYVALUE: {
-			struct winreg_QueryValue *r = _r;
+			struct winreg_QueryValue *r = (struct winreg_QueryValue *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.type = r->in.type;
 			r->out.data = r->in.data;
@@ -2987,55 +2987,55 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_REPLACEKEY: {
-			struct winreg_ReplaceKey *r = _r;
+			struct winreg_ReplaceKey *r = (struct winreg_ReplaceKey *)_r;
 			r->out.result = _winreg_ReplaceKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_RESTOREKEY: {
-			struct winreg_RestoreKey *r = _r;
+			struct winreg_RestoreKey *r = (struct winreg_RestoreKey *)_r;
 			r->out.result = _winreg_RestoreKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_SAVEKEY: {
-			struct winreg_SaveKey *r = _r;
+			struct winreg_SaveKey *r = (struct winreg_SaveKey *)_r;
 			r->out.result = _winreg_SaveKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_SETKEYSECURITY: {
-			struct winreg_SetKeySecurity *r = _r;
+			struct winreg_SetKeySecurity *r = (struct winreg_SetKeySecurity *)_r;
 			r->out.result = _winreg_SetKeySecurity(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_SETVALUE: {
-			struct winreg_SetValue *r = _r;
+			struct winreg_SetValue *r = (struct winreg_SetValue *)_r;
 			r->out.result = _winreg_SetValue(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_UNLOADKEY: {
-			struct winreg_UnLoadKey *r = _r;
+			struct winreg_UnLoadKey *r = (struct winreg_UnLoadKey *)_r;
 			r->out.result = _winreg_UnLoadKey(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_INITIATESYSTEMSHUTDOWN: {
-			struct winreg_InitiateSystemShutdown *r = _r;
+			struct winreg_InitiateSystemShutdown *r = (struct winreg_InitiateSystemShutdown *)_r;
 			r->out.result = _winreg_InitiateSystemShutdown(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_ABORTSYSTEMSHUTDOWN: {
-			struct winreg_AbortSystemShutdown *r = _r;
+			struct winreg_AbortSystemShutdown *r = (struct winreg_AbortSystemShutdown *)_r;
 			r->out.result = _winreg_AbortSystemShutdown(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_GETVERSION: {
-			struct winreg_GetVersion *r = _r;
+			struct winreg_GetVersion *r = (struct winreg_GetVersion *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.version = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.version == NULL) {
@@ -3047,7 +3047,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKCC: {
-			struct winreg_OpenHKCC *r = _r;
+			struct winreg_OpenHKCC *r = (struct winreg_OpenHKCC *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3059,7 +3059,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKDD: {
-			struct winreg_OpenHKDD *r = _r;
+			struct winreg_OpenHKDD *r = (struct winreg_OpenHKDD *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3071,7 +3071,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_QUERYMULTIPLEVALUES: {
-			struct winreg_QueryMultipleValues *r = _r;
+			struct winreg_QueryMultipleValues *r = (struct winreg_QueryMultipleValues *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.values = r->in.values;
 			r->out.buffer = r->in.buffer;
@@ -3081,19 +3081,19 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_INITIATESYSTEMSHUTDOWNEX: {
-			struct winreg_InitiateSystemShutdownEx *r = _r;
+			struct winreg_InitiateSystemShutdownEx *r = (struct winreg_InitiateSystemShutdownEx *)_r;
 			r->out.result = _winreg_InitiateSystemShutdownEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_SAVEKEYEX: {
-			struct winreg_SaveKeyEx *r = _r;
+			struct winreg_SaveKeyEx *r = (struct winreg_SaveKeyEx *)_r;
 			r->out.result = _winreg_SaveKeyEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WINREG_OPENHKPT: {
-			struct winreg_OpenHKPT *r = _r;
+			struct winreg_OpenHKPT *r = (struct winreg_OpenHKPT *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3105,7 +3105,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_OPENHKPN: {
-			struct winreg_OpenHKPN *r = _r;
+			struct winreg_OpenHKPN *r = (struct winreg_OpenHKPN *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.handle == NULL) {
@@ -3117,7 +3117,7 @@ NTSTATUS rpc_winreg_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WINREG_QUERYMULTIPLEVALUES2: {
-			struct winreg_QueryMultipleValues2 *r = _r;
+			struct winreg_QueryMultipleValues2 *r = (struct winreg_QueryMultipleValues2 *)_r;
 			r->out.result = _winreg_QueryMultipleValues2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

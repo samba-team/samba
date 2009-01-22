@@ -4199,7 +4199,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 	switch (opnum)
 	{
 		case NDR_SRVSVC_NETCHARDEVENUM: {
-			struct srvsvc_NetCharDevEnum *r = _r;
+			struct srvsvc_NetCharDevEnum *r = (struct srvsvc_NetCharDevEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4213,7 +4213,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETCHARDEVGETINFO: {
-			struct srvsvc_NetCharDevGetInfo *r = _r;
+			struct srvsvc_NetCharDevGetInfo *r = (struct srvsvc_NetCharDevGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevInfo);
 			if (r->out.info == NULL) {
@@ -4225,13 +4225,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETCHARDEVCONTROL: {
-			struct srvsvc_NetCharDevControl *r = _r;
+			struct srvsvc_NetCharDevControl *r = (struct srvsvc_NetCharDevControl *)_r;
 			r->out.result = _srvsvc_NetCharDevControl(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETCHARDEVQENUM: {
-			struct srvsvc_NetCharDevQEnum *r = _r;
+			struct srvsvc_NetCharDevQEnum *r = (struct srvsvc_NetCharDevQEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4245,7 +4245,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETCHARDEVQGETINFO: {
-			struct srvsvc_NetCharDevQGetInfo *r = _r;
+			struct srvsvc_NetCharDevQGetInfo *r = (struct srvsvc_NetCharDevQGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetCharDevQInfo);
 			if (r->out.info == NULL) {
@@ -4257,7 +4257,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETCHARDEVQSETINFO: {
-			struct srvsvc_NetCharDevQSetInfo *r = _r;
+			struct srvsvc_NetCharDevQSetInfo *r = (struct srvsvc_NetCharDevQSetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_error = r->in.parm_error;
 			r->out.result = _srvsvc_NetCharDevQSetInfo(cli->pipes_struct, r);
@@ -4265,19 +4265,19 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETCHARDEVQPURGE: {
-			struct srvsvc_NetCharDevQPurge *r = _r;
+			struct srvsvc_NetCharDevQPurge *r = (struct srvsvc_NetCharDevQPurge *)_r;
 			r->out.result = _srvsvc_NetCharDevQPurge(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETCHARDEVQPURGESELF: {
-			struct srvsvc_NetCharDevQPurgeSelf *r = _r;
+			struct srvsvc_NetCharDevQPurgeSelf *r = (struct srvsvc_NetCharDevQPurgeSelf *)_r;
 			r->out.result = _srvsvc_NetCharDevQPurgeSelf(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETCONNENUM: {
-			struct srvsvc_NetConnEnum *r = _r;
+			struct srvsvc_NetConnEnum *r = (struct srvsvc_NetConnEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4291,7 +4291,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETFILEENUM: {
-			struct srvsvc_NetFileEnum *r = _r;
+			struct srvsvc_NetFileEnum *r = (struct srvsvc_NetFileEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4305,7 +4305,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETFILEGETINFO: {
-			struct srvsvc_NetFileGetInfo *r = _r;
+			struct srvsvc_NetFileGetInfo *r = (struct srvsvc_NetFileGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetFileInfo);
 			if (r->out.info == NULL) {
@@ -4317,13 +4317,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETFILECLOSE: {
-			struct srvsvc_NetFileClose *r = _r;
+			struct srvsvc_NetFileClose *r = (struct srvsvc_NetFileClose *)_r;
 			r->out.result = _srvsvc_NetFileClose(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSESSENUM: {
-			struct srvsvc_NetSessEnum *r = _r;
+			struct srvsvc_NetSessEnum *r = (struct srvsvc_NetSessEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4337,13 +4337,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSESSDEL: {
-			struct srvsvc_NetSessDel *r = _r;
+			struct srvsvc_NetSessDel *r = (struct srvsvc_NetSessDel *)_r;
 			r->out.result = _srvsvc_NetSessDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSHAREADD: {
-			struct srvsvc_NetShareAdd *r = _r;
+			struct srvsvc_NetShareAdd *r = (struct srvsvc_NetShareAdd *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_error = r->in.parm_error;
 			r->out.result = _srvsvc_NetShareAdd(cli->pipes_struct, r);
@@ -4351,7 +4351,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHAREENUMALL: {
-			struct srvsvc_NetShareEnumAll *r = _r;
+			struct srvsvc_NetShareEnumAll *r = (struct srvsvc_NetShareEnumAll *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4365,7 +4365,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHAREGETINFO: {
-			struct srvsvc_NetShareGetInfo *r = _r;
+			struct srvsvc_NetShareGetInfo *r = (struct srvsvc_NetShareGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetShareInfo);
 			if (r->out.info == NULL) {
@@ -4377,7 +4377,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHARESETINFO: {
-			struct srvsvc_NetShareSetInfo *r = _r;
+			struct srvsvc_NetShareSetInfo *r = (struct srvsvc_NetShareSetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_error = r->in.parm_error;
 			r->out.result = _srvsvc_NetShareSetInfo(cli->pipes_struct, r);
@@ -4385,19 +4385,19 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHAREDEL: {
-			struct srvsvc_NetShareDel *r = _r;
+			struct srvsvc_NetShareDel *r = (struct srvsvc_NetShareDel *)_r;
 			r->out.result = _srvsvc_NetShareDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSHAREDELSTICKY: {
-			struct srvsvc_NetShareDelSticky *r = _r;
+			struct srvsvc_NetShareDelSticky *r = (struct srvsvc_NetShareDelSticky *)_r;
 			r->out.result = _srvsvc_NetShareDelSticky(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSHARECHECK: {
-			struct srvsvc_NetShareCheck *r = _r;
+			struct srvsvc_NetShareCheck *r = (struct srvsvc_NetShareCheck *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.type = talloc_zero(mem_ctx, enum srvsvc_ShareType);
 			if (r->out.type == NULL) {
@@ -4409,7 +4409,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSRVGETINFO: {
-			struct srvsvc_NetSrvGetInfo *r = _r;
+			struct srvsvc_NetSrvGetInfo *r = (struct srvsvc_NetSrvGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union srvsvc_NetSrvInfo);
 			if (r->out.info == NULL) {
@@ -4421,7 +4421,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSRVSETINFO: {
-			struct srvsvc_NetSrvSetInfo *r = _r;
+			struct srvsvc_NetSrvSetInfo *r = (struct srvsvc_NetSrvSetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_error = r->in.parm_error;
 			r->out.result = _srvsvc_NetSrvSetInfo(cli->pipes_struct, r);
@@ -4429,7 +4429,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETDISKENUM: {
-			struct srvsvc_NetDiskEnum *r = _r;
+			struct srvsvc_NetDiskEnum *r = (struct srvsvc_NetDiskEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = r->in.info;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4443,7 +4443,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSERVERSTATISTICSGET: {
-			struct srvsvc_NetServerStatisticsGet *r = _r;
+			struct srvsvc_NetServerStatisticsGet *r = (struct srvsvc_NetServerStatisticsGet *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.stats = talloc_zero(mem_ctx, struct srvsvc_Statistics *);
 			if (r->out.stats == NULL) {
@@ -4455,13 +4455,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETTRANSPORTADD: {
-			struct srvsvc_NetTransportAdd *r = _r;
+			struct srvsvc_NetTransportAdd *r = (struct srvsvc_NetTransportAdd *)_r;
 			r->out.result = _srvsvc_NetTransportAdd(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETTRANSPORTENUM: {
-			struct srvsvc_NetTransportEnum *r = _r;
+			struct srvsvc_NetTransportEnum *r = (struct srvsvc_NetTransportEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.transports = r->in.transports;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4475,13 +4475,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETTRANSPORTDEL: {
-			struct srvsvc_NetTransportDel *r = _r;
+			struct srvsvc_NetTransportDel *r = (struct srvsvc_NetTransportDel *)_r;
 			r->out.result = _srvsvc_NetTransportDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETREMOTETOD: {
-			struct srvsvc_NetRemoteTOD *r = _r;
+			struct srvsvc_NetRemoteTOD *r = (struct srvsvc_NetRemoteTOD *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct srvsvc_NetRemoteTODInfo *);
 			if (r->out.info == NULL) {
@@ -4493,13 +4493,13 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSETSERVICEBITS: {
-			struct srvsvc_NetSetServiceBits *r = _r;
+			struct srvsvc_NetSetServiceBits *r = (struct srvsvc_NetSetServiceBits *)_r;
 			r->out.result = _srvsvc_NetSetServiceBits(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETPATHTYPE: {
-			struct srvsvc_NetPathType *r = _r;
+			struct srvsvc_NetPathType *r = (struct srvsvc_NetPathType *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.pathtype = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.pathtype == NULL) {
@@ -4511,7 +4511,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETPATHCANONICALIZE: {
-			struct srvsvc_NetPathCanonicalize *r = _r;
+			struct srvsvc_NetPathCanonicalize *r = (struct srvsvc_NetPathCanonicalize *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.pathtype = r->in.pathtype;
 			r->out.can_path = talloc_zero_array(mem_ctx, uint8_t, r->in.maxbuf);
@@ -4524,31 +4524,31 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETPATHCOMPARE: {
-			struct srvsvc_NetPathCompare *r = _r;
+			struct srvsvc_NetPathCompare *r = (struct srvsvc_NetPathCompare *)_r;
 			r->out.result = _srvsvc_NetPathCompare(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETNAMEVALIDATE: {
-			struct srvsvc_NetNameValidate *r = _r;
+			struct srvsvc_NetNameValidate *r = (struct srvsvc_NetNameValidate *)_r;
 			r->out.result = _srvsvc_NetNameValidate(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRPRNAMECANONICALIZE: {
-			struct srvsvc_NETRPRNAMECANONICALIZE *r = _r;
+			struct srvsvc_NETRPRNAMECANONICALIZE *r = (struct srvsvc_NETRPRNAMECANONICALIZE *)_r;
 			r->out.result = _srvsvc_NETRPRNAMECANONICALIZE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETPRNAMECOMPARE: {
-			struct srvsvc_NetPRNameCompare *r = _r;
+			struct srvsvc_NetPRNameCompare *r = (struct srvsvc_NetPRNameCompare *)_r;
 			r->out.result = _srvsvc_NetPRNameCompare(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSHAREENUM: {
-			struct srvsvc_NetShareEnum *r = _r;
+			struct srvsvc_NetShareEnum *r = (struct srvsvc_NetShareEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info_ctr = r->in.info_ctr;
 			r->out.resume_handle = r->in.resume_handle;
@@ -4562,7 +4562,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHAREDELSTART: {
-			struct srvsvc_NetShareDelStart *r = _r;
+			struct srvsvc_NetShareDelStart *r = (struct srvsvc_NetShareDelStart *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.hnd = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.hnd == NULL) {
@@ -4574,7 +4574,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSHAREDELCOMMIT: {
-			struct srvsvc_NetShareDelCommit *r = _r;
+			struct srvsvc_NetShareDelCommit *r = (struct srvsvc_NetShareDelCommit *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.hnd = r->in.hnd;
 			r->out.result = _srvsvc_NetShareDelCommit(cli->pipes_struct, r);
@@ -4582,7 +4582,7 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETGETFILESECURITY: {
-			struct srvsvc_NetGetFileSecurity *r = _r;
+			struct srvsvc_NetGetFileSecurity *r = (struct srvsvc_NetGetFileSecurity *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sd_buf = talloc_zero(mem_ctx, struct sec_desc_buf *);
 			if (r->out.sd_buf == NULL) {
@@ -4594,85 +4594,85 @@ NTSTATUS rpc_srvsvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_SRVSVC_NETSETFILESECURITY: {
-			struct srvsvc_NetSetFileSecurity *r = _r;
+			struct srvsvc_NetSetFileSecurity *r = (struct srvsvc_NetSetFileSecurity *)_r;
 			r->out.result = _srvsvc_NetSetFileSecurity(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSERVERTRANSPORTADDEX: {
-			struct srvsvc_NetServerTransportAddEx *r = _r;
+			struct srvsvc_NetServerTransportAddEx *r = (struct srvsvc_NetServerTransportAddEx *)_r;
 			r->out.result = _srvsvc_NetServerTransportAddEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETSERVERSETSERVICEBITSEX: {
-			struct srvsvc_NetServerSetServiceBitsEx *r = _r;
+			struct srvsvc_NetServerSetServiceBitsEx *r = (struct srvsvc_NetServerSetServiceBitsEx *)_r;
 			r->out.result = _srvsvc_NetServerSetServiceBitsEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSGETVERSION: {
-			struct srvsvc_NETRDFSGETVERSION *r = _r;
+			struct srvsvc_NETRDFSGETVERSION *r = (struct srvsvc_NETRDFSGETVERSION *)_r;
 			r->out.result = _srvsvc_NETRDFSGETVERSION(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSCREATELOCALPARTITION: {
-			struct srvsvc_NETRDFSCREATELOCALPARTITION *r = _r;
+			struct srvsvc_NETRDFSCREATELOCALPARTITION *r = (struct srvsvc_NETRDFSCREATELOCALPARTITION *)_r;
 			r->out.result = _srvsvc_NETRDFSCREATELOCALPARTITION(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSDELETELOCALPARTITION: {
-			struct srvsvc_NETRDFSDELETELOCALPARTITION *r = _r;
+			struct srvsvc_NETRDFSDELETELOCALPARTITION *r = (struct srvsvc_NETRDFSDELETELOCALPARTITION *)_r;
 			r->out.result = _srvsvc_NETRDFSDELETELOCALPARTITION(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE: {
-			struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r = _r;
+			struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r = (struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *)_r;
 			r->out.result = _srvsvc_NETRDFSSETLOCALVOLUMESTATE(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSSETSERVERINFO: {
-			struct srvsvc_NETRDFSSETSERVERINFO *r = _r;
+			struct srvsvc_NETRDFSSETSERVERINFO *r = (struct srvsvc_NETRDFSSETSERVERINFO *)_r;
 			r->out.result = _srvsvc_NETRDFSSETSERVERINFO(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSCREATEEXITPOINT: {
-			struct srvsvc_NETRDFSCREATEEXITPOINT *r = _r;
+			struct srvsvc_NETRDFSCREATEEXITPOINT *r = (struct srvsvc_NETRDFSCREATEEXITPOINT *)_r;
 			r->out.result = _srvsvc_NETRDFSCREATEEXITPOINT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSDELETEEXITPOINT: {
-			struct srvsvc_NETRDFSDELETEEXITPOINT *r = _r;
+			struct srvsvc_NETRDFSDELETEEXITPOINT *r = (struct srvsvc_NETRDFSDELETEEXITPOINT *)_r;
 			r->out.result = _srvsvc_NETRDFSDELETEEXITPOINT(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSMODIFYPREFIX: {
-			struct srvsvc_NETRDFSMODIFYPREFIX *r = _r;
+			struct srvsvc_NETRDFSMODIFYPREFIX *r = (struct srvsvc_NETRDFSMODIFYPREFIX *)_r;
 			r->out.result = _srvsvc_NETRDFSMODIFYPREFIX(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSFIXLOCALVOLUME: {
-			struct srvsvc_NETRDFSFIXLOCALVOLUME *r = _r;
+			struct srvsvc_NETRDFSFIXLOCALVOLUME *r = (struct srvsvc_NETRDFSFIXLOCALVOLUME *)_r;
 			r->out.result = _srvsvc_NETRDFSFIXLOCALVOLUME(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO: {
-			struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r = _r;
+			struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r = (struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *)_r;
 			r->out.result = _srvsvc_NETRDFSMANAGERREPORTSITEINFO(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SRVSVC_NETRSERVERTRANSPORTDELEX: {
-			struct srvsvc_NETRSERVERTRANSPORTDELEX *r = _r;
+			struct srvsvc_NETRSERVERTRANSPORTDELEX *r = (struct srvsvc_NETRSERVERTRANSPORTDELEX *)_r;
 			r->out.result = _srvsvc_NETRSERVERTRANSPORTDELEX(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

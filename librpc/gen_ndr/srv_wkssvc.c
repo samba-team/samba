@@ -2415,7 +2415,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 	switch (opnum)
 	{
 		case NDR_WKSSVC_NETWKSTAGETINFO: {
-			struct wkssvc_NetWkstaGetInfo *r = _r;
+			struct wkssvc_NetWkstaGetInfo *r = (struct wkssvc_NetWkstaGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetWkstaInfo);
 			if (r->out.info == NULL) {
@@ -2427,7 +2427,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETWKSTASETINFO: {
-			struct wkssvc_NetWkstaSetInfo *r = _r;
+			struct wkssvc_NetWkstaSetInfo *r = (struct wkssvc_NetWkstaSetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_error = r->in.parm_error;
 			r->out.result = _wkssvc_NetWkstaSetInfo(cli->pipes_struct, r);
@@ -2435,7 +2435,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETWKSTAENUMUSERS: {
-			struct wkssvc_NetWkstaEnumUsers *r = _r;
+			struct wkssvc_NetWkstaEnumUsers *r = (struct wkssvc_NetWkstaEnumUsers *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = r->in.info;
 			r->out.resume_handle = r->in.resume_handle;
@@ -2449,7 +2449,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRWKSTAUSERGETINFO: {
-			struct wkssvc_NetrWkstaUserGetInfo *r = _r;
+			struct wkssvc_NetrWkstaUserGetInfo *r = (struct wkssvc_NetrWkstaUserGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union wkssvc_NetrWkstaUserInfo);
 			if (r->out.info == NULL) {
@@ -2461,7 +2461,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRWKSTAUSERSETINFO: {
-			struct wkssvc_NetrWkstaUserSetInfo *r = _r;
+			struct wkssvc_NetrWkstaUserSetInfo *r = (struct wkssvc_NetrWkstaUserSetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_err = r->in.parm_err;
 			r->out.result = _wkssvc_NetrWkstaUserSetInfo(cli->pipes_struct, r);
@@ -2469,7 +2469,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETWKSTATRANSPORTENUM: {
-			struct wkssvc_NetWkstaTransportEnum *r = _r;
+			struct wkssvc_NetWkstaTransportEnum *r = (struct wkssvc_NetWkstaTransportEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = r->in.info;
 			r->out.resume_handle = r->in.resume_handle;
@@ -2483,7 +2483,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRWKSTATRANSPORTADD: {
-			struct wkssvc_NetrWkstaTransportAdd *r = _r;
+			struct wkssvc_NetrWkstaTransportAdd *r = (struct wkssvc_NetrWkstaTransportAdd *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_err = r->in.parm_err;
 			r->out.result = _wkssvc_NetrWkstaTransportAdd(cli->pipes_struct, r);
@@ -2491,13 +2491,13 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRWKSTATRANSPORTDEL: {
-			struct wkssvc_NetrWkstaTransportDel *r = _r;
+			struct wkssvc_NetrWkstaTransportDel *r = (struct wkssvc_NetrWkstaTransportDel *)_r;
 			r->out.result = _wkssvc_NetrWkstaTransportDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRUSEADD: {
-			struct wkssvc_NetrUseAdd *r = _r;
+			struct wkssvc_NetrUseAdd *r = (struct wkssvc_NetrUseAdd *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.parm_err = r->in.parm_err;
 			r->out.result = _wkssvc_NetrUseAdd(cli->pipes_struct, r);
@@ -2505,7 +2505,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRUSEGETINFO: {
-			struct wkssvc_NetrUseGetInfo *r = _r;
+			struct wkssvc_NetrUseGetInfo *r = (struct wkssvc_NetrUseGetInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, union wkssvc_NetrUseGetInfoCtr);
 			if (r->out.ctr == NULL) {
@@ -2517,13 +2517,13 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRUSEDEL: {
-			struct wkssvc_NetrUseDel *r = _r;
+			struct wkssvc_NetrUseDel *r = (struct wkssvc_NetrUseDel *)_r;
 			r->out.result = _wkssvc_NetrUseDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRUSEENUM: {
-			struct wkssvc_NetrUseEnum *r = _r;
+			struct wkssvc_NetrUseEnum *r = (struct wkssvc_NetrUseEnum *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = r->in.info;
 			r->out.resume_handle = r->in.resume_handle;
@@ -2537,13 +2537,13 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRMESSAGEBUFFERSEND: {
-			struct wkssvc_NetrMessageBufferSend *r = _r;
+			struct wkssvc_NetrMessageBufferSend *r = (struct wkssvc_NetrMessageBufferSend *)_r;
 			r->out.result = _wkssvc_NetrMessageBufferSend(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRWORKSTATIONSTATISTICSGET: {
-			struct wkssvc_NetrWorkstationStatisticsGet *r = _r;
+			struct wkssvc_NetrWorkstationStatisticsGet *r = (struct wkssvc_NetrWorkstationStatisticsGet *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct wkssvc_NetrWorkstationStatistics *);
 			if (r->out.info == NULL) {
@@ -2555,43 +2555,43 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRLOGONDOMAINNAMEADD: {
-			struct wkssvc_NetrLogonDomainNameAdd *r = _r;
+			struct wkssvc_NetrLogonDomainNameAdd *r = (struct wkssvc_NetrLogonDomainNameAdd *)_r;
 			r->out.result = _wkssvc_NetrLogonDomainNameAdd(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRLOGONDOMAINNAMEDEL: {
-			struct wkssvc_NetrLogonDomainNameDel *r = _r;
+			struct wkssvc_NetrLogonDomainNameDel *r = (struct wkssvc_NetrLogonDomainNameDel *)_r;
 			r->out.result = _wkssvc_NetrLogonDomainNameDel(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRJOINDOMAIN: {
-			struct wkssvc_NetrJoinDomain *r = _r;
+			struct wkssvc_NetrJoinDomain *r = (struct wkssvc_NetrJoinDomain *)_r;
 			r->out.result = _wkssvc_NetrJoinDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRUNJOINDOMAIN: {
-			struct wkssvc_NetrUnjoinDomain *r = _r;
+			struct wkssvc_NetrUnjoinDomain *r = (struct wkssvc_NetrUnjoinDomain *)_r;
 			r->out.result = _wkssvc_NetrUnjoinDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN: {
-			struct wkssvc_NetrRenameMachineInDomain *r = _r;
+			struct wkssvc_NetrRenameMachineInDomain *r = (struct wkssvc_NetrRenameMachineInDomain *)_r;
 			r->out.result = _wkssvc_NetrRenameMachineInDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRVALIDATENAME: {
-			struct wkssvc_NetrValidateName *r = _r;
+			struct wkssvc_NetrValidateName *r = (struct wkssvc_NetrValidateName *)_r;
 			r->out.result = _wkssvc_NetrValidateName(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRGETJOININFORMATION: {
-			struct wkssvc_NetrGetJoinInformation *r = _r;
+			struct wkssvc_NetrGetJoinInformation *r = (struct wkssvc_NetrGetJoinInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.name_buffer = r->in.name_buffer;
 			r->out.name_type = talloc_zero(mem_ctx, enum wkssvc_NetJoinStatus);
@@ -2604,7 +2604,7 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRGETJOINABLEOUS: {
-			struct wkssvc_NetrGetJoinableOus *r = _r;
+			struct wkssvc_NetrGetJoinableOus *r = (struct wkssvc_NetrGetJoinableOus *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.num_ous = r->in.num_ous;
 			r->out.ous = talloc_zero(mem_ctx, const char **);
@@ -2617,31 +2617,31 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRJOINDOMAIN2: {
-			struct wkssvc_NetrJoinDomain2 *r = _r;
+			struct wkssvc_NetrJoinDomain2 *r = (struct wkssvc_NetrJoinDomain2 *)_r;
 			r->out.result = _wkssvc_NetrJoinDomain2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRUNJOINDOMAIN2: {
-			struct wkssvc_NetrUnjoinDomain2 *r = _r;
+			struct wkssvc_NetrUnjoinDomain2 *r = (struct wkssvc_NetrUnjoinDomain2 *)_r;
 			r->out.result = _wkssvc_NetrUnjoinDomain2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRRENAMEMACHINEINDOMAIN2: {
-			struct wkssvc_NetrRenameMachineInDomain2 *r = _r;
+			struct wkssvc_NetrRenameMachineInDomain2 *r = (struct wkssvc_NetrRenameMachineInDomain2 *)_r;
 			r->out.result = _wkssvc_NetrRenameMachineInDomain2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRVALIDATENAME2: {
-			struct wkssvc_NetrValidateName2 *r = _r;
+			struct wkssvc_NetrValidateName2 *r = (struct wkssvc_NetrValidateName2 *)_r;
 			r->out.result = _wkssvc_NetrValidateName2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRGETJOINABLEOUS2: {
-			struct wkssvc_NetrGetJoinableOus2 *r = _r;
+			struct wkssvc_NetrGetJoinableOus2 *r = (struct wkssvc_NetrGetJoinableOus2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.num_ous = r->in.num_ous;
 			r->out.ous = talloc_zero(mem_ctx, const char **);
@@ -2654,25 +2654,25 @@ NTSTATUS rpc_wkssvc_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, c
 		}
 
 		case NDR_WKSSVC_NETRADDALTERNATECOMPUTERNAME: {
-			struct wkssvc_NetrAddAlternateComputerName *r = _r;
+			struct wkssvc_NetrAddAlternateComputerName *r = (struct wkssvc_NetrAddAlternateComputerName *)_r;
 			r->out.result = _wkssvc_NetrAddAlternateComputerName(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRREMOVEALTERNATECOMPUTERNAME: {
-			struct wkssvc_NetrRemoveAlternateComputerName *r = _r;
+			struct wkssvc_NetrRemoveAlternateComputerName *r = (struct wkssvc_NetrRemoveAlternateComputerName *)_r;
 			r->out.result = _wkssvc_NetrRemoveAlternateComputerName(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRSETPRIMARYCOMPUTERNAME: {
-			struct wkssvc_NetrSetPrimaryComputername *r = _r;
+			struct wkssvc_NetrSetPrimaryComputername *r = (struct wkssvc_NetrSetPrimaryComputername *)_r;
 			r->out.result = _wkssvc_NetrSetPrimaryComputername(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_WKSSVC_NETRENUMERATECOMPUTERNAMES: {
-			struct wkssvc_NetrEnumerateComputerNames *r = _r;
+			struct wkssvc_NetrEnumerateComputerNames *r = (struct wkssvc_NetrEnumerateComputerNames *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.ctr = talloc_zero(mem_ctx, struct wkssvc_ComputerNamesCtr *);
 			if (r->out.ctr == NULL) {

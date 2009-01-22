@@ -5485,7 +5485,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 	switch (opnum)
 	{
 		case NDR_SAMR_CONNECT: {
-			struct samr_Connect *r = _r;
+			struct samr_Connect *r = (struct samr_Connect *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.connect_handle == NULL) {
@@ -5497,7 +5497,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CLOSE: {
-			struct samr_Close *r = _r;
+			struct samr_Close *r = (struct samr_Close *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.handle = r->in.handle;
 			r->out.result = _samr_Close(cli->pipes_struct, r);
@@ -5505,13 +5505,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETSECURITY: {
-			struct samr_SetSecurity *r = _r;
+			struct samr_SetSecurity *r = (struct samr_SetSecurity *)_r;
 			r->out.result = _samr_SetSecurity(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_QUERYSECURITY: {
-			struct samr_QuerySecurity *r = _r;
+			struct samr_QuerySecurity *r = (struct samr_QuerySecurity *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sdbuf = talloc_zero(mem_ctx, struct sec_desc_buf *);
 			if (r->out.sdbuf == NULL) {
@@ -5523,13 +5523,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SHUTDOWN: {
-			struct samr_Shutdown *r = _r;
+			struct samr_Shutdown *r = (struct samr_Shutdown *)_r;
 			r->out.result = _samr_Shutdown(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_LOOKUPDOMAIN: {
-			struct samr_LookupDomain *r = _r;
+			struct samr_LookupDomain *r = (struct samr_LookupDomain *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sid = talloc_zero(mem_ctx, struct dom_sid2 *);
 			if (r->out.sid == NULL) {
@@ -5541,7 +5541,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ENUMDOMAINS: {
-			struct samr_EnumDomains *r = _r;
+			struct samr_EnumDomains *r = (struct samr_EnumDomains *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
@@ -5559,7 +5559,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_OPENDOMAIN: {
-			struct samr_OpenDomain *r = _r;
+			struct samr_OpenDomain *r = (struct samr_OpenDomain *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.domain_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.domain_handle == NULL) {
@@ -5571,7 +5571,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYDOMAININFO: {
-			struct samr_QueryDomainInfo *r = _r;
+			struct samr_QueryDomainInfo *r = (struct samr_QueryDomainInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_DomainInfo *);
 			if (r->out.info == NULL) {
@@ -5583,13 +5583,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETDOMAININFO: {
-			struct samr_SetDomainInfo *r = _r;
+			struct samr_SetDomainInfo *r = (struct samr_SetDomainInfo *)_r;
 			r->out.result = _samr_SetDomainInfo(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_CREATEDOMAINGROUP: {
-			struct samr_CreateDomainGroup *r = _r;
+			struct samr_CreateDomainGroup *r = (struct samr_CreateDomainGroup *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.group_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.group_handle == NULL) {
@@ -5606,7 +5606,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ENUMDOMAINGROUPS: {
-			struct samr_EnumDomainGroups *r = _r;
+			struct samr_EnumDomainGroups *r = (struct samr_EnumDomainGroups *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
@@ -5624,7 +5624,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CREATEUSER: {
-			struct samr_CreateUser *r = _r;
+			struct samr_CreateUser *r = (struct samr_CreateUser *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.user_handle == NULL) {
@@ -5641,7 +5641,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ENUMDOMAINUSERS: {
-			struct samr_EnumDomainUsers *r = _r;
+			struct samr_EnumDomainUsers *r = (struct samr_EnumDomainUsers *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
@@ -5659,7 +5659,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CREATEDOMALIAS: {
-			struct samr_CreateDomAlias *r = _r;
+			struct samr_CreateDomAlias *r = (struct samr_CreateDomAlias *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.alias_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.alias_handle == NULL) {
@@ -5676,7 +5676,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ENUMDOMAINALIASES: {
-			struct samr_EnumDomainAliases *r = _r;
+			struct samr_EnumDomainAliases *r = (struct samr_EnumDomainAliases *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.resume_handle = r->in.resume_handle;
 			r->out.sam = talloc_zero(mem_ctx, struct samr_SamArray *);
@@ -5694,7 +5694,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_GETALIASMEMBERSHIP: {
-			struct samr_GetAliasMembership *r = _r;
+			struct samr_GetAliasMembership *r = (struct samr_GetAliasMembership *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rids = talloc_zero(mem_ctx, struct samr_Ids);
 			if (r->out.rids == NULL) {
@@ -5706,7 +5706,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_LOOKUPNAMES: {
-			struct samr_LookupNames *r = _r;
+			struct samr_LookupNames *r = (struct samr_LookupNames *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rids = talloc_zero(mem_ctx, struct samr_Ids);
 			if (r->out.rids == NULL) {
@@ -5723,7 +5723,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_LOOKUPRIDS: {
-			struct samr_LookupRids *r = _r;
+			struct samr_LookupRids *r = (struct samr_LookupRids *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.names = talloc_zero(mem_ctx, struct lsa_Strings);
 			if (r->out.names == NULL) {
@@ -5740,7 +5740,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_OPENGROUP: {
-			struct samr_OpenGroup *r = _r;
+			struct samr_OpenGroup *r = (struct samr_OpenGroup *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.group_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.group_handle == NULL) {
@@ -5752,7 +5752,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYGROUPINFO: {
-			struct samr_QueryGroupInfo *r = _r;
+			struct samr_QueryGroupInfo *r = (struct samr_QueryGroupInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_GroupInfo *);
 			if (r->out.info == NULL) {
@@ -5764,19 +5764,19 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETGROUPINFO: {
-			struct samr_SetGroupInfo *r = _r;
+			struct samr_SetGroupInfo *r = (struct samr_SetGroupInfo *)_r;
 			r->out.result = _samr_SetGroupInfo(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_ADDGROUPMEMBER: {
-			struct samr_AddGroupMember *r = _r;
+			struct samr_AddGroupMember *r = (struct samr_AddGroupMember *)_r;
 			r->out.result = _samr_AddGroupMember(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_DELETEDOMAINGROUP: {
-			struct samr_DeleteDomainGroup *r = _r;
+			struct samr_DeleteDomainGroup *r = (struct samr_DeleteDomainGroup *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.group_handle = r->in.group_handle;
 			r->out.result = _samr_DeleteDomainGroup(cli->pipes_struct, r);
@@ -5784,13 +5784,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_DELETEGROUPMEMBER: {
-			struct samr_DeleteGroupMember *r = _r;
+			struct samr_DeleteGroupMember *r = (struct samr_DeleteGroupMember *)_r;
 			r->out.result = _samr_DeleteGroupMember(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_QUERYGROUPMEMBER: {
-			struct samr_QueryGroupMember *r = _r;
+			struct samr_QueryGroupMember *r = (struct samr_QueryGroupMember *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rids = talloc_zero(mem_ctx, struct samr_RidTypeArray *);
 			if (r->out.rids == NULL) {
@@ -5802,13 +5802,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP: {
-			struct samr_SetMemberAttributesOfGroup *r = _r;
+			struct samr_SetMemberAttributesOfGroup *r = (struct samr_SetMemberAttributesOfGroup *)_r;
 			r->out.result = _samr_SetMemberAttributesOfGroup(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_OPENALIAS: {
-			struct samr_OpenAlias *r = _r;
+			struct samr_OpenAlias *r = (struct samr_OpenAlias *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.alias_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.alias_handle == NULL) {
@@ -5820,7 +5820,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYALIASINFO: {
-			struct samr_QueryAliasInfo *r = _r;
+			struct samr_QueryAliasInfo *r = (struct samr_QueryAliasInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_AliasInfo *);
 			if (r->out.info == NULL) {
@@ -5832,13 +5832,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETALIASINFO: {
-			struct samr_SetAliasInfo *r = _r;
+			struct samr_SetAliasInfo *r = (struct samr_SetAliasInfo *)_r;
 			r->out.result = _samr_SetAliasInfo(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_DELETEDOMALIAS: {
-			struct samr_DeleteDomAlias *r = _r;
+			struct samr_DeleteDomAlias *r = (struct samr_DeleteDomAlias *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.alias_handle = r->in.alias_handle;
 			r->out.result = _samr_DeleteDomAlias(cli->pipes_struct, r);
@@ -5846,19 +5846,19 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ADDALIASMEMBER: {
-			struct samr_AddAliasMember *r = _r;
+			struct samr_AddAliasMember *r = (struct samr_AddAliasMember *)_r;
 			r->out.result = _samr_AddAliasMember(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_DELETEALIASMEMBER: {
-			struct samr_DeleteAliasMember *r = _r;
+			struct samr_DeleteAliasMember *r = (struct samr_DeleteAliasMember *)_r;
 			r->out.result = _samr_DeleteAliasMember(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_GETMEMBERSINALIAS: {
-			struct samr_GetMembersInAlias *r = _r;
+			struct samr_GetMembersInAlias *r = (struct samr_GetMembersInAlias *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sids = talloc_zero(mem_ctx, struct lsa_SidArray);
 			if (r->out.sids == NULL) {
@@ -5870,7 +5870,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_OPENUSER: {
-			struct samr_OpenUser *r = _r;
+			struct samr_OpenUser *r = (struct samr_OpenUser *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.user_handle == NULL) {
@@ -5882,7 +5882,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_DELETEUSER: {
-			struct samr_DeleteUser *r = _r;
+			struct samr_DeleteUser *r = (struct samr_DeleteUser *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.user_handle = r->in.user_handle;
 			r->out.result = _samr_DeleteUser(cli->pipes_struct, r);
@@ -5890,7 +5890,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYUSERINFO: {
-			struct samr_QueryUserInfo *r = _r;
+			struct samr_QueryUserInfo *r = (struct samr_QueryUserInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_UserInfo *);
 			if (r->out.info == NULL) {
@@ -5902,19 +5902,19 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETUSERINFO: {
-			struct samr_SetUserInfo *r = _r;
+			struct samr_SetUserInfo *r = (struct samr_SetUserInfo *)_r;
 			r->out.result = _samr_SetUserInfo(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_CHANGEPASSWORDUSER: {
-			struct samr_ChangePasswordUser *r = _r;
+			struct samr_ChangePasswordUser *r = (struct samr_ChangePasswordUser *)_r;
 			r->out.result = _samr_ChangePasswordUser(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_GETGROUPSFORUSER: {
-			struct samr_GetGroupsForUser *r = _r;
+			struct samr_GetGroupsForUser *r = (struct samr_GetGroupsForUser *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rids = talloc_zero(mem_ctx, struct samr_RidWithAttributeArray *);
 			if (r->out.rids == NULL) {
@@ -5926,7 +5926,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYDISPLAYINFO: {
-			struct samr_QueryDisplayInfo *r = _r;
+			struct samr_QueryDisplayInfo *r = (struct samr_QueryDisplayInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_size == NULL) {
@@ -5948,7 +5948,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_GETDISPLAYENUMERATIONINDEX: {
-			struct samr_GetDisplayEnumerationIndex *r = _r;
+			struct samr_GetDisplayEnumerationIndex *r = (struct samr_GetDisplayEnumerationIndex *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.idx = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.idx == NULL) {
@@ -5960,19 +5960,19 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN: {
-			struct samr_TestPrivateFunctionsDomain *r = _r;
+			struct samr_TestPrivateFunctionsDomain *r = (struct samr_TestPrivateFunctionsDomain *)_r;
 			r->out.result = _samr_TestPrivateFunctionsDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_TESTPRIVATEFUNCTIONSUSER: {
-			struct samr_TestPrivateFunctionsUser *r = _r;
+			struct samr_TestPrivateFunctionsUser *r = (struct samr_TestPrivateFunctionsUser *)_r;
 			r->out.result = _samr_TestPrivateFunctionsUser(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_GETUSERPWINFO: {
-			struct samr_GetUserPwInfo *r = _r;
+			struct samr_GetUserPwInfo *r = (struct samr_GetUserPwInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
 			if (r->out.info == NULL) {
@@ -5984,13 +5984,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN: {
-			struct samr_RemoveMemberFromForeignDomain *r = _r;
+			struct samr_RemoveMemberFromForeignDomain *r = (struct samr_RemoveMemberFromForeignDomain *)_r;
 			r->out.result = _samr_RemoveMemberFromForeignDomain(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_QUERYDOMAININFO2: {
-			struct samr_QueryDomainInfo2 *r = _r;
+			struct samr_QueryDomainInfo2 *r = (struct samr_QueryDomainInfo2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_DomainInfo *);
 			if (r->out.info == NULL) {
@@ -6002,7 +6002,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYUSERINFO2: {
-			struct samr_QueryUserInfo2 *r = _r;
+			struct samr_QueryUserInfo2 *r = (struct samr_QueryUserInfo2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, union samr_UserInfo *);
 			if (r->out.info == NULL) {
@@ -6014,7 +6014,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYDISPLAYINFO2: {
-			struct samr_QueryDisplayInfo2 *r = _r;
+			struct samr_QueryDisplayInfo2 *r = (struct samr_QueryDisplayInfo2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_size == NULL) {
@@ -6036,7 +6036,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_GETDISPLAYENUMERATIONINDEX2: {
-			struct samr_GetDisplayEnumerationIndex2 *r = _r;
+			struct samr_GetDisplayEnumerationIndex2 *r = (struct samr_GetDisplayEnumerationIndex2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.idx = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.idx == NULL) {
@@ -6048,7 +6048,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CREATEUSER2: {
-			struct samr_CreateUser2 *r = _r;
+			struct samr_CreateUser2 *r = (struct samr_CreateUser2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.user_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.user_handle == NULL) {
@@ -6070,7 +6070,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_QUERYDISPLAYINFO3: {
-			struct samr_QueryDisplayInfo3 *r = _r;
+			struct samr_QueryDisplayInfo3 *r = (struct samr_QueryDisplayInfo3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.total_size = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.total_size == NULL) {
@@ -6092,31 +6092,31 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS: {
-			struct samr_AddMultipleMembersToAlias *r = _r;
+			struct samr_AddMultipleMembersToAlias *r = (struct samr_AddMultipleMembersToAlias *)_r;
 			r->out.result = _samr_AddMultipleMembersToAlias(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS: {
-			struct samr_RemoveMultipleMembersFromAlias *r = _r;
+			struct samr_RemoveMultipleMembersFromAlias *r = (struct samr_RemoveMultipleMembersFromAlias *)_r;
 			r->out.result = _samr_RemoveMultipleMembersFromAlias(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_OEMCHANGEPASSWORDUSER2: {
-			struct samr_OemChangePasswordUser2 *r = _r;
+			struct samr_OemChangePasswordUser2 *r = (struct samr_OemChangePasswordUser2 *)_r;
 			r->out.result = _samr_OemChangePasswordUser2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_CHANGEPASSWORDUSER2: {
-			struct samr_ChangePasswordUser2 *r = _r;
+			struct samr_ChangePasswordUser2 *r = (struct samr_ChangePasswordUser2 *)_r;
 			r->out.result = _samr_ChangePasswordUser2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_GETDOMPWINFO: {
-			struct samr_GetDomPwInfo *r = _r;
+			struct samr_GetDomPwInfo *r = (struct samr_GetDomPwInfo *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
 			if (r->out.info == NULL) {
@@ -6128,7 +6128,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CONNECT2: {
-			struct samr_Connect2 *r = _r;
+			struct samr_Connect2 *r = (struct samr_Connect2 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.connect_handle == NULL) {
@@ -6140,19 +6140,19 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETUSERINFO2: {
-			struct samr_SetUserInfo2 *r = _r;
+			struct samr_SetUserInfo2 *r = (struct samr_SetUserInfo2 *)_r;
 			r->out.result = _samr_SetUserInfo2(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_SETBOOTKEYINFORMATION: {
-			struct samr_SetBootKeyInformation *r = _r;
+			struct samr_SetBootKeyInformation *r = (struct samr_SetBootKeyInformation *)_r;
 			r->out.result = _samr_SetBootKeyInformation(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_GETBOOTKEYINFORMATION: {
-			struct samr_GetBootKeyInformation *r = _r;
+			struct samr_GetBootKeyInformation *r = (struct samr_GetBootKeyInformation *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.unknown = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.unknown == NULL) {
@@ -6164,7 +6164,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CONNECT3: {
-			struct samr_Connect3 *r = _r;
+			struct samr_Connect3 *r = (struct samr_Connect3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.connect_handle == NULL) {
@@ -6176,7 +6176,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CONNECT4: {
-			struct samr_Connect4 *r = _r;
+			struct samr_Connect4 *r = (struct samr_Connect4 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.connect_handle = talloc_zero(mem_ctx, struct policy_handle);
 			if (r->out.connect_handle == NULL) {
@@ -6188,7 +6188,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CHANGEPASSWORDUSER3: {
-			struct samr_ChangePasswordUser3 *r = _r;
+			struct samr_ChangePasswordUser3 *r = (struct samr_ChangePasswordUser3 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.dominfo = talloc_zero(mem_ctx, struct samr_DomInfo1 *);
 			if (r->out.dominfo == NULL) {
@@ -6205,7 +6205,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_CONNECT5: {
-			struct samr_Connect5 *r = _r;
+			struct samr_Connect5 *r = (struct samr_Connect5 *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.level_out = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.level_out == NULL) {
@@ -6227,7 +6227,7 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_RIDTOSID: {
-			struct samr_RidToSid *r = _r;
+			struct samr_RidToSid *r = (struct samr_RidToSid *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.sid = talloc_zero(mem_ctx, struct dom_sid2 *);
 			if (r->out.sid == NULL) {
@@ -6239,13 +6239,13 @@ NTSTATUS rpc_samr_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, con
 		}
 
 		case NDR_SAMR_SETDSRMPASSWORD: {
-			struct samr_SetDsrmPassword *r = _r;
+			struct samr_SetDsrmPassword *r = (struct samr_SetDsrmPassword *)_r;
 			r->out.result = _samr_SetDsrmPassword(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
 		case NDR_SAMR_VALIDATEPASSWORD: {
-			struct samr_ValidatePassword *r = _r;
+			struct samr_ValidatePassword *r = (struct samr_ValidatePassword *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.rep = talloc_zero(mem_ctx, union samr_ValidatePasswordRep *);
 			if (r->out.rep == NULL) {
