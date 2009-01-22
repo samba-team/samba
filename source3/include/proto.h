@@ -5771,7 +5771,6 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 /* The following definitions come from rpc_parse/parse_rpc.c  */
 
 const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-					 struct cli_state *cli,
 					 const struct ndr_syntax_id *interface);
 void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
