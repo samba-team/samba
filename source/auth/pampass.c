@@ -462,7 +462,9 @@ static bool smb_pam_end(pam_handle_t *pamh, struct pam_conv *smb_pam_conv_ptr)
 static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rhost, struct pam_conv *pconv)
 {
 	int pam_error;
+#ifdef PAM_RHOST
 	const char *our_rhost;
+#endif
 	char addr[INET6_ADDRSTRLEN];
 
 	*pamh = (pam_handle_t *)NULL;
@@ -475,6 +477,7 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 		return False;
 	}
 
+#ifdef PAM_RHOST
 	if (rhost == NULL) {
 		our_rhost = client_name(get_client_fd());
 		if (strequal(our_rhost,"UNKNOWN"))
@@ -483,7 +486,6 @@ static bool smb_pam_start(pam_handle_t **pamh, const char *user, const char *rho
 		our_rhost = rhost;
 	}
 
-#ifdef PAM_RHOST
 	DEBUG(4,("smb_pam_start: PAM: setting rhost to: %s\n", our_rhost));
 	pam_error = pam_set_item(*pamh, PAM_RHOST, our_rhost);
 	if(!smb_pam_error_handler(*pamh, pam_error, "set rhost failed", 0)) {

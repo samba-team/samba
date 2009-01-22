@@ -314,14 +314,14 @@ void process_node_status_request(struct subnet_record *subrec, struct packet_str
 	char rdata[MAX_DGRAM_SIZE];
 	char *countptr, *buf, *bufend, *buf0;
 	int names_added,i;
-	struct name_record *namerec;
+	struct name_record *namerec = NULL;
 
 	pull_ascii_nstring(qname, sizeof(qname), nmb->question.question_name.name);
 
 	DEBUG(3,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s.\n", nmb_namestr(&nmb->question.question_name), inet_ntoa(p->ip), subrec->subnet_name));
 
-	if((namerec = find_name_on_subnet(subrec, &nmb->question.question_name, FIND_SELF_NAME)) == 0) {
+	if(find_name_on_subnet(subrec, &nmb->question.question_name, FIND_SELF_NAME) == 0) {
 		DEBUG(1,("process_node_status_request: status request for name %s from IP %s on \
 subnet %s - name not found.\n", nmb_namestr(&nmb->question.question_name),
 			inet_ntoa(p->ip), subrec->subnet_name));

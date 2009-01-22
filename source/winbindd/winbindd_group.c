@@ -991,7 +991,13 @@ static void getgrgid_recv(void *private_data, bool success, const char *sid)
 		DEBUG(10,("getgrgid_recv: gid %lu has sid %s\n",
 			  (unsigned long)(state->request.data.gid), sid));
 
-		string_to_sid(&group_sid, sid);
+		if (!string_to_sid(&group_sid, sid)) {
+			DEBUG(1,("getgrgid_recv: Could not convert sid %s "
+				"from string\n", sid));
+			request_error(state);
+			return;
+		}
+
 		winbindd_getgrsid(state, group_sid);
 		return;
 	}

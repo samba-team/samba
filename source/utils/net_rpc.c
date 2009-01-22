@@ -4064,7 +4064,11 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 		return false;
 	}
 
-	string_to_sid(&user_sid, sid_str);
+	if (!string_to_sid(&user_sid, sid_str)) {
+		DEBUG(1,("Could not convert sid %s from string\n", sid_str));
+		return false;
+	}
+
 	wbcFreeMemory(sid_str);
 	sid_str = NULL;
 
@@ -4200,7 +4204,11 @@ static bool get_user_tokens_from_file(FILE *f,
 			/* We have a SID */
 
 			DOM_SID sid;
-			string_to_sid(&sid, &line[1]);
+			if(!string_to_sid(&sid, &line[1])) {
+				DEBUG(1,("get_user_tokens_from_file: Could "
+					"not convert sid %s \n",&line[1]));
+				return false;
+			}
 
 			if (token == NULL) {
 				DEBUG(0, ("File does not begin with username"));

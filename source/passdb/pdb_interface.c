@@ -605,6 +605,9 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 	struct group *grp;
 	const char *grp_name;
 
+	/* coverity */
+	map.gid = (gid_t) -1;
+
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
 	if (!get_domain_group_from_sid(group_sid, &map)) {
@@ -779,6 +782,9 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
+
+	/* coverity */
+	map.gid = (gid_t) -1;
 
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);

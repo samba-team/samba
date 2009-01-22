@@ -679,7 +679,6 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
-
 	*r->out.bytes_needed = r->in.buf_size;
 
 	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query, p->pipe_user.nt_user_token );
