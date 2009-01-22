@@ -419,29 +419,10 @@ wbcErr wbcRemoveGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 	return wbc_status;
 }
 
-/* Set the highwater mark for allocated uids. */
+/* Set the highwater mark for allocated uids - not implemented any more */
 wbcErr wbcSetUidHwm(uid_t uid_hwm)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Make request */
-
-	request.data.dual_idmapset.id = uid_hwm;
-	request.data.dual_idmapset.type = _ID_TYPE_UID;
-
-	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_HWM,
-					    &request, &response);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
- done:
-	return wbc_status;
+	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Set the highwater mark for allocated gids. */
