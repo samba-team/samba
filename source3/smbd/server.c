@@ -45,26 +45,6 @@ int get_client_fd(void)
 	return server_fd;
 }
 
-#ifdef CLUSTER_SUPPORT
-static int client_get_tcp_info(struct sockaddr_storage *server,
-			       struct sockaddr_storage *client)
-{
-	socklen_t length;
-	if (server_fd == -1) {
-		return -1;
-	}
-	length = sizeof(*server);
-	if (getsockname(server_fd, (struct sockaddr *)server, &length) != 0) {
-		return -1;
-	}
-	length = sizeof(*client);
-	if (getpeername(server_fd, (struct sockaddr *)client, &length) != 0) {
-		return -1;
-	}
-	return 0;
-}
-#endif
-
 struct event_context *smbd_event_context(void)
 {
 	if (!smbd_event_ctx) {
@@ -943,34 +923,6 @@ void exit_server_fault(void)
 	exit_server("critical server fault");
 }
 
-
-/****************************************************************************
-received when we should release a specific IP
-****************************************************************************/
-static void release_ip(const char *ip, void *priv)
-{
-	char addr[INET6_ADDRSTRLEN];
-
-	if (strcmp(client_socket_addr(get_client_fd(),addr,sizeof(addr)), ip) == 0) {
-		/* we can't afford to do a clean exit - that involves
-		   database writes, which would potentially mean we
-		   are still running after the failover has finished -
-		   we have to get rid of this process ID straight
-		   away */
-		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
-			ip));
-		/* note we must exit with non-zero status so the unclean handler gets
-		   called in the parent, so that the brl database is tickled */
-		_exit(1);
-	}
-}
-
-static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
-			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
-{
-	release_ip((char *)data->data, NULL);
-}
-
 /****************************************************************************
  Initialise connect, service and file structs.
 ****************************************************************************/
@@ -995,59 +947,6 @@ static bool init_structs(void )
 		return False;
 
 	return True;
-}
-
-/*
- * Send keepalive packets to our client
- */
-static bool keepalive_fn(const struct timeval *now, void *private_data)
-{
-	if (!send_keepalive(smbd_server_fd())) {
-		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
-		return False;
-	}
-	return True;
-}
-
-/*
- * Do the recurring check if we're idle
- */
-static bool deadtime_fn(const struct timeval *now, void *private_data)
-{
-	if ((conn_num_open() == 0)
-	    || (conn_idle_all(now->tv_sec))) {
-		DEBUG( 2, ( "Closing idle connection\n" ) );
-		messaging_send(smbd_messaging_context(), procid_self(),
-			       MSG_SHUTDOWN, &data_blob_null);
-		return False;
-	}
-
-	return True;
-}
-
-/*
- * Do the recurring log file and smb.conf reload checks.
- */
-
-static bool housekeeping_fn(const struct timeval *now, void *private_data)
-{
-	change_to_root_user();
-
-	/* update printer queue caches if necessary */
-	update_monitored_printq_cache();
-
-	/* check if we need to reload services */
-	check_reload(time(NULL));
-
-	/* Change machine password if neccessary. */
-	attempt_machine_password_change();
-
-        /*
-	 * Force a log file check.
-	 */
-        force_check_log_size();
-        check_log_size();
-	return true;
 }
 
 /****************************************************************************
@@ -1094,7 +993,6 @@ extern void build_options(bool screen);
 	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
 	};
-	char remaddr[INET6_ADDRSTRLEN];
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
 	smbd_init_globals();
@@ -1355,116 +1253,6 @@ extern void build_options(bool screen);
 
 	if (!open_sockets_smbd(is_daemon, interactive, ports))
 		exit(1);
-
-	/*
-	 * everything after this point is run after the fork()
-	 */ 
-
-	/* Ensure child is set to blocking mode */
-	set_blocking(smbd_server_fd(),True);
-
-	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), lp_socket_options());
-
-	/* this is needed so that we get decent entries
-	   in smbstatus for port 445 connects */
-	set_remote_machine_name(get_peer_addr(smbd_server_fd(),
-					      remaddr,
-					      sizeof(remaddr)),
-					      false);
-
-	static_init_rpc;
-
-	init_modules();
-
-	/* Possibly reload the services file. Only worth doing in
-	 * daemon mode. In inetd mode, we know we only just loaded this.
-	 */
-	if (is_daemon) {
-		reload_services(True);
-	}
-
-	if (!init_account_policy()) {
-		DEBUG(0,("Could not open account policy tdb.\n"));
-		exit(1);
-	}
-
-	if (*lp_rootdir()) {
-		if (chroot(lp_rootdir()) == 0)
-			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
-	}
-
-	/* Setup oplocks */
-	if (!init_oplocks(smbd_messaging_context()))
-		exit(1);
-
-	/* Setup aio signal handler. */
-	initialize_async_io_handler();
-
-	/* register our message handlers */
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_RELEASE_IP, msg_release_ip);
-	messaging_register(smbd_messaging_context(), NULL,
-			   MSG_SMB_CLOSE_FILE, msg_close_file);
-
-	if ((lp_keepalive() != 0)
-	    && !(event_add_idle(smbd_event_context(), NULL,
-				timeval_set(lp_keepalive(), 0),
-				"keepalive", keepalive_fn,
-				NULL))) {
-		DEBUG(0, ("Could not add keepalive event\n"));
-		exit(1);
-	}
-
-	if (!(event_add_idle(smbd_event_context(), NULL,
-			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
-			     "deadtime", deadtime_fn, NULL))) {
-		DEBUG(0, ("Could not add deadtime event\n"));
-		exit(1);
-	}
-
-	if (!(event_add_idle(smbd_event_context(), NULL,
-			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
-			     "housekeeping", housekeeping_fn, NULL))) {
-		DEBUG(0, ("Could not add housekeeping event\n"));
-		exit(1);
-	}
-
-#ifdef CLUSTER_SUPPORT
-
-	if (lp_clustering()) {
-		/*
-		 * We need to tell ctdb about our client's TCP
-		 * connection, so that for failover ctdbd can send
-		 * tickle acks, triggering a reconnection by the
-		 * client.
-		 */
-
-		struct sockaddr_storage srv, clnt;
-
-		if (client_get_tcp_info(&srv, &clnt) == 0) {
-
-			NTSTATUS status;
-
-			status = ctdbd_register_ips(
-				messaging_ctdbd_connection(),
-				&srv, &clnt, release_ip, NULL);
-
-			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
-					  nt_errstr(status)));
-			}
-		} else
-		{
-			DEBUG(0,("Unable to get tcp info for "
-				 "CTDB_CONTROL_TCP_CLIENT: %s\n",
-				 strerror(errno)));
-		}
-	}
-
-#endif
 
 	TALLOC_FREE(frame);
 

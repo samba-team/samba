@@ -1903,12 +1903,135 @@ static void smbd_server_connection_handler(struct event_context *ev,
 	}
 }
 
+
+/****************************************************************************
+received when we should release a specific IP
+****************************************************************************/
+static void release_ip(const char *ip, void *priv)
+{
+	char addr[INET6_ADDRSTRLEN];
+
+	if (strcmp(client_socket_addr(get_client_fd(),addr,sizeof(addr)), ip) == 0) {
+		/* we can't afford to do a clean exit - that involves
+		   database writes, which would potentially mean we
+		   are still running after the failover has finished -
+		   we have to get rid of this process ID straight
+		   away */
+		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
+			ip));
+		/* note we must exit with non-zero status so the unclean handler gets
+		   called in the parent, so that the brl database is tickled */
+		_exit(1);
+	}
+}
+
+static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
+			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+{
+	release_ip((char *)data->data, NULL);
+}
+
+#ifdef CLUSTER_SUPPORT
+static int client_get_tcp_info(struct sockaddr_storage *server,
+			       struct sockaddr_storage *client)
+{
+	socklen_t length;
+	if (server_fd == -1) {
+		return -1;
+	}
+	length = sizeof(*server);
+	if (getsockname(server_fd, (struct sockaddr *)server, &length) != 0) {
+		return -1;
+	}
+	length = sizeof(*client);
+	if (getpeername(server_fd, (struct sockaddr *)client, &length) != 0) {
+		return -1;
+	}
+	return 0;
+}
+#endif
+
+/*
+ * Send keepalive packets to our client
+ */
+static bool keepalive_fn(const struct timeval *now, void *private_data)
+{
+	if (!send_keepalive(smbd_server_fd())) {
+		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		return False;
+	}
+	return True;
+}
+
+/*
+ * Do the recurring check if we're idle
+ */
+static bool deadtime_fn(const struct timeval *now, void *private_data)
+{
+	if ((conn_num_open() == 0)
+	    || (conn_idle_all(now->tv_sec))) {
+		DEBUG( 2, ( "Closing idle connection\n" ) );
+		messaging_send(smbd_messaging_context(), procid_self(),
+			       MSG_SHUTDOWN, &data_blob_null);
+		return False;
+	}
+
+	return True;
+}
+
+/*
+ * Do the recurring log file and smb.conf reload checks.
+ */
+
+static bool housekeeping_fn(const struct timeval *now, void *private_data)
+{
+	change_to_root_user();
+
+	/* update printer queue caches if necessary */
+	update_monitored_printq_cache();
+
+	/* check if we need to reload services */
+	check_reload(time(NULL));
+
+	/* Change machine password if neccessary. */
+	attempt_machine_password_change();
+
+        /*
+	 * Force a log file check.
+	 */
+	force_check_log_size();
+	check_log_size();
+	return true;
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char remaddr[INET6_ADDRSTRLEN];
+
+	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
+	if (!smbd_server_conn) {
+		exit_server("failed to create smbd_server_connection");
+	}
+
+	/* Ensure child is set to blocking mode */
+	set_blocking(smbd_server_fd(),True);
+
+	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+	set_socket_options(smbd_server_fd(), lp_socket_options());
+
+	/* this is needed so that we get decent entries
+	   in smbstatus for port 445 connects */
+	set_remote_machine_name(get_peer_addr(smbd_server_fd(),
+					      remaddr,
+					      sizeof(remaddr)),
+					      false);
+	reload_services(true);
+
 	/*
 	 * Before the first packet, check the global hosts allow/ hosts deny
 	 * parameters before doing any parsing of packets passed to us by the
@@ -1931,12 +2054,96 @@ void smbd_process(void)
 		exit_server_cleanly("connection denied");
 	}
 
+	static_init_rpc;
+
+	init_modules();
+
+	if (!init_account_policy()) {
+		exit_server("Could not open account policy tdb.\n");
+	}
+
+	if (*lp_rootdir()) {
+		if (chroot(lp_rootdir()) != 0) {
+			DEBUG(0,("Failed changed root to %s\n", lp_rootdir()));
+			exit_server("Failed to chroot()");
+		}
+		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
+	}
+
+	/* Setup oplocks */
+	if (!init_oplocks(smbd_messaging_context()))
+		exit_server("Failed to init oplocks");
+
+	/* Setup aio signal handler. */
+	initialize_async_io_handler();
+
+	/* register our message handlers */
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_RELEASE_IP, msg_release_ip);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_CLOSE_FILE, msg_close_file);
+
+	if ((lp_keepalive() != 0)
+	    && !(event_add_idle(smbd_event_context(), NULL,
+				timeval_set(lp_keepalive(), 0),
+				"keepalive", keepalive_fn,
+				NULL))) {
+		DEBUG(0, ("Could not add keepalive event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
+			     "deadtime", deadtime_fn, NULL))) {
+		DEBUG(0, ("Could not add deadtime event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     "housekeeping", housekeeping_fn, NULL))) {
+		DEBUG(0, ("Could not add housekeeping event\n"));
+		exit(1);
+	}
+
+#ifdef CLUSTER_SUPPORT
+
+	if (lp_clustering()) {
+		/*
+		 * We need to tell ctdb about our client's TCP
+		 * connection, so that for failover ctdbd can send
+		 * tickle acks, triggering a reconnection by the
+		 * client.
+		 */
+
+		struct sockaddr_storage srv, clnt;
+
+		if (client_get_tcp_info(&srv, &clnt) == 0) {
+
+			NTSTATUS status;
+
+			status = ctdbd_register_ips(
+				messaging_ctdbd_connection(),
+				&srv, &clnt, release_ip, NULL);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
+					  nt_errstr(status)));
+			}
+		} else
+		{
+			DEBUG(0,("Unable to get tcp info for "
+				 "CTDB_CONTROL_TCP_CLIENT: %s\n",
+				 strerror(errno)));
+		}
+	}
+
+#endif
+
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
-	if (!smbd_server_conn) {
-		exit_server("failed to create smbd_server_connection");
-	}
 	smbd_server_conn->fde = event_add_fd(smbd_event_context(),
 					     smbd_server_conn,
 					     smbd_server_fd(),
@@ -1947,9 +2154,12 @@ void smbd_process(void)
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
+	TALLOC_FREE(frame);
+
 	while (True) {
 		NTSTATUS status;
-		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
+
+		frame = talloc_stackframe_pool(8192);
 
 		errno = 0;
 
@@ -1958,9 +2168,11 @@ void smbd_process(void)
 		    !NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
 				  " exiting\n", nt_errstr(status)));
-			return;
+			break;
 		}
 
 		TALLOC_FREE(frame);
 	}
+
+	exit_server_cleanly(NULL);
 }
