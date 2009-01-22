@@ -1005,106 +1005,12 @@ static NTSTATUS idmap_tdb_close(struct idmap_domain *dom)
 	return NT_STATUS_OK;
 }
 
-struct dump_data {
-	TALLOC_CTX *memctx;
-	struct id_map **maps;
-	int *num_maps;
-	NTSTATUS ret;
-};
-
-static int idmap_tdb_dump_one_entry(struct db_record *rec, void *pdata)
-{
-	struct dump_data *data = talloc_get_type(pdata, struct dump_data);
-	struct id_map *maps;
-	int num_maps = *data->num_maps;
-
-	/* ignore any record but the ones with a SID as key */
-	if (strncmp((const char *)rec->key.dptr, "S-", 2) == 0) {
-
-		maps = talloc_realloc(NULL, *data->maps, struct id_map, num_maps+1);
-		if ( ! maps) {
-			DEBUG(0, ("Out of memory!\n"));
-			data->ret = NT_STATUS_NO_MEMORY;
-			return -1;
-		}
-       		*data->maps = maps;
-		maps[num_maps].sid = talloc(maps, struct dom_sid);
-		if ( ! maps[num_maps].sid) {
-			DEBUG(0, ("Out of memory!\n"));
-			data->ret = NT_STATUS_NO_MEMORY;
-			return -1;
-		}
-
-		if (!string_to_sid(maps[num_maps].sid, (const char *)rec->key.dptr)) {
-			DEBUG(10,("INVALID record %s\n", (const char *)rec->key.dptr));
-			/* continue even with errors */
-			return 0;
-		}
-
-		/* Try a UID record. */
-		if (sscanf((const char *)rec->value.dptr, "UID %u", &(maps[num_maps].xid.id)) == 1) {
-			maps[num_maps].xid.type = ID_TYPE_UID;
-			maps[num_maps].status = ID_MAPPED;
-			*data->num_maps = num_maps + 1;
-
-		/* Try a GID record. */
-		} else
-		if (sscanf((const char *)rec->value.dptr, "GID %u", &(maps[num_maps].xid.id)) == 1) {
-			maps[num_maps].xid.type = ID_TYPE_GID;
-			maps[num_maps].status = ID_MAPPED;
-			*data->num_maps = num_maps + 1;
-
-		/* Unknown record type ! */
-		} else {
-			maps[num_maps].status = ID_UNKNOWN;
-			DEBUG(2, ("Found INVALID record %s -> %s\n",
-				(const char *)rec->key.dptr,
-				(const char *)rec->value.dptr));
-			/* do not increment num_maps */
-		}
-	}
-
-	return 0;
-}
-
-/**********************************
- Dump all mappings out
-**********************************/
-
-static NTSTATUS idmap_tdb_dump_data(struct idmap_domain *dom, struct id_map **maps, int *num_maps)
-{
-	struct idmap_tdb_context *ctx;
-	struct dump_data *data;
-	NTSTATUS ret = NT_STATUS_OK;
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
-
-	data = TALLOC_ZERO_P(ctx, struct dump_data);
-	if ( ! data) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
-	data->maps = maps;
-	data->num_maps = num_maps;
-	data->ret = NT_STATUS_OK;
-
-	ctx->db->traverse_read(ctx->db, idmap_tdb_dump_one_entry, data);
-
-	if ( ! NT_STATUS_IS_OK(data->ret)) {
-		ret = data->ret;
-	}
-
-	talloc_free(data);
-	return ret;
-}
-
 static struct idmap_methods db_methods = {
 
 	.init = idmap_tdb_db_init,
 	.unixids_to_sids = idmap_tdb_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb_sids_to_unixids,
 	.set_mapping = idmap_tdb_set_mapping,
-	.dump_data = idmap_tdb_dump_data,
 	.close_fn = idmap_tdb_close
 };
 

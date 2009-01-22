@@ -52,10 +52,6 @@ struct idmap_methods {
 
 	NTSTATUS (*set_mapping)(struct idmap_domain *dom, const struct id_map *map);
 
-	/* Called to dump backends data */
-	/* NOTE: caller must use talloc_free to free maps when done */
-	NTSTATUS (*dump_data)(struct idmap_domain *dom, struct id_map **maps, int *num_maps);
-
 	/* Called when backend is unloaded */
 	NTSTATUS (*close_fn)(struct idmap_domain *dom);
 };
