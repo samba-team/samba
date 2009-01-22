@@ -682,8 +682,16 @@ static void init_child_recv(void *private_data, bool success)
 		state->response->data.domain_info.name);
 	fstrcpy(state->domain->alt_name,
 		state->response->data.domain_info.alt_name);
-	string_to_sid(&state->domain->sid,
-		      state->response->data.domain_info.sid);
+	if (!string_to_sid(&state->domain->sid,
+		      state->response->data.domain_info.sid)) {
+		DEBUG(1,("init_child_recv: Could not convert sid %s "
+			"from string\n",
+			state->response->data.domain_info.sid));
+		state->continuation(state->private_data, False);
+		talloc_destroy(state->mem_ctx);
+		return;
+	}
+
 	state->domain->native_mode =
 		state->response->data.domain_info.native_mode;
 	state->domain->active_directory =

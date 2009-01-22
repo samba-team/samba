@@ -32,24 +32,27 @@
 
  int d_vfprintf(FILE *f, const char *format, va_list ap)
 {
-	char *p, *p2;
+	char *p = NULL, *p2 = NULL;
 	int ret, maxlen, clen;
 	const char *msgstr;
 	va_list ap2;
 
+	VA_COPY(ap2, ap);
+
 	/* do any message translations */
 	msgstr = lang_msg(format);
-	if (!msgstr) return -1;
-
-	VA_COPY(ap2, ap);
+	if (!msgstr) {
+		ret = -1;
+		goto out;
+	}
 
 	ret = vasprintf(&p, msgstr, ap2);
 
 	lang_msg_free(msgstr);
 
 	if (ret <= 0) {
-	  va_end(ap2);
-	  return ret;
+		ret = -1;
+		goto out;
 	}
 
 	/* now we have the string in unix format, convert it to the display
@@ -58,10 +61,10 @@
 again:
 	p2 = (char *)SMB_MALLOC(maxlen);
 	if (!p2) {
-		SAFE_FREE(p);
-		va_end(ap2);
-		return -1;
+		ret = -1;
+		goto out;
 	}
+
 	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen, True);
 
 	if (clen >= maxlen) {
@@ -72,10 +75,11 @@ again:
 	}
 
 	/* good, its converted OK */
-	SAFE_FREE(p);
 	ret = fwrite(p2, 1, clen, f);
-	SAFE_FREE(p2);
+out:
 
+	SAFE_FREE(p);
+	SAFE_FREE(p2);
 	va_end(ap2);
 
 	return ret;
