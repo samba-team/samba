@@ -983,7 +983,9 @@ EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
 EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSAMBA_OBJ) \
-	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o
+	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o \
+		../librpc/gen_ndr/ndr_eventlog.o \
+		../librpc/gen_ndr/ndr_lsa.o
 
 SHARESEC_OBJ0 = utils/sharesec.o
 SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \

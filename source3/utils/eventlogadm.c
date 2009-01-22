@@ -37,6 +37,7 @@ static void usage( char *s )
 	printf( "\nUsage: %s [OPTION]\n\n", s );
 	printf( " -o write <Eventlog Name> \t\t\t\t\tWrites records to eventlog from STDIN\n" );
 	printf( " -o addsource <EventlogName> <sourcename> <msgfileDLLname> \tAdds the specified source & DLL eventlog registry entry\n" );
+	printf( " -o dump <Eventlog Name> <starting_record>\t\t\t\t\tDump stored eventlog entries on STDOUT\n" );
 	printf( "\nMiscellaneous options:\n" );
 	printf( " -d\t\t\t\t\t\t\t\tturn debug on\n" );
 	printf( " -h\t\t\t\t\t\t\t\tdisplay help\n\n" );
@@ -157,6 +158,54 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 	return 0;
 }
 
+static int DoDumpCommand(int argc, char **argv, bool debugflag, char *exename)
+{
+	ELOG_TDB *etdb;
+	TALLOC_CTX *mem_ctx = talloc_tos();
+	const char *tdb_filename;
+	uint32_t count = 1;
+
+	if (argc > 2) {
+		return -1;
+	}
+
+	tdb_filename = argv[0];
+
+	if (argc > 1) {
+		count = atoi(argv[1]);
+	}
+
+	etdb = elog_open_tdb(argv[0], false, true);
+	if (!etdb) {
+		printf("can't open the eventlog TDB (%s)\n", argv[0]);
+		return -1;
+	}
+
+	while (1) {
+
+		struct eventlog_Record_tdb *r;
+		char *s;
+
+		r = evlog_pull_record_tdb(mem_ctx, etdb->tdb, count);
+		if (!r) {
+			break;
+		}
+
+		printf("displaying record: %d\n", count);
+
+		s = NDR_PRINT_STRUCT_STRING(mem_ctx, eventlog_Record_tdb, r);
+		if (s) {
+			printf("%s\n", s);
+			talloc_free(s);
+		}
+		count++;
+	}
+
+	elog_close_tdb(etdb, false);
+
+	return 0;
+}
+
 /* would be nice to use the popT stuff here, however doing so forces us to drag in a lot of other infrastructure */
 
 int main( int argc, char *argv[] )
@@ -220,6 +269,10 @@ int main( int argc, char *argv[] )
 		}
 		if ( !StrCaseCmp( opname, "write" ) ) {
 			rc = DoWriteCommand( argc, argv, opt_debug, exename );
+			break;
+		}
+		if ( !StrCaseCmp( opname, "dump" ) ) {
+			rc = DoDumpCommand( argc, argv, opt_debug, exename );
 			break;
 		}
 		printf( "unknown command [%s]\n", opname );
