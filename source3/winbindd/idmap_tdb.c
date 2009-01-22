@@ -694,10 +694,10 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
-	fstring tmp;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	if ((keystr = talloc_asprintf(
-		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
+	keystr = sid_string_talloc(tmp_ctx, map->sid);
+	if (keystr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -706,7 +706,7 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(ctx->db, NULL, keystr);
+	data = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr);
 	if (!data.dptr) {
 		DEBUG(10,("Record %s not found\n", keystr));
 		ret = NT_STATUS_NONE_MAPPED;
@@ -730,8 +730,6 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 		DEBUG(2, ("Found INVALID record %s -> %s\n", keystr, (const char *)data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 	}
-	
-	TALLOC_FREE(data.dptr);
 
 	/* apply filters before returning result */
 	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
@@ -742,7 +740,7 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	}
 
 done:
-	talloc_free(keystr);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
