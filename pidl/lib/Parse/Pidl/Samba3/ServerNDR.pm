@@ -234,7 +234,7 @@ sub ParseDispatchFunction($)
 		my $op = "NDR_".uc($fn->{NAME});
 		pidl "case $op: {";
 		indent;
-		pidl "struct $fn->{NAME} *r = _r;";
+		pidl "struct $fn->{NAME} *r = (struct $fn->{NAME} *)_r;";
 		CallWithStruct("cli->pipes_struct", "mem_ctx", $fn, 
 			sub { pidl "return NT_STATUS_NO_MEMORY;"; });
 		pidl "return NT_STATUS_OK;";
