@@ -774,23 +774,6 @@ NTSTATUS idmap_backends_sid_to_unixid(const char *domain, struct id_map *id)
 	return dom->methods->sids_to_unixids(dom, maps);
 }
 
-NTSTATUS idmap_set_mapping(const struct id_map *map)
-{
-	struct idmap_domain *dom;
-
-	dom = idmap_find_domain(NULL);
-	if (dom == NULL) {
-		DEBUG(3, ("no default domain, no place to write\n"));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-	if (dom->methods->set_mapping == NULL) {
-		DEBUG(3, ("default domain not writable\n"));
-		return NT_STATUS_MEDIA_WRITE_PROTECTED;
-	}
-
-	return dom->methods->set_mapping(dom, map);
-}
-
 NTSTATUS idmap_remove_mapping(const struct id_map *map)
 {
 	struct idmap_domain *dom;
