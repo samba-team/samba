@@ -153,16 +153,4 @@ interface wbint
 
     NTSTATUS wbint_PingDc(
 	);
-
-    typedef [public] enum {
-	WBINT_ID_TYPE_NOT_SPECIFIED,
-	WBINT_ID_TYPE_UID,
-	WBINT_ID_TYPE_GID
-    } wbint_IdType;
-
-    NTSTATUS wbint_RemoveMapping(
-	[in] dom_sid *sid,
-	[in] wbint_IdType type,
-	[in] hyper id
-	);
 }
