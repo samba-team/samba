@@ -1780,12 +1780,6 @@ doma_done:
 				    "Admins group not available!\n"));
 			goto done;
 		}
-		if (!winbind_allocate_uid(&uid)) {
-			d_fprintf(stderr,
-				  _("Unable to allocate a new uid to create "
-				    "the Administrator user!\n"));
-			goto done;
-		}
 		name = talloc_strdup(tc, "Administrator");
 		dn = talloc_asprintf(tc, "uid=Administrator,%s", lp_ldap_user_suffix());
 		uidstr = talloc_asprintf(tc, "%u", (unsigned int)uid);
@@ -1805,6 +1799,13 @@ doma_done:
 		}
 
 		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_ADMINISTRATOR);
+
+		if (!winbind_allocate_uid(&uid)) {
+			d_fprintf(stderr,
+				  _("Unable to allocate a new uid to create "
+				    "the Administrator user!\n"));
+			goto done;
+		}
 
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_ACCOUNT);
 		smbldap_set_mod(&mods, LDAP_MOD_ADD, "objectClass", LDAP_OBJ_POSIXACCOUNT);
