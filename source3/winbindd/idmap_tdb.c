@@ -990,124 +990,6 @@ done:
 }
 
 /**********************************
- remove a mapping.
-**********************************/
-
-static NTSTATUS idmap_tdb_remove_mapping(struct idmap_domain *dom,
-					 const struct id_map *map)
-{
-	struct idmap_tdb_context *ctx;
-	NTSTATUS ret;
-	TDB_DATA ksid, kid, data;
-	char *ksidstr, *kidstr;
-	fstring tmp;
-
-	if (!map || !map->sid) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	ksidstr = kidstr = NULL;
-	data.dptr = NULL;
-
-	/* TODO: should we filter a remove_mapping using low/high filters ? */
-
-	ctx = talloc_get_type(dom->private_data, struct idmap_tdb_context);
-
-	switch (map->xid.type) {
-
-	case ID_TYPE_UID:
-		kidstr = talloc_asprintf(ctx, "UID %lu",
-					 (unsigned long)map->xid.id);
-		break;
-
-	case ID_TYPE_GID:
-		kidstr = talloc_asprintf(ctx, "GID %lu",
-					 (unsigned long)map->xid.id);
-		break;
-
-	default:
-		DEBUG(2, ("INVALID unix ID type: 0x02%x\n", map->xid.type));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (kidstr == NULL) {
-		DEBUG(0, ("ERROR: Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	if ((ksidstr = talloc_asprintf(
-		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		ret = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	DEBUG(10, ("Checking %s <-> %s map\n", ksidstr, kidstr));
-	ksid = string_term_tdb_data(ksidstr);
-	kid = string_term_tdb_data(kidstr);
-
-	if (ctx->db->transaction_start(ctx->db) != 0) {
-		DEBUG(0, ("Failed to start transaction for %s\n",
-			  ksidstr));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	/* Check if sid is present in database */
-	data = dbwrap_fetch(ctx->db, NULL, ksid);
-	if (!data.dptr) {
-		ctx->db->transaction_cancel(ctx->db);
-		DEBUG(10,("Record %s not found\n", ksidstr));
-		ret = NT_STATUS_NONE_MAPPED;
-		goto done;
-	}
-
-	/* Check if sid is mapped to the specified ID */
-	if ((data.dsize != kid.dsize) ||
-	    (memcmp(data.dptr, kid.dptr, data.dsize) != 0)) {
-		ctx->db->transaction_cancel(ctx->db);
-		DEBUG(10,("Specified SID does not map to specified ID\n"));
-		DEBUGADD(10,("Actual mapping is %s -> %s\n", ksidstr,
-			 (const char *)data.dptr));
-		ret = NT_STATUS_NONE_MAPPED;
-		goto done;
-	}
-
-	DEBUG(10, ("Removing %s <-> %s map\n", ksidstr, kidstr));
-
-	/* Delete previous mappings. */
-
-	DEBUG(10, ("Deleting existing mapping %s -> %s\n", ksidstr, kidstr ));
-	ret = dbwrap_delete(ctx->db, ksid);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Warning: Failed to delete %s: %s\n",
-			 ksidstr, nt_errstr(ret)));
-	}
-
-	DEBUG(10,("Deleting existing mapping %s -> %s\n", kidstr, ksidstr ));
-	ret = dbwrap_delete(ctx->db, kid);
-	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0,("Warning: Failed to delete %s: %s\n",
-			 kidstr, nt_errstr(ret)));
-	}
-
-	if (ctx->db->transaction_commit(ctx->db) != 0) {
-		DEBUG(0, ("Failed to commit transaction for (%s -> %s)\n",
-			  ksidstr, kidstr));
-		ret = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
-	ret = NT_STATUS_OK;
-
-done:
-	talloc_free(ksidstr);
-	talloc_free(kidstr);
-	talloc_free(data.dptr);
-	return ret;
-}
-
-/**********************************
  Close the idmap tdb instance
 **********************************/
 
@@ -1222,7 +1104,6 @@ static struct idmap_methods db_methods = {
 	.unixids_to_sids = idmap_tdb_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb_sids_to_unixids,
 	.set_mapping = idmap_tdb_set_mapping,
-	.remove_mapping = idmap_tdb_remove_mapping,
 	.dump_data = idmap_tdb_dump_data,
 	.close_fn = idmap_tdb_close
 };

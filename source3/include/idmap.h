@@ -51,7 +51,6 @@ struct idmap_methods {
 	NTSTATUS (*sids_to_unixids)(struct idmap_domain *dom, struct id_map **ids);
 
 	NTSTATUS (*set_mapping)(struct idmap_domain *dom, const struct id_map *map);
-	NTSTATUS (*remove_mapping)(struct idmap_domain *dom, const struct id_map *map);
 
 	/* Called to dump backends data */
 	/* NOTE: caller must use talloc_free to free maps when done */
