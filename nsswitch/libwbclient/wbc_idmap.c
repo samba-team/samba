@@ -277,41 +277,10 @@ wbcErr wbcSetUidMapping(uid_t uid, const struct wbcDomainSid *sid)
 	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
-/* Set a group id mapping */
+/* Set a group id mapping - not implemented any more */
 wbcErr wbcSetGidMapping(gid_t gid, const struct wbcDomainSid *sid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	char *sid_string = NULL;
-
-	if (!sid) {
-		return WBC_ERR_INVALID_PARAM;
-	}
-
-	/* Initialise request */
-
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* Make request */
-
-	request.data.dual_idmapset.id = gid;
-	request.data.dual_idmapset.type = _ID_TYPE_GID;
-
-	wbc_status = wbcSidToString(sid, &sid_string);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
-	strncpy(request.data.dual_idmapset.sid, sid_string,
-		sizeof(request.data.dual_idmapset.sid)-1);
-	wbcFreeMemory(sid_string);
-
-	wbc_status = wbcRequestResponsePriv(WINBINDD_SET_MAPPING,
-					    &request, &response);
-	BAIL_ON_WBC_ERROR(wbc_status);
-
- done:
-	return wbc_status;
+	return WBC_ERR_NOT_IMPLEMENTED;
 }
 
 /* Remove a user id mapping */
