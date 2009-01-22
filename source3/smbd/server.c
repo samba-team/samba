@@ -199,9 +199,6 @@ static bool open_sockets_inetd(void)
 	
 	/* close our standard file descriptors */
 	close_low_fds(False); /* Don't close stderr */
-	
-	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-	set_socket_options(smbd_server_fd(), lp_socket_options());
 
 	return True;
 }
@@ -690,17 +687,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				continue;
 			}
 
-			/* Ensure child is set to blocking mode */
-			set_blocking(smbd_server_fd(),True);
-
-			if (smbd_server_fd() != -1 && interactive)
+			if (interactive)
 				return True;
 
 			if (allowable_number_of_smbd_processes() &&
-			    smbd_server_fd() != -1 &&
 			    ((child = sys_fork())==0)) {
-				char remaddr[INET6_ADDRSTRLEN];
-
 				/* Child code ... */
 
 				/* Stop zombies, the parent explicitly handles
@@ -718,17 +709,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				   descriptors */
 				close_low_fds(False);
 				am_parent = 0;
-
-				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
-				set_socket_options(smbd_server_fd(),
-						   lp_socket_options());
-
-				/* this is needed so that we get decent entries
-				   in smbstatus for port 445 connects */
-				set_remote_machine_name(get_peer_addr(smbd_server_fd(),
-								remaddr,
-								sizeof(remaddr)),
-								false);
 
 				if (!reinit_after_fork(
 					    smbd_messaging_context(),
@@ -1114,6 +1094,7 @@ extern void build_options(bool screen);
 	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
 	};
+	char remaddr[INET6_ADDRSTRLEN];
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
 	smbd_init_globals();
@@ -1378,6 +1359,19 @@ extern void build_options(bool screen);
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
+
+	/* Ensure child is set to blocking mode */
+	set_blocking(smbd_server_fd(),True);
+
+	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+	set_socket_options(smbd_server_fd(), lp_socket_options());
+
+	/* this is needed so that we get decent entries
+	   in smbstatus for port 445 connects */
+	set_remote_machine_name(get_peer_addr(smbd_server_fd(),
+					      remaddr,
+					      sizeof(remaddr)),
+					      false);
 
 	static_init_rpc;
 
