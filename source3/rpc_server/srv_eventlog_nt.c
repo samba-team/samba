@@ -194,7 +194,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 	   in a single process */
 
 	become_root();
-	elog->etdb = elog_open_tdb( elog->logname, False );
+	elog->etdb = elog_open_tdb( elog->logname, False, False );
 	unbecome_root();
 
 	if ( !elog->etdb ) {
@@ -214,7 +214,7 @@ static NTSTATUS elog_open( pipes_struct * p, const char *logname, POLICY_HND *hn
 			}
 
 			become_root();
-			elog->etdb = elog_open_tdb( elog->logname, False );
+			elog->etdb = elog_open_tdb( elog->logname, False, False );
 			unbecome_root();
 		}
 
@@ -677,7 +677,7 @@ NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
 
 	elog_close_tdb( info->etdb, True );
 	become_root();
-	info->etdb = elog_open_tdb( info->logname, True );
+	info->etdb = elog_open_tdb( info->logname, True, False );
 	unbecome_root();
 
 	if ( !info->etdb )

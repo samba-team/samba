@@ -103,7 +103,7 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 
 	argfname = argv[0];
 
-	if ( !( etdb = elog_open_tdb( argfname, False ) ) ) {
+	if ( !( etdb = elog_open_tdb( argfname, False, False ) ) ) {
 		printf( "can't open the eventlog TDB (%s)\n", argfname );
 		return -1;
 	}

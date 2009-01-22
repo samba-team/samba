@@ -312,7 +312,7 @@ bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 /*******************************************************************
 *******************************************************************/
 
-ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
+ELOG_TDB *elog_open_tdb( char *logname, bool force_clear, bool read_only )
 {
 	TDB_CONTEXT *tdb = NULL;
 	uint32_t vers_id;
@@ -321,6 +321,13 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 	ELOG_TDB *tdb_node = NULL;
 	char *eventlogdir;
 	TALLOC_CTX *ctx = talloc_tos();
+
+	/* check for invalid options */
+
+	if (force_clear && read_only) {
+		DEBUG(1,("elog_open_tdb: Invalid flags\n"));
+		return NULL;
+	}
 
 	/* first see if we have an open context */
 
@@ -363,7 +370,7 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 
 	if ( !force_clear ) {
 
-		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );
+		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, read_only ? O_RDONLY : O_RDWR , 0 );
 		if ( tdb ) {
 			vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
 
