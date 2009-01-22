@@ -33,7 +33,7 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 	for (i = 0; methods[i].ml_name; i++) {
 		PyObject *descr;
 		if (methods[i].ml_flags & METH_CLASS) 
-			descr = PyCFunction_New(&methods[i], type);
+			descr = PyCFunction_New(&methods[i], (PyObject *)type);
 		else 
 			descr = PyDescr_NewMethod(type, &methods[i]);
 		PyDict_SetItemString(dict, methods[i].ml_name, 
@@ -187,6 +187,22 @@ static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
 	return py_talloc_import((PyTypeObject *)self, secdesc);
 }
 
+static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *py_sid)
+{
+	struct dom_sid *sid = py_talloc_get_ptr(py_sid);
+	struct security_descriptor *desc = py_talloc_get_ptr(self);
+	char *text;
+	PyObject *ret;
+
+	text = sddl_encode(NULL, desc, sid);
+
+	ret = PyString_FromString(text);
+
+	talloc_free(text);
+
+	return ret;
+}
+
 static PyMethodDef py_descriptor_extra_methods[] = {
 	{ "sacl_add", (PyCFunction)py_descriptor_sacl_add, METH_VARARGS,
 		"S.sacl_add(ace) -> None\n"
@@ -198,6 +214,8 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 	{ "sacl_del", (PyCFunction)py_descriptor_sacl_del, METH_VARARGS,
 		NULL },
 	{ "from_sddl", (PyCFunction)py_descriptor_from_sddl, METH_VARARGS|METH_CLASS, 
+		NULL },
+	{ "as_sddl", (PyCFunction)py_descriptor_as_sddl, METH_O,
 		NULL },
 	{ NULL }
 };

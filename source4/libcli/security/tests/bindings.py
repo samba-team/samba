@@ -57,6 +57,16 @@ class SecurityDescriptorTests(unittest.TestCase):
         self.assertEquals(desc.sacl, None)
         self.assertEquals(desc.type, 0x8004)
 
+    def test_as_sddl(self):
+        text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
+        dom = security.dom_sid("S-2-0-0")
+        desc1 = security.descriptor.from_sddl(text, dom)
+        desc2 = security.descriptor.from_sddl(desc1.as_sddl(dom), dom)
+        self.assertEquals(desc1.group_sid, desc2.group_sid)
+        self.assertEquals(desc1.owner_sid, desc2.owner_sid)
+        self.assertEquals(desc1.sacl, desc2.sacl)
+        self.assertEquals(desc1.type, desc2.type)
+
 
 class DomSidTests(unittest.TestCase):
     def test_parse_sid(self):
