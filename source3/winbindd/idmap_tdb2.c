@@ -298,17 +298,6 @@ static NTSTATUS idmap_tdb2_allocate_id(struct unixid *xid)
 }
 
 /*
-  Set high id. 
-*/
-static NTSTATUS idmap_tdb2_set_hwm(struct unixid *xid)
-{
-	/* not supported, or we would invalidate the cache tdb on
-	   other nodes */
-	DEBUG(0,("idmap_tdb2_set_hwm not supported\n"));
-	return NT_STATUS_NOT_SUPPORTED;
-}
-
-/*
   Close the alloc tdb 
 */
 static NTSTATUS idmap_tdb2_alloc_close(void)
@@ -897,7 +886,6 @@ static struct idmap_methods db_methods = {
 static struct idmap_alloc_methods db_alloc_methods = {
 	.init        = idmap_tdb2_alloc_init,
 	.allocate_id = idmap_tdb2_allocate_id,
-	.set_id_hwm  = idmap_tdb2_set_hwm,
 	.close_fn    = idmap_tdb2_alloc_close
 };
 
