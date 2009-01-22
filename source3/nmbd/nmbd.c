@@ -441,10 +441,6 @@ static void process(void)
 		time_t t = time(NULL);
 		TALLOC_CTX *frame = talloc_stackframe();
 
-		/* Check for internal messages */
-
-		message_dispatch(nmbd_messaging_context());
-
 		/*
 		 * Check all broadcast subnets to see if
 		 * we need to run an election on any of them.

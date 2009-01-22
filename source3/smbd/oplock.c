@@ -36,9 +36,9 @@ int32 get_number_of_exclusive_open_oplocks(void)
  Return True if an oplock message is pending.
 ****************************************************************************/
 
-bool oplock_message_waiting(fd_set *fds)
+bool oplock_message_waiting(void)
 {
-	if (koplocks && koplocks->msg_waiting(fds)) {
+	if (koplocks && koplocks->ops->msg_waiting(koplocks)) {
 		return True;
 	}
 
@@ -52,7 +52,7 @@ bool oplock_message_waiting(fd_set *fds)
  we're calling this in a shutting down state.
 ****************************************************************************/
 
-void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds)
+void process_kernel_oplocks(struct messaging_context *msg_ctx)
 {
 	/*
 	 * We need to check for kernel oplocks before going into the select
@@ -64,11 +64,11 @@ void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds)
 		return;
 	}
 
-	while (koplocks->msg_waiting(pfds)) { 
+	while (koplocks->ops->msg_waiting(koplocks)) {
 		files_struct *fsp;
 		char msg[MSG_SMB_KERNEL_BREAK_SIZE];
 
-		fsp = koplocks->receive_message(pfds);
+		fsp = koplocks->ops->receive_message(koplocks);
 
 		if (fsp == NULL) {
 			DEBUG(3, ("Kernel oplock message announced, but none "
@@ -99,7 +99,7 @@ bool set_file_oplock(files_struct *fsp, int oplock_type)
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks &&
-	    !koplocks->set_oplock(fsp, oplock_type)) {
+	    !koplocks->ops->set_oplock(koplocks, fsp, oplock_type)) {
 		return False;
 	}
 
@@ -129,7 +129,7 @@ void release_file_oplock(files_struct *fsp)
 	if ((fsp->oplock_type != NO_OPLOCK) &&
 	    (fsp->oplock_type != FAKE_LEVEL_II_OPLOCK) &&
 	    koplocks) {
-		koplocks->release_oplock(fsp);
+		koplocks->ops->release_oplock(koplocks, fsp);
 	}
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK) {
@@ -161,7 +161,7 @@ void release_file_oplock(files_struct *fsp)
 static void downgrade_file_oplock(files_struct *fsp)
 {
 	if (koplocks) {
-		koplocks->release_oplock(fsp);
+		koplocks->ops->release_oplock(koplocks, fsp);
 	}
 	fsp->oplock_type = LEVEL_II_OPLOCK;
 	exclusive_oplocks_open--;
@@ -224,19 +224,6 @@ bool downgrade_oplock(files_struct *fsp)
 	downgrade_file_oplock(fsp);
 	TALLOC_FREE(lck);
 	return ret;
-}
-
-/****************************************************************************
- Return the fd (if any) used for receiving oplock notifications.
-****************************************************************************/
-
-int oplock_notify_fd(void)
-{
-	if (koplocks) {
-		return koplocks->notification_fd;
-	}
-
-	return -1;
 }
 
 /****************************************************************************
@@ -914,9 +901,9 @@ bool init_oplocks(struct messaging_context *msg_ctx)
 
 	if (lp_kernel_oplocks()) {
 #if HAVE_KERNEL_OPLOCKS_IRIX
-		koplocks = irix_init_kernel_oplocks();
+		koplocks = irix_init_kernel_oplocks(talloc_autofree_context());
 #elif HAVE_KERNEL_OPLOCKS_LINUX
-		koplocks = linux_init_kernel_oplocks();
+		koplocks = linux_init_kernel_oplocks(talloc_autofree_context());
 #endif
 	}
 

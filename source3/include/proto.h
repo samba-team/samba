@@ -4722,7 +4722,6 @@ bool parse_lpq_entry(enum printing_types printing_type,char *line,
 /* The following definitions come from printing/notify.c  */
 
 int print_queue_snum(const char *qname);
-bool print_notify_messages_pending(void);
 void print_notify_send_messages(struct messaging_context *msg_ctx,
 				unsigned int timeout);
 void notify_printer_status_byname(const char *sharename, uint32 status);
@@ -4745,7 +4744,6 @@ void notify_printer_printername(int snum, char *printername);
 void notify_printer_port(int snum, char *port_name);
 void notify_printer_location(int snum, char *location);
 void notify_printer_byname( const char *printername, uint32 change, const char *value );
-bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list);
 
 /* The following definitions come from printing/nt_printing.c  */
 
@@ -7026,8 +7024,8 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-bool oplock_message_waiting(fd_set *fds);
-void process_kernel_oplocks(struct messaging_context *msg_ctx, fd_set *pfds);
+bool oplock_message_waiting(void);
+void process_kernel_oplocks(struct messaging_context *msg_ctx);
 bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
@@ -7041,14 +7039,14 @@ bool init_oplocks(struct messaging_context *msg_ctx);
 
 /* The following definitions come from smbd/oplock_irix.c  */
 
-struct kernel_oplocks *irix_init_kernel_oplocks(void) ;
+struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx) ;
 
 /* The following definitions come from smbd/oplock_linux.c  */
 
 void linux_set_lease_capability(void);
 int linux_set_lease_sighandler(int fd);
 int linux_setlease(int fd, int leasetype);
-struct kernel_oplocks *linux_init_kernel_oplocks(void) ;
+struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx) ;
 
 /* The following definitions come from smbd/password.c  */
 

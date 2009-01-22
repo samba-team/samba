@@ -840,12 +840,6 @@ static void process_loop(void)
 		exit(1);
 	}
 
-	/* We'll be doing this a lot */
-
-	/* Handle messages */
-
-	message_dispatch(winbind_messaging_context());
-
 	run_events(winbind_event_context(), 0, NULL, NULL);
 
 	/* refresh the trusted domain cache */
@@ -979,6 +973,8 @@ static void process_loop(void)
 	}
 
  no_fds_ready:
+
+	run_events(winbind_event_context(), selret, &r_fds, &w_fds);
 
 #if 0
 	winbindd_check_cache_size(time(NULL));

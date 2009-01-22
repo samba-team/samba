@@ -1773,6 +1773,11 @@ bool listen_for_packets(bool run_election)
 	}
 #endif
 
+	/* Process a signal and timer events now... */
+	if (run_events(nmbd_event_context(), 0, NULL, NULL)) {
+		return False;
+	}
+
 	/*
 	 * During elections and when expecting a netbios response packet we
 	 * need to send election packets at tighter intervals.
@@ -1789,13 +1794,6 @@ bool listen_for_packets(bool run_election)
 					 &r_fds, &w_fds, &timeout, &maxfd);
 	}
 
-	if (timeval_is_zero(&timeout)) {
-		/* Process a timed event now... */
-		if (run_events(nmbd_event_context(), 0, NULL, NULL)) {
-			return False;
-		}
-	}
-
 	/* Prepare for the select - allow certain signals. */
 
 	BlockSignals(False, SIGTERM);
@@ -1806,11 +1804,11 @@ bool listen_for_packets(bool run_election)
 
 	BlockSignals(True, SIGTERM);
 
-	if(selrtn == -1) {
+	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
 		return False;
 	}
 
-	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
+	if (selrtn == -1) {
 		return False;
 	}
 

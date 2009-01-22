@@ -2367,6 +2367,11 @@ NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (async_req_is_error(req, &status)) {
+		/*
+		 * We always have to initialize to reply pdu, even if there is
+		 * none. The rpccli_* caller routines expect this.
+		 */
+		prs_init_empty(reply_pdu, mem_ctx, UNMARSHALL);
 		return status;
 	}
 

@@ -188,20 +188,13 @@ extern char *LastDir;
 extern SIG_ATOMIC_T oplock_signals_received;
 #define FD_PENDING_SIZE 100
 extern SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-extern struct kernel_oplocks linux_koplocks;
-#endif
-
-#if HAVE_KERNEL_OPLOCKS_IRIX
-extern int oplock_pipe_write;
-extern int oplock_pipe_read;
-extern struct kernel_oplocks irix_koplocks;
 #endif
 
 /* Current number of oplocks we have outstanding. */
 extern int32_t exclusive_oplocks_open;
 extern int32_t level_II_oplocks_open;
 extern bool global_client_failed_oplock_break;
-extern const struct kernel_oplocks *koplocks;
+extern struct kernel_oplocks *koplocks;
 
 extern struct notify_mid_map *notify_changes_by_mid;
 

@@ -180,15 +180,14 @@ static int s3_event_loop_once(struct tevent_context *ev)
 	to.tv_sec = 9999;	/* Max timeout */
 	to.tv_usec = 0;
 
+	if (run_events(ev, 0, NULL, NULL)) {
+		return 0;
+	}
+
 	GetTimeOfDay(&now);
 
 	if (!event_add_to_select_args(ev, &now, &r_fds, &w_fds, &to, &maxfd)) {
 		return -1;
-	}
-
-	if (timeval_is_zero(&to)) {
-		run_events(ev, 0, NULL, NULL);
-		return 0;
 	}
 
 	ret = sys_select(maxfd+1, &r_fds, &w_fds, NULL, &to);

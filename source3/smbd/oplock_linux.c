@@ -101,7 +101,7 @@ int linux_setlease(int fd, int leasetype)
  * oplock break protocol.
 ****************************************************************************/
 
-static files_struct *linux_oplock_receive_message(fd_set *fds)
+static files_struct *linux_oplock_receive_message(struct kernel_oplocks *ctx)
 {
 	int fd;
 	files_struct *fsp;
@@ -125,7 +125,8 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
  Attempt to set an kernel oplock on a file.
 ****************************************************************************/
 
-static bool linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
+static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
+				    files_struct *fsp, int oplock_type)
 {
 	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
@@ -148,7 +149,8 @@ static bool linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
  Release a kernel oplock on a file.
 ****************************************************************************/
 
-static void linux_release_kernel_oplock(files_struct *fsp)
+static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
+					files_struct *fsp)
 {
 	if (DEBUGLVL(10)) {
 		/*
@@ -181,7 +183,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
  See if a oplock message is waiting.
 ****************************************************************************/
 
-static bool linux_oplock_msg_waiting(fd_set *fds)
+static bool linux_oplock_msg_waiting(struct kernel_oplocks *ctx)
 {
 	return oplock_signals_received != 0;
 }
@@ -205,14 +207,30 @@ static bool linux_oplocks_available(void)
  Setup kernel oplocks.
 ****************************************************************************/
 
-struct kernel_oplocks *linux_init_kernel_oplocks(void) 
+static const struct kernel_oplocks_ops linux_koplocks = {
+	.receive_message	= linux_oplock_receive_message,
+	.set_oplock		= linux_set_kernel_oplock,
+	.release_oplock		= linux_release_kernel_oplock,
+	.msg_waiting		= linux_oplock_msg_waiting
+};
+
+struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 {
         struct sigaction act;
+	struct kernel_oplocks *ctx;
 
 	if (!linux_oplocks_available()) {
 		DEBUG(3,("Linux kernel oplocks not available\n"));
 		return NULL;
 	}
+
+	ctx = talloc_zero(mem_ctx, struct kernel_oplocks);
+	if (!ctx) {
+		DEBUG(0,("Linux Kernel oplocks talloc_Zero failed\n"));
+		return NULL;
+	}
+
+	ctx->ops = &linux_koplocks;
 
 	ZERO_STRUCT(act);
 
@@ -225,18 +243,12 @@ struct kernel_oplocks *linux_init_kernel_oplocks(void)
 		return NULL;
 	}
 
-	linux_koplocks.receive_message = linux_oplock_receive_message;
-	linux_koplocks.set_oplock = linux_set_kernel_oplock;
-	linux_koplocks.release_oplock = linux_release_kernel_oplock;
-	linux_koplocks.msg_waiting = linux_oplock_msg_waiting;
-	linux_koplocks.notification_fd = -1;
-
 	/* the signal can start off blocked due to a bug in bash */
 	BlockSignals(False, RT_SIGNAL_LEASE);
 
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 
-	return &linux_koplocks;
+	return ctx;
 }
 #else
  void oplock_linux_dummy(void);

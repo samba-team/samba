@@ -46,28 +46,33 @@
 #include "librpc/gen_ndr/messaging.h"
 #include "librpc/gen_ndr/ndr_messaging.h"
 
-static sig_atomic_t received_signal;
+struct messaging_tdb_context {
+	struct messaging_context *msg_ctx;
+	struct tdb_wrap *tdb;
+	struct tevent_signal *se;
+	int received_messages;
+};
 
 static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   struct server_id pid, int msg_type,
 				   const DATA_BLOB *data,
 				   struct messaging_backend *backend);
+static void message_dispatch(struct messaging_context *msg_ctx);
 
-/****************************************************************************
- Notifications come in as signals.
-****************************************************************************/
-
-static void sig_usr1(void)
+static void messaging_tdb_signal_handler(struct tevent_context *ev_ctx,
+					 struct tevent_signal *se,
+					 int signum, int count,
+					 void *_info, void *private_data)
 {
-	received_signal = 1;
-	sys_select_signal(SIGUSR1);
-}
+	struct messaging_tdb_context *ctx = talloc_get_type(private_data,
+					    struct messaging_tdb_context);
 
-static int messaging_tdb_destructor(struct messaging_backend *tdb_ctx)
-{
-	struct tdb_wrap *tdb = (struct tdb_wrap *)tdb_ctx->private_data;
-	TALLOC_FREE(tdb);
-	return 0;
+	ctx->received_messages++;
+
+	DEBUG(10, ("messaging_tdb_signal_handler: sig[%d] count[%d] msgs[%d]\n",
+		   signum, count, ctx->received_messages));
+
+	message_dispatch(ctx->msg_ctx);
 }
 
 /****************************************************************************
@@ -79,20 +84,44 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 			    struct messaging_backend **presult)
 {
 	struct messaging_backend *result;
-	struct tdb_wrap *tdb;
+	struct messaging_tdb_context *ctx;
 
 	if (!(result = TALLOC_P(mem_ctx, struct messaging_backend))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	tdb = tdb_wrap_open(result, lock_path("messages.tdb"), 
-			    0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
-			    O_RDWR|O_CREAT,0600);
+	ctx = TALLOC_ZERO_P(result, struct messaging_tdb_context);
+	if (!ctx) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->private_data = ctx;
+	result->send_fn = messaging_tdb_send;
 
-	if (!tdb) {
+	ctx->msg_ctx = msg_ctx;
+
+	ctx->tdb = tdb_wrap_open(ctx, lock_path("messages.tdb"),
+				 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT,
+				 O_RDWR|O_CREAT,0600);
+
+	if (!ctx->tdb) {
 		NTSTATUS status = map_nt_error_from_unix(errno);
 		DEBUG(0, ("ERROR: Failed to initialise messages database: "
+			  "%s\n", strerror(errno)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	ctx->se = tevent_add_signal(msg_ctx->event_ctx,
+				    ctx,
+				    SIGUSR1, 0,
+				    messaging_tdb_signal_handler,
+				    ctx);
+	if (!ctx->se) {
+		NTSTATUS status = map_nt_error_from_unix(errno);
+		DEBUG(0, ("ERROR: Failed to initialise messages signal handler: "
 			  "%s\n", strerror(errno)));
 		TALLOC_FREE(result);
 		return status;
@@ -101,14 +130,7 @@ NTSTATUS messaging_tdb_init(struct messaging_context *msg_ctx,
 	sec_init();
 
 	/* Activate the per-hashchain freelist */
-	tdb_set_max_dead(tdb->tdb, 5);
-
-	CatchSignal(SIGUSR1, SIGNAL_CAST sig_usr1);
-
-	result->private_data = (void *)tdb;
-	result->send_fn = messaging_tdb_send;
-
-	talloc_set_destructor(result, messaging_tdb_destructor);
+	tdb_set_max_dead(ctx->tdb->tdb, 5);
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -289,11 +311,13 @@ static NTSTATUS messaging_tdb_send(struct messaging_context *msg_ctx,
 				   const DATA_BLOB *data,
 				   struct messaging_backend *backend)
 {
+	struct messaging_tdb_context *ctx = talloc_get_type(backend->private_data,
+					    struct messaging_tdb_context);
 	struct messaging_array *msg_array;
 	struct messaging_rec *rec;
 	NTSTATUS status;
 	TDB_DATA key;
-	struct tdb_wrap *tdb = (struct tdb_wrap *)backend->private_data;
+	struct tdb_wrap *tdb = ctx->tdb;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* NULL pointer means implicit length zero. */
@@ -406,25 +430,30 @@ static NTSTATUS retrieve_all_messages(TDB_CONTEXT *msg_tdb,
  messages on an *odd* byte boundary.
 ****************************************************************************/
 
-void message_dispatch(struct messaging_context *msg_ctx)
+static void message_dispatch(struct messaging_context *msg_ctx)
 {
+	struct messaging_tdb_context *ctx = talloc_get_type(msg_ctx->local->private_data,
+					    struct messaging_tdb_context);
 	struct messaging_array *msg_array = NULL;
-	struct tdb_wrap *tdb = (struct tdb_wrap *)
-		(msg_ctx->local->private_data);
+	struct tdb_wrap *tdb = ctx->tdb;
+	NTSTATUS status;
 	uint32 i;
 
-	if (!received_signal)
-		return;
-
-	DEBUG(10, ("message_dispatch: received_signal = %d\n",
-		   received_signal));
-
-	received_signal = 0;
-
-	if (!NT_STATUS_IS_OK(retrieve_all_messages(tdb->tdb, NULL,
-						   &msg_array))) {
+	if (ctx->received_messages == 0) {
 		return;
 	}
+
+	DEBUG(10, ("message_dispatch: received_messages = %d\n",
+		   ctx->received_messages));
+
+	status = retrieve_all_messages(tdb->tdb, NULL, &msg_array);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("message_dispatch: failed to retrieve messages: %s\n",
+			   nt_errstr(status)));
+		return;
+	}
+
+	ctx->received_messages = 0;
 
 	for (i=0; i<msg_array->num_messages; i++) {
 		messaging_dispatch_rec(msg_ctx, &msg_array->messages[i]);

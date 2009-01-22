@@ -34,7 +34,10 @@ static struct notify_queue {
 	size_t buflen;
 } *notify_queue_head = NULL;
 
-static struct timed_event *notify_event;
+static struct tevent_timer *notify_event;
+
+static bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx,
+				  size_t *p_num_pids, pid_t **pp_pid_list);
 
 static bool create_send_ctx(void)
 {
@@ -63,7 +66,7 @@ int print_queue_snum(const char *qname)
  Used to decide if we need a short select timeout.
 *******************************************************************/
 
-bool print_notify_messages_pending(void)
+static bool print_notify_messages_pending(void)
 {
 	return (notify_queue_head != NULL);
 }
@@ -219,10 +222,10 @@ void print_notify_send_messages(struct messaging_context *msg_ctx,
  Event handler to send the messages.
 *******************************************************************/
 
-static void print_notify_event_send_messages(struct event_context *event_ctx,
-					struct timed_event *te,
-					struct timeval now,
-					void *private_data)
+static void print_notify_event_send_messages(struct tevent_context *event_ctx,
+					     struct tevent_timer *te,
+					     struct timeval now,
+					     void *private_data)
 {
 	/* Remove this timed event handler. */
 	TALLOC_FREE(notify_event);
@@ -324,7 +327,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 
 	if ((notify_event == NULL) && (smbd_event_context() != NULL)) {
 		/* Add an event for 1 second's time to send this queue. */
-		notify_event = event_add_timed(smbd_event_context(), NULL,
+		notify_event = tevent_add_timer(smbd_event_context(), NULL,
 					timeval_current_ofs(1,0),
 					print_notify_event_send_messages, NULL);
 	}
@@ -535,7 +538,8 @@ void notify_printer_byname( const char *printername, uint32 change, const char *
  messages on this print queue. Used in printing/notify to send the messages.
 ****************************************************************************/
 
-bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t *p_num_pids, pid_t **pp_pid_list)
+static bool print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx,
+				  size_t *p_num_pids, pid_t **pp_pid_list)
 {
 	struct tdb_print_db *pdb = NULL;
 	TDB_CONTEXT *tdb = NULL;
