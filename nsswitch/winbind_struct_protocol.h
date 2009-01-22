@@ -51,8 +51,11 @@ typedef char fstring[FSTRING_LEN];
  * 23: added session_key to ccache_ntlm_auth response
  *     added WINBINDD_CCACHE_SAVE
  * 24: Fill in num_entries WINBINDD_LIST_USERS and WINBINDD_LIST_GROUPS
+ * 25: removed WINBINDD_SET_HWM
+ *     removed WINBINDD_SET_MAPPING
+ *     removed WINBINDD_REMOVE_MAPPING
  */
-#define WINBIND_INTERFACE_VERSION 24
+#define WINBIND_INTERFACE_VERSION 25
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
