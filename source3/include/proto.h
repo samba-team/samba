@@ -5302,6 +5302,11 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 
+/* The following definitions come from rpc_client/rpc_transport_sock.c  */
+
+NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
+				 struct rpc_cli_transport **presult);
+
 /* The following definitions come from rpc_client/cli_reg.c  */
 
 NTSTATUS rpccli_winreg_Connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
