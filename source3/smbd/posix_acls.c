@@ -3187,6 +3187,15 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 		return -1;
 	}
 
+	/* only allow chown to the current user. This is more secure,
+	   and also copes with the case where the SID in a take ownership ACL is
+	   a local SID on the users workstation
+	*/
+	if (uid != current_user.ut.uid) {
+		errno = EPERM;
+		return -1;
+	}
+
 	if (SMB_VFS_STAT(conn,fname,&st)) {
 		return -1;
 	}
@@ -3194,12 +3203,6 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 	if (!NT_STATUS_IS_OK(open_file_fchmod(NULL, conn, fname, &st, &fsp))) {
 		return -1;
 	}
-
-	/* only allow chown to the current user. This is more secure,
-	   and also copes with the case where the SID in a take ownership ACL is
-	   a local SID on the users workstation 
-	*/
-	uid = current_user.ut.uid;
 
 	become_root();
 	/* Keep the current file gid the same. */
