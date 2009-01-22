@@ -184,8 +184,7 @@ WERROR libnetapi_open_pipe(struct libnetapi_ctx *ctx,
 	status = pipe_cm_open(ctx, cli, interface, &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnetapi_set_error_string(ctx, "failed to open PIPE %s: %s",
-			cli_get_pipe_name_from_iface(debug_ctx(), cli,
-						     interface),
+			cli_get_pipe_name_from_iface(debug_ctx(), interface),
 			get_friendly_nt_error_msg(status));
 		return WERR_DEST_NOT_FOUND;
 	}
