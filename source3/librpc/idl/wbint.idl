@@ -160,12 +160,6 @@ interface wbint
 	WBINT_ID_TYPE_GID
     } wbint_IdType;
 
-    NTSTATUS wbint_SetMapping(
-	[in] dom_sid *sid,
-	[in] wbint_IdType type,
-	[in] hyper id
-	);
-
     NTSTATUS wbint_RemoveMapping(
 	[in] dom_sid *sid,
 	[in] wbint_IdType type,

@@ -563,28 +563,6 @@ NTSTATUS _wbint_PingDc(struct pipes_struct *p, struct wbint_PingDc *r)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS _wbint_SetMapping(struct pipes_struct *p, struct wbint_SetMapping *r)
-{
-	struct id_map map;
-
-	map.sid = r->in.sid;
-	map.xid.id = r->in.id;
-	map.status = ID_MAPPED;
-
-	switch (r->in.type) {
-	case WBINT_ID_TYPE_UID:
-		map.xid.type = ID_TYPE_UID;
-		break;
-	case WBINT_ID_TYPE_GID:
-		map.xid.type = ID_TYPE_GID;
-		break;
-	default:
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	return idmap_set_mapping(&map);
-}
-
 NTSTATUS _wbint_RemoveMapping(struct pipes_struct *p,
 			      struct wbint_RemoveMapping *r)
 {

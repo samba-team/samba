@@ -543,8 +543,6 @@ static struct winbindd_async_dispatch_table async_priv_table[] = {
 	  winbindd_allocate_uid_send, winbindd_allocate_uid_recv },
 	{ WINBINDD_ALLOCATE_GID, "ALLOCATE_GID",
 	  winbindd_allocate_gid_send, winbindd_allocate_gid_recv },
-	{ WINBINDD_SET_MAPPING, "SET_MAPPING",
-	  winbindd_set_mapping_send, winbindd_set_mapping_recv },
 	{ WINBINDD_REMOVE_MAPPING, "SET_MAPPING",
 	  winbindd_remove_mapping_send, winbindd_remove_mapping_recv },
 	{ WINBINDD_CHANGE_MACHACC, "CHANGE_MACHACC",
