@@ -328,11 +328,17 @@ char *rep_mkdtemp(char *template);
 #ifndef HAVE_PREAD
 #define pread rep_pread
 ssize_t rep_pread(int __fd, void *__buf, size_t __nbytes, off_t __offset);
+#define LIBREPLACE_PREAD_REPLACED 1
+#else
+#define LIBREPLACE_PREAD_NOT_REPLACED 1
 #endif
 
 #ifndef HAVE_PWRITE
 #define pwrite rep_pwrite
 ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset);
+#define LIBREPLACE_PWRITE_REPLACED 1
+#else
+#define LIBREPLACE_PWRITE_NOT_REPLACED 1
 #endif
 
 #if !defined(HAVE_INET_NTOA) || defined(REPLACE_INET_NTOA)
