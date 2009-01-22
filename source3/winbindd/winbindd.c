@@ -173,36 +173,161 @@ static void terminate(bool is_parent)
 	exit(0);
 }
 
-static SIG_ATOMIC_T do_sigterm = 0;
-
-static void termination_handler(int signum)
+static void winbindd_sig_term_handler(struct tevent_context *ev,
+				      struct tevent_signal *se,
+				      int signum,
+				      int count,
+				      void *siginfo,
+				      void *private_data)
 {
-	do_sigterm = 1;
-	sys_select_signal(signum);
+	bool *is_parent = talloc_get_type_abort(private_data, bool);
+
+	DEBUG(0,("Got sig[%d] terminate (is_parent=%d)\n",
+		 signum, (int)*is_parent));
+	terminate(*is_parent);
 }
 
-static SIG_ATOMIC_T do_sigusr2 = 0;
-
-static void sigusr2_handler(int signum)
+bool winbindd_setup_sig_term_handler(bool parent)
 {
-	do_sigusr2 = 1;
-	sys_select_signal(SIGUSR2);
+	struct tevent_signal *se;
+	bool *is_parent;
+
+	is_parent = talloc(winbind_event_context(), bool);
+	if (!is_parent) {
+		return false;
+	}
+
+	*is_parent = parent;
+
+	se = tevent_add_signal(winbind_event_context(),
+			       is_parent,
+			       SIGTERM, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGTERM handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	se = tevent_add_signal(winbind_event_context(),
+			       is_parent,
+			       SIGINT, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGINT handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	se = tevent_add_signal(winbind_event_context(),
+			       is_parent,
+			       SIGQUIT, 0,
+			       winbindd_sig_term_handler,
+			       is_parent);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGINT handler"));
+		talloc_free(is_parent);
+		return false;
+	}
+
+	return true;
 }
 
-static SIG_ATOMIC_T do_sighup = 0;
-
-static void sighup_handler(int signum)
+static void winbindd_sig_hup_handler(struct tevent_context *ev,
+				     struct tevent_signal *se,
+				     int signum,
+				     int count,
+				     void *siginfo,
+				     void *private_data)
 {
-	do_sighup = 1;
-	sys_select_signal(SIGHUP);
+	const char *file = (const char *)private_data;
+
+	DEBUG(1,("Reloading services after SIGHUP\n"));
+	flush_caches();
+	reload_services_file(file);
 }
 
-static SIG_ATOMIC_T do_sigchld = 0;
-
-static void sigchld_handler(int signum)
+bool winbindd_setup_sig_hup_handler(const char *lfile)
 {
-	do_sigchld = 1;
-	sys_select_signal(SIGCHLD);
+	struct tevent_signal *se;
+	char *file = NULL;
+
+	if (lfile) {
+		file = talloc_strdup(winbind_event_context(),
+				     lfile);
+		if (!file) {
+			return false;
+		}
+	}
+
+	se = tevent_add_signal(winbind_event_context(),
+			       winbind_event_context(),
+			       SIGHUP, 0,
+			       winbindd_sig_hup_handler,
+			       file);
+	if (!se) {
+		return false;
+	}
+
+	return true;
+}
+
+static void winbindd_sig_chld_handler(struct tevent_context *ev,
+				      struct tevent_signal *se,
+				      int signum,
+				      int count,
+				      void *siginfo,
+				      void *private_data)
+{
+	pid_t pid;
+
+	while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
+		winbind_child_died(pid);
+	}
+}
+
+static bool winbindd_setup_sig_chld_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(winbind_event_context(),
+			       winbind_event_context(),
+			       SIGCHLD, 0,
+			       winbindd_sig_chld_handler,
+			       NULL);
+	if (!se) {
+		return false;
+	}
+
+	return true;
+}
+
+static void winbindd_sig_usr2_handler(struct tevent_context *ev,
+				      struct tevent_signal *se,
+				      int signum,
+				      int count,
+				      void *siginfo,
+				      void *private_data)
+{
+	print_winbindd_status();
+}
+
+static bool winbindd_setup_sig_usr2_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(winbind_event_context(),
+			       winbind_event_context(),
+			       SIGCHLD, 0,
+			       winbindd_sig_usr2_handler,
+			       NULL);
+	if (!se) {
+		return false;
+	}
+
+	return true;
 }
 
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
@@ -224,7 +349,9 @@ static void msg_shutdown(struct messaging_context *msg,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	do_sigterm = 1;
+	/* only the parent waits for this message */
+	DEBUG(0,("Got shutdown message\n"));
+	terminate(true);
 }
 
 
@@ -797,27 +924,6 @@ static bool remove_idle_client(void)
 	return False;
 }
 
-/* check if HUP has been received and reload files */
-void winbind_check_sighup(const char *lfile)
-{
-	if (do_sighup) {
-
-		DEBUG(3, ("got SIGHUP\n"));
-
-		flush_caches();
-		reload_services_file(lfile);
-
-		do_sighup = 0;
-	}
-}
-
-/* check if TERM has been received */
-void winbind_check_sigterm(bool is_parent)
-{
-	if (do_sigterm)
-		terminate(is_parent);
-}
-
 /* Process incoming clients on listen_sock.  We use a tricky non-blocking,
    non-forking, non-threaded model which allows us to handle many
    simultaneous connections while remaining impervious to many denial of
@@ -979,26 +1085,6 @@ static void process_loop(void)
 #if 0
 	winbindd_check_cache_size(time(NULL));
 #endif
-
-	/* Check signal handling things */
-
-	winbind_check_sigterm(true);
-	winbind_check_sighup(NULL);
-
-	if (do_sigusr2) {
-		print_winbindd_status();
-		do_sigusr2 = 0;
-	}
-
-	if (do_sigchld) {
-		pid_t pid;
-
-		do_sigchld = 0;
-
-		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
-			winbind_child_died(pid);
-		}
-	}
 }
 
 /* Main function */
@@ -1168,18 +1254,6 @@ int main(int argc, char **argv, char **envp)
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGCHLD);
 
-	/* Setup signal handlers */
-
-	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
-	CatchSignal(SIGQUIT, termination_handler);
-	CatchSignal(SIGTERM, termination_handler);
-	CatchSignal(SIGCHLD, sigchld_handler);
-
-	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
-
-	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
-	CatchSignal(SIGHUP, sighup_handler);
-
 	if (!interactive)
 		become_daemon(Fork, no_process_group);
 
@@ -1206,6 +1280,19 @@ int main(int argc, char **argv, char **envp)
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
+
+	/* Setup signal handlers */
+
+	if (!winbindd_setup_sig_term_handler(true))
+		exit(1);
+	if (!winbindd_setup_sig_hup_handler(NULL))
+		exit(1);
+	if (!winbindd_setup_sig_chld_handler())
+		exit(1);
+	if (!winbindd_setup_sig_usr2_handler())
+		exit(1);
+
+	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
 
 	/*
 	 * Ensure all cache and idmap caches are consistent
