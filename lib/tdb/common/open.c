@@ -461,6 +461,10 @@ fail:
 /* reopen all tdb's */
 int tdb_reopen_all(int parent_longlived)
 {
+#if defined(LIBREPLACE_PREAD_NOT_REPLACED) && \
+	defined(LIBREPLACE_PWRITE_NOT_REPLACED)
+	return 0;
+#else
 	struct tdb_context *tdb;
 
 	for (tdb=tdbs; tdb; tdb = tdb->next) {
@@ -483,6 +487,7 @@ int tdb_reopen_all(int parent_longlived)
 		if (tdb_reopen(tdb) != 0)
 			return -1;
 	}
+#endif
 
 	return 0;
 }
