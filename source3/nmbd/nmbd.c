@@ -85,6 +85,69 @@ static void terminate(void)
 	exit(0);
 }
 
+static void nmbd_sig_term_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	terminate();
+}
+
+static bool nmbd_setup_sig_term_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(nmbd_event_context(),
+			       nmbd_event_context(),
+			       SIGTERM, 0,
+			       nmbd_sig_term_handler,
+			       NULL);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGTERM handler"));
+		return false;
+	}
+
+	return true;
+}
+
+static void msg_reload_nmbd_services(struct messaging_context *msg,
+				     void *private_data,
+				     uint32_t msg_type,
+				     struct server_id server_id,
+				     DATA_BLOB *data);
+
+static void nmbd_sig_hup_handler(struct tevent_context *ev,
+				 struct tevent_signal *se,
+				 int signum,
+				 int count,
+				 void *siginfo,
+				 void *private_data)
+{
+	DEBUG(0,("Got SIGHUP dumping debug info.\n"));
+	msg_reload_nmbd_services(nmbd_messaging_context(),
+				 NULL, MSG_SMB_CONF_UPDATED,
+				 procid_self(), NULL);
+}
+
+static bool nmbd_setup_sig_hup_handler(void)
+{
+	struct tevent_signal *se;
+
+	se = tevent_add_signal(nmbd_event_context(),
+			       nmbd_event_context(),
+			       SIGHUP, 0,
+			       nmbd_sig_hup_handler,
+			       NULL);
+	if (!se) {
+		DEBUG(0,("failed to setup SIGHUP handler"));
+		return false;
+	}
+
+	return true;
+}
+
 /**************************************************************************** **
  Handle a SHUTDOWN message from smbcontrol.
  **************************************************************************** */
@@ -96,30 +159,6 @@ static void nmbd_terminate(struct messaging_context *msg,
 			   DATA_BLOB *data)
 {
 	terminate();
-}
-
-/**************************************************************************** **
- Catch a SIGTERM signal.
- **************************************************************************** */
-
-static SIG_ATOMIC_T got_sig_term;
-
-static void sig_term(int sig)
-{
-	got_sig_term = 1;
-	sys_select_signal(SIGTERM);
-}
-
-/**************************************************************************** **
- Catch a SIGHUP signal.
- **************************************************************************** */
-
-static SIG_ATOMIC_T reload_after_sighup;
-
-static void sig_hup(int sig)
-{
-	reload_after_sighup = 1;
-	sys_select_signal(SIGHUP);
 }
 
 /**************************************************************************** **
@@ -452,15 +491,6 @@ static void process(void)
 		}
 
 		/*
-		 * Handle termination inband.
-		 */
-
-		if (got_sig_term) {
-			got_sig_term = 0;
-			terminate();
-		}
-
-		/*
 		 * Process all incoming packets
 		 * read above. This calls the success and
 		 * failure functions registered when response
@@ -629,19 +659,6 @@ static void process(void)
 
 		clear_unexpected(t);
 
-		/*
-		 * Reload the services file if we got a sighup.
-		 */
-
-		if(reload_after_sighup) {
-			DEBUG( 0, ( "Got SIGHUP dumping debug info.\n" ) );
-			msg_reload_nmbd_services(nmbd_messaging_context(),
-						 NULL, MSG_SMB_CONF_UPDATED,
-						 procid_self(), NULL);
-
-			reload_after_sighup = 0;
-		}
-
 		/* check for new network interfaces */
 
 		reload_interfaces(t);
@@ -807,10 +824,7 @@ static bool open_sockets(bool isdaemon, int port)
 	BlockSignals(False, SIGHUP);
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGTERM);
-	
-	CatchSignal( SIGHUP,  SIGNAL_CAST sig_hup );
-	CatchSignal( SIGTERM, SIGNAL_CAST sig_term );
-	
+
 #if defined(SIGFPE)
 	/* we are never interested in SIGFPE */
 	BlockSignals(True,SIGFPE);
@@ -904,6 +918,11 @@ static bool open_sockets(bool isdaemon, int port)
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
+
+	if (!nmbd_setup_sig_term_handler())
+		exit(1);
+	if (!nmbd_setup_sig_hup_handler())
+		exit(1);
 
 	/* get broadcast messages */
 	claim_connection(NULL,"",FLAG_MSG_GENERAL|FLAG_MSG_DBWRAP);
