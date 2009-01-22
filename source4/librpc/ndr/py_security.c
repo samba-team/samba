@@ -31,7 +31,11 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 		type->tp_dict = PyDict_New();
 	dict = type->tp_dict;
 	for (i = 0; methods[i].ml_name; i++) {
-		PyObject *descr = PyDescr_NewMethod(type, &methods[i]);
+		PyObject *descr;
+		if (methods[i].ml_flags & METH_CLASS) 
+			descr = PyCFunction_New(&methods[i], type);
+		else 
+			descr = PyDescr_NewMethod(type, &methods[i]);
 		PyDict_SetItemString(dict, methods[i].ml_name, 
 				     descr);
 	}
@@ -160,7 +164,28 @@ static PyObject *py_descriptor_sacl_del(PyObject *self, PyObject *args)
 static PyObject *py_descriptor_new(PyTypeObject *self, PyObject *args, PyObject *kwargs)
 {
 	return py_talloc_import(self, security_descriptor_initialise(NULL));
-}	
+}
+
+static PyObject *py_descriptor_from_sddl(PyObject *self, PyObject *args)
+{
+	struct security_descriptor *secdesc;
+	char *sddl;
+	PyObject *py_sid;
+	struct dom_sid *sid;
+
+	if (!PyArg_ParseTuple(args, "sO", &sddl, &py_sid))
+		return NULL;
+
+	sid = py_talloc_get_ptr(py_sid);
+
+	secdesc = sddl_decode(NULL, sddl, sid);
+	if (secdesc == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Unable to parse SDDL");
+		return NULL;
+	}
+
+	return py_talloc_import((PyTypeObject *)self, secdesc);
+}
 
 static PyMethodDef py_descriptor_extra_methods[] = {
 	{ "sacl_add", (PyCFunction)py_descriptor_sacl_add, METH_VARARGS,
@@ -171,6 +196,8 @@ static PyMethodDef py_descriptor_extra_methods[] = {
 	{ "dacl_del", (PyCFunction)py_descriptor_dacl_del, METH_VARARGS,
 		NULL },
 	{ "sacl_del", (PyCFunction)py_descriptor_sacl_del, METH_VARARGS,
+		NULL },
+	{ "from_sddl", (PyCFunction)py_descriptor_from_sddl, METH_VARARGS|METH_CLASS, 
 		NULL },
 	{ NULL }
 };

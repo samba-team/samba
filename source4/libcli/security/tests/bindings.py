@@ -49,6 +49,14 @@ class SecurityDescriptorTests(unittest.TestCase):
     def setUp(self):
         self.descriptor = security.descriptor()
 
+    def test_from_sddl(self):
+        desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)", security.dom_sid("S-2-0-0"))
+        self.assertEquals(desc.group_sid, security.dom_sid('S-2-0-0-512'))
+        self.assertEquals(desc.owner_sid, security.dom_sid('S-1-5-32-548'))
+        self.assertEquals(desc.revision, 1)
+        self.assertEquals(desc.sacl, None)
+        self.assertEquals(desc.type, 0x8004)
+
 
 class DomSidTests(unittest.TestCase):
     def test_parse_sid(self):
