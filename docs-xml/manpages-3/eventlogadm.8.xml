@@ -91,7 +91,7 @@
 		</term>
 		<listitem><para>
 		The <command>-o write</command> reads event log
-		records from standard input and writes them to theSamba
+		records from standard input and writes them to the Samba
 		event log store named by EVENTLOG.
 		</para> </listitem>
 		</varlistentry>
@@ -180,7 +180,7 @@
 		</para></listitem>
 
 		<listitem><para>
-		<command>SRN</command> - he name of the machine on
+		<command>SRN</command> - The name of the machine on
 		which the eventlog was generated. This is typically the
 		host name.
 		</para></listitem>
