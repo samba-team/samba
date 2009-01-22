@@ -114,18 +114,7 @@ struct rpc_cli_transport {
 struct rpc_pipe_client {
 	struct rpc_pipe_client *prev, *next;
 
-	enum dcerpc_transport_t transport_type;
-
-	union {
-		struct {
-			struct cli_state *cli;
-			const char *pipe_name;
-			uint16 fnum;
-		} np;
-		struct {
-			int fd;
-		} sock;
-	} trans ;
+	struct rpc_cli_transport *transport;
 
 	struct ndr_syntax_id abstract_syntax;
 	struct ndr_syntax_id transfer_syntax;
