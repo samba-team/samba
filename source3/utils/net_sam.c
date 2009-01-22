@@ -1853,6 +1853,8 @@ doma_done:
 
 		d_printf(_("Adding the Guest user.\n"));
 
+		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
+
 		pwd = getpwnam_alloc(tc, lp_guestaccount());
 
 		if (!pwd) {
@@ -1881,8 +1883,6 @@ doma_done:
 				goto failed;
 			}
 		}
-
-		sid_compose(&sid, get_global_sam_sid(), DOMAIN_RID_GUEST);
 
 		dn = talloc_asprintf(tc, "uid=%s,%s", pwd->pw_name, lp_ldap_user_suffix ());
 		uidstr = talloc_asprintf(tc, "%u", (unsigned int)pwd->pw_uid);
