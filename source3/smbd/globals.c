@@ -22,10 +22,9 @@
 
 #if defined(WITH_AIO)
 struct aio_extra *aio_list_head = NULL;
+struct tevent_signal *aio_signal_event = NULL;
 int aio_pending_size = 0;
-sig_atomic_t aio_signals_received = 0;
 int outstanding_aio_calls = 0;
-uint16 *aio_pending_array = NULL;
 #endif
 
 /* dlink list we store pending lock records on. */

@@ -6475,8 +6475,6 @@ REGVAL_CTR *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
 
 /* The following definitions come from smbd/aio.c  */
 
-void aio_request_done(uint16_t mid);
-bool aio_finished(void);
 void initialize_async_io_handler(void);
 bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
@@ -6487,23 +6485,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite);
-int process_aio_queue(void);
 int wait_for_aio_completion(files_struct *fsp);
 void cancel_aio_by_fsp(files_struct *fsp);
-bool aio_finished(void);
-void initialize_async_io_handler(void);
-int process_aio_queue(void);
-bool schedule_aio_read_and_X(connection_struct *conn,
-			     struct smb_request *req,
-			     files_struct *fsp, SMB_OFF_T startpos,
-			     size_t smb_maxcnt);
-bool schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *req,
-			      files_struct *fsp, char *data,
-			      SMB_OFF_T startpos,
-			      size_t numtowrite);
-void cancel_aio_by_fsp(files_struct *fsp);
-int wait_for_aio_completion(files_struct *fsp);
+void smbd_aio_complete_mid(unsigned int mid);
 
 /* The following definitions come from smbd/blocking.c  */
 
