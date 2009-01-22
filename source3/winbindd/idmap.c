@@ -646,19 +646,6 @@ NTSTATUS idmap_allocate_gid(struct unixid *id)
 	return ctx->methods->allocate_id(id);
 }
 
-NTSTATUS idmap_set_uid_hwm(struct unixid *id)
-{
-	struct idmap_alloc_context *ctx;
-	NTSTATUS ret;
-
-	if (!NT_STATUS_IS_OK(ret = idmap_alloc_init(&ctx))) {
-		return ret;
-	}
-
-	id->type = ID_TYPE_UID;
-	return ctx->methods->set_id_hwm(id);
-}
-
 NTSTATUS idmap_set_gid_hwm(struct unixid *id)
 {
 	struct idmap_alloc_context *ctx;
