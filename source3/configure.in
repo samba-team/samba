@@ -1916,7 +1916,7 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    # The $SHLD and $LDSHFLAGS variables may contain references to other
    # variables so they need to be eval'ed.
    $CC $CPPFLAGS $CFLAGS $PICFLAG -c -o \
-	shlib.o ${srcdir-.}/tests/shlib.c && \
+	shlib.o ${srcdir-.}/../tests/shlib.c && \
    `eval echo $SHLD` `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" \
         shlib.o && ac_cv_shlib_works=yes
    rm -f "shlib.$SHLIBEXT" shlib.o
@@ -2749,20 +2749,20 @@ if test x"$samba_cv_HAVE_RPC_AUTH_ERROR_CONFLICT" = x"yes"; then
 fi
 
 AC_MSG_CHECKING([for test routines])
-AC_TRY_RUN([#include "${srcdir-.}/tests/trivial.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/trivial.c"],
            AC_MSG_RESULT(yes),
 	   AC_MSG_ERROR([cant find test code. Aborting config]),
 	   AC_MSG_WARN([cannot run when cross-compiling]))
 
 AC_CACHE_CHECK([for ftruncate extend],samba_cv_HAVE_FTRUNCATE_EXTEND,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/ftruncate.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/ftruncate.c"],
            samba_cv_HAVE_FTRUNCATE_EXTEND=yes,samba_cv_HAVE_FTRUNCATE_EXTEND=no,samba_cv_HAVE_FTRUNCATE_EXTEND=cross)])
 if test x"$samba_cv_HAVE_FTRUNCATE_EXTEND" = x"yes"; then
     AC_DEFINE(HAVE_FTRUNCATE_EXTEND,1,[Truncate extend])
 fi
 
 AC_CACHE_CHECK([for broken getgroups],samba_cv_HAVE_BROKEN_GETGROUPS,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/getgroups.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/getgroups.c"],
            samba_cv_HAVE_BROKEN_GETGROUPS=yes,samba_cv_HAVE_BROKEN_GETGROUPS=no,samba_cv_HAVE_BROKEN_GETGROUPS=cross)])
 if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
@@ -2849,14 +2849,14 @@ if test x"$samba_cv_DARWIN_INITGROUPS" = x"yes" ; then
 fi
 
 AC_CACHE_CHECK([for fcntl locking],samba_cv_HAVE_FCNTL_LOCK,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/fcntl_lock.c"],
            samba_cv_HAVE_FCNTL_LOCK=yes,samba_cv_HAVE_FCNTL_LOCK=no,samba_cv_HAVE_FCNTL_LOCK=cross)])
 if test x"$samba_cv_HAVE_FCNTL_LOCK" = x"yes"; then
     AC_DEFINE(HAVE_FCNTL_LOCK,1,[Whether fcntl locking is available])
 fi
 
 AC_CACHE_CHECK([for broken (glibc2.1/x86) 64 bit fcntl locking],samba_cv_HAVE_BROKEN_FCNTL64_LOCKS,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock64.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/fcntl_lock64.c"],
            samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=yes,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=no,samba_cv_HAVE_BROKEN_FCNTL64_LOCKS=cross)])
 if test x"$samba_cv_HAVE_BROKEN_FCNTL64_LOCKS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_FCNTL64_LOCKS,1,[Whether fcntl64 locks are broken])
@@ -4375,7 +4375,7 @@ if test $with_pam_for_crypt = no; then
 AC_CACHE_CHECK([for a crypt that needs truncated salt],samba_cv_HAVE_TRUNCATED_SALT,[
 crypt_LIBS="$LIBS"
 LIBS="$AUTH_LIBS $LIBS"
-AC_TRY_RUN([#include "${srcdir-.}/tests/crypttest.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/crypttest.c"],
 	samba_cv_HAVE_TRUNCATED_SALT=no,samba_cv_HAVE_TRUNCATED_SALT=yes,samba_cv_HAVE_TRUNCATED_SALT=cross)
 LIBS="$crypt_LIBS"])
 if test x"$samba_cv_HAVE_TRUNCATED_SALT" = x"yes"; then
@@ -4603,7 +4603,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4A 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4A=yes,samba_cv_HAVE_QUOTACTL_4A=no,samba_cv_HAVE_QUOTACTL_4A=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4A" = x"yes"; then
     samba_cv_SYSQUOTA_FOUND=yes;
@@ -4618,7 +4618,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_4B 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_4B=yes,samba_cv_HAVE_QUOTACTL_4B=no,samba_cv_HAVE_QUOTACTL_4B=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_4B" = x"yes"; then
     echo "int quotactl(const char *path, int cmd, int id, char *addr) is not reworked for the new sys_quota api"
@@ -4634,7 +4634,7 @@ AC_TRY_RUN_STRICT([
 #define HAVE_QUOTACTL_3 1
 #define AUTOCONF_TEST 1
 #include "confdefs.h"
-#include "${srcdir-.}/tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
+#include "${srcdir-.}/../tests/sysquotas.c"],[$Werror_FLAGS],[$CPPFLAGS],[$LDFLAGS],
            samba_cv_HAVE_QUOTACTL_3=yes,samba_cv_HAVE_QUOTACTL_3=no,samba_cv_HAVE_QUOTACTL_3=cross)])
 if test x"$samba_cv_HAVE_QUOTACTL_3" = x"yes"; then
     echo "CRAY int quotactl (char *spec, int request, char *arg) is NOT reworked for the sys_quota api"
@@ -6348,7 +6348,7 @@ AC_MSG_RESULT([    AUTH_LIBS = $AUTH_LIBS])
 # final configure stuff
 
 AC_MSG_CHECKING([configure summary])
-AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/summary.c"],
            AC_MSG_RESULT(yes),
 	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
 	   AC_MSG_WARN([cannot run when cross-compiling]))

@@ -51,7 +51,7 @@ if test x"$samba_cv_CC_NEGATIVE_ENUM_VALUES" != x"yes"; then
 fi
 
 AC_MSG_CHECKING([for test routines])
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/trivial.c"],
 	    AC_MSG_RESULT(yes),
 	    AC_MSG_ERROR([cant find test code. Aborting config]),
 	    AC_MSG_WARN([cannot run when cross-compiling]))

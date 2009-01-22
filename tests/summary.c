@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+void exit(int);
+
 main()
 {
     exit (0);

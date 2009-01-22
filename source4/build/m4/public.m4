@@ -90,7 +90,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 				OLD_CFLAGS="$CFLAGS"
 				CFLAGS="$CFLAGS $$1_CFLAGS"
 				AC_MSG_CHECKING([that the C compiler can use the $1_CFLAGS])
-				AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+				AC_TRY_RUN([#include "${srcdir-.}/../tests/trivial.c"],
 					SMB_ENABLE($1, YES)
 					AC_MSG_RESULT(yes),
 					AC_MSG_RESULT(no),

@@ -122,7 +122,7 @@ CFLAGS="${CFLAGS} ${DEVELOPER_CFLAGS}"
 # final configure stuff
 
 AC_MSG_CHECKING([configure summary])
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/summary.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/summary.c"],
            AC_MSG_RESULT(yes),
 	   AC_MSG_ERROR([summary failure. Aborting config]); exit 1;,
 	   AC_MSG_WARN([cannot run when cross-compiling]))

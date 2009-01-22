@@ -137,7 +137,7 @@ if test $BLDSHARED = true; then
 			ac_cv_shlib_works=no
 			# try building a trivial shared library
 			# TODO: also test SONAMEFLAG
-			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
+			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/../tests/shlib.c -o shlib.o &&
 				${SHLD} ${SHLD_FLAGS} -o shlib.${SHLIBEXT} shlib.o && 
 				ac_cv_shlib_works=yes
 			rm -f shlib.${SHLIBEXT} shlib.o
@@ -146,7 +146,7 @@ if test $BLDSHARED = true; then
 	               [ac_cv_shmod_works],[
 			ac_cv_shmod_works=no
 			# try building a trivial shared library
-			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/build/tests/shlib.c -o shlib.o &&
+			${CC} ${CFLAGS} ${PICFLAG} -c ${srcdir-.}/../tests/shlib.c -o shlib.o &&
 				${MDLD} ${MDLD_FLAGS} -o shlib.${SHLIBEXT} shlib.o && 
 				ac_cv_shmod_works=yes
 			rm -f shlib.${SHLIBEXT} shlib.o
@@ -162,7 +162,7 @@ fi
 AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
 
 AC_MSG_CHECKING([if we can link using the selected flags])
-AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+AC_TRY_RUN([#include "${srcdir-.}/../tests/trivial.c"],
 	    AC_MSG_RESULT(yes),
 	    AC_MSG_ERROR([we cannot link with the selected cc and ld flags. Aborting configure]),
 	    AC_MSG_WARN([cannot run when cross-compiling]))
