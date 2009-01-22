@@ -82,7 +82,6 @@ static const struct pipe_id_info {
  ****************************************************************************/
 
 const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-					 struct cli_state *cli,
 					 const struct ndr_syntax_id *interface)
 {
 	int i;
@@ -3594,7 +3593,7 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	result->transport_type = NCACN_NP;
 
 	result->trans.np.pipe_name = cli_get_pipe_name_from_iface(
-		result, cli, abstract_syntax);
+		result, abstract_syntax);
 	if (result->trans.np.pipe_name == NULL) {
 		DEBUG(1, ("Could not find pipe for interface\n"));
 		TALLOC_FREE(result);
@@ -3713,7 +3712,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    cli_get_pipe_name_from_iface(debug_ctx(), cli,
+			    cli_get_pipe_name_from_iface(debug_ctx(),
 							 interface),
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
