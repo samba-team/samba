@@ -956,3 +956,8 @@ NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog 
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS _eventlog_ReportEventAndSourceW(pipes_struct *p, struct eventlog_ReportEventAndSourceW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
