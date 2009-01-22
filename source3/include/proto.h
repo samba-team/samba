@@ -7024,7 +7024,7 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-bool oplock_message_waiting();
+bool oplock_message_waiting(void);
 void process_kernel_oplocks(struct messaging_context *msg_ctx);
 bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
