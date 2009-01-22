@@ -309,6 +309,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_DOMAIN_CONTROLLER_INFO(struct ndr_push *ndr,
 		NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->client_site_name));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->domain_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -328,6 +329,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_DOMAIN_CONTROLLER_INFO(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->client_site_name));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->domain_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
