@@ -1674,8 +1674,6 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types);
-bool winbind_allocate_uid(uid_t *uid);
-bool winbind_allocate_gid(gid_t *gid);
 
 /* The following definitions come from lib/wins_srv.c  */
 
