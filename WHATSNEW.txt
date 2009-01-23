@@ -199,6 +199,7 @@ smb.conf changes
     init logon delayed hosts		New		""
     init logon delay			New		100
     ldap ssl				Changed Default	start tls
+    share modes				Deprecated
     winbind reconnect delay		New		30
 
 
@@ -207,20 +208,39 @@ Changes since 3.3.0rc2:
 
 
 o   Jeremy Allison <jra@samba.org>
+    * BUG 4308: Fix corrupting of file ACLs during Excel save operations.
     * BUG 5979: Fix level 2 oplocks being granted improperly.
     * BUG 5980: Race condition when granting level2 oplocks can cause break
       notify to be missed.
     * BUG 5986: Editing a stream is broken (rename problems).
     * BUG 5990: Strict allocate should be checked before ftruncate.
     * BUG 6009: Setting "min receivefile size = 1" breaks writes.
+    * BUG 6016: Alternate Data Streams / Extended Attributes seem to conflict.
+    * BUG 6017: Fix magic scripts.
+    * BUG 6019: Fix file corruption in Clustered SMB/NFS environment managed via
+      CTDB.
+    * BUG 6021: smbclient du command does not recuse properly.
+    * BUG 6024: Deprecate the "share modes" parameter.
+    * BUG 6030: Add missing <th> header in Status page.
+    * BUG 6035: Fix possible race between fcntl F_SETLKW and alarm delivery.
+    * BUG 6040: Calling Samba print server with an aliased DNS-name fails.
     * Fix gcc 4.3.2 warnings.
     * Fix more asprintf errors and error code paths.
+    * Attempt to fix crash seen with new CUPS async printcap loading code.
+    * Add winbindd_reinit_after_fork(), cleaning out all possible events
+      in a forked child.
+    * Make winbindd_cm.c use winbindd_reinit_after_fork().
+    * Fix race condition in alarm lock processing.
+    * Fixes crash bug in SWAT.
 
 
 o   Michael Adam <obnox@samba.org>
     * Fix build of pam_winbind.so on older Linux systems.
     * Packaging RHEL-CTDB: Fix build of [u]mount.cifs.
     * Prevent access to root filesystem when connecting with empty service name.
+    * Fix distclean target and add realdistclean target in the docs build.
+    * Add manpage for idmap_tdb2.
+    * Clarify idmap manpages.
 
 
 o   Kai Blin <kai@samba.org>
@@ -229,6 +249,7 @@ o   Kai Blin <kai@samba.org>
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix "allow trusted domain" so it disables trusted domains.
+    * Return immediately on a failed GC connection in ads_connect.
 
 
 o   SATOH Fumiyasu <fumiyas@osstech.jp>
@@ -249,6 +270,7 @@ o   Volker Lendecke <vl@samba.org>
     * BUG 5913: Fix build error with at least GCC 4.2.2.
     * BUG 5933: Fix incrementing/decrementing of num_validated_vuids.
     * BUG 5953: Make cli_send_smb_direct_writeX use writev.
+    * BUG 5965: Fix creation of the first share using SWAT.
     * BUG 5969: Optimize smbclient put command.
     * BUG 6012: Add "get_real_filename" to full_audit.
     * BUG 6014: Fix segfault when calling mget without arguments.
@@ -261,6 +283,11 @@ o   Volker Lendecke <vl@samba.org>
     * Fix a bad memleak in vfs_full_audit.
 
 
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * BUG 6022: Make smbc_urlencode and smbc_urldecode in libsmbclient.
+    * Determine case sensitivity based on file system attributes.
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * net_status: Use dbwrap to open sessionid.tdb.
     * Fix dbwrap_store_uint32() to match dbwrap_store_int32().
@@ -269,6 +296,16 @@ o   Stefan Metzmacher <metze@samba.org>
     * Register the client connection via CTDB_CONTROL_TCP_ADD.
     * Don't need to call messaging_reinit() twice.
     * Raise TDBSAM_VERSION.
+    * Add manpage for vfs_fileid.
+    * Rename 'fd_event' to 'winbindd_fd_event' to avoid confusion.
+    * Recreate the per domain check_online_event without relying on global
+      state.
+    * Handle the smb signing states the same in the krb5 and ntlmssp cases.
+    * Re-add 'fileid:algorithm' option to vfs_fileid.
+    * Fix CTDB IPv6 support in cluster setups.
+    * Reinit_after_fork() should reinit the event context before the
+      messaging context.
+    * Fix PCAP support in socket_wrapper.
 
 
 o   Lars Müller <lars@samba.org>
@@ -277,12 +314,38 @@ o   Lars Müller <lars@samba.org>
 
 o   Tim Prouty <tprouty@samba.org>
     * Fix stream marshalling to return the correct streaminfo status.
+    * Allow renames of streams via NTRENAME and fix stream error codes on
+      rename.
+    * Remove a few unnecessary checks from the streams xattr module.
+    * Remove a few unnecessary checks from the streams depot module and fix to
+      work with NTRENAME.
+
+
+o   Andreas Schneider <anschneider@suse.de>
+    * Fix a segfault if ? is there but the options are NULL.
+    * Avoid flooding of syslog with failing pam_putenv messages.
 
 
 o   Karolin Seeger <kseeger@samba.org>
+    * BUG 6000: Avoid bashism in perfcount.init.
     * Change default value of "ldap ssl" to "start tls".
     * Update version number in the manpages.
     * Fix several small issues and typos in the manpages.
+    * Check if Unix account exists before asking for the password in smbpasswd.
+
+
+o   Todd Stecher <todd.stecher@gmail.com>
+    * Fix memory leaks and other fixes found by Coverity.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Clean event context after child is forked.
+    * Fix broken krb5 refresh chain.
+    * Set entry->refresh_time to make ccache_regain_all_now() work correctly.
+    * Refresh sequence number as soon as possible.
+    * Don't set child->requests to NULL in parent after fork.
+    * Don't send message to any other child in child process.
+    * Fix bug in get_dc_name_via_netlogon(), null pointer reference.
 
 
 ######################################################################
