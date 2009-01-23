@@ -252,13 +252,6 @@ static void irix_release_kernel_oplock(struct kernel_oplocks *_ctx,
 	}
 }
 
-static bool irix_oplock_msg_waiting(struct kernel_oplocks *_ctx)
-{
-	struct irix_oplocks_context *ctx = talloc_get_type(_ctx->private_data,
-					   struct irix_oplocks_context);
-	return ctx->pending;
-}
-
 static void irix_oplocks_read_fde_handler(struct event_context *ev,
 					  struct fd_event *fde,
 					  uint16_t flags,
@@ -266,10 +259,10 @@ static void irix_oplocks_read_fde_handler(struct event_context *ev,
 {
 	struct irix_oplocks_context *ctx = talloc_get_type(private_data,
 					   struct irix_oplocks_context);
+	files_struct *fsp;
 
-	ctx->pending = true;
-	process_kernel_oplocks(smbd_messaging_context());
-	ctx->pending = false;
+	fsp = irix_oplock_receive_message(ctx->ctx);
+	break_kernel_oplock(smbd_messaging_context(), fsp);
 }
 
 /****************************************************************************
@@ -277,10 +270,8 @@ static void irix_oplocks_read_fde_handler(struct event_context *ev,
 ****************************************************************************/
 
 static const struct kernel_oplocks_ops irix_koplocks = {
-	.receive_message	= irix_oplock_receive_message,
 	.set_oplock		= irix_set_kernel_oplock,
 	.release_oplock		= irix_release_kernel_oplock,
-	.msg_waiting		= irix_oplock_msg_waiting
 };
 
 struct kernel_oplocks *irix_init_kernel_oplocks(TALLOC_CTX *mem_ctx)

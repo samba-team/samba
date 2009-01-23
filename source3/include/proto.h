@@ -7018,13 +7018,11 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-bool oplock_message_waiting(void);
-void process_kernel_oplocks(struct messaging_context *msg_ctx);
+void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
-int oplock_notify_fd(void);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);

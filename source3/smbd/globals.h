@@ -181,12 +181,6 @@ extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
 extern char *LastDir;
 
-#if HAVE_KERNEL_OPLOCKS_LINUX
-extern SIG_ATOMIC_T oplock_signals_received;
-#define FD_PENDING_SIZE 100
-extern SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-#endif
-
 /* Current number of oplocks we have outstanding. */
 extern int32_t exclusive_oplocks_open;
 extern int32_t level_II_oplocks_open;

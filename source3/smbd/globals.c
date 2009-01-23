@@ -169,11 +169,6 @@ struct vfs_init_function_entry *backends = NULL;
 char *sparse_buf = NULL;
 char *LastDir = NULL;
 
-#if HAVE_KERNEL_OPLOCKS_LINUX
-SIG_ATOMIC_T oplock_signals_received = 0;
-SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-#endif
-
 /* Current number of oplocks we have outstanding. */
 int32_t exclusive_oplocks_open = 0;
 int32_t level_II_oplocks_open = 0;
@@ -201,8 +196,4 @@ void smbd_init_globals(void)
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
-
-#if HAVE_KERNEL_OPLOCKS_LINUX
-	ZERO_STRUCT(fd_pending_array);
-#endif
 }

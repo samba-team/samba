@@ -742,46 +742,6 @@ void smbd_setup_sig_hup_handler(void)
 	}
 }
 
-/****************************************************************************
- Do all async processing in here. This includes kernel oplock messages, change
- notify events etc.
-****************************************************************************/
-
-static void async_processing(void)
-{
-	DEBUG(10,("async_processing: Doing async processing.\n"));
-
-	process_aio_queue();
-
-	process_kernel_oplocks(smbd_messaging_context());
-
-	/* Do the aio check again after receive_local_message as it does a
-	   select and may have eaten our signal. */
-	/* Is this till true? -- vl */
-	process_aio_queue();
-}
-
-/****************************************************************************
-  Do a select on an two fd's - with timeout. 
-
-  If a local udp message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) call async_processing()
-
-  If a pending smb message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) return this next.
-
-  If the first smbfd is ready then read an smb from it.
-  if the second (loopback UDP) fd is ready then read a message
-  from it and setup the buffer header to identify the length
-  and from address.
-  Returns False on timeout or error.
-  Else returns True.
-
-The timeout is in milliseconds
-****************************************************************************/
-
 static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
 	fd_set r_fds, w_fds;
@@ -798,26 +758,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
-
-	/*
-	 * Ensure we process oplock break messages by preference.
-	 * We have to do this before the select, after the select
-	 * and if the select returns EINTR. This is due to the fact
-	 * that the selects called from async_processing can eat an EINTR
-	 * caused by a signal (we can't take the break message there).
-	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
-	 */
-
-	if (oplock_message_waiting()) {
-		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing();
-		/*
-		 * After async processing we must go and do the select again, as
-		 * the state of the flag in fds for the server file descriptor is
-		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
-		 */
-		return NT_STATUS_RETRY;
-	}
 
 	/*
 	 * Are there any timed events waiting ? If so, ensure we don't
@@ -849,20 +789,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	}
 
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
-		return NT_STATUS_RETRY;
-	}
-
-	/* if we get EINTR then maybe we have received an oplock
-	   signal - treat this as select returning 1. This is ugly, but
-	   is the best we can do until the oplock code knows more about
-	   signals */
-	if (selrtn == -1 && errno == EINTR) {
-		async_processing();
-		/*
-		 * After async processing we must go and do the select again, as
-		 * the state of the flag in fds for the server file descriptor is
-		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
-		 */
 		return NT_STATUS_RETRY;
 	}
 
