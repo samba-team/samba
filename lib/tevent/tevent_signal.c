@@ -29,7 +29,7 @@
 #define NUM_SIGNALS 64
 
 /* maximum number of SA_SIGINFO signals to hold in the queue */
-#define SA_INFO_QUEUE_COUNT 10
+#define SA_INFO_QUEUE_COUNT 100
 
 struct sigcounter {
 	uint32_t count;
