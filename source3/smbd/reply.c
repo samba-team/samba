@@ -2368,7 +2368,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 	char *p = NULL;
 	int count=0;
 	NTSTATUS status = NT_STATUS_OK;
-	SMB_STRUCT_STAT sbuf;
+	SMB_STRUCT_STAT sbuf, st;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	status = unix_convert(ctx, conn, name_in, has_wild, &name, NULL, &sbuf);
@@ -2464,11 +2464,12 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 		status = NT_STATUS_NO_SUCH_FILE;
 
-		while ((dname = ReadDirName(dir_hnd, &offset))) {
-			SMB_STRUCT_STAT st;
+		while ((dname = ReadDirName(dir_hnd, &offset, &st))) {
 			char *fname = NULL;
 
-			if (!is_visible_file(conn, directory, dname, &st, True)) {
+			if (!is_visible_file(conn, directory, dname, &st,
+			    true))
+			{
 				continue;
 			}
 
@@ -5005,15 +5006,15 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 	const char *dname = NULL;
 	bool ret = True;
 	long offset = 0;
+	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, directory,
 					  NULL, 0);
 
 	if(dir_hnd == NULL)
 		return False;
 
-	while((dname = ReadDirName(dir_hnd, &offset))) {
+	while((dname = ReadDirName(dir_hnd, &offset, &st))) {
 		char *fullname = NULL;
-		SMB_STRUCT_STAT st;
 
 		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
@@ -5110,7 +5111,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			goto err;
 		}
 
-		while ((dname = ReadDirName(dir_hnd,&dirpos))) {
+		while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
 			if((strcmp(dname, ".") == 0) || (strcmp(dname, "..")==0))
 				continue;
 			if (!is_visible_file(conn, directory, dname, &st, False))
@@ -5133,7 +5134,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 
 		/* Do a recursive delete. */
 		RewindDir(dir_hnd,&dirpos);
-		while ((dname = ReadDirName(dir_hnd,&dirpos))) {
+		while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
 			char *fullname = NULL;
 
 			if (ISDOT(dname) || ISDOTDOT(dname)) {
@@ -5911,7 +5912,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	 * - gentest fix. JRA
 	 */
 
-	while ((dname = ReadDirName(dir_hnd, &offset))) {
+	while ((dname = ReadDirName(dir_hnd, &offset, &sbuf1))) {
 		files_struct *fsp = NULL;
 		char *fname = NULL;
 		char *destname = NULL;
@@ -6513,7 +6514,7 @@ void reply_copy(struct smb_request *req)
 
 		error = ERRbadfile;
 
-		while ((dname = ReadDirName(dir_hnd, &offset))) {
+		while ((dname = ReadDirName(dir_hnd, &offset, &sbuf1))) {
 			char *destname = NULL;
 			char *fname = NULL;
 

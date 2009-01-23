@@ -1485,7 +1485,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 		goto out;
 	}
 
-	while ((dname = vfs_readdirname(conn, dirp)) != NULL) {
+	while ((dname = vfs_readdirname(conn, dirp, NULL)) != NULL) {
 		if (is_msdfs_link(conn,
 				dname,
 				NULL)) {
@@ -1585,7 +1585,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 		goto out;
 	}
 
-	while ((dname = vfs_readdirname(conn, dirp)) != NULL) {
+	while ((dname = vfs_readdirname(conn, dirp, NULL)) != NULL) {
 		char *link_target = NULL;
 		if (cnt >= jn_remain) {
 			DEBUG(2, ("form_junctions: ran out of MSDFS "

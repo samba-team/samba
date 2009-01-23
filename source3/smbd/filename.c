@@ -849,7 +849,7 @@ int get_real_filename(connection_struct *conn, const char *path,
 
 	/* now scan for matching names */
 	curpos = 0;
-	while ((dname = ReadDirName(cur_dir, &curpos))) {
+	while ((dname = ReadDirName(cur_dir, &curpos, NULL))) {
 
 		/* Is it dot or dot dot. */
 		if (ISDOT(dname) || ISDOTDOT(dname)) {

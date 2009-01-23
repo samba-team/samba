@@ -6512,7 +6512,8 @@ bool get_dir_entry(TALLOC_CTX *ctx,
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto);
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *name, const char *mask, uint32 attr);
-const char *ReadDirName(struct smb_Dir *dirp, long *poffset);
+const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+			SMB_STRUCT_STAT *sbuf);
 void RewindDir(struct smb_Dir *dirp, long *poffset);
 void SeekDir(struct smb_Dir *dirp, long offset);
 long TellDir(struct smb_Dir *dirp);
@@ -7356,7 +7357,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
 int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len);
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);
-char *vfs_readdirname(connection_struct *conn, void *p);
+char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf);
 int vfs_ChDir(connection_struct *conn, const char *path);
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn);
 NTSTATUS check_reduced_name(connection_struct *conn, const char *fname);

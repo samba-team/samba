@@ -552,11 +552,12 @@ int dptr_dnum(struct dptr_struct *dptr)
  Return the next visible file name, skipping veto'd and invisible files.
 ****************************************************************************/
 
-static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr, long *poffset, SMB_STRUCT_STAT *pst)
+static const char *dptr_normal_ReadDirName(struct dptr_struct *dptr,
+					   long *poffset, SMB_STRUCT_STAT *pst)
 {
 	/* Normal search for the next file. */
 	const char *name;
-	while ((name = ReadDirName(dptr->dir_hnd, poffset)) != NULL) {
+	while ((name = ReadDirName(dptr->dir_hnd, poffset, pst)) != NULL) {
 		if (is_visible_file(dptr->conn, dptr->path, name, pst, True)) {
 			return name;
 		}
@@ -573,85 +574,84 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			long *poffset,
 			SMB_STRUCT_STAT *pst)
 {
+	char *name = NULL;
+	char *pathreal = NULL;
 	SET_STAT_INVALID(*pst);
 
-	if (dptr->has_wild) {
+	if (dptr->has_wild || dptr->did_stat) {
 		return dptr_normal_ReadDirName(dptr, poffset, pst);
 	}
 
-	/* If poffset is -1 then we know we returned this name before and we have
-	   no wildcards. We're at the end of the directory. */
+	/* If poffset is -1 then we know we returned this name before and we
+	 * have no wildcards. We're at the end of the directory. */
 	if (*poffset == END_OF_DIRECTORY_OFFSET) {
 		return NULL;
 	}
 
-	if (!dptr->did_stat) {
-		char *pathreal = NULL;
+	/* We know the stored wcard contains no wildcard characters.
+	 * See if we can match with a stat call. If we can't, then set
+	 * did_stat to true to ensure we only do this once and keep
+	 * searching. */
 
-		/* We know the stored wcard contains no wildcard characters. See if we can match
-		   with a stat call. If we can't, then set did_stat to true to
-		   ensure we only do this once and keep searching. */
+	dptr->did_stat = true;
 
-		dptr->did_stat = True;
+	/* First check if it should be visible. */
+	if (!is_visible_file(dptr->conn, dptr->path, dptr->wcard,
+	    pst, true))
+	{
+		/* This only returns false if the file was found, but
+		   is explicitly not visible. Set us to end of
+		   directory, but return NULL as we know we can't ever
+		   find it. */
+		goto ret;
+	}
 
-		/* First check if it should be visible. */
-		if (!is_visible_file(dptr->conn, dptr->path, dptr->wcard, pst, True)) {
-			/* This only returns False if the file was found, but
-			   is explicitly not visible. Set us to end of directory,
-			   but return NULL as we know we can't ever find it. */
-			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-			return NULL;
-		}
+	if (VALID_STAT(*pst)) {
+		name = dptr->wcard;
+		goto ret;
+	}
 
-		if (VALID_STAT(*pst)) {
-			/* We need to set the underlying dir_hnd offset to -1 also as
-			   this function is usually called with the output from TellDir. */
-			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-			return dptr->wcard;
-		}
+	pathreal = talloc_asprintf(ctx,
+				"%s/%s",
+				dptr->path,
+				dptr->wcard);
+	if (!pathreal)
+		return NULL;
 
-		pathreal = talloc_asprintf(ctx,
-					"%s/%s",
-					dptr->path,
-					dptr->wcard);
-		if (!pathreal) {
-			return NULL;
-		}
-
-		if (SMB_VFS_STAT(dptr->conn,pathreal,pst) == 0) {
-			/* We need to set the underlying dir_hnd offset to -1 also as
-			   this function is usually called with the output from TellDir. */
-			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-			TALLOC_FREE(pathreal);
-			return dptr->wcard;
-		} else {
-			/* If we get any other error than ENOENT or ENOTDIR
-			   then the file exists we just can't stat it. */
-			if (errno != ENOENT && errno != ENOTDIR) {
-				/* We need to set the underlying dir_hdn offset to -1 also as
-				   this function is usually called with the output from TellDir. */
-				dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-				TALLOC_FREE(pathreal);
-				return dptr->wcard;
-			}
-		}
-
-		TALLOC_FREE(pathreal);
-
-		/* Stat failed. We know this is authoratiative if we are
-		 * providing case sensitive semantics or the underlying
-		 * filesystem is case sensitive.
-		 */
-
-		if (dptr->conn->case_sensitive ||
-		    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
-			/* We need to set the underlying dir_hnd offset to -1 also as
-			   this function is usually called with the output from TellDir. */
-			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
-			return NULL;
+	if (SMB_VFS_STAT(dptr->conn, pathreal, pst) == 0) {
+		name = dptr->wcard;
+		goto clean;
+	} else {
+		/* If we get any other error than ENOENT or ENOTDIR
+		   then the file exists we just can't stat it. */
+		if (errno != ENOENT && errno != ENOTDIR) {
+			name = dptr->wcard;
+			goto clean;
 		}
 	}
+
+	/* Stat failed. We know this is authoratiative if we are
+	 * providing case sensitive semantics or the underlying
+	 * filesystem is case sensitive.
+	 */
+	if (dptr->conn->case_sensitive ||
+	    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH))
+	{
+		goto clean;
+	}
+
+	TALLOC_FREE(pathreal);
+
 	return dptr_normal_ReadDirName(dptr, poffset, pst);
+
+clean:
+	TALLOC_FREE(pathreal);
+ret:
+	/* We need to set the underlying dir_hnd offset to -1
+	 * also as this function is usually called with the
+	 * output from TellDir. */
+	dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
+	return name;
 }
 
 /****************************************************************************
@@ -981,18 +981,16 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 }
 
 /*******************************************************************
- Should the file be seen by the client ? NOTE: A successful return
- is no guarantee of the file's existence ... you also have to check
- whether pst is valid.
+ Should the file be seen by the client?
+ NOTE: A successful return is no guarantee of the file's existence.
 ********************************************************************/
 
-bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
+bool is_visible_file(connection_struct *conn, const char *dir_path,
+		     const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
 {
 	bool hide_unreadable = lp_hideunreadable(SNUM(conn));
 	bool hide_unwriteable = lp_hideunwriteable_files(SNUM(conn));
 	bool hide_special = lp_hide_special_files(SNUM(conn));
-
-	SET_STAT_INVALID(*pst);
 
 	if ((strcmp(".",name) == 0) || (strcmp("..",name) == 0)) {
 		return True; /* . and .. are always visible. */
@@ -1023,26 +1021,30 @@ bool is_visible_file(connection_struct *conn, const char *dir_path, const char *
 		 * the configuration options. We succeed, on the basis that the
 		 * checks *might* have passed if the file was present.
 		 */
-		if (SMB_VFS_STAT(conn, entry, pst) != 0) {
+		if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, entry, pst) != 0))
+		{
 		        SAFE_FREE(entry);
 		        return True;
 		}
 
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry)) {
-			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
+			DEBUG(10,("is_visible_file: file %s is unreadable.\n",
+				 entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
 		/* Honour _hide unwriteable_ option */
 		if (hide_unwriteable && !user_can_write_file(conn, entry, pst)) {
-			DEBUG(10,("is_visible_file: file %s is unwritable.\n", entry ));
+			DEBUG(10,("is_visible_file: file %s is unwritable.\n",
+				 entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
 		/* Honour _hide_special_ option */
 		if (hide_special && file_is_special(conn, entry, pst)) {
-			DEBUG(10,("is_visible_file: file %s is special.\n", entry ));
+			DEBUG(10,("is_visible_file: file %s is special.\n",
+				 entry ));
 			SAFE_FREE(entry);
 			return False;
 		}
@@ -1100,17 +1102,21 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 }
 
 /*******************************************************************
- Read from a directory. Also return current offset.
+ Read from a directory.
+ Return directory entry, current offset, and optional stat information.
  Don't check for veto or invisible files.
 ********************************************************************/
 
-const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
+const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+			SMB_STRUCT_STAT *sbuf)
 {
 	const char *n;
 	connection_struct *conn = dirp->conn;
 
 	/* Cheat to allow . and .. to be the first entries returned. */
-	if (((*poffset == START_OF_DIRECTORY_OFFSET) || (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2)) {
+	if (((*poffset == START_OF_DIRECTORY_OFFSET) ||
+	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2))
+	{
 		if (dirp->file_number == 0) {
 			n = ".";
 			*poffset = dirp->offset = START_OF_DIRECTORY_OFFSET;
@@ -1128,7 +1134,7 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset)
 		SeekDir(dirp, *poffset);
 	}
 
-	while ((n = vfs_readdirname(conn, dirp->dir))) {
+	while ((n = vfs_readdirname(conn, dirp->dir, sbuf))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
@@ -1261,7 +1267,7 @@ bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
 	SMB_VFS_REWINDDIR(conn, dirp->dir);
 	dirp->file_number = 0;
 	*poffset = START_OF_DIRECTORY_OFFSET;
-	while ((entry = ReadDirName(dirp, poffset))) {
+	while ((entry = ReadDirName(dirp, poffset, NULL))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			return True;
 		}
@@ -1279,6 +1285,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;
 	const char *dname;
+	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, dirname,
 					  NULL, 0);
 
@@ -1286,9 +1293,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	while ((dname = ReadDirName(dir_hnd,&dirpos))) {
-		SMB_STRUCT_STAT st;
-
+	while ((dname = ReadDirName(dir_hnd, &dirpos, &st))) {
 		/* Quick check for "." and ".." */
 		if (dname[0] == '.') {
 			if (!dname[1] || (dname[1] == '.' && !dname[2])) {
@@ -1300,7 +1305,8 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 			continue;
 		}
 
-		DEBUG(10,("can_delete_directory: got name %s - can't delete\n", dname ));
+		DEBUG(10,("can_delete_directory: got name %s - can't delete\n",
+			 dname ));
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
