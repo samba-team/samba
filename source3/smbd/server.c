@@ -136,24 +136,6 @@ static void msg_sam_sync(struct messaging_context *msg,
         DEBUG(10, ("** sam sync message received, ignoring\n"));
 }
 
-
-/****************************************************************************
- Open the socket communication - inetd.
-****************************************************************************/
-
-static bool open_sockets_inetd(void)
-{
-	/* Started from inetd. fd 0 is the socket. */
-	/* We will abort gracefully when the client or remote system 
-	   goes away */
-	smbd_set_server_fd(dup(0));
-	
-	/* close our standard file descriptors */
-	close_low_fds(False); /* Don't close stderr */
-
-	return True;
-}
-
 static void msg_exit_server(struct messaging_context *msg,
 			    void *private_data,
 			    uint32_t msg_type,
@@ -317,7 +299,7 @@ static void smbd_setup_sig_chld_handler(void)
  Open the socket communication.
 ****************************************************************************/
 
-static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_ports)
+static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 {
 	int num_interfaces = iface_count();
 	int num_sockets = 0;
@@ -329,10 +311,6 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 	char *ports;
 	struct dns_reg_state * dns_reg = NULL;
 	unsigned dns_port = 0;
-
-	if (!is_daemon) {
-		return open_sockets_inetd();
-	}
 
 #ifdef HAVE_ATEXIT
 	atexit(killkids);
@@ -1224,7 +1202,25 @@ extern void build_options(bool screen);
 		start_background_queue();
 	}
 
-	if (!open_sockets_smbd(is_daemon, interactive, ports))
+	if (!is_daemon) {
+		/* inetd mode */
+		TALLOC_FREE(frame);
+
+		/* Started from inetd. fd 0 is the socket. */
+		/* We will abort gracefully when the client or remote system
+		   goes away */
+		smbd_set_server_fd(dup(0));
+
+		/* close our standard file descriptors */
+		close_low_fds(False); /* Don't close stderr */
+
+		smbd_process();
+
+		exit_server_cleanly(NULL);
+		return(0);
+	}
+
+	if (!open_sockets_smbd(interactive, ports))
 		exit(1);
 
 	TALLOC_FREE(frame);
