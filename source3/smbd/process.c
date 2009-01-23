@@ -904,31 +904,6 @@ NTSTATUS allow_new_trans(struct trans_state *list, int mid)
 	return NT_STATUS_OK;
 }
 
-/****************************************************************************
- We're terminating and have closed all our files/connections etc.
- If there are any pending local messages we need to respond to them
- before termination so that other smbds don't think we just died whilst
- holding oplocks.
-****************************************************************************/
-
-void respond_to_all_remaining_local_messages(void)
-{
-	/*
-	 * Assert we have no exclusive open oplocks.
-	 */
-
-	if(get_number_of_exclusive_open_oplocks()) {
-		DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
-			get_number_of_exclusive_open_oplocks() ));
-		return;
-	}
-
-	process_kernel_oplocks(smbd_messaging_context());
-
-	return;
-}
-
-
 /*
 These flags determine some of the permissions required to do an operation 
 

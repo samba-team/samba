@@ -832,8 +832,6 @@ static void exit_server_common(enum server_exit_reason how,
 	/* delete our entry in the connections database. */
 	yield_connection(NULL,"");
 
-	respond_to_all_remaining_local_messages();
-
 #ifdef WITH_DFS
 	if (dcelogin_atmost_once) {
 		dfs_unlogin();
