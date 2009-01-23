@@ -18,10 +18,11 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>Browser URL:</command>
 	<para>
-        smb://[[[domain:]user[:password@]]server[/share[/path[/file]]]] [?options]
-    </para>
+	Browser URL:
+	<command moreinfo="none">smb://[[[domain:]user[:password@]]server[/share[/path[/file]]]] [?options]
+	</command>
+	</para>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
