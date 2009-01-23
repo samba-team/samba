@@ -530,6 +530,7 @@ REG_FULL_OBJ = $(REG_SMBCONF_OBJ) \
 	       registry/reg_perfcount.o \
 	       registry/reg_util_legacy.o
 
+LIB_EVENTLOG_OBJ = rpc_server/srv_eventlog_lib.o
 
 RPC_LSA_OBJ = rpc_server/srv_lsa_nt.o ../librpc/gen_ndr/srv_lsa.o
 
@@ -566,7 +567,7 @@ RPC_DFS_OBJ =  ../librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 RPC_SPOOLSS_OBJ = rpc_server/srv_spoolss.o rpc_server/srv_spoolss_nt.o
 
 RPC_EVENTLOG_OBJ = rpc_server/srv_eventlog.o rpc_server/srv_eventlog_nt.o \
-		   rpc_server/srv_eventlog_lib.o ../librpc/gen_ndr/srv_eventlog.o
+		   $(LIB_EVENTLOG_OBJ) ../librpc/gen_ndr/srv_eventlog.o
 
 RPC_PIPE_OBJ = rpc_server/srv_pipe_hnd.o \
                rpc_server/srv_pipe.o rpc_server/srv_lsa_hnd.o
@@ -896,7 +897,8 @@ NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   $(PASSWD_UTIL_OBJ) utils/net_dns.o utils/net_ads_gpo.o \
 	   utils/net_conf.o utils/net_join.o utils/net_user.o \
 	   utils/net_group.o utils/net_file.o utils/net_registry.o \
-	   auth/token_util.o utils/net_dom.o utils/net_share.o utils/net_lua.o
+	   auth/token_util.o utils/net_dom.o utils/net_share.o utils/net_lua.o \
+	   utils/net_eventlog.o
 
 # these are not processed by make proto
 NET_OBJ2 = utils/net_registry_util.o utils/net_help_common.o
@@ -914,7 +916,8 @@ NET_OBJ = $(NET_OBJ1) \
 	  $(REG_SMBCONF_OBJ) @LIBNETAPI_STATIC@ $(LIBNET_OBJ) \
 	  $(LIBSMBCONF_OBJ) \
 	  @LIBWBCLIENT_STATIC@ \
-	  $(PRIVILEGES_BASIC_OBJ) @LIBLUA_STATIC@
+	  $(PRIVILEGES_BASIC_OBJ) @LIBLUA_STATIC@ \
+	  $(LIB_EVENTLOG_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
@@ -983,7 +986,7 @@ EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
 EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(LIBSAMBA_OBJ) \
-	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o \
+	        registry/reg_eventlog.o $(LIB_EVENTLOG_OBJ) \
 		../librpc/gen_ndr/ndr_eventlog.o \
 		../librpc/gen_ndr/ndr_lsa.o
 
