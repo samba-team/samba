@@ -1794,15 +1794,7 @@ bool listen_for_packets(bool run_election)
 					 &r_fds, &w_fds, &timeout, &maxfd);
 	}
 
-	/* Prepare for the select - allow certain signals. */
-
-	BlockSignals(False, SIGTERM);
-
 	selrtn = sys_select(maxfd+1,&r_fds,&w_fds,NULL,&timeout);
-
-	/* We can only take signals when we are in the select - block them again here. */
-
-	BlockSignals(True, SIGTERM);
 
 	if (run_events(nmbd_event_context(), selrtn, &r_fds, &w_fds)) {
 		return False;

@@ -969,9 +969,6 @@ static bool open_sockets(bool isdaemon, int port)
 		exit(1);
 	}
 
-	/* We can only take signals in the select. */
-	BlockSignals( True, SIGTERM );
-
 	TALLOC_FREE(frame);
 	process();
 
