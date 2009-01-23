@@ -111,6 +111,7 @@
 /* Changed to version 24 - make security descriptor const in fset_nt_acl. JRA. */
 /* Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t. */
 /* Leave at 25 - not yet released. Add create_file call. -- tprouty. */
+/* Leave at 25 - not yet released. Add create time to ntimes. -- tstecher. */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -137,6 +138,7 @@ struct security_descriptor;
 struct vfs_statvfs_struct;
 struct smb_request;
 struct ea_list;
+struct smb_file_time;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
@@ -348,7 +350,7 @@ struct vfs_ops {
 		int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*chdir)(struct vfs_handle_struct *handle, const char *path);
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
-		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
+		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, struct smb_file_time *ft);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
 		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode);

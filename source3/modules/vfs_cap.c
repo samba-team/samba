@@ -208,7 +208,8 @@ static int cap_chdir(vfs_handle_struct *handle, const char *path)
 	return SMB_VFS_NEXT_CHDIR(handle, cappath);
 }
 
-static int cap_ntimes(vfs_handle_struct *handle, const char *path, const struct timespec ts[2])
+static int cap_ntimes(vfs_handle_struct *handle, const char *path,
+		      struct smb_file_time *ft)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -216,7 +217,7 @@ static int cap_ntimes(vfs_handle_struct *handle, const char *path, const struct 
 		errno = ENOMEM;
 		return -1;
 	}
-	return SMB_VFS_NEXT_NTIMES(handle, cappath, ts);
+	return SMB_VFS_NEXT_NTIMES(handle, cappath, ft);
 }
 
 

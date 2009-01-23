@@ -6688,7 +6688,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		     uint32 dosmode, SMB_STRUCT_STAT *st,
 		     const char *parent_dir,
 		     bool newfile);
-int file_ntimes(connection_struct *conn, const char *fname, const struct timespec ts[2]);
+int file_ntimes(connection_struct *conn, const char *fname,
+		struct smb_file_time *ft);
 bool set_sticky_write_time_path(connection_struct *conn, const char *fname,
 			 struct file_id fileid, const struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime);
@@ -7424,7 +7425,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   const char *fname,
 			   const SMB_STRUCT_STAT *psbuf,
-			   struct timespec ts[2],
+			   struct smb_file_time *ft,
 			   bool setting_write_time);
 void reply_findclose(struct smb_request *req);
 void reply_findnclose(struct smb_request *req);

@@ -1901,4 +1901,11 @@ struct smb_extended_info {
  */
 #define CFF_DOS_PATH		0x00000001
 
+/* time info */
+struct smb_file_time {
+	struct timespec mtime;
+	struct timespec atime;
+	struct timespec create_time;
+};
+
 #endif /* _SMB_H */

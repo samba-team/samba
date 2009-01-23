@@ -172,7 +172,7 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 			 char *path);
 static int smb_full_audit_ntimes(vfs_handle_struct *handle,
-		       const char *path, const struct timespec ts[2]);
+		       const char *path, struct smb_file_time *ft);
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   SMB_OFF_T len);
 static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
@@ -1426,11 +1426,11 @@ static char *smb_full_audit_getwd(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_ntimes(vfs_handle_struct *handle,
-		       const char *path, const struct timespec ts[2])
+		       const char *path, struct smb_file_time *ft)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_NTIMES(handle, path, ts);
+	result = SMB_VFS_NEXT_NTIMES(handle, path, ft);
 
 	do_log(SMB_VFS_OP_NTIMES, (result >= 0), handle, "%s", path);
 

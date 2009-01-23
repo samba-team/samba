@@ -795,14 +795,17 @@ static NTSTATUS cmd_getwd(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	struct timespec ts[2];
+	struct smb_file_time ft;
 	if (argc != 4) {
 		printf("Usage: utime <path> <access> <modify>\n");
 		return NT_STATUS_OK;
 	}
-	ts[0] = convert_time_t_to_timespec(atoi(argv[2]));
-	ts[1] = convert_time_t_to_timespec(atoi(argv[3]));
-	if (SMB_VFS_NTIMES(vfs->conn, argv[1], ts) != 0) {
+
+	ZERO_STRUCT(ft);
+
+	ft.atime = convert_time_t_to_timespec(atoi(argv[2]));
+	ft.mtime = convert_time_t_to_timespec(atoi(argv[3]));
+	if (SMB_VFS_NTIMES(vfs->conn, argv[1], &ft) != 0) {
 		printf("utime: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

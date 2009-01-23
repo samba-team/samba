@@ -704,7 +704,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
  than POSIX.
 *******************************************************************/
 
-int file_ntimes(connection_struct *conn, const char *fname, const struct timespec ts[2])
+int file_ntimes(connection_struct *conn, const char *fname,
+		struct smb_file_time *ft)
 {
 	SMB_STRUCT_STAT sbuf;
 	int ret = -1;
@@ -713,9 +714,11 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 	ZERO_STRUCT(sbuf);
 
 	DEBUG(6, ("file_ntime: actime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ts[0]))));
+		  time_to_asc(convert_timespec_to_time_t(ft->atime))));
 	DEBUG(6, ("file_ntime: modtime: %s",
-		  time_to_asc(convert_timespec_to_time_t(ts[1]))));
+		  time_to_asc(convert_timespec_to_time_t(ft->mtime))));
+	DEBUG(6, ("file_ntime: createtime: %s",
+		  time_to_asc(convert_timespec_to_time_t(ft->create_time))));
 
 	/* Don't update the time on read-only shares */
 	/* We need this as set_filetime (which can be called on
@@ -728,7 +731,7 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 		return 0;
 	}
 
-	if(SMB_VFS_NTIMES(conn, fname, ts) == 0) {
+	if(SMB_VFS_NTIMES(conn, fname, ft) == 0) {
 		return 0;
 	}
 
@@ -750,7 +753,7 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 	if (can_write_to_file(conn, fname, &sbuf)) {
 		/* We are allowed to become root and change the filetime. */
 		become_root();
-		ret = SMB_VFS_NTIMES(conn, fname, ts);
+		ret = SMB_VFS_NTIMES(conn, fname, ft);
 		unbecome_root();
 	}
 

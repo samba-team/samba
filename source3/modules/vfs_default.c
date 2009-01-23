@@ -682,25 +682,26 @@ static char *vfswrap_getwd(vfs_handle_struct *handle,  char *path)
  system will support.
 **********************************************************************/
 
-static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const struct timespec ts[2])
+static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path,
+			  struct smb_file_time *ft)
 {
 	int result;
 
 	START_PROFILE(syscall_ntimes);
 #if defined(HAVE_UTIMES)
-	if (ts != NULL) {
+	if (ft != NULL) {
 		struct timeval tv[2];
-		tv[0] = convert_timespec_to_timeval(ts[0]);
-		tv[1] = convert_timespec_to_timeval(ts[1]);
+		tv[0] = convert_timespec_to_timeval(ft->atime);
+		tv[1] = convert_timespec_to_timeval(ft->mtime);
 		result = utimes(path, tv);
 	} else {
 		result = utimes(path, NULL);
 	}
 #elif defined(HAVE_UTIME)
-	if (ts != NULL) {
+	if (ft != NULL) {
 		struct utimbuf times;
-		times.actime = convert_timespec_to_time_t(ts[0]);
-		times.modtime = convert_timespec_to_time_t(ts[1]);
+		times.actime = convert_timespec_to_time_t(ft->atime);
+		times.modtime = convert_timespec_to_time_t(ft->mtime);
 		result = utime(path, times);
 	} else {
 		result = utime(path, NULL);
