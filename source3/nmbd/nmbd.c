@@ -282,6 +282,7 @@ static void reload_interfaces(time_t t)
 
 	/* We need to wait if there are no subnets... */
 	if (FIRST_SUBNET == NULL) {
+		void (*saved_handler)(int);
 
 		if (print_waiting_msg) {
 			DEBUG(0,("reload_interfaces: "
@@ -293,29 +294,20 @@ static void reload_interfaces(time_t t)
 		 * Whilst we're waiting for an interface, allow SIGTERM to
 		 * cause us to exit.
 		 */
-
-		BlockSignals(false, SIGTERM);
+		saved_handler = CatchSignal( SIGTERM, SIGNAL_CAST SIG_DFL );
 
 		/* We only count IPv4, non-loopback interfaces here. */
-		while (iface_count_v4_nl() == 0 && !got_sig_term) {
+		while (iface_count_v4_nl() == 0) {
 			sleep(5);
 			load_interfaces();
 		}
 
-		/*
-		 * Handle termination inband.
-		 */
-
-		if (got_sig_term) {
-			got_sig_term = 0;
-			terminate();
-		}
+		CatchSignal( SIGTERM, SIGNAL_CAST saved_handler );
 
 		/*
 		 * We got an interface, go back to blocking term.
 		 */
 
-		BlockSignals(true, SIGTERM);
 		goto try_again;
 	}
 }
