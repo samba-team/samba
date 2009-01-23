@@ -94,7 +94,8 @@ static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    SMB_STRUCT_DIR *dirp);
+				    SMB_STRUCT_DIR *dirp,
+				    SMB_STRUCT_STAT *sbuf);
 static void smb_full_audit_seekdir(vfs_handle_struct *handle,
 			SMB_STRUCT_DIR *dirp, long offset);
 static long smb_full_audit_telldir(vfs_handle_struct *handle,
@@ -1029,11 +1030,11 @@ static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 }
 
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
-				    SMB_STRUCT_DIR *dirp)
+				    SMB_STRUCT_DIR *dirp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *result;
 
-	result = SMB_VFS_NEXT_READDIR(handle, dirp);
+	result = SMB_VFS_NEXT_READDIR(handle, dirp, sbuf);
 
 	/* This operation has no reasonable error condition
 	 * (End of dir is also failure), so always succeed.

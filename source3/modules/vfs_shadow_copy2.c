@@ -524,7 +524,7 @@ static int shadow_copy2_get_shadow_copy2_data(vfs_handle_struct *handle,
 	shadow_copy2_data->num_volumes = 0;
 	shadow_copy2_data->labels      = NULL;
 
-	while ((d = SMB_VFS_NEXT_READDIR(handle, p))) {
+	while ((d = SMB_VFS_NEXT_READDIR(handle, p, NULL))) {
 		SHADOW_COPY_LABEL *tlabels;
 
 		/* ignore names not of the right form in the snapshot directory */

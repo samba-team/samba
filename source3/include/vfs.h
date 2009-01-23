@@ -113,6 +113,7 @@
 /* Leave at 25 - not yet released. Add create_file call. -- tprouty. */
 /* Leave at 25 - not yet released. Add create time to ntimes. -- tstecher. */
 /* Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty. */
+/* Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -303,7 +304,9 @@ struct vfs_ops {
 		/* Directory operations */
 
 		SMB_STRUCT_DIR *(*opendir)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
-		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle,
+					      SMB_STRUCT_DIR *dirp,
+					      SMB_STRUCT_STAT *sbuf);
 		void (*seekdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset);
 		long (*telldir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
 		void (*rewind_dir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);

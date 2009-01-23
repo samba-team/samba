@@ -93,7 +93,7 @@ static SMB_STRUCT_DIR *shadow_copy_opendir(vfs_handle_struct *handle, const char
 	while (True) {
 		SMB_STRUCT_DIRENT *d;
 
-		d = SMB_VFS_NEXT_READDIR(handle, p);
+		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {
 			break;
 		}
@@ -176,7 +176,7 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle, files_str
 		SHADOW_COPY_LABEL *tlabels;
 		SMB_STRUCT_DIRENT *d;
 
-		d = SMB_VFS_NEXT_READDIR(handle, p);
+		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
 		if (d == NULL) {
 			break;
 		}

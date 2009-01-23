@@ -113,12 +113,18 @@ static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *f
 	return result;
 }
 
-static SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
+static SMB_STRUCT_DIRENT *vfswrap_readdir(vfs_handle_struct *handle,
+				          SMB_STRUCT_DIR *dirp,
+					  SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *result;
 
 	START_PROFILE(syscall_readdir);
 	result = sys_readdir(dirp);
+	/* Default Posix readdir() does not give us stat info.
+	 * Set to invalid to indicate we didn't return this info. */
+	if (sbuf)
+		SET_STAT_INVALID(*sbuf);
 	END_PROFILE(syscall_readdir);
 	return result;
 }

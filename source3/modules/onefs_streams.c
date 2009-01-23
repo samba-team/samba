@@ -545,7 +545,7 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 	fake_fs.fsp_name = SMB_STRDUP(fname);
 
 	/* Iterate over the streams in the ADS directory. */
-	while ((dp = SMB_VFS_READDIR(conn, dirp)) != NULL) {
+	while ((dp = SMB_VFS_READDIR(conn, dirp, NULL)) != NULL) {
 		/* Skip the "." and ".." entries */
 		if ((strcmp(dp->d_name, ".") == 0) ||
 		    (strcmp(dp->d_name, "..") == 0))

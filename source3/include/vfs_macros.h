@@ -38,7 +38,7 @@
 
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, fname, mask, attr) ((conn)->vfs.ops.opendir((conn)->vfs.handles.opendir, (fname), (mask), (attr)))
-#define SMB_VFS_READDIR(conn, dirp) ((conn)->vfs.ops.readdir((conn)->vfs.handles.readdir, (dirp)))
+#define SMB_VFS_READDIR(conn, dirp, sbuf) ((conn)->vfs.ops.readdir((conn)->vfs.handles.readdir, (dirp), (sbuf)))
 #define SMB_VFS_SEEKDIR(conn, dirp, offset) ((conn)->vfs.ops.seekdir((conn)->vfs.handles.seekdir, (dirp), (offset)))
 #define SMB_VFS_TELLDIR(conn, dirp) ((conn)->vfs.ops.telldir((conn)->vfs.handles.telldir, (dirp)))
 #define SMB_VFS_REWINDDIR(conn, dirp) ((conn)->vfs.ops.rewind_dir((conn)->vfs.handles.rewind_dir, (dirp)))
@@ -166,7 +166,7 @@
 
 /* Directory operations */
 #define SMB_VFS_OPAQUE_OPENDIR(conn, fname, mask, attr) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (fname), (mask), (attr)))
-#define SMB_VFS_OPAQUE_READDIR(conn, dirp) ((conn)->vfs_opaque.ops.readdir((conn)->vfs_opaque.handles.readdir, (dirp)))
+#define SMB_VFS_OPAQUE_READDIR(conn, dirp, sbuf) ((conn)->vfs_opaque.ops.readdir((conn)->vfs_opaque.handles.readdir, (dirp), (sbuf)))
 #define SMB_VFS_OPAQUE_SEEKDIR(conn, dirp, offset) ((conn)->vfs_opaque.ops.seekdir((conn)->vfs_opaque.handles.seekdir, (dirp), (offset)))
 #define SMB_VFS_OPAQUE_TELLDIR(conn, dirp) ((conn)->vfs_opaque.ops.telldir((conn)->vfs_opaque.handles.telldir, (dirp)))
 #define SMB_VFS_OPAQUE_REWINDDIR(conn, dirp) ((conn)->vfs_opaque.ops.rewind_dir((conn)->vfs_opaque.handles.rewind_dir, (dirp)))
@@ -294,11 +294,11 @@
 
 /* Directory operations */
 #define SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (fname), (mask), (attr)))
-#define SMB_VFS_NEXT_READDIR(handle, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (dirp)))
+#define SMB_VFS_NEXT_READDIR(handle, dirp, sbuf) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (dirp), (sbuf)))
 #define SMB_VFS_NEXT_SEEKDIR(handle, dirp, offset) ((handle)->vfs_next.ops.seekdir((handle)->vfs_next.handles.seekdir, (dirp), (offset)))
 #define SMB_VFS_NEXT_TELLDIR(handle, dirp) ((handle)->vfs_next.ops.telldir((handle)->vfs_next.handles.telldir, (dirp)))
 #define SMB_VFS_NEXT_REWINDDIR(handle, dirp) ((handle)->vfs_next.ops.rewind_dir((handle)->vfs_next.handles.rewind_dir, (dirp)))
-#define SMB_VFS_NEXT_DIR(handle, dirp) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (dirp)))
+#define SMB_VFS_NEXT_DIR(handle, dirp, sbuf) ((handle)->vfs_next.ops.readdir((handle)->vfs_next.handles.readdir, (dirp), (sbuf)))
 #define SMB_VFS_NEXT_MKDIR(handle, path, mode) ((handle)->vfs_next.ops.mkdir((handle)->vfs_next.handles.mkdir,(path), (mode)))
 #define SMB_VFS_NEXT_RMDIR(handle, path) ((handle)->vfs_next.ops.rmdir((handle)->vfs_next.handles.rmdir, (path)))
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) ((handle)->vfs_next.ops.closedir((handle)->vfs_next.handles.closedir, dir))

@@ -352,7 +352,7 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	while ((dirent = vfs_readdirname(handle->conn, dirhandle)) != NULL) {
+	while ((dirent = vfs_readdirname(handle->conn, dirhandle, NULL)) != NULL) {
 
 		if (ISDOT(dirent) || ISDOTDOT(dirent)) {
 			continue;

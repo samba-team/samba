@@ -61,7 +61,7 @@ static SMB_STRUCT_DIRENT *cap_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR 
 	size_t newnamelen;
 	DEBUG(3,("cap: cap_readdir\n"));
 
-	result = SMB_VFS_NEXT_READDIR(handle, dirp);
+	result = SMB_VFS_NEXT_READDIR(handle, dirp, NULL);
 	if (!result) {
 		return NULL;
 	}

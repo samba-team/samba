@@ -141,20 +141,51 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
 static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	SMB_STRUCT_DIRENT *dent;
+	const char *user;
+	const char *group;
+	SMB_STRUCT_STAT st;
+	SMB_STRUCT_DIRENT *dent = NULL;
 
 	if (vfs->currentdir == NULL) {
 		printf("readdir: error=-1 (no open directory)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dent = SMB_VFS_READDIR(vfs->conn, vfs->currentdir);
+	dent = SMB_VFS_READDIR(vfs->conn, vfs->currentdir, &st);
 	if (dent == NULL) {
 		printf("readdir: NULL\n");
 		return NT_STATUS_OK;
 	}
 
 	printf("readdir: %s\n", dent->d_name);
+	if (VALID_STAT(st)) {
+		printf("  stat available");
+		if (S_ISREG(st.st_mode)) printf("  Regular File\n");
+		else if (S_ISDIR(st.st_mode)) printf("  Directory\n");
+		else if (S_ISCHR(st.st_mode)) printf("  Character Device\n");
+		else if (S_ISBLK(st.st_mode)) printf("  Block Device\n");
+		else if (S_ISFIFO(st.st_mode)) printf("  Fifo\n");
+		else if (S_ISLNK(st.st_mode)) printf("  Symbolic Link\n");
+		else if (S_ISSOCK(st.st_mode)) printf("  Socket\n");
+		printf("  Size: %10u", (unsigned int)st.st_size);
+#ifdef HAVE_STAT_ST_BLOCKS
+		printf(" Blocks: %9u", (unsigned int)st.st_blocks);
+#endif
+#ifdef HAVE_STAT_ST_BLKSIZE
+		printf(" IO Block: %u\n", (unsigned int)st.st_blksize);
+#endif
+		printf("  Device: 0x%10x", (unsigned int)st.st_dev);
+		printf(" Inode: %10u", (unsigned int)st.st_ino);
+		printf(" Links: %10u\n", (unsigned int)st.st_nlink);
+		printf("  Access: %05o", (st.st_mode) & 007777);
+		printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n",
+		       (unsigned long)st.st_uid, user,
+		       (unsigned long)st.st_gid, group);
+		printf("  Access: %s", ctime(&(st.st_atime)));
+		printf("  Modify: %s", ctime(&(st.st_mtime)));
+		printf("  Change: %s", ctime(&(st.st_ctime)));
+	}
+
 	return NT_STATUS_OK;
 }
 

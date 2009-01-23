@@ -705,7 +705,7 @@ SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
  A vfs_readdir wrapper which just returns the file name.
 ********************************************************************/
 
-char *vfs_readdirname(connection_struct *conn, void *p)
+char *vfs_readdirname(connection_struct *conn, void *p, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_STRUCT_DIRENT *ptr= NULL;
 	char *dname;
@@ -713,7 +713,7 @@ char *vfs_readdirname(connection_struct *conn, void *p)
 	if (!p)
 		return(NULL);
 
-	ptr = SMB_VFS_READDIR(conn, (DIR *)p);
+	ptr = SMB_VFS_READDIR(conn, (DIR *)p, sbuf);
 	if (!ptr)
 		return(NULL);
 
