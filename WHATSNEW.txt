@@ -37,6 +37,8 @@ Major enhancements in Samba 3.3.0 include:
  Libraries:
  o NetApi library implements various new calls for User- and Group
    Account Management.
+ o libsmbclient does now determine case sensitivity based on file system
+   attributes.
 
 
 General changes
@@ -182,6 +184,19 @@ A basic config using the current trunk code would look like:
 	template shell = /bin/bash
 
 Please refer to the idmap_adex(8) man page for more details.
+
+
+Libraries
+=========
+
+libsmbclient will now treat file names case-sensitive by default if the filesystem
+we are connecting to supports case sensitivity. This change of behavior is
+considered a bug fix, as it was previously possible to accidentally overwrite a
+file that had the same case-insensitive name but a different case-sensitive name
+as a previously-existing file, while creating a new file.
+
+If it is not possible to detect if the filesystem supports case sensitivity,
+the user-specified option value will be used.
 
 
 ######################################################################
