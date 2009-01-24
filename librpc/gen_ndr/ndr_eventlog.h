@@ -59,7 +59,9 @@ extern const struct ndr_interface_table ndr_table_eventlog;
 
 #define NDR_EVENTLOG_FLUSHEVENTLOG (0x17)
 
-#define NDR_EVENTLOG_CALL_COUNT (24)
+#define NDR_EVENTLOG_REPORTEVENTANDSOURCEW (0x18)
+
+#define NDR_EVENTLOG_CALL_COUNT (25)
 void ndr_print_eventlogReadFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_eventlogEventTypes(struct ndr_push *ndr, int ndr_flags, enum eventlogEventTypes r);
 enum ndr_err_code ndr_pull_eventlogEventTypes(struct ndr_pull *ndr, int ndr_flags, enum eventlogEventTypes *r);
@@ -92,4 +94,5 @@ void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, const char *
 void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_WriteClusterEvents *r);
 void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogIntormation *r);
 void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_FlushEventLog *r);
+void ndr_print_eventlog_ReportEventAndSourceW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventAndSourceW *r);
 #endif /* _HEADER_NDR_eventlog */
