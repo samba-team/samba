@@ -539,30 +539,30 @@ static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	offset = entry->data;
-	memcpy( offset, &( entry->data_record.source_name ),
+	memcpy( offset, entry->data_record.source_name,
 		entry->data_record.source_name_len );
 	offset += entry->data_record.source_name_len;
-	memcpy( offset, &( entry->data_record.computer_name ),
+	memcpy( offset, entry->data_record.computer_name,
 		entry->data_record.computer_name_len );
 	offset += entry->data_record.computer_name_len;
 	/* SID needs to be DWORD-aligned */
 	offset += entry->data_record.sid_padding;
 	entry->record.user_sid_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.sid ),
+	memcpy( offset, entry->data_record.sid,
 		entry->record.user_sid_length );
 	offset += entry->record.user_sid_length;
 	/* Now do the strings */
 	entry->record.string_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.strings ),
+	memcpy( offset, entry->data_record.strings,
 		entry->data_record.strings_len );
 	offset += entry->data_record.strings_len;
 	/* Now do the data */
 	entry->record.data_length = entry->data_record.user_data_len;
 	entry->record.data_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.user_data ),
+	memcpy( offset, entry->data_record.user_data,
 		entry->data_record.user_data_len );
 	offset += entry->data_record.user_data_len;
 
