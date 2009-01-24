@@ -166,6 +166,7 @@ bool eventlog_io_r_read_eventlog(const char *desc,
 	/* Now pad with whitespace until the end of the response buffer */
 
 	if (q_u->max_read_size - r_u->num_bytes_in_resp) {
+		r_u->end_of_entries_padding = PRS_ALLOC_MEM(ps, uint8_t, q_u->max_read_size - r_u->num_bytes_in_resp);
 		if (!r_u->end_of_entries_padding) {
 			return False;
 		}
@@ -173,11 +174,8 @@ bool eventlog_io_r_read_eventlog(const char *desc,
 		if(!(prs_uint8s(False, "end of entries padding", ps, 
 				depth, r_u->end_of_entries_padding,
 				(q_u->max_read_size - r_u->num_bytes_in_resp)))) {
-			free(r_u->end_of_entries_padding);
 			return False;
 		}
-
-		free(r_u->end_of_entries_padding);
 	}
 
 	/* We had better be DWORD aligned here */
