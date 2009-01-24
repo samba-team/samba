@@ -578,17 +578,15 @@ static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 /********************************************************************
  ********************************************************************/
 
-static bool add_record_to_resp( Eventlog_entry *entry,
-				uint32_t *num_records,
-				uint32_t *num_bytes_in_resp,
+static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 				Eventlog_entry * ee_new )
 {
 	Eventlog_entry *insert_point;
 
-	insert_point = entry;
+	insert_point = r_u->entry;
 
 	if ( NULL == insert_point ) {
-		entry = ee_new;
+		r_u->entry = ee_new;
 		ee_new->next = NULL;
 	} else {
 		while ( ( NULL != insert_point->next ) ) {
@@ -597,8 +595,8 @@ static bool add_record_to_resp( Eventlog_entry *entry,
 		ee_new->next = NULL;
 		insert_point->next = ee_new;
 	}
-	(*num_records)++;
-	*num_bytes_in_resp += ee_new->record.length;
+	r_u->num_records++;
+	r_u->num_bytes_in_resp += ee_new->record.length;
 
 	return True;
 }
@@ -775,10 +773,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 			break;
 		}
 
-		add_record_to_resp( r_u->entry,
-				    &r_u->num_records, &r_u->num_bytes_in_resp,
-				    ee_new );
-
+		add_record_to_resp( r_u, ee_new );
 		bytes_left -= ee_new->record.length;
 		TALLOC_FREE(entry);
 		num_records_read = r_u->num_records - num_records_read;
