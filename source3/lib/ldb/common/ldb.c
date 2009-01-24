@@ -808,15 +808,18 @@ int ldb_search(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_result *
 	va_list ap;
 	int ret;
 
+	expression = NULL;
 	res = NULL;
 	*result = NULL;
 
-	va_start(ap, exp_fmt);
-	expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
-	va_end(ap);
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(mem_ctx, exp_fmt, ap);
+		va_end(ap);
 
-	if ( ! expression) {
-		return LDB_ERR_OPERATIONS_ERROR;
+		if ( ! expression) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
 	}
 
 	ret = _ldb_search(ldb, ldb, &res, base, scope, attrs, expression);
