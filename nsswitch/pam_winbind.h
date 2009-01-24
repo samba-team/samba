@@ -171,6 +171,6 @@ struct pwb_context {
 	uint32_t ctrl;
 };
 
-#define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
 #define TALLOC_ZERO_P(ctx, type) (type *)_talloc_zero(ctx, sizeof(type), #type)
 #define TALLOC_P(ctx, type) (type *)talloc_named_const(ctx, sizeof(type), #type)
