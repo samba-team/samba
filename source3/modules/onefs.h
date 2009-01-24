@@ -101,6 +101,9 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 			  unsigned int *num_streams,
 			  struct stream_struct **streams);
 
+int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
+			 int flags, struct timespec times[3]);
+
 NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info, SEC_DESC **ppdesc);
 

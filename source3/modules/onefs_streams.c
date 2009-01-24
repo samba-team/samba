@@ -51,6 +51,25 @@ NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 	return NT_STATUS_OK;
 }
 
+int onefs_is_stream(const char *path, char **pbase, char **pstream,
+		    bool *is_stream)
+{
+	(*is_stream) = is_ntfs_stream_name(path);
+
+	if (!(*is_stream)) {
+		return 0;
+	}
+
+	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
+							  pbase, pstream))) {
+		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	return 0;
+}
+
 int onefs_close(vfs_handle_struct *handle, struct files_struct *fsp)
 {
 	int ret2, ret = 0;
@@ -141,27 +160,18 @@ int onefs_rename(vfs_handle_struct *handle, const char *oldname,
 	char *nbase = NULL;
 	char *nsname = NULL;
 
-	old_is_stream = is_ntfs_stream_name(oldname);
-	new_is_stream = is_ntfs_stream_name(newname);
+	frame = talloc_stackframe();
+
+	ret = onefs_is_stream(oldname, &obase, &osname, &old_is_stream);
+	if (ret)
+		return ret;
+
+	ret = onefs_is_stream(newname, &nbase, &nsname, &new_is_stream);
+	if (ret)
+		return ret;
 
 	if (!old_is_stream && !new_is_stream) {
 		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
-	}
-
-	frame = talloc_stackframe();
-
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(),
-							  oldname, &obase,
-							  &osname))) {
-		errno = ENOMEM;
-		goto done;
-	}
-
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(),
-							  newname, &nbase,
-							  &nsname))) {
-		errno = ENOMEM;
-		goto done;
 	}
 
 	dir_fd = get_stream_dir_fd(handle->conn, obase, NULL);
@@ -237,18 +247,17 @@ static int stat_stream(vfs_handle_struct *handle, const char *base,
 int onefs_stat(vfs_handle_struct *handle, const char *path,
 	       SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
+	bool is_stream;
 	char *base = NULL;
 	char *stream = NULL;
 
-	if (!is_ntfs_stream_name(path)) {
-		return SMB_VFS_NEXT_STAT(handle, path, sbuf);
-	}
+	ret = onefs_is_stream(path, &base, &stream, &is_stream);
+	if (ret)
+		return ret;
 
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
-							  &base, &stream))) {
-		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
-		errno = ENOMEM;
-		return -1;
+	if (!is_stream) {
+		return SMB_VFS_NEXT_STAT(handle, path, sbuf);
 	}
 
 	/* If it's the ::$DATA stream just stat the base file name. */
@@ -285,18 +294,17 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 int onefs_lstat(vfs_handle_struct *handle, const char *path,
 		SMB_STRUCT_STAT *sbuf)
 {
+	int ret;
+	bool is_stream;
 	char *base = NULL;
 	char *stream = NULL;
 
-	if (!is_ntfs_stream_name(path)) {
-		return SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
-	}
+	ret = onefs_is_stream(path, &base, &stream, &is_stream);
+	if (ret)
+		return ret;
 
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
-							  &base, &stream))) {
-		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
-		errno = ENOMEM;
-		return -1;
+	if (!is_stream) {
+		return SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
 	}
 
 	/* If it's the ::$DATA stream just stat the base file name. */
@@ -309,19 +317,19 @@ int onefs_lstat(vfs_handle_struct *handle, const char *path,
 
 int onefs_unlink(vfs_handle_struct *handle, const char *path)
 {
+	int ret;
+	bool is_stream;
 	char *base = NULL;
 	char *stream = NULL;
-	int dir_fd, ret, saved_errno;
+	int dir_fd, saved_errno;
 
-	if (!is_ntfs_stream_name(path)) {
-		return SMB_VFS_NEXT_UNLINK(handle, path);
+	ret = onefs_is_stream(path, &base, &stream, &is_stream);
+	if (ret) {
+		return ret;
 	}
 
-	if (!NT_STATUS_IS_OK(onefs_split_ntfs_stream_name(talloc_tos(), path,
-							  &base, &stream))) {
-		DEBUG(10, ("onefs_split_ntfs_stream_name failed\n"));
-		errno = ENOMEM;
-		return -1;
+	if (!is_stream)	{
+		return SMB_VFS_NEXT_UNLINK(handle, path);
 	}
 
 	/* If it's the ::$DATA stream just unlink the base file name. */
@@ -338,6 +346,42 @@ int onefs_unlink(vfs_handle_struct *handle, const char *path)
 
 	saved_errno = errno;
 	close(dir_fd);
+	errno = saved_errno;
+	return ret;
+}
+
+int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
+			 int flags, struct timespec times[3])
+{
+	int ret;
+	bool is_stream;
+	char *base;
+	char *stream;
+	int dirfd;
+	int saved_errno;
+
+	START_PROFILE(syscall_ntimes);
+
+	ret = onefs_is_stream(fname, &base, &stream, &is_stream);
+	if (ret)
+		return ret;
+
+	if (!is_stream) {
+		ret = vtimes(fname, times, flags);
+		return ret;
+	}
+
+	dirfd = get_stream_dir_fd(handle->conn, base, NULL);
+	if (dirfd < -1) {
+		return -1;
+	}
+
+	ret = enc_vtimesat(dirfd, stream, ENC_DEFAULT, times, flags);
+
+	END_PROFILE(syscall_ntimes);
+
+	saved_errno = errno;
+	close(dirfd);
 	errno = saved_errno;
 	return ret;
 }
