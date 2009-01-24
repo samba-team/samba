@@ -557,12 +557,13 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
-	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	status = idmap_tdb2_open_db();
-	NT_STATUS_NOT_OK_RETURN(status);
+	ret = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(ret);
 
-	if ((keystr = sid_string_talloc(ctx, map->sid)) == NULL) {
+	keystr = sid_string_talloc(tmp_ctx, map->sid);
+	if (keystr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -571,7 +572,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
+	data = dbwrap_fetch_bystring(idmap_tdb2, tmp_ctx, keystr);
 	if (!data.dptr) {
 		fstring idstr;
 
@@ -626,7 +627,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	}
 
 done:
-	talloc_free(keystr);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 
