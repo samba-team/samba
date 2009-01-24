@@ -18,6 +18,15 @@
 */
 
 #include "includes.h"
+#include "lib/talloc/talloc.h"
+#include "lib/tevent/tevent.h"
+#include "lib/async_req/async_req.h"
+#include "lib/async_req/async_sock.h"
+#include <fcntl.h>
+
+#ifndef TALLOC_FREE
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+#endif
 
 /**
  * Discriminator for async_syscall_state
@@ -36,7 +45,7 @@ enum async_syscall_type {
 
 struct async_syscall_state {
 	enum async_syscall_type syscall_type;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 
 	union {
 		struct param_send {
@@ -99,7 +108,7 @@ struct async_syscall_state {
  */
 
 static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   enum async_syscall_type type,
 					   struct async_syscall_state **pstate)
 {
@@ -125,7 +134,7 @@ static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
  * @param[in] ev	The event context to work from
  * @param[in] type	Which syscall will this be
  * @param[in] fd	The file descriptor we work on
- * @param[in] fde_flags EVENT_FD_READ/WRITE -- what are we interested in?
+ * @param[in] fde_flags TEVENT_FD_READ/WRITE -- what are we interested in?
  * @param[in] fde_cb	The callback function for the file descriptor event
  * @param[in] pstate	Where to put the newly created private_data state
  * @retval The new request
@@ -137,12 +146,12 @@ static struct async_req *async_syscall_new(TALLOC_CTX *mem_ctx,
 
 static struct async_req *async_fde_syscall_new(
 	TALLOC_CTX *mem_ctx,
-	struct event_context *ev,
+	struct tevent_context *ev,
 	enum async_syscall_type type,
 	int fd,
 	uint16_t fde_flags,
-	void (*fde_cb)(struct event_context *ev,
-		       struct fd_event *fde, uint16_t flags,
+	void (*fde_cb)(struct tevent_context *ev,
+		       struct tevent_fd *fde, uint16_t flags,
 		       void *priv),
 	struct async_syscall_state **pstate)
 {
@@ -154,7 +163,7 @@ static struct async_req *async_fde_syscall_new(
 		return NULL;
 	}
 
-	state->fde = event_add_fd(ev, state, fd, fde_flags, fde_cb, result);
+	state->fde = tevent_add_fd(ev, state, fd, fde_flags, fde_cb, result);
 	if (state->fde == NULL) {
 		TALLOC_FREE(result);
 		return NULL;
@@ -215,12 +224,12 @@ int async_syscall_result_int(struct async_req *req, int *perrno)
  * fde event handler for the "send" syscall
  * @param[in] ev	The event context that sent us here
  * @param[in] fde	The file descriptor event associated with the send
- * @param[in] flags	Can only be EVENT_FD_WRITE here
+ * @param[in] flags	Can only be TEVENT_FD_WRITE here
  * @param[in] priv	private data, "struct async_req *" in this case
  */
 
-static void async_send_callback(struct event_context *ev,
-				struct fd_event *fde, uint16_t flags,
+static void async_send_callback(struct tevent_context *ev,
+				struct tevent_fd *fde, uint16_t flags,
 				void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -255,7 +264,7 @@ static void async_send_callback(struct event_context *ev,
  * This function is a direct counterpart of send(2)
  */
 
-struct async_req *async_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     int fd, const void *buffer, size_t length,
 			     int flags)
 {
@@ -264,7 +273,7 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	result = async_fde_syscall_new(
 		mem_ctx, ev, ASYNC_SYSCALL_SEND,
-		fd, EVENT_FD_WRITE, async_send_callback,
+		fd, TEVENT_FD_WRITE, async_send_callback,
 		&state);
 	if (result == NULL) {
 		return NULL;
@@ -282,12 +291,12 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
  * fde event handler for the "sendall" syscall group
  * @param[in] ev	The event context that sent us here
  * @param[in] fde	The file descriptor event associated with the send
- * @param[in] flags	Can only be EVENT_FD_WRITE here
+ * @param[in] flags	Can only be TEVENT_FD_WRITE here
  * @param[in] priv	private data, "struct async_req *" in this case
  */
 
-static void async_sendall_callback(struct event_context *ev,
-				   struct fd_event *fde, uint16_t flags,
+static void async_sendall_callback(struct tevent_context *ev,
+				   struct tevent_fd *fde, uint16_t flags,
 				   void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -301,7 +310,8 @@ static void async_sendall_callback(struct event_context *ev,
 		return;
 	}
 
-	state->result.result_ssize_t = send(p->fd, (char *)p->buffer + p->sent,
+	state->result.result_ssize_t = send(p->fd,
+					    (const char *)p->buffer + p->sent,
 					    p->length - p->sent, p->flags);
 	state->sys_errno = errno;
 
@@ -340,7 +350,7 @@ static void async_sendall_callback(struct event_context *ev,
  * "length" bytes
  */
 
-struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, const void *buffer, size_t length,
 			       int flags)
 {
@@ -349,7 +359,7 @@ struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	result = async_fde_syscall_new(
 		mem_ctx, ev, ASYNC_SYSCALL_SENDALL,
-		fd, EVENT_FD_WRITE, async_sendall_callback,
+		fd, TEVENT_FD_WRITE, async_sendall_callback,
 		&state);
 	if (result == NULL) {
 		return NULL;
@@ -373,12 +383,12 @@ NTSTATUS sendall_recv(struct async_req *req)
  * fde event handler for the "recv" syscall
  * @param[in] ev	The event context that sent us here
  * @param[in] fde	The file descriptor event associated with the recv
- * @param[in] flags	Can only be EVENT_FD_READ here
+ * @param[in] flags	Can only be TEVENT_FD_READ here
  * @param[in] priv	private data, "struct async_req *" in this case
  */
 
-static void async_recv_callback(struct event_context *ev,
-				struct fd_event *fde, uint16_t flags,
+static void async_recv_callback(struct tevent_context *ev,
+				struct tevent_fd *fde, uint16_t flags,
 				void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -413,7 +423,7 @@ static void async_recv_callback(struct event_context *ev,
  * This function is a direct counterpart of recv(2)
  */
 
-struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     int fd, void *buffer, size_t length,
 			     int flags)
 {
@@ -422,7 +432,7 @@ struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	result = async_fde_syscall_new(
 		mem_ctx, ev, ASYNC_SYSCALL_RECV,
-		fd, EVENT_FD_READ, async_recv_callback,
+		fd, TEVENT_FD_READ, async_recv_callback,
 		&state);
 
 	if (result == NULL) {
@@ -441,12 +451,12 @@ struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct event_context *ev,
  * fde event handler for the "recvall" syscall group
  * @param[in] ev	The event context that sent us here
  * @param[in] fde	The file descriptor event associated with the recv
- * @param[in] flags	Can only be EVENT_FD_READ here
+ * @param[in] flags	Can only be TEVENT_FD_READ here
  * @param[in] priv	private data, "struct async_req *" in this case
  */
 
-static void async_recvall_callback(struct event_context *ev,
-				   struct fd_event *fde, uint16_t flags,
+static void async_recvall_callback(struct tevent_context *ev,
+				   struct tevent_fd *fde, uint16_t flags,
 				   void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -499,7 +509,7 @@ static void async_recvall_callback(struct event_context *ev,
  * async_recvall will call recv(2) until "length" bytes are received
  */
 
-struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, void *buffer, size_t length,
 			       int flags)
 {
@@ -508,7 +518,7 @@ struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	result = async_fde_syscall_new(
 		mem_ctx, ev, ASYNC_SYSCALL_RECVALL,
-		fd, EVENT_FD_READ, async_recvall_callback,
+		fd, TEVENT_FD_READ, async_recvall_callback,
 		&state);
 	if (result == NULL) {
 		return NULL;
@@ -535,8 +545,8 @@ struct async_connect_state {
 	long old_sockflags;
 };
 
-static void async_connect_connected(struct event_context *ev,
-				    struct fd_event *fde, uint16_t flags,
+static void async_connect_connected(struct tevent_context *ev,
+				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv);
 
 /**
@@ -553,13 +563,13 @@ static void async_connect_connected(struct event_context *ev,
  */
 
 struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev,
+				     struct tevent_context *ev,
 				     int fd, const struct sockaddr *address,
 				     socklen_t address_len)
 {
 	struct async_req *result;
 	struct async_connect_state *state;
-	struct fd_event *fde;
+	struct tevent_fd *fde;
 	NTSTATUS status;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
@@ -575,7 +585,7 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	state->fd = fd;
 	state->sys_errno = 0;
 
-	state->old_sockflags = sys_fcntl_long(fd, F_GETFL, 0);
+	state->old_sockflags = fcntl(fd, F_GETFL, 0);
 	if (state->old_sockflags == -1) {
 		goto post_errno;
 	}
@@ -604,7 +614,7 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 		goto post_errno;
 	}
 
-	fde = event_add_fd(ev, state, fd, EVENT_FD_READ | EVENT_FD_WRITE,
+	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
 			   async_connect_connected, result);
 	if (fde == NULL) {
 		status = NT_STATUS_NO_MEMORY;
@@ -616,7 +626,7 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	state->sys_errno = errno;
 	status = map_nt_error_from_unix(state->sys_errno);
  post_status:
-	sys_fcntl_long(fd, F_SETFL, state->old_sockflags);
+	fcntl(fd, F_SETFL, state->old_sockflags);
 	if (!async_post_status(result, ev, status)) {
 		goto fail;
 	}
@@ -634,8 +644,8 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
  * @param[in] priv	private data, "struct async_req *" in this case
  */
 
-static void async_connect_connected(struct event_context *ev,
-				    struct fd_event *fde, uint16_t flags,
+static void async_connect_connected(struct tevent_context *ev,
+				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(
@@ -650,8 +660,8 @@ static void async_connect_connected(struct event_context *ev,
 	 * successful connect, the socket is only writable. Upon an
 	 * error, it's both readable and writable.
 	 */
-	if ((flags & (EVENT_FD_READ|EVENT_FD_WRITE))
-	    == (EVENT_FD_READ|EVENT_FD_WRITE)) {
+	if ((flags & (TEVENT_FD_READ|TEVENT_FD_WRITE))
+	    == (TEVENT_FD_READ|TEVENT_FD_WRITE)) {
 		int sockerr;
 		socklen_t err_len = sizeof(sockerr);
 
@@ -664,7 +674,7 @@ static void async_connect_connected(struct event_context *ev,
 
 		DEBUG(10, ("connect returned %s\n", strerror(errno)));
 
-		sys_fcntl_long(state->fd, F_SETFL, state->old_sockflags);
+		fcntl(state->fd, F_SETFL, state->old_sockflags);
 		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
 		return;
 	}
@@ -679,7 +689,7 @@ NTSTATUS async_connect_recv(struct async_req *req, int *perrno)
 		req->private_data, struct async_connect_state);
 	NTSTATUS status;
 
-	sys_fcntl_long(state->fd, F_SETFL, state->old_sockflags);
+	fcntl(state->fd, F_SETFL, state->old_sockflags);
 
 	*perrno = state->sys_errno;
 

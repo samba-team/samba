@@ -344,7 +344,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o \
 	  lib/interfaces.o lib/memcache.o \
 	  lib/util_transfer_file.o ../lib/async_req/async_req.o \
-	  lib/async_sock.o \
+	  ../lib/async_req/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/interface.o lib/pidfile.o \
