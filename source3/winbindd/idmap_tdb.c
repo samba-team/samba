@@ -402,6 +402,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t high_hwm;
 	uint32_t hwm;
+	int res;
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -423,7 +424,14 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	res = idmap_alloc_db->transaction_start(idmap_alloc_db);
+	if (res != 0) {
+		DEBUG(1, (__location__ " Failed to start transaction.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if ((hwm = dbwrap_fetch_int32(idmap_alloc_db, hwmkey)) == -1) {
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -431,6 +439,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -438,6 +447,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	ret = dbwrap_change_uint32_atomic(idmap_alloc_db, hwmkey, &hwm, 1);
 	if (ret != 0) {
 		DEBUG(0, ("Fatal error while fetching a new %s value\n!", hwmtype));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -445,9 +455,16 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
+	res = idmap_alloc_db->transaction_commit(idmap_alloc_db);
+	if (res != 0) {
+		DEBUG(1, (__location__ " Failed to commit transaction.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	xid->id = hwm;
 	DEBUG(10,("New %s = %d\n", hwmtype, hwm));
 
