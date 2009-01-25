@@ -36,7 +36,7 @@
 #include <rfc2459_asn1.h>
 #include <hx509.h>
 
-RCSID("$Id$");
+#ifdef KX509
 
 /*
  *
@@ -288,7 +288,7 @@ out:
 krb5_error_code
 _kdc_do_kx509(krb5_context context,
 	      krb5_kdc_configuration *config,
-	      const Kx509Request *req, krb5_data *reply,
+	      const struct Kx509Request *req, krb5_data *reply,
 	      const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret;
@@ -457,3 +457,5 @@ out:
 
     return 0;
 }
+
+#endif /* KX509 */
