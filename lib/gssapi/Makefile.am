@@ -4,9 +4,13 @@ include $(top_srcdir)/Makefile.am.common
 
 AUTOMAKE_OPTIONS = subdir-objects
 
-AM_CPPFLAGS += -I$(srcdir)/../krb5 \
+AM_CPPFLAGS += \
+	-I$(srcdir)/../krb5 \
 	-I$(srcdir) \
+	-I$(srcdir)/gssapi \
 	-I$(srcdir)/mech \
+	-I$(srcdir)/krb5 \
+	-I$(srcdir)/spnego \
 	$(INCLUDE_libintl) \
 	$(INCLUDE_hcrypto) \
 	$(INCLUDE_krb4)
@@ -256,7 +260,7 @@ $(spnego_files) spnego_asn1.h: spnego_asn1_files
 $(gssapi_files) gssapi_asn1.h: gssapi_asn1_files
 
 spnego_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/spnego/spnego.asn1
-	../asn1/asn1_compile$(EXEEXT) --sequence=MechTypeList $(srcdir)/spnego/spnego.asn1 spnego_asn1
+	../asn1/asn1_compile$(EXEEXT) --option-file=$(srcdir)/spnego/spnego.opt $(srcdir)/spnego/spnego.asn1 spnego_asn1
 
 gssapi_asn1_files: ../asn1/asn1_compile$(EXEEXT) $(srcdir)/mech/gssapi.asn1
 	../asn1/asn1_compile$(EXEEXT) $(srcdir)/mech/gssapi.asn1 gssapi_asn1
