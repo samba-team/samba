@@ -33,7 +33,6 @@
 
 
 #include <config.h>
-RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
