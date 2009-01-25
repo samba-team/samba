@@ -37,6 +37,8 @@
 
 #include <stdio.h>
 #include <gssapi.h>
+#include <gssapi_krb5.h>
+#include <gssapi_spengo.h>
 #include <err.h>
 #include <roken.h>
 
