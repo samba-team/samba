@@ -7,12 +7,11 @@ ACLOCAL_AMFLAGS = -I ../../cf
 CLEANFILES = roken.h make-roken.c $(XHEADERS)
 
 lib_LTLIBRARIES = libroken.la
-noinst_LTLIBRARIES = libnroken.la
 
 libroken_la_LDFLAGS = -version-info 19:0:1
-libnroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
+libroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
 
-AM_CPPFLAGS += $(libnroken_la_CPPFLAGS)
+AM_CPPFLAGS += $(libroken_la_CPPFLAGS)
 
 noinst_PROGRAMS = make-roken snprintf-test resolve-test rkpty
 
@@ -34,7 +33,7 @@ TESTS = $(check_PROGRAMS)
 LDADD = libroken.la $(LIB_crypt)
 make_roken_LDADD = 
 
-noinst_LTLIBRARIES += libtest.la
+noinst_LTLIBRARIES = libtest.la
 libtest_la_SOURCES = strftime.c strptime.c snprintf.c
 libtest_la_CFLAGS = -DTEST_SNPRINTF -DTEST_STRPFTIME
 
@@ -56,9 +55,7 @@ snprintf_test_CFLAGS	= -DTEST_SNPRINTF
 
 resolve_test_SOURCES = resolve-test.c
 
-libroken_la_SOURCES = 
-
-libnroken_la_SOURCES =		\
+libroken_la_SOURCES =		\
 	base64.c		\
 	bswap.c			\
 	concat.c		\
@@ -109,16 +106,14 @@ libnroken_la_SOURCES =		\
 	xfree.c			\
 	xdbm.h
 
-EXTRA_libnroken_la_SOURCES =	\
+EXTRA_libroken_la_SOURCES =	\
 	err.hin			\
 	glob.hin		\
 	fnmatch.hin		\
 	ifaddrs.hin		\
 	vis.hin	
 
-libnroken_la_LIBADD = @LTLIBOBJS@
-
-libroken_la_LIBADD = libnroken.la
+libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h $(XHEADERS)
 
@@ -171,7 +166,7 @@ dist_include_HEADERS = 				\
 	xdbm.h
 
 if have_socket_wrapper
-libnroken_la_SOURCES += socket_wrapper.c socket_wrapper.h
+libroken_la_SOURCES += socket_wrapper.c socket_wrapper.h
 dist_include_HEADERS += socket_wrapper.h
 endif
 
