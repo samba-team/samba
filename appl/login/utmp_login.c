@@ -77,16 +77,11 @@ shrink_hostname (const char *hostname,
     }
 }
 
-#ifdef HAVE_UTMPX_H
-void utmp_login(char *tty, const char *username, const char *hostname)
-{
-    return;
-}
-#else
-
 /* update utmp and wtmp - the BSD way */
 
-static void
+#if !defined(HAVE_UTMPX_H) || (defined(WTMP_FILE) && defined(!WTMPX_FILE))
+
+void
 prepare_utmp (struct utmp *utmp, char *tty,
 	      const char *username, const char *hostname)
 {
@@ -126,6 +121,14 @@ prepare_utmp (struct utmp *utmp, char *tty,
     strncpy(utmp->ut_id, make_id(ttyx), sizeof(utmp->ut_id));
 # endif
 }
+#endif
+
+#ifdef HAVE_UTMPX_H
+void utmp_login(char *tty, const char *username, const char *hostname)
+{
+    return;
+}
+#else
 
 void utmp_login(char *tty, const char *username, const char *hostname)
 {
