@@ -54,6 +54,7 @@ doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
 	@for a in $(PROJECTS) ; do \
 		echo $$a ; \
 		rm -rf $(srcdir)/$$a ; \
+		mkdir $(srcdir)/$$a ; \
 		doxygen $$a.dxy; \
 		(cd $(srcdir) && find $$a/man -type f > $$a/manpages ) ; \
 	done
