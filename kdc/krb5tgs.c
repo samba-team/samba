@@ -107,7 +107,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 			hdb_entry_ex *krbtgt,
 			krb5_enctype enctype,
 			krb5_const_principal server,
-			krb5_principals *principals,
+			krb5_principals principals,
 			EncTicketPart *tkt)
 {
     krb5_error_code ret;
@@ -186,7 +186,7 @@ check_KRB5SignedPath(krb5_context context,
 		     krb5_kdc_configuration *config,
 		     hdb_entry_ex *krbtgt,
 		     EncTicketPart *tkt,
-		     krb5_principals **delegated,
+		     krb5_principals *delegated,
 		     int *signedpath)
 {
     krb5_error_code ret;
@@ -668,7 +668,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_principal client_principal,
 	       hdb_entry_ex *krbtgt,
 	       krb5_enctype krbtgt_etype,
-	       krb5_principals *spp,
+	       krb5_principals spp,
 	       const krb5_data *rspac,
 	       const METHOD_DATA *enc_pa_data,
 	       const char **e_text,
@@ -1373,7 +1373,7 @@ tgs_build_reply(krb5_context context,
     hdb_entry_ex *server = NULL, *client = NULL;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
-    krb5_principals *spp = NULL;
+    krb5_principals spp = NULL;
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
@@ -1574,7 +1574,7 @@ server_lookup:
 		    break;
 	    if(i == b->etype.len) {
 		kdc_log(context, config, 0,
-			"Addition ticket have not matching etypes", spp);
+			"Addition ticket have not matching etypes");
 		krb5_clear_error_message(context);
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP;
 		goto out;
