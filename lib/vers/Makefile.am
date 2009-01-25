@@ -8,6 +8,6 @@ build_HEADERZ		= vers.h
 
 CHECK_LOCAL		= no-check-local
 
-make-print-version.o: $(top_builddir)/include/version.h
+libvers_la_SOURCES      = print_version.c
 
 EXTRA_DIST = $(build_HEADERZ)
