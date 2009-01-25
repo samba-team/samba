@@ -36,9 +36,7 @@
 #ifndef __COMPILE_ET_H__
 #define __COMPILE_ET_H__
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <err.h>
 #include <stdio.h>
