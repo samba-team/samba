@@ -36,8 +36,6 @@
 #include <gssapi/gssapi_krb5.h>
 #include <krb5.h>
 
-RCSID("$Id$");
-
 /* XXX a bit too much of krb5 dependency here...
    What is the correct way to do this?
    */
