@@ -5,30 +5,27 @@ include $(top_srcdir)/Makefile.am.common
 AM_CPPFLAGS += $(INCLUDE_hcrypto)
 
 lib_LTLIBRARIES = libheimntlm.la
-noinst_LTLIBRARIES = libnheimntlm.la
 
 include_HEADERS = heimntlm.h heimntlm-protos.h
 
-libheimntlm_la_SOURCES	=
-libnheimntlm_la_SOURCES	= ntlm.c heimntlm.h
+libheimntlm_la_SOURCES	= ntlm.c heimntlm.h
 
 libheimntlm_la_LDFLAGS = -version-info 1:0:1
 
 if versionscript
 libheimntlm_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
-$(libnheimntlm_la_OBJECTS): $(srcdir)/version-script.map
+$(libheimntlm_la_OBJECTS): $(srcdir)/version-script.map
 
 libheimntlm_la_LIBADD = \
-	libnheimntlm.la \
 	../krb5/libkrb5.la \
 	$(LIB_hcrypto) \
 	$(LIBADD_roken)
 
 $(srcdir)/heimntlm-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o heimntlm-protos.h $(libnheimntlm_la_SOURCES) || rm -f heimntlm-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o heimntlm-protos.h $(libheimntlm_la_SOURCES) || rm -f heimntlm-protos.h
 
-$(libnheimntlm_la_OBJECTS): $(srcdir)/heimntlm-protos.h
+$(libheimntlm_la_OBJECTS): $(srcdir)/heimntlm-protos.h
 
 
 TESTS = test_ntlm
