@@ -43,7 +43,7 @@
  */
 
 krb5_error_code
-_kdc_try_kx509_request(void *ptr, size_t len, Kx509Request *req, size_t *size)
+_kdc_try_kx509_request(void *ptr, size_t len, struct Kx509Request *req, size_t *size)
 {
     if (len < 4)
 	return -1;
