@@ -218,7 +218,7 @@ write_v4_cc(krb5_context context, const char *tkfile,
     if (ret != data.length)
 	ret = KRB5_CC_IO;
 
-    krb5_data_free(context, &data);
+    krb5_data_free(&data);
 
     flock(fd, LOCK_UN);
     free(path);
