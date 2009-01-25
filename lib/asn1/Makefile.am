@@ -104,6 +104,7 @@ gen_files_k5 =						\
 	asn1_PROV_SRV_LOCATION.x			\
 	asn1_Principal.x				\
 	asn1_PrincipalName.x				\
+	asn1_Principals.x				\
 	asn1_Realm.x					\
 	asn1_SAMFlags.x					\
 	asn1_TGS_REP.x					\
@@ -116,7 +117,6 @@ gen_files_k5 =						\
 	asn1_krb5int32.x				\
 	asn1_krb5uint32.x				\
 	asn1_KRB5SignedPathData.x			\
-	asn1_KRB5SignedPathPrincipals.x			\
 	asn1_KRB5SignedPath.x
 
 gen_files_cms =						\
