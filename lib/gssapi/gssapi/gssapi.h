@@ -870,7 +870,4 @@ gss_decapsulate_token(gss_buffer_t /* input_token */,
 }
 #endif
 
-#include <gssapi/gssapi_krb5.h>
-#include <gssapi/gssapi_spnego.h>
-
 #endif /* GSSAPI_GSSAPI_H_ */
