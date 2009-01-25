@@ -480,6 +480,7 @@
  *       uint8_t vno8;
  *       keyblock key;
  *       uint32_t vno; #only present if >= 4 bytes left in entry
+ *       uint32_t flags; #only present if >= 4 bytes left in entry
  *   };
  *
  *   counted_octet_string {
