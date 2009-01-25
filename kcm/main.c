@@ -98,8 +98,10 @@ main(int argc, char **argv)
     signal(SIGUSR2, sigusr2);
     signal(SIGPIPE, SIG_IGN);
 #endif
+#ifdef SUPPORT_DETACH
     if (detach_from_console)
 	daemon(0, 0);
+#endif
     pidfile(NULL);
     kcm_loop();
     krb5_free_context(kcm_context);
