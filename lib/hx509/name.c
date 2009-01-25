@@ -235,7 +235,7 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		ret = wind_ucs2utf8(bmp, bmplen, ss, k + 1);
+		ret = wind_ucs2utf8(bmp, bmplen, ss, NULL);
 		if (ret)
 		    return ret;
 		ss[k] = '\0';
@@ -260,7 +260,7 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		ret = wind_ucs4utf8(uni, unilen, ss, k + 1);
+		ret = wind_ucs4utf8(uni, unilen, ss, NULL);
 		if (ret)
 		    return ret;
 		ss[k] = '\0';
