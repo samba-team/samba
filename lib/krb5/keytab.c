@@ -491,6 +491,24 @@ krb5_kt_destroy(krb5_context context,
     return ret;
 }
 
+/*
+ * Match any aliases in keytab `entry' with `principal'.
+ */
+
+static krb5_boolean
+compare_aliseses(krb5_context context,
+		 krb5_keytab_entry *entry,
+		 krb5_const_principal principal)
+{
+    unsigned int i;
+    if (entry->aliases == NULL)
+	return FALSE;
+    for (i = 0; i < entry->aliases->len; i++)
+	if (krb5_principal_compare(context, &entry->aliases->val[i], principal))
+	    return TRUE;
+    return FALSE;
+}
+
 /**
  * Compare `entry' against `principal, vno, enctype'.
  * Any of `principal, vno, enctype' might be 0 which acts as a wildcard.
@@ -515,7 +533,8 @@ krb5_kt_compare(krb5_context context,
 		krb5_enctype enctype)
 {
     if(principal != NULL &&
-       !krb5_principal_compare(context, entry->principal, principal))
+       !(krb5_principal_compare(context, entry->principal, principal) ||
+	 compare_aliseses(context, entry, principal)))
 	return FALSE;
     if(vno && vno != entry->vno)
 	return FALSE;
