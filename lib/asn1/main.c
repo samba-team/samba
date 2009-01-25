@@ -97,7 +97,7 @@ main(int argc, char **argv)
     const char *name = NULL;
     int optidx = 0;
     char **arg = NULL;
-    size_t len, i;
+    size_t len = 0, i;
 
     setprogname(argv[0]);
     if(getarg(args, num_args, argc, argv, &optidx))
