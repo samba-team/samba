@@ -34,8 +34,6 @@
 #include "iprop.h"
 #include <rtbl.h>
 
-RCSID("$Id$");
-
 static krb5_log_facility *log_facility;
 
 const char *slave_stats_file;
@@ -708,7 +706,9 @@ static char *keytab_str = "HDB:";
 static char *database;
 static char *config_file;
 static char *port_str;
+#ifdef SUPPORT_DETACH
 static int detach_from_console = 0;
+#endif
 
 static struct getargs args[] = {
     { "config-file", 'c', arg_string, &config_file },
@@ -724,8 +724,10 @@ static struct getargs args[] = {
       "time of inactivity after which a slave is considered gone", "time"},
     { "port", 0, arg_string, &port_str,
       "port ipropd will listen to", "port"},
+#ifdef SUPPORT_DETACH
     { "detach", 0, arg_flag, &detach_from_console,
       "detach from console" },
+#endif
     { "hostname", 0, arg_string, &master_hostname,
       "hostname of master (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
@@ -782,8 +784,10 @@ main(int argc, char **argv)
     if (time_before_missing < 0)
 	krb5_errx (context, 1, "couldn't parse time: %s", slave_time_missing);
 
+#ifdef SUPPORT_DETACH
     if (detach_from_console)
 	daemon(0, 0);
+#endif
     pidfile (NULL);
     krb5_openlog (context, "ipropd-master", &log_facility);
     krb5_set_warn_dest(context, log_facility);
