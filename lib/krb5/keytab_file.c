@@ -744,6 +744,7 @@ const krb5_kt_ops krb5_fkt_ops = {
     fkt_resolve,
     fkt_get_name,
     fkt_close,
+    NULL, /* destroy */
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,
@@ -757,6 +758,7 @@ const krb5_kt_ops krb5_wrfkt_ops = {
     fkt_resolve,
     fkt_get_name,
     fkt_close,
+    NULL, /* destroy */
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,
@@ -770,6 +772,7 @@ const krb5_kt_ops krb5_javakt_ops = {
     fkt_resolve_java14,
     fkt_get_name,
     fkt_close,
+    NULL, /* destroy */
     NULL, /* get */
     fkt_start_seq_get,
     fkt_next_entry,
