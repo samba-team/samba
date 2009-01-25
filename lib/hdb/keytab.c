@@ -263,6 +263,7 @@ krb5_kt_ops hdb_kt_ops = {
     hdb_resolve,
     hdb_get_name,
     hdb_close,
+    NULL,		/* destroy */
     hdb_get_entry,
     NULL,		/* start_seq_get */
     NULL,		/* next_entry */
