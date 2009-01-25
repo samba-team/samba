@@ -911,7 +911,7 @@ process_stream(krb5_context context,
 	     */
 	    CHECK(krb5_store_uint32(dreply, gctx.seq_num));
 
-	    if (chdr.proc >= sizeof(procs[0])/sizeof(procs)) {
+	    if (chdr.proc >= sizeof(procs)/sizeof(procs[0])) {
 		krb5_warnx(context, "proc number out of array");
 	    } else if (procs[chdr.proc].func == NULL) {
 		krb5_warnx(context, "proc '%s' never implemented", 
