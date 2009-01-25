@@ -444,6 +444,9 @@ echo "   verify alias entry in keytab with any"
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
+echo "testing removal of keytab"
+${ktutil} -k ${keytab} destroy || { ec=1 ; eval "${testfailed}"; }
+test -f ${keytabfile} && { ec=1 ; eval "${testfailed}"; }
 
 echo "killing kdc (${kdcpid})"
 sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
