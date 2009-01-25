@@ -34,7 +34,7 @@
 #include "kdc_locl.h"
 #include <hex.h>
 
-RCSID("$Id$");
+#ifdef DIGEST
 
 #define MS_CHAP_V2	0x20
 #define CHAP_MD5	0x10
@@ -201,7 +201,7 @@ get_password_entry(krb5_context context,
 krb5_error_code
 _kdc_do_digest(krb5_context context,
 	       krb5_kdc_configuration *config,
-	       const DigestREQ *req, krb5_data *reply,
+	       const struct kxDigestREQ *req, krb5_data *reply,
 	       const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
@@ -1465,3 +1465,5 @@ _kdc_do_digest(krb5_context context,
 
     return ret;
 }
+
+#endif /* DIGEST */
