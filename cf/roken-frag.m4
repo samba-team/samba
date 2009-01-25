@@ -283,11 +283,22 @@ AC_FIND_IF_NOT_BROKEN(gai_strerror,,
 #include <netdb.h>
 #endif],[0])
 
+dnl Darwin is weird, and in some senses not unix, launchd doesn't want
+dnl servers to use daemon(), so its deprecated.
+case "$host_os" in
+	darwin*)
+		;;
+	*)
+		AC_DEFINE([SUPPORT_DETACH], 1,
+		    [Define if os support want to detach is daemonens.])
+		AC_BROKEN([daemon]) ;;
+esac
+
+
 AC_BROKEN([					\
 	chown					\
 	copyhostent				\
 	closefrom				\
-	daemon					\
 	ecalloc					\
 	emalloc					\
 	erealloc				\
