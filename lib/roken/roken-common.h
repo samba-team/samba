@@ -287,9 +287,6 @@ int ROKEN_LIB_FUNCTION
 simple_execle(const char*, ...);
 
 int ROKEN_LIB_FUNCTION
-simple_execl(const char *file, ...);
-
-int ROKEN_LIB_FUNCTION
 wait_for_process(pid_t);
 
 int ROKEN_LIB_FUNCTION
