@@ -99,6 +99,7 @@ static struct getargs args[] = {
     {	"ports",	'P', 	arg_string, &port_str,
 	"ports to listen to", "portspec"
     },
+#ifdef SUPPORT_DETACH
 #if DETACH_IS_DEFAULT
     {
 	"detach",       'D',      arg_negative_flag, &detach_from_console,
@@ -109,6 +110,7 @@ static struct getargs args[] = {
 	"detach",       0 ,      arg_flag, &detach_from_console,
 	"detach from console"
     },
+#endif
 #endif
     {	"addresses",	0,	arg_strings, &addresses_str,
 	"addresses to listen on", "list of addresses" },
@@ -277,12 +279,14 @@ configure(krb5_context context, int argc, char **argv)
     if (enable_kaserver != -1)
 	config->enable_kaserver = enable_kaserver;
 
+#ifdef SUPPORT_DETACH
     if(detach_from_console == -1)
 	detach_from_console = krb5_config_get_bool_default(context, NULL,
 							   DETACH_IS_DEFAULT,
 							   "kdc",
 							   "detach", NULL);
-
+#endif /* SUPPORT_DETACH */
+    
     if(max_request == 0)
 	max_request = 64 * 1024;
 
