@@ -46,13 +46,15 @@ compare_keyblock(const krb5_keyblock *a, const krb5_keyblock *b)
     return TRUE;
 }
 
-static int
-kt_copy_int (const char *from, const char *to)
+int
+kt_copy (void *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     krb5_keytab src_keytab, dst_keytab;
     krb5_kt_cursor cursor;
     krb5_keytab_entry entry, dummy;
+    const char *from = argv[0];
+    const char *to = argv[1];
 
     ret = krb5_kt_resolve (context, from, &src_keytab);
     if (ret) {
@@ -138,38 +140,4 @@ kt_copy_int (const char *from, const char *to)
     krb5_kt_close (context, src_keytab);
     krb5_kt_close (context, dst_keytab);
     return ret != 0;
-}
-
-int
-kt_copy (void *opt, int argc, char **argv)
-{
-    return kt_copy_int(argv[0], argv[1]);
-}
-
-int
-srvconv(struct srvconvert_options *opt, int argc, char **argv)
-{
-    char kt4[1024], kt5[1024];
-
-    snprintf(kt4, sizeof(kt4), "krb4:%s", opt->srvtab_string);
-
-    if(keytab_string != NULL)
-	return kt_copy_int(kt4, keytab_string);
-
-    krb5_kt_default_modify_name(context, kt5, sizeof(kt5));
-    return kt_copy_int(kt4, kt5);
-}
-
-int
-srvcreate(struct srvcreate_options *opt, int argc, char **argv)
-{
-    char kt4[1024], kt5[1024];
-
-    snprintf(kt4, sizeof(kt4), "krb4:%s", opt->srvtab_string);
-
-    if(keytab_string != NULL)
-	return kt_copy_int(keytab_string, kt4);
-
-    krb5_kt_default_name(context, kt5, sizeof(kt5));
-    return kt_copy_int(kt5, kt4);
 }
