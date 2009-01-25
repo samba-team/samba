@@ -186,8 +186,17 @@ void cli_credentials_set_kerberos_state(struct cli_credentials *creds,
 bool cli_credentials_set_domain(struct cli_credentials *cred, 
 				const char *val, 
 				enum credentials_obtained obtained);
+bool cli_credentials_set_domain_callback(struct cli_credentials *cred,
+					 const char *(*domain_cb) (struct cli_credentials *));
 bool cli_credentials_set_username(struct cli_credentials *cred, 
 				  const char *val, enum credentials_obtained obtained);
+bool cli_credentials_set_username_callback(struct cli_credentials *cred,
+				  const char *(*username_cb) (struct cli_credentials *));
+bool cli_credentials_set_principal(struct cli_credentials *cred, 
+				   const char *val, 
+				   enum credentials_obtained obtained);
+bool cli_credentials_set_principal_callback(struct cli_credentials *cred,
+				  const char *(*principal_cb) (struct cli_credentials *));
 bool cli_credentials_set_password(struct cli_credentials *cred, 
 				  const char *val, 
 				  enum credentials_obtained obtained);

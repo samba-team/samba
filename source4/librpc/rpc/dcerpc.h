@@ -385,4 +385,6 @@ typedef NTSTATUS (*dcerpc_call_fn) (struct dcerpc_pipe *, TALLOC_CTX *, void *);
 
 enum dcerpc_transport_t dcerpc_transport_by_endpoint_protocol(int prot);
 
+const char *dcerpc_floor_get_rhs_data(TALLOC_CTX *mem_ctx, struct epm_floor *epm_floor);
+
 #endif /* __DCERPC_H__ */
