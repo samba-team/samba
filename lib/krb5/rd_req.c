@@ -775,7 +775,6 @@ out:
 
 static krb5_error_code
 get_key_from_keytab(krb5_context context,
-		    krb5_auth_context *auth_context,
 		    krb5_ap_req *ap_req,
 		    krb5_const_principal server,
 		    krb5_keytab keytab,
@@ -821,9 +820,14 @@ out:
  * @param auth_context the authentication context, can be NULL, then
  *        default values for the authentication context will used.
  * @param inbuf the (AP-REQ) authentication buffer
+ *
  * @param server the server with authenticate as, if NULL the function
  *        will try to find any avaiable credentintial in the keytab
- *        that will verify the reply.
+ *        that will verify the reply. The function will prefer the
+ *        server the server client specified in the AP-REQ, but if
+ *        there is no mach, it will try all keytab entries for a
+ *        match. This have serious performance issues for larger keytabs.
+ *
  * @param inctx control the behavior of the function, if NULL, the
  *        default behavior is used.
  * @param outctx the return outctx, free with krb5_rd_req_out_ctx_free().
@@ -843,7 +847,8 @@ krb5_rd_req_ctx(krb5_context context,
     krb5_error_code ret;
     krb5_ap_req ap_req;
     krb5_rd_req_out_ctx o = NULL;
-    krb5_keytab keytab = NULL;
+    krb5_keytab id = NULL, keytab = NULL;
+    krb5_principal service = NULL;
 
     *outctx = NULL;
 
@@ -881,6 +886,9 @@ krb5_rd_req_ctx(krb5_context context,
 	goto out;
     }
 
+    if (inctx && inctx->keytab)
+	id = inctx->keytab;
+
     if((*auth_context)->keyblock){
 	ret = krb5_copy_keyblock(context,
 				 (*auth_context)->keyblock,
@@ -893,20 +901,37 @@ krb5_rd_req_ctx(krb5_context context,
 				 &o->keyblock);
 	if (ret)
 	    goto out;
-    } else if (server) {
-	krb5_keytab id = NULL;
+    } else {
 
-	if (inctx && inctx->keytab)
-	    id = inctx->keytab;
+	if(id == NULL) {
+	    krb5_kt_default(context, &keytab);
+	    id = keytab;
+	}
+	if (id == NULL)
+	    goto out;
+
+	if (server == NULL) {
+	    ret = _krb5_principalname2krb5_principal(context,
+						     &service,
+						     ap_req.ticket.sname,
+						     ap_req.ticket.realm);
+	    if (ret)
+		goto out;
+	    server = service;
+	}
 
 	ret = get_key_from_keytab(context,
-				  auth_context,
 				  &ap_req,
 				  server,
 				  id,
 				  &o->keyblock);
-	if(ret)
-	    goto out;
+	if (ret) {
+	    /* 
+	     * Fall back to iterating over the keytab. This have
+	     * serious performace issues for larger keytab.
+	     */
+	    o->keyblock = NULL;
+	}
     }
 
     if (o->keyblock) {
@@ -941,16 +966,6 @@ krb5_rd_req_ctx(krb5_context context,
 
 	if (ap_req.ticket.enc_part.kvno)
 	    kvno = *ap_req.ticket.enc_part.kvno;
-
-	if (inctx && inctx->keytab)
-	    id = inctx->keytab;
-
-	if(id == NULL) {
-	    krb5_kt_default(context, &keytab);
-	    id = keytab;
-	}
-	if (id == NULL)
-	    goto out;
 
 	ret = krb5_kt_start_seq_get(context, id, &cursor);
 	if (ret)
@@ -1045,12 +1060,16 @@ krb5_rd_req_ctx(krb5_context context,
 	  ret = 0;
     }
 out:
+
     if (ret || outctx == NULL) {
 	krb5_rd_req_out_ctx_free(context, o);
     } else
 	*outctx = o;
 
     free_AP_REQ(&ap_req);
+
+    if (service)
+	krb5_free_principal(context, service);
 
     if (keytab)
 	krb5_kt_close(context, keytab);
