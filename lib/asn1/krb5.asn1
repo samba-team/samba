@@ -632,7 +632,7 @@ KRB5SignedPath ::= SEQUENCE {
 	etype[0]	ENCTYPE,
 	cksum[1]	Checksum,
 	-- srvs delegated though
-	delegated[2]	KRB5SignedPathPrincipals OPTIONAL
+	delegated[2]	Principals OPTIONAL
 }
 
 PA-ClientCanonicalizedNames ::= SEQUENCE{
