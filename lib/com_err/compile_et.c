@@ -35,8 +35,6 @@
 #include "compile_et.h"
 #include <getarg.h>
 
-RCSID("$Id$");
-
 #include <roken.h>
 #include <err.h>
 #include "parse.h"
