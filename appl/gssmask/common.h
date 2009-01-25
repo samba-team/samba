@@ -55,7 +55,9 @@
 
 #include <assert.h>
 #include <krb5.h>
-#include <gssapi.h>
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
+#include <gssapi/gssapi_spnego.h>
 #include <unistd.h>
 
 #include <roken.h>
