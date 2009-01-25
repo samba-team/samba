@@ -360,6 +360,8 @@ check_for_tgt (krb5_context context,
  * Print a list of all AFS tokens
  */
 
+#ifndef NO_AFS
+
 static void
 display_tokens(int do_verbose)
 {
@@ -425,6 +427,7 @@ display_tokens(int do_verbose)
 	putchar('\n');
     }
 }
+#endif
 
 /*
  * display the ccache in `cred_cache'
@@ -551,7 +554,9 @@ static int help_flag		= 0;
 static int do_verbose		= 0;
 static int do_list_caches	= 0;
 static int do_test		= 0;
+#ifndef NO_AFS
 static int do_tokens		= 0;
+#endif
 static int do_v5		= 1;
 static char *cred_cache;
 static int do_flags	 	= 0;
@@ -564,8 +569,10 @@ static struct getargs args[] = {
     { "test",			't', arg_flag, &do_test,
       NP_("test for having tickets", ""), NULL },
     { NULL,			's', arg_flag, &do_test },
+#ifndef NO_AFS
     { "tokens",			'T',   arg_flag, &do_tokens,
       NP_("display AFS tokens", ""), NULL },
+#endif
     { "v5",			'5',	arg_flag, &do_v5,
       NP_("display v5 cred cache", ""), NULL},
     { "list-caches",		'l', arg_flag, &do_list_caches,
@@ -633,11 +640,13 @@ main (int argc, char **argv)
 					 do_verbose, do_flags, do_hidden);
 
     if (!do_test) {
+#ifndef NO_AFS
 	if (do_tokens && k_hasafs ()) {
 	    if (do_v5)
 		printf ("\n");
 	    display_tokens (do_verbose);
 	}
+#endif
     }
 
     return exit_status;
