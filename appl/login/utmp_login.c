@@ -79,7 +79,7 @@ shrink_hostname (const char *hostname,
 
 /* update utmp and wtmp - the BSD way */
 
-#if !defined(HAVE_UTMPX_H) || (defined(WTMP_FILE) && defined(!WTMPX_FILE))
+#if !defined(HAVE_UTMPX_H) || (defined(WTMP_FILE) && !defined(WTMPX_FILE))
 
 void
 prepare_utmp (struct utmp *utmp, char *tty,
