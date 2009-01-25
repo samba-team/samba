@@ -440,6 +440,7 @@ const krb5_kt_ops krb5_akf_ops = {
     akf_resolve,
     akf_get_name,
     akf_close,
+    NULL, /* destroy */
     NULL, /* get */
     akf_start_seq_get,
     akf_next_entry,
