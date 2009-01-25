@@ -39,7 +39,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <gssapi.h>
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
+#include <gssapi/gssapi_spnego.h>
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
