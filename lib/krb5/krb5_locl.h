@@ -36,9 +36,7 @@
 #ifndef __KRB5_LOCL_H__
 #define __KRB5_LOCL_H__
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <errno.h>
 #include <ctype.h>

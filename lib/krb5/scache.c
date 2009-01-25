@@ -35,8 +35,6 @@
 
 #include <sqlite3.h>
 
-RCSID("$Id$");
-
 typedef struct krb5_scache {
     char *name;
     char *file;
