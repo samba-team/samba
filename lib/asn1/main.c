@@ -135,7 +135,7 @@ main(int argc, char **argv)
 	FILE *opt;
 
 	opt = fopen(option_file, "r");
-	if (opt) {
+	if (opt == NULL) {
 	    perror("open");
 	    exit(1);
 	}
@@ -166,7 +166,7 @@ main(int argc, char **argv)
 	if(getarg(args, num_args, len, arg, &optidx))
 	    usage(1);
 
-	if (len == optidx) {
+	if (len != optidx) {
 	    fprintf(stderr, "extra args");
 	    exit(1);
 	}
