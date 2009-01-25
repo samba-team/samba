@@ -1,4 +1,0 @@
-
-
-static int foo;
-
