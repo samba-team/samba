@@ -44,8 +44,10 @@ char *door_path = NULL;
 
 static char *max_request_str;	/* `max_request' as a string */
 
+#ifdef SUPPORT_DETACH
 int detach_from_console = -1;
 #define DETACH_IS_DEFAULT FALSE
+#endif
 
 static const char *system_cache_name = NULL;
 static const char *system_keytab = NULL;
@@ -81,6 +83,7 @@ static struct getargs args[] = {
 	"max-request",	0,	arg_string, &max_request,
 	"max size for a kcm-request", "size"
     },
+#ifdef SUPPORT_DETACH
 #if DETACH_IS_DEFAULT
     {
 	"detach",       'D',      arg_negative_flag, &detach_from_console,
@@ -91,6 +94,7 @@ static struct getargs args[] = {
 	"detach",       0 ,      arg_flag, &detach_from_console,
 	"detach from console"
     },
+#endif
 #endif
     {	"help",		'h',	arg_flag,   &help_flag },
     {
