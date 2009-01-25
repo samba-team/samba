@@ -233,8 +233,8 @@ scrub_file (int fd)
  * hardlink)
  */
 
-static krb5_error_code
-erase_file(krb5_context context, const char *filename)
+krb5_error_code
+_krb5_erase_file(krb5_context context, const char *filename)
 {
     int fd;
     struct stat sb1, sb2;
@@ -453,7 +453,7 @@ static krb5_error_code
 fcc_destroy(krb5_context context,
 	    krb5_ccache id)
 {
-    erase_file(context, FILENAME(id));
+    _krb5_erase_file(context, FILENAME(id));
     return 0;
 }
 
@@ -901,10 +901,10 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	fcc_unlock(context, fd1);
 	close(fd1);
 
-	erase_file(context, FILENAME(from));
+	_krb5_erase_file(context, FILENAME(from));
 
 	if (ret) {
-	    erase_file(context, FILENAME(to));
+	    _krb5_erase_file(context, FILENAME(to));
 	    return ret;
 	}
     }
