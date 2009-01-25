@@ -32,11 +32,9 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
+
 #include "roken.h"
-RCSID("$Id$");
 
 #include <sys/types.h>
 #include <ctype.h>

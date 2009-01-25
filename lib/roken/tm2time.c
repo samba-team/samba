@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif
 
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>

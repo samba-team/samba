@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif
 #if defined(TEST_SNPRINTF)
 #include "snprintf-test.h"
 #endif /* TEST_SNPRINTF */

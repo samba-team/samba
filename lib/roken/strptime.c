@@ -30,16 +30,12 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 #ifdef TEST_STRPFTIME
 #include "strpftime-test.h"
 #endif
 #include <ctype.h>
 #include "roken.h"
-
-RCSID("$Id$");
 
 static const char *abb_weekdays[] = {
     "Sun",

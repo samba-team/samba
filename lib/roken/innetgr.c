@@ -30,14 +30,10 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 #include "roken.h"
 
 #ifndef HAVE_INNETGR
-
-RCSID("$Id$");
 
 int ROKEN_LIB_FUNCTION
 innetgr(const char *netgroup, const char *machine,

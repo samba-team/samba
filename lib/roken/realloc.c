@@ -31,10 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
 #undef realloc
-#endif
+
 #include <stdlib.h>
 #include "roken.h"
 

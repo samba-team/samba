@@ -30,10 +30,7 @@
  */
 
 #if 1
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif
 #include "roken.h"
 #ifndef _DIAGASSERT
 #define _DIAGASSERT(X)

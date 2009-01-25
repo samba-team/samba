@@ -1,9 +1,7 @@
 # $Id$
 
 BEGIN {
-	print "#ifdef HAVE_CONFIG_H"
 	print "#include <config.h>"
-	print "#endif"
 	print "#include <stdio.h>"
 	print ""
 	print "int main(int argc, char **argv)"

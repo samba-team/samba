@@ -55,9 +55,7 @@
  *	Number of matches in the current invocation of glob.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>

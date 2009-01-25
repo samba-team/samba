@@ -31,10 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-RCSID("$Id$");
-#endif /* HAVE_CONFIG_H */
 
 #include "roken.h"
 #ifdef HAVE_SHADOW_H

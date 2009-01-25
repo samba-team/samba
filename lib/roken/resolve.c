@@ -31,9 +31,9 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
+
 #include <config.h>
-#endif
+
 #include "roken.h"
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>

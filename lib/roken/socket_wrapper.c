@@ -59,9 +59,7 @@
 
 #else /* _SAMBA_BUILD_ */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 #undef SOCKET_WRAPPER_REPLACE
 
 #include <sys/types.h>

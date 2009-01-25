@@ -27,11 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
-
-RCSID("$Id$");
 
 #ifndef HAVE_GETUSERSHELL
 
