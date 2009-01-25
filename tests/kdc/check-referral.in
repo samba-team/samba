@@ -64,7 +64,6 @@ kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
 
-rm -f ${keytabfile}
 rm -f current-db*
 rm -f out-*
 rm -f mkey.file*
