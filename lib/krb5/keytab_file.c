@@ -453,6 +453,7 @@ fkt_next_entry_int(krb5_context context,
     int ret;
     int8_t tmp8;
     int32_t tmp32;
+    uint32_t utmp32;
     off_t pos, curpos;
 
     pos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
@@ -467,8 +468,8 @@ loop:
     ret = krb5_kt_ret_principal (context, d, cursor->sp, &entry->principal);
     if (ret)
 	goto out;
-    ret = krb5_ret_int32(cursor->sp, &tmp32);
-    entry->timestamp = tmp32;
+    ret = krb5_ret_uint32(cursor->sp, &utmp32);
+    entry->timestamp = utmp32;
     if (ret)
 	goto out;
     ret = krb5_ret_int8(cursor->sp, &tmp8);
@@ -484,11 +485,17 @@ loop:
     curpos = krb5_storage_seek(cursor->sp, 0, SEEK_CUR);
     if(len + 4 + pos - curpos >= 4) {
 	ret = krb5_ret_int32(cursor->sp, &tmp32);
-	if (ret == 0 && tmp32 != 0) {
+	if (ret == 0 && tmp32 != 0)
 	    entry->vno = tmp32;
-	}
     }
-    entry->flags = 0;
+    /* there might be a flags field here */
+    if(len + 4 + pos - curpos >= 8) {
+	ret = krb5_ret_uint32(cursor->sp, &utmp32);
+	if (ret == 0)
+	    entry->flags = tmp32;
+    } else
+	entry->flags = 0;
+
     entry->aliases = NULL;
 
     if(start) *start = pos;
@@ -656,6 +663,15 @@ fkt_add_entry(krb5_context context,
 	}
 	if ((d->flags & KRB5_KT_FL_JAVA) == 0) {
 	    ret = krb5_store_int32 (emem, entry->vno);
+	    if (ret) {
+		krb5_set_error_message(context, ret,
+				       N_("Failed storing extended kvno "
+					  "in keytab %s", ""),
+				       d->filename);
+		krb5_storage_free(emem);
+		goto out;
+	    }
+	    ret = krb5_store_uint32 (emem, entry->flags);
 	    if (ret) {
 		krb5_set_error_message(context, ret,
 				       N_("Failed storing extended kvno "
