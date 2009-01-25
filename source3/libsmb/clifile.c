@@ -814,6 +814,7 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
 				   buflen + converted_size);
 	if (buf == NULL) {
+		TALLOC_FREE(converted);
 		return NULL;
 	}
 
