@@ -382,11 +382,13 @@ kcm_configure(int argc, char **argv)
 	    krb5_err(kcm_context, 1, ret, "initializing system ccache");
     }
 
+#ifdef SUPPORT_DETACH
     if(detach_from_console == -1)
 	detach_from_console = krb5_config_get_bool_default(kcm_context, NULL,
 							   DETACH_IS_DEFAULT,
 							   "kcm",
 							   "detach", NULL);
+#endif
     kcm_openlog();
     if(max_request == 0)
 	max_request = 64 * 1024;
