@@ -70,21 +70,6 @@ krb5_data_free(krb5_data *p)
 }
 
 /**
- * Same as krb5_data_free().
- *
- * @param context Kerberos 5 context.
- * @param data krb5_data to free.
- *
- * @ingroup krb5
- */
-
-void KRB5_LIB_FUNCTION
-krb5_free_data_contents(krb5_context context, krb5_data *data)
-{
-    krb5_data_free(data);
-}
-
-/**
  * Free krb5_data (and its content).
  *
  * @param context Kerberos 5 context.
