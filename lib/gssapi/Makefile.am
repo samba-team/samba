@@ -16,9 +16,6 @@ AM_CPPFLAGS += \
 	$(INCLUDE_krb4)
 
 lib_LTLIBRARIES = libgssapi.la
-noinst_LTLIBRARIES = libngssapi.la
-
-libgssapi_la_SOURCES =
 
 krb5src = \
 	krb5/8003.c \
@@ -183,13 +180,13 @@ ntlmsrc = \
 $(srcdir)/ntlm/ntlm-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p ntlm/ntlm-private.h $(ntlmsrc) || rm -f ntlm/ntlm-private.h
 
-dist_libngssapi_la_SOURCES  = \
+dist_libgssapi_la_SOURCES  = \
 	$(krb5src) \
 	$(mechsrc) \
 	$(ntlmsrc) \
 	$(spnegosrc)
 
-nodist_libngssapi_la_SOURCES  = \
+nodist_libgssapi_la_SOURCES  = \
 	gkrb5_err.c \
 	gkrb5_err.h \
 	$(BUILT_SOURCES)
@@ -201,7 +198,6 @@ libgssapi_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 
 libgssapi_la_LIBADD = \
-	libngssapi.la \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/asn1/libasn1.la \
@@ -243,10 +239,10 @@ BUILTHEADERS = \
 	$(srcdir)/spnego/spnego-private.h \
 	$(srcdir)/ntlm/ntlm-private.h
 
-$(libngssapi_la_OBJECTS): $(BUILTHEADERS)
+$(libgssapi_la_OBJECTS): $(BUILTHEADERS)
 $(test_context_OBJECTS): $(BUILTHEADERS)
 
-$(libngssapi_la_OBJECTS): $(srcdir)/version-script.map
+$(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
 BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
@@ -322,7 +318,7 @@ EXTRA_DIST = \
 
 # to help stupid solaris make
 
-$(libngssapi_la_OBJECTS): gkrb5_err.h gssapi_asn1.h spnego_asn1.h
+$(libgssapi_la_OBJECTS): gkrb5_err.h gssapi_asn1.h spnego_asn1.h
 
 gkrb5_err.h gkrb5_err.c: $(srcdir)/krb5/gkrb5_err.et
 	$(COMPILE_ET) $(srcdir)/krb5/gkrb5_err.et
