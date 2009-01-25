@@ -65,6 +65,7 @@ seq_type(const char *p)
 int dce_fix;
 int rfc1510_bitstring;
 int one_code_file;
+char *option_file;
 int version_flag;
 int help_flag;
 struct getargs args[] = {
@@ -73,6 +74,7 @@ struct getargs args[] = {
     { "preserve-binary", 0, arg_strings, &preserve },
     { "sequence", 0, arg_strings, &seq },
     { "one-code-file", 0, arg_flag, &one_code_file },
+    { "option-file", 0, arg_string, &option_file },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -122,6 +124,58 @@ main(int argc, char **argv)
 	} else
 	    name = argv[optidx + 1];
     }
+
+    /*
+     * Parse extra options file
+     */
+    if (option_file) {
+	char **arg = NULL;
+	size_t len, i;
+	char buf[1024];
+	FILE *opt;
+
+	opt = fopen(option_file, "r");
+	if (opt) {
+	    perror("open");
+	    exit(1);
+	}
+
+	arg = calloc(2, sizeof(arg[0]));
+	arg[0] = option_file;
+	arg[1] = NULL;
+	len = 1;
+	
+	while (fgets(buf, sizeof(buf), opt) != NULL) {
+	    buf[strcspn(buf, "\n\r")] = '\0';
+
+	    arg = realloc(arg, (len + 2) * sizeof(arg[0]));
+	    if (argv == NULL) {
+		perror("malloc");
+		exit(1);
+	    }
+	    arg[i] = strdup(buf);
+	    if (arg[i] == NULL) {
+		perror("strdup");
+		exit(1);
+	    }
+	    arg[i + 1] = NULL;
+	}
+	fclose(opt);
+
+	optidx = 0;
+	if(getarg(args, num_args, len, arg, &optidx))
+	    usage(1);
+
+	if (len == optidx) {
+	    fprintf(stderr, "extra args");
+	    exit(1);
+	}
+
+	for (i = 1; i < len; i++)
+	    free(arg[i]);
+	free(arg);
+    }
+
 
     init_generate (file, name);
 
