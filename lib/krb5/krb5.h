@@ -323,6 +323,7 @@ typedef const char *krb5_const_realm; /* stupid language */
 typedef Principal krb5_principal_data;
 typedef struct Principal *krb5_principal;
 typedef const struct Principal *krb5_const_principal;
+typedef struct Principals *krb5_principals;
 
 typedef time_t krb5_deltat;
 typedef time_t krb5_timestamp;
@@ -484,6 +485,8 @@ typedef struct krb5_keytab_entry {
     krb5_kvno vno;
     krb5_keyblock keyblock;
     uint32_t timestamp;
+    uint32_t flags;
+    krb5_principals aliases;
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
