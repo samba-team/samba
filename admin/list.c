@@ -85,6 +85,7 @@ do_list(struct list_options *opt, const char *keytab_str)
 	rtbl_add_column_by_id(table, 3, "Date", 0);
     if(opt->keys_flag)
 	rtbl_add_column_by_id(table, 4, "Key", 0);
+    rtbl_add_column_by_id(table, 5, "Aliases", 0);
     rtbl_set_separator(table, "  ");
 
     while((ret = krb5_kt_next_entry(context, keytab, &entry, &cursor)) == 0){
@@ -125,6 +126,19 @@ do_list(struct list_options *opt, const char *keytab_str)
 	    rtbl_add_column_entry_by_id(table, 4, s);
 	    free(s);
 	}
+	if (entry.aliases) {
+	    unsigned int i;
+	    struct rk_strpool *p = NULL;
+	    
+	    for (i = 0; i< entry.aliases->len; i++) {
+		krb5_unparse_name_fixed(context, entry.principal, buf, sizeof(buf));
+		rk_strpoolprintf(p, "%s%s", buf,
+				 i + 1 < entry.aliases->len ? ", " : "");
+		
+	    }
+	    rtbl_add_column_entry_by_id(table, 5, rk_strpoolcollect(p));
+	}
+
 	krb5_kt_free_entry(context, &entry);
     }
     ret = krb5_kt_end_seq_get(context, keytab, &cursor);
