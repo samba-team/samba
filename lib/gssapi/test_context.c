@@ -410,7 +410,7 @@ main(int argc, char **argv)
 
 	ret = krb5_timeofday(context, &now);
 	if (ret)
-		errx(1, "krb5_timeofday failed");
+	    errx(1, "krb5_timeofday failed");
 	
 	/* client */
 	maj_stat = gss_krb5_export_lucid_sec_context(&min_stat,
@@ -418,8 +418,8 @@ main(int argc, char **argv)
 						     1, /* version */
 						     &ctx);
 	if (maj_stat != GSS_S_COMPLETE)
-		errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
-		     gssapi_err(maj_stat, min_stat, actual_mech));
+	    errx(1, "gss_krb5_export_lucid_sec_context failed: %s",
+		 gssapi_err(maj_stat, min_stat, actual_mech));
 	
 	
 	maj_stat = gss_krb5_free_lucid_sec_context(&maj_stat, ctx);
