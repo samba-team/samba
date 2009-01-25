@@ -452,7 +452,9 @@ static int version_flag;
 static int help_flag;
 static char *keytab_str;
 static char *port_str;
+#ifdef SUPPORT_DETACH
 static int detach_from_console = 0;
+#endif
 
 static struct getargs args[] = {
     { "config-file", 'c', arg_string, &config_file },
@@ -463,8 +465,10 @@ static struct getargs args[] = {
       "time before server is considered lost", "time" },
     { "port", 0, arg_string, &port_str,
       "port ipropd-slave will connect to", "port"},
+#ifdef SUPPORT_DETACH
     { "detach", 0, arg_flag, &detach_from_console,
       "detach from console" },
+#endif
     { "hostname", 0, arg_string, &slave_str,
       "hostname of slave (if not same as hostname)", "hostname" },
     { "version", 0, arg_flag, &version_flag },
@@ -543,8 +547,10 @@ main(int argc, char **argv)
 
     master = argv[0];
 
+#ifdef SUPPORT_DETACH
     if (detach_from_console)
 	daemon(0, 0);
+#endif
     pidfile (NULL);
     krb5_openlog (context, "ipropd-slave", &log_facility);
     krb5_set_warn_dest(context, log_facility);
