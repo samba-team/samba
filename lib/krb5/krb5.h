@@ -506,6 +506,7 @@ struct krb5_keytab_data {
     krb5_error_code (*resolve)(krb5_context, const char*, krb5_keytab);
     krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
     krb5_error_code (*close)(krb5_context, krb5_keytab);
+    krb5_error_code (*destroy)(krb5_context, krb5_keytab);
     krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal,
 			   krb5_kvno, krb5_enctype, krb5_keytab_entry*);
     krb5_error_code (*start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
