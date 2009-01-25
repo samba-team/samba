@@ -2323,6 +2323,10 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *pass, int passlen,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup);
+struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct cli_state *cli);
+NTSTATUS cli_session_setup_guest_recv(struct async_req *req);
 bool cli_ulogoff(struct cli_state *cli);
 bool cli_send_tconX(struct cli_state *cli, 
 		    const char *share, const char *dev, const char *pass, int passlen);

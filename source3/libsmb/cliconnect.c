@@ -161,50 +161,79 @@ static uint32 cli_session_setup_capabilities(struct cli_state *cli)
  Do a NT1 guest session setup.
 ****************************************************************************/
 
-static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
+struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct cli_state *cli)
 {
-	char *p;
-	uint32 capabilities = cli_session_setup_capabilities(cli);
+	struct async_req *result;
+	uint16_t vwv[13];
+	uint8_t *bytes;
 
-	memset(cli->outbuf, '\0', smb_size);
-	cli_set_message(cli->outbuf,13,0,True);
-	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
-	cli_setup_packet(cli);
-			
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,CLI_BUFFER_SIZE);
-	SSVAL(cli->outbuf,smb_vwv3,2);
-	SSVAL(cli->outbuf,smb_vwv4,cli->pid);
-	SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
-	SSVAL(cli->outbuf,smb_vwv7,0);
-	SSVAL(cli->outbuf,smb_vwv8,0);
-	SIVAL(cli->outbuf,smb_vwv11,capabilities); 
-	p = smb_buf(cli->outbuf);
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* username */
-	p += clistr_push(cli, p, "", -1, STR_TERMINATE); /* workgroup */
-	p += clistr_push(cli, p, "Unix", -1, STR_TERMINATE);
-	p += clistr_push(cli, p, "Samba", -1, STR_TERMINATE);
-	cli_setup_bcc(cli, p);
+	SCVAL(vwv+0, 0, 0xFF);
+	SCVAL(vwv+0, 1, 0);
+	SSVAL(vwv+1, 0, 0);
+	SSVAL(vwv+2, 0, CLI_BUFFER_SIZE);
+	SSVAL(vwv+3, 0, 2);
+	SSVAL(vwv+4, 0, cli->pid);
+	SIVAL(vwv+5, 0, cli->sesskey);
+	SSVAL(vwv+7, 0, 0);
+	SSVAL(vwv+8, 0, 0);
+	SSVAL(vwv+9, 0, 0);
+	SSVAL(vwv+10, 0, 0);
+	SIVAL(vwv+11, 0, cli_session_setup_capabilities(cli));
 
-	if (!cli_send_smb(cli) || !cli_receive_smb(cli)) {
-		return cli_nt_error(cli);
+	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "",  1, /* username */
+				   NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, /* workgroup */
+				   NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix",
+				   strlen("Unix")+1, NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba",
+				   strlen("Samba")+1, NULL);
+
+	if (bytes == NULL) {
+		return NULL;
 	}
-	
-	show_msg(cli->inbuf);
-	
-	if (cli_is_error(cli)) {
-		return cli_nt_error(cli);
+
+	result = cli_request_send(mem_ctx, ev, cli, SMBsesssetupX, 0,
+				  13, vwv, 0, talloc_get_size(bytes), bytes);
+	TALLOC_FREE(bytes);
+	return result;
+}
+
+NTSTATUS cli_session_setup_guest_recv(struct async_req *req)
+{
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
+	struct cli_state *cli = cli_req->cli;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	uint8_t *p;
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
 	}
 
-	cli->vuid = SVAL(cli->inbuf,smb_uid);
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
-	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
-	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
-			 -1, STR_TERMINATE);
+	p = bytes;
+
+	cli->vuid = SVAL(cli_req->inbuf, smb_uid);
+
+	p += clistr_pull(cli_req->inbuf, cli->server_os, (char *)p,
+			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(cli_req->inbuf, cli->server_type, (char *)p,
+			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
+	p += clistr_pull(cli_req->inbuf, cli->server_domain, (char *)p,
+			 sizeof(fstring), bytes+num_bytes-p, STR_TERMINATE);
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -213,6 +242,43 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	fstrcpy(cli->user_name, "");
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_session_setup_guest_send(frame, ev, cli);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_session_setup_guest_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
