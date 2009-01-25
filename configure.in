@@ -70,6 +70,10 @@ if test "$enable_hdb_openldap_module" = yes -a "$with_openldap" = yes; then
 fi
 AM_CONDITIONAL(OPENLDAP_MODULE, test "$enable_hdb_openldap_module" = yes -a "$with_openldap" = yes)
 
+dnl
+dnl Optional modules, pk-init, digest, kx509
+dnl
+
 AC_ARG_ENABLE(pk-init, 
 	AS_HELP_STRING([--disable-pk-init],
 		[if you want disable to PK-INIT support]))
@@ -77,6 +81,21 @@ if test "$enable_pk_init" != no ;then
 	AC_DEFINE([PKINIT], 1, [Define to enable PKINIT.])
 fi
 AM_CONDITIONAL(PKINIT, test "$enable_pk_init" != no)
+
+AC_ARG_ENABLE(digest, 
+	AS_HELP_STRING([--disable-digest],
+		[if you want disable to DIGEST support]))
+if test "$enable_digest" != no ;then
+	AC_DEFINE([DIGEST], 1, [Define to enable DIGEST.])
+fi
+
+AC_ARG_ENABLE(kx509, 
+	AS_HELP_STRING([--disable-kx509],
+		[if you want disable to kx509 support]))
+if test "$enable_kx509" != no ;then
+	AC_DEFINE([KX509], 1, [Define to enable kx509.])
+fi
+
 
 dnl Check for sqlite
 rk_TEST_PACKAGE(sqlite3,
