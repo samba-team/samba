@@ -274,6 +274,20 @@ getverifymic(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
 	     gssapi_err(maj_stat, min_stat, mechoid));
 }
 
+static void
+empty_release(void)
+{
+    gss_ctx_id_t ctx = GSS_C_NO_CONTEXT;
+    gss_cred_id_t cred = GSS_C_NO_CREDENTIAL;
+    gss_name_t name = GSS_C_NO_NAME;
+    gss_OID_set oidset = GSS_C_NO_OID_SET;
+    OM_uint32 junk;
+    
+    gss_delete_sec_context(&junk, &ctx, NULL);
+    gss_release_cred(&junk, &cred);
+    gss_release_name(&junk, &name);
+    gss_release_oid_set(&junk, &oidset);
+}
 
 /*
  *
@@ -590,6 +604,7 @@ main(int argc, char **argv)
 	getverifymic(sctx, cctx, actual_mech);
     }
 
+
     gss_delete_sec_context(&min_stat, &cctx, NULL);
     gss_delete_sec_context(&min_stat, &sctx, NULL);
 
@@ -604,6 +619,8 @@ main(int argc, char **argv)
 	gss_delete_sec_context(&min_stat, &sctx, NULL);
 
     }
+
+    empty_release();
 
     return 0;
 }
