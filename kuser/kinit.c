@@ -32,11 +32,12 @@
  */
 
 #include "kuser_locl.h"
-RCSID("$Id$");
 
 #include "krb5-v4compat.h"
 
+#ifndef NO_NTLM
 #include "heimntlm.h"
+#endif
 
 int forwardable_flag	= -1;
 int proxiable_flag	= -1;
@@ -73,7 +74,9 @@ static int enterprise_flag = 0;
 static int ok_as_delegate_flag = 0;
 static int use_referrals_flag = 0;
 static int windows_flag = 0;
+#ifndef NO_NTLM
 static char *ntlm_domain;
+#endif
 
 
 static struct getargs args[] = {
@@ -168,8 +171,10 @@ static struct getargs args[] = {
     { "pk-use-enckey",	0,  arg_flag, &pk_use_enckey,
       NP_("Use RSA encrypted reply (instead of DH)", "") },
 #endif
+#ifndef NO_NTLM
     { "ntlm-domain",	0,  arg_string, &ntlm_domain,
       NP_("NTLM domain", ""), "domain" },
+#endif
 
     { "ok-as-delegate",	0,  arg_flag, &ok_as_delegate_flag,
       NP_("honor ok-as-delegate on tickets", "") },
@@ -341,8 +346,10 @@ renew_validate(krb5_context context,
 	if(get_v4_tgt)
 	    do_524init(context, cache, out, NULL);
 #endif
-	if(do_afslog && k_hasafs())
+#ifndef NO_AFS
+	if(do_afslog && k_hasafs()) {
 	    krb5_afslog(context, cache, NULL, NULL);
+#endif
     }
 
     krb5_free_creds (context, out);
@@ -354,6 +361,8 @@ out:
     krb5_free_cred_contents(context, &in);
     return ret;
 }
+
+#ifndef NO_NTLM
 
 static krb5_error_code
 store_ntlmkey(krb5_context context, krb5_ccache id,
@@ -376,6 +385,7 @@ store_ntlmkey(krb5_context context, krb5_ccache id,
     free(name);
     return ret;
 }
+#endif
 
 static krb5_error_code
 get_new_tickets(krb5_context context,
@@ -392,10 +402,11 @@ get_new_tickets(krb5_context context,
     krb5_deltat renew = 0;
     char *renewstr = NULL;
     krb5_enctype *enctype = NULL;
-    struct ntlm_buf ntlmkey;
     krb5_ccache tempccache;
-
+#ifndef NO_NTLM
+    struct ntlm_buf ntlmkey;
     memset(&ntlmkey, 0, sizeof(ntlmkey));
+#endif
     passwd[0] = '\0';
 
     if (password_file) {
@@ -556,8 +567,10 @@ get_new_tickets(krb5_context context,
 					    opt);
     }
     krb5_get_init_creds_opt_free(context, opt);
+#ifndef NO_NTLM
     if (ntlm_domain && passwd[0])
 	heim_ntlm_nt_key(passwd, &ntlmkey);
+#endif
     memset(passwd, 0, sizeof(passwd));
 
     switch(ret){
@@ -615,8 +628,10 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_move");
 
+#if HAVE_NTLM
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
+#endif
 
     if (ok_as_delegate_flag || windows_flag || use_referrals_flag) {
 	unsigned char d = 0;
@@ -708,8 +723,10 @@ renew_func(void *ptr)
     if(get_v4_tgt || convert_524)
 	do_524init(ctx->context, ctx->ccache, NULL, server_str);
 #endif
+#ifndef NO_AFS
     if(do_afslog && k_hasafs())
 	krb5_afslog(ctx->context, ctx->ccache, NULL, NULL);
+#endif
 
     expire = ticket_lifetime(ctx->context, ctx->ccache, ctx->principal,
 			     server_str) / 2;
@@ -820,8 +837,10 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, N_("resolving credentials cache", ""));
 
+#ifndef NO_AFS
     if(argc > 1 && k_hasafs ())
 	k_setpag();
+#endif
 
     if (lifetime) {
 	int tmp = parse_time (lifetime, "s");
@@ -865,8 +884,10 @@ main (int argc, char **argv)
     if(get_v4_tgt || convert_524)
 	do_524init(context, ccache, NULL, server_str);
 #endif
+#ifndef NO_AFS
     if(do_afslog && k_hasafs())
 	krb5_afslog(context, ccache, NULL, NULL);
+#endif
     if(argc > 1) {
 	struct renew_ctx ctx;
 	time_t timeout;
@@ -891,8 +912,10 @@ main (int argc, char **argv)
 #ifndef HEIMDAL_SMALLER
 	_krb5_krb_dest_tkt(context, krb4_cc_name);
 #endif
+#ifndef NO_AFS
 	if(k_hasafs())
 	    k_unlog();
+#endif
     } else {
 	krb5_cc_close (context, ccache);
 	ret = 0;
