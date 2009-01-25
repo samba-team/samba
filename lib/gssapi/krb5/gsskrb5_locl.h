@@ -36,14 +36,13 @@
 #ifndef GSSKRB5_LOCL_H
 #define GSSKRB5_LOCL_H
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <krb5_locl.h>
 #include <gkrb5_err.h>
 #include <gssapi.h>
 #include <gssapi_mech.h>
+#include <gssapi_krb5.h>
 #include <assert.h>
 
 #include "cfx.h"
@@ -121,7 +120,7 @@ struct gssapi_thr_context {
  * Prototypes
  */
 
-#include <krb5/gsskrb5-private.h>
+#include <gsskrb5-private.h>
 
 #define GSSAPI_KRB5_INIT(ctx) do {				\
     krb5_error_code kret_gss_init;				\
