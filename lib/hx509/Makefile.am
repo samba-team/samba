@@ -3,7 +3,6 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libhx509.la
-noinst_LTLIBRARIES = libnhx509.la
 libhx509_la_LDFLAGS = -version-info 5:0:0
 
 BUILT_SOURCES =				\
@@ -54,9 +53,7 @@ gen_files_crmf = 			\
 
 AM_YFLAGS = -d
 
-libhx509_la_SOURCES = 
-
-dist_libnhx509_la_SOURCES = \
+dist_libhx509_la_SOURCES = \
 	ca.c \
 	cert.c \
 	cms.c \
@@ -94,7 +91,6 @@ dist_libnhx509_la_SOURCES = \
 sel-lex.c: sel-gram.h
 
 libhx509_la_LIBADD = \
-	libnhx509.la \
 	$(LIB_com_err) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
@@ -111,8 +107,8 @@ libhx509_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 $(libhx509_la_OBJECTS): $(srcdir)/version-script.map
 
-libnhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_hcrypto)
-nodist_libnhx509_la_SOURCES = $(BUILT_SOURCES)
+libhx509_la_CPPFLAGS = -I$(srcdir)/ref $(INCLUDE_hcrypto)
+nodist_libhx509_la_SOURCES = $(BUILT_SOURCES)
 
 $(gen_files_ocsp) ocsp_asn1.h: ocsp_asn1_files
 $(gen_files_pkcs10) pkcs10_asn1.h: pkcs10_asn1_files
@@ -129,13 +125,13 @@ pkcs10_asn1_files: $(asn1_compile) $(srcdir)/pkcs10.asn1
 crmf_asn1_files: $(asn1_compile) $(srcdir)/crmf.asn1
 	$(asn1_compile) $(srcdir)/crmf.asn1 crmf_asn1 || (rm -f crmf_asn1_files ; exit 1)
 
-$(libnhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h $(srcdir)/hx_locl.h
+$(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h $(srcdir)/hx_locl.h
 
 $(srcdir)/hx509-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -R '^(_|^C)' -E HX509_LIB -q -P comment -o hx509-protos.h $(dist_libnhx509_la_SOURCES) || rm -f hx509-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -R '^(_|^C)' -E HX509_LIB -q -P comment -o hx509-protos.h $(dist_libhx509_la_SOURCES) || rm -f hx509-protos.h
 
 $(srcdir)/hx509-private.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(dist_libnhx509_la_SOURCES) || rm -f hx509-private.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(dist_libhx509_la_SOURCES) || rm -f hx509-private.h
 
 dist_include_HEADERS = hx509.h hx509-protos.h
 nodist_include_HEADERS = hx509_err.h
