@@ -197,7 +197,7 @@ int
 _hx509_Name_to_string(const Name *n, char **str)
 {
     size_t total_len = 0;
-    int i, j;
+    int i, j, ret;
 
     *str = strdup("");
     if (*str == NULL)
@@ -224,15 +224,20 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss = ds->u.utf8String;
 		break;
 	    case choice_DirectoryString_bmpString: {
-		uint16_t *bmp = ds->u.bmpString.data;
+	        const uint16_t *bmp = ds->u.bmpString.data;
 		size_t bmplen = ds->u.bmpString.length;
 		size_t k;
 
-		ss = malloc(bmplen + 1);
+		ret = wind_ucs2utf8_length(bmp, bmplen, &k);
+		if (ret)
+		    return ret;
+		
+		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		for (k = 0; k < bmplen; k++)
-		    ss[k] = bmp[k] & 0xff; /* XXX */
+		ret = wind_ucs2utf8(bmp, bmplen, ss, k + 1);
+		if (ret)
+		    return ret;
 		ss[k] = '\0';
 		break;
 	    }
@@ -244,15 +249,20 @@ _hx509_Name_to_string(const Name *n, char **str)
 		ss[ds->u.teletexString.length] = '\0';
 		break;
 	    case choice_DirectoryString_universalString: {
-		uint32_t *uni = ds->u.universalString.data;
+	        const uint32_t *uni = ds->u.universalString.data;
 		size_t unilen = ds->u.universalString.length;
 		size_t k;
 
-		ss = malloc(unilen + 1);
+		ret = wind_ucs4utf8_length(uni, unilen, &k);
+		if (ret)
+		    return ret;
+
+		ss = malloc(k + 1);
 		if (ss == NULL)
 		    _hx509_abort("allocation failure"); /* XXX */
-		for (k = 0; k < unilen; k++)
-		    ss[k] = uni[k] & 0xff; /* XXX */
+		ret = wind_ucs4utf8(uni, unilen, ss, k + 1);
+		if (ret)
+		    return ret;
 		ss[k] = '\0';
 		break;
 	    }
