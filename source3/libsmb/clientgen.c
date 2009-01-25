@@ -56,6 +56,16 @@ void cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
+ convenience routine to find if we negotiated ucs2
+****************************************************************************/
+
+bool cli_ucs2(struct cli_state *cli)
+{
+	return ((cli->capabilities & CAP_UNICODE) != 0);
+}
+
+
+/****************************************************************************
  Read an smb from a fd ignoring all keepalive packets.
  The timeout is in milliseconds
 
