@@ -31,9 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "ntlm/ntlm.h"
-
-RCSID("$Id$");
+#include "ntlm.h"
 
 /*
  *
@@ -43,10 +41,17 @@ OM_uint32
 _gss_ntlm_allocate_ctx(OM_uint32 *minor_status, ntlm_ctx *ctx)
 {
     OM_uint32 maj_stat;
-
+    struct ntlm_server_interface *interface = NULL;
+    
+#ifdef DIGEST
+    interface = &ntlmsspi_kdc_digest;
+#endif
+    if (interface == NULL)
+	return GSS_S_FAILURE;
+    
     *ctx = calloc(1, sizeof(**ctx));
 
-    (*ctx)->server = &ntlmsspi_kdc_digest;
+    (*ctx)->server = interface;
 
     maj_stat = (*(*ctx)->server->nsi_init)(minor_status, &(*ctx)->ictx);
     if (maj_stat != GSS_S_COMPLETE)

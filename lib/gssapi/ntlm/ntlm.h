@@ -36,9 +36,7 @@
 #ifndef NTLM_NTLM_H
 #define NTLM_NTLM_H
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,7 +132,7 @@ typedef struct {
     char *domain;
 } *ntlm_name;
 
-#include <ntlm/ntlm-private.h>
+#include <ntlm-private.h>
 
 
 #endif /* NTLM_NTLM_H */

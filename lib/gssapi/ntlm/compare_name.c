@@ -31,9 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "ntlm/ntlm.h"
-
-RCSID("$Id$");
+#include "ntlm.h"
 
 OM_uint32 _gss_ntlm_compare_name
            (OM_uint32 * minor_status,

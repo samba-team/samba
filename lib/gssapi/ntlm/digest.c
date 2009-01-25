@@ -31,9 +31,11 @@
  * SUCH DAMAGE.
  */
 
-#include "ntlm/ntlm.h"
+#include "ntlm.h"
 
 RCSID("$Id$");
+
+#ifdef DIGEST
 
 /*
  *
@@ -434,3 +436,5 @@ struct ntlm_server_interface ntlmsspi_kdc_digest = {
     kdc_type3,
     kdc_free_buffer
 };
+
+#endif /* DIGEST */

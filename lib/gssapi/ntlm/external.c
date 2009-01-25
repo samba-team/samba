@@ -31,7 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "ntlm/ntlm.h"
+#include "ntlm.h"
 
 RCSID("$Id$");
 

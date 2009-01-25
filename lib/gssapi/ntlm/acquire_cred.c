@@ -31,9 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#include "ntlm/ntlm.h"
-
-RCSID("$Id$");
+#include "ntlm.h"
 
 OM_uint32 _gss_ntlm_acquire_cred
            (OM_uint32 * min_stat,
