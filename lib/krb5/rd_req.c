@@ -926,9 +926,11 @@ krb5_rd_req_ctx(krb5_context context,
 				  id,
 				  &o->keyblock);
 	if (ret) {
-	    /* 
-	     * Fall back to iterating over the keytab. This have
-	     * serious performace issues for larger keytab.
+	    /* If caller specified a server, fail. */
+	    if (service == NULL)
+		goto out;
+	    /* Otherwise, fall back to iterating over the keytab. This
+	     * have serious performace issues for larger keytab.
 	     */
 	    o->keyblock = NULL;
 	}
