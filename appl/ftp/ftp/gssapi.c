@@ -36,7 +36,8 @@
 #else
 #include "ftp_locl.h"
 #endif
-#include <gssapi.h>
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_krb5.h>
 #include <krb5_err.h>
 
 RCSID("$Id$");
