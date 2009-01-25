@@ -33,8 +33,6 @@
 
 #include "der_locl.h"
 
-RCSID("$Id$");
-
 #include <version.h>
 
 /*

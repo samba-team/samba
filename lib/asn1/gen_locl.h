@@ -36,9 +36,8 @@
 #ifndef __GEN_LOCL_H__
 #define __GEN_LOCL_H__
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,9 +79,14 @@ int yyparse(void);
 int preserve_type(const char *);
 int seq_type(const char *);
 
+void generate_header_of_codefile(const char *);
+void close_codefile(void);
+
+
 extern FILE *headerfile, *codefile, *logfile;
 extern int dce_fix;
 extern int rfc1510_bitstring;
+extern int one_code_file;
 
 extern int error_flag;
 

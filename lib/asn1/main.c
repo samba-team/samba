@@ -64,6 +64,7 @@ seq_type(const char *p)
 
 int dce_fix;
 int rfc1510_bitstring;
+int one_code_file;
 int version_flag;
 int help_flag;
 struct getargs args[] = {
@@ -71,6 +72,7 @@ struct getargs args[] = {
     { "decode-dce-ber", 0, arg_flag, &dce_fix },
     { "preserve-binary", 0, arg_strings, &preserve },
     { "sequence", 0, arg_strings, &seq },
+    { "one-code-file", 0, arg_flag, &one_code_file },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
 };
@@ -122,6 +124,10 @@ main(int argc, char **argv)
     }
 
     init_generate (file, name);
+
+    if (one_code_file)
+	generate_header_of_codefile(name);
+
     initsym ();
     ret = yyparse ();
     if(ret != 0 || error_flag != 0)
@@ -129,5 +135,9 @@ main(int argc, char **argv)
     close_generate ();
     if (argc != optidx)
 	fclose(yyin);
+
+    if (one_code_file)
+	close_codefile();
+
     return 0;
 }

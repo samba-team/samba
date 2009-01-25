@@ -229,7 +229,7 @@ gen_compare_defval(const char *var, struct value *val)
     }
 }
 
-static void
+void
 generate_header_of_codefile(const char *name)
 {
     char *filename;
@@ -267,7 +267,7 @@ generate_header_of_codefile(const char *name)
 
 }
 
-static void
+void
 close_codefile(void)
 {
     if (codefile == NULL)
@@ -296,7 +296,8 @@ generate_constant (const Symbol *s)
 	struct objid *o, **list;
 	unsigned int i, len;
 
-	generate_header_of_codefile(s->gen_name);
+	if (!one_code_file)
+	    generate_header_of_codefile(s->gen_name);
 
 	len = 0;
 	for (o = s->value->u.objectidentifiervalue; o != NULL; o = o->next)
@@ -342,7 +343,8 @@ generate_constant (const Symbol *s)
 
 	free(list);
 
-	close_codefile();
+	if (!one_code_file)
+	    close_codefile();
 
 	break;
     }
@@ -789,7 +791,8 @@ generate_type_header (const Symbol *s)
 void
 generate_type (const Symbol *s)
 {
-    generate_header_of_codefile(s->gen_name);
+    if (!one_code_file)
+	generate_header_of_codefile(s->gen_name);
 
     generate_type_header (s);
     generate_type_encode (s);
@@ -800,5 +803,9 @@ generate_type (const Symbol *s)
     generate_type_seq (s);
     generate_glue (s->type, s->gen_name);
     fprintf(headerfile, "\n\n");
-    close_codefile();
+
+    if (!one_code_file) {
+	fprintf(codefile, "\n\n");
+	close_codefile();
+	}
 }
