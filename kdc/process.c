@@ -66,7 +66,9 @@ krb5_kdc_process_request(krb5_context context,
 			 int datagram_reply)
 {
     KDC_REQ req;
+#ifdef KRB4
     Ticket ticket;
+#endif
 #ifdef DIGEST
     DigestREQ digestreq;
 #endif
@@ -90,10 +92,6 @@ krb5_kdc_process_request(krb5_context context,
 	ret = _kdc_tgs_rep(context, config, &req, reply, from, addr, datagram_reply);
 	free_TGS_REQ(&req);
 	return ret;
-    }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
-	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
-	free_Ticket(&ticket);
-	return ret;
 #ifdef DIGEST
     }else if(decode_DigestREQ(buf, len, &digestreq, &i) == 0){
 	ret = _kdc_do_digest(context, config, &digestreq, reply, from, addr);
@@ -106,15 +104,22 @@ krb5_kdc_process_request(krb5_context context,
 	free_Kx509Request(&kx509req);
 	return ret;
 #endif
+#ifdef KRB4
+    }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
+	ret = _kdc_do_524(context, config, &ticket, reply, from, addr);
+	free_Ticket(&ticket);
+	return ret;
     } else if(_kdc_maybe_version4(buf, len)){
 	*prependlength = FALSE; /* elbitapmoc sdrawkcab XXX */
 	ret = _kdc_do_version4(context, config, buf, len, reply, from,
 			       (struct sockaddr_in*)addr);
 	return ret;
+
     } else if (config->enable_kaserver) {
 	ret = _kdc_do_kaserver(context, config, buf, len, reply, from,
 			       (struct sockaddr_in*)addr);
 	return ret;
+#endif
     }
 			
     return -1;

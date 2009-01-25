@@ -84,6 +84,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	krb5_config_get_bool_default(context, NULL,
 				     c->enable_v4,
 				     "kdc", "enable-524", NULL);
+#ifdef DIGEST
     c->enable_digest =
 	krb5_config_get_bool_default(context, NULL,
 				     FALSE,
@@ -110,7 +111,9 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    c->enable_digest = 0;
 	}
     }
+#endif
 
+#ifdef KX509
     c->enable_kx509 =
 	krb5_config_get_bool_default(context, NULL,
 				     FALSE,
@@ -129,6 +132,7 @@ krb5_kdc_get_config(krb5_context context, krb5_kdc_configuration **config)
 	    c->enable_kx509 = FALSE;
 	}
     }
+#endif
 
     c->check_ticket_addresses =
 	krb5_config_get_bool_default(context, NULL,
