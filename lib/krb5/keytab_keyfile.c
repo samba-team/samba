@@ -275,6 +275,8 @@ akf_next_entry(krb5_context context,
 	ret = 0;
 
     entry->timestamp = time(NULL);
+    entry->flags = 0;
+    entry->aliases = NULL;
 
  out:
     krb5_storage_seek(cursor->sp, pos + 4 + 8, SEEK_SET);
