@@ -266,11 +266,15 @@ main(int argc, char **argv)
 
 	perf_add(context, id, times);
 	perf_delete(context, id, 1, times);
-#endif
 
+	ret = krb5_kt_destroy(context, id);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_kt_destroy: %s", perf_str);
+#else
 	ret = krb5_kt_close(context, id);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_kt_close");
+#endif
 
     } else {
 
