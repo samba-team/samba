@@ -234,34 +234,10 @@ command = {
 	}
 }
 command = {
-	name = "srvconvert"
-	name = "srv2keytab"
-	option = {
-		long = "srvtab"
-		short = "s"
-		type = "string"
-		argument = "file"
-		help = "name of Kerberos 4 srvtab"
-		default = "/etc/srvtab"
-	}
+	name = "destroy"
+	function = "kt_destroy"
 	max_args = "0"
-	function = "srvconv"
-	help = "Convert a Kerberos 4 srvtab to a keytab."
-}
-command = {
-	name = "srvcreate"
-	name = "key2srvtab"
-	option = {
-		long = "srvtab"
-		short = "s"
-		type = "string"
-		argument = "file"
-		help = "name of Kerberos 4 srvtab"
-		default = "/etc/srvtab"
-	}
-	max_args = "0"
-	function = "srvcreate"
-	help = "Convert a keytab to a Kerberos 4 srvtab."
+	help = "Destroy (remove) the keytab."
 }
 command = {
 	name = "help"
