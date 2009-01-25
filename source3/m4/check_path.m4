@@ -361,6 +361,25 @@ AC_ARG_WITH(smbtorture4_path,
  esac
 ])
 
+#################################################
+# set custom conf for make test
+selftest_custom_conf=""
+AC_SUBST(selftest_custom_conf)
+AC_ARG_WITH(selftest_custom_conf,
+[AS_HELP_STRING([--with-selftest-custom-conf=PATH], [An optional custom smb.conf that is included in the server smb.conf during make test(none)])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_ERROR([--with-selftest-custom-conf should take a path])
+  ;;
+  * )
+    selftest_custom_conf="$withval"
+    if test -z "$selftest_custom_conf" -a ! -f $selftest_custom_conf; then
+	AC_MSG_ERROR(['$selftest_custom_conf' does not  exist!])
+    fi
+  ;;
+ esac
+])
+
 ## check for --enable-debug first before checking CFLAGS before
 ## so that we don't mix -O and -g
 debug=no

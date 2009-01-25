@@ -19,6 +19,7 @@ datarootdir=@datarootdir@
 selftest_prefix=@selftest_prefix@
 selftest_shrdir=@selftest_shrdir@
 smbtorture4_path=@smbtorture4_path@
+selftest_custom_conf=@selftest_custom_conf@
 
 LIBS=@LIBS@
 CC=@CC@
@@ -2928,9 +2929,22 @@ test_pam_modules:: pam_modules
 ##
 ## Targets for 'make test'
 ##
+
+ifdef smbtorture4_path
+smbtorture4_path_arg=-t ${smbtorture4_path}
+endif
+
+ifdef selftest_shrdir
+selftest_shrdir_arg=-s ${selftest_shrdir}
+endif
+
+ifdef selftest_custom_conf
+selftest_custom_conf_arg=-c ${selftest_custom_conf}
+endif
+
 test:: all torture timelimit
 	@echo Running Test suite
-	@LIB_PATH_VAR=$(LIB_PATH_VAR) PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}" ${selftest_shrdir}
+	@LIB_PATH_VAR=$(LIB_PATH_VAR) PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all ${smbtorture4_path_arg} ${selftest_shrdir_arg} ${selftest_custom_conf_arg}
 
 valgrindtest:: all torture timelimit
 	@echo Running Test suite with valgrind
@@ -2939,7 +2953,7 @@ valgrindtest:: all torture timelimit
 	 WINBINDD_VALGRIND="xterm -n winbindd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
-	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all "${smbtorture4_path}"
+	 PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix} all ${smbtorture4_path_arg} ${selftest_shrdir_arg} ${selftest_custom_conf_arg}
 
 SELFTEST_FORMAT = plain
 selftestdir = ../selftest
