@@ -31,18 +31,17 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
+
 #include <config.h>
-RCSID("$Id$");
-#endif
+
 #include "roken.h"
 
-#include "print_version.h"
+#include "version.h"
 
 void
 print_version(const char *progname)
 {
-    const char *package_list = VERSIONLIST;
+    const char *package_list = heimdal_version;
 
     if(progname == NULL)
 	progname = getprogname();
