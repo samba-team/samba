@@ -91,13 +91,19 @@
 #include <parse_units.h>
 #include <krb5.h>
 #include <krb5_locl.h>
+#ifdef DIGEST
 #include <digest_asn1.h>
+#endif
+#ifdef KX509
 #include <kx509_asn1.h>
+#endif
 #include <hdb.h>
 #include <hdb_err.h>
 #include <der.h>
 
+#ifndef NO_NTLM
 #include <heimntlm.h>
+#endif
 #include <windc_plugin.h>
 
 #undef ALLOC
