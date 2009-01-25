@@ -959,7 +959,6 @@ krb5_rd_req_ctx(krb5_context context,
 
 	krb5_keytab_entry entry;
 	krb5_kt_cursor cursor;
-	krb5_keytab id = NULL;
 	int done = 0, kvno = 0;
 
 	memset(&cursor, 0, sizeof(cursor));
