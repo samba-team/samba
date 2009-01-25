@@ -247,9 +247,11 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_kt_resolve: %s", perf_str);
 
+	/* add, find, delete on keytab */
 	perf_add(context, id, times);
 	perf_find(context, id, times);
 	perf_delete(context, id, 0, times);
+
 	/* add and find again on used keytab */
 	perf_add(context, id, times);
 	perf_find(context, id, times);
