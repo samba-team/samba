@@ -5,7 +5,6 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d -t
 
 lib_LTLIBRARIES = libasn1.la
-noinst_LTLIBRARIES = libnasn1.la
 libasn1_la_LDFLAGS = -version-info 8:0:0
 
 if versionscript
@@ -14,11 +13,8 @@ endif
 
 
 libasn1_la_LIBADD = \
-	libnasn1.la \
 	@LIB_com_err@ \
 	$(LIBADD_roken)
-
-libasn1_la_SOURCES =
 
 BUILT_SOURCES =				\
 	$(gen_files_rfc2459:.x=.c)	\
@@ -493,7 +489,7 @@ asn1_compile_SOURCES = 				\
 	symbol.c				\
 	symbol.h
 
-dist_libnasn1_la_SOURCES =			\
+dist_libasn1_la_SOURCES =			\
 	der-protos.h 				\
 	der_locl.h 				\
 	der.c					\
@@ -509,7 +505,7 @@ dist_libnasn1_la_SOURCES =			\
 	extra.c					\
 	timegm.c
 
-nodist_libnasn1_la_SOURCES = $(BUILT_SOURCES)
+nodist_libasn1_la_SOURCES = $(BUILT_SOURCES)
 
 asn1_compile_LDADD = \
 	$(LIB_roken) $(LEXLIB)
@@ -561,7 +557,7 @@ nodist_include_HEADERS += digest_asn1.h
 nodist_include_HEADERS += kx509_asn1.h
 
 $(asn1_compile_OBJECTS): parse.h parse.c $(srcdir)/der-protos.h
-$(libnasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
+$(libasn1_la_OBJECTS): krb5_asn1.h asn1_err.h $(srcdir)/der-protos.h
 $(check_gen_OBJECTS): test_asn1.h
 $(asn1_print_OBJECTS): krb5_asn1.h
 
@@ -626,4 +622,4 @@ EXTRA_DIST =		\
 	version-script.map
 
 $(srcdir)/der-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libnasn1_la_SOURCES) || rm -f der-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -o der-protos.h $(dist_libasn1_la_SOURCES) || rm -f der-protos.h
