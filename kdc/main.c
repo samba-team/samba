@@ -36,11 +36,11 @@
 #include <util.h>
 #endif
 
-RCSID("$Id$");
-
 sig_atomic_t exit_flag = 0;
 
+#ifdef SUPPORT_DETACH
 int detach_from_console = -1;
+#endif
 
 static RETSIGTYPE
 sigterm(int sig)
@@ -90,8 +90,10 @@ main(int argc, char **argv)
     signal(SIGXCPU, sigterm);
     signal(SIGPIPE, SIG_IGN);
 #endif
+#ifdef SUPPORT_DETACH
     if (detach_from_console)
 	daemon(0, 0);
+#endif
     pidfile(NULL);
     loop(context, config);
     krb5_free_context(context);
