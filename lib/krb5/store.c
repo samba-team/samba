@@ -271,7 +271,7 @@ krb5_storage_to_data(krb5_storage *sp, krb5_data *data)
     if (pos < 0)
 	return HEIM_ERR_NOT_SEEKABLE;
     size = (size_t)sp->seek(sp, 0, SEEK_END);
-    if (size > ((off_t)((size_t)-1)))
+    if (size > (size_t)-1)
 	return HEIM_ERR_TOO_BIG;
     ret = krb5_data_alloc (data, size);
     if (ret) {
