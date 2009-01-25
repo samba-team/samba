@@ -254,8 +254,6 @@ main(int argc, char **argv)
 	perf_add(context, id, times);
 	perf_find(context, id, times);
 
-#if 0
-	/* try delete backwards */
 	ret = krb5_kt_destroy(context, id);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_kt_destroy: %s", perf_str);
@@ -264,17 +262,15 @@ main(int argc, char **argv)
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_kt_resolve: %s", perf_str);
 
+	/* try delete backwards */
+#if 0
 	perf_add(context, id, times);
 	perf_delete(context, id, 1, times);
+#endif
 
 	ret = krb5_kt_destroy(context, id);
 	if (ret)
-	    krb5_err(context, 1, ret, "krb5_kt_destroy: %s", perf_str);
-#else
-	ret = krb5_kt_close(context, id);
-	if (ret)
-	    krb5_err(context, 1, ret, "krb5_kt_close");
-#endif
+	    krb5_err(context, 1, ret, "krb5_kt_destroy");
 
     } else {
 
