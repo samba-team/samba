@@ -125,9 +125,6 @@ struct sockaddr_dl;
 #else
 #include <time.h>
 #endif
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif
 
 #ifdef HAVE_PATHS_H
 #include <paths.h>
