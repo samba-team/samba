@@ -783,10 +783,15 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 {
-	size_t buflen = talloc_get_size(buf);
+	size_t buflen;
 	char *converted;
 	size_t converted_size;
 
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	buflen = talloc_get_size(buf);
 	/*
 	 * We're pushing into an SMB buffer, align odd
 	 */
