@@ -33,7 +33,7 @@
 
 #include "der_locl.h"
 
-#include <version.h>
+#include <vers.h>
 
 /*
  * All decoding functions take a pointer `p' to first position in
