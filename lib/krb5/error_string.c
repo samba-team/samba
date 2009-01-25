@@ -235,7 +235,7 @@ krb5_free_error_string(krb5_context context, char *str)
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_set_error_string(krb5_context context, const char *fmt, ...)
-    __attribute__((format (printf, 2, 3))) __attribute__((deprecated))
+    __attribute__((format (printf, 2, 3))) KRB5_DEPRECATED
 {
     va_list ap;
 
@@ -257,7 +257,7 @@ krb5_set_error_string(krb5_context context, const char *fmt, ...)
 
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_vset_error_string(krb5_context context, const char *fmt, va_list args)
-    __attribute__ ((format (printf, 2, 0))) __attribute__((deprecated))
+    __attribute__ ((format (printf, 2, 0))) KRB5_DEPRECATED
 {
     krb5_vset_error_message(context, 0, fmt, args);
     return 0;
