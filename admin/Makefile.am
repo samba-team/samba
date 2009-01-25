@@ -14,6 +14,7 @@ dist_ktutil_SOURCES =				\
 	add.c					\
 	change.c				\
 	copy.c					\
+	destroy.c				\
 	get.c					\
 	ktutil.c				\
 	ktutil_locl.h				\
