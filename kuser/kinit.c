@@ -347,7 +347,7 @@ renew_validate(krb5_context context,
 	    do_524init(context, cache, out, NULL);
 #endif
 #ifndef NO_AFS
-	if(do_afslog && k_hasafs()) {
+	if(do_afslog && k_hasafs())
 	    krb5_afslog(context, cache, NULL, NULL);
 #endif
     }
@@ -628,7 +628,7 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_move");
 
-#if HAVE_NTLM
+#ifndef NO_NTLM
     if (ntlm_domain && ntlmkey.data)
 	store_ntlmkey(context, ccache, ntlm_domain, &ntlmkey);
 #endif
