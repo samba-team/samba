@@ -399,6 +399,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_kt_close;
 		krb5_kt_compare;
 		krb5_kt_copy_entry_contents;
+		krb5_kt_destroy;
 		krb5_kt_default;
 		krb5_kt_default_modify_name;
 		krb5_kt_default_name;
