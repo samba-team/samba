@@ -488,6 +488,9 @@ loop:
 	    entry->vno = tmp32;
 	}
     }
+    entry->flags = 0;
+    entry->aliases = NULL;
+
     if(start) *start = pos;
     if(end) *end = pos + 4 + len;
  out:
