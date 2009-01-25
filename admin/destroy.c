@@ -44,7 +44,7 @@ kt_destroy (void *opt, int argc, char **argv)
 
     ret = krb5_kt_destroy (context, keytab);
     if (ret) {
-	krb5_warn (context, ret, "destroy keytab `%s' failed");
+	krb5_warn (context, ret, "destroy keytab failed");
 	return 1;
     }
 
