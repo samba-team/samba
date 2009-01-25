@@ -107,7 +107,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
 			hdb_entry_ex *krbtgt,
 			krb5_enctype enctype,
 			krb5_const_principal server,
-			KRB5SignedPathPrincipals *principals,
+			krb5_principals *principals,
 			EncTicketPart *tkt)
 {
     krb5_error_code ret;
@@ -117,7 +117,7 @@ _kdc_add_KRB5SignedPath(krb5_context context,
     size_t size;
 
     if (server && principals) {
-	ret = add_KRB5SignedPathPrincipals(principals, server);
+	ret = add_Principals(principals, server);
 	if (ret)
 	    return ret;
     }
@@ -186,7 +186,7 @@ check_KRB5SignedPath(krb5_context context,
 		     krb5_kdc_configuration *config,
 		     hdb_entry_ex *krbtgt,
 		     EncTicketPart *tkt,
-		     KRB5SignedPathPrincipals **delegated,
+		     krb5_principals **delegated,
 		     int *signedpath)
 {
     krb5_error_code ret;
@@ -255,7 +255,7 @@ check_KRB5SignedPath(krb5_context context,
 		return ENOMEM;
 	    }
 
-	    ret = copy_KRB5SignedPathPrincipals(*delegated, sp.delegated);
+	    ret = copy_Principals(*delegated, sp.delegated);
 	    if (ret) {
 		free_KRB5SignedPath(&sp);
 		free(*delegated);
@@ -668,7 +668,7 @@ tgs_make_reply(krb5_context context,
 	       krb5_principal client_principal,
 	       hdb_entry_ex *krbtgt,
 	       krb5_enctype krbtgt_etype,
-	       KRB5SignedPathPrincipals *spp,
+	       krb5_principals *spp,
 	       const krb5_data *rspac,
 	       const METHOD_DATA *enc_pa_data,
 	       const char **e_text,
@@ -1373,7 +1373,7 @@ tgs_build_reply(krb5_context context,
     hdb_entry_ex *server = NULL, *client = NULL;
     krb5_realm ref_realm = NULL;
     EncTicketPart *tgt = &ticket->ticket;
-    KRB5SignedPathPrincipals *spp = NULL;
+    krb5_principals *spp = NULL;
     const EncryptionKey *ekey;
     krb5_keyblock sessionkey;
     krb5_kvno kvno;
