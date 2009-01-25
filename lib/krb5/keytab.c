@@ -449,7 +449,7 @@ krb5_kt_get_full_name(krb5_context context,
  * even on errors.
  *
  * @param context a Keberos context.
- * @param id keytab to get name for.
+ * @param id keytab to close.
  *
  * @return Return an error code or 0, see krb5_get_error_message().
  *
@@ -465,6 +465,29 @@ krb5_kt_close(krb5_context context,
     ret = (*id->close)(context, id);
     memset(id, 0, sizeof(*id));
     free(id);
+    return ret;
+}
+
+/**
+ * Destroy (remove) the keytab in `id'.  All resources will be released,
+ * even on errors, does the equvalment of krb5_kt_close() on the resources.
+ *
+ * @param context a Keberos context.
+ * @param id keytab to destroy.
+ *
+ * @return Return an error code or 0, see krb5_get_error_message().
+ *
+ * @ingroup krb5_keytab
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_kt_destroy(krb5_context context,
+		krb5_keytab id)
+{
+    krb5_error_code ret;
+
+    ret = (*id->destroy)(context, id);
+    krb5_kt_close(context, id);
     return ret;
 }
 
