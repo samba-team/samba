@@ -96,6 +96,8 @@ main(int argc, char **argv)
     const char *file;
     const char *name = NULL;
     int optidx = 0;
+    char **arg = NULL;
+    size_t len, i;
 
     setprogname(argv[0]);
     if(getarg(args, num_args, argc, argv, &optidx))
@@ -129,8 +131,6 @@ main(int argc, char **argv)
      * Parse extra options file
      */
     if (option_file) {
-	char **arg = NULL;
-	size_t len, i;
 	char buf[1024];
 	FILE *opt;
 
@@ -153,12 +153,13 @@ main(int argc, char **argv)
 		perror("malloc");
 		exit(1);
 	    }
-	    arg[i] = strdup(buf);
-	    if (arg[i] == NULL) {
+	    arg[len] = strdup(buf);
+	    if (arg[len] == NULL) {
 		perror("strdup");
 		exit(1);
 	    }
-	    arg[i + 1] = NULL;
+	    arg[len + 1] = NULL;
+	    len++;
 	}
 	fclose(opt);
 
@@ -170,10 +171,6 @@ main(int argc, char **argv)
 	    fprintf(stderr, "extra args");
 	    exit(1);
 	}
-
-	for (i = 1; i < len; i++)
-	    free(arg[i]);
-	free(arg);
     }
 
 
@@ -193,5 +190,11 @@ main(int argc, char **argv)
     if (one_code_file)
 	close_codefile();
 
+    if (arg) {
+	for (i = 1; i < len; i++)
+	    free(arg[i]);
+	free(arg);
+    }
+    
     return 0;
 }
