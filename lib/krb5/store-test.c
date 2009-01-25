@@ -51,7 +51,8 @@ compare(const char *name, krb5_storage *sp, void *expected, size_t len)
 {
     int ret = 0;
     krb5_data data;
-    krb5_storage_to_data(sp, &data);
+    if (krb5_storage_to_data(sp, &data))
+	errx(1, "krb5_storage_to_data failed");
     krb5_storage_free(sp);
     if(data.length != len || memcmp(data.data, expected, len) != 0) {
 	printf("%s mismatch\n", name);
