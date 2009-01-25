@@ -9,6 +9,7 @@ AM_CPPFLAGS += \
 	-I$(srcdir) \
 	-I$(srcdir)/gssapi \
 	-I$(srcdir)/mech \
+	-I$(srcdir)/ntlm \
 	-I$(srcdir)/krb5 \
 	-I$(srcdir)/spnego \
 	$(INCLUDE_libintl) \
