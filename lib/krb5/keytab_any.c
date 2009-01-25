@@ -253,6 +253,7 @@ const krb5_kt_ops krb5_any_ops = {
     any_resolve,
     any_get_name,
     any_close,
+    NULL, /* destroy */
     NULL, /* get */
     any_start_seq_get,
     any_next_entry,
