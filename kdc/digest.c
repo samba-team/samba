@@ -201,7 +201,7 @@ get_password_entry(krb5_context context,
 krb5_error_code
 _kdc_do_digest(krb5_context context,
 	       krb5_kdc_configuration *config,
-	       const struct kxDigestREQ *req, krb5_data *reply,
+	       const struct DigestREQ *req, krb5_data *reply,
 	       const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
