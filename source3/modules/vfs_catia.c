@@ -252,9 +252,9 @@ static char *catia_getwd(vfs_handle_struct *handle, char *buf)
 }
 
 static int catia_ntimes(vfs_handle_struct *handle,
-		       const char *path, const struct timespec ts[2])
+		       const char *path, struct smb_file_time *ft)
 {
-        return SMB_VFS_NEXT_NTIMES(handle, path, ts);
+        return SMB_VFS_NEXT_NTIMES(handle, path, ft);
 }
 
 static bool catia_symlink(vfs_handle_struct *handle,

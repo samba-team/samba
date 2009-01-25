@@ -340,7 +340,7 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	  lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o \
 	  lib/interfaces.o lib/memcache.o \
-	  lib/util_transfer_file.o lib/async_req.o \
+	  lib/util_transfer_file.o ../lib/async_req/async_req.o \
 	  lib/async_sock.o \
 	  $(TDB_LIB_OBJ) \
 	  $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
@@ -576,7 +576,8 @@ RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2) \
                 rpc_parse/parse_spoolss.o \
 	        rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o
 
-RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
+RPC_CLIENT_OBJ = rpc_client/cli_pipe.o rpc_client/rpc_transport_np.o \
+	rpc_client/rpc_transport_sock.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
@@ -761,7 +762,7 @@ SMBCONTROL_OBJ = utils/smbcontrol.o $(LOCKING_OBJ) $(PARAM_OBJ) \
 SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
              $(PROFILE_OBJ) $(LIB_NONSMBD_OBJ) $(LIBSMB_OBJ) \
 	     $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
-             rpc_client/cli_pipe.o ../librpc/rpc/binding.o $(RPC_PARSE_OBJ2) \
+             $(RPC_CLIENT_OBJ) ../librpc/rpc/binding.o $(RPC_PARSE_OBJ2) \
              $(RPC_CLIENT_OBJ1) \
 	     $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(LDB_OBJ) $(GROUPDB_OBJ) \
 	     $(LIBMSRPC_GEN_OBJ)
@@ -844,7 +845,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 	$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
 
-CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
+CLIENT_OBJ1 = client/client.o client/clitar.o $(RPC_CLIENT_OBJ) \
 	      ../librpc/rpc/binding.o \
 	      client/dnsbrowse.o \
 	      $(RPC_CLIENT_OBJ1) \

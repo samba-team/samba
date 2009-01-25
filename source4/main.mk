@@ -48,3 +48,4 @@ mkinclude libcli/config.mk
 mkinclude scripting/python/config.mk
 mkinclude kdc/config.mk
 mkinclude ../lib/smbconf/config.mk
+mkinclude ../lib/async_req/config.mk

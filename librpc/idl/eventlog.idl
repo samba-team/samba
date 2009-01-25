@@ -67,8 +67,11 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x01 */
-	[todo] NTSTATUS eventlog_BackupEventLogW();
-	
+	NTSTATUS eventlog_BackupEventLogW(
+		[in] policy_handle *handle,
+		[in,ref] lsa_String *backup_filename
+		);
+
 	/******************/
 	/* Function: 0x02 */
 	NTSTATUS eventlog_CloseEventLog(
@@ -77,7 +80,9 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x03 */
-	[todo] NTSTATUS eventlog_DeregisterEventSource();
+	NTSTATUS eventlog_DeregisterEventSource(
+		[in,out] policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x04 */
@@ -110,11 +115,24 @@ import "lsa.idl", "security.idl";
 
 	/******************/
 	/* Function: 0x08 */
-	[todo] NTSTATUS eventlog_RegisterEventSourceW();
+	NTSTATUS eventlog_RegisterEventSourceW(
+		[in,unique] eventlog_OpenUnknown0 *unknown0,
+		[in,ref] lsa_String *module_name,
+		[in,ref] lsa_String *reg_module_name,
+		[in] uint32 major_version,
+		[in] uint32 minor_version,
+		[out] policy_handle *log_handle
+		);
 
 	/******************/
 	/* Function: 0x09 */
-	[todo] NTSTATUS eventlog_OpenBackupEventLogW();
+	NTSTATUS eventlog_OpenBackupEventLogW(
+		[in,unique] eventlog_OpenUnknown0 *unknown0,
+		[in,ref] lsa_String *backup_logname,
+		[in] uint32 major_version,
+		[in] uint32 minor_version,
+		[out] policy_handle *handle
+		);
 
 	/******************/
 	/* Function: 0x0a */
@@ -130,7 +148,22 @@ import "lsa.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x0b */
-	[todo] NTSTATUS eventlog_ReportEventW();
+	NTSTATUS eventlog_ReportEventW(
+		[in] policy_handle *handle,
+		[in] time_t timestamp,
+		[in] eventlogEventTypes event_type,
+		[in] uint16 event_category,
+		[in] uint32 event_id,
+		[in] [range(0,256)] uint16 num_of_strings,
+		[in] [range(0,0x3FFFF)] uint32 data_size,
+		[in,ref] lsa_String *servername,
+		[in,unique] dom_sid *user_sid,
+		[in,unique] [size_is(num_of_strings)] lsa_String **strings,
+		[in,unique] [size_is(data_size)] uint8 *data,
+		[in] uint16 flags,
+		[in,out,unique] uint32 *record_number,
+		[in,out,unique] time_t *time_written
+		);
 
 	/*****************/
 	/* Function 0x0c */
@@ -174,11 +207,42 @@ import "lsa.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x16 */
-	[todo] NTSTATUS eventlog_GetLogIntormation();
+
+	typedef struct {
+		boolean32 full;
+	} EVENTLOG_FULL_INFORMATION;
+
+	NTSTATUS eventlog_GetLogIntormation(
+		[in] policy_handle *handle,
+		[in] uint32 level,
+		[out,ref] [size_is(buf_size)] uint8 *buffer,
+		[in] [range(0,1024)] uint32 buf_size,
+		[out,ref] uint32 *bytes_needed
+		);
 
 	/*****************/
 	/* Function 0x17 */
 	NTSTATUS eventlog_FlushEventLog(
 		[in] policy_handle *handle
-	);	
+	);
+
+	/*****************/
+	/* Function 0x18 */
+	NTSTATUS eventlog_ReportEventAndSourceW(
+		[in] policy_handle *handle,
+		[in] time_t timestamp,
+		[in] eventlogEventTypes event_type,
+		[in] uint16 event_category,
+		[in] uint32 event_id,
+		[in,ref] lsa_String *sourcename,
+		[in] [range(0,256)] uint16 num_of_strings,
+		[in] [range(0,0x3FFFF)] uint32 data_size,
+		[in,ref] lsa_String *servername,
+		[in,unique] dom_sid *user_sid,
+		[in,unique] [size_is(num_of_strings)] lsa_String **strings,
+		[in,unique] [size_is(data_size)] uint8 *data,
+		[in] uint16 flags,
+		[in,out,unique] uint32 *record_number,
+		[in,out,unique] time_t *time_written
+		);
 }

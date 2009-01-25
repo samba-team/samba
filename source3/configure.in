@@ -63,6 +63,7 @@ SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TEVENT_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/async_req"
 
 SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/../lib/popt"
 
@@ -1307,7 +1308,8 @@ fi
 
 #################################################
 # Check whether struct stat has timestamps with sub-second resolution.
-# At least IRIX and Solaris have these.
+# At least IRIX and Solaris have these.  FREEBSD does as well,
+# but with different members
 #
 # We check that
 #	all of st_mtim, st_atim and st_ctim exist
@@ -1316,6 +1318,43 @@ fi
 # There is some conflicting standards weirdness about whether we should use
 # "struct timespec" or "timespec_t". Linux doesn't have timespec_t, so we
 # prefer struct timespec.
+AC_CACHE_CHECK([whether struct stat has timespec timestamps],
+    samba_cv_stat_timespec_hires,
+      [
+      AC_TRY_COMPILE(
+	  [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	  ],
+	  [
+	  struct timespec t;
+	  struct stat s = {0};
+	  t = s.st_mtimespec;
+	  t = s.st_ctimespec;
+	  t = s.st_atimespec;
+	],
+      samba_cv_stat_timespec_hires=yes, samba_cv_stat_timespec_hires=no)
+      ])
+
+if test x"$samba_cv_stat_timespec_hires" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIMESPEC, 1, [whether struct stat contains st_mtimepec])
+    AC_DEFINE(HAVE_STAT_ST_ATIMESPEC, 1, [whether struct stat contains st_atimespec])
+    AC_DEFINE(HAVE_STAT_ST_CTIMESPEC, 1, [whether struct stat contains st_ctimespec])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1, [whether struct stat has sub-second timestamps])
+fi
+
+
 
 AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_cv_stat_hires,
     [

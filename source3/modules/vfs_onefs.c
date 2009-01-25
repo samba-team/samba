@@ -66,6 +66,39 @@ static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
         return result;
 }
 
+static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
+			struct smb_file_time *ft)
+{
+	int flags = 0;
+	struct timespec times[3];
+
+	if (!null_timespec(ft->atime)) {
+		flags |= VT_ATIME;
+		times[0] = ft->atime;
+		DEBUG(6,("**** onefs_ntimes: actime: %s.%d\n",
+			time_to_asc(convert_timespec_to_time_t(ft->atime)),
+			ft->atime.tv_nsec));
+	}
+
+	if (!null_timespec(ft->mtime)) {
+		flags |= VT_MTIME;
+		times[1] = ft->mtime;
+		DEBUG(6,("**** onefs_ntimes: modtime: %s.%d\n",
+			time_to_asc(convert_timespec_to_time_t(ft->mtime)),
+			ft->mtime.tv_nsec));
+	}
+
+	if (!null_timespec(ft->create_time)) {
+		flags |= VT_BTIME;
+		times[2] = ft->create_time;
+		DEBUG(6,("**** onefs_ntimes: createtime: %s.%d\n",
+		   time_to_asc(convert_timespec_to_time_t(ft->create_time)),
+		   ft->create_time.tv_nsec));
+	}
+
+	return onefs_vtimes_streams(handle, fname, flags, times);
+}
+
 static uint32_t onefs_fs_capabilities(struct vfs_handle_struct *handle)
 {
 	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
@@ -92,6 +125,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_unlink), SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_ntimes), SMB_VFS_OP_NTIMES,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_chflags), SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_streaminfo), SMB_VFS_OP_STREAMINFO,

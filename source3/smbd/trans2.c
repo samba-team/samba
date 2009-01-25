@@ -1430,7 +1430,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 
 			mdate_ts = get_mtimespec(&sbuf);
 			adate_ts = get_atimespec(&sbuf);
-			create_date_ts = get_create_timespec(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+			create_date_ts = get_create_timespec(&sbuf,
+			    lp_fake_dir_create_times(SNUM(conn)));
 
 			if (ask_sharemode) {
 				struct timespec write_time_ts;
@@ -1453,7 +1454,8 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			mdate = convert_timespec_to_time_t(mdate_ts);
 			adate = convert_timespec_to_time_t(adate_ts);
 
-			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",pathreal,fname));
+			DEBUG(5,("get_lanman2_dir_entry: found %s fname=%s\n",
+				pathreal,fname));
 
 			found = True;
 
@@ -4892,7 +4894,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   const char *fname,
 			   const SMB_STRUCT_STAT *psbuf,
-			   struct timespec ts[2],
+			   struct smb_file_time *ft,
 			   bool setting_write_time)
 {
 	uint32 action =
@@ -4904,23 +4906,29 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (null_timespec(ts[0])) {
-		ts[0] = get_atimespec(psbuf);
+	if (null_timespec(ft->atime)) {
+		ft->atime= get_atimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
-	if (null_timespec(ts[1])) {
-		ts[1] = get_mtimespec(psbuf);
+	if (null_timespec(ft->mtime)) {
+		ft->mtime = get_mtimespec(psbuf);
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
 	if (!setting_write_time) {
-		/* ts[1] comes from change time, not write time. */
+		/* ft->mtime comes from change time, not write time. */
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
-	DEBUG(6,("smb_set_file_time: actime: %s " , time_to_asc(convert_timespec_to_time_t(ts[0])) ));
-	DEBUG(6,("smb_set_file_time: modtime: %s ", time_to_asc(convert_timespec_to_time_t(ts[1])) ));
+	DEBUG(5,("smb_set_filetime: actime: %s\n ",
+		time_to_asc(convert_timespec_to_time_t(ft->atime))));
+	DEBUG(5,("smb_set_filetime: modtime: %s\n ",
+		time_to_asc(convert_timespec_to_time_t(ft->mtime))));
+	if (!null_timespec(ft->create_time)) {
+		DEBUG(5,("smb_set_file_time: createtime: %s\n ",
+		   time_to_asc(convert_timespec_to_time_t(ft->create_time))));
+	}
 
 	/*
 	 * Try and set the times of this file if
@@ -4930,7 +4938,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	{
 		struct timespec mts = get_mtimespec(psbuf);
 		struct timespec ats = get_atimespec(psbuf);
-		if ((timespec_compare(&ts[0], &ats) == 0) && (timespec_compare(&ts[1], &mts) == 0)) {
+		if ((timespec_compare(&ft->atime, &ats) == 0) &&
+		    (timespec_compare(&ft->mtime, &mts) == 0)) {
 			return NT_STATUS_OK;
 		}
 	}
@@ -4947,18 +4956,19 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		 */
 
 		DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
-			  time_to_asc(convert_timespec_to_time_t(ts[1])) ));
+			  time_to_asc(convert_timespec_to_time_t(ft->mtime))));
 
 		if (fsp != NULL) {
 			if (fsp->base_fsp) {
-				set_sticky_write_time_fsp(fsp->base_fsp, ts[1]);
+				set_sticky_write_time_fsp(fsp->base_fsp,
+							  ft->mtime);
 			} else {
-				set_sticky_write_time_fsp(fsp, ts[1]);
+				set_sticky_write_time_fsp(fsp, ft->mtime);
 			}
 		} else {
 			set_sticky_write_time_path(conn, fname,
 					    vfs_file_id_from_sbuf(conn, psbuf),
-					    ts[1]);
+					    ft->mtime);
 		}
 	}
 
@@ -4968,7 +4978,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		fname = fsp->base_fsp->fsp_name;
 	}
 
-	if(file_ntimes(conn, fname, ts)!=0) {
+	if(file_ntimes(conn, fname, ft)!=0) {
 		return map_nt_error_from_unix(errno);
 	}
 	notify_fname(conn, NOTIFY_ACTION_MODIFIED, action, fname);
@@ -5677,16 +5687,21 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 					const char *fname,
 					const SMB_STRUCT_STAT *psbuf)
 {
-	struct timespec ts[2];
+	struct smb_file_time ft;
+	ZERO_STRUCT(ft);
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	/* create time */
+	ft.create_time = interpret_long_date(pdata);
+
 	/* access time */
-	ts[0] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastAccess));
+	ft.atime = interpret_long_date(pdata + 8);
+
 	/* write time */
-	ts[1] = convert_time_t_to_timespec(srv_make_unix_date2(pdata+l1_fdateLastWrite));
+	ft.mtime = interpret_long_date(pdata + 16);
 
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		fname ? fname : fsp->fsp_name ));
@@ -5695,7 +5710,7 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				ts,
+				&ft,
 				true);
 }
 
@@ -5713,10 +5728,12 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	/* Patch to do this correctly from Paul Eggert <eggert@twinsun.com>. */
 	struct timespec write_time;
 	struct timespec changed_time;
+	struct smb_file_time ft;
 	uint32 dosmode = 0;
-	struct timespec ts[2];
 	NTSTATUS status = NT_STATUS_OK;
 	bool setting_write_time = true;
+
+	ZERO_STRUCT(ft);
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -5724,36 +5741,36 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 
 	/* Set the attributes */
 	dosmode = IVAL(pdata,32);
-	status = smb_set_file_dosmode(conn,
-					fname,
-					psbuf,
-					dosmode);
+	status = smb_set_file_dosmode(conn, fname, psbuf, dosmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	/* Ignore create time at offset pdata. */
 
 	/* access time */
-	ts[0] = interpret_long_date(pdata+8);
+	ft.atime = interpret_long_date(pdata+8);
 
 	write_time = interpret_long_date(pdata+16);
 	changed_time = interpret_long_date(pdata+24);
 
 	/* mtime */
-	ts[1] = timespec_min(&write_time, &changed_time);
+	ft.mtime = timespec_min(&write_time, &changed_time);
 
-	if ((timespec_compare(&write_time, &ts[1]) == 1) && !null_timespec(write_time)) {
-		ts[1] = write_time;
+	/* create time */
+	ft.create_time = interpret_long_date(pdata);
+
+	if ((timespec_compare(&write_time, &ft.mtime) == 1) &&
+	    !null_timespec(write_time)) {
+		ft.mtime = write_time;
 	}
 
 	/* Prefer a defined time to an undefined one. */
-	if (null_timespec(ts[1])) {
+	if (null_timespec(ft.mtime)) {
 		if (null_timespec(write_time)) {
-			ts[1] = changed_time;
+			ft.mtime = changed_time;
 			setting_write_time = false;
 		} else {
-	 		ts[1] = write_time;
+			ft.mtime = write_time;
 		}
 	}
 
@@ -5764,7 +5781,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 				fsp,
 				fname,
 				psbuf,
-				ts,
+				&ft,
 				setting_write_time);
 }
 
@@ -6012,7 +6029,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 					const char *fname,
 					SMB_STRUCT_STAT *psbuf)
 {
-	struct timespec ts[2];
+	struct smb_file_time ft;
 	uint32 raw_unixmode;
 	mode_t unixmode;
 	SMB_OFF_T size = 0;
@@ -6021,6 +6038,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	bool delete_on_fail = False;
 	enum perm_type ptype;
+
+	ZERO_STRUCT(ft);
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -6039,8 +6058,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 #endif /* LARGE_SMB_OFF_T */
 	}
 
-	ts[0] = interpret_long_date(pdata+24); /* access_time */
-	ts[1] = interpret_long_date(pdata+32); /* modification_time */
+	ft.atime = interpret_long_date(pdata+24); /* access_time */
+	ft.mtime = interpret_long_date(pdata+32); /* modification_time */
 	set_owner = (uid_t)IVAL(pdata,40);
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
@@ -6083,8 +6102,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
 		size = get_file_size(*psbuf);
-		ts[0] = get_atimespec(psbuf);
-		ts[1] = get_mtimespec(psbuf);
+		ft.atime = get_atimespec(psbuf);
+		ft.mtime = get_mtimespec(psbuf);
 		/* 
 		 * We continue here as we might want to change the 
 		 * owner uid/gid.
@@ -6172,7 +6191,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 				fsp,
 				fname,
 				psbuf,
-				ts,
+				&ft,
 				true);
 }
 

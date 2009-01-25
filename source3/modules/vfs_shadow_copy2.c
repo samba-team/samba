@@ -393,9 +393,9 @@ static int shadow_copy2_chdir(vfs_handle_struct *handle,
 }
 
 static int shadow_copy2_ntimes(vfs_handle_struct *handle,
-		       const char *fname, const struct timespec ts[2])
+		       const char *fname, struct smb_file_time *ft)
 {
-        SHADOW2_NEXT(NTIMES, (handle, name, ts), int, -1);
+        SHADOW2_NEXT(NTIMES, (handle, name, ft), int, -1);
 }
 
 static int shadow_copy2_readlink(vfs_handle_struct *handle,

@@ -65,6 +65,10 @@ struct eventlog_Record {
 	uint32_t size2;/* [value(size)] */
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
+struct EVENTLOG_FULL_INFORMATION {
+	uint32_t full;
+};
+
 
 struct eventlog_ClearEventLogW {
 	struct {
@@ -80,6 +84,11 @@ struct eventlog_ClearEventLogW {
 
 
 struct eventlog_BackupEventLogW {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *backup_filename;/* [ref] */
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;
@@ -102,6 +111,11 @@ struct eventlog_CloseEventLog {
 
 struct eventlog_DeregisterEventSource {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		struct policy_handle *handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -161,6 +175,15 @@ struct eventlog_OpenEventLogW {
 
 struct eventlog_RegisterEventSourceW {
 	struct {
+		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
+		struct lsa_String *module_name;/* [ref] */
+		struct lsa_String *reg_module_name;/* [ref] */
+		uint32_t major_version;
+		uint32_t minor_version;
+	} in;
+
+	struct {
+		struct policy_handle *log_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -169,6 +192,14 @@ struct eventlog_RegisterEventSourceW {
 
 struct eventlog_OpenBackupEventLogW {
 	struct {
+		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
+		struct lsa_String *backup_logname;/* [ref] */
+		uint32_t major_version;
+		uint32_t minor_version;
+	} in;
+
+	struct {
+		struct policy_handle *handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -195,6 +226,25 @@ struct eventlog_ReadEventLogW {
 
 struct eventlog_ReportEventW {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		time_t timestamp;
+		enum eventlogEventTypes event_type;
+		uint16_t event_category;
+		uint32_t event_id;
+		uint16_t num_of_strings;/* [range(0,256)] */
+		uint32_t data_size;/* [range(0,0x3FFFF)] */
+		struct lsa_String *servername;/* [ref] */
+		struct dom_sid *user_sid;/* [unique] */
+		struct lsa_String **strings;/* [unique,size_is(num_of_strings)] */
+		uint8_t *data;/* [unique,size_is(data_size)] */
+		uint16_t flags;
+		uint32_t *record_number;/* [unique] */
+		time_t *time_written;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *record_number;/* [unique] */
+		time_t *time_written;/* [unique] */
 		NTSTATUS result;
 	} out;
 
@@ -283,6 +333,14 @@ struct eventlog_WriteClusterEvents {
 
 struct eventlog_GetLogIntormation {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t level;
+		uint32_t buf_size;/* [range(0,1024)] */
+	} in;
+
+	struct {
+		uint8_t *buffer;/* [ref,size_is(buf_size)] */
+		uint32_t *bytes_needed;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -295,6 +353,34 @@ struct eventlog_FlushEventLog {
 	} in;
 
 	struct {
+		NTSTATUS result;
+	} out;
+
+};
+
+
+struct eventlog_ReportEventAndSourceW {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		time_t timestamp;
+		enum eventlogEventTypes event_type;
+		uint16_t event_category;
+		uint32_t event_id;
+		struct lsa_String *sourcename;/* [ref] */
+		uint16_t num_of_strings;/* [range(0,256)] */
+		uint32_t data_size;/* [range(0,0x3FFFF)] */
+		struct lsa_String *servername;/* [ref] */
+		struct dom_sid *user_sid;/* [unique] */
+		struct lsa_String **strings;/* [unique,size_is(num_of_strings)] */
+		uint8_t *data;/* [unique,size_is(data_size)] */
+		uint16_t flags;
+		uint32_t *record_number;/* [unique] */
+		time_t *time_written;/* [unique] */
+	} in;
+
+	struct {
+		uint32_t *record_number;/* [unique] */
+		time_t *time_written;/* [unique] */
 		NTSTATUS result;
 	} out;
 

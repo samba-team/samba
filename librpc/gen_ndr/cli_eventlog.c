@@ -47,12 +47,16 @@ NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle /* [in] [ref] */,
+					 struct lsa_String *backup_filename /* [in] [ref] */)
 {
 	struct eventlog_BackupEventLogW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.backup_filename = backup_filename;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
@@ -122,12 +126,14 @@ NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
-					       TALLOC_CTX *mem_ctx)
+					       TALLOC_CTX *mem_ctx,
+					       struct policy_handle *handle /* [in,out] [ref] */)
 {
 	struct eventlog_DeregisterEventSource r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
@@ -152,6 +158,7 @@ NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	return r.out.result;
@@ -322,12 +329,23 @@ NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
-					      TALLOC_CTX *mem_ctx)
+					      TALLOC_CTX *mem_ctx,
+					      struct eventlog_OpenUnknown0 *unknown0 /* [in] [unique] */,
+					      struct lsa_String *module_name /* [in] [ref] */,
+					      struct lsa_String *reg_module_name /* [in] [ref] */,
+					      uint32_t major_version /* [in]  */,
+					      uint32_t minor_version /* [in]  */,
+					      struct policy_handle *log_handle /* [out] [ref] */)
 {
 	struct eventlog_RegisterEventSourceW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.unknown0 = unknown0;
+	r.in.module_name = module_name;
+	r.in.reg_module_name = reg_module_name;
+	r.in.major_version = major_version;
+	r.in.minor_version = minor_version;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
@@ -352,18 +370,28 @@ NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*log_handle = *r.out.log_handle;
 
 	/* Return result */
 	return r.out.result;
 }
 
 NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
-					     TALLOC_CTX *mem_ctx)
+					     TALLOC_CTX *mem_ctx,
+					     struct eventlog_OpenUnknown0 *unknown0 /* [in] [unique] */,
+					     struct lsa_String *backup_logname /* [in] [ref] */,
+					     uint32_t major_version /* [in]  */,
+					     uint32_t minor_version /* [in]  */,
+					     struct policy_handle *handle /* [out] [ref] */)
 {
 	struct eventlog_OpenBackupEventLogW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.unknown0 = unknown0;
+	r.in.backup_logname = backup_logname;
+	r.in.major_version = major_version;
+	r.in.minor_version = minor_version;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
@@ -388,6 +416,7 @@ NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	return r.out.result;
@@ -444,12 +473,40 @@ NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
-				      TALLOC_CTX *mem_ctx)
+				      TALLOC_CTX *mem_ctx,
+				      struct policy_handle *handle /* [in] [ref] */,
+				      time_t timestamp /* [in]  */,
+				      enum eventlogEventTypes event_type /* [in]  */,
+				      uint16_t event_category /* [in]  */,
+				      uint32_t event_id /* [in]  */,
+				      uint16_t num_of_strings /* [in] [range(0,256)] */,
+				      uint32_t data_size /* [in] [range(0,0x3FFFF)] */,
+				      struct lsa_String *servername /* [in] [ref] */,
+				      struct dom_sid *user_sid /* [in] [unique] */,
+				      struct lsa_String **strings /* [in] [unique,size_is(num_of_strings)] */,
+				      uint8_t *data /* [in] [unique,size_is(data_size)] */,
+				      uint16_t flags /* [in]  */,
+				      uint32_t *record_number /* [in,out] [unique] */,
+				      time_t *time_written /* [in,out] [unique] */)
 {
 	struct eventlog_ReportEventW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.timestamp = timestamp;
+	r.in.event_type = event_type;
+	r.in.event_category = event_category;
+	r.in.event_id = event_id;
+	r.in.num_of_strings = num_of_strings;
+	r.in.data_size = data_size;
+	r.in.servername = servername;
+	r.in.user_sid = user_sid;
+	r.in.strings = strings;
+	r.in.data = data;
+	r.in.flags = flags;
+	r.in.record_number = record_number;
+	r.in.time_written = time_written;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
@@ -474,6 +531,12 @@ NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	if (record_number && r.out.record_number) {
+		*record_number = *r.out.record_number;
+	}
+	if (time_written && r.out.time_written) {
+		*time_written = *r.out.time_written;
+	}
 
 	/* Return result */
 	return r.out.result;
@@ -840,12 +903,20 @@ NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle /* [in] [ref] */,
+					   uint32_t level /* [in]  */,
+					   uint8_t *buffer /* [out] [ref,size_is(buf_size)] */,
+					   uint32_t buf_size /* [in] [range(0,1024)] */,
+					   uint32_t *bytes_needed /* [out] [ref] */)
 {
 	struct eventlog_GetLogIntormation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buf_size = buf_size;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
@@ -870,6 +941,8 @@ NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	memcpy(buffer, r.out.buffer, r.in.buf_size * sizeof(*buffer));
+	*bytes_needed = *r.out.bytes_needed;
 
 	/* Return result */
 	return r.out.result;
@@ -908,6 +981,78 @@ NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+
+	/* Return result */
+	return r.out.result;
+}
+
+NTSTATUS rpccli_eventlog_ReportEventAndSourceW(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       struct policy_handle *handle /* [in] [ref] */,
+					       time_t timestamp /* [in]  */,
+					       enum eventlogEventTypes event_type /* [in]  */,
+					       uint16_t event_category /* [in]  */,
+					       uint32_t event_id /* [in]  */,
+					       struct lsa_String *sourcename /* [in] [ref] */,
+					       uint16_t num_of_strings /* [in] [range(0,256)] */,
+					       uint32_t data_size /* [in] [range(0,0x3FFFF)] */,
+					       struct lsa_String *servername /* [in] [ref] */,
+					       struct dom_sid *user_sid /* [in] [unique] */,
+					       struct lsa_String **strings /* [in] [unique,size_is(num_of_strings)] */,
+					       uint8_t *data /* [in] [unique,size_is(data_size)] */,
+					       uint16_t flags /* [in]  */,
+					       uint32_t *record_number /* [in,out] [unique] */,
+					       time_t *time_written /* [in,out] [unique] */)
+{
+	struct eventlog_ReportEventAndSourceW r;
+	NTSTATUS status;
+
+	/* In parameters */
+	r.in.handle = handle;
+	r.in.timestamp = timestamp;
+	r.in.event_type = event_type;
+	r.in.event_category = event_category;
+	r.in.event_id = event_id;
+	r.in.sourcename = sourcename;
+	r.in.num_of_strings = num_of_strings;
+	r.in.data_size = data_size;
+	r.in.servername = servername;
+	r.in.user_sid = user_sid;
+	r.in.strings = strings;
+	r.in.data = data;
+	r.in.flags = flags;
+	r.in.record_number = record_number;
+	r.in.time_written = time_written;
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_IN_DEBUG(eventlog_ReportEventAndSourceW, &r);
+	}
+
+	status = cli->dispatch(cli,
+				mem_ctx,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REPORTEVENTANDSOURCEW,
+				&r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventAndSourceW, &r);
+	}
+
+	if (NT_STATUS_IS_ERR(status)) {
+		return status;
+	}
+
+	/* Return variables */
+	if (record_number && r.out.record_number) {
+		*record_number = *r.out.record_number;
+	}
+	if (time_written && r.out.time_written) {
+		*time_written = *r.out.time_written;
+	}
 
 	/* Return result */
 	return r.out.result;

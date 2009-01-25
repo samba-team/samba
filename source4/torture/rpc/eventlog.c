@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter 2003,2005
    Copyright (C) Jelmer Vernooij 2004
+   Copyright (C) Guenther Deschner 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +27,8 @@
 #include "librpc/gen_ndr/ndr_lsa.h"
 #include "torture/rpc/rpc.h"
 #include "param/param.h"
+
+#define TEST_BACKUP_NAME "samrtorturetest"
 
 static void init_lsa_String(struct lsa_String *name, const char *s)
 {
@@ -180,6 +183,55 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ReportEventLog(struct torture_context *tctx,
+				struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct eventlog_ReportEventW r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
+
+	uint32_t record_number = 0;
+	time_t time_written = 0;
+	struct lsa_String servername, *strings;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	init_lsa_String(&servername, NULL);
+
+	strings = talloc_array(tctx, struct lsa_String, 1);
+	init_lsa_String(&strings[0], "Currently tortured by samba 4");
+
+	ZERO_STRUCT(r);
+
+	r.in.handle = &handle;
+	r.in.timestamp = time(NULL);
+	r.in.event_type = EVENTLOG_INFORMATION_TYPE;
+	r.in.event_category = 0;
+	r.in.event_id = 0;
+	r.in.num_of_strings = 1;
+	r.in.data_size = 0;
+	r.in.servername = &servername;
+	r.in.user_sid = NULL;
+	r.in.strings = &strings;
+	r.in.data = NULL;
+	r.in.flags = 0;
+	r.out.record_number = &record_number;
+	r.out.time_written = &time_written;
+
+	status = dcerpc_eventlog_ReportEventW(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, r.out.result, "ReportEventW failed");
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"CloseEventLog failed");
+	return true;
+}
+
 static bool test_FlushEventLog(struct torture_context *tctx,
 			       struct dcerpc_pipe *p)
 {
@@ -233,6 +285,53 @@ static bool test_ClearEventLog(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_GetLogInformation(struct torture_context *tctx,
+				   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct eventlog_GetLogIntormation r;
+	struct eventlog_CloseEventLog cr;
+	struct policy_handle handle;
+	uint32_t bytes_needed = 0;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	r.in.handle = &handle;
+	r.in.level = 1;
+	r.in.buf_size = 0;
+	r.out.buffer = NULL;
+	r.out.bytes_needed = &bytes_needed;
+
+	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_LEVEL,
+				      "GetLogInformation failed");
+
+	r.in.level = 0;
+
+	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+
+	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_BUFFER_TOO_SMALL,
+				      "GetLogInformation failed");
+
+	r.in.buf_size = bytes_needed;
+	r.out.buffer = talloc_array(tctx, uint8_t, bytes_needed);
+
+	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+
+	torture_assert_ntstatus_ok(tctx, status, "GetLogInformation failed");
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"CloseEventLog failed");
+
+	return true;
+}
+
+
 static bool test_OpenEventLog(struct torture_context *tctx,
 			      struct dcerpc_pipe *p)
 {
@@ -243,6 +342,72 @@ static bool test_OpenEventLog(struct torture_context *tctx,
 		return false;
 
 	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"CloseEventLog failed");
+
+	return true;
+}
+
+static bool test_BackupLog(struct torture_context *tctx,
+			   struct dcerpc_pipe *p)
+{
+	NTSTATUS status;
+	struct policy_handle handle, backup_handle;
+	struct eventlog_BackupEventLogW r;
+	struct eventlog_OpenBackupEventLogW b;
+	struct eventlog_CloseEventLog cr;
+	const char *tmp;
+	struct lsa_String backup_filename;
+	struct eventlog_OpenUnknown0 unknown0;
+
+	if (!get_policy_handle(tctx, p, &handle))
+		return false;
+
+	tmp = talloc_asprintf(tctx, "C:\\%s", TEST_BACKUP_NAME);
+	init_lsa_String(&backup_filename, tmp);
+
+	r.in.handle = &handle;
+	r.in.backup_filename = &backup_filename;
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status,
+		NT_STATUS_OBJECT_PATH_SYNTAX_BAD, "BackupEventLogW failed");
+
+	tmp = talloc_asprintf(tctx, "\\??\\C:\\%s", TEST_BACKUP_NAME);
+	init_lsa_String(&backup_filename, tmp);
+
+	r.in.handle = &handle;
+	r.in.backup_filename = &backup_filename;
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "BackupEventLogW failed");
+
+	status = dcerpc_eventlog_BackupEventLogW(p, tctx, &r);
+	torture_assert_ntstatus_equal(tctx, status,
+		NT_STATUS_OBJECT_NAME_COLLISION, "BackupEventLogW failed");
+
+	cr.in.handle = cr.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(tctx,
+			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
+			"BackupLog failed");
+
+	unknown0.unknown0 = 0x005c;
+	unknown0.unknown1 = 0x0001;
+
+	b.in.unknown0 = &unknown0;
+	b.in.backup_logname = &backup_filename;
+	b.in.major_version = 1;
+	b.in.minor_version = 1;
+	b.out.handle = &backup_handle;
+
+	status = dcerpc_eventlog_OpenBackupEventLogW(p, tctx, &b);
+
+	torture_assert_ntstatus_ok(tctx, status, "OpenBackupEventLogW failed");
+
+	cr.in.handle = cr.out.handle = &backup_handle;
 
 	torture_assert_ntstatus_ok(tctx,
 			dcerpc_eventlog_CloseEventLog(p, tctx, &cr),
@@ -267,7 +432,10 @@ struct torture_suite *torture_rpc_eventlog(TALLOC_CTX *mem_ctx)
 	test->dangerous = true;
 	torture_rpc_tcase_add_test(tcase, "GetNumRecords", test_GetNumRecords);
 	torture_rpc_tcase_add_test(tcase, "ReadEventLog", test_ReadEventLog);
+	torture_rpc_tcase_add_test(tcase, "ReportEventLog", test_ReportEventLog);
 	torture_rpc_tcase_add_test(tcase, "FlushEventLog", test_FlushEventLog);
+	torture_rpc_tcase_add_test(tcase, "GetLogIntormation", test_GetLogInformation);
+	torture_rpc_tcase_add_test(tcase, "BackupLog", test_BackupLog);
 
 	return suite;
 }

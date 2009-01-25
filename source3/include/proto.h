@@ -5216,7 +5216,6 @@ NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
 unsigned int rpccli_set_timeout(struct rpc_pipe_client *cli,
 				unsigned int timeout);
 bool rpccli_get_pwd_hash(struct rpc_pipe_client *cli, uint8_t nt_hash[16]);
-struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
 NTSTATUS rpccli_anon_bind_data(TALLOC_CTX *mem_ctx,
 			       struct cli_pipe_auth_data **presult);
 NTSTATUS rpccli_ntlmssp_bind_data(TALLOC_CTX *mem_ctx,
@@ -5296,6 +5295,17 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
 
+/* The following definitions come from rpc_client/rpc_transport_np.c  */
+
+NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+			       const struct ndr_syntax_id *abstract_syntax,
+			       struct rpc_cli_transport **presult);
+struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
+
+/* The following definitions come from rpc_client/rpc_transport_sock.c  */
+
+NTSTATUS rpc_transport_sock_init(TALLOC_CTX *mem_ctx, int fd,
+				 struct rpc_cli_transport **presult);
 
 /* The following definitions come from rpc_client/cli_reg.c  */
 
@@ -6678,7 +6688,8 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		     uint32 dosmode, SMB_STRUCT_STAT *st,
 		     const char *parent_dir,
 		     bool newfile);
-int file_ntimes(connection_struct *conn, const char *fname, const struct timespec ts[2]);
+int file_ntimes(connection_struct *conn, const char *fname,
+		struct smb_file_time *ft);
 bool set_sticky_write_time_path(connection_struct *conn, const char *fname,
 			 struct file_id fileid, const struct timespec mtime);
 bool set_sticky_write_time_fsp(struct files_struct *fsp, const struct timespec mtime);
@@ -7414,7 +7425,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   files_struct *fsp,
 			   const char *fname,
 			   const SMB_STRUCT_STAT *psbuf,
-			   struct timespec ts[2],
+			   struct smb_file_time *ft,
 			   bool setting_write_time);
 void reply_findclose(struct smb_request *req);
 void reply_findnclose(struct smb_request *req);

@@ -391,19 +391,21 @@ static void recycle_do_touch(vfs_handle_struct *handle, const char *fname,
 			     bool touch_mtime)
 {
 	SMB_STRUCT_STAT st;
-	struct timespec ts[2];
+	struct smb_file_time ft;
 	int ret, err;
+
+	ZERO_STRUCT(ft);
 
 	if (SMB_VFS_NEXT_STAT(handle, fname, &st) != 0) {
 		DEBUG(0,("recycle: stat for %s returned %s\n",
 			 fname, strerror(errno)));
 		return;
 	}
-	ts[0] = timespec_current(); /* atime */
-	ts[1] = touch_mtime ? ts[0] : get_mtimespec(&st); /* mtime */
+	ft.atime = timespec_current(); /* atime */
+	ft.mtime = touch_mtime ? ft.atime : get_mtimespec(&st); /* mtime */
 
 	become_root();
-	ret = SMB_VFS_NEXT_NTIMES(handle, fname, ts);
+	ret = SMB_VFS_NEXT_NTIMES(handle, fname, &ft);
 	err = errno;
 	unbecome_root();
 	if (ret == -1 ) {

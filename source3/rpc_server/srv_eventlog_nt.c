@@ -539,30 +539,30 @@ static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	offset = entry->data;
-	memcpy( offset, &( entry->data_record.source_name ),
+	memcpy( offset, entry->data_record.source_name,
 		entry->data_record.source_name_len );
 	offset += entry->data_record.source_name_len;
-	memcpy( offset, &( entry->data_record.computer_name ),
+	memcpy( offset, entry->data_record.computer_name,
 		entry->data_record.computer_name_len );
 	offset += entry->data_record.computer_name_len;
 	/* SID needs to be DWORD-aligned */
 	offset += entry->data_record.sid_padding;
 	entry->record.user_sid_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.sid ),
+	memcpy( offset, entry->data_record.sid,
 		entry->record.user_sid_length );
 	offset += entry->record.user_sid_length;
 	/* Now do the strings */
 	entry->record.string_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.strings ),
+	memcpy( offset, entry->data_record.strings,
 		entry->data_record.strings_len );
 	offset += entry->data_record.strings_len;
 	/* Now do the data */
 	entry->record.data_length = entry->data_record.user_data_len;
 	entry->record.data_offset =
 		sizeof( Eventlog_record ) + ( offset - entry->data );
-	memcpy( offset, &( entry->data_record.user_data ),
+	memcpy( offset, entry->data_record.user_data,
 		entry->data_record.user_data_len );
 	offset += entry->data_record.user_data_len;
 
@@ -578,17 +578,15 @@ static Eventlog_entry *read_package_entry( TALLOC_CTX *mem_ctx,
 /********************************************************************
  ********************************************************************/
 
-static bool add_record_to_resp( Eventlog_entry *entry,
-				uint32_t *num_records,
-				uint32_t *num_bytes_in_resp,
+static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 				Eventlog_entry * ee_new )
 {
 	Eventlog_entry *insert_point;
 
-	insert_point = entry;
+	insert_point = r_u->entry;
 
 	if ( NULL == insert_point ) {
-		entry = ee_new;
+		r_u->entry = ee_new;
 		ee_new->next = NULL;
 	} else {
 		while ( ( NULL != insert_point->next ) ) {
@@ -597,8 +595,8 @@ static bool add_record_to_resp( Eventlog_entry *entry,
 		ee_new->next = NULL;
 		insert_point->next = ee_new;
 	}
-	(*num_records)++;
-	*num_bytes_in_resp += ee_new->record.length;
+	r_u->num_records++;
+	r_u->num_bytes_in_resp += ee_new->record.length;
 
 	return True;
 }
@@ -775,10 +773,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 			break;
 		}
 
-		add_record_to_resp( r_u->entry,
-				    &r_u->num_records, &r_u->num_bytes_in_resp,
-				    ee_new );
-
+		add_record_to_resp( r_u, ee_new );
 		bytes_left -= ee_new->record.length;
 		TALLOC_FREE(entry);
 		num_records_read = r_u->num_records - num_records_read;
@@ -961,3 +956,8 @@ NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog 
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS _eventlog_ReportEventAndSourceW(pipes_struct *p, struct eventlog_ReportEventAndSourceW *r)
+{
+	p->rng_fault_state = True;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}

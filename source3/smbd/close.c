@@ -465,11 +465,11 @@ void set_close_write_time(struct files_struct *fsp, struct timespec ts)
 static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 {
 	SMB_STRUCT_STAT sbuf;
-	struct timespec ts[2];
+	struct smb_file_time ft;
 	NTSTATUS status;
 
 	ZERO_STRUCT(sbuf);
-	ZERO_STRUCT(ts);
+	ZERO_STRUCT(ft);
 
 	if (!fsp->update_write_time_on_close) {
 		return NT_STATUS_OK;
@@ -495,9 +495,9 @@ static NTSTATUS update_write_time_on_close(struct files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	ts[1] = fsp->close_write_time;
+	ft.mtime = fsp->close_write_time;
 	status = smb_set_file_time(fsp->conn, fsp, fsp->fsp_name,
-				   &sbuf, ts, true);
+				   &sbuf, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

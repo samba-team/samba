@@ -715,7 +715,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		if (!entry->data_record.strings) {
 			return false;
 		}
-		memcpy(entry->data_record.strings + old_len,
+		memcpy(((char *)entry->data_record.strings) + old_len,
 				temp,
 				tmp_len);
 		entry->data_record.strings_len += tmp_len;
