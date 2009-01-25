@@ -3,7 +3,6 @@
 include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libwind.la
-noinst_LTLIBRARIES = libnwind.la
 
 built = \
 	bidi_table.c				\
@@ -40,10 +39,8 @@ code = \
 
 $(code:.c=.lo): $(built)
 
-libwind_la_SOURCES =
-
-dist_libnwind_la_SOURCES = $(code) $(built)
-nodist_libnwind_la_SOURCES = wind_err.c wind_err.h
+dist_libwind_la_SOURCES = $(code) $(built)
+nodist_libwind_la_SOURCES = wind_err.c wind_err.h
 
 dist_include_HEADERS = wind.h
 nodist_include_HEADERS = wind_err.h
@@ -53,7 +50,6 @@ $(libwind_la_OBJECTS): wind_err.h
 libwind_la_LDFLAGS = -version-info 0:0:0
 
 libwind_la_LIBADD = \
-	libnwind.la \
 	$(LIB_com_err)
 
 if versionscript
