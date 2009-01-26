@@ -6651,14 +6651,9 @@ uint32 dmapi_file_flags(const char * const path);
 
 /* The following definitions come from smbd/dnsregister.c  */
 
-void dns_register_close(struct dns_reg_state **dns_state_ptr);
-void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout);
-bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout);
+bool smbd_setup_mdns_registration(struct tevent_context *ev,
+				  TALLOC_CTX *mem_ctx,
+				  uint16_t port);
 
 /* The following definitions come from smbd/dosmode.c  */
 

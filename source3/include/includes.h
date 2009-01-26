@@ -678,20 +678,6 @@ struct printjob;
 
 #include "smb_ldap.h"
 
-struct dns_reg_state;
-
-void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout);
-
-void dns_register_close(struct dns_reg_state ** dns_state_ptr);
-
-
-bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout);
-
 /*
  * Reasons for cache flush.
  */

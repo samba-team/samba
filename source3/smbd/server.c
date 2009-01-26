@@ -309,12 +309,14 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 	int maxfd = 0;
 	int i;
 	char *ports;
-	struct dns_reg_state * dns_reg = NULL;
+	TALLOC_CTX *dns_ctx = NULL;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT
 	atexit(killkids);
 #endif
+
+	dns_ctx = talloc_new(NULL);
 
 	/* Stop zombies */
 	smbd_setup_sig_chld_handler();
@@ -535,6 +537,11 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 			   MSG_SMB_INJECT_FAULT, msg_inject_fault);
 #endif
 
+	if (dns_port != 0) {
+		smbd_setup_mdns_registration(smbd_event_context(),
+					     dns_ctx, dns_port);
+	}
+
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
@@ -554,12 +561,6 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 		FD_ZERO(&w_fds);
 		GetTimeOfDay(&now);
 
-		/* Kick off our mDNS registration. */
-		if (dns_port != 0) {
-			dns_register_smbd(&dns_reg, dns_port, &maxfd,
-					&r_fds, &idle_timeout);
-		}
-
 		event_add_to_select_args(smbd_event_context(), &now,
 					 &r_fds, &w_fds, &idle_timeout,
 					 &maxfd);
@@ -578,11 +579,6 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 		 */
 		if (num == 0 && count_all_current_connections() == 0) {
 			exit_server_cleanly("idle timeout");
-		}
-
-		/* process pending nDNS responses */
-		if (dns_register_smbd_reply(dns_reg, &r_fds, &idle_timeout)) {
-			--num;
 		}
 
 		/* check if we need to reload services */
@@ -624,6 +620,8 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 			    ((child = sys_fork())==0)) {
 				/* Child code ... */
 
+				TALLOC_FREE(dns_ctx);
+
 				/* Stop zombies, the parent explicitly handles
 				 * them, counting worker smbds. */
 				CatchChild();
@@ -631,9 +629,6 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 				/* close the listening socket(s) */
 				for(i = 0; i < num_sockets; i++)
 					close(fd_listenset[i]);
-
-				/* close our mDNS daemon handle */
-				dns_register_close(&dns_reg);
 
 				/* close our standard file
 				   descriptors */
