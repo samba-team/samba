@@ -781,7 +781,9 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
 {
 	size_t buflen;
 	char *converted;
@@ -806,7 +808,7 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 
 	if (!convert_string_allocate(talloc_tos(), CH_UNIX,
 				     ucs2 ? CH_UTF16LE : CH_DOS,
-				     str, strlen(str)+1, &converted,
+				     str, str_len, &converted,
 				     &converted_size, true)) {
 		return NULL;
 	}
@@ -821,6 +823,11 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 	memcpy(buf + buflen, converted, converted_size);
 
 	TALLOC_FREE(converted);
+
+	if (pconverted_size) {
+		*pconverted_size = converted_size;
+	}
+
 	return buf;
 }
 
@@ -890,12 +897,8 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	bytes = talloc_array(talloc_tos(), uint8_t, 0);
-	if (bytes == NULL) {
-		return NULL;
-	}
-
-	bytes = smb_bytes_push_str(
-		bytes, (cli->capabilities & CAP_UNICODE) != 0, fname);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
 	if (bytes == NULL) {
 		return NULL;
 	}

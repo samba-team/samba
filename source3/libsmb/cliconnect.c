@@ -1294,7 +1294,10 @@ struct async_req *cli_negprot_send(TALLOC_CTX *mem_ctx,
 		if (bytes == NULL) {
 			return NULL;
 		}
-		bytes = smb_bytes_push_str(bytes, false, prots[numprots].name);
+		bytes = smb_bytes_push_str(bytes, false,
+					   prots[numprots].name,
+					   strlen(prots[numprots].name)+1,
+					   NULL);
 		if (bytes == NULL) {
 			return NULL;
 		}

@@ -765,9 +765,9 @@ static struct async_req *cli_ship_trans(TALLOC_CTX *mem_ctx,
 		if (bytes == NULL) {
 			goto fail;
 		}
-		bytes = smb_bytes_push_str(
-			bytes, (state->cli->capabilities & CAP_UNICODE) != 0,
-			state->pipe_name);
+		bytes = smb_bytes_push_str(bytes, cli_ucs2(state->cli),
+					   state->pipe_name,
+					   strlen(state->pipe_name)+1, NULL);
 		if (bytes == NULL) {
 			goto fail;
 		}

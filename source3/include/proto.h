@@ -2501,7 +2501,8 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str);
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
+			    size_t strlen, size_t *pconverted_size);
 struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				const char *fname, int flags, int share_mode);
