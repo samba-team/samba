@@ -48,7 +48,7 @@ typedef struct {
 
 PyAPI_DATA(PyTypeObject) dcerpc_InterfaceType;
 
-#define PyErr_FromNdrError(err) PyErr_FromNTSTATUS(ndr_map_error2ntstatus(err))
+#define PyErr_FromNdrError(err) Py_BuildValue("(is)", err, ndr_map_error2string(err))
 
 #define PyErr_SetNdrError(err) \
 		PyErr_SetObject(PyExc_RuntimeError, PyErr_FromNdrError(err))
