@@ -39,9 +39,6 @@ RCSID("$Id$");
 #ifdef KRB5
 #include <krb5.h>
 #endif
-#ifdef KRB4
-#include <krb.h>
-#endif
 #include <kafs.h>
 #include <roken.h>
 #include <getarg.h>
@@ -54,9 +51,6 @@ static char *realm;
 static getarg_strings files;
 static int unlog_flag;
 static int verbose;
-#ifdef KRB4
-static int use_krb4 = 1;
-#endif
 #ifdef KRB5
 static char *client_string;
 static char *cache_string;
@@ -68,9 +62,6 @@ struct getargs args[] = {
     { "file",	'p', arg_strings, &files, "files to get tokens for", "path" },
     { "realm",	'k', arg_string, &realm, "realm for afs cell", "realm" },
     { "unlog",	'u', arg_flag, &unlog_flag, "remove tokens" },
-#ifdef KRB4
-    { "v4",	 0, arg_negative_flag, &use_krb4, "don't use Kerberos 4" },
-#endif
 #ifdef KRB5
     { "principal",'P',arg_string,&client_string,"principal to use","principal"},
     { "cache",   0,  arg_string, &cache_string, "ccache to use", "cache"},
@@ -200,22 +191,11 @@ do_afslog(const char *cell)
 	    return 0;
     }
 #endif
-#if KRB4
-    if (use_krb4) {
-	k4ret = krb_afslog(cell, realm);
-	if(k4ret == 0)
-	    return 0;
-    }
-#endif
     if (cell == NULL)
 	cell = "<default cell>";
 #ifdef KRB5
     if (k5ret)
 	warnx("krb5_afslog(%s): %s", cell, krb5_get_err_text(context, k5ret));
-#endif
-#ifdef KRB4
-    if (k4ret)
-	warnx("krb_afslog(%s): %s", cell, krb_get_err_text(k4ret));
 #endif
     if (k5ret || k4ret)
 	return 1;
