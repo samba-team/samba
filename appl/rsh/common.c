@@ -34,7 +34,7 @@
 #include "rsh_locl.h"
 RCSID("$Id$");
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 
 #ifdef KRB5
 int key_usage = 1026;
@@ -74,11 +74,6 @@ ssize_t
 do_read (int fd, void *buf, size_t sz, void *ivec)
 {
     if (do_encrypt) {
-#ifdef KRB4
-	if (auth_method == AUTH_KRB4) {
-	    return des_enc_read (fd, buf, sz, schedule, &iv);
-	} else
-#endif /* KRB4 */
 #ifdef KRB5
         if(auth_method == AUTH_KRB5) {
 	    krb5_error_code ret;
@@ -134,11 +129,6 @@ ssize_t
 do_write (int fd, void *buf, size_t sz, void *ivec)
 {
     if (do_encrypt) {
-#ifdef KRB4
-	if(auth_method == AUTH_KRB4) {
-	    return des_enc_write (fd, buf, sz, schedule, &iv);
-	} else
-#endif /* KRB4 */
 #ifdef KRB5
 	if(auth_method == AUTH_KRB5) {
 	    krb5_error_code status;
@@ -177,4 +167,4 @@ do_write (int fd, void *buf, size_t sz, void *ivec)
     } else
 	return write (fd, buf, sz);
 }
-#endif /* KRB4 || KRB5 */
+#endif /* KRB5 */
