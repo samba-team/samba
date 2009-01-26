@@ -93,7 +93,6 @@ typedef struct krb5_kdc_configuration {
 } krb5_kdc_configuration;
 
 struct krb5_kdc_service {
-    const char *name;
     unsigned int flags;
 #define KS_KRB5		1
 #define KS_NO_LENGTH	2
