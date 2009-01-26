@@ -95,8 +95,8 @@ typedef struct krb5_kdc_configuration {
 struct krb5_kdc_service {
     const char *name;
     unsigned int flags;
-#define KS_KRB5			1
-#define KS_PREPENDLENGTH	2
+#define KS_KRB5		1
+#define KS_NO_LENGTH	2
     krb5_error_code (*process)(krb5_context context,
 			       krb5_kdc_configuration *config,
 			       krb5_data *req_buffer,
