@@ -54,6 +54,43 @@ static struct db_context *idmap_tdb2;
 
 static NTSTATUS idmap_tdb2_alloc_load(void);
 
+static NTSTATUS idmap_tdb2_load_ranges(void)
+{
+	uid_t low_uid = 0;
+	uid_t high_uid = 0;
+	gid_t low_gid = 0;
+	gid_t high_gid = 0;
+
+	if (!lp_idmap_uid(&low_uid, &high_uid)) {
+		DEBUG(1, ("idmap uid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!lp_idmap_gid(&low_gid, &high_gid)) {
+		DEBUG(1, ("idmap gid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	idmap_tdb2_state.low_uid = low_uid;
+	idmap_tdb2_state.high_uid = high_uid;
+	idmap_tdb2_state.low_gid = low_gid;
+	idmap_tdb2_state.high_gid = high_gid;
+
+	if (idmap_tdb2_state.high_uid <= idmap_tdb2_state.low_uid) {
+		DEBUG(1, ("idmap uid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
+		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   open the permanent tdb
  */
@@ -94,10 +131,7 @@ static NTSTATUS idmap_tdb2_open_db(void)
 */
 static NTSTATUS idmap_tdb2_alloc_load(void)
 {
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
+	NTSTATUS status;
 	uint32 low_id;
 
 	/* see if a idmap script is configured */
@@ -111,27 +145,9 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 
 	/* load ranges */
 
-	if (!lp_idmap_uid(&low_uid, &high_uid)
-	    || !lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap uid or idmap gid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	idmap_tdb2_state.low_uid = low_uid;
-	idmap_tdb2_state.high_uid = high_uid;
-	idmap_tdb2_state.low_gid = low_gid;
-	idmap_tdb2_state.high_gid = high_gid;
-
-	if (idmap_tdb2_state.high_uid <= idmap_tdb2_state.low_uid) {
-		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	status = idmap_tdb2_load_ranges();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/* Create high water marks for group and user id */
