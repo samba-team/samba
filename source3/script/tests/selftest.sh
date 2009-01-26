@@ -25,11 +25,11 @@ do
 done
 
 echo "Running selftest with the following"
-echo "Selftest Directory:\t\t$DIRECTORY"
-echo "Subtests to Run:\t\t$SUBTESTS"
-echo "smbtorture4 Path:\t\t$SMBTORTURE4"
-echo "Alternative Share Dir:\t\t$ALT_SHRDIR_ARG"
-echo "Custom Configuration:\t\t$CUSTOM_CONF_ARG"
+echo "Selftest Directory: $DIRECTORY"
+echo "Subtests to Run: $SUBTESTS"
+echo "smbtorture4 Path: $SMBTORTURE4"
+echo "Alternative Share Dir: $ALT_SHRDIR_ARG"
+echo "Custom Configuration: $CUSTOM_CONF_ARG"
 
 if [ $CUSTOM_CONF_ARG ]; then
     INCLUDE_CUSTOM_CONF="include = $CUSTOM_CONF_ARG"
@@ -95,10 +95,11 @@ export WINBINDD_SOCKET_DIR WINBINDD_PRIV_PIPE_DIR
 PATH=bin:$PATH
 export PATH
 
-if [ $SMBTORTRE4 ]; then
+if [ $SMBTORTURE4 ]; then
     SAMBA4BINDIR=`dirname $SMBTORTURE4`
-    SAMBA4SHAREDDIR="$SAMBA4BINDIR/shared"
 fi
+
+SAMBA4SHAREDDIR="$SAMBA4BINDIR/shared"
 
 export SAMBA4SHAREDDIR
 export SMBTORTURE4
