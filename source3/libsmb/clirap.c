@@ -952,7 +952,8 @@ bool cli_qfilename(struct cli_state *cli, int fnum, char *name, size_t namelen)
 		return False;
 	}
 
-	clistr_pull(cli, name, rdata+4, namelen, IVAL(rdata, 0), STR_UNICODE);
+	clistr_pull(cli->inbuf, name, rdata+4, namelen, IVAL(rdata, 0),
+		    STR_UNICODE);
 
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
@@ -1232,7 +1233,8 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, fstrin
 		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	clistr_pull(cli, alt_name, rdata+4, sizeof(fstring), len, STR_UNICODE);
+	clistr_pull(cli->inbuf, alt_name, rdata+4, sizeof(fstring), len,
+		    STR_UNICODE);
 
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);

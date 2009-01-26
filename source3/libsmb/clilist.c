@@ -98,7 +98,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			   between win2000 and win9x for this call
 			   (tridge) */
 			ret = clistr_pull_talloc(ctx,
-						cli,
+						cli->inbuf,
 						&finfo->name,
 						p,
 						len+2,
@@ -127,7 +127,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			ret = clistr_pull_talloc(ctx,
-						cli,
+						cli->inbuf,
 						&finfo->name,
 						p,
 					 	len,
@@ -179,7 +179,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				/* stupid NT bugs. grr */
 				int flags = 0;
 				if (p[1] == 0 && namelen > 1) flags |= STR_UNICODE;
-				clistr_pull(cli, finfo->short_name, p,
+				clistr_pull(cli->inbuf, finfo->short_name, p,
 					    sizeof(finfo->short_name),
 					    slen, flags);
 			}
@@ -188,7 +188,7 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 				return pdata_end - base;
 			}
 			ret = clistr_pull_talloc(ctx,
-						cli,
+						cli->inbuf,
 						&finfo->name,
 						p,
 				    		namelen,
@@ -514,7 +514,7 @@ static bool interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
 	ret = clistr_pull_talloc(ctx,
-			cli,
+			cli->inbuf,
 			&finfo->name,
 			p+30,
 			12,

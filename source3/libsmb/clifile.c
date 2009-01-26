@@ -783,10 +783,15 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 {
-	size_t buflen = talloc_get_size(buf);
+	size_t buflen;
 	char *converted;
 	size_t converted_size;
 
+	if (buf == NULL) {
+		return NULL;
+	}
+
+	buflen = talloc_get_size(buf);
 	/*
 	 * We're pushing into an SMB buffer, align odd
 	 */
@@ -809,6 +814,7 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 	buf = TALLOC_REALLOC_ARRAY(NULL, buf, uint8_t,
 				   buflen + converted_size);
 	if (buf == NULL) {
+		TALLOC_FREE(converted);
 		return NULL;
 	}
 
@@ -1745,7 +1751,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 		if (!path2) {
 			return -1;
 		}
-		clistr_pull(cli, path2, p,
+		clistr_pull(cli->inbuf, path2, p,
 			    len+1, len, STR_ASCII);
 		*tmp_path = path2;
 	}

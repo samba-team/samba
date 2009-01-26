@@ -199,9 +199,12 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 
 	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -276,9 +279,12 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
 	fstrcpy(cli->user_name, user);
 
 	if (strstr(cli->server_type, "Samba")) {
@@ -426,9 +432,12 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	cli->vuid = SVAL(cli->inbuf,smb_uid);
 	
 	p = smb_buf(cli->inbuf);
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), -1, STR_TERMINATE);
-	p += clistr_pull(cli, cli->server_domain, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_domain, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
 
 	if (strstr(cli->server_type, "Samba")) {
 		cli->is_samba = True;
@@ -512,11 +521,13 @@ static DATA_BLOB cli_session_setup_blob_receive(struct cli_state *cli)
 	blob2 = data_blob(p, SVAL(cli->inbuf, smb_vwv3));
 
 	p += blob2.length;
-	p += clistr_pull(cli, cli->server_os, p, sizeof(fstring), -1, STR_TERMINATE);
+	p += clistr_pull(cli->inbuf, cli->server_os, p, sizeof(fstring),
+			 -1, STR_TERMINATE);
 
 	/* w2k with kerberos doesn't properly null terminate this field */
 	len = smb_bufrem(cli->inbuf, p);
-	p += clistr_pull(cli, cli->server_type, p, sizeof(fstring), len, 0);
+	p += clistr_pull(cli->inbuf, cli->server_type, p, sizeof(fstring),
+			 len, 0);
 
 	return blob2;
 }
@@ -1178,7 +1189,8 @@ bool cli_send_tconX(struct cli_state *cli,
 	if (cli_is_error(cli))
 		return False;
 
-	clistr_pull(cli, cli->dev, smb_buf(cli->inbuf), sizeof(fstring), -1, STR_TERMINATE|STR_ASCII);
+	clistr_pull(cli->inbuf, cli->dev, smb_buf(cli->inbuf), sizeof(fstring),
+		    -1, STR_TERMINATE|STR_ASCII);
 
 	if (cli->protocol >= PROTOCOL_NT1 &&
 	    smb_buflen(cli->inbuf) == 3) {
@@ -1350,7 +1362,7 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 		/* work out if they sent us a workgroup */
 		if (!(cli->capabilities & CAP_EXTENDED_SECURITY) &&
 		    smb_buflen(cli->inbuf) > 8) {
-			clistr_pull(cli, cli->server_domain,
+			clistr_pull(cli->inbuf, cli->server_domain,
 				    bytes+8, sizeof(cli->server_domain),
 				    num_bytes-8,
 				    STR_UNICODE|STR_NOALIGN);

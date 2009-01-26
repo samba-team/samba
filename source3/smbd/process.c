@@ -1640,8 +1640,18 @@ void chain_reply(struct smb_request *req)
 		/*
 		 * In req->chain_outbuf we collect all the replies. Start the
 		 * chain by copying in the first reply.
+		 *
+		 * We do the realloc because later on we depend on
+		 * talloc_get_size to determine the length of
+		 * chain_outbuf. The reply_xxx routines might have
+		 * over-allocated (reply_pipe_read_and_X used to be such an
+		 * example).
 		 */
-		req->chain_outbuf = req->outbuf;
+		req->chain_outbuf = TALLOC_REALLOC_ARRAY(
+			req, req->outbuf, uint8_t, smb_len(req->outbuf) + 4);
+		if (req->chain_outbuf == NULL) {
+			goto error;
+		}
 		req->outbuf = NULL;
 	} else {
 		if (!smb_splice_chain(&req->chain_outbuf,
