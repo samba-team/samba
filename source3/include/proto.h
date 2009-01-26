@@ -2509,6 +2509,28 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 FileAttributes, uint32 ShareAccess,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
+struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli,
+				    const char *fname,
+				    uint32_t CreatFlags,
+				    uint32_t DesiredAccess,
+				    uint32_t FileAttributes,
+				    uint32_t ShareAccess,
+				    uint32_t CreateDisposition,
+				    uint32_t CreateOptions,
+				    uint8_t SecurityFlags);
+NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum);
+NTSTATUS cli_ntcreate(struct cli_state *cli,
+		      const char *fname,
+		      uint32_t CreatFlags,
+		      uint32_t DesiredAccess,
+		      uint32_t FileAttributes,
+		      uint32_t ShareAccess,
+		      uint32_t CreateDisposition,
+		      uint32_t CreateOptions,
+		      uint8_t SecurityFlags,
+		      uint16_t *pfid);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
 			    size_t str_len, size_t *pconverted_size);
