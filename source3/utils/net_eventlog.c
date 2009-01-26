@@ -72,6 +72,101 @@ static int net_eventlog_dump(struct net_context *c, int argc,
 }
 
 /**
+ * Import an *evt win32 eventlog file to internal tdb representation
+ *
+ * @param argc  Standard main() style argc.
+ * @param argv  Standard main() style argv. Initial components are already
+ *              stripped.
+ *
+ * @return A shell status integer (0 for success).
+ **/
+
+static int net_eventlog_import(struct net_context *c, int argc,
+			       const char **argv)
+{
+	int ret = -1;
+	TALLOC_CTX *ctx = talloc_stackframe();
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	uint32_t num_records = 0;
+	uint32_t i;
+	ELOG_TDB *etdb = NULL;
+
+	struct EVENTLOGHEADER evt_header;
+	struct EVENTLOG_EVT_FILE evt;
+
+	if (argc < 2 || c->display_usage) {
+		d_fprintf(stderr, "usage: net eventlog import <file> <eventlog>\n");
+		goto done;
+	}
+
+	blob.data = (uint8_t *)file_load(argv[0], &blob.length, 0, ctx);
+	if (!blob.data) {
+		d_fprintf(stderr, "failed to load evt file: %s\n", argv[0]);
+		goto done;
+	}
+
+	/* dump_data(0, blob.data, blob.length); */
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, NULL, &evt_header,
+		   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOGHEADER);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		d_fprintf(stderr, "evt header pull failed: %s\n", ndr_errstr(ndr_err));
+		goto done;
+	}
+
+	if (evt_header.Flags & ELF_LOGFILE_HEADER_WRAP) {
+		d_fprintf(stderr, "input file is wrapped, cannot proceed\n");
+		goto done;
+	}
+
+	ndr_err = ndr_pull_struct_blob(&blob, ctx, NULL, &evt,
+		   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOG_EVT_FILE);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		d_fprintf(stderr, "evt pull failed: %s\n", ndr_errstr(ndr_err));
+		goto done;
+	}
+
+	/* NDR_PRINT_DEBUG(EVENTLOG_EVT_FILE, &evt); */
+
+	etdb = elog_open_tdb(argv[1], false, false);
+	if (!etdb) {
+		d_fprintf(stderr, "can't open the eventlog TDB (%s)\n", argv[1]);
+		goto done;
+	}
+
+	num_records = evt.hdr.CurrentRecordNumber - evt.hdr.OldestRecordNumber;
+
+	for (i=0; i<num_records; i++) {
+		uint32_t record_number;
+		struct eventlog_Record_tdb e;
+
+		status = evlog_evt_entry_to_tdb_entry(ctx, &evt.records[i], &e);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+
+		status = evlog_push_record_tdb(ctx, ELOG_TDB_CTX(etdb),
+					       &e, &record_number);
+		if (!NT_STATUS_IS_OK(status)) {
+			d_fprintf(stderr, "can't write to the eventlog: %s\n",
+				nt_errstr(status));
+			goto done;
+		}
+	}
+
+	printf("wrote %d entries to tdb\n", i);
+
+	ret = 0;
+ done:
+
+	elog_close_tdb(etdb, false);
+
+	TALLOC_FREE(ctx);
+	return ret;
+}
+
+/**
  * 'net rpc eventlog' entrypoint.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
@@ -91,6 +186,15 @@ int net_eventlog(struct net_context *c, int argc, const char **argv)
 			"net eventlog dump\n"
 			"    Dump win32 *.evt eventlog file"
 		},
+		{
+			"import",
+			net_eventlog_import,
+			NET_TRANSPORT_LOCAL,
+			"Import eventlog",
+			"net eventlog import\n"
+			"    Import win32 *.evt eventlog file"
+		},
+
 	{ NULL, NULL, 0, NULL, NULL }
 	};
 
