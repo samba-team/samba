@@ -123,10 +123,6 @@ struct tm *localtime(const time_t *);
 struct hostent  *gethostbyname(const char *);
 #endif
 
-#ifdef KRB4
-#include <krb.h>
-#include <prot.h>
-#endif
 #ifdef KRB5
 #include <krb5.h>
 #endif
@@ -228,16 +224,6 @@ kx_write (kx_context *kc, int fd, const void *buf, size_t len);
 
 int
 copy_encrypted (kx_context *kc, int fd1, int fd2);
-
-#ifdef KRB4
-
-void
-krb4_make_context (kx_context *c);
-
-int
-recv_v4_auth (kx_context *kc, int sock, u_char *buf);
-
-#endif
 
 #ifdef KRB5
 
