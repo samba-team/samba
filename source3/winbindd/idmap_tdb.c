@@ -203,29 +203,21 @@ static bool idmap_tdb_upgrade(struct db_context *db)
 	return True;
 }
 
-static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
-				  bool check_config,
-				  struct db_context **dbctx)
+static NTSTATUS idmap_tdb_load_ranges(void)
 {
-	NTSTATUS ret;
-	TALLOC_CTX *ctx;
-	char *tdbfile = NULL;
-	struct db_context *db = NULL;
-	int32_t version;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
-	bool config_error = false;
 
-	/* load ranges */
-	if (!lp_idmap_uid(&low_uid, &high_uid)
-	    || !lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap uid or idmap gid missing\n"));
-		config_error = true;
-		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!lp_idmap_uid(&low_uid, &high_uid)) {
+		DEBUG(1, ("idmap uid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!lp_idmap_gid(&low_gid, &high_gid)) {
+		DEBUG(1, ("idmap gid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	idmap_tdb_state.low_uid = low_uid;
@@ -235,17 +227,33 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 
 	if (idmap_tdb_state.high_uid <= idmap_tdb_state.low_uid) {
 		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		config_error = true;
-		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (idmap_tdb_state.high_gid <= idmap_tdb_state.low_gid) {
 		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
+				  bool check_config,
+				  struct db_context **dbctx)
+{
+	NTSTATUS ret;
+	TALLOC_CTX *ctx;
+	char *tdbfile = NULL;
+	struct db_context *db = NULL;
+	int32_t version;
+	bool config_error = false;
+
+	ret = idmap_tdb_load_ranges();
+	if (!NT_STATUS_IS_OK(ret)) {
 		config_error = true;
 		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
+			return ret;
 		}
 	}
 
