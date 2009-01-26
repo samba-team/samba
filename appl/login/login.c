@@ -133,11 +133,7 @@ exec_shell(const char *shell, int fallback)
     err(1, "%s", shell);
 }
 
-static enum { NONE = 0, AUTH_KRB4 = 1, AUTH_KRB5 = 2, AUTH_OTP = 3 } auth;
-
-#ifdef KRB4
-static krb5_boolean get_v4_tgt = FALSE;
-#endif
+static enum { NONE = 0, AUTH_KRB5 = 2, AUTH_OTP = 3 } auth;
 
 #ifdef OTP
 static OtpContext otp_ctx;
@@ -180,73 +176,6 @@ krb5_verify(struct passwd *pwd, const char *password)
     return ret;
 }
 
-#ifdef KRB4
-static krb5_error_code
-krb5_to4 (krb5_ccache id)
-{
-    krb5_error_code ret;
-    krb5_principal princ;
-
-    ret = krb5_cc_get_principal(context, id, &princ);
-    if(ret == 0) {
-	krb5_appdefault_boolean(context, "login",
-				krb5_principal_get_realm(context, princ),
-				"krb4_get_tickets", FALSE, &get_v4_tgt);
-	krb5_free_principal(context, princ);
-    } else {
-	krb5_realm realm = NULL;
-	krb5_get_default_realm(context, &realm);
-	krb5_appdefault_boolean(context, "login",
-				realm,
-				"krb4_get_tickets", FALSE, &get_v4_tgt);
-	free(realm);
-    }
-
-    if (get_v4_tgt) {
-        CREDENTIALS c;
-        krb5_creds mcred, cred;
-        char krb4tkfile[MAXPATHLEN];
-	krb5_error_code ret;
-	krb5_principal princ;
-
-	krb5_cc_clear_mcred(&mcred);
-
-	ret = krb5_cc_get_principal (context, id, &princ);
-	if (ret)
-	    return ret;
-
-	ret = krb5_make_principal(context, &mcred.server,
-				  princ->realm,
-				  "krbtgt",
-				  princ->realm,
-				  NULL);
-	if (ret) {
-	    krb5_free_principal(context, princ);
-	    return ret;
-	}
-	mcred.client = princ;
-
-	ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
-	if(ret == 0) {
-	    ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
-	    if(ret == 0) {
-		snprintf(krb4tkfile,sizeof(krb4tkfile),"%s%d",TKT_ROOT,
-			 getuid());
-		krb_set_tkt_string(krb4tkfile);
-		tf_setup(&c, c.pname, c.pinst);
-	    }
-	    memset(&c, 0, sizeof(c));
-	    krb5_free_cred_contents(context, &cred);
-	}
-	if (ret != 0)
-	    get_v4_tgt = FALSE;
-	krb5_free_principal(context, mcred.server);
-	krb5_free_principal(context, mcred.client);
-    }
-    return 0;
-}
-#endif /* KRB4 */
-
 static int
 krb5_start_session (const struct passwd *pwd)
 {
@@ -264,9 +193,6 @@ krb5_start_session (const struct passwd *pwd)
 	krb5_cc_destroy (context, id2);
 	return ret;
     }
-#ifdef KRB4
-    krb5_to4 (id2);
-#endif
     krb5_cc_close(context, id2);
     krb5_cc_destroy(context, id);
     return 0;
@@ -308,63 +234,6 @@ krb5_get_afs_tokens (const struct passwd *pwd)
 }
 
 #endif /* KRB5 */
-
-#ifdef KRB4
-
-static int
-krb4_verify(struct passwd *pwd, const char *password)
-{
-    char lrealm[REALM_SZ];
-    int ret;
-    char ticket_file[MaxPathLen];
-
-    ret = krb_get_lrealm (lrealm, 1);
-    if (ret)
-	return 1;
-
-    snprintf (ticket_file, sizeof(ticket_file),
-	      "%s%u_%u",
-	      TKT_ROOT, (unsigned)pwd->pw_uid, (unsigned)getpid());
-
-    krb_set_tkt_string (ticket_file);
-
-    ret = krb_verify_user (pwd->pw_name, "", lrealm, (char *)password,
-			   KRB_VERIFY_SECURE_FAIL, NULL);
-    if (ret)
-	return 1;
-
-    if (chown (ticket_file, pwd->pw_uid, pwd->pw_gid) < 0) {
-	dest_tkt();
-	return 1;
-    }
-	
-    add_env ("KRBTKFILE", ticket_file);
-    return 0;
-}
-
-static void
-krb4_get_afs_tokens (const struct passwd *pwd)
-{
-    char cell[64];
-    char *pw_dir;
-
-    if (!k_hasafs ())
-	return;
-
-    pw_dir = pwd->pw_dir;
-
-    if (!pag_set) {
-	k_setpag();
-	pag_set = 1;
-    }
-
-    if(k_afs_cell_of_file(pw_dir, cell, sizeof(cell)) == 0)
-	krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
-
-    krb_afslog_uid_home (NULL, NULL, pwd->pw_uid, pwd->pw_dir);
-}
-
-#endif /* KRB4 */
 
 static int f_flag;
 static int p_flag;
@@ -600,28 +469,11 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     if (auth == AUTH_KRB5) {
 	krb5_start_session (pwd);
     }
-#ifdef KRB4
-    else if (auth == 0) {
-	krb5_error_code ret;
-	krb5_ccache id;
-
-	ret = krb5_cc_default (context, &id);
-	if (ret == 0) {
-	    krb5_to4 (id);
-	    krb5_cc_close (context, id);
-	}
-    }
-#endif /* KRB4 */
 
     krb5_get_afs_tokens (pwd);
 
     krb5_finish ();
 #endif /* KRB5 */
-
-#ifdef KRB4
-    if (auth == AUTH_KRB4 || get_v4_tgt)
-	krb4_get_afs_tokens (pwd);
-#endif /* KRB4 */
 
     add_env("PATH", _PATH_DEFPATH);
 
@@ -679,12 +531,6 @@ check_password(struct passwd *pwd, const char *password)
 #ifdef KRB5
     if(krb5_verify(pwd, password) == 0) {
 	auth = AUTH_KRB5;
-	return 0;
-    }
-#endif
-#ifdef KRB4
-    if (krb4_verify (pwd, password) == 0) {
-	auth = AUTH_KRB4;
 	return 0;
     }
 #endif
