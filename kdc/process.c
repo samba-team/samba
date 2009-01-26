@@ -210,18 +210,18 @@ kdc_kaserver(krb5_context context,
 
 
 static struct krb5_kdc_service services[] =  {
-    { "Kerberos 5 as",		KS_PREPENDLENGTH|KS_KRB5,	kdc_as_req },
-    { "Kerberos 5 tgs",		KS_PREPENDLENGTH|KS_KRB5,	kdc_tgs_req },
+    { "Kerberos 5 as",		KS_KRB5,	kdc_as_req },
+    { "Kerberos 5 tgs",		KS_KRB5,	kdc_tgs_req },
 #ifdef DIGEST
-    { "Kerberos digest",	KS_PREPENDLENGTH,		kdc_digest },
+    { "Kerberos digest",	0,		kdc_digest },
 #endif
 #ifdef KX509
-    { "kx509",			KS_PREPENDLENGTH,		kdc_kx509 },
+    { "kx509",			0,		kdc_kx509 },
 #endif
 #ifdef KRB4
-    { "Kerberos 542",		KS_PREPENDLENGTH,		kdc_524 },
-    { "Kerberos 4",		0,				kdc_krb4 },
-    { "kaserver",		KS_PREPENDLENGTH,		kdc_kaserver },
+    { "Kerberos 542",		0,		kdc_524 },
+    { "Kerberos 4",		KS_NO_LENGTH,	kdc_krb4 },
+    { "kaserver",		0,		kdc_kaserver },
 #endif
     { NULL }
 };
@@ -253,7 +253,8 @@ krb5_kdc_process_request(krb5_context context,
 	ret = (*services[i].process)(context, config, &req_buffer,
 				     reply, from, addr, datagram_reply);
 	if (ret == 0) {
-	    *prependlength = (services[i].flags & KS_PREPENDLENGTH);
+	    if (services[i].flags & KS_NO_LENGTH)
+		*prependlength = 0;
 	    break;
 	}
     }
