@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(X_CFLAGS)
+AM_CPPFLAGS += $(X_CFLAGS)
 
 WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
@@ -31,7 +31,6 @@ kx_SOURCES = \
 	kx.h \
 	common.c \
 	context.c \
-	krb4.c \
 	krb5.c \
 	$(XauWriteAuth_c)
 
@@ -42,7 +41,6 @@ kxd_SOURCES = \
 	kx.h \
 	common.c \
 	context.c \
-	krb4.c \
 	krb5.c \
 	$(XauWriteAuth_c)
 
@@ -67,7 +65,6 @@ tenletxr: tenletxr.in
 LDADD = \
 	$(LIB_kafs)				\
 	$(LIB_krb5) 				\
-	$(LIB_krb4)				\
 	$(LIB_hcrypto)				\
 	$(LIB_roken)				\
 	$(X_LIBS) $(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)
