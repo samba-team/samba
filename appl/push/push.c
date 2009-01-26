@@ -34,10 +34,6 @@
 #include "push_locl.h"
 RCSID("$Id$");
 
-#ifdef KRB4
-static int use_v4 = -1;
-#endif
-
 #ifdef KRB5
 static int use_v5 = -1;
 static krb5_context context;
@@ -54,10 +50,6 @@ static int do_count;
 static char *header_str;
 
 struct getargs args[] = {
-#ifdef KRB4
-    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
-      NULL },
-#endif
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
@@ -565,48 +557,6 @@ do_v5 (const char *host,
 }
 #endif
 
-#ifdef KRB4
-static int
-do_v4 (const char *host,
-       int port,
-       const char *user,
-       const char *filename,
-       const char *header_str,
-       int leavep,
-       int verbose,
-       int forkp)
-{
-    KTEXT_ST ticket;
-    MSG_DAT msg_data;
-    CREDENTIALS cred;
-    des_key_schedule sched;
-    int s;
-    int ret;
-
-    s = do_connect (host, port, 1);
-    if (s < 0)
-	return 1;
-    ret = krb_sendauth(0,
-		       s,
-		       &ticket,
-		       "pop",
-		       (char *)host,
-		       krb_realmofhost(host),
-		       getpid(),
-		       &msg_data,
-		       &cred,
-		       sched,
-		       NULL,
-		       NULL,
-		       "KPOPV0.1");
-    if(ret) {
-	warnx("krb_sendauth: %s", krb_get_err_text(ret));
-	return 1;
-    }
-    return doit (s, host, user, filename, header_str, leavep, verbose, forkp);
-}
-#endif /* KRB4 */
-
 #ifdef HESIOD
 
 #ifdef HESIOD_INTERFACES
@@ -763,13 +713,6 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
-#if defined(KRB4) && defined(KRB5)
-    if(use_v4 == -1 && use_v5 == 1)
-	use_v4 = 0;
-    if(use_v5 == -1 && use_v4 == 1)
-	use_v5 = 0;
-#endif
-
     if (do_help)
 	usage (0);
 
@@ -818,10 +761,8 @@ main(int argc, char **argv)
     if (port == 0) {
 #ifdef KRB5
 	port = krb5_getportbyname (context, "kpop", "tcp", 1109);
-#elif defined(KRB4)
-	port = k_getportbyname ("kpop", "tcp", htons(1109));
 #else
-#error must define KRB4 or KRB5
+#error must define KRB5
 #endif
     }
 
@@ -833,12 +774,5 @@ main(int argc, char **argv)
 		     do_leave, verbose_level, do_fork);
     }
 #endif
-
-#ifdef KRB4
-    if (ret && use_v4) {
-	ret = do_v4 (host, port, user, filename, header_str,
-		     do_leave, verbose_level, do_fork);
-    }
-#endif /* KRB4 */
     return ret;
 }
