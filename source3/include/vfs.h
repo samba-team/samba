@@ -112,6 +112,7 @@
 /* Changed to version 25 - Jelmer's change from SMB_BIG_UINT to uint64_t. */
 /* Leave at 25 - not yet released. Add create_file call. -- tprouty. */
 /* Leave at 25 - not yet released. Add create time to ntimes. -- tstecher. */
+/* Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty. */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -189,6 +190,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STAT,
 	SMB_VFS_OP_FSTAT,
 	SMB_VFS_OP_LSTAT,
+	SMB_VFS_OP_GET_ALLOC_SIZE,
 	SMB_VFS_OP_UNLINK,
 	SMB_VFS_OP_CHMOD,
 	SMB_VFS_OP_FCHMOD,
@@ -342,6 +344,7 @@ struct vfs_ops {
 		int (*stat)(struct vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 		int (*lstat)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
+		uint64_t (*get_alloc_size)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 		int (*unlink)(struct vfs_handle_struct *handle, const char *path);
 		int (*chmod)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
 		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
@@ -496,6 +499,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *stat;
 		struct vfs_handle_struct *fstat;
 		struct vfs_handle_struct *lstat;
+		struct vfs_handle_struct *get_alloc_size;
 		struct vfs_handle_struct *unlink;
 		struct vfs_handle_struct *chmod;
 		struct vfs_handle_struct *fchmod;

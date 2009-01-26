@@ -551,6 +551,39 @@ int vfswrap_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT 
 	return result;
 }
 
+/********************************************************************
+ Given a stat buffer return the allocated size on disk, taking into
+ account sparse files.
+********************************************************************/
+static uint64_t vfswrap_get_alloc_size(vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const SMB_STRUCT_STAT *sbuf)
+{
+	uint64_t result;
+
+	START_PROFILE(syscall_get_alloc_size);
+
+	if(S_ISDIR(sbuf->st_mode)) {
+		result = 0;
+		goto out;
+	}
+
+#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	result = (uint64_t)STAT_ST_BLOCKSIZE * (uint64_t)sbuf->st_blocks;
+#else
+	result = get_file_size_stat(sbuf);
+#endif
+
+	if (fsp && fsp->initial_allocation_size)
+		result = MAX(result,fsp->initial_allocation_size);
+
+	result = smb_roundup(handle->conn, result);
+
+ out:
+	END_PROFILE(syscall_get_alloc_size);
+	return result;
+}
+
 static int vfswrap_unlink(vfs_handle_struct *handle,  const char *path)
 {
 	int result;
@@ -1043,7 +1076,7 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	}
 
 	streams->size = sbuf.st_size;
-	streams->alloc_size = get_allocation_size(handle->conn, fsp, &sbuf);
+	streams->alloc_size = SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp, &sbuf);
 
 	streams->name = talloc_strdup(streams, "::$DATA");
 	if (streams->name == NULL) {
@@ -1442,6 +1475,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_fstat),	SMB_VFS_OP_FSTAT,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_lstat),	SMB_VFS_OP_LSTAT,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_get_alloc_size),	SMB_VFS_OP_GET_ALLOC_SIZE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_unlink),	SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_OPAQUE},
