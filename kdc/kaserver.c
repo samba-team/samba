@@ -33,7 +33,7 @@
 
 #include "kdc_locl.h"
 
-RCSID("$Id$");
+#ifdef KRB4
 
 #include <krb5-v4compat.h>
 #include <rx.h>
@@ -949,3 +949,5 @@ out:
     krb5_storage_free (sp);
     return ret;
 }
+
+#endif /* KRB4 */
