@@ -210,18 +210,18 @@ kdc_kaserver(krb5_context context,
 
 
 static struct krb5_kdc_service services[] =  {
-    { "Kerberos 5 as",		KS_KRB5,	kdc_as_req },
-    { "Kerberos 5 tgs",		KS_KRB5,	kdc_tgs_req },
+    { KS_KRB5,	kdc_as_req },
+    { KS_KRB5,	kdc_tgs_req },
 #ifdef DIGEST
-    { "Kerberos digest",	0,		kdc_digest },
+    { 0,		kdc_digest },
 #endif
 #ifdef KX509
-    { "kx509",			0,		kdc_kx509 },
+    { 0,		kdc_kx509 },
 #endif
 #ifdef KRB4
-    { "Kerberos 542",		0,		kdc_524 },
-    { "Kerberos 4",		KS_NO_LENGTH,	kdc_krb4 },
-    { "kaserver",		0,		kdc_kaserver },
+    { 0,		kdc_524 },
+    { KS_NO_LENGTH,	kdc_krb4 },
+    { 0,		kdc_kaserver },
 #endif
     { NULL }
 };
