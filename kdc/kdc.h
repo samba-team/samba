@@ -92,6 +92,20 @@ typedef struct krb5_kdc_configuration {
 
 } krb5_kdc_configuration;
 
+struct krb5_kdc_service {
+    const char *name;
+    unsigned int flags;
+#define KS_KRB5			1
+#define KS_PREPENDLENGTH	2
+    krb5_error_code (*process)(krb5_context context,
+			       krb5_kdc_configuration *config,
+			       krb5_data *req_buffer,
+			       krb5_data *reply,
+			       const char *from,
+			       struct sockaddr *addr,
+			       int datagram_reply);
+};
+
 #include <kdc-protos.h>
 
 #endif
