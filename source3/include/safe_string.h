@@ -146,13 +146,13 @@ size_t __unsafe_string_function_usage_here_char__(void);
 	clistr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
 			cli, dest, src, dest_len, flags)
 
-#define clistr_pull(cli, dest, src, dest_len, src_len, flags) \
+#define clistr_pull(inbuf, dest, src, dest_len, src_len, flags) \
 	clistr_pull_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
-			cli, dest, src, dest_len, src_len, flags)
+			inbuf, dest, src, dest_len, src_len, flags)
 
-#define clistr_pull_talloc(ctx, cli, pp_dest, src, src_len, flags) \
+#define clistr_pull_talloc(ctx, inbuf, pp_dest, src, src_len, flags) \
 	clistr_pull_talloc_fn(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
-			ctx, cli, pp_dest, src, src_len, flags)
+			ctx, inbuf, pp_dest, src, src_len, flags)
 
 #define srvstr_push(base_ptr, smb_flags2, dest, src, dest_len, flags) \
 	srvstr_push_fn2(SAFE_STRING_FUNCTION_NAME, SAFE_STRING_LINE, \
@@ -200,10 +200,10 @@ size_t __unsafe_string_function_usage_here_char__(void);
     ? __unsafe_string_function_usage_here_size_t__() \
     : clistr_push_fn(fn_name, fn_line, cli, dest, src, dest_len, flags))
 
-#define clistr_pull_fn2(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags) \
+#define clistr_pull_fn2(fn_name, fn_line, inbuf, dest, src, dest_len, srclen, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \
     ? __unsafe_string_function_usage_here_size_t__() \
-    : clistr_pull_fn(fn_name, fn_line, cli, dest, src, dest_len, srclen, flags))
+    : clistr_pull_fn(fn_name, fn_line, inbuf, dest, src, dest_len, srclen, flags))
 
 #define srvstr_push_fn2(fn_name, fn_line, base_ptr, smb_flags2, dest, src, dest_len, flags) \
     (CHECK_STRING_SIZE(dest, dest_len) \

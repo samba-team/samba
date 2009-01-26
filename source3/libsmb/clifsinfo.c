@@ -229,7 +229,8 @@ bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint
 		*pserial_number = IVAL(rdata,0);
 	}
 	nlen = CVAL(rdata,l2_vol_cch);
-	clistr_pull(cli, volume_name, rdata + l2_vol_szVolLabel, sizeof(fstring), nlen, STR_NOALIGN);
+	clistr_pull(cli->inbuf, volume_name, rdata + l2_vol_szVolLabel,
+		    sizeof(fstring), nlen, STR_NOALIGN);
 
 	/* todo: but not yet needed
 	 *       return the other stuff
@@ -290,7 +291,8 @@ bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *
 		*pserial_number = IVAL(rdata,8);
 	}
 	nlen = IVAL(rdata,12);
-	clistr_pull(cli, volume_name, rdata + 18, sizeof(fstring), nlen, STR_UNICODE);
+	clistr_pull(cli->inbuf, volume_name, rdata + 18, sizeof(fstring),
+		    nlen, STR_UNICODE);
 
 	/* todo: but not yet needed
 	 *       return the other stuff

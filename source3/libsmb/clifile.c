@@ -1751,7 +1751,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 		if (!path2) {
 			return -1;
 		}
-		clistr_pull(cli, path2, p,
+		clistr_pull(cli->inbuf, path2, p,
 			    len+1, len, STR_ASCII);
 		*tmp_path = path2;
 	}
