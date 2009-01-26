@@ -153,11 +153,6 @@ krb5_init(void)
 }
 #endif
 
-#if defined(AUTHENTICATION) && defined(KRB4)
-extern char *dest_realm, dst_realm_buf[];
-extern int dst_realm_sz;
-#endif
-
 int
 main(int argc, char **argv)
 {
@@ -280,17 +275,10 @@ main(int argc, char **argv)
 #endif
 			break;
 		case 'k':
-#if defined(AUTHENTICATION) && defined(KRB4)
-		    {
-			dest_realm = dst_realm_buf;
-			strlcpy(dest_realm, optarg, dst_realm_sz);
-		    }
-#else
-			fprintf(stderr,
-			   "%s: Warning: -k ignored, no Kerberos V4 support.\n",
-								prompt);
-#endif
-			break;
+		    fprintf(stderr,
+			    "%s: Warning: -k ignored, no Kerberos V4 support.\n",
+			    prompt);
+		    break;
 		case 'l':
 		  if(autologin == 0){
 		    fprintf(stderr, "%s: Warning: -K ignored\n", prompt);
