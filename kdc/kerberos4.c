@@ -33,9 +33,9 @@
 
 #include "kdc_locl.h"
 
-#include <krb5-v4compat.h>
+#ifdef KRB4
 
-RCSID("$Id$");
+#include <krb5-v4compat.h>
 
 #ifndef swap32
 static uint32_t
@@ -792,3 +792,4 @@ _kdc_get_des_key(krb5_context context,
     return 0;
 }
 
+#endif /* KRB4 */
