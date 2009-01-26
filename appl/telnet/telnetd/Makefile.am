@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += -I$(srcdir)/.. $(INCLUDE_krb4) $(INCLUDE_hcrypto)
+AM_CPPFLAGS += -I$(srcdir)/.. $(INCLUDE_hcrypto)
 
 libexec_PROGRAMS = telnetd
 
@@ -16,7 +16,6 @@ man_MANS = telnetd.8
 LDADD = \
 	../libtelnet/libtelnet.a \
 	$(LIB_krb5) \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(LIB_tgetent) \
 	$(LIB_logwtmp) \
