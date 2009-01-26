@@ -110,10 +110,6 @@ struct ether_addr;
 #include <roken.h>
 #include <getarg.h>
 
-#ifdef KRB4
-#include <krb.h>
-#include <prot.h>
-#endif
 #ifdef KRB5
 #include <krb5.h>
 #endif
@@ -144,9 +140,7 @@ struct ether_addr;
 #include <otp.h>
 #endif
 
-#if defined(KRB4_MAILDIR)
-#define POP_MAILDIR	KRB4_MAILDIR
-#elif defined(_PATH_MAILDIR)
+#if defined(_PATH_MAILDIR)
 #define POP_MAILDIR     _PATH_MAILDIR
 #elif defined(MAILDIR)
 #define POP_MAILDIR	MAILDIR
@@ -261,9 +255,6 @@ typedef struct  {                               /*  POP parameter block */
     int                 parm_count;             /*  Number of parameters in
                                                     parsed list */
     int			kerberosp;		/*  Using KPOP? */
-#ifdef KRB4
-    AUTH_DAT		kdata;
-#endif
 #ifdef KRB5
     krb5_context	context;
     krb5_principal	principal;              /*  principal auth as */

@@ -81,9 +81,6 @@ static struct auth_mech *methods[] = {
 #ifdef KRB5
     &gssapi_mech,
 #endif
-#ifdef KRB4
-    &krb4_mech,
-#endif
     NULL
 };
 

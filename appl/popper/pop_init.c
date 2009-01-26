@@ -8,15 +8,15 @@
 RCSID("$Id$");
 
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 
 static int
 pop_net_read(POP *p, int fd, void *buf, size_t len)
 {
 #ifdef KRB5
     return krb5_net_read(p->context, &fd, buf, len);
-#elif defined(KRB4)
-    return krb_net_read(fd, buf, len);
+#else
+#error must define KRB5
 #endif
 }
 #endif
@@ -48,54 +48,6 @@ pop_write_addr(POP *p, struct sockaddr *addr)
     fprintf(f, "%s %s\n", as, ts);
     fclose(f);
 }
-
-#ifdef KRB4
-static int
-krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
-{
-    Key_schedule schedule;
-    KTEXT_ST ticket;
-    char instance[INST_SZ];
-    char version[9];
-    int auth;
-
-    if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
-	return -1;
-    if (pop_net_read (p, s, buf + 4,
-		      KRB_SENDAUTH_VLEN - 4) != KRB_SENDAUTH_VLEN - 4)
-	return -1;
-    if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
-	return -1;
-
-    k_getsockinst (0, instance, sizeof(instance));
-    auth = krb_recvauth(KOPT_IGNORE_PROTOCOL,
-			s,
-			&ticket,
-			"pop",
-			instance,
-                        (struct sockaddr_in *)addr,
-			(struct sockaddr_in *) NULL,
-                        &p->kdata,
-			"",
-			schedule,
-			version);
-
-    if (auth != KSUCCESS) {
-        pop_msg(p, POP_FAILURE, "Kerberos authentication failure: %s",
-                krb_get_err_text(auth));
-        pop_log(p, POP_PRIORITY, "%s: (%s.%s@%s) %s", p->client,
-                p->kdata.pname, p->kdata.pinst, p->kdata.prealm,
-		krb_get_err_text(auth));
-	return -1;
-    }
-
-#ifdef DEBUG
-    pop_log(p, POP_DEBUG, "%s.%s@%s (%s): ok", p->kdata.pname,
-            p->kdata.pinst, p->kdata.prealm, p->ipaddr);
-#endif /* DEBUG */
-    return 0;
-}
-#endif /* KRB4 */
 
 #ifdef KRB5
 static int
@@ -161,7 +113,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr *addr)
 static int
 krb_authenticate(POP *p, struct sockaddr *addr)
 {
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     u_char buf[BUFSIZ];
 
     if (pop_net_read (p, 0, buf, 4) != 4) {
@@ -169,14 +121,6 @@ krb_authenticate(POP *p, struct sockaddr *addr)
 		strerror(errno));
 	exit (1);
     }
-#ifdef KRB4
-    if (krb4_authenticate (p, 0, buf, addr) == 0){
-	pop_write_addr(p, addr);
-	p->version = 4;
-	return POP_SUCCESS;
-    }
-#endif
-#ifdef KRB5
     if (krb5_authenticate (p, 0, buf, addr) == 0){
 	pop_write_addr(p, addr);
 	p->version = 5;
@@ -184,8 +128,6 @@ krb_authenticate(POP *p, struct sockaddr *addr)
     }
 #endif
     exit (1);
-	
-#endif /* defined(KRB4) || defined(KRB5) */
 
     return(POP_SUCCESS);
 }
@@ -207,7 +149,7 @@ static int help_flag;
 static int version_flag;
 
 static struct getargs args[] = {
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     { "kerberos", 'k', arg_flag, &kerberos_flag, "use kerberos" },
 #endif
     { "auth-mode", 'a', arg_string, &auth_str, "required authentication",
@@ -241,8 +183,6 @@ pop_getportbyname(POP *p, const char *service,
 {
 #ifdef KRB5
     return krb5_getportbyname(p->context, service, proto, def);
-#elif defined(KRB4)
-    return k_getportbyname(service, proto, htons(def));
 #else
     return htons(default);
 #endif
@@ -348,7 +288,7 @@ pop_init(POP *p,int argcount,char **argmessage)
 	trace_file_name = trace_file;
     }
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     p->kerberosp = kerberos_flag;
 #endif
 

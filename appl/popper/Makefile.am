@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4)
-
 noinst_PROGRAMS = pop_debug
 
 libexec_PROGRAMS = popper
@@ -33,7 +31,6 @@ popper_SOURCES =				\
 	popper.c				\
 	maildir.c				\
 	auth_gssapi.c				\
-	auth_krb4.c				\
 	popper.h				\
 	version.h
 
@@ -41,7 +38,6 @@ LDADD = \
 	$(LIB_otp) \
 	$(top_builddir)/lib/gssapi/libgssapi.la \
 	$(LIB_krb5) \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(DBLIB)
@@ -49,5 +45,5 @@ LDADD = \
 man_MANS = popper.8
 
 EXTRA_DIST = pop3.rfc1081 pop3e.rfc1082 \
-	popper.README.release README-FIRST README-KRB4 \
+	popper.README.release README-FIRST \
 	$(man_MANS)

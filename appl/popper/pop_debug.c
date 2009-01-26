@@ -94,39 +94,6 @@ get_socket (const char *hostname, int port)
     err (1, "failed to connect to %s", hostname);
 }
 
-#ifdef KRB4
-static int
-doit_v4 (char *host, int port)
-{
-    KTEXT_ST ticket;
-    MSG_DAT msg_data;
-    CREDENTIALS cred;
-    des_key_schedule sched;
-    int ret;
-    int s = get_socket (host, port);
-
-    ret = krb_sendauth(0,
-		       s,
-		       &ticket,
-		       "pop",
-		       host,
-		       krb_realmofhost(host),
-		       getpid(),
-		       &msg_data,
-		       &cred,
-		       sched,
-		       NULL,
-		       NULL,
-		       "KPOPV0.1");
-    if(ret) {
-	warnx("krb_sendauth: %s", krb_get_err_text(ret));
-	return 1;
-    }
-    loop(s);
-    return 0;
-}
-#endif
-
 #ifdef KRB5
 static int
 doit_v5 (char *host, int port)
@@ -175,9 +142,6 @@ doit_v5 (char *host, int port)
 #endif
 
 
-#ifdef KRB4
-static int use_v4 = -1;
-#endif
 #ifdef KRB5
 static int use_v5 = -1;
 #endif
@@ -186,10 +150,6 @@ static int do_version;
 static int do_help;
 
 struct getargs args[] = {
-#ifdef KRB4
-    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
-      NULL },
-#endif
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
@@ -256,28 +216,14 @@ main(int argc, char **argv)
     if (port == 0) {
 #ifdef KRB5
 	port = krb5_getportbyname (NULL, "kpop", "tcp", 1109);
-#elif defined(KRB4)
-	port = k_getportbyname ("kpop", "tcp", 1109);
 #else
-#error must define KRB4 or KRB5
+#error must define KRB5
 #endif
     }
-
-#if defined(KRB4) && defined(KRB5)
-    if(use_v4 == -1 && use_v5 == 1)
-	use_v4 = 0;
-    if(use_v5 == -1 && use_v4 == 1)
-	use_v5 = 0;
-#endif
 
 #ifdef KRB5
     if (ret && use_v5) {
 	ret = doit_v5 (argv[0], port);
-    }
-#endif
-#ifdef KRB4
-    if (ret && use_v4) {
-	ret = doit_v4 (argv[0], port);
     }
 #endif
     return ret;
