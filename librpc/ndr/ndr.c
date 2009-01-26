@@ -1122,3 +1122,38 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const vo
 	NDR_CHECK(ndr_token_retrieve(&ndr->relative_list, p, &rel_offset));
 	return ndr_pull_set_offset(ndr, rel_offset);
 }
+
+const static struct {
+	enum ndr_err_code err;
+	const char *string;
+} ndr_err_code_strings[] = {
+	{ NDR_ERR_SUCCESS, "Success" },
+	{ NDR_ERR_ARRAY_SIZE, "Bad Array Size" },
+	{ NDR_ERR_BAD_SWITCH, "Bad Switch" },
+	{ NDR_ERR_OFFSET, "Offset Error" },
+	{ NDR_ERR_RELATIVE, "Relative Pointer Error" },
+	{ NDR_ERR_CHARCNV, "Character Conversion Error" },
+	{ NDR_ERR_LENGTH, "Length Error" },
+	{ NDR_ERR_SUBCONTEXT, "Subcontext Error" },
+	{ NDR_ERR_COMPRESSION, "Compression Error" },
+	{ NDR_ERR_STRING, "String Error" },
+	{ NDR_ERR_VALIDATE, "Validate Error" },
+	{ NDR_ERR_BUFSIZE, "Buffer Size Error" },
+	{ NDR_ERR_ALLOC, "Allocation Error" },
+	{ NDR_ERR_RANGE, "Range Error" },
+	{ NDR_ERR_TOKEN, "Token Error" },
+	{ NDR_ERR_IPV4ADDRESS, "IPv4 Address Error" },
+	{ NDR_ERR_INVALID_POINTER, "Invalid Pointer" },
+	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
+	{ 0, NULL }
+};
+
+_PUBLIC_ const char *ndr_map_error2string(enum ndr_err_code ndr_err)
+{
+	int i;
+	for (i = 0; ndr_err_code_strings[i].string != NULL; i++) {
+		if (ndr_err_code_strings[i].err == ndr_err)
+			return ndr_err_code_strings[i].string;
+	}
+	return "Unknown error";
+}
