@@ -258,14 +258,10 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 	}
 
 	/* use our own context here */
-	ctx = talloc_new(memctx);
-	if (!ctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	ctx = talloc_stackframe();
 
 	/* use the old database if present */
-	tdbfile = talloc_strdup(ctx, state_path("winbindd_idmap.tdb"));
+	tdbfile = state_path("winbindd_idmap.tdb");
 	if (!tdbfile) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
