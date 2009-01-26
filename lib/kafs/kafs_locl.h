@@ -94,15 +94,11 @@
 #ifdef KRB5
 #include <krb5.h>
 #endif
-#ifdef KRB4
-#include <krb.h>
-#else
 #ifdef KRB5
 #include "crypto-headers.h"
 #include <krb5-v4compat.h>
 typedef struct credentials CREDENTIALS;
 #endif /* KRB5 */
-#endif /* KRB4 */
 #include <kafs.h>
 
 #include <resolve.h>
