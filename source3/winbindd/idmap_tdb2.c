@@ -111,7 +111,6 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 
 	/* load ranges */
 
-	/* Create high water marks for group and user id */
 	if (!lp_idmap_uid(&low_uid, &high_uid)
 	    || !lp_idmap_gid(&low_gid, &high_gid)) {
 		DEBUG(1, ("idmap uid or idmap gid missing\n"));
@@ -129,6 +128,14 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
+		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Create high water marks for group and user id */
+
 	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
 					  HWM_USER)) == -1) ||
 	    (low_id < idmap_tdb2_state.low_uid)) {
@@ -139,12 +146,6 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 				  "database\n"));
 			return NT_STATUS_INTERNAL_DB_ERROR;
 		}
-	}
-
-	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
