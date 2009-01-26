@@ -52,11 +52,6 @@ krb5_keyblock *keyblock;
 krb5_crypto crypto;
 #endif
 
-#ifdef KRB4
-des_key_schedule schedule;
-des_cblock iv;
-#endif
-
 #ifdef KRB5
 krb5_ccache ccache, ccache2;
 int kerberos_status = 0;
@@ -71,7 +66,6 @@ static int do_inetd = 1;
 static char *port_str;
 static int do_rhosts = 1;
 static int do_kerberos = 0;
-#define DO_KRB4 2
 #define DO_KRB5 4
 static int do_vacuous = 0;
 static int do_log = 1;
@@ -158,70 +152,6 @@ recv_bsd_auth (int s, u_char *buf,
 	fatal(s, NULL, "Login incorrect.");
     return 0;
 }
-
-#ifdef KRB4
-static int
-recv_krb4_auth (int s, u_char *buf,
-		struct sockaddr *thisaddr,
-		struct sockaddr *thataddr,
-		char **client_username,
-		char **server_username,
-		char **cmd)
-{
-    int status;
-    int32_t options;
-    KTEXT_ST ticket;
-    AUTH_DAT auth;
-    char instance[INST_SZ + 1];
-    char version[KRB_SENDAUTH_VLEN + 1];
-
-    if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
-	return -1;
-    if (net_read (s, buf + 4, KRB_SENDAUTH_VLEN - 4) !=
-	KRB_SENDAUTH_VLEN - 4)
-	syslog_and_die ("reading auth info: %m");
-    if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
-	syslog_and_die("unrecognized auth protocol: %.8s", buf);
-
-    options = KOPT_IGNORE_PROTOCOL;
-    if (do_encrypt)
-	options |= KOPT_DO_MUTUAL;
-    k_getsockinst (s, instance, sizeof(instance));
-    status = krb_recvauth (options,
-			   s,
-			   &ticket,
-			   "rcmd",
-			   instance,
-			   (struct sockaddr_in *)thataddr,
-			   (struct sockaddr_in *)thisaddr,
-			   &auth,
-			   "",
-			   schedule,
-			   version);
-    if (status != KSUCCESS)
-	syslog_and_die ("recvauth: %s", krb_get_err_text(status));
-    if (strncmp (version, KCMD_OLD_VERSION, KRB_SENDAUTH_VLEN) != 0)
-	syslog_and_die ("bad version: %s", version);
-
-    *server_username = read_str (s, USERNAME_SZ, "remote username");
-    if (kuserok (&auth, *server_username) != 0)
-	fatal (s, NULL, "Permission denied.");
-    *cmd = read_str (s, ARG_MAX + 1, "command");
-
-    syslog(LOG_INFO|LOG_AUTH,
-	   "kerberos v4 shell from %s on %s as %s, cmd '%.80s'",
-	   krb_unparse_name_long(auth.pname, auth.pinst, auth.prealm),
-
-	   inet_ntoa(((struct sockaddr_in *)thataddr)->sin_addr),
-	   *server_username,
-	   *cmd);
-
-    memcpy (iv, auth.session, sizeof(iv));
-
-    return 0;
-}
-
-#endif /* KRB4 */
 
 #ifdef KRB5
 static int
@@ -745,15 +675,6 @@ doit (void)
 	if (net_read (s, buf, 4) != 4)
 	    syslog_and_die ("reading auth info: %m");
 
-#ifdef KRB4
-	if ((do_kerberos & DO_KRB4) &&
-	    recv_krb4_auth (s, buf, thisaddr, thataddr,
-			    &client_user,
-			    &server_user,
-			    &cmd) == 0)
-	    auth_method = AUTH_KRB4;
-	else
-#endif /* KRB4 */
 #ifdef KRB5
 	    if((do_kerberos & DO_KRB5) &&
 	       recv_krb5_auth (s, buf, thisaddr, thataddr,
@@ -888,19 +809,13 @@ doit (void)
 	    fatal (s, "net_write", "write failed");
     }
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     if(k_hasafs()) {
 	char cell[64];
 
 	if(do_newpag)
 	    k_setpag();
-#ifdef KRB4
-	if (k_afs_cell_of_file (pwd->pw_dir, cell, sizeof(cell)) == 0)
-	    krb_afslog_uid_home (cell, NULL, pwd->pw_uid, pwd->pw_dir);
-	krb_afslog_uid_home(NULL, NULL, pwd->pw_uid, pwd->pw_dir);
-#endif
 
-#ifdef KRB5
 	/* XXX */
        if (kerberos_status) {
 	   krb5_ccache ccache;
@@ -916,9 +831,8 @@ doit (void)
 	       krb5_cc_close (context, ccache);
 	   }
        }
-#endif /* KRB5 */
     }
-#endif /* KRB5 || KRB4 */
+#endif /* KRB5 */
     execle (pwd->pw_shell, pwd->pw_shell, "-c", cmd, NULL, env);
     err(1, "exec %s", pwd->pw_shell);
 }
@@ -928,7 +842,7 @@ struct getargs args[] = {
     { "keepalive",	'n',	arg_negative_flag,	&do_keepalive },
     { "inetd",		'i',	arg_negative_flag,	&do_inetd,
       "Not started from inetd" },
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     { "kerberos",	'k',	arg_flag,	&do_kerberos,
       "Implement kerberised services" },
     { "encrypt",	'x',	arg_flag,		&do_encrypt,
@@ -940,7 +854,7 @@ struct getargs args[] = {
       "port" },
     { "vacuous",	'v',	arg_flag, &do_vacuous,
       "Don't accept non-kerberised connections" },
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     { NULL,		'P',	arg_negative_flag, &do_newpag,
       "Don't put process in new PAG" },
 #endif
@@ -985,12 +899,12 @@ main(int argc, char **argv)
 	exit(0);
     }
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     if (do_encrypt)
 	do_kerberos = 1;
 
     if(do_kerberos)
-	do_kerberos = DO_KRB4 | DO_KRB5;
+	do_kerberos = DO_KRB5;
 #endif
 
 #ifdef KRB5
@@ -1014,7 +928,7 @@ main(int argc, char **argv)
 		errx (1, "getaddrinfo: %s", gai_strerror (error));
 	}
 	if (ai == NULL) {
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 	    if (do_kerberos) {
 		if (do_encrypt) {
 		    error = getaddrinfo(NULL, "ekshell", &hints, &ai);
