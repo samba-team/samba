@@ -405,15 +405,9 @@ main(int argc, char **argv)
 #ifdef KRB5
 	  "+%s"
 #endif
-#ifdef KRB4
-	  "+%s"
-#endif
 	  ") ready.", hostname, version
 #ifdef KRB5
 	  ,heimdal_version
-#endif
-#ifdef KRB4
-	  ,krb4_version
 #endif
 	  );
 
@@ -714,7 +708,7 @@ int do_login(int code, char *passwd)
 	return -1;
     }
     initgroups(pw->pw_name, pw->pw_gid);
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     if(k_hasafs())
 	k_setpag();
 #endif
@@ -906,21 +900,6 @@ pass(char *passwd)
 		else if((auth_level & AUTH_OTP) == 0) {
 #ifdef KRB5
 		    rval = krb5_verify(pw, passwd);
-#endif
-#ifdef KRB4
-		    if (rval) {
-			char realm[REALM_SZ];
-			if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
-			    rval = krb_verify_user(pw->pw_name,
-						   "", realm,
-						   passwd,
-						   KRB_VERIFY_SECURE, NULL);
-			if (rval == KSUCCESS ) {
-			    chown (tkt_string(), pw->pw_uid, pw->pw_gid);
-			    if(k_hasafs())
-				krb_afslog(0, 0);
-			}
-		    }
 #endif
 		    if (rval)
 			rval = unix_verify_user(pw->pw_name, passwd);
@@ -1892,7 +1871,7 @@ dologout(int status)
     transflag = 0;
     urgflag = 0;
     if (logged_in) {
-#if KRB4 || KRB5
+#if KRB5
 	cond_kdestroy();
 #endif
 	seteuid((uid_t)0); /* No need to check, we call exit() below */
