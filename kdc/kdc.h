@@ -102,7 +102,8 @@ struct krb5_kdc_service {
 			       krb5_data *reply,
 			       const char *from,
 			       struct sockaddr *addr,
-			       int datagram_reply);
+			       int datagram_reply,
+			       int *claim);
 };
 
 #include <kdc-protos.h>
