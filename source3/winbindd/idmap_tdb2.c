@@ -152,9 +152,8 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 
 	/* Create high water marks for group and user id */
 
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
-					  HWM_USER)) == -1) ||
-	    (low_id < idmap_tdb2_state.low_uid)) {
+	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_USER);
+	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_uid)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_USER,
 					     idmap_tdb2_state.low_uid))) {
@@ -164,9 +163,8 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 		}
 	}
 
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
-					  HWM_GROUP)) == -1) ||
-	    (low_id < idmap_tdb2_state.low_gid)) {
+	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_GROUP);
+	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_gid)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_GROUP,
 					     idmap_tdb2_state.low_gid))) {
