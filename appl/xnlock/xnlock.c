@@ -35,11 +35,6 @@ RCSID("$Id$");
 
 #ifdef KRB5
 #include <krb5.h>
-#endif
-#ifdef KRB4
-#include <krb.h>
-#endif
-#if defined(KRB4) || defined(KRB5)
 #include <kafs.h>
 #endif
 
@@ -48,11 +43,6 @@ RCSID("$Id$");
 
 static char login[16];
 static char userprompt[128];
-#ifdef KRB4
-static char name[ANAME_SZ];
-static char inst[INST_SZ];
-static char realm[REALM_SZ];
-#endif
 #ifdef KRB5
 static krb5_context context;
 static krb5_principal client;
@@ -581,9 +571,6 @@ verify_krb5(const char *password)
 {
     krb5_error_code ret;
     krb5_ccache id;
-#ifdef KRB4
-    krb5_boolean get_v4_tgt;
-#endif
 
     krb5_cc_default(context, &id);
     ret = krb5_verify_user(context,
@@ -593,34 +580,6 @@ verify_krb5(const char *password)
 			   0,
 			   NULL);
     if (ret == 0){
-#ifdef KRB4
-	krb5_appdefault_boolean(context, "xnlock",
-				krb5_principal_get_realm(context, client),
-				"krb4_get_tickets", FALSE, &get_v4_tgt);
-	if(get_v4_tgt) {
-	    CREDENTIALS c;
-	    krb5_creds mcred, cred;
-
-	    krb5_cc_clear_mcred(&mcred);
-
-	    krb5_make_principal(context, &mcred.server,
-				client->realm,
-				"krbtgt",
-				client->realm,
-				NULL);
-	    mcred.client = client;
-
-	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
-	    if(ret == 0) {
-		ret = krb524_convert_creds_kdc_ccache(context, id, &cred, &c);
-		if(ret == 0)
-		    tf_setup(&c, c.pname, c.pinst);
-		memset(&c, 0, sizeof(c));
-		krb5_free_cred_contents(context, &cred);
-	    }
-	    krb5_free_principal(context, mcred.server);
-	}
-#endif
 	if (k_hasafs())
 	    krb5_afslog(context, id, NULL, NULL);
 	return 0;
@@ -676,25 +635,6 @@ verify(char *password)
      */
     if(verify_krb5(password) == 0)
 	return 0;
-#endif
-
-#ifdef KRB4
-    {
-	int ret;
-	/*
-	 * Try to verify as user with kerberos 4.
-	 */
-	ret = krb_verify_user(name, inst, realm, password,
-			      KRB_VERIFY_NOT_SECURE, NULL);
-	if (ret == KSUCCESS){
-	    if (k_hasafs())
-		krb_afslog(NULL, NULL);
-	    return 0;
-	}
-	if (ret != INTK_BADPW)
-	    warnx ("warning: %s",
-		   (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
-    }
 #endif
 
     return -1;
@@ -1011,11 +951,6 @@ main (int argc, char **argv)
     locked_at = time(0);
 
     snprintf(userprompt, sizeof(userprompt), "User: %s", login);
-#ifdef KRB4
-    krb_get_default_principal(name, inst, realm);
-    snprintf(userprompt, sizeof(userprompt), "User: %s",
-	     krb_unparse_name_long(name, inst, realm));
-#endif
 #ifdef KRB5
     {
 	krb5_error_code ret;
@@ -1044,14 +979,8 @@ main (int argc, char **argv)
     White = appres.fg;
 
     if (appres.destroytickets) {
-#ifdef KRB4
-	int fd;
-
-        dest_tkt();		/* Nuke old ticket file */
-				/* but keep a place holder */
-	fd = open (TKT_FILE, O_WRONLY | O_CREAT | O_EXCL, 0600);
-	if (fd >= 0)
-	    close (fd);
+#ifdef KRB5
+	/*XXX add krb4 code here */
 #endif
     }
 
