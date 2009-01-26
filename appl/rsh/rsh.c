@@ -35,7 +35,7 @@
 RCSID("$Id$");
 
 enum auth_method auth_method;
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 int do_encrypt       = -1;
 #endif
 #ifdef KRB5
@@ -48,19 +48,12 @@ krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
 #endif
-#ifdef KRB4
-des_key_schedule schedule;
-des_cblock iv;
-#endif
 int sock_debug	     = 0;
 
-#ifdef KRB4
-static int use_v4 = -1;
-#endif
 #ifdef KRB5
 static int use_v5 = -1;
 #endif
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 static int use_only_broken = 0;
 #else
 static int use_only_broken = 1;
@@ -155,50 +148,6 @@ rsh_loop (int s, int errsock)
 	}
     }
 }
-
-#ifdef KRB4
-static int
-send_krb4_auth(int s,
-	       struct sockaddr *thisaddr,
-	       struct sockaddr *thataddr,
-	       const char *hostname,
-	       const char *remote_user,
-	       const char *local_user,
-	       size_t cmd_len,
-	       const char *cmd)
-{
-    KTEXT_ST text;
-    CREDENTIALS cred;
-    MSG_DAT msg;
-    int status;
-    size_t len;
-
-    /* the normal default for krb4 should be to disable encryption */
-    status = krb_sendauth ((do_encrypt == 1) ? KOPT_DO_MUTUAL : 0,
-			   s, &text, "rcmd",
-			   (char *)hostname, krb_realmofhost (hostname),
-			   getpid(), &msg, &cred, schedule,
-			   (struct sockaddr_in *)thisaddr,
-			   (struct sockaddr_in *)thataddr,
-			   KCMD_OLD_VERSION);
-    if (status != KSUCCESS) {
-	warnx("%s: %s", hostname, krb_get_err_text(status));
-	return 1;
-    }
-    memcpy (iv, cred.session, sizeof(iv));
-
-    len = strlen(remote_user) + 1;
-    if (net_write (s, remote_user, len) != len) {
-	warn("write");
-	return 1;
-    }
-    if (net_write (s, cmd, cmd_len) != cmd_len) {
-	warn("write");
-	return 1;
-    }
-    return 0;
-}
-#endif /* KRB4 */
 
 #ifdef KRB5
 /*
@@ -754,7 +703,7 @@ doit_broken (int argc,
     }
 }
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 static int
 doit (const char *hostname,
       struct addrinfo *ai,
@@ -832,12 +781,9 @@ doit (const char *hostname,
 	warnx ("failed to contact %s", hostname);
     return -1;
 }
-#endif /* KRB4 || KRB5 */
+#endif /* KRB5 */
 
 struct getargs args[] = {
-#ifdef KRB4
-    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4" },
-#endif
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5" },
     { "forward", 'f', arg_flag,		&do_forward,	"Forward credentials [krb5]"},
@@ -852,7 +798,7 @@ struct getargs args[] = {
       "Protocol version [krb5]", "protocol" },
 #endif
     { "broken", 'K', arg_flag,		&use_only_broken, "Use only priv port" },
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     { "encrypt", 'x', arg_flag,		&do_encrypt,	"Encrypt connection" },
     { NULL, 	'z', arg_negative_flag,      &do_encrypt,
       "Don't encrypt connection", NULL },
@@ -962,17 +908,7 @@ main(int argc, char **argv)
 
 #endif
 
-#if defined(KRB4) && defined(KRB5)
-    if(use_v4 == -1 && use_v5 == 1)
-	use_v4 = 0;
-    if(use_v5 == -1 && use_v4 == 1)
-	use_v5 = 0;
-#endif
-
     if (use_only_broken) {
-#ifdef KRB4
-	use_v4 = 0;
-#endif
 #ifdef KRB5
 	use_v5 = 0;
 #endif
@@ -984,7 +920,7 @@ main(int argc, char **argv)
 	use_broken = 0;
     }
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
     if (do_encrypt == 1 && use_only_broken)
 	errx (1, "encryption not supported with old style authentication");
 #endif
@@ -1066,33 +1002,6 @@ main(int argc, char **argv)
 	    protocol_version = 1;
 	    goto again;
 	}
-	freeaddrinfo(ai);
-    }
-#endif
-#ifdef KRB4
-    if (ret && use_v4) {
-	memset (&hints, 0, sizeof(hints));
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-
-	if(port_str == NULL) {
-	    if(do_encrypt) {
-		error = getaddrinfo(host, "ekshell", &hints, &ai);
-		if(error == EAI_NONAME)
-		    error = getaddrinfo(host, "545", &hints, &ai);
-	    } else {
-		error = getaddrinfo(host, "kshell", &hints, &ai);
-		if(error == EAI_NONAME)
-		    error = getaddrinfo(host, "544", &hints, &ai);
-	    }
-	} else
-	    error = getaddrinfo(host, port_str, &hints, &ai);
-
-	if(error)
-	    errx (1, "getaddrinfo: %s", gai_strerror(error));
-	auth_method = AUTH_KRB4;
-	ret = doit (host, ai, user, local_user, cmd, cmd_len,
-		    send_krb4_auth);
 	freeaddrinfo(ai);
     }
 #endif
