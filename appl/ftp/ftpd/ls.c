@@ -405,14 +405,14 @@ find_log10(int num)
  * have to fetch them.
  */
 
-#ifdef KRB4
+#ifdef KRB5
 static int do_the_afs_dance = 1;
 #endif
 
 static int
 lstat_file (const char *file, struct stat *sb)
 {
-#ifdef KRB4
+#ifdef KRB5
     if (do_the_afs_dance &&
 	k_hasafs()
 	&& strcmp(file, ".")
@@ -494,7 +494,7 @@ lstat_file (const char *file, struct stat *sb)
 
 	return 0;
     }
-#endif /* KRB4 */
+#endif /* KRB5 */
     return lstat (file, sb);
 }
 

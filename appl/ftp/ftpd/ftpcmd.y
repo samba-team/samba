@@ -501,26 +501,7 @@ cmd
 
 	| SITE SP KAUTH SP STRING CRLF check_login
 		{
-#ifdef KRB4
-			char *p;
-			
-			if(guest)
-				reply(500, "Can't be done as guest.");
-			else{
-				if($7 && $5 != NULL){
-				    p = strpbrk($5, " \t");
-				    if(p){
-					*p++ = 0;
-					kauth($5, p + strspn(p, " \t"));
-				    }else
-					kauth($5, NULL);
-				}
-			}
-			if($5 != NULL)
-			    free($5);
-#else
 			reply(500, "Command not implemented.");
-#endif
 		}
 	| SITE SP KLIST CRLF check_login
 		{
@@ -529,29 +510,15 @@ cmd
 		}
 	| SITE SP KDESTROY CRLF check_login
 		{
-#ifdef KRB4
-		    if($5)
-			kdestroy();
-#else
 		    reply(500, "Command not implemented.");
-#endif
 		}
 	| SITE SP KRBTKFILE SP STRING CRLF check_login
 		{
-#ifdef KRB4
-		    if(guest)
-			reply(500, "Can't be done as guest.");
-		    else if($7 && $5)
-			krbtkfile($5);
-		    if($5)
-			free($5);
-#else
 		    reply(500, "Command not implemented.");
-#endif
 		}
 	| SITE SP AFSLOG CRLF check_login
 		{
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($5)
@@ -562,7 +529,7 @@ cmd
 		}
 	| SITE SP AFSLOG SP STRING CRLF check_login
 		{
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 		    if(guest)
 			reply(500, "Can't be done as guest.");
 		    else if($7)

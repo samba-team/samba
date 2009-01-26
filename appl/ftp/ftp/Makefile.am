@@ -8,9 +8,6 @@ bin_PROGRAMS = ftp
 
 CHECK_LOCAL = 
 
-if KRB4
-krb4_sources = krb4.c
-endif
 if KRB5
 krb5_sources = gssapi.c
 endif

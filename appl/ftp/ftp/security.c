@@ -91,9 +91,6 @@ static struct sec_server_mech *mechs[] = {
 #ifdef KRB5
     &gss_server_mech,
 #endif
-#ifdef KRB4
-    &krb4_server_mech,
-#endif
     NULL
 };
 
@@ -104,9 +101,6 @@ static struct sec_server_mech *mech;
 static struct sec_client_mech *mechs[] = {
 #ifdef KRB5
     &gss_client_mech,
-#endif
-#ifdef KRB4
-    &krb4_client_mech,
 #endif
     NULL
 };

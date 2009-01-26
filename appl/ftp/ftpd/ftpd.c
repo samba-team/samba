@@ -271,16 +271,6 @@ main(int argc, char **argv)
 
     setprogname (argv[0]);
 
-    /* detach from any tickets and tokens */
-    {
-#ifdef KRB4
-	char tkfile[1024];
-	snprintf(tkfile, sizeof(tkfile),
-		 "/tmp/ftp_%u", (unsigned)getpid());
-	krb_set_tkt_string(tkfile);
-#endif
-    }
-
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
 
