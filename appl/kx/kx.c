@@ -568,29 +568,6 @@ doit (kx_context *kc, int passive_flag)
 	return doit_active  (kc);
 }
 
-#ifdef KRB4
-
-/*
- * Start a v4-authenticatated kx connection.
- */
-
-static int
-doit_v4 (const char *host, int port, const char *user,
-	 int passive_flag, int debug_flag, int keepalive_flag, int tcp_flag)
-{
-    int ret;
-    kx_context context;
-
-    krb4_make_context (&context);
-    context_set (&context,
-		 host, user, port, debug_flag, keepalive_flag, tcp_flag);
-
-    ret = doit (&context, passive_flag);
-    context_destroy (&context);
-    return ret;
-}
-#endif /* KRB4 */
-
 #ifdef KRB5
 
 /*
@@ -618,12 +595,6 @@ doit_v5 (const char *host, int port, const char *user,
  * Variables set from the arguments
  */
 
-#ifdef KRB4
-static int use_v4		= -1;
-#ifdef HAVE_KRB_ENABLE_DEBUG
-static int krb_debug_flag	= 0;
-#endif /* HAVE_KRB_ENABLE_DEBUG */
-#endif /* KRB4 */
 #ifdef KRB5
 static int use_v5		= -1;
 #endif
@@ -637,14 +608,6 @@ static int version_flag		= 0;
 static int help_flag		= 0;
 
 struct getargs args[] = {
-#ifdef KRB4
-    { "krb4",	'4', arg_flag,		&use_v4,	"Use Kerberos V4",
-      NULL },
-#ifdef HAVE_KRB_ENABLE_DEBUG
-    { "krb4-debug", 'D', arg_flag,	&krb_debug_flag,
-      "enable krb4 debugging" },
-#endif /* HAVE_KRB_ENABLE_DEBUG */
-#endif /* KRB4 */
 #ifdef KRB5
     { "krb5",	'5', arg_flag,		&use_v5,	"Use Kerberos V5",
       NULL },
@@ -737,26 +700,11 @@ main(int argc, char **argv)
 	krb_enable_debug ();
 #endif
 
-#if defined(KRB4) && defined(KRB5)
-    if(use_v4 == -1 && use_v5 == 1)
-	use_v4 = 0;
-    if(use_v5 == -1 && use_v4 == 1)
-	use_v5 = 0;
-#endif
-
 #ifdef KRB5
     if (ret && use_v5) {
 	if (port == 0)
 	    port = krb5_getportbyname(NULL, "kx", "tcp", KX_PORT);
 	ret = doit_v5 (host, port, user,
-		       passive_flag, debug_flag, keepalive_flag, tcp_flag);
-    }
-#endif
-#ifdef KRB4
-    if (ret && use_v4) {
-	if (port == 0)
-	    port = k_getportbyname("kx", "tcp", htons(KX_PORT));
-	ret = doit_v4 (host, port, user,
 		       passive_flag, debug_flag, keepalive_flag, tcp_flag);
     }
 #endif
