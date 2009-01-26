@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hesiod)
+AM_CPPFLAGS += $(INCLUDE_hesiod)
 
 bin_SCRIPTS		= pfrom
 
@@ -21,7 +21,6 @@ CLEANFILES = pfrom
 EXTRA_DIST = pfrom.in $(man_MANS)
 
 LDADD = $(LIB_krb5) \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(LIB_roken) \
 	$(LIB_hesiod)
