@@ -33,4 +33,6 @@
     <para>See also the discussion in the <link linkend="PRINTERSSECT">
     [printers]</link> section.</para>
 </description>
+<value type="default">Depends on the operating system, see
+<command moreinfo="none">testparm -v.</command></value>
 </samba:parameter>
