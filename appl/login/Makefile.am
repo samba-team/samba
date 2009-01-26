@@ -2,8 +2,6 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4)
-
 man_MANS = login.1 login.access.5
 
 bin_PROGRAMS = login
@@ -28,7 +26,6 @@ login_SOURCES =					\
 LDADD = $(LIB_otp) \
 	$(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(LIB_roken) \
