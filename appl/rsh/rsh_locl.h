@@ -96,10 +96,6 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
-#ifdef KRB4
-#include <krb.h>
-#include <prot.h>
-#endif
 #ifdef KRB5
 #include <krb5.h>
 /* XXX */
@@ -112,7 +108,7 @@ struct krb5_dh_moduli;
 #include "crypto-headers.h"
 #include <krb5-private.h> /* for _krb5_{get,put}_int */
 #endif
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 #include <kafs.h>
 #endif
 
@@ -130,7 +126,7 @@ struct krb5_dh_moduli;
  *
  */
 
-enum auth_method { AUTH_KRB4, AUTH_KRB5, AUTH_BROKEN };
+enum auth_method { AUTH_KRB5, AUTH_BROKEN };
 
 extern enum auth_method auth_method;
 extern int do_encrypt;
@@ -142,10 +138,6 @@ extern int key_usage;
 extern void *ivec_in[2];
 extern void *ivec_out[2];
 void init_ivecs(int, int);
-#endif
-#ifdef KRB4
-extern des_key_schedule schedule;
-extern des_cblock iv;
 #endif
 
 #define KCMD_OLD_VERSION "KCMDV0.1"
@@ -161,7 +153,7 @@ extern des_cblock iv;
 
 #define PATH_RSH BINDIR "/rsh"
 
-#if defined(KRB4) || defined(KRB5)
+#if defined(KRB5)
 ssize_t do_read (int, void*, size_t, void*);
 ssize_t do_write (int, void*, size_t, void*);
 #else
