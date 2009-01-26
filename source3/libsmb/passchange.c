@@ -138,13 +138,13 @@ NTSTATUS remote_password_change(const char *remote_machine, const char *user_nam
 		cli_init_creds(cli, user_name, "", old_passwd);
 	}
 
-	if (!cli_send_tconX(cli, "IPC$", "IPC", "", 1)) {
-		if (asprintf(err_str, "machine %s rejected the tconX on the IPC$ "
-			 "share. Error was : %s.\n",
-			 remote_machine, cli_errstr(cli)) == -1) {
+	result = cli_tcon_andx(cli, "IPC$", "IPC", "", 1);
+	if (!NT_STATUS_IS_OK(result)) {
+		if (asprintf(err_str, "machine %s rejected the tconX on the "
+			     "IPC$ share. Error was : %s.\n",
+			     remote_machine, nt_errstr(result))) {
 			*err_str = NULL;
 		}
-		result = cli_nt_error(cli);
 		cli_shutdown(cli);
 		return result;
 	}

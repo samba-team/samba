@@ -3022,7 +3022,7 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
 {
-	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
 		d_printf("skipping   [%s]: not a file share.\n", netname);
 		return false;
 	}
@@ -4281,7 +4281,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 
 	cnum = cli->cnum;
 
-	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
 		return;
 	}
 

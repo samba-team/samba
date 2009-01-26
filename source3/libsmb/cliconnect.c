@@ -1173,13 +1173,17 @@ bool cli_ulogoff(struct cli_state *cli)
  Send a tconX.
 ****************************************************************************/
 
-bool cli_send_tconX(struct cli_state *cli, 
-		    const char *share, const char *dev, const char *pass, int passlen)
+struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct cli_state *cli,
+				     const char *share, const char *dev,
+				     const char *pass, int passlen)
 {
-	fstring fullshare, pword;
-	char *p;
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+	fstring pword;
+	char *tmp = NULL;
+	struct async_req *result;
+	uint16_t vwv[4];
+	uint8_t *bytes;
 
 	fstrcpy(cli->share, share);
 
@@ -1187,9 +1191,10 @@ bool cli_send_tconX(struct cli_state *cli,
 	if (cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) {
 		passlen = 1;
 		pass = "";
-	} else if (!pass) {
-		DEBUG(1, ("Server not using user level security and no password supplied.\n"));
-		return False;
+	} else if (pass == NULL) {
+		DEBUG(1, ("Server not using user level security and no "
+			  "password supplied.\n"));
+		goto access_denied;
 	}
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) &&
@@ -1198,28 +1203,32 @@ bool cli_send_tconX(struct cli_state *cli,
 			DEBUG(1, ("Server requested LANMAN password "
 				  "(share-level security) but "
 				  "'client lanman auth' is disabled\n"));
-			return False;
+			goto access_denied;
 		}
 
 		/*
-		 * Non-encrypted passwords - convert to DOS codepage before encryption.
+		 * Non-encrypted passwords - convert to DOS codepage before
+		 * encryption.
 		 */
 		passlen = 24;
-		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
+		SMBencrypt(pass, cli->secblob.data, (uchar *)pword);
 	} else {
-		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
+		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL
+				     |NEGOTIATE_SECURITY_CHALLENGE_RESPONSE))
+		   == 0) {
 			if (!lp_client_plaintext_auth() && (*pass)) {
 				DEBUG(1, ("Server requested plaintext "
 					  "password but 'client plaintext "
 					  "auth' is disabled\n"));
-				return False;
+				goto access_denied;
 			}
 
 			/*
-			 * Non-encrypted passwords - convert to DOS codepage before using.
+			 * Non-encrypted passwords - convert to DOS codepage
+			 * before using.
 			 */
-			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
-
+			passlen = clistr_push(cli, pword, pass, sizeof(pword),
+					      STR_TERMINATE);
 		} else {
 			if (passlen) {
 				memcpy(pword, pass, passlen);
@@ -1227,52 +1236,139 @@ bool cli_send_tconX(struct cli_state *cli,
 		}
 	}
 
-	slprintf(fullshare, sizeof(fullshare)-1,
-		 "\\\\%s\\%s", cli->desthost, share);
+	SCVAL(vwv+0, 0, 0xFF);
+	SCVAL(vwv+0, 1, 0);
+	SSVAL(vwv+1, 0, 0);
+	SSVAL(vwv+2, 0, TCONX_FLAG_EXTENDED_RESPONSE);
+	SSVAL(vwv+3, 0, passlen);
 
-	cli_set_message(cli->outbuf,4, 0, True);
-	SCVAL(cli->outbuf,smb_com,SMBtconX);
-	cli_setup_packet(cli);
-
-	SSVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,TCONX_FLAG_EXTENDED_RESPONSE);
-	SSVAL(cli->outbuf,smb_vwv3,passlen);
-
-	p = smb_buf(cli->outbuf);
 	if (passlen) {
-		memcpy(p,pword,passlen);
+		bytes = (uint8_t *)talloc_memdup(talloc_tos(), pword, passlen);
+	} else {
+		bytes = talloc_array(talloc_tos(), uint8_t, 0);
 	}
-	p += passlen;
-	p += clistr_push(cli, p, fullshare, -1, STR_TERMINATE |STR_UPPER);
-	p += clistr_push(cli, p, dev, -1, STR_TERMINATE |STR_UPPER | STR_ASCII);
 
-	cli_setup_bcc(cli, p);
+	/*
+	 * Add the sharename
+	 */
+	tmp = talloc_asprintf_strupper_m(talloc_tos(), "\\\\%s\\%s",
+					 cli->desthost, share);
+	if (tmp == NULL) {
+		TALLOC_FREE(bytes);
+		return NULL;
+	}
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), tmp, strlen(tmp)+1,
+				   NULL);
+	TALLOC_FREE(tmp);
 
-	cli_send_smb(cli);
-	if (!cli_receive_smb(cli))
-		return False;
+	/*
+	 * Add the devicetype
+	 */
+	tmp = talloc_strdup_upper(talloc_tos(), dev);
+	if (tmp == NULL) {
+		TALLOC_FREE(bytes);
+		return NULL;
+	}
+	bytes = smb_bytes_push_str(bytes, false, tmp, strlen(tmp)+1, NULL);
+	TALLOC_FREE(tmp);
 
-	if (cli_is_error(cli))
-		return False;
+	if (bytes == NULL) {
+		return NULL;
+	}
 
-	clistr_pull(cli->inbuf, cli->dev, smb_buf(cli->inbuf), sizeof(fstring),
-		    -1, STR_TERMINATE|STR_ASCII);
+	result = cli_request_send(mem_ctx, ev, cli, SMBtconX, 0,
+				  4, vwv, 0, talloc_get_size(bytes), bytes);
+	TALLOC_FREE(bytes);
+	return result;
 
-	if (cli->protocol >= PROTOCOL_NT1 &&
-	    smb_buflen(cli->inbuf) == 3) {
+ access_denied:
+	result = async_req_new(mem_ctx);
+	if (async_post_status(result, ev, NT_STATUS_ACCESS_DENIED)) {
+		return result;
+	}
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+NTSTATUS cli_tcon_andx_recv(struct async_req *req)
+{
+	struct cli_request *cli_req = talloc_get_type_abort(
+		req->private_data, struct cli_request);
+	struct cli_state *cli = cli_req->cli;
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	clistr_pull(cli_req->inbuf, cli->dev, bytes, sizeof(fstring),
+		    num_bytes, STR_TERMINATE|STR_ASCII);
+
+	if ((cli->protocol >= PROTOCOL_NT1) && (num_bytes == 3)) {
 		/* almost certainly win95 - enable bug fixes */
 		cli->win95 = True;
 	}
 
-	/* Make sure that we have the optional support 16-bit field.  WCT > 2 */
-	/* Avoids issues when connecting to Win9x boxes sharing files */
+	/*
+	 * Make sure that we have the optional support 16-bit field. WCT > 2.
+	 * Avoids issues when connecting to Win9x boxes sharing files
+	 */
 
-	cli->dfsroot = False;
-	if ( (CVAL(cli->inbuf, smb_wct))>2 && cli->protocol >= PROTOCOL_LANMAN2 )
-		cli->dfsroot = (SVAL( cli->inbuf, smb_vwv2 ) & SMB_SHARE_IN_DFS) ? True : False;
+	cli->dfsroot = false;
 
-	cli->cnum = SVAL(cli->inbuf,smb_tid);
-	return True;
+	if ((wct > 2) && (cli->protocol >= PROTOCOL_LANMAN2)) {
+		cli->dfsroot = ((SVAL(vwv+2, 0) & SMB_SHARE_IN_DFS) != 0);
+	}
+
+	cli->cnum = SVAL(cli_req->inbuf,smb_tid);
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
+		       const char *dev, const char *pass, int passlen)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_tcon_andx_send(frame, ev, cli, share, dev, pass, passlen);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_tcon_andx_recv(req);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************************
@@ -1956,8 +2052,9 @@ NTSTATUS cli_full_connection(struct cli_state **output_cli,
 	}
 
 	if (service) {
-		if (!cli_send_tconX(cli, service, service_type, password, pw_len)) {
-			nt_status = cli_nt_error(cli);
+		nt_status = cli_tcon_andx(cli, service, service_type, password,
+					  pw_len);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(1,("failed tcon_X with %s\n", nt_errstr(nt_status)));
 			cli_shutdown(cli);
 			if (NT_STATUS_IS_OK(nt_status)) {
