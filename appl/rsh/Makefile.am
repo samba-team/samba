@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-AM_CPPFLAGS += $(INCLUDE_krb4) -I$(srcdir)/../login
+AM_CPPFLAGS += -I$(srcdir)/../login
 
 bin_PROGRAMS = rsh
 
@@ -22,7 +22,6 @@ limits_conf.c:
 
 LDADD = $(LIB_kafs) \
 	$(LIB_krb5) \
-	$(LIB_krb4) \
 	$(LIB_hcrypto) \
 	$(LIB_roken)
 
