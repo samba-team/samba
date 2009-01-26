@@ -97,17 +97,6 @@ int sra_status (Authenticator *, char *, int);
 void sra_printsub (unsigned char *, size_t, unsigned char *, size_t);
 #endif
 
-#ifdef	KRB4
-int kerberos4_init (Authenticator *, int);
-int kerberos4_send_mutual (Authenticator *);
-int kerberos4_send_oneway (Authenticator *);
-void kerberos4_is (Authenticator *, unsigned char *, int);
-void kerberos4_reply (Authenticator *, unsigned char *, int);
-int kerberos4_status (Authenticator *, char *, size_t, int);
-void kerberos4_printsub (unsigned char *, size_t, unsigned char *, size_t);
-int kerberos4_forward(Authenticator *ap, void *);
-#endif
-
 #ifdef	KRB5
 int kerberos5_init (Authenticator *, int);
 int kerberos5_send_mutual (Authenticator *);
