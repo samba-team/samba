@@ -155,10 +155,6 @@ recv_conn (int sock, kx_context *kc,
      if (ret && recv_v5_auth (kc, sock, msg) == 0)
 	 ret = 0;
 #endif
-#ifdef KRB4
-     if (ret && recv_v4_auth (kc, sock, msg) == 0)
-	 ret = 0;
-#endif
      if (ret) {
 	 syslog (LOG_ERR, "unrecognized auth protocol: %x %x %x %x",
 		 msg[0], msg[1], msg[2], msg[3]);
@@ -758,10 +754,8 @@ main (int argc, char **argv)
     } else {
 #if defined(KRB5)
 	port = krb5_getportbyname(NULL, "kx", "tcp", KX_PORT);
-#elif defined(KRB4)
-	port = k_getportbyname ("kx", "tcp", htons(KX_PORT));
 #else
-#error define KRB4 or KRB5
+#error define KRB5
 #endif
     }
 
