@@ -91,8 +91,9 @@ static int onefs_load_config(struct vfs_handle_struct *handle)
 		if (share_count <= ONEFS_DATA_FASTBUF)
 			pshare_config = share_config;
 		else {
-			pshare_config = SMB_MALLOC_ARRAY(struct onefs_vfs_config,
-							 share_count);
+			pshare_config =
+			    SMB_MALLOC_ARRAY(struct onefs_vfs_config,
+					     share_count);
 			if (!pshare_config) {
 				errno = ENOMEM;
 				return -1;
@@ -152,8 +153,9 @@ static int onefs_open(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
-static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,  files_struct *fsp,
-				const SMB_STRUCT_STAT *sbuf)
+static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
+				     files_struct *fsp,
+				     const SMB_STRUCT_STAT *sbuf)
 {
 	uint64_t result;
 
@@ -246,7 +248,21 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_opendir), SMB_VFS_OP_OPENDIR,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_readdir), SMB_VFS_OP_READDIR,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_seekdir), SMB_VFS_OP_SEEKDIR,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_telldir), SMB_VFS_OP_TELLDIR,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_rewinddir), SMB_VFS_OP_REWINDDIR,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_mkdir), SMB_VFS_OP_MKDIR,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_closedir), SMB_VFS_OP_CLOSEDIR,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_init_search_op), SMB_VFS_OP_INIT_SEARCH_OP,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_open), SMB_VFS_OP_OPEN,
 	 SMB_VFS_LAYER_OPAQUE},

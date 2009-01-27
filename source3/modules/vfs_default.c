@@ -210,7 +210,6 @@ static void vfswrap_init_search_op(vfs_handle_struct *handle,
 				   SMB_STRUCT_DIR *dirp)
 {
 	/* Default behavior is a NOOP */
-	return;
 }
 
 /* File operations */
@@ -1456,7 +1455,7 @@ static vfs_op_tuple vfs_default_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_closedir),	SMB_VFS_OP_CLOSEDIR,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_init_search_op),	SMB_VFS_OP_INIT_SEARCH_OP,
+	{SMB_VFS_OP(vfswrap_init_search_op), SMB_VFS_OP_INIT_SEARCH_OP,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* File operations */

@@ -41,26 +41,28 @@ enum onefs_acl_wire_format
 #define PARM_ONEFS_TYPE "onefs"
 #define PARM_ACL_WIRE_FORMAT "acl wire format"
 #define PARM_ACL_WIRE_FORMAT_DEFAULT ACL_FORMAT_WINDOWS_SD
-#define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE "simple file sharing compatibility mode"
-#define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT false
+#define PARM_ATIME_NOW		"atime now files"
+#define PARM_ATIME_STATIC	"atime static files"
+#define PARM_ATIME_SLOP		"atime now slop"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL "creator owner gets full control"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
+#define PARM_CTIME_NOW		"ctime now files"
+#define PARM_CTIME_SLOP		"ctime now slop"
+#define PARM_IGNORE_SACL "ignore sacl"
+#define PARM_IGNORE_SACL_DEFAULT false
+#define PARM_MTIME_NOW		"mtime now files"
+#define PARM_MTIME_STATIC	"mtime static files"
+#define PARM_MTIME_SLOP		"mtime now slop"
+#define PARM_USE_READDIRPLUS "use readdirplus"
+#define PARM_USE_READDIRPLUS_DEFAULT true
+#define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE "simple file sharing compatibility mode"
+#define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT false
 #define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE "unmappable sids deny everyone"
 #define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE_DEFAULT false
 #define PARM_UNMAPPABLE_SIDS_IGNORE "ignore unmappable sids"
 #define PARM_UNMAPPABLE_SIDS_IGNORE_DEFAULT false
 #define PARM_UNMAPPABLE_SIDS_IGNORE_LIST "unmappable sids ignore list"
 #define PARM_UNMAPPABLE_SIDS_IGNORE_LIST_DEFAULT NULL
-#define PARM_IGNORE_SACL "ignore sacl"
-#define PARM_IGNORE_SACL_DEFAULT false
-#define PARM_ATIME_NOW		"atime now files"
-#define PARM_ATIME_SLOP		"atime now slop"
-#define PARM_CTIME_NOW		"ctime now files"
-#define PARM_CTIME_SLOP		"ctime now slop"
-#define PARM_MTIME_NOW		"mtime now files"
-#define PARM_MTIME_SLOP		"mtime now slop"
-#define PARM_MTIME_STATIC	"mtime static files"
-#define PARM_ATIME_STATIC	"atime static files"
 
 #define IS_CTIME_NOW_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
 	(cfg)->ctime_now_list,(conn)->case_sensitive))
@@ -80,7 +82,6 @@ enum onefs_acl_wire_format
 #define ONEFS_VFS_CONFIG_INITIALIZED	0x00010000
 
 #define ONEFS_VFS_CONFIG_FAKETIMESTAMPS	0x00000001
-
 
 struct onefs_vfs_config
 {
@@ -113,6 +114,25 @@ struct onefs_vfs_config
 /*
  * vfs interface handlers
  */
+SMB_STRUCT_DIR *onefs_opendir(struct vfs_handle_struct *handle,
+			      const char *fname, const char *mask,
+			      uint32 attributes);
+
+SMB_STRUCT_DIRENT *onefs_readdir(struct vfs_handle_struct *handle,
+				 SMB_STRUCT_DIR *dirp, SMB_STRUCT_STAT *sbuf);
+
+void onefs_seekdir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
+		   long offset);
+
+long onefs_telldir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+
+void onefs_rewinddir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
+
+int onefs_closedir(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
+
+void onefs_init_search_op(struct vfs_handle_struct *handle,
+			  SMB_STRUCT_DIR *dirp);
+
 NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 			   struct smb_request *req,
 			   uint16_t root_dir_fid,
