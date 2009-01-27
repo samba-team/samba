@@ -40,6 +40,31 @@ static int onefs_open(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
+static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,  files_struct *fsp,
+				const SMB_STRUCT_STAT *sbuf)
+{
+	uint64_t result;
+
+	START_PROFILE(syscall_get_alloc_size);
+
+	if(S_ISDIR(sbuf->st_mode)) {
+		result = 0;
+		goto out;
+	}
+
+	/* Just use the file size since st_blocks is unreliable on OneFS. */
+	result = get_file_size_stat(sbuf);
+
+	if (fsp && fsp->initial_allocation_size)
+		result = MAX(result,fsp->initial_allocation_size);
+
+	result = smb_roundup(handle->conn, result);
+
+ out:
+	END_PROFILE(syscall_get_alloc_size);
+	return result;
+}
+
 static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
 			 vfs_statvfs_struct *statbuf)
 {
@@ -123,6 +148,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_lstat), SMB_VFS_OP_LSTAT,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_get_alloc_size), SMB_VFS_OP_GET_ALLOC_SIZE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_unlink), SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_ntimes), SMB_VFS_OP_NTIMES,
