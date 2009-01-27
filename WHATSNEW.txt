@@ -209,7 +209,7 @@ smb.conf changes
     Parameter Name                      Description     Default
     --------------                      -----------     -------
     cups connection timeout		New		30
-    idmap config DOM:range		Removed
+    idmap alloc config : range		Removed
     idmap domains			Removed
     init logon delayed hosts		New		""
     init logon delay			New		100
