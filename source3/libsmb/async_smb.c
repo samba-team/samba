@@ -1022,7 +1022,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 			      struct fd_event *event, uint16 flags, void *p)
 {
 	struct cli_state *cli = (struct cli_state *)p;
-	struct cli_request *req;
+	struct cli_request *req, *next;
 	NTSTATUS status;
 
 	DEBUG(11, ("cli_state_handler called with flags %d\n", flags));
@@ -1128,9 +1128,14 @@ static void cli_state_handler(struct event_context *event_ctx,
 	return;
 
  sock_error:
-	for (req = cli->outstanding_requests; req; req = req->next) {
-		int i;
-		for (i=0; i<req->num_async; i++) {
+
+	for (req = cli->outstanding_requests; req; req = next) {
+		int i, num_async;
+
+		next = req->next;
+		num_async = req->num_async;
+
+		for (i=0; i<num_async; i++) {
 			async_req_error(req->async[i], status);
 		}
 	}
