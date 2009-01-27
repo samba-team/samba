@@ -64,7 +64,7 @@ void setup_async_write(struct winbindd_fd_event *event, void *data, size_t lengt
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
 bool winbindd_setup_sig_term_handler(bool parent);
-bool winbindd_setup_sig_hup_handler(const char *logfile);
+bool winbindd_setup_sig_hup_handler(const char *lfile);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_reqtrans.c  */
