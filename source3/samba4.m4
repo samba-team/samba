@@ -1,5 +1,5 @@
 AC_SUBST(BLDSHARED)
-smbtorture4_path=bin/smbtorture4
+smbtorture4_path="-t bin/smbtorture4"
 m4_include(build/m4/public.m4)
 
 m4_include(../m4/check_python.m4)

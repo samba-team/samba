@@ -337,7 +337,7 @@ AC_ARG_WITH(selftest-shrdir,
     AC_MSG_WARN([--with-selftest-shrdir called without argument - will use default])
   ;;
   * )
-    selftest_shrdir="$withval"
+    selftest_shrdir="-s $withval"
     ;;
   esac
 ])
@@ -357,6 +357,7 @@ AC_ARG_WITH(smbtorture4_path,
     if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
     	AC_MSG_ERROR(['$smbtorture_path' does not  exist!])
     fi
+    smbtorture4_path="-t $withval"
   ;;
  esac
 ])
@@ -376,6 +377,7 @@ AC_ARG_WITH(selftest_custom_conf,
     if test -z "$selftest_custom_conf" -a ! -f $selftest_custom_conf; then
 	AC_MSG_ERROR(['$selftest_custom_conf' does not  exist!])
     fi
+    selftest_custom_conf="-c $withval"
   ;;
  esac
 ])
