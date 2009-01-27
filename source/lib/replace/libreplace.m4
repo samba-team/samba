@@ -97,7 +97,10 @@ AC_CHECK_HEADERS(sys/syslog.h syslog.h)
 AC_CHECK_HEADERS(sys/time.h time.h)
 AC_CHECK_HEADERS(stdarg.h vararg.h)
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS([netinet/ip.h], [], [], [#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif])
+AC_CHECK_HEADERS(netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 AC_CHECK_HEADERS(stropts.h)
 
