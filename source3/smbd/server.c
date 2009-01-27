@@ -295,44 +295,224 @@ static void smbd_setup_sig_chld_handler(void)
 	}
 }
 
+struct smbd_open_socket;
+
+struct smbd_parent_context {
+	bool interactive;
+
+	/* the list of listening sockets */
+	struct smbd_open_socket *sockets;
+};
+
+struct smbd_open_socket {
+	struct smbd_open_socket *prev, *next;
+	struct smbd_parent_context *parent;
+	int fd;
+	struct tevent_fd *fde;
+};
+
+static void smbd_open_socket_close_fn(struct tevent_context *ev,
+				      struct tevent_fd *fde,
+				      int fd,
+				      void *private_data)
+{
+	/* this might be the socket_wrapper swrap_close() */
+	close(fd);
+}
+
+static void smbd_accept_connection(struct tevent_context *ev,
+				   struct tevent_fd *fde,
+				   uint16_t flags,
+				   void *private_data)
+{
+	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
+				     struct smbd_open_socket);
+	struct sockaddr_storage addr;
+	socklen_t in_addrlen = sizeof(addr);
+	pid_t pid = 0;
+
+	smbd_set_server_fd(accept(s->fd,(struct sockaddr *)&addr,&in_addrlen));
+
+	if (smbd_server_fd() == -1 && errno == EINTR)
+		return;
+
+	if (smbd_server_fd() == -1) {
+		DEBUG(0,("open_sockets_smbd: accept: %s\n",
+			 strerror(errno)));
+		return;
+	}
+
+	if (s->parent->interactive) {
+		smbd_process();
+		exit_server_cleanly("end of interactive mode");
+		return;
+	}
+
+	if (!allowable_number_of_smbd_processes()) {
+		close(smbd_server_fd());
+		smbd_set_server_fd(-1);
+		return;
+	}
+
+	pid = sys_fork();
+	if (pid == 0) {
+		/* Child code ... */
+		am_parent = 0;
+
+		/* Stop zombies, the parent explicitly handles
+		 * them, counting worker smbds. */
+		CatchChild();
+
+		/* close our standard file
+		   descriptors */
+		close_low_fds(False);
+
+		TALLOC_FREE(s->parent);
+		s = NULL;
+
+		if (!reinit_after_fork(
+			    smbd_messaging_context(),
+			    smbd_event_context(),
+			    true)) {
+			DEBUG(0,("reinit_after_fork() failed\n"));
+			smb_panic("reinit_after_fork() failed");
+		}
+
+		smbd_setup_sig_term_handler();
+		smbd_setup_sig_hup_handler();
+
+		smbd_process();
+		exit_server_cleanly("end of child");
+		return;
+	} else if (pid < 0) {
+		DEBUG(0,("smbd_accept_connection: sys_fork() failed: %s\n",
+			 strerror(errno)));
+	}
+
+	/* The parent doesn't need this socket */
+	close(smbd_server_fd());
+
+	/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
+		Clear the closed fd info out of server_fd --
+		and more importantly, out of client_fd in
+		util_sock.c, to avoid a possible
+		getpeername failure if we reopen the logs
+		and use %I in the filename.
+	*/
+
+	smbd_set_server_fd(-1);
+
+	if (pid != 0) {
+		add_child_pid(pid);
+	}
+
+	/* Force parent to check log size after
+	 * spawning child.  Fix from
+	 * klausr@ITAP.Physik.Uni-Stuttgart.De.  The
+	 * parent smbd will log to logserver.smb.  It
+	 * writes only two messages for each child
+	 * started/finished. But each child writes,
+	 * say, 50 messages also in logserver.smb,
+	 * begining with the debug_count of the
+	 * parent, before the child opens its own log
+	 * file logserver.client. In a worst case
+	 * scenario the size of logserver.smb would be
+	 * checked after about 50*50=2500 messages
+	 * (ca. 100kb).
+	 * */
+	force_check_log_size();
+}
+
+bool smbd_open_one_socket(struct smbd_parent_context *parent,
+			  const struct sockaddr_storage *ifss,
+			  uint16_t port)
+{
+	struct smbd_open_socket *s;
+
+	s = talloc(parent, struct smbd_open_socket);
+	if (!s) {
+		return false;
+	}
+
+	s->parent = parent;
+	s->fd = open_socket_in(SOCK_STREAM,
+			       port,
+			       parent->sockets == NULL ? 0 : 2,
+			       ifss,
+			       true);
+	if (s->fd == -1) {
+		DEBUG(0,("smbd_open_once_socket: open_socket_in: "
+			"%s\n", strerror(errno)));
+			close(s->fd);
+		TALLOC_FREE(s);
+		return false;
+	}
+
+	/* ready to listen */
+	set_socket_options(s->fd, "SO_KEEPALIVE");
+	set_socket_options(s->fd, lp_socket_options());
+
+	/* Set server socket to
+	 * non-blocking for the accept. */
+	set_blocking(s->fd, False);
+
+	if (listen(s->fd, SMBD_LISTEN_BACKLOG) == -1) {
+		DEBUG(0,("open_sockets_smbd: listen: "
+			"%s\n", strerror(errno)));
+			close(s->fd);
+		TALLOC_FREE(s);
+		return false;
+	}
+
+	s->fde = tevent_add_fd(smbd_event_context(),
+			       s,
+			       s->fd, TEVENT_FD_READ,
+			       smbd_accept_connection,
+			       s);
+	if (!s->fde) {
+		DEBUG(0,("open_sockets_smbd: "
+			 "tevent_add_fd: %s\n",
+			 strerror(errno)));
+		close(s->fd);
+		TALLOC_FREE(s);
+		return false;
+	}
+	tevent_fd_set_close_fn(s->fde, smbd_open_socket_close_fn);
+
+	DLIST_ADD_END(parent->sockets, s, struct smbd_open_socket *);
+
+	return true;
+}
+
 /****************************************************************************
  Open the socket communication.
 ****************************************************************************/
 
-static bool open_sockets_smbd(bool interactive, const char *smb_ports)
+static bool open_sockets_smbd(struct smbd_parent_context *parent,
+			      const char *smb_ports)
 {
 	int num_interfaces = iface_count();
-	int num_sockets = 0;
-	int fd_listenset[FD_SETSIZE];
-	fd_set listen_set;
-	int s;
-	int maxfd = 0;
 	int i;
 	char *ports;
-	TALLOC_CTX *dns_ctx = NULL;
 	unsigned dns_port = 0;
 
 #ifdef HAVE_ATEXIT
 	atexit(killkids);
 #endif
 
-	dns_ctx = talloc_new(NULL);
-
 	/* Stop zombies */
 	smbd_setup_sig_chld_handler();
-
-	FD_ZERO(&listen_set);
 
 	/* use a reasonable default set of ports - listing on 445 and 139 */
 	if (!smb_ports) {
 		ports = lp_smb_ports();
 		if (!ports || !*ports) {
-			ports = smb_xstrdup(SMB_PORTS);
+			ports = talloc_strdup(talloc_tos(), SMB_PORTS);
 		} else {
-			ports = smb_xstrdup(ports);
+			ports = talloc_strdup(talloc_tos(), ports);
 		}
 	} else {
-		ports = smb_xstrdup(smb_ports);
+		ports = talloc_strdup(talloc_tos(), smb_ports);
 	}
 
 	if (lp_interfaces() && lp_bind_interfaces_only()) {
@@ -344,7 +524,6 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
-			TALLOC_CTX *frame = NULL;
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
 			char *tok;
@@ -357,64 +536,22 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 				continue;
 			}
 
-			frame = talloc_stackframe();
 			for (ptr=ports;
-					next_token_talloc(frame,&ptr, &tok, " \t,");) {
+			     next_token_talloc(talloc_tos(),&ptr, &tok, " \t,");) {
 				unsigned port = atoi(tok);
 				if (port == 0 || port > 0xffff) {
 					continue;
 				}
 
-				/* Keep the first port for mDNS service
-				 * registration.
-				 */
-				if (dns_port == 0) {
-					dns_port = port;
-				}
-
-				s = fd_listenset[num_sockets] =
-					open_socket_in(SOCK_STREAM,
-							port,
-							num_sockets == 0 ? 0 : 2,
-							ifss,
-							true);
-				if(s == -1) {
-					continue;
-				}
-
-				/* ready to listen */
-				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(s,lp_socket_options());
-
-				/* Set server socket to
-				 * non-blocking for the accept. */
-				set_blocking(s,False);
-
-				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-					DEBUG(0,("open_sockets_smbd: listen: "
-						"%s\n", strerror(errno)));
-					close(s);
-					TALLOC_FREE(frame);
-					return False;
-				}
-				FD_SET(s,&listen_set);
-				maxfd = MAX( maxfd, s);
-
-				num_sockets++;
-				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("open_sockets_smbd: Too "
-						"many sockets to bind to\n"));
-					TALLOC_FREE(frame);
-					return False;
+				if (!smbd_open_one_socket(parent, ifss, port)) {
+					return false;
 				}
 			}
-			TALLOC_FREE(frame);
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
 
-		TALLOC_CTX *frame = talloc_stackframe();
 		char *tok;
 		const char *ptr;
 		const char *sock_addr = lp_socket_address();
@@ -431,8 +568,8 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 		}
 
 		for (sock_ptr=sock_addr;
-				next_token_talloc(frame, &sock_ptr, &sock_tok, " \t,"); ) {
-			for (ptr=ports; next_token_talloc(frame, &ptr, &tok, " \t,"); ) {
+		     next_token_talloc(talloc_tos(), &sock_ptr, &sock_tok, " \t,"); ) {
+			for (ptr=ports; next_token_talloc(talloc_tos(), &ptr, &tok, " \t,"); ) {
 				struct sockaddr_storage ss;
 
 				unsigned port = atoi(tok);
@@ -453,52 +590,14 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 					continue;
 				}
 
-				s = open_socket_in(SOCK_STREAM,
-						port,
-						num_sockets == 0 ? 0 : 2,
-						&ss,
-						true);
-				if (s == -1) {
-					continue;
-				}
-
-				/* ready to listen */
-				set_socket_options(s,"SO_KEEPALIVE");
-				set_socket_options(s,lp_socket_options());
-
-				/* Set server socket to non-blocking
-				 * for the accept. */
-				set_blocking(s,False);
-
-				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
-					DEBUG(0,("open_sockets_smbd: "
-						"listen: %s\n",
-						 strerror(errno)));
-					close(s);
-					TALLOC_FREE(frame);
-					return False;
-				}
-
-				fd_listenset[num_sockets] = s;
-				FD_SET(s,&listen_set);
-				maxfd = MAX( maxfd, s);
-
-				num_sockets++;
-
-				if (num_sockets >= FD_SETSIZE) {
-					DEBUG(0,("open_sockets_smbd: Too "
-						"many sockets to bind to\n"));
-					TALLOC_FREE(frame);
-					return False;
+				if (!smbd_open_one_socket(parent, &ss, port)) {
+					return false;
 				}
 			}
 		}
-		TALLOC_FREE(frame);
 	}
 
-	SAFE_FREE(ports);
-
-	if (num_sockets == 0) {
+	if (parent->sockets == NULL) {
 		DEBUG(0,("open_sockets_smbd: No "
 			"sockets available to bind to.\n"));
 		return false;
@@ -539,26 +638,33 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 
 	if (dns_port != 0) {
 		smbd_setup_mdns_registration(smbd_event_context(),
-					     dns_ctx, dns_port);
+					     parent, dns_port);
 	}
 
+	return true;
+}
+
+static void smbd_parent_loop(struct smbd_parent_context *parent)
+{
 	/* now accept incoming connections - forking a new process
 	   for each incoming connection */
 	DEBUG(2,("waiting for a connection\n"));
 	while (1) {
 		struct timeval now, idle_timeout;
 		fd_set r_fds, w_fds;
+		int maxfd = 0;
 		int num;
+		TALLOC_CTX *frame = talloc_stackframe();
 
 		if (run_events(smbd_event_context(), 0, NULL, NULL)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
 
 		idle_timeout = timeval_zero();
 
-		memcpy((char *)&r_fds, (char *)&listen_set,
-		       sizeof(listen_set));
 		FD_ZERO(&w_fds);
+		FD_ZERO(&r_fds);
 		GetTimeOfDay(&now);
 
 		event_add_to_select_args(smbd_event_context(), &now,
@@ -569,7 +675,11 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 				 timeval_is_zero(&idle_timeout) ?
 				 NULL : &idle_timeout);
 
+		/* check if we need to reload services */
+		check_reload(time(NULL));
+
 		if (run_events(smbd_event_context(), num, &r_fds, &w_fds)) {
+			TALLOC_FREE(frame);
 			continue;
 		}
 
@@ -580,108 +690,7 @@ static bool open_sockets_smbd(bool interactive, const char *smb_ports)
 		if (num == 0 && count_all_current_connections() == 0) {
 			exit_server_cleanly("idle timeout");
 		}
-
-		/* check if we need to reload services */
-		check_reload(time(NULL));
-
-		/* Find the sockets that are read-ready -
-		   accept on these. */
-		for( ; num > 0; num--) {
-			struct sockaddr addr;
-			socklen_t in_addrlen = sizeof(addr);
-			pid_t child = 0;
-
-			s = -1;
-			for(i = 0; i < num_sockets; i++) {
-				if(FD_ISSET(fd_listenset[i],&r_fds)) {
-					s = fd_listenset[i];
-					/* Clear this so we don't look
-					   at it again. */
-					FD_CLR(fd_listenset[i],&r_fds);
-					break;
-				}
-			}
-
-			smbd_set_server_fd(accept(s,&addr,&in_addrlen));
-
-			if (smbd_server_fd() == -1 && errno == EINTR)
-				continue;
-
-			if (smbd_server_fd() == -1) {
-				DEBUG(2,("open_sockets_smbd: accept: %s\n",
-					 strerror(errno)));
-				continue;
-			}
-
-			if (interactive)
-				return True;
-
-			if (allowable_number_of_smbd_processes() &&
-			    ((child = sys_fork())==0)) {
-				/* Child code ... */
-
-				TALLOC_FREE(dns_ctx);
-
-				/* Stop zombies, the parent explicitly handles
-				 * them, counting worker smbds. */
-				CatchChild();
-
-				/* close the listening socket(s) */
-				for(i = 0; i < num_sockets; i++)
-					close(fd_listenset[i]);
-
-				/* close our standard file
-				   descriptors */
-				close_low_fds(False);
-				am_parent = 0;
-
-				if (!reinit_after_fork(
-					    smbd_messaging_context(),
-					    smbd_event_context(),
-					    true)) {
-					DEBUG(0,("reinit_after_fork() failed\n"));
-					smb_panic("reinit_after_fork() failed");
-				}
-
-				smbd_setup_sig_term_handler();
-				smbd_setup_sig_hup_handler();
-
-				return True;
-			}
-			/* The parent doesn't need this socket */
-			close(smbd_server_fd());
-
-			/* Sun May 6 18:56:14 2001 ackley@cs.unm.edu:
-				Clear the closed fd info out of server_fd --
-				and more importantly, out of client_fd in
-				util_sock.c, to avoid a possible
-				getpeername failure if we reopen the logs
-				and use %I in the filename.
-			*/
-
-			smbd_set_server_fd(-1);
-
-			if (child != 0) {
-				add_child_pid(child);
-			}
-
-			/* Force parent to check log size after
-			 * spawning child.  Fix from
-			 * klausr@ITAP.Physik.Uni-Stuttgart.De.  The
-			 * parent smbd will log to logserver.smb.  It
-			 * writes only two messages for each child
-			 * started/finished. But each child writes,
-			 * say, 50 messages also in logserver.smb,
-			 * begining with the debug_count of the
-			 * parent, before the child opens its own log
-			 * file logserver.client. In a worst case
-			 * scenario the size of logserver.smb would be
-			 * checked after about 50*50=2500 messages
-			 * (ca. 100kb).
-			 * */
-			force_check_log_size();
-
-		} /* end for num */
+		TALLOC_FREE(frame);
 	} /* end while 1 */
 
 /* NOTREACHED	return True; */
@@ -939,6 +948,7 @@ extern void build_options(bool screen);
 	POPT_COMMON_DYNCONFIG
 	POPT_TABLEEND
 	};
+	struct smbd_parent_context *parent = NULL;
 	TALLOC_CTX *frame = talloc_stackframe(); /* Setup tos. */
 
 	smbd_init_globals();
@@ -1215,12 +1225,18 @@ extern void build_options(bool screen);
 		return(0);
 	}
 
-	if (!open_sockets_smbd(interactive, ports))
-		exit(1);
+	parent = talloc_zero(smbd_event_context(), struct smbd_parent_context);
+	if (!parent) {
+		exit_server("talloc(struct smbd_parent_context) failed");
+	}
+	parent->interactive = interactive;
+
+	if (!open_sockets_smbd(parent, ports))
+		exit_server("open_sockets_smbd() failed");
 
 	TALLOC_FREE(frame);
 
-	smbd_process();
+	smbd_parent_loop(parent);
 
 	exit_server_cleanly(NULL);
 	return(0);
