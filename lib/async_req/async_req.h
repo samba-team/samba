@@ -123,7 +123,7 @@ void async_req_done(struct async_req *req);
 
 void async_req_error(struct async_req *req, NTSTATUS status);
 
-bool async_post_status(struct async_req *req, struct event_context *ev,
+bool async_post_status(struct async_req *req, struct tevent_context *ev,
 		       NTSTATUS status);
 
 bool async_req_nomem(const void *p, struct async_req *req);
@@ -132,11 +132,11 @@ bool async_req_is_error(struct async_req *req, NTSTATUS *status);
 
 NTSTATUS async_req_simple_recv(struct async_req *req);
 
-bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to);
 
 struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct timeval to);
 
 NTSTATUS async_wait_recv(struct async_req *req);
@@ -146,7 +146,7 @@ struct async_req_queue;
 struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx);
 
 bool async_req_enqueue(struct async_req_queue *queue,
-		       struct event_context *ev,
+		       struct tevent_context *ev,
 		       struct async_req *req,
 		       void (*trigger)(struct async_req *req));
 

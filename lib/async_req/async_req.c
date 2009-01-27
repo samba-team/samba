@@ -18,6 +18,14 @@
 */
 
 #include "includes.h"
+#include "lib/tevent/tevent.h"
+#include "lib/talloc/talloc.h"
+#include "lib/util/dlinklist.h"
+#include "lib/async_req/async_req.h"
+
+#ifndef TALLOC_FREE
+#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
+#endif
 
 /**
  * @brief Print an async_req structure
@@ -53,7 +61,7 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 {
 	struct async_req *result;
 
-	result = TALLOC_ZERO_P(mem_ctx, struct async_req);
+	result = talloc_zero(mem_ctx, struct async_req);
 	if (result == NULL) {
 		return NULL;
 	}
@@ -107,7 +115,7 @@ void async_req_error(struct async_req *req, NTSTATUS status)
  * @param[in] priv	The async request to be finished
  */
 
-static void async_trigger(struct event_context *ev, struct timed_event *te,
+static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
 			  struct timeval now, void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
@@ -134,12 +142,12 @@ static void async_trigger(struct event_context *ev, struct timed_event *te,
  * conventions, independent of whether the request was actually deferred.
  */
 
-bool async_post_status(struct async_req *req, struct event_context *ev,
+bool async_post_status(struct async_req *req, struct tevent_context *ev,
 		       NTSTATUS status)
 {
 	req->status = status;
 
-	if (event_add_timed(ev, req, timeval_zero(),
+	if (tevent_add_timer(ev, req, timeval_zero(),
 			    async_trigger, req) == NULL) {
 		return false;
 	}
@@ -195,8 +203,8 @@ NTSTATUS async_req_simple_recv(struct async_req *req)
 	return NT_STATUS_OK;
 }
 
-static void async_req_timedout(struct event_context *ev,
-			       struct timed_event *te,
+static void async_req_timedout(struct tevent_context *ev,
+			       struct tevent_timer *te,
 			       struct timeval now,
 			       void *priv)
 {
@@ -206,17 +214,17 @@ static void async_req_timedout(struct event_context *ev,
 	async_req_error(req, NT_STATUS_IO_TIMEOUT);
 }
 
-bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to)
 {
-	return (event_add_timed(ev, req,
+	return (tevent_add_timer(ev, req,
 				timeval_current_ofs(to.tv_sec, to.tv_usec),
 				async_req_timedout, req)
 		!= NULL);
 }
 
 struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct timeval to)
 {
 	struct async_req *result;
@@ -250,7 +258,7 @@ struct async_req_queue {
 
 struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx)
 {
-	return TALLOC_ZERO_P(mem_ctx, struct async_req_queue);
+	return talloc_zero(mem_ctx, struct async_req_queue);
 }
 
 static int async_queue_entry_destructor(struct async_queue_entry *e)
@@ -266,8 +274,8 @@ static int async_queue_entry_destructor(struct async_queue_entry *e)
 	return 0;
 }
 
-static void async_req_immediate_trigger(struct event_context *ev,
-					struct timed_event *te,
+static void async_req_immediate_trigger(struct tevent_context *ev,
+					struct tevent_timer *te,
 					struct timeval now,
 					void *priv)
 {
@@ -278,7 +286,7 @@ static void async_req_immediate_trigger(struct event_context *ev,
 	e->trigger(e->req);
 }
 
-bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
+bool async_req_enqueue(struct async_req_queue *queue, struct tevent_context *ev,
 		       struct async_req *req,
 		       void (*trigger)(struct async_req *req))
 {
@@ -300,9 +308,9 @@ bool async_req_enqueue(struct async_req_queue *queue, struct event_context *ev,
 	talloc_set_destructor(e, async_queue_entry_destructor);
 
 	if (!busy) {
-		struct timed_event *te;
+		struct tevent_timer *te;
 
-		te = event_add_timed(ev, e, timeval_zero(),
+		te = tevent_add_timer(ev, e, timeval_zero(),
 				     async_req_immediate_trigger,
 				     e);
 		if (te == NULL) {
@@ -330,7 +338,7 @@ bool _async_req_setup(TALLOC_CTX *mem_ctx, struct async_req **preq,
 		TALLOC_FREE(req);
 		return false;
 	}
-	talloc_set_name(state, typename);
+	talloc_set_name_const(state, typename);
 	req->private_data = state;
 
 	*preq = req;

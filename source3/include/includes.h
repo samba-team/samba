@@ -647,7 +647,7 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "memcache.h"
-#include "async_req.h"
+#include "../lib/async_req/async_req.h"
 #include "async_smb.h"
 #include "async_sock.h"
 #include "services.h"
