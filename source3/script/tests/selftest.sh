@@ -170,8 +170,6 @@ cat >$COMMONCONFFILE<<EOF
 	private dir = $PRIVATEDIR
 	pid directory = $PIDDIR
 	lock directory = $LOCKDIR
-	state directory = $LOCKDIR
-	cache directory = $LOCKDIR
 	log file = $LOGDIR/log.%m
 	log level = 0
 
@@ -206,6 +204,9 @@ cat >$SERVERCONFFILE<<EOF
 	bind interfaces only = yes
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
+
+	state directory = $LOCKDIR
+	cache directory = $LOCKDIR
 
 	passdb backend = tdbsam
 
