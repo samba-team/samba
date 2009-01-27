@@ -53,6 +53,9 @@ kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
 server=host/datan.test.h5l.se
 server2=host/computer.example.com
+serverip=host/10.11.12.13
+serveripname=host/ip.test.h5l.org
+serveripname2=host/10.11.12.14
 alias1=host/datan.example.com
 alias2=host/datan
 aliaskeytab=host/datan
@@ -116,6 +119,11 @@ ${kadmin} ext -k ${keytab} ${ps} || exit 1
 
 ${kadmin} add -p kaka --use-defaults ${server2}@${R2} || exit 1
 ${kadmin} ext -k ${keytab} ${server2}@${R2} || exit 1
+${kadmin} add -p kaka --use-defaults ${serverip}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${serverip}@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${serveripname}@${R} || exit 1
+${kadmin} ext -k ${keytab} ${serveripname}@${R} || exit 1
+${kadmin} modify --alias=${serveripname2}@${R} ${serveripname}@${R}
 ${kadmin} add -p foo --use-defaults remove2@${R2} || exit 1
 
 ${kadmin} add -p kaka --use-defaults ${alias1}@${R} || exit 1
@@ -227,6 +235,30 @@ for a in $enctypes; do
 	done
 	${kdestroy}
 done
+
+echo "Getting client initial tickets ip based name"; > messages.log
+${kinit} --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
+echo "Getting ip based name tickets"; > messages.log
+${kgetcred} ${serverip}@${R} || { ec=1 ; eval "${testfailed}"; }
+echo "  checking we we got back right ticket"
+${klist} | grep ${serverip}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
+echo "  checking if ticket is useful"
+./ap-req ${serverip}@${R} ${keytab} ${cache} || \
+	{ ec=1 ; eval "${testfailed}"; }
+${kdestroy}
+
+echo "Getting client initial tickets ip based name (alias)"; > messages.log
+${kinit} --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
+for a in ${serveripname} ${serveripname2} ; do
+    echo "Getting ip based name tickets (alias) $a"; > messages.log
+    ${kgetcred} ${a}@${R} || { ec=1 ; eval "${testfailed}"; }
+    echo "  checking we we got back right ticket"
+    ${klist} | grep ${a}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
+    echo "  checking if ticket is useful"
+    ./ap-req --server-any ${a}@${R} ${keytab} ${cache} || \
+    	{ ec=1 ; eval "${testfailed}"; }
+done
+${kdestroy}
 
 echo "Getting server initial tickets"; > messages.log
 ${kinit} --keytab=${keytab} ${server}@$R || { ec=1 ; eval "${testfailed}"; }
