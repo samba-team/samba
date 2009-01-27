@@ -156,6 +156,7 @@ CLEANFILES= \
 	krb5-pkinit-win.conf \
 	signal \
 	leaks-log \
+	malloc-log \
 	messages.log \
 	o2cache.krb5 \
 	o2digest-reply \
