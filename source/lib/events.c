@@ -218,22 +218,13 @@ bool event_add_to_select_args(struct event_context *event_ctx,
 bool run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
-	bool fired = False;
-	struct fd_event *fde, *next;
+	struct fd_event *fde;
+	struct timeval now;
 
-	/* Run all events that are pending, not just one (as we
-	   did previously. */
+	GetTimeOfDay(&now);
 
-	while (event_ctx->timed_events) {
-		struct timeval now;
-		GetTimeOfDay(&now);
-
-		if (timeval_compare(
-			    &now, &event_ctx->timed_events->when) < 0) {
-			/* Nothing to do yet */
-			DEBUG(11, ("run_events: Nothing to do\n"));
-			break;
-		}
+	if ((event_ctx->timed_events != NULL)
+	    && (timeval_compare(&now, &event_ctx->timed_events->when) >= 0)) {
 
 		DEBUG(10, ("Running event \"%s\" %lx\n",
 			   event_ctx->timed_events->event_name,
@@ -244,38 +235,29 @@ bool run_events(struct event_context *event_ctx,
 			event_ctx->timed_events, now,
 			event_ctx->timed_events->private_data);
 
-		fired = True;
-	}
-
-	if (fired) {
-		/*
-		 * We might have changed the socket status during the timed
-		 * events, return to run select again.
-		 */
-		return True;
+		return true;
 	}
 
 	if (selrtn == 0) {
 		/*
 		 * No fd ready
 		 */
-		return fired;
+		return false;
 	}
 
-	for (fde = event_ctx->fd_events; fde; fde = next) {
+	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
 		uint16 flags = 0;
 
-		next = fde->next;
 		if (FD_ISSET(fde->fd, read_fds)) flags |= EVENT_FD_READ;
 		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
 
 		if (flags & fde->flags) {
 			fde->handler(event_ctx, fde, flags, fde->private_data);
-			fired = True;
+			return true;
 		}
 	}
 
-	return fired;
+	return false;
 }
 
 
