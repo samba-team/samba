@@ -1,16 +1,18 @@
                    =============================
-                   Release Notes for Samba 3.2.7
-			 January 05, 2009
+                   Release Notes for Samba 3.2.8
+			  March 03, 2009
                    =============================
 
 
-This is a security release in order to address CVE-2009-0022.
+This is a bug fix release of the Samba 3.2 series.
 
-   o CVE-2009-0022
-     In Samba 3.2.0 to 3.2.6, in setups with registry shares enabled,
-     access to the root filesystem ("/") is granted
-     when connecting to a share called "" (empty string)
-     using old versions of smbclient (before 3.0.28).
+Major enhancements included in Samba 3.2.8 are:
+
+  o Correctly detect if the current DC is the closest one.
+  o Add saf_join_store() function to memorize the DC used at join time.
+    This avoids problems caused by replication delays shortly after domain
+    joins.
+
 
 The original security announcement for this and past advisories can
 be found http://www.samba.org/samba/security/
@@ -20,12 +22,160 @@ be found http://www.samba.org/samba/security/
 Changes
 #######
 
-Changes since 3.2.6
+Changes since 3.2.7
 -------------------
 
 
 o   Michael Adam <obnox@samba.org>
-    * Fix for CVE-2009-0022.
+    * BUG 6066: netinet/ip.h present but cannot be compiled under Solaris.
+    * Fix join by creating keytab after changing the config in libnet.
+    * Streamline logic of libnet_join_post_processing() in libnet_join.
+    * Fix build of [u]mount.cifs in the RHEL packaging.
+    * Fix distclean target and add realdistclean target in the docs build.
+    * Clean generated .png images and build/catalog.xml in "make clean".
+    * Fix detection of netinet/ip.h on Solaris 8.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * BUG 4308: Excel save operation corrupts file ACLs.
+    * BUG 5979: Fix level 2 oplocks.
+    * BUG 5980: Fix race condition when granting level2 oplocks can cause break
+      notify to be missed.
+    * BUG 5986: Fix renaming of streams.
+    * BUG 5990: Strict allocate should be checked before ftruncate.
+    * BUG 6009: Setting "min receivefile size = 1" breaks writes.
+    * BUG 6016: Alternate Data Streams / Extended Attributes seem to conflict.
+    * BUG 6017: Fix magic scripts.
+    * BUG 6019: Fix file corruption in Clustered SMB/NFS environments managed via
+      CTDB.
+    * BUG 6021: smbclient du command does not recuse properly.
+    * BUG 6030: Add missing <th> header in Status page.
+    * BUG 6035: Fix possible race between fcntl F_SETLKW and alarm delivery.
+    * BUG 6040: Calling Samba print server with an aliased DNS-name fails.
+    * Fix race condition in alarm lock processing.
+    * Fix logic bug introduce in backport of ccache_regain_all_now.
+    * Fix crash bug in SWAT.
+    * Fix logic error in try_chown.
+    * Fix detection of dns_sd libraries.
+
+
+o   Kai Blin <kai@samba.org>
+    * BUG 5953: Fix smbclient crashes.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fix "allow trusted domain" so it disables trusted domains.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Fix buffer allocation in eventlog read call.
+    * Fix various invalid memcpy in read_package_entry().
+
+
+o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
+    * Variables for signals must be volatile sig_atomic_t in Winbind.
+    * Fix gmem->numgids and gmem->maxgids breakage on Solaris 64-bit.
+    * Fix a compile-time warning.
+    * Fix SIGBUS on non-x86 CPUs in libsmbclient.
+
+
+o   Björn Jacke <bj@sernet.de>
+    * Correct the description of the "ldap timeout" parameter.
+
+
+o   Jeff Layton <jlayton@redhat.com>
+    * Allow mounts to ipv6 capable servers in mount.cifs.
+
+
+o   Volker Lendecke <vl@sernet.de>
+    * BUG 5933: Fix incrementing/decrementing num_validated_vuids.
+    * BUG 5953: Make cli_send_smb_direct_writeX use writev.
+    * BUG 5965: Fix creation of the first share using SWAT.
+    * BUG 5969: Optimize smbclient put command.
+    * BUG 6014: mget shouldn't segfault without arguments.
+    * Fix error code when smbclient puts a file over an existing directory.
+    * Fix a valgrind error.
+    * Fix a "ignoring function call result" warning.
+    * Add sys_writev.
+    * Add write_data_iov.
+    * Make write_data use write_data_iov.
+    * Fix a memory leak in cups_pull_comment_location.
+    * Fix an ancient uninitialized variable read.
+    * Fix a bad memleak in vfs_full_audit.
+
+
+o   Herb Lewis <hlewis@chomps.localdomain>
+    * Don't return 0 on error in smbcacls - bad for scripts.
+
+
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * Determine case sensitivity based on file system attributes in
+      libsmbclient.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Correctly detect if the current dc is the closest one.
+    * Use get_dc_name() instead of get_sorted_dc_list() in the LDAP case.
+    * Fallback to returning all DCs, when none is available in the requested
+      site.
+    * Add saf_join_store() function.
+    * Use DS_FORCE_REDISCOVERY in libnet_join.
+    * Use dbwrap to open sessionid.tdb in net status.
+    * Fix dbwrap_store_uint32() to match dbwrap_store_int32().
+    * Handle the SMB signing states the same in the krb5 and ntlmssp cases in
+      libsmb.
+    * Re-add "fileid:algorithm" as option in vfs_fileid.
+    * Add vfs_fileid manpage.
+
+
+o   Lars Müller <lars@samba.org>
+    * Tweak with pam defines of older Linux versions.
+
+
+o   Tim Prouty <tprouty@samba.org>
+    * Fix stream marshalling to return the correct streaminfo status.
+    * Fix a delete on close divergence from Windows.
+    * Allow renames of streams via NTRENAME and fix stream error codes on
+      rename.
+    * Remove a few unnecessary checks from the streams depot module and fix to
+      work with NTRENAME.
+    * Remove a few unnecessary checks from the streams xattr module.
+    * Remove a few unnecessary checks from the streams xattr module.
+
+
+o   Andreas Schneider <anschneider@suse.de>
+    * Fix a segfault if ? is there but the options are NULL.
+    * Avoid flooding of syslog with failing pam_putenv messages.
+    * Document default of the printing config variable.
+
+
+o   Karolin Seeger <kseeger@samba.org>
+    * BUG 6058: Use 'make distclean' instead of 'make clean' in build_docs.
+    * BUG 6000: Avoid bashism in perfcount.init.
+    * Change default value for "ldap ssl" to "start tls".
+    * Several documentation improvements/typo fixes.
+    * Fix syntax error in samba.spec.tmpl.
+    * Check if Unix account exists before asking for the password in smbpasswd.
+    * Add manpage for vfs_shadow_copy2.
+
+
+o   Richard Sharpe <realrichardsharpe@gmail.com>
+    * Fix mistake in DEBUG message.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Keep compatibility with v3-0-ctdb name for fileid:mapping option.
+
+
+o   Bo Yang <boyang@novell.com>
+    * Clean event context after child is forked.
+    * Refresh sequence number as soon as possible.
+    * Don't set child->requests to NULL in parent after fork.
+    * Backport of the clean event context after fork and
+      krb5 refresh chain fixes.
+    * Fix null pointer refrence in event context.
+    * Don't send message to any other child in child process.
+    * Fix bug in get_dc_name_via_netlogon(), null pointer refrence.
 
 
 ######################################################################
