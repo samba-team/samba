@@ -5831,6 +5831,11 @@ static void usage(void)
 
 	load_case_tables();
 
+	if (is_default_dyn_CONFIGFILE()) {
+		if(getenv("SMB_CONF_PATH")) {
+			set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
+		}
+	}
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 
