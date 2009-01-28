@@ -130,7 +130,6 @@ INSTALLPERMS_DATA = 0644
 LOGFILEBASE = @logfilebase@
 CONFIGFILE = $(CONFIGDIR)/smb.conf
 LMHOSTSFILE = $(CONFIGDIR)/lmhosts
-CTDBDIR = @ctdbdir@
 NCALRPCDIR = @ncalrpcdir@
 
 # This is where smbpasswd et al go
