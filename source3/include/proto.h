@@ -3779,6 +3779,8 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 
 /* The following definitions come from nmbd/nmbd_processlogon.c  */
 
+bool initialize_nmbd_proxy_logon(void);
+
 void process_logon_packet(struct packet_struct *p, char *buf,int len, 
                           const char *mailslot);
 
