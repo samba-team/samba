@@ -33,14 +33,12 @@
  */
 
 #include "onefs.h"
+#include "smbd/globals.h"
 
 extern const struct generic_mapping file_generic_mapping;
-extern bool global_client_failed_oplock_break;
 
-struct deferred_open_record {
-	bool delayed_for_oplocks;
-	bool failed; /* added for onefs_oplocks */
-	struct file_id id;
+struct onefs_fsp_data {
+	uint64_t oplock_callback_id;
 };
 
 static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
@@ -55,9 +53,9 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			      uint64_t allocation_size,
 			      struct security_descriptor *sd,
 			      struct ea_list *ea_list,
-
 			      files_struct **result,
 			      int *pinfo,
+			      struct onefs_fsp_data *fsp_data,
 			      SMB_STRUCT_STAT *psbuf);
 
 /****************************************************************************
@@ -189,11 +187,6 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 		flags |= O_NOFOLLOW;
 	}
 #endif
-	/* Don't request an oplock if oplocks are turned off for the
-	 * share. */
-	if (!lp_oplocks(SNUM(conn)))
-		oplock_request = 0;
-
 	/* Stream handling */
 	if (is_ntfs_stream_name(path)) {
 		status = onefs_split_ntfs_stream_name(talloc_tos(), path,
@@ -202,6 +195,22 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 	/* It's a stream, so pass in the base_fd */
 	if (stream != NULL) {
 		SMB_ASSERT(fsp->base_fsp);
+
+		/*
+		 * We have never seen an oplock taken on a stream, and our
+		 * current implementation doesn't support it.  If a request is
+		 * seen, log a loud error message and ignore the requested
+		 * oplock.
+		 */
+		if ((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) !=
+		     NO_OPLOCK) {
+			DEBUG(0,("Oplock(%d) being requested on a stream! "
+				"Ignoring oplock request: base=%s, stream=%s",
+				oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK,
+				base, stream));
+			/* Recover by requesting NO_OPLOCK instead. */
+			oplock_request &= SAMBA_PRIVATE_OPLOCK_MASK;
+		}
 
 		DEBUG(10,("Opening a stream: base=%s(%d), stream=%s",
 			  base, fsp->base_fsp->fh->fd, stream));
@@ -242,8 +251,8 @@ static NTSTATUS onefs_open_file(files_struct *fsp,
 
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("Error opening file %s (%s) (local_flags=%d) "
-			  "(flags=%d)\n",
-			  path,nt_errstr(status),local_flags,flags));
+			"(flags=%d)\n",
+			path, strerror(errno), local_flags, flags));
 		return status;
 	}
 
@@ -407,7 +416,11 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	 * measure here in case the other smbd is stuck
 	 * somewhere else. */
 
-	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
+	/*
+	 * On OneFS, the kernel will always send an oplock_revoked message
+	 * before this timeout is hit.
+	 */
+	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*10, 0);
 
 	/* Nothing actually uses state.delayed_for_oplocks
 	   but it's handy to differentiate in debug messages
@@ -415,7 +428,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 	   a 1 second delay for share mode conflicts. */
 
 	state.delayed_for_oplocks = True;
-	state.failed = False;
+	state.failed = false;
 	state.id = lck->id;
 
 	if (!request_timed_out(request_time, timeout)) {
@@ -438,6 +451,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				  struct security_descriptor *sd,
 				  files_struct *fsp,
 				  int *pinfo,
+				  struct onefs_fsp_data *fsp_data,
 				  SMB_STRUCT_STAT *psbuf)
 {
 	int flags=0;
@@ -461,7 +475,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	char *parent_dir;
 	const char *newname;
 	int granted_oplock;
-	uint64 oplock_waiter;
+	uint64_t oplock_callback_id = 0;
 	uint32 createfile_attributes = 0;
 
 	ZERO_STRUCT(id);
@@ -504,6 +518,30 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		  fname, new_dos_attributes, access_mask, share_access,
 		  create_disposition, create_options, unx_mode,
 		  oplock_request));
+
+	/*
+	 * Any non-stat-only open has the potential to contend oplocks, which
+	 * means to avoid blocking in the kernel (which is unacceptable), the
+	 * open must be deferred.  In order to defer opens, req must not be
+	 * NULL.  The known cases of calling with a NULL req:
+	 *
+	 *   1. Open the base file of a stream: Always done stat-only
+	 *
+	 *   2. Open the stream: Oplocks are disallowed on streams, so an
+	 *      oplock will never be contended.
+	 *
+	 *   3. open_file_fchmod(), which is called from 3 places:
+	 *      A. try_chown: Posix acls only. Never called on onefs.
+	 *      B. set_ea_dos_attributes: Can't be called from onefs, because
+	 *         SMB_VFS_SETXATTR return ENOSYS.
+	 *      C. file_set_dos_mode: This would only happen if the "dos
+	 *         filemode" smb.conf parameter is set to yes.  We ship with
+	 *	   it off, but if a customer were to turn it on it would be
+	 *         bad.
+	 */
+	if (req == NULL && !is_stat_open(access_mask) && !is_ntfs_stream_name(fname)) {
+		smb_panic("NULL req on a non-stat-open!");
+	}
 
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {
 		DEBUG(0, ("No smb request but not an internal only open!\n"));
@@ -839,10 +877,22 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		 (unsigned int)unx_mode, (unsigned int)access_mask,
 		 (unsigned int)open_access_mask));
 
-	oplock_waiter = 1; //ifs_oplock_wait_record(mid);
-
-	if (oplock_waiter == 0) {
-		return NT_STATUS_NO_MEMORY;
+	/*
+	 * Since the open is guaranteed to be stat only if req == NULL, a
+	 * callback record is only needed if req != NULL.
+	 */
+	if (req) {
+		SMB_ASSERT(fsp_data);
+		oplock_callback_id = onefs_oplock_wait_record(req->mid);
+		if (oplock_callback_id == 0) {
+			return NT_STATUS_NO_MEMORY;
+		}
+	} else {
+		/*
+		 * It is also already asserted it's either a stream or a
+		 * stat-only open at this point.
+		 */
+		SMB_ASSERT(fsp->oplock_type == NO_OPLOCK);
 	}
 
 	/* Do the open. */
@@ -858,7 +908,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				 access_mask,
 				 open_access_mask,
 				 fsp->oplock_type,
-				 oplock_waiter,
+				 oplock_callback_id,
 				 share_access,
 				 create_options,
 				 createfile_attributes,
@@ -910,6 +960,9 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 				goto cleanup_destroy;
 			}
 			/* Waiting for an oplock */
+			DEBUG(5,("Async createfile because a client has an "
+				 "oplock on %s\n", fname));
+
 			SMB_ASSERT(req);
 			schedule_defer_open(lck, request_time, req);
 			goto cleanup;
@@ -1044,7 +1097,9 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		 * Normal error, for example EACCES
 		 */
 	 cleanup_destroy:
-		//destroy_ifs_callback_record(oplock_waiter);
+		if (oplock_callback_id != 0) {
+			destroy_onefs_callback_record(oplock_callback_id);
+		}
 	 cleanup:
 		TALLOC_FREE(lck);
 		return status;
@@ -1052,9 +1107,12 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 
 	fsp->oplock_type = granted_oplock;
 
-	/* XXX uncomment for oplocks */
-	//ifs_set_oplock_callback(oplock_waiter, fsp);
-	//fsp->oplock_callback_id = oplock_waiter;
+	if (oplock_callback_id != 0) {
+		onefs_set_oplock_callback(oplock_callback_id, fsp);
+		fsp_data->oplock_callback_id = oplock_callback_id;
+	} else {
+		SMB_ASSERT(fsp->oplock_type == NO_OPLOCK);
+	}
 
 	if (!file_existed) {
 		struct timespec old_write_time = get_mtimespec(psbuf);
@@ -1193,6 +1251,16 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 			/* Could not get the kernel oplock */
 			fsp->oplock_type = NO_OPLOCK;
 		}
+	}
+
+	if (fsp->oplock_type == LEVEL_II_OPLOCK &&
+	    (!lp_level2_oplocks(SNUM(conn)) ||
+		!(global_client_caps & CAP_LEVEL_II_OPLOCKS))) {
+
+		DEBUG(5, ("Downgrading level2 oplock on open "
+			  "because level2 oplocks = off\n"));
+
+		release_file_oplock(fsp);
 	}
 
 	if (info == FILE_WAS_OVERWRITTEN || info == FILE_WAS_CREATED ||
@@ -1654,6 +1722,7 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 			 NULL,			/* ea_list */
 			 &streams[i],		/* result */
 			 NULL,			/* pinfo */
+			 NULL,			/* fsp_data */
 			 NULL);			/* psbuf */
 
 		TALLOC_FREE(streamname);
@@ -1701,6 +1770,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 					   struct ea_list *ea_list,
 					   files_struct **result,
 					   int *pinfo,
+					   struct onefs_fsp_data *fsp_data,
 					   SMB_STRUCT_STAT *psbuf)
 {
 	SMB_STRUCT_STAT sbuf;
@@ -1733,6 +1803,8 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 	}
 
 	if (req == NULL) {
+		SMB_ASSERT((oplock_request & ~SAMBA_PRIVATE_OPLOCK_MASK) ==
+			    NO_OPLOCK);
 		oplock_request |= INTERNAL_OPEN_ONLY;
 	}
 
@@ -1793,7 +1865,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			conn,				/* conn */
 			NULL,				/* req */
 			base,				/* fname */
-			0,				/* access_mask */
+			SYNCHRONIZE_ACCESS,		/* access_mask */
 			(FILE_SHARE_READ |
 			    FILE_SHARE_WRITE |
 			    FILE_SHARE_DELETE),		/* share_access */
@@ -1806,6 +1878,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			NULL,				/* ea_list */
 			&base_fsp,			/* result */
 			NULL,				/* pinfo */
+			NULL,				/* fsp_data */
 			NULL);				/* psbuf */
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1890,6 +1963,7 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 			sd,				/* sd */
 			fsp,				/* result */
 			&info,				/* pinfo */
+			fsp_data,		       	/* fsp_data */
 			&sbuf);				/* psbuf */
 
 		if(!NT_STATUS_IS_OK(status)) {
@@ -2013,6 +2087,13 @@ static NTSTATUS onefs_create_file_unixpath(connection_struct *conn,
 	return status;
 }
 
+static void destroy_onefs_fsp_data(void *p_data)
+{
+	struct onefs_fsp_data *fsp_data = (struct onefs_fsp_data *)p_data;
+
+	destroy_onefs_callback_record(fsp_data->oplock_callback_id);
+}
+
 /**
  * SMB_VFS_CREATE_FILE interface to onefs.
  */
@@ -2036,6 +2117,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 {
 	connection_struct *conn = handle->conn;
 	struct case_semantics_state *case_state = NULL;
+	struct onefs_fsp_data fsp_data = {};
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
 	files_struct *fsp = NULL;
@@ -2139,6 +2221,7 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 		ea_list,				/* ea_list */
 		&fsp,					/* result */
 		&info,					/* pinfo */
+		&fsp_data,			       	/* fsp_data */
 		&sbuf);					/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2146,6 +2229,26 @@ NTSTATUS onefs_create_file(vfs_handle_struct *handle,
 	}
 
 	DEBUG(10, ("onefs_create_file: info=%d\n", info));
+
+	/*
+	 * Setup private onefs_fsp_data.  Currently the private data struct is
+	 * only used to store the oplock_callback_id so that when the file is
+	 * closed, the onefs_callback_record can be properly cleaned up in the
+	 * oplock_onefs sub-system.
+	 */
+	if (fsp) {
+		struct onefs_fsp_data *fsp_data_tmp = NULL;
+		fsp_data_tmp = (struct onefs_fsp_data *)
+		    VFS_ADD_FSP_EXTENSION(handle, fsp, struct onefs_fsp_data,
+			&destroy_onefs_fsp_data);
+
+		if (fsp_data_tmp == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		*fsp_data_tmp = fsp_data;
+	}
 
 	*result = fsp;
 	if (pinfo != NULL) {

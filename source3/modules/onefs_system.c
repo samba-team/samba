@@ -68,58 +68,6 @@ static void smlock_dump(int debuglevel, const struct sm_lock *sml)
 	       (int)sml->sm_timeout.tv_usec));
 }
 
-/*
- * Return string value of onefs oplock types.
- */
-static const char *onefs_oplock_str(enum oplock_type onefs_oplock_type)
-{
-	switch (onefs_oplock_type) {
-	case OPLOCK_NONE:
-		return "OPLOCK_NONE";
-	case OPLOCK_EXCLUSIVE:
-		return "OPLOCK_EXCLUSIVE";
-	case OPLOCK_BATCH:
-		return "OPLOCK_BATCH";
-	case OPLOCK_SHARED:
-		return "OPLOCK_SHARED";
-	default:
-		break;
-	}
-	return "UNKNOWN";
-}
-
-/*
- * Convert from onefs to samba oplock.
- */
-static int onefs_oplock_to_samba_oplock(enum oplock_type onefs_oplock)
-{
-	switch (onefs_oplock) {
-	case OPLOCK_NONE:
-		return NO_OPLOCK;
-	case OPLOCK_EXCLUSIVE:
-		return EXCLUSIVE_OPLOCK;
-	case OPLOCK_BATCH:
-		return BATCH_OPLOCK;
-	case OPLOCK_SHARED:
-		return LEVEL_II_OPLOCK;
-	default:
-		DEBUG(0, ("unknown oplock type %d found\n", onefs_oplock));
-		break;
-	}
-	return NO_OPLOCK;
-}
-
-/*
- * Convert from samba to onefs oplock.
- */
-static enum oplock_type onefs_samba_oplock_to_oplock(int samba_oplock_type)
-{
-	if (BATCH_OPLOCK_TYPE(samba_oplock_type)) return OPLOCK_BATCH;
-	if (EXCLUSIVE_OPLOCK_TYPE(samba_oplock_type)) return OPLOCK_EXCLUSIVE;
-	if (LEVEL_II_OPLOCK_TYPE(samba_oplock_type)) return OPLOCK_SHARED;
-	return OPLOCK_NONE;
-}
-
 /**
  * External interface to ifs_createfile
  */
@@ -164,10 +112,12 @@ int onefs_sys_create_file(connection_struct *conn,
 		pifs_sd = &ifs_sd;
 	}
 
+	/* Stripping off private bits will be done for us. */
 	onefs_oplock = onefs_samba_oplock_to_oplock(oplock_request);
 
-	/* Temporary until oplock work is added to vfs_onefs */
-	onefs_oplock = OPLOCK_NONE;
+	if (!lp_oplocks(SNUM(conn))) {
+		SMB_ASSERT(onefs_oplock == OPLOCK_NONE);
+	}
 
 	/* Convert samba dos flags to UF_DOS_* attributes. */
 	onefs_dos_attributes = dos_attributes_to_stat_dos_flags(dos_flags);

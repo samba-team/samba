@@ -1099,6 +1099,8 @@ if test x"$samba_cv_HAVE_ONEFS" = x"yes"; then
     AC_DEFINE(HAVE_ONEFS,1,[Whether building on Isilon OneFS])
     default_shared_modules="$default_shared_modules vfs_onefs perfcount_onefs"
     ONEFS_LIBS="-lisi_acl"
+    # Need to also add general libs for oplocks support
+    save_LIBS="$save_LIBS -lisi_ecs -lisi_event -lisi_util -ldevstat"
 fi
 AC_SUBST(ONEFS_LIBS)
 LIBS="$save_LIBS"

@@ -22,7 +22,7 @@
 #define _ONEFS_H
 
 #include "includes.h"
-
+#include "oplock_onefs.h"
 #include <sys/isi_acl.h>
 
 /* OneFS Module smb.conf parameters and defaults */

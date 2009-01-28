@@ -122,6 +122,11 @@ void release_file_oplock(files_struct *fsp)
 
 static void downgrade_file_oplock(files_struct *fsp)
 {
+	if (!EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
+		DEBUG(0, ("trying to downgrade an already-downgraded oplock!\n"));
+		return;
+	}
+
 	if (koplocks) {
 		koplocks->ops->release_oplock(koplocks, fsp, LEVEL_II_OPLOCK);
 	}
@@ -916,6 +921,8 @@ bool init_oplocks(struct messaging_context *msg_ctx)
 		koplocks = irix_init_kernel_oplocks(talloc_autofree_context());
 #elif HAVE_KERNEL_OPLOCKS_LINUX
 		koplocks = linux_init_kernel_oplocks(talloc_autofree_context());
+#elif HAVE_ONEFS
+		koplocks = onefs_init_kernel_oplocks(talloc_autofree_context());
 #endif
 	}
 

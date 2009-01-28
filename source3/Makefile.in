@@ -620,7 +620,7 @@ PROFILES_OBJ = utils/profiles.o \
                $(LIB_OBJ) $(LIB_DUMMY_OBJ) \
                $(POPT_LIB_OBJ)
 
-OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o
+OPLOCK_OBJ = smbd/oplock.o smbd/oplock_irix.o smbd/oplock_linux.o smbd/oplock_onefs.o
 
 NOTIFY_OBJ = smbd/notify.o smbd/notify_inotify.o smbd/notify_internal.o
 
