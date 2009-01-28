@@ -242,6 +242,8 @@ TDB_LIB_OBJ = lib/util_tdb.o ../lib/util/util_tdb.o \
 	  lib/dbwrap_ctdb.o \
 	  lib/dbwrap_rbt.o @LIBTDB_STATIC@
 
+TDB_VALIDATE_OBJ = lib/tdb_validate.o
+
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
 VERSION_OBJ = lib/version.o
@@ -1065,7 +1067,8 @@ WINBINDD_OBJ = \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) \
 		$(DCUTIL_OBJ) $(IDMAP_OBJ) $(NSS_INFO_OBJ) \
 		$(AFS_OBJ) $(AFS_SETTOKEN_OBJ) \
-		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ) 
+		$(LIBADS_SERVER_OBJ) $(SERVER_MUTEX_OBJ) $(LDB_OBJ) \
+		$(TDB_VALIDATE_OBJ)
 
 WBINFO_OBJ = ../nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) \

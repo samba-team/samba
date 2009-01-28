@@ -31,16 +31,6 @@ struct tdb_wrap {
 	struct tdb_wrap *next, *prev;
 };
 
-struct tdb_validation_status {
-	bool tdb_error;
-	bool bad_freelist;
-	bool bad_entry;
-	bool unknown_key;
-	bool success;
-};
-
-typedef int (*tdb_validate_data_func)(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state);
-
 TDB_DATA make_tdb_data(const uint8_t *dptr, size_t dsize);
 TDB_DATA string_tdb_data(const char *string);
 TDB_DATA string_term_tdb_data(const char *string);
@@ -89,10 +79,5 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 			       int open_flags, mode_t mode);
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err);
-
-int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn);
-int tdb_validate_open(const char *tdb_path, tdb_validate_data_func validate_fn);
-int tdb_validate_and_backup(const char *tdb_path,
-			    tdb_validate_data_func validate_fn);
 
 #endif /* __TDBUTIL_H__ */
