@@ -165,17 +165,6 @@ AC_ARG_WITH(logfilebase,
 
 
 #################################################
-# set ctdb source directory location
-AC_ARG_WITH(ctdb,
-[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-ctdb called without argument])
-  ;;
-  * )
-    ctdbdir="$withval"
-    ;;
-  esac])
 
 #################################################
 # set shared modules (internal lib) directory location
@@ -246,7 +235,6 @@ AC_SUBST(configdir)
 AC_SUBST(lockdir)
 AC_SUBST(piddir)
 AC_SUBST(logfilebase)
-AC_SUBST(ctdbdir)
 AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)

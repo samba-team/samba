@@ -5090,16 +5090,127 @@ AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 #################################################
 # check for cluster extensions
 
-AC_MSG_CHECKING(whether to include cluster support)
+CTDB_CFLAGS=""
+AC_SUBST(CTDB_CFLAGS)
+AC_ARG_WITH(ctdb,
+[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-ctdb called without argument])
+    ;;
+  *)
+    CTDB_CPPFLAGS="-I$withval/include"
+    ;;
+  esac])
+
+SAVED_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $CTDB_CPPFLAGS"
+ctdb_broken="missing or broken headers"
+
+AC_CHECK_HEADERS(ctdb.h ctdb_private.h,,,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#define private #error __USED_RESERVED_WORD_private__
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+])
+
+AC_HAVE_DECL(CTDB_CONTROL_TRANS2_COMMIT_RETRY,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+if test x"$ac_cv_have_CTDB_CONTROL_TRANS2_COMMIT_RETRY_decl" = x"yes"; then
+	ctdb_broken=no
+else
+	ctdb_broken="missing transaction support"
+fi
+
+# in ctdb 1.0.57 ctdb_control_tcp was temparary renamed to ctdb_tcp_client
+AC_CHECK_TYPE(struct ctdb_tcp_client,[
+	AC_DEFINE([ctdb_control_tcp],[ctdb_tcp_client],[ctdb ipv4 support])
+],,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+
+AC_CHECK_TYPE(struct ctdb_control_tcp,[
+	AC_DEFINE([HAVE_STRUCT_CTDB_CONTROL_TCP],[1],[ctdb ipv4 support])
+],[
+	ctdb_broken="missing struct ctdb_control_tcp"
+],[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+
+AC_CHECK_TYPE(struct ctdb_control_tcp_addr,[
+	AC_DEFINE([HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR],[1],[ctdb ipv6 support])
+],,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+CPPFLAGS="$SAVED_CPPFLAGS"
+
+AC_MSG_CHECKING(cluster support)
 AC_ARG_WITH(cluster-support,
-[AS_HELP_STRING([--with-cluster-support], [Enable cluster extensions (default=no)])])
-if test "x$with_cluster_support" = "xyes"; then
+[AS_HELP_STRING([--with-cluster-support], [Enable cluster extensions (default=auto)])])
+
+if test x"$with_cluster_support" = x ; then
+	with_cluster_support="auto"
+fi
+
+if test x"$ac_cv_header_ctdb_private_h" != x"yes"; then
+	if test "x$with_cluster_support" = "xyes"; then
+		AC_MSG_ERROR("ctdb_private.h is required for cluster support")
+	fi
+	with_cluster_support=no
+fi
+
+if test x"$ctdb_broken" != x"no"; then
+	if test "x$with_cluster_support" = "xyes"; then
+		AC_MSG_ERROR(["cluster support: $ctdb_broken"])
+	fi
+	with_cluster_support=no
+fi
+
+if test "x$with_cluster_support" != "xno"; then
     AC_DEFINE(CLUSTER_SUPPORT,1,[Whether to enable cluster extensions])
+    SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${CTDB_CPPFLAGS}"
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
 fi
-
 
 #################################################
 # check for ACL support
