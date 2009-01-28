@@ -1423,7 +1423,7 @@ AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct tim
 		t.tv_sec = s.st_atime;
 		t.tv_nsec = s.st_atimensec;
 	    ],
-	    samba_cv_stat_hires=yes, samba_cv_stat_hires=no)
+	    samba_cv_stat_hires_notimespec=yes, samba_cv_stat_hires_notimespec=no)
     ])
 
 if test x"$samba_cv_stat_hires_notimespec" = x"yes" ; then
