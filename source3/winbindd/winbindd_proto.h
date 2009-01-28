@@ -498,7 +498,6 @@ void winbindd_lookupname(struct winbindd_cli_state *state);
 void winbindd_lookuprids(struct winbindd_cli_state *state);
 void winbindd_sid_to_uid(struct winbindd_cli_state *state);
 void winbindd_sid_to_gid(struct winbindd_cli_state *state);
-void winbindd_sids_to_unixids(struct winbindd_cli_state *state);
 void winbindd_set_mapping(struct winbindd_cli_state *state);
 void winbindd_remove_mapping(struct winbindd_cli_state *state);
 void winbindd_set_hwm(struct winbindd_cli_state *state);
