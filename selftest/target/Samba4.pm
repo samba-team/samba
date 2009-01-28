@@ -520,7 +520,6 @@ sub provision($$$$$$)
 	my $unix_uid = $>;
 	my $unix_gids_str = $);
 	my @unix_gids = split(" ", $unix_gids_str);
-	my $srcdir="$RealBin/..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
 	my $tmpdir = "$prefix_abs/tmp";
