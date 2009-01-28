@@ -345,6 +345,13 @@ START=`date`
  bin/smbclient $CONFIGURATION -L $SERVER_IP -U% -p 139 | head -2
  MAKE_TEST_BINARY=""
 
+ MAKE_TEST_BINARY="bin/net"
+ printf "%s" "creating BUILTIN\\Administrators..."
+ bin/net -s $SERVERCONFFILE sam createbuiltingroup \
+   Administrators > /dev/null 2>&1 ||  exit 1
+ echo "DONE"
+ MAKE_TEST_BINARY=""
+
  failed=0
 
  . $SCRIPTDIR/tests_$SUBTESTS.sh
