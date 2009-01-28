@@ -1389,7 +1389,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtimespec], samba_cv_stat_st_birt
 		struct stat s = {0};
 		t = s.st_birthtimespec;
 	    ],
-	    samba_cv_stat_st_birthtimespec=yes, samba_cv_stat_birthtimespec=no)
+	    samba_cv_stat_st_birthtimespec=yes, samba_cv_stat_st_birthtimespec=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtimespec" = x"yes" ; then
@@ -1419,7 +1419,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtimensec], samba_cv_stat_st_birt
 		struct stat s = {0};
 		t.tv_nsec = s.st_birthtimensec;
 	    ],
-	    samba_cv_stat_st_birthtimensec=yes, samba_cv_stat_birthtimensec=no)
+	    samba_cv_stat_st_birthtimensec=yes, samba_cv_stat_st_birthtimensec=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtimensec" = x"yes" ; then
@@ -1449,7 +1449,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtime], samba_cv_stat_st_birthtim
 		struct stat s = {0};
 		t = s.st_birthtime;
 	    ],
-	    samba_cv_stat_st_birthtime=yes, samba_cv_stat_birthtime=no)
+	    samba_cv_stat_st_birthtime=yes, samba_cv_stat_st_birthtime=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtime" = x"yes" ; then
