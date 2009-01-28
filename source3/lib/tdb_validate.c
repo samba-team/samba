@@ -22,8 +22,8 @@
 #include "includes.h"
 #include "tdb_validate.h"
 
-/* 
- * internal validation function, executed by the child.  
+/*
+ * internal validation function, executed by the child.
  */
 static int tdb_validate_child(struct tdb_context *tdb,
 			      tdb_validate_data_func validate_fn)
@@ -364,46 +364,46 @@ static int rename_file_with_suffix(TALLOC_CTX *ctx, const char *path,
  * do a backup of a tdb, moving the destination out of the way first
  */
 static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
-		      		  const char *dst_path, int hash_size,
+				  const char *dst_path, int hash_size,
 				  const char *rotate_suffix,
 				  bool retry_norotate_if_nospc,
 				  bool rename_as_last_resort_if_nospc)
 {
 	int ret;
 
-        rename_file_with_suffix(ctx, dst_path, rotate_suffix);
+	rename_file_with_suffix(ctx, dst_path, rotate_suffix);
 
-        ret = tdb_backup(ctx, src_path, dst_path, hash_size);
+	ret = tdb_backup(ctx, src_path, dst_path, hash_size);
 
 	if (ret != 0) {
 		DEBUG(10, ("backup of %s failed: %s\n", src_path, strerror(errno)));
 	}
-        if ((ret != 0) && (errno == ENOSPC) && retry_norotate_if_nospc)
-        {
-                char *rotate_path = talloc_asprintf(ctx, "%s%s", dst_path,
-                                                    rotate_suffix);
-                DEBUG(10, ("backup of %s failed due to lack of space\n",
+	if ((ret != 0) && (errno == ENOSPC) && retry_norotate_if_nospc)
+	{
+		char *rotate_path = talloc_asprintf(ctx, "%s%s", dst_path,
+						    rotate_suffix);
+		DEBUG(10, ("backup of %s failed due to lack of space\n",
 			   src_path));
-                DEBUGADD(10, ("trying to free some space by removing rotated "
+		DEBUGADD(10, ("trying to free some space by removing rotated "
 			      "dst %s\n", rotate_path));
-                if (unlink(rotate_path) == -1) {
-                        DEBUG(10, ("unlink of %s failed: %s\n", rotate_path,
+		if (unlink(rotate_path) == -1) {
+			DEBUG(10, ("unlink of %s failed: %s\n", rotate_path,
 				   strerror(errno)));
-                } else {
-                        ret = tdb_backup(ctx, src_path, dst_path, hash_size);
-                }
-                TALLOC_FREE(rotate_path);
-        }
+		} else {
+			ret = tdb_backup(ctx, src_path, dst_path, hash_size);
+		}
+		TALLOC_FREE(rotate_path);
+	}
 
-        if ((ret != 0) && (errno == ENOSPC) && rename_as_last_resort_if_nospc)
-        {
-                DEBUG(10, ("backup of %s failed due to lack of space\n", 
+	if ((ret != 0) && (errno == ENOSPC) && rename_as_last_resort_if_nospc)
+	{
+		DEBUG(10, ("backup of %s failed due to lack of space\n", 
 			   src_path));
-                DEBUGADD(10, ("using 'rename' as a last resort\n"));
-                ret = rename(src_path, dst_path);
-        }
+		DEBUGADD(10, ("using 'rename' as a last resort\n"));
+		ret = rename(src_path, dst_path);
+	}
 
-        return ret;
+	return ret;
 }
 
 /*
@@ -416,8 +416,8 @@ static int tdb_backup_with_rotate(TALLOC_CTX *ctx, const char *src_path,
  *  - if the tdb is corrupt:
  *    - move the tdb to "name.corrupt"
  *    - check if there is valid backup.
- *      if so, restore the backup.
- *      if restore is successful, return 0 (success),
+ *	if so, restore the backup.
+ *	if restore is successful, return 0 (success),
  *    - otherwise return -1 (failure)
  */
 int tdb_validate_and_backup(const char *tdb_path,
