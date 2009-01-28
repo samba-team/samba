@@ -5937,7 +5937,7 @@ if test x"$enable_dnssd" != x"no"; then
     AC_CHECK_FUNCS(DNSServiceRegister)
     AC_CHECK_LIB_EXT(dns_sd, DNSSD_LIBS, DNSServiceRegister)
     if test x"$ac_cv_func_DNSServiceRegister" != x"yes" -a \
-            x"$ac_cv_lib_ext_DNSServiceRegister" != x"yes"; then
+            x"$ac_cv_lib_ext_dns_sd_DNSServiceRegister" != x"yes"; then
 	have_dnssd_support=no
     fi
 
