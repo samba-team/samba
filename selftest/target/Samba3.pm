@@ -95,6 +95,11 @@ sub setup_env($$$)
 	
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "member") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_member("$path/member", $self->{vars}->{dc});
 	} else {
 		return undef;
 	}
@@ -124,7 +129,50 @@ sub setup_dc($$)
 
 	$self->wait_for_start($vars);
 
+	$self->{vars}->{dc} = $vars;
+
 	return $vars;
+}
+
+sub setup_member($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+
+	print "PROVISIONING MEMBER...";
+
+	my $member_options = "
+	security = domain
+";
+	my $ret = $self->provision($prefix,
+				   "LOCALMEMBER3",
+				   3,
+				   "localmember3pass",
+				   $member_options);
+
+	$ret or die("Unable to provision");
+
+	my $net = $self->binpath("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$self->check_or_start($ret,
+			      ($ENV{NMBD_MAXTIME} or 2700),
+			      ($ENV{WINBINDD_MAXTIME} or 2700),
+			      ($ENV{SMBD_MAXTIME} or 2700));
+
+	$self->wait_for_start($ret);
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	return $ret;
 }
 
 sub stop($)

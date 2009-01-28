@@ -66,5 +66,9 @@ for t in $tests; do
 done
 
 plantest "blackbox.smbclient" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
+plantest "blackbox.smbclient member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
+plantest "blackbox.smbclient domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
+
 plantest "blackbox.wbinfo" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
 plantest "blackbox.net" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
+

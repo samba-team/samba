@@ -457,7 +457,7 @@ if ($opt_target eq "samba4") {
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
-	$testenv_default = "dc";
+	$testenv_default = "member";
 	require target::Samba3;
 	$target = new Samba3($bindir);
 } elsif ($opt_target eq "win") {
