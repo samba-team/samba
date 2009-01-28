@@ -179,26 +179,26 @@ sub check_or_start($$$$) {
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
 
-# disable winbindd until the build-farm faked_users work with it
-#	unlink($env_vars->{WINBINDD_TEST_LOG});
-#	print "STARTING WINBINDD...";
-#	$pid = fork();
-#	if ($pid == 0) {
-#		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
-#		open STDERR, '>&STDOUT';
-#
-#		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
-#
-#		my @optargs = ("-d0");
-#		if (defined($ENV{WINBINDD_OPTIONS})) {
-#			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
-#		}
-#
-#		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
-#		exec($self->binpath("timelimit"), $winbindd_maxtime, $ENV{WINBINDD_VALGRIND}, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
-#	}
-#	write_pid($env_vars, "winbindd", $pid);
-#	print "DONE\n";
+	unlink($env_vars->{WINBINDD_TEST_LOG});
+	print "STARTING WINBINDD...";
+	$pid = fork();
+	if ($pid == 0) {
+		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
+		open STDERR, '>&STDOUT';
+
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
+		my @optargs = ("-d0");
+		if (defined($ENV{WINBINDD_OPTIONS})) {
+			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
+		}
+
+		$ENV{$ENV{LIB_PATH_VAR}} = $self->{bindir};
+		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
+		exec($self->binpath("timelimit"), $winbindd_maxtime, $ENV{WINBINDD_VALGRIND}, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+	}
+	write_pid($env_vars, "winbindd", $pid);
+	print "DONE\n";
 
 	unlink($env_vars->{SMBD_TEST_LOG});
 	print "STARTING SMBD...";

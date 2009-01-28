@@ -2951,12 +2951,15 @@ valgrindtest:: all torture timelimit
 SELFTEST_FORMAT = plain
 selftestdir = ../selftest
 
+S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin"
+
 selftest:: all torture timelimit
-	@$(selftestdir)/selftest.pl --prefix=st --target=samba3 \
+	@$(S3_LD_LIBPATH_OVERRIDE) $(selftestdir)/selftest.pl \
+		--prefix=${selftest_prefix} --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--expected-failures=$(srcdir)/selftest/knownfail \
 		--exclude=$(srcdir)/selftest/skip \
-		--socket-wrapper $(TESTS) --format=$(SELFTEST_FORMAT)
+		--socket-wrapper $(TESTS) --format=$(SELFTEST_FORMAT) --immediate
 
 selftest-%:
 	$(MAKE) selftest TESTS=$*
