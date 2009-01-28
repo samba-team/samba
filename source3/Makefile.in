@@ -2954,7 +2954,8 @@ selftestdir = ../selftest
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin"
 
 selftest:: all torture timelimit
-	@$(S3_LD_LIBPATH_OVERRIDE) $(selftestdir)/selftest.pl \
+	@$(S3_LD_LIBPATH_OVERRIDE) PERL="$(PERL)" \
+		$(PERL) $(selftestdir)/selftest.pl \
 		--prefix=${selftest_prefix} --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
 		--expected-failures=$(srcdir)/selftest/knownfail \

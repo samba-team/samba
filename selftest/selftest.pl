@@ -580,6 +580,7 @@ sub write_clientconf($$)
 	}
 	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
+		print CF "\twinbindd:socket dir = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
 	if ($opt_socket_wrapper) {
 		print CF "\tinterfaces = $interfaces\n";

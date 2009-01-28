@@ -265,7 +265,6 @@ sub create_clientconf($$$)
 	my $logdir = "$prefix/logs";
 	my $piddir = "$prefix/pid";
 	my $privatedir = "$prefix/private";
-	my $scriptdir = "$RealBin/..";
 	my $conffile = "$prefix/smb.conf";
 
 	my $torture_interfaces='127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.0.0.10/8,127.0.0.11/8';
@@ -284,7 +283,7 @@ sub create_clientconf($$$)
 
 	netbios name = TORTURE_6
 	interfaces = $torture_interfaces
-	panic action = $scriptdir/gdb_backtrace \%d %\$(MAKE_TEST_BINARY)
+	panic action = $RealBin/gdb_backtrace \%d %\$(MAKE_TEST_BINARY)
 
 	passdb backend = tdbsam
 	";
@@ -308,10 +307,7 @@ sub provision($$$$$$)
 	my $unix_uid = $>;
 	my $unix_gids_str = $);
 	my @unix_gids = split(" ", $unix_gids_str);
-	my $password = "test";
 
-	my $srcdir="$RealBin/..";
-	my $scriptdir="$srcdir/selftest";
 	my $prefix_abs = abs_path($prefix);
 	my $bindir_abs = abs_path($self->{bindir});
 
@@ -349,7 +345,7 @@ sub provision($$$$$$)
 
 	my $conffile="$libdir/server.conf";
 
-	my $nss_wrapper_pl = "$ENV{PERL} $srcdir/../lib/nss_wrapper/nss_wrapper.pl";
+	my $nss_wrapper_pl = "$ENV{PERL} $RealBin/../lib/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
 	my $nss_wrapper_group = "$privatedir/group";
 
@@ -359,7 +355,7 @@ sub provision($$$$$$)
 	netbios name = $server
 	interfaces = $server_ip/8
 	bind interfaces only = yes
-	panic action = $scriptdir/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+	panic action = $RealBin/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 
 	workgroup = $domain
 
@@ -408,8 +404,13 @@ sub provision($$$$$$)
 	# End extra options
 
 	#Include user defined custom parameters if set
-	$ENV{INCLUDE_CUSTOM_CONF}
+";
 
+	if (defined($ENV{INCLUDE_CUSTOM_CONF})) {
+		print CONF "\t$ENV{INCLUDE_CUSTOM_CONF}\n";
+	}
+
+	print CONF "
 [tmp]
 	path = $shrdir
 [hideunread]
@@ -436,15 +437,13 @@ sub provision($$$$$$)
 	##
 
 	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
-	print PASSWD "
-nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
+	print PASSWD "nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
 $unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
 ";
 	close(PASSWD);
 
 	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
-	print GROUP "
-nobody:x:65533:
+	print GROUP "nobody:x:65533:
 nogroup:x:65534:nobody
 $unix_name-group:x:$unix_gids[0]:
 ";
@@ -457,15 +456,18 @@ $unix_name-group:x:$unix_gids[0]:
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
 
-	$ENV{NSS_WRAPPER_PASSWD} = undef;
-	$ENV{NSS_WRAPPER_GROUP} = undef;
+	delete $ENV{NSS_WRAPPER_PASSWD};
+	delete $ENV{NSS_WRAPPER_GROUP};
 
 	print "DONE\n";
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
+	$ret{NMBD_TEST_LOG_POS} = 0;
 	$ret{WINBINDD_TEST_LOG} = "$prefix/winbindd_test.log";
+	$ret{WINBINDD_TEST_LOG_POS} = 0;
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	$ret{SMBD_TEST_LOG_POS} = 0;
 	$ret{SERVERCONFFILE} = $conffile;
 	$ret{CONFIGURATION} ="-s $conffile";
 	$ret{SERVER} = $server;
@@ -476,7 +478,7 @@ $unix_name-group:x:$unix_gids[0]:
 	$ret{PIDDIR} = $piddir;
 	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
 	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
-	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} => $swiface,
+	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} = $swiface;
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
@@ -504,7 +506,7 @@ sub wait_for_start($$)
 	print "creating BUILTIN\\Administrators\n";
 	$ENV{WINBINDD_SOCKET_DIR} = $envvars->{WINBINDD_SOCKET_DIR};
 	system($self->binpath("net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Administrators");
-	$ENV{WINBINDD_SOCKET_DIR} = undef;
+	delete $ENV{WINBINDD_SOCKET_DIR};
 
 	print $self->getlog_env($envvars);
 }
