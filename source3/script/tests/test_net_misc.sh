@@ -16,7 +16,7 @@ test_time()
 {
 	PARAM="$1"
 
-	${NETTIME} ${PARAM} -S localhost2
+	${NETTIME} -S ${SERVER} ${PARAM}
 }
 
 test_lookup()

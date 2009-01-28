@@ -104,7 +104,18 @@ sub setup_dc($$)
 {
 	my ($self, $path) = @_;
 
-	my $vars = $self->provision($path, "dc");
+	print "PROVISIONING DC...";
+
+	my $dc_options = "
+	domain master = yes
+	domain logons = yes
+";
+
+	my $vars = $self->provision($path,
+				    "LOCALDC2",
+				    2,
+				    "localdc2pass",
+				    $dc_options);
 
 	$self->check_or_start($vars,
 			      ($ENV{NMBD_MAXTIME} or 2700),
@@ -280,17 +291,16 @@ sub create_clientconf($$$)
 	close(CONF);
 }
 
-sub provision($$$)
+sub provision($$$$$$)
 {
-	my ($self, $prefix, $role) = @_;
+	my ($self, $prefix, $server, $swiface, $password, $extra_options) = @_;
 
 	##
 	## setup the various environment variables we need
 	##
 
 	my %ret = ();
-	my $server = "LOCALHOST2";
-	my $server_ip = "127.0.0.2";
+	my $server_ip = "127.0.0.$swiface";
 	my $domain = "SAMBA-TEST";
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
@@ -366,14 +376,6 @@ sub provision($$$)
 
 	passdb backend = tdbsam
 
-";
-
-	if ($role eq "dc") {
-		print CONF "\tdomain master = yes\n";
-		print CONF "\tdomain logons = yes\n";
-	}
-
-print CONF "
 	time server = yes
 
 	add user script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action add --name %u
@@ -400,6 +402,10 @@ print CONF "
 	map system = yes
 	create mask = 755
 	vfs objects = $bindir_abs/xattr_tdb.so $bindir_abs/streams_depot.so
+
+	# Begin extra options
+	$extra_options
+	# End extra options
 
 	#Include user defined custom parameters if set
 	$ENV{INCLUDE_CUSTOM_CONF}
@@ -470,7 +476,7 @@ $unix_name-group:x:$unix_gids[0]:
 	$ret{PIDDIR} = $piddir;
 	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
 	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
-	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} => 2,
+	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} => $swiface,
 	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
 	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
 
