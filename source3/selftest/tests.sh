@@ -65,6 +65,6 @@ for t in $tests; do
     plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
 done
 
-plantest "blackbox.smbclient" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP
+plantest "blackbox.smbclient" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
 plantest "blackbox.wbinfo" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
 plantest "blackbox.net" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh

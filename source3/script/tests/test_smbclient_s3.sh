@@ -2,17 +2,19 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 4 ]; then
 cat <<EOF
-Usage: test_smbclient_s3.sh SERVER SERVER_IP
+Usage: test_smbclient_s3.sh SERVER SERVER_IP USERNAME PASSWORD
 EOF
 exit 1;
 fi
 
 SERVER="$1"
 SERVER_IP="$2"
+USERNAME="$3"
+PASSWORD="$4"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
-shift 2
+shift 4
 ADDARGS="$*"
 
 incdir=`dirname $0`
@@ -25,9 +27,18 @@ test_noninteractive_no_prompt()
 {
     prompt="smb"
 
-    echo du | \
-	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I SERVER_IP $ADDARGS 2>&1 | \
-    grep $prompt
+    cmd='echo du | $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+
+    if [ $? != 0 ] ; then
+	echo "$out"
+	echo "command failed"
+	false
+	return
+    fi
+
+    echo "$out" | grep $prompt >/dev/null 2>&1
 
     if [ $? = 0 ] ; then
 	# got a prompt .. fail
@@ -49,18 +60,26 @@ du
 quit
 EOF
 
-    CLI_FORCE_INTERACTIVE=yes \
-    $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP \
-	$ADDARGS < $tmpfile 2>/dev/null | \
-    grep $prompt
+    cmd='CLI_FORCE_INTERACTIVE=yes $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP $ADDARGS < $tmpfile 2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    rm -f $tmpfile
+
+    if [ $ret != 0 ] ; then
+	echo "$out"
+	echo "command failed"
+	false
+	return
+    fi
+
+    echo "$out" | grep $prompt >/dev/null 2>&1
 
     if [ $? = 0 ] ; then
 	# got a prompt .. succeed
-	rm -f $tmpfile
 	true
     else
 	echo failed to match interactive prompt on stdout
-	rm -f $tmpfile
 	false
     fi
 }
