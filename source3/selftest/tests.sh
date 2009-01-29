@@ -48,10 +48,10 @@ BINDIR=`dirname $0`/../bin
 SCRIPTDIR=`dirname $0`/../script/tests
 export SCRIPTDIR
 
-plantest "talloctort" none $VALGRIND $BINDIR/talloctort 
-plantest "replacetort" none $VALGRIND $BINDIR/replacetort
-plantest "tdbtorture" none $VALGRIND $BINDIR/tdbtorture
-plantest "smbconftort" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
+plantest "talloctort3" none $VALGRIND $BINDIR/talloctort
+plantest "replacetort3" none $VALGRIND $BINDIR/replacetort
+plantest "tdbtorture3" none $VALGRIND $BINDIR/tdbtorture
+plantest "smbconftort3" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
 
 tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
 tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "
@@ -61,14 +61,27 @@ tests="$tests OPEN XCOPY RENAME DELETE PROPERTIES W2K"
 tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE"
 
 for t in $tests; do
-	name=`normalize_testname $t`
+    name=`normalize_testname smbtorture3.plain.$t`
     plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
 done
 
-plantest "blackbox.smbclient" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
-plantest "blackbox.smbclient member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
-plantest "blackbox.smbclient domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
+for t in $tests; do
+    name=`normalize_testname smbtorture3.crypt.$t`
+    plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
+done
 
-plantest "blackbox.wbinfo" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
-plantest "blackbox.net" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
+# plain
+plantest "blackbox.smbclient3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
+plantest "blackbox.smbclient3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
+plantest "blackbox.smbclient3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
+
+# encrypted
+plantest "blackbox.smbclient3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD "-e"
+
+# these don't work yet
+#plantest "blackbox.smbclient3.crypt member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "-e"
+#plantest "blackbox.smbclient3.crypt domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "-e"
+
+plantest "blackbox.wbinfo3" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
+plantest "blackbox.net3" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
 
