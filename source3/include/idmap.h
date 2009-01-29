@@ -22,11 +22,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* idmap version determines auto-conversion - this is the database
-   structure version specifier. */
-
-#define IDMAP_VERSION 2
-
 /* The interface version specifier. 
    Updated to 3 for enum types by JRA. */
 
