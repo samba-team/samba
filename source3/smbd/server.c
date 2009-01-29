@@ -445,7 +445,10 @@ bool smbd_open_one_socket(struct smbd_parent_context *parent,
 			"%s\n", strerror(errno)));
 			close(s->fd);
 		TALLOC_FREE(s);
-		return false;
+		/*
+		 * We ignore an error here, as we've done before
+		 */
+		return true;
 	}
 
 	/* ready to listen */
