@@ -904,3 +904,66 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
+				      const struct EVENTLOGRECORD *e,
+				      struct eventlog_Record_tdb *t)
+{
+	uint32_t i;
+
+	ZERO_STRUCTP(t);
+
+	t->size				= e->Length;
+	t->reserved			= e->Reserved;
+	t->record_number		= e->RecordNumber;
+	t->time_generated		= e->TimeGenerated;
+	t->time_written			= e->TimeWritten;
+	t->event_id			= e->EventID;
+	t->event_type			= e->EventType;
+	t->num_of_strings		= e->NumStrings;
+	t->event_category		= e->EventCategory;
+	t->reserved_flags		= e->ReservedFlags;
+	t->closing_record_number	= e->ClosingRecordNumber;
+
+	t->stringoffset			= e->StringOffset;
+	t->sid_length			= e->UserSidLength;
+	t->sid_offset			= e->UserSidOffset;
+	t->data_length			= e->DataLength;
+	t->data_offset			= e->DataOffset;
+
+	t->source_name_len		= 2 * strlen_m_term(e->SourceName);
+	t->source_name			= talloc_strdup(mem_ctx, e->SourceName);
+	NT_STATUS_HAVE_NO_MEMORY(t->source_name);
+
+	t->computer_name_len		= 2 * strlen_m_term(e->Computername);
+	t->computer_name		= talloc_strdup(mem_ctx, e->Computername);
+	NT_STATUS_HAVE_NO_MEMORY(t->computer_name);
+
+	/* t->sid_padding; */
+	if (e->UserSidLength > 0) {
+		const char *sid_str = NULL;
+		smb_ucs2_t *dummy = NULL;
+		sid_str = sid_string_talloc(mem_ctx, &e->UserSid);
+		t->sid_length = rpcstr_push_talloc(mem_ctx, &dummy, sid_str);
+		if (t->sid_length == -1) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		t->sid = data_blob_talloc(mem_ctx, (uint8_t *)dummy, t->sid_length);
+		NT_STATUS_HAVE_NO_MEMORY(t->sid.data);
+	}
+
+	t->strings			= talloc_array(mem_ctx, const char *, e->NumStrings);
+	for (i=0; i < e->NumStrings; i++) {
+		t->strings[i]		= talloc_strdup(t->strings, e->Strings[i]);
+		NT_STATUS_HAVE_NO_MEMORY(t->strings[i]);
+	}
+
+	t->strings_len			= 2 * ndr_size_string_array(t->strings, t->num_of_strings, LIBNDR_FLAG_STR_NULLTERM);
+	t->data				= data_blob_talloc(mem_ctx, e->Data, e->DataLength);
+	/* t->padding			= r->Pad; */
+
+	return NT_STATUS_OK;
+}
