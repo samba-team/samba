@@ -102,6 +102,7 @@ o   Volker Lendecke <vl@sernet.de>
     * Fix a memory leak in cups_pull_comment_location.
     * Fix an ancient uninitialized variable read.
     * Fix a bad memleak in vfs_full_audit.
+    * Fix several valgrind errors.
 
 
 o   Herb Lewis <hlewis@chomps.localdomain>
@@ -147,6 +148,7 @@ o   Andreas Schneider <anschneider@suse.de>
     * Fix a segfault if ? is there but the options are NULL.
     * Avoid flooding of syslog with failing pam_putenv messages.
     * Document default of the printing config variable.
+    * Use talloc_tos() instead of the talloc NULL context.
 
 
 o   Karolin Seeger <kseeger@samba.org>
