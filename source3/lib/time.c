@@ -427,10 +427,10 @@ void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_atim = ts;
 #elif defined(HAVE_STAT_ST_ATIMENSEC)
 	pst->st_atime = ts.tv_sec;
-	pst->st_atimensec = ts.tv_nsec
+	pst->st_atimensec = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_ATIME_N)
 	pst->st_atime = ts.tv_sec;
-	pst->st_atime_n = ts.tv_nsec
+	pst->st_atime_n = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_ATIMESPEC)
 	pst->st_atimespec = ts;
 #else
@@ -479,10 +479,10 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_mtim = ts;
 #elif defined(HAVE_STAT_ST_MTIMENSEC)
 	pst->st_mtime = ts.tv_sec;
-	pst->st_mtimensec = ts.tv_nsec
+	pst->st_mtimensec = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_MTIME_N)
 	pst->st_mtime = ts.tv_sec;
-	pst->st_mtime_n = ts.tv_nsec
+	pst->st_mtime_n = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_MTIMESPEC)
 	pst->st_mtimespec = ts;
 #else
@@ -531,10 +531,10 @@ void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_ctim = ts;
 #elif defined(HAVE_STAT_ST_CTIMENSEC)
 	pst->st_ctime = ts.tv_sec;
-	pst->st_ctimensec = ts.tv_nsec
+	pst->st_ctimensec = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_CTIME_N)
 	pst->st_ctime = ts.tv_sec;
-	pst->st_ctime_n = ts.tv_nsec
+	pst->st_ctime_n = ts.tv_nsec;
 #elif defined(HAVE_STAT_ST_CTIMESPEC)
 	pst->st_ctimespec = ts;
 #else
