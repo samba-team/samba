@@ -1474,6 +1474,46 @@ if test x"$samba_cv_stat_hires_notimespec_n" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps without struct timespec suffixed _n])
 fi
 
+dnl Tru64 has _micro_second_ resolution:
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps in st_uXtime], samba_cv_stat_hires_uxtime,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtime;
+		t.tv_nsec = s.st_umtime * 1000;
+		t.tv_sec = s.st_ctime;
+		t.tv_nsec = s.st_uctime * 1000;
+		t.tv_sec = s.st_atime;
+		t.tv_nsec = s.st_uatime * 1000;
+	    ],
+	    samba_cv_stat_hires_uxtime=yes, samba_cv_stat_hires_uxtime=no)
+    ])
+
+if test x"$samba_cv_stat_hires_uxtime" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_UMTIME, 1, [whether struct stat contains st_umtime])
+    AC_DEFINE(HAVE_STAT_ST_UATIME, 1, [whether struct stat contains st_uatime])
+    AC_DEFINE(HAVE_STAT_ST_UCTIME, 1, [whether struct stat contains st_uctime])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps in st_uXtime])
+fi
+
 AC_CACHE_CHECK([whether struct stat has st_birthtimespec], samba_cv_stat_st_birthtimespec,
     [
 	AC_TRY_COMPILE(
