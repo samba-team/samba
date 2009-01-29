@@ -19,8 +19,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "includes.h"
 #include "tdb_validate.h"
+#include "includes.h"
 
 /*
  * internal validation function, executed by the child.
