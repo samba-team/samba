@@ -1128,6 +1128,7 @@ bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 bool socket_exist(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
+uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
@@ -2500,7 +2501,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint8 SecuityFlags);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
 uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
-			    size_t strlen, size_t *pconverted_size);
+			    size_t str_len, size_t *pconverted_size);
 struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				const char *fname, int flags, int share_mode);
@@ -7377,7 +7378,6 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 /* The following definitions come from smbd/trans2.c  */
 
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
-uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);

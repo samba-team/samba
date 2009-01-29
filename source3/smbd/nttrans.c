@@ -621,7 +621,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
+	SOFF_T(p, 0, SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;
@@ -1086,7 +1086,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fattr); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, get_allocation_size(conn,fsp,&sbuf));
+	SOFF_T(p, 0, SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 8;

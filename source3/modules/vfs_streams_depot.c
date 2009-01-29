@@ -648,8 +648,8 @@ static bool collect_one_stream(const char *dirname,
 	if (!add_one_stream(state->mem_ctx,
 			    &state->num_streams, &state->streams,
 			    dirent, sbuf.st_size,
-			    get_allocation_size(
-				    state->handle->conn, NULL, &sbuf))) {
+			    SMB_VFS_GET_ALLOC_SIZE(state->handle->conn, NULL,
+						   &sbuf))) {
 		state->status = NT_STATUS_NO_MEMORY;
 		return false;
 	}
@@ -693,8 +693,8 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
 				    "::$DATA", sbuf.st_size,
-				    get_allocation_size(handle->conn, fsp,
-							&sbuf))) {
+				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
+							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}

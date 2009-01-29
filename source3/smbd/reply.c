@@ -1816,7 +1816,7 @@ void reply_open_and_X(struct smb_request *req)
 			END_PROFILE(SMBopenX);
 			return;
 		}
-		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
+		sbuf.st_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
 	}
 
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
@@ -7281,7 +7281,7 @@ void reply_getattrE(struct smb_request *req)
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
-		uint32 allocation_size = get_allocation_size(conn,fsp, &sbuf);
+		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &sbuf);
 		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}

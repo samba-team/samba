@@ -542,6 +542,15 @@ bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st)
 }
 
 /*******************************************************************
+ Returns the size in bytes of the named given the stat struct.
+********************************************************************/
+
+uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf)
+{
+	return sbuf->st_size;
+}
+
+/*******************************************************************
  Returns the size in bytes of the named file.
 ********************************************************************/
 
@@ -551,7 +560,7 @@ SMB_OFF_T get_file_size(char *file_name)
 	buf.st_size = 0;
 	if(sys_stat(file_name,&buf) != 0)
 		return (SMB_OFF_T)-1;
-	return(buf.st_size);
+	return get_file_size_stat(&buf);
 }
 
 /*******************************************************************
