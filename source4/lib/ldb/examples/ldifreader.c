@@ -29,9 +29,7 @@ It lists / dumps the entries in an LDIF file to standard output.
 
 */
 
-#include "ldb_includes.h"
 #include "ldb.h"
-#include "ldb_errors.h"
 
 /*
   ldb_ldif_write takes a function pointer to a custom output

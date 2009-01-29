@@ -31,7 +31,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
+#include "ldb.h"
 #include "tools/cmdline.h"
 
 static struct ldb_cmdline *options;

@@ -23,7 +23,7 @@
  * Simo Sorce <idra@samba.org>		2005
  */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 
 /* Byte-wise swap two items of size SIZE. */
 #define SWAP(a, b, size)						      \

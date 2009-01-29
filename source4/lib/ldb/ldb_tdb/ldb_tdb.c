@@ -45,8 +45,6 @@
  *    Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
-
 #include "ldb_tdb.h"
 
 
@@ -84,7 +82,8 @@ static int ltdb_err_map(enum TDB_ERROR tdb_code)
 */
 int ltdb_lock_read(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	if (ltdb->in_transaction == 0) {
 		return tdb_lockall_read(ltdb->tdb);
 	}
@@ -96,7 +95,8 @@ int ltdb_lock_read(struct ldb_module *module)
 */
 int ltdb_unlock_read(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	if (ltdb->in_transaction == 0) {
 		return tdb_unlockall_read(ltdb->tdb);
 	}
@@ -113,7 +113,7 @@ int ltdb_unlock_read(struct ldb_module *module)
 */
 struct TDB_DATA ltdb_key(struct ldb_module *module, struct ldb_dn *dn)
 {
-	struct ldb_context *ldb = module->ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	TDB_DATA key;
 	char *key_str = NULL;
 	const char *dn_folded = NULL;
@@ -164,6 +164,7 @@ failed:
 static int ltdb_check_special_dn(struct ldb_module *module,
 			  const struct ldb_message *msg)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int i, j;
 
 	if (! ldb_dn_is_special(msg->dn) ||
@@ -176,7 +177,7 @@ static int ltdb_check_special_dn(struct ldb_module *module,
 	for (i = 0; i < msg->num_elements; i++) {
 		for (j = 0; j < msg->elements[i].num_values; j++) {
 			if (ltdb_check_at_attributes_values(&msg->elements[i].values[j]) != 0) {
-				ldb_set_errstring(module->ldb, "Invalid attribute value in an @ATTRIBUTES entry");
+				ldb_set_errstring(ldb, "Invalid attribute value in an @ATTRIBUTES entry");
 				return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 			}
 		}
@@ -214,8 +215,8 @@ static int ltdb_modified(struct ldb_module *module, struct ldb_dn *dn)
 */
 int ltdb_store(struct ldb_module *module, const struct ldb_message *msg, int flgs)
 {
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	int ret;
 
@@ -252,6 +253,7 @@ done:
 static int ltdb_add_internal(struct ldb_module *module,
 			     const struct ldb_message *msg)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	int ret;
 
 	ret = ltdb_check_special_dn(module, msg);
@@ -266,7 +268,7 @@ static int ltdb_add_internal(struct ldb_module *module,
 	ret = ltdb_store(module, msg, TDB_INSERT);
 
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
-		ldb_asprintf_errstring(module->ldb,
+		ldb_asprintf_errstring(ldb,
 					"Entry %s already exists",
 					ldb_dn_get_linearized(msg->dn));
 		return ret;
@@ -296,7 +298,7 @@ static int ltdb_add(struct ltdb_context *ctx)
 	struct ldb_request *req = ctx->req;
 	int tret;
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	tret = ltdb_add_internal(module, req->op.add.message);
 	if (tret != LDB_SUCCESS) {
@@ -312,8 +314,8 @@ static int ltdb_add(struct ltdb_context *ctx)
 */
 int ltdb_delete_noindex(struct ldb_module *module, struct ldb_dn *dn)
 {
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key;
 	int ret;
 
@@ -386,7 +388,7 @@ static int ltdb_delete(struct ltdb_context *ctx)
 	struct ldb_request *req = ctx->req;
 	int tret;
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	if (ltdb_cache_load(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -514,7 +516,7 @@ static int msg_delete_element(struct ldb_module *module,
 			      const char *name,
 			      const struct ldb_val *val)
 {
-	struct ldb_context *ldb = module->ldb;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	unsigned int i;
 	int found;
 	struct ldb_message_element *el;
@@ -560,9 +562,9 @@ static int msg_delete_element(struct ldb_module *module,
 int ltdb_modify_internal(struct ldb_module *module,
 			 const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 	struct ldb_message *msg2;
 	unsigned i, j;
@@ -625,12 +627,12 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el2, &el->values[j])) {
-					ldb_asprintf_errstring(module->ldb, "%s: value #%d already exists", el->name, j);
+					ldb_asprintf_errstring(ldb, "%s: value #%d already exists", el->name, j);
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(module->ldb, "%s: value #%d provided more than once", el->name, j);
+					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
@@ -661,7 +663,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 
 			for (j=0;j<el->num_values;j++) {
 				if (ldb_msg_find_val(el, &el->values[j]) != &el->values[j]) {
-					ldb_asprintf_errstring(module->ldb, "%s: value #%d provided more than once", el->name, j);
+					ldb_asprintf_errstring(ldb, "%s: value #%d provided more than once", el->name, j);
 					ret = LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS;
 					goto failed;
 				}
@@ -688,7 +690,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			if (msg->elements[i].num_values == 0) {
 				if (msg_delete_attribute(module, ldb, msg2, 
 							 msg->elements[i].name) != 0) {
-					ldb_asprintf_errstring(module->ldb, "No such attribute: %s for delete on %s", msg->elements[i].name, dn);
+					ldb_asprintf_errstring(ldb, "No such attribute: %s for delete on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -699,7 +701,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 						       msg2, 
 						       msg->elements[i].name,
 						       &msg->elements[i].values[j]) != 0) {
-					ldb_asprintf_errstring(module->ldb, "No matching attribute value when deleting attribute: %s on %s", msg->elements[i].name, dn);
+					ldb_asprintf_errstring(ldb, "No matching attribute value when deleting attribute: %s on %s", msg->elements[i].name, dn);
 					ret = LDB_ERR_NO_SUCH_ATTRIBUTE;
 					goto failed;
 				}
@@ -710,7 +712,7 @@ int ltdb_modify_internal(struct ldb_module *module,
 			}
 			break;
 		default:
-			ldb_asprintf_errstring(module->ldb,
+			ldb_asprintf_errstring(ldb,
 				"Invalid ldb_modify flags on %s: 0x%x",
 				msg->elements[i].name,
 				msg->elements[i].flags & LDB_FLAG_MOD_MASK);
@@ -750,7 +752,7 @@ static int ltdb_modify(struct ltdb_context *ctx)
 	struct ldb_request *req = ctx->req;
 	int tret;
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	tret = ltdb_check_special_dn(module, req->op.mod.message);
 	if (tret != LDB_SUCCESS) {
@@ -779,7 +781,7 @@ static int ltdb_rename(struct ltdb_context *ctx)
 	struct ldb_message *msg;
 	int tret;
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	if (ltdb_cache_load(ctx->module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -841,8 +843,8 @@ static int ltdb_rename(struct ltdb_context *ctx)
 
 static int ltdb_start_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	if (tdb_transaction_start(ltdb->tdb) != 0) {
 		return ltdb_err_map(tdb_error(ltdb->tdb));
@@ -857,8 +859,8 @@ static int ltdb_start_trans(struct ldb_module *module)
 
 static int ltdb_end_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	ltdb->in_transaction--;
 
@@ -875,8 +877,8 @@ static int ltdb_end_trans(struct ldb_module *module)
 
 static int ltdb_del_trans(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb =
-		talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	ltdb->in_transaction--;
 
@@ -897,6 +899,7 @@ static int ltdb_del_trans(struct ldb_module *module)
 static int ltdb_sequence_number(struct ltdb_context *ctx,
 				struct ldb_extended **ext)
 {
+	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
 	TALLOC_CTX *tmp_ctx;
@@ -907,13 +910,15 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 	const char *date;
 	int ret;
 
+	ldb = ldb_module_get_ctx(module);
+
 	seq = talloc_get_type(req->op.extended.data,
 				struct ldb_seqnum_request);
 	if (seq == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	if (ltdb_lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -930,7 +935,7 @@ static int ltdb_sequence_number(struct ltdb_context *ctx,
 		goto done;
 	}
 
-	dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
+	dn = ldb_dn_new(tmp_ctx, ldb, LTDB_BASEINFO);
 
 	msg = talloc(tmp_ctx, struct ldb_message);
 	if (msg == NULL) {
@@ -978,18 +983,23 @@ done:
 	return ret;
 }
 
-static void ltdb_request_done(struct ldb_request *req, int error)
+static void ltdb_request_done(struct ltdb_context *ctx, int error)
 {
+	struct ldb_context *ldb;
+	struct ldb_request *req;
 	struct ldb_reply *ares;
 
+	ldb = ldb_module_get_ctx(ctx->module);
+	req = ctx->req;
+
 	/* if we already returned an error just return */
-	if (req->handle->status != LDB_SUCCESS) {
+	if (ldb_request_get_status(req) != LDB_SUCCESS) {
 		return;
 	}
 
 	ares = talloc_zero(req, struct ldb_reply);
 	if (!ares) {
-		ldb_oom(req->handle->ldb);
+		ldb_oom(ldb);
 		req->callback(req, NULL);
 		return;
 	}
@@ -1007,23 +1017,28 @@ static void ltdb_timeout(struct tevent_context *ev,
 	struct ltdb_context *ctx;
 	ctx = talloc_get_type(private_data, struct ltdb_context);
 
-	ltdb_request_done(ctx->req, LDB_ERR_TIME_LIMIT_EXCEEDED);
+	ltdb_request_done(ctx, LDB_ERR_TIME_LIMIT_EXCEEDED);
 }
 
-static void ltdb_request_extended_done(struct ldb_request *req,
+static void ltdb_request_extended_done(struct ltdb_context *ctx,
 					struct ldb_extended *ext,
 					int error)
 {
+	struct ldb_context *ldb;
+	struct ldb_request *req;
 	struct ldb_reply *ares;
 
+	ldb = ldb_module_get_ctx(ctx->module);
+	req = ctx->req;
+
 	/* if we already returned an error just return */
-	if (req->handle->status != LDB_SUCCESS) {
+	if (ldb_request_get_status(req) != LDB_SUCCESS) {
 		return;
 	}
 
 	ares = talloc_zero(req, struct ldb_reply);
 	if (!ares) {
-		ldb_oom(req->handle->ldb);
+		ldb_oom(ldb);
 		req->callback(req, NULL);
 		return;
 	}
@@ -1048,7 +1063,7 @@ static void ltdb_handle_extended(struct ltdb_context *ctx)
 		ret = LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 
-	ltdb_request_extended_done(ctx->req, ext, ret);
+	ltdb_request_extended_done(ctx, ext, ret);
 }
 
 static void ltdb_callback(struct tevent_context *ev,
@@ -1088,13 +1103,14 @@ static void ltdb_callback(struct tevent_context *ev,
 	if (!ctx->callback_failed) {
 		/* Once we are done, we do not need timeout events */
 		talloc_free(ctx->timeout_event);
-		ltdb_request_done(ctx->req, ret);
+		ltdb_request_done(ctx, ret);
 	}
 }
 
 static int ltdb_handle_request(struct ldb_module *module,
 			       struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct tevent_context *ev;
 	struct ltdb_context *ac;
 	struct tevent_timer *te;
@@ -1104,16 +1120,18 @@ static int ltdb_handle_request(struct ldb_module *module,
 		return LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION;
 	}
 
+	ldb = ldb_module_get_ctx(module);
+
 	if (req->starttime == 0 || req->timeout == 0) {
-		ldb_set_errstring(module->ldb, "Invalid timeout settings");
+		ldb_set_errstring(ldb, "Invalid timeout settings");
 		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	}
 
-	ev = ldb_get_event_context(module->ldb);
+	ev = ldb_get_event_context(ldb);
 
 	ac = talloc_zero(req, struct ltdb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -1154,8 +1172,9 @@ static const struct ldb_module_ops ltdb_ops = {
 */
 static int ltdb_connect(struct ldb_context *ldb, const char *url,
 			unsigned int flags, const char *options[],
-			struct ldb_module **module)
+			struct ldb_module **_module)
 {
+	struct ldb_module *module;
 	const char *path;
 	int tdb_flags, open_flags;
 	struct ltdb_private *ltdb;
@@ -1199,7 +1218,7 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 	/* note that we use quite a large default hash size */
 	ltdb->tdb = ltdb_wrap_open(ltdb, path, 10000,
 				   tdb_flags, open_flags,
-				   ldb->create_perms, ldb);
+				   ldb_get_create_perms(ldb), ldb);
 	if (!ltdb->tdb) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			  "Unable to open tdb '%s'\n", path);
@@ -1209,24 +1228,20 @@ static int ltdb_connect(struct ldb_context *ldb, const char *url,
 
 	ltdb->sequence_number = 0;
 
-	*module = talloc(ldb, struct ldb_module);
-	if ((*module) == NULL) {
-		ldb_oom(ldb);
+	module = ldb_module_new(ldb, ldb, "ldb_tdb backend", &ltdb_ops);
+	if (!module) {
 		talloc_free(ltdb);
 		return -1;
 	}
-	talloc_set_name_const(*module, "ldb_tdb backend");
-	(*module)->ldb = ldb;
-	(*module)->prev = (*module)->next = NULL;
-	(*module)->private_data = ltdb;
-	(*module)->ops = &ltdb_ops;
+	ldb_module_set_private(module, ltdb);
 
-	if (ltdb_cache_load(*module) != 0) {
-		talloc_free(*module);
+	if (ltdb_cache_load(module) != 0) {
+		talloc_free(module);
 		talloc_free(ltdb);
 		return -1;
 	}
 
+	*_module = module;
 	return 0;
 }
 

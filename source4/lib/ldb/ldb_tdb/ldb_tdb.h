@@ -6,6 +6,8 @@
 #include "tdb.h"
 #endif
 
+#include "ldb_module.h"
+
 /* this private structure is used by the ltdb backend in the
    ldb_context */
 struct ltdb_private {

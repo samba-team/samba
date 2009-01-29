@@ -36,7 +36,7 @@
  *      Simo Sorce Mar 2006
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct rename_context {
 
@@ -86,6 +86,7 @@ static int rdn_name_add_callback(struct ldb_request *req,
 
 static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct rename_context *ac;
 	struct ldb_message *msg;
@@ -95,7 +96,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_val rdn_val;
 	int i, ret;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "rdn_name_add_record\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -141,10 +143,10 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	} else {
-		a = ldb_schema_attribute_by_name(module->ldb, rdn_name);
+		a = ldb_schema_attribute_by_name(ldb, rdn_name);
 
 		for (i = 0; i < attribute->num_values; i++) {
-			ret = a->syntax->comparison_fn(module->ldb, msg,
+			ret = a->syntax->comparison_fn(ldb, msg,
 					&rdn_val, &attribute->values[i]);
 			if (ret == 0) {
 				/* overwrite so it matches in case */
@@ -153,7 +155,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 			}
 		}
 		if (i == attribute->num_values) {
-			ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, 
+			ldb_debug_set(ldb, LDB_DEBUG_FATAL, 
 				      "RDN mismatch on %s: %s (%s)", 
 				      ldb_dn_get_linearized(msg->dn), rdn_name, rdn_val.data);
 			talloc_free(ac);
@@ -162,7 +164,7 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	ret = ldb_build_add_req(&down_req, module->ldb, req,
+	ret = ldb_build_add_req(&down_req, ldb, req,
 				msg,
 				req->controls,
 				ac, rdn_name_add_callback,
@@ -205,6 +207,7 @@ static int rdn_modify_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct rename_context *ac;
 	struct ldb_request *mod_req;
 	const char *rdn_name;
@@ -213,6 +216,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	int ret;
 
 	ac = talloc_get_type(req->context, struct rename_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		goto error;
@@ -258,7 +262,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 		goto error;
 	}
 
-	ret = ldb_build_mod_req(&mod_req, ac->module->ldb,
+	ret = ldb_build_mod_req(&mod_req, ldb,
 				ac, msg, NULL,
 				ac, rdn_modify_callback,
 				req);
@@ -268,7 +272,7 @@ static int rdn_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	talloc_steal(mod_req, msg);
 
 	/* do the mod call */
-	return ldb_request(ac->module->ldb, mod_req);
+	return ldb_request(ldb, mod_req);
 
 error:
 	return ldb_module_done(ac->req, NULL, NULL,
@@ -277,11 +281,13 @@ error:
 
 static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct rename_context *ac;
 	struct ldb_request *down_req;
 	int ret;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "rdn_name_rename\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "rdn_name_rename\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.rename.newdn)) {
@@ -297,7 +303,7 @@ static int rdn_name_rename(struct ldb_module *module, struct ldb_request *req)
 	ac->req = req;
 
 	ret = ldb_build_rename_req(&down_req,
-				   module->ldb,
+				   ldb,
 				   ac,
 				   req->op.rename.olddn,
 				   req->op.rename.newdn,

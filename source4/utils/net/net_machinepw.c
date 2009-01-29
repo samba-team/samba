@@ -19,12 +19,12 @@
 */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "utils/net/net.h"
 #include "libnet/libnet.h"
 #include "libcli/security/security.h"
 #include "param/secrets.h"
 #include "param/param.h"
-#include "lib/events/events.h"
 #include "lib/util/util_ldb.h"
 
 int net_machinepw_usage(struct net_context *ctx, int argc, const char **argv)

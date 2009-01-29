@@ -3,6 +3,7 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
+PRIVATE_DEPENDENCIES = LIBLDB
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################

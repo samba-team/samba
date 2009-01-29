@@ -31,7 +31,6 @@
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/share.h"
-#include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 #include "dynconfig/dynconfig.h"
 #include "smbd/process_model.h"

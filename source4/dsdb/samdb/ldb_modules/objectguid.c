@@ -34,7 +34,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb_includes.h"
+#include "ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 
@@ -136,6 +136,7 @@ static int og_op_callback(struct ldb_request *req, struct ldb_reply *ares)
 /* add_record: add objectGUID attribute */
 static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message_element *attribute;
 	struct ldb_message *msg;
@@ -147,7 +148,9 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	time_t t = time(NULL);
 	struct og_context *ac;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -176,7 +179,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	guid = GUID_random();
 
 	ndr_err = ndr_push_struct_blob(&v, msg, 
-				       lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
 				       &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -196,7 +199,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* Get a sequence number from the backend */
 	/* FIXME: ldb_sequence_number is a semi-async call,
 	 * make sure this function is split and a callback is used */
-	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNCreated", seq_num) != 0 ||
 		    add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
@@ -204,7 +207,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 		}
 	}
 
-	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+	ret = ldb_build_add_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
 				ac, og_op_callback,
@@ -220,6 +223,7 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 /* modify_record: update timestamps */
 static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	int ret;
@@ -227,7 +231,9 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	uint64_t seq_num;
 	struct og_context *ac;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "objectguid_add_record\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -252,14 +258,14 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* Get a sequence number from the backend */
-	ret = ldb_sequence_number(module->ldb, LDB_SEQ_NEXT, &seq_num);
+	ret = ldb_sequence_number(ldb, LDB_SEQ_NEXT, &seq_num);
 	if (ret == LDB_SUCCESS) {
 		if (add_uint64_element(msg, "uSNChanged", seq_num) != 0) {
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
-	ret = ldb_build_mod_req(&down_req, module->ldb, ac,
+	ret = ldb_build_mod_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
 				ac, og_op_callback,

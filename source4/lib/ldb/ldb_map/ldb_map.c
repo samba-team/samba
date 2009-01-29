@@ -35,7 +35,7 @@
  *  Author: Jelmer Vernooij, Martin Kuehl
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 #include "ldb_map.h"
 #include "ldb_map_private.h"
@@ -102,7 +102,7 @@
 /* Extract mappings from private data. */
 const struct ldb_map_context *map_get_context(struct ldb_module *module)
 {
-	const struct map_private *data = talloc_get_type(module->private_data, struct map_private);
+	const struct map_private *data = talloc_get_type(ldb_module_get_private(module), struct map_private);
 	return data->context;
 }
 
@@ -110,11 +110,14 @@ const struct ldb_map_context *map_get_context(struct ldb_module *module)
 struct map_context *map_init_context(struct ldb_module *module,
 					struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct map_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct map_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -202,7 +205,10 @@ static struct ldb_dn *ldb_dn_rebase_remote(void *mem_ctx, const struct ldb_map_c
 int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *request)
 {
 	const struct ldb_map_context *data = map_get_context(module);
+	struct ldb_context *ldb;
 	struct ldb_message *msg;
+
+	ldb = ldb_module_get_ctx(module);
 
 	switch (request->operation) {
 	case LDB_SEARCH:
@@ -236,7 +242,7 @@ int ldb_next_remote_request(struct ldb_module *module, struct ldb_request *reque
 		break;
 
 	default:
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "Invalid remote request!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -462,6 +468,7 @@ bool ldb_dn_check_local(struct ldb_module *module, struct ldb_dn *dn)
 struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
+	struct ldb_context *ldb;
 	struct ldb_dn *newdn;
 	const struct ldb_map_attribute *map;
 	enum ldb_map_attr_type map_type;
@@ -472,6 +479,8 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 	if (dn == NULL) {
 		return NULL;
 	}
+
+	ldb = ldb_module_get_ctx(module);
 
 	newdn = ldb_dn_copy(mem_ctx, dn);
 	if (newdn == NULL) {
@@ -493,14 +502,14 @@ struct ldb_dn *ldb_dn_map_local(struct ldb_module *module, void *mem_ctx, struct
 		switch (map_type) {
 		case MAP_IGNORE:
 		case MAP_GENERATE:
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
 				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_local == NULL) {
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_local' not set for attribute '%s' "
 					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 				goto failed;
@@ -534,6 +543,7 @@ failed:
 struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struct ldb_dn *dn)
 {
 	const struct ldb_map_context *data = map_get_context(module);
+	struct ldb_context *ldb;
 	struct ldb_dn *newdn;
 	const struct ldb_map_attribute *map;
 	enum ldb_map_attr_type map_type;
@@ -544,6 +554,8 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 	if (dn == NULL) {
 		return NULL;
 	}
+
+	ldb = ldb_module_get_ctx(module);
 
 	newdn = ldb_dn_copy(mem_ctx, dn);
 	if (newdn == NULL) {
@@ -565,14 +577,14 @@ struct ldb_dn *ldb_dn_map_remote(struct ldb_module *module, void *mem_ctx, struc
 		switch (map_type) {
 		case MAP_IGNORE:
 		case MAP_GENERATE:
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "MAP_IGNORE/MAP_GENERATE attribute '%s' "
 				  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 			goto failed;
 
 		case MAP_CONVERT:
 			if (map->u.convert.convert_remote == NULL) {
-				ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+				ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 					  "'convert_remote' not set for attribute '%s' "
 					  "used in DN!\n", ldb_dn_get_component_name(dn, i));
 				goto failed;
@@ -623,10 +635,13 @@ struct ldb_dn *ldb_dn_map_rebase_remote(struct ldb_module *module, void *mem_ctx
 /* Map a DN contained in an ldb value into the remote partition. */
 static struct ldb_val ldb_dn_convert_local(struct ldb_module *module, void *mem_ctx, const struct ldb_val *val)
 {
+	struct ldb_context *ldb;
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_from_ldb_val(mem_ctx, module->ldb, val);
+	ldb = ldb_module_get_ctx(module);
+
+	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, val);
 	if (! ldb_dn_validate(dn)) {
 		newval.length = 0;
 		newval.data = NULL;
@@ -649,10 +664,13 @@ static struct ldb_val ldb_dn_convert_local(struct ldb_module *module, void *mem_
 /* Map a DN contained in an ldb value into the local partition. */
 static struct ldb_val ldb_dn_convert_remote(struct ldb_module *module, void *mem_ctx, const struct ldb_val *val)
 {
+	struct ldb_context *ldb;
 	struct ldb_dn *dn, *newdn;
 	struct ldb_val newval;
 
-	dn = ldb_dn_from_ldb_val(mem_ctx, module->ldb, val);
+	ldb = ldb_module_get_ctx(module);
+
+	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, val);
 	if (! ldb_dn_validate(dn)) {
 		newval.length = 0;
 		newval.data = NULL;
@@ -693,10 +711,13 @@ static struct ldb_val map_objectclass_convert_local(struct ldb_module *module, v
 static void map_objectclass_generate_remote(struct ldb_module *module, const char *local_attr, const struct ldb_message *old, struct ldb_message *remote, struct ldb_message *local)
 {
 	const struct ldb_map_context *data = map_get_context(module);
+	struct ldb_context *ldb;
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	bool found_extensibleObject = false;
 	int i;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* Find old local objectClass */
 	oc = ldb_msg_find_element(old, "objectClass");
@@ -707,7 +728,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	/* Prepare new element */
 	el = talloc_zero(remote, struct ldb_message_element);
 	if (el == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return;			/* TODO: fail? */
 	}
 
@@ -716,7 +737,7 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	el->values = talloc_array(el, struct ldb_val, el->num_values);
 	if (el->values == NULL) {
 		talloc_free(el);
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return;			/* TODO: fail? */
 	}
 
@@ -766,9 +787,12 @@ static struct ldb_val map_objectclass_convert_remote(struct ldb_module *module, 
 static struct ldb_message_element *map_objectclass_generate_local(struct ldb_module *module, void *mem_ctx, const char *local_attr, const struct ldb_message *remote)
 {
 	const struct ldb_map_context *data = map_get_context(module);
+	struct ldb_context *ldb;
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	int i;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* Find old remote objectClass */
 	oc = ldb_msg_find_element(remote, "objectClass");
@@ -779,7 +803,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	/* Prepare new element */
 	el = talloc_zero(mem_ctx, struct ldb_message_element);
 	if (el == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -788,7 +812,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	el->values = talloc_array(el, struct ldb_val, el->num_values);
 	if (el->values == NULL) {
 		talloc_free(el);
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -809,7 +833,7 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 		el->values = talloc_realloc(el, el->values, struct ldb_val, el->num_values);
 		if (el->values == NULL) {
 			talloc_free(el);
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return NULL;
 		}
 	}
@@ -847,8 +871,11 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
 struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *dn, const char * const *attrs, const struct ldb_parse_tree *tree, void *context, ldb_map_callback_t callback)
 {
 	const struct ldb_parse_tree *search_tree;
+	struct ldb_context *ldb;
 	struct ldb_request *req;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (tree) {
 		search_tree = tree;
@@ -859,7 +886,7 @@ struct ldb_request *map_search_base_req(struct map_context *ac, struct ldb_dn *d
 		}
 	}
 
-	ret = ldb_build_search_req_ex(&req, ac->module->ldb, ac,
+	ret = ldb_build_search_req_ex(&req, ldb, ac,
 					dn, LDB_SCOPE_BASE,
 					search_tree, attrs,
 					NULL,
@@ -879,10 +906,13 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac,
 					void *context,
 					ldb_map_callback_t callback)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *req;
 	struct ldb_message *msg;
 	const char *dn;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Prepare message */
 	msg = ldb_msg_new(ac);
@@ -905,7 +935,7 @@ struct ldb_request *map_build_fixup_req(struct map_context *ac,
 	}
 
 	/* Prepare request */
-	ret = ldb_build_mod_req(&req, ac->module->ldb,
+	ret = ldb_build_mod_req(&req, ldb,
 				ac, msg, NULL,
 				context, callback,
 				ac->req);
@@ -961,6 +991,7 @@ static const struct ldb_map_attribute objectclass_attribute_map	= {
 static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data, const char *name)
 {
 	static const char * const attrs[] = { MAP_DN_FROM, MAP_DN_TO, NULL };
+	struct ldb_context *ldb;
 	struct ldb_dn *dn;
 	struct ldb_message *msg;
 	struct ldb_result *res;
@@ -972,34 +1003,36 @@ static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data,
 		return LDB_SUCCESS;
 	}
 
-	dn = ldb_dn_new_fmt(data, module->ldb, "%s=%s", MAP_DN_NAME, name);
+	ldb = ldb_module_get_ctx(module);
+
+	dn = ldb_dn_new_fmt(data, ldb, "%s=%s", MAP_DN_NAME, name);
 	if ( ! ldb_dn_validate(dn)) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "Failed to construct '%s' DN!\n", MAP_DN_NAME);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, data, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
+	ret = ldb_search(ldb, data, &res, dn, LDB_SCOPE_BASE, attrs, NULL);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
 	if (res->count == 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "No results for '%s=%s'!\n", MAP_DN_NAME, name);
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 	if (res->count > 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 			  "Too many results for '%s=%s'!\n", MAP_DN_NAME, name);
 		talloc_free(res);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
 	msg = res->msgs[0];
-	data->local_base_dn = ldb_msg_find_attr_as_dn(module->ldb, data, msg, MAP_DN_FROM);
-	data->remote_base_dn = ldb_msg_find_attr_as_dn(module->ldb, data, msg, MAP_DN_TO);
+	data->local_base_dn = ldb_msg_find_attr_as_dn(ldb, data, msg, MAP_DN_FROM);
+	data->remote_base_dn = ldb_msg_find_attr_as_dn(ldb, data, msg, MAP_DN_TO);
 	talloc_free(res);
 
 	return LDB_SUCCESS;
@@ -1075,7 +1108,7 @@ _PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attrib
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	module->private_data = data;
+	ldb_module_set_private(module, data);
 
 	data->context = talloc_zero(data, struct ldb_map_context);
 	if (!data->context) {

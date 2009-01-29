@@ -27,7 +27,7 @@
 #include "ntvfs/ntvfs.h"
 #include "ntvfs/common/ntvfs_common.h"
 #include "libcli/wbclient/wbclient.h"
-#include "dsdb/samdb/samdb.h"
+#include "lib/events/events.h"
 
 struct pvfs_wait;
 struct pvfs_oplock;

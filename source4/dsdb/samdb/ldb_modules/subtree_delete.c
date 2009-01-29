@@ -29,7 +29,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct subtree_delete_context {
 	struct ldb_module *module;
@@ -41,11 +41,14 @@ struct subtree_delete_context {
 static struct subtree_delete_context *subdel_ctx_init(struct ldb_module *module,
 						      struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct subtree_delete_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct subtree_delete_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -58,10 +61,12 @@ static struct subtree_delete_context *subdel_ctx_init(struct ldb_module *module,
 static int subtree_delete_search_callback(struct ldb_request *req,
 					  struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct subtree_delete_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct subtree_delete_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -89,7 +94,7 @@ static int subtree_delete_search_callback(struct ldb_request *req,
 
 		if (ac->num_children > 0) {
 			talloc_free(ares);
-			ldb_asprintf_errstring(ac->module->ldb,
+			ldb_asprintf_errstring(ldb,
 				"Cannot delete %s, not a leaf node "
 				"(has %d children)\n",
 				ldb_dn_get_linearized(ac->req->op.del.dn),
@@ -112,6 +117,7 @@ static int subtree_delete_search_callback(struct ldb_request *req,
 
 static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	static const char * const attrs[2] = { "distinguishedName", NULL };
 	struct ldb_request *search_req;
 	struct subtree_delete_context *ac;
@@ -119,6 +125,8 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(req->op.rename.olddn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* This gets complex:  We need to:
 	   - Do a search for all entires under this entry 
@@ -135,7 +143,7 @@ static int subtree_delete(struct ldb_module *module, struct ldb_request *req)
 	/* we do not really need to find all descendents,
 	 * if there is even one single direct child, that's
 	 * enough to bail out */
-	ret = ldb_build_search_req(&search_req, module->ldb, ac,
+	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   req->op.del.dn, LDB_SCOPE_ONELEVEL,
 				   "(objectClass=*)", attrs,
 				   req->controls,

@@ -46,18 +46,18 @@
 #define _LDB_H_ 1
 /*! \endcond */
 
+#include "ldb_includes.h"
+
 /*
   major restrictions as compared to normal LDAP:
 
-     - no async calls.
      - each record must have a unique key field
      - the key must be representable as a NULL terminated C string and may not 
        contain a comma or braces
 
   major restrictions as compared to tdb:
 
-     - no explicit locking calls
-     UPDATE: we have transactions now, better than locking --SSS.
+     - no explicit locking calls, but we have transactions when using ldb_tdb
 
 */
 

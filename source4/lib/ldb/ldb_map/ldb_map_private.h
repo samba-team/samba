@@ -1,6 +1,6 @@
 
 /* A handy macro to report Out of Memory conditions */
-#define map_oom(module) ldb_set_errstring(module->ldb, talloc_asprintf(module, "Out of Memory"));
+#define map_oom(module) ldb_set_errstring(ldb_module_get_ctx(module), talloc_asprintf(module, "Out of Memory"));
 
 /* The type of search callback functions */
 typedef int (*ldb_map_callback_t)(struct ldb_request *, struct ldb_reply *);

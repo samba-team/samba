@@ -31,7 +31,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 
 /*
   this allows the user to choose their own debug function

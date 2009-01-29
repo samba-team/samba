@@ -13,6 +13,6 @@ PUBLIC_HEADERS += $(libclisrcdir)/ldap/ldap.h $(libclisrcdir)/ldap/ldap_ndr.h
 $(eval $(call proto_header_template,$(libclisrcdir)/ldap/ldap_proto.h,$(LIBCLI_LDAP_OBJ_FILES:.o=.c)))
 
 [SUBSYSTEM::LDAP_ENCODE]
-# FIXME PRIVATE_DEPENDENCIES = LIBLDB
+PRIVATE_DEPENDENCIES = LIBLDB
 
 LDAP_ENCODE_OBJ_FILES = $(libclisrcdir)/ldap/ldap_ndr.o

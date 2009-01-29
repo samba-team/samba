@@ -21,7 +21,6 @@
 */
 
 #include "includes.h"
-#include "dsdb/samdb/samdb.h"
 #include "libcli/security/security.h"
 #include "auth/session.h"
 

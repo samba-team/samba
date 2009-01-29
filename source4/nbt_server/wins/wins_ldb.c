@@ -28,6 +28,7 @@
  */
 
 #include "includes.h"
+#include "lib/events/events.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "lib/ldb/include/ldb.h"

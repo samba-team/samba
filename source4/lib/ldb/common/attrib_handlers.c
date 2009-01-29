@@ -25,7 +25,7 @@
   see rfc2252
 */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 #include "system/locale.h"
 #include "ldb_handlers.h"
 

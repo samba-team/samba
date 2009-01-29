@@ -29,7 +29,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct rr_context {
 	struct ldb_module *module;
@@ -43,7 +43,7 @@ static struct rr_context *rr_init_context(struct ldb_module *module,
 
 	ac = talloc_zero(req, struct rr_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb_module_get_ctx(module), "Out of Memory");
 		return NULL;
 	}
 
@@ -55,10 +55,12 @@ static struct rr_context *rr_init_context(struct ldb_module *module,
 
 static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct rr_context *ac;
 	int i, j;
 
 	ac = talloc_get_type(req->context, struct rr_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -106,7 +108,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 					  (size_t)(p - ac->req->op.search.attrs[i]));
 
 		if (!new_attr) {
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -123,7 +125,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		} else {
 			end_str = talloc_asprintf(el, "%u", end);
 			if (!end_str) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL,
 							LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -137,7 +139,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			orig_num_values = el->num_values;
 			
 			if ((start + end < start) || (start + end < end)) {
-				ldb_asprintf_errstring(ac->module->ldb,
+				ldb_asprintf_errstring(ldb,
 					"range request error: start or end would overflow!");
 				return ldb_module_done(ac->req, NULL, NULL,
 							LDB_ERR_UNWILLING_TO_PERFORM);
@@ -147,7 +149,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 			
 			el->values = talloc_array(el, struct ldb_val, (end - start) + 1);
 			if (!el->values) {
-				ldb_oom(ac->module->ldb);
+				ldb_oom(ldb);
 				return ldb_module_done(ac->req, NULL, NULL,
 							LDB_ERR_OPERATIONS_ERROR);
 			}
@@ -158,7 +160,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 		el->name = talloc_asprintf(el, "%s;range=%u-%s", el->name, start, end_str);
 		if (!el->name) {
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -170,6 +172,7 @@ static int rr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 /* search */
 static int rr_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	int i;
 	unsigned int start, end;
 	const char **new_attrs = NULL;
@@ -177,6 +180,8 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *down_req;
 	struct rr_context *ac;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* Strip the range request from the attribute */
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
@@ -194,14 +199,14 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 		end = (unsigned int)-1;
 		if (sscanf(p, ";range=%u-*", &start) != 1) {
 			if (sscanf(p, ";range=%u-%u", &start, &end) != 2) {
-				ldb_asprintf_errstring(module->ldb,
+				ldb_asprintf_errstring(ldb,
 					"range request error: "
 					"range request malformed");
 				return LDB_ERR_UNWILLING_TO_PERFORM;
 			}
 		}
 		if (start > end) {
-			ldb_asprintf_errstring(module->ldb, "range request error: start must not be greater than end");
+			ldb_asprintf_errstring(ldb, "range request error: start must not be greater than end");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
 
@@ -210,7 +215,7 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 					      (size_t)(p - new_attrs[i]));
 
 		if (!new_attrs[i]) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
@@ -221,7 +226,7 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+		ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					      req->op.search.base,
 					      req->op.search.scope,
 					      req->op.search.tree,

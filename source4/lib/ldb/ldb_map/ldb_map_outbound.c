@@ -25,7 +25,7 @@
 
 */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 #include "ldb_map.h"
 #include "ldb_map_private.h"
@@ -264,6 +264,9 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 	const struct ldb_map_attribute *map;
 	struct ldb_message_element *old, *el=NULL;
 	const char *remote_name = NULL;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* We handle wildcards in ldb_msg_el_merge_wildcard */
 	if (ldb_attr_cmp(attr_name, "*") == 0) {
@@ -300,7 +303,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 
 	case MAP_CONVERT:
 		if (map->u.convert.convert_remote == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
 				  "'convert_remote' not set\n",
 				  attr_name);
@@ -319,7 +322,7 @@ static int ldb_msg_el_merge(struct ldb_module *module, struct ldb_message *local
 
 	case MAP_GENERATE:
 		if (map->u.generate.generate_local == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "ldb_map: "
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "ldb_map: "
 				  "Skipping attribute '%s': "
 				  "'generate_local' not set\n",
 				  attr_name);
@@ -869,6 +872,9 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 {
 	const struct ldb_map_context *data = map_get_context(module);
 	const struct ldb_map_attribute *map;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (tree == NULL) {
 		return 0;
@@ -893,7 +899,7 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 	}
 
 	if (map->type == MAP_GENERATE) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "ldb_map: "
 			  "Skipping attribute '%s': "
 			  "'convert_operator' not set\n",
 			  tree->u.equality.attr);
@@ -1045,14 +1051,17 @@ int map_return_entry(struct map_context *ac, struct ldb_reply *ares)
 {
 	struct ldb_message_element *el;
 	const char * const *attrs;
+	struct ldb_context *ldb;
 	int i;
 
+	ldb = ldb_module_get_ctx(ac->module);
+
 	/* Merged result doesn't match original query, skip */
-	if (!ldb_match_msg(ac->module->ldb, ares->message,
+	if (!ldb_match_msg(ldb, ares->message,
 			   ac->req->op.search.tree,
 			   ac->req->op.search.base,
 			   ac->req->op.search.scope)) {
-		ldb_debug(ac->module->ldb, LDB_DEBUG_TRACE, "ldb_map: "
+		ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_map: "
 			  "Skipping record '%s': "
 			  "doesn't match original search\n",
 			  ldb_dn_get_linearized(ares->message->dn));
@@ -1086,13 +1095,17 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_parse_tree *remote_tree;
 	struct ldb_parse_tree *local_tree;
 	struct ldb_request *remote_req;
+	struct ldb_context *ldb;
 	struct map_context *ac;
 	int ret;
 
 	const char *wildcard[] = { "*", NULL };
 	const char * const *attrs;
 
-	if (!module->private_data) /* if we're not yet initialized, go to the next module */
+	ldb = ldb_module_get_ctx(module);
+
+	/* if we're not yet initialized, go to the next module */
+	if (!ldb_module_get_private(module))
 		return ldb_next_request(module, req);
 
 	/* Do not manipulate our control entries */
@@ -1165,7 +1178,7 @@ int map_search(struct ldb_module *module, struct ldb_request *req)
 	ac->local_tree = local_tree;
 
 	/* Prepare the remote operation */
-	ret = ldb_build_search_req_ex(&remote_req, module->ldb, ac,
+	ret = ldb_build_search_req_ex(&remote_req, ldb, ac,
 				      req->op.search.base,
 				      req->op.search.scope,
 				      remote_tree,
@@ -1282,10 +1295,12 @@ static int map_search_local(struct map_context *ac)
 /* Merge the remote and local parts of a search result. */
 int map_local_merge_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct map_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct map_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -1301,7 +1316,7 @@ int map_local_merge_callback(struct ldb_request *req, struct ldb_reply *ares)
 		/* We have already found a local record */
 		if (ac->r_current->local) {
 			talloc_free(ares);
-			ldb_set_errstring(ac->module->ldb, "ldb_map: Too many results!");
+			ldb_set_errstring(ldb, "ldb_map: Too many results!");
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}

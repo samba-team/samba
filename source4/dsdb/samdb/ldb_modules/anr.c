@@ -30,7 +30,7 @@
  */
 
 #include "includes.h"
-#include "ldb_includes.h"
+#include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 
 /**
@@ -40,11 +40,14 @@ static struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
 				       TALLOC_CTX *mem_ctx, enum ldb_parse_op op, 
 				       struct ldb_parse_tree *first_arm, struct ldb_parse_tree *second_arm)
 {
+	struct ldb_context *ldb;
 	struct ldb_parse_tree *list;
+
+	ldb = ldb_module_get_ctx(module);
 
 	list = talloc(mem_ctx, struct ldb_parse_tree);
 	if (list == NULL){
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 	list->operation = op;
@@ -52,7 +55,7 @@ static struct ldb_parse_tree *make_parse_list(struct ldb_module *module,
 	list->u.list.num_elements = 2;
 	list->u.list.elements = talloc_array(list, struct ldb_parse_tree *, 2);
 	if (!list->u.list.elements) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 	list->u.list.elements[0] = talloc_steal(list, first_arm);
@@ -67,7 +70,10 @@ static struct ldb_parse_tree *make_match_tree(struct ldb_module *module,
 				       TALLOC_CTX *mem_ctx, enum ldb_parse_op op, 
 				       const char *attr, const DATA_BLOB *match)
 {
+	struct ldb_context *ldb;
 	struct ldb_parse_tree *match_tree;
+
+	ldb = ldb_module_get_ctx(module);
 
 	match_tree = talloc(mem_ctx, struct ldb_parse_tree);
 	
@@ -83,7 +89,7 @@ static struct ldb_parse_tree *make_match_tree(struct ldb_module *module,
 		match_tree->u.substring.chunks = talloc_array(match_tree, struct ldb_val *, 2);
 		
 		if (match_tree->u.substring.chunks == NULL){
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return NULL;
 		}
 		match_tree->u.substring.chunks[0] = match;
@@ -120,12 +126,16 @@ static int anr_replace_value(struct anr_context *ac,
 	struct ldb_module *module = ac->module;
 	struct ldb_parse_tree *match_tree;
 	struct dsdb_attribute *cur;
-	const struct dsdb_schema *schema = dsdb_get_schema(module->ldb);
+	const struct dsdb_schema *schema;
+	struct ldb_context *ldb;
 	uint8_t *p;
 	enum ldb_parse_op op;
 
+	ldb = ldb_module_get_ctx(module);
+
+	schema = dsdb_get_schema(ldb);
 	if (!schema) {
-		ldb_asprintf_errstring(module->ldb, "no schema with which to construct anr filter");
+		ldb_asprintf_errstring(ldb, "no schema with which to construct anr filter");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -135,7 +145,7 @@ static int anr_replace_value(struct anr_context *ac,
 		DATA_BLOB *match2 = talloc(mem_ctx, DATA_BLOB);
 		*match2 = data_blob_const(match->data+1, match->length - 1);
 		if (match2 == NULL){
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		match = match2;
@@ -151,7 +161,7 @@ static int anr_replace_value(struct anr_context *ac,
 			/* Inject an 'or' with the current tree */
 			tree = make_parse_list(module, mem_ctx,  LDB_OP_OR, tree, match_tree);
 			if (tree == NULL) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 		} else {
@@ -170,7 +180,7 @@ static int anr_replace_value(struct anr_context *ac,
 		DATA_BLOB *first_match = talloc(tree, DATA_BLOB);
 		DATA_BLOB *second_match = talloc(tree, DATA_BLOB);
 		if (!first_match || !second_match) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		*first_match = data_blob_const(match->data, p-match->data);
@@ -183,7 +193,7 @@ static int anr_replace_value(struct anr_context *ac,
 
 		first_split_filter = make_parse_list(module, ac,  LDB_OP_AND, match_tree_1, match_tree_2);
 		if (first_split_filter == NULL){
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		
@@ -192,14 +202,14 @@ static int anr_replace_value(struct anr_context *ac,
 
 		second_split_filter = make_parse_list(module, ac,  LDB_OP_AND, match_tree_1, match_tree_2);
 		if (second_split_filter == NULL){
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		split_filters = make_parse_list(module, mem_ctx,  LDB_OP_OR, 
 						first_split_filter, second_split_filter);
 		if (split_filters == NULL) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
@@ -305,14 +315,17 @@ static int anr_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 /* search */
 static int anr_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_parse_tree *anr_tree;
 	struct ldb_request *down_req;
 	struct anr_context *ac;
 	int ret;
 
+	ldb = ldb_module_get_ctx(module);
+
 	ac = talloc(req, struct anr_context);
 	if (!ac) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -335,7 +348,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
-					module->ldb, ac,
+					ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					anr_tree,

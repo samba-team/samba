@@ -42,7 +42,7 @@
 
 
 #include "includes.h"
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 #include "tevent.h"
 #include "libcli/ldap/ldap.h"
@@ -70,7 +70,10 @@ struct ildb_context {
 static void ildb_request_done(struct ildb_context *ctx,
 			      struct ldb_control **ctrls, int error)
 {
+	struct ldb_context *ldb;
 	struct ldb_reply *ares;
+
+	ldb = ldb_module_get_ctx(ctx->module);
 
 	ctx->done = true;
 
@@ -81,7 +84,7 @@ static void ildb_request_done(struct ildb_context *ctx,
 
 	ares = talloc_zero(ctx->req, struct ldb_reply);
 	if (!ares) {
-		ldb_oom(ctx->req->handle->ldb);
+		ldb_oom(ldb);
 		ctx->req->callback(ctx->req, NULL);
 		return;
 	}
@@ -163,17 +166,21 @@ failed:
 */
 static int ildb_map_error(struct ldb_module *module, NTSTATUS status)
 {
-	struct ildb_private *ildb = talloc_get_type(module->private_data, struct ildb_private);
+	struct ildb_private *ildb;
+	struct ldb_context *ldb;
+
+	ildb = talloc_get_type(ldb_module_get_private(module), struct ildb_private);
+	ldb = ldb_module_get_ctx(module);
 
 	TALLOC_CTX *mem_ctx = talloc_new(ildb);
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
 	if (!mem_ctx) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ldb_set_errstring(module->ldb,
+	ldb_set_errstring(ldb,
 			  ldap_errstr(ildb->ldap, mem_ctx, status));
 	talloc_free(mem_ctx);
 	if (NT_STATUS_IS_LDAP(status)) {
@@ -196,6 +203,7 @@ static void ildb_request_timeout(struct tevent_context *ev, struct tevent_timer 
 
 static void ildb_callback(struct ldap_request *req)
 {
+	struct ldb_context *ldb;
 	struct ildb_context *ac;
 	NTSTATUS status;
 	struct ldap_SearchResEntry *search;
@@ -209,6 +217,7 @@ static void ildb_callback(struct ldap_request *req)
 	int i;
 
 	ac = talloc_get_type(req->async.private_data, struct ildb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 	callback_failed = false;
 	request_done = false;
 	controls = NULL;
@@ -285,7 +294,7 @@ static void ildb_callback(struct ldap_request *req)
 				controls = talloc_steal(ac, msg->controls);
 				if (msg->r.SearchResultDone.resultcode) {
 					if (msg->r.SearchResultDone.errormessage) {
-						ldb_set_errstring(ac->module->ldb, msg->r.SearchResultDone.errormessage);
+						ldb_set_errstring(ldb, msg->r.SearchResultDone.errormessage);
 					}
 				}
 
@@ -303,7 +312,7 @@ static void ildb_callback(struct ldap_request *req)
 
 				search = &(msg->r.SearchResultEntry);
 
-				ldbmsg->dn = ldb_dn_new(ldbmsg, ac->module->ldb, search->dn);
+				ldbmsg->dn = ldb_dn_new(ldbmsg, ldb, search->dn);
 				if ( ! ldb_dn_validate(ldbmsg->dn)) {
 					ret = LDB_ERR_OPERATIONS_ERROR;
 					break;
@@ -368,21 +377,24 @@ static void ildb_callback(struct ldap_request *req)
 
 static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
 {
+	struct ldb_context *ldb;
 	struct ldap_request *req;
 
 	if (!ac) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	ldb = ldb_module_get_ctx(ac->module);
+
 	req = ldap_request_send(ac->ildb->ldap, msg);
 	if (req == NULL) {
-		ldb_set_errstring(ac->module->ldb, "async send request failed");
+		ldb_set_errstring(ldb, "async send request failed");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ac->ireq = talloc_steal(ac, req);
 
 	if (!ac->ireq->conn) {
-		ldb_set_errstring(ac->module->ldb, "connection to remote LDAP server dropped?");
+		ldb_set_errstring(ldb, "connection to remote LDAP server dropped?");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -405,23 +417,26 @@ static int ildb_request_send(struct ildb_context *ac, struct ldap_message *msg)
  */
 static int ildb_search(struct ildb_context *ac)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *req = ac->req;
 	struct ldap_message *msg;
 	int n;
 
+	ldb = ldb_module_get_ctx(ac->module);
+
 	if (!req->callback || !req->context) {
-		ldb_set_errstring(ac->module->ldb, "Async interface called with NULL callback function or NULL context");
+		ldb_set_errstring(ldb, "Async interface called with NULL callback function or NULL context");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	if (req->op.search.tree == NULL) {
-		ldb_set_errstring(ac->module->ldb, "Invalid expression parse tree");
+		ldb_set_errstring(ldb, "Invalid expression parse tree");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	msg = new_ldap_message(req);
 	if (msg == NULL) {
-		ldb_set_errstring(ac->module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -433,7 +448,7 @@ static int ildb_search(struct ildb_context *ac)
 		msg->r.SearchRequest.basedn  = ldb_dn_get_extended_linearized(msg, req->op.search.base, 0);
 	}
 	if (msg->r.SearchRequest.basedn == NULL) {
-		ldb_set_errstring(ac->module->ldb, "Unable to determine baseDN");
+		ldb_set_errstring(ldb, "Unable to determine baseDN");
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -659,21 +674,23 @@ static bool ildb_dn_is_special(struct ldb_request *req)
 
 static int ildb_handle_request(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ildb_private *ildb;
 	struct ildb_context *ac;
 	struct tevent_timer *te;
 	int ret;
 
-	ildb = talloc_get_type(module->private_data, struct ildb_private);
+	ildb = talloc_get_type(ldb_module_get_private(module), struct ildb_private);
+	ldb = ldb_module_get_ctx(module);
 
 	if (req->starttime == 0 || req->timeout == 0) {
-		ldb_set_errstring(module->ldb, "Invalid timeout settings");
+		ldb_set_errstring(ldb, "Invalid timeout settings");
 		return LDB_ERR_TIME_LIMIT_EXCEEDED;
 	}
 
 	ac = talloc_zero(req, struct ildb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -743,22 +760,15 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	NTSTATUS status;
 	struct cli_credentials *creds;
 
-	module = talloc(ldb, struct ldb_module);
-	if (!module) {
-		ldb_oom(ldb);
-		return -1;
-	}
-	talloc_set_name_const(module, "ldb_ildap backend");
-	module->ldb		= ldb;
-	module->prev		= module->next = NULL;
-	module->ops		= &ildb_ops;
+	module = ldb_module_new(ldb, ldb, "ldb_ildap backend", &ildb_ops);
+	if (!module) return -1;
 
 	ildb = talloc(module, struct ildb_private);
 	if (!ildb) {
 		ldb_oom(ldb);
 		goto failed;
 	}
-	module->private_data	= ildb;
+	ldb_module_set_private(module, ildb);
 
 	ildb->event_ctx = ldb_get_event_context(ldb);
 

@@ -73,7 +73,7 @@
   modifiersName: not supported by w2k3?
 */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 /*
   construct a canonical name from a message
@@ -126,7 +126,10 @@ static int operational_search_post_process(struct ldb_module *module,
 					   struct ldb_message *msg, 
 					   const char * const *attrs)
 {
+	struct ldb_context *ldb;
 	int i, a=0;
+
+	ldb = ldb_module_get_ctx(module);
 
 	for (a=0;attrs && attrs[a];a++) {
 		for (i=0;i<ARRAY_SIZE(search_sub);i++) {
@@ -161,7 +164,7 @@ static int operational_search_post_process(struct ldb_module *module,
 	return 0;
 
 failed:
-	ldb_debug_set(module->ldb, LDB_DEBUG_WARNING, 
+	ldb_debug_set(ldb, LDB_DEBUG_WARNING, 
 		      "operational_search_post_process failed for attribute '%s'\n", 
 		      attrs[a]);
 	return -1;
@@ -224,11 +227,14 @@ static int operational_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int operational_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct operational_context *ac;
 	struct ldb_request *down_req;
 	const char **search_attrs = NULL;
 	int i, a;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc(req, struct operational_context);
 	if (ac == NULL) {
@@ -268,7 +274,7 @@ static int operational_search(struct ldb_module *module, struct ldb_request *req
 		}
 	}
 
-	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,

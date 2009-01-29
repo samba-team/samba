@@ -28,7 +28,7 @@
  *  Author: Andrew Bartlett
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct subren_msg_store {
 	struct subren_msg_store *next;
@@ -47,11 +47,14 @@ struct subtree_rename_context {
 static struct subtree_rename_context *subren_ctx_init(struct ldb_module *module,
 					 struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct subtree_rename_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct subtree_rename_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -66,10 +69,12 @@ static int subtree_rename_next_request(struct subtree_rename_context *ac);
 static int subtree_rename_callback(struct ldb_request *req,
 				   struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct subtree_rename_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct subtree_rename_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -82,7 +87,7 @@ static int subtree_rename_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb, "Invalid reply type!\n");
+		ldb_set_errstring(ldb, "Invalid reply type!\n");
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
@@ -104,14 +109,17 @@ static int subtree_rename_callback(struct ldb_request *req,
 
 static int subtree_rename_next_request(struct subtree_rename_context *ac)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *req;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (ac->current == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_rename_req(&req, ac->module->ldb, ac->current,
+	ret = ldb_build_rename_req(&req, ldb, ac->current,
 				   ac->current->olddn,
 				   ac->current->newdn,
 				   ac->req->controls,
@@ -204,6 +212,7 @@ static int subtree_rename_search_callback(struct ldb_request *req,
 /* rename */
 static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	static const char *attrs[2] = { "distinguishedName", NULL };
 	struct ldb_request *search_req;
 	struct subtree_rename_context *ac;
@@ -211,6 +220,8 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	if (ldb_dn_is_special(req->op.rename.olddn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* This gets complex:  We need to:
 	   - Do a search for all entires under this entry 
@@ -235,7 +246,7 @@ static int subtree_rename(struct ldb_module *module, struct ldb_request *req)
 	ac->current->newdn = req->op.rename.newdn;
 	ac->list = ac->current;
 
-	ret = ldb_build_search_req(&search_req, module->ldb, ac,
+	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   req->op.rename.olddn, 
 				   LDB_SCOPE_SUBTREE,
 				   "(objectClass=*)",

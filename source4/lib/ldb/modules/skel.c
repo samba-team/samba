@@ -31,7 +31,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct private_data {
 
@@ -87,9 +87,13 @@ static int skel_del_trans(struct ldb_module *module)
 
 static int skel_destructor(struct ldb_module *ctx)
 {
-	struct private_data *data = talloc_get_type(ctx->private_data, struct private_data);
+	struct private_data *data;
+
+	data = talloc_get_type(ldb_module_get_private(ctx), struct private_data);
+
 	/* put your clean-up functions here */
 	if (data->some_private_data) talloc_free(data->some_private_data);
+
 	return 0;
 }
 
@@ -100,16 +104,19 @@ static int skel_request(struct ldb_module *module, struct ldb_request *req)
 
 static int skel_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	struct private_data *data;
+
+	ldb = ldb_module_get_ctx(module);
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	data->some_private_data = NULL;
-	module->private_data = data;
+	ldb_module_set_private(module, data);
 
 	talloc_set_destructor (module, skel_destructor);
 

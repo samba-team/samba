@@ -35,7 +35,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb_includes.h"
+#include "ldb_module.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/common/flags.h"
@@ -47,10 +47,11 @@ struct it_context {
 
 static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct it_context *ac;
 
 	ac = talloc_get_type(req->context, struct it_context);
-
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -62,7 +63,7 @@ static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(req->handle->ldb, "Invalid reply type!");
+		ldb_set_errstring(ldb, "Invalid reply type!");
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
@@ -74,6 +75,7 @@ static int it_callback(struct ldb_request *req, struct ldb_reply *ares)
 /* add_record: add instancetype attribute */
 static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *down_req;
 	struct ldb_message *msg;
 	struct it_context *ac;
@@ -81,9 +83,10 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	int ret;
 	const struct ldb_control *partition_ctrl;
 	const struct dsdb_control_current_partition *partition;
- 
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "instancetype_add_record\n");
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "instancetype_add_record\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
@@ -92,7 +95,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "instancetype_add: no current partition control found");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -111,7 +114,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	/* we have to copy the message as the caller might have it as a const */
 	msg = ldb_msg_copy_shallow(ac, req->op.add.message);
 	if (msg == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -121,18 +124,18 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	instance_type = INSTANCE_TYPE_WRITE;
 	if (ldb_dn_compare(partition->dn, msg->dn) == 0) {
 		instance_type |= INSTANCE_TYPE_IS_NC_HEAD;
-		if (ldb_dn_compare(msg->dn, samdb_base_dn(module->ldb)) != 0) {
+		if (ldb_dn_compare(msg->dn, samdb_base_dn(ldb)) != 0) {
 			instance_type |= INSTANCE_TYPE_NC_ABOVE;
 		}
 	}
 
 	ret = ldb_msg_add_fmt(msg, "instanceType", "%u", instance_type);
 	if (ret != LDB_SUCCESS) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_add_req(&down_req, module->ldb, ac,
+	ret = ldb_build_add_req(&down_req, ldb, ac,
 				msg,
 				req->controls,
 				ac, it_callback,
