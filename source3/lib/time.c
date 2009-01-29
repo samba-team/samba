@@ -483,8 +483,8 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 #elif defined(HAVE_STAT_ST_MTIME_N)
 	pst->st_mtime = ts.tv_sec;
 	pst->st_mtime_n = ts.tv_nsec
-#elif defined(HAVE_STAT_ST_ATIMESPEC)
-	pst->st_atimespec = ts;
+#elif defined(HAVE_STAT_ST_MTIMESPEC)
+	pst->st_mtimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
