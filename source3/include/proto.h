@@ -5326,6 +5326,10 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
+NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
+			     struct rpc_cli_smbd_conn *conn,
+			     const struct ndr_syntax_id *syntax,
+			     struct rpc_pipe_client **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 
@@ -5340,6 +5344,36 @@ NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
+
+/* The following definitions come from rpc_client/rpc_transport_smbd.c  */
+
+struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      void (*stdout_callback)(char *buf,
+								      size_t len,
+								      void *priv),
+					      void *priv);
+NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     struct rpc_cli_smbd_conn **pconn);
+NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
+				struct rpc_cli_smbd_conn **pconn,
+				void (*stdout_callback)(char *buf,
+							size_t len,
+							void *priv),
+				void *priv);
+
+struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct rpc_cli_smbd_conn *conn,
+					       const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      struct rpc_cli_transport **presult);
+NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
+				 struct rpc_cli_smbd_conn *conn,
+				 const struct ndr_syntax_id *abstract_syntax,
+				 struct rpc_cli_transport **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 

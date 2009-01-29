@@ -3511,6 +3511,61 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
+			     struct rpc_cli_smbd_conn *conn,
+			     const struct ndr_syntax_id *syntax,
+			     struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct cli_pipe_auth_data *auth;
+	NTSTATUS status;
+
+	result = talloc(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->abstract_syntax = *syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	result->desthost = talloc_strdup(result, global_myname());
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", global_myname());
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rpc_transport_smbd_init(result, conn, syntax,
+					 &result->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpc_transport_smbd_init failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpccli_anon_bind_data failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpc_pipe_bind failed: %s\n", nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Open a pipe to a remote server.
  ****************************************************************************/
