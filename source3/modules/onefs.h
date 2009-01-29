@@ -53,6 +53,62 @@ enum onefs_acl_wire_format
 #define PARM_UNMAPPABLE_SIDS_IGNORE_LIST_DEFAULT NULL
 #define PARM_IGNORE_SACL "ignore sacl"
 #define PARM_IGNORE_SACL_DEFAULT false
+#define PARM_ATIME_NOW		"atime now files"
+#define PARM_ATIME_SLOP		"atime now slop"
+#define PARM_CTIME_NOW		"ctime now files"
+#define PARM_CTIME_SLOP		"ctime now slop"
+#define PARM_MTIME_NOW		"mtime now files"
+#define PARM_MTIME_SLOP		"mtime now slop"
+#define PARM_MTIME_STATIC	"mtime static files"
+#define PARM_ATIME_STATIC	"atime static files"
+
+#define IS_CTIME_NOW_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
+	(cfg)->ctime_now_list,(conn)->case_sensitive))
+#define IS_MTIME_NOW_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
+	(cfg)->mtime_now_list,(conn)->case_sensitive))
+#define IS_ATIME_NOW_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
+	(cfg)->atime_now_list,(conn)->case_sensitive))
+#define IS_MTIME_STATIC_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
+	(cfg)->mtime_static_list,(conn)->case_sensitive))
+#define IS_ATIME_STATIC_PATH(conn,cfg,path)  ((conn) && is_in_path((path),\
+	(cfg)->atime_static_list,(conn)->case_sensitive))
+
+/*
+ * Store some commonly evaluated parameters to avoid loadparm pain.
+ */
+
+#define ONEFS_VFS_CONFIG_INITIALIZED	0x00010000
+
+#define ONEFS_VFS_CONFIG_FAKETIMESTAMPS	0x00000001
+
+
+struct onefs_vfs_config
+{
+	int32 init_flags;
+
+	/* data for fake timestamps */
+	int atime_slop;
+	int ctime_slop;
+	int mtime_slop;
+
+	/* Per-share list of files to fake the create time for. */
+        name_compare_entry *ctime_now_list;
+
+	/* Per-share list of files to fake the modification time for. */
+	name_compare_entry *mtime_now_list;
+
+	/* Per-share list of files to fake the access time for. */
+	name_compare_entry *atime_now_list;
+
+	/* Per-share list of files to fake the modification time for. */
+	name_compare_entry *mtime_static_list;
+
+	/* The access  time  will  equal  the  create  time.  */
+	/* The  modification  time  will  equal  the  create  time.*/
+
+	/* Per-share list of files to fake the access time for. */
+	name_compare_entry *atime_static_list;
+};
 
 /*
  * vfs interface handlers
@@ -121,6 +177,8 @@ NTSTATUS onefs_samba_sd_to_sd(uint32 security_info_sent, SEC_DESC *psd,
 NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				      char **pbase, char **pstream);
 
+bool onefs_get_config(int snum, int config_type,
+		      struct onefs_vfs_config *cfg);
 /*
  * System Interfaces
  */
