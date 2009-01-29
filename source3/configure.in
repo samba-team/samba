@@ -5875,6 +5875,8 @@ fi
 ############################################
 # See if we have the Linux splice syscall.
 
+case "$host_os" in
+*linux*)
 AC_CACHE_CHECK([for Linux splice],
                 samba_cv_HAVE_LINUX_SPLICE,[
     AC_TRY_LINK([
@@ -5885,6 +5887,11 @@ AC_CACHE_CHECK([for Linux splice],
     [long ret = splice(0,0,1,0,400,0);],
     samba_cv_HAVE_LINUX_SPLICE=yes,
     samba_cv_HAVE_LINUX_SPLICE=no)])
+;;
+*)
+samba_cv_HAVE_LINUX_SPLICE=no
+;;
+esac
 
 if test x"$samba_cv_HAVE_LINUX_SPLICE" = x"yes"; then
   AC_DEFINE(HAVE_LINUX_SPLICE,1,
