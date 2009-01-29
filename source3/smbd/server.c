@@ -423,9 +423,9 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	force_check_log_size();
 }
 
-bool smbd_open_one_socket(struct smbd_parent_context *parent,
-			  const struct sockaddr_storage *ifss,
-			  uint16_t port)
+static bool smbd_open_one_socket(struct smbd_parent_context *parent,
+				 const struct sockaddr_storage *ifss,
+				 uint16_t port)
 {
 	struct smbd_open_socket *s;
 
