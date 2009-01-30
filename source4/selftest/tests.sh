@@ -128,15 +128,16 @@ done
 
 for bindoptions in seal,padcheck $VALIDATE bigendian; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
+     env="dc"
      case $transport in
-	 ncalrpc) tests=$ncalrpc_tests ;;
+	 ncalrpc) tests=$ncalrpc_tests;env="dc:local" ;;
 	 ncacn_np) tests=$ncacn_np_tests ;;
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "`normalize_testname $t` on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
-   plantest "rpc.samba3.sharesec on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp RPC-SAMBA3-SHARESEC "$*"
+   plantest "rpc.samba3.sharesec on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp RPC-SAMBA3-SHARESEC "$*"
  done
 done
 
@@ -148,13 +149,14 @@ done
 
 for bindoptions in connect $VALIDATE ; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
+     env="dc"
      case $transport in
-	 ncalrpc) tests=$slow_ncalrpc_tests ;;
+	 ncalrpc) tests=$slow_ncalrpc_tests; env="dc:local" ;;
 	 ncacn_np) tests=$slow_ncacn_np_tests ;;
 	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "`normalize_testname $t` on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "`normalize_testname $t` on $transport with $bindoptions" $env $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -201,7 +203,11 @@ for transport in $transports; do
  for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
         "--option=socket:testnonblock=True --option=torture:quick=yes"; do
-   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+   env="dc"
+   if test x"$transport" = x"ncalrpc"; then
+      env="dc:local"
+   fi
+   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
   done
  done
 done
@@ -219,7 +225,11 @@ for transport in $transports; do
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:quick=yes" \
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
     ; do
-   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+   env="dc"
+   if test x"$transport" = x"ncalrpc"; then
+      env="dc:local"
+   fi
+   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" $env $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
   done
  done
 done
@@ -394,16 +404,16 @@ plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
 plantest "samba.python" none $SUBUNITRUN samba.tests
 plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
-plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
-plantest "dcerpc.bare.python" dc $SUBUNITRUN samba.tests.dcerpc.bare
-plantest "unixinfo.python" dc $SUBUNITRUN samba.tests.dcerpc.unix
+plantest "samr.python" dc:local $SUBUNITRUN samba.tests.dcerpc.sam
+plantest "dcerpc.bare.python" dc:local $SUBUNITRUN samba.tests.dcerpc.bare
+plantest "unixinfo.python" dc:local $SUBUNITRUN samba.tests.dcerpc.unix
 plantest "samdb.python" none $SUBUNITRUN samba.tests.samdb
 plantest "tevent.python" none PYTHONPATH="$PYTHONPATH:../lib/tevent" $SUBUNITRUN tests
 plantest "messaging.python" none PYTHONPATH="$PYTHONPATH:lib/messaging/tests" $SUBUNITRUN bindings
 plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 plantest "subunit.python" none $SUBUNITRUN subunit
-plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
-plantest "winreg.python" dc $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
+plantest "rpcecho.python" dc:local $SUBUNITRUN samba.tests.dcerpc.rpcecho
+plantest "winreg.python" dc:local $SUBUNITRUN -U\$USERNAME%\$PASSWORD samba.tests.dcerpc.registry
 plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 rm -rf $PREFIX/upgrade
