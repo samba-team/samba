@@ -45,6 +45,7 @@
 #include <errno.h>
 
 #include <gssapi.h>
+#include <gssapi_ntlm.h>
 #include <gssapi_mech.h>
 
 #include <krb5.h>
