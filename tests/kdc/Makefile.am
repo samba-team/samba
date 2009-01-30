@@ -9,7 +9,6 @@ noinst_DATA = \
 	krb5-pkinit-win.conf \
 	krb5-slave.conf
 
-check_PROGRAMS = ap-req
 check_SCRIPTS = $(SCRIPT_TESTS) 
 
 SCRIPT_TESTS = \
