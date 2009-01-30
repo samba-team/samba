@@ -506,6 +506,11 @@ struct ldb_module *ldb_module_new(TALLOC_CTX *memctx,
 	return module;
 }
 
+const char * ldb_module_get_name(struct ldb_module *module)
+{
+	return module->ops->name;
+}
+
 struct ldb_context *ldb_module_get_ctx(struct ldb_module *module)
 {
 	return module->ldb;

@@ -55,7 +55,7 @@ struct ldb_module_ops {
 	int (*end_transaction)(struct ldb_module *);
 	int (*del_transaction)(struct ldb_module *);
 	int (*sequence_number)(struct ldb_module *, struct ldb_request *);
-    void *private_data;
+	void *private_data;
 };
 
 
@@ -110,6 +110,7 @@ struct ldb_module *ldb_module_new(TALLOC_CTX *memctx,
 				  const char *module_name,
 				  const struct ldb_module_ops *ops);
 
+const char * ldb_module_get_name(struct ldb_module *module);
 struct ldb_context *ldb_module_get_ctx(struct ldb_module *module);
 void *ldb_module_get_private(struct ldb_module *module);
 void ldb_module_set_private(struct ldb_module *module, void *private_data);
