@@ -216,8 +216,8 @@ arg_printusage (struct getargs *args,
 		const char *progname,
 		const char *extra_string)
 {
-    return arg_printusage_i18n(args, num_args, "Usage",
-			       progname, extra_string, builtin_i18n);
+    arg_printusage_i18n(args, num_args, "Usage",
+			progname, extra_string, builtin_i18n);
 }
 
 void ROKEN_LIB_FUNCTION
