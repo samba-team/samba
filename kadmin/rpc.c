@@ -979,13 +979,13 @@ process_stream(krb5_context context,
 
 		krb5_warnx(context, "%s connected", client);
 
-		ret = kadm5_init_with_password_ctx(context,
-						   client,
-						   NULL,
-						   KADM5_ADMIN_SERVICE,
-						   &realm_params,
-						   0, 0,
-						   &server_handle);
+		ret = kadm5_s_init_with_password_ctx(context,
+						     client,
+						     NULL,
+						     KADM5_ADMIN_SERVICE,
+						     &realm_params,
+						     0, 0,
+						     &server_handle);
 		INSIST(ret == 0);
 	    }
 
