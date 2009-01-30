@@ -521,13 +521,13 @@ handle_v5(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_unparse_name");
     krb5_free_ticket (context, ticket);
-    ret = kadm5_init_with_password_ctx(context,
-				       client,
-				       NULL,
-				       KADM5_ADMIN_SERVICE,
-				       &realm_params,
-				       0, 0,
-				       &kadm_handle);
+    ret = kadm5_s_init_with_password_ctx(context,
+					 client,
+					 NULL,
+					 KADM5_ADMIN_SERVICE,
+					 &realm_params,
+					 0, 0,
+					 &kadm_handle);
     if(ret)
 	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
     v5_loop (context, ac, initial, kadm_handle, fd);
