@@ -33,8 +33,8 @@
 
 /* $Id$ */
 
-#ifndef GSSAPI_SPNEGO_H_
-#define GSSAPI_SPNEGO_H_
+#ifndef GSSAPI_NTLM_H_
+#define GSSAPI_NTLM_H_
 
 #include <gssapi.h>
 
@@ -48,4 +48,4 @@ extern GSSAPI_LIB_VARIABLE gss_OID GSS_NTLM_MECHANISM;
 }
 #endif
 
-#endif /* GSSAPI_SPNEGO_H_ */
+#endif /* GSSAPI_NTLM_H_ */
