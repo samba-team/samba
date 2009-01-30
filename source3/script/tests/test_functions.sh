@@ -1,3 +1,4 @@
+TEST_FUNCTIONS_SH="INCLUDED"
 
 samba3_stop_sig_term() {
 	RET=0

@@ -17,8 +17,10 @@ SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
 shift 4
 ADDARGS="$*"
 
+test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`
 . $incdir/test_functions.sh
+}
 
 failed=0
 

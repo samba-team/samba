@@ -16,8 +16,10 @@ start="$4"
 shift 4
 ADDARGS="$*"
 
+test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`
 . $incdir/test_functions.sh
+}
 
 tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
 #tests="$tests UNLINK BROWSE ATTR TRANS2 MAXFID TORTURE "
