@@ -77,6 +77,7 @@ ktutil="${TESTS_ENVIRONMENT} ../../admin/ktutil"
 hxtool="${TESTS_ENVIRONMENT} ../../lib/hx509/hxtool"
 kimpersonate="${TESTS_ENVIRONMENT} ../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
 test_renew="${TESTS_ENVIRONMENT} ../../lib/krb5/test_renew"
+test_ap_req="${TESTS_ENVIRONMENT} ../../lib/krb5/test_ap-req"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -174,7 +175,7 @@ echo "Getting tickets"; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "Listing tickets"; > messages.log
 ${klist} > /dev/null || { ec=1 ; eval "${testfailed}"; }
-./ap-req ${server}@${R} ${keytab} ${cache} || \
+${test_ap_req} ${server}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
@@ -189,7 +190,7 @@ for a in $enctypes; do
 	${kinit} --enctype=$a --password-file=${objdir}/foopassword foo@$R || { ec=1 ; eval "${testfailed}"; }
 	echo "Getting tickets"; > messages.log
 	${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
-	./ap-req ${server}@${R} ${keytab} ${cache} || { ec=1 ; eval "${testfailed}"; }
+	${test_ap_req} ${server}@${R} ${keytab} ${cache} || { ec=1 ; eval "${testfailed}"; }
 	${kdestroy}
 done
 
@@ -200,7 +201,7 @@ ${kinit} --password-file=${objdir}/foopassword foo@$R || \
 for a in $enctypes; do
 	echo "Getting tickets ($a)"; > messages.log
 	${kgetcred} -e $a ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
-	./ap-req ${server}@${R} ${keytab} ${cache} || \
+	${test_ap_req} ${server}@${R} ${keytab} ${cache} || \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kdestroy} --credential=${server}@${R}
 done
@@ -214,7 +215,7 @@ for a in $enctypes; do
 	echo "  checking we we got back right ticket"
 	${klist} | grep ${server2}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
 	echo "  checking if ticket is useful"
-	./ap-req ${server2}@${R2} ${keytab} ${cache} || \
+	${test_ap_req} ${server2}@${R2} ${keytab} ${cache} || \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kdestroy} --credential=${server2}@${R2}
 done
@@ -229,7 +230,7 @@ for a in $enctypes; do
 		echo "Getting tickets ($a ->  $b)"; > messages.log
 		${kgetcred} -e $b ${server}@${R} || \
 			{ ec=1 ; eval "${testfailed}"; }
-		./ap-req ${server}@${R} ${keytab} ${cache} || \
+		${test_ap_req} ${server}@${R} ${keytab} ${cache} || \
 			{ ec=1 ; eval "${testfailed}"; }
 		${kdestroy} --credential=${server}@${R}
 	done
@@ -243,7 +244,7 @@ ${kgetcred} ${serverip}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "  checking we we got back right ticket"
 ${klist} | grep ${serverip}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
 echo "  checking if ticket is useful"
-./ap-req ${serverip}@${R} ${keytab} ${cache} || \
+${test_ap_req} ${serverip}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
@@ -255,7 +256,7 @@ for a in ${serveripname} ${serveripname2} ; do
     echo "  checking we we got back right ticket"
     ${klist} | grep ${a}@ > /dev/null || { ec=1 ; eval "${testfailed}"; }
     echo "  checking if ticket is useful"
-    ./ap-req --server-any ${a}@${R} ${keytab} ${cache} || \
+    ${test_ap_req} --server-any ${a}@${R} ${keytab} ${cache} || \
     	{ ec=1 ; eval "${testfailed}"; }
 done
 ${kdestroy}
@@ -321,13 +322,13 @@ for a in $enctypes; do
 		echo "Getting tickets ($a ->  $b)"; > messages.log
 		${kgetcred} -e $b ${server}@${R} || \
 			{ ec=1 ; eval "${testfailed}"; }
-		./ap-req ${server}@${R} ${keytab} ${cache} || \
+		${test_ap_req} ${server}@${R} ${keytab} ${cache} || \
 			{ ec=1 ; eval "${testfailed}"; }
 
 		echo "Getting tickets ($a ->  $b) (server des3 only)"; > messages.log
 		${kgetcred} ${server}-des3@${R} || \
 			{ ec=1 ; eval "${testfailed}"; }
-		./ap-req ${server}-des3@${R} ${keytab} ${cache} || \
+		${test_ap_req} ${server}-des3@${R} ${keytab} ${cache} || \
 			{ ec=1 ; eval "${testfailed}"; }
 
 		${kdestroy} --credential=${server}@${R}
@@ -402,7 +403,7 @@ ${kinit} --forwardable --password-file=${objdir}/foopassword ${ps} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kgetcred_imp} --impersonate=bar@${R} ${ps} || \
 	{ ec=1 ; eval "${testfailed}"; }
-./ap-req ${ps} ${keytab} ${ocache} || \
+${test_ap_req} ${ps} ${keytab} ${ocache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "  negative check"
 ${kgetcred_imp} --impersonate=bar@${R} foo@${R} 2>/dev/null && \
@@ -417,7 +418,7 @@ ${kgetcred} \
 	${server}@${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "  try using the credential"
-./ap-req ${server}@${R} ${keytab} ${o2cache} || \
+${test_ap_req} ${server}@${R} ${keytab} ${o2cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "  negative check"
 ${kgetcred} \
@@ -463,16 +464,16 @@ echo "Getting tickets"; > messages.log
 ${kgetcred} ${alias1}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kgetcred} ${alias2}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "   verify entry in keytab"
-./ap-req ${alias1}@${R} ${keytab} ${cache} || \
+${test_ap_req} ${alias1}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "   verify entry in keytab with any"
-./ap-req --server-any ${alias1}@${R} ${keytab} ${cache} || \
+${test_ap_req} --server-any ${alias1}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "   verify failure with alias entry"
-./ap-req ${alias2}@${R} ${keytab} ${cache} 2>/dev/null && \
+${test_ap_req} ${alias2}@${R} ${keytab} ${cache} 2>/dev/null && \
 	{ ec=1 ; eval "${testfailed}"; }
 echo "   verify alias entry in keytab with any"
-./ap-req --server-any ${alias2}@${R} ${keytab} ${cache} || \
+${test_ap_req} --server-any ${alias2}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
