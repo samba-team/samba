@@ -769,8 +769,6 @@ krb5_set_password(krb5_context context,
     return ret;
 }
 
-#ifndef HEIMDAL_SMALLER
-
 /*
  *
  */
@@ -835,8 +833,6 @@ krb5_set_password_using_ccache(krb5_context context,
 	krb5_free_principal(context, principal);
     return ret;
 }
-
-#endif /* !HEIMDAL_SMALLER */
 
 /*
  *
