@@ -338,12 +338,6 @@ extern GSSAPI_LIB_VARIABLE gss_OID GSS_C_NT_EXPORT_NAME;
 
 extern GSSAPI_LIB_VARIABLE gss_OID GSS_SASL_DIGEST_MD5_MECHANISM;
 
-/*
- * NTLM mechanism
- */
-
-extern GSSAPI_LIB_VARIABLE gss_OID GSS_NTLM_MECHANISM;
-
 /* Major status codes */
 
 #define GSS_S_COMPLETE 0
