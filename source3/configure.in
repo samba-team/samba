@@ -1027,7 +1027,7 @@ fi
 
 AC_CHECK_FUNCS(getcwd fchown chmod fchmod mknod mknod64)
 AC_CHECK_FUNCS(strtol)
-AC_CHECK_FUNCS(fstat strchr chflags)
+AC_CHECK_FUNCS(strchr chflags)
 AC_CHECK_FUNCS(getrlimit fsync fdatasync setpgid)
 AC_CHECK_FUNCS(setsid glob strpbrk crypt16 getauthuid)
 AC_CHECK_FUNCS(sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
