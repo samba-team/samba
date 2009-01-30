@@ -230,6 +230,10 @@ ctdb_check_tcp_ports() {
           ${NETCAT} -z 127.0.0.1 $p > /dev/null || all_ok=0
       elif [ "x${NETSTAT}" != "x" ]; then
           ( ${NETSTAT} -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
+      else
+          echo "ERROR: neither netcat (or nc) nor netstat found!"
+          echo "ERROR: can't monitor ${service_name} tcp port ${p}"
+          all_ok=0
       fi
 
       [ $all_ok -eq 1 ] || {
