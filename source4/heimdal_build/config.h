@@ -8,7 +8,6 @@
 
 #include "include/config.h"
 #include "../replace/replace.h"
-#include "system/network.h"
 
 #if !defined(HAVE_DIRFD) && !defined(HAVE_DIRFD_DECL) && !defined(dirfd)
 #define dirfd(d) (-1)
