@@ -35,6 +35,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "ldb_private.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "param/param.h"
 
