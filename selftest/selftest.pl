@@ -752,7 +752,8 @@ sub setup_env($)
 	my $option = $name;
 
 	$envname =~ s/:.*//;
-	$option =~ s/^[^:]*://;
+	$option =~ s/^[^:]*//;
+	$option =~ s/^://;
 
 	$option = "client" if $option eq "";
 
