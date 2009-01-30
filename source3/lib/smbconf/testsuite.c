@@ -41,11 +41,11 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 	char **includes = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	printf("test: get_includes\n");
+	printf("TEST: get_includes\n");
 	werr = smbconf_get_global_includes(ctx, mem_ctx,
 					   &num_includes, &includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: get_includes - %s\n", win_errstr(werr));
+		printf("FAIL: get_includes - %s\n", win_errstr(werr));
 		goto done;
 	}
 
@@ -53,7 +53,7 @@ static bool test_get_includes(struct smbconf_ctx *ctx)
 	       (num_includes > 0) ? ":" : ".");
 	print_strings("", num_includes, (const char **)includes);
 
-	printf("success: get_includes\n");
+	printf("OK: get_includes\n");
 	ret = true;
 
 done:
@@ -75,11 +75,11 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 	uint32_t get_num_includes = 0;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	printf("test: set_get_includes\n");
+	printf("TEST: set_get_includes\n");
 
 	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: get_set_includes (setting includes) - %s\n",
+		printf("FAIL: get_set_includes (setting includes) - %s\n",
 		       win_errstr(werr));
 		goto done;
 	}
@@ -87,13 +87,13 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
 					   &get_includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: get_set_includes (getting includes) - %s\n",
+		printf("FAIL: get_set_includes (getting includes) - %s\n",
 		       win_errstr(werr));
 		goto done;
 	}
 
 	if (get_num_includes != set_num_includes) {
-		printf("failure: get_set_includes - set %d includes, got %d\n",
+		printf("FAIL: get_set_includes - set %d includes, got %d\n",
 		       set_num_includes, get_num_includes);
 		goto done;
 	}
@@ -105,12 +105,12 @@ static bool test_set_get_includes(struct smbconf_ctx *ctx)
 			printf("got: \n");
 			print_strings("* ", get_num_includes,
 				      (const char **)get_includes);
-			printf("failure: get_set_includes - data mismatch:\n");
+			printf("FAIL: get_set_includes - data mismatch:\n");
 			goto done;
 		}
 	}
 
-	printf("success: set_includes\n");
+	printf("OK: set_includes\n");
 	ret = true;
 
 done:
@@ -130,18 +130,18 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 	uint32_t get_num_includes = 0;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	printf("test: delete_includes\n");
+	printf("TEST: delete_includes\n");
 
 	werr = smbconf_set_global_includes(ctx, set_num_includes, set_includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: delete_includes (setting includes) - %s\n",
+		printf("FAIL: delete_includes (setting includes) - %s\n",
 		       win_errstr(werr));
 		goto done;
 	}
 
 	werr = smbconf_delete_global_includes(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: delete_includes (deleting includes) - %s\n",
+		printf("FAIL: delete_includes (deleting includes) - %s\n",
 		       win_errstr(werr));
 		goto done;
 	}
@@ -149,24 +149,24 @@ static bool test_delete_includes(struct smbconf_ctx *ctx)
 	werr = smbconf_get_global_includes(ctx, mem_ctx, &get_num_includes,
 					   &get_includes);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: delete_includes (getting includes) - %s\n",
+		printf("FAIL: delete_includes (getting includes) - %s\n",
 		       win_errstr(werr));
 		goto done;
 	}
 
 	if (get_num_includes != 0) {
-		printf("failure: delete_includes (not empty after delete)\n");
+		printf("FAIL: delete_includes (not empty after delete)\n");
 		goto done;
 	}
 
 	werr = smbconf_delete_global_includes(ctx);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failuer: delete_includes (delete empty includes) - "
+		printf("FAIL: delete_includes (delete empty includes) - "
 		       "%s\n", win_errstr(werr));
 		goto done;
 	}
 
-	printf("success: delete_includes\n");
+	printf("OK: delete_includes\n");
 	ret = true;
 
 done:
@@ -177,7 +177,7 @@ static bool create_conf_file(const char *filename)
 {
 	FILE *f;
 
-	printf("creating file\n");
+	printf("TEST: creating file\n");
 	f = sys_fopen(filename, "w");
 	if (!f) {
 		printf("failure: failed to open %s for writing: %s\n",
@@ -192,7 +192,7 @@ static bool create_conf_file(const char *filename)
 
 	fclose(f);
 
-	printf("success: create file\n");
+	printf("OK: create file\n");
 	return true;
 }
 
@@ -211,30 +211,29 @@ static bool torture_smbconf_txt(void)
 		goto done;
 	}
 
-	printf("test: init\n");
+	printf("TEST: init\n");
 	werr = smbconf_init_txt(mem_ctx, &conf_ctx, filename);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: init failed: %s\n", win_errstr(werr));
+		printf("FAIL: text backend\[ failed: %s\n", win_errstr(werr));
 		ret = false;
 		goto done;
 	}
-	printf("success: init\n");
+	printf("OK: init\n");
 
 	ret &= test_get_includes(conf_ctx);
 
 	smbconf_shutdown(conf_ctx);
 
-	printf("unlinking file\n");
+	printf("TEST: unlink file\n");
 	if (unlink(filename) != 0) {
-		printf("failure: unlink failed: %s\n", strerror(errno));
+		printf("OK: unlink failed: %s\n", strerror(errno));
 		ret = false;
 		goto done;
 	}
-	printf("success: unlink file\n");
-
-	printf("%s: text backend\n", ret ? "success" : "failure");
+	printf("OK: unlink file\n");
 
 done:
+	printf("%s: text backend\n", ret ? "success" : "failure");
 	talloc_free(mem_ctx);
 	return ret;
 }
@@ -248,14 +247,14 @@ static bool torture_smbconf_reg(void)
 
 	printf("test: registry backend\n");
 
-	printf("test: init\n");
+	printf("TEST: init\n");
 	werr = smbconf_init_reg(mem_ctx, &conf_ctx, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
-		printf("failure: init failed: %s\n", win_errstr(werr));
+		printf("FAIL: init failed: %s\n", win_errstr(werr));
 		ret = false;
 		goto done;
 	}
-	printf("success: init\n");
+	printf("OK: init\n");
 
 	ret &= test_get_includes(conf_ctx);
 	ret &= test_set_get_includes(conf_ctx);
@@ -263,9 +262,8 @@ static bool torture_smbconf_reg(void)
 
 	smbconf_shutdown(conf_ctx);
 
-	printf("%s: registry backend\n", ret ? "success" : "failure");
-
 done:
+	printf("%s: registry backend\n", ret ? "success" : "failure");
 	talloc_free(mem_ctx);
 	return ret;
 }
