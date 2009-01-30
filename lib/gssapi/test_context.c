@@ -37,6 +37,7 @@
 #include <gssapi.h>
 #include <gssapi_krb5.h>
 #include <gssapi_spnego.h>
+#include <gssapi_ntlm.h>
 #include "test_common.h"
 
 RCSID("$Id$");
