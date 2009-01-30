@@ -2604,6 +2604,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	/* Unmarshall the RPC header */
 	if (!smb_io_rpc_hdr("hdr", &hdr, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
+		prs_mem_free(&reply_pdu);
 		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
@@ -2611,12 +2612,14 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	if (!smb_io_rpc_hdr_ba("", &hdr_ba, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: Failed to unmarshall "
 			  "RPC_HDR_BA.\n"));
+		prs_mem_free(&reply_pdu);
 		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
 	if (!check_bind_response(&hdr_ba, &state->cli->transfer_syntax)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
+		prs_mem_free(&reply_pdu);
 		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
@@ -2633,6 +2636,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	case PIPE_AUTH_TYPE_NONE:
 	case PIPE_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
+		prs_mem_free(&reply_pdu);
 		async_req_done(req);
 		break;
 
@@ -2640,6 +2644,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 		/* Need to send AUTH3 packet - no reply. */
 		status = rpc_finish_auth3_bind_send(req, state, &hdr,
 						    &reply_pdu);
+		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			async_req_error(req, status);
 		}
@@ -2649,6 +2654,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 		/* Need to send alter context request and reply. */
 		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &hdr,
 							     &reply_pdu);
+		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
 			async_req_error(req, status);
 		}
@@ -2660,6 +2666,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	default:
 		DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
 			 (unsigned int)state->cli->auth->auth_type));
+		prs_mem_free(&reply_pdu);
 		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 }
