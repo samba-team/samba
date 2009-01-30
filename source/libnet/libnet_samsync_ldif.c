@@ -542,8 +542,10 @@ static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 	groupmap->sambaSID	= talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
 	groupmap->group_dn	= talloc_asprintf(mem_ctx,
 	     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->group_dn);
+	if (groupmap->sambaSID == NULL || groupmap->group_dn == NULL) {
+		SAFE_FREE(group_attr);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", groupname, group_attr,
