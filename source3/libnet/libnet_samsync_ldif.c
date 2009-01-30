@@ -776,7 +776,10 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 	g_rid = r->rid;
 	groupmap->gidNumber = ldif_gid;
 	groupmap->sambaSID = talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
+	if (groupmap->sambaSID == NULL) {
+		SAFE_FREE(group_attr);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,
