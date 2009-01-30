@@ -42,7 +42,7 @@ is($x->{res},
 \t\tNDR_PRINT_IN_DEBUG(bar, &r);
 \t}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_foo,
 				NDR_BAR,
@@ -86,7 +86,7 @@ is($x->{res},
 \t\tNDR_PRINT_IN_DEBUG(bar, &r);
 \t}
 
-	status = cli_do_rpc_ndr(cli,
+	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_foo,
 				NDR_BAR,
