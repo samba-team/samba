@@ -758,7 +758,7 @@ sub setup_env($)
 	$option = "client" if $option eq "";
 
 	if ($envname eq "none") {
-		$testenv_vars = \{};
+		$testenv_vars = {};
 	} elsif (defined(get_running_env($envname))) {
 		$testenv_vars = get_running_env($envname);
 		if (not $target->check_env($testenv_vars)) {
