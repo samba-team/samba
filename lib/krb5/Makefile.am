@@ -39,7 +39,7 @@ TESTS =						\
 	test_pknistkdf				\
 	test_time
 
-check_PROGRAMS = $(TESTS) test_hostname
+check_PROGRAMS = $(TESTS) test_hostname test_ap-req
 
 LDADD = libkrb5.la \
 	$(LIB_hcrypto) \
