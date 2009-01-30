@@ -51,7 +51,7 @@ export SCRIPTDIR
 plantest "talloctort3" none $VALGRIND $BINDIR/talloctort
 plantest "replacetort3" none $VALGRIND $BINDIR/replacetort
 plantest "tdbtorture3" none $VALGRIND $BINDIR/tdbtorture
-plantest "smbconftort3" none $VALGRIND $BINDIR/smbconftort $CONFIGURATION
+plantest "smbconftort3" none $VALGRIND $BINDIR/smbconftort -s \$SMB_CONF_PATH
 
 tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
 tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "

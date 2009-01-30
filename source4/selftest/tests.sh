@@ -60,12 +60,12 @@ smb4torture="$samba4bindir/smbtorture${EXEEXT}"
 $smb4torture -V
 
 prefix_abs="$SELFTEST_PREFIX/s4client"
+CONFIGURATION="--configfile=\$SMB_CONF_PATH"
 
 test -d "$prefix_abs" || mkdir "$prefix_abs"
-conffile="$SELFTEST_CONFFILE"
 
 TORTURE_OPTIONS=""
-TORTURE_OPTIONS="$TORTURE_OPTIONS --configfile=$conffile"
+TORTURE_OPTIONS="$TORTURE_OPTIONS $CONFIGURATION"
 TORTURE_OPTIONS="$TORTURE_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
 TORTURE_OPTIONS="$TORTURE_OPTIONS --target=$SELFTEST_TARGET"
 TORTURE_OPTIONS="$TORTURE_OPTIONS --basedir=$prefix_abs"
@@ -79,11 +79,6 @@ fi
 smb4torture="$smb4torture $TORTURE_OPTIONS"
 
 echo "OPTIONS $TORTURE_OPTIONS"
-
-SMB_CONF_PATH="$conffile"
-export SMB_CONF_PATH
-CONFIGURATION="--configfile=$conffile"
-export CONFIGURATION
 
 # Simple tests for LDAP and CLDAP
 

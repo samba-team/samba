@@ -648,7 +648,6 @@ if ($opt_quick) {
 }
 $ENV{SELFTEST_TARGET} = $opt_target;
 $ENV{SELFTEST_MAXTIME} = $torture_maxtime;
-$ENV{SELFTEST_CONFFILE} = $conffile;
 
 my @available = ();
 foreach my $fn (@testlists) {
@@ -852,7 +851,7 @@ server is pid `cat \$PIDDIR/samba.pid`
 
 Some useful environment variables:
 TORTURE_OPTIONS=\$TORTURE_OPTIONS
-CONFIGURATION=\$CONFIGURATION
+SMB_CONF_PATH=\$SMB_CONF_PATH
 
 $envvarstr
 \" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");
