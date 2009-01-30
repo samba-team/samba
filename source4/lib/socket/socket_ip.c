@@ -549,19 +549,36 @@ _PUBLIC_ const struct socket_ops *socket_ipv4_ops(enum socket_type type)
 
 static struct in6_addr interpret_addr6(const char *name)
 {
-	struct hostent *he;
-	
-	if (name == NULL) return in6addr_any;
+	char addr[INET6_ADDRSTRLEN];
+	struct in6_addr dest6;
+	const char *sp = name;
+	char *p = strchr_m(sp, '%');
+	int ret;
 
-	if (strcasecmp(name, "localhost") == 0) {
-		name = "::1";
+	if (sp == NULL) return in6addr_any;
+
+	if (strcasecmp(sp, "localhost") == 0) {
+		sp = "::1";
 	}
 
-	he = gethostbyname2(name, PF_INET6);
+	/*
+	 * Cope with link-local.
+	 * This is IP:v6:addr%ifname.
+	 */
 
-	if (he == NULL) return in6addr_any;
+	if (p && (p > sp) && (if_nametoindex(p+1) != 0)) {
+		strlcpy(addr, sp,
+			MIN(PTR_DIFF(p,sp)+1,
+				sizeof(addr)));
+		sp = addr;
+	}
 
-	return *((struct in6_addr *)he->h_addr);
+	ret = inet_pton(AF_INET6, sp, &dest6);
+	if (ret > 0) {
+		return dest6;
+	}
+
+	return in6addr_any;
 }
 
 static NTSTATUS ipv6_init(struct socket_context *sock)
