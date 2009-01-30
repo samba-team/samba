@@ -27,6 +27,8 @@
 #include "config.h"
 #endif
 
+#include <roken.h>
+
 #include <string.h>
 #include <stdlib.h>
 
