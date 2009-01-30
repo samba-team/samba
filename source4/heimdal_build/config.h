@@ -8,6 +8,7 @@
 
 #include "include/config.h"
 #include "../replace/replace.h"
+#include "system/network.h"
 
 #define RCSID(msg) struct __rcsid { int __rcsdi; }
 #define KRB5
