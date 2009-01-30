@@ -217,6 +217,7 @@ noinst_HEADERS = \
 nobase_include_HEADERS = \
 	gssapi/gssapi.h \
 	gssapi/gssapi_krb5.h \
+	gssapi/gssapi_ntlm.h \
 	gssapi/gssapi_spnego.h
 
 gssapidir = $(includedir)/gssapi
