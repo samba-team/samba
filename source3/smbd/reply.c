@@ -2728,12 +2728,12 @@ static void reply_readbraw_error(void)
  Use sendfile in readbraw.
 ****************************************************************************/
 
-void send_file_readbraw(connection_struct *conn,
-			struct smb_request *req,
-			files_struct *fsp,
-			SMB_OFF_T startpos,
-			size_t nread,
-			ssize_t mincount)
+static void send_file_readbraw(connection_struct *conn,
+			       struct smb_request *req,
+			       files_struct *fsp,
+			       SMB_OFF_T startpos,
+			       size_t nread,
+			       ssize_t mincount)
 {
 	char *outbuf = NULL;
 	ssize_t ret=0;

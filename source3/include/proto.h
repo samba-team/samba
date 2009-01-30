@@ -7275,12 +7275,6 @@ void reply_ctemp(struct smb_request *req);
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, bool has_wild);
 void reply_unlink(struct smb_request *req);
-void send_file_readbraw(connection_struct *conn,
-			struct smb_request *req,
-			files_struct *fsp,
-			SMB_OFF_T startpos,
-			size_t nread,
-			ssize_t mincount);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);
 void reply_read(struct smb_request *req);
