@@ -114,7 +114,7 @@ slow_ncacn_np_tests="RPC-SAMLOGON RPC-SAMR RPC-SAMR-USERS RPC-SAMR-PASSWORDS"
 slow_ncalrpc_tests="RPC-SAMR RPC-SAMR-PASSWORDS"
 slow_ncacn_ip_tcp_tests="RPC-SAMR RPC-SAMR-PASSWORDS RPC-CRACKNAMES"
 
-all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-SECRETS RPC-SAMBA3-SHARESEC"
+all_tests="$ncalrpc_tests $ncacn_np_tests $ncacn_ip_tcp_tests $slow_ncalrpc_tests $slow_ncacn_np_tests $slow_ncacn_ip_tcp_tests RPC-SECRETS RPC-SAMBA3-SHARESEC RPC-COUNTCALLS"
 
 # Make sure all tests get run
 for t in `$smb4torture --list | grep "^RPC-"`
@@ -146,6 +146,9 @@ for bindoptions in "" $VALIDATE bigendian; do
   plantest "`normalize_testname $t` with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
  done
 done
+
+t="RPC-COUNTCALLS"
+plantest "`normalize_testname $t`" dc:local $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
 
 for bindoptions in connect $VALIDATE ; do
  for transport in ncalrpc ncacn_np ncacn_ip_tcp; do
