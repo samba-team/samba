@@ -717,6 +717,9 @@ nogroup:x:65534:nobody
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");
 	}
+	if (defined($ENV{PYTHON})) {
+		push (@provision_options, $ENV{PYTHON});
+	}
 	push (@provision_options, "$self->{setupdir}/provision");
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
