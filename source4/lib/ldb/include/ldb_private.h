@@ -158,16 +158,7 @@ int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n);
 
-void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
-
-int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
-				 struct ldb_message_element *el2);
 void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
-
-/**
-  Obtain current/next database sequence number
-*/
-int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num);
 
 #define LDB_SEQ_GLOBAL_SEQUENCE    0x01
 #define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02

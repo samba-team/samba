@@ -26,7 +26,6 @@
 */
 
 #include "ldb_module.h"
-#include "ldb_private.h"
 
 #include "ldb_map.h"
 #include "ldb_map_private.h"

@@ -1233,6 +1233,11 @@ int ldb_extended(struct ldb_context *ldb,
 		 struct ldb_result **res);
 
 /**
+  Obtain current/next database sequence number
+*/
+int ldb_sequence_number(struct ldb_context *ldb, enum ldb_sequence_type type, uint64_t *seq_num);
+
+/**
   start a transaction
 */
 int ldb_transaction_start(struct ldb_context *ldb);
@@ -1633,6 +1638,8 @@ int ldb_msg_add_fmt(struct ldb_message *msg,
 */
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
 			    struct ldb_message_element *el2);
+int ldb_msg_element_compare_name(struct ldb_message_element *el1, 
+				 struct ldb_message_element *el2);
 
 /**
    Find elements in a message.
@@ -1746,14 +1753,16 @@ const char **ldb_attr_list_copy(TALLOC_CTX *mem_ctx, const char * const *attrs);
 const char **ldb_attr_list_copy_add(TALLOC_CTX *mem_ctx, const char * const *attrs, const char *new_attr);
 int ldb_attr_in_list(const char * const *attrs, const char *attr);
 
+int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace);
+int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
+void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
+void ldb_msg_remove_element(struct ldb_message *msg, struct ldb_message_element *el);
+
 
 void ldb_parse_tree_attr_replace(struct ldb_parse_tree *tree, 
 				 const char *attr, 
 				 const char *replace);
 
-int ldb_msg_rename_attr(struct ldb_message *msg, const char *attr, const char *replace);
-int ldb_msg_copy_attr(struct ldb_message *msg, const char *attr, const char *replace);
-void ldb_msg_remove_attr(struct ldb_message *msg, const char *attr);
 
 /**
    Convert a time structure to a string
