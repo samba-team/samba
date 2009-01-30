@@ -419,10 +419,12 @@ find_func(krb5_context context, const char *name)
 
     p = strchr(name, ':');
     if (p) {
+	size_t len = p - name + 1;
 	func = p + 1;
-	module = strndup(name, p - name);
+	module = malloc(len);
 	if (module == NULL)
 	    return NULL;
+	strlcpy(module, name, len);
     } else
 	func = name;
 
