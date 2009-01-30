@@ -10,6 +10,10 @@
 #include "../replace/replace.h"
 #include "system/network.h"
 
+#if !defined(HAVE_DIRFD) && !defined(HAVE_DIRFD_DECL) && !defined(dirfd)
+#define dirfd(d) (-1)
+#endif
+
 #define RCSID(msg) struct __rcsid { int __rcsdi; }
 #define KRB5
 
