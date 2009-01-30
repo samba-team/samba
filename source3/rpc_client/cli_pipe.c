@@ -1252,7 +1252,7 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
 	/* Make incoming_pdu dynamic with no memory. */
-	prs_give_memory(&state->incoming_pdu, 0, 0, true);
+	prs_give_memory(&state->incoming_pdu, NULL, 0, true);
 
 	talloc_set_destructor(state, rpc_api_pipe_state_destructor);
 
