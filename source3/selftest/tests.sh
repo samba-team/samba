@@ -129,3 +129,42 @@ plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smb
 
 plantest "blackbox.net_s3" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
 
+(
+	shift $#
+	testitprefix="posix_s3."
+	testitenv="dc:local"
+
+	SMBTORTURE4BINARY=$SMBTORTURE4
+	TORTURE4_OPTIONS=""
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --configfile=\$SMB_CONF_PATH"
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --maximum-runtime=$SELFTEST_MAXTIME"
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --target=$SELFTEST_TARGET"
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --basedir=$SELFTEST_PREFIX"
+	if [ -n "$SELFTEST_VERBOSE" ]; then
+		TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:progress=no"
+	fi
+	TORTURE_OPTIONS="$TORTURE4_OPTIONS --format=subunit"
+	if [ -n "$SELFTEST_QUICK" ]; then
+		TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:quick=yes"
+	fi
+
+	# This is an ugly hack...
+	TORTURE4_OPTIONS="$TORTURE4_OPTIONS --option=torture:localdir=$SELFTEST_PREFIX/dc/share"
+
+	if [ -x "$SMBTORTURE4" ]; then
+		LIB_PATH_VAR_VAR="\$`echo $LIB_PATH_VAR`"
+		S4_LIB_PREFIX=`eval echo "$LIB_PATH_VAR=\"$SAMBA4SHAREDDIR:$LIB_PATH_VAR_VAR\""`
+		SMBTORTURE4="$S4_LIB_PREFIX $SMBTORTURE4"
+		SMBTORTURE4VERSION=`eval $SMBTORTURE4 --version`
+	fi
+	if [ -n "$SMBTORTURE4" -a -n "$SMBTORTURE4VERSION" ];then
+		echo "Using SMBTORTURE4: $SMBTORTURE4BINARY"
+		echo "Version: $SMBTORTURE4VERSION"
+		. $SCRIPTDIR/test_posix_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" ""
+	else
+		echo "Skip Tests with Samba4's smbtorture"
+		echo "Try to compile with --with-smbtorture4-path=PATH to enable"
+	fi
+
+)
+

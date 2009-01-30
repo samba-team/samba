@@ -2954,7 +2954,9 @@ selftestdir = ../selftest
 S3_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin"
 
 selftest:: all torture timelimit
-	@$(S3_LD_LIBPATH_OVERRIDE) PERL="$(PERL)" \
+	@LIB_PATH_VAR=$(LIB_PATH_VAR) $(S3_LD_LIBPATH_OVERRIDE) \
+		SAMBA4SHAREDDIR="$(builddir)/bin/shared" SMBTORTURE4=$(smbtorture4_path) \
+		PERL="$(PERL)" PYTHON="$(PYTHON)" \
 		$(PERL) $(selftestdir)/selftest.pl \
 		--prefix=${selftest_prefix} --target=samba3 \
 		--testlist="$(srcdir)/selftest/tests.sh|" \
