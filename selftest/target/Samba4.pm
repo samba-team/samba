@@ -751,10 +751,14 @@ nogroup:x:65534:nobody
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
 		NCALRPCDIR => $ncalrpcdir,
 		LOCKDIR => $lockdir,
+		SERVERCONFFILE => $conffile,
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface,
 		NSS_WRAPPER_PASSWD => $nsswrap_passwd,
 		NSS_WRAPPER_GROUP => $nsswrap_group,
+		SMBD_TEST_FIFO => "$prefix/smbd_test.fifo",
+		SMBD_TEST_LOG => "$prefix/smbd_test.log",
+		SMBD_TEST_LOG_POS => 0,
 	};
 
 	if (defined($self->{ldap})) {
@@ -812,10 +816,6 @@ sub provision_member($$$)
 
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
-	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
-	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
-	$ret->{SMBD_TEST_LOG_POS} = 0;
-
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
@@ -841,9 +841,6 @@ sub provision_dc($$)
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
 
-	$ret->{SMBD_TEST_FIFO} = "$prefix/server_test.fifo";
-	$ret->{SMBD_TEST_LOG} = "$prefix/server_test.log";
-	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
 }
 

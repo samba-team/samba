@@ -572,16 +572,6 @@ sub write_clientconf($$)
 	if (defined($vars->{REALM})) {
 		print CF "\trealm = $vars->{REALM}\n";
 	}
-	if (defined($vars->{NCALRPCDIR})) {
-		print CF "\tncalrpc dir = $vars->{NCALRPCDIR}\n";
-	}
-	if (defined($vars->{PIDDIR})) {
-		print CF "\tpid directory = $vars->{PIDDIR}\n";
-	}
-	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
-		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
-		print CF "\twinbindd:socket dir = $vars->{WINBINDD_SOCKET_DIR}\n";
-	}
 	if ($opt_socket_wrapper) {
 		print CF "\tinterfaces = $interfaces\n";
 	}
@@ -706,6 +696,17 @@ $| = 1;
 
 my %running_envs = ();
 
+sub get_running_env($)
+{
+	my ($name) = @_;
+
+	my $envname = $name;
+
+	$envname =~ s/:.*//;
+
+	return $running_envs{$envname};
+}
+
 my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",
@@ -743,13 +744,22 @@ $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 
 sub setup_env($)
 {
-	my ($envname) = @_;
+	my ($name) = @_;
 
-	my $testenv_vars;
+	my $testenv_vars = undef;
+
+	my $envname = $name;
+	my $option = $name;
+
+	$envname =~ s/:.*//;
+	$option =~ s/^[^:]*://;
+
+	$option = "client" if $option eq "";
+
 	if ($envname eq "none") {
-		$testenv_vars = {};
-	} elsif (defined($running_envs{$envname})) {
-		$testenv_vars = $running_envs{$envname};
+		$testenv_vars = \{};
+	} elsif (defined(get_running_env($envname))) {
+		$testenv_vars = get_running_env($envname);
 		if (not $target->check_env($testenv_vars)) {
 			$testenv_vars = undef;
 		}
@@ -761,8 +771,16 @@ sub setup_env($)
 
 	$running_envs{$envname} = $testenv_vars;
 
-	SocketWrapper::set_default_iface(6);
-	write_clientconf($conffile, $testenv_vars);
+	if ($option eq "local") {
+		SocketWrapper::set_default_iface($testenv_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+		$ENV{SMB_CONF_PATH} = $testenv_vars->{SERVERCONFFILE};
+	} elsif ($option eq "client") {
+		SocketWrapper::set_default_iface(6);
+		write_clientconf($conffile, $testenv_vars);
+		$ENV{SMB_CONF_PATH} = $conffile;
+	} else {
+		die("Unknown option[$option] for envname[$envname]");
+	}
 
 	foreach (@exported_envvars) {
 		if (defined($testenv_vars->{$_})) {
@@ -792,21 +810,21 @@ sub getlog_env($)
 {
 	my ($envname) = @_;
 	return "" if ($envname eq "none");
-	return $target->getlog_env($running_envs{$envname});
+	return $target->getlog_env(get_running_env($envname));
 }
 
 sub check_env($)
 {
 	my ($envname) = @_;
 	return 1 if ($envname eq "none");
-	return $target->check_env($running_envs{$envname});
+	return $target->check_env(get_running_env($envname));
 }
 
 sub teardown_env($)
 {
 	my ($envname) = @_;
 	return if ($envname eq "none");
-	$target->teardown_env($running_envs{$envname});
+	$target->teardown_env(get_running_env($envname));
 	delete $running_envs{$envname};
 }
 
