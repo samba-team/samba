@@ -205,17 +205,33 @@ ctdb_check_tcp_ports() {
   shift
   wait_ports="$*"
   [ -z "$wait_ports" ] && return;
+
+  # check availability of netcat or netstat first
+  NETCAT=""
+  NETSTAT=""
+  if [ -x /usr/bin/netcat ]; then
+      NETCAT=/usr/bin/netcat
+  elif [ -x /bin/netcat ]; then
+      NETCAT=/bin/netcat
+  elif [ -x /usr/bin/nc ]; then
+      NETCAT=/usr/bin/nc
+  elif [ -x /bin/nc ]; then
+      NETCAT=/bin/nc
+  elif [ -x /usr/bin/netstat ]; then
+      NETSTAT=/usr/bin/netstat
+  elif [ -x /bin/netstat ]; then
+      NETSTAT=/bin/netstat
+  fi
+
   for p in $wait_ports; do
       all_ok=1
-      if [ -x /usr/bin/netcat ]; then
-          /usr/bin/netcat -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ -x /usr/bin/nc ]; then
-          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ -x /usr/bin/netstat ]; then
-          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
-      elif [ -x /bin/netstat ]; then
-          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
+
+      if [ "x${NETCAT}" != "x" ]; then
+          ${NETCAT} -z 127.0.0.1 $p > /dev/null || all_ok=0
+      elif [ "x${NETSTAT}" != "x" ]; then
+          ( ${NETSTAT} -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
       fi
+
       [ $all_ok -eq 1 ] || {
 	  echo "ERROR: $service_name tcp port $p is not responding"
 	  exit 1
