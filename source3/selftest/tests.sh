@@ -44,44 +44,88 @@ normalize_testname() {
 	echo $name | tr "A-Z-" "a-z."
 }
 
+TEST_FUNCTIONS_SH="INCLUDED"
+testit() {
+	name=$1
+	shift 1
+	cmdline="$*"
+
+	plantest "`normalize_testname $testitprefix$name`" $testitenv $cmdline
+	return
+}
+
+testok() {
+	true
+	return
+}
+
 BINDIR=`dirname $0`/../bin
+export BINDIR
+
 SCRIPTDIR=`dirname $0`/../script/tests
 export SCRIPTDIR
 
-plantest "talloctort3" none $VALGRIND $BINDIR/talloctort
-plantest "replacetort3" none $VALGRIND $BINDIR/replacetort
-plantest "tdbtorture3" none $VALGRIND $BINDIR/tdbtorture
-plantest "smbconftort3" none $VALGRIND $BINDIR/smbconftort -s \$SMB_CONF_PATH
+CONFIGURATION="--configfile \$SMB_CONF_PATH"
+export CONFIGURATION
 
-tests="FDPASS LOCK1 LOCK2 LOCK3 LOCK4 LOCK5 LOCK6 LOCK7"
-tests="$tests UNLINK BROWSE ATTR TRANS2 TORTURE "
-tests="$tests OPLOCK1 OPLOCK2 OPLOCK3"
-tests="$tests DIR DIR1 TCON TCONDEV RW1 RW2 RW3"
-tests="$tests OPEN XCOPY RENAME DELETE PROPERTIES W2K"
-tests="$tests TCON2 IOCTL CHKPATH FDSESS LOCAL-SUBSTITUTE"
+CONFFILE="\$SMB_CONF_PATH"
+export CONFFILE
 
-for t in $tests; do
-    name=`normalize_testname smbtorture3.plain.$t`
-    plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
-done
+SERVER="\$SERVER"
+export SERVER
 
-for t in $tests; do
-    name=`normalize_testname smbtorture3.crypt.$t`
-    plantest "$name" dc $VALGRIND $BINDIR/smbtorture //\$SERVER/tmp -U\$USERNAME%\$PASSWORD $t
-done
+USERNAME="\$USERNAME"
+export USERNAME
+
+PASSWORD="\$PASSWORD"
+export PASSWORD
+
+(
+	shift $#
+	testitprefix="local_s3."
+	testitenv="none"
+	. $SCRIPTDIR/test_local_s3.sh
+)
+
+(
+	shift $#
+	testitprefix="smbtorture_s3.plain."
+	testitenv="dc"
+	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD ""
+)
+
+(
+	shift $#
+	testitprefix="smbtorture_s3.crypt."
+	testitenv="dc"
+	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "-e"
+)
+
+(
+	shift $#
+	testitprefix="wbinfo_s3."
+	testitenv="dc:local"
+	. $SCRIPTDIR/test_wbinfo_s3.sh \$WORKGROUP \$SERVER \$USERNAME \$PASSWORD
+)
+
+(
+	shift $#
+	testitprefix="ntlm_auth_s3."
+	testitenv="dc:local"
+	. $SCRIPTDIR/test_ntlm_auth_s3.sh
+)
 
 # plain
-plantest "blackbox.smbclient3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
-plantest "blackbox.smbclient3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
-plantest "blackbox.smbclient3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
+plantest "blackbox.smbclient_s3.plain" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD
+plantest "blackbox.smbclient_s3.plain member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD
+plantest "blackbox.smbclient_s3.plain domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD
 
 # encrypted
-plantest "blackbox.smbclient3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD "-e"
+plantest "blackbox.smbclient_s3.crypt" dc BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$USERNAME \$PASSWORD "-e"
 
 # these don't work yet
-#plantest "blackbox.smbclient3.crypt member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "-e"
-#plantest "blackbox.smbclient3.crypt domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "-e"
+#plantest "blackbox.smbclient_s3.crypt member creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$SERVER\\\\\$USERNAME \$PASSWORD "-e"
+#plantest "blackbox.smbclient_s3.crypt domain creds" member BINDIR="$BINDIR" script/tests/test_smbclient_s3.sh \$SERVER \$SERVER_IP \$DOMAIN\\\\\$DC_USERNAME \$DC_PASSWORD "-e"
 
-plantest "blackbox.wbinfo3" dc BINDIR="$BINDIR" script/tests/test_wbinfo_s3.sh \$DOMAIN \$SERVER \$USERNAME \$PASSWORD
-plantest "blackbox.net3" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
+plantest "blackbox.net_s3" dc BINDIR="$BINDIR" SCRIPTDIR="$SCRIPTDIR" script/tests/test_net_s3.sh
 
