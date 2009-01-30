@@ -7201,6 +7201,7 @@ void remove_from_common_flags2(uint32 v);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
 size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
+bool req_is_in_chain(struct smb_request *req);
 void check_reload(time_t t);
 void smbd_process(void);
 
@@ -7275,6 +7276,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, bool has_wild);
 void reply_unlink(struct smb_request *req);
 void send_file_readbraw(connection_struct *conn,
+			struct smb_request *req,
 			files_struct *fsp,
 			SMB_OFF_T startpos,
 			size_t nread,

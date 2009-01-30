@@ -47,11 +47,6 @@ typedef struct blocking_lock_record {
  Determine if this is a secondary element of a chained SMB.
   **************************************************************************/
 
-static bool in_chained_smb(void)
-{
-	return (chain_size != 0);
-}
-
 static void received_unlock_msg(struct messaging_context *msg,
 				void *private_data,
 				uint32_t msg_type,
@@ -144,7 +139,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	blocking_lock_record *blr;
 	NTSTATUS status;
 
-	if(in_chained_smb() ) {
+	if(req_is_in_chain(req)) {
 		DEBUG(0,("push_blocking_lock_request: cannot queue a chained request (currently).\n"));
 		return False;
 	}

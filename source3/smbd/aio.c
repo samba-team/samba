@@ -141,8 +141,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
-	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
+        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return False;
 	}
 
@@ -238,8 +237,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
-	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
+        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return False;
 	}
 

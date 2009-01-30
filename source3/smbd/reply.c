@@ -2729,6 +2729,7 @@ static void reply_readbraw_error(void)
 ****************************************************************************/
 
 void send_file_readbraw(connection_struct *conn,
+			struct smb_request *req,
 			files_struct *fsp,
 			SMB_OFF_T startpos,
 			size_t nread,
@@ -2745,7 +2746,7 @@ void send_file_readbraw(connection_struct *conn,
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL) &&
+	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
@@ -2963,7 +2964,7 @@ void reply_readbraw(struct smb_request *req)
 		(unsigned long)mincount,
 		(unsigned long)nread ) );
 
-	send_file_readbraw(conn, fsp, startpos, nread, mincount);
+	send_file_readbraw(conn, req, fsp, startpos, nread, mincount);
 
 	DEBUG(5,("reply_readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -3229,7 +3230,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((chain_size == 0) && (CVAL(req->vwv+0, 0) == 0xFF) &&
+	if (!req_is_in_chain(req) &&
 	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];

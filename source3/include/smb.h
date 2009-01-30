@@ -1550,11 +1550,6 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 #define COPYBUF_SIZE (8*1024)
 
 /*
- * Used in chaining code.
- */
-extern int chain_size;
-
-/*
  * Map the Core and Extended Oplock requesst bits down
  * to common bits (EXCLUSIVE_OPLOCK & BATCH_OPLOCK).
  */
