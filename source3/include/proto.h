@@ -2472,6 +2472,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 NTSTATUS cli_echo_recv(struct async_req *req);
 NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
 bool cli_ucs2(struct cli_state *cli);
+bool is_andx_req(uint8_t cmd);
 
 /* The following definitions come from libsmb/clierror.c  */
 
