@@ -7,6 +7,7 @@ AC_DEFUN(BUILD_WITH_SHARED_BUILD_DIR,
     if test x"$with_shared_build_dir" != x; then
         sharedbuilddir=$with_shared_build_dir
         CFLAGS="$CFLAGS -I$with_shared_build_dir/include"
+        CPPFLAGS="$CPPFLAGS -I$with_shared_build_dir/include"
         LDFLAGS="$LDFLAGS -L$with_shared_build_dir/lib"
     fi
     AC_SUBST(sharedbuilddir)
