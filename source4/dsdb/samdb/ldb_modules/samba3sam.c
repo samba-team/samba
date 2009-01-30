@@ -6,9 +6,7 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_errors.h"
+#include "ldb/include/ldb_module.h"
 #include "ldb/ldb_map/ldb_map.h"
 #include "system/passwd.h"
 
@@ -118,20 +116,23 @@ static void generate_sambaPrimaryGroupSID(struct ldb_module *module, const char 
 static struct ldb_val convert_uid_samaccount(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
-	ldb_handler_copy(module->ldb, ctx, val, &out);
+	out = ldb_val_dup(ctx, val);
 
 	return out;
 }
 
 static struct ldb_val lookup_homedir(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
+	struct ldb_context *ldb;
 	struct passwd *pwd; 
 	struct ldb_val retval;
-	
+
+	ldb = ldb_module_get_ctx(module);
+
 	pwd = getpwnam((char *)val->data);
 
 	if (!pwd) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "Unable to lookup '%s' in passwd", (char *)val->data);
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "Unable to lookup '%s' in passwd", (char *)val->data);
 		return *talloc_zero(ctx, struct ldb_val);
 	}
 
@@ -145,7 +146,7 @@ static struct ldb_val lookup_gid(struct ldb_module *module, TALLOC_CTX *ctx, con
 {
 	struct passwd *pwd; 
 	struct ldb_val retval;
-	
+
 	pwd = getpwnam((char *)val->data);
 
 	if (!pwd) {

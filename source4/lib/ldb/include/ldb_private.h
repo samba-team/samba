@@ -160,9 +160,6 @@ char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n
 
 void ldb_dump_results(struct ldb_context *ldb, struct ldb_result *result, FILE *f);
 
-#define LDB_SEQ_GLOBAL_SEQUENCE    0x01
-#define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02
-
 
 /* The following definitions come from lib/ldb/common/ldb_modules.c  */
 

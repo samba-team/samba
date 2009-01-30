@@ -33,9 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb/include/ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 
 /* search */
@@ -79,6 +77,7 @@ static int show_deleted_search_callback(struct ldb_request *req,
 
 static int show_deleted_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_control *control;
 	struct ldb_control **saved_controls;
 	struct show_deleted_search_request *ar;
@@ -86,6 +85,8 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 	char *old_filter;
 	char *new_filter;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ar = talloc_zero(req, struct show_deleted_search_request);
 	if (ar == NULL) {
@@ -102,7 +103,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 		new_filter = talloc_asprintf(ar, "(&(!(isDeleted=TRUE))%s)",
 						 old_filter);
 
-		ret = ldb_build_search_req(&down_req, module->ldb, ar,
+		ret = ldb_build_search_req(&down_req, ldb, ar,
 					   req->op.search.base,
 					   req->op.search.scope,
 					   new_filter,
@@ -112,7 +113,7 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 					   req);
 
 	} else {
-		ret = ldb_build_search_req_ex(&down_req, module->ldb, ar,
+		ret = ldb_build_search_req_ex(&down_req, ldb, ar,
 					      req->op.search.base,
 					      req->op.search.scope,
 					      req->op.search.tree,
@@ -136,11 +137,14 @@ static int show_deleted_search(struct ldb_module *module, struct ldb_request *re
 
 static int show_deleted_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SHOW_DELETED_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"extended_dn: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

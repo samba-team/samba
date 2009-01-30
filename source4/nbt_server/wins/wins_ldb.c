@@ -31,16 +31,15 @@
 #include "lib/events/events.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_private.h"
+#include "lib/ldb/include/ldb_module.h"
 #include "system/network.h"
 #include "lib/socket/netif.h"
 #include "param/param.h"
 
 static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 {
-	struct winsdb_handle *h = talloc_get_type(ldb_get_opaque(module->ldb, "winsdb_handle"),
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct winsdb_handle *h = talloc_get_type(ldb_get_opaque(ldb, "winsdb_handle"),
 						  struct winsdb_handle);
 	const struct ldb_message *msg;
 
@@ -63,7 +62,7 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	if (!h) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL, "%s", "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL, "%s", "WINS_LDB: INTERNAL ERROR: no winsdb_handle present!");
 		return LDB_ERR_OTHER;
 	}
 
@@ -74,39 +73,40 @@ static int wins_ldb_verify(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 
 	case WINSDB_HANDLE_CALLER_ADMIN:
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "%s\n", "WINS_LDB: TODO verify add/modify for WINSDB_HANDLE_CALLER_ADMIN");
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "%s\n", "WINS_LDB: TODO verify add/modify for WINSDB_HANDLE_CALLER_ADMIN");
 		return ldb_next_request(module, req);
 	}
 
 	return LDB_ERR_OTHER;
 }
 
-static int wins_ldb_init(struct ldb_module *ctx)
+static int wins_ldb_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct winsdb_handle *h;
 	const char *owner;
-	struct loadparm_context *lp_ctx = ldb_get_opaque(ctx->ldb, "loadparm");
+	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
 
-	ctx->private_data = NULL;
+	ldb_module_set_private(module, NULL);
 
 	owner = lp_parm_string(lp_ctx, NULL, "winsdb", "local_owner");
 	if (!owner) {
 		struct interface *ifaces;
-		load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
+		load_interfaces(module, lp_interfaces(lp_ctx), &ifaces);
 		owner = iface_n_ip(ifaces, 0);
 		if (!owner) {
 			owner = "0.0.0.0";
 		}
 	}
 
-	h = talloc_zero(ctx, struct winsdb_handle);
+	h = talloc_zero(module, struct winsdb_handle);
 	if (!h) goto failed;
-	h->ldb		= ctx->ldb;
+	h->ldb		= ldb;
 	h->caller	= WINSDB_HANDLE_CALLER_ADMIN;
 	h->local_owner	= talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;
 
-	return ldb_set_opaque(ctx->ldb, "winsdb_handle", h);
+	return ldb_set_opaque(ldb, "winsdb_handle", h);
 
 failed:
 	talloc_free(h);

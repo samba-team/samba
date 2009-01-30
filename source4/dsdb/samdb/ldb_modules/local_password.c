@@ -31,8 +31,7 @@
 
 #include "includes.h"
 #include "libcli/ldap/ldap.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "dsdb/samdb/ldb_modules/password_modules.h"
@@ -89,11 +88,14 @@ struct lpdb_context {
 static struct lpdb_context *lpdb_init_context(struct ldb_module *module,
 					      struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct lpdb_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct lpdb_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -105,9 +107,11 @@ static struct lpdb_context *lpdb_init_context(struct ldb_module *module,
 
 static int lpdb_local_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct lpdb_context *ac;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -119,7 +123,7 @@ static int lpdb_local_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb, "Unexpected reply type");
+		ldb_set_errstring(ldb, "Unexpected reply type");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -141,6 +145,7 @@ static int lpdb_add_callback(struct ldb_request *req,
 
 static int local_password_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_message *remote_message;
 	struct ldb_request *remote_req;
 	struct lpdb_context *ac;
@@ -148,14 +153,15 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	int ret;
 	int i;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "local_password_add\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_add\n");
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
 
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.add.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -173,7 +179,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 
 	/* TODO: remove this when userPassword will be in schema */
 	if (!ldb_msg_check_string_attribute(req->op.add.message, "objectClass", "person")) {
-		ldb_asprintf_errstring(module->ldb,
+		ldb_asprintf_errstring(ldb,
 					"Cannot relocate a password on entry: %s, does not have objectClass 'person'",
 					ldb_dn_get_linearized(req->op.add.message->dn));
 		return LDB_ERR_OBJECT_CLASS_VIOLATION;
@@ -213,7 +219,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	 * to add the password.  This may be changed to an 'add and
 	 * search', to allow the directory to create the objectGUID */
 	if (ldb_msg_find_ldb_val(req->op.add.message, "objectGUID") == NULL) {
-		ldb_set_errstring(module->ldb,
+		ldb_set_errstring(ldb,
 				  "no objectGUID found in search: "
 				  "local_password module must be "
 				  "onfigured below objectGUID module!\n");
@@ -221,7 +227,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 	}
 
 	ac->local_message->dn = ldb_dn_new(ac->local_message,
-					   module->ldb, LOCAL_BASE);
+					   ldb, LOCAL_BASE);
 	if ((ac->local_message->dn == NULL) ||
 	    ( ! ldb_dn_add_child_fmt(ac->local_message->dn,
 				     PASSWORD_GUID_ATTR "=%s",
@@ -230,7 +236,7 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_add_req(&remote_req, module->ldb, ac,
+	ret = ldb_build_add_req(&remote_req, ldb, ac,
 				remote_message,
 				req->controls,
 				ac, lpdb_add_callback,
@@ -247,11 +253,13 @@ static int local_password_add(struct ldb_module *module, struct ldb_request *req
 static int lpdb_add_callback(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *local_req;
 	struct lpdb_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -263,7 +271,7 @@ static int lpdb_add_callback(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb, "Unexpected reply type");
+		ldb_set_errstring(ldb, "Unexpected reply type");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -271,7 +279,7 @@ static int lpdb_add_callback(struct ldb_request *req,
 
 	ac->remote_done = talloc_steal(ac, ares);
 
-	ret = ldb_build_add_req(&local_req, ac->module->ldb, ac,
+	ret = ldb_build_add_req(&local_req, ldb, ac,
 				ac->local_message,
 				NULL,
 				ac, lpdb_local_callback,
@@ -298,20 +306,22 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 
 static int local_password_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct lpdb_context *ac;
 	struct ldb_message *remote_message;
 	struct ldb_request *remote_req;
 	int ret;
 	int i;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "local_password_modify\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_modify\n");
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
 	}
 
 	/* If the caller is manipulating the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.mod.message->dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -354,7 +364,7 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 		ldb_msg_remove_attr(ac->local_message, remote_message->elements[i].name);
 	}
 
-	ret = ldb_build_mod_req(&remote_req, module->ldb, ac,
+	ret = ldb_build_mod_req(&remote_req, ldb, ac,
 				remote_message,
 				req->controls,
 				ac, lpdb_modify_callabck,
@@ -371,12 +381,14 @@ static int local_password_modify(struct ldb_module *module, struct ldb_request *
 static int lpdb_modify_callabck(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectGUID", "objectClass", NULL };
 	struct ldb_request *search_req;
 	struct lpdb_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -388,7 +400,7 @@ static int lpdb_modify_callabck(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb, "Unexpected reply type");
+		ldb_set_errstring(ldb, "Unexpected reply type");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -397,7 +409,7 @@ static int lpdb_modify_callabck(struct ldb_request *req,
 	ac->remote_done = talloc_steal(ac, ares);
 
 	/* prepare the search operation */
-	ret = ldb_build_search_req(&search_req, ac->module->ldb, ac,
+	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   ac->req->op.mod.message->dn, LDB_SCOPE_BASE,
 				   "(objectclass=*)", attrs,
 				   NULL,
@@ -421,6 +433,7 @@ static int lpdb_modify_callabck(struct ldb_request *req,
 static int lpdb_mod_search_callback(struct ldb_request *req,
 				    struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *local_req;
 	struct lpdb_context *ac;
 	struct ldb_dn *local_dn;
@@ -428,6 +441,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -441,7 +455,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->remote != NULL) {
-			ldb_set_errstring(ac->module->ldb, "Too many results");
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -465,7 +479,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 		/* if it is not an entry of type person this is an error */
 		/* TODO: remove this when sambaPassword will be in schema */
 		if (ac->remote == NULL) {
-			ldb_asprintf_errstring(ac->module->ldb,
+			ldb_asprintf_errstring(ldb,
 				"entry just modified (%s) not found!",
 				ldb_dn_get_linearized(req->op.search.base));
 			return ldb_module_done(ac->req, NULL, NULL,
@@ -482,7 +496,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 
 		if (ldb_msg_find_ldb_val(ac->remote->message,
 					 "objectGUID") == NULL) {
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb,
 					  "no objectGUID found in search: "
 					  "local_password module must be "
 					  "configured below objectGUID "
@@ -494,7 +508,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 		objectGUID = samdb_result_guid(ac->remote->message,
 						"objectGUID");
 
-		local_dn = ldb_dn_new(ac, ac->module->ldb, LOCAL_BASE);
+		local_dn = ldb_dn_new(ac, ldb, LOCAL_BASE);
 		if ((local_dn == NULL) ||
 		    ( ! ldb_dn_add_child_fmt(local_dn,
 					    PASSWORD_GUID_ATTR "=%s",
@@ -504,7 +518,7 @@ static int lpdb_mod_search_callback(struct ldb_request *req,
 		}
 		ac->local_message->dn = local_dn;
 
-		ret = ldb_build_mod_req(&local_req, ac->module->ldb, ac,
+		ret = ldb_build_mod_req(&local_req, ldb, ac,
 					ac->local_message,
 					NULL,
 					ac, lpdb_local_callback,
@@ -535,11 +549,13 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 static int local_password_delete(struct ldb_module *module,
 				 struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *remote_req;
 	struct lpdb_context *ac;
 	int ret;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "local_password_delete\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_delete\n");
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
@@ -548,7 +564,7 @@ static int local_password_delete(struct ldb_module *module,
 
 	/* If the caller is manipulating the local passwords directly,
 	 * let them pass */
-	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.del.dn) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -559,7 +575,7 @@ static int local_password_delete(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_del_req(&remote_req, module->ldb, ac,
+	ret = ldb_build_del_req(&remote_req, ldb, ac,
 				req->op.del.dn,
 				req->controls,
 				ac, lpdb_delete_callabck,
@@ -576,12 +592,14 @@ static int local_password_delete(struct ldb_module *module,
 static int lpdb_delete_callabck(struct ldb_request *req,
 				struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	static const char * const attrs[] = { "objectGUID", "objectClass", NULL };
 	struct ldb_request *search_req;
 	struct lpdb_context *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -593,7 +611,7 @@ static int lpdb_delete_callabck(struct ldb_request *req,
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb, "Unexpected reply type");
+		ldb_set_errstring(ldb, "Unexpected reply type");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -602,7 +620,7 @@ static int lpdb_delete_callabck(struct ldb_request *req,
 	ac->remote_done = talloc_steal(ac, ares);
 
 	/* prepare the search operation */
-	ret = ldb_build_search_req(&search_req, ac->module->ldb, ac,
+	ret = ldb_build_search_req(&search_req, ldb, ac,
 				   ac->req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectclass=*)", attrs,
 				   NULL,
@@ -626,6 +644,7 @@ static int lpdb_delete_callabck(struct ldb_request *req,
 static int lpdb_del_search_callback(struct ldb_request *req,
 				    struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *local_req;
 	struct lpdb_context *ac;
 	struct ldb_dn *local_dn;
@@ -633,6 +652,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -646,7 +666,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->remote != NULL) {
-			ldb_set_errstring(ac->module->ldb, "Too many results");
+			ldb_set_errstring(ldb, "Too many results");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -686,7 +706,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 
 		if (ldb_msg_find_ldb_val(ac->remote->message,
 					 "objectGUID") == NULL) {
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb,
 					  "no objectGUID found in search: "
 					  "local_password module must be "
 					  "configured below objectGUID "
@@ -698,7 +718,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 		objectGUID = samdb_result_guid(ac->remote->message,
 						"objectGUID");
 
-		local_dn = ldb_dn_new(ac, ac->module->ldb, LOCAL_BASE);
+		local_dn = ldb_dn_new(ac, ldb, LOCAL_BASE);
 		if ((local_dn == NULL) ||
 		    ( ! ldb_dn_add_child_fmt(local_dn,
 					    PASSWORD_GUID_ATTR "=%s",
@@ -707,7 +727,7 @@ static int lpdb_del_search_callback(struct ldb_request *req,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
 
-		ret = ldb_build_del_req(&local_req, ac->module->ldb, ac,
+		ret = ldb_build_del_req(&local_req, ldb, ac,
 					local_dn,
 					NULL,
 					ac, lpdb_local_callback,
@@ -736,10 +756,13 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 
 static int lpdb_local_search(struct lpdb_context *ac)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *local_req;
 	int ret;
 
-	ret = ldb_build_search_req(&local_req, ac->module->ldb, ac,
+	ldb = ldb_module_get_ctx(ac->module);
+
+	ret = ldb_build_search_req(&local_req, ldb, ac,
 				   ac->current->local_dn,
 				   LDB_SCOPE_BASE,
 				   "(objectclass=*)",
@@ -757,6 +780,7 @@ static int lpdb_local_search(struct lpdb_context *ac)
 static int lpdb_local_search_callback(struct ldb_request *req,
 					struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct lpdb_context *ac;
 	struct ldb_reply *merge;
 	struct lpdb_reply *lr;
@@ -764,6 +788,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 	int i;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -781,7 +806,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 	case LDB_REPLY_ENTRY:
 
 		if (lr->remote == NULL) {
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb,
 				"Too many results for password entry search!");
 			talloc_free(ares);
 			return ldb_module_done(ac->req, NULL, NULL,
@@ -868,6 +893,7 @@ static int lpdb_local_search_callback(struct ldb_request *req,
 static int lpdb_remote_search_callback(struct ldb_request *req,
 					struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct lpdb_context *ac;
 	struct ldb_dn *local_dn;
 	struct GUID objectGUID;
@@ -875,6 +901,7 @@ static int lpdb_remote_search_callback(struct ldb_request *req,
 	int ret;
 
 	ac = talloc_get_type(req->context, struct lpdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -903,7 +930,7 @@ static int lpdb_remote_search_callback(struct ldb_request *req,
 		}
 
 		if (ldb_msg_find_ldb_val(ares->message, "objectGUID") == NULL) {
-			ldb_set_errstring(ac->module->ldb, 
+			ldb_set_errstring(ldb, 
 					  "no objectGUID found in search: local_password module must be configured below objectGUID module!\n");
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -919,7 +946,7 @@ static int lpdb_remote_search_callback(struct ldb_request *req,
 			ldb_msg_remove_attr(ares->message, "objectClass");
 		}
 
-		local_dn = ldb_dn_new(ac, ac->module->ldb, LOCAL_BASE);
+		local_dn = ldb_dn_new(ac, ldb, LOCAL_BASE);
 		if ((local_dn == NULL) ||
 		    (! ldb_dn_add_child_fmt(local_dn,
 					    PASSWORD_GUID_ATTR "=%s",
@@ -984,13 +1011,15 @@ static int lpdb_remote_search_callback(struct ldb_request *req,
 
 static int local_password_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *remote_req;
 	struct lpdb_context *ac;
 	int i;
 	int ret;
 	const char * const *search_attrs = NULL;
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "local_password_search\n");
+	ldb = ldb_module_get_ctx(module);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "local_password_search\n");
 
 	if (ldb_dn_is_special(req->op.search.base)) { /* do not manipulate our control entries */
 		return ldb_next_request(module, req);
@@ -999,7 +1028,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 	search_attrs = NULL;
 
 	/* If the caller is searching for the local passwords directly, let them pass */
-	if (ldb_dn_compare_base(ldb_dn_new(req, module->ldb, LOCAL_BASE),
+	if (ldb_dn_compare_base(ldb_dn_new(req, ldb, LOCAL_BASE),
 				req->op.search.base) == 0) {
 		return ldb_next_request(module, req);
 	}
@@ -1044,7 +1073,7 @@ static int local_password_search(struct ldb_module *module, struct ldb_request *
 		search_attrs = req->op.search.attrs;
 	}
 
-	ret = ldb_build_search_req_ex(&remote_req, module->ldb, ac,
+	ret = ldb_build_search_req_ex(&remote_req, ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,

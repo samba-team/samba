@@ -695,6 +695,9 @@ enum ldb_sequence_type {
 	LDB_SEQ_NEXT
 };
 
+#define LDB_SEQ_GLOBAL_SEQUENCE    0x01
+#define LDB_SEQ_TIMESTAMP_SEQUENCE 0x02
+
 struct ldb_seqnum_request {
 	enum ldb_sequence_type type;
 };
