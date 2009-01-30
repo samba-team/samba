@@ -478,6 +478,9 @@ arg_match_long(struct getargs *args, size_t num_args,
     default:
 	abort ();
     }
+
+    /* not reached */
+    return ARG_ERR_NO_MATCH;
 }
 
 static int
