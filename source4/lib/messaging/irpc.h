@@ -48,10 +48,10 @@ struct irpc_message {
 typedef NTSTATUS (*irpc_function_t)(struct irpc_message *, void *r);
 
 /* register a server function with the irpc messaging system */
-#define IRPC_REGISTER(msg_ctx, pipename, funcname, function, private) \
+#define IRPC_REGISTER(msg_ctx, pipename, funcname, function, private_data) \
    irpc_register(msg_ctx, &ndr_table_ ## pipename, \
                           NDR_ ## funcname, \
-			  (irpc_function_t)function, private)
+			  (irpc_function_t)function, private_data)
 
 /* make a irpc call */
 #define IRPC_CALL(msg_ctx, server_id, pipename, funcname, ptr, ctx) \
@@ -82,16 +82,16 @@ struct irpc_request {
 
 struct loadparm_context;
 
-typedef void (*msg_callback_t)(struct messaging_context *msg, void *private, 
+typedef void (*msg_callback_t)(struct messaging_context *msg, void *private_data,
 			       uint32_t msg_type, 
 			       struct server_id server_id, DATA_BLOB *data);
 
 NTSTATUS messaging_send(struct messaging_context *msg, struct server_id server, 
 			uint32_t msg_type, DATA_BLOB *data);
-NTSTATUS messaging_register(struct messaging_context *msg, void *private,
+NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
 			    uint32_t msg_type, 
 			    msg_callback_t fn);
-NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
+NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_data,
 				msg_callback_t fn, uint32_t *msg_type);
 struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, 
 					 const char *dir,
@@ -104,14 +104,14 @@ struct messaging_context *messaging_client_init(TALLOC_CTX *mem_ctx,
 					 struct tevent_context *ev);
 NTSTATUS messaging_send_ptr(struct messaging_context *msg, struct server_id server, 
 			    uint32_t msg_type, void *ptr);
-void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private);
+void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private_data);
 
 
 
 
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct ndr_interface_table *table, 
-		       int call, irpc_function_t fn, void *private);
+		       int call, irpc_function_t fn, void *private_data);
 struct irpc_request *irpc_call_send(struct messaging_context *msg_ctx, 
 				    struct server_id server_id, 
 				    const struct ndr_interface_table *table, 

@@ -54,9 +54,9 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
   a deferred reply to echodata
 */
 static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te, 
-			      struct timeval t, void *private)
+			      struct timeval t, void *private_data)
 {
-	struct irpc_message *irpc = talloc_get_type(private, struct irpc_message);
+	struct irpc_message *irpc = talloc_get_type(private_data, struct irpc_message);
 	struct echo_EchoData *r = irpc->data;
 	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
 	if (r->out.out_data == NULL) {
