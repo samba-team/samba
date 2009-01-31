@@ -22,8 +22,6 @@ installdirs::
 
 installheaders:: installdirs
 	cp $(srcdir)/tevent.h $(DESTDIR)$(includedir)
-	cp $(srcdir)/tevent_internal.h $(DESTDIR)$(includedir)
-	cp $(srcdir)/tevent_util.h $(DESTDIR)$(includedir)
 
 installlibs:: installdirs
 	cp tevent.pc $(DESTDIR)$(libdir)/pkgconfig
