@@ -2281,8 +2281,11 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	int num_users=0;
 	int errflags=0;
 	int i, resume_context, cli_buf_size;
-	struct pdb_search *search;
-	struct samr_displayentry *users;
+	uint32_t resume_handle;
+
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle samr_handle, domain_handle;
+	NTSTATUS status;
 
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
@@ -2327,40 +2330,88 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 
-	become_root();
-	search = pdb_search_users(ACB_NORMAL);
-	unbecome_root();
-	if (search == NULL) {
-		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
-		return False;
+	status = rpc_pipe_open_internal(
+		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		conn->server_info, &samr_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
-	become_root();
-	num_users = pdb_search_entries(search, resume_context, 0xffffffff,
-				       &users);
-	unbecome_root();
+	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+
+	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
+					get_global_sam_sid(), &domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
 
 	errflags=NERR_Success;
 
-	for (i=0; i<num_users; i++) {
-		const char *name = users[i].account_name;
+	resume_handle = 0;
 
-		if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)) {
-			strlcpy(p,name,PTR_DIFF(endp,p));
-			DEBUG(10,("api_RNetUserEnum:adding entry %d username "
-				  "%s\n",count_sent,p));
-			p += 21;
-			count_sent++;
-		} else {
-			/* set overflow error */
-			DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
-				  "username %s\n",count_sent,name));
-			errflags=234;
+	while (true) {
+		struct samr_SamArray *sam_entries;
+		uint32_t num_entries;
+
+		status = rpccli_samr_EnumDomainUsers(samr_pipe, talloc_tos(),
+						     &domain_handle,
+						     &resume_handle,
+						     0, &sam_entries, 1,
+						     &num_entries);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+				   "%s\n", nt_errstr(status)));
 			break;
 		}
+
+		if (num_entries == 0) {
+			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+				   "no entries -- done\n"));
+			break;
+		}
+
+		for (i=0; i<num_entries; i++) {
+			const char *name;
+
+			name = sam_entries->entries[i].name.string;
+
+			if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)
+			   &&(strlen(name)<=21)) {
+				strlcpy(p,name,PTR_DIFF(endp,p));
+				DEBUG(10,("api_RNetUserEnum:adding entry %d "
+					  "username %s\n",count_sent,p));
+				p += 21;
+				count_sent++;
+			} else {
+				/* set overflow error */
+				DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
+					  "username %s\n",count_sent,name));
+				errflags=234;
+				break;
+			}
+		}
+
+		if (errflags != NERR_Success) {
+			break;
+		}
+
+		TALLOC_FREE(sam_entries);
 	}
 
-	pdb_search_destroy(search);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
