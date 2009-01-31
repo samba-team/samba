@@ -1131,6 +1131,12 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		return NULL;
 	}
 
+	if (len == 0) {
+		state->nwritten = 0;
+		status = NT_STATUS_OK;
+		goto post_status;
+	}
+
 	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
 		struct pipes_struct *p = talloc_get_type_abort(
 			handle->private_data, struct pipes_struct);

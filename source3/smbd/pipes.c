@@ -150,6 +150,7 @@ void reply_pipe_write(struct smb_request *req)
 	size_t numtowrite = SVAL(req->vwv+1, 0);
 	ssize_t nwritten;
 	const uint8_t *data;
+	NTSTATUS status;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -163,22 +164,12 @@ void reply_pipe_write(struct smb_request *req)
 
 	data = req->buf + 3;
 
-	if (numtowrite == 0) {
-		nwritten = 0;
-	} else {
-		NTSTATUS status;
-		if (!fsp_is_np(fsp)) {
-			reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-			return;
-		}
-		DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n",
-			  (int)fsp->fnum, fsp->fsp_name, (int)numtowrite));
-		status = np_write(fsp->fake_file_handle, data, numtowrite,
-				  &nwritten);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
+	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
+		  fsp->fsp_name, (int)numtowrite));
+	status = np_write(fsp->fake_file_handle, data, numtowrite, &nwritten);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
@@ -213,6 +204,7 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		((SVAL(req->vwv+7, 0) & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
 		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	uint8_t *data;
+	NTSTATUS status;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -229,35 +221,27 @@ void reply_pipe_write_and_X(struct smb_request *req)
 
 	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
 
-	if (numtowrite == 0) {
-		nwritten = 0;
-	} else {
-		NTSTATUS status;
-
-		if(pipe_start_message_raw) {
-			/*
-			 * For the start of a message in named pipe byte mode,
-			 * the first two bytes are a length-of-pdu field. Ignore
-			 * them (we don't trust the client). JRA.
-			 */
-	 	       if(numtowrite < 2) {
-				DEBUG(0,("reply_pipe_write_and_X: start of "
-					 "message set and not enough data "
-					 "sent.(%u)\n",
-					 (unsigned int)numtowrite ));
-				reply_unixerror(req, ERRDOS, ERRnoaccess);
-				return;
-			}
-
-			data += 2;
-			numtowrite -= 2;
-		}                        
-		status = np_write(fsp->fake_file_handle, data, numtowrite,
-				  &nwritten);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
+	if(pipe_start_message_raw) {
+		/*
+		 * For the start of a message in named pipe byte mode,
+		 * the first two bytes are a length-of-pdu field. Ignore
+		 * them (we don't trust the client). JRA.
+		 */
+		if(numtowrite < 2) {
+			DEBUG(0,("reply_pipe_write_and_X: start of message "
+				 "set and not enough data sent.(%u)\n",
+				 (unsigned int)numtowrite ));
+			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
+
+		data += 2;
+		numtowrite -= 2;
+	}
+	status = np_write(fsp->fake_file_handle, data, numtowrite, &nwritten);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		return;
 	}
 
 	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
