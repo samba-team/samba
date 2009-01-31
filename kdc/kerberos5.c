@@ -712,9 +712,11 @@ log_as_req(krb5_context context,
 	   const KDC_REQ_BODY *b)
 {
     krb5_error_code ret;
-    struct rk_strpool *p = NULL;
+    struct rk_strpool *p;
     char *str;
     int i;
+
+    p = rk_strpoolprintf(NULL, "%s", "Client supported enctypes: ");
 
     for (i = 0; i < b->etype.len; i++) {
 	ret = krb5_enctype_to_string(context, b->etype.val[i], &str);
@@ -733,10 +735,6 @@ log_as_req(krb5_context context,
     if (p == NULL)
 	p = rk_strpoolprintf(p, "no encryption types");
 
-    str = rk_strpoolcollect(p);
-    kdc_log(context, config, 0, "Client supported enctypes: %s", str);
-    free(str);
-
     {
 	char *cet;
 	char *set;
@@ -745,21 +743,26 @@ log_as_req(krb5_context context,
 	if(ret == 0) {
 	    ret = krb5_enctype_to_string(context, setype, &set);
 	    if (ret == 0) {
-		kdc_log(context, config, 5, "Using %s/%s", cet, set);
+		p = rk_strpoolprintf(p, ", using %s/%s", cet, set);
 		free(set);
 	    }
 	    free(cet);
 	}
 	if (ret != 0)
-	    kdc_log(context, config, 5, "Using e-types %d/%d", cetype, setype);
+	    p = rk_strpoolprintf(p, ", using enctypes %d/%d",
+				 cetype, setype);
     }
+
+    str = rk_strpoolcollect(p);
+    kdc_log(context, config, 0, "%s", str);
+    free(str);
 
     {
 	char fixedstr[128];
 	unparse_flags(KDCOptions2int(b->kdc_options), asn1_KDCOptions_units(),
 		      fixedstr, sizeof(fixedstr));
 	if(*fixedstr)
-	    kdc_log(context, config, 2, "Requested flags: %s", fixedstr);
+	    kdc_log(context, config, 0, "Requested flags: %s", fixedstr);
     }
 }
 
