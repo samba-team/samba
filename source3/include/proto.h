@@ -6314,6 +6314,10 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const char *client_address,
 		 struct auth_serversupplied_info *server_info,
 		 struct fake_file_handle **phandle);
+struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct fake_file_handle *handle,
+				const uint8_t *data, size_t len);
+NTSTATUS np_write_recv(struct async_req *req, ssize_t *nwritten);
 NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
 		  size_t len, ssize_t *nwritten);
 NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,

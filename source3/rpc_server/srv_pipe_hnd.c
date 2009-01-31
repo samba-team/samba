@@ -1109,32 +1109,119 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	return NT_STATUS_OK;
 }
 
+struct np_write_state {
+	ssize_t nwritten;
+};
+
+static void np_write_done(struct async_req *subreq);
+
+struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct fake_file_handle *handle,
+				const uint8_t *data, size_t len)
+{
+	struct async_req *result, *subreq;
+	struct np_write_state *state;
+	NTSTATUS status;
+
+	DEBUG(6, ("np_write_send: len: %d\n", (int)len));
+	dump_data(50, data, len);
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct np_write_state)) {
+		return NULL;
+	}
+
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
+		struct pipes_struct *p = talloc_get_type_abort(
+			handle->private_data, struct pipes_struct);
+
+		state->nwritten = write_to_internal_pipe(p, (char *)data, len);
+
+		status = (state->nwritten >= 0)
+			? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+		goto post_status;
+	}
+
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
+		struct np_proxy_state *p = talloc_get_type_abort(
+			handle->private_data, struct np_proxy_state);
+
+		state->nwritten = len;
+
+		subreq = sendall_send(state, ev, p->fd, data, len, 0);
+		if (subreq == NULL) {
+			goto fail;
+		}
+		subreq->async.fn = np_write_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	status = NT_STATUS_INVALID_HANDLE;
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void np_write_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = sendall_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	return async_req_done(req);
+}
+
+NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
+{
+	struct np_write_state *state = talloc_get_type_abort(
+		req->private_data, struct np_write_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	*pnwritten = state->nwritten;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
 		  size_t len, ssize_t *nwritten)
 {
-	DEBUG(6, ("np_write: len: %d\n", (int)len));
-	dump_data(50, data, len);
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
 
-	switch (handle->type) {
-	case FAKE_FILE_TYPE_NAMED_PIPE: {
-		struct pipes_struct *p = talloc_get_type_abort(
-			handle->private_data, struct pipes_struct);
-		*nwritten = write_to_internal_pipe(p, (char *)data, len);
-		break;
-	}
-	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
-		struct np_proxy_state *p = talloc_get_type_abort(
-			handle->private_data, struct np_proxy_state);
-		*nwritten = write_data(p->fd, (char *)data, len);
-		break;
-	}
-	default:
-		return NT_STATUS_INVALID_HANDLE;
-		break;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	return ((*nwritten) >= 0)
-		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+	req = np_write_send(frame, ev, handle, data, len);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = np_write_recv(req, nwritten);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
