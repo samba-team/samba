@@ -2,7 +2,6 @@ Release Notes - Heimdal - Version Heimdal 1.3
 
  New features
 
- - Make building on AIX6 possible.
  - Partital support for MIT kadmind rpc protocol in kadmind
  - Better support for finding keytab entries when using SPN aliases in the KDC
  - Support BER in ASN.1 library (needed for CMS)
@@ -10,14 +9,13 @@ Release Notes - Heimdal - Version Heimdal 1.3
  - Support for new sqlite based credential cache
  - Try both to KDC referals the the common DNS reverse lookup in GSS-API.
  - Fix the KCM not not leak resources on failure
- - Bugfixes in LDAP KDC code to make it more stable
- - Make ipropd-slave reconnect when master down gown
  - Add IPv6 support to iprop.
- - Support localization of error strings in kinit/klist/kdestroy and Kerberos library.
+ - Support localization of error strings in
+   kinit/klist/kdestroy and Kerberos library.
+ - Remove Kerberos 4 support in application (still in KDC)
  - Deprecate DES
- - Remove Kerberos 4 support for kinit
  - Support i18n password in windows domains (using utf8)
- - More complete API emumation of OpenSSL in hcrypto 
+ - More complete API emulation of OpenSSL in hcrypto 
 
  API changes
 
@@ -38,6 +36,12 @@ Release Notes - Heimdal - Version Heimdal 1.3
  - Add support for GSS_C_DELEG_POLICY_FLAG
  - Add krb5_cc_[gs]et_config to store data in the credential caches
  - PTY testing application
+
+Bugfixes
+ - Make building on AIX6 possible.
+ - Bugfixes in LDAP KDC code to make it more stable
+ - Make ipropd-slave reconnect when master down gown
+
 
 Release Notes - Heimdal - Version Heimdal 1.2.1
 
