@@ -30,7 +30,7 @@
 */
 struct irpc_message {
 	struct server_id from;
-	void *private;
+	void *private_data;
 	struct irpc_header header;
 	struct ndr_pull *ndr;
 	bool defer_reply;
@@ -76,7 +76,7 @@ struct irpc_request {
 	TALLOC_CTX *mem_ctx;
 	struct {
 		void (*fn)(struct irpc_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 

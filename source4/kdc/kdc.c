@@ -566,7 +566,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	struct PAC_Validate pac_validate;
 	DATA_BLOB srv_sig;
 	struct PAC_SIGNATURE_DATA kdc_sig;
-	struct kdc_server *kdc = talloc_get_type(msg->private, struct kdc_server);
+	struct kdc_server *kdc = talloc_get_type(msg->private_data, struct kdc_server);
 	enum ndr_err_code ndr_err;
 	krb5_enctype etype;
 	int ret;

@@ -109,7 +109,7 @@ static void ping_message(struct messaging_context *msg, void *private_data,
 static NTSTATUS irpc_uptime(struct irpc_message *msg, 
 			    struct irpc_uptime *r)
 {
-	struct messaging_context *ctx = talloc_get_type(msg->private, struct messaging_context);
+	struct messaging_context *ctx = talloc_get_type(msg->private_data, struct messaging_context);
 	*r->out.start_time = timeval_to_nttime(&ctx->start_time);
 	return NT_STATUS_OK;
 }
@@ -768,7 +768,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	/* make the call */
-	m->private     = i->private_data;
+	m->private_data= i->private_data;
 	m->defer_reply = false;
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;

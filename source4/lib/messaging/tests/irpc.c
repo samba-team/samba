@@ -145,7 +145,7 @@ static bool test_echodata(struct torture_context *tctx,
 static void irpc_callback(struct irpc_request *irpc)
 {
 	struct echo_AddOne *r = (struct echo_AddOne *)irpc->r;
-	int *pong_count = (int *)irpc->async.private;
+	int *pong_count = (int *)irpc->async.private_data;
 	NTSTATUS status = irpc_call_recv(irpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("irpc call failed - %s\n", nt_errstr(status));
@@ -186,7 +186,7 @@ static bool test_speed(struct torture_context *tctx,
 		torture_assert(tctx, irpc != NULL, "AddOne send failed");
 
 		irpc->async.fn = irpc_callback;
-		irpc->async.private = &pong_count;
+		irpc->async.private_data = &pong_count;
 
 		ping_count++;
 

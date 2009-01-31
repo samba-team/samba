@@ -295,7 +295,7 @@ NTSTATUS nbtd_proxy_wins_challenge(struct irpc_message *msg,
 				   struct nbtd_proxy_wins_challenge *req)
 {
 	struct nbtd_server *nbtd_server =
-		talloc_get_type(msg->private, struct nbtd_server);
+		talloc_get_type(msg->private_data, struct nbtd_server);
 	struct proxy_wins_challenge_state *s;
 	uint32_t i;
 
@@ -355,7 +355,7 @@ NTSTATUS nbtd_proxy_wins_release_demand(struct irpc_message *msg,
 				   struct nbtd_proxy_wins_release_demand *req)
 {
 	struct nbtd_server *nbtd_server =
-		talloc_get_type(msg->private, struct nbtd_server);
+		talloc_get_type(msg->private_data, struct nbtd_server);
 	struct proxy_wins_release_demand_state *s;
 	uint32_t i;
 

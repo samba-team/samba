@@ -32,7 +32,8 @@
 static NTSTATUS smbsrv_session_information(struct irpc_message *msg, 
 					   struct smbsrv_information *r)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private_data,
+					     struct smbsrv_connection);
 	int i=0, count=0;
 	struct smbsrv_session *sess;
 
@@ -75,7 +76,8 @@ static NTSTATUS smbsrv_session_information(struct irpc_message *msg,
 static NTSTATUS smbsrv_tcon_information(struct irpc_message *msg, 
 					struct smbsrv_information *r)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(msg->private_data,
+					     struct smbsrv_connection);
 	int i=0, count=0;
 	struct smbsrv_tcon *tcon;
 

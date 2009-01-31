@@ -36,7 +36,7 @@ static void wb_irpc_SamLogon_callback(struct composite_context *ctx);
 static NTSTATUS wb_irpc_SamLogon(struct irpc_message *msg, 
 				 struct winbind_SamLogon *req)
 {
-	struct wbsrv_service *service = talloc_get_type(msg->private,
+	struct wbsrv_service *service = talloc_get_type(msg->private_data,
 					struct wbsrv_service);
 	struct wb_irpc_SamLogon_state *s;
 	struct composite_context *ctx;
@@ -83,7 +83,7 @@ static void wb_irpc_get_idmap_callback(struct composite_context *ctx);
 static NTSTATUS wb_irpc_get_idmap(struct irpc_message *msg,
 				  struct winbind_get_idmap *req)
 {
-	struct wbsrv_service *service = talloc_get_type(msg->private,
+	struct wbsrv_service *service = talloc_get_type(msg->private_data,
 					struct wbsrv_service);
 	struct wb_irpc_get_idmap_state *s;
 	struct composite_context *ctx;

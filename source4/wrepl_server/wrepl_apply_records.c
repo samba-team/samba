@@ -893,7 +893,7 @@ struct r_do_challenge_state {
 static void r_do_late_release_demand_handler(struct irpc_request *ireq)
 {
 	NTSTATUS status;
-	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
+	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private_data,
 							     struct r_do_challenge_state);
 
 	status = irpc_call_recv(ireq);
@@ -931,7 +931,7 @@ static NTSTATUS r_do_late_release_demand(struct r_do_challenge_state *state)
 	NT_STATUS_HAVE_NO_MEMORY(ireq);
 
 	ireq->async.fn		= r_do_late_release_demand_handler;
-	ireq->async.private	= state;
+	ireq->async.private_data= state;
 
 	return NT_STATUS_OK;
 }
@@ -954,7 +954,7 @@ _UA_MA_DI_A<00>: C:BEST vs. B:BEST2 (C:ALL) => B:MHOMED => MHOMED_MERGE
 static void r_do_challenge_handler(struct irpc_request *ireq)
 {
 	NTSTATUS status;
-	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private,
+	struct r_do_challenge_state *state = talloc_get_type(ireq->async.private_data,
 							     struct r_do_challenge_state);
 	bool old_is_subset = false;
 	bool new_is_subset = false;
@@ -1076,7 +1076,7 @@ static NTSTATUS r_do_challenge(struct wreplsrv_partner *partner,
 	NT_STATUS_HAVE_NO_MEMORY(ireq);
 
 	ireq->async.fn		= r_do_challenge_handler;
-	ireq->async.private	= state;
+	ireq->async.private_data= state;
 
 	talloc_steal(partner, state);
 	return NT_STATUS_OK;
@@ -1090,7 +1090,7 @@ struct r_do_release_demand_state {
 static void r_do_release_demand_handler(struct irpc_request *ireq)
 {
 	NTSTATUS status;
-	struct r_do_release_demand_state *state = talloc_get_type(ireq->async.private,
+	struct r_do_release_demand_state *state = talloc_get_type(ireq->async.private_data,
 						  struct r_do_release_demand_state);
 
 	status = irpc_call_recv(ireq);
@@ -1152,7 +1152,7 @@ static NTSTATUS r_do_release_demand(struct wreplsrv_partner *partner,
 	NT_STATUS_HAVE_NO_MEMORY(ireq);
 
 	ireq->async.fn		= r_do_release_demand_handler;
-	ireq->async.private	= state;
+	ireq->async.private_data= state;
 
 	talloc_steal(partner, state);
 	return NT_STATUS_OK;

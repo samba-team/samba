@@ -174,7 +174,7 @@ static void finddcs_name_resolved(struct composite_context *ctx)
 static void finddcs_getdc_replied(struct irpc_request *ireq)
 {
 	struct finddcs_state *state =
-		talloc_get_type(ireq->async.private, struct finddcs_state);
+		talloc_get_type(ireq->async.private_data, struct finddcs_state);
 
 	state->ctx->status = irpc_call_recv(ireq);
 	if (!composite_is_ok(state->ctx)) return;
