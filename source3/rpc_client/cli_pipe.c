@@ -81,9 +81,10 @@ static const struct pipe_id_info {
  Return the pipe name from the interface.
  ****************************************************************************/
 
-const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-					 const struct ndr_syntax_id *interface)
+const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface)
 {
+	char *guid_str;
+	const char *result;
 	int i;
 	for (i = 0; pipe_names[i].client_pipe; i++) {
 		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax,
@@ -97,7 +98,18 @@ const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 	 * interested in the known pipes mentioned in pipe_names[]
 	 */
 
-	return NULL;
+	guid_str = GUID_string(talloc_tos(), &interface->uuid);
+	if (guid_str == NULL) {
+		return NULL;
+	}
+	result = talloc_asprintf(talloc_tos(), "Interface %s.%d", guid_str,
+				 (int)interface->if_version);
+	TALLOC_FREE(guid_str);
+
+	if (result == NULL) {
+		return "PIPE";
+	}
+	return result;
 }
 
 /********************************************************************
@@ -3649,8 +3661,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    cli_get_pipe_name_from_iface(debug_ctx(),
-							 interface),
+			    get_pipe_name_from_iface(interface),
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
 		return status;
@@ -3658,8 +3669,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
-		  cli->desthost ));
+		  get_pipe_name_from_iface(interface), cli->desthost));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3705,8 +3715,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
 		"machine %s and bound NTLMSSP as user %s\\%s.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
-		  cli->desthost, domain, username ));
+		  get_pipe_name_from_iface(interface), cli->desthost, domain,
+		  username ));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3897,7 +3907,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
+		  get_pipe_name_from_iface(interface),
 		  cli->desthost, domain ));
 
 	*presult = result;

@@ -619,16 +619,14 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 			default:
 				DEBUG(0, ("Could not initialise %s. Invalid "
 					  "auth type %u\n",
-					  cli_get_pipe_name_from_iface(
-						  debug_ctx(),
+					  get_pipe_name_from_iface(
 						  cmd_entry->interface),
 					  pipe_default_auth_type ));
 				return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!NT_STATUS_IS_OK(ntresult)) {
 			DEBUG(0, ("Could not initialise %s. Error was %s\n",
-				  cli_get_pipe_name_from_iface(
-					  debug_ctx(),
+				  get_pipe_name_from_iface(
 					  cmd_entry->interface),
 				  nt_errstr(ntresult) ));
 			return ntresult;
@@ -657,8 +655,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 			if (!NT_STATUS_IS_OK(ntresult)) {
 				DEBUG(0, ("Could not initialise credentials for %s.\n",
-					  cli_get_pipe_name_from_iface(
-						  debug_ctx(),
+					  get_pipe_name_from_iface(
 						  cmd_entry->interface)));
 				return ntresult;
 			}

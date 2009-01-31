@@ -286,7 +286,6 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 {
 	struct async_req *result, *subreq;
 	struct rpc_transport_np_init_state *state;
-	NTSTATUS status;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct rpc_transport_np_init_state)) {
@@ -304,12 +303,8 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	}
 	state->transport->priv = state->transport_np;
 
-	state->transport_np->pipe_name = cli_get_pipe_name_from_iface(
-		state, abstract_syntax);
-	if (state->transport_np->pipe_name == NULL) {
-		status = NT_STATUS_PIPE_NOT_AVAILABLE;
-		goto post_status;
-	}
+	state->transport_np->pipe_name = get_pipe_name_from_iface(
+		abstract_syntax);
 	state->transport_np->cli = cli;
 
 	subreq = cli_ntcreate_send(
@@ -323,10 +318,6 @@ struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
 	subreq->async.priv = result;
 	return result;
 
- post_status:
-	if (async_post_status(result, ev, status)) {
-		return result;
-	}
  fail:
 	TALLOC_FREE(result);
 	return NULL;

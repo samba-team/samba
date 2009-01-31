@@ -181,8 +181,7 @@ int run_rpc_command(struct net_context *c,
 			}
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
-					cli_get_pipe_name_from_iface(
-						debug_ctx(), interface),
+					get_pipe_name_from_iface(interface),
 					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
 				return -1;
