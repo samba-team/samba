@@ -59,6 +59,7 @@ kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
 klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
+test_apreq="${TESTS_ENVIRONMENT} ../../lib/krb5/test_ap-req"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -114,7 +115,7 @@ ${kinit} --password-file=${objdir}/foopassword foo@${R} || \
 echo "Getting tickets" ; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "Verify PAC on server"; > messages.log
-../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} || \
+${test_apreq} --verify-pac ${server}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
@@ -124,7 +125,7 @@ ${kinit} --request-pac --password-file=${objdir}/foopassword foo@${R} || \
 echo "Getting tickets" ; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "Verify PAC on server (pag)"; > messages.log
-../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} || \
+${test_apreq} --verify-pac ${server}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
@@ -134,7 +135,7 @@ ${kinit} --no-request-pac --password-file=${objdir}/foopassword foo@${R} || \
 echo "Getting tickets" ; > messages.log
 ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 echo "Verify PAC on server (no pag)"; > messages.log
-../kdc/ap-req --verify-pac ${server}@${R} ${keytab} ${cache} 2> /dev/null && \
+${test_apreq} --verify-pac ${server}@${R} ${keytab} ${cache} 2> /dev/null && \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
