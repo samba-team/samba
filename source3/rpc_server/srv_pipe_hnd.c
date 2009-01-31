@@ -1200,36 +1200,6 @@ NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
-		  size_t len, ssize_t *nwritten)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
-
-	ev = event_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = np_write_send(frame, ev, handle, data, len);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
-
-	status = np_write_recv(req, nwritten);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}
-
 struct np_read_state {
 	ssize_t nread;
 	bool is_data_outstanding;
