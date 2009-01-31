@@ -1184,7 +1184,7 @@ static void np_write_done(struct async_req *subreq)
 		async_req_error(req, status);
 		return;
 	}
-	return async_req_done(req);
+	async_req_done(req);
 }
 
 NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
