@@ -796,7 +796,7 @@ static int rpc_user_info(struct net_context *c, int argc, const char **argv)
 	status = NetUserGetGroups(c->opt_host,
 				  argv[0],
 				  0,
-				  (uint8_t **)&u0,
+				  (uint8_t **)(void *)&u0,
 				  (uint32_t)-1,
 				  &entries_read,
 				  &total_entries);
@@ -2996,7 +2996,7 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 
 	status = NetShareEnum(c->opt_host,
 			      level,
-			      (uint8_t **)&i1,
+			      (uint8_t **)(void *)&i1,
 			      (uint32_t)-1,
 			      &entries_read,
 			      &total_entries,
@@ -4775,7 +4775,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 			     NULL,
 			     username,
 			     3,
-			     (uint8_t **)&i3,
+			     (uint8_t **)(void *)&i3,
 			     preferred_len,
 			     &entries_read,
 			     &total_entries,
