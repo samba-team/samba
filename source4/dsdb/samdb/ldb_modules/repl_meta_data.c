@@ -258,7 +258,7 @@ static int replmd_add(struct ldb_module *module, struct ldb_request *req)
 		return ldb_next_request(module, req);
 	}
 
-	ldb = ldb_module_get_ctx(ac->module);
+	ldb = ldb_module_get_ctx(module);
 
 	ldb_debug(ldb, LDB_DEBUG_TRACE, "replmd_add\n");
 
