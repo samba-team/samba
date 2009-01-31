@@ -150,11 +150,6 @@ const char **ldb_subclass_list(struct ldb_context *ldb, const char *classname);
 void ldb_subclass_remove(struct ldb_context *ldb, const char *classname);
 int ldb_subclass_add(struct ldb_context *ldb, const char *classname, const char *subclass);
 
-int ldb_handler_copy(struct ldb_context *ldb, void *mem_ctx,
-		     const struct ldb_val *in, struct ldb_val *out);
-int ldb_comparison_binary(struct ldb_context *ldb, void *mem_ctx,
-			  const struct ldb_val *v1, const struct ldb_val *v2);
-
 /* The following definitions come from lib/ldb/common/ldb_utf8.c */
 char *ldb_casefold_default(void *context, void *mem_ctx, const char *s, size_t n);
 
