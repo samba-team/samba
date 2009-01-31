@@ -1076,13 +1076,6 @@ _kdc_as_rep(krb5_context context,
     if(ret)
 	goto out;
 
-    ret = _kdc_check_flags(context, config,
-			   client, client_name,
-			   server, server_name,
-			   TRUE);
-    if(ret)
-	goto out;
-
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
 
@@ -1364,6 +1357,19 @@ _kdc_as_rep(krb5_context context,
 		client_name);
 	goto out;
     }
+
+    /*
+     * Verify flags after the user been required to prove its identity
+     * with in a preauth mech.
+     */
+
+    ret = _kdc_check_flags(context, config,
+			   client, client_name,
+			   server, server_name,
+			   TRUE);
+    if(ret)
+	goto out;
+
 
     /*
      * Find the client key (for preauth ENC-TS verification and reply
