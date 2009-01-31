@@ -144,13 +144,18 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
  Reply to a write on a pipe.
 ****************************************************************************/
 
+struct pipe_write_state {
+	size_t numtowrite;
+};
+
+static void pipe_write_done(struct async_req *subreq);
+
 void reply_pipe_write(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
-	size_t numtowrite = SVAL(req->vwv+1, 0);
-	ssize_t nwritten;
 	const uint8_t *data;
-	NTSTATUS status;
+	struct pipe_write_state *state;
+	struct async_req *subreq;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -162,29 +167,59 @@ void reply_pipe_write(struct smb_request *req)
 		return;
 	}
 
+	state = talloc(req, struct pipe_write_state);
+	if (state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	req->async_priv = state;
+
+	state->numtowrite = SVAL(req->vwv+1, 0);
+
 	data = req->buf + 3;
 
 	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
-		  fsp->fsp_name, (int)numtowrite));
-	status = np_write(fsp->fake_file_handle, data, numtowrite, &nwritten);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
+		  fsp->fsp_name, (int)state->numtowrite));
+
+	subreq = np_write_send(state, smbd_event_context(),
+			       fsp->fake_file_handle, data, state->numtowrite);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	subreq->async.fn = pipe_write_done;
+	subreq->async.priv = talloc_move(req->conn, &req);
+}
 
-	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
+static void pipe_write_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct pipe_write_state *state = talloc_get_type_abort(
+		req->async_priv, struct pipe_write_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if ((nwritten == 0 && state->numtowrite != 0) || (nwritten < 0)) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
-		return;
+		goto send;
 	}
 
 	reply_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
-  
-	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n", fsp->fnum,
-		 (int)nwritten));
 
-	return;
+	DEBUG(3,("write-IPC nwritten=%d\n", (int)nwritten));
+
+ send:
+	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted)) {
+		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+	}
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
