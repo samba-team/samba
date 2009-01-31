@@ -5,7 +5,7 @@ pid=$2
 
 ec=0
 
-if [ "$(uname -s)" = "Darwin" ] ; then
+if [ XXXX"$(uname -s)" = "Darwin" ] ; then
     leaks $pid > leaks-log 2>&1 || \
         { echo "leaks failed: $?"; cat leaks-log; exit 1; }
 
@@ -20,6 +20,6 @@ kill $pid
 sleep 3
 kill -9 $pid 2> /dev/null
 
-rm leaks-log
+rm -f leaks-log
 
 exit $ec
