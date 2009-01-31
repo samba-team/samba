@@ -333,15 +333,20 @@ static void pipe_write_andx_done(struct async_req *subreq)
  wrinkles to handle pipes.
 ****************************************************************************/
 
+struct pipe_read_andx_state {
+	uint8_t *outbuf;
+	int smb_mincnt;
+	int smb_maxcnt;
+};
+
+static void pipe_read_andx_done(struct async_req *subreq);
+
 void reply_pipe_read_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
-	int smb_maxcnt = SVAL(req->vwv+5, 0);
-	int smb_mincnt = SVAL(req->vwv+6, 0);
-	ssize_t nread;
 	uint8_t *data;
-	bool unused;
-	NTSTATUS status;
+	struct pipe_read_andx_state *state;
+	struct async_req *subreq;
 
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
@@ -360,17 +365,55 @@ void reply_pipe_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 12, smb_maxcnt);
-
-	data = (uint8_t *)smb_buf(req->outbuf);
-
-	status = np_read(fsp->fake_file_handle, data, smb_maxcnt, &nread,
-			 &unused);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+	state = talloc(req, struct pipe_read_andx_state);
+	if (state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	req->async_priv = state;
+
+	state->smb_maxcnt = SVAL(req->vwv+5, 0);
+	state->smb_mincnt = SVAL(req->vwv+6, 0);
+
+	reply_outbuf(req, 12, state->smb_maxcnt);
+	data = (uint8_t *)smb_buf(req->outbuf);
+
+	/*
+	 * We have to tell the upper layers that we're async.
+	 */
+	state->outbuf = req->outbuf;
+	req->outbuf = NULL;
+
+	subreq = np_read_send(state, smbd_event_context(),
+			      fsp->fake_file_handle, data,
+			      state->smb_maxcnt);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	subreq->async.fn = pipe_read_andx_done;
+	subreq->async.priv = talloc_move(req->conn, &req);
+}
+
+static void pipe_read_andx_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct pipe_read_andx_state *state = talloc_get_type_abort(
+		req->async_priv, struct pipe_read_andx_state);
+	NTSTATUS status;
+	ssize_t nread;
+	bool is_data_outstanding;
+
+	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto done;
+	}
+
+	req->outbuf = state->outbuf;
+	state->outbuf = NULL;
 
 	srv_set_message((char *)req->outbuf, 12, nread, False);
   
@@ -380,10 +423,11 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2);		/* the buflen field */
-	SSVAL(req->outbuf,smb_vwv11,smb_maxcnt);
+	SSVAL(req->outbuf,smb_vwv11,state->smb_maxcnt);
   
-	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
-		 fsp->fnum, smb_mincnt, smb_maxcnt, (int)nread));
+	DEBUG(3,("readX-IPC min=%d max=%d nread=%d\n",
+		 state->smb_mincnt, state->smb_maxcnt, (int)nread));
 
+ done:
 	chain_reply(req);
 }
