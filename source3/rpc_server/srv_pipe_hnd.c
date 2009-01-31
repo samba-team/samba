@@ -1224,38 +1224,118 @@ NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
 	return status;
 }
 
+struct np_read_state {
+	ssize_t nread;
+	bool is_data_outstanding;
+};
+
+static void np_read_done(struct async_req *subreq);
+
+struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+			       struct fake_file_handle *handle,
+			       uint8_t *data, size_t len)
+{
+	struct async_req *result, *subreq;
+	struct np_read_state *state;
+	NTSTATUS status;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct np_read_state)) {
+		return NULL;
+	}
+
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE) {
+		struct pipes_struct *p = talloc_get_type_abort(
+			handle->private_data, struct pipes_struct);
+
+		state->nread = read_from_internal_pipe(
+			p, (char *)data, len, &state->is_data_outstanding);
+
+		status = (state->nread >= 0)
+			? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+		goto post_status;
+	}
+
+	if (handle->type == FAKE_FILE_TYPE_NAMED_PIPE_PROXY) {
+		struct np_proxy_state *p = talloc_get_type_abort(
+			handle->private_data, struct np_proxy_state);
+
+		state->nread = len;
+
+		subreq = recvall_send(state, ev, p->fd, data, len, 0);
+		if (subreq == NULL) {
+			goto fail;
+		}
+		subreq->async.fn = np_read_done;
+		subreq->async.priv = result;
+		return result;
+	}
+
+	status = NT_STATUS_INVALID_HANDLE;
+ post_status:
+	if (async_post_status(result, ev, status)) {
+		return result;
+	}
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void np_read_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	NTSTATUS status;
+
+	status = recvall_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(req, status);
+		return;
+	}
+	async_req_done(req);
+}
+
+NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
+		      bool *is_data_outstanding)
+{
+	struct np_read_state *state = talloc_get_type_abort(
+		req->private_data, struct np_read_state);
+	NTSTATUS status;
+
+	if (async_req_is_error(req, &status)) {
+		return status;
+	}
+	*nread = state->nread;
+	*is_data_outstanding = state->is_data_outstanding;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
 		 ssize_t *nread, bool *is_data_outstanding)
 {
-	switch (handle->type) {
-	case FAKE_FILE_TYPE_NAMED_PIPE: {
-		struct pipes_struct *p = talloc_get_type_abort(
-			handle->private_data, struct pipes_struct);
-		*nread = read_from_internal_pipe(p, (char *)data, len,
-						 is_data_outstanding);
-		break;
-	}
-	case FAKE_FILE_TYPE_NAMED_PIPE_PROXY: {
-		struct np_proxy_state *p = talloc_get_type_abort(
-			handle->private_data, struct np_proxy_state);
-		int available = 0;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
 
-		*nread = sys_read(p->fd, (char *)data, len);
-
-		/*
-		 * We don't look at the ioctl result. We don't really care
-		 * if there is data available, because this is racy anyway.
-		 */
-		ioctl(p->fd, FIONREAD, &available);
-		*is_data_outstanding = (available > 0);
-
-		break;
-	}
-	default:
-		return NT_STATUS_INVALID_HANDLE;
-		break;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	return ((*nread) >= 0)
-		? NT_STATUS_OK : NT_STATUS_UNEXPECTED_IO_ERROR;
+	req = np_read_send(frame, ev, handle, data, len);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = np_read_recv(req, nread, is_data_outstanding);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
