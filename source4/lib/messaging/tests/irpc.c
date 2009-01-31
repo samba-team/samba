@@ -87,7 +87,7 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	struct echo_AddOne r;
 	NTSTATUS status;
 	const struct irpc_test_data *data = (const struct irpc_test_data *)_data;
-	uint32_t value = (uint32_t)_value;
+	uint32_t value = *(const uint32_t *)_value;
 
 	/* make the call */
 	r.in.in_data = value;
@@ -261,7 +261,7 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 
 	for (i = 0; i < 5; i++) {
 		torture_tcase_add_test_const(tcase, "addone", test_addone,
-				(void *)values[i]);
+				(void *)&values[i]);
 	}
 
 	torture_tcase_add_test_const(tcase, "echodata", test_echodata, NULL);
