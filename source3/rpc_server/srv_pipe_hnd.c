@@ -1285,33 +1285,3 @@ NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
 	*is_data_outstanding = state->is_data_outstanding;
 	return NT_STATUS_OK;
 }
-
-NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
-		 ssize_t *nread, bool *is_data_outstanding)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct event_context *ev;
-	struct async_req *req;
-	NTSTATUS status;
-
-	ev = event_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = np_read_send(frame, ev, handle, data, len);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	while (req->state < ASYNC_REQ_DONE) {
-		event_loop_once(ev);
-	}
-
-	status = np_read_recv(req, nread, is_data_outstanding);
- fail:
-	TALLOC_FREE(frame);
-	return status;
-}

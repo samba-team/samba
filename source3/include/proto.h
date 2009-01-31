@@ -6323,8 +6323,6 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			       uint8_t *data, size_t len);
 NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
 		      bool *is_data_outstanding);
-NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
-		 ssize_t *nread, bool *is_data_outstanding);
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
