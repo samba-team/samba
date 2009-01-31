@@ -62,7 +62,7 @@ struct proxy_ctx {
 */
 static int load_proxy_info(struct ldb_module *module)
 {
-	struct ldb = ldb_module_get_ctx(module);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct proxy_data *proxy = talloc_get_type(ldb_module_get_private(module), struct proxy_data);
 	struct ldb_dn *dn;
 	struct ldb_result *res = NULL;
@@ -262,7 +262,7 @@ static int proxy_search_callback(struct ldb_request *req,
 
 	ac = talloc_get_type(req->context, struct proxy_ctx);
 	ldb = ldb_module_get_ctx(ac->module);
-	proxy = talloc_get_type(private_data, struct proxy_data);
+	proxy = talloc_get_type(ldb_module_get_private(module), struct proxy_data);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
