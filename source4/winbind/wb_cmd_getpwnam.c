@@ -27,7 +27,7 @@
 #include "winbind/wb_helper.h"
 #include "smbd/service_task.h"
 #include "libnet/libnet_proto.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 
 struct cmd_getpwnam_state {
 	struct composite_context *ctx;

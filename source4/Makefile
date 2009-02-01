@@ -98,6 +98,7 @@ ntvfssrcdir := ntvfs
 ntptrsrcdir := ntptr
 librpcsrcdir := librpc
 libclisrcdir := libcli
+libclicommonsrcdir := ../libcli
 libclinbtsrcdir := ../libcli/nbt
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc

@@ -29,7 +29,7 @@
 #include "lib/ldb_wrap.h"
 #include "param/param.h"
 #include "winbind/idmap.h"
-#include "libcli/security/proto.h"
+#include "libcli/security/security.h"
 #include "libcli/ldap/ldap_ndr.h"
 
 /**

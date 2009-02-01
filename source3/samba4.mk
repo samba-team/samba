@@ -111,6 +111,7 @@ ntptrsrcdir := $(samba4srcdir)/ntptr
 clientsrcdir := $(samba4srcdir)/client
 libclisrcdir := $(samba4srcdir)/libcli
 libclinbtsrcdir := $(samba4srcdir)/../libcli/nbt
+libclicommonsrcdir := $(samba4srcdir)/../libcli
 pyscriptsrcdir := $(samba4srcdir)/scripting/python
 kdcsrcdir := $(samba4srcdir)/kdc
 smbreadlinesrcdir := $(samba4srcdir)/lib/smbreadline

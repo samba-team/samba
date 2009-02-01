@@ -279,7 +279,6 @@ LIBNDR_OBJ = ../librpc/ndr/ndr_basic.o \
 	     ../librpc/gen_ndr/ndr_security.o \
 	     ../librpc/ndr/ndr_sec_helper.o \
 	     librpc/ndr/ndr_string.o \
-	     librpc/ndr/sid.o \
 	     ../librpc/ndr/uuid.o \
 		 librpc/ndr/util.o
 
@@ -364,7 +363,8 @@ LIB_OBJ = $(LIBSAMBAUTIL_OBJ) $(UTIL_OBJ) $(CRYPTO_OBJ) \
 	  lib/ldap_escape.o @CHARSET_STATIC@ \
 	  lib/secdesc.o lib/util_seaccess.o lib/secace.o lib/secacl.o \
 	  libads/krb5_errs.o lib/system_smbd.o lib/audit.o $(LIBNDR_OBJ) \
-	  lib/file_id.o lib/idmap_cache.o
+	  lib/file_id.o lib/idmap_cache.o \
+	  ../libcli/security/dom_sid.o
 
 LIB_DUMMY_OBJ = lib/dummysmbd.o lib/dummyroot.o
 LIB_NONSMBD_OBJ = $(LIB_OBJ) $(LIB_DUMMY_OBJ)
