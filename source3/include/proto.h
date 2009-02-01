@@ -6271,7 +6271,8 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
-bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name);
+bool init_pipe_handle_list(pipes_struct *p,
+			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr);
 bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
@@ -6294,7 +6295,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt,
 			  const char *srv,
 			  const struct ndr_interface_table *iface,
 			  const struct api_struct *cmds, int size);
-bool is_known_pipename(const char *cli_filename);
+bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
 bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p);
 bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,

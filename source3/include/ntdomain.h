@@ -214,8 +214,7 @@ typedef struct pipes_struct {
 
 	struct auth_serversupplied_info *server_info;
 
-	fstring name;
-	fstring pipe_srv_name;
+	struct ndr_syntax_id syntax;
 
 	/* linked list of rpc dispatch tables associated 
 	   with the open rpc contexts */

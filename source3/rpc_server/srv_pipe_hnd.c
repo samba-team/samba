@@ -90,13 +90,14 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 ****************************************************************************/
 
 static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-						     const char *pipe_name,
+						     const struct ndr_syntax_id *syntax,
 						     const char *client_address,
 						     struct auth_serversupplied_info *server_info)
 {
 	pipes_struct *p;
 
-	DEBUG(4,("Create pipe requested %s\n", pipe_name));
+	DEBUG(4,("Create pipe requested %s\n",
+		 get_pipe_name_from_iface(syntax)));
 
 	p = TALLOC_ZERO_P(mem_ctx, struct pipes_struct);
 
@@ -105,13 +106,15 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	if ((p->mem_ctx = talloc_init("pipe %s %p", pipe_name, p)) == NULL) {
+	if ((p->mem_ctx = talloc_init("pipe %s %p",
+				      get_pipe_name_from_iface(syntax),
+				      p)) == NULL) {
 		DEBUG(0,("open_rpc_pipe_p: talloc_init failed.\n"));
 		TALLOC_FREE(p);
 		return NULL;
 	}
 
-	if (!init_pipe_handle_list(p, pipe_name)) {
+	if (!init_pipe_handle_list(p, syntax)) {
 		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
 		talloc_destroy(p->mem_ctx);
 		TALLOC_FREE(p);
@@ -152,11 +155,11 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	 * Initialize the outgoing RPC data buffer with no memory.
 	 */	
 	prs_init_empty(&p->out_data.rdata, p->mem_ctx, MARSHALL);
-	
-	fstrcpy(p->name, pipe_name);
-	
+
+	p->syntax = *syntax;
+
 	DEBUG(4,("Created internal pipe %s (pipes_open=%d)\n",
-		 pipe_name, pipes_open));
+		 get_pipe_name_from_iface(syntax), pipes_open));
 
 	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
 
@@ -174,7 +177,7 @@ static void set_incoming_fault(pipes_struct *p)
 	p->in_data.pdu_received_len = 0;
 	p->fault_state = True;
 	DEBUG(10, ("set_incoming_fault: Setting fault state on pipe %s\n",
-		   p->name));
+		   get_pipe_name_from_iface(&p->syntax)));
 }
 
 /****************************************************************************
@@ -324,7 +327,8 @@ static void free_pipe_context(pipes_struct *p)
 			 "%lu\n", (unsigned long)talloc_total_size(p->mem_ctx) ));
 		talloc_free_children(p->mem_ctx);
 	} else {
-		p->mem_ctx = talloc_init("pipe %s %p", p->name, p);
+		p->mem_ctx = talloc_init(
+			"pipe %s %p", get_pipe_name_from_iface(&p->syntax), p);
 		if (p->mem_ctx == NULL) {
 			p->fault_state = True;
 		}
@@ -492,7 +496,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 	if(p->fault_state) {
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
-			p->name ));
+			 get_pipe_name_from_iface(&p->syntax)));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		return;
@@ -520,12 +524,13 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case RPC_PING: /* CL request - ignore... */
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type, p->name));
+				(unsigned int)p->hdr.pkt_type,
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 		case RPC_RESPONSE: /* No responses here. */
 			DEBUG(0,("process_complete_pdu: Error. RPC_RESPONSE received from client on pipe %s.\n",
-				p->name ));
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 		case RPC_FAULT:
@@ -537,7 +542,8 @@ static void process_complete_pdu(pipes_struct *p)
 		case RPC_FACK:
 		case RPC_CANCEL_ACK:
 			DEBUG(0,("process_complete_pdu: Error. Connectionless packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type, p->name));
+				(unsigned int)p->hdr.pkt_type,
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 		case RPC_BIND:
@@ -552,7 +558,8 @@ static void process_complete_pdu(pipes_struct *p)
 		case RPC_BINDACK:
 		case RPC_BINDNACK:
 			DEBUG(0,("process_complete_pdu: Error. RPC_BINDACK/RPC_BINDNACK packet type %u received on pipe %s.\n",
-				(unsigned int)p->hdr.pkt_type, p->name));
+				(unsigned int)p->hdr.pkt_type,
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 
@@ -567,7 +574,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case RPC_ALTCONTRESP:
 			DEBUG(0,("process_complete_pdu: Error. RPC_ALTCONTRESP on pipe %s: Should only be server -> client.\n",
-				p->name));
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 		case RPC_AUTH3:
@@ -581,7 +588,7 @@ static void process_complete_pdu(pipes_struct *p)
 
 		case RPC_SHUTDOWN:
 			DEBUG(0,("process_complete_pdu: Error. RPC_SHUTDOWN on pipe %s: Should only be server -> client.\n",
-				p->name));
+				get_pipe_name_from_iface(&p->syntax)));
 			break;
 
 		case RPC_CO_CANCEL:
@@ -619,7 +626,8 @@ static void process_complete_pdu(pipes_struct *p)
 	prs_set_endian_data( &p->in_data.data, RPC_LITTLE_ENDIAN);
 
 	if (!reply) {
-		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
+		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on "
+			 "pipe %s\n", get_pipe_name_from_iface(&p->syntax)));
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_OP_RNG_ERROR));
 		prs_mem_free(&rpc_in);
@@ -773,7 +781,8 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 		return -1;		
 	}
 
-	DEBUG(6,(" name: %s len: %u\n", p->name, (unsigned int)n));
+	DEBUG(6,(" name: %s len: %u\n", get_pipe_name_from_iface(&p->syntax),
+		 (unsigned int)n));
 
 	/*
 	 * We cannot return more than one PDU length per
@@ -787,8 +796,10 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 	 */
 
 	if(n > RPC_MAX_PDU_FRAG_LEN) {
-                DEBUG(5,("read_from_pipe: too large read (%u) requested on \
-pipe %s. We can only service %d sized reads.\n", (unsigned int)n, p->name, RPC_MAX_PDU_FRAG_LEN ));
+                DEBUG(5,("read_from_pipe: too large read (%u) requested on "
+			 "pipe %s. We can only service %d sized reads.\n",
+			 (unsigned int)n, get_pipe_name_from_iface(&p->syntax),
+			 RPC_MAX_PDU_FRAG_LEN ));
 		n = RPC_MAX_PDU_FRAG_LEN;
 	}
 
@@ -803,9 +814,12 @@ pipe %s. We can only service %d sized reads.\n", (unsigned int)n, p->name, RPC_M
 	if((pdu_remaining = p->out_data.current_pdu_len - p->out_data.current_pdu_sent) > 0) {
 		data_returned = (ssize_t)MIN(n, pdu_remaining);
 
-		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, current_pdu_sent = %u \
-returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len, 
-			(unsigned int)p->out_data.current_pdu_sent, (int)data_returned));
+		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
+			  "current_pdu_sent = %u returning %d bytes.\n",
+			  get_pipe_name_from_iface(&p->syntax),
+			  (unsigned int)p->out_data.current_pdu_len,
+			  (unsigned int)p->out_data.current_pdu_sent,
+			  (int)data_returned));
 
 		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
 		p->out_data.current_pdu_sent += (uint32)data_returned;
@@ -817,9 +831,11 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 	 * may of course be zero if this is the first return fragment.
 	 */
 
-	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length \
-= %u, prs_offset(&p->out_data.rdata) = %u.\n",
-		p->name, (int)p->fault_state, (unsigned int)p->out_data.data_sent_length, (unsigned int)prs_offset(&p->out_data.rdata) ));
+	DEBUG(10,("read_from_pipe: %s: fault_state = %d : data_sent_length "
+		  "= %u, prs_offset(&p->out_data.rdata) = %u.\n",
+		  get_pipe_name_from_iface(&p->syntax), (int)p->fault_state,
+		  (unsigned int)p->out_data.data_sent_length,
+		  (unsigned int)prs_offset(&p->out_data.rdata) ));
 
 	if(p->out_data.data_sent_length >= prs_offset(&p->out_data.rdata)) {
 		/*
@@ -837,7 +853,8 @@ returning %d bytes.\n", p->name, (unsigned int)p->out_data.current_pdu_len,
 	 */
 
 	if(!create_next_pdu(p)) {
-		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n", p->name));
+		DEBUG(0,("read_from_pipe: %s: create_next_pdu failed.\n",
+			 get_pipe_name_from_iface(&p->syntax)));
 		return -1;
 	}
 
@@ -1086,13 +1103,14 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		handle->private_data = p;
 	} else {
 		struct pipes_struct *p;
+		struct ndr_syntax_id syntax;
 
-		if (!is_known_pipename(name)) {
+		if (!is_known_pipename(name, &syntax)) {
 			TALLOC_FREE(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		p = make_internal_rpc_pipe_p(handle, name, client_address,
+		p = make_internal_rpc_pipe_p(handle, &syntax, client_address,
 					     server_info);
 
 		handle->type = FAKE_FILE_TYPE_NAMED_PIPE;

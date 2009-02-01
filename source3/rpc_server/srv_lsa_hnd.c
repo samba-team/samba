@@ -34,9 +34,10 @@
  pipe is open. JRA.
 ****************************************************************************/
 
-static bool is_samr_lsa_pipe(const char *pipe_name)
+static bool is_samr_lsa_pipe(const struct ndr_syntax_id *syntax)
 {
-	return (strstr(pipe_name, "samr") || strstr(pipe_name, "lsa"));
+	return (ndr_syntax_id_equal(syntax, &ndr_table_samr.syntax_id)
+		|| ndr_syntax_id_equal(syntax, &ndr_table_lsarpc.syntax_id));
 }
 
 /****************************************************************************
@@ -44,7 +45,7 @@ static bool is_samr_lsa_pipe(const char *pipe_name)
  pipes of the same name.
 ****************************************************************************/
 
-bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
+bool init_pipe_handle_list(pipes_struct *p, const struct ndr_syntax_id *syntax)
 {
 	pipes_struct *plist;
 	struct handle_list *hl;
@@ -52,11 +53,11 @@ bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 	for (plist = get_first_internal_pipe();
 	     plist;
 	     plist = get_next_internal_pipe(plist)) {
-		if (strequal(plist->name, pipe_name)) {
+		if (ndr_syntax_id_equal(syntax, &plist->syntax)) {
 			break;
 		}
-		if (is_samr_lsa_pipe(plist->name)
-		    && is_samr_lsa_pipe(pipe_name)) {
+		if (is_samr_lsa_pipe(&plist->syntax)
+		    && is_samr_lsa_pipe(syntax)) {
 			/*
 			 * samr and lsa share a handle space (same process
 			 * under Windows?)
@@ -80,7 +81,8 @@ bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 		}
 		ZERO_STRUCTP(hl);
 
-		DEBUG(10,("init_pipe_handles: created handle list for pipe %s\n", pipe_name ));
+		DEBUG(10,("init_pipe_handles: created handle list for "
+			  "pipe %s\n", get_pipe_name_from_iface(syntax)));
 	}
 
 	/*
@@ -96,7 +98,8 @@ bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name)
 	p->pipe_handles = hl;
 
 	DEBUG(10,("init_pipe_handles: pipe_handles ref count = %lu for pipe %s\n",
-		  (unsigned long)p->pipe_handles->pipe_ref_count, pipe_name ));
+		  (unsigned long)p->pipe_handles->pipe_ref_count,
+		  get_pipe_name_from_iface(syntax)));
 
 	return True;
 }
@@ -242,7 +245,8 @@ void close_policy_by_pipe(pipes_struct *p)
 		p->pipe_handles->count = 0;
 
 		SAFE_FREE(p->pipe_handles);
-		DEBUG(10,("close_policy_by_pipe: deleted handle list for pipe %s\n", p->name ));
+		DEBUG(10,("close_policy_by_pipe: deleted handle list for "
+			  "pipe %s\n", get_pipe_name_from_iface(&p->syntax)));
 	}
 }
 
