@@ -43,7 +43,7 @@ if test x$fhs = xyes; then
     winbindd_privileged_socket_dir="${localstatedir}/lib/samba/winbindd_privileged"
 else
 	# Check to prevent installing directly under /usr without the FHS
-	AS_IF([test $prefix == /usr || test $prefix == /usr/local],[
+	AS_IF([test $prefix = /usr || test $prefix = /usr/local],[
 		AC_MSG_ERROR([Don't install directly under "/usr" or "/usr/local" without using the FHS option (--enable-fhs). This could lead to file loss!])
 	])
 fi
