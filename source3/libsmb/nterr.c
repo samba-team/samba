@@ -659,6 +659,11 @@ const char *nt_errstr(NTSTATUS nt_code)
 	}
 #endif
 
+	if (NT_STATUS_IS_DOS(nt_code)) {
+		return smb_dos_err_name(NT_STATUS_DOS_CLASS(nt_code),
+					NT_STATUS_DOS_CODE(nt_code));
+	}
+
 	while (nt_errs[idx].nt_errstr != NULL) {
 		if (NT_STATUS_EQUAL(nt_errs[idx].nt_errcode, nt_code)) {
                         return nt_errs[idx].nt_errstr;
