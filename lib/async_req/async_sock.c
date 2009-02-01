@@ -239,7 +239,7 @@ static void async_send_callback(struct tevent_context *ev,
 	struct param_send *p = &state->param.param_send;
 
 	if (state->syscall_type != ASYNC_SYSCALL_SEND) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -306,7 +306,7 @@ static void async_sendall_callback(struct tevent_context *ev,
 	struct param_sendall *p = &state->param.param_sendall;
 
 	if (state->syscall_type != ASYNC_SYSCALL_SENDALL) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -316,18 +316,18 @@ static void async_sendall_callback(struct tevent_context *ev,
 	state->sys_errno = errno;
 
 	if (state->result.result_ssize_t == -1) {
-		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
 		return;
 	}
 
 	if (state->result.result_ssize_t == 0) {
-		async_req_error(req, NT_STATUS_END_OF_FILE);
+		async_req_nterror(req, NT_STATUS_END_OF_FILE);
 		return;
 	}
 
 	p->sent += state->result.result_ssize_t;
 	if (p->sent > p->length) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -376,7 +376,7 @@ struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 NTSTATUS sendall_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 /**
@@ -398,7 +398,7 @@ static void async_recv_callback(struct tevent_context *ev,
 	struct param_recv *p = &state->param.param_recv;
 
 	if (state->syscall_type != ASYNC_SYSCALL_RECV) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -466,7 +466,7 @@ static void async_recvall_callback(struct tevent_context *ev,
 	struct param_recvall *p = &state->param.param_recvall;
 
 	if (state->syscall_type != ASYNC_SYSCALL_RECVALL) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -476,18 +476,18 @@ static void async_recvall_callback(struct tevent_context *ev,
 	state->sys_errno = errno;
 
 	if (state->result.result_ssize_t == -1) {
-		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
 		return;
 	}
 
 	if (state->result.result_ssize_t == 0) {
-		async_req_error(req, NT_STATUS_END_OF_FILE);
+		async_req_nterror(req, NT_STATUS_END_OF_FILE);
 		return;
 	}
 
 	p->received += state->result.result_ssize_t;
 	if (p->received > p->length) {
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -535,7 +535,7 @@ struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 NTSTATUS recvall_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct async_connect_state {
@@ -627,7 +627,7 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	status = map_nt_error_from_unix(state->sys_errno);
  post_status:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	if (!async_post_status(result, ev, status)) {
+	if (!async_post_ntstatus(result, ev, status)) {
 		goto fail;
 	}
 	return result;
@@ -675,7 +675,7 @@ static void async_connect_connected(struct tevent_context *ev,
 		DEBUG(10, ("connect returned %s\n", strerror(errno)));
 
 		fcntl(state->fd, F_SETFL, state->old_sockflags);
-		async_req_error(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
 		return;
 	}
 
@@ -693,7 +693,7 @@ NTSTATUS async_connect_recv(struct async_req *req, int *perrno)
 
 	*perrno = state->sys_errno;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	if (state->sys_errno == 0) {

@@ -20,7 +20,7 @@
 #ifndef __ASYNC_REQ_H__
 #define __ASYNC_REQ_H__
 
-#include "includes.h"
+#include "lib/talloc/talloc.h"
 
 /**
  * An async request moves between the following 4 states:
@@ -92,9 +92,9 @@ struct async_req {
 	 * @brief status code when finished
 	 *
 	 * This status can be queried in the async completion function. It
-	 * will be set to NT_STATUS_OK when everything went fine.
+	 * will be set to 0 when everything went fine.
 	 **/
-	NTSTATUS status;
+	uint32_t error;
 
 	/**
 	 * @brief What to do on completion
@@ -121,16 +121,12 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
 
 void async_req_done(struct async_req *req);
 
-void async_req_error(struct async_req *req, NTSTATUS status);
+void async_req_error(struct async_req *req, uint32_t error);
 
-bool async_post_status(struct async_req *req, struct tevent_context *ev,
-		       NTSTATUS status);
+bool async_post_error(struct async_req *req, struct tevent_context *ev,
+		      uint32_t error);
 
-bool async_req_nomem(const void *p, struct async_req *req);
-
-bool async_req_is_error(struct async_req *req, NTSTATUS *status);
-
-NTSTATUS async_req_simple_recv(struct async_req *req);
+bool async_req_is_error(struct async_req *req, uint32_t *error);
 
 bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to);
@@ -139,7 +135,7 @@ struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
 				  struct tevent_context *ev,
 				  struct timeval to);
 
-NTSTATUS async_wait_recv(struct async_req *req);
+bool async_wait_recv(struct async_req *req);
 
 struct async_req_queue;
 

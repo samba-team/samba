@@ -650,7 +650,7 @@ static void cli_echo_recv_helper(struct async_req *req)
 
 	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -659,7 +659,7 @@ static void cli_echo_recv_helper(struct async_req *req)
 	if ((num_bytes != cli_req->data.echo.data.length)
 	    || (memcmp(cli_req->data.echo.data.data, bytes,
 		       num_bytes) != 0)) {
-		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -727,7 +727,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS cli_echo_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 /**

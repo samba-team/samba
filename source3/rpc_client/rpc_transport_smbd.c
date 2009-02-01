@@ -169,12 +169,12 @@ static void get_anon_ipc_negprot_done(struct async_req *subreq)
 	status = cli_negprot_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	subreq = cli_session_setup_guest_send(state, state->ev, state->cli);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = get_anon_ipc_sesssetup_done;
@@ -192,13 +192,13 @@ static void get_anon_ipc_sesssetup_done(struct async_req *subreq)
 	status = cli_session_setup_guest_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	subreq = cli_tcon_andx_send(state, state->ev, state->cli,
 				    "IPC$", "IPC", NULL, 0);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = get_anon_ipc_tcon_done;
@@ -214,7 +214,7 @@ static void get_anon_ipc_tcon_done(struct async_req *subreq)
 	status = cli_tcon_andx_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -222,7 +222,7 @@ static void get_anon_ipc_tcon_done(struct async_req *subreq)
 
 static NTSTATUS get_anon_ipc_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct rpc_cli_smbd_conn_init_state {
@@ -356,7 +356,7 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 	if (stdout_pipe[1] != -1) {
 		close(stdout_pipe[1]);
 	}
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -372,7 +372,7 @@ static void rpc_cli_smbd_conn_init_done(struct async_req *subreq)
 	status = get_anon_ipc_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -386,7 +386,7 @@ NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
 		req->private_data, struct rpc_cli_smbd_conn_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pconn = talloc_move(mem_ctx, &state->conn);
@@ -481,7 +481,7 @@ static void rpc_smbd_write_done(struct async_req *subreq)
 	status = state->sub_transp->write_recv(subreq, &state->written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -493,7 +493,7 @@ static NTSTATUS rpc_smbd_write_recv(struct async_req *req, ssize_t *pwritten)
 		req->private_data, struct rpc_smbd_write_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pwritten = state->written;
@@ -554,7 +554,7 @@ static void rpc_smbd_read_done(struct async_req *subreq)
 	status = state->sub_transp->read_recv(subreq, &state->received);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -566,7 +566,7 @@ static NTSTATUS rpc_smbd_read_recv(struct async_req *req, ssize_t *preceived)
 		req->private_data, struct rpc_smbd_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*preceived = state->received;
@@ -632,7 +632,7 @@ static void rpc_transport_smbd_init_done(struct async_req *subreq)
 		&state->transport_smbd->sub_transp);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -646,7 +646,7 @@ NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
 		req->private_data, struct rpc_transport_smbd_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

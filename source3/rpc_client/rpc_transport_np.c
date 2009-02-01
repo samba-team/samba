@@ -93,7 +93,7 @@ static void rpc_np_write_done(struct async_req *subreq)
 	status = cli_write_andx_recv(subreq, &state->written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -105,7 +105,7 @@ static NTSTATUS rpc_np_write_recv(struct async_req *req, ssize_t *pwritten)
 		req->private_data, struct rpc_np_write_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pwritten = state->written;
@@ -169,13 +169,13 @@ static void rpc_np_read_done(struct async_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	if (state->received > state->size) {
 		TALLOC_FREE(subreq);
-		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -189,7 +189,7 @@ static NTSTATUS rpc_np_read_recv(struct async_req *req, ssize_t *preceived)
 		req->private_data, struct rpc_np_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*preceived = state->received;
@@ -251,7 +251,7 @@ static void rpc_np_trans_done(struct async_req *subreq)
 				&state->rdata, &state->rdata_len);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -264,7 +264,7 @@ static NTSTATUS rpc_np_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct rpc_np_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*prdata = talloc_move(mem_ctx, &state->rdata);
@@ -334,7 +334,7 @@ static void rpc_transport_np_init_pipe_open(struct async_req *subreq)
 	status = cli_ntcreate_recv(subreq, &state->transport_np->fnum);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -351,7 +351,7 @@ NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
 		req->private_data, struct rpc_transport_np_init_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

@@ -1183,7 +1183,7 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	status = NT_STATUS_INVALID_HANDLE;
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
  fail:
@@ -1199,7 +1199,7 @@ static void np_write_done(struct async_req *subreq)
 
 	status = sendall_recv(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -1211,7 +1211,7 @@ NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
 		req->private_data, struct np_write_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pnwritten = state->nwritten;
@@ -1267,7 +1267,7 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 	status = NT_STATUS_INVALID_HANDLE;
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
  fail:
@@ -1283,7 +1283,7 @@ static void np_read_done(struct async_req *subreq)
 
 	status = recvall_recv(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -1296,7 +1296,7 @@ NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
 		req->private_data, struct np_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*nread = state->nread;

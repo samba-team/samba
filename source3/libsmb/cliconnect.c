@@ -215,7 +215,7 @@ NTSTATUS cli_session_setup_guest_recv(struct async_req *req)
 	uint8_t *p;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1283,7 +1283,7 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 
  access_denied:
 	result = async_req_new(mem_ctx);
-	if (async_post_status(result, ev, NT_STATUS_ACCESS_DENIED)) {
+	if (async_post_ntstatus(result, ev, NT_STATUS_ACCESS_DENIED)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -1301,7 +1301,7 @@ NTSTATUS cli_tcon_andx_recv(struct async_req *req)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1483,7 +1483,7 @@ NTSTATUS cli_negprot_recv(struct async_req *req)
 	NTSTATUS status;
 	uint16_t protnum;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

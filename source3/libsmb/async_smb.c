@@ -979,7 +979,7 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		   nt_errstr(status)));
 
 	for (req = cli->outstanding_requests; req; req = req->next) {
-		async_req_error(req->async[0], status);
+		async_req_nterror(req->async[0], status);
 	}
 	return;
 }
@@ -1110,7 +1110,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 		num_async = req->num_async;
 
 		for (i=0; i<num_async; i++) {
-			async_req_error(req->async[i], status);
+			async_req_nterror(req->async[i], status);
 		}
 	}
 	TALLOC_FREE(cli->fd_event);

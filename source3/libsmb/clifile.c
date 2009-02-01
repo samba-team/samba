@@ -836,7 +836,7 @@ NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1049,7 +1049,7 @@ NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1127,7 +1127,7 @@ NTSTATUS cli_close_recv(struct async_req *req)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

@@ -1036,7 +1036,7 @@ struct async_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  post_status:
-	if (!async_post_status(result, ev, status)) {
+	if (!async_post_ntstatus(result, ev, status)) {
 		goto fail;
 	}
 	return result;
@@ -1077,12 +1077,12 @@ static void open_socket_out_connected(struct async_req *subreq)
 		subreq = async_connect_send(state, state->ev, state->fd,
 					    (struct sockaddr *)&state->ss,
 					    state->salen);
-		if (async_req_nomem(subreq, req)) {
+		if (async_req_ntnomem(subreq, req)) {
 			return;
 		}
 		if (!async_req_set_timeout(subreq, state->ev,
 					   timeval_set(0, state->wait_nsec))) {
-			async_req_error(req, NT_STATUS_NO_MEMORY);
+			async_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 		subreq->async.fn = open_socket_out_connected;
@@ -1098,7 +1098,7 @@ static void open_socket_out_connected(struct async_req *subreq)
 #endif
 
 	/* real error */
-	async_req_error(req, map_nt_error_from_unix(sys_errno));
+	async_req_nterror(req, map_nt_error_from_unix(sys_errno));
 }
 
 NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd)
@@ -1107,7 +1107,7 @@ NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd)
 		req->private_data, struct open_socket_out_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pfd = state->fd;
@@ -1183,7 +1183,7 @@ struct async_req *open_socket_out_defer_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  post_status:
-	if (!async_post_status(result, ev, status)) {
+	if (!async_post_ntstatus(result, ev, status)) {
 		goto fail;
 	}
 	return result;
@@ -1198,18 +1198,18 @@ static void open_socket_out_defer_waited(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct open_socket_out_defer_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_defer_state);
-	NTSTATUS status;
+	bool ret;
 
-	status = async_wait_recv(subreq);
+	ret = async_wait_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+	if (!ret) {
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
 	subreq = open_socket_out_send(state, state->ev, &state->ss,
 				      state->port, state->timeout);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = open_socket_out_defer_connected;
@@ -1227,7 +1227,7 @@ static void open_socket_out_defer_connected(struct async_req *subreq)
 	status = open_socket_out_recv(subreq, &state->fd);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -1239,7 +1239,7 @@ NTSTATUS open_socket_out_defer_recv(struct async_req *req, int *pfd)
 		req->private_data, struct open_socket_out_defer_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pfd = state->fd;

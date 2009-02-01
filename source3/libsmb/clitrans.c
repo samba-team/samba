@@ -962,7 +962,7 @@ static void cli_trans_ship_rest(struct async_req *req,
 {
 	state->secondary_request_ctx = talloc_new(state);
 	if (state->secondary_request_ctx == NULL) {
-		async_req_error(req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -972,7 +972,7 @@ static void cli_trans_ship_rest(struct async_req *req,
 
 		cli_req = cli_ship_trans(state->secondary_request_ctx, state);
 		if (cli_req == NULL) {
-			async_req_error(req, NT_STATUS_NO_MEMORY);
+			async_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
@@ -1133,7 +1133,7 @@ static void cli_trans_recv_helper(struct async_req *req)
 	 */
 
 	if (NT_STATUS_IS_ERR(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1154,7 +1154,7 @@ static void cli_trans_recv_helper(struct async_req *req)
 		state->rsetup = (uint16_t *)TALLOC_MEMDUP(
 			state, setup, sizeof(uint16_t) * num_setup);
 		if (state->rsetup == NULL) {
-			async_req_error(req, NT_STATUS_NO_MEMORY);
+			async_req_nterror(req, NT_STATUS_NO_MEMORY);
 			return;
 		}
 	}
@@ -1165,7 +1165,7 @@ static void cli_trans_recv_helper(struct async_req *req)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Pulling params failed: %s\n", nt_errstr(status)));
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1175,7 +1175,7 @@ static void cli_trans_recv_helper(struct async_req *req)
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("Pulling data failed: %s\n", nt_errstr(status)));
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1318,7 +1318,7 @@ NTSTATUS cli_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		cli_req->recv_helper.priv, struct cli_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

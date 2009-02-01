@@ -232,7 +232,7 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	if (async_post_status(req, ev, status)) {
+	if (async_post_ntstatus(req, ev, status)) {
 		return req;
 	}
 	TALLOC_FREE(req);
@@ -295,8 +295,8 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (winbind_closed_fd(fd)) {
-		if (!async_post_status(result, ev,
-				       NT_STATUS_PIPE_DISCONNECTED)) {
+		if (!async_post_ntstatus(result, ev,
+					 NT_STATUS_PIPE_DISCONNECTED)) {
 			goto fail;
 		}
 		return result;
@@ -334,13 +334,13 @@ static void wb_int_trans_write_done(struct async_req *subreq)
 	status = wb_req_write_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	subreq = wb_resp_read_send(state, state->ev, state->fd);
 	if (subreq == NULL) {
-		async_req_error(req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(req, NT_STATUS_NO_MEMORY);
 	}
 	subreq->async.fn = wb_int_trans_read_done;
 	subreq->async.priv = req;
@@ -357,7 +357,7 @@ static void wb_int_trans_read_done(struct async_req *subreq)
 	status = wb_resp_read_recv(subreq, state, &state->wb_resp);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -372,7 +372,7 @@ static NTSTATUS wb_int_trans_recv(struct async_req *req,
 		req->private_data, struct wb_int_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -454,7 +454,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct async_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		state->wb_ctx->is_priv = true;
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -463,7 +463,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 
@@ -483,7 +483,7 @@ static void wb_open_pipe_ping_done(struct async_req *subreq)
 	status = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -496,7 +496,7 @@ static void wb_open_pipe_ping_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 
@@ -516,7 +516,7 @@ static void wb_open_pipe_getpriv_done(struct async_req *subreq)
 	status = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -526,7 +526,7 @@ static void wb_open_pipe_getpriv_done(struct async_req *subreq)
 	subreq = wb_connect_send(state, state->ev, state->wb_ctx,
 				 (char *)wb_resp->extra_data.data);
 	TALLOC_FREE(wb_resp);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 
@@ -545,7 +545,7 @@ static void wb_open_pipe_connect_priv_done(struct async_req *subreq)
 	status = wb_connect_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	state->wb_ctx->is_priv = true;
@@ -554,7 +554,7 @@ static void wb_open_pipe_connect_priv_done(struct async_req *subreq)
 
 static NTSTATUS wb_open_pipe_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct wb_trans_state {
@@ -582,7 +582,7 @@ static void wb_trigger_trans(struct async_req *req)
 
 		subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
 					   state->need_priv);
-		if (async_req_nomem(subreq, req)) {
+		if (async_req_ntnomem(subreq, req)) {
 			return;
 		}
 		subreq->async.fn = wb_trans_connect_done;
@@ -592,7 +592,7 @@ static void wb_trigger_trans(struct async_req *req)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = wb_trans_done;
@@ -645,13 +645,13 @@ static bool wb_trans_retry(struct async_req *req,
 		 * Winbind not around or we can't connect to the pipe. Fail
 		 * immediately.
 		 */
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return true;
 	}
 
 	state->num_retries -= 1;
 	if (state->num_retries == 0) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return true;
 	}
 
@@ -665,7 +665,7 @@ static bool wb_trans_retry(struct async_req *req,
 	}
 
 	subreq = async_wait_send(state, state->ev, timeval_set(1, 0));
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return true;
 	}
 
@@ -680,18 +680,18 @@ static void wb_trans_retry_wait_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
+	bool ret;
 
-	status = async_wait_recv(subreq);
+	ret = async_wait_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		async_req_error(req, status);
+	if (ret) {
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
 	subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
 				   state->need_priv);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = wb_trans_connect_done;
@@ -715,7 +715,7 @@ static void wb_trans_connect_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   state->wb_req);
-	if (async_req_nomem(subreq, req)) {
+	if (async_req_ntnomem(subreq, req)) {
 		return;
 	}
 
@@ -748,7 +748,7 @@ NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct wb_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

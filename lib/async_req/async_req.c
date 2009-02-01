@@ -43,8 +43,8 @@
 
 char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req)
 {
-	return talloc_asprintf(mem_ctx, "async_req: state=%d, status=%s, "
-			       "priv=%s", req->state, nt_errstr(req->status),
+	return talloc_asprintf(mem_ctx, "async_req: state=%d, error=%d, "
+			       "priv=%s", req->state, (int)req->error,
 			       talloc_get_name(req->private_data));
 }
 
@@ -81,7 +81,7 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 
 void async_req_done(struct async_req *req)
 {
-	req->status = NT_STATUS_OK;
+	req->error = 0;
 	req->state = ASYNC_REQ_DONE;
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
@@ -98,9 +98,9 @@ void async_req_done(struct async_req *req)
  * function with the appropriate status code.
  */
 
-void async_req_error(struct async_req *req, NTSTATUS status)
+void async_req_error(struct async_req *req, uint32_t error)
 {
-	req->status = status;
+	req->error = error;
 	req->state = ASYNC_REQ_ERROR;
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
@@ -121,11 +121,11 @@ static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
 	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
 
 	TALLOC_FREE(te);
-	if (NT_STATUS_IS_OK(req->status)) {
+	if (req->error == 0) {
 		async_req_done(req);
 	}
 	else {
-		async_req_error(req, req->status);
+		async_req_error(req, req->error);
 	}
 }
 
@@ -142,10 +142,10 @@ static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
  * conventions, independent of whether the request was actually deferred.
  */
 
-bool async_post_status(struct async_req *req, struct tevent_context *ev,
-		       NTSTATUS status)
+bool async_post_error(struct async_req *req, struct tevent_context *ev,
+		      uint32_t error)
 {
-	req->status = status;
+	req->error = error;
 
 	if (tevent_add_timer(ev, req, timeval_zero(),
 			    async_trigger, req) == NULL) {
@@ -154,53 +154,16 @@ bool async_post_status(struct async_req *req, struct tevent_context *ev,
 	return true;
 }
 
-/**
- * @brief Helper function for nomem check
- * @param[in] p		The pointer to be checked
- * @param[in] req	The request being processed
- *
- * Convenience helper to easily check alloc failure within a callback
- * implementing the next step of an async request.
- *
- * Call pattern would be
- * \code
- * p = talloc(mem_ctx, bla);
- * if (async_req_nomem(p, req)) {
- *	return;
- * }
- * \endcode
- */
-
-bool async_req_nomem(const void *p, struct async_req *req)
-{
-	if (p != NULL) {
-		return false;
-	}
-	async_req_error(req, NT_STATUS_NO_MEMORY);
-	return true;
-}
-
-bool async_req_is_error(struct async_req *req, NTSTATUS *status)
+bool async_req_is_error(struct async_req *req, uint32_t *error)
 {
 	if (req->state < ASYNC_REQ_DONE) {
-		*status = NT_STATUS_INTERNAL_ERROR;
 		return true;
 	}
 	if (req->state == ASYNC_REQ_ERROR) {
-		*status = req->status;
+		*error = req->error;
 		return true;
 	}
 	return false;
-}
-
-NTSTATUS async_req_simple_recv(struct async_req *req)
-{
-	NTSTATUS status;
-
-	if (async_req_is_error(req, &status)) {
-		return status;
-	}
-	return NT_STATUS_OK;
 }
 
 static void async_req_timedout(struct tevent_context *ev,
@@ -211,7 +174,7 @@ static void async_req_timedout(struct tevent_context *ev,
 	struct async_req *req = talloc_get_type_abort(
 		priv, struct async_req);
 	TALLOC_FREE(te);
-	async_req_error(req, NT_STATUS_IO_TIMEOUT);
+	async_req_nterror(req, NT_STATUS_IO_TIMEOUT);
 }
 
 bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
@@ -240,9 +203,9 @@ struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-NTSTATUS async_wait_recv(struct async_req *req)
+bool async_wait_recv(struct async_req *req)
 {
-	return NT_STATUS_OK;
+	return true;
 }
 
 struct async_queue_entry {
