@@ -164,7 +164,7 @@ static int prealloc_open(vfs_handle_struct* handle,
 	if ((flags & O_CREAT) || (flags & O_TRUNC)) {
 		SMB_OFF_T * psize;
 
-		psize = VFS_ADD_FSP_EXTENSION(handle, fsp, SMB_OFF_T);
+		psize = VFS_ADD_FSP_EXTENSION(handle, fsp, SMB_OFF_T, NULL);
 		if (psize == NULL || *psize == -1) {
 			return fd;
 		}

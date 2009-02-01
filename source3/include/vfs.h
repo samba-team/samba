@@ -679,8 +679,8 @@ typedef struct vfs_statvfs_struct {
 /* Add a new FSP extension of the given type. Returns a pointer to the
  * extenstion data.
  */
-#define VFS_ADD_FSP_EXTENSION(handle, fsp, type) \
-    vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type))
+#define VFS_ADD_FSP_EXTENSION(handle, fsp, type, destroy_fn)		\
+    vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type), (destroy_fn))
 
 /* Return a pointer to the existing FSP extension data. */
 #define VFS_FETCH_FSP_EXTENSION(handle, fsp) \

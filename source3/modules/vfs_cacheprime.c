@@ -54,7 +54,7 @@ static bool prime_cache(
         SMB_OFF_T * last;
         ssize_t nread;
 
-        last = (SMB_OFF_T *)VFS_ADD_FSP_EXTENSION(handle, fsp, SMB_OFF_T);
+        last = (SMB_OFF_T *)VFS_ADD_FSP_EXTENSION(handle, fsp, SMB_OFF_T, NULL);
         if (!last) {
                 return False;
         }

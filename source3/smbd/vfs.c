@@ -220,7 +220,9 @@ bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 
 #define EXT_DATA_AREA(e) ((uint8 *)(e) + sizeof(struct vfs_fsp_data))
 
-void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle, files_struct *fsp, size_t ext_size)
+void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle,
+				   files_struct *fsp, size_t ext_size,
+				   void (*destroy_fn)(void *p_data))
 {
 	struct vfs_fsp_data *ext;
 	void * ext_data;
@@ -238,6 +240,7 @@ void *vfs_add_fsp_extension_notype(vfs_handle_struct *handle, files_struct *fsp,
 
 	ext->owner = handle;
 	ext->next = fsp->vfs_extension;
+	ext->destroy = destroy_fn;
 	fsp->vfs_extension = ext;
 	return EXT_DATA_AREA(ext);
 }
@@ -255,6 +258,9 @@ void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 			    prev->next = curr->next;
 		    } else {
 			    fsp->vfs_extension = curr->next;
+		    }
+		    if (curr->destroy) {
+			    curr->destroy(EXT_DATA_AREA(curr));
 		    }
 		    TALLOC_FREE(curr);
 		    return;

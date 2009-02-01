@@ -190,7 +190,7 @@ static int commit_open(
                                         MODULE, "eof mode", "none");
 
         if (dthresh > 0 || !strequal(eof_mode, "none")) {
-                c = VFS_ADD_FSP_EXTENSION(handle, fsp, struct commit_info);
+                c = VFS_ADD_FSP_EXTENSION(handle, fsp, struct commit_info, NULL);
                 /* Process main tunables */
                 if (c) {
                         c->dthresh = dthresh;

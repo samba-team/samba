@@ -405,7 +405,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 	}
 
         sio = (struct stream_io *)VFS_ADD_FSP_EXTENSION(handle, fsp,
-							struct stream_io);
+							struct stream_io,
+							NULL);
         if (sio == NULL) {
                 errno = ENOMEM;
                 goto fail;
