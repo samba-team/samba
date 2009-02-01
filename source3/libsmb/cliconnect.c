@@ -188,10 +188,8 @@ struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
 				   NULL);
 	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, /* workgroup */
 				   NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix",
-				   strlen("Unix")+1, NULL);
-	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba",
-				   strlen("Samba")+1, NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Unix", 5, NULL);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "Samba", 6, NULL);
 
 	if (bytes == NULL) {
 		return NULL;
