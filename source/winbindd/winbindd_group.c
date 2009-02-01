@@ -1306,6 +1306,7 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		char *gr_mem;
 		DOM_SID group_sid;
 		struct winbindd_domain *domain;
+		char *domain_name_idmap;
 
 		/* Do we need to fetch another chunk of groups? */
 
@@ -1353,8 +1354,13 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->name, &group_sid,
-						      &group_gid))) {
+		domain_name_idmap = domain->have_idmap_config
+				  ? domain->name
+				  : "";
+
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain_name_idmap,
+						      &group_sid, &group_gid)))
+		{
 			union unid_t id;
 			enum lsa_SidType type;
 
