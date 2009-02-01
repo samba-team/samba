@@ -1303,3 +1303,40 @@ NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
 	*is_data_outstanding = state->is_data_outstanding;
 	return NT_STATUS_OK;
 }
+
+/**
+ * Create a new RPC client context which uses a local dispatch function.
+ */
+NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx,
+				const struct ndr_syntax_id *abstract_syntax,
+				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli,
+						      TALLOC_CTX *mem_ctx,
+						      const struct ndr_interface_table *table,
+						      uint32_t opnum, void *r),
+				struct auth_serversupplied_info *serversupplied_info,
+				struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+
+	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->abstract_syntax = *abstract_syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = dispatch;
+
+	result->pipes_struct = make_internal_rpc_pipe_p(
+		result, abstract_syntax, "", serversupplied_info);
+	if (result->pipes_struct == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->max_xmit_frag = -1;
+	result->max_recv_frag = -1;
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
