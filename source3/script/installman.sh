@@ -20,7 +20,7 @@ fi
 
 # Get the configured feature set
 test -f "${SRCDIR}/config.log" && \
-	eval `grep "^[[:alnum:]]*=.*" "${SRCDIR}/config.log"`
+	eval `grep "^[[:alnum:]_]*=.*" "${SRCDIR}/config.log"`
 
 for lang in $langs; do
     if [ "X$lang" = XC ]; then
