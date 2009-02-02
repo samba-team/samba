@@ -709,9 +709,9 @@ static void continue_pipe_auth(struct composite_context *ctx)
   handle timeouts of a dcerpc connect
 */
 static void dcerpc_connect_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
-					   struct timeval t, void *private)
+					   struct timeval t, void *private_data)
 {
-	struct composite_context *c = talloc_get_type(private, struct composite_context);
+	struct composite_context *c = talloc_get_type(private_data, struct composite_context);
 	composite_error(c, NT_STATUS_IO_TIMEOUT);
 }
 
