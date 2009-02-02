@@ -76,7 +76,6 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 	char *mapped_name = NULL;
 	struct winbindd_domain *domain = NULL;
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	char *dom_name_idmap = "";
 
 	if (!pw || !dom_name || !user_name)
 		return False;
@@ -88,13 +87,10 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 		nt_status = NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	if (domain->have_idmap_config) {
-		dom_name_idmap = dom_name;
-	}
-
 	/* Resolve the uid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(dom_name_idmap, user_sid,
+	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(domain->have_idmap_config ?
+					      dom_name : "", user_sid,
 					      &pw->pw_uid))) {
 		DEBUG(1, ("error getting user id for sid %s\n",
 			  sid_string_dbg(user_sid)));
@@ -103,7 +99,8 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 
 	/* Resolve the gid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(dom_name_idmap, group_sid,
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->have_idmap_config ?
+					      dom_name : "", group_sid,
 					      &pw->pw_gid))) {
 		DEBUG(1, ("error getting group id for sid %s\n",
 			  sid_string_dbg(group_sid)));
