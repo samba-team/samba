@@ -140,7 +140,7 @@ static void dreplsrv_task_init(struct task_server *task)
 	}
 	service->task		= task;
 	service->startup_time	= timeval_current();
-	task->private		= service;
+	task->private_data	= service;
 
 	status = dreplsrv_init_creds(service);
 	if (!W_ERROR_IS_OK(status)) {

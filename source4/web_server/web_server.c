@@ -202,7 +202,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
 		if (!talloc_reference(web->task, web)) goto failed;
-		wdata = talloc_get_type(web->task->private, struct web_server_data);
+		wdata = talloc_get_type(web->task->private_data, struct web_server_data);
 		if (wdata == NULL) goto failed;
 		wdata->http_process_input(wdata, web);
 		talloc_unlink(web->task, web);
@@ -252,7 +252,7 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 static void websrv_accept(struct stream_connection *conn)
 {
 	struct task_server *task = talloc_get_type(conn->private, struct task_server);
-	struct web_server_data *wdata = talloc_get_type(task->private, struct web_server_data);
+	struct web_server_data *wdata = talloc_get_type(task->private_data, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
@@ -343,7 +343,7 @@ static void websrv_task_init(struct task_server *task)
 	wdata = talloc_zero(task, struct web_server_data);
 	if (wdata == NULL)goto failed;
 
-	task->private = wdata;
+	task->private_data = wdata;
 	
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;
