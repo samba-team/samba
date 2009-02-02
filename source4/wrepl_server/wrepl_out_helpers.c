@@ -62,7 +62,7 @@ static NTSTATUS wreplsrv_out_connect_wait_socket(struct wreplsrv_out_connect_sta
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn		= wreplsrv_out_connect_handler_req;
-	state->req->async.private	= state;
+	state->req->async.private_data	= state;
 
 	state->stage = WREPLSRV_OUT_CONNECT_STAGE_WAIT_ASSOC_CTX;
 
@@ -131,7 +131,7 @@ static void wreplsrv_out_connect_handler_creq(struct composite_context *creq)
 
 static void wreplsrv_out_connect_handler_req(struct wrepl_request *req)
 {
-	struct wreplsrv_out_connect_state *state = talloc_get_type(req->async.private,
+	struct wreplsrv_out_connect_state *state = talloc_get_type(req->async.private_data,
 						   struct wreplsrv_out_connect_state);
 	wreplsrv_out_connect_handler(state);
 	return;
@@ -276,7 +276,7 @@ static NTSTATUS wreplsrv_pull_table_wait_connection(struct wreplsrv_pull_table_s
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn		= wreplsrv_pull_table_handler_req;
-	state->req->async.private	= state;
+	state->req->async.private_data	= state;
 
 	state->stage = WREPLSRV_PULL_TABLE_STAGE_WAIT_TABLE_REPLY;
 
@@ -330,7 +330,7 @@ static void wreplsrv_pull_table_handler_creq(struct composite_context *creq)
 
 static void wreplsrv_pull_table_handler_req(struct wrepl_request *req)
 {
-	struct wreplsrv_pull_table_state *state = talloc_get_type(req->async.private,
+	struct wreplsrv_pull_table_state *state = talloc_get_type(req->async.private_data,
 						  struct wreplsrv_pull_table_state);
 	wreplsrv_pull_table_handler(state);
 	return;
@@ -436,7 +436,7 @@ static NTSTATUS wreplsrv_pull_names_wait_connection(struct wreplsrv_pull_names_s
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn		= wreplsrv_pull_names_handler_req;
-	state->req->async.private	= state;
+	state->req->async.private_data	= state;
 
 	state->stage = WREPLSRV_PULL_NAMES_STAGE_WAIT_SEND_REPLY;
 
@@ -490,7 +490,7 @@ static void wreplsrv_pull_names_handler_creq(struct composite_context *creq)
 
 static void wreplsrv_pull_names_handler_req(struct wrepl_request *req)
 {
-	struct wreplsrv_pull_names_state *state = talloc_get_type(req->async.private,
+	struct wreplsrv_pull_names_state *state = talloc_get_type(req->async.private_data,
 						  struct wreplsrv_pull_names_state);
 	wreplsrv_pull_names_handler(state);
 	return;
@@ -651,7 +651,7 @@ static NTSTATUS wreplsrv_pull_cycle_next_owner_wrapper(struct wreplsrv_pull_cycl
 		NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 		state->req->async.fn		= wreplsrv_pull_cycle_handler_req;
-		state->req->async.private	= state;
+		state->req->async.private_data	= state;
 
 		state->stage = WREPLSRV_PULL_CYCLE_STAGE_WAIT_STOP_ASSOC;
 	}
@@ -773,7 +773,7 @@ static void wreplsrv_pull_cycle_handler_creq(struct composite_context *creq)
 
 static void wreplsrv_pull_cycle_handler_req(struct wrepl_request *req)
 {
-	struct wreplsrv_pull_cycle_state *state = talloc_get_type(req->async.private,
+	struct wreplsrv_pull_cycle_state *state = talloc_get_type(req->async.private_data,
 						  struct wreplsrv_pull_cycle_state);
 	wreplsrv_pull_cycle_handler(state);
 	return;
@@ -957,7 +957,7 @@ static NTSTATUS wreplsrv_push_notify_inform(struct wreplsrv_push_notify_state *s
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn		= wreplsrv_push_notify_handler_req;
-	state->req->async.private	= state;
+	state->req->async.private_data	= state;
 
 	state->stage = WREPLSRV_PUSH_NOTIFY_STAGE_WAIT_INFORM;
 
@@ -1056,7 +1056,7 @@ static void wreplsrv_push_notify_handler_creq(struct composite_context *creq)
 
 static void wreplsrv_push_notify_handler_req(struct wrepl_request *req)
 {
-	struct wreplsrv_push_notify_state *state = talloc_get_type(req->async.private,
+	struct wreplsrv_push_notify_state *state = talloc_get_type(req->async.private_data,
 						   struct wreplsrv_push_notify_state);
 	wreplsrv_push_notify_handler(state);
 	return;
