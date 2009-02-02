@@ -285,7 +285,7 @@ static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 */
 static void kdc_tcp_recv_handler(struct stream_connection *conn, uint16_t flags)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
 	packet_recv(kdcconn->packet);
 }
@@ -305,7 +305,7 @@ static void kdc_tcp_recv_error(void *private_data, NTSTATUS status)
 */
 static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
 	packet_queue_run(kdcconn->packet);
 }
@@ -357,7 +357,7 @@ static bool kdc_process(struct kdc_server *kdc,
 */
 static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_fn_t process_fn)
 {
-	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
+	struct kdc_server *kdc = talloc_get_type(conn->private_data, struct kdc_server);
 	struct kdc_tcp_connection *kdcconn;
 
 	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
@@ -368,7 +368,7 @@ static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_f
 	kdcconn->conn	 = conn;
 	kdcconn->kdc	 = kdc;
 	kdcconn->process = process_fn;
-	conn->private    = kdcconn;
+	conn->private_data    = kdcconn;
 
 	kdcconn->packet = packet_init(kdcconn);
 	if (kdcconn->packet == NULL) {

@@ -183,7 +183,7 @@ static void ldapsrv_conn_idle_timeout(struct tevent_context *ev,
 void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
-		talloc_get_type(c->private, struct ldapsrv_connection);
+		talloc_get_type(c->private_data, struct ldapsrv_connection);
 
 	if (conn->limits.ite) { /* clean initial timeout if any */
 		talloc_free(conn->limits.ite);
@@ -209,7 +209,7 @@ void ldapsrv_recv(struct stream_connection *c, uint16_t flags)
 static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 {
 	struct ldapsrv_connection *conn = 
-		talloc_get_type(c->private, struct ldapsrv_connection);
+		talloc_get_type(c->private_data, struct ldapsrv_connection);
 	
 	packet_queue_run(conn->packet);
 }
@@ -328,7 +328,7 @@ failed:
 static void ldapsrv_accept(struct stream_connection *c)
 {
 	struct ldapsrv_service *ldapsrv_service = 
-		talloc_get_type(c->private, struct ldapsrv_service);
+		talloc_get_type(c->private_data, struct ldapsrv_service);
 	struct ldapsrv_connection *conn;
 	struct cli_credentials *server_credentials;
 	struct socket_address *socket_address;
@@ -347,7 +347,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->sockets.raw = c->socket;
 	conn->lp_ctx      = ldapsrv_service->task->lp_ctx;
 
-	c->private        = conn;
+	c->private_data   = conn;
 
 	socket_address = socket_get_my_addr(c->socket, conn);
 	if (!socket_address) {

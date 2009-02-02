@@ -49,7 +49,7 @@ static void wbsrv_recv_error(void *private_data, NTSTATUS status)
 
 static void wbsrv_accept(struct stream_connection *conn)
 {
-	struct wbsrv_listen_socket *listen_socket = talloc_get_type(conn->private, 
+	struct wbsrv_listen_socket *listen_socket = talloc_get_type(conn->private_data,
 								    struct wbsrv_listen_socket);
 	struct wbsrv_connection *wbconn;
 
@@ -61,7 +61,7 @@ static void wbsrv_accept(struct stream_connection *conn)
 	wbconn->conn	      = conn;
 	wbconn->listen_socket = listen_socket;
 	wbconn->lp_ctx        = listen_socket->service->task->lp_ctx;
-	conn->private         = wbconn;
+	conn->private_data    = wbconn;
 
 	wbconn->packet = packet_init(wbconn);
 	if (wbconn->packet == NULL) {
@@ -83,7 +83,7 @@ static void wbsrv_accept(struct stream_connection *conn)
 */
 static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(conn->private, 
+	struct wbsrv_connection *wbconn = talloc_get_type(conn->private_data,
 							  struct wbsrv_connection);
 	packet_recv(wbconn->packet);
 
@@ -94,7 +94,7 @@ static void wbsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void wbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(conn->private, 
+	struct wbsrv_connection *wbconn = talloc_get_type(conn->private_data,
 							  struct wbsrv_connection);
 	packet_queue_run(wbconn->packet);
 }

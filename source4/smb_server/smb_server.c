@@ -88,7 +88,7 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 */
 static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private,
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private_data,
 							     struct smbsrv_connection);
 
 	DEBUG(10,("smbsrv_recv\n"));
@@ -101,7 +101,7 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, 
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private_data,
 							     struct smbsrv_connection);
 	packet_queue_run(smb_conn->packet);
 }
@@ -148,7 +148,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	smb_conn->lp_ctx = conn->lp_ctx;
 	smb_conn->connection = conn;
-	conn->private = smb_conn;
+	conn->private_data = smb_conn;
 
 	smb_conn->statistics.connect_time = timeval_current();
 

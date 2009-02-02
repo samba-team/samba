@@ -123,7 +123,7 @@ static NTSTATUS wreplsrv_recv_request(void *private_data, DATA_BLOB blob)
 */
 static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private,
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private_data,
 								   struct wreplsrv_in_connection);
 
 	packet_recv(wreplconn->packet);
@@ -134,7 +134,7 @@ static void wreplsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void wreplsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private,
+	struct wreplsrv_in_connection *wreplconn = talloc_get_type(conn->private_data,
 								   struct wreplsrv_in_connection);
 	packet_queue_run(wreplconn->packet);
 }
@@ -154,7 +154,7 @@ static void wreplsrv_recv_error(void *private_data, NTSTATUS status)
 */
 static void wreplsrv_accept(struct stream_connection *conn)
 {
-	struct wreplsrv_service *service = talloc_get_type(conn->private, struct wreplsrv_service);
+	struct wreplsrv_service *service = talloc_get_type(conn->private_data, struct wreplsrv_service);
 	struct wreplsrv_in_connection *wreplconn;
 	struct socket_address *peer_ip;
 
@@ -189,7 +189,7 @@ static void wreplsrv_accept(struct stream_connection *conn)
 
 	wreplconn->partner	= wreplsrv_find_partner(service, peer_ip->addr);
 
-	conn->private = wreplconn;
+	conn->private_data = wreplconn;
 
 	irpc_add_name(conn->msg_ctx, "wreplsrv_connection");
 }

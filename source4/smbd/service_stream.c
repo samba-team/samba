@@ -136,7 +136,7 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	srv_conn->private       = private_data;
+	srv_conn->private_data  = private_data;
 	srv_conn->model_ops     = model_ops;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= cluster_id(0, 0);
@@ -177,7 +177,7 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	srv_conn->private       = stream_socket->private_data;
+	srv_conn->private_data	= stream_socket->private_data;
 	srv_conn->model_ops     = stream_socket->model_ops;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= server_id;
