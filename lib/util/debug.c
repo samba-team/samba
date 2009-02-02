@@ -102,7 +102,7 @@ _PUBLIC_ void dbghdr(int level, const char *location, const char *func)
 }
 
 
-_PUBLIC_ void dbghdrclass(int level, int class, const char *location, const char *func)
+_PUBLIC_ void dbghdrclass(int level, int dclass, const char *location, const char *func)
 {
 	/* Simple wrapper, Samba 4 doesn't do debug classes */
 	dbghdr(level, location, func);
