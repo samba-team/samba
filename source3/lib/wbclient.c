@@ -155,7 +155,7 @@ struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 }
 
 static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
-					 struct event_context *ev,
+					 struct tevent_context *ev,
 					 struct wb_context *wb_ctx,
 					 const char *dir)
 {
@@ -272,7 +272,7 @@ static struct winbindd_request *winbindd_request_copy(
 }
 
 struct wb_int_trans_state {
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int fd;
 	struct winbindd_request *wb_req;
 	struct winbindd_response *wb_resp;
@@ -282,7 +282,7 @@ static void wb_int_trans_write_done(struct async_req *subreq);
 static void wb_int_trans_read_done(struct async_req *subreq);
 
 static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev, int fd,
+					   struct tevent_context *ev, int fd,
 					   struct winbindd_request *wb_req)
 {
 	struct async_req *result;
@@ -396,7 +396,7 @@ static const char *winbindd_socket_dir(void)
 
 struct wb_open_pipe_state {
 	struct wb_context *wb_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	bool need_priv;
 	struct winbindd_request wb_req;
 };
@@ -407,7 +407,7 @@ static void wb_open_pipe_getpriv_done(struct async_req *subreq);
 static void wb_open_pipe_connect_priv_done(struct async_req *subreq);
 
 static struct async_req *wb_open_pipe_send(TALLOC_CTX *mem_ctx,
-					   struct event_context *ev,
+					   struct tevent_context *ev,
 					   struct wb_context *wb_ctx,
 					   bool need_priv)
 {
@@ -560,7 +560,7 @@ static NTSTATUS wb_open_pipe_recv(struct async_req *req)
 struct wb_trans_state {
 	struct wb_trans_state *prev, *next;
 	struct wb_context *wb_ctx;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	struct winbindd_request *wb_req;
 	struct winbindd_response *wb_resp;
 	int num_retries;
@@ -599,7 +599,7 @@ static void wb_trigger_trans(struct async_req *req)
 	subreq->async.priv = req;
 }
 
-struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct wb_context *wb_ctx, bool need_priv,
 				const struct winbindd_request *wb_req)
 {

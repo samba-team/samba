@@ -27,7 +27,7 @@
 
 struct req_read_state {
 	struct winbindd_request *wb_req;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	size_t max_extra_data;
 	int fd;
 };
@@ -37,7 +37,7 @@ static void wb_req_read_main(struct async_req *subreq);
 static void wb_req_read_extra(struct async_req *subreq);
 
 struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
+				   struct tevent_context *ev,
 				   int fd, size_t max_extra_data)
 {
 	struct async_req *result, *subreq;
@@ -184,7 +184,7 @@ NTSTATUS wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 
 struct req_write_state {
 	struct winbindd_request *wb_req;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int fd;
 };
 
@@ -192,7 +192,7 @@ static void wb_req_write_main(struct async_req *subreq);
 static void wb_req_write_extra(struct async_req *subreq);
 
 struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd,
+				    struct tevent_context *ev, int fd,
 				    struct winbindd_request *wb_req)
 {
 	struct async_req *result, *subreq;
@@ -275,7 +275,7 @@ NTSTATUS wb_req_write_recv(struct async_req *req)
 
 struct resp_read_state {
 	struct winbindd_response *wb_resp;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	size_t max_extra_data;
 	int fd;
 };
@@ -285,7 +285,7 @@ static void wb_resp_read_main(struct async_req *subreq);
 static void wb_resp_read_extra(struct async_req *subreq);
 
 struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd)
+				    struct tevent_context *ev, int fd)
 {
 	struct async_req *result, *subreq;
 	struct resp_read_state *state;
@@ -423,7 +423,7 @@ NTSTATUS wb_resp_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 
 struct resp_write_state {
 	struct winbindd_response *wb_resp;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int fd;
 };
 
@@ -431,7 +431,7 @@ static void wb_resp_write_main(struct async_req *subreq);
 static void wb_resp_write_extra(struct async_req *subreq);
 
 struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd,
+				    struct tevent_context *ev, int fd,
 				    struct winbindd_response *wb_resp)
 {
 	struct async_req *result, *subreq;
