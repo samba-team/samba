@@ -583,10 +583,10 @@ _PUBLIC_ bool check_error(const char *location, struct smbcli_state *c,
 	
 	status = smbcli_nt_error(c->tree);
 	if (NT_STATUS_IS_DOS(status)) {
-		int class, num;
-		class = NT_STATUS_DOS_CLASS(status);
+		int classnum, num;
+		classnum = NT_STATUS_DOS_CLASS(status);
 		num = NT_STATUS_DOS_CODE(status);
-                if (eclass != class || ecode != num) {
+                if (eclass != classnum || ecode != num) {
                         printf("unexpected error code %s\n", nt_errstr(status));
                         printf(" expected %s or %s (at %s)\n", 
 			       nt_errstr(NT_STATUS_DOS(eclass, ecode)), 
