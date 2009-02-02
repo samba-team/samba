@@ -91,14 +91,14 @@ export PASSWORD
 	shift $#
 	testitprefix="smbtorture_s3.plain."
 	testitenv="dc"
-	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD ""
+	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" ""
 )
 
 (
 	shift $#
 	testitprefix="smbtorture_s3.crypt."
 	testitenv="dc"
-	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "-e"
+	. $SCRIPTDIR/test_smbtorture_s3.sh //\$SERVER_IP/tmp \$USERNAME \$PASSWORD "" "-e"
 )
 
 (
