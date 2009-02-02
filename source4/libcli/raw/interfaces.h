@@ -2698,7 +2698,7 @@ union smb_search_data {
 };
 
 /* Callback function passed to the raw search interface. */
-typedef bool (*smbcli_search_callback)(void *private, const union smb_search_data *file);
+typedef bool (*smbcli_search_callback)(void *private_data, const union smb_search_data *file);
 
 enum smb_search_close_level {RAW_FINDCLOSE_GENERIC, RAW_FINDCLOSE_FCLOSE, RAW_FINDCLOSE_FINDCLOSE};
 

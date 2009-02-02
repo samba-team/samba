@@ -149,7 +149,7 @@ struct smbcli_transport {
 	struct {
 		/* a oplock break request handler */
 		bool (*handler)(struct smbcli_transport *transport, 
-				uint16_t tid, uint16_t fnum, uint8_t level, void *private);
+				uint16_t tid, uint16_t fnum, uint8_t level, void *private_data);
 		/* private data passed to the oplock handler */
 		void *private;
 	} oplock;
@@ -328,11 +328,11 @@ struct smbcli_tree *smbcli_tree_init(struct smbcli_session *session, TALLOC_CTX 
 NTSTATUS smb_raw_tcon(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_tcon *parms);
 void smbcli_oplock_handler(struct smbcli_transport *transport, 
 			bool (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
-			void *private);
+			void *private_data);
 void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
 				   void (*idle_func)(struct smbcli_transport *, void *),
 				   uint64_t period,
-				   void *private);
+				   void *private_data);
 NTSTATUS smbcli_request_simple_recv(struct smbcli_request *req);
 bool smbcli_oplock_ack(struct smbcli_tree *tree, uint16_t fnum, uint16_t ack_level);
 NTSTATUS smb_raw_open(struct smbcli_tree *tree, TALLOC_CTX *mem_ctx, union smb_open *parms);
@@ -366,7 +366,7 @@ struct smbcli_request *smb_raw_echo_send(struct smbcli_transport *transport,
 					 struct smb_echo *p);
 NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      TALLOC_CTX *mem_ctx,
-			      union smb_search_first *io, void *private,
+			      union smb_search_first *io, void *private_data,
 			      smbcli_search_callback callback);
 NTSTATUS smb_raw_flush(struct smbcli_tree *tree, union smb_flush *parms);
 
