@@ -34,8 +34,6 @@
 #include "system/wait.h"
 
 /* Lists, trees, caching, database... */
-#include <stdlib.h>
-#include <stdbool.h>
 #include <talloc.h>
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
