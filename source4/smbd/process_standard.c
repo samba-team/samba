@@ -61,7 +61,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 				       void (*new_conn)(struct tevent_context *,
 							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
-				       void *private)
+				       void *private_data)
 {
 	NTSTATUS status;
 	struct socket_context *sock2;
@@ -97,8 +97,8 @@ static void standard_accept_connection(struct tevent_context *ev,
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
 	   everything else will be freed */
-	talloc_steal(ev2, private);
-	talloc_steal(private, sock2);
+	talloc_steal(ev2, private_data);
+	talloc_steal(private_data, sock2);
 
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
@@ -128,7 +128,7 @@ static void standard_accept_connection(struct tevent_context *ev,
 	talloc_free(s);
 
 	/* setup this new connection.  Cluster ID is PID based for this process modal */
-	new_conn(ev2, lp_ctx, sock2, cluster_id(pid, 0), private);
+	new_conn(ev2, lp_ctx, sock2, cluster_id(pid, 0), private_data);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -146,7 +146,7 @@ static void standard_new_task(struct tevent_context *ev,
 			      struct loadparm_context *lp_ctx,
 			      const char *service_name,
 			      void (*new_task)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
-			      void *private)
+			      void *private_data)
 {
 	pid_t pid;
 	struct tevent_context *ev2;
@@ -166,7 +166,7 @@ static void standard_new_task(struct tevent_context *ev,
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
 	   everything else will be freed */
-	talloc_steal(ev2, private);
+	talloc_steal(ev2, private_data);
 
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
@@ -183,7 +183,7 @@ static void standard_new_task(struct tevent_context *ev,
 	setproctitle("task %s server_id[%d]", service_name, pid);
 
 	/* setup this new task.  Cluster ID is PID based for this process modal */
-	new_task(ev2, lp_ctx, cluster_id(pid, 0), private);
+	new_task(ev2, lp_ctx, cluster_id(pid, 0), private_data);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

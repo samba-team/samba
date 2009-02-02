@@ -53,9 +53,9 @@ struct task_state {
 */
 static void task_server_callback(struct tevent_context *event_ctx, 
 				 struct loadparm_context *lp_ctx,
-				 struct server_id server_id, void *private)
+				 struct server_id server_id, void *private_data)
 {
-	struct task_state *state = talloc_get_type(private, struct task_state);
+	struct task_state *state = talloc_get_type(private_data, struct task_state);
 	struct task_server *task;
 
 	task = talloc(event_ctx, struct task_server);

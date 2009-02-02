@@ -149,9 +149,9 @@ static void setup_signals(void)
   handle io on stdin
 */
 static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent_fd *fde, 
-				 uint16_t flags, void *private)
+				 uint16_t flags, void *private_data)
 {
-	const char *binary_name = (const char *)private;
+	const char *binary_name = (const char *)private_data;
 	uint8_t c;
 	if (read(0, &c, 1) == 0) {
 		DEBUG(0,("%s: EOF on stdin - terminating\n", binary_name));
@@ -169,9 +169,9 @@ static void server_stdin_handler(struct tevent_context *event_ctx, struct tevent
 */
 _NORETURN_ static void max_runtime_handler(struct tevent_context *ev, 
 					   struct tevent_timer *te, 
-					   struct timeval t, void *private)
+					   struct timeval t, void *private_data)
 {
-	const char *binary_name = (const char *)private;
+	const char *binary_name = (const char *)private_data;
 	DEBUG(0,("%s: maximum runtime exceeded - terminating\n", binary_name));
 	exit(0);
 }

@@ -238,7 +238,7 @@ static void named_pipe_recv_error(void *private_data, NTSTATUS status)
 	stream_terminate_connection(pipe_conn->connection, nt_errstr(status));
 }
 
-static NTSTATUS named_pipe_full_request(void *private, DATA_BLOB blob, size_t *size)
+static NTSTATUS named_pipe_full_request(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 8) {
 		return STATUS_MORE_ENTRIES;
