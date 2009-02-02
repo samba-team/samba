@@ -157,9 +157,9 @@ struct echo_TestSleep_private {
 };
 
 static void echo_TestSleep_handler(struct tevent_context *ev, struct tevent_timer *te, 
-				   struct timeval t, void *private)
+				   struct timeval t, void *private_data)
 {
-	struct echo_TestSleep_private *p = talloc_get_type(private, 
+	struct echo_TestSleep_private *p = talloc_get_type(private_data,
 							   struct echo_TestSleep_private);
 	struct echo_TestSleep *r = p->r;
 	NTSTATUS status;
