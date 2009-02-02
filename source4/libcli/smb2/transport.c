@@ -390,7 +390,7 @@ static void idle_handler(struct tevent_context *ev,
 						      transport,
 						      next,
 						      idle_handler, transport);
-	transport->idle.func(transport, transport->idle.private);
+	transport->idle.func(transport, transport->idle.private_data);
 }
 
 /*
@@ -403,7 +403,7 @@ void smb2_transport_idle_handler(struct smb2_transport *transport,
 				 void *private_data)
 {
 	transport->idle.func = idle_func;
-	transport->idle.private = private_data;
+	transport->idle.private_data = private_data;
 	transport->idle.period = period;
 
 	if (transport->socket->event.te != NULL) {

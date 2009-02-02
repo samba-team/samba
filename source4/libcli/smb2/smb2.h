@@ -59,7 +59,7 @@ struct smb2_transport {
 	   for a packet */
 	struct {
 		void (*func)(struct smb2_transport *, void *);
-		void *private;
+		void *private_data;
 		uint_t period;
 	} idle;
 
