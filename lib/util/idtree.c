@@ -92,10 +92,10 @@ static void free_layer(struct idr_context *idp, struct idr_layer *p)
 static int idr_pre_get(struct idr_context *idp)
 {
 	while (idp->id_free_cnt < IDR_FREE_MAX) {
-		struct idr_layer *new = talloc_zero(idp, struct idr_layer);
-		if(new == NULL)
+		struct idr_layer *pn = talloc_zero(idp, struct idr_layer);
+		if(pn == NULL)
 			return (0);
-		free_layer(idp, new);
+		free_layer(idp, pn);
 	}
 	return 1;
 }
@@ -103,7 +103,7 @@ static int idr_pre_get(struct idr_context *idp)
 static int sub_alloc(struct idr_context *idp, void *ptr, int *starting_id)
 {
 	int n, m, sh;
-	struct idr_layer *p, *new;
+	struct idr_layer *p, *pn;
 	struct idr_layer *pa[MAX_LEVEL];
 	int l, id, oid;
 	uint32_t bm;
@@ -155,9 +155,9 @@ restart:
 		 * Create the layer below if it is missing.
 		 */
 		if (!p->ary[m]) {
-			if (!(new = alloc_layer(idp)))
+			if (!(pn = alloc_layer(idp)))
 				return -1;
-			p->ary[m] = new;
+			p->ary[m] = pn;
 			p->count++;
 		}
 		pa[l--] = p;
@@ -188,7 +188,7 @@ restart:
 
 static int idr_get_new_above_int(struct idr_context *idp, void *ptr, int starting_id)
 {
-	struct idr_layer *p, *new;
+	struct idr_layer *p, *pn;
 	int layers, v, id;
 
 	idr_pre_get(idp);
@@ -210,24 +210,24 @@ build_up:
 		layers++;
 		if (!p->count)
 			continue;
-		if (!(new = alloc_layer(idp))) {
+		if (!(pn = alloc_layer(idp))) {
 			/*
 			 * The allocation failed.  If we built part of
 			 * the structure tear it down.
 			 */
-			for (new = p; p && p != idp->top; new = p) {
+			for (pn = p; p && p != idp->top; pn = p) {
 				p = p->ary[0];
-				new->ary[0] = NULL;
-				new->bitmap = new->count = 0;
-				free_layer(idp, new);
+				pn->ary[0] = NULL;
+				pn->bitmap = pn->count = 0;
+				free_layer(idp, pn);
 			}
 			return -1;
 		}
-		new->ary[0] = p;
-		new->count = 1;
+		pn->ary[0] = p;
+		pn->count = 1;
 		if (p->bitmap == IDR_FULL)
-			set_bit(0, new->bitmap);
-		p = new;
+			set_bit(0, pn->bitmap);
+		p = pn;
 	}
 	idp->top = p;
 	idp->layers = layers;
