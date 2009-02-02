@@ -241,41 +241,41 @@ const char **merge_attr_list(TALLOC_CTX *mem_ctx,
   considering subclasses, auxillary classes etc)
 */
 
-const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *class, enum dsdb_attr_list_query query)
+const char **dsdb_attribute_list(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass, enum dsdb_attr_list_query query)
 {
 	const char **attr_list = NULL;
 	switch (query) {
 	case DSDB_SCHEMA_ALL_MAY:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
 		break;
 		
 	case DSDB_SCHEMA_ALL_MUST:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMustContain);
 		break;
 		
 	case DSDB_SCHEMA_SYS_MAY:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
 		break;
 		
 	case DSDB_SCHEMA_SYS_MUST:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMustContain);
 		break;
 		
 	case DSDB_SCHEMA_MAY:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
 		break;
 		
 	case DSDB_SCHEMA_MUST:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mustContain);
 		break;
 		
 	case DSDB_SCHEMA_ALL:
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mayContain);
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMayContain);
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->mustContain);
-		attr_list = merge_attr_list(mem_ctx, attr_list, class->systemMustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMayContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->mustContain);
+		attr_list = merge_attr_list(mem_ctx, attr_list, sclass->systemMustContain);
 		break;
 	}
 	return attr_list;
@@ -287,26 +287,26 @@ static const char **dsdb_full_attribute_list_internal(TALLOC_CTX *mem_ctx,
 						enum dsdb_attr_list_query query)
 {
 	int i;
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	
 	const char **attr_list = NULL;
 	const char **this_class_list;
 	const char **recursive_list;
 
 	for (i=0; class_list && class_list[i]; i++) {
-		class = dsdb_class_by_lDAPDisplayName(schema, class_list[i]);
+		sclass = dsdb_class_by_lDAPDisplayName(schema, class_list[i]);
 		
-		this_class_list = dsdb_attribute_list(mem_ctx, class, query);
+		this_class_list = dsdb_attribute_list(mem_ctx, sclass, query);
 		attr_list = merge_attr_list(mem_ctx, attr_list, this_class_list);
 
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
-								   class->systemAuxiliaryClass, 
+								   sclass->systemAuxiliaryClass,
 								   query);
 		
 		attr_list = merge_attr_list(mem_ctx, attr_list, recursive_list);
 		
 		recursive_list = dsdb_full_attribute_list_internal(mem_ctx, schema, 
-								   class->auxiliaryClass, 
+								   sclass->auxiliaryClass,
 								   query);
 		
 		attr_list = merge_attr_list(mem_ctx, attr_list, recursive_list);
