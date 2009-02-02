@@ -450,12 +450,12 @@ static NTSTATUS smbcli_transport_finish_recv(void *private_data, DATA_BLOB blob)
 	smb_setup_bufinfo(req);
 
 	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		int class = CVAL(req->in.hdr,HDR_RCLS);
+		int eclass = CVAL(req->in.hdr,HDR_RCLS);
 		int code = SVAL(req->in.hdr,HDR_ERR);
-		if (class == 0 && code == 0) {
+		if (eclass == 0 && code == 0) {
 			transport->error.e.nt_status = NT_STATUS_OK;
 		} else {
-			transport->error.e.nt_status = NT_STATUS_DOS(class, code);
+			transport->error.e.nt_status = NT_STATUS_DOS(eclass, code);
 		}
 	} else {
 		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
