@@ -75,13 +75,13 @@ static NTSTATUS vampire_samdump_handle_secret(TALLOC_CTX *mem_ctx,
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
 	const char *name = delta->delta_id_union.name;
-	struct samdump_secret *new = talloc(samdump_state, struct samdump_secret);
+	struct samdump_secret *n = talloc(samdump_state, struct samdump_secret);
 
-	new->name = talloc_strdup(new, name);
-	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
-	new->mtime = secret->current_cipher_set_time;
+	n->name = talloc_strdup(n, name);
+	n->secret = data_blob_talloc(n, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
+	n->mtime = secret->current_cipher_set_time;
 
-	DLIST_ADD(samdump_state->secrets, new);
+	DLIST_ADD(samdump_state->secrets, n);
 
 	return NT_STATUS_OK;
 }
@@ -93,12 +93,12 @@ static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
 
-	struct samdump_trusted_domain *new = talloc(samdump_state, struct samdump_trusted_domain);
+	struct samdump_trusted_domain *n = talloc(samdump_state, struct samdump_trusted_domain);
 
-	new->name = talloc_strdup(new, trusted_domain->domain_name.string);
-	new->sid = talloc_steal(new, dom_sid);
+	n->name = talloc_strdup(n, trusted_domain->domain_name.string);
+	n->sid = talloc_steal(n, dom_sid);
 
-	DLIST_ADD(samdump_state->trusted_domains, new);
+	DLIST_ADD(samdump_state->trusted_domains, n);
 
 	return NT_STATUS_OK;
 }
