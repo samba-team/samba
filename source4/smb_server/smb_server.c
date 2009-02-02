@@ -34,10 +34,10 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 
-static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
+static NTSTATUS smbsrv_recv_generic_request(void *private_data, DATA_BLOB blob)
 {
 	NTSTATUS status;
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	uint32_t protocol_version;
 
 	/* see if its a special NBT packet */
@@ -109,9 +109,9 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 /*
   handle socket recv errors
 */
-static void smbsrv_recv_error(void *private, NTSTATUS status)
+static void smbsrv_recv_error(void *private_data, NTSTATUS status)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	
 	smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 }

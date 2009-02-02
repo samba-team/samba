@@ -65,9 +65,9 @@ static bool find_fill_info(struct smbsrv_request *req,
 }
 
 /* callback function for search first/next */
-static bool find_callback(void *private, const union smb_search_data *file)
+static bool find_callback(void *private_data, const union smb_search_data *file)
 {
-	struct search_state *state = (struct search_state *)private;
+	struct search_state *state = (struct search_state *)private_data;
 
 	return find_fill_info(state->req, file);
 }

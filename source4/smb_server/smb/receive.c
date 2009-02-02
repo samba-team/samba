@@ -351,9 +351,9 @@ static const struct smb_message_struct
 receive a SMB request header from the wire, forming a request_context
 from the result
 ****************************************************************************/
-NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
+NTSTATUS smbsrv_recv_smb_request(void *private_data, DATA_BLOB blob)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	struct smbsrv_request *req;
 	struct timeval cur_time = timeval_current();
 	uint8_t command;

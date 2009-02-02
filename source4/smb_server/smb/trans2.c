@@ -800,9 +800,9 @@ static NTSTATUS find_fill_info(struct find_state *state,
 }
 
 /* callback function for trans2 findfirst/findnext */
-static bool find_callback(void *private, const union smb_search_data *file)
+static bool find_callback(void *private_data, const union smb_search_data *file)
 {
-	struct find_state *state = talloc_get_type(private, struct find_state);
+	struct find_state *state = talloc_get_type(private_data, struct find_state);
 	struct smb_trans2 *trans = state->op->trans;
 	uint_t old_length;
 
