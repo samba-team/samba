@@ -41,29 +41,29 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
 	}
 }
 
-static int py_dom_sid_cmp(PyObject *self, PyObject *py_other)
+static int py_dom_sid_cmp(PyObject *py_self, PyObject *py_other)
 {
-	struct dom_sid *this = py_talloc_get_ptr(self), *other;
+	struct dom_sid *self = py_talloc_get_ptr(py_self), *other;
 	other = py_talloc_get_ptr(py_other);
 	if (other == NULL)
 		return -1;
 
-	return dom_sid_compare(this, other);
+	return dom_sid_compare(self, other);
 }
 
-static PyObject *py_dom_sid_str(PyObject *self)
+static PyObject *py_dom_sid_str(PyObject *py_self)
 {
-	struct dom_sid *this = py_talloc_get_ptr(self);
-	char *str = dom_sid_string(NULL, this);
+	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	char *str = dom_sid_string(NULL, self);
 	PyObject *ret = PyString_FromString(str);
 	talloc_free(str);
 	return ret;
 }
 
-static PyObject *py_dom_sid_repr(PyObject *self)
+static PyObject *py_dom_sid_repr(PyObject *py_self)
 {
-	struct dom_sid *this = py_talloc_get_ptr(self);
-	char *str = dom_sid_string(NULL, this);
+	struct dom_sid *self = py_talloc_get_ptr(py_self);
+	char *str = dom_sid_string(NULL, self);
 	PyObject *ret = PyString_FromFormat("dom_sid('%s')", str);
 	talloc_free(str);
 	return ret;
