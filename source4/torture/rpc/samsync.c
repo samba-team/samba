@@ -830,14 +830,14 @@ static bool samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
 	const char *name = delta->delta_id_union.name;
-	struct samsync_secret *new = talloc(samsync_state, struct samsync_secret);
+	struct samsync_secret *nsec = talloc(samsync_state, struct samsync_secret);
 	struct samsync_secret *old = talloc(mem_ctx, struct samsync_secret);
 	struct lsa_QuerySecret q;
 	struct lsa_OpenSecret o;
 	struct policy_handle sec_handle;
 	struct lsa_DATA_BUF_PTR bufp1;
 	struct lsa_DATA_BUF_PTR bufp2;
-	NTTIME new_mtime;
+	NTTIME nsec_mtime;
 	NTTIME old_mtime;
 	bool ret = true;
 	DATA_BLOB lsa_blob1, lsa_blob_out, session_key;
@@ -849,12 +849,12 @@ static bool samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	creds_arcfour_crypt(samsync_state->creds, secret->old_cipher.cipher_data, 
 			    secret->old_cipher.maxlen); 
 
-	new->name = talloc_reference(new, name);
-	new->secret = data_blob_talloc(new, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
-	new->mtime = secret->current_cipher_set_time;
+	nsec->name = talloc_reference(nsec, name);
+	nsec->secret = data_blob_talloc(nsec, secret->current_cipher.cipher_data, secret->current_cipher.maxlen);
+	nsec->mtime = secret->current_cipher_set_time;
 
-	new = talloc_reference(samsync_state, new);
-	DLIST_ADD(samsync_state->secrets, new);
+	nsec = talloc_reference(samsync_state, nsec);
+	DLIST_ADD(samsync_state->secrets, nsec);
 
 	old->name = talloc_reference(old, name);
 	old->secret = data_blob_const(secret->old_cipher.cipher_data, secret->old_cipher.maxlen);
@@ -882,13 +882,13 @@ static bool samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	}
 
 
-	ZERO_STRUCT(new_mtime);
+	ZERO_STRUCT(nsec_mtime);
 	ZERO_STRUCT(old_mtime);
 
 	/* fetch the secret back again */
 	q.in.sec_handle = &sec_handle;
 	q.in.new_val = &bufp1;
-	q.in.new_mtime = &new_mtime;
+	q.in.new_mtime = &nsec_mtime;
 	q.in.old_val = &bufp2;
 	q.in.old_mtime = &old_mtime;
 
@@ -957,26 +957,26 @@ static bool samsync_handle_secret(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 		}
 		
 		if (!q.out.new_mtime) {
-			printf("NEW mtime not available on LSA for secret %s\n", new->name);
+			printf("NEW mtime not available on LSA for secret %s\n", nsec->name);
 			ret = false;
 		}
-		if (new->mtime != *q.out.new_mtime) {
+		if (nsec->mtime != *q.out.new_mtime) {
 			printf("NEW mtime on secret %s does not match between SAMSYNC (%s) and LSA (%s)\n", 
-			       new->name, nt_time_string(mem_ctx, new->mtime), 
+			       nsec->name, nt_time_string(mem_ctx, nsec->mtime),
 			       nt_time_string(mem_ctx, *q.out.new_mtime)); 
 			ret = false;
 		}
 
-		if (new->secret.length != lsa_blob_out.length) {
+		if (nsec->secret.length != lsa_blob_out.length) {
 			printf("Returned secret %s doesn't match: %d != %d\n",
-			       new->name, (int)new->secret.length, (int)lsa_blob_out.length);
+			       nsec->name, (int)nsec->secret.length, (int)lsa_blob_out.length);
 			ret = false;
 		} else if (memcmp(lsa_blob_out.data, 
-			   new->secret.data, new->secret.length) != 0) {
+			   nsec->secret.data, nsec->secret.length) != 0) {
 			printf("Returned secret %s doesn't match: \n",
-			       new->name);
+			       nsec->name);
 			DEBUG(1, ("SamSync Secret:\n"));
-			dump_data(1, new->secret.data, new->secret.length);
+			dump_data(1, nsec->secret.data, nsec->secret.length);
 			DEBUG(1, ("LSA Secret:\n"));
 			dump_data(1, lsa_blob_out.data, lsa_blob_out.length);
 			ret = false;
@@ -994,7 +994,7 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	struct netr_DELTA_TRUSTED_DOMAIN *trusted_domain = delta->delta_union.trusted_domain;
 	struct dom_sid *dom_sid = delta->delta_id_union.sid;
 
-	struct samsync_trusted_domain *new = talloc(samsync_state, struct samsync_trusted_domain);
+	struct samsync_trusted_domain *ndom = talloc(samsync_state, struct samsync_trusted_domain);
 	struct lsa_OpenTrustedDomain t;
 	struct policy_handle trustdom_handle;
 	struct lsa_QueryTrustedDomainInfo q;
@@ -1003,8 +1003,8 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
 	int levels [] = {1, 3, 8};
 	int i;
 
-	new->name = talloc_reference(new, trusted_domain->domain_name.string);
-	new->sid = talloc_reference(new, dom_sid);
+	ndom->name = talloc_reference(ndom, trusted_domain->domain_name.string);
+	ndom->sid = talloc_reference(ndom, dom_sid);
 
 	t.in.handle = samsync_state->lsa_handle;
 	t.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -1044,8 +1044,8 @@ static bool samsync_handle_trusted_domain(TALLOC_CTX *mem_ctx, struct samsync_st
   We would like to do this, but it is NOT_SUPPORTED on win2k3
 	TEST_SEC_DESC_EQUAL(trusted_domain->sdbuf, lsa, &trustdom_handle);
 */
-	new = talloc_reference(samsync_state, new);
-	DLIST_ADD(samsync_state->trusted_domains, new);
+	ndom = talloc_reference(samsync_state, ndom);
+	DLIST_ADD(samsync_state->trusted_domains, ndom);
 
 	return ret;
 }
