@@ -105,6 +105,6 @@ $(eval $(call proto_header_template,$(libregistrysrcdir)/tests/proto.h,$(torture
 
 [PYTHON::py_registry]
 LIBRARY_REALNAME = samba/registry.$(SHLIBEXT)
-PUBLIC_DEPENDENCIES = registry PYTALLOC swig_credentials param
+PUBLIC_DEPENDENCIES = registry PYTALLOC pycredentials param
 
 py_registry_OBJ_FILES = $(libregistrysrcdir)/pyregistry.o

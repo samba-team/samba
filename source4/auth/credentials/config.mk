@@ -13,10 +13,8 @@ $(eval $(call proto_header_template,$(authsrcdir)/credentials/credentials_proto.
 
 PUBLIC_HEADERS += $(authsrcdir)/credentials/credentials.h
 
-[PYTHON::swig_credentials]
+[PYTHON::pycredentials]
 LIBRARY_REALNAME = samba/credentials.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBCMDLINE_CREDENTIALS PYTALLOC param
 
-swig_credentials_OBJ_FILES = $(authsrcdir)/credentials/pycredentials.o
-
-$(swig_credentials_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)
+pycredentials_OBJ_FILES = $(authsrcdir)/credentials/pycredentials.o
