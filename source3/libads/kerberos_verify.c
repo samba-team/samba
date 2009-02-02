@@ -72,9 +72,15 @@ static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
 	}
 
 	/* Get the key for checking the pac signature */
+#ifdef HAVE_ETYPE_IN_ENCRYPTEDDATA /* Heimdal */
+	ret = krb5_kt_get_entry(context, keytab, dec_ticket->server,
+	    dec_ticket.enc_part.kvno, dec_ticket.enc_part.etype,
+	    &kt_entry);
+#else /* MIT */
 	ret = krb5_kt_get_entry(context, keytab, dec_ticket->server,
 	    dec_ticket->enc_part.kvno, dec_ticket->enc_part.enctype,
 	    &kt_entry);
+#endif
 	if (ret) {
 		DEBUG(0, ("krb5_kt_get_entry failed (%s)\n",
 			  error_message(ret)));
