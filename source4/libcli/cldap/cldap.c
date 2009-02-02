@@ -146,9 +146,9 @@ static void cldap_socket_recv(struct cldap_socket *cldap)
 */
 static void cldap_request_timeout(struct tevent_context *event_ctx, 
 				  struct tevent_timer *te, struct timeval t,
-				  void *private)
+				  void *private_data)
 {
-	struct cldap_request *req = talloc_get_type(private, struct cldap_request);
+	struct cldap_request *req = talloc_get_type(private_data, struct cldap_request);
 
 	/* possibly try again */
 	if (req->num_retries != 0) {
@@ -224,9 +224,9 @@ static void cldap_socket_send(struct cldap_socket *cldap)
   handle fd events on a cldap_socket
 */
 static void cldap_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-				 uint16_t flags, void *private)
+				 uint16_t flags, void *private_data)
 {
-	struct cldap_socket *cldap = talloc_get_type(private, struct cldap_socket);
+	struct cldap_socket *cldap = talloc_get_type(private_data, struct cldap_socket);
 	if (flags & EVENT_FD_WRITE) {
 		cldap_socket_send(cldap);
 	} 
@@ -282,10 +282,10 @@ failed:
 NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 				  void (*handler)(struct cldap_socket *, struct ldap_message *, 
 						  struct socket_address *),
-				  void *private)
+				  void *private_data)
 {
 	cldap->incoming.handler = handler;
-	cldap->incoming.private = private;
+	cldap->incoming.private = private_data;
 	EVENT_FD_READABLE(cldap->fde);
 	return NT_STATUS_OK;
 }
