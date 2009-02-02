@@ -269,7 +269,7 @@ static void rpc_read_done(struct async_req *subreq)
 					     state->data + state->num_read,
 					     state->size - state->num_read,
 					     state->transport->priv);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = rpc_read_done;
@@ -350,7 +350,7 @@ static void rpc_write_done(struct async_req *subreq)
 					      state->data + state->num_written,
 					      state->size - state->num_written,
 					      state->transport->priv);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = rpc_write_done;
@@ -512,7 +512,7 @@ static void get_complete_frag_got_header(struct async_req *subreq)
 		state, state->ev, state->cli->transport,
 		(uint8_t *)(prs_data_p(state->pdu) + RPC_HEADER_LEN),
 		state->prhdr->frag_len - RPC_HEADER_LEN);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = get_complete_frag_got_rest;
@@ -1138,7 +1138,7 @@ static void cli_api_pipe_write_done(struct async_req *subreq)
 	}
 
 	state->rdata = TALLOC_ARRAY(state, uint8_t, RPC_HEADER_LEN);
-	if (async_req_ntnomem(state->rdata, req)) {
+	if (async_req_nomem(state->rdata, req)) {
 		return;
 	}
 
@@ -1150,7 +1150,7 @@ static void cli_api_pipe_write_done(struct async_req *subreq)
 	subreq = state->transport->read_send(state, state->ev, state->rdata,
 					     RPC_HEADER_LEN,
 					     state->transport->priv);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = cli_api_pipe_read_done;
@@ -1336,7 +1336,7 @@ static void rpc_api_pipe_trans_done(struct async_req *subreq)
 	 */
 	rdata_copy = (char *)memdup(rdata, rdata_len);
 	TALLOC_FREE(rdata);
-	if (async_req_ntnomem(rdata_copy, req)) {
+	if (async_req_nomem(rdata_copy, req)) {
 		return;
 	}
 	prs_give_memory(&state->incoming_frag, rdata_copy, rdata_len, true);
@@ -1344,7 +1344,7 @@ static void rpc_api_pipe_trans_done(struct async_req *subreq)
 	/* Ensure we have enough data for a pdu. */
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
 					&state->rhdr, &state->incoming_frag);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = rpc_api_pipe_got_pdu;
@@ -1436,7 +1436,7 @@ static void rpc_api_pipe_got_pdu(struct async_req *subreq)
 
 	subreq = get_complete_frag_send(state, state->ev, state->cli,
 					&state->rhdr, &state->incoming_frag);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = rpc_api_pipe_got_pdu;
@@ -2235,7 +2235,7 @@ static void rpc_api_pipe_req_write_done(struct async_req *subreq)
 		subreq = rpc_api_pipe_send(state, state->ev, state->cli,
 					   &state->outgoing_frag,
 					   RPC_RESPONSE);
-		if (async_req_ntnomem(subreq, req)) {
+		if (async_req_nomem(subreq, req)) {
 			return;
 		}
 		subreq->async.fn = rpc_api_pipe_req_done;
@@ -2246,7 +2246,7 @@ static void rpc_api_pipe_req_write_done(struct async_req *subreq)
 			state->cli->transport,
 			(uint8_t *)prs_data_p(&state->outgoing_frag),
 			prs_offset(&state->outgoing_frag));
-		if (async_req_ntnomem(subreq, req)) {
+		if (async_req_nomem(subreq, req)) {
 			return;
 		}
 		subreq->async.fn = rpc_api_pipe_req_write_done;

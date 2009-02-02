@@ -432,7 +432,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 				state->start_offset + state->requested,
 				request_thistime);
 
-			if (async_req_ntnomem(new_req, state->req)) {
+			if (async_req_nomem(new_req, state->req)) {
 				return;
 			}
 

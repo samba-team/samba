@@ -23,32 +23,6 @@
 #include "lib/util/dlinklist.h"
 #include "lib/async_req/async_req_ntstatus.h"
 
-/**
- * @brief Helper function for nomem check
- * @param[in] p		The pointer to be checked
- * @param[in] req	The request being processed
- *
- * Convenience helper to easily check alloc failure within a callback
- * implementing the next step of an async request.
- *
- * Call pattern would be
- * \code
- * p = talloc(mem_ctx, bla);
- * if (async_req_ntnomem(p, req)) {
- *	return;
- * }
- * \endcode
- */
-
-bool async_req_ntnomem(const void *p, struct async_req *req)
-{
-	if (p != NULL) {
-		return false;
-	}
-	async_req_nterror(req, NT_STATUS_NO_MEMORY);
-	return true;
-}
-
 void async_req_nterror(struct async_req *req, NTSTATUS status)
 {
 	async_req_error(req, NT_STATUS_V(status));
@@ -62,13 +36,27 @@ bool async_post_ntstatus(struct async_req *req, struct tevent_context *ev,
 
 bool async_req_is_nterror(struct async_req *req, NTSTATUS *status)
 {
-	uint32_t error = NT_STATUS_V(NT_STATUS_INTERNAL_ERROR);
+	enum async_req_state state;
+	uint64_t error;
 
-	if (async_req_is_error(req, &error)) {
-		*status = NT_STATUS(error);
-		return true;
+	if (!async_req_is_error(req, &state, &error)) {
+		return false;
 	}
-	return false;
+	switch (state) {
+	case ASYNC_REQ_USER_ERROR:
+		*status = NT_STATUS(error);
+		break;
+	case ASYNC_REQ_TIMED_OUT:
+		*status = NT_STATUS_IO_TIMEOUT;
+		break;
+	case ASYNC_REQ_NO_MEMORY:
+		*status = NT_STATUS_NO_MEMORY;
+		break;
+	default:
+		*status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
+	return true;
 }
 
 NTSTATUS async_req_simple_recv_ntstatus(struct async_req *req)

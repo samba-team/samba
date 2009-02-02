@@ -174,7 +174,7 @@ static void get_anon_ipc_negprot_done(struct async_req *subreq)
 	}
 
 	subreq = cli_session_setup_guest_send(state, state->ev, state->cli);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = get_anon_ipc_sesssetup_done;
@@ -198,7 +198,7 @@ static void get_anon_ipc_sesssetup_done(struct async_req *subreq)
 
 	subreq = cli_tcon_andx_send(state, state->ev, state->cli,
 				    "IPC$", "IPC", NULL, 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = get_anon_ipc_tcon_done;

@@ -32,6 +32,4 @@ bool async_req_is_nterror(struct async_req *req, NTSTATUS *status);
 
 NTSTATUS async_req_simple_recv_ntstatus(struct async_req *req);
 
-bool async_req_ntnomem(const void *p, struct async_req *req);
-
 #endif

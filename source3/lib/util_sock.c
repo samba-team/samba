@@ -1077,7 +1077,7 @@ static void open_socket_out_connected(struct async_req *subreq)
 		subreq = async_connect_send(state, state->ev, state->fd,
 					    (struct sockaddr *)&state->ss,
 					    state->salen);
-		if (async_req_ntnomem(subreq, req)) {
+		if (async_req_nomem(subreq, req)) {
 			return;
 		}
 		if (!async_req_set_timeout(subreq, state->ev,
@@ -1209,7 +1209,7 @@ static void open_socket_out_defer_waited(struct async_req *subreq)
 
 	subreq = open_socket_out_send(state, state->ev, &state->ss,
 				      state->port, state->timeout);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = open_socket_out_defer_connected;

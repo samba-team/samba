@@ -463,7 +463,7 @@ static void wb_open_pipe_connect_nonpriv_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -496,7 +496,7 @@ static void wb_open_pipe_ping_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   &state->wb_req);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -526,7 +526,7 @@ static void wb_open_pipe_getpriv_done(struct async_req *subreq)
 	subreq = wb_connect_send(state, state->ev, state->wb_ctx,
 				 (char *)wb_resp->extra_data.data);
 	TALLOC_FREE(wb_resp);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -582,7 +582,7 @@ static void wb_trigger_trans(struct async_req *req)
 
 		subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
 					   state->need_priv);
-		if (async_req_ntnomem(subreq, req)) {
+		if (async_req_nomem(subreq, req)) {
 			return;
 		}
 		subreq->async.fn = wb_trans_connect_done;
@@ -592,7 +592,7 @@ static void wb_trigger_trans(struct async_req *req)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   state->wb_req);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = wb_trans_done;
@@ -665,7 +665,7 @@ static bool wb_trans_retry(struct async_req *req,
 	}
 
 	subreq = async_wait_send(state, state->ev, timeval_set(1, 0));
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return true;
 	}
 
@@ -691,7 +691,7 @@ static void wb_trans_retry_wait_done(struct async_req *subreq)
 
 	subreq = wb_open_pipe_send(state, state->ev, state->wb_ctx,
 				   state->need_priv);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = wb_trans_connect_done;
@@ -715,7 +715,7 @@ static void wb_trans_connect_done(struct async_req *subreq)
 
 	subreq = wb_int_trans_send(state, state->ev, state->wb_ctx->fd,
 				   state->wb_req);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 

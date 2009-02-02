@@ -40,9 +40,17 @@ enum async_req_state {
 	 */
 	ASYNC_REQ_DONE,
 	/**
-	 * an error has occured
+	 * A user error has occured
 	 */
-	ASYNC_REQ_ERROR
+	ASYNC_REQ_USER_ERROR,
+	/**
+	 * Request timed out
+	 */
+	ASYNC_REQ_TIMED_OUT,
+	/**
+	 * No memory in between
+	 */
+	ASYNC_REQ_NO_MEMORY
 };
 
 /**
@@ -94,7 +102,7 @@ struct async_req {
 	 * This status can be queried in the async completion function. It
 	 * will be set to 0 when everything went fine.
 	 **/
-	uint32_t error;
+	uint64_t error;
 
 	/**
 	 * @brief What to do on completion
@@ -121,12 +129,15 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
 
 void async_req_done(struct async_req *req);
 
-void async_req_error(struct async_req *req, uint32_t error);
+void async_req_error(struct async_req *req, uint64_t error);
+
+bool async_req_nomem(const void *p, struct async_req *req);
 
 bool async_post_error(struct async_req *req, struct tevent_context *ev,
-		      uint32_t error);
+		      uint64_t error);
 
-bool async_req_is_error(struct async_req *req, uint32_t *error);
+bool async_req_is_error(struct async_req *req, enum async_req_state *state,
+			uint64_t *error);
 
 bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to);

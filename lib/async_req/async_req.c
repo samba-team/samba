@@ -70,6 +70,14 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 	return result;
 }
 
+static void async_req_finish(struct async_req *req, enum async_req_state state)
+{
+	req->state = state;
+	if (req->async.fn != NULL) {
+		req->async.fn(req);
+	}
+}
+
 /**
  * @brief An async request has successfully finished
  * @param[in] req	The finished request
@@ -81,30 +89,23 @@ struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
 
 void async_req_done(struct async_req *req)
 {
-	req->error = 0;
-	req->state = ASYNC_REQ_DONE;
-	if (req->async.fn != NULL) {
-		req->async.fn(req);
-	}
+	async_req_finish(req, ASYNC_REQ_DONE);
 }
 
 /**
  * @brief An async request has seen an error
  * @param[in] req	The request with an error
- * @param[in] status	The error code
+ * @param[in] error	The error code
  *
  * async_req_done is to be used by implementors of async requests. When a
  * request can not successfully completed, the implementation should call this
  * function with the appropriate status code.
  */
 
-void async_req_error(struct async_req *req, uint32_t error)
+void async_req_error(struct async_req *req, uint64_t error)
 {
 	req->error = error;
-	req->state = ASYNC_REQ_ERROR;
-	if (req->async.fn != NULL) {
-		req->async.fn(req);
-	}
+	async_req_finish(req, ASYNC_REQ_USER_ERROR);
 }
 
 /**
@@ -130,6 +131,32 @@ static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
 }
 
 /**
+ * @brief Helper function for nomem check
+ * @param[in] p		The pointer to be checked
+ * @param[in] req	The request being processed
+ *
+ * Convenience helper to easily check alloc failure within a callback
+ * implementing the next step of an async request.
+ *
+ * Call pattern would be
+ * \code
+ * p = talloc(mem_ctx, bla);
+ * if (async_req_ntnomem(p, req)) {
+ *	return;
+ * }
+ * \endcode
+ */
+
+bool async_req_nomem(const void *p, struct async_req *req)
+{
+	if (p != NULL) {
+		return false;
+	}
+	async_req_finish(req, ASYNC_REQ_NO_MEMORY);
+	return true;
+}
+
+/**
  * @brief Finish a request before it started processing
  * @param[in] req	The finished request
  * @param[in] status	The success code
@@ -143,7 +170,7 @@ static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
  */
 
 bool async_post_error(struct async_req *req, struct tevent_context *ev,
-		      uint32_t error)
+		      uint64_t error)
 {
 	req->error = error;
 
@@ -154,16 +181,17 @@ bool async_post_error(struct async_req *req, struct tevent_context *ev,
 	return true;
 }
 
-bool async_req_is_error(struct async_req *req, uint32_t *error)
+bool async_req_is_error(struct async_req *req, enum async_req_state *state,
+			uint64_t *error)
 {
-	if (req->state < ASYNC_REQ_DONE) {
-		return true;
+	if (req->state == ASYNC_REQ_DONE) {
+		return false;
 	}
-	if (req->state == ASYNC_REQ_ERROR) {
+	if (req->state == ASYNC_REQ_USER_ERROR) {
 		*error = req->error;
-		return true;
 	}
-	return false;
+	*state = req->state;
+	return true;
 }
 
 static void async_req_timedout(struct tevent_context *ev,
@@ -171,18 +199,17 @@ static void async_req_timedout(struct tevent_context *ev,
 			       struct timeval now,
 			       void *priv)
 {
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
+	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
 	TALLOC_FREE(te);
-	async_req_nterror(req, NT_STATUS_IO_TIMEOUT);
+	async_req_finish(req, ASYNC_REQ_TIMED_OUT);
 }
 
 bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to)
 {
-	return (tevent_add_timer(ev, req,
-				timeval_current_ofs(to.tv_sec, to.tv_usec),
-				async_req_timedout, req)
+	return (tevent_add_timer(
+			ev, req, timeval_current_ofs(to.tv_sec, to.tv_usec),
+			async_req_timedout, req)
 		!= NULL);
 }
 

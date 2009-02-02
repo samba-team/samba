@@ -96,7 +96,7 @@ static void wb_req_read_len(struct async_req *subreq)
 	subreq = recvall_send(
 		req, state->ev, state->fd, (uint32 *)(state->wb_req)+1,
 		sizeof(struct winbindd_request) - sizeof(uint32), 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -135,7 +135,7 @@ static void wb_req_read_main(struct async_req *subreq)
 
 	state->wb_req->extra_data.data = TALLOC_ARRAY(
 		state->wb_req, char, state->wb_req->extra_len + 1);
-	if (async_req_ntnomem(state->wb_req->extra_data.data, req)) {
+	if (async_req_nomem(state->wb_req->extra_data.data, req)) {
 		return;
 	}
 
@@ -144,7 +144,7 @@ static void wb_req_read_main(struct async_req *subreq)
 	subreq = recvall_send(
 		req, state->ev, state->fd, state->wb_req->extra_data.data,
 		state->wb_req->extra_len, 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -244,7 +244,7 @@ static void wb_req_write_main(struct async_req *subreq)
 	subreq = sendall_send(state, state->ev, state->fd,
 			      state->wb_req->extra_data.data,
 			      state->wb_req->extra_len, 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -343,7 +343,7 @@ static void wb_resp_read_len(struct async_req *subreq)
 	subreq = recvall_send(
 		req, state->ev, state->fd, (uint32 *)(state->wb_resp)+1,
 		sizeof(struct winbindd_response) - sizeof(uint32), 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -375,7 +375,7 @@ static void wb_resp_read_main(struct async_req *subreq)
 
 	state->wb_resp->extra_data.data = TALLOC_ARRAY(
 		state->wb_resp, char, extra_len+1);
-	if (async_req_ntnomem(state->wb_resp->extra_data.data, req)) {
+	if (async_req_nomem(state->wb_resp->extra_data.data, req)) {
 		return;
 	}
 	((char *)state->wb_resp->extra_data.data)[extra_len] = 0;
@@ -383,7 +383,7 @@ static void wb_resp_read_main(struct async_req *subreq)
 	subreq = recvall_send(
 		req, state->ev, state->fd, state->wb_resp->extra_data.data,
 		extra_len, 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
@@ -484,7 +484,7 @@ static void wb_resp_write_main(struct async_req *subreq)
 		state, state->ev, state->fd,
 		state->wb_resp->extra_data.data,
 		state->wb_resp->length - sizeof(struct winbindd_response), 0);
-	if (async_req_ntnomem(subreq, req)) {
+	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 
