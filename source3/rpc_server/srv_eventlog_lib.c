@@ -312,7 +312,7 @@ bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 /*******************************************************************
 *******************************************************************/
 
-ELOG_TDB *elog_open_tdb( char *logname, bool force_clear, bool read_only )
+ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 {
 	TDB_CONTEXT *tdb = NULL;
 	uint32_t vers_id;

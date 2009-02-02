@@ -6258,7 +6258,7 @@ char *elog_tdbname(TALLOC_CTX *ctx, const char *name );
 int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention );
 bool prune_eventlog( TDB_CONTEXT * tdb );
 bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed );
-ELOG_TDB *elog_open_tdb( char *logname, bool force_clear, bool read_only );
+ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only );
 int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee );
 void fixup_eventlog_entry( Eventlog_entry * ee );
