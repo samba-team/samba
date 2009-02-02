@@ -74,14 +74,14 @@ struct libnet_samdump_keytab_data {
 	struct loadparm_context *lp_ctx;
 };
 
-static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx, 		
-					 void *private, 			
+static NTSTATUS libnet_samdump_keytab_fn(TALLOC_CTX *mem_ctx,
+					 void *private_data,
 					 enum netr_SamDatabaseID database,
 					 struct netr_DELTA_ENUM *delta,
 					 char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct libnet_samdump_keytab_data *data = private; 
+	struct libnet_samdump_keytab_data *data = private_data;
 	*error_string = NULL;
 	switch (delta->delta_type) {
 	case NETR_DELTA_USER:

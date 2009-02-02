@@ -103,14 +103,14 @@ static NTSTATUS vampire_samdump_handle_trusted_domain(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx, 		
-				  void *private, 			
+static NTSTATUS libnet_samdump_fn(TALLOC_CTX *mem_ctx,
+				  void *private_data,
 				  enum netr_SamDatabaseID database,
 				  struct netr_DELTA_ENUM *delta,
 				  char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct samdump_state *samdump_state = (struct samdump_state *)private;
+	struct samdump_state *samdump_state = (struct samdump_state *)private_data;
 
 	*error_string = NULL;
 	switch (delta->delta_type) {

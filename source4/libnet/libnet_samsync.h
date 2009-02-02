@@ -34,11 +34,11 @@ struct libnet_SamSync {
 		const char *binding_string;
 		bool rid_crypt;
 		NTSTATUS (*init_fn)(TALLOC_CTX *mem_ctx, 		
-				    void *private,
+				    void *private_data,
 				    struct libnet_SamSync_state *samsync_state,
 				    char **error_string);
 		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
-				     void *private, 			
+				     void *private_data,
 				     enum netr_SamDatabaseID database,
 				     struct netr_DELTA_ENUM *delta,
 				     char **error_string);

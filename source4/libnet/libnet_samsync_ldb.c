@@ -1052,13 +1052,13 @@ static NTSTATUS samsync_ldb_delete_account(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx, 		
-				      void *private, 			
+				      void *private_data,
 				      enum netr_SamDatabaseID database,
 				      struct netr_DELTA_ENUM *delta,
 				      char **error_string)
 {
 	NTSTATUS nt_status = NT_STATUS_OK;
-	struct samsync_ldb_state *state = talloc_get_type(private, struct samsync_ldb_state);
+	struct samsync_ldb_state *state = talloc_get_type(private_data, struct samsync_ldb_state);
 
 	*error_string = NULL;
 	switch (delta->delta_type) {
@@ -1172,11 +1172,11 @@ static NTSTATUS libnet_samsync_ldb_fn(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS libnet_samsync_ldb_init(TALLOC_CTX *mem_ctx, 		
-					void *private,
+					void *private_data,
 					struct libnet_SamSync_state *samsync_state,
 					char **error_string)
 {
-	struct samsync_ldb_state *state = talloc_get_type(private, struct samsync_ldb_state);
+	struct samsync_ldb_state *state = talloc_get_type(private_data, struct samsync_ldb_state);
 	const char *server = dcerpc_server_name(samsync_state->netlogon_pipe);
 	char *ldap_url;
 
