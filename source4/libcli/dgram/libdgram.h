@@ -91,7 +91,7 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 				    void (*handler)(struct nbt_dgram_socket *, 
 						    struct nbt_dgram_packet *, 
 						    struct socket_address *),
-				    void *private);
+				    void *private_data);
 struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
 					       struct tevent_context *event_ctx,
 					       struct smb_iconv_convenience *);
@@ -102,11 +102,11 @@ struct dgram_mailslot_handler *dgram_mailslot_find(struct nbt_dgram_socket *dgms
 struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dgmsock,
 						     const char *mailslot_name,
 						     dgram_mailslot_handler_t handler,
-						     void *private);
+						     void *private_data);
 struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgmsock,
 						   const char *mailslot_name,
 						   dgram_mailslot_handler_t handler,
-						   void *private);
+						   void *private_data);
 DATA_BLOB dgram_mailslot_data(struct nbt_dgram_packet *dgram);
 
 
