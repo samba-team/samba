@@ -73,9 +73,9 @@ static bool interpret_long_filename(enum smb_search_data_level level,
 }
 
 /* callback function used for trans2 search */
-static bool smbcli_list_new_callback(void *private, const union smb_search_data *file)
+static bool smbcli_list_new_callback(void *private_data, const union smb_search_data *file)
 {
-	struct search_private *state = (struct search_private*) private;
+	struct search_private *state = (struct search_private*) private_data;
 	struct clilist_file_info *tdl;
  
 	/* add file info to the dirlist pool */
@@ -231,9 +231,9 @@ static bool interpret_short_filename(enum smb_search_data_level level,
 }
 
 /* callback function used for smb_search */
-static bool smbcli_list_old_callback(void *private, const union smb_search_data *file)
+static bool smbcli_list_old_callback(void *private_data, const union smb_search_data *file)
 {
-	struct search_private *state = (struct search_private*) private;
+	struct search_private *state = (struct search_private*) private_data;
 	struct clilist_file_info *tdl;
 	
 	/* add file info to the dirlist pool */
