@@ -25,7 +25,7 @@ struct web_server_data {
 	struct tls_params *tls_params;
 	void (*http_process_input)(struct web_server_data *wdata, 
 				   struct websrv_context *web);
-	void *private;	
+	void *private_data;
 };
 
 struct http_header {
