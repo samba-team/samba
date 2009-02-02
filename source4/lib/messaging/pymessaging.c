@@ -159,11 +159,11 @@ static PyObject *py_messaging_send(PyObject *self, PyObject *args, PyObject *kwa
 	Py_RETURN_NONE;
 }
 
-static void py_msg_callback_wrapper(struct messaging_context *msg, void *private, 
+static void py_msg_callback_wrapper(struct messaging_context *msg, void *private_data,
 			       uint32_t msg_type, 
 			       struct server_id server_id, DATA_BLOB *data)
 {
-	PyObject *callback = (PyObject *)private;
+	PyObject *callback = (PyObject *)private_data;
 
 	PyObject_CallFunction(callback, discard_const_p(char, "i(iii)s#"), msg_type, 
 			      server_id.id, server_id.id2, server_id.node, 
