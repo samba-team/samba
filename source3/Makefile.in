@@ -19,6 +19,7 @@ datarootdir=@datarootdir@
 selftest_prefix=@selftest_prefix@
 selftest_shrdir=@selftest_shrdir@
 smbtorture4_path=@smbtorture4_path@
+smbtorture4_option=@smbtorture4_option@
 selftest_custom_conf=@selftest_custom_conf@
 
 LIBS=@LIBS@
@@ -2932,7 +2933,7 @@ test_pam_modules:: pam_modules
 ## Targets for 'make test'
 ##
 
-TEST_EXTRA_ARGS = ${smbtorture4_path} ${selftest_shrdir} ${selftest_custom_conf}
+TEST_EXTRA_ARGS = ${smbtorture4_option} ${selftest_shrdir} ${selftest_custom_conf}
 
 test:: all torture timelimit
 	@echo Running Test suite

@@ -332,6 +332,8 @@ AC_ARG_WITH(selftest-shrdir,
 # set path of samba4's smbtorture
 smbtorture4_path=""
 AC_SUBST(smbtorture4_path)
+smbtorture4_option=""
+AC_SUBST(smbtorture4_option)
 AC_ARG_WITH(smbtorture4_path,
 [AS_HELP_STRING([--with-smbtorture4-path=PATH], [The path to a samba4 smbtorture for make test (none)])],
 [ case "$withval" in
@@ -343,7 +345,7 @@ AC_ARG_WITH(smbtorture4_path,
     if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
     	AC_MSG_ERROR(['$smbtorture_path' does not  exist!])
     fi
-    smbtorture4_path="-t $withval"
+    smbtorture4_option="-t $withval"
   ;;
  esac
 ])
