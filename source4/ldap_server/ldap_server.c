@@ -55,9 +55,9 @@ void ldapsrv_terminate_connection(struct ldapsrv_connection *conn,
 /*
   handle packet errors
 */
-static void ldapsrv_error_handler(void *private, NTSTATUS status)
+static void ldapsrv_error_handler(void *private_data, NTSTATUS status)
 {
-	struct ldapsrv_connection *conn = talloc_get_type(private, 
+	struct ldapsrv_connection *conn = talloc_get_type(private_data,
 							  struct ldapsrv_connection);
 	ldapsrv_terminate_connection(conn, nt_errstr(status));
 }
@@ -132,10 +132,10 @@ static void ldapsrv_process_message(struct ldapsrv_connection *conn,
 /*
   decode/process data
 */
-static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
+static NTSTATUS ldapsrv_decode(void *private_data, DATA_BLOB blob)
 {
 	NTSTATUS status;
-	struct ldapsrv_connection *conn = talloc_get_type(private, 
+	struct ldapsrv_connection *conn = talloc_get_type(private_data,
 							  struct ldapsrv_connection);
 	struct asn1_data *asn1 = asn1_init(conn);
 	struct ldap_message *msg = talloc(conn, struct ldap_message);
@@ -170,9 +170,9 @@ static NTSTATUS ldapsrv_decode(void *private, DATA_BLOB blob)
 static void ldapsrv_conn_idle_timeout(struct tevent_context *ev,
 				      struct tevent_timer *te,
 				      struct timeval t,
-				      void *private)
+				      void *private_data)
 {
-	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
+	struct ldapsrv_connection *conn = talloc_get_type(private_data, struct ldapsrv_connection);
 
 	ldapsrv_terminate_connection(conn, "Timeout. No requests after bind");
 }
@@ -217,9 +217,9 @@ static void ldapsrv_send(struct stream_connection *c, uint16_t flags)
 static void ldapsrv_conn_init_timeout(struct tevent_context *ev,
 				      struct tevent_timer *te,
 				      struct timeval t,
-				      void *private)
+				      void *private_data)
 {
-	struct ldapsrv_connection *conn = talloc_get_type(private, struct ldapsrv_connection);
+	struct ldapsrv_connection *conn = talloc_get_type(private_data, struct ldapsrv_connection);
 
 	ldapsrv_terminate_connection(conn, "Timeout. No requests after initial connection");
 }
