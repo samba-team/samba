@@ -152,7 +152,7 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedClasses;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	int i, j, ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
@@ -172,14 +172,14 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	oc_el = ldb_msg_find_element(msg, "objectClass");
 
 	for (i=0; oc_el && i < oc_el->num_values; i++) {
-		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
-		if (!class) {
+		sclass = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
+		if (!sclass) {
 			/* We don't know this class?  what is going on? */
 			continue;
 		}
 
-		for (j=0; class->possibleInferiors && class->possibleInferiors[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->possibleInferiors[j]);
+		for (j=0; sclass->possibleInferiors && sclass->possibleInferiors[j]; j++) {
+			ldb_msg_add_string(msg, attrName, sclass->possibleInferiors[j]);
 		}
 	}
 		
