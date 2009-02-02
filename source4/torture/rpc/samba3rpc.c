@@ -1867,7 +1867,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 			d_printf("(%s) whoami on user connection failed\n",
 				 __location__);
 			ret = false;
-			goto delete;
+			goto del;
 		}
 
 		talloc_free(tree);
@@ -1881,7 +1881,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		ret = false;
 	}
 
- delete:
+ del:
 	if (!delete_user(cli, torture->lp_ctx, 
 			 cmdline_credentials,
 			 cli_credentials_get_username(user_creds))) {
@@ -3050,7 +3050,7 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 			 TALLOC_CTX *mem_ctx, int depth)
 {
 	struct winreg_EnumKey r;
-	struct winreg_StringBuf class, name;
+	struct winreg_StringBuf kclass, name;
 	NTSTATUS status;
 	NTTIME t = 0;
 
@@ -3058,13 +3058,13 @@ static NTSTATUS enumkeys(struct dcerpc_pipe *p, struct policy_handle *handle,
 		return NT_STATUS_OK;
 	}
 
-	class.name   = "";
-	class.size   = 1024;
+	kclass.name   = "";
+	kclass.size   = 1024;
 
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 	r.in.name = &name;
-	r.in.keyclass = &class;
+	r.in.keyclass = &kclass;
 	r.out.name = &name;
 	r.in.last_changed_time = &t;
 
