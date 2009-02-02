@@ -95,18 +95,19 @@ NTSTATUS smb2_getinfo(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 /*
   map a generic info level to a SMB2 info level
 */
-uint16_t smb2_getinfo_map_level(uint16_t level, uint8_t class)
+uint16_t smb2_getinfo_map_level(uint16_t level, uint8_t info_class)
 {
-	if (class == SMB2_GETINFO_FILE && 
+	if (info_class == SMB2_GETINFO_FILE &&
 	    level == RAW_FILEINFO_SEC_DESC) {
 		return SMB2_GETINFO_SECURITY;
 	}
-	if ((level & 0xFF) == class) {
+	if ((level & 0xFF) == info_class) {
 		return level;
 	} else if (level > 1000) {
-		return ((level-1000)<<8) | class;
+		return ((level-1000)<<8) | info_class;
 	}
-	DEBUG(0,("Unable to map SMB2 info level 0x%04x of class %d\n", level, class));
+	DEBUG(0,("Unable to map SMB2 info level 0x%04x of class %d\n",
+		 level, info_class));
 	return 0;	
 }
 
