@@ -46,7 +46,7 @@ static NTSTATUS dcerpc_winreg_bind(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dce_call->context->private = ctx;
+	dce_call->context->private_data = ctx;
 
 	return NT_STATUS_OK;
 }
@@ -57,7 +57,7 @@ static WERROR dcesrv_winreg_openhive(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx, uint32_t hkey,
 				     struct policy_handle **outh)
 {
-	struct registry_context *ctx = dce_call->context->private;
+	struct registry_context *ctx = dce_call->context->private_data;
 	struct dcesrv_handle *h;
 	WERROR result;
 

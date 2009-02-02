@@ -603,7 +603,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		 * it also matches samba3
 		 */
 		context->assoc_group_id = SAMBA_ASSOC_GROUP;
-		context->private = NULL;
+		context->private_data = NULL;
 		context->handles = NULL;
 		DLIST_ADD(call->conn->contexts, context);
 		call->context = context;
@@ -767,7 +767,7 @@ static NTSTATUS dcesrv_alter_new_context(struct dcesrv_call_state *call, uint32_
 	context->iface = iface;
 	context->context_id = context_id;
 	context->assoc_group_id = SAMBA_ASSOC_GROUP;
-	context->private = NULL;
+	context->private_data = NULL;
 	context->handles = NULL;
 	DLIST_ADD(call->conn->contexts, context);
 	call->context = context;

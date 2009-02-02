@@ -47,7 +47,7 @@ struct server_pipe_state {
 static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private_data;
 
 	ZERO_STRUCTP(r->out.return_credentials);
 
@@ -55,7 +55,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	if (pipe_state) {
 		talloc_free(pipe_state);
-		dce_call->context->private = NULL;
+		dce_call->context->private_data = NULL;
 	}
 	
 	pipe_state = talloc(dce_call->context, struct server_pipe_state);
@@ -68,7 +68,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	*r->out.return_credentials = pipe_state->server_challenge;
 
-	dce_call->context->private = pipe_state;
+	dce_call->context->private_data = pipe_state;
 
 	return NT_STATUS_OK;
 }
@@ -76,7 +76,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					 struct netr_ServerAuthenticate3 *r)
 {
-	struct server_pipe_state *pipe_state = dce_call->context->private;
+	struct server_pipe_state *pipe_state = dce_call->context->private_data;
 	struct creds_CredentialState *creds;
 	void *sam_ctx;
 	struct samr_Password *mach_pwd;

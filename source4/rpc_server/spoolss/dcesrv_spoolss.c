@@ -220,7 +220,7 @@ static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const st
 				    lp_ntptr_providor(dce_call->conn->dce_ctx->lp_ctx), &ntptr);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	dce_call->context->private = ntptr;
+	dce_call->context->private_data = ntptr;
 
 	return NT_STATUS_OK;
 }
@@ -233,7 +233,7 @@ static NTSTATUS dcerpc_spoolss_bind(struct dcesrv_call_state *dce_call, const st
 static WERROR dcesrv_spoolss_EnumPrinters(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinters *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
 
@@ -369,7 +369,7 @@ static WERROR dcesrv_spoolss_AddPrinterDriver(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_spoolss_EnumPrinterDrivers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPrinterDrivers *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
 
@@ -402,7 +402,7 @@ static WERROR dcesrv_spoolss_GetPrinterDriver(struct dcesrv_call_state *dce_call
 static WERROR dcesrv_spoolss_GetPrinterDriverDirectory(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_GetPrinterDriverDirectory *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
 
@@ -796,7 +796,7 @@ static WERROR dcesrv_spoolss_EnumForms(struct dcesrv_call_state *dce_call, TALLO
 static WERROR dcesrv_spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumPorts *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
 
@@ -819,7 +819,7 @@ static WERROR dcesrv_spoolss_EnumPorts(struct dcesrv_call_state *dce_call, TALLO
 static WERROR dcesrv_spoolss_EnumMonitors(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_EnumMonitors *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	WERROR status;
 	struct smb_iconv_convenience *ic = lp_iconv_convenience(ntptr->lp_ctx);
 
@@ -1228,7 +1228,7 @@ static WERROR dcesrv_spoolss_44(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static WERROR dcesrv_spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct spoolss_OpenPrinterEx *r)
 {
-	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private, struct ntptr_context);
+	struct ntptr_context *ntptr = talloc_get_type(dce_call->context->private_data, struct ntptr_context);
 	struct ntptr_GenericHandle *handle;
 	struct dcesrv_handle *h;
 	const char *server;

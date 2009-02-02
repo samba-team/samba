@@ -36,7 +36,7 @@ static NTSTATUS dcerpc_unixinfo_bind(struct dcesrv_call_state *dce_call,
 			   dce_call->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(wbc_ctx);
 
-	dce_call->context->private = wbc_ctx;
+	dce_call->context->private_data = wbc_ctx;
 
 	return NT_STATUS_OK;
 }
@@ -49,7 +49,7 @@ static NTSTATUS dcesrv_unixinfo_SidToUid(struct dcesrv_call_state *dce_call,
 {
 	NTSTATUS status;
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private,
+						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_mapping *ids;
 	struct composite_context *ctx;
@@ -82,7 +82,7 @@ static NTSTATUS dcesrv_unixinfo_UidToSid(struct dcesrv_call_state *dce_call,
 				  struct unixinfo_UidToSid *r)
 {
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private,
+						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_mapping *ids;
 	struct composite_context *ctx;
@@ -124,7 +124,7 @@ static NTSTATUS dcesrv_unixinfo_SidToGid(struct dcesrv_call_state *dce_call,
 {
 	NTSTATUS status;
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private,
+						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_mapping *ids;
 	struct composite_context *ctx;
@@ -157,7 +157,7 @@ static NTSTATUS dcesrv_unixinfo_GidToSid(struct dcesrv_call_state *dce_call,
 				  struct unixinfo_GidToSid *r)
 {
 	struct wbc_context *wbc_ctx = talloc_get_type_abort(
-						dce_call->context->private,
+						dce_call->context->private_data,
 						struct wbc_context);
 	struct id_mapping *ids;
 	struct composite_context *ctx;
