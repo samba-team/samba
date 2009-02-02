@@ -47,7 +47,7 @@ struct update_kt_ctx {
 	struct ldb_request *req;
 
 	struct ldb_dn *dn;
-	bool delete;
+	bool do_delete;
 
 	struct ldb_reply *op_reply;
 	bool found;
@@ -75,7 +75,7 @@ static struct update_kt_ctx *update_kt_ctx_init(struct ldb_module *module,
  * Just hope we are lucky and nothing breaks (using the tdb backend masks a lot
  * of async issues). -SSS
  */
-static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delete) {
+static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool do_delete) {
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct update_kt_private *data = talloc_get_type(ldb_module_get_private(module), struct update_kt_private);
 	struct dn_list *item;
@@ -126,7 +126,7 @@ static int add_modified(struct ldb_module *module, struct ldb_dn *dn, bool delet
 	status = cli_credentials_set_secrets(item->creds, ldb_get_event_context(ldb), ldb_get_opaque(ldb, "loadparm"), ldb, NULL, filter);
 	talloc_free(filter);
 	if (NT_STATUS_IS_OK(status)) {
-		if (delete) {
+		if (do_delete) {
 			/* Ensure we don't helpfully keep an old keytab entry */
 			cli_credentials_set_kvno(item->creds, cli_credentials_get_kvno(item->creds)+2);	
 			/* Wipe passwords */
@@ -165,7 +165,7 @@ static int update_kt_op_callback(struct ldb_request *req,
 					LDB_ERR_OPERATIONS_ERROR);
 	}
 
-	if (ac->delete) {
+	if (ac->do_delete) {
 		return ldb_module_done(ac->req, ares->controls,
 					ares->response, LDB_SUCCESS);
 	}
@@ -230,10 +230,10 @@ static int ukt_search_modified_callback(struct ldb_request *req,
 
 		if (ac->found) {
 			/* do the dirty sync job here :/ */
-			ret = add_modified(ac->module, ac->dn, ac->delete);
+			ret = add_modified(ac->module, ac->dn, ac->do_delete);
 		}
 
-		if (ac->delete) {
+		if (ac->do_delete) {
 			ret = ukt_del_op(ac);
 			if (ret != LDB_SUCCESS) {
 				return ldb_module_done(ac->req,
@@ -342,7 +342,7 @@ static int update_kt_delete(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ac->dn = req->op.del.dn;
-	ac->delete = true;
+	ac->do_delete = true;
 
 	return ukt_search_modified(ac);
 }
