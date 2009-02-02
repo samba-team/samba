@@ -115,9 +115,9 @@ failed:
   handle a request timeout
 */
 static void nbt_name_socket_timeout(struct tevent_context *ev, struct tevent_timer *te,
-				    struct timeval t, void *private)
+				    struct timeval t, void *private_data)
 {
-	struct nbt_name_request *req = talloc_get_type(private,
+	struct nbt_name_request *req = talloc_get_type(private_data,
 						       struct nbt_name_request);
 
 	if (req->num_retries != 0) {
@@ -314,9 +314,9 @@ done:
   handle fd events on a nbt_name_socket
 */
 static void nbt_name_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-				    uint16_t flags, void *private)
+				    uint16_t flags, void *private_data)
 {
-	struct nbt_name_socket *nbtsock = talloc_get_type(private,
+	struct nbt_name_socket *nbtsock = talloc_get_type(private_data,
 							  struct nbt_name_socket);
 	if (flags & EVENT_FD_WRITE) {
 		nbt_name_socket_send(nbtsock);
@@ -508,10 +508,10 @@ NTSTATUS nbt_name_request_recv(struct nbt_name_request *req)
 _PUBLIC_ NTSTATUS nbt_set_incoming_handler(struct nbt_name_socket *nbtsock,
 				  void (*handler)(struct nbt_name_socket *, struct nbt_name_packet *,
 						  struct socket_address *),
-				  void *private)
+				  void *private_data)
 {
 	nbtsock->incoming.handler = handler;
-	nbtsock->incoming.private_data = private;
+	nbtsock->incoming.private_data = private_data;
 	EVENT_FD_READABLE(nbtsock->fde);
 	return NT_STATUS_OK;
 }
