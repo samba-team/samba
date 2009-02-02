@@ -81,6 +81,7 @@ o   SATOH Fumiyasu <fumiyas@osstech.co.jp>
 
 o   Björn Jacke <bj@sernet.de>
     * Correct the description of the "ldap timeout" parameter.
+    * Fix build with external dns_sd libraries.
 
 
 o   Jeff Layton <jlayton@redhat.com>
