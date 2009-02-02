@@ -110,9 +110,9 @@ static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
 /*
   receive a full packet on a NTP_SIGND connection
 */
-static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
+static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private, 
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data,
 							     struct ntp_signd_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
@@ -271,9 +271,9 @@ static void ntp_signd_recv_handler(struct stream_connection *conn, uint16_t flag
 /*
   called on a tcp recv error
 */
-static void ntp_signd_recv_error(void *private, NTSTATUS status)
+static void ntp_signd_recv_error(void *private_data, NTSTATUS status)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private, struct ntp_signd_connection);
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data, struct ntp_signd_connection);
 	ntp_signd_terminate_connection(ntp_signdconn, nt_errstr(status));
 }
 
