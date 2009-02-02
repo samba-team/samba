@@ -112,7 +112,7 @@ static void lock_send(struct benchlock_state *state)
 		DEBUG(0,("Failed to setup lock\n"));
 		lock_failed++;
 	}
-	state->req->async.private = state;
+	state->req->async.private_data = state;
 	state->req->async.fn      = lock_completion;
 }
 
@@ -222,7 +222,7 @@ static void reopen_connection(struct tevent_context *ev, struct tevent_timer *te
 */
 static void lock_completion(struct smbcli_request *req)
 {
-	struct benchlock_state *state = (struct benchlock_state *)req->async.private;
+	struct benchlock_state *state = (struct benchlock_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	state->req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
@@ -262,7 +262,7 @@ static void lock_completion(struct smbcli_request *req)
 
 static void echo_completion(struct smbcli_request *req)
 {
-	struct benchlock_state *state = (struct benchlock_state *)req->async.private;
+	struct benchlock_state *state = (struct benchlock_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
@@ -305,7 +305,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 		p.in.size = 0;
 		p.in.data = NULL;
 		req = smb_raw_echo_send(state[i].tree->session->transport, &p);
-		req->async.private = &state[i];
+		req->async.private_data = &state[i];
 		req->async.fn      = echo_completion;
 	}
 }

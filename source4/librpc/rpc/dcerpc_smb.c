@@ -84,7 +84,7 @@ static void smb_read_callback(struct smbcli_request *req)
 	uint16_t frag_length;
 	NTSTATUS status;
 
-	state = talloc_get_type(req->async.private, struct smb_read_state);
+	state = talloc_get_type(req->async.private_data, struct smb_read_state);
 	smb = talloc_get_type(state->c->transport.private_data, struct smb_private);
 	io = state->io;
 
@@ -133,7 +133,7 @@ static void smb_read_callback(struct smbcli_request *req)
 	}
 
 	state->req->async.fn = smb_read_callback;
-	state->req->async.private = state;
+	state->req->async.private_data = state;
 }
 
 /*
@@ -185,7 +185,7 @@ static NTSTATUS send_read_request_continue(struct dcerpc_connection *c, DATA_BLO
 	}
 
 	req->async.fn = smb_read_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 
 	state->req = req;
 
@@ -221,7 +221,7 @@ struct smb_trans_state {
 */
 static void smb_trans_callback(struct smbcli_request *req)
 {
-	struct smb_trans_state *state = (struct smb_trans_state *)req->async.private;
+	struct smb_trans_state *state = (struct smb_trans_state *)req->async.private_data;
 	struct dcerpc_connection *c = state->c;
 	NTSTATUS status;
 
@@ -293,7 +293,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
 	}
 
 	state->req->async.fn = smb_trans_callback;
-	state->req->async.private = state;
+	state->req->async.private_data = state;
 
 	talloc_steal(state, state->req);
 
@@ -305,7 +305,7 @@ static NTSTATUS smb_send_trans_request(struct dcerpc_connection *c, DATA_BLOB *b
 */
 static void smb_write_callback(struct smbcli_request *req)
 {
-	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private;
+	struct dcerpc_connection *c = (struct dcerpc_connection *)req->async.private_data;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		DEBUG(0,("dcerpc_smb: write callback error\n"));
@@ -351,7 +351,7 @@ static NTSTATUS smb_send_request(struct dcerpc_connection *c, DATA_BLOB *blob,
 	}
 
 	req->async.fn = smb_write_callback;
-	req->async.private = c;
+	req->async.private_data = c;
 
 	if (trigger_read) {
 		send_read_request(c);
@@ -501,7 +501,7 @@ struct composite_context *dcerpc_pipe_open_smb_send(struct dcerpc_pipe *p,
 
 static void pipe_open_recv(struct smbcli_request *req)
 {
-	struct pipe_open_smb_state *state = talloc_get_type(req->async.private,
+	struct pipe_open_smb_state *state = talloc_get_type(req->async.private_data,
 					    struct pipe_open_smb_state);
 	struct composite_context *ctx = state->ctx;
 	struct dcerpc_connection *c = state->c;

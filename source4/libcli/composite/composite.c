@@ -86,7 +86,7 @@ _PUBLIC_ NTSTATUS composite_wait_free(struct composite_context *c)
    this is used to allow for a composite function to complete without
    going through any state transitions. When that happens the caller
    has had no opportunity to fill in the async callback fields
-   (ctx->async.fn and ctx->async.private) which means the usual way of
+   (ctx->async.fn and ctx->async.private_data) which means the usual way of
    dealing with composite functions doesn't work. To cope with this,
    we trigger a timer event that will happen then the event loop is
    re-entered. This gives the caller a chance to setup the callback,
@@ -194,7 +194,7 @@ _PUBLIC_ void composite_continue_smb(struct composite_context *ctx,
 {
 	if (composite_nomem(new_req, ctx)) return;
 	new_req->async.fn = continuation;
-	new_req->async.private = private_data;
+	new_req->async.private_data = private_data;
 }
 
 _PUBLIC_ void composite_continue_smb2(struct composite_context *ctx,

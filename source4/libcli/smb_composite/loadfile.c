@@ -61,7 +61,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 
 	/* call the handler again when the close is done */
 	state->req->async.fn = loadfile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = LOADFILE_CLOSE;
 
 	return NT_STATUS_OK;
@@ -113,7 +113,7 @@ static NTSTATUS loadfile_open(struct composite_context *c,
 
 	/* call the handler again when the first read is done */
 	state->req->async.fn = loadfile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = LOADFILE_READ;
 
 	talloc_free(state->io_open);
@@ -152,7 +152,7 @@ static NTSTATUS loadfile_read(struct composite_context *c,
 
 	/* call the handler again when the read is done */
 	state->req->async.fn = loadfile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 
 	return NT_STATUS_OK;
 }
@@ -180,7 +180,7 @@ static NTSTATUS loadfile_close(struct composite_context *c,
 */
 static void loadfile_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = (struct composite_context *)req->async.private;
+	struct composite_context *c = (struct composite_context *)req->async.private_data;
 	struct loadfile_state *state = talloc_get_type(c->private_data, struct loadfile_state);
 
 	/* when this handler is called, the stage indicates what
@@ -250,7 +250,7 @@ struct composite_context *smb_composite_loadfile_send(struct smbcli_tree *tree,
 
 	/* setup the callback handler */
 	state->req->async.fn = loadfile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = LOADFILE_OPEN;
 
 	return c;

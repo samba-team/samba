@@ -80,7 +80,7 @@ static void set_user_session_key(struct smbcli_session *session,
 */
 static void request_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = (struct composite_context *)req->async.private;
+	struct composite_context *c = (struct composite_context *)req->async.private_data;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	struct smbcli_session *session = req->session;
 	DATA_BLOB session_key = data_blob(NULL, 0);

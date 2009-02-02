@@ -46,7 +46,7 @@ static NTSTATUS appendacl_open(struct composite_context *c,
 
 	/* set the handler */
 	state->req->async.fn = appendacl_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = APPENDACL_GET;
 	
 	talloc_free (state->io_open);
@@ -92,7 +92,7 @@ static NTSTATUS appendacl_get(struct composite_context *c,
 
 	/* call handler when done setting new security descriptor on file */
 	state->req->async.fn = appendacl_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = APPENDACL_SET;
 
 	talloc_free (state->io_fileinfo);
@@ -124,7 +124,7 @@ static NTSTATUS appendacl_set(struct composite_context *c,
 
 	/* set the handler */
 	state->req->async.fn = appendacl_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = APPENDACL_GETAGAIN;
 	
 	talloc_free (state->io_setfileinfo);
@@ -159,7 +159,7 @@ static NTSTATUS appendacl_getagain(struct composite_context *c,
 
 	/* call the handler */
 	state->req->async.fn = appendacl_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = APPENDACL_CLOSEPATH;
 
 	talloc_free (state->io_fileinfo);
@@ -188,7 +188,7 @@ static NTSTATUS appendacl_close(struct composite_context *c,
 */
 static void appendacl_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = (struct composite_context *)req->async.private;
+	struct composite_context *c = (struct composite_context *)req->async.private_data;
 	struct appendacl_state *state = talloc_get_type(c->private_data, struct appendacl_state);
 
 	/* when this handler is called, the stage indicates what
@@ -270,7 +270,7 @@ struct composite_context *smb_composite_appendacl_send(struct smbcli_tree *tree,
 
 	/* setup the callback handler */
 	state->req->async.fn = appendacl_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = APPENDACL_OPENPATH;
 
 	return c;

@@ -58,5 +58,5 @@ _PUBLIC_ void smbcli_oplock_handler(struct smbcli_transport *transport,
 			void *private_data)
 {
 	transport->oplock.handler = handler;
-	transport->oplock.private = private_data;
+	transport->oplock.private_data = private_data;
 }

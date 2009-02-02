@@ -64,7 +64,7 @@ static NTSTATUS setup_close(struct composite_context *c,
 	/* call the handler again when the close is done */
 	state->stage = SAVEFILE_CLOSE;
 	state->req->async.fn = savefile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 
 	return NT_STATUS_OK;
 }
@@ -108,7 +108,7 @@ static NTSTATUS savefile_open(struct composite_context *c,
 	/* call the handler again when the first write is done */
 	state->stage = SAVEFILE_WRITE;
 	state->req->async.fn = savefile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	talloc_free(state->io_open);
 
 	return NT_STATUS_OK;
@@ -149,7 +149,7 @@ static NTSTATUS savefile_write(struct composite_context *c,
 
 	/* call the handler again when the write is done */
 	state->req->async.fn = savefile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 
 	return NT_STATUS_OK;
 }
@@ -181,7 +181,7 @@ static NTSTATUS savefile_close(struct composite_context *c,
 */
 static void savefile_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = (struct composite_context *)req->async.private;
+	struct composite_context *c = (struct composite_context *)req->async.private_data;
 	struct savefile_state *state = talloc_get_type(c->private_data, struct savefile_state);
 
 	/* when this handler is called, the stage indicates what
@@ -254,7 +254,7 @@ struct composite_context *smb_composite_savefile_send(struct smbcli_tree *tree,
 
 	/* setup the callback handler */
 	state->req->async.fn = savefile_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	c->private_data = state;
 
 	return c;

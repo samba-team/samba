@@ -166,7 +166,7 @@ static bool oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 	}
 
 	req->async.fn = oplock_handler_close_recv;
-	req->async.private = NULL;
+	req->async.private_data = NULL;
 
 	return true;
 }

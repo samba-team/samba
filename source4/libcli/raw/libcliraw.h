@@ -128,7 +128,7 @@ struct smbcli_transport {
 	   for a packet */
 	struct {
 		void (*func)(struct smbcli_transport *, void *);
-		void *private;
+		void *private_data;
 		uint_t period;
 	} idle;
 
@@ -151,7 +151,7 @@ struct smbcli_transport {
 		bool (*handler)(struct smbcli_transport *transport, 
 				uint16_t tid, uint16_t fnum, uint8_t level, void *private_data);
 		/* private data passed to the oplock handler */
-		void *private;
+		void *private_data;
 	} oplock;
 
 	/* a list of async requests that are pending for receive on this connection */
@@ -286,7 +286,7 @@ struct smbcli_request {
 	*/
 	struct {
 		void (*fn)(struct smbcli_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 
