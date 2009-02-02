@@ -46,7 +46,7 @@ struct loadparm_context;
 struct parm_struct {
 	const char *label;
 	parm_type type;
-	parm_class class;
+	parm_class pclass;
 	int offset;
 	bool (*special)(struct loadparm_context *, const char *, char **);
 	const struct enum_list *enum_list;
