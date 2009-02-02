@@ -48,6 +48,7 @@ for lang in $langs; do
 
 	    # Check if this man page if required by the configured feature set
 	    case "${MP_BASENAME}" in
+		cifs.upcall.8) test -z "${CIFSUPCALL_PROGS}" && continue ;;
 	    	smbsh.1) test -z "${SMBWRAPPER}" && continue ;;
 		*) ;;
 	    esac
