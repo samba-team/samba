@@ -50,9 +50,9 @@ static int websrv_destructor(struct websrv_context *web)
 */
 static void websrv_timeout(struct tevent_context *event_context, 
 			   struct tevent_timer *te, 
-			   struct timeval t, void *private)
+			   struct timeval t, void *private_data)
 {
-	struct websrv_context *web = talloc_get_type(private, struct websrv_context);
+	struct websrv_context *web = talloc_get_type(private_data, struct websrv_context);
 	struct stream_connection *conn = web->conn;
 	web->conn = NULL;
 	/* TODO: send a message to any running esp context on this connection
