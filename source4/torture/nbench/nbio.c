@@ -802,15 +802,15 @@ bool nb_mkdir(const char *dname, NTSTATUS status, bool retry)
 	return true;
 }
 
-bool nb_rename(const char *old, const char *new, NTSTATUS status, bool retry)
+bool nb_rename(const char *o, const char *n, NTSTATUS status, bool retry)
 {
 	NTSTATUS ret;
 	union smb_rename io;
 
 	io.generic.level = RAW_RENAME_RENAME;
 	io.rename.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
-	io.rename.in.pattern1 = old;
-	io.rename.in.pattern2 = new;
+	io.rename.in.pattern1 = o;
+	io.rename.in.pattern2 = n;
 
 	ret = smb_raw_rename(c->tree, &io);
 
