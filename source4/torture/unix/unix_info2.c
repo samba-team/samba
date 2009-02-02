@@ -201,9 +201,9 @@ static bool query_path_info2(void *mem_ctx,
 			-1, fname, info2);
 }
 
-static bool search_callback(void *private, const union smb_search_data *fdata)
+static bool search_callback(void *private_data, const union smb_search_data *fdata)
 {
-	struct unix_info2 *info2 = (struct unix_info2 *)private;
+	struct unix_info2 *info2 = (struct unix_info2 *)private_data;
 
 	info2->end_of_file = fdata->unix_info2.end_of_file;
 	info2->num_bytes = fdata->unix_info2.num_bytes;

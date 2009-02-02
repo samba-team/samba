@@ -74,9 +74,9 @@ static struct {
 */
 static bool oplock_handler_ack_to_given(struct smbcli_transport *transport,
 					uint16_t tid, uint16_t fnum,
-					uint8_t level, void *private)
+					uint8_t level, void *private_data)
 {
-	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
 	const char *name;
 
 	break_info.fnum = fnum;
@@ -105,9 +105,9 @@ static bool oplock_handler_ack_to_given(struct smbcli_transport *transport,
 */
 static bool oplock_handler_ack_to_none(struct smbcli_transport *transport, 
 				       uint16_t tid, uint16_t fnum, 
-				       uint8_t level, void *private)
+				       uint8_t level, void *private_data)
 {
-	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
 	break_info.fnum = fnum;
 	break_info.level = level;
 	break_info.count++;
@@ -122,7 +122,7 @@ static bool oplock_handler_ack_to_none(struct smbcli_transport *transport,
 */
 static bool oplock_handler_timeout(struct smbcli_transport *transport,
 				   uint16_t tid, uint16_t fnum,
-				   uint8_t level, void *private)
+				   uint8_t level, void *private_data)
 {
 	break_info.fnum = fnum;
 	break_info.level = level;
@@ -146,10 +146,10 @@ static void oplock_handler_close_recv(struct smbcli_request *req)
   a handler function for oplock break requests - close the file
 */
 static bool oplock_handler_close(struct smbcli_transport *transport, uint16_t tid, 
-				 uint16_t fnum, uint8_t level, void *private)
+				 uint16_t fnum, uint8_t level, void *private_data)
 {
 	union smb_close io;
-	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
 	struct smbcli_request *req;
 
 	break_info.fnum = fnum;
@@ -2999,9 +2999,9 @@ static struct hold_oplock_info {
 
 static bool oplock_handler_hold(struct smbcli_transport *transport, 
 				uint16_t tid, uint16_t fnum, uint8_t level, 
-				void *private)
+				void *private_data)
 {
-	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
 	struct hold_oplock_info *info;
 	int i;
 
@@ -3019,7 +3019,7 @@ static bool oplock_handler_hold(struct smbcli_transport *transport,
 	if (info->close_on_break) {
 		printf("oplock break on %s - closing\n",
 		       info->fname);
-		oplock_handler_close(transport, tid, fnum, level, private);
+		oplock_handler_close(transport, tid, fnum, level, private_data);
 		return true;
 	}
 

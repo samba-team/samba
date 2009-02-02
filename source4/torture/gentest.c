@@ -125,9 +125,9 @@ static struct smb2_handle bad_smb2_handle;
 
 static bool oplock_handler_smb2(struct smb2_transport *transport, const struct smb2_handle *handle,
 				uint8_t level, void *private_data);
-static void idle_func_smb2(struct smb2_transport *transport, void *private);
-static bool oplock_handler_smb(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private);
-static void idle_func_smb(struct smbcli_transport *transport, void *private);
+static void idle_func_smb2(struct smb2_transport *transport, void *private_data);
+static bool oplock_handler_smb(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private_data);
+static void idle_func_smb(struct smbcli_transport *transport, void *private_data);
 
 /*
   check if a string should be ignored. This is used as the basis
@@ -976,7 +976,7 @@ static void oplock_handler_close_recv_smb(struct smbcli_request *req)
 /*
   the oplock handler will either ack the break or close the file
 */
-static bool oplock_handler_smb(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private)
+static bool oplock_handler_smb(struct smbcli_transport *transport, uint16_t tid, uint16_t fnum, uint8_t level, void *private_data)
 {
 	union smb_close io;
 	int i, j;
@@ -1035,7 +1035,7 @@ static bool oplock_handler_smb(struct smbcli_transport *transport, uint16_t tid,
   an operation on another connection blocking until that break is acked
   we check for operations on all transports in the idle function
 */
-static void idle_func_smb(struct smbcli_transport *transport, void *private)
+static void idle_func_smb(struct smbcli_transport *transport, void *private_data)
 {
 	int i, j;
 	for (i=0;i<NSERVERS;i++) {
@@ -1155,7 +1155,7 @@ static bool oplock_handler_smb2(struct smb2_transport *transport, const struct s
   an operation on another connection blocking until that break is acked
   we check for operations on all transports in the idle function
 */
-static void idle_func_smb2(struct smb2_transport *transport, void *private)
+static void idle_func_smb2(struct smb2_transport *transport, void *private_data)
 {
 	int i, j;
 	for (i=0;i<NSERVERS;i++) {
