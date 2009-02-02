@@ -33,7 +33,7 @@ struct bench_state {
 static void request_handler(struct cldap_request *req)
 {
 	struct cldap_netlogon io;
-	struct bench_state *state = talloc_get_type(req->async.private, struct bench_state);
+	struct bench_state *state = talloc_get_type(req->async.private_data, struct bench_state);
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	io.in.version = 6;
@@ -75,7 +75,7 @@ static bool bench_cldap(struct torture_context *tctx, const char *address)
 			struct cldap_request *req;
 			req = cldap_netlogon_send(cldap, &search);
 
-			req->async.private = state;
+			req->async.private_data = state;
 			req->async.fn = request_handler;
 			num_sent++;
 			if (num_sent % 50 == 0) {

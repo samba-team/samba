@@ -285,7 +285,7 @@ NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
 				  void *private_data)
 {
 	cldap->incoming.handler = handler;
-	cldap->incoming.private = private_data;
+	cldap->incoming.private_data = private_data;
 	EVENT_FD_READABLE(cldap->fde);
 	return NT_STATUS_OK;
 }

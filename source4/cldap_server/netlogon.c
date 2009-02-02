@@ -407,7 +407,7 @@ void cldapd_netlogon_request(struct cldap_socket *cldap,
 			     struct ldb_parse_tree *tree,
 			     struct socket_address *src)
 {
-	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private, struct cldapd_server);
+	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private_data, struct cldapd_server);
 	int i;
 	const char *domain = NULL;
 	const char *host = NULL;

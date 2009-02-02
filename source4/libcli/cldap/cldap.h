@@ -63,7 +63,7 @@ struct cldap_request {
 	/* information on what to do on completion */
 	struct {
 		void (*fn)(struct cldap_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 
@@ -88,7 +88,7 @@ struct cldap_socket {
 	struct {
 		void (*handler)(struct cldap_socket *, struct ldap_message *, 
 				struct socket_address *);
-		void *private;
+		void *private_data;
 	} incoming;
 };
 

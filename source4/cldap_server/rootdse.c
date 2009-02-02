@@ -155,7 +155,7 @@ void cldapd_rootdse_request(struct cldap_socket *cldap,
 			    struct ldap_SearchRequest *search,
 			    struct socket_address *src)
 {
-	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private, struct cldapd_server);
+	struct cldapd_server *cldapd = talloc_get_type(cldap->incoming.private_data, struct cldapd_server);
 	NTSTATUS status;
 	struct cldap_reply reply;
 	struct ldap_Result result;
