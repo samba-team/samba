@@ -365,7 +365,8 @@ unless (defined($ENV{VALGRIND})) {
 	$ENV{MALLOC_CHECK_} = 2;
 }
 
-my $old_pwd = "$RealBin/..";
+my $bindir = ($opt_bindir or "$builddir/bin");
+my $bindir_abs = abs_path($bindir);
 
 # Backwards compatibility:
 if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
@@ -410,8 +411,8 @@ if (defined($ENV{RUN_FROM_BUILD_FARM}) and
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
-$ENV{LDB_MODULES_PATH} = "$old_pwd/source4/bin/modules/ldb";
-$ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/source4/bin/modules";
+$ENV{LDB_MODULES_PATH} = "$bindir_abs/modules/ldb";
+$ENV{LD_SAMBA_MODULE_PATH} = "$bindir_abs/modules";
 sub prefix_pathvar($$)
 {
 	my ($name, $newpath) = @_;
@@ -421,8 +422,8 @@ sub prefix_pathvar($$)
 		$ENV{$name} = $newpath;
 	}
 }
-prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/source4/bin/pkgconfig");
-prefix_pathvar("PYTHONPATH", "$old_pwd/source4/bin/python");
+prefix_pathvar("PKG_CONFIG_PATH", "$bindir_abs/pkgconfig");
+prefix_pathvar("PYTHONPATH", "$bindir_abs/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
 	# Socket wrapper keep pcap implies socket wrapper pcap
@@ -450,10 +451,8 @@ my $testenv_default = "none";
 if ($opt_target eq "samba4") {
 	$testenv_default = "member";
 	require target::Samba4;
-	$target = new Samba4($opt_bindir or "$builddir/bin",
-			     $ldap, "$srcdir/setup", $exeext);
+	$target = new Samba4($bindir, $ldap, "$srcdir/setup", $exeext);
 } elsif ($opt_target eq "samba3") {
-	my $bindir = ($opt_bindir or "$builddir/bin");
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
