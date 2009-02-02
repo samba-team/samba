@@ -126,9 +126,9 @@ static int pvfs_notify_destructor(struct pvfs_notify_buffer *n)
 /*
   called when a async notify event comes in
 */
-static void pvfs_notify_callback(void *private, const struct notify_event *ev)
+static void pvfs_notify_callback(void *private_data, const struct notify_event *ev)
 {
-	struct pvfs_notify_buffer *n = talloc_get_type(private, struct pvfs_notify_buffer);
+	struct pvfs_notify_buffer *n = talloc_get_type(private_data, struct pvfs_notify_buffer);
 	size_t len;
 	struct notify_changes *n2;
 	char *new_path;
@@ -201,9 +201,9 @@ static NTSTATUS pvfs_notify_setup(struct pvfs_state *pvfs, struct pvfs_file *f,
   called from the pvfs_wait code when either an event has come in, or
   the notify request has been cancelled
 */
-static void pvfs_notify_end(void *private, enum pvfs_wait_notice reason)
+static void pvfs_notify_end(void *private_data, enum pvfs_wait_notice reason)
 {
-	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private, 
+	struct pvfs_notify_buffer *notify_buffer = talloc_get_type(private_data,
 								   struct pvfs_notify_buffer);
 	if (reason == PVFS_WAIT_CANCEL) {
 		pvfs_notify_send(notify_buffer, NT_STATUS_CANCELLED, false);

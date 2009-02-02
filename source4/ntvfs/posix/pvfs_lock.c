@@ -88,9 +88,9 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
   range, so we should try the lock again. Note that on timeout we
   do retry the lock, giving it a last chance.
 */
-static void pvfs_pending_lock_continue(void *private, enum pvfs_wait_notice reason)
+static void pvfs_pending_lock_continue(void *private_data, enum pvfs_wait_notice reason)
 {
-	struct pvfs_pending_lock *pending = private;
+	struct pvfs_pending_lock *pending = private_data;
 	struct pvfs_state *pvfs = pending->pvfs;
 	struct pvfs_file *f = pending->f;
 	struct ntvfs_request *req = pending->req;

@@ -42,9 +42,9 @@ struct pvfs_aio_write_state {
   called when an aio read has finished
 */
 static void pvfs_aio_read_handler(struct tevent_context *ev, struct tevent_aio *ae,
-			     int ret, void *private)
+			     int ret, void *private_data)
 {
-	struct pvfs_aio_read_state *state = talloc_get_type(private, 
+	struct pvfs_aio_read_state *state = talloc_get_type(private_data,
 							    struct pvfs_aio_read_state);
 	struct pvfs_file *f = state->f;
 	union smb_read *rd = state->rd;
@@ -107,9 +107,9 @@ NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
   called when an aio write has finished
 */
 static void pvfs_aio_write_handler(struct tevent_context *ev, struct tevent_aio *ae,
-			     int ret, void *private)
+			     int ret, void *private_data)
 {
-	struct pvfs_aio_write_state *state = talloc_get_type(private, 
+	struct pvfs_aio_write_state *state = talloc_get_type(private_data,
 							    struct pvfs_aio_write_state);
 	struct pvfs_file *f = state->f;
 	union smb_write *wr = state->wr;
