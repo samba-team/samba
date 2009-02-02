@@ -4,7 +4,7 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0.70
+Version: 1.0.71
 Release: 1
 Epoch: 0
 License: GNU GPL version 3
@@ -128,6 +128,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Feb 2 2009 : Version 1.0.71
+ - Additional ipv6 fixes from Michael Adams
 * Fri Jan 16 2009 : Version 1.0.70
  - IPv6 support is completed. this is backward compatible with ipv4-only
    systems. To use IPv6 with samba and ctdb you need current GIT of samba 3.3
