@@ -158,9 +158,9 @@ NTSTATUS gensec_packet_full_request(struct gensec_security *gensec_security,
 	return packet_full_request_u32(NULL, blob, size);
 }
 
-static NTSTATUS gensec_socket_full_request(void *private, DATA_BLOB blob, size_t *size) 
+static NTSTATUS gensec_socket_full_request(void *private_data, DATA_BLOB blob, size_t *size)
 {
-	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 	struct gensec_security *gensec_security = gensec_socket->gensec_security;
 	return gensec_packet_full_request(gensec_security, blob, size);
 }
@@ -187,9 +187,9 @@ static NTSTATUS gensec_socket_pending(struct socket_context *sock, size_t *npend
 }      
 
 /* Note if an error occours, so we can return it up the stack */
-static void gensec_socket_error_handler(void *private, NTSTATUS status)
+static void gensec_socket_error_handler(void *private_data, NTSTATUS status)
 {
-	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 		gensec_socket->eof = true;
 	} else {
@@ -199,9 +199,9 @@ static void gensec_socket_error_handler(void *private, NTSTATUS status)
 
 static void gensec_socket_trigger_read(struct tevent_context *ev, 
 				       struct tevent_timer *te, 
-				       struct timeval t, void *private)
+				       struct timeval t, void *private_data)
 {
-	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 
 	gensec_socket->in_extra_read++;
 	gensec_socket->recv_handler(gensec_socket->recv_private, EVENT_FD_READ);
@@ -287,9 +287,9 @@ static NTSTATUS gensec_socket_recv(struct socket_context *sock, void *buf,
  *
  * This function (and anything under it) MUST NOT call the event system
  */
-static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
+static NTSTATUS gensec_socket_unwrap(void *private_data, DATA_BLOB blob)
 {
-	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 	DATA_BLOB unwrapped;
 	NTSTATUS nt_status;
 	TALLOC_CTX *mem_ctx;
@@ -329,9 +329,9 @@ static NTSTATUS gensec_socket_unwrap(void *private, DATA_BLOB blob)
 }
 
 /* when the data is sent, we know we have not been interrupted */
-static void send_callback(void *private) 
+static void send_callback(void *private_data)
 {
-	struct gensec_socket *gensec_socket = talloc_get_type(private, struct gensec_socket);
+	struct gensec_socket *gensec_socket = talloc_get_type(private_data, struct gensec_socket);
 	gensec_socket->interrupted = false;
 }
 
