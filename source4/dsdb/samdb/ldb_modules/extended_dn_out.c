@@ -59,42 +59,42 @@ static bool is_attr_in_list(const char * const * attrs, const char *attr)
 
 static char **copy_attrs(void *mem_ctx, const char * const * attrs)
 {
-	char **new;
+	char **nattrs;
 	int i, num;
 
 	for (num = 0; attrs[num]; num++);
 
-	new = talloc_array(mem_ctx, char *, num + 1);
-	if (!new) return NULL;
+	nattrs = talloc_array(mem_ctx, char *, num + 1);
+	if (!nattrs) return NULL;
 
 	for(i = 0; i < num; i++) {
-		new[i] = talloc_strdup(new, attrs[i]);
-		if (!new[i]) {
-			talloc_free(new);
+		nattrs[i] = talloc_strdup(nattrs, attrs[i]);
+		if (!nattrs[i]) {
+			talloc_free(nattrs);
 			return NULL;
 		}
 	}
-	new[i] = NULL;
+	nattrs[i] = NULL;
 
-	return new;
+	return nattrs;
 }
 
 static bool add_attrs(void *mem_ctx, char ***attrs, const char *attr)
 {
-	char **new;
+	char **nattrs;
 	int num;
 
 	for (num = 0; (*attrs)[num]; num++);
 
-	new = talloc_realloc(mem_ctx, *attrs, char *, num + 2);
-	if (!new) return false;
+	nattrs = talloc_realloc(mem_ctx, *attrs, char *, num + 2);
+	if (!nattrs) return false;
 
-	*attrs = new;
+	*attrs = nattrs;
 
-	new[num] = talloc_strdup(new, attr);
-	if (!new[num]) return false;
+	nattrs[num] = talloc_strdup(nattrs, attr);
+	if (!nattrs[num]) return false;
 
-	new[num + 1] = NULL;
+	nattrs[num + 1] = NULL;
 
 	return true;
 }
@@ -246,10 +246,10 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct dsdb_openldap_dereference_result_control *dereference_control = NULL;
 	int ret, i, j;
 	struct ldb_message *msg = ares->message;
-	struct extended_dn_out_private *private;
+	struct extended_dn_out_private *p;
 
 	ac = talloc_get_type(req->context, struct extended_search_context);
-	private = talloc_get_type(ac->module->private_data, struct extended_dn_out_private);
+	p = talloc_get_type(ac->module->private_data, struct extended_dn_out_private);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -271,7 +271,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 		break;
 	}
 
-	if (private && private->normalise) {
+	if (p && p->normalise) {
 		ret = fix_dn(ares->message->dn);
 		if (ret != LDB_SUCCESS) {
 			return ldb_module_done(ac->req, NULL, NULL, ret);
@@ -289,7 +289,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 	}
 
-	if ((private && private->normalise) || ac->inject) {
+	if ((p && p->normalise) || ac->inject) {
 		const struct ldb_val *val = ldb_msg_find_ldb_val(ares->message, "distinguishedName");
 		if (val) {
 			ldb_msg_remove_attr(ares->message, "distinguishedName");
@@ -307,7 +307,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
 	}
 
-	if (private && private->dereference) {
+	if (p && p->dereference) {
 		control = ldb_reply_get_control(ares, DSDB_OPENLDAP_DEREFERENCE_CONTROL);
 	
 		if (control && control->data) {
@@ -323,7 +323,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 			continue;
 		}
 
-		if (private->normalise) {
+		if (p->normalise) {
 			/* If we are also in 'normalise' mode, then
 			 * fix the attribute names to be in the
 			 * correct case */
@@ -351,7 +351,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares)
 				return ldb_module_done(ac->req, NULL, NULL, LDB_ERR_INVALID_DN_SYNTAX);
 			}
 
-			if (private->normalise) {
+			if (p->normalise) {
 				ret = fix_dn(dn);
 				if (ret != LDB_SUCCESS) {
 					return ldb_module_done(ac->req, NULL, NULL, ret);
@@ -408,7 +408,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	const char * const *const_attrs;
 	int ret;
 
-	struct extended_dn_out_private *private = talloc_get_type(module->private_data, struct extended_dn_out_private);
+	struct extended_dn_out_private *p = talloc_get_type(module->private_data, struct extended_dn_out_private);
 
 	/* check if there's an extended dn control */
 	control = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
@@ -450,7 +450,7 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	 * the extended DN, or we are 'store DN+GUID+SID'
 	 * (!dereference) mode.  (This is the normal mode for LDB on
 	 * tdb). */
-	if (control || (storage_format_control && private && !private->dereference)) {
+	if (control || (storage_format_control && p && !p->dereference)) {
 		ac->inject = true;
 		if (extended_ctrl) {
 			ac->extended_type = extended_ctrl->type;
@@ -522,10 +522,10 @@ static int extended_dn_out_search(struct ldb_module *module, struct ldb_request 
 	/* Add in dereference control, if we were asked to, we are
 	 * using the 'dereference' mode (such as with an OpenLDAP
 	 * backend) and have the control prepared */
-	if (control && private && private->dereference && private->dereference_control) {
+	if (control && p && p->dereference && p->dereference_control) {
 		ret = ldb_request_add_control(down_req,
 					      DSDB_OPENLDAP_DEREFERENCE_CONTROL,
-					      false, private->dereference_control);
+					      false, p->dereference_control);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -539,17 +539,17 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 {
 	int ret;
 
-	struct extended_dn_out_private *private = talloc(module, struct extended_dn_out_private);
+	struct extended_dn_out_private *p = talloc(module, struct extended_dn_out_private);
 
-	module->private_data = private;
+	module->private_data = p;
 
-	if (!private) {
+	if (!p) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	private->dereference = false;
-	private->normalise = false;
+	p->dereference = false;
+	p->normalise = false;
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
@@ -564,24 +564,24 @@ static int extended_dn_out_ldb_init(struct ldb_module *module)
 static int extended_dn_out_dereference_init(struct ldb_module *module)
 {
 	int ret, i = 0;
-	struct extended_dn_out_private *private;
+	struct extended_dn_out_private *p;
 	struct dsdb_openldap_dereference_control *dereference_control;
 	struct dsdb_attribute *cur;
 
 	struct dsdb_schema *schema;
 
-	module->private_data = private = talloc_zero(module, struct extended_dn_out_private);
+	module->private_data = p = talloc_zero(module, struct extended_dn_out_private);
 
-	if (!private) {
+	if (!p) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	private->dereference = true;
+	p->dereference = true;
 
 	/* At the moment, servers that need dereference also need the
 	 * DN and attribute names to be normalised */
-	private->normalise = true;
+	p->normalise = true;
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_EXTENDED_DN_OID);
 	if (ret != LDB_SUCCESS) {
@@ -602,10 +602,10 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	private->dereference_control = dereference_control
-		= talloc_zero(private, struct dsdb_openldap_dereference_control);
+	p->dereference_control = dereference_control
+		= talloc_zero(p, struct dsdb_openldap_dereference_control);
 
-	if (!private->dereference_control) {
+	if (!p->dereference_control) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -621,7 +621,7 @@ static int extended_dn_out_dereference_init(struct ldb_module *module)
 			continue;
 		}
 		dereference_control->dereference
-			= talloc_realloc(private, dereference_control->dereference, 
+			= talloc_realloc(p, dereference_control->dereference,
 					 struct dsdb_openldap_dereference *, i + 2);
 		if (!dereference_control) {
 			ldb_oom(module->ldb);
