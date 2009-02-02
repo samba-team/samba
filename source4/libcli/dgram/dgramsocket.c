@@ -203,7 +203,7 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 				    void *private_data)
 {
 	dgmsock->incoming.handler = handler;
-	dgmsock->incoming.private = private_data;
+	dgmsock->incoming.private_data = private_data;
 	EVENT_FD_READABLE(dgmsock->fde);
 	return NT_STATUS_OK;
 }

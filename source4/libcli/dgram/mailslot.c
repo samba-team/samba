@@ -66,7 +66,7 @@ struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dg
 		return NULL;
 	}
 	dgmslot->handler = handler;
-	dgmslot->private = private_data;
+	dgmslot->private_data = private_data;
 
 	DLIST_ADD(dgmsock->mailslot_handlers, dgmslot);
 	talloc_set_destructor(dgmslot, dgram_mailslot_destructor);

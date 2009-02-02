@@ -65,7 +65,7 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 				      struct socket_address *src)
 {
 	struct getdc_state *s =
-		talloc_get_type(dgmslot->private, struct getdc_state);
+		talloc_get_type(dgmslot->private_data, struct getdc_state);
 	const char *p;
 	struct nbt_netlogon_response netlogon;
 	NTSTATUS status;

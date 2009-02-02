@@ -161,7 +161,7 @@ void nbtd_mailslot_netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 {
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct nbtd_interface *iface = 
-		talloc_get_type(dgmslot->private, struct nbtd_interface);
+		talloc_get_type(dgmslot->private_data, struct nbtd_interface);
 	struct nbt_netlogon_packet *netlogon = 
 		talloc(dgmslot, struct nbt_netlogon_packet);
 	struct nbtd_iface_name *iname;

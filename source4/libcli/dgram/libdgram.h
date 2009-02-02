@@ -55,7 +55,7 @@ struct nbt_dgram_socket {
 	struct {
 		void (*handler)(struct nbt_dgram_socket *, struct nbt_dgram_packet *, 
 				struct socket_address *src);
-		void *private;
+		void *private_data;
 	} incoming;
 };
 
@@ -79,7 +79,7 @@ struct dgram_mailslot_handler {
 	const char *mailslot_name;
 
 	dgram_mailslot_handler_t handler;
-	void *private;
+	void *private_data;
 };
 
 

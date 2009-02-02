@@ -42,11 +42,11 @@ static void netlogon_handler(struct dgram_mailslot_handler *dgmslot,
 			     struct socket_address *src)
 {
 	NTSTATUS status;
-	struct nbt_netlogon_response *netlogon = dgmslot->private;
+	struct nbt_netlogon_response *netlogon = dgmslot->private_data;
 
-	dgmslot->private = netlogon = talloc(dgmslot, struct nbt_netlogon_response);
+	dgmslot->private_data = netlogon = talloc(dgmslot, struct nbt_netlogon_response);
 
-	if (!dgmslot->private) {
+	if (!dgmslot->private_data) {
 		return;
 	}
        
@@ -139,11 +139,11 @@ static bool nbt_test_netlogon(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -234,11 +234,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -273,11 +273,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -324,11 +324,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -365,11 +365,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -378,7 +378,7 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 
 	torture_assert_int_equal(tctx, response->data.samlogon.data.nt5_ex.command, LOGON_SAM_LOGON_RESPONSE, "Got incorrect netlogon response command");
 
-	dgmslot->private = NULL;
+	dgmslot->private_data = NULL;
 
 	ZERO_STRUCT(logon);
 	logon.command = LOGON_SAM_LOGON_REQUEST;
@@ -404,11 +404,11 @@ static bool nbt_test_netlogon2(struct torture_context *tctx)
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send netlogon request");
 
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -513,11 +513,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -557,11 +557,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && dgmslot->private == NULL) {
+	while (timeval_elapsed(&tv) < 5 && dgmslot->private_data == NULL) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -597,11 +597,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
@@ -634,11 +634,11 @@ static bool nbt_test_ntlogon(struct torture_context *tctx)
 					      &myname, &logon);
 	torture_assert_ntstatus_ok(tctx, status, "Failed to send ntlogon request");
 
-	while (timeval_elapsed(&tv) < 5 && !dgmslot->private) {
+	while (timeval_elapsed(&tv) < 5 && !dgmslot->private_data) {
 		event_loop_once(dgmsock->event_ctx);
 	}
 
-	response = talloc_get_type(dgmslot->private, struct nbt_netlogon_response);
+	response = talloc_get_type(dgmslot->private_data, struct nbt_netlogon_response);
 
 	torture_assert(tctx, response != NULL, "Failed to receive a netlogon reply packet");
 
