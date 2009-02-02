@@ -41,9 +41,9 @@ void wbsrv_terminate_connection(struct wbsrv_connection *wbconn, const char *rea
 /*
   called on a tcp recv error
 */
-static void wbsrv_recv_error(void *private, NTSTATUS status)
+static void wbsrv_recv_error(void *private_data, NTSTATUS status)
 {
-	struct wbsrv_connection *wbconn = talloc_get_type(private, struct wbsrv_connection);
+	struct wbsrv_connection *wbconn = talloc_get_type(private_data, struct wbsrv_connection);
 	wbsrv_terminate_connection(wbconn, nt_errstr(status));
 }
 
