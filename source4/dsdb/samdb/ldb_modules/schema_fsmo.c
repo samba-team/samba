@@ -291,11 +291,11 @@ static int schema_fsmo_extended(struct ldb_module *module, struct ldb_request *r
 static int generate_objectClasses(struct ldb_context *ldb, struct ldb_message *msg,
 				  const struct dsdb_schema *schema) 
 {
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	int ret;
 
-	for (class = schema->classes; class; class = class->next) {
-		ret = ldb_msg_add_string(msg, "objectClasses", schema_class_to_description(msg, class));
+	for (sclass = schema->classes; sclass; sclass = sclass->next) {
+		ret = ldb_msg_add_string(msg, "objectClasses", schema_class_to_description(msg, sclass));
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -320,12 +320,12 @@ static int generate_attributeTypes(struct ldb_context *ldb, struct ldb_message *
 static int generate_dITContentRules(struct ldb_context *ldb, struct ldb_message *msg,
 				    const struct dsdb_schema *schema) 
 {
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	int ret;
 
-	for (class = schema->classes; class; class = class->next) {
-		if (class->auxiliaryClass || class->systemAuxiliaryClass) {
-			char *ditcontentrule = schema_class_to_dITContentRule(msg, class, schema);
+	for (sclass = schema->classes; sclass; sclass = sclass->next) {
+		if (sclass->auxiliaryClass || sclass->systemAuxiliaryClass) {
+			char *ditcontentrule = schema_class_to_dITContentRule(msg, sclass, schema);
 			if (!ditcontentrule) {
 				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
