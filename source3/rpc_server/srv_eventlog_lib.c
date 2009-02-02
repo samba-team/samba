@@ -594,9 +594,8 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
  going in.
 ********************************************************************/
 
-bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bool * eor )
 {
-	TALLOC_CTX *ctx = talloc_tos();
 	char *start = NULL, *stop = NULL;
 
 	start = line;
@@ -667,7 +666,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.source_name_len = rpcstr_push_talloc(ctx,
+		entry->data_record.source_name_len = rpcstr_push_talloc(mem_ctx,
 				&entry->data_record.source_name,
 				stop);
 		if (entry->data_record.source_name_len == (uint32_t)-1 ||
@@ -679,7 +678,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.computer_name_len = rpcstr_push_talloc(ctx,
+		entry->data_record.computer_name_len = rpcstr_push_talloc(mem_ctx,
 				&entry->data_record.computer_name,
 				stop);
 		if (entry->data_record.computer_name_len == (uint32_t)-1 ||
@@ -691,7 +690,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->record.user_sid_length = rpcstr_push_talloc(ctx,
+		entry->record.user_sid_length = rpcstr_push_talloc(mem_ctx,
 				&entry->data_record.sid,
 				stop);
 		if (entry->record.user_sid_length == (uint32_t)-1 ||
@@ -708,14 +707,14 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace(stop[0])) {
 			stop++;
 		}
-		tmp_len = rpcstr_push_talloc(ctx,
+		tmp_len = rpcstr_push_talloc(mem_ctx,
 						&temp,
 						stop);
 		if (tmp_len == (size_t)-1 || !temp) {
 			return false;
 		}
 		old_len = entry->data_record.strings_len;
-		entry->data_record.strings = (smb_ucs2_t *)TALLOC_REALLOC_ARRAY(ctx,
+		entry->data_record.strings = (smb_ucs2_t *)TALLOC_REALLOC_ARRAY(mem_ctx,
 						entry->data_record.strings,
 						char,
 						old_len + tmp_len);
@@ -735,7 +734,7 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 			stop++;
 		}
 		entry->data_record.user_data_len = strlen(stop);
-		entry->data_record.user_data = talloc_strdup(ctx,
+		entry->data_record.user_data = talloc_strdup(mem_ctx,
 						stop);
 		if (!entry->data_record.user_data) {
 			return false;

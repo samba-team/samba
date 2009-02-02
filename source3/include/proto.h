@@ -6262,7 +6262,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee );
 void fixup_eventlog_entry( Eventlog_entry * ee );
-bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor );
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bool * eor );
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 

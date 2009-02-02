@@ -89,6 +89,7 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 	bool is_eor;
 	Eventlog_entry ee;
 	int rcnum;
+	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	f1 = stdin;
 	if ( !f1 ) {
@@ -122,7 +123,7 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 		is_eor = False;
 
 
-		parse_logentry( ( char * ) &linein, &ee, &is_eor );
+		parse_logentry( mem_ctx, ( char * ) &linein, &ee, &is_eor );
 		/* should we do something with the return code? */
 
 		if ( is_eor ) {
