@@ -416,6 +416,59 @@ static char *shadow_copy2_realpath(vfs_handle_struct *handle,
         SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
 }
 
+static const char *shadow_copy2_connectpath(struct vfs_handle_struct *handle,
+					    const char *fname)
+{
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
+	const char *snapdir, *baseoffset, *basedir;
+	size_t baselen;
+	char *ret;
+
+	if (!shadow_copy2_match_name(fname)) {
+		return handle->conn->connectpath;
+	}
+
+	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle);
+	if (snapdir == NULL) {
+		DEBUG(2,("no snapdir found for share at %s\n",
+			 handle->conn->connectpath));
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	basedir = shadow_copy2_find_basedir(tmp_ctx, handle);
+	if (basedir == NULL) {
+		DEBUG(2,("no basedir found for share at %s\n",
+			 handle->conn->connectpath));
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	baselen = strlen(basedir);
+	baseoffset = handle->conn->connectpath + baselen;
+
+	/* some sanity checks */
+	if (strncmp(basedir, handle->conn->connectpath, baselen) != 0 ||
+	    (handle->conn->connectpath[baselen] != 0
+	     && handle->conn->connectpath[baselen] != '/')) {
+		DEBUG(0,("shadow_copy2_connectpath: basedir %s is not a "
+			 "parent of %s\n", basedir,
+			 handle->conn->connectpath));
+		TALLOC_FREE(tmp_ctx);
+		return NULL;
+	}
+
+	if (*baseoffset == '/') baseoffset++;
+
+	ret = talloc_asprintf(talloc_tos(), "%s/%.*s/%s",
+			      snapdir,
+			      GMT_NAME_LEN, fname,
+			      baseoffset);
+	DEBUG(6,("shadow_copy2_connectpath: '%s' -> '%s'\n", fname, ret));
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
 			       const char *fname, uint32 security_info,
 			       struct security_descriptor **ppdesc)
@@ -592,6 +645,7 @@ static vfs_op_tuple shadow_copy2_ops[] = {
         {SMB_VFS_OP(shadow_copy2_link),       SMB_VFS_OP_LINK,     SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(shadow_copy2_mknod),      SMB_VFS_OP_MKNOD,    SMB_VFS_LAYER_TRANSPARENT},
         {SMB_VFS_OP(shadow_copy2_realpath),   SMB_VFS_OP_REALPATH, SMB_VFS_LAYER_TRANSPARENT},
+        {SMB_VFS_OP(shadow_copy2_connectpath), SMB_VFS_OP_CONNECTPATH, SMB_VFS_LAYER_OPAQUE},
 
         /* NT File ACL operations */
         {SMB_VFS_OP(shadow_copy2_get_nt_acl), SMB_VFS_OP_GET_NT_ACL, SMB_VFS_LAYER_TRANSPARENT},
