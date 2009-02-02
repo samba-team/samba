@@ -5,6 +5,7 @@
  *
  *
  * Copyright (C) Brian Moran                2005.
+ * Copyright (C) Guenther Deschner          2009.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,12 +85,13 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 	FILE *f1;
 	char *argfname;
 	ELOG_TDB *etdb;
+	NTSTATUS status;
 
 	/* fixed constants are bad bad bad  */
 	char linein[1024];
 	bool is_eor;
-	Eventlog_entry ee;
-	int rcnum;
+	struct eventlog_Record_tdb ee;
+	uint32_t record_number;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 
 	f1 = stdin;
@@ -128,22 +130,25 @@ static int DoWriteCommand( int argc, char **argv, bool debugflag, char *exename 
 		/* should we do something with the return code? */
 
 		if ( is_eor ) {
-			fixup_eventlog_entry( &ee );
+			fixup_eventlog_record_tdb( &ee );
 
 			if ( opt_debug )
-				printf( "record number [%d], tg [%d] , tw [%d]\n", ee.record.record_number, ee.record.time_generated, ee.record.time_written );
+				printf( "record number [%d], tg [%d] , tw [%d]\n",
+					ee.record_number, (int)ee.time_generated, (int)ee.time_written );
 
-			if ( ee.record.time_generated != 0 ) {
+			if ( ee.time_generated != 0 ) {
 
 				/* printf("Writing to the event log\n"); */
 
-				rcnum = write_eventlog_tdb( ELOG_TDB_CTX(etdb), &ee );
-				if ( !rcnum ) {
-					printf( "Can't write to the event log\n" );
+				status = evlog_push_record_tdb( mem_ctx, ELOG_TDB_CTX(etdb),
+								&ee, &record_number );
+				if ( !NT_STATUS_IS_OK(status) ) {
+					printf( "Can't write to the event log: %s\n",
+						nt_errstr(status) );
 				} else {
 					if ( opt_debug )
 						printf( "Wrote record %d\n",
-							rcnum );
+							record_number );
 				}
 			} else {
 				if ( opt_debug )

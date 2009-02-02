@@ -6262,7 +6262,7 @@ ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
 int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee );
 void fixup_eventlog_entry( Eventlog_entry * ee );
-bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bool * eor );
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb *entry, bool * eor );
 size_t fixup_eventlog_record_tdb(struct eventlog_Record_tdb *r);
 struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 						  TDB_CONTEXT *tdb,

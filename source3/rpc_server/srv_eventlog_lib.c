@@ -594,7 +594,7 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
  going in.
 ********************************************************************/
 
-bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bool * eor )
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb *entry, bool * eor )
 {
 	char *start = NULL, *stop = NULL;
 
@@ -615,32 +615,32 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 
 	if ( 0 == strncmp( start, "LEN", stop - start ) ) {
 		/* This will get recomputed later anyway -- probably not necessary */
-		entry->record.length = atoi( stop + 1 );
+		entry->size = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "RS1", stop - start ) ) {
 		/* For now all these reserved entries seem to have the same value,
 		   which can be hardcoded to int(1699505740) for now */
-		entry->record.reserved1 = atoi( stop + 1 );
+		entry->reserved = talloc_strdup(mem_ctx, "eLfL");
 	} else if ( 0 == strncmp( start, "RCN", stop - start ) ) {
-		entry->record.record_number = atoi( stop + 1 );
+		entry->record_number = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "TMG", stop - start ) ) {
-		entry->record.time_generated = atoi( stop + 1 );
+		entry->time_generated = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "TMW", stop - start ) ) {
-		entry->record.time_written = atoi( stop + 1 );
+		entry->time_written = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "EID", stop - start ) ) {
-		entry->record.event_id = atoi( stop + 1 );
+		entry->event_id = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "ETP", stop - start ) ) {
 		if ( strstr( start, "ERROR" ) ) {
-			entry->record.event_type = EVENTLOG_ERROR_TYPE;
+			entry->event_type = EVENTLOG_ERROR_TYPE;
 		} else if ( strstr( start, "WARNING" ) ) {
-			entry->record.event_type = EVENTLOG_WARNING_TYPE;
+			entry->event_type = EVENTLOG_WARNING_TYPE;
 		} else if ( strstr( start, "INFO" ) ) {
-			entry->record.event_type = EVENTLOG_INFORMATION_TYPE;
+			entry->event_type = EVENTLOG_INFORMATION_TYPE;
 		} else if ( strstr( start, "AUDIT_SUCCESS" ) ) {
-			entry->record.event_type = EVENTLOG_AUDIT_SUCCESS;
+			entry->event_type = EVENTLOG_AUDIT_SUCCESS;
 		} else if ( strstr( start, "AUDIT_FAILURE" ) ) {
-			entry->record.event_type = EVENTLOG_AUDIT_FAILURE;
+			entry->event_type = EVENTLOG_AUDIT_FAILURE;
 		} else if ( strstr( start, "SUCCESS" ) ) {
-			entry->record.event_type = EVENTLOG_SUCCESS;
+			entry->event_type = EVENTLOG_SUCCESS;
 		} else {
 			/* some other eventlog type -- currently not defined in MSDN docs, so error out */
 			return False;
@@ -650,27 +650,26 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 /*
   else if(0 == strncmp(start, "NST", stop - start))
   {
-  entry->record.num_strings = atoi(stop + 1);
+  entry->num_of_strings = atoi(stop + 1);
   }
 */
 	else if ( 0 == strncmp( start, "ECT", stop - start ) ) {
-		entry->record.event_category = atoi( stop + 1 );
+		entry->event_category = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "RS2", stop - start ) ) {
-		entry->record.reserved2 = atoi( stop + 1 );
+		entry->reserved_flags = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "CRN", stop - start ) ) {
-		entry->record.closing_record_number = atoi( stop + 1 );
+		entry->closing_record_number = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "USL", stop - start ) ) {
-		entry->record.user_sid_length = atoi( stop + 1 );
+		entry->sid_length = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "SRC", stop - start ) ) {
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.source_name_len = rpcstr_push_talloc(mem_ctx,
-				&entry->data_record.source_name,
-				stop);
-		if (entry->data_record.source_name_len == (uint32_t)-1 ||
-				entry->data_record.source_name == NULL) {
+		entry->source_name_len = strlen_m_term(stop);
+		entry->source_name = talloc_strdup(mem_ctx, stop);
+		if (entry->source_name_len == (uint32_t)-1 ||
+				entry->source_name == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "SRN", stop - start ) ) {
@@ -678,54 +677,43 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.computer_name_len = rpcstr_push_talloc(mem_ctx,
-				&entry->data_record.computer_name,
-				stop);
-		if (entry->data_record.computer_name_len == (uint32_t)-1 ||
-				entry->data_record.computer_name == NULL) {
+		entry->computer_name_len = strlen_m_term(stop);
+		entry->computer_name = talloc_strdup(mem_ctx, stop);
+		if (entry->computer_name_len == (uint32_t)-1 ||
+				entry->computer_name == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "SID", stop - start ) ) {
+		smb_ucs2_t *dummy = NULL;
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->record.user_sid_length = rpcstr_push_talloc(mem_ctx,
-				&entry->data_record.sid,
+		entry->sid_length = rpcstr_push_talloc(mem_ctx,
+				&dummy,
 				stop);
-		if (entry->record.user_sid_length == (uint32_t)-1 ||
-				entry->data_record.sid == NULL) {
+		entry->sid = data_blob_talloc(mem_ctx, dummy, entry->sid_length);
+		if (entry->sid_length == (uint32_t)-1 ||
+				entry->sid.data == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
-		smb_ucs2_t *temp = NULL;
 		size_t tmp_len;
-		uint32_t old_len;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */
 		while ( isspace(stop[0])) {
 			stop++;
 		}
-		tmp_len = rpcstr_push_talloc(mem_ctx,
-						&temp,
-						stop);
-		if (tmp_len == (size_t)-1 || !temp) {
+		tmp_len = strlen_m_term(stop);
+		if (tmp_len == (size_t)-1) {
 			return false;
 		}
-		old_len = entry->data_record.strings_len;
-		entry->data_record.strings = (smb_ucs2_t *)TALLOC_REALLOC_ARRAY(mem_ctx,
-						entry->data_record.strings,
-						char,
-						old_len + tmp_len);
-		if (!entry->data_record.strings) {
+		if (!add_string_to_array(mem_ctx, stop, &entry->strings,
+					 (int *)&entry->num_of_strings)) {
 			return false;
 		}
-		memcpy(((char *)entry->data_record.strings) + old_len,
-				temp,
-				tmp_len);
-		entry->data_record.strings_len += tmp_len;
-		entry->record.num_strings++;
+		entry->strings_len += tmp_len;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
 		/* skip past initial ":" */
 		stop++;
@@ -733,10 +721,9 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.user_data_len = strlen(stop);
-		entry->data_record.user_data = talloc_strdup(mem_ctx,
-						stop);
-		if (!entry->data_record.user_data) {
+		entry->data_length = strlen_m(stop);
+		entry->data = data_blob_talloc(mem_ctx, stop, entry->data_length);
+		if (!entry->data.data) {
 			return false;
 		}
 	} else {
