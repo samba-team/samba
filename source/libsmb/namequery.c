@@ -1502,7 +1502,7 @@ NTSTATUS internal_resolve_name(const char *name,
 	*return_count = 0;
 
 	DEBUG(10, ("internal_resolve_name: looking up %s#%x (sitename %s)\n",
-			name, name_type, sitename ? sitename : NULL));
+			name, name_type, sitename ? sitename : "(null)"));
 
 	if (is_ipaddress(name)) {
 		if ((*return_iplist = SMB_MALLOC_P(struct ip_service)) ==
