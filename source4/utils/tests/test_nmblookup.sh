@@ -26,11 +26,14 @@ testit() {
 	return $status
 }
 
-testit "nmblookup -U \$SERVER_IP \$SERVER" bin/nmblookup $TORTURE_OPTIONS -U $SERVER_IP $SERVER
-testit "nmblookup -U \$SERVER_IP \$NETBIOSNAME" bin/nmblookup $TORTURE_OPTIONS -U $SERVER_IP $NETBIOSNAME
-testit "nmblookup -U \$SERVER_IP \$NETBIOSALIAS" bin/nmblookup $TORTURE_OPTIONS -U $SERVER_IP $NETBIOSALIAS
-testit "nmblookup \$SERVER" bin/nmblookup $TORTURE_OPTIONS $SERVER
-testit "nmblookup \$NETBIOSNAME" bin/nmblookup $TORTURE_OPTIONS $NETBIOSNAME
-testit "nmblookup \$NETBIOSALIAS" bin/nmblookup $TORTURE_OPTIONS $NETBIOSALIAS
+samba4bindir="$BUILDDIR/bin"
+nmblookup="$samba4bindir/nmblookup$EXEEXT"
+
+testit "nmblookup -U \$SERVER_IP \$SERVER" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $SERVER
+testit "nmblookup -U \$SERVER_IP \$NETBIOSNAME" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $NETBIOSNAME
+testit "nmblookup -U \$SERVER_IP \$NETBIOSALIAS" $nmblookup $TORTURE_OPTIONS -U $SERVER_IP $NETBIOSALIAS
+testit "nmblookup \$SERVER" $nmblookup $TORTURE_OPTIONS $SERVER
+testit "nmblookup \$NETBIOSNAME" $nmblookup $TORTURE_OPTIONS $NETBIOSNAME
+testit "nmblookup \$NETBIOSALIAS" $nmblookup $TORTURE_OPTIONS $NETBIOSALIAS
 
 exit $failed

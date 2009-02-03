@@ -8,8 +8,8 @@
 
 failed=0
 
-samba4bindir=`dirname $0`/../../bin
-ndrdump=$samba4bindir/ndrdump
+samba4bindir="$BUILDDIR/bin"
+ndrdump="$samba4bindir/ndrdump$EXEEXT"
 files=`dirname $0`/
 
 testit "ndrdump with in" $VALGRIND $ndrdump samr samr_CreateUser in $files/samr-CreateUser-in.dat $@ || failed=`expr $failed + 1`

@@ -17,8 +17,8 @@ DOMAIN=$4
 shift 4
 failed=0
 
-samba4bindir=`dirname $0`/../../bin
-gentest=$samba4bindir/gentest
+samba4bindir="$BUILDDIR/bin"
+gentest="$samba4bindir/gentest$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

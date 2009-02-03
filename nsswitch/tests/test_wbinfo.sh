@@ -14,8 +14,8 @@ TARGET=$4
 shift 4
 
 failed=0
-samba4bindir=`dirname $0`/../../source4/bin
-wbinfo=$samba4bindir/wbinfo
+samba4bindir="$BUILDDIR/bin"
+wbinfo="$samba4bindir/wbinfo$EXEEXT"
 
 . `dirname $0`/../../testprogs/blackbox/subunit.sh
 

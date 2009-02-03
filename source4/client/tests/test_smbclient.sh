@@ -18,8 +18,8 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../bin
-smbclient=$samba4bindir/smbclient
+samba4bindir="$BUILDDIR/bin"
+smbclient="$samba4bindir/smbclient$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 
