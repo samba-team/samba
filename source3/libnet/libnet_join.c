@@ -817,6 +817,17 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 	ZERO_STRUCT(user_pol);
 
+	switch (r->in.secure_channel_type) {
+	case SEC_CHAN_WKSTA:
+		acct_flags = ACB_WSTRUST;
+		break;
+	case SEC_CHAN_BDC:
+		acct_flags = ACB_SVRTRUST;
+		break;
+	default:
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (!r->in.machine_password) {
 		r->in.machine_password = generate_random_str(mem_ctx, DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
@@ -868,15 +879,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 			SAMR_USER_ACCESS_SET_ATTRIBUTES;
 		uint32_t access_granted = 0;
 
-		/* Don't try to set any acct_flags flags other than ACB_WSTRUST */
-
 		DEBUG(10,("Creating account with desired access mask: %d\n",
 			access_desired));
 
 		status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
 						 &domain_pol,
 						 &lsa_acct_name,
-						 ACB_WSTRUST,
+						 acct_flags,
 						 access_desired,
 						 &user_pol,
 						 &access_granted,
