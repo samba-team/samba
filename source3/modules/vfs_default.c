@@ -735,7 +735,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path,
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ft->atime);
 		times.modtime = convert_timespec_to_time_t(ft->mtime);
-		result = utime(path, times);
+		result = utime(path, &times);
 	} else {
 		result = utime(path, NULL);
 	}
