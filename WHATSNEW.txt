@@ -132,6 +132,8 @@ o   Stefan Metzmacher <metze@samba.org>
 
 o   Lars Müller <lars@samba.org>
     * Tweak with pam defines of older Linux versions.
+    * Adjust regex to match variable names including underscores.
+    * Conditional install of the cifs.upcall man page.
 
 
 o   Tim Prouty <tprouty@samba.org>
