@@ -270,7 +270,7 @@ bool prune_eventlog( TDB_CONTEXT * tdb )
 /********************************************************************
 ********************************************************************/
 
-bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
+static bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 {
 	int calcd_size;
 	int MaxSize, Retention;
