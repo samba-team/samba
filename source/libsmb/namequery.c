@@ -1225,7 +1225,7 @@ BOOL internal_resolve_name(const char *name, int name_type,
 	*return_count = 0;
 
 	DEBUG(10, ("internal_resolve_name: looking up %s#%x (sitename %s)\n",
-			name, name_type, sitename ? sitename : NULL));
+			name, name_type, sitename ? sitename : "(null)"));
 
 	if (allzeros || allones || is_address) {
   
