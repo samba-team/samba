@@ -4,7 +4,7 @@ echo "Running extended search tests"
 
 mv $LDB_URL $LDB_URL.1
 
-cat <<EOF | bin/ldbadd || exit 1
+cat <<EOF | $VALGRIND ldbadd$EXEEXT || exit 1
 dn: cn=testrec1,cn=TEST
 i1: 1
 i2: 0
@@ -38,10 +38,10 @@ EOF
 checkcount() {
     count=$1
     expression="$2"
-    n=`bin/ldbsearch "$expression" | grep '^dn' | wc -l`
+    n=`$VALGRIND ldbsearch$EXEEXT "$expression" | grep '^dn' | wc -l`
     if [ $n != $count ]; then
 	echo "Got $n but expected $count for $expression"
-	bin/ldbsearch "$expression"
+	$VALGRIND ldbsearch$EXEEXT "$expression"
 	exit 1
     fi
     echo "OK: $count $expression"
