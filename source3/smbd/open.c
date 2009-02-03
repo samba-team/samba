@@ -67,12 +67,14 @@ NTSTATUS smb1_file_se_access_check(const struct security_descriptor *sd,
 
 static NTSTATUS check_open_rights(struct connection_struct *conn,
 				const char *fname,
-				uint32_t access_mask)
+				uint32_t access_mask,
+				uint32_t *access_granted)
 {
 	/* Check if we have rights to open. */
 	NTSTATUS status;
-	uint32_t access_granted = 0;
 	struct security_descriptor *sd;
+
+	*access_granted = 0;
 
 	status = SMB_VFS_GET_NT_ACL(conn, fname,
 			(OWNER_SECURITY_INFORMATION |
@@ -90,9 +92,17 @@ static NTSTATUS check_open_rights(struct connection_struct *conn,
 	status = smb1_file_se_access_check(sd,
 				conn->server_info->ptok,
 				access_mask,
-				&access_granted);
+				access_granted);
 
 	TALLOC_FREE(sd);
+
+	DEBUG(10,("check_open_rights: file %s requesting "
+		"0x%x returning 0x%x (%s)\n",
+		fname,
+		(unsigned int)access_mask,
+		(unsigned int)*access_granted,
+		nt_errstr(status) ));
+
 	return status;
 }
 
@@ -415,14 +425,35 @@ static NTSTATUS open_file(files_struct *fsp,
 	} else {
 		fsp->fh->fd = -1; /* What we used to call a stat open. */
 		if (file_existed) {
+			uint32_t access_granted = 0;
+
 			status = check_open_rights(conn,
 					path,
-					access_mask);
+					access_mask,
+					&access_granted);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(10, ("open_file: Access denied on "
-					"file %s\n",
-					path));
-				return status;
+
+				/* Were we trying to do a stat open
+				 * for delete and didn't get DELETE
+				 * access (only) ? Check if the
+				 * directory allows DELETE_CHILD.
+				 * See here:
+				 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
+				 * for details. */
+
+				if (!(NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
+						(access_mask & DELETE_ACCESS) &&
+	    					(access_granted == DELETE_ACCESS) &&
+						can_delete_file_in_directory(conn, path))) {
+					DEBUG(10, ("open_file: Access denied on "
+						"file %s\n",
+						path));
+					return status;
+				}
+
+				DEBUG(10,("open_file: overrode ACCESS_DENIED "
+					"on file %s\n",
+					path ));
 			}
 		}
 	}
@@ -2395,9 +2426,11 @@ static NTSTATUS open_directory(connection_struct *conn,
 	}
 
 	if (info == FILE_WAS_OPENED) {
+		uint32_t access_granted = 0;
 		status = check_open_rights(conn,
 					fname,
-					access_mask);
+					access_mask,
+					&access_granted);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("open_directory: check_open_rights on "
 				"file %s failed with %s\n",
@@ -2826,8 +2859,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 	    && (create_disposition != FILE_CREATE)
 	    && (share_access & FILE_SHARE_DELETE)
 	    && (access_mask & DELETE_ACCESS)
-	    && (!can_delete_file_in_directory(conn, fname))) {
+	    && (!(can_delete_file_in_directory(conn, fname) ||
+		 can_access_file_acl(conn, fname, DELETE_ACCESS)))) {
 		status = NT_STATUS_ACCESS_DENIED;
+		DEBUG(10,("create_file_unixpath: open file %s "
+			"for delete ACCESS_DENIED\n", fname ));
 		goto fail;
 	}
 
