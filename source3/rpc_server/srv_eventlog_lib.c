@@ -832,6 +832,39 @@ struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ ********************************************************************/
+
+struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
+					 TDB_CONTEXT *tdb,
+					 uint32_t record_number)
+{
+	struct eventlog_Record_tdb *t;
+	struct EVENTLOGRECORD *r;
+	NTSTATUS status;
+
+	r = talloc_zero(mem_ctx, struct EVENTLOGRECORD);
+	if (!r) {
+		return NULL;
+	}
+
+	t = evlog_pull_record_tdb(r, tdb, record_number);
+	if (!t) {
+		talloc_free(r);
+		return NULL;
+	}
+
+	status = evlog_tdb_entry_to_evt_entry(r, t, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(r);
+		return NULL;
+	}
+
+	r->Length = r->Length2 = ndr_size_EVENTLOGRECORD(r, NULL, 0);
+
+	return r;
+}
+
+/********************************************************************
  write an eventlog entry. Note that we have to lock, read next
  eventlog, increment, write, write the record, unlock
 
