@@ -39,7 +39,7 @@ fi
 
 LOGDIR='${localstatedir}/log'
 AC_ARG_WITH([logdir],
-	[  --with-logdir=DIR       path to log directory],
+	[  --with-logdir=DIR       path to log directory [[LOCALSTATEDIR/log]]],
 	LOGDIR=$withval)
 if test ! -z "$LOGDIR"; then
   if test "$LOGDIR" = "yes" -o "$LOGDIR" = "no"; then
