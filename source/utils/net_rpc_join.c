@@ -239,14 +239,17 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 					   pipe_hnd->cli->desthost,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
+					   SAMR_ACCESS_ENUM_DOMAINS
+					   | SAMR_ACCESS_OPEN_DOMAIN,
 					   &sam_pol),
 		      "could not connect to SAM database");
 
 
 	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 					     &sam_pol,
-					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
+					     | SAMR_DOMAIN_ACCESS_CREATE_USER
+					     | SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					     domain_sid,
 					     &domain_pol),
 		      "could not open domain");
