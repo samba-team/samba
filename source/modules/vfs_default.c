@@ -635,7 +635,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ts[0]);
 		times.modtime = convert_timespec_to_time_t(ts[1]);
-		result = utime(path, times);
+		result = utime(path, &times);
 	}
 #else
 	errno = ENOSYS;
