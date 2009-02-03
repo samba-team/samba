@@ -19,6 +19,24 @@ AC_MSG_RESULT($pythondir)
 
 AC_SUBST(pythondir)
 
+SMB_EXT_LIB(LIBREPLACE_EXT, [${LIBDL} ${CRYPT_LIBS}])
+SMB_ENABLE(LIBREPLACE_EXT)
+
+SMB_EXT_LIB(LIBREPLACE_NETWORK, [${LIBREPLACE_NETWORK_LIBS}])
+SMB_ENABLE(LIBREPLACE_NETWORK)
+
+SMB_SUBSYSTEM(LIBREPLACE,
+	[${LIBREPLACE_OBJS}],
+	[LIBREPLACE_EXT LIBREPLACE_NETWORK],
+	[-I../lib/replace])
+
+LIBREPLACE_HOSTCC_OBJS=`echo ${LIBREPLACE_OBJS} |sed -e 's/\.o/\.ho/g'`
+
+SMB_SUBSYSTEM(LIBREPLACE_HOSTCC,
+	[${LIBREPLACE_HOSTCC_OBJS}],
+	[],
+	[-I../lib/replace])
+
 m4_include(lib/smbreadline/readline.m4)
 m4_include(heimdal_build/internal.m4)
 m4_include(../lib/util/fault.m4)

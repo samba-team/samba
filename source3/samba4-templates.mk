@@ -19,9 +19,9 @@ endef
 # Link a binary
 # Arguments: target file, depends, flags
 define binary_link_template
-$(1)4: $(2) $(LIBREPLACE_OBJ) ;
+$(1)4: $(2) ;
 	@echo Linking $$@
-	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)  $$(LIBS) $$(LIBREPLACE_OBJ)
+	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)  $$(LIBS)
 clean::
 	@rm -f $(1)
 
@@ -32,9 +32,9 @@ endef
 # Link a host-machine binary
 # Arguments: target file, depends, flags
 define host_binary_link_template
-$(1)4: $(2) $(LIBREPLACE_OBJ) ;
+$(1)4: $(2) ;
 	@echo Linking $$@
-	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3) $$(LIBREPLACE_OBJ)
+	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
 
 clean::
 	rm -f $(1)
