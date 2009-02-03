@@ -149,7 +149,9 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 }
 
 /*
-  the main entry point for access checking. 
+  The main entry point for access checking. If returning ACCESS_DENIED
+  this function returns the denied bits in the uint32_t pointed
+  to by the access_granted pointer.
 */
 NTSTATUS se_access_check(const struct security_descriptor *sd, 
 			  const NT_USER_TOKEN *token,
@@ -238,6 +240,7 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 
 done:
 	if (bits_remaining != 0) {
+		*access_granted = bits_remaining;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
