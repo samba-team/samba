@@ -12,6 +12,7 @@ bindir = @bindir@
 sbindir = @sbindir@
 mandir = @mandir@
 localstatedir = @localstatedir@
+logdir = @LOGDIR@
 VPATH = @srcdir@:@tdbdir@:@tallocdir@:@libreplacedir@:@poptdir@
 srcdir = @srcdir@
 etcdir = @sysconfdir@
@@ -30,6 +31,7 @@ IPQ_LIBS = @IPQ_LIBS@
 CFLAGS=-g -I$(srcdir)/include -Iinclude -Ilib -Ilib/util -I$(srcdir) \
        -I@tallocdir@ -I@tdbdir@/include -I@libreplacedir@ \
 	-DVARDIR=\"$(localstatedir)\" -DETCDIR=\"$(etcdir)\" \
+	-DLOGDIR=\"$(logdir)\" \
 	-DUSE_MMAP=1 @CFLAGS@ $(POPT_CFLAGS)
 
 LIB_FLAGS=@LDFLAGS@ -Llib @LIBS@ $(POPT_LIBS) @INFINIBAND_LIBS@ @CTDB_PCAP_LDFLAGS@
