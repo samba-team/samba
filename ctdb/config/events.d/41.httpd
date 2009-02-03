@@ -3,7 +3,31 @@
 
 . $CTDB_BASE/functions
 loadconfig ctdb
-loadconfig http
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	redhat)
+		CTDB_SERVICE_HTTP="httpd"
+		CTDB_CONFIG_HTTP="http"
+		;;
+	suse)
+		CTDB_SERVICE_HTTP="apache2"
+		CTDB_CONFIG_HTTP="apache2"
+		;;
+	ubuntu)
+		CTDB_SERVICE_HTTP="apache2"
+		CTDB_CONFIG_HTTP="apache2"
+		;;
+	*)
+		# should not happen.
+		# for now use red hat style as default
+		CTDB_SERVICE_HTTP="httpd"
+		CTDB_CONFIG_HTTP="http"
+		;;
+esac
+
+loadconfig "${CTDB_CONFIG_HTTP}"
 
 [ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
 
@@ -12,12 +36,12 @@ shift
 
 case $cmd in 
      startup)
-        service httpd stop > /dev/null 2>&1
-        service httpd start
+        service "${CTDB_SERVICE_HTTP}" stop > /dev/null 2>&1
+        service "${CTDB_SERVICE_HTTP}" start
         ;;
 
      shutdown)
-        service httpd stop
+        service "${CTDB_SERVICE_HTTP}" stop
         ;;
 
      monitor)
