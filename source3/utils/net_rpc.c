@@ -504,6 +504,112 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 }
 
 /**
+ * Join a domain using the administrator username and password
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped.  Currently not used.
+ * @return A shell status integer (0 for success)
+ *
+ **/
+
+int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
+{
+	struct libnet_JoinCtx *r = NULL;
+	TALLOC_CTX *mem_ctx;
+	WERROR werr;
+	const char *domain = lp_workgroup(); /* FIXME */
+	bool modify_config = lp_config_backend_is_registry();
+	enum netr_SchannelType sec_chan_type;
+
+	if (c->display_usage) {
+		d_printf("Usage:\n"
+			 "net rpc join\n"
+			 "    Join a domain the new way\n");
+		return 0;
+	}
+
+	mem_ctx = talloc_init("net_rpc_join_newstyle");
+	if (!mem_ctx) {
+		return -1;
+	}
+
+	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto fail;
+	}
+
+	/*
+	   check what type of join - if the user want's to join as
+	   a BDC, the server must agree that we are a BDC.
+	*/
+	if (argc >= 0) {
+		sec_chan_type = get_sec_channel_type(argv[0]);
+	} else {
+		sec_chan_type = get_sec_channel_type(NULL);
+	}
+
+	if (!c->msg_ctx) {
+		d_fprintf(stderr, _("Could not initialise message context. "
+			"Try running as root\n"));
+		werr = WERR_ACCESS_DENIED;
+		goto fail;
+	}
+
+	r->in.msg_ctx			= c->msg_ctx;
+	r->in.domain_name		= domain;
+	r->in.secure_channel_type	= sec_chan_type;
+	r->in.dc_name			= c->opt_host;
+	r->in.admin_account		= c->opt_user_name;
+	r->in.admin_password		= net_prompt_pass(c, c->opt_user_name);
+	r->in.debug			= true;
+	r->in.use_kerberos		= c->opt_kerberos;
+	r->in.modify_config		= modify_config;
+	r->in.join_flags		= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+					  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
+					  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
+
+	werr = libnet_Join(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto fail;
+	}
+
+	/* Check the short name of the domain */
+
+	if (!modify_config && !strequal(lp_workgroup(), r->out.netbios_domain_name)) {
+		d_printf("The workgroup in %s does not match the short\n", get_dyn_CONFIGFILE());
+		d_printf("domain name obtained from the server.\n");
+		d_printf("Using the name [%s] from the server.\n", r->out.netbios_domain_name);
+		d_printf("You should set \"workgroup = %s\" in %s.\n",
+			 r->out.netbios_domain_name, get_dyn_CONFIGFILE());
+	}
+
+	d_printf("Using short domain name -- %s\n", r->out.netbios_domain_name);
+
+	if (r->out.dns_domain_name) {
+		d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
+			r->out.dns_domain_name);
+	} else {
+		d_printf("Joined '%s' to domain '%s'\n", r->in.machine_name,
+			r->out.netbios_domain_name);
+	}
+
+	TALLOC_FREE(mem_ctx);
+
+	return 0;
+
+fail:
+	/* issue an overall failure message at the end. */
+	d_printf("Failed to join domain: %s\n",
+		r && r->out.error_string ? r->out.error_string :
+		get_friendly_werror_msg(werr));
+
+	TALLOC_FREE(mem_ctx);
+
+	return -1;
+}
+
+/**
  * 'net rpc join' entrypoint.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already

@@ -504,7 +504,7 @@ LIBNET_SAMSYNC_SRC = '''libnet/libnet_samsync.c
 
 NET_SRC1 = '''utils/net.c utils/net_ads.c utils/net_help.c
               utils/net_rap.c utils/net_rpc.c utils/net_rpc_samsync.c
-              utils/net_rpc_join.c utils/net_time.c utils/net_lookup.c
+              utils/net_time.c utils/net_lookup.c
               utils/net_cache.c utils/net_groupmap.c
               utils/net_idmap.c utils/net_idmap_check.c
               utils/interact.c
