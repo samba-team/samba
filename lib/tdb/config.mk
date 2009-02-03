@@ -1,7 +1,7 @@
 ################################################
 # Start SUBSYSTEM LIBTDB
 [LIBRARY::LIBTDB]
-OUTPUT_TYPE = STATIC_LIBRARY
+OUTPUT_TYPE = MERGED_OBJ
 CFLAGS = -I$(tdbsrcdir)/include
 #
 # End SUBSYSTEM ldb
