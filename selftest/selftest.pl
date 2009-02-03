@@ -394,6 +394,7 @@ mkdir($prefix, 0777) unless -d $prefix;
 
 my $prefix_abs = abs_path($prefix);
 my $srcdir_abs = abs_path($srcdir);
+my $builddir_abs = abs_path($builddir);
 
 die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
@@ -403,6 +404,9 @@ $ENV{KRB5CCNAME} = "$prefix/krb5ticket";
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
+$ENV{BUILDDIR} = $builddir;
+$ENV{BUILDDIR_ABS} = $builddir_abs;
+$ENV{EXEEXT} = $exeext;
 
 if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
 	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
