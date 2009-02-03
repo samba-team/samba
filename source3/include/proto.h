@@ -6271,6 +6271,10 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 			       TDB_CONTEXT *tdb,
 			       struct eventlog_Record_tdb *r,
 			       uint32_t *record_number);
+NTSTATUS evlog_push_record(TALLOC_CTX *mem_ctx,
+			   TDB_CONTEXT *tdb,
+			   struct EVENTLOGRECORD *r,
+			   uint32_t *record_number);
 struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
 					 TDB_CONTEXT *tdb,
 					 uint32_t record_number);

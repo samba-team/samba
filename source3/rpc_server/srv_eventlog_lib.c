@@ -941,6 +941,34 @@ NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
 /********************************************************************
  ********************************************************************/
 
+NTSTATUS evlog_push_record(TALLOC_CTX *mem_ctx,
+			   TDB_CONTEXT *tdb,
+			   struct EVENTLOGRECORD *r,
+			   uint32_t *record_number)
+{
+	struct eventlog_Record_tdb *t;
+	NTSTATUS status;
+
+	t = talloc_zero(mem_ctx, struct eventlog_Record_tdb);
+	if (!t) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = evlog_evt_entry_to_tdb_entry(t, r, t);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(t);
+		return status;
+	}
+
+	status = evlog_push_record_tdb(mem_ctx, tdb, t, record_number);
+	talloc_free(t);
+
+	return status;
+}
+
+/********************************************************************
+ ********************************************************************/
+
 NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
 				      const struct EVENTLOGRECORD *e,
 				      struct eventlog_Record_tdb *t)
