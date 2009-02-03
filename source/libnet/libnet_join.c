@@ -790,7 +790,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 				      pipe_hnd->desthost,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SAMR_ACCESS_ENUM_DOMAINS
+				      | SAMR_ACCESS_OPEN_DOMAIN,
 				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -798,7 +799,9 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 					&sam_pol,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
+					| SAMR_DOMAIN_ACCESS_CREATE_USER
+					| SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					r->out.domain_sid,
 					&domain_pol);
 	if (!NT_STATUS_IS_OK(status)) {
