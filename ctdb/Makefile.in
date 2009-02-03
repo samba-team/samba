@@ -76,6 +76,17 @@ showflags:
 	@echo '  CFLAGS = $(CFLAGS)'
 	@echo '  LIBS = $(LIBS)'
 
+showlayout::
+	@echo "ctdb will be installed into:"
+	@echo "  prefix:      $(prefix)"
+	@echo "  bindir:      $(bindir)"
+	@echo "  sbindir:     $(sbindir)"
+	@echo "  libdir:      $(libdir)"
+	@echo "  vardir:      $(localstatedir)"
+	@echo "  logdir:      $(logdir)"
+	@echo "  mandir:      $(mandir)"
+	@echo "  etcdir:      $(etcdir)"
+
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
