@@ -188,6 +188,15 @@ bool downgrade_oplock(files_struct *fsp)
 	return ret;
 }
 
+/*
+ * Some kernel oplock implementations handle the notification themselves.
+ */
+bool should_notify_deferred_opens()
+{
+	return !(koplocks &&
+		(koplocks->flags & KOPLOCKS_DEFERRED_OPEN_NOTIFICATION));
+}
+
 /****************************************************************************
  Set up an oplock break message.
 ****************************************************************************/
@@ -306,6 +315,15 @@ static void oplock_timeout_handler(struct event_context *ctx,
 
 static void add_oplock_timeout_handler(files_struct *fsp)
 {
+	/*
+	 * If kernel oplocks already notifies smbds when an oplock break times
+	 * out, just return.
+	 */
+	if (koplocks &&
+	    (koplocks->flags & KOPLOCKS_TIMEOUT_NOTIFICATION)) {
+		return;
+	}
+
 	if (fsp->oplock_timeout != NULL) {
 		DEBUG(0, ("Logic problem -- have an oplock event hanging "
 			  "around\n"));
@@ -491,8 +509,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && 
 	    !(msg.op_type & FORCE_OPLOCK_BREAK_TO_NONE) &&
-	    !koplocks && /* NOTE: we force levelII off for kernel oplocks -
-			  * this will change when it is supported */
+	    !(koplocks && !(koplocks->flags & KOPLOCKS_LEVEL2_SUPPORTED)) &&
 	    lp_level2_oplocks(SNUM(fsp->conn))) {
 		break_to_level2 = True;
 	}
@@ -612,6 +629,15 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 void reply_to_oplock_break_requests(files_struct *fsp)
 {
 	int i;
+
+	/*
+	 * If kernel oplocks already notifies smbds when oplocks are
+	 * broken/removed, just return.
+	 */
+	if (koplocks &&
+	    (koplocks->flags & KOPLOCKS_OPLOCK_BROKEN_NOTIFICATION)) {
+		return;
+	}
 
 	for (i=0; i<fsp->num_pending_break_messages; i++) {
 		struct share_mode_entry *e = &fsp->pending_break_messages[i];

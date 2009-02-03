@@ -134,6 +134,10 @@ static NTSTATUS close_filestruct(files_struct *fsp)
 static void notify_deferred_opens(struct share_mode_lock *lck)
 {
  	int i;
+
+	if (!should_notify_deferred_opens()) {
+		return;
+	}
  
  	for (i=0; i<lck->num_share_modes; i++) {
  		struct share_mode_entry *e = &lck->share_modes[i];

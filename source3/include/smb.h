@@ -1689,9 +1689,26 @@ enum smbd_capability {
     LEASE_CAPABILITY
 };
 
+/*
+ * Kernel oplocks capability flags.
+ */
+
+/* Level 2 oplocks are supported natively by kernel oplocks. */
+#define KOPLOCKS_LEVEL2_SUPPORTED		0x1
+
+/* The kernel notifies deferred openers when they can retry the open. */
+#define KOPLOCKS_DEFERRED_OPEN_NOTIFICATION	0x2
+
+/* The kernel notifies smbds when an oplock break times out. */
+#define KOPLOCKS_TIMEOUT_NOTIFICATION		0x4
+
+/* The kernel notifies smbds when an oplock is broken. */
+#define KOPLOCKS_OPLOCK_BROKEN_NOTIFICATION	0x8
+
 struct kernel_oplocks_ops;
 struct kernel_oplocks {
 	const struct kernel_oplocks_ops *ops;
+	uint32_t flags;
 	void *private_data;
 };
 
