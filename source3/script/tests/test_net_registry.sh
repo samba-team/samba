@@ -7,10 +7,8 @@ RPC="$1"
 
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 
-NETREMOTE="${NET} -U${USERNAME}%${PASSWORD} -S ${SERVER} -I ${SERVER_IP}"
-
 if test "x${RPC}" = "xrpc" ; then
-	NETREG="${NETREMOTE} rpc registry"
+	NETREG="${NET} -U${USERNAME}%${PASSWORD} -I ${SERVER_IP} rpc registry"
 else
 	NETREG="${NET} registry"
 fi
@@ -336,7 +334,14 @@ test_setvalue_twice()
 
 give_administrative_rights()
 {
-	${NETREMOTE} rpc group addmem BUILTIN\\Administrators $USERNAME
+	bin/net -s $SERVERCONFFILE sam createbuiltingroup Administrators
+	if test "x$?" != "x0" ; then
+		echo "ERROR: creating builtin group Administrators"
+		false
+		return
+	fi
+
+	bin/net -s $SERVERCONFFILE sam addmem BUILTIN\\Administrators $USERNAME
 	if test "x$?" != "x0" ; then
 		echo "ERROR: adding user $USERNAME to BUILTIN\\Administrators"
 		false
@@ -347,7 +352,7 @@ give_administrative_rights()
 
 take_administrative_rights()
 {
-	${NETREMOTE} rpc group delmem BUILTIN\\Administrators $USERNAME
+	bin/net -s $SERVERCONFFILE sam delmem BUILTIN\\Administrators $USERNAME
 	if test "x$?" != "x0" ; then
 		echo "ERROR: removing user $USERNAME from BUILTIN\\Administrators"
 		false
