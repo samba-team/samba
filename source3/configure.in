@@ -6537,7 +6537,10 @@ fi
 
 if test x$enable_merged_build = xyes; then
 	MERGED_BUILD=1
+	saved_USESHARED="$USESHARED"
+	USESHARED="false"
 	m4_include(samba4.m4)
+	USESHARED="$saved_USESHARED"
 fi
 
 AC_SUBST(ZLIB_LIBS)
