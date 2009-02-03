@@ -70,6 +70,9 @@ void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char *name, co
 enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r);
 enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r);
 void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name, const struct eventlog_Record *r);
+enum ndr_err_code ndr_push_eventlog_Record_tdb(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record_tdb *r);
+enum ndr_err_code ndr_pull_eventlog_Record_tdb(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record_tdb *r);
+void ndr_print_eventlog_Record_tdb(struct ndr_print *ndr, const char *name, const struct eventlog_Record_tdb *r);
 void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ClearEventLogW *r);
 void ndr_print_eventlog_BackupEventLogW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_BackupEventLogW *r);
 void ndr_print_eventlog_CloseEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_CloseEventLog *r);

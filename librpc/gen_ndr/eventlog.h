@@ -65,6 +65,35 @@ struct eventlog_Record {
 	uint32_t size2;/* [value(size)] */
 }/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
 
+struct eventlog_Record_tdb {
+	uint32_t size;
+	const char *reserved;/* [value("eLfL"),charset(DOS)] */
+	uint32_t record_number;
+	time_t time_generated;
+	time_t time_written;
+	uint32_t event_id;
+	enum eventlogEventTypes event_type;
+	uint16_t num_of_strings;/* [range(0,256)] */
+	uint16_t event_category;
+	uint16_t reserved_flags;
+	uint32_t closing_record_number;
+	uint32_t stringoffset;
+	uint32_t sid_length;/* [value(sid.length)] */
+	uint32_t sid_offset;
+	uint32_t data_length;/* [value(data.length)] */
+	uint32_t data_offset;
+	uint32_t source_name_len;/* [value(2*strlen_m_term(source_name))] */
+	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t computer_name_len;/* [value(2*strlen_m_term(computer_name))] */
+	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t sid_padding;
+	DATA_BLOB sid;
+	uint32_t strings_len;/* [value(2*ndr_size_string_array(strings,num_of_strings,LIBNDR_FLAG_STR_NULLTERM))] */
+	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	DATA_BLOB data;
+	uint32_t padding;
+}/* [public,flag(LIBNDR_FLAG_NOALIGN|LIBNDR_PRINT_ARRAY_HEX)] */;
+
 struct EVENTLOG_FULL_INFORMATION {
 	uint32_t full;
 };
