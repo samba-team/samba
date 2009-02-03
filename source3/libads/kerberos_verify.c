@@ -45,6 +45,8 @@ static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
 	krb5_ticket *dec_ticket = NULL;
 
 	krb5_data packet;
+	krb5_kvno kvno = 0;
+	krb5_enctype enctype;
 
 	*pp_tkt = NULL;
 	*keyblock = NULL;
@@ -62,7 +64,6 @@ static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
 
 	packet.length = ticket->length;
 	packet.data = (char *)ticket->data;
-	*pp_tkt = NULL;
 
 	ret = krb5_rd_req(context, &auth_context, &packet, NULL, keytab,
 	    NULL, &dec_ticket);
@@ -71,10 +72,16 @@ static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
 		goto out;
 	}
 
+#ifdef HAVE_ETYPE_IN_ENCRYPTEDDATA /* Heimdal */
+	enctype = dec_ticket->ticket.key.keytype;
+#else /* MIT */
+	enctype = dec_ticket->enc_part.enctype;
+	kvno    = dec_ticket->enc_part.kvno;
+#endif
+
 	/* Get the key for checking the pac signature */
 	ret = krb5_kt_get_entry(context, keytab, dec_ticket->server,
-	    dec_ticket->enc_part.kvno, dec_ticket->enc_part.enctype,
-	    &kt_entry);
+				kvno, enctype, &kt_entry);
 	if (ret) {
 		DEBUG(0, ("krb5_kt_get_entry failed (%s)\n",
 			  error_message(ret)));
