@@ -346,9 +346,11 @@ START=`date`
  MAKE_TEST_BINARY=""
 
  MAKE_TEST_BINARY="bin/net"
- printf "%s" "creating BUILTIN\\Administrators..."
- bin/net -s $SERVERCONFFILE sam createbuiltingroup \
-   Administrators > /dev/null 2>&1 ||  exit 1
+ printf "%s\n" "creating BUILTIN\\Administrators..."
+ bin/net -s $SERVERCONFFILE sam createbuiltingroup Administrators || {
+   echo "FAILED: $?"
+   exit 1
+ }
  echo "DONE"
  MAKE_TEST_BINARY=""
 
