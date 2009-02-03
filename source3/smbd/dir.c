@@ -681,6 +681,14 @@ void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset)
 }
 
 /****************************************************************************
+ Initialize variables & state data at the beginning of all search SMB requests.
+****************************************************************************/
+void dptr_init_search_op(struct dptr_struct *dptr)
+{
+	return SMB_VFS_INIT_SEARCH_OP(dptr->conn, dptr->dir_hnd->dir);
+}
+
+/****************************************************************************
  Fill the 5 byte server reserved dptr field.
 ****************************************************************************/
 

@@ -6495,6 +6495,7 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 			SMB_STRUCT_STAT *pst);
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
 void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset);
+void dptr_init_search_op(struct dptr_struct *dptr);
 bool dptr_fill(char *buf1,unsigned int key);
 struct dptr_struct *dptr_fetch(char *buf,int *num);
 struct dptr_struct *dptr_fetch_lanman2(int dptr_num);

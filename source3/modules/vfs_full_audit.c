@@ -108,6 +108,8 @@ static int smb_full_audit_rmdir(vfs_handle_struct *handle,
 		       const char *path);
 static int smb_full_audit_closedir(vfs_handle_struct *handle,
 			  SMB_STRUCT_DIR *dirp);
+static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
+			SMB_STRUCT_DIR *dirp);
 static int smb_full_audit_open(vfs_handle_struct *handle,
 		      const char *fname, files_struct *fsp, int flags, mode_t mode);
 static NTSTATUS smb_full_audit_create_file(vfs_handle_struct *handle,
@@ -373,6 +375,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_closedir),	SMB_VFS_OP_CLOSEDIR,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_init_search_op), SMB_VFS_OP_INIT_SEARCH_OP,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* File operations */
 
@@ -587,6 +591,7 @@ static struct {
 	{ SMB_VFS_OP_MKDIR,	"mkdir" },
 	{ SMB_VFS_OP_RMDIR,	"rmdir" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
+	{ SMB_VFS_OP_INIT_SEARCH_OP, "init_search_op" },
 	{ SMB_VFS_OP_OPEN,	"open" },
 	{ SMB_VFS_OP_CREATE_FILE, "create_file" },
 	{ SMB_VFS_OP_CLOSE,	"close" },
@@ -1108,6 +1113,15 @@ static int smb_full_audit_closedir(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_CLOSEDIR, (result >= 0), handle, "");
 
 	return result;
+}
+
+static void smb_full_audit_init_search_op(vfs_handle_struct *handle,
+			SMB_STRUCT_DIR *dirp)
+{
+	SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp);
+
+	do_log(SMB_VFS_OP_INIT_SEARCH_OP, True, handle, "");
+	return;
 }
 
 static int smb_full_audit_open(vfs_handle_struct *handle,

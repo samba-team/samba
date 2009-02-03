@@ -1914,7 +1914,7 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		/* W2K3 seems to treat zero as 1. */
 		maxentries = 1;
 	}
- 
+
 	switch (info_level) {
 		case SMB_FIND_INFO_STANDARD:
 		case SMB_FIND_EA_SIZE:
@@ -2043,7 +2043,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	params = *pparams;
 
-	/* Save the wildcard match and attribs we are using on this directory - 
+	/* Save the wildcard match and attribs we are using on this directory -
 		needed as lanman2 assumes these are being saved between calls */
 
 	ntstatus = dptr_create(conn,
@@ -2064,6 +2064,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	dptr_num = dptr_dnum(conn->dirptr);
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n", dptr_num, mask, dirtype));
 
+	/* Initialize per TRANS2_FIND_FIRST operation data */
+	dptr_init_search_op(conn->dirptr);
+
 	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */
 
@@ -2078,7 +2081,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	for (i=0;(i<maxentries) && !finished && !out_of_space;i++) {
 		bool got_exact_match = False;
 
-		/* this is a heuristic to avoid seeking the dirptr except when 
+		/* this is a heuristic to avoid seeking the dirptr except when
 			absolutely necessary. It allows for a filename of about 40 chars */
 		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
 			out_of_space = True;
@@ -2373,6 +2376,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		dptr_num, mask, dirtype,
 		(long)conn->dirptr,
 		dptr_TellDir(conn->dirptr)));
+
+	/* Initialize per TRANS2_FIND_NEXT operation data */
+	dptr_init_search_op(conn->dirptr);
 
 	/* We don't need to check for VOL here as this is returned by
 		a different TRANS2 call. */

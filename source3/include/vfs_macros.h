@@ -45,6 +45,7 @@
 #define SMB_VFS_MKDIR(conn, path, mode) ((conn)->vfs.ops.mkdir((conn)->vfs.handles.mkdir,(path), (mode)))
 #define SMB_VFS_RMDIR(conn, path) ((conn)->vfs.ops.rmdir((conn)->vfs.handles.rmdir, (path)))
 #define SMB_VFS_CLOSEDIR(conn, dir) ((conn)->vfs.ops.closedir((conn)->vfs.handles.closedir, dir))
+#define SMB_VFS_INIT_SEARCH_OP(conn, dirp) ((conn)->vfs.ops.init_search_op((conn)->vfs.handles.init_search_op, (dirp)))
 
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
@@ -173,6 +174,7 @@
 #define SMB_VFS_OPAQUE_MKDIR(conn, path, mode) ((conn)->vfs_opaque.ops.mkdir((conn)->vfs_opaque.handles.mkdir,(path), (mode)))
 #define SMB_VFS_OPAQUE_RMDIR(conn, path) ((conn)->vfs_opaque.ops.rmdir((conn)->vfs_opaque.handles.rmdir, (path)))
 #define SMB_VFS_OPAQUE_CLOSEDIR(conn, dir) ((conn)->vfs_opaque.ops.closedir((conn)->vfs_opaque.handles.closedir, dir))
+#define SMB_VFS_OPAQUE_INIT_SEARCH_OP(conn, dirp) ((conn)->vfs_opaque.ops.init_search_op((conn)->vfs_opaque.handles.init_search_op, (dirp)))
 
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
@@ -302,6 +304,7 @@
 #define SMB_VFS_NEXT_MKDIR(handle, path, mode) ((handle)->vfs_next.ops.mkdir((handle)->vfs_next.handles.mkdir,(path), (mode)))
 #define SMB_VFS_NEXT_RMDIR(handle, path) ((handle)->vfs_next.ops.rmdir((handle)->vfs_next.handles.rmdir, (path)))
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) ((handle)->vfs_next.ops.closedir((handle)->vfs_next.handles.closedir, dir))
+#define SMB_VFS_NEXT_INIT_SEARCH_OP(handle, dirp) ((handle)->vfs_next.ops.init_search_op((handle)->vfs_next.handles.init_search_op, (dirp)))
 
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))

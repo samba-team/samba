@@ -114,6 +114,7 @@
 /* Leave at 25 - not yet released. Add create time to ntimes. -- tstecher. */
 /* Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty. */
 /* Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann */
+/* Leave at 25 - not yet released. Add init_search_op call. - sdann */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -144,14 +145,14 @@ struct smb_file_time;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
-    (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops). 
+    (struct vfs_fn_pointers and struct vfs_handle_pointers inside of struct vfs_ops).
     In particular, if new operations are added to vfs_ops, appropriate constants
     should be added to vfs_op_type so that order of them kept same as in vfs_ops.
 */
 
 typedef enum _vfs_op_type {
 	SMB_VFS_OP_NOOP = -1,
-	
+
 	/* Disk operations */
 
 	SMB_VFS_OP_CONNECT = 0,
@@ -173,6 +174,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_MKDIR,
 	SMB_VFS_OP_RMDIR,
 	SMB_VFS_OP_CLOSEDIR,
+	SMB_VFS_OP_INIT_SEARCH_OP,
 
 	/* File operations */
 
@@ -313,6 +315,7 @@ struct vfs_ops {
 		int (*mkdir)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, const char *path);
 		int (*closedir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
+		void (*init_search_op)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
 
 		/* File operations */
 
@@ -484,6 +487,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *mkdir;
 		struct vfs_handle_struct *rmdir;
 		struct vfs_handle_struct *closedir;
+		struct vfs_handle_struct *init_search_op;
 
 		/* File operations */
 
