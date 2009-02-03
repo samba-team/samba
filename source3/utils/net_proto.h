@@ -145,6 +145,7 @@ int run_rpc_command(struct net_context *c,
 			int argc,
 			const char **argv);
 int net_rpc_changetrustpw(struct net_context *c, int argc, const char **argv);
+int net_rpc_testjoin(struct net_context *c, int argc, const char **argv);
 int net_rpc_join(struct net_context *c, int argc, const char **argv);
 NTSTATUS rpc_info_internals(struct net_context *c,
 			const struct dom_sid *domain_sid,
@@ -205,7 +206,6 @@ NTSTATUS net_rpc_join_ok(struct net_context *c, const char *domain,
 			 const char *server,
 			 const struct sockaddr_storage *server_ss);
 int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv);
-int net_rpc_testjoin(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_rpc_printer.c  */
 

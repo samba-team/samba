@@ -552,32 +552,3 @@ done:
 
 	return retval;
 }
-
-/**
- * check that a join is OK
- *
- * @return A shell status integer (0 for success)
- *
- **/
-int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
-{
-	NTSTATUS nt_status;
-
-	if (c->display_usage) {
-		d_printf(_("Usage\n"
-			   "net rpc testjoin\n"
-			   "    Test if a join is OK\n"));
-		return 0;
-	}
-
-	/* Display success or failure */
-	nt_status = net_rpc_join_ok(c, c->opt_target_workgroup, NULL, NULL);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		fprintf(stderr, _("Join to domain '%s' is not valid: %s\n"),
-			c->opt_target_workgroup, nt_errstr(nt_status));
-		return -1;
-	}
-
-	printf(_("Join to '%s' is OK\n"), c->opt_target_workgroup);
-	return 0;
-}

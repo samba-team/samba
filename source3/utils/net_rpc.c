@@ -438,6 +438,72 @@ fail:
 }
 
 /**
+ * check that a join is OK
+ *
+ * @return A shell status integer (0 for success)
+ *
+ **/
+int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx;
+	const char *domain = c->opt_target_workgroup;
+	const char *dc = c->opt_host;
+
+	if (c->display_usage) {
+		d_printf("Usage\n"
+			 "net rpc testjoin\n"
+			 "    Test if a join is OK\n");
+		return 0;
+	}
+
+	mem_ctx = talloc_init("net_rpc_testjoin");
+	if (!mem_ctx) {
+		return -1;
+	}
+
+	if (!dc) {
+		struct netr_DsRGetDCNameInfo *info;
+
+		if (!c->msg_ctx) {
+			d_fprintf(stderr, _("Could not initialise message context. "
+				"Try running as root\n"));
+			talloc_destroy(mem_ctx);
+			return -1;
+		}
+
+		status = dsgetdcname(mem_ctx,
+				     c->msg_ctx,
+				     domain,
+				     NULL,
+				     NULL,
+				     DS_RETURN_DNS_NAME,
+				     &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_destroy(mem_ctx);
+			return -1;
+		}
+
+		dc = strip_hostname(info->dc_unc);
+	}
+
+	/* Display success or failure */
+	status = libnet_join_ok(c->opt_workgroup, lp_netbios_name(), dc,
+				c->opt_kerberos);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
+			domain, nt_errstr(status));
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+
+	printf("Join to '%s' is OK\n",domain);
+	talloc_destroy(mem_ctx);
+
+	return 0;
+}
+
+/**
  * 'net rpc join' entrypoint.
  * @param argc  Standard main() style argc.
  * @param argv  Standard main() style argv. Initial components are already
