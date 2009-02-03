@@ -104,6 +104,7 @@ o   Volker Lendecke <vl@sernet.de>
     * Fix an ancient uninitialized variable read.
     * Fix a bad memleak in vfs_full_audit.
     * Fix several valgrind errors.
+    * Fix 'net rpc join' for users with the SeMachineAccountPrivilege.
 
 
 o   Herb Lewis <hlewis@chomps.localdomain>
