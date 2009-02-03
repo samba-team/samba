@@ -88,13 +88,7 @@ static bool ads_dedicated_keytab_verify_ticket(krb5_context context,
 		goto out;
 	}
 
-#ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK /* Heimdal */
-	ret = krb5_copy_keyblock(context, &kt_entry.keyblock, keyblock);
-#elif defined(HAVE_KRB5_KEYTAB_ENTRY_KEY) /* MIT */
-	ret = krb5_copy_keyblock(context, &kt_entry.key, keyblock);
-#else
-#error UNKNOWN_KRB5_KEYTAB_ENTRY_FORMAT
-#endif
+	ret = krb5_copy_keyblock(context, KRB5_KT_KEY(&kt_entry), keyblock);
 	smb_krb5_kt_free_entry(context, &kt_entry);
 
 	if (ret) {
