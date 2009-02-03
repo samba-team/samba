@@ -1695,6 +1695,16 @@ struct kernel_oplocks {
 	void *private_data;
 };
 
+enum level2_contention_type {
+	LEVEL2_CONTEND_ALLOC_SHRINK,
+	LEVEL2_CONTEND_ALLOC_GROW,
+	LEVEL2_CONTEND_SET_FILE_LEN,
+	LEVEL2_CONTEND_FILL_SPARSE,
+	LEVEL2_CONTEND_WRITE,
+	LEVEL2_CONTEND_WINDOWS_BRL,
+	LEVEL2_CONTEND_POSIX_BRL
+};
+
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
 struct kernel_oplocks_ops {
@@ -1702,6 +1712,10 @@ struct kernel_oplocks_ops {
 			   files_struct *fsp, int oplock_type);
 	void (*release_oplock)(struct kernel_oplocks *ctx,
 			       files_struct *fsp, int oplock_type);
+	void (*contend_level2_oplocks_begin)(files_struct *fsp,
+					     enum level2_contention_type type);
+	void (*contend_level2_oplocks_end)(files_struct *fsp,
+					   enum level2_contention_type type);
 };
 
 #include "smb_macros.h"

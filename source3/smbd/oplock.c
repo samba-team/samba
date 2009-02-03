@@ -329,7 +329,7 @@ static void add_oplock_timeout_handler(files_struct *fsp)
  the client for LEVEL2.
 *******************************************************************/
 
-static void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
+void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
 						      void *private_data,
 						      uint32_t msg_type,
 						      struct server_id src,
@@ -699,7 +699,8 @@ static void process_open_retry_message(struct messaging_context *msg_ctx,
  none.
 ****************************************************************************/
 
-void release_level_2_oplocks_on_change(files_struct *fsp)
+static void contend_level2_oplocks_begin_default(files_struct *fsp,
+					      enum level2_contention_type type)
 {
 	int i;
 	struct share_mode_lock *lck;
@@ -797,6 +798,26 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 	   in the share mode lock db. */
 
 	TALLOC_FREE(lck);
+}
+
+void contend_level2_oplocks_begin(files_struct *fsp,
+				  enum level2_contention_type type)
+{
+	if (koplocks && koplocks->ops->contend_level2_oplocks_begin) {
+		koplocks->ops->contend_level2_oplocks_begin(fsp, type);
+		return;
+	}
+
+	contend_level2_oplocks_begin_default(fsp, type);
+}
+
+void contend_level2_oplocks_end(files_struct *fsp,
+				enum level2_contention_type type)
+{
+	/* Only kernel oplocks implement this so far */
+	if (koplocks && koplocks->ops->contend_level2_oplocks_end) {
+		koplocks->ops->contend_level2_oplocks_end(fsp, type);
+	}
 }
 
 /****************************************************************************

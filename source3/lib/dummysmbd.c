@@ -66,3 +66,22 @@ struct messaging_context *smbd_messaging_context(void)
 {
 	return NULL;
 }
+
+/**
+ * The following two functions need to be called from inside the low-level BRL
+ * code for oplocks correctness in smbd.  Since other utility binaries also
+ * link in some of the brl code directly, these dummy functions are necessary
+ * to avoid needing to link in the oplocks code and its dependencies to all of
+ * the utility binaries.
+ */
+void contend_level2_oplocks_begin(files_struct *fsp,
+				  enum level2_contention_type type)
+{
+	return;
+}
+
+void contend_level2_oplocks_end(files_struct *fsp,
+				enum level2_contention_type type)
+{
+	return;
+}

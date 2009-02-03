@@ -318,7 +318,9 @@ ssize_t write_file(struct smb_request *req,
 	 * the shared memory area whilst doing this.
 	 */
 
-	release_level_2_oplocks_on_change(fsp);
+	/* This should actually be improved to span the write. */
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
 #ifdef WITH_PROFILE
 	if (profile_p && profile_p->writecache_total_writes % 500 == 0) {

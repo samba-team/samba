@@ -291,7 +291,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	aio_ex->req = talloc_move(aio_ex, &req);
 
-	release_level_2_oplocks_on_change(fsp);
+	/* This should actually be improved to span the write. */
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WRITE);
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WRITE);
 
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {

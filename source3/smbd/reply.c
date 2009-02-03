@@ -3010,8 +3010,6 @@ void reply_lockread(struct smb_request *req)
 		return;
 	}
 
-	release_level_2_oplocks_on_change(fsp);
-
 	numtoread = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
@@ -4496,8 +4494,6 @@ void reply_lock(struct smb_request *req)
 		END_PROFILE(SMBlock);
 		return;
 	}
-
-	release_level_2_oplocks_on_change(fsp);
 
 	count = (uint64_t)IVAL(req->vwv+1, 0);
 	offset = (uint64_t)IVAL(req->vwv+3, 0);
@@ -6869,13 +6865,6 @@ void reply_lockingX(struct smb_request *req)
 			return;
 		}
 	}
-
-	/*
-	 * We do this check *after* we have checked this is not a oplock break
-	 * response message. JRA.
-	 */
-
-	release_level_2_oplocks_on_change(fsp);
 
 	if (req->buflen <
 	    (num_ulocks + num_locks) * (large_file_format ? 20 : 10)) {

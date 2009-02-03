@@ -514,8 +514,6 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 	uint64_t space_avail;
 	uint64_t bsize,dfree,dsize;
 
-	release_level_2_oplocks_on_change(fsp);
-
 	/*
 	 * Actually try and commit the space on disk....
 	 */
@@ -541,14 +539,22 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 		DEBUG(10,("vfs_allocate_file_space: file %s, shrink. Current size %.0f\n",
 				fsp->fsp_name, (double)st.st_size ));
 
+		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
+
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
 		if ((ret = SMB_VFS_FTRUNCATE(fsp, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
+
+		contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
+
 		return ret;
 	}
 
 	/* Grow - we need to test if we have enough space. */
+
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_GROW);
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_ALLOC_GROW);
 
 	if (!lp_strict_allocate(SNUM(fsp->conn)))
 		return 0;
@@ -581,7 +587,8 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 {
 	int ret;
 
-	release_level_2_oplocks_on_change(fsp);
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
+
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
@@ -591,6 +598,8 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
 			     fsp->fsp_name);
 	}
+
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_SET_FILE_LEN);
 
 	return ret;
 }
@@ -613,7 +622,6 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	size_t num_to_write;
 	ssize_t pwrite_ret;
 
-	release_level_2_oplocks_on_change(fsp);
 	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1) {
 		return ret;
@@ -626,13 +634,16 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	DEBUG(10,("vfs_fill_sparse: write zeros in file %s from len %.0f to len %.0f (%.0f bytes)\n",
 		fsp->fsp_name, (double)st.st_size, (double)len, (double)(len - st.st_size)));
 
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
+
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
 
 	if (!sparse_buf) {
 		sparse_buf = SMB_CALLOC_ARRAY(char, SPARSE_BUF_WRITE_SIZE);
 		if (!sparse_buf) {
 			errno = ENOMEM;
-			return -1;
+			ret = -1;
+			goto out;
 		}
 	}
 
@@ -647,17 +658,23 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 		if (pwrite_ret == -1) {
 			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
 				fsp->fsp_name, strerror(errno) ));
-			return -1;
+			ret = -1;
+			goto out;
 		}
 		if (pwrite_ret == 0) {
-			return 0;
+			ret = 0;
+			goto out;
 		}
 
 		total += pwrite_ret;
 	}
 
 	set_filelen_write_cache(fsp, len);
-	return 0;
+
+	ret = 0;
+ out:
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_FILL_SPARSE);
+	return ret;
 }
 
 /****************************************************************************

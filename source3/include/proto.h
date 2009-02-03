@@ -6899,7 +6899,15 @@ void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 void reply_to_oplock_break_requests(files_struct *fsp);
-void release_level_2_oplocks_on_change(files_struct *fsp);
+void process_oplock_async_level2_break_message(struct messaging_context *msg_ctx,
+						      void *private_data,
+						      uint32_t msg_type,
+						      struct server_id src,
+						      DATA_BLOB *data);
+void contend_level2_oplocks_begin(files_struct *fsp,
+				  enum level2_contention_type type);
+void contend_level2_oplocks_end(files_struct *fsp,
+				enum level2_contention_type type);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
 void message_to_share_mode_entry(struct share_mode_entry *e, char *msg);
 bool init_oplocks(struct messaging_context *msg_ctx);

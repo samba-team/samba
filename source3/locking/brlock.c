@@ -311,6 +311,7 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = br_lck->lock_data;
+	NTSTATUS status;
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
@@ -325,6 +326,10 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 			break;
 		}
 #endif
+	}
+
+	if (!IS_PENDING_LOCK(plock->lock_type)) {
+		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 	}
 
 	/* We can get the Windows lock, now see if it needs to
@@ -346,9 +351,11 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 			plock->context.smbpid = 0xFFFFFFFF;
 
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
-				return NT_STATUS_FILE_LOCK_CONFLICT;
+				status = NT_STATUS_FILE_LOCK_CONFLICT;
+				goto fail;
 			} else {
-				return map_nt_error_from_unix(errno);
+				status = map_nt_error_from_unix(errno);
+				goto fail;
 			}
 		}
 	}
@@ -356,7 +363,8 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	/* no conflicts - add it to the list of locks */
 	locks = (struct lock_struct *)SMB_REALLOC(locks, (br_lck->num_locks + 1) * sizeof(*locks));
 	if (!locks) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	memcpy(&locks[br_lck->num_locks], plock, sizeof(struct lock_struct));
@@ -365,6 +373,11 @@ static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
 	br_lck->modified = True;
 
 	return NT_STATUS_OK;
+ fail:
+	if (!IS_PENDING_LOCK(plock->lock_type)) {
+		contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -587,11 +600,13 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			       struct byte_range_lock *br_lck,
 			       struct lock_struct *plock)
 {
-	unsigned int i, count;
+	unsigned int i, count, posix_count;
 	struct lock_struct *locks = br_lck->lock_data;
 	struct lock_struct *tp;
 	bool lock_was_added = False;
 	bool signal_pending_read = False;
+	bool break_oplocks = false;
+	NTSTATUS status;
 
 	/* No zero-zero locks for POSIX. */
 	if (plock->start == 0 && plock->size == 0) {
@@ -613,7 +628,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	count = 0;
+	count = posix_count = 0;
 	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *curr_lock = &locks[i];
 
@@ -637,6 +652,8 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			memcpy(&tp[count], curr_lock, sizeof(struct lock_struct));
 			count++;
 		} else {
+			unsigned int tmp_count;
+
 			/* POSIX conflict semantics are different. */
 			if (brl_conflict_posix(curr_lock, plock)) {
 				/* Can't block ourselves with POSIX locks. */
@@ -648,8 +665,25 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			}
 
 			/* Work out overlaps. */
-			count += brlock_posix_split_merge(&tp[count], curr_lock, plock, &lock_was_added);
+			tmp_count += brlock_posix_split_merge(&tp[count], curr_lock, plock, &lock_was_added);
+			posix_count += tmp_count;
+			count += tmp_count;
 		}
+	}
+
+	/*
+	 * Break oplocks while we hold a brl. Since lock() and unlock() calls
+	 * are not symetric with POSIX semantics, we cannot guarantee our
+	 * contend_level2_oplocks_begin/end calls will be acquired and
+	 * released one-for-one as with Windows semantics. Therefore we only
+	 * call contend_level2_oplocks_begin if this is the first POSIX brl on
+	 * the file.
+	 */
+	break_oplocks = (!IS_PENDING_LOCK(plock->lock_type) &&
+			 posix_count == 0);
+	if (break_oplocks) {
+		contend_level2_oplocks_begin(br_lck->fsp,
+					     LEVEL2_CONTEND_POSIX_BRL);
 	}
 
 	if (!lock_was_added) {
@@ -679,10 +713,12 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				SAFE_FREE(tp);
-				return NT_STATUS_FILE_LOCK_CONFLICT;
+				status = NT_STATUS_FILE_LOCK_CONFLICT;
+				goto fail;
 			} else {
 				SAFE_FREE(tp);
-				return map_nt_error_from_unix(errno);
+				status = map_nt_error_from_unix(errno);
+				goto fail;
 			}
 		}
 	}
@@ -690,7 +726,8 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	/* Realloc so we don't leak entries per lock call. */
 	tp = (struct lock_struct *)SMB_REALLOC(tp, count * sizeof(*locks));
 	if (!tp) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 	br_lck->num_locks = count;
 	SAFE_FREE(br_lck->lock_data);
@@ -723,6 +760,12 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	}
 
 	return NT_STATUS_OK;
+ fail:
+	if (break_oplocks) {
+		contend_level2_oplocks_end(br_lck->fsp,
+					   LEVEL2_CONTEND_POSIX_BRL);
+	}
+	return status;
 }
 
 /****************************************************************************
@@ -881,6 +924,7 @@ static bool brl_unlock_windows(struct messaging_context *msg_ctx,
 		}
 	}
 
+	contend_level2_oplocks_end(br_lck->fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 	return True;
 }
 
@@ -892,7 +936,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 			     struct byte_range_lock *br_lck,
 			     const struct lock_struct *plock)
 {
-	unsigned int i, j, count;
+	unsigned int i, j, count, posix_count;
 	struct lock_struct *tp;
 	struct lock_struct *locks = br_lck->lock_data;
 	bool overlap_found = False;
@@ -919,7 +963,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	count = 0;
+	count = posix_count = 0;
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 		struct lock_struct tmp_lock[3];
@@ -946,6 +990,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 				/* No change in this lock. */
 				memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
 				count++;
+				posix_count++;
 			} else {
 				SMB_ASSERT(tmp_lock[0].lock_type == UNLOCK_LOCK);
 				overlap_found = True;
@@ -970,6 +1015,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 				}
 			}
 			count++;
+			posix_count++;
 			continue;
 		} else {
 			/* tmp_count == 3 - (we split a lock range in two). */
@@ -979,8 +1025,10 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 
 			memcpy(&tp[count], &tmp_lock[0], sizeof(struct lock_struct));
 			count++;
+			posix_count++;
 			memcpy(&tp[count], &tmp_lock[2], sizeof(struct lock_struct));
 			count++;
+			posix_count++;
 			overlap_found = True;
 			/* Optimisation... */
 			/* We know we're finished here as we can't overlap any
@@ -1022,6 +1070,11 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 		/* We deleted the last lock. */
 		SAFE_FREE(tp);
 		tp = NULL;
+	}
+
+	if (posix_count == 0) {
+		contend_level2_oplocks_end(br_lck->fsp,
+					   LEVEL2_CONTEND_POSIX_BRL);
 	}
 
 	br_lck->num_locks = count;
@@ -1276,6 +1329,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 	struct lock_struct *locks = br_lck->lock_data;
 	struct server_id pid = procid_self();
 	bool unlock_individually = False;
+	bool posix_level2_contention_ended = false;
 
 	if(lp_posix_locking(fsp->conn->params)) {
 
@@ -1346,8 +1400,17 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 			if ((lock->lock_flav == WINDOWS_LOCK) && (lock->fnum == fnum)) {
 				del_this_lock = True;
 				num_deleted_windows_locks++;
+				contend_level2_oplocks_end(br_lck->fsp,
+				    LEVEL2_CONTEND_WINDOWS_BRL);
 			} else if (lock->lock_flav == POSIX_LOCK) {
 				del_this_lock = True;
+
+				/* Only end level2 contention once for posix */
+				if (!posix_level2_contention_ended) {
+					posix_level2_contention_ended = true;
+					contend_level2_oplocks_end(br_lck->fsp,
+					    LEVEL2_CONTEND_POSIX_BRL);
+				}
 			}
 		}
 

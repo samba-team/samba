@@ -179,8 +179,10 @@ static bool linux_oplocks_available(void)
 ****************************************************************************/
 
 static const struct kernel_oplocks_ops linux_koplocks = {
-	.set_oplock		= linux_set_kernel_oplock,
-	.release_oplock		= linux_release_kernel_oplock,
+	.set_oplock			= linux_set_kernel_oplock,
+	.release_oplock			= linux_release_kernel_oplock,
+	.contend_level2_oplocks_begin	= NULL,
+	.contend_level2_oplocks_end	= NULL,
 };
 
 struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
