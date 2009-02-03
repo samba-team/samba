@@ -1229,6 +1229,10 @@ struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
 			 */
 			passlen = clistr_push(cli, pword, pass, sizeof(pword),
 					      STR_TERMINATE);
+			if (passlen == -1) {
+				DEBUG(1, ("clistr_push(pword) failed\n"));
+				goto access_denied;
+			}
 		} else {
 			if (passlen) {
 				memcpy(pword, pass, passlen);
