@@ -1053,56 +1053,6 @@ bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUF
 }
 
 /******************************************************************
- Stream a string, length/buffer specified separately,
- in uint8 chars.
- ********************************************************************/
-
-bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STRING2 *str)
-{
-	unsigned int i;
-	char *q = prs_mem_get(ps, str->str_str_len);
-	if (q == NULL)
-		return False;
-
-	if (UNMARSHALLING(ps)) {
-		if (str->str_str_len > str->str_max_len) {
-			return False;
-		}
-		if (str->str_max_len) {
-			str->buffer = PRS_ALLOC_MEM(ps,unsigned char, str->str_max_len);
-			if (str->buffer == NULL)
-				return False;
-		} else {
-			str->buffer = NULL;
-			/* Return early to ensure Coverity isn't confused. */
-			DEBUGADD(5,("%s%04x %s: \n", tab_depth(5,depth), ps->data_offset, name));
-			return True;
-		}
-	}
-
-	if (UNMARSHALLING(ps)) {
-		for (i = 0; i < str->str_str_len; i++)
-			str->buffer[i] = CVAL(q,i);
-	} else {
-		for (i = 0; i < str->str_str_len; i++)
-			SCVAL(q, i, str->buffer[i]);
-	}
-
-	DEBUGADD(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
-	if (charmode)
-		print_asc(5, (unsigned char*)str->buffer, str->str_str_len);
-	else {
-		for (i = 0; i < str->str_str_len; i++)
-			DEBUG(5,("%02x ", str->buffer[i]));
-	}
-	DEBUGADD(5,("\n"));
-
-	ps->data_offset += str->str_str_len;
-
-	return True;
-}
-
-/******************************************************************
  Stream a unicode string, length/buffer specified separately,
  in uint16 chars. The unicode string is already in little-endian format.
  ********************************************************************/

@@ -5679,86 +5679,25 @@ uint32 size_of_relative_string(UNISTR *string);
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime);
-uint32 get_enum_hnd(ENUM_HND *enh);
-void init_enum_hnd(ENUM_HND *enh, uint32 hnd);
-bool smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth);
 bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
-void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-bool smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2);
-bool smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
-void init_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
-bool smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-void init_uni_hdr(UNIHDR *hdr, UNISTR2 *str2);
-bool smb_io_unihdr(const char *desc, UNIHDR *hdr, prs_struct *ps, int depth);
-void init_buf_hdr(BUFHDR *hdr, int max_len, int len);
-bool smb_io_hdrbuf_pre(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-bool smb_io_hdrbuf_post(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
-bool smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, const char *buf);
 bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth);
-void init_rpc_blob_uint32(RPC_DATA_BLOB *str, uint32 val);
-void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len);
-void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf);
-void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len);
 bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
-void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len);
-bool smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
-void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags);
-void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf );
 void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf);
 void init_unistr2_from_unistr(TALLOC_CTX *ctx, UNISTR2 *to, const UNISTR *from);
 void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob) ;
 bool prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2);
 bool prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 );
 bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-bool prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array );
-bool init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings );
-void init_dom_rid(DOM_RID *prid, uint32 rid, uint16 type, uint32 idx);
-bool smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth);
-bool smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth);
-void init_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
-bool smb_io_dom_rid3(const char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth);
-void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
-void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv,
-		   const char *comp_name);
-bool smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth);
-void init_log_info(DOM_LOG_INFO *loginfo, const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name);
-bool smb_io_log_info(const char *desc, DOM_LOG_INFO *loginfo, prs_struct *ps, int depth);
-bool smb_io_chal(const char *desc, DOM_CHAL *chal, prs_struct *ps, int depth);
-bool smb_io_cred(const char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
-void init_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				const char *logon_srv, const char *comp_name,
-				const DOM_CRED *clnt_cred);
-bool smb_io_clnt_info2(const char *desc, DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
-void init_clnt_info(DOM_CLNT_INFO *clnt,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		const DOM_CRED *cred);
-bool smb_io_clnt_info(const char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
-void init_logon_id(DOM_LOGON_ID *logonid, uint32 log_id_low, uint32 log_id_high);
-bool smb_io_logon_id(const char *desc, DOM_LOGON_ID *logonid, prs_struct *ps, int depth);
-void init_owf_info(OWF_INFO *hash, const uint8 data[16]);
-bool smb_io_owf_info(const char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
-bool smb_io_gid(const char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
 void init_unistr3(UNISTR3 *str, const char *buf);
 bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
-bool smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth);
-bool smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth);
-bool make_uni_hdr(UNIHDR *hdr, int len);
-bool make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
@@ -5816,7 +5755,6 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str);
-bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STRING2 *str);
 bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
 bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);

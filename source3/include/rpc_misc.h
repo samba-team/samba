@@ -92,63 +92,12 @@ enum unistr2_term_codes { UNI_FLAGS_NONE = 0, UNI_STR_TERMINATE = 1, UNI_MAXLEN_
  **********************************************************************/
  
 typedef struct policy_handle POLICY_HND;
-typedef struct {
-	uint32 ptr_hnd;          /* pointer to enumeration handle */
-	uint32 handle;           /* enumeration handle */
-} ENUM_HND;
 
 #define OUR_HANDLE(hnd) (((hnd)==NULL) ? "NULL" :\
 	( IVAL((hnd)->uuid.node,2) == (uint32)sys_getpid() ? "OURS" : \
 		"OTHER")), ((unsigned int)IVAL((hnd)->uuid.node,2)),\
 		((unsigned int)sys_getpid() )
 
-
-/********************************************************************** 
- * Buffer Headers -- use by SEC_DESC_BUF in winreg and netlogon code
- **********************************************************************/
- 
-/* TODO: replace this with an encompassing buffer structure */
-typedef struct {
-	uint32 buf_max_len;
-	uint32 buf_len;
-} BUFHDR;
-
-/* this is a BUFHDR + a pointer to a buffer */
-typedef struct {
-	uint32 info_level;
-	uint32 length;		/* uint8 chars */
-	uint32 buffer;
-} BUFHDR2;
-
-/* generic buffer ?  wrapped around void*? */
-typedef struct {
-	uint32 size;
-	uint32 buffer;
-} BUFHDR4;
-
-
-/********************************************************************** 
- * Buffers 
- **********************************************************************/
-
-/* buffer used by \winreg\ calls to fill in arbitrary REG_XXX values.
-   It *may* look like a UNISTR2 but it is *not*.  This is not a goof
-   by the winreg developers.  It is a generic buffer.  buffer length
-   is stored in bytes (not # of uint16's) */
-
-typedef struct {
-	uint32 buf_max_len;
-	uint32 offset;
-	uint32 buf_len;
-	uint16 *buffer;
-} REGVAL_BUFFER;
-
-/* generic rpc version of the DATA_BLOB.  Just a length and uint8 array */
-
-typedef struct {
-	uint32 buf_len;
-	uint8 *buffer;
-} RPC_DATA_BLOB;
 
 /********************************************************************** 
  * Buffers use by spoolss (i might be able to replace it with
@@ -160,22 +109,6 @@ typedef struct {
 	uint16 *buffer; /* data */
 } BUFFER5;
 
-
-/********************************************************************** 
- * Unicode and basic string headers 
- **********************************************************************/
- 
-typedef struct {
-	uint16 str_str_len;
-	uint16 str_max_len;
-	uint32 buffer; /* non-zero */
-} STRHDR;
-
-typedef struct {
-	uint16 uni_str_len;
-	uint16 uni_max_len;
-	uint32 buffer; 
-} UNIHDR;
 
 /********************************************************************** 
  * UNICODE string variations
@@ -204,139 +137,5 @@ typedef struct {		/* UNISTR3 - XXXX not sure about this structure */
 	uint32 uni_str_len;
 	UNISTR str;
 } UNISTR3;
-
-typedef struct {		/* Buffer wrapped around a UNISTR2 */
-	uint16 length;		/* number of bytes not counting NULL terminatation */
-	uint16 size;		/* number of bytes including NULL terminatation */
-	UNISTR2 *string;
-} UNISTR4;
-
-typedef struct {
-	uint32 count;
-	UNISTR4 *strings;
-} UNISTR4_ARRAY;
-
-
-/********************************************************************** 
- * String variations
- **********************************************************************/
-
-typedef struct {		/* STRING2 - string size (in uint8 chars) and buffer */
-	uint32 str_max_len;
-	uint32 offset;
-	uint32 str_str_len;
-	uint8  *buffer; 	/* uint8 characters. **NOT** necessarily null-terminated */
-} STRING2;
-
-
-
-
-/********************************************************************** 
- * Domain SID structures
- **********************************************************************/
-
-typedef struct {
-	uint32 num_auths; /* length, bytes, including length of len :-) */
-	DOM_SID sid;
-} DOM_SID2;
-
-
-/********************************************************************** 
- * Domain SID structures
- **********************************************************************/
-
-/* DOM_RID - domain RID structure for ntlsa pipe */
-typedef struct {
-	uint16 type; /* value is SID_NAME_USE enum */
-	uint32 rid;
-	uint32 rid_idx; /* referenced domain index */
-} DOM_RID;
-
-/* DOM_RID2 - second domain RID structure for ntlsa pipe */
-typedef struct {
-	uint16 type; /* value is SID_NAME_USE enum */
-	uint32 rid;
-	uint32 rid_idx; /* referenced domain index */
-	uint32 unknown;
-} DOM_RID2;
-
-typedef struct {		/* DOM_RID3 - domain RID structure for samr pipe */
-	uint32 rid;        /* domain-relative (to a SID) id */
-	uint32 type1;      /* value is 0x1 */
-	uint32 ptr_type;   /* undocumented pointer */
-	uint32 type2;      /* value is 0x1 */
-	uint32 unk; /* value is 0x2 */
-} DOM_RID3;
-
-/* DOM_RID4 - rid + user attributes */
-typedef struct domrid4_info
-{
-	uint32 unknown;
-	uint16 attr;
-	uint32 rid;  /* user RID */
-} DOM_RID4;
-
-/* DOM_GID - group id + user attributes */
-typedef struct {
-	uint32 g_rid;  /* a group RID */
-	uint32 attr;
-} DOM_GID;
-
-/********************************************************************** 
- * ????
- **********************************************************************/
-
-/* DOM_CLNT_SRV - client / server names */
-typedef struct clnt_srv_info {
-	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
-	UNISTR2 uni_logon_srv; /* logon server name */
-	uint32  undoc_buffer2; /* undocumented 32 bit buffer pointer */
-	UNISTR2 uni_comp_name; /* client machine name */
-} DOM_CLNT_SRV;
-
-/* DOM_LOG_INFO - login info */
-typedef struct log_info {
-	uint32  undoc_buffer; /* undocumented 32 bit buffer pointer */
-	UNISTR2 uni_logon_srv; /* logon server name */
-	UNISTR2 uni_acct_name; /* account name */
-	uint16  sec_chan;      /* secure channel type */
-	UNISTR2 uni_comp_name; /* client machine name */
-} DOM_LOG_INFO;
-
-/* DOM_CHAL - challenge info */
-typedef struct chal_info {
-	unsigned char data[8]; /* credentials */
-} DOM_CHAL;
- 
-/* DOM_CREDs - timestamped client or server credentials */
-typedef struct cred_info {
-	DOM_CHAL challenge; /* credentials */
-	UTIME timestamp;    /* credential time-stamp */
-} DOM_CRED;
-
-/* DOM_CLNT_INFO - client info */
-typedef struct clnt_info {
-	DOM_LOG_INFO login;
-	DOM_CRED     cred;
-} DOM_CLNT_INFO;
-
-/* DOM_CLNT_INFO2 - client info */
-typedef struct clnt_info2 {
-	DOM_CLNT_SRV login;
-	uint32        ptr_cred;
-	DOM_CRED      cred;
-} DOM_CLNT_INFO2;
-
-/* DOM_LOGON_ID - logon id */
-typedef struct logon_info {
-	uint32 low;
-	uint32 high;
-} DOM_LOGON_ID;
-
-/* OWF INFO */
-typedef struct owf_info {
-	uint8 data[16];
-} OWF_INFO;
-
 
 #endif /* _RPC_MISC_H */
