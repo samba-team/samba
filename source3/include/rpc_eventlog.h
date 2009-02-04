@@ -37,14 +37,6 @@
 
 /***********************************/
 
-typedef struct 
-{
-	POLICY_HND handle;
-	uint32 flags;
-	uint32 offset;
-	uint32 max_read_size;
-} EVENTLOG_Q_READ_EVENTLOG;
-
 typedef struct {
 	uint32 length;
 	uint32 reserved1;
@@ -85,16 +77,5 @@ typedef struct eventlog_entry {
 	uint8 *end_of_data_padding;
 	struct eventlog_entry *next;
 } Eventlog_entry;
- 
-typedef struct {
-	uint32 num_bytes_in_resp;
-	uint32 bytes_in_next_record;
-	uint32 num_records;
-	Eventlog_entry *entry;
-	uint8 *end_of_entries_padding;
-	uint32 sent_size;
-	uint32 real_size;
-	NTSTATUS status;
-} EVENTLOG_R_READ_EVENTLOG;
 
 #endif /* _RPC_EVENTLOG_H */

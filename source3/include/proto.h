@@ -5677,14 +5677,6 @@ uint32 size_of_relative_string(UNISTR *string);
 
 /* The following definitions come from rpc_parse/parse_eventlog.c  */
 
-bool eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u,
-				 prs_struct *ps, int depth);
-bool eventlog_io_r_read_eventlog(const char *desc,
-				 EVENTLOG_Q_READ_EVENTLOG *q_u,
-				 EVENTLOG_R_READ_EVENTLOG *r_u,
-				 prs_struct *ps,
-				 int depth);
-
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
@@ -6285,10 +6277,6 @@ NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
 				      struct EVENTLOGRECORD *e);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
-
-NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
-				EVENTLOG_Q_READ_EVENTLOG * q_u,
-				EVENTLOG_R_READ_EVENTLOG * r_u );
 
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
