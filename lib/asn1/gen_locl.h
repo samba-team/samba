@@ -84,7 +84,7 @@ void close_codefile(void);
 
 
 extern FILE *headerfile, *codefile, *logfile;
-extern int dce_fix;
+extern int support_ber;
 extern int rfc1510_bitstring;
 extern int one_code_file;
 

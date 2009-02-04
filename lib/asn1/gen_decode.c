@@ -500,9 +500,9 @@ decode_type (const char *name, const Type *t, int optional,
 		"size_t %s_datalen, %s_oldlen;\n"
 		"Der_type %s;\n",
 		tmpstr, tmpstr, typestring);
-	if(dce_fix)
+	if(support_ber)
 	    fprintf(codefile,
-		    "int dce_fix;\n");
+		    "int is_indefinite;\n");
 
 	fprintf(codefile, "e = der_match_tag_and_length(p, len, %s, &%s, %s, "
 		"&%s_datalen, &l);\n",
@@ -512,7 +512,7 @@ decode_type (const char *name, const Type *t, int optional,
 		tmpstr);
 
 	/* XXX hardcode for now */
-	if (dce_fix && t->subtype->type == TOctetString) {
+	if (support_ber && t->subtype->type == TOctetString) {
 	    ide = typestring;
 	} else {
 	    fprintf(codefile,
@@ -536,11 +536,11 @@ decode_type (const char *name, const Type *t, int optional,
 		 "p += l; len -= l; ret += l;\n"
 		 "%s_oldlen = len;\n",
 		 tmpstr);
-	if(dce_fix)
+	if(support_ber)
 	    fprintf (codefile,
-		     "if((dce_fix = _heim_fix_dce(%s_datalen, &len)) < 0)\n"
+		     "if((is_indefinite = _heim_fix_dce(%s_datalen, &len)) < 0)\n"
 		     "{ e = ASN1_BAD_FORMAT; %s; }\n"
-		     "if (dce_fix) { if (len < 2) { e = ASN1_OVERRUN; %s; } len -= 2; }",
+		     "if (is_indefinite) { if (len < 2) { e = ASN1_OVERRUN; %s; } len -= 2; }",
 		     tmpstr, forwstr, forwstr);
 	else
 	    fprintf(codefile,
@@ -550,9 +550,9 @@ decode_type (const char *name, const Type *t, int optional,
 	if (tname == NULL)
 	    errx(1, "malloc");
 	decode_type (name, t->subtype, 0, forwstr, tname, ide);
-	if(dce_fix)
+	if(support_ber)
 	    fprintf(codefile,
-		    "if(dce_fix){\n"
+		    "if(is_indefinite){\n"
 		    "len += 2;\n"
 		    "e = der_match_tag_and_length(p, len, "
 		    "(Der_class)0, &%s, UT_EndOfContent, "

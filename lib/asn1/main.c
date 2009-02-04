@@ -62,7 +62,7 @@ seq_type(const char *p)
     return 0;
 }
 
-int dce_fix;
+int support_ber;
 int rfc1510_bitstring;
 int one_code_file;
 char *option_file;
@@ -70,7 +70,8 @@ int version_flag;
 int help_flag;
 struct getargs args[] = {
     { "encode-rfc1510-bit-string", 0, arg_flag, &rfc1510_bitstring },
-    { "decode-dce-ber", 0, arg_flag, &dce_fix },
+    { "decode-dce-ber", 0, arg_flag, &support_ber },
+    { "support-ber", 0, arg_flag, &support_ber },
     { "preserve-binary", 0, arg_strings, &preserve },
     { "sequence", 0, arg_strings, &seq },
     { "one-code-file", 0, arg_flag, &one_code_file },
