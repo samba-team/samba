@@ -351,32 +351,6 @@ done:
 }
 
 /********************************************************************
- ********************************************************************/
-
-static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
-				Eventlog_entry * ee_new )
-{
-	Eventlog_entry *insert_point;
-
-	insert_point = r_u->entry;
-
-	if ( NULL == insert_point ) {
-		r_u->entry = ee_new;
-		ee_new->next = NULL;
-	} else {
-		while ( ( NULL != insert_point->next ) ) {
-			insert_point = insert_point->next;
-		}
-		ee_new->next = NULL;
-		insert_point->next = ee_new;
-	}
-	r_u->num_records++;
-	r_u->num_bytes_in_resp += ee_new->record.length;
-
-	return True;
-}
-
-/********************************************************************
  _eventlog_OpenEventLogW
  ********************************************************************/
 
