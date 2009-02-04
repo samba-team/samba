@@ -173,7 +173,8 @@ setup:
 
 S4_LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)="$(builddir)/bin/shared"
 
-SELFTEST4 = $(S4_LD_LIBPATH_OVERRIDE) EXEEXT="4" $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
+SELFTEST4 = $(S4_LD_LIBPATH_OVERRIDE) EXEEXT="4" PYTHON="$(PYTHON)" PERL="$(PERL)" \
+    $(PERL) $(selftestdir)/selftest.pl --prefix=st4 \
     --builddir=$(builddir) --srcdir=$(samba4srcdir) \
     --exeext=4 \
     --expected-failures=$(samba4srcdir)/selftest/knownfail \
