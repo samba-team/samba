@@ -853,6 +853,11 @@ hx509_cms_verify_signed(hx509_context context,
 				 _hx509_verify_get_time(ctx), &cert,
 				 HX509_QUERY_KU_DIGITALSIGNATURE);
 	if (ret) {
+	    /**
+	     * If HX509_CMS_VS_NO_KU_CHECK is set, allow more liberal
+	     * search for matching certificates by not considering
+	     * KeyUsage bits on the certificates.
+	     */
 	    if ((flags & HX509_CMS_VS_NO_KU_CHECK) == 0)
 		continue;
 
@@ -962,6 +967,14 @@ hx509_cms_verify_signed(hx509_context context,
 	    match_oid = oid_id_pkcs7_data();
 	}
 
+	/**
+	 * If HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH, allow
+	 * encapContentInfo mismatch with the oid in signedAttributes
+	 * (or if no signedAttributes where use, pkcs7-data oid).
+	 * This is only needed to work with broken CMS implementations
+	 * that doesn't follow CMS signedAttributes rules.
+	 */
+
 	if (der_heim_oid_cmp(match_oid, &sd.encapContentInfo.eContentType) &&
 	    (flags & HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH) == 0) {
 	    ret = HX509_CMS_DATA_OID_MISMATCH;
@@ -987,9 +1000,16 @@ hx509_cms_verify_signed(hx509_context context,
 	if (ret)
 	    goto next_sigature;
 
-	ret = hx509_verify_path(context, ctx, cert, certs);
-	if (ret)
-	    goto next_sigature;
+	/** 
+	 * If HX509_CMS_VS_NO_VALIDATE flags is set, do not verify the
+	 * signing certificates and leave that up to the caller.
+	 */
+
+	if ((flags & HX509_CMS_VS_NO_VALIDATE) == 0) {
+	    ret = hx509_verify_path(context, ctx, cert, certs);
+	    if (ret)
+		goto next_sigature;
+	}
 
 	ret = hx509_certs_add(context, *signer_certs, cert);
 	if (ret)
@@ -1002,7 +1022,18 @@ hx509_cms_verify_signed(hx509_context context,
 	    hx509_cert_free(cert);
 	cert = NULL;
     }
-    if (found_valid_sig == 0) {
+    /**
+     * If HX509_CMS_VS_ALLOW_ZERO_SIGNER is set, allow empty
+     * SignerInfo (no signatures). If SignedData have no signatures,
+     * the function will return 0 with signer_certs set to NULL. Zero
+     * signers is allowed by the standard, but since its only useful
+     * in corner cases, it make into a flag that the caller have to
+     * turn on.
+     */
+    if (sd.signerInfos.len == 0 && (flags & HX509_CMS_VS_ALLOW_ZERO_SIGNER)) {
+	if (*signer_certs)
+	    hx509_certs_free(signer_certs);
+    } else if (found_valid_sig == 0) {
 	if (ret == 0) {
 	    ret = HX509_CMS_SIGNER_NOT_FOUND;
 	    hx509_set_error_string(context, 0, ret,
