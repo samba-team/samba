@@ -5614,7 +5614,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
-		if (SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) == -1) {
+		int ret = -1;
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+		}
+		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
@@ -5718,6 +5724,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	struct smb_Dir *dir_hnd = NULL;
 	const char *dname;
 	long offset = 0;
+	bool posix_pathnames = lp_posix_pathnames();
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
@@ -5829,19 +5836,30 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, directory, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, directory, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, directory, &sbuf1);
+		}
 
 		status = S_ISDIR(sbuf1.st_mode) ?
 			open_directory(conn, req, directory, &sbuf1,
-				       access_mask,
-				       FILE_SHARE_READ|FILE_SHARE_WRITE,
-				       FILE_OPEN, 0, 0, NULL,
-				       &fsp)
+					access_mask,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0,
+					NULL,
+					&fsp)
 			: open_file_ntcreate(conn, req, directory, &sbuf1,
-					     access_mask,
-					     FILE_SHARE_READ|FILE_SHARE_WRITE,
-					     FILE_OPEN, 0, 0, 0, NULL,
-					     &fsp);
+					access_mask,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0,
+					0,
+					NULL,
+					&fsp);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
@@ -5933,19 +5951,30 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, fname, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, fname, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, fname, &sbuf1);
+		}
 
 		status = S_ISDIR(sbuf1.st_mode) ?
 			open_directory(conn, req, fname, &sbuf1,
-				       access_mask,
-				       FILE_SHARE_READ|FILE_SHARE_WRITE,
-				       FILE_OPEN, 0, 0, NULL,
-				       &fsp)
+					access_mask,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0,
+					NULL,
+					&fsp)
 			: open_file_ntcreate(conn, req, fname, &sbuf1,
-					     access_mask,
-					     FILE_SHARE_READ|FILE_SHARE_WRITE,
-					     FILE_OPEN, 0, 0, 0, NULL,
-					     &fsp);
+					access_mask,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					FILE_OPEN,
+					0,
+					posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0,
+					0,
+					NULL,
+					&fsp);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: open_file_ntcreate "
@@ -7123,7 +7152,14 @@ void reply_setattrE(struct smb_request *req)
 			return;
 		}
 	} else {
-		if (SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf) == -1) {
+		int ret = -1;
+
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf);
+		}
+		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
 			END_PROFILE(SMBsetattrE);
