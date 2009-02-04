@@ -1220,11 +1220,12 @@ static void np_write_done(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
-	NTSTATUS status;
+	int err;
+	ssize_t ret;
 
-	status = sendall_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	ret = sendall_recv(subreq, &err);
+	if (ret < 0) {
+		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 	async_req_done(req);

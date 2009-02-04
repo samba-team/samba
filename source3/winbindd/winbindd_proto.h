@@ -67,27 +67,6 @@ bool winbindd_setup_sig_term_handler(bool parent);
 bool winbindd_setup_sig_hup_handler(const char *lfile);
 int main(int argc, char **argv, char **envp);
 
-/* The following definitions come from winbindd/winbindd_reqtrans.c  */
-
-struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
-				   int fd, size_t max_extra_data);
-NTSTATUS wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-			  struct winbindd_request **preq);
-struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd,
-				    struct winbindd_request *wb_req);
-NTSTATUS wb_req_write_recv(struct async_req *req);
-
-struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd);
-NTSTATUS wb_resp_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-			   struct winbindd_response **presp);
-struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				     struct event_context *ev, int fd,
-				     struct winbindd_response *wb_resp);
-NTSTATUS wb_resp_write_recv(struct async_req *req);
-
 /* The following definitions come from winbindd/winbindd_ads.c  */
 
 

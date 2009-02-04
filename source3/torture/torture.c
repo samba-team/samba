@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "wbc_async.h"
 
 extern char *optarg;
 extern int optind;
@@ -5497,14 +5498,14 @@ static bool run_local_memcache(int dummy)
 
 static void wbclient_done(struct async_req *req)
 {
-	NTSTATUS status;
+	wbcErr wbc_err;
 	struct winbindd_response *wb_resp;
 	int *i = (int *)req->async.priv;
 
-	status = wb_trans_recv(req, req, &wb_resp);
+	wbc_err = wb_trans_recv(req, req, &wb_resp);
 	TALLOC_FREE(req);
 	*i += 1;
-	d_printf("wb_trans_recv %d returned %s\n", *i, nt_errstr(status));
+	d_printf("wb_trans_recv %d returned %s\n", *i, wbcErrorString(wbc_err));
 }
 
 static bool run_local_wbclient(int dummy)
