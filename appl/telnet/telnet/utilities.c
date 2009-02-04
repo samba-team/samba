@@ -248,6 +248,18 @@ optionstatus(void)
 
 }
 
+static void __attribute__((format (printf, 3, 4)))
+qprintf(int quote, FILE *f, const char *fmt, ...)
+    
+{
+    va_list va;
+    if (quote)
+	fprintf(f, "\" ");
+    va_start(va, fmt);
+    vfprintf(f, fmt, va);
+    va_end(va);
+}
+
 void
 printsub(int direction, unsigned char *pointer, size_t length)
 {
@@ -728,57 +740,44 @@ printsub(int direction, unsigned char *pointer, size_t length)
 		fprintf(NetTrace, "INFO ");
 	    env_common:
 		{
-		    int noquote = 2;
+		    int quote = 0;
 		    for (i = 2; i < length; i++ ) {
 			switch (pointer[i]) {
-			case NEW_ENV_VALUE:
-#ifdef OLD_ENVIRON
-		     /*	case NEW_ENV_OVAR: */
-			    if (pointer[0] == TELOPT_OLD_ENVIRON) {
-				    fprintf(NetTrace, "\" VAR " + noquote);
-			    } else
-#endif /* OLD_ENVIRON */
-				fprintf(NetTrace, "\" VALUE " + noquote);
-			    noquote = 2;
+			case NEW_ENV_VAR:
+			    qprintf(quote, NetTrace, "VAR ");
+			    quote = 0;
 			    break;
 
-			case NEW_ENV_VAR:
-#ifdef OLD_ENVIRON
-		     /* case OLD_ENV_VALUE: */
-			    if (pointer[0] == TELOPT_OLD_ENVIRON) {
-				    fprintf(NetTrace, "\" VALUE " + noquote);
-			    } else
-#endif /* OLD_ENVIRON */
-				fprintf(NetTrace, "\" VAR " + noquote);
-			    noquote = 2;
+			case NEW_ENV_VALUE:
+			    qprintf(quote, NetTrace, "VALUE");
+			    quote = 0;
 			    break;
 
 			case ENV_ESC:
-			    fprintf(NetTrace, "\" ESC " + noquote);
-			    noquote = 2;
+			    qprintf(quote, NetTrace, "ESC ");
+			    quote = 0;
 			    break;
 
 			case ENV_USERVAR:
-			    fprintf(NetTrace, "\" USERVAR " + noquote);
-			    noquote = 2;
+			    qprintf(quote, NetTrace, "USERVAR ");
+			    quote = 0;
 			    break;
 
 			default:
 			    if (isprint(pointer[i]) && pointer[i] != '"') {
-				if (noquote) {
+				if (!quote) {
 				    putc('"', NetTrace);
-				    noquote = 0;
+				    quote = 1;
 				}
 				putc(pointer[i], NetTrace);
 			    } else {
-				fprintf(NetTrace, "\" %03o " + noquote,
-							pointer[i]);
-				noquote = 2;
+				qprintf(quote, NetTrace, "%03o ", pointer[i]);
+				quote = 0;
 			    }
 			    break;
 			}
 		    }
-		    if (!noquote)
+		    if (quote)
 			putc('"', NetTrace);
 		    break;
 		}
