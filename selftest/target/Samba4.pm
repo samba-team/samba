@@ -87,17 +87,17 @@ sub slapd_stop($$)
 sub check_or_start($$$) 
 {
 	my ($self, $env_vars, $max_time) = @_;
-	return 0 if ( -p $env_vars->{SMBD_TEST_FIFO});
+	return 0 if ( -p $env_vars->{SAMBA_TEST_FIFO});
 
-	unlink($env_vars->{SMBD_TEST_FIFO});
-	POSIX::mkfifo($env_vars->{SMBD_TEST_FIFO}, 0700);
-	unlink($env_vars->{SMBD_TEST_LOG});
+	unlink($env_vars->{SAMBA_TEST_FIFO});
+	POSIX::mkfifo($env_vars->{SAMBA_TEST_FIFO}, 0700);
+	unlink($env_vars->{SAMBA_TEST_LOG});
 	
-	print "STARTING SMBD... ";
+	print "STARTING SAMBA... ";
 	my $pid = fork();
 	if ($pid == 0) {
-		open STDIN, $env_vars->{SMBD_TEST_FIFO};
-		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
+		open STDIN, $env_vars->{SAMBA_TEST_FIFO};
+		open STDOUT, ">$env_vars->{SAMBA_TEST_LOG}";
 		open STDERR, '>&STDOUT';
 		
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
@@ -112,7 +112,7 @@ sub check_or_start($$$)
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
-		# Start slapd before smbd, but with the fifo on stdin
+		# Start slapd before samba, but with the fifo on stdin
 		if (defined($self->{ldap})) {
 		    $self->slapd_start($env_vars) or 
 			die("couldn't start slapd (2nd time)");
@@ -131,7 +131,7 @@ sub check_or_start($$$)
 			print "Unable to start $samba: $ret: $!\n";
 			exit 1;
 		}
-		unlink($env_vars->{SMBD_TEST_FIFO});
+		unlink($env_vars->{SAMBA_TEST_FIFO});
 		my $exit = $? >> 8;
 		if ( $ret == 0 ) {
 			print "$samba exits with status $exit\n";
@@ -145,7 +145,7 @@ sub check_or_start($$$)
 	}
 	print "DONE\n";
 
-	open(DATA, ">$env_vars->{SMBD_TEST_FIFO}");
+	open(DATA, ">$env_vars->{SAMBA_TEST_FIFO}");
 
 	return $pid;
 }
@@ -760,9 +760,9 @@ nogroup:x:65534:nobody
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface,
 		NSS_WRAPPER_PASSWD => $nsswrap_passwd,
 		NSS_WRAPPER_GROUP => $nsswrap_group,
-		SMBD_TEST_FIFO => "$prefix/smbd_test.fifo",
-		SMBD_TEST_LOG => "$prefix/smbd_test.log",
-		SMBD_TEST_LOG_POS => 0,
+		SAMBA_TEST_FIFO => "$prefix/samba_test.fifo",
+		SAMBA_TEST_LOG => "$prefix/samba_test.log",
+		SAMBA_TEST_LOG_POS => 0,
 	};
 
 	if (defined($self->{ldap})) {
@@ -889,16 +889,16 @@ sub teardown_env($$)
 sub getlog_env($$)
 {
 	my ($self, $envvars) = @_;
-	my $title = "SMBD LOG of: $envvars->{NETBIOSNAME}\n";
+	my $title = "SAMBA LOG of: $envvars->{NETBIOSNAME}\n";
 	my $out = $title;
 
-	open(LOG, "<$envvars->{SMBD_TEST_LOG}");
+	open(LOG, "<$envvars->{SAMBA_TEST_LOG}");
 
-	seek(LOG, $envvars->{SMBD_TEST_LOG_POS}, SEEK_SET);
+	seek(LOG, $envvars->{SAMBA_TEST_LOG_POS}, SEEK_SET);
 	while (<LOG>) {
 		$out .= $_;
 	}
-	$envvars->{SMBD_TEST_LOG_POS} = tell(LOG);
+	$envvars->{SAMBA_TEST_LOG_POS} = tell(LOG);
 	close(LOG);
 
 	return "" if $out eq $title;
@@ -910,7 +910,7 @@ sub check_env($$)
 {
 	my ($self, $envvars) = @_;
 
-	return 1 if (-p $envvars->{SMBD_TEST_FIFO});
+	return 1 if (-p $envvars->{SAMBA_TEST_FIFO});
 
 	print $self->getlog_env($envvars);
 
