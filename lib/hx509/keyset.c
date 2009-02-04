@@ -489,6 +489,65 @@ hx509_certs_find(hx509_context context,
     return 0;
 }
 
+/**
+ * Filter certificate matching the query.
+ *
+ * @param context a hx509 context.
+ * @param certs certificate store to search.
+ * @param q query allocated with @ref hx509_query functions.
+ * @param r the certificate store to add
+ *
+ * @return Returns an hx509 error code.
+ *
+ * @ingroup hx509_keyset
+ */
+
+int
+hx509_certs_filter(hx509_context context,
+		   hx509_certs certs,
+		   const hx509_query *q,
+		   hx509_certs result)
+{
+    hx509_cursor cursor;
+    hx509_cert c;
+    int ret, found = 0;
+
+    _hx509_query_statistic(context, 0, q);
+
+    ret = hx509_certs_start_seq(context, certs, &cursor);
+    if (ret)
+	return ret;
+
+    c = NULL;
+    while (1) {
+	ret = hx509_certs_next_cert(context, certs, cursor, &c);
+	if (ret)
+	    break;
+	if (c == NULL)
+	    break;
+	if (_hx509_query_match_cert(context, q, c)) {
+	    hx509_certs_add(context, result, c);
+	    found = 1;
+	}
+	hx509_cert_free(c);
+    }
+
+    hx509_certs_end_seq(context, certs, cursor);
+    if (ret)
+	return ret;
+    /**
+     * Return HX509_CERT_NOT_FOUND if no certificate in certs matched
+     * the query.
+     */
+    if (!found) {
+	hx509_clear_error_string(context);
+	return HX509_CERT_NOT_FOUND;
+    }
+
+    return 0;
+}
+
+
 static int
 certs_merge_func(hx509_context context, void *ctx, hx509_cert c)
 {
