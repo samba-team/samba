@@ -854,8 +854,8 @@ send_pac_p(krb5_context context, KDC_REQ *req)
     return TRUE;
 }
 
-static krb5_boolean
-is_anonymous(krb5_context context, krb5_principal principal)
+krb5_boolean
+_kdc_is_anonymous(krb5_context context, krb5_principal principal)
 {
     if (principal->name.name_type != KRB5_NT_WELLKNOWN ||
 	principal->name.name_string.len != 2 ||
@@ -964,7 +964,7 @@ _kdc_as_rep(krb5_context context,
      *
      */
 
-    if (is_anonymous(context, client_princ)) {
+    if (_kdc_is_anonymous(context, client_princ)) {
 	if (!b->kdc_options.request_anonymous) {
 	    kdc_log(context, config, 0, "Anonymous ticket w/o anonymous flag");
 	    ret = KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN;
