@@ -4378,7 +4378,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 {
 	int ret;
 	bool r;
-	ENUM_HND hnd;
 	uint32 i;
 	FILE *f;
 
@@ -4410,8 +4409,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 
 	for (i=0; i<num_tokens; i++)
 		collect_alias_memberships(&tokens[i].token);
-
-	init_enum_hnd(&hnd, 0);
 
 	share_list.num_shares = 0;
 	share_list.shares = NULL;
