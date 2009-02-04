@@ -499,7 +499,8 @@ hx509_certs_find(hx509_context context,
  * @param context a hx509 context.
  * @param certs certificate store to search.
  * @param q query allocated with @ref hx509_query functions.
- * @param r the certificate store to add
+ * @param result the filtered certificate store, caller must free with
+ *        hx509_certs_free().
  *
  * @return Returns an hx509 error code.
  *
