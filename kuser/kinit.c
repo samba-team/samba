@@ -443,10 +443,8 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
     if(proxiable_flag != -1)
 	krb5_get_init_creds_opt_set_proxiable (opt, proxiable_flag);
-    if(anonymous_flag) {
+    if(anonymous_flag)
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
-	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
-    }
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt,
 						pac_flag ? TRUE : FALSE);
@@ -776,14 +774,30 @@ main (int argc, char **argv)
     if (canonicalize_flag || enterprise_flag)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
-    if (argv[0]) {
-	ret = krb5_parse_name_flags (context, argv[0], parseflags, &principal);
+    if (anonymous_flag) {
+	krb5_realm realm = NULL;
+
+	if (argv[0])
+	    realm = argv[0];
+
+	ret = krb5_make_principal(context, &principal, realm,
+				   KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, 
+				   NULL);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
+	    krb5_err(context, 1, ret, "krb5_build_principal");
+	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
+
     } else {
-	ret = krb5_get_default_principal (context, &principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+	if (argv[0]) {
+	    ret = krb5_parse_name_flags (context, argv[0], parseflags,
+					 &principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_parse_name");
+	} else {
+	    ret = krb5_get_default_principal (context, &principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_get_default_principal");
+	}
     }
 
     if(fcache_version)
