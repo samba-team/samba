@@ -553,6 +553,11 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
+	/* Remove the oplock before potentially deleting the file. */
+	if(fsp->oplock_type) {
+		release_file_oplock(fsp);
+	}
+
 	/* If this is an old DOS or FCB open and we have multiple opens on
 	   the same handle we only have one share mode. Ensure we only remove
 	   the share mode on the last close. */
@@ -560,10 +565,6 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	if (fsp->fh->ref_count == 1) {
 		/* Should we return on error here... ? */
 		saved_status3 = close_remove_share_mode(fsp, close_type);
-	}
-
-	if(fsp->oplock_type) {
-		release_file_oplock(fsp);
 	}
 
 	locking_close_file(smbd_messaging_context(), fsp);
