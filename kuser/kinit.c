@@ -33,7 +33,13 @@
 
 #include "kuser_locl.h"
 
+#ifndef HEIMDAL_SMALLER
 #include "krb5-v4compat.h"
+#endif
+
+struct krb5_dh_moduli;
+struct AlgorithmIdentifier;
+#include <krb5-private.h>
 
 #ifndef NO_NTLM
 #include "heimntlm.h"
@@ -781,9 +787,8 @@ main (int argc, char **argv)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
     if (pk_enterprise_flag) {
-
-	ret = krb5_pk_enterprise_cert(context, pk_user_id,
-				      argv[0], &principal);
+	ret = _krb5_pk_enterprise_cert(context, pk_user_id,
+				       argv[0], &principal);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
 
