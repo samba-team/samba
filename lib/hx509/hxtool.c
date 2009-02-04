@@ -334,8 +334,6 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = hx509_certs_init(context, "MEMORY:signer-certs", 0, NULL, &signer);
-    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
     if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-pool", 0, NULL, &pool);
@@ -371,7 +369,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->signer_string)
 	hx509_query_match_friendly_name(q, opt->signer_string);
 
-    ret = hx509_certs_filter(context, store, q, signer);
+    ret = hx509_certs_filter(context, store, q, &signer);
     hx509_query_free(context, q);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_certs_find");
