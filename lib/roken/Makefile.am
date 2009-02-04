@@ -11,6 +11,10 @@ lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 19:0:1
 libroken_la_CPPFLAGS = -DBUILD_ROKEN_LIB
 
+if versionscript
+libroken_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
+endif
+
 AM_CPPFLAGS += $(libroken_la_CPPFLAGS)
 
 noinst_PROGRAMS = make-roken snprintf-test resolve-test rkpty
