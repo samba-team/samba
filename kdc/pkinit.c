@@ -1421,6 +1421,10 @@ _kdc_pk_check_client(krb5_context context,
     int i;
 
     if (client_params->cert == NULL) {
+
+	if (!_kdc_is_anonymous(context, client->entry.principal))
+	    return KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+
 	*subject_name = strdup("anonymous client client");
 	if (*subject_name == NULL)
 	    return ENOMEM;
@@ -1650,6 +1654,7 @@ _kdc_pk_initialize(krb5_context context,
 
     ret = _krb5_pk_load_id(context,
 			   &kdc_identity,
+			   0,
 			   user_id,
 			   anchors,
 			   pool,
