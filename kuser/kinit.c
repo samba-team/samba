@@ -310,7 +310,7 @@ renew_validate(krb5_context context,
     else if (out)
 	flags.b.proxiable 	  = out->flags.b.proxiable;
 
-    if (anonymous_flag != -1)
+    if (anonymous_flag)
 	flags.b.request_anonymous = anonymous_flag;
     if(life)
 	in.times.endtime = time(NULL) + life;
@@ -443,21 +443,24 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_forwardable (opt, forwardable_flag);
     if(proxiable_flag != -1)
 	krb5_get_init_creds_opt_set_proxiable (opt, proxiable_flag);
-    if(anonymous_flag != -1)
+    if(anonymous_flag) {
 	krb5_get_init_creds_opt_set_anonymous (opt, anonymous_flag);
+	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
+    }
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_pac_request(context, opt,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
-    if (pk_user_id) {
+    if (pk_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
 						 pk_user_id,
 						 pk_x509_anchors,
 						 NULL,
 						 NULL,
-						 pk_use_enckey ? 2 : 0,
+						 pk_use_enckey ? 2 : 0 |
+						 anonymous_flag ? 4 : 0,
 						 krb5_prompter_posix,
 						 NULL,
 						 passwd);
@@ -525,7 +528,7 @@ get_new_tickets(krb5_context context,
 					  server_str,
 					  opt);
 	krb5_kt_close(context, kt);
-    } else if (pk_user_id) {
+    } else if (pk_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_password (context,
 					    &cred,
 					    principal,
