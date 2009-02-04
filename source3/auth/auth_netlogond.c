@@ -236,8 +236,6 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		goto done;
 	}
 
-	TALLOC_FREE(auth);
-
 	plaintext_machinepw = mymachinepw(talloc_tos());
 	if (plaintext_machinepw == NULL) {
 		status = NT_STATUS_NO_MEMORY;
