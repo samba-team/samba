@@ -61,6 +61,29 @@ ${hxtool} cms-verify-sd \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
+echo "create signed data (no signer)"
+${hxtool} cms-create-sd \
+        --no-signer \
+	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
+	"$srcdir/test_chain.in" \
+	sd.data > /dev/null || exit 1
+
+echo "verify signed data (no signer)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+        --no-signer-allowed \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out > signer.tmp || exit 1
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+grep "unsigned" signer.tmp > /dev/null || exit 1
+
+echo "verify signed data (no signer) (test failure)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	sd.data sd.data.out 2> signer.tmp && exit 1
+grep "No signers where found" signer.tmp > /dev/null || exit 1
+
 echo "create signed data (id-by-name)"
 ${hxtool} cms-create-sd \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
