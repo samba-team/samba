@@ -1221,6 +1221,7 @@ NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
 struct np_read_state {
 	ssize_t nread;
 	bool is_data_outstanding;
+	int fd;
 };
 
 static void np_read_done(struct async_req *subreq);
@@ -1255,6 +1256,7 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			handle->private_data, struct np_proxy_state);
 
 		state->nread = len;
+		state->fd = p->fd;
 
 		subreq = recvall_send(state, ev, p->fd, data, len, 0);
 		if (subreq == NULL) {
@@ -1279,13 +1281,24 @@ static void np_read_done(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
+	struct np_read_state *state = talloc_get_type_abort(
+		req->private_data, struct np_read_state);
 	NTSTATUS status;
+	int available = 0;
 
 	status = recvall_recv(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		async_req_nterror(req, status);
 		return;
 	}
+
+	/*
+	 * We don't look at the ioctl result. We don't really care if there is
+	 * data available, because this is racy anyway.
+	 */
+	ioctl(state->fd, FIONREAD, &available);
+	state->is_data_outstanding = (available > 0);
+
 	async_req_done(req);
 }
 
