@@ -176,7 +176,7 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_certs signers = NULL;
     hx509_certs anchors = NULL;
     hx509_lock lock;
-    int ret;
+    int ret, flags = 0;
 
     size_t sz;
     void *p;
@@ -243,7 +243,10 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 
     hx509_verify_attach_anchors(ctx, anchors);
 
-    ret = hx509_cms_verify_signed(context, ctx, 0, co.data, co.length, sd,
+    if (!opt->signer_allowed_flag)
+	flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
+
+    ret = hx509_cms_verify_signed(context, ctx, flags, co.data, co.length, sd,
 				  store, &type, &c, &signers);
     if (co.data != p)
 	der_free_octet_string(&co);
@@ -257,8 +260,12 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	free(str);
 	der_free_oid(&type);
     }
-    printf("signers:\n");
-    hx509_certs_iter(context, signers, hx509_ci_print_names, stdout);
+    if (signers == NULL) {
+	printf("unsigned\n");
+    } else {
+	printf("signers:\n");
+	hx509_certs_iter(context, signers, hx509_ci_print_names, stdout);
+    }
 
     hx509_verify_destroy_ctx(ctx);
 
@@ -303,6 +310,7 @@ print_signer(hx509_context context, void *ctx, hx509_cert cert)
     hx509_pem_add_header(header, "Signer", signer_name);
 
     free(signer_name);
+    return 0;
 }
 
 int
