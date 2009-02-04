@@ -506,191 +506,229 @@ EOF
 	close(ADMINCERTFILE);
 }
 
-sub provision($$$$$$)
+#
+# provision_raw_prepare() is also used by Samba34.pm!
+#
+sub provision_raw_prepare($$$$$$)
 {
 	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
+	my $ctx;
 
-	my $server_loglevel = 1;
-	my $username = "administrator";
-	my $domain = "SAMBADOMAIN";
-	my $realm = "SAMBA.EXAMPLE.COM";
-	my $dnsname = "samba.example.com";
-	my $basedn = "dc=samba,dc=example,dc=com";
-	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
-	chomp $unix_name;
-	my $unix_uid = $>;
-	my $unix_gids_str = $);
-	my @unix_gids = split(" ", $unix_gids_str);
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
-	my $tmpdir = "$prefix_abs/tmp";
-	my $etcdir = "$prefix_abs/etc";
-	my $piddir = "$prefix_abs/pid";
-	my $conffile = "$etcdir/smb.conf";
-	my $krb5_config = "$etcdir/krb5.conf";
-	my $privatedir = "$prefix_abs/private";
-	my $ncalrpcdir = "$prefix_abs/ncalrpc";
-	my $lockdir = "$prefix_abs/lockdir";
-	my $winbindd_socket_dir = "$prefix_abs/winbindd_socket";
-	my $winbindd_privileged_socket_dir = "$prefix_abs/winbindd_privileged_socket";
-	my $ntp_signd_socket_dir = "$prefix_abs/ntp_signd_socket";
-	my $nsswrap_passwd = "$etcdir/passwd";
-	my $nsswrap_group = "$etcdir/group";
 
-	my $configuration = "--configfile=$conffile";
-	my $ldapdir = "$privatedir/ldap";
+	die ("prefix=''") if $prefix_abs eq "";
+	die ("prefix='/'") if $prefix_abs eq "/";
 
-	my $tlsdir = "$privatedir/tls";
+	(system("rm -rf $prefix_abs/*") == 0) or die("Unable to clean up");
 
-	my $ifaceipv4 = "127.0.0.$swiface";
-	my $interfaces = "$ifaceipv4/8";
+	$ctx->{prefix} = $prefix;
+	$ctx->{prefix_abs} = $prefix_abs;
+	$ctx->{server_role} = $server_role;
+	$ctx->{netbiosname} = $netbiosname;
+	$ctx->{netbiosalias} = $netbiosalias;
+	$ctx->{swiface} = $swiface;
+	$ctx->{password} = $password;
 
-	(system("rm -rf $prefix/*") == 0) or die("Unable to clean up");
-	mkdir($_, 0777) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
-		$tmpdir, "$tmpdir/test1", "$tmpdir/test2");
+	$ctx->{server_loglevel} = 1;
+	$ctx->{username} = "administrator";
+	$ctx->{domain} = "SAMBADOMAIN";
+	$ctx->{realm} = "SAMBA.EXAMPLE.COM";
+	$ctx->{dnsname} = "samba.example.com";
+	$ctx->{basedn} = "dc=samba,dc=example,dc=com";
 
+	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `whoami`);
+	chomp $unix_name;
+	$ctx->{unix_name} = $unix_name;
+	$ctx->{unix_uid} = $>;
+	$ctx->{unix_gids_str} = $);
+	@{$ctx->{unix_gids}} = split(" ", $ctx->{unix_gids_str});
 
-	my $localbasedn = $basedn;
-	$localbasedn = "CN=$netbiosname" if $server_role eq "member server";
+	$ctx->{tmpdir} = "$prefix_abs/tmp";
+	$ctx->{etcdir} = "$prefix_abs/etc";
+	$ctx->{piddir} = "$prefix_abs/pid";
+	$ctx->{smb_conf} = "$ctx->{etcdir}/smb.conf";
+	$ctx->{krb5_conf} = "$ctx->{etcdir}/krb5.conf";
+	$ctx->{privatedir} = "$prefix_abs/private";
+	$ctx->{ncalrpcdir} = "$prefix_abs/ncalrpc";
+	$ctx->{lockdir} = "$prefix_abs/lockdir";
+	$ctx->{winbindd_socket_dir} = "$prefix_abs/winbindd_socket";
+	$ctx->{winbindd_privileged_socket_dir} = "$prefix_abs/winbindd_privileged_socket";
+	$ctx->{ntp_signd_socket_dir} = "$prefix_abs/ntp_signd_socket";
+	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
+	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
 
-	open(CONFFILE, ">$conffile");
+	$ctx->{ldapdir} = "$ctx->{privatedir}/ldap";
+	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
+
+	$ctx->{ipv4} = "127.0.0.$swiface";
+	$ctx->{interfaces} = "$ctx->{ipv4}/8";
+
+	$ctx->{localbasedn} = $ctx->{basedn};
+	$ctx->{localbasedn} = "CN=$netbiosname" if $server_role eq "member server";
+
+	push(@{$ctx->{directories}}, $ctx->{privatedir});
+	push(@{$ctx->{directories}}, $ctx->{etcdir});
+	push(@{$ctx->{directories}}, $ctx->{piddir});
+	push(@{$ctx->{directories}}, $ctx->{ncalrpcdir});
+	push(@{$ctx->{directories}}, $ctx->{lockdir});
+
+	push(@{$ctx->{directories}}, $ctx->{tmpdir});
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test1");
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test2");
+
+	return $ctx;
+}
+
+#
+# provision_raw_run() is also used by Samba34.pm!
+#
+sub provision_raw_run($$)
+{
+	my ($self, $ctx) = @_;
+
+	mkdir($_, 0777) foreach (@{$ctx->{directories}});
+
+	open(CONFFILE, ">$ctx->{smb_conf}")
+		or die("can't open $ctx->{smb_conf}$?");
 	print CONFFILE "
 [global]
-	netbios name = $netbiosname
-	netbios aliases = $netbiosalias
-	workgroup = $domain
-	realm = $realm
-	private dir = $privatedir
-	pid directory = $piddir
-	ncalrpc dir = $ncalrpcdir
-	lock dir = $lockdir
+	netbios name = $ctx->{netbiosname}
+	netbios aliases = $ctx->{netbiosalias}
+	workgroup = $ctx->{domain}
+	realm = $ctx->{realm}
+	private dir = $ctx->{privatedir}
+	pid directory = $ctx->{piddir}
+	ncalrpc dir = $ctx->{ncalrpcdir}
+	lock dir = $ctx->{lockdir}
 	setup directory = $self->{setupdir}
 	modules dir = $self->{bindir}/modules
-	winbindd socket directory = $winbindd_socket_dir
-	winbindd privileged socket directory = $winbindd_privileged_socket_dir
-	ntp signd socket directory = $ntp_signd_socket_dir
-        winbind separator = /
+	winbindd socket directory = $ctx->{winbindd_socket_dir}
+	winbindd privileged socket directory = $ctx->{winbindd_privileged_socket_dir}
+	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
+	winbind separator = /
 	name resolve order = bcast
-	interfaces = $interfaces
-	tls dh params file = $tlsdir/dhparms.pem
+	interfaces = $ctx->{interfaces}
+	tls dh params file = $ctx->{tlsdir}/dhparms.pem
 	panic action = $RealBin/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
-	server role = $server_role
+	server role = $ctx->{server_role}
 	max xmit = 32K
 	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
 #We don't want to pass our self-tests if the PAC code is wrong
 	gensec:require_pac = true
-	log level = $server_loglevel
+	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 
 [tmp]
-	path = $tmpdir
+	path = $ctx->{tmpdir}
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
-	posix:eadb = $lockdir/eadb.tdb
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
 
 [test1]
-	path = $tmpdir/test1
+	path = $ctx->{tmpdir}/test1
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
-	posix:eadb = $lockdir/eadb.tdb
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
 
 [test2]
-	path = $tmpdir/test2
+	path = $ctx->{tmpdir}/test2
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
-	posix:eadb = $lockdir/eadb.tdb
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
 	posix:oplocktimeout = 3
 	posix:writetimeupdatedelay = 500000
 
 [cifs]
 	read only = no
 	ntvfs handler = cifs
-	cifs:server = $netbiosname
+	cifs:server = $ctx->{netbiosname}
 	cifs:share = tmp
 #There is no username specified here, instead the client is expected
 #to log in with kerberos, and the serverwill use delegated credentials.
 
 [simple]
-	path = $tmpdir
+	path = $ctx->{tmpdir}
 	read only = no
 	ntvfs handler = simple
 
 [sysvol]
-	path = $lockdir/sysvol
+	path = $ctx->{lockdir}/sysvol
 	read only = yes
 
 [netlogon]
-	path = $lockdir/sysvol/$dnsname/scripts
+	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
 	read only = no
 
 [cifsposix]
 	copy = simple
-	ntvfs handler = cifsposix   
+	ntvfs handler = cifsposix
 ";
 	close(CONFFILE);
 
-	$self->mk_keyblobs($tlsdir);
+	$self->mk_keyblobs($ctx->{tlsdir});
 
-	open(KRB5CONF, ">$krb5_config");
+	open(KRB5CONF, ">$ctx->{krb5_conf}")
+		or die("can't open $ctx->{krb5_conf}$?");
 	print KRB5CONF "
-#Generated krb5.conf for $realm
+#Generated krb5.conf for $ctx->{realm}
 
 [libdefaults]
- default_realm = $realm
+ default_realm = $ctx->{realm}
  dns_lookup_realm = false
  dns_lookup_kdc = false
  ticket_lifetime = 24h
  forwardable = yes
 
 [realms]
- $realm = {
+ $ctx->{realm} = {
   kdc = 127.0.0.1:88
   admin_server = 127.0.0.1:88
-  default_domain = $dnsname
+  default_domain = $ctx->{dnsname}
  }
- $dnsname = {
+ $ctx->{dnsname} = {
   kdc = 127.0.0.1:88
   admin_server = 127.0.0.1:88
-  default_domain = $dnsname
+  default_domain = $ctx->{dnsname}
  }
- $domain = {
+ $ctx->{domain} = {
   kdc = 127.0.0.1:88
   admin_server = 127.0.0.1:88
-  default_domain = $dnsname
+  default_domain = $ctx->{dnsname}
  }
 
 [appdefaults]
-	pkinit_anchors = FILE:$tlsdir/ca.pem
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
 
 [kdc]
 	enable-pkinit = true
-	pkinit_identity = FILE:$tlsdir/kdc.pem,$tlsdir/key.pem
-	pkinit_anchors = FILE:$tlsdir/ca.pem
+	pkinit_identity = FILE:$ctx->{tlsdir}/kdc.pem,$ctx->{tlsdir}/key.pem
+	pkinit_anchors = FILE:$ctx->{tlsdir}/ca.pem
 
 [domain_realm]
- .$dnsname = $realm
+ .$ctx->{dnsname} = $ctx->{realm}
 ";
 	close(KRB5CONF);
 
-	open(PWD, ">$nsswrap_passwd");
+	open(PWD, ">$ctx->{nsswrap_passwd}");
 	print PWD "
-root:x:0:0:root gecos:$prefix_abs:/bin/false
-$unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
-nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
+root:x:0:0:root gecos:$ctx->{prefix_abs}:/bin/false
+$ctx->{unix_name}:x:$ctx->{unix_uid}:@{$ctx->{unix_gids}}[0]:$ctx->{unix_name} gecos:$ctx->{prefix_abs}:/bin/false
+nobody:x:65534:65533:nobody gecos:$ctx->{prefix_abs}:/bin/false
 ";
 	close(PWD);
 
-	open(GRP, ">$nsswrap_group");
+	open(GRP, ">$ctx->{nsswrap_group}");
 	print GRP "
 root:x:0:
 wheel:x:10:
@@ -700,6 +738,8 @@ nogroup:x:65534:nobody
 ";
 	close(GRP);
 
+	my $configuration = "--configfile=$ctx->{smb_conf}";
+
 #Ensure the config file is valid before we start
 	my $testparm = $self->bindir_path("testparm");
 	if (system("$testparm $configuration -v --suppress-prompt >/dev/null 2>&1") != 0) {
@@ -707,11 +747,11 @@ nogroup:x:65534:nobody
 		die("Failed to create a valid smb.conf configuration $testparm!");
 	}
 
-	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$netbiosname\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
+	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
 
 	my @provision_options = ();
-	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
-	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
+	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
+	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	if (defined($ENV{GDB_PROVISION})) {
 		push (@provision_options, "gdb --args python");
 	}
@@ -723,66 +763,66 @@ nogroup:x:65534:nobody
 	}
 	push (@provision_options, "$self->{setupdir}/provision");
 	push (@provision_options, split(' ', $configuration));
-	push (@provision_options, "--host-name=$netbiosname");
-	push (@provision_options, "--host-ip=$ifaceipv4");
+	push (@provision_options, "--host-name=$ctx->{netbiosname}");
+	push (@provision_options, "--host-ip=$ctx->{ipv4}");
 	push (@provision_options, "--quiet");
-	push (@provision_options, "--domain=$domain");
-	push (@provision_options, "--realm=$realm");
-	push (@provision_options, "--adminpass=$password");
-	push (@provision_options, "--krbtgtpass=krbtgt$password");
-	push (@provision_options, "--machinepass=machine$password");
-	push (@provision_options, "--root=$unix_name");
+	push (@provision_options, "--domain=$ctx->{domain}");
+	push (@provision_options, "--realm=$ctx->{realm}");
+	push (@provision_options, "--adminpass=$ctx->{password}");
+	push (@provision_options, "--krbtgtpass=krbtgt$ctx->{password}");
+	push (@provision_options, "--machinepass=machine$ctx->{password}");
+	push (@provision_options, "--root=$ctx->{unix_name}");
 
-	push (@provision_options, "--server-role=\"$server_role\"");
+	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
 
-	my $ldap_uri= "$ldapdir/ldapi";
+	my $ldap_uri= "$ctx->{ldapdir}/ldapi";
 	$ldap_uri =~ s|/|%2F|g;
 	$ldap_uri = "ldapi://$ldap_uri";
 
 	my $ret = {
-		KRB5_CONFIG => $krb5_config,
-		PIDDIR => $piddir,
-		SERVER => $netbiosname,
-		SERVER_IP => $ifaceipv4,
-		NETBIOSNAME => $netbiosname,
-		NETBIOSALIAS => $netbiosalias,
+		KRB5_CONFIG => $ctx->{krb5_conf},
+		PIDDIR => $ctx->{piddir},
+		SERVER => $ctx->{netbiosname},
+		SERVER_IP => $ctx->{ipv4},
+		NETBIOSNAME => $ctx->{netbiosname},
+		NETBIOSALIAS => $ctx->{netbiosalias},
 		LDAP_URI => $ldap_uri,
-		DOMAIN => $domain,
-		USERNAME => $username,
-		REALM => $realm,
-		PASSWORD => $password,
-		LDAPDIR => $ldapdir,
-		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
-		NCALRPCDIR => $ncalrpcdir,
-		LOCKDIR => $lockdir,
-		SERVERCONFFILE => $conffile,
+		DOMAIN => $ctx->{domain},
+		USERNAME => $ctx->{username},
+		REALM => $ctx->{realm},
+		PASSWORD => $ctx->{password},
+		LDAPDIR => $ctx->{ldapdir},
+		WINBINDD_SOCKET_DIR => $ctx->{winbindd_socket_dir},
+		NCALRPCDIR => $ctx->{ncalrpcdir},
+		LOCKDIR => $ctx->{lockdir},
+		SERVERCONFFILE => $ctx->{smb_conf},
 		CONFIGURATION => $configuration,
-		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface,
-		NSS_WRAPPER_PASSWD => $nsswrap_passwd,
-		NSS_WRAPPER_GROUP => $nsswrap_group,
-		SAMBA_TEST_FIFO => "$prefix/samba_test.fifo",
-		SAMBA_TEST_LOG => "$prefix/samba_test.log",
+		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},
+		NSS_WRAPPER_PASSWD => $ctx->{nsswrap_passwd},
+		NSS_WRAPPER_GROUP => $ctx->{nsswrap_group},
+		SAMBA_TEST_FIFO => "$ctx->{prefix}/samba_test.fifo",
+		SAMBA_TEST_LOG => "$ctx->{prefix}/samba_test.log",
 		SAMBA_TEST_LOG_POS => 0,
 	};
 
 	if (defined($self->{ldap})) {
 
-                push (@provision_options, "--ldap-backend=$ldap_uri");
-	        system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$password --root=$unix_name --realm=$realm --domain=$domain --host-name=$netbiosname --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+	push (@provision_options, "--ldap-backend=$ldap_uri");
+		system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
 
-	        push (@provision_options, "--password=$password");
+		push (@provision_options, "--password=$ctx->{password}");
 
-	        if ($self->{ldap} eq "openldap") {
-	               push (@provision_options, "--username=samba-admin");
-		       ($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ldapdir, $configuration) or die("Unable to create openldap directories");
-		       push (@provision_options, "--ldap-backend-type=openldap");
-	        } elsif ($self->{ldap} eq "fedora-ds") {
-	               push (@provision_options, "--simple-bind-dn=cn=Manager,$localbasedn");
-		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
-		       push (@provision_options, "--ldap-backend-type=fedora-ds");
-                 }
+		if ($self->{ldap} eq "openldap") {
+			push (@provision_options, "--username=samba-admin");
+			($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx->{ldapdir}, $configuration) or die("Unable to create openldap directories");
+			push (@provision_options, "--ldap-backend-type=openldap");
+		} elsif ($self->{ldap} eq "fedora-ds") {
+			push (@provision_options, "--simple-bind-dn=cn=Manager,$ctx->{localbasedn}");
+			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx->{ldapdir}, $configuration) or die("Unable to create fedora ds directories");
+			push (@provision_options, "--ldap-backend-type=fedora-ds");
+		}
 
-		$self->slapd_start($ret) or 
+		$self->slapd_start($ret) or
 			die("couldn't start slapd");
 	}
 
@@ -790,11 +830,24 @@ nogroup:x:65534:nobody
 	(system($provision_cmd) == 0) or die("Unable to provision: \n$provision_cmd\n");
 
 	if (defined($self->{ldap})) {
-		$self->slapd_stop($ret) or 
+		$self->slapd_stop($ret) or
 			die("couldn't stop slapd");
-        }
+	}
 
-	return $ret; 
+	return $ret;
+}
+
+sub provision($$$$$$)
+{
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
+
+	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
+					       $netbiosname, $netbiosalias,
+					       $swiface, $password);
+
+	my $ret = $self->provision_raw_run($ctx);
+
+	return $ret;
 }
 
 sub provision_member($$$)
