@@ -39,6 +39,7 @@
 
 [kdc]
 	enable-digest = true
+	allow-anonymous = true
 	digests_allowed = chap-md5,digest-md5,ntlm-v1,ntlm-v1-session,ntlm-v2,ms-chap-v2
 
 	enable-pkinit = true
