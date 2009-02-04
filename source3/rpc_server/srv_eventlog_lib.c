@@ -967,3 +967,66 @@ NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
+				      const struct eventlog_Record_tdb *t,
+				      struct EVENTLOGRECORD *e)
+{
+	uint32_t i;
+
+	ZERO_STRUCTP(e);
+
+	e->Length		= t->size;
+	e->Reserved		= t->reserved;
+	e->RecordNumber		= t->record_number;
+	e->TimeGenerated	= t->time_generated;
+	e->TimeWritten		= t->time_written;
+	e->EventID		= t->event_id;
+	e->EventType		= t->event_type;
+	e->NumStrings		= t->num_of_strings;
+	e->EventCategory	= t->event_category;
+	e->ReservedFlags	= t->reserved_flags;
+	e->ClosingRecordNumber	= t->closing_record_number;
+
+	e->StringOffset		= t->stringoffset;
+	e->UserSidLength	= t->sid_length;
+	e->UserSidOffset	= t->sid_offset;
+	e->DataLength		= t->data_length;
+	e->DataOffset		= t->data_offset;
+
+	e->SourceName		= talloc_strdup(mem_ctx, t->source_name);
+	NT_STATUS_HAVE_NO_MEMORY(e->SourceName);
+
+	e->Computername		= talloc_strdup(mem_ctx, t->computer_name);
+	NT_STATUS_HAVE_NO_MEMORY(e->Computername);
+
+	if (t->sid_length > 0) {
+		const char *sid_str = NULL;
+		size_t len;
+		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+					   t->sid.data, t->sid.length,
+					   &sid_str, &len, false)) {
+			return NT_STATUS_INVALID_SID;
+		}
+		if (len > 0) {
+			e->UserSid = *string_sid_talloc(mem_ctx, sid_str);
+		}
+	}
+
+	e->Strings		= talloc_array(mem_ctx, const char *, t->num_of_strings);
+	for (i=0; i < t->num_of_strings; i++) {
+		e->Strings[i] = talloc_strdup(e->Strings, t->strings[i]);
+		NT_STATUS_HAVE_NO_MEMORY(e->Strings[i]);
+	}
+
+	e->Data			= (uint8_t *)talloc_memdup(mem_ctx, t->data.data, t->data_length);
+	e->Pad			= talloc_strdup(mem_ctx, "");
+	NT_STATUS_HAVE_NO_MEMORY(e->Pad);
+
+	e->Length2		= t->size;
+
+	return NT_STATUS_OK;
+}
