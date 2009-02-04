@@ -1412,12 +1412,14 @@ _kdc_as_rep(krb5_context context,
 
     rep.pvno = 5;
     rep.msg_type = krb_as_rep;
-    copy_Realm(&client->entry.principal->realm, &rep.crealm);
-    if (f.request_anonymous)
-	_kdc_make_anonymous_principalname (&rep.cname);
-    else
-	_krb5_principal2principalname(&rep.cname,
-				      client->entry.principal);
+
+    ret = copy_Realm(&client->entry.principal->realm, &rep.crealm);
+    if (ret)
+	goto out;
+    ret = _krb5_principal2principalname(&rep.cname, client->entry.principal);
+    if (ret)
+	goto out;
+
     rep.ticket.tkt_vno = 5;
     copy_Realm(&server->entry.principal->realm, &rep.ticket.realm);
     _krb5_principal2principalname(&rep.ticket.sname,
