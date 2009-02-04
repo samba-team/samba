@@ -1058,27 +1058,19 @@ _kdc_as_rep(krb5_context context,
 	    if (ret == 0 && pkp == NULL)
 		goto ts_enc;
 
-	    if (!b->kdc_options.request_anonymous) {
-		ret = _kdc_pk_check_client(context,
-					   config,
-					   client,
-					   pkp,
-					   &client_cert);
-		if (ret) {
-		    e_text = "PKINIT certificate not allowed to "
-			"impersonate principal";
-		    _kdc_pk_free_client_param(context, pkp);
-		    
-		    kdc_log(context, config, 0, "%s", e_text);
-		    pkp = NULL;
-		    goto out;
-		}
-	    } else {
-		client_cert = strdup("anonymous client client");
-		if (client_cert == NULL) {
-		    ret = ENOMEM;
-		    goto out;
-		}
+	    ret = _kdc_pk_check_client(context,
+				       config,
+				       client,
+				       pkp,
+				       &client_cert);
+	    if (ret) {
+		e_text = "PKINIT certificate not allowed to "
+		    "impersonate principal";
+		_kdc_pk_free_client_param(context, pkp);
+		
+		kdc_log(context, config, 0, "%s", e_text);
+		pkp = NULL;
+		goto out;
 	    }
 
 	    found_pa = 1;
