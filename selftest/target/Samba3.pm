@@ -551,11 +551,6 @@ sub wait_for_start($$)
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
 	system($self->binpath("smbclient") ." $envvars->{CONFIGURATION} -L $envvars->{SERVER_IP} -U% -p 139 | head -2");
 
-	print "creating BUILTIN\\Administrators\n";
-	$ENV{WINBINDD_SOCKET_DIR} = $envvars->{WINBINDD_SOCKET_DIR};
-	system($self->binpath("net") ." $envvars->{CONFIGURATION} sam createbuiltingroup Administrators");
-	delete $ENV{WINBINDD_SOCKET_DIR};
-
 	print $self->getlog_env($envvars);
 }
 
