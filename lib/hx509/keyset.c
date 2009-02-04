@@ -510,7 +510,7 @@ int
 hx509_certs_filter(hx509_context context,
 		   hx509_certs certs,
 		   const hx509_query *q,
-		   hx509_certs result)
+		   hx509_certs *result)
 {
     hx509_cursor cursor;
     hx509_cert c;
@@ -518,9 +518,16 @@ hx509_certs_filter(hx509_context context,
 
     _hx509_query_statistic(context, 0, q);
 
-    ret = hx509_certs_start_seq(context, certs, &cursor);
+    ret = hx509_certs_init(context, "MEMORY:filter-certs", 0,
+			   NULL, result);
     if (ret)
 	return ret;
+
+    ret = hx509_certs_start_seq(context, certs, &cursor);
+    if (ret) {
+	hx509_certs_free(result);
+	return ret;
+    }
 
     c = NULL;
     while (1) {
@@ -530,20 +537,24 @@ hx509_certs_filter(hx509_context context,
 	if (c == NULL)
 	    break;
 	if (_hx509_query_match_cert(context, q, c)) {
-	    hx509_certs_add(context, result, c);
+	    hx509_certs_add(context, *result, c);
 	    found = 1;
 	}
 	hx509_cert_free(c);
     }
 
     hx509_certs_end_seq(context, certs, cursor);
-    if (ret)
+    if (ret) {
+	hx509_certs_free(result);
 	return ret;
+    }
+
     /**
      * Return HX509_CERT_NOT_FOUND if no certificate in certs matched
      * the query.
      */
     if (!found) {
+	hx509_certs_free(result);
 	hx509_clear_error_string(context);
 	return HX509_CERT_NOT_FOUND;
     }
