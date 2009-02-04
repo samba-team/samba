@@ -78,13 +78,12 @@ static void pvfs_wait_dispatch(struct messaging_context *msg,
 	}
 
 	pwait->reason = PVFS_WAIT_EVENT;
-	req = pwait->req;
 
 	/* the extra reference here is to ensure that the req
 	   structure is not destroyed when the async request reply is
 	   sent, which would cause problems with the other ntvfs
 	   modules above us */
-	talloc_reference(msg, req);
+	req = talloc_reference(msg, pwait->req);
 	ntvfs_async_setup(pwait->req, pwait);
 	talloc_unlink(msg, req);
 }
