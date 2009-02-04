@@ -603,7 +603,7 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 #define KRB5_TGS_NAME_SIZE (6)
 #define KRB5_TGS_NAME ("krbtgt")
-#define KRB5_WELLKNOWN_NAME ("ANONYMOUS")
+#define KRB5_WELLKNOWN_NAME ("WELLKNOWN")
 #define KRB5_ANON_NAME ("ANONYMOUS")
 #define KRB5_DIGEST_NAME ("digest")
 
