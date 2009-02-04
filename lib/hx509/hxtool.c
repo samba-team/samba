@@ -283,6 +283,28 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     return 0;
 }
 
+static int
+print_signer(hx509_context context, void *ctx, hx509_cert cert)
+{
+    hx509_pem_header **header = ctx;
+    char *signer_name = NULL;
+    hx509_name name;
+    int ret;
+    
+    ret = hx509_cert_get_subject(cert, &name);
+    if (ret)
+	errx(1, "hx509_cert_get_subject");
+    
+    ret = hx509_name_to_string(name, &signer_name);
+    hx509_name_free(&name);
+    if (ret)
+	errx(1, "hx509_name_to_string");
+
+    hx509_pem_add_header(header, "Signer", signer_name);
+
+    free(signer_name);
+}
+
 int
 cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 {
@@ -291,12 +313,10 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     heim_octet_string o;
     hx509_query *q;
     hx509_lock lock;
-    hx509_certs store, pool, anchors;
-    hx509_cert cert;
+    hx509_certs store, pool, anchors, signer;
     size_t sz;
     void *p;
     int ret, flags = 0;
-    char *signer_name = NULL;
 
     memset(&contentType, 0, sizeof(contentType));
 
@@ -306,6 +326,8 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
+    ret = hx509_certs_init(context, "MEMORY:signer-certs", 0, NULL, &signer);
+    if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-store", 0, NULL, &store);
     if (ret) hx509_err(context, 1, ret, "hx509_certs_init: MEMORY");
     ret = hx509_certs_init(context, "MEMORY:cert-pool", 0, NULL, &pool);
@@ -326,6 +348,10 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	flags |= HX509_CMS_SIGATURE_DETACHED;
     if (opt->id_by_name_flag)
 	flags |= HX509_CMS_SIGATURE_ID_NAME;
+    if (!opt->signer_flag) {
+	flags |= HX509_CMS_SIGATURE_NO_SIGNER;
+
+    }
 
     ret = hx509_query_alloc(context, &q);
     if (ret)
@@ -337,7 +363,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
     if (opt->signer_string)
 	hx509_query_match_friendly_name(q, opt->signer_string);
 
-    ret = hx509_certs_find(context, store, q, &cert);
+    ret = hx509_certs_filter(context, store, q, signer);
     hx509_query_free(context, q);
     if (ret)
 	hx509_err(context, 1, ret, "hx509_certs_find");
@@ -351,37 +377,22 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 
     parse_oid(opt->content_type_string, oid_id_pkcs7_data(), &contentType);
 
-    ret = hx509_cms_create_signed_1(context,
-				    flags,
-				    &contentType,
-				    p,
-				    sz,
-				    NULL,
-				    cert,
-				    peer,
-				    anchors,
-				    pool,
-				    &o);
+    ret = hx509_cms_create_signed(context,
+				  flags,
+				  &contentType,
+				  p,
+				  sz,
+				  NULL,
+				  signer,
+				  peer,
+				  anchors,
+				  pool,
+				  &o);
     if (ret)
 	errx(1, "hx509_cms_create_signed: %d", ret);
 
-    {
-	hx509_name name;
-	
-	ret = hx509_cert_get_subject(cert, &name);
-	if (ret)
-	    errx(1, "hx509_cert_get_subject");
-	
-	ret = hx509_name_to_string(name, &signer_name);
-	hx509_name_free(&name);
-	if (ret)
-	    errx(1, "hx509_name_to_string");
-    }
-
-
     hx509_certs_free(&anchors);
     hx509_certs_free(&pool);
-    hx509_cert_free(cert);
     hx509_certs_free(&store);
     rk_xfree(p);
     hx509_lock_free(lock);
@@ -406,7 +417,9 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	hx509_pem_add_header(&header, "Content-disposition",
 			     opt->detached_signature_flag ?
 			     "detached" : "inline");
-	hx509_pem_add_header(&header, "Signer", signer_name);
+	ret = hx509_certs_iter(context, signer, print_signer, header);
+	if (ret)
+	    hx509_err(context, 1, ret, "print signer");
 
 	f = fopen(argv[1], "w");
 	if (f == NULL)
@@ -425,7 +438,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	    errx(1, "hx509_write_file: %d", ret);
     }
 
-    free(signer_name);
+    hx509_certs_free(&signer);
     free(o.data);
 
     return 0;
