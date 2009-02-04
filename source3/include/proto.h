@@ -6238,11 +6238,6 @@ bool spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_st
 bool make_monitorui_buf( RPC_BUFFER *buf, const char *dllname );
 bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 
-/* The following definitions come from rpc_server/srv_eventlog.c  */
-
-NTSTATUS rpc_eventlog2_init(void);
-void eventlog2_get_pipe_fns(struct api_struct **fns, int *n_fns);
-
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
