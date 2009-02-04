@@ -144,7 +144,8 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       size_t num_sids,
 				       const DOM_SID *sids,
-				       int *numgroups, DOM_GID **pgids)
+				       int *numgroups,
+				       struct samr_RidWithAttribute **pgids)
 {
 	int i;
 
@@ -152,13 +153,14 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 	*pgids = NULL;
 
 	for (i=0; i<num_sids; i++) {
-		DOM_GID gid;
-		if (!sid_peek_check_rid(domain_sid, &sids[i], &gid.g_rid)) {
+		struct samr_RidWithAttribute gid;
+		if (!sid_peek_check_rid(domain_sid, &sids[i], &gid.rid)) {
 			continue;
 		}
-		gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+		gid.attributes = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
 			    SE_GROUP_ENABLED);
-		ADD_TO_ARRAY(mem_ctx, DOM_GID, gid, pgids, numgroups);
+		ADD_TO_ARRAY(mem_ctx, struct samr_RidWithAttribute,
+			     gid, pgids, numgroups);
 		if (*pgids == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -177,7 +179,7 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 				struct netr_SamInfo3 *sam3)
 {
 	struct samu *sampw;
-	DOM_GID *gids = NULL;
+	struct samr_RidWithAttribute *gids = NULL;
 	const DOM_SID *user_sid = NULL;
 	const DOM_SID *group_sid = NULL;
 	DOM_SID domain_sid;
@@ -277,8 +279,8 @@ NTSTATUS serverinfo_to_SamInfo3(struct auth_serversupplied_info *server_info,
 	}
 
 	for (i=0; i < groups.count; i++) {
-		groups.rids[i].rid = gids[i].g_rid;
-		groups.rids[i].attributes = gids[i].attr;
+		groups.rids[i].rid = gids[i].rid;
+		groups.rids[i].attributes = gids[i].attributes;
 	}
 
 	unix_to_nt_time(&last_logon, pdb_get_logon_time(sampw));

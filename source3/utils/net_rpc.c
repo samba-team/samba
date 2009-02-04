@@ -1393,7 +1393,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 	struct samr_RidTypeArray *rids = NULL;
 	/* char **names; */
 	int i;
-	/* DOM_GID *user_gids; */
+	/* struct samr_RidWithAttribute *user_gids; */
 
 	struct samr_Ids group_rids, name_types;
 	struct lsa_String lsa_acct_name;
