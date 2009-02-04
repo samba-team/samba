@@ -134,8 +134,6 @@ static char *mymachinepw(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	pwd[sizeof(pwd)-1] = '\0';
-
 	nread = read(fd, pwd, sizeof(pwd)-1);
 	close(fd);
 
@@ -144,7 +142,7 @@ static char *mymachinepw(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	DEBUG(0, ("pwd: %d [%s]\n", (int)nread, pwd));
+	pwd[nread] = '\0';
 
 	if (pwd[nread-1] == '\n') {
 		pwd[nread-1] = '\0';
