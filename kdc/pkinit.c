@@ -531,10 +531,14 @@ _kdc_pk_rd_padata(krb5_context context,
 
     {
 	hx509_certs signer_certs;
+	int flags = HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH; /* BTMM */
+
+	if (req->req_body.kdc_options.request_anonymous)
+	    flags |= HX509_CMS_VS_ALLOW_ZERO_SIGNER;
 
 	ret = hx509_cms_verify_signed(kdc_identity->hx509ctx,
 				      kdc_identity->verify_ctx,
-				      HX509_CMS_VS_ALLOW_DATA_OID_MISMATCH,
+				      flags,
 				      signed_content.data,
 				      signed_content.length,
 				      NULL,
@@ -550,9 +554,11 @@ _kdc_pk_rd_padata(krb5_context context,
 	    goto out;
 	}
 
-	ret = hx509_get_one_cert(kdc_identity->hx509ctx, signer_certs,
-				 &client_params->cert);
-	hx509_certs_free(&signer_certs);
+	if (signer_certs) {
+	    ret = hx509_get_one_cert(kdc_identity->hx509ctx, signer_certs,
+				     &client_params->cert);
+	    hx509_certs_free(&signer_certs);
+	}
 	if (ret)
 	    goto out;
     }
@@ -1413,6 +1419,13 @@ _kdc_pk_check_client(krb5_context context,
     krb5_error_code ret;
     hx509_name name;
     int i;
+
+    if (client_params->cert == NULL) {
+	*subject_name = strdup("anonymous client client");
+	if (*subject_name == NULL)
+	    return ENOMEM;
+	return 0;
+    }
 
     ret = hx509_cert_get_base_subject(kdc_identity->hx509ctx,
 				      client_params->cert,
