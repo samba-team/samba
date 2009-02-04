@@ -394,6 +394,13 @@ _kdc_pk_rd_padata(krb5_context context,
 
 	type = "PK-INIT-Win2k";
 
+	if (req->req_body.kdc_options.request_anonymous) {
+	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
+	    krb5_set_error_message(context, ret, 
+				   "Anon not supported in RSA mode");
+	    goto out;
+	}
+
 	ret = decode_PA_PK_AS_REQ_Win2k(pa->padata_value.data,
 					pa->padata_value.length,
 					&r,
@@ -602,6 +609,15 @@ _kdc_pk_rd_padata(krb5_context context,
 	    krb5_set_error_message(context, ret,
 				   "Can't decode AuthPack: %d", ret);
 	    free_AuthPack(&ap);
+	    goto out;
+	}
+
+	if (req->req_body.kdc_options.request_anonymous &&
+	    ap.clientPublicValue == NULL) {
+	    free_AuthPack(&ap);
+	    ret = KRB5_KDC_ERR_PUBLIC_KEY_ENCRYPTION_NOT_SUPPORTED;
+	    krb5_set_error_message(context, ret, 
+				   "Anon not supported in RSA mode");
 	    goto out;
 	}
 
