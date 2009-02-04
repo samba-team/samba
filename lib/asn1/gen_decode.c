@@ -516,7 +516,7 @@ decode_type (const char *name, const Type *t, int optional,
 	    ide = typestring;
 	} else {
 	    fprintf(codefile,
-		    "if (%s != %s) { e = ASN1_BAD_ID; }\n",
+		    "if (e == 0 && %s != %s) { e = ASN1_BAD_ID; }\n",
 		    typestring, is_primitive_type(t->subtype->type) ? "PRIM" : "CONS");
 	}
 
