@@ -94,6 +94,11 @@ command = {
 		help = "create a detached signature"
 	}
 	option = {
+		long = "signer"
+		type = "-flag"
+		help = "do not sign"
+	}
+	option = {
 		long = "id-by-name"
 		type = "flag"
 		help = "use subject name for CMS Identifier"
@@ -138,6 +143,11 @@ command = {
 		long = "pem"
 		type = "flag"
 		help = "unwrap in-data from PEM armor"
+	}
+	option = {
+		long = "signer-allowed"
+		type = "-flag"
+		help = "allow no signer"
 	}
 	option = {
 		long = "signed-content"
