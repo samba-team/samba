@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 # Bootstrap Samba and run a number of tests against it.
 # Copyright (C) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2007-2009 Stefan Metzmacher <metze@samba.org>
 # Published under the GNU GPL, v3 or later.
 
 =pod
@@ -287,6 +288,7 @@ sub ShowHelp()
 {
 	print "Samba test runner
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
+Copyright (C) Stefan Metzmacher <metze\@samba.org>
 
 Usage: $Script [OPTIONS] TESTNAME-REGEX
 
