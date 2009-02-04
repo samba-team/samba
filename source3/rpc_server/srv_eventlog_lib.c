@@ -445,44 +445,6 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 	return 0;
 }
 
-
-/*******************************************************************
- calculate the correct fields etc for an eventlog entry
-*******************************************************************/
-
-void fixup_eventlog_entry( Eventlog_entry * ee )
-{
-	/* fix up the eventlog entry structure as necessary */
-
-	ee->data_record.sid_padding =
-		( ( 4 -
-		    ( ( ee->data_record.source_name_len +
-			ee->data_record.computer_name_len ) % 4 ) ) % 4 );
-	ee->data_record.data_padding =
-		( 4 -
-		  ( ( ee->data_record.strings_len +
-		      ee->data_record.user_data_len ) % 4 ) ) % 4;
-	ee->record.length = sizeof( Eventlog_record );
-	ee->record.length += ee->data_record.source_name_len;
-	ee->record.length += ee->data_record.computer_name_len;
-	if ( ee->record.user_sid_length == 0 ) {
-		/* Should not pad to a DWORD boundary for writing out the sid if there is
-		   no SID, so just propagate the padding to pad the data */
-		ee->data_record.data_padding += ee->data_record.sid_padding;
-		ee->data_record.sid_padding = 0;
-	}
-	/* DEBUG(10, ("sid_padding is [%d].\n", ee->data_record.sid_padding)); */
-	/* DEBUG(10, ("data_padding is [%d].\n", ee->data_record.data_padding)); */
-
-	ee->record.length += ee->data_record.sid_padding;
-	ee->record.length += ee->record.user_sid_length;
-	ee->record.length += ee->data_record.strings_len;
-	ee->record.length += ee->data_record.user_data_len;
-	ee->record.length += ee->data_record.data_padding;
-	/* need another copy of length at the end of the data */
-	ee->record.length += sizeof( ee->record.length );
-}
-
 /********************************************************************
  Note that it's a pretty good idea to initialize the Eventlog_entry
  structure to zero's before calling parse_logentry on an batch of

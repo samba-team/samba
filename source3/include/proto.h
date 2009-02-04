@@ -6251,7 +6251,6 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention );
 bool prune_eventlog( TDB_CONTEXT * tdb );
 ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only );
 int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
-void fixup_eventlog_entry( Eventlog_entry * ee );
 bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb *entry, bool * eor );
 size_t fixup_eventlog_record_tdb(struct eventlog_Record_tdb *r);
 struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
