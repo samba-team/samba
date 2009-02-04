@@ -187,7 +187,7 @@ sub stop_sig_term($$) {
 
 sub stop_sig_kill($$) {
 	my ($self, $pid) = @_;
-	kill("ALRM", $pid) or warn("Unable to kill $pid: $!");
+	kill("KILL", $pid) or warn("Unable to kill $pid: $!");
 }
 
 sub write_pid($$$)
@@ -226,6 +226,16 @@ sub check_or_start($$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
+		if ($nmbd_maxtime eq "skip") {
+			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+				my $signame = shift;
+				print("Skip nmbd received signal $signame");
+				exit 0;
+			};
+			sleep(999999);
+			exit 0;
+		}
+
 		my @optargs = ("-d0");
 		if (defined($ENV{NMBD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{NMBD_OPTIONS});
@@ -257,6 +267,16 @@ sub check_or_start($$$$) {
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
+		if ($winbindd_maxtime eq "skip") {
+			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+				my $signame = shift;
+				print("Skip winbindd received signal $signame");
+				exit 0;
+			};
+			sleep(999999);
+			exit 0;
+		}
+
 		my @optargs = ("-d0");
 		if (defined($ENV{WINBINDD_OPTIONS})) {
 			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
@@ -287,6 +307,16 @@ sub check_or_start($$$$) {
 
 		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
 		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
+
+		if ($smbd_maxtime eq "skip") {
+			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+				my $signame = shift;
+				print("Skip smbd received signal $signame");
+				exit 0;
+			};
+			sleep(999999);
+			exit 0;
+		}
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
 		my @optargs = ("-d0");
