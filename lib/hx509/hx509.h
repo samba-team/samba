@@ -151,8 +151,9 @@ typedef enum {
 #define HX509_CA_TEMPLATE_EKU 64
 
 /* flags hx509_cms_create_signed* */
-#define HX509_CMS_SIGATURE_DETACHED 1
-#define HX509_CMS_SIGATURE_ID_NAME 2
+#define HX509_CMS_SIGATURE_DETACHED			0x01
+#define HX509_CMS_SIGATURE_ID_NAME			0x02
+#define HX509_CMS_SIGATURE_NO_SIGNER			0x04
 
 /* hx509_verify_hostname nametype */
 typedef enum  {
