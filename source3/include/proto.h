@@ -5675,8 +5675,6 @@ bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 bool smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC **secdesc);
 uint32 size_of_relative_string(UNISTR *string);
 
-/* The following definitions come from rpc_parse/parse_eventlog.c  */
-
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
