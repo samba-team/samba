@@ -93,7 +93,7 @@ NTSTATUS pvfs_copy_file(struct pvfs_state *pvfs,
 	mode_t mode;
 	NTSTATUS status;
 	size_t buf_size = 0x10000;
-	char *buf = talloc_size(name2, buf_size);
+	uint8_t *buf = talloc_array(name2, uint8_t, buf_size);
 
 	if (buf == NULL) {
 		return NT_STATUS_NO_MEMORY;

@@ -464,7 +464,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 	}
 
 	/* rebuild the name */
-	ret = talloc_size(mem_ctx, len+1);
+	ret = talloc_array(mem_ctx, char, len+1);
 	if (ret == NULL) {
 		talloc_free(s);
 		return NT_STATUS_NO_MEMORY;
@@ -477,6 +477,8 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 		len += len1 + 1;
 	}	
 	ret[len] = 0;
+
+	talloc_set_name_const(ret, ret);
 
 	talloc_free(s);
 
