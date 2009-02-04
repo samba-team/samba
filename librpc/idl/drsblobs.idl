@@ -6,6 +6,7 @@ import "drsuapi.idl", "misc.idl", "samr.idl", "lsa.idl";
   uuid("12345778-1234-abcd-0001-00000001"),
   version(0.0),
   pointer_default(unique),
+  helper("../librpc/ndr/ndr_drsblobs.h"),
   helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {
