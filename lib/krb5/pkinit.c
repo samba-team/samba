@@ -176,21 +176,26 @@ create_signature(krb5_context context,
     hx509_cert cert = NULL;
     hx509_query *q = NULL;
     int ret;
+    int flags = 0;
 
-    ret = hx509_query_alloc(id->hx509ctx, &q);
-    if (ret) {
-	pk_copy_error(context, id->hx509ctx, ret,
-		      "Allocate query to find signing certificate");
-	return ret;
+    if (id->certs) {
+	ret = hx509_query_alloc(id->hx509ctx, &q);
+	if (ret) {
+	    pk_copy_error(context, id->hx509ctx, ret,
+			  "Allocate query to find signing certificate");
+	    return ret;
+	}
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = find_cert(context, id, q, &cert);
+	hx509_query_free(id->hx509ctx, q);
+	if (ret)
+	    return ret;
+    } else {
+	flags = HX509_CMS_SIGNATURE_NO_SIGNER;
     }
-
-    hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
-
-    ret = find_cert(context, id, q, &cert);
-    hx509_query_free(id->hx509ctx, q);
-    if (ret)
-	return ret;
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
 				    0,
@@ -203,7 +208,8 @@ create_signature(krb5_context context,
 				    NULL,
 				    id->certs,
 				    sd_data);
-    hx509_cert_free(cert);
+    if (cert)
+	hx509_cert_free(cert);
     if (ret) {
 	pk_copy_error(context, id->hx509ctx, ret,
 		      "Create CMS signedData");
@@ -1527,6 +1533,7 @@ _krb5_pk_allow_proxy_certificate(struct krb5_pk_identity *id,
 krb5_error_code KRB5_LIB_FUNCTION
 _krb5_pk_load_id(krb5_context context,
 		 struct krb5_pk_identity **ret_id,
+		 int flags,
 		 const char *user_id,
 		 const char *anchor_id,
 		 char * const *chain_list,
@@ -1548,7 +1555,7 @@ _krb5_pk_load_id(krb5_context context,
 	return HEIM_PKINIT_NO_VALID_CA;
     }
 
-    if (user_id == NULL) {
+    if (user_id == NULL && (flags & 4) == 0) {
 	krb5_set_error_message(context, HEIM_PKINIT_NO_PRIVATE_KEY,
 			       N_("PKINIT: No user certificate given", ""));
 	return HEIM_PKINIT_NO_PRIVATE_KEY;
@@ -1581,11 +1588,15 @@ _krb5_pk_load_id(krb5_context context,
 	    goto out;
     }
 
-    ret = hx509_certs_init(id->hx509ctx, user_id, 0, lock, &id->certs);
-    if (ret) {
-	pk_copy_error(context, id->hx509ctx, ret,
-		      "Failed to init cert certs");
-	goto out;
+    if (user_id) {
+	ret = hx509_certs_init(id->hx509ctx, user_id, 0, lock, &id->certs);
+	if (ret) {
+	    pk_copy_error(context, id->hx509ctx, ret,
+			  "Failed to init cert certs");
+	    goto out;
+	}
+    } else {
+	id->certs = NULL;
     }
 
     ret = hx509_certs_init(id->hx509ctx, anchor_id, 0, NULL, &id->anchors);
@@ -2120,6 +2131,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 
     ret = _krb5_pk_load_id(context,
 			   &opt->opt_private->pk_init_ctx->id,
+			   flags,
 			   user_id,
 			   x509_anchors,
 			   pool,
