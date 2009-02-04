@@ -913,46 +913,53 @@ printsub(int direction, unsigned char *pointer, size_t length)
 	    output_data("INFO ");
 	env_common:
 	    {
-		int noquote = 2;
+		int quote = 0;
 		for (i = 2; i < length; i++ ) {
 		    switch (pointer[i]) {
 		    case NEW_ENV_VAR:
-			output_data("\" VAR " + noquote);
-			noquote = 2;
+			if (quote)
+			    output_data("\" ");
+			output_data("VAR ");
+			quote = 0;
 			break;
-
+			
 		    case NEW_ENV_VALUE:
-			output_data("\" VALUE " + noquote);
-			noquote = 2;
+			if (quote)
+			    output_data("\" ");
+			output_data("VALUE ");
+			quote = 0;
 			break;
-
+			
 		    case ENV_ESC:
-			output_data("\" ESC " + noquote);
-			noquote = 2;
+			if (quote)
+			    output_data("\" ");
+			output_data("ESC ");
+			quote = 0;
 			break;
-
+			
 		    case ENV_USERVAR:
-			output_data("\" USERVAR " + noquote);
-			noquote = 2;
+			if (quote)
+			    output_data("\" ");
+			output_data("USERVAR ");
+			quote = 0;
 			break;
-
+			
 		    default:
 			if (isprint(pointer[i]) && pointer[i] != '"') {
-			    if (noquote) {
-				output_data ("\"");
-				noquote = 0;
+			    if (!quote) {
+				output_data("\"");
+				quote = 1;
 			    }
-			    output_data ("%c", pointer[i]);
+			    output_data("%c", pointer[i]);
 			} else {
-			    output_data("\" %03o " + noquote,
-					pointer[i]);
-			    noquote = 2;
+			    output_data("%03o ", pointer[i]);
+			    quote = 0;
 			}
 			break;
 		    }
 		}
-		if (!noquote)
-		    output_data ("\"");
+		if (quote)
+		    output_data("\"");
 		break;
 	    }
 	}
