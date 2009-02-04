@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 1997 - 2001, 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -259,7 +260,6 @@ hdb_generate_key_set(krb5_context context, krb5_principal principal,
     Key *k, *key_set;
     int i, j;
     char *default_keytypes[] = {
-	"des:pw-salt",
 	"aes256-cts-hmac-sha1-96:pw-salt",
 	"des3-cbc-sha1:pw-salt",
 	"arcfour-hmac-md5:pw-salt",
