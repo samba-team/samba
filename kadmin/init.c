@@ -221,6 +221,14 @@ init(struct init_options *opt, int argc, char **argv)
 			    KRB5_KDB_DISALLOW_TGT_BASED);
 	krb5_free_principal(context, princ);
 
+	/* Create `WELLKNOWN/ANONYMOUS' for anonymous as-req */
+	krb5_make_principal(context, &princ, realm,
+			    KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, NULL);
+	create_random_entry(princ, 60*60, 60*60,
+			    KRB5_KDB_REQUIRES_PRE_AUTH);
+	krb5_free_principal(context, princ);
+
+
 	/* Create `default' */
 	{
 	    kadm5_principal_ent_rec ent;
