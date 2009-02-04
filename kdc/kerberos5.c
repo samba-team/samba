@@ -1072,10 +1072,6 @@ _kdc_as_rep(krb5_context context,
 	goto out;
     }
 
-    ret = _kdc_windc_client_access(context, client, req, &e_data);
-    if(ret)
-	goto out;
-
     memset(&et, 0, sizeof(et));
     memset(&ek, 0, sizeof(ek));
 
@@ -1370,6 +1366,9 @@ _kdc_as_rep(krb5_context context,
     if(ret)
 	goto out;
 
+    ret = _kdc_windc_client_access(context, client, req, &e_data);
+    if(ret)
+	goto out;
 
     /*
      * Find the client key (for preauth ENC-TS verification and reply
