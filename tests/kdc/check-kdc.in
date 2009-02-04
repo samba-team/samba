@@ -369,7 +369,7 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
     base="${srcdir}/../../lib/hx509/data"
 
     echo "try anonymous pkinit"; > messages.log
-    ${kinit} $type --anonymous WELLKNOWN/ANONYMOUS@${R} || \
+    ${kinit} $type --anonymous ${R} || \
 	{ ec=1 ; eval "${testfailed}"; }
     ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
     ${kdestroy}
