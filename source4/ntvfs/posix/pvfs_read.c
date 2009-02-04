@@ -29,7 +29,8 @@
 NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		   struct ntvfs_request *req, union smb_read *rd)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	ssize_t ret;
 	struct pvfs_file *f;
 	NTSTATUS status;

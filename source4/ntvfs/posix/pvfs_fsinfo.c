@@ -85,7 +85,8 @@ NTSTATUS pvfs_fsinfo(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, union smb_fsinfo *fs)
 {
 	NTSTATUS status;
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	uint64_t blocks_free, blocks_total;
 	uint_t bpunit;
 	struct stat st;

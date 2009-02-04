@@ -338,7 +338,8 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 		        struct ntvfs_request *req, union smb_fileinfo *info)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_filename *name;
 	NTSTATUS status;
 
@@ -374,7 +375,8 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 		        struct ntvfs_request *req, union smb_fileinfo *info)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
 	NTSTATUS status;

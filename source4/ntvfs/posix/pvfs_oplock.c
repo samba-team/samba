@@ -245,7 +245,8 @@ NTSTATUS pvfs_setup_oplock(struct pvfs_file *f, uint32_t oplock_granted)
 NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, union smb_lock *lck)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 	uint8_t oplock_break;
 	NTSTATUS status;

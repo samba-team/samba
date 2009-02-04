@@ -308,7 +308,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, 
 			  union smb_setfileinfo *info)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
 	struct pvfs_filename newstats;
@@ -609,7 +610,8 @@ static NTSTATUS pvfs_setpathinfo_setup_retry(struct ntvfs_module_context *ntvfs,
 					     struct odb_lock *lck,
 					     NTSTATUS status)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct timeval end_time;
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
@@ -632,7 +634,8 @@ static NTSTATUS pvfs_setpathinfo_setup_retry(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_setfileinfo *info)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_filename *name;
 	struct pvfs_filename newstats;
 	NTSTATUS status;

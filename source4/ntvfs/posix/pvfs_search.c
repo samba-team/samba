@@ -294,8 +294,12 @@ static void pvfs_search_cleanup(struct pvfs_state *pvfs)
 	time_t t = time(NULL);
 
 	for (i=0;i<MAX_OLD_SEARCHES;i++) {
-		struct pvfs_search_state *search = idr_find(pvfs->search.idtree, i);
-		if (search == NULL) return;
+		struct pvfs_search_state *search;
+		void *p = idr_find(pvfs->search.idtree, i);
+
+		if (p == NULL) return;
+
+		search = talloc_get_type(p, struct pvfs_search_state);
 		if (pvfs_list_eos(search->dir, search->current_index) &&
 		    search->last_used != 0 &&
 		    t > search->last_used + 30) {
@@ -316,7 +320,8 @@ static NTSTATUS pvfs_search_first_old(struct ntvfs_module_context *ntvfs,
 				      bool (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t search_attrib;
@@ -405,7 +410,9 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 				     void *search_private, 
 				     bool (*callback)(void *, const union smb_search_data *))
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
+	void *p;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
 	uint_t reply_count, max_count;
@@ -415,11 +422,13 @@ static NTSTATUS pvfs_search_next_old(struct ntvfs_module_context *ntvfs,
 	handle    = io->search_next.in.id.handle | (io->search_next.in.id.reserved<<8);
 	max_count = io->search_next.in.max_count;
 
-	search = idr_find(pvfs->search.idtree, handle);
-	if (search == NULL) {
+	p = idr_find(pvfs->search.idtree, handle);
+	if (p == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	search = talloc_get_type(p, struct pvfs_search_state);
 
 	dir = search->dir;
 
@@ -455,7 +464,8 @@ static NTSTATUS pvfs_search_first_trans2(struct ntvfs_module_context *ntvfs,
 					 bool (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t search_attrib, max_count;
@@ -550,7 +560,9 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 					void *search_private, 
 					bool (*callback)(void *, const union smb_search_data *))
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
+	void *p;
 	struct pvfs_search_state *search;
 	struct pvfs_dir *dir;
 	uint_t reply_count;
@@ -559,12 +571,14 @@ static NTSTATUS pvfs_search_next_trans2(struct ntvfs_module_context *ntvfs,
 
 	handle = io->t2fnext.in.handle;
 
-	search = idr_find(pvfs->search.idtree, handle);
-	if (search == NULL) {
+	p = idr_find(pvfs->search.idtree, handle);
+	if (p == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	
+
+	search = talloc_get_type(p, struct pvfs_search_state);
+
 	dir = search->dir;
 	
 	status = NT_STATUS_OK;
@@ -612,7 +626,8 @@ static NTSTATUS pvfs_search_first_smb2(struct ntvfs_module_context *ntvfs,
 				       bool (*callback)(void *, const union smb_search_data *))
 {
 	struct pvfs_dir *dir;
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t max_count;
@@ -714,7 +729,8 @@ static NTSTATUS pvfs_search_next_smb2(struct ntvfs_module_context *ntvfs,
 				      void *search_private, 
 				      bool (*callback)(void *, const union smb_search_data *))
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_search_state *search;
 	uint_t reply_count;
 	uint16_t max_count;
@@ -812,7 +828,9 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req, union smb_search_close *io)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
+	void *p;
 	struct pvfs_search_state *search;
 	uint16_t handle = INVALID_SEARCH_HANDLE;
 
@@ -829,11 +847,13 @@ NTSTATUS pvfs_search_close(struct ntvfs_module_context *ntvfs,
 		break;
 	}
 
-	search = idr_find(pvfs->search.idtree, handle);
-	if (search == NULL) {
+	p = idr_find(pvfs->search.idtree, handle);
+	if (p == NULL) {
 		/* we didn't find the search handle */
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	search = talloc_get_type(p, struct pvfs_search_state);
 
 	talloc_free(search);
 

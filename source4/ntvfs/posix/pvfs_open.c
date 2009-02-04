@@ -868,7 +868,8 @@ struct pvfs_odb_retry {
 /* destroy a pending request */
 static int pvfs_odb_retry_destructor(struct pvfs_odb_retry *r)
 {
-	struct pvfs_state *pvfs = r->ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(r->ntvfs->private_data,
+				  struct pvfs_state);
 	if (r->odb_locking_key.data) {
 		struct odb_lock *lck;
 		lck = odb_lock(r->req, pvfs->odb_context, &r->odb_locking_key);
@@ -913,7 +914,8 @@ NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
 					       void *private_data,
 					       enum pvfs_wait_notice reason))
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_odb_retry *r;
 	struct pvfs_wait *wait_handle;
 	NTSTATUS status;
@@ -1039,7 +1041,8 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req, union smb_open *io,
 				   struct pvfs_file *f, struct odb_lock *lck)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f2;
 	struct pvfs_filename *name;
 	NTSTATUS status;
@@ -1120,7 +1123,8 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 				      struct odb_lock *lck,
 				      NTSTATUS parent_status)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct timeval end_time;
 	struct timeval *final_timeout = NULL;
@@ -1174,7 +1178,8 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		   struct ntvfs_request *req, union smb_open *io)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	int flags = 0;
 	struct pvfs_filename *name;
 	struct pvfs_file *f;
@@ -1627,7 +1632,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		    struct ntvfs_request *req, union smb_close *io)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 
 	if (io->generic.level == RAW_CLOSE_SPLCLOSE) {
@@ -1684,7 +1690,8 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f, *next;
 
 	for (f=pvfs->files.list;f;f=next) {
@@ -1704,7 +1711,8 @@ NTSTATUS pvfs_logoff(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 		   struct ntvfs_request *req)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f, *next;
 
 	for (f=pvfs->files.list;f;f=next) {

@@ -84,7 +84,8 @@ static NTSTATUS pvfs_unlink_setup_retry(struct ntvfs_module_context *ntvfs,
 					struct odb_lock *lck,
 					NTSTATUS status)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct timeval end_time;
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
@@ -191,7 +192,8 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req,
 		     union smb_unlink *unl)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_dir *dir;
 	NTSTATUS status;
 	uint32_t total_deleted=0;

@@ -185,7 +185,8 @@ struct pvfs_wait *pvfs_wait_message(struct pvfs_state *pvfs,
 */
 NTSTATUS pvfs_cancel(struct ntvfs_module_context *ntvfs, struct ntvfs_request *req)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_wait *pwait;
 
 	for (pwait=pvfs->wait_list;pwait;pwait=pwait->next) {

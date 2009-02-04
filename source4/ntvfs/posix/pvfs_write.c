@@ -83,7 +83,8 @@ static void pvfs_trigger_write_time_update(struct pvfs_file_handle *h)
 NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		    struct ntvfs_request *req, union smb_write *wr)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	ssize_t ret;
 	struct pvfs_file *f;
 	NTSTATUS status;
