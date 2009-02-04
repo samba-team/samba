@@ -67,6 +67,7 @@ static char *krb4_cc_name;
 int fcache_version;
 char *password_file	= NULL;
 char *pk_user_id	= NULL;
+int pk_enterprise_flag = 0;
 char *pk_x509_anchors	= NULL;
 int pk_use_enckey	= 0;
 static int canonicalize_flag = 0;
@@ -162,6 +163,9 @@ static struct getargs args[] = {
     { "enterprise",0,   arg_flag, &enterprise_flag,
       NP_("parse principal as a KRB5-NT-ENTERPRISE name", "") },
 #ifdef PKINIT
+    { "pk-enterprise",	'C',	arg_flag,	&pk_enterprise_flag,
+      NP_("use enterprise name from certificate", "") },
+
     { "pk-user",	'C',	arg_string,	&pk_user_id,
       NP_("principal's public/private/certificate identifier", ""), "id" },
 
@@ -450,6 +454,8 @@ get_new_tickets(krb5_context context,
 						pac_flag ? TRUE : FALSE);
     if (canonicalize_flag)
 	krb5_get_init_creds_opt_set_canonicalize(context, opt, TRUE);
+    if (pk_enterprise_flag && windows_flag)
+	krb5_get_init_creds_opt_set_win2k(context, opt, TRUE);
     if (pk_user_id || anonymous_flag) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 principal,
@@ -774,15 +780,18 @@ main (int argc, char **argv)
     if (canonicalize_flag || enterprise_flag)
 	parseflags |= KRB5_PRINCIPAL_PARSE_ENTERPRISE;
 
-    if (anonymous_flag) {
-	krb5_realm realm = NULL;
+    if (pk_enterprise_flag) {
 
-	if (argv[0])
-	    realm = argv[0];
+	ret = krb5_pk_enterprise_cert(context, pk_user_id,
+				      argv[0], &principal);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_pk_enterprise_certs");
 
-	ret = krb5_make_principal(context, &principal, realm,
-				   KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, 
-				   NULL);
+    } else if (anonymous_flag) {
+
+	ret = krb5_make_principal(context, &principal, argv[0],
+				  KRB5_WELLKNOWN_NAME, KRB5_ANON_NAME, 
+				  NULL);
 	if (ret)
 	    krb5_err(context, 1, ret, "krb5_build_principal");
 	krb5_principal_set_type(context, principal, KRB5_NT_WELLKNOWN);
