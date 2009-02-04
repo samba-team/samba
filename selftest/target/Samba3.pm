@@ -386,6 +386,9 @@ sub provision($$$$$$)
 	## 
 	## create the test directory layout
 	##
+	die ("prefix_abs = ''") if $prefix_abs eq "";
+	die ("prefix_abs = '/'") if $prefix_abs eq "/";
+
 	mkdir($prefix_abs, 0777);
 	print "CREATE TEST ENVIRONMENT IN '$prefix'...";
 	system("rm -rf $prefix_abs/*");
