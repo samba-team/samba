@@ -1431,7 +1431,7 @@ hx509_cms_create_signed(hx509_context context,
     sigctx.content.length = length;
     sigctx.eContentType = eContentType;
     sigctx.peer = peer;
-    if (flags & HX509_CMS_SIGATURE_ID_NAME)
+    if (flags & HX509_CMS_SIGNATURE_ID_NAME)
 	sigctx.cmsidflag = CMS_ID_NAME;
     else
 	sigctx.cmsidflag = CMS_ID_SKI;
@@ -1448,9 +1448,9 @@ hx509_cms_create_signed(hx509_context context,
     der_copy_oid(eContentType, &sigctx.sd.encapContentInfo.eContentType);
 
     /**
-     * Use HX509_CMS_SIGATURE_DETACHED to create detached signatures.
+     * Use HX509_CMS_SIGNATURE_DETACHED to create detached signatures.
      */
-    if ((flags & HX509_CMS_SIGATURE_DETACHED) == 0) {
+    if ((flags & HX509_CMS_SIGNATURE_DETACHED) == 0) {
 	ALLOC(sigctx.sd.encapContentInfo.eContent, 1);
 	if (sigctx.sd.encapContentInfo.eContent == NULL) {
 	    hx509_clear_error_string(context);
@@ -1469,8 +1469,8 @@ hx509_cms_create_signed(hx509_context context,
     }
 
     /**
-     * Use HX509_CMS_SIGATURE_NO_SIGNER to create no sigInfo (no
-     * sigatures).
+     * Use HX509_CMS_SIGNATURE_NO_SIGNER to create no sigInfo (no
+     * signatures).
      */
     if ((flags & HX509_CMS_SIGATURE_NO_SIGNER) == 0) {
 	ret = hx509_certs_iter(context, certs, sig_process, &sigctx);
