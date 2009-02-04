@@ -1512,8 +1512,6 @@ krb5_init_creds_step(krb5_context context,
 	    krb5_keyblock *key = NULL;
 	    unsigned eflags = EXTRACT_TICKET_AS_REQ;
 
-	    if (ctx->flags.request_anonymous)
-		eflags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
 	    if (ctx->flags.canonicalize) {
 		eflags |= EXTRACT_TICKET_ALLOW_SERVER_MISMATCH;
 		eflags |= EXTRACT_TICKET_MATCH_REALM;
