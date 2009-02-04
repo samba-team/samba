@@ -79,7 +79,7 @@ kimpersonate="${TESTS_ENVIRONMENT} ../../kuser/kimpersonate -k ${keytab} --ccach
 test_renew="${TESTS_ENVIRONMENT} ../../lib/krb5/test_renew"
 test_ap_req="${TESTS_ENVIRONMENT} ../../lib/krb5/test_ap-req"
 
-KRB5_CONFIG="${objdir}/krb5.conf"
+KRB5_CONFIG="${objdir}/@KDCCONF@"
 export KRB5_CONFIG
 
 rm -f ${keytabfile}

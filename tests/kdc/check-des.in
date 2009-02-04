@@ -60,7 +60,7 @@ klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
 
-KRB5_CONFIG="${objdir}/krb5-no-weak.conf"
+KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
 
 rm -f ${keytabfile}

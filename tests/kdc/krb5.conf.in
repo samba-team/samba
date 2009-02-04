@@ -68,6 +68,7 @@
 
 [kadmin]
 	save-password = true
+	@dk@
 
 [capaths]
 	TEST.H5L.SE = {
