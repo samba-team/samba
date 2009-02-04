@@ -1431,6 +1431,11 @@ hx509_cms_create_signed(hx509_context context,
     sigctx.content.length = length;
     sigctx.eContentType = eContentType;
     sigctx.peer = peer;
+    /**
+     * Use HX509_CMS_SIGNATURE_ID_NAME to preferred use of issuer name
+     * and serial number if possible. Otherwise subject key identifier
+     * will preferred.
+     */
     if (flags & HX509_CMS_SIGNATURE_ID_NAME)
 	sigctx.cmsidflag = CMS_ID_NAME;
     else
@@ -1472,7 +1477,7 @@ hx509_cms_create_signed(hx509_context context,
      * Use HX509_CMS_SIGNATURE_NO_SIGNER to create no sigInfo (no
      * signatures).
      */
-    if ((flags & HX509_CMS_SIGATURE_NO_SIGNER) == 0) {
+    if ((flags & HX509_CMS_SIGNATURE_NO_SIGNER) == 0) {
 	ret = hx509_certs_iter(context, certs, sig_process, &sigctx);
 	if (ret)
 	    goto out;
