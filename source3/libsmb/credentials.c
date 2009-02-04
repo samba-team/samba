@@ -146,7 +146,7 @@ static void creds_init_64(struct dcinfo *dc,
 
 static void creds_step(struct dcinfo *dc)
 {
-	DOM_CHAL time_chal;
+	struct netr_Credential time_chal;
 
 	DEBUG(5,("\tsequence = 0x%x\n", (unsigned int)dc->sequence ));
 
