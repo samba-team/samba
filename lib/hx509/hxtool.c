@@ -353,11 +353,11 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	anchors = NULL;
 
     if (opt->detached_signature_flag)
-	flags |= HX509_CMS_SIGATURE_DETACHED;
+	flags |= HX509_CMS_SIGNATURE_DETACHED;
     if (opt->id_by_name_flag)
-	flags |= HX509_CMS_SIGATURE_ID_NAME;
+	flags |= HX509_CMS_SIGNATURE_ID_NAME;
     if (!opt->signer_flag) {
-	flags |= HX509_CMS_SIGATURE_NO_SIGNER;
+	flags |= HX509_CMS_SIGNATURE_NO_SIGNER;
 
     }
 
