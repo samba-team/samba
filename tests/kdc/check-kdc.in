@@ -365,6 +365,15 @@ fi
 # If we support pkinit and have RSA, lets try that
 if test "$pkinit" = yes -a "$rsa" = yes ; then
 
+    base="${srcdir}/../../lib/hx509/data"
+
+    echo "try anonymous pkinit"; > messages.log
+    ${kinit} $type --anonymous WELLKNOWN/ANONYMOUS@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+    ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+    ${kdestroy}
+
+
     for type in "" "--pk-use-enckey"; do
 	echo "Trying pk-init (principal in certificate) $type"; > messages.log
 	base="${srcdir}/../../lib/hx509/data"
