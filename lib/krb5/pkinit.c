@@ -2198,3 +2198,103 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     return EINVAL;
 #endif
 }
+
+#ifdef PKINIT
+
+static int
+match_ms_san(hx509_context context, hx509_cert cert, void *ctx)
+{
+    hx509_octet_string_list list;
+    char **result = ctx;
+    int ret;
+
+    if (*result) 
+	return 0;
+
+    ret = hx509_cert_find_subjectAltName_otherName(context,
+						   cert,
+						   oid_id_pkinit_ms_san(),
+						   &list);
+    if (ret)
+	return 0;
+
+    if (list.len > 0 && list.val[0].length > 0) {
+
+	ret = decode_MS_UPN_SAN(list.val[0].data, list.val[0].length,
+				result, NULL);
+	if (ret)
+	    *result = NULL;
+    }
+    hx509_free_octet_string_list(&list);	   
+
+    if (*result == NULL)
+	return 0;
+    return 1;
+}
+
+#endif
+
+/*
+ * Private since it need to be redesigned using krb5_get_init_creds()
+ */
+
+krb5_error_code  KRB5_LIB_FUNCTION
+_krb5_pk_enterprise_cert(krb5_context context,
+			 const char *user_id,
+			 krb5_const_realm realm,
+			 krb5_principal *principal)
+{
+#ifdef PKINIT
+    krb5_error_code ret;
+    char *enterprise_name = NULL;
+    hx509_context hx509ctx;
+    hx509_certs certs, result;
+    hx509_query *q;
+
+    *principal = NULL;
+    
+    if (user_id == NULL)
+	return ENOENT;
+
+    ret = hx509_context_init(&hx509ctx);
+    if (ret)
+	return ret;
+
+    ret = hx509_certs_init(hx509ctx, user_id, 0, NULL, &certs);
+    if (ret) {
+	pk_copy_error(context, hx509ctx, ret,
+		      "Failed to init cert certs");
+	return ret;
+    }
+
+    ret = hx509_query_alloc(hx509ctx, &q);
+
+    hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+    hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+    hx509_query_match_eku(q, oid_id_pkinit_ms_eku());
+    hx509_query_match_cmp_func(q, match_ms_san, &enterprise_name);
+
+    ret = hx509_certs_filter(hx509ctx, certs, q, &result);
+    hx509_query_free(hx509ctx, q);
+    hx509_certs_free(&certs);
+
+    if (enterprise_name == NULL)
+	return ENOENT; /* XXX */
+
+    ret = krb5_make_principal(context, principal, realm,
+			      enterprise_name, NULL);
+    free(enterprise_name);
+    hx509_context_free(&hx509ctx);
+    if (ret)
+	return ret;
+
+
+    krb5_principal_set_type(context, *principal, KRB5_NT_ENTERPRISE_PRINCIPAL);
+    
+    return ret;
+#else
+    krb5_set_error_message(context, EINVAL,
+			   N_("no support for PKINIT compiled in", ""));
+    return EINVAL;
+#endif
+}
