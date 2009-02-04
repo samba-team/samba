@@ -749,6 +749,46 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, Eventlog_entry * entry, bo
 	return true;
 }
 
+/*******************************************************************
+ calculate the correct fields etc for an eventlog entry
+*******************************************************************/
+
+size_t fixup_eventlog_record_tdb(struct eventlog_Record_tdb *r)
+{
+	size_t size = 56; /* static size of integers before buffers start */
+
+	r->source_name_len = strlen_m_term(r->source_name) * 2;
+	r->computer_name_len = strlen_m_term(r->computer_name) * 2;
+	r->strings_len = ndr_size_string_array(r->strings,
+		r->num_of_strings, LIBNDR_FLAG_STR_NULLTERM) * 2;
+
+	/* fix up the eventlog entry structure as necessary */
+	r->sid_padding = ( ( 4 - ( ( r->source_name_len + r->computer_name_len ) % 4 ) ) % 4 );
+	r->padding =       ( 4 - ( ( r->strings_len + r->data_length ) % 4 ) ) % 4;
+
+	if (r->sid_length == 0) {
+		/* Should not pad to a DWORD boundary for writing out the sid if there is
+		   no SID, so just propagate the padding to pad the data */
+		r->padding += r->sid_padding;
+		r->sid_padding = 0;
+	}
+
+	size += r->source_name_len;
+	size += r->computer_name_len;
+	size += r->sid_padding;
+	size += r->sid_length;
+	size += r->strings_len;
+	size += r->data_length;
+	size += r->padding;
+	/* need another copy of length at the end of the data */
+	size += sizeof(r->size);
+
+	r->size = size;
+
+	return size;
+}
+
+
 /********************************************************************
  ********************************************************************/
 
