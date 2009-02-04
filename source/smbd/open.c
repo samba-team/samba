@@ -415,28 +415,42 @@ static NTSTATUS open_file(files_struct *fsp,
 					access_mask,
 					&access_granted);
 			if (!NT_STATUS_IS_OK(status)) {
+				if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+					if ((access_mask & DELETE_ACCESS) &&
+							(access_granted == DELETE_ACCESS) &&
+							can_delete_file_in_directory(conn, path)) {
+						/* Were we trying to do a stat open
+						 * for delete and didn't get DELETE
+						 * access (only) ? Check if the
+						 * directory allows DELETE_CHILD.
+						 * See here:
+						 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
+						 * for details. */
 
-				/* Were we trying to do a stat open
-				 * for delete and didn't get DELETE
-				 * access (only) ? Check if the
-				 * directory allows DELETE_CHILD.
-				 * See here:
-				 * http://blogs.msdn.com/oldnewthing/archive/2004/06/04/148426.aspx
-				 * for details. */
-
-				if (!(NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) &&
-						(access_mask & DELETE_ACCESS) &&
-	    					(access_granted == DELETE_ACCESS) &&
-						can_delete_file_in_directory(conn, path))) {
-					DEBUG(10, ("open_file: Access denied on "
-						"file %s\n",
-						path));
+						DEBUG(10,("open_file: overrode ACCESS_DENIED "
+							"on file %s\n",
+							path ));
+					} else {
+						DEBUG(10, ("open_file: Access denied on "
+							"file %s\n",
+							path));
+						return status;
+					}
+				} else if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND) &&
+							fsp->posix_open &&
+							S_ISLNK(psbuf->st_mode)) {
+					/* This is a POSIX stat open for delete
+					 * or rename on a symlink that points
+					 * nowhere. Allow. */
+					DEBUG(10, ("open_file: allowing POSIX open "
+						"on bad symlink %s\n",
+						path ));
+				} else {
+					DEBUG(10, ("open_file: check_open_rights "
+						"on file %s returned %s\n",
+						path, nt_errstr(status) ));
 					return status;
 				}
-
-				DEBUG(10,("open_file: overrode ACCESS_DENIED "
-					"on file %s\n",
-					path ));
 			}
 		}
 	}
