@@ -8,6 +8,14 @@ HEIMDAL_ROKEN_1.0 {
 		base64_encode;
 		bswap16;
 		bswap32;
+		cgetcap;
+		cgetclose;
+		cgetent;
+		cgetmatch;
+		cgetnum;
+		cgetset;
+		cgetstr;
+		cgetustr;
 		closefrom;
 		copyhostent;
 		dns_free_data;
@@ -37,6 +45,7 @@ HEIMDAL_ROKEN_1.0 {
 		getipnodebyname;
 		getnameinfo;
 		getnameinfo_verified;
+		getprogname;
 		glob;
 		globfree;
 		hex_decode;
@@ -77,6 +86,8 @@ HEIMDAL_ROKEN_1.0 {
 		rk_fnmatch;
 		rk_freeifaddrs;
 		rk_getifaddrs;
+		rk_glob;
+		rk_globfree;
 		rk_hex_decode;
 		rk_hex_encode;
 		rk_realloc;
@@ -120,6 +131,8 @@ HEIMDAL_ROKEN_1.0 {
 		rtbl_set_flags;
 		rtbl_set_prefix;
 		rtbl_set_separator;
+		setprogname;
+		signal;
 		simple_execl;
 		simple_execle;
 		simple_execlp;
