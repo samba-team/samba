@@ -52,6 +52,7 @@ HEIMDAL_X509_1.2 {
 		hx509_certs_add;
 		hx509_certs_append;
 		hx509_certs_end_seq;
+		hx509_certs_filter;
 		hx509_certs_find;
 		hx509_certs_free;
 		hx509_certs_info;
