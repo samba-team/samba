@@ -2775,7 +2775,7 @@ hx509_query_match_expr(hx509_context context, hx509_query *q, const char *expr)
 
 int
 hx509_query_match_cmp_func(hx509_query *q,
-			   int (*func)(void *, hx509_cert),
+			   int (*func)(hx509_context, hx509_cert, void *),
 			   void *ctx)
 {
     if (func)
@@ -2920,7 +2920,7 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	    return 0;
     }
     if (q->match & HX509_QUERY_MATCH_FUNCTION) {
-	ret = (*q->cmp_func)(q->cmp_func_ctx, cert);
+	ret = (*q->cmp_func)(context, cert, q->cmp_func_ctx);
 	if (ret != 0)
 	    return 0;
     }
