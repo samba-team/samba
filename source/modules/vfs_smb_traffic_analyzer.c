@@ -164,6 +164,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 	char *str = NULL;
 	char *username = NULL;
 	const char *anon_prefix = NULL;
+	const char *total_anonymization = NULL;
 	size_t len;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, rf_sock, struct refcounted_sock, return);
@@ -184,14 +185,24 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 
 	/* check if anonymization is required */
 
+	total_anonymization=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",
+					"total_anonymization", NULL);
+
 	anon_prefix=lp_parm_const_string(SNUM(handle->conn),"smb_traffic_analyzer",\
 					"anonymize_prefix", NULL );
 	if (anon_prefix!=NULL) {
-		username = talloc_asprintf(talloc_tos(),
-			"%s%i",
-			anon_prefix,
-			str_checksum(
-				handle->conn->server_info->sanitized_username )	); 
+		if (total_anonymization!=NULL) {
+			username = talloc_asprintf(talloc_tos(),
+				"%s",
+				anon_prefix);
+		} else {
+			username = talloc_asprintf(talloc_tos(),
+				"%s%i",
+				anon_prefix,
+				str_checksum(
+					handle->conn->server_info->sanitized_username )	); 
+		}
+
 	} else {
 		username = handle->conn->server_info->sanitized_username;
 	}
