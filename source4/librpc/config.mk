@@ -753,4 +753,6 @@ idl:: $(pidldir)/lib/Parse/Pidl/IDL.pm $(pidldir)/lib/Parse/Pidl/Expr.pm
 	@PIDL_OUTPUTDIR="../librpc/gen_ndr" PIDL_ARGS="$(PIDL_ARGS)" CPP="$(CPP)" srcdir="$(srcdir)" PIDL="$(PIDL)" ../librpc/build_idl.sh ../librpc/idl/*.idl
 	@CPP="$(CPP)" PIDL="$(PIDL)" $(librpcsrcdir)/scripts/build_idl.sh PARTIAL $(librpcsrcdir)/gen_ndr $(librpcsrcdir)/idl/*.idl
 
-
+clean::
+	@echo "Remove ../librpc/gen_ndr files which are not commited to git"
+	@cat ../.gitignore | grep "^librpc/gen_ndr" | xargs rm -f
