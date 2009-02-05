@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <string.h>
 #include <mntent.h>
+#include <limits.h>
 #include "mount.h"
 
 #define UNMOUNT_CIFS_VERSION_MAJOR "0"
@@ -231,6 +232,37 @@ static int remove_from_mtab(char * mountpoint)
 	return rc;
 }
 
+/* Make a canonical pathname from PATH.  Returns a freshly malloced string.
+   It is up the *caller* to ensure that the PATH is sensible.  i.e.
+   canonicalize ("/dev/fd0/.") returns "/dev/fd0" even though ``/dev/fd0/.''
+   is not a legal pathname for ``/dev/fd0''  Anything we cannot parse
+   we return unmodified.   */
+static char *
+canonicalize(char *path)
+{
+	char *canonical = malloc (PATH_MAX + 1);
+
+	if (!canonical) {
+		fprintf(stderr, "Error! Not enough memory!\n");
+		return NULL;
+	}
+
+	if (strlen(path) > PATH_MAX) {
+		fprintf(stderr, "Mount point string too long\n");
+		return NULL;
+	}
+
+	if (path == NULL)
+		return NULL;
+
+	if (realpath (path, canonical))
+		return canonical;
+
+	strncpy (canonical, path, PATH_MAX);
+	canonical[PATH_MAX] = '\0';
+	return canonical;
+}
+
 int main(int argc, char ** argv)
 {
 	int c;
@@ -304,7 +336,7 @@ int main(int argc, char ** argv)
 	argv += optind;
 	argc -= optind;
 
-	mountpoint = argv[0];
+	mountpoint = canonicalize(argv[0]);
 
 	if((argc < 1) || (argv[0] == NULL)) {
 		printf("\nMissing name of unmount directory\n");
