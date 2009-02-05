@@ -29,7 +29,9 @@
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct PyNdrRpcMethodDef *md, PyObject *args, PyObject *kwargs)
+static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface,
+					const struct PyNdrRpcMethodDef *md,
+					PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -74,7 +76,7 @@ static PyObject *py_dcerpc_run_function(dcerpc_InterfaceObject *iface, struct Py
 static PyObject *py_dcerpc_call_wrapper(PyObject *self, PyObject *args, void *wrapped, PyObject *kwargs)
 {	
 	dcerpc_InterfaceObject *iface = (dcerpc_InterfaceObject *)self;
-	struct PyNdrRpcMethodDef *md = wrapped;
+	const struct PyNdrRpcMethodDef *md = (const struct PyNdrRpcMethodDef *)wrapped;
 
 	return py_dcerpc_run_function(iface, md, args, kwargs);
 }
@@ -85,7 +87,7 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 	int i;
 	for (i = 0; mds[i].name; i++) {
 		PyObject *ret;
-		struct wrapperbase *wb = calloc(sizeof(struct wrapperbase), 1);
+		struct wrapperbase *wb = (struct wrapperbase *)calloc(sizeof(struct wrapperbase), 1);
 
 		wb->name = discard_const_p(char, mds[i].name);
 		wb->flags = PyWrapperFlag_KEYWORDS;
