@@ -5,17 +5,17 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    Copyright (C) Andrew Bartlett              2001-2003
    Copyright (C) Gerald Carter                2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -69,7 +69,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
  servers local time, as logon hours are just specified as a weekly
  bitmask.
 ****************************************************************************/
-                                                                                                              
+
 static bool logon_hours_ok(struct samu *sampass)
 {
 	/* In logon hours first bit is Sunday from 12AM to 1AM */
@@ -107,7 +107,7 @@ static bool logon_hours_ok(struct samu *sampass)
 				asct = "INVALID TIME";
 			}
 		}
-		
+
 		DEBUG(1, ("logon_hours_ok: Account for user %s not allowed to "
 			  "logon at this time (%s).\n",
 			  pdb_get_username(sampass), asct ));
@@ -133,7 +133,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	uint32	acct_ctrl = pdb_get_acct_ctrl(sampass);
 	char *workstation_list;
 	time_t kickoff_time;
-	
+
 	DEBUG(4,("sam_account_ok: Checking SMB password for user %s\n",pdb_get_username(sampass)));
 
 	/* Quit if the account was disabled. */
@@ -154,7 +154,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Test account expire time */
-	
+
 	kickoff_time = pdb_get_kickoff_time(sampass);
 	if (kickoff_time != 0 && time(NULL) > kickoff_time) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' has expired.\n", pdb_get_username(sampass)));
@@ -406,7 +406,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 	is_my_domain  = strequal(user_info->domain, lp_workgroup());
 
 	/* check whether or not we service this domain/workgroup name */
-	
+
 	switch ( lp_server_role() ) {
 		case ROLE_STANDALONE:
 		case ROLE_DOMAIN_MEMBER:
@@ -426,7 +426,7 @@ static NTSTATUS check_samstrict_security(const struct auth_context *auth_context
 		default: /* name is ok */
 			break;
 	}
-	
+
 	return check_sam_security(auth_context, my_private_data, mem_ctx, user_info, server_info);
 }
 
