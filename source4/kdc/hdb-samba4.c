@@ -186,9 +186,9 @@ static HDBFlags uf2HDBFlags(krb5_context context, int userAccountControl, enum h
 	return flags;
 }
 
-static int hdb_ldb_destructor(struct hdb_ldb_private *private)
+static int hdb_ldb_destructor(struct hdb_ldb_private *p)
 {
-    hdb_entry_ex *entry_ex = private->entry_ex;
+    hdb_entry_ex *entry_ex = p->entry_ex;
     free_hdb_entry(&entry_ex->entry);
     return 0;
 }
@@ -509,7 +509,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 							"nCName",
 							ldb_dn_new(mem_ctx, (struct ldb_context *)db->hdb_db, NULL));
 
-	struct hdb_ldb_private *private;
+	struct hdb_ldb_private *p;
 	NTTIME acct_expiry;
 
 	struct ldb_message_element *objectclasses;
@@ -531,19 +531,19 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 			
-	private = talloc(mem_ctx, struct hdb_ldb_private);
-	if (!private) {
+	p = talloc(mem_ctx, struct hdb_ldb_private);
+	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
-	private->entry_ex = entry_ex;
-	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
-	private->netbios_name = lp_netbios_name(lp_ctx);
+	p->entry_ex = entry_ex;
+	p->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	p->netbios_name = lp_netbios_name(lp_ctx);
 
-	talloc_set_destructor(private, hdb_ldb_destructor);
+	talloc_set_destructor(p, hdb_ldb_destructor);
 
-	entry_ex->ctx = private;
+	entry_ex->ctx = p;
 	entry_ex->free_entry = hdb_ldb_free_entry;
 
 	userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
@@ -655,7 +655,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = LDB_message2entry_keys(context, private->iconv_convenience, private, msg, userAccountControl, entry_ex);
+	ret = LDB_message2entry_keys(context, p->iconv_convenience, p, msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;
@@ -679,9 +679,9 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 
-	private->msg = talloc_steal(private, msg);
-	private->realm_ref_msg = talloc_steal(private, realm_ref_msg);
-	private->samdb = (struct ldb_context *)db->hdb_db;
+	p->msg = talloc_steal(p, msg);
+	p->realm_ref_msg = talloc_steal(p, realm_ref_msg);
+	p->samdb = (struct ldb_context *)db->hdb_db;
 	
 out:
 	if (ret != 0) {
@@ -712,24 +712,24 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 	struct samr_Password password_hash;
 	const struct ldb_val *password_val;
 	struct trustAuthInOutBlob password_blob;
-	struct hdb_ldb_private *private;
+	struct hdb_ldb_private *p;
 
 	enum ndr_err_code ndr_err;
 	int i, ret, trust_direction_flags;
 
-	private = talloc(mem_ctx, struct hdb_ldb_private);
-	if (!private) {
+	p = talloc(mem_ctx, struct hdb_ldb_private);
+	if (!p) {
 		ret = ENOMEM;
 		goto out;
 	}
 
-	private->entry_ex = entry_ex;
-	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
-	private->netbios_name = lp_netbios_name(lp_ctx);
+	p->entry_ex = entry_ex;
+	p->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	p->netbios_name = lp_netbios_name(lp_ctx);
 
-	talloc_set_destructor(private, hdb_ldb_destructor);
+	talloc_set_destructor(p, hdb_ldb_destructor);
 
-	entry_ex->ctx = private;
+	entry_ex->ctx = p;
 	entry_ex->free_entry = hdb_ldb_free_entry;
 
 	/* use 'whenCreated' */
@@ -756,7 +756,7 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 		goto out;
 	}
 
-	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, private->iconv_convenience, &password_blob,
+	ndr_err = ndr_pull_struct_blob(password_val, mem_ctx, p->iconv_convenience, &password_blob,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ret = EINVAL;
@@ -868,9 +868,9 @@ static krb5_error_code LDB_trust_message2entry(krb5_context context, HDB *db,
 	}
 
 
-	private->msg = talloc_steal(private, msg);
-	private->realm_ref_msg = NULL;
-	private->samdb = (struct ldb_context *)db->hdb_db;
+	p->msg = talloc_steal(p, msg);
+	p->realm_ref_msg = NULL;
+	p->samdb = (struct ldb_context *)db->hdb_db;
 	
 out:
 	if (ret != 0) {

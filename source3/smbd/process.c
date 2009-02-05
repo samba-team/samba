@@ -692,57 +692,55 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 	return result;
 }
 
-/****************************************************************************
- Do all async processing in here. This includes kernel oplock messages, change
- notify events etc.
-****************************************************************************/
-
-static void async_processing(void)
+static void smbd_sig_term_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
 {
-	DEBUG(10,("async_processing: Doing async processing.\n"));
+	exit_server_cleanly("termination signal");
+}
 
-	process_aio_queue();
+void smbd_setup_sig_term_handler(void)
+{
+	struct tevent_signal *se;
 
-	process_kernel_oplocks(smbd_messaging_context());
-
-	/* Do the aio check again after receive_local_message as it does a
-	   select and may have eaten our signal. */
-	/* Is this till true? -- vl */
-	process_aio_queue();
-
-	if (got_sig_term) {
-		exit_server_cleanly("termination signal");
-	}
-
-	/* check for sighup processing */
-	if (reload_after_sighup) {
-		change_to_root_user();
-		DEBUG(1,("Reloading services after SIGHUP\n"));
-		reload_services(False);
-		reload_after_sighup = 0;
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGTERM, 0,
+			       smbd_sig_term_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGTERM handler");
 	}
 }
 
-/****************************************************************************
-  Do a select on an two fd's - with timeout. 
+static void smbd_sig_hup_handler(struct tevent_context *ev,
+				  struct tevent_signal *se,
+				  int signum,
+				  int count,
+				  void *siginfo,
+				  void *private_data)
+{
+	change_to_root_user();
+	DEBUG(1,("Reloading services after SIGHUP\n"));
+	reload_services(False);
+}
 
-  If a local udp message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) call async_processing()
+void smbd_setup_sig_hup_handler(void)
+{
+	struct tevent_signal *se;
 
-  If a pending smb message has been pushed onto the
-  queue (this can only happen during oplock break
-  processing) return this next.
-
-  If the first smbfd is ready then read an smb from it.
-  if the second (loopback UDP) fd is ready then read a message
-  from it and setup the buffer header to identify the length
-  and from address.
-  Returns False on timeout or error.
-  Else returns True.
-
-The timeout is in milliseconds
-****************************************************************************/
+	se = tevent_add_signal(smbd_event_context(),
+			       smbd_event_context(),
+			       SIGHUP, 0,
+			       smbd_sig_hup_handler,
+			       NULL);
+	if (!se) {
+		exit_server("failed to setup SIGHUP handler");
+	}
+}
 
 static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *conn)
 {
@@ -760,26 +758,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 
 	FD_ZERO(&r_fds);
 	FD_ZERO(&w_fds);
-
-	/*
-	 * Ensure we process oplock break messages by preference.
-	 * We have to do this before the select, after the select
-	 * and if the select returns EINTR. This is due to the fact
-	 * that the selects called from async_processing can eat an EINTR
-	 * caused by a signal (we can't take the break message there).
-	 * This is hideously complex - *MUST* be simplified for 3.0 ! JRA.
-	 */
-
-	if (oplock_message_waiting()) {
-		DEBUG(10,("receive_message_or_smb: oplock_message is waiting.\n"));
-		async_processing();
-		/*
-		 * After async processing we must go and do the select again, as
-		 * the state of the flag in fds for the server file descriptor is
-		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
-		 */
-		return NT_STATUS_RETRY;
-	}
 
 	/*
 	 * Are there any timed events waiting ? If so, ensure we don't
@@ -811,20 +789,6 @@ static NTSTATUS smbd_server_connection_loop_once(struct smbd_server_connection *
 	}
 
 	if (run_events(smbd_event_context(), selrtn, &r_fds, &w_fds)) {
-		return NT_STATUS_RETRY;
-	}
-
-	/* if we get EINTR then maybe we have received an oplock
-	   signal - treat this as select returning 1. This is ugly, but
-	   is the best we can do until the oplock code knows more about
-	   signals */
-	if (selrtn == -1 && errno == EINTR) {
-		async_processing();
-		/*
-		 * After async processing we must go and do the select again, as
-		 * the state of the flag in fds for the server file descriptor is
-		 * indeterminate - we may have done I/O on it in the oplock processing. JRA.
-		 */
 		return NT_STATUS_RETRY;
 	}
 
@@ -865,31 +829,6 @@ NTSTATUS allow_new_trans(struct trans_state *list, int mid)
 
 	return NT_STATUS_OK;
 }
-
-/****************************************************************************
- We're terminating and have closed all our files/connections etc.
- If there are any pending local messages we need to respond to them
- before termination so that other smbds don't think we just died whilst
- holding oplocks.
-****************************************************************************/
-
-void respond_to_all_remaining_local_messages(void)
-{
-	/*
-	 * Assert we have no exclusive open oplocks.
-	 */
-
-	if(get_number_of_exclusive_open_oplocks()) {
-		DEBUG(0,("respond_to_all_remaining_local_messages: PANIC : we have %d exclusive oplocks.\n",
-			get_number_of_exclusive_open_oplocks() ));
-		return;
-	}
-
-	process_kernel_oplocks(smbd_messaging_context());
-
-	return;
-}
-
 
 /*
 These flags determine some of the permissions required to do an operation 
@@ -1420,8 +1359,6 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	connection_struct *conn;
 	struct smb_request *req;
 
-	chain_size = 0;
-
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
@@ -1830,9 +1767,8 @@ void check_reload(time_t t)
 		mypid = getpid();
 	}
 
-	if (reload_after_sighup || (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK)) {
+	if (t >= last_smb_conf_reload_time+SMBD_RELOAD_CHECK) {
 		reload_services(True);
-		reload_after_sighup = False;
 		last_smb_conf_reload_time = t;
 	}
 
@@ -1903,12 +1839,135 @@ static void smbd_server_connection_handler(struct event_context *ev,
 	}
 }
 
+
+/****************************************************************************
+received when we should release a specific IP
+****************************************************************************/
+static void release_ip(const char *ip, void *priv)
+{
+	char addr[INET6_ADDRSTRLEN];
+
+	if (strcmp(client_socket_addr(get_client_fd(),addr,sizeof(addr)), ip) == 0) {
+		/* we can't afford to do a clean exit - that involves
+		   database writes, which would potentially mean we
+		   are still running after the failover has finished -
+		   we have to get rid of this process ID straight
+		   away */
+		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
+			ip));
+		/* note we must exit with non-zero status so the unclean handler gets
+		   called in the parent, so that the brl database is tickled */
+		_exit(1);
+	}
+}
+
+static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data,
+			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+{
+	release_ip((char *)data->data, NULL);
+}
+
+#ifdef CLUSTER_SUPPORT
+static int client_get_tcp_info(struct sockaddr_storage *server,
+			       struct sockaddr_storage *client)
+{
+	socklen_t length;
+	if (server_fd == -1) {
+		return -1;
+	}
+	length = sizeof(*server);
+	if (getsockname(server_fd, (struct sockaddr *)server, &length) != 0) {
+		return -1;
+	}
+	length = sizeof(*client);
+	if (getpeername(server_fd, (struct sockaddr *)client, &length) != 0) {
+		return -1;
+	}
+	return 0;
+}
+#endif
+
+/*
+ * Send keepalive packets to our client
+ */
+static bool keepalive_fn(const struct timeval *now, void *private_data)
+{
+	if (!send_keepalive(smbd_server_fd())) {
+		DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
+		return False;
+	}
+	return True;
+}
+
+/*
+ * Do the recurring check if we're idle
+ */
+static bool deadtime_fn(const struct timeval *now, void *private_data)
+{
+	if ((conn_num_open() == 0)
+	    || (conn_idle_all(now->tv_sec))) {
+		DEBUG( 2, ( "Closing idle connection\n" ) );
+		messaging_send(smbd_messaging_context(), procid_self(),
+			       MSG_SHUTDOWN, &data_blob_null);
+		return False;
+	}
+
+	return True;
+}
+
+/*
+ * Do the recurring log file and smb.conf reload checks.
+ */
+
+static bool housekeeping_fn(const struct timeval *now, void *private_data)
+{
+	change_to_root_user();
+
+	/* update printer queue caches if necessary */
+	update_monitored_printq_cache();
+
+	/* check if we need to reload services */
+	check_reload(time(NULL));
+
+	/* Change machine password if neccessary. */
+	attempt_machine_password_change();
+
+        /*
+	 * Force a log file check.
+	 */
+	force_check_log_size();
+	check_log_size();
+	return true;
+}
+
 /****************************************************************************
  Process commands from the client
 ****************************************************************************/
 
 void smbd_process(void)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	char remaddr[INET6_ADDRSTRLEN];
+
+	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
+	if (!smbd_server_conn) {
+		exit_server("failed to create smbd_server_connection");
+	}
+
+	/* Ensure child is set to blocking mode */
+	set_blocking(smbd_server_fd(),True);
+
+	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
+	set_socket_options(smbd_server_fd(), lp_socket_options());
+
+	/* this is needed so that we get decent entries
+	   in smbstatus for port 445 connects */
+	set_remote_machine_name(get_peer_addr(smbd_server_fd(),
+					      remaddr,
+					      sizeof(remaddr)),
+					      false);
+	reload_services(true);
+
 	/*
 	 * Before the first packet, check the global hosts allow/ hosts deny
 	 * parameters before doing any parsing of packets passed to us by the
@@ -1931,12 +1990,96 @@ void smbd_process(void)
 		exit_server_cleanly("connection denied");
 	}
 
+	static_init_rpc;
+
+	init_modules();
+
+	if (!init_account_policy()) {
+		exit_server("Could not open account policy tdb.\n");
+	}
+
+	if (*lp_rootdir()) {
+		if (chroot(lp_rootdir()) != 0) {
+			DEBUG(0,("Failed changed root to %s\n", lp_rootdir()));
+			exit_server("Failed to chroot()");
+		}
+		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
+	}
+
+	/* Setup oplocks */
+	if (!init_oplocks(smbd_messaging_context()))
+		exit_server("Failed to init oplocks");
+
+	/* Setup aio signal handler. */
+	initialize_async_io_handler();
+
+	/* register our message handlers */
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_RELEASE_IP, msg_release_ip);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_CLOSE_FILE, msg_close_file);
+
+	if ((lp_keepalive() != 0)
+	    && !(event_add_idle(smbd_event_context(), NULL,
+				timeval_set(lp_keepalive(), 0),
+				"keepalive", keepalive_fn,
+				NULL))) {
+		DEBUG(0, ("Could not add keepalive event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(IDLE_CLOSED_TIMEOUT, 0),
+			     "deadtime", deadtime_fn, NULL))) {
+		DEBUG(0, ("Could not add deadtime event\n"));
+		exit(1);
+	}
+
+	if (!(event_add_idle(smbd_event_context(), NULL,
+			     timeval_set(SMBD_SELECT_TIMEOUT, 0),
+			     "housekeeping", housekeeping_fn, NULL))) {
+		DEBUG(0, ("Could not add housekeeping event\n"));
+		exit(1);
+	}
+
+#ifdef CLUSTER_SUPPORT
+
+	if (lp_clustering()) {
+		/*
+		 * We need to tell ctdb about our client's TCP
+		 * connection, so that for failover ctdbd can send
+		 * tickle acks, triggering a reconnection by the
+		 * client.
+		 */
+
+		struct sockaddr_storage srv, clnt;
+
+		if (client_get_tcp_info(&srv, &clnt) == 0) {
+
+			NTSTATUS status;
+
+			status = ctdbd_register_ips(
+				messaging_ctdbd_connection(),
+				&srv, &clnt, release_ip, NULL);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(0, ("ctdbd_register_ips failed: %s\n",
+					  nt_errstr(status)));
+			}
+		} else
+		{
+			DEBUG(0,("Unable to get tcp info for "
+				 "CTDB_CONTROL_TCP_CLIENT: %s\n",
+				 strerror(errno)));
+		}
+	}
+
+#endif
+
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
-	smbd_server_conn = talloc_zero(smbd_event_context(), struct smbd_server_connection);
-	if (!smbd_server_conn) {
-		exit_server("failed to create smbd_server_connection");
-	}
 	smbd_server_conn->fde = event_add_fd(smbd_event_context(),
 					     smbd_server_conn,
 					     smbd_server_fd(),
@@ -1947,9 +2090,12 @@ void smbd_process(void)
 		exit_server("failed to create smbd_server_connection fde");
 	}
 
+	TALLOC_FREE(frame);
+
 	while (True) {
 		NTSTATUS status;
-		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
+
+		frame = talloc_stackframe_pool(8192);
 
 		errno = 0;
 
@@ -1958,9 +2104,35 @@ void smbd_process(void)
 		    !NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("smbd_server_connection_loop_once failed: %s,"
 				  " exiting\n", nt_errstr(status)));
-			return;
+			break;
 		}
 
 		TALLOC_FREE(frame);
 	}
+
+	exit_server_cleanly(NULL);
+}
+
+bool req_is_in_chain(struct smb_request *req)
+{
+	if (req->vwv != (uint16_t *)(req->inbuf+smb_vwv)) {
+		/*
+		 * We're right now handling a subsequent request, so we must
+		 * be in a chain
+		 */
+		return true;
+	}
+
+	if (!is_andx_req(req->cmd)) {
+		return false;
+	}
+
+	if (req->wct < 2) {
+		/*
+		 * Okay, an illegal request, but definitely not chained :-)
+		 */
+		return false;
+	}
+
+	return (CVAL(req->vwv+0, 0) != 0xFF);
 }

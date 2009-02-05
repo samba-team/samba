@@ -32,7 +32,7 @@
  */
 
 #include "includes.h"
-#include "ldb_includes.h"
+#include "ldb.h"
 #include "system/locale.h"
 #include "lib/ldb/tools/cmdline.h"
 #include "param/param.h"

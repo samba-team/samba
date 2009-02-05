@@ -129,7 +129,7 @@ static NTSTATUS connect_session_setup_anon(struct composite_context *c,
 	}
 
 	state->req->async.fn = request_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = CONNECT_TCON;
 
 	return NT_STATUS_OK;
@@ -215,7 +215,7 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 	}
 
 	state->req->async.fn = request_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = CONNECT_TCON;
 
 	return NT_STATUS_OK;
@@ -285,7 +285,7 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = CONNECT_NEGPROT;
 	
 	return NT_STATUS_OK;
@@ -354,7 +354,7 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->stage = CONNECT_SESSION_REQUEST;
 
 	return NT_STATUS_OK;
@@ -434,7 +434,7 @@ static void state_handler(struct composite_context *c)
 */
 static void request_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data,
 						     struct composite_context);
 	state_handler(c);
 }

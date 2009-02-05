@@ -67,7 +67,7 @@ struct ldb_map_attribute {
 	} type;
 	
 	/* if set, will be called for search expressions that contain this attribute */
-	int (*convert_operator)(struct ldb_module *, TALLOC_CTX *ctx, struct ldb_parse_tree **new, const struct ldb_parse_tree *);
+	int (*convert_operator)(struct ldb_module *, TALLOC_CTX *ctx, struct ldb_parse_tree **ntree, const struct ldb_parse_tree *otree);
 
 	union { 
 		struct {

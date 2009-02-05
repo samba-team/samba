@@ -1101,6 +1101,7 @@ static bool run_tcon_test(int dummy)
 	uint16 vuid1, vuid2;
 	char buf[4];
 	bool ret = True;
+	NTSTATUS status;
 
 	memset(buf, '\0', sizeof(buf));
 
@@ -1127,10 +1128,11 @@ static bool run_tcon_test(int dummy)
 		return False;
 	}
 
-	if (!cli_send_tconX(cli, share, "?????",
-			    password, strlen(password)+1)) {
+	status = cli_tcon_andx(cli, share, "?????",
+			       password, strlen(password)+1);
+	if (!NT_STATUS_IS_OK(status)) {
 		printf("%s refused 2nd tree connect (%s)\n", host,
-		           cli_errstr(cli));
+		       nt_errstr(status));
 		cli_shutdown(cli);
 		return False;
 	}
@@ -1239,14 +1241,14 @@ static bool tcon_devtest(struct cli_state *cli,
 			 const char *return_devtype,
 			 NTSTATUS expected_error)
 {
-	bool status;
+	NTSTATUS status;
 	bool ret;
 
-	status = cli_send_tconX(cli, myshare, devtype,
-				password, strlen(password)+1);
+	status = cli_tcon_andx(cli, myshare, devtype,
+			       password, strlen(password)+1);
 
 	if (NT_STATUS_IS_OK(expected_error)) {
-		if (status) {
+		if (NT_STATUS_IS_OK(status)) {
 			if (strcmp(cli->dev, return_devtype) == 0) {
 				ret = True;
 			} else { 
@@ -1264,7 +1266,7 @@ static bool tcon_devtest(struct cli_state *cli,
 		}
 		cli_tdis(cli);
 	} else {
-		if (status) {
+		if (NT_STATUS_IS_OK(status)) {
 			printf("tconx to share %s with type %s "
 			       "should have failed but succeeded\n",
 			       myshare, devtype);
@@ -2157,7 +2159,7 @@ static bool run_fdsesstest(int dummy)
 		return False;
 
 	saved_cnum = cli->cnum;
-	if (!cli_send_tconX(cli, share, "?????", "", 1))
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, share, "?????", "", 1)))
 		return False;
 	new_cnum = cli->cnum;
 	cli->cnum = saved_cnum;
@@ -5831,6 +5833,11 @@ static void usage(void)
 
 	load_case_tables();
 
+	if (is_default_dyn_CONFIGFILE()) {
+		if(getenv("SMB_CONF_PATH")) {
+			set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
+		}
+	}
 	lp_load(get_dyn_CONFIGFILE(),True,False,False,True);
 	load_interfaces();
 

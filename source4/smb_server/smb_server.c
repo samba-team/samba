@@ -34,10 +34,10 @@
 #include "dsdb/samdb/samdb.h"
 #include "param/param.h"
 
-static NTSTATUS smbsrv_recv_generic_request(void *private, DATA_BLOB blob)
+static NTSTATUS smbsrv_recv_generic_request(void *private_data, DATA_BLOB blob)
 {
 	NTSTATUS status;
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	uint32_t protocol_version;
 
 	/* see if its a special NBT packet */
@@ -88,7 +88,7 @@ void smbsrv_terminate_connection(struct smbsrv_connection *smb_conn, const char 
 */
 static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private,
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private_data,
 							     struct smbsrv_connection);
 
 	DEBUG(10,("smbsrv_recv\n"));
@@ -101,7 +101,7 @@ static void smbsrv_recv(struct stream_connection *conn, uint16_t flags)
 */
 static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private, 
+	struct smbsrv_connection *smb_conn = talloc_get_type(conn->private_data,
 							     struct smbsrv_connection);
 	packet_queue_run(smb_conn->packet);
 }
@@ -109,9 +109,9 @@ static void smbsrv_send(struct stream_connection *conn, uint16_t flags)
 /*
   handle socket recv errors
 */
-static void smbsrv_recv_error(void *private, NTSTATUS status)
+static void smbsrv_recv_error(void *private_data, NTSTATUS status)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	
 	smbsrv_terminate_connection(smb_conn, nt_errstr(status));
 }
@@ -148,7 +148,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 
 	smb_conn->lp_ctx = conn->lp_ctx;
 	smb_conn->connection = conn;
-	conn->private = smb_conn;
+	conn->private_data = smb_conn;
 
 	smb_conn->statistics.connect_time = timeval_current();
 

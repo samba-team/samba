@@ -144,12 +144,18 @@ void reply_open_pipe_and_X(connection_struct *conn, struct smb_request *req)
  Reply to a write on a pipe.
 ****************************************************************************/
 
+struct pipe_write_state {
+	size_t numtowrite;
+};
+
+static void pipe_write_done(struct async_req *subreq);
+
 void reply_pipe_write(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
-	size_t numtowrite = SVAL(req->vwv+1, 0);
-	ssize_t nwritten;
 	const uint8_t *data;
+	struct pipe_write_state *state;
+	struct async_req *subreq;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -161,39 +167,59 @@ void reply_pipe_write(struct smb_request *req)
 		return;
 	}
 
+	state = talloc(req, struct pipe_write_state);
+	if (state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	req->async_priv = state;
+
+	state->numtowrite = SVAL(req->vwv+1, 0);
+
 	data = req->buf + 3;
 
-	if (numtowrite == 0) {
-		nwritten = 0;
-	} else {
-		NTSTATUS status;
-		if (!fsp_is_np(fsp)) {
-			reply_nterror(req, NT_STATUS_INVALID_HANDLE);
-			return;
-		}
-		DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n",
-			  (int)fsp->fnum, fsp->fsp_name, (int)numtowrite));
-		status = np_write(fsp->fake_file_handle, data, numtowrite,
-				  &nwritten);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
-			return;
-		}
-	}
+	DEBUG(6, ("reply_pipe_write: %x name: %s len: %d\n", (int)fsp->fnum,
+		  fsp->fsp_name, (int)state->numtowrite));
 
-	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
+	subreq = np_write_send(state, smbd_event_context(),
+			       fsp->fake_file_handle, data, state->numtowrite);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
+	}
+	subreq->async.fn = pipe_write_done;
+	subreq->async.priv = talloc_move(req->conn, &req);
+}
+
+static void pipe_write_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct pipe_write_state *state = talloc_get_type_abort(
+		req->async_priv, struct pipe_write_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if ((nwritten == 0 && state->numtowrite != 0) || (nwritten < 0)) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		goto send;
 	}
 
 	reply_outbuf(req, 1, 0);
 
 	SSVAL(req->outbuf,smb_vwv0,nwritten);
-  
-	DEBUG(3,("write-IPC pnum=%04x nwritten=%d\n", fsp->fnum,
-		 (int)nwritten));
 
-	return;
+	DEBUG(3,("write-IPC nwritten=%d\n", (int)nwritten));
+
+ send:
+	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted)) {
+		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+	}
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
@@ -203,16 +229,20 @@ void reply_pipe_write(struct smb_request *req)
  wrinkles to handle pipes.
 ****************************************************************************/
 
+struct pipe_write_andx_state {
+	bool pipe_start_message_raw;
+	size_t numtowrite;
+};
+
+static void pipe_write_andx_done(struct async_req *subreq);
+
 void reply_pipe_write_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+2, 0));
-	size_t numtowrite = SVAL(req->vwv+10, 0);
-	ssize_t nwritten;
 	int smb_doff = SVAL(req->vwv+11, 0);
-	bool pipe_start_message_raw =
-		((SVAL(req->vwv+7, 0) & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
-		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
 	uint8_t *data;
+	struct pipe_write_andx_state *state;
+	struct async_req *subreq;
 
 	if (!fsp_is_np(fsp)) {
 		reply_doserror(req, ERRDOS, ERRbadfid);
@@ -224,55 +254,76 @@ void reply_pipe_write_and_X(struct smb_request *req)
 		return;
 	}
 
+	state = talloc(req, struct pipe_write_andx_state);
+	if (state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	req->async_priv = state;
+
+	state->numtowrite = SVAL(req->vwv+10, 0);
+	state->pipe_start_message_raw =
+		((SVAL(req->vwv+7, 0) & (PIPE_START_MESSAGE|PIPE_RAW_MODE))
+		 == (PIPE_START_MESSAGE|PIPE_RAW_MODE));
+
 	DEBUG(6, ("reply_pipe_write_and_X: %x name: %s len: %d\n",
-		  (int)fsp->fnum, fsp->fsp_name, (int)numtowrite));
+		  (int)fsp->fnum, fsp->fsp_name, (int)state->numtowrite));
 
 	data = (uint8_t *)smb_base(req->inbuf) + smb_doff;
 
-	if (numtowrite == 0) {
-		nwritten = 0;
-	} else {
-		NTSTATUS status;
-
-		if(pipe_start_message_raw) {
-			/*
-			 * For the start of a message in named pipe byte mode,
-			 * the first two bytes are a length-of-pdu field. Ignore
-			 * them (we don't trust the client). JRA.
-			 */
-	 	       if(numtowrite < 2) {
-				DEBUG(0,("reply_pipe_write_and_X: start of "
-					 "message set and not enough data "
-					 "sent.(%u)\n",
-					 (unsigned int)numtowrite ));
-				reply_unixerror(req, ERRDOS, ERRnoaccess);
-				return;
-			}
-
-			data += 2;
-			numtowrite -= 2;
-		}                        
-		status = np_write(fsp->fake_file_handle, data, numtowrite,
-				  &nwritten);
-		if (!NT_STATUS_IS_OK(status)) {
-			reply_nterror(req, status);
+	if (state->pipe_start_message_raw) {
+		/*
+		 * For the start of a message in named pipe byte mode,
+		 * the first two bytes are a length-of-pdu field. Ignore
+		 * them (we don't trust the client). JRA.
+		 */
+		if (state->numtowrite < 2) {
+			DEBUG(0,("reply_pipe_write_and_X: start of message "
+				 "set and not enough data sent.(%u)\n",
+				 (unsigned int)state->numtowrite ));
+			reply_unixerror(req, ERRDOS, ERRnoaccess);
 			return;
 		}
+
+		data += 2;
+		state->numtowrite -= 2;
 	}
 
-	if ((nwritten == 0 && numtowrite != 0) || (nwritten < 0)) {
-		reply_unixerror(req, ERRDOS,ERRnoaccess);
+	subreq = np_write_send(state, smbd_event_context(),
+			       fsp->fake_file_handle, data, state->numtowrite);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
+	}
+	subreq->async.fn = pipe_write_andx_done;
+	subreq->async.priv = talloc_move(req->conn, &req);
+}
+
+static void pipe_write_andx_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct pipe_write_andx_state *state = talloc_get_type_abort(
+		req->async_priv, struct pipe_write_andx_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status) || (nwritten != state->numtowrite)) {
+		reply_unixerror(req, ERRDOS,ERRnoaccess);
+		goto done;
 	}
 
 	reply_outbuf(req, 6, 0);
 
-	nwritten = (pipe_start_message_raw ? nwritten + 2 : nwritten);
+	nwritten = (state->pipe_start_message_raw ? nwritten + 2 : nwritten);
 	SSVAL(req->outbuf,smb_vwv2,nwritten);
-  
-	DEBUG(3,("writeX-IPC pnum=%04x nwritten=%d\n", fsp->fnum,
-		 (int)nwritten));
 
+	DEBUG(3,("writeX-IPC nwritten=%d\n", (int)nwritten));
+
+ done:
 	chain_reply(req);
 }
 
@@ -282,15 +333,20 @@ void reply_pipe_write_and_X(struct smb_request *req)
  wrinkles to handle pipes.
 ****************************************************************************/
 
+struct pipe_read_andx_state {
+	uint8_t *outbuf;
+	int smb_mincnt;
+	int smb_maxcnt;
+};
+
+static void pipe_read_andx_done(struct async_req *subreq);
+
 void reply_pipe_read_and_X(struct smb_request *req)
 {
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+0, 0));
-	int smb_maxcnt = SVAL(req->vwv+5, 0);
-	int smb_mincnt = SVAL(req->vwv+6, 0);
-	ssize_t nread;
 	uint8_t *data;
-	bool unused;
-	NTSTATUS status;
+	struct pipe_read_andx_state *state;
+	struct async_req *subreq;
 
 	/* we don't use the offset given to use for pipe reads. This
            is deliberate, instead we always return the next lump of
@@ -309,17 +365,55 @@ void reply_pipe_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	reply_outbuf(req, 12, smb_maxcnt);
-
-	data = (uint8_t *)smb_buf(req->outbuf);
-
-	status = np_read(fsp->fake_file_handle, data, smb_maxcnt, &nread,
-			 &unused);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_doserror(req, ERRDOS, ERRnoaccess);
+	state = talloc(req, struct pipe_read_andx_state);
+	if (state == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	req->async_priv = state;
+
+	state->smb_maxcnt = SVAL(req->vwv+5, 0);
+	state->smb_mincnt = SVAL(req->vwv+6, 0);
+
+	reply_outbuf(req, 12, state->smb_maxcnt);
+	data = (uint8_t *)smb_buf(req->outbuf);
+
+	/*
+	 * We have to tell the upper layers that we're async.
+	 */
+	state->outbuf = req->outbuf;
+	req->outbuf = NULL;
+
+	subreq = np_read_send(state, smbd_event_context(),
+			      fsp->fake_file_handle, data,
+			      state->smb_maxcnt);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		return;
+	}
+	subreq->async.fn = pipe_read_andx_done;
+	subreq->async.priv = talloc_move(req->conn, &req);
+}
+
+static void pipe_read_andx_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct pipe_read_andx_state *state = talloc_get_type_abort(
+		req->async_priv, struct pipe_read_andx_state);
+	NTSTATUS status;
+	ssize_t nread;
+	bool is_data_outstanding;
+
+	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto done;
+	}
+
+	req->outbuf = state->outbuf;
+	state->outbuf = NULL;
 
 	srv_set_message((char *)req->outbuf, 12, nread, False);
   
@@ -329,10 +423,11 @@ void reply_pipe_read_and_X(struct smb_request *req)
 	      + 1 		/* the wct field */
 	      + 12 * sizeof(uint16_t) /* vwv */
 	      + 2);		/* the buflen field */
-	SSVAL(req->outbuf,smb_vwv11,smb_maxcnt);
+	SSVAL(req->outbuf,smb_vwv11,state->smb_maxcnt);
   
-	DEBUG(3,("readX-IPC pnum=%04x min=%d max=%d nread=%d\n",
-		 fsp->fnum, smb_mincnt, smb_maxcnt, (int)nread));
+	DEBUG(3,("readX-IPC min=%d max=%d nread=%d\n",
+		 state->smb_mincnt, state->smb_maxcnt, (int)nread));
 
+ done:
 	chain_reply(req);
 }

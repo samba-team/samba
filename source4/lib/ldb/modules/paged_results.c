@@ -32,7 +32,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct message_store {
 	/* keep the whole ldb_reply as an optimization
@@ -290,6 +290,7 @@ static int paged_search_callback(struct ldb_request *req, struct ldb_reply *ares
 
 static int paged_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_control *control;
 	struct private_data *private_data;
 	struct ldb_paged_control *paged_ctrl;
@@ -297,6 +298,8 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_request *search_req;
 	struct paged_context *ac;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* check if there's a paged request control */
 	control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
@@ -310,11 +313,12 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_PROTOCOL_ERROR;
 	}
 
-	private_data = talloc_get_type(module->private_data, struct private_data);
+	private_data = talloc_get_type(ldb_module_get_private(module),
+					struct private_data);
 
 	ac = talloc_zero(req, struct paged_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -333,7 +337,7 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-		ret = ldb_build_search_req_ex(&search_req, module->ldb, ac,
+		ret = ldb_build_search_req_ex(&search_req, ldb, ac,
 						req->op.search.base,
 						req->op.search.scope,
 						req->op.search.tree,
@@ -385,8 +389,11 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 
 static int paged_request_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	struct private_data *data;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
@@ -395,11 +402,11 @@ static int paged_request_init(struct ldb_module *module)
 
 	data->next_free_id = 1;
 	data->store = NULL;
-	module->private_data = data;
+	ldb_module_set_private(module, data);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_PAGED_RESULTS_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			"paged_request:"
 			"Unable to register control with rootdse!\n");
 	}

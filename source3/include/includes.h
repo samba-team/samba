@@ -619,11 +619,9 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ntlmssp.h"
 #include "auth.h"
 #include "ntdomain.h"
-#include "rpc_lsa.h"
 #include "reg_objects.h"
 #include "reg_db.h"
 #include "rpc_spoolss.h"
-#include "rpc_eventlog.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
@@ -647,9 +645,9 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ctdbd_conn.h"
 #include "../lib/util/talloc_stack.h"
 #include "memcache.h"
-#include "async_req.h"
+#include "../lib/async_req/async_req_ntstatus.h"
 #include "async_smb.h"
-#include "async_sock.h"
+#include "../lib/async_req/async_sock.h"
 #include "services.h"
 #include "eventlog.h"
 
@@ -677,20 +675,6 @@ struct printjob;
 #include "smbldap.h"
 
 #include "smb_ldap.h"
-
-struct dns_reg_state;
-
-void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout);
-
-void dns_register_close(struct dns_reg_state ** dns_state_ptr);
-
-
-bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout);
 
 /*
  * Reasons for cache flush.
@@ -893,8 +877,25 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
-#if defined(HAVE_KRB5)
+/*
+ * This should be under the HAVE_KRB5 flag but since they're used
+ * in lp_kerberos_method(), they ned to be always available
+ */
+#define KERBEROS_VERIFY_SECRETS 0
+#define KERBEROS_VERIFY_SYSTEM_KEYTAB 1
+#define KERBEROS_VERIFY_DEDICATED_KEYTAB 2
+#define KERBEROS_VERIFY_SECRETS_AND_KEYTAB 3
 
+/*
+ * If you add any entries to the above, please modify the below expressions
+ * so they remain accurate.
+ */
+#define USE_KERBEROS_KEYTAB (KERBEROS_VERIFY_SECRETS != lp_kerberos_method())
+#define USE_SYSTEM_KEYTAB \
+    ((KERBEROS_VERIFY_SECRETS_AND_KEYTAB == lp_kerberos_method()) || \
+     (KERBEROS_VERIFY_SYSTEM_KEYTAB == lp_kerberos_method()))
+
+#if defined(HAVE_KRB5)
 krb5_error_code smb_krb5_parse_name(krb5_context context,
 				const char *name, /* in unix charset */
                                 krb5_principal *principal);

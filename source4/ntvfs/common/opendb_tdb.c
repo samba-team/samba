@@ -548,7 +548,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 /*
   register a pending open file in the open files database
 */
-static NTSTATUS odb_tdb_open_file_pending(struct odb_lock *lck, void *private)
+static NTSTATUS odb_tdb_open_file_pending(struct odb_lock *lck, void *private_data)
 {
 	struct odb_context *odb = lck->odb;
 
@@ -562,7 +562,7 @@ static NTSTATUS odb_tdb_open_file_pending(struct odb_lock *lck, void *private)
 	NT_STATUS_HAVE_NO_MEMORY(lck->file.pending);
 
 	lck->file.pending[lck->file.num_pending].server = odb->ntvfs_ctx->server_id;
-	lck->file.pending[lck->file.num_pending].notify_ptr = private;
+	lck->file.pending[lck->file.num_pending].notify_ptr = private_data;
 
 	lck->file.num_pending++;
 
@@ -710,7 +710,7 @@ static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
 /*
   remove a pending opendb entry
 */
-static NTSTATUS odb_tdb_remove_pending(struct odb_lock *lck, void *private)
+static NTSTATUS odb_tdb_remove_pending(struct odb_lock *lck, void *private_data)
 {
 	struct odb_context *odb = lck->odb;
 	int i;
@@ -721,7 +721,7 @@ static NTSTATUS odb_tdb_remove_pending(struct odb_lock *lck, void *private)
 
 	/* find the entry, and delete it */
 	for (i=0;i<lck->file.num_pending;i++) {
-		if (private == lck->file.pending[i].notify_ptr &&
+		if (private_data == lck->file.pending[i].notify_ptr &&
 		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &lck->file.pending[i].server)) {
 			if (i < lck->file.num_pending-1) {
 				memmove(lck->file.pending+i, lck->file.pending+i+1,

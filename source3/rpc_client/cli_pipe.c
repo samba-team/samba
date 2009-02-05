@@ -81,9 +81,10 @@ static const struct pipe_id_info {
  Return the pipe name from the interface.
  ****************************************************************************/
 
-const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-					 const struct ndr_syntax_id *interface)
+const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface)
 {
+	char *guid_str;
+	const char *result;
 	int i;
 	for (i = 0; pipe_names[i].client_pipe; i++) {
 		if (ndr_syntax_id_equal(pipe_names[i].abstr_syntax,
@@ -97,7 +98,18 @@ const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
 	 * interested in the known pipes mentioned in pipe_names[]
 	 */
 
-	return NULL;
+	guid_str = GUID_string(talloc_tos(), &interface->uuid);
+	if (guid_str == NULL) {
+		return NULL;
+	}
+	result = talloc_asprintf(talloc_tos(), "Interface %s.%d", guid_str,
+				 (int)interface->if_version);
+	TALLOC_FREE(guid_str);
+
+	if (result == NULL) {
+		return "PIPE";
+	}
+	return result;
 }
 
 /********************************************************************
@@ -243,7 +255,7 @@ static void rpc_read_done(struct async_req *subreq)
 	status = state->transport->read_recv(subreq, &received);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -266,7 +278,7 @@ static void rpc_read_done(struct async_req *subreq)
 
 static NTSTATUS rpc_read_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct rpc_write_state {
@@ -323,7 +335,7 @@ static void rpc_write_done(struct async_req *subreq)
 	status = state->transport->write_recv(subreq, &written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -347,7 +359,7 @@ static void rpc_write_done(struct async_req *subreq)
 
 static NTSTATUS rpc_write_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 
@@ -458,7 +470,7 @@ static struct async_req *get_complete_frag_send(TALLOC_CTX *mem_ctx,
 
 	status = NT_STATUS_OK;
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -476,18 +488,18 @@ static void get_complete_frag_got_header(struct async_req *subreq)
 	status = rpc_read_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	status = parse_rpc_header(state->cli, state->prhdr, state->pdu);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	if (!rpc_grow_buffer(state->pdu, state->prhdr->frag_len)) {
-		async_req_error(req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -516,7 +528,7 @@ static void get_complete_frag_got_rest(struct async_req *subreq)
 	status = rpc_read_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -524,7 +536,7 @@ static void get_complete_frag_got_rest(struct async_req *subreq)
 
 static NTSTATUS get_complete_frag_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 /****************************************************************************
@@ -1084,7 +1096,7 @@ static struct async_req *cli_api_pipe_send(TALLOC_CTX *mem_ctx,
 	status = NT_STATUS_INVALID_PARAMETER;
 
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
  fail:
@@ -1104,7 +1116,7 @@ static void cli_api_pipe_trans_done(struct async_req *subreq)
 					      &state->rdata_len);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -1121,7 +1133,7 @@ static void cli_api_pipe_write_done(struct async_req *subreq)
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1157,7 +1169,7 @@ static void cli_api_pipe_read_done(struct async_req *subreq)
 	status = state->transport->read_recv(subreq, &received);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	state->rdata_len = received;
@@ -1171,7 +1183,7 @@ static NTSTATUS cli_api_pipe_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct cli_api_pipe_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -1252,7 +1264,7 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 
 	prs_init_empty(&state->incoming_pdu, state, UNMARSHALL);
 	/* Make incoming_pdu dynamic with no memory. */
-	prs_give_memory(&state->incoming_pdu, 0, 0, true);
+	prs_give_memory(&state->incoming_pdu, NULL, 0, true);
 
 	talloc_set_destructor(state, rpc_api_pipe_state_destructor);
 
@@ -1284,7 +1296,7 @@ static struct async_req *rpc_api_pipe_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -1306,7 +1318,7 @@ static void rpc_api_pipe_trans_done(struct async_req *subreq)
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("cli_api_pipe failed: %s\n", nt_errstr(status)));
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1354,7 +1366,7 @@ static void rpc_api_pipe_got_pdu(struct async_req *subreq)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("get_complete_frag failed: %s\n",
 			  nt_errstr(status)));
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1369,7 +1381,7 @@ static void rpc_api_pipe_got_pdu(struct async_req *subreq)
 		  nt_errstr(status)));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1393,13 +1405,13 @@ static void rpc_api_pipe_got_pdu(struct async_req *subreq)
 			 "%s\n",
 			 state->incoming_pdu.bigendian_data?"big":"little",
 			 state->incoming_frag.bigendian_data?"big":"little"));
-		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		async_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	/* Now copy the data portion out of the pdu into rbuf. */
 	if (!prs_force_grow(&state->incoming_pdu, rdata_len)) {
-		async_req_error(req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -1410,7 +1422,7 @@ static void rpc_api_pipe_got_pdu(struct async_req *subreq)
 	status = cli_pipe_reset_current_pdu(state->cli, &state->rhdr,
 					    &state->incoming_frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -1438,7 +1450,7 @@ static NTSTATUS rpc_api_pipe_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct rpc_api_pipe_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -2105,7 +2117,7 @@ struct async_req *rpc_api_pipe_req_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -2209,13 +2221,13 @@ static void rpc_api_pipe_req_write_done(struct async_req *subreq)
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	status = prepare_next_frag(state, &is_last_frag);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -2253,7 +2265,7 @@ static void rpc_api_pipe_req_done(struct async_req *subreq)
 	status = rpc_api_pipe_recv(subreq, state, &state->reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -2266,7 +2278,7 @@ NTSTATUS rpc_api_pipe_req_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct rpc_api_pipe_req_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		/*
 		 * We always have to initialize to reply pdu, even if there is
 		 * none. The rpccli_* caller routines expect this.
@@ -2573,7 +2585,7 @@ struct async_req *rpc_pipe_bind_send(TALLOC_CTX *mem_ctx,
 	return result;
 
  post_status:
-	if (async_post_status(result, ev, status)) {
+	if (async_post_ntstatus(result, ev, status)) {
 		return result;
 	}
 	TALLOC_FREE(result);
@@ -2597,27 +2609,30 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 		DEBUG(3, ("rpc_pipe_bind: %s bind request returned %s\n",
 			  rpccli_pipe_txt(debug_ctx(), state->cli),
 			  nt_errstr(status)));
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	/* Unmarshall the RPC header */
 	if (!smb_io_rpc_hdr("hdr", &hdr, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: failed to unmarshall RPC_HDR.\n"));
-		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		prs_mem_free(&reply_pdu);
+		async_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
 	if (!smb_io_rpc_hdr_ba("", &hdr_ba, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_pipe_bind: Failed to unmarshall "
 			  "RPC_HDR_BA.\n"));
-		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		prs_mem_free(&reply_pdu);
+		async_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
 	if (!check_bind_response(&hdr_ba, &state->cli->transfer_syntax)) {
 		DEBUG(2, ("rpc_pipe_bind: check_bind_response failed.\n"));
-		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		prs_mem_free(&reply_pdu);
+		async_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
@@ -2633,6 +2648,7 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	case PIPE_AUTH_TYPE_NONE:
 	case PIPE_AUTH_TYPE_SCHANNEL:
 		/* Bind complete. */
+		prs_mem_free(&reply_pdu);
 		async_req_done(req);
 		break;
 
@@ -2640,8 +2656,9 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 		/* Need to send AUTH3 packet - no reply. */
 		status = rpc_finish_auth3_bind_send(req, state, &hdr,
 						    &reply_pdu);
+		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
-			async_req_error(req, status);
+			async_req_nterror(req, status);
 		}
 		break;
 
@@ -2649,8 +2666,9 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 		/* Need to send alter context request and reply. */
 		status = rpc_finish_spnego_ntlmssp_bind_send(req, state, &hdr,
 							     &reply_pdu);
+		prs_mem_free(&reply_pdu);
 		if (!NT_STATUS_IS_OK(status)) {
-			async_req_error(req, status);
+			async_req_nterror(req, status);
 		}
 		break;
 
@@ -2660,7 +2678,8 @@ static void rpc_pipe_bind_step_one_done(struct async_req *subreq)
 	default:
 		DEBUG(0,("cli_finish_bind_auth: unknown auth type %u\n",
 			 (unsigned int)state->cli->auth->auth_type));
-		async_req_error(req, NT_STATUS_INTERNAL_ERROR);
+		prs_mem_free(&reply_pdu);
+		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 	}
 }
 
@@ -2737,7 +2756,7 @@ static void rpc_bind_auth3_write_done(struct async_req *subreq)
 	status = rpc_write_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -2852,7 +2871,7 @@ static void rpc_bind_ntlmssp_api_done(struct async_req *subreq)
 	status = rpc_api_pipe_recv(subreq, talloc_tos(), &reply_pdu);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -2860,19 +2879,19 @@ static void rpc_bind_ntlmssp_api_done(struct async_req *subreq)
 	if (!smb_io_rpc_hdr("rpc_hdr   ", &hdr, &reply_pdu, 0)) {
 		DEBUG(0, ("rpc_finish_spnego_ntlmssp_bind: Failed to "
 			  "unmarshall RPC_HDR.\n"));
-		async_req_error(req, NT_STATUS_BUFFER_TOO_SMALL);
+		async_req_nterror(req, NT_STATUS_BUFFER_TOO_SMALL);
 		return;
 	}
 
 	if (!prs_set_offset(
 		    &reply_pdu,
 		    hdr.frag_len - hdr.auth_len - RPC_HDR_AUTH_LEN)) {
-		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		async_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
 	if (!smb_io_rpc_hdr_auth("hdr_auth", &hdr_auth, &reply_pdu, 0)) {
-		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		async_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2885,7 +2904,7 @@ static void rpc_bind_ntlmssp_api_done(struct async_req *subreq)
 					OID_NTLMSSP, &tmp_blob)) {
 		data_blob_free(&server_spnego_response);
 		data_blob_free(&tmp_blob);
-		async_req_error(req, NT_STATUS_INVALID_PARAMETER);
+		async_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 
@@ -2899,7 +2918,7 @@ static void rpc_bind_ntlmssp_api_done(struct async_req *subreq)
 
 NTSTATUS rpc_pipe_bind_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS rpc_pipe_bind(struct rpc_pipe_client *cli,
@@ -3511,6 +3530,61 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
+			     struct rpc_cli_smbd_conn *conn,
+			     const struct ndr_syntax_id *syntax,
+			     struct rpc_pipe_client **presult)
+{
+	struct rpc_pipe_client *result;
+	struct cli_pipe_auth_data *auth;
+	NTSTATUS status;
+
+	result = talloc(mem_ctx, struct rpc_pipe_client);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	result->abstract_syntax = *syntax;
+	result->transfer_syntax = ndr_transfer_syntax;
+	result->dispatch = cli_do_rpc_ndr;
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
+	result->max_recv_frag = RPC_MAX_PDU_FRAG_LEN;
+
+	result->desthost = talloc_strdup(result, global_myname());
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", global_myname());
+	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = rpc_transport_smbd_init(result, conn, syntax,
+					 &result->transport);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpc_transport_smbd_init failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	status = rpccli_anon_bind_data(result, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpccli_anon_bind_data failed: %s\n",
+			  nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	status = rpc_pipe_bind(result, auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("rpc_pipe_bind failed: %s\n", nt_errstr(status)));
+		TALLOC_FREE(result);
+		return status;
+	}
+
+	*presult = result;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Open a pipe to a remote server.
  ****************************************************************************/
@@ -3587,8 +3661,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 		}
 		DEBUG(lvl, ("cli_rpc_pipe_open_noauth: rpc_pipe_bind for pipe "
 			    "%s failed with error %s\n",
-			    cli_get_pipe_name_from_iface(debug_ctx(),
-							 interface),
+			    get_pipe_name_from_iface(interface),
 			    nt_errstr(status) ));
 		TALLOC_FREE(result);
 		return status;
@@ -3596,8 +3669,7 @@ NTSTATUS cli_rpc_pipe_open_noauth(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_noauth: opened pipe %s to machine "
 		  "%s and bound anonymously.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
-		  cli->desthost ));
+		  get_pipe_name_from_iface(interface), cli->desthost));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3643,8 +3715,8 @@ static NTSTATUS cli_rpc_pipe_open_ntlmssp_internal(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
 		"machine %s and bound NTLMSSP as user %s\\%s.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
-		  cli->desthost, domain, username ));
+		  get_pipe_name_from_iface(interface), cli->desthost, domain,
+		  username ));
 
 	*presult = result;
 	return NT_STATUS_OK;
@@ -3835,7 +3907,7 @@ NTSTATUS cli_rpc_pipe_open_schannel_with_key(struct cli_state *cli,
 
 	DEBUG(10,("cli_rpc_pipe_open_schannel_with_key: opened pipe %s to machine %s "
 		  "for domain %s and bound using schannel.\n",
-		  cli_get_pipe_name_from_iface(debug_ctx(), interface),
+		  get_pipe_name_from_iface(interface),
 		  cli->desthost, domain ));
 
 	*presult = result;
@@ -4045,40 +4117,3 @@ NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 
 	return NT_STATUS_OK;
 }
-
-/**
- * Create a new RPC client context which uses a local dispatch function.
- */
-NTSTATUS rpc_pipe_open_internal(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *abstract_syntax, 
-				NTSTATUS (*dispatch) (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const struct ndr_interface_table *table, uint32_t opnum, void *r),
-				struct auth_serversupplied_info *serversupplied_info,
-				struct rpc_pipe_client **presult)
-{
-	struct rpc_pipe_client *result;
-
-	result = TALLOC_ZERO_P(mem_ctx, struct rpc_pipe_client);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	result->abstract_syntax = *abstract_syntax;
-	result->transfer_syntax = ndr_transfer_syntax;
-	result->dispatch = dispatch;
-
-	result->pipes_struct = TALLOC_ZERO_P(mem_ctx, pipes_struct);
-	if (result->pipes_struct == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
-	}
-	result->pipes_struct->mem_ctx = mem_ctx;
-	result->pipes_struct->server_info = serversupplied_info;
-	result->pipes_struct->pipe_bound = true;
-
-	result->max_xmit_frag = -1;
-	result->max_recv_frag = -1;
-
-	*presult = result;
-	return NT_STATUS_OK;
-}
-
-

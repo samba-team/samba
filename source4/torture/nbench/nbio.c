@@ -384,9 +384,9 @@ static struct smbcli_state *c;
   a handler function for oplock break requests
 */
 static bool oplock_handler(struct smbcli_transport *transport, uint16_t tid, 
-			   uint16_t fnum, uint8_t level, void *private)
+			   uint16_t fnum, uint8_t level, void *private_data)
 {
-	struct smbcli_tree *tree = (struct smbcli_tree *)private;
+	struct smbcli_tree *tree = (struct smbcli_tree *)private_data;
 	return smbcli_oplock_ack(tree, fnum, OPLOCK_BREAK_TO_NONE);
 }
 
@@ -802,15 +802,15 @@ bool nb_mkdir(const char *dname, NTSTATUS status, bool retry)
 	return true;
 }
 
-bool nb_rename(const char *old, const char *new, NTSTATUS status, bool retry)
+bool nb_rename(const char *o, const char *n, NTSTATUS status, bool retry)
 {
 	NTSTATUS ret;
 	union smb_rename io;
 
 	io.generic.level = RAW_RENAME_RENAME;
 	io.rename.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
-	io.rename.in.pattern1 = old;
-	io.rename.in.pattern2 = new;
+	io.rename.in.pattern1 = o;
+	io.rename.in.pattern2 = n;
 
 	ret = smb_raw_rename(c->tree, &io);
 
@@ -906,7 +906,7 @@ bool nb_qfsinfo(int level, NTSTATUS status)
 }
 
 /* callback function used for trans2 search */
-static bool findfirst_callback(void *private, const union smb_search_data *file)
+static bool findfirst_callback(void *private_data, const union smb_search_data *file)
 {
 	return true;
 }

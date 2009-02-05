@@ -39,7 +39,7 @@ struct stream_connection {
 	const struct stream_server_ops *ops;
 	const struct model_ops *model_ops;
 	struct server_id server_id;
-	void *private;
+	void *private_data;
 
 	struct {
 		struct tevent_context *ctx;

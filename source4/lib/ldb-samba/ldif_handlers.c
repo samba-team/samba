@@ -22,7 +22,8 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb_includes.h"
+#include "ldb_private.h"
+#include "ldb_handlers.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -365,7 +366,7 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 {
 	struct ldb_dn *dn1 = NULL;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
 	if (!tmp_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -381,10 +382,10 @@ static int ldif_canonicalise_objectCategory(struct ldb_context *ldb, void *mem_c
 	dn1 = ldb_dn_from_ldb_val(tmp_ctx, ldb, in);
 	if ( ! ldb_dn_validate(dn1)) {
 		const char *lDAPDisplayName = talloc_strndup(tmp_ctx, (char *)in->data, in->length);
-		class = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
-		if (class) {
+		sclass = dsdb_class_by_lDAPDisplayName(schema, lDAPDisplayName);
+		if (sclass) {
 			struct ldb_dn *dn = ldb_dn_new(mem_ctx, ldb,  
-						       class->defaultObjectCategory);
+						       sclass->defaultObjectCategory);
 			*out = data_blob_string_const(ldb_dn_alloc_casefold(mem_ctx, dn));
 			talloc_free(tmp_ctx);
 

@@ -30,7 +30,7 @@ struct task_server {
 	struct messaging_context *msg_ctx;
 	struct loadparm_context *lp_ctx;
 	struct server_id server_id;
-	void *private;
+	void *private_data;
 };
 
 

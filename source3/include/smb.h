@@ -367,6 +367,7 @@ struct uuid;
 struct named_mutex;
 struct pcap_cache;
 struct wb_context;
+struct rpc_cli_smbd_conn;
 
 struct vfs_fsp_data {
     struct vfs_fsp_data *next;
@@ -623,7 +624,18 @@ struct smb_request {
 	uint16_t buflen;
 	const uint8_t *buf;
 	const uint8 *inbuf;
+
+	/*
+	 * Async handling in the main smb processing loop is directed by
+	 * outbuf: reply_xxx routines indicate sync behaviour by putting their
+	 * reply into "outbuf". If they leave it as NULL, they take of it
+	 * themselves, possibly later.
+	 *
+	 * If async handling is wanted, the reply_xxx routine must make sure
+	 * that it talloc_move()s the smb_req somewhere else.
+	 */
 	uint8 *outbuf;
+
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
@@ -637,6 +649,11 @@ struct smb_request {
 	 * Here we collect the outbufs from the chain handlers
 	 */
 	uint8_t *chain_outbuf;
+
+	/*
+	 * state information for async smb handling
+	 */
+	void *async_priv;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -1242,7 +1259,7 @@ struct bitmap {
 /* Mapping of access rights to UNIX perms. for a UNIX directory. */
 #define UNIX_DIRECTORY_ACCESS_RWX		FILE_GENERIC_ALL
 #define UNIX_DIRECTORY_ACCESS_R 		FILE_GENERIC_READ
-#define UNIX_DIRECTORY_ACCESS_W			FILE_GENERIC_WRITE
+#define UNIX_DIRECTORY_ACCESS_W			(FILE_GENERIC_WRITE|FILE_DELETE_CHILD)
 #define UNIX_DIRECTORY_ACCESS_X			FILE_GENERIC_EXECUTE
 
 #if 0
@@ -1549,11 +1566,6 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 #define COPYBUF_SIZE (8*1024)
 
 /*
- * Used in chaining code.
- */
-extern int chain_size;
-
-/*
  * Map the Core and Extended Oplock requesst bits down
  * to common bits (EXCLUSIVE_OPLOCK & BATCH_OPLOCK).
  */
@@ -1680,12 +1692,10 @@ struct kernel_oplocks {
 /* if a kernel does support oplocks then a structure of the following
    typee is used to describe how to interact with the kernel */
 struct kernel_oplocks_ops {
-	files_struct * (*receive_message)(struct kernel_oplocks *ctx);
 	bool (*set_oplock)(struct kernel_oplocks *ctx,
 			   files_struct *fsp, int oplock_type);
 	void (*release_oplock)(struct kernel_oplocks *ctx,
 			       files_struct *fsp);
-	bool (*msg_waiting)(struct kernel_oplocks *ctx);
 };
 
 #include "smb_macros.h"

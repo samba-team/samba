@@ -533,8 +533,8 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 		if (!add_one_stream(state->mem_ctx,
 				    &state->num_streams, &state->streams,
 				    dp->d_name, stream_sbuf.st_size,
-				    get_allocation_size(conn, NULL,
-							&stream_sbuf))) {
+				    SMB_VFS_GET_ALLOC_SIZE(conn, NULL,
+							   &stream_sbuf))) {
 			state->status = NT_STATUS_NO_MEMORY;
 			break;
 		}
@@ -594,8 +594,8 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
 				    "", sbuf.st_size,
-				    get_allocation_size(handle->conn, fsp,
-							&sbuf))) {
+				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
+							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}

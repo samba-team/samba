@@ -63,8 +63,8 @@ void setup_async_write(struct winbindd_fd_event *event, void *data, size_t lengt
 		       void *private_data);
 void request_error(struct winbindd_cli_state *state);
 void request_ok(struct winbindd_cli_state *state);
-void winbind_check_sighup(const char *lfile);
-void winbind_check_sigterm(bool in_parent);
+bool winbindd_setup_sig_term_handler(bool parent);
+bool winbindd_setup_sig_hup_handler(const char *lfile);
 int main(int argc, char **argv, char **envp);
 
 /* The following definitions come from winbindd/winbindd_reqtrans.c  */
@@ -498,7 +498,6 @@ void winbindd_lookupname(struct winbindd_cli_state *state);
 void winbindd_lookuprids(struct winbindd_cli_state *state);
 void winbindd_sid_to_uid(struct winbindd_cli_state *state);
 void winbindd_sid_to_gid(struct winbindd_cli_state *state);
-void winbindd_sids_to_unixids(struct winbindd_cli_state *state);
 void winbindd_set_mapping(struct winbindd_cli_state *state);
 void winbindd_remove_mapping(struct winbindd_cli_state *state);
 void winbindd_set_hwm(struct winbindd_cli_state *state);

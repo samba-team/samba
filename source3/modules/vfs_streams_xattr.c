@@ -732,8 +732,8 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		if (!add_one_stream(mem_ctx,
 				    &state.num_streams, &state.streams,
 				    "::$DATA", sbuf.st_size,
-				    get_allocation_size(handle->conn, fsp,
-							&sbuf))) {
+				    SMB_VFS_GET_ALLOC_SIZE(handle->conn, fsp,
+							   &sbuf))) {
 			return NT_STATUS_NO_MEMORY;
 		}
 	}

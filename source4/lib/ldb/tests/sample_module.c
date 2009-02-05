@@ -21,9 +21,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ldb_includes.h"
-#include "ldb.h"
-#include "ldb_errors.h"
+#include "ldb_module.h"
 
 int sample_add(struct ldb_module *mod, struct ldb_request *req)
 {

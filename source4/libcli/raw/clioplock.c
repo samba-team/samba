@@ -55,8 +55,8 @@ set the oplock handler for a connection
 ****************************************************************************/
 _PUBLIC_ void smbcli_oplock_handler(struct smbcli_transport *transport, 
 			bool (*handler)(struct smbcli_transport *, uint16_t, uint16_t, uint8_t, void *),
-			void *private)
+			void *private_data)
 {
 	transport->oplock.handler = handler;
-	transport->oplock.private = private;
+	transport->oplock.private_data = private_data;
 }

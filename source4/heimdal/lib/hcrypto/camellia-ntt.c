@@ -23,6 +23,11 @@
  *  http://info.isl.ntt.co.jp/crypt/eng/camellia/specifications.html
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <roken.h>
 
 #include <string.h>
 #include <stdlib.h>

@@ -653,9 +653,9 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
   handle timeouts of individual dcerpc requests
 */
 static void dcerpc_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
-				   struct timeval t, void *private)
+				   struct timeval t, void *private_data)
 {
-	struct rpc_request *req = talloc_get_type(private, struct rpc_request);
+	struct rpc_request *req = talloc_get_type(private_data, struct rpc_request);
 
 	if (req->ignore_timeout) {
 		dcerpc_req_dequeue(req);

@@ -66,7 +66,7 @@ struct dcesrv_interface {
 	NTSTATUS (*ndr_push)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_push *, const void *);
 
 	/* for any private use by the interface code */
-	const void *private;
+	const void *private_data;
 };
 
 enum dcesrv_call_list {
@@ -162,7 +162,7 @@ struct dcesrv_connection_context {
 	const struct dcesrv_interface *iface;
 
 	/* private data for the interface implementation */
-	void *private;
+	void *private_data;
 
 	/* current rpc handles - this is really the wrong scope for
 	   them, but it will do for now */

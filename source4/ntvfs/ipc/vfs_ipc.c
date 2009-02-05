@@ -44,7 +44,7 @@ struct ipc_private {
 	/* a list of open pipes */
 	struct pipe_state {
 		struct pipe_state *next, *prev;
-		struct ipc_private *private;
+		struct ipc_private *ipriv;
 		const char *pipe_name;
 		struct ntvfs_handle *handle;
 		struct dcesrv_connection *dce_conn;
@@ -56,12 +56,12 @@ struct ipc_private {
 /*
   find a open pipe give a file handle
 */
-static struct pipe_state *pipe_state_find(struct ipc_private *private, struct ntvfs_handle *handle)
+static struct pipe_state *pipe_state_find(struct ipc_private *ipriv, struct ntvfs_handle *handle)
 {
 	struct pipe_state *s;
 	void *p;
 
-	p = ntvfs_handle_get_backend_data(handle, private->ntvfs);
+	p = ntvfs_handle_get_backend_data(handle, ipriv->ntvfs);
 	if (!p) return NULL;
 
 	s = talloc_get_type(p, struct pipe_state);
@@ -73,14 +73,14 @@ static struct pipe_state *pipe_state_find(struct ipc_private *private, struct nt
 /*
   find a open pipe give a wire fnum
 */
-static struct pipe_state *pipe_state_find_key(struct ipc_private *private, struct ntvfs_request *req, const DATA_BLOB *key)
+static struct pipe_state *pipe_state_find_key(struct ipc_private *ipriv, struct ntvfs_request *req, const DATA_BLOB *key)
 {
 	struct ntvfs_handle *h;
 
-	h = ntvfs_handle_search_by_wire_key(private->ntvfs, req, key);
+	h = ntvfs_handle_search_by_wire_key(ipriv->ntvfs, req, key);
 	if (!h) return NULL;
 
-	return pipe_state_find(private, h);
+	return pipe_state_find(ipriv, h);
 }
 
 
@@ -91,7 +91,7 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, const char *sharename)
 {
 	NTSTATUS status;
-	struct ipc_private *private;
+	struct ipc_private *ipriv;
 
 	ntvfs->ctx->fs_type = talloc_strdup(ntvfs->ctx, "IPC");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->fs_type);
@@ -100,16 +100,16 @@ static NTSTATUS ipc_connect(struct ntvfs_module_context *ntvfs,
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
 	/* prepare the private state for this connection */
-	private = talloc(ntvfs, struct ipc_private);
-	NT_STATUS_HAVE_NO_MEMORY(private);
+	ipriv = talloc(ntvfs, struct ipc_private);
+	NT_STATUS_HAVE_NO_MEMORY(ipriv);
 
-	ntvfs->private_data = private;
+	ntvfs->private_data = ipriv;
 
-	private->ntvfs = ntvfs;
-	private->pipe_list = NULL;
+	ipriv->ntvfs = ntvfs;
+	ipriv->pipe_list = NULL;
 
 	/* setup the DCERPC server subsystem */
-	status = dcesrv_init_ipc_context(private, ntvfs->ctx->lp_ctx, &private->dcesrv);
+	status = dcesrv_init_ipc_context(ipriv, ntvfs->ctx->lp_ctx, &ipriv->dcesrv);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
@@ -174,23 +174,23 @@ static NTSTATUS ipc_setpathinfo(struct ntvfs_module_context *ntvfs,
 */
 static int ipc_fd_destructor(struct pipe_state *p)
 {
-	DLIST_REMOVE(p->private->pipe_list, p);
-	ntvfs_handle_remove_backend_data(p->handle, p->private->ntvfs);
+	DLIST_REMOVE(p->ipriv->pipe_list, p);
+	ntvfs_handle_remove_backend_data(p->handle, p->ipriv->ntvfs);
 	return 0;
 }
 
 static struct socket_address *ipc_get_my_addr(struct dcesrv_connection *dce_conn, TALLOC_CTX *mem_ctx)
 {
-	struct ipc_private *private = dce_conn->transport.private_data;
+	struct ipc_private *ipriv = dce_conn->transport.private_data;
 
-	return ntvfs_get_my_addr(private->ntvfs, mem_ctx);
+	return ntvfs_get_my_addr(ipriv->ntvfs, mem_ctx);
 }
 
 static struct socket_address *ipc_get_peer_addr(struct dcesrv_connection *dce_conn, TALLOC_CTX *mem_ctx)
 {
-	struct ipc_private *private = dce_conn->transport.private_data;
+	struct ipc_private *ipriv = dce_conn->transport.private_data;
 
-	return ntvfs_get_peer_addr(private->ntvfs, mem_ctx);
+	return ntvfs_get_peer_addr(ipriv->ntvfs, mem_ctx);
 }
 
 /*
@@ -203,7 +203,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	struct pipe_state *p;
 	NTSTATUS status;
 	struct dcerpc_binding *ep_description;
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	struct ntvfs_handle *h;
 
 	status = ntvfs_handle_new(ntvfs, req, &h);
@@ -235,7 +235,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	/* The session info is refcount-increased in the 
 	 * dcesrv_endpoint_search_connect() function
 	 */
-	status = dcesrv_endpoint_search_connect(private->dcesrv,
+	status = dcesrv_endpoint_search_connect(ipriv->dcesrv,
 						p,
 						ep_description, 
 						h->session_info,
@@ -246,18 +246,18 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 						&p->dce_conn);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	p->dce_conn->transport.private_data		= private;
+	p->dce_conn->transport.private_data		= ipriv;
 	p->dce_conn->transport.report_output_data	= NULL;
 	p->dce_conn->transport.get_my_addr		= ipc_get_my_addr;
 	p->dce_conn->transport.get_peer_addr		= ipc_get_peer_addr;
 	
-	DLIST_ADD(private->pipe_list, p);
+	DLIST_ADD(ipriv->pipe_list, p);
 
-	p->private = private;
+	p->ipriv = ipriv;
 
 	talloc_set_destructor(p, ipc_fd_destructor);
 
-	status = ntvfs_handle_set_backend_data(h, private->ntvfs, p);
+	status = ntvfs_handle_set_backend_data(h, ipriv->ntvfs, p);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	*ps = p;
@@ -417,7 +417,7 @@ static NTSTATUS ipc_readx_dcesrv_output(void *private_data, DATA_BLOB *out, size
 static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req, union smb_read *rd)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	DATA_BLOB data;
 	struct pipe_state *p;
 	NTSTATUS status = NT_STATUS_OK;
@@ -426,7 +426,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_read(ntvfs, req, rd);
 	}
 
-	p = pipe_state_find(private, rd->readx.in.file.ntvfs);
+	p = pipe_state_find(ipriv, rd->readx.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -457,7 +457,7 @@ static NTSTATUS ipc_read(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_write *wr)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	DATA_BLOB data;
 	struct pipe_state *p;
 	NTSTATUS status;
@@ -469,7 +469,7 @@ static NTSTATUS ipc_write(struct ntvfs_module_context *ntvfs,
 	data.data = discard_const_p(void, wr->writex.in.data);
 	data.length = wr->writex.in.count;
 
-	p = pipe_state_find(private, wr->writex.in.file.ntvfs);
+	p = pipe_state_find(ipriv, wr->writex.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -511,14 +511,14 @@ static NTSTATUS ipc_flush(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_close *io)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	struct pipe_state *p;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
 
-	p = pipe_state_find(private, io->close.in.file.ntvfs);
+	p = pipe_state_find(ipriv, io->close.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -534,10 +534,10 @@ static NTSTATUS ipc_close(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_exit(struct ntvfs_module_context *ntvfs,
 			 struct ntvfs_request *req)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	struct pipe_state *p, *next;
 	
-	for (p=private->pipe_list; p; p=next) {
+	for (p=ipriv->pipe_list; p; p=next) {
 		next = p->next;
 		if (p->handle->session_info == req->session_info &&
 		    p->handle->smbpid == req->smbpid) {
@@ -554,10 +554,10 @@ static NTSTATUS ipc_exit(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_logoff(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	struct pipe_state *p, *next;
 	
-	for (p=private->pipe_list; p; p=next) {
+	for (p=ipriv->pipe_list; p; p=next) {
 		next = p->next;
 		if (p->handle->session_info == req->session_info) {
 			talloc_free(p);
@@ -572,7 +572,7 @@ static NTSTATUS ipc_logoff(struct ntvfs_module_context *ntvfs,
 */
 static NTSTATUS ipc_async_setup(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
-				void *private)
+				void *private_data)
 {
 	return NT_STATUS_OK;
 }
@@ -610,8 +610,8 @@ static NTSTATUS ipc_setfileinfo(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_qfileinfo(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req, union smb_fileinfo *info)
 {
-	struct ipc_private *private = ntvfs->private_data;
-	struct pipe_state *p = pipe_state_find(private, info->generic.in.file.ntvfs);
+	struct ipc_private *ipriv = ntvfs->private_data;
+	struct pipe_state *p = pipe_state_find(ipriv, info->generic.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -717,7 +717,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 			       struct ntvfs_request *req, struct smb_trans2 *trans)
 {
 	struct pipe_state *p;
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	NTSTATUS status;
 	DATA_BLOB fnum_key;
 	uint16_t fnum;
@@ -731,7 +731,7 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 	SSVAL(&fnum, 0, trans->in.setup[1]);
 	fnum_key = data_blob_const(&fnum, 2);
 
-	p = pipe_state_find_key(private, req, &fnum_key);
+	p = pipe_state_find_key(ipriv, req, &fnum_key);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -772,14 +772,14 @@ static NTSTATUS ipc_dcerpc_cmd(struct ntvfs_module_context *ntvfs,
 static NTSTATUS ipc_set_nm_pipe_state(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req, struct smb_trans2 *trans)
 {
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	struct pipe_state *p;
 	DATA_BLOB fnum_key;
 
 	/* the fnum is in setup[1] */
 	fnum_key = data_blob_const(&trans->in.setup[1], sizeof(trans->in.setup[1]));
 
-	p = pipe_state_find_key(private, req, &fnum_key);
+	p = pipe_state_find_key(ipriv, req, &fnum_key);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -830,7 +830,7 @@ static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
 			       struct ntvfs_request *req, union smb_ioctl *io)
 {
 	struct pipe_state *p;
-	struct ipc_private *private = ntvfs->private_data;
+	struct ipc_private *ipriv = ntvfs->private_data;
 	NTSTATUS status;
 
 	switch (io->smb2.in.function) {
@@ -841,7 +841,7 @@ static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FS_DRIVER_REQUIRED;
 	}
 
-	p = pipe_state_find(private, io->smb2.in.file.ntvfs);
+	p = pipe_state_find(ipriv, io->smb2.in.file.ntvfs);
 	if (!p) {
 		return NT_STATUS_INVALID_HANDLE;
 	}

@@ -27,7 +27,7 @@
 
 struct req_read_state {
 	struct winbindd_request *wb_req;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	size_t max_extra_data;
 	int fd;
 };
@@ -37,7 +37,7 @@ static void wb_req_read_main(struct async_req *subreq);
 static void wb_req_read_extra(struct async_req *subreq);
 
 struct async_req *wb_req_read_send(TALLOC_CTX *mem_ctx,
-				   struct event_context *ev,
+				   struct tevent_context *ev,
 				   int fd, size_t max_extra_data)
 {
 	struct async_req *result, *subreq;
@@ -81,7 +81,7 @@ static void wb_req_read_len(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -89,7 +89,7 @@ static void wb_req_read_len(struct async_req *subreq)
 		DEBUG(0, ("wb_req_read_len: Invalid request size received: "
 			  "%d (expected %d)\n", (int)state->wb_req->length,
 			  (int)sizeof(struct winbindd_request)));
-		async_req_error(req, NT_STATUS_INVALID_BUFFER_SIZE);
+		async_req_nterror(req, NT_STATUS_INVALID_BUFFER_SIZE);
 		return;
 	}
 
@@ -115,7 +115,7 @@ static void wb_req_read_main(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -124,7 +124,7 @@ static void wb_req_read_main(struct async_req *subreq)
 		DEBUG(3, ("Got request with %d bytes extra data on "
 			  "unprivileged socket\n",
 			  (int)state->wb_req->extra_len));
-		async_req_error(req, NT_STATUS_INVALID_BUFFER_SIZE);
+		async_req_nterror(req, NT_STATUS_INVALID_BUFFER_SIZE);
 		return;
 	}
 
@@ -161,7 +161,7 @@ static void wb_req_read_extra(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -175,7 +175,7 @@ NTSTATUS wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct req_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*preq = talloc_move(mem_ctx, &state->wb_req);
@@ -184,7 +184,7 @@ NTSTATUS wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 
 struct req_write_state {
 	struct winbindd_request *wb_req;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int fd;
 };
 
@@ -192,7 +192,7 @@ static void wb_req_write_main(struct async_req *subreq);
 static void wb_req_write_extra(struct async_req *subreq);
 
 struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd,
+				    struct tevent_context *ev, int fd,
 				    struct winbindd_request *wb_req)
 {
 	struct async_req *result, *subreq;
@@ -232,7 +232,7 @@ static void wb_req_write_main(struct async_req *subreq)
 	status = sendall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -261,7 +261,7 @@ static void wb_req_write_extra(struct async_req *subreq)
 	status = sendall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -270,12 +270,12 @@ static void wb_req_write_extra(struct async_req *subreq)
 
 NTSTATUS wb_req_write_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct resp_read_state {
 	struct winbindd_response *wb_resp;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	size_t max_extra_data;
 	int fd;
 };
@@ -285,7 +285,7 @@ static void wb_resp_read_main(struct async_req *subreq);
 static void wb_resp_read_extra(struct async_req *subreq);
 
 struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd)
+				    struct tevent_context *ev, int fd)
 {
 	struct async_req *result, *subreq;
 	struct resp_read_state *state;
@@ -327,7 +327,7 @@ static void wb_resp_read_len(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -336,7 +336,7 @@ static void wb_resp_read_len(struct async_req *subreq)
 			  "%d (expected at least%d)\n",
 			  (int)state->wb_resp->length,
 			  (int)sizeof(struct winbindd_response)));
-		async_req_error(req, NT_STATUS_INVALID_BUFFER_SIZE);
+		async_req_nterror(req, NT_STATUS_INVALID_BUFFER_SIZE);
 		return;
 	}
 
@@ -363,7 +363,7 @@ static void wb_resp_read_main(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -400,7 +400,7 @@ static void wb_resp_read_extra(struct async_req *subreq)
 	status = recvall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -414,7 +414,7 @@ NTSTATUS wb_resp_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct resp_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*presp = talloc_move(mem_ctx, &state->wb_resp);
@@ -423,7 +423,7 @@ NTSTATUS wb_resp_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 
 struct resp_write_state {
 	struct winbindd_response *wb_resp;
-	struct event_context *ev;
+	struct tevent_context *ev;
 	int fd;
 };
 
@@ -431,7 +431,7 @@ static void wb_resp_write_main(struct async_req *subreq);
 static void wb_resp_write_extra(struct async_req *subreq);
 
 struct async_req *wb_resp_write_send(TALLOC_CTX *mem_ctx,
-				    struct event_context *ev, int fd,
+				    struct tevent_context *ev, int fd,
 				    struct winbindd_response *wb_resp)
 {
 	struct async_req *result, *subreq;
@@ -471,7 +471,7 @@ static void wb_resp_write_main(struct async_req *subreq)
 	status = sendall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -501,7 +501,7 @@ static void wb_resp_write_extra(struct async_req *subreq)
 	status = sendall_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -510,5 +510,5 @@ static void wb_resp_write_extra(struct async_req *subreq)
 
 NTSTATUS wb_resp_write_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }

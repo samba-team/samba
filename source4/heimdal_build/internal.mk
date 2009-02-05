@@ -656,7 +656,7 @@ HEIMDAL_COM_ERR_OBJ_FILES = \
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 
 ASN1C = $(builddir)/bin/asn1_compile
 
@@ -682,7 +682,6 @@ asn1_compile_OBJ_FILES = \
 	$(asn1_compile_ASN1_OBJ_FILES) \
 	$(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
-	$(heimdalbuildsrcdir)/replace.ho
 
 $(asn1_compile_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/asn1 -I$(heimdalsrcdir)/lib/roken -I$(socketwrappersrcdir)
 
@@ -700,7 +699,7 @@ $(eval $(call heimdal_proto_header_template, \
 # Start BINARY compile_et
 [BINARY::compile_et]
 USE_HOSTCC = YES
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN LIBREPLACE_NETWORK
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 # End BINARY compile_et
 #######################
 
@@ -711,7 +710,6 @@ compile_et_OBJ_FILES = $(heimdalsrcdir)/lib/vers/print_version.ho \
 	$(heimdalsrcdir)/lib/com_err/lex.ho \
 	$(heimdalsrcdir)/lib/com_err/compile_et.ho \
 	$(socketwrappersrcdir)/socket_wrapper.ho \
-	$(heimdalbuildsrcdir)/replace.ho
 
 $(compile_et_OBJ_FILES): CFLAGS+=-I$(heimdalbuildsrcdir) -I$(heimdalsrcdir)/lib/com_err -I$(heimdalsrcdir)/lib/roken  -I$(socketwrappersrcdir)
 

@@ -134,8 +134,6 @@ static char *mymachinepw(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	pwd[sizeof(pwd)-1] = '\0';
-
 	nread = read(fd, pwd, sizeof(pwd)-1);
 	close(fd);
 
@@ -144,7 +142,7 @@ static char *mymachinepw(TALLOC_CTX *mem_ctx)
 		return NULL;
 	}
 
-	DEBUG(0, ("pwd: %d [%s]\n", (int)nread, pwd));
+	pwd[nread] = '\0';
 
 	if (pwd[nread-1] == '\n') {
 		pwd[nread-1] = '\0';
@@ -237,8 +235,6 @@ static NTSTATUS check_netlogond_security(const struct auth_context *auth_context
 		DEBUG(10, ("rpc_pipe_bind failed: %s\n", nt_errstr(status)));
 		goto done;
 	}
-
-	TALLOC_FREE(auth);
 
 	plaintext_machinepw = mymachinepw(talloc_tos());
 	if (plaintext_machinepw == NULL) {

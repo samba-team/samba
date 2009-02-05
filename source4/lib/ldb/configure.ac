@@ -11,7 +11,7 @@ AC_DEFUN([SMB_MODULE_DEFAULT], [echo -n ""])
 AC_DEFUN([SMB_LIBRARY_ENABLE], [echo -n ""])
 AC_DEFUN([SMB_EXT_LIB], [echo -n ""])
 AC_DEFUN([SMB_ENABLE], [echo -n ""])
-AC_INIT(ldb, 0.9.2)
+AC_INIT(ldb, 0.9.3)
 AC_CONFIG_SRCDIR([common/ldb.c])
 
 AC_LIBREPLACE_ALL_CHECKS

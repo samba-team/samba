@@ -29,7 +29,7 @@
 
 static uint32_t msg_pong;
 
-static void ping_message(struct messaging_context *msg, void *private, 
+static void ping_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	NTSTATUS status;
@@ -39,17 +39,17 @@ static void ping_message(struct messaging_context *msg, void *private,
 	}
 }
 
-static void pong_message(struct messaging_context *msg, void *private, 
+static void pong_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	int *count = private;
+	int *count = (int *)private_data;
 	(*count)++;
 }
 
-static void exit_message(struct messaging_context *msg, void *private, 
+static void exit_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
-	talloc_free(private);
+	talloc_free(private_data);
 	exit(0);
 }
 

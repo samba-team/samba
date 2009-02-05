@@ -55,7 +55,7 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 				     int argc,
 				     const char **argv)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	struct policy_handle handle;
 
 	uint32_t flags = EVENTLOG_BACKWARDS_READ |
@@ -67,7 +67,7 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 	uint32_t real_size = 0;
 
 	if (argc < 2 || argc > 4) {
-		printf("Usage: %s logname [offset]\n", argv[0]);
+		printf("Usage: %s logname [offset] [number_of_bytes]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
@@ -75,12 +75,27 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 		offset = atoi(argv[2]);
 	}
 
+	if (argc >= 4) {
+		number_of_bytes = atoi(argv[3]);
+		data = talloc_array(mem_ctx, uint8_t, number_of_bytes);
+		if (!data) {
+			goto done;
+		}
+	}
+
 	status = get_eventlog_handle(cli, mem_ctx, argv[1], &handle);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	while (1) {
+	do {
+
+		enum ndr_err_code ndr_err;
+		DATA_BLOB blob;
+		struct EVENTLOGRECORD r;
+		uint32_t size = 0;
+		uint32_t pos = 0;
+
 		status = rpccli_eventlog_ReadEventLogW(cli, mem_ctx,
 						       &handle,
 						       flags,
@@ -93,35 +108,53 @@ static NTSTATUS cmd_eventlog_readlog(struct rpc_pipe_client *cli,
 		    real_size > 0 ) {
 			number_of_bytes = real_size;
 			data = talloc_array(mem_ctx, uint8_t, real_size);
-			continue;
+			if (!data) {
+				goto done;
+			}
+			status = rpccli_eventlog_ReadEventLogW(cli, mem_ctx,
+							       &handle,
+							       flags,
+							       offset,
+							       number_of_bytes,
+							       data,
+							       &sent_size,
+							       &real_size);
+		}
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) &&
+		    !NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 
 		number_of_bytes = 0;
 
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
+		size = IVAL(data, pos);
 
-		{
-			enum ndr_err_code ndr_err;
-			DATA_BLOB blob;
-			struct eventlog_Record rec;
+		while (size > 0) {
 
-			blob = data_blob_const(data, sent_size);
-
-			ndr_err = ndr_pull_struct_blob_all(&blob, mem_ctx, NULL,
-							   &rec,
-							   (ndr_pull_flags_fn_t)ndr_pull_eventlog_Record);
+			blob = data_blob_const(data + pos, size);
+			/* dump_data(0, blob.data, blob.length); */
+			ndr_err = ndr_pull_struct_blob_all(&blob, mem_ctx, NULL, &r,
+					   (ndr_pull_flags_fn_t)ndr_pull_EVENTLOGRECORD);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				status = ndr_map_error2ntstatus(ndr_err);
 				goto done;
 			}
 
-			NDR_PRINT_DEBUG(eventlog_Record, &rec);
+			NDR_PRINT_DEBUG(EVENTLOGRECORD, &r);
+
+			pos += size;
+
+			if (pos + 4 > sent_size) {
+				break;
+			}
+
+			size = IVAL(data, pos);
 		}
 
 		offset++;
-	}
+
+	} while (NT_STATUS_IS_OK(status));
 
  done:
 	rpccli_eventlog_CloseEventLog(cli, mem_ctx, &handle);

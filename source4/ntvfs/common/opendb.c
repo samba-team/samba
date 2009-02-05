@@ -107,9 +107,9 @@ NTSTATUS odb_open_file(struct odb_lock *lck,
 /*
   register a pending open file in the open files database
 */
-NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
+NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private_data)
 {
-	return ops->odb_open_file_pending(lck, private);
+	return ops->odb_open_file_pending(lck, private_data);
 }
 
 
@@ -126,9 +126,9 @@ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
 /*
   remove a pending opendb entry
 */
-NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
+NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private_data)
 {
-	return ops->odb_remove_pending(lck, private);
+	return ops->odb_remove_pending(lck, private_data);
 }
 
 

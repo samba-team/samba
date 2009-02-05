@@ -56,6 +56,16 @@ void cli_set_port(struct cli_state *cli, int port)
 }
 
 /****************************************************************************
+ convenience routine to find if we negotiated ucs2
+****************************************************************************/
+
+bool cli_ucs2(struct cli_state *cli)
+{
+	return ((cli->capabilities & CAP_UNICODE) != 0);
+}
+
+
+/****************************************************************************
  Read an smb from a fd ignoring all keepalive packets.
  The timeout is in milliseconds
 
@@ -640,7 +650,7 @@ static void cli_echo_recv_helper(struct async_req *req)
 
 	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
@@ -649,7 +659,7 @@ static void cli_echo_recv_helper(struct async_req *req)
 	if ((num_bytes != cli_req->data.echo.data.length)
 	    || (memcmp(cli_req->data.echo.data.data, bytes,
 		       num_bytes) != 0)) {
-		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -717,7 +727,7 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 NTSTATUS cli_echo_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 /**
@@ -764,4 +774,29 @@ NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
  fail:
 	TALLOC_FREE(frame);
 	return status;
+}
+
+/**
+ * Is the SMB command able to hold an AND_X successor
+ * @param[in] cmd	The SMB command in question
+ * @retval Can we add a chained request after "cmd"?
+ */
+bool is_andx_req(uint8_t cmd)
+{
+	switch (cmd) {
+	case SMBtconX:
+	case SMBlockingX:
+	case SMBopenX:
+	case SMBreadX:
+	case SMBwriteX:
+	case SMBsesssetupX:
+	case SMBulogoffX:
+	case SMBntcreateX:
+		return true;
+		break;
+	default:
+		break;
+	}
+
+	return false;
 }

@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    routines for marshalling/unmarshalling spoolss subcontext buffer structures
 
    Copyright (C) Andrew Tridgell 2003
    Copyright (C) Tim Potter 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,7 +23,9 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_spoolss.h"
+#if (_SAMBA_BUILD_ >= 4)
 #include "param/param.h"
+#endif
 
 #define NDR_SPOOLSS_PUSH_ENUM_IN(fn) do { \
 	if (!r->in.buffer && r->in.offered != 0) {\
@@ -157,7 +159,7 @@
 	enum ndr_err_code _ndr_err; \
         _ndr_err = call; \
 	if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
-        	return 0; \
+		return 0; \
 	}\
 } while (0)
 
@@ -387,7 +389,7 @@ enum ndr_err_code ndr_pull_spoolss_EnumPrintProcessors(struct ndr_pull *ndr, int
 	return NDR_ERR_SUCCESS;
 }
 
-uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, 
+uint32_t ndr_size_spoolss_EnumPrinterProcessors_info(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience,
 													 uint32_t level, uint32_t count, union spoolss_PrintProcessorInfo *info)
 {
 	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPrintProcessors);

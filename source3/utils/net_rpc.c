@@ -181,8 +181,7 @@ int run_rpc_command(struct net_context *c,
 			}
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(0, ("Could not initialise pipe %s. Error was %s\n",
-					cli_get_pipe_name_from_iface(
-						debug_ctx(), interface),
+					get_pipe_name_from_iface(interface),
 					nt_errstr(nt_status) ));
 				cli_shutdown(cli);
 				return -1;
@@ -797,7 +796,7 @@ static int rpc_user_info(struct net_context *c, int argc, const char **argv)
 	status = NetUserGetGroups(c->opt_host,
 				  argv[0],
 				  0,
-				  (uint8_t **)&u0,
+				  (uint8_t **)(void *)&u0,
 				  (uint32_t)-1,
 				  &entries_read,
 				  &total_entries);
@@ -1394,7 +1393,7 @@ static NTSTATUS rpc_group_delete_internals(struct net_context *c,
 	struct samr_RidTypeArray *rids = NULL;
 	/* char **names; */
 	int i;
-	/* DOM_GID *user_gids; */
+	/* struct samr_RidWithAttribute *user_gids; */
 
 	struct samr_Ids group_rids, name_types;
 	struct lsa_String lsa_acct_name;
@@ -2997,7 +2996,7 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 
 	status = NetShareEnum(c->opt_host,
 			      level,
-			      (uint8_t **)&i1,
+			      (uint8_t **)(void *)&i1,
 			      (uint32_t)-1,
 			      &entries_read,
 			      &total_entries,
@@ -3022,7 +3021,7 @@ static int rpc_share_list(struct net_context *c, int argc, const char **argv)
 
 static bool check_share_availability(struct cli_state *cli, const char *netname)
 {
-	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
 		d_printf("skipping   [%s]: not a file share.\n", netname);
 		return false;
 	}
@@ -4281,7 +4280,7 @@ static void show_userlist(struct rpc_pipe_client *pipe_hnd,
 
 	cnum = cli->cnum;
 
-	if (!cli_send_tconX(cli, netname, "A:", "", 0)) {
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, netname, "A:", "", 0))) {
 		return;
 	}
 
@@ -4378,7 +4377,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 {
 	int ret;
 	bool r;
-	ENUM_HND hnd;
 	uint32 i;
 	FILE *f;
 
@@ -4410,8 +4408,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 
 	for (i=0; i<num_tokens; i++)
 		collect_alias_memberships(&tokens[i].token);
-
-	init_enum_hnd(&hnd, 0);
 
 	share_list.num_shares = 0;
 	share_list.shares = NULL;
@@ -4776,7 +4772,7 @@ static int rpc_file_user(struct net_context *c, int argc, const char **argv)
 			     NULL,
 			     username,
 			     3,
-			     (uint8_t **)&i3,
+			     (uint8_t **)(void *)&i3,
 			     preferred_len,
 			     &entries_read,
 			     &total_entries,

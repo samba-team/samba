@@ -1221,9 +1221,9 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
 		  struct loadparm_service *service, struct parm_struct *parm)
 {
 	if (service == NULL) {
-		if (parm->class == P_LOCAL)
+		if (parm->pclass == P_LOCAL)
 			return ((char *)lp_ctx->sDefault)+parm->offset;
-		else if (parm->class == P_GLOBAL)
+		else if (parm->pclass == P_GLOBAL)
 			return ((char *)lp_ctx->globals)+parm->offset;
 		else return NULL;
 	} else {
@@ -1264,7 +1264,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 	bool not_added;
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].offset != -1 && parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].offset != -1 && parm_table[i].pclass == P_LOCAL &&
 		    (bcopyall || pcopymapDest[i])) {
 			void *src_ptr =
 				((char *)pserviceSource) + parm_table[i].offset;
@@ -1743,7 +1743,7 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 		return true;
 	}
 
-	if (parm_table[parmnum].class == P_GLOBAL) {
+	if (parm_table[parmnum].pclass == P_GLOBAL) {
 		DEBUG(0,
 		      ("Global parameter %s found in service section!\n",
 		       pszParmName));
@@ -1758,7 +1758,7 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 	 * entries with the same data pointer */
 	for (i = 0; parm_table[i].label; i++)
 		if (parm_table[i].offset == parm_table[parmnum].offset &&
-		    parm_table[i].class == parm_table[parmnum].class)
+		    parm_table[i].pclass == parm_table[parmnum].pclass)
 			service->copymap[i] = false;
 
 	return set_variable(service, parmnum, parm_ptr, pszParmName,
@@ -2053,7 +2053,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 	fprintf(f, "# Global parameters\n[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_GLOBAL &&
+		if (parm_table[i].pclass == P_GLOBAL &&
 		    parm_table[i].offset != -1 &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
 			if (!show_defaults && (lp_ctx->flags[i] & FLAG_DEFAULT)) 
@@ -2084,7 +2084,7 @@ static void dump_a_service(struct loadparm_service * pService, struct loadparm_s
 		fprintf(f, "\n[%s]\n", pService->szService);
 
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].class == P_LOCAL &&
+		if (parm_table[i].pclass == P_LOCAL &&
 		    parm_table[i].offset != -1 &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
@@ -2157,7 +2157,7 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 		struct loadparm_service *pService = lp_ctx->services[snum];
 
 		for (; parm_table[*i].label; (*i)++) {
-			if (parm_table[*i].class == P_LOCAL &&
+			if (parm_table[*i].pclass == P_LOCAL &&
 			    parm_table[*i].offset != -1 &&
 			    (*parm_table[*i].label != '-') &&
 			    ((*i) == 0 ||
@@ -2267,7 +2267,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		    parm_table[i].offset != -1 &&
 		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			char **r;
-			if (parm_table[i].class == P_LOCAL) {
+			if (parm_table[i].pclass == P_LOCAL) {
 				r = (char **)(((char *)lp_ctx->sDefault) + parm_table[i].offset);
 			} else {
 				r = (char **)(((char *)lp_ctx->globals) + parm_table[i].offset);

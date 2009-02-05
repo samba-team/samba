@@ -37,9 +37,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb_module.h"
 #include "auth/credentials/credentials.h"
 
 struct proxy_data {
@@ -64,7 +62,8 @@ struct proxy_ctx {
 */
 static int load_proxy_info(struct ldb_module *module)
 {
-	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct proxy_data *proxy = talloc_get_type(ldb_module_get_private(module), struct proxy_data);
 	struct ldb_dn *dn;
 	struct ldb_result *res = NULL;
 	int ret;
@@ -76,14 +75,14 @@ static int load_proxy_info(struct ldb_module *module)
 		return LDB_SUCCESS;
 	}
 
-	dn = ldb_dn_new(proxy, module->ldb, "@PROXYINFO");
+	dn = ldb_dn_new(proxy, ldb, "@PROXYINFO");
 	if (dn == NULL) {
 		goto failed;
 	}
-	ret = ldb_search(module->ldb, proxy, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
+	ret = ldb_search(ldb, proxy, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	talloc_free(dn);
 	if (ret != LDB_SUCCESS || res->count != 1) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Can't find @PROXYINFO\n");
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Can't find @PROXYINFO\n");
 		goto failed;
 	}
 
@@ -96,47 +95,47 @@ static int load_proxy_info(struct ldb_module *module)
 	newstr   = ldb_msg_find_attr_as_string(res->msgs[0], "newstr", NULL);
 
 	if (url == NULL || olddn == NULL || newdn == NULL || username == NULL || password == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Need url, olddn, newdn, oldstr, newstr, username and password in @PROXYINFO\n");
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Need url, olddn, newdn, oldstr, newstr, username and password in @PROXYINFO\n");
 		goto failed;
 	}
 
-	proxy->olddn = ldb_dn_new(proxy, module->ldb, olddn);
+	proxy->olddn = ldb_dn_new(proxy, ldb, olddn);
 	if (proxy->olddn == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to explode olddn '%s'\n", olddn);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Failed to explode olddn '%s'\n", olddn);
 		goto failed;
 	}
 	
-	proxy->newdn = ldb_dn_new(proxy, module->ldb, newdn);
+	proxy->newdn = ldb_dn_new(proxy, ldb, newdn);
 	if (proxy->newdn == NULL) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "Failed to explode newdn '%s'\n", newdn);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "Failed to explode newdn '%s'\n", newdn);
 		goto failed;
 	}
 
 	proxy->upstream = ldb_init(proxy, ldb_get_event_context(ldb));
 	if (proxy->upstream == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		goto failed;
 	}
 
 	proxy->oldstr = str_list_make(proxy, oldstr, ", ");
 	if (proxy->oldstr == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		goto failed;
 	}
 
 	proxy->newstr = str_list_make(proxy, newstr, ", ");
 	if (proxy->newstr == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		goto failed;
 	}
 
 	/* setup credentials for connection */
 	creds = cli_credentials_init(proxy->upstream);
 	if (creds == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		goto failed;
 	}
-	cli_credentials_guess(creds, ldb_get_opaque(module->ldb, "loadparm"));
+	cli_credentials_guess(creds, ldb_get_opaque(ldb, "loadparm"));
 	cli_credentials_set_username(creds, username, CRED_SPECIFIED);
 	cli_credentials_set_password(creds, password, CRED_SPECIFIED);
 
@@ -144,11 +143,11 @@ static int load_proxy_info(struct ldb_module *module)
 
 	ret = ldb_connect(proxy->upstream, url, 0, NULL);
 	if (ret != 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "proxy failed to connect to %s\n", url);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "proxy failed to connect to %s\n", url);
 		goto failed;
 	}
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "proxy connected to %s\n", url);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "proxy connected to %s\n", url);
 
 	talloc_free(res);
 
@@ -256,12 +255,14 @@ static void proxy_convert_record(struct ldb_context *ldb,
 static int proxy_search_callback(struct ldb_request *req,
 				  struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct proxy_data *proxy;
 	struct proxy_ctx *ac;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct proxy_ctx);
-	proxy = talloc_get_type(ac->module->private_data, struct proxy_data);
+	ldb = ldb_module_get_ctx(ac->module);
+	proxy = talloc_get_type(ldb_module_get_private(module), struct proxy_data);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -279,7 +280,7 @@ static int proxy_search_callback(struct ldb_request *req,
 #ifdef DEBUG_PROXY
 		ac->count++;
 #endif
-		proxy_convert_record(ac->module->ldb, proxy, ares->message);
+		proxy_convert_record(ldb, proxy, ares->message);
 		ret = ldb_module_send_entry(ac->req, ares->message, ares->controls);
 		break;
 
@@ -304,12 +305,15 @@ static int proxy_search_callback(struct ldb_request *req,
 /* search */
 static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct proxy_ctx *ac;
 	struct ldb_parse_tree *newtree;
-	struct proxy_data *proxy = talloc_get_type(module->private_data, struct proxy_data);
+	struct proxy_data *proxy = talloc_get_type(ldb_module_get_private(module), struct proxy_data);
 	struct ldb_request *newreq;
 	struct ldb_dn *base;
 	int ret, i;
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (req->op.search.base == NULL ||
 		(req->op.search.base->comp_num == 1 &&
@@ -347,13 +351,13 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	ldb_dn_remove_base_components(base, ldb_dn_get_comp_num(proxy->newdn));
 	ldb_dn_add_base(base, proxy->olddn);
 
-	ldb_debug(module->ldb, LDB_DEBUG_FATAL, "proxying: '%s' with dn '%s' \n", 
+	ldb_debug(ldb, LDB_DEBUG_FATAL, "proxying: '%s' with dn '%s' \n", 
 		  ldb_filter_from_tree(ac, newreq->op.search.tree), ldb_dn_get_linearized(newreq->op.search.base));
 	for (i = 0; req->op.search.attrs && req->op.search.attrs[i]; i++) {
-		ldb_debug(module->ldb, LDB_DEBUG_FATAL, "attr: '%s'\n", req->op.search.attrs[i]);
+		ldb_debug(ldb, LDB_DEBUG_FATAL, "attr: '%s'\n", req->op.search.attrs[i]);
 	}
 
-	ret = ldb_build_search_req_ex(&newreq, module->ldb, ac,
+	ret = ldb_build_search_req_ex(&newreq, ldb, ac,
 				      base, req->op.search.scope,
 				      newtree, req->op.search.attrs,
 				      req->controls,
@@ -364,16 +368,16 @@ static int proxy_search_bytree(struct ldb_module *module, struct ldb_request *re
 	 * 	  for now this makes the module *not* ASYNC */
 	ret = ldb_request(proxy->upstream, newreq);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
+		ldb_set_errstring(ldb, ldb_errstring(proxy->upstream));
 	}
 	ret = ldb_wait(newreq->handle, LDB_WAIT_ALL);
 	if (ret != LDB_SUCCESS) {
-		ldb_set_errstring(module->ldb, ldb_errstring(proxy->upstream));
+		ldb_set_errstring(ldb, ldb_errstring(proxy->upstream));
 	}
 	return ret;
 
 failed:
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE, "proxy failed for %s\n", 
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "proxy failed for %s\n", 
 		  ldb_dn_get_linearized(req->op.search.base));
 
 passthru:

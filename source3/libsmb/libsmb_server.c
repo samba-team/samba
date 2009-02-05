@@ -300,11 +300,11 @@ SMBC_server(TALLOC_CTX *ctx,
 			 * tid.
 			 */
 
-			if (!cli_send_tconX(srv->cli, share, "?????",
-                                            *pp_password,
-                                            strlen(*pp_password)+1)) {
-
-                                errno = SMBC_errno(context, srv->cli);
+			status = cli_tcon_andx(srv->cli, share, "?????",
+					       *pp_password,
+					       strlen(*pp_password)+1);
+			if (!NT_STATUS_IS_OK(status)) {
+                                errno = map_errno_from_nt_status(status);
                                 cli_shutdown(srv->cli);
 				srv->cli = NULL;
                                 smbc_getFunctionRemoveCachedServer(context)(context,
@@ -501,9 +501,10 @@ again:
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, share, "?????",
-			    *pp_password, strlen(*pp_password)+1)) {
-		errno = SMBC_errno(context, c);
+	status = cli_tcon_andx(c, share, "?????", *pp_password,
+			       strlen(*pp_password)+1);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
 		cli_shutdown(c);
 		return NULL;
 	}

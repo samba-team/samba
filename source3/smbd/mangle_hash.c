@@ -53,7 +53,7 @@
  *
  */
 
-static const char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
+static const char basechars[43]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
 #define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))

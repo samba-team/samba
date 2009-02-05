@@ -55,7 +55,7 @@ struct ntvfs_ops {
 	/* async_setup - called when a backend is processing a async request */
 	NTSTATUS (*async_setup)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
-				void *private);
+				void *private_data);
 
 	/* filesystem operations */
 	NTSTATUS (*fsinfo)(struct ntvfs_module_context *ntvfs,
@@ -94,12 +94,12 @@ struct ntvfs_ops {
 	/* directory search */
 	NTSTATUS (*search_first)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
-				 union smb_search_first *io, void *private,
-				 bool (*callback)(void *private, const union smb_search_data *file));
+				 union smb_search_first *io, void *private_data,
+				 bool (*callback)(void *private_data, const union smb_search_data *file));
 	NTSTATUS (*search_next)(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req,
-				union smb_search_next *io, void *private,
-				bool (*callback)(void *private, const union smb_search_data *file));
+				union smb_search_next *io, void *private_data,
+				bool (*callback)(void *private_data, const union smb_search_data *file));
 	NTSTATUS (*search_close)(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req,
 				 union smb_search_close *io);

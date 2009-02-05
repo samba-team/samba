@@ -186,7 +186,7 @@ static void next_open(struct benchopen_state *state)
 
 	state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 	state->req_open->async.fn = open_completed;
-	state->req_open->async.private = state;
+	state->req_open->async.private_data = state;
 }
 
 
@@ -203,7 +203,7 @@ static void next_close(struct benchopen_state *state)
 
 	state->req_close = smb_raw_close_send(state->tree, &state->close_parms);
 	state->req_close->async.fn = close_completed;
-	state->req_close->async.private = state;
+	state->req_close->async.private_data = state;
 }
 
 /*
@@ -211,7 +211,7 @@ static void next_close(struct benchopen_state *state)
 */
 static void open_completed(struct smbcli_request *req)
 {
-	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
+	struct benchopen_state *state = (struct benchopen_state *)req->async.private_data;
 	TALLOC_CTX *tmp_ctx = talloc_new(state->mem_ctx);
 	NTSTATUS status;
 
@@ -243,7 +243,7 @@ static void open_completed(struct smbcli_request *req)
 		state->open_retries++;
 		state->req_open = smb_raw_open_send(state->tree, &state->open_parms);
 		state->req_open->async.fn = open_completed;
-		state->req_open->async.private = state;
+		state->req_open->async.private_data = state;
 		return;
 	}
 
@@ -275,7 +275,7 @@ static void open_completed(struct smbcli_request *req)
 */
 static void close_completed(struct smbcli_request *req)
 {
-	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
+	struct benchopen_state *state = (struct benchopen_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 
 	state->req_close = NULL;
@@ -312,7 +312,7 @@ static void close_completed(struct smbcli_request *req)
 
 static void echo_completion(struct smbcli_request *req)
 {
-	struct benchopen_state *state = (struct benchopen_state *)req->async.private;
+	struct benchopen_state *state = (struct benchopen_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
@@ -357,7 +357,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 		p.in.size = 0;
 		p.in.data = NULL;
 		req = smb_raw_echo_send(state[i].tree->session->transport, &p);
-		req->async.private = &state[i];
+		req->async.private_data = &state[i];
 		req->async.fn      = echo_completion;
 	}
 }

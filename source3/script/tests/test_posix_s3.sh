@@ -16,8 +16,10 @@ start="$4"
 shift 4
 ADDARGS="$*"
 
+test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`
 . $incdir/test_functions.sh
+}
 
 base="BASE-ATTR BASE-CHARSET BASE-CHKPATH BASE-DEFER_OPEN BASE-DELAYWRITE BASE-DELETE"
 base="$base BASE-DENY1 BASE-DENY2 BASE-DENY3 BASE-DENYDOS BASE-DIR1 BASE-DIR2"

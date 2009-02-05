@@ -13,7 +13,7 @@ PUBLIC_HEADERS += param/param.h
 PC_FILES += $(paramsrcdir)/samba-hostconfig.pc
 
 [SUBSYSTEM::PROVISION]
-PRIVATE_DEPENDENCIES = LIBPYTHON swig_ldb 
+PRIVATE_DEPENDENCIES = LIBPYTHON pyldb
 
 PROVISION_OBJ_FILES = $(paramsrcdir)/provision.o $(param_OBJ_FILES)
 
@@ -62,5 +62,3 @@ LIBRARY_REALNAME = samba/param.$(SHLIBEXT)
 PRIVATE_DEPENDENCIES = LIBSAMBA-HOSTCONFIG PYTALLOC
 
 param_OBJ_FILES = $(paramsrcdir)/pyparam.o
-
-$(param_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)

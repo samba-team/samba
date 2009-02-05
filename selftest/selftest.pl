@@ -365,7 +365,8 @@ unless (defined($ENV{VALGRIND})) {
 	$ENV{MALLOC_CHECK_} = 2;
 }
 
-my $old_pwd = "$RealBin/..";
+my $bindir = ($opt_bindir or "$builddir/bin");
+my $bindir_abs = abs_path($bindir);
 
 # Backwards compatibility:
 if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
@@ -393,6 +394,7 @@ mkdir($prefix, 0777) unless -d $prefix;
 
 my $prefix_abs = abs_path($prefix);
 my $srcdir_abs = abs_path($srcdir);
+my $builddir_abs = abs_path($builddir);
 
 die("using an empty absolute prefix isn't allowed") unless $prefix_abs ne "";
 die("using '/' as absolute prefix isn't allowed") unless $prefix_abs ne "/";
@@ -402,6 +404,9 @@ $ENV{KRB5CCNAME} = "$prefix/krb5ticket";
 $ENV{PREFIX_ABS} = $prefix_abs;
 $ENV{SRCDIR} = $srcdir;
 $ENV{SRCDIR_ABS} = $srcdir_abs;
+$ENV{BUILDDIR} = $builddir;
+$ENV{BUILDDIR_ABS} = $builddir_abs;
+$ENV{EXEEXT} = $exeext;
 
 if (defined($ENV{RUN_FROM_BUILD_FARM}) and 
 	($ENV{RUN_FROM_BUILD_FARM} eq "yes")) {
@@ -410,8 +415,8 @@ if (defined($ENV{RUN_FROM_BUILD_FARM}) and
 
 my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
-$ENV{LDB_MODULES_PATH} = "$old_pwd/source4/bin/modules/ldb";
-$ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/source4/bin/modules";
+$ENV{LDB_MODULES_PATH} = "$bindir_abs/modules/ldb";
+$ENV{LD_SAMBA_MODULE_PATH} = "$bindir_abs/modules";
 sub prefix_pathvar($$)
 {
 	my ($name, $newpath) = @_;
@@ -421,8 +426,8 @@ sub prefix_pathvar($$)
 		$ENV{$name} = $newpath;
 	}
 }
-prefix_pathvar("PKG_CONFIG_PATH", "$old_pwd/source4/bin/pkgconfig");
-prefix_pathvar("PYTHONPATH", "$old_pwd/source4/bin/python");
+prefix_pathvar("PKG_CONFIG_PATH", "$bindir_abs/pkgconfig");
+prefix_pathvar("PYTHONPATH", "$bindir_abs/python");
 
 if ($opt_socket_wrapper_keep_pcap) {
 	# Socket wrapper keep pcap implies socket wrapper pcap
@@ -450,14 +455,12 @@ my $testenv_default = "none";
 if ($opt_target eq "samba4") {
 	$testenv_default = "member";
 	require target::Samba4;
-	$target = new Samba4($opt_bindir or "$builddir/bin",
-			     $ldap, "$srcdir/setup", $exeext);
+	$target = new Samba4($bindir, $ldap, "$srcdir/setup", $exeext);
 } elsif ($opt_target eq "samba3") {
-	my $bindir = ($opt_bindir or "$builddir/bin");
 	if ($opt_socket_wrapper and `$bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
-	$testenv_default = "dc";
+	$testenv_default = "member";
 	require target::Samba3;
 	$target = new Samba3($bindir);
 } elsif ($opt_target eq "win") {
@@ -552,6 +555,12 @@ sub write_clientconf($$)
 	        mkdir("$prefix/client/private", 0777);
 	}
 
+	if ( -d "$prefix/client/lock" ) {
+	        unlink <$prefix/client/lockdir/*>;
+	} else {
+	        mkdir("$prefix/client/lockdir", 0777);
+	}
+
 	open(CF, ">$conffile");
 	print CF "[global]\n";
 	if (defined($ENV{VALGRIND})) {
@@ -566,20 +575,12 @@ sub write_clientconf($$)
 	if (defined($vars->{REALM})) {
 		print CF "\trealm = $vars->{REALM}\n";
 	}
-	if (defined($vars->{NCALRPCDIR})) {
-		print CF "\tncalrpc dir = $vars->{NCALRPCDIR}\n";
-	}
-	if (defined($vars->{PIDDIR})) {
-		print CF "\tpid directory = $vars->{PIDDIR}\n";
-	}
-	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
-		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
-	}
 	if ($opt_socket_wrapper) {
 		print CF "\tinterfaces = $interfaces\n";
 	}
 	print CF "
 	private dir = $prefix_abs/client/private
+	lock dir = $prefix_abs/client/lockdir
 	name resolve order = bcast
 	panic action = $RealBin/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
@@ -650,7 +651,6 @@ if ($opt_quick) {
 }
 $ENV{SELFTEST_TARGET} = $opt_target;
 $ENV{SELFTEST_MAXTIME} = $torture_maxtime;
-$ENV{SELFTEST_CONFFILE} = $conffile;
 
 my @available = ();
 foreach my $fn (@testlists) {
@@ -698,6 +698,17 @@ $| = 1;
 
 my %running_envs = ();
 
+sub get_running_env($)
+{
+	my ($name) = @_;
+
+	my $envname = $name;
+
+	$envname =~ s/:.*//;
+
+	return $running_envs{$envname};
+}
+
 my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",
@@ -735,13 +746,23 @@ $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 
 sub setup_env($)
 {
-	my ($envname) = @_;
+	my ($name) = @_;
 
-	my $testenv_vars;
+	my $testenv_vars = undef;
+
+	my $envname = $name;
+	my $option = $name;
+
+	$envname =~ s/:.*//;
+	$option =~ s/^[^:]*//;
+	$option =~ s/^://;
+
+	$option = "client" if $option eq "";
+
 	if ($envname eq "none") {
 		$testenv_vars = {};
-	} elsif (defined($running_envs{$envname})) {
-		$testenv_vars = $running_envs{$envname};
+	} elsif (defined(get_running_env($envname))) {
+		$testenv_vars = get_running_env($envname);
 		if (not $target->check_env($testenv_vars)) {
 			$testenv_vars = undef;
 		}
@@ -753,8 +774,16 @@ sub setup_env($)
 
 	$running_envs{$envname} = $testenv_vars;
 
-	SocketWrapper::set_default_iface(6);
-	write_clientconf($conffile, $testenv_vars);
+	if ($option eq "local") {
+		SocketWrapper::set_default_iface($testenv_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+		$ENV{SMB_CONF_PATH} = $testenv_vars->{SERVERCONFFILE};
+	} elsif ($option eq "client") {
+		SocketWrapper::set_default_iface(6);
+		write_clientconf($conffile, $testenv_vars);
+		$ENV{SMB_CONF_PATH} = $conffile;
+	} else {
+		die("Unknown option[$option] for envname[$envname]");
+	}
 
 	foreach (@exported_envvars) {
 		if (defined($testenv_vars->{$_})) {
@@ -784,21 +813,21 @@ sub getlog_env($)
 {
 	my ($envname) = @_;
 	return "" if ($envname eq "none");
-	return $target->getlog_env($running_envs{$envname});
+	return $target->getlog_env(get_running_env($envname));
 }
 
 sub check_env($)
 {
 	my ($envname) = @_;
 	return 1 if ($envname eq "none");
-	return $target->check_env($running_envs{$envname});
+	return $target->check_env(get_running_env($envname));
 }
 
 sub teardown_env($)
 {
 	my ($envname) = @_;
 	return if ($envname eq "none");
-	$target->teardown_env($running_envs{$envname});
+	$target->teardown_env(get_running_env($envname));
 	delete $running_envs{$envname};
 }
 
@@ -825,7 +854,7 @@ server is pid `cat \$PIDDIR/samba.pid`
 
 Some useful environment variables:
 TORTURE_OPTIONS=\$TORTURE_OPTIONS
-CONFIGURATION=\$CONFIGURATION
+SMB_CONF_PATH=\$SMB_CONF_PATH
 
 $envvarstr
 \" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");

@@ -1128,6 +1128,7 @@ bool add_gid_to_array_unique(TALLOC_CTX *mem_ctx, gid_t gid,
 bool file_exist_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 bool socket_exist(const char *fname);
 bool directory_exist_stat(char *dname,SMB_STRUCT_STAT *st);
+uint64_t get_file_size_stat(const SMB_STRUCT_STAT *sbuf);
 SMB_OFF_T get_file_size(char *file_name);
 char *attrib_string(uint16 mode);
 void show_msg(char *buf);
@@ -1674,8 +1675,6 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 int num_rids, uint32 *rids,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types);
-bool winbind_allocate_uid(uid_t *uid);
-bool winbind_allocate_gid(gid_t *gid);
 
 /* The following definitions come from lib/wins_srv.c  */
 
@@ -2324,9 +2323,19 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 			   const char *pass, int passlen,
 			   const char *ntpass, int ntpasslen,
 			   const char *workgroup);
+struct async_req *cli_session_setup_guest_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct cli_state *cli);
+NTSTATUS cli_session_setup_guest_recv(struct async_req *req);
 bool cli_ulogoff(struct cli_state *cli);
-bool cli_send_tconX(struct cli_state *cli, 
-		    const char *share, const char *dev, const char *pass, int passlen);
+struct async_req *cli_tcon_andx_send(TALLOC_CTX *mem_ctx,
+				     struct event_context *ev,
+				     struct cli_state *cli,
+				     const char *share, const char *dev,
+				     const char *pass, int passlen);
+NTSTATUS cli_tcon_andx_recv(struct async_req *req);
+NTSTATUS cli_tcon_andx(struct cli_state *cli, const char *share,
+		       const char *dev, const char *pass, int passlen);
 bool cli_tdis(struct cli_state *cli);
 void cli_negprot_sendsync(struct cli_state *cli);
 NTSTATUS cli_negprot(struct cli_state *cli);
@@ -2462,6 +2471,8 @@ struct async_req *cli_echo_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				DATA_BLOB data);
 NTSTATUS cli_echo_recv(struct async_req *req);
 NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data);
+bool cli_ucs2(struct cli_state *cli);
+bool is_andx_req(uint8_t cmd);
 
 /* The following definitions come from libsmb/clierror.c  */
 
@@ -2499,8 +2510,31 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 		 uint32 FileAttributes, uint32 ShareAccess,
 		 uint32 CreateDisposition, uint32 CreateOptions,
 		 uint8 SecuityFlags);
+struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli,
+				    const char *fname,
+				    uint32_t CreatFlags,
+				    uint32_t DesiredAccess,
+				    uint32_t FileAttributes,
+				    uint32_t ShareAccess,
+				    uint32_t CreateDisposition,
+				    uint32_t CreateOptions,
+				    uint8_t SecurityFlags);
+NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum);
+NTSTATUS cli_ntcreate(struct cli_state *cli,
+		      const char *fname,
+		      uint32_t CreatFlags,
+		      uint32_t DesiredAccess,
+		      uint32_t FileAttributes,
+		      uint32_t ShareAccess,
+		      uint32_t CreateDisposition,
+		      uint32_t CreateOptions,
+		      uint8_t SecurityFlags,
+		      uint16_t *pfid);
 int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess);
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str);
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str,
+			    size_t str_len, size_t *pconverted_size);
 struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct cli_state *cli,
 				const char *fname, int flags, int share_mode);
@@ -2944,7 +2978,6 @@ NTSTATUS map_nt_error_from_gss(uint32 gss_maj, uint32 minor);
 /* The following definitions come from libsmb/namecache.c  */
 
 bool namecache_enable(void);
-bool namecache_shutdown(void);
 bool namecache_store(const char *name,
 			int name_type,
 			int num_names,
@@ -3952,6 +3985,7 @@ bool lp_passdb_expand_explicit(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_admin_dn(void);
 int lp_ldap_ssl(void);
+bool lp_ldap_ssl_ads(void);
 int lp_ldap_passwd_sync(void);
 bool lp_ldap_delete_dn(void);
 int lp_ldap_replication_sleep(void);
@@ -4027,7 +4061,8 @@ bool lp_client_use_spnego(void);
 bool lp_hostname_lookups(void);
 bool lp_change_notify(const struct share_params *p );
 bool lp_kernel_change_notify(const struct share_params *p );
-bool lp_use_kerberos_keytab(void);
+char * lp_dedicated_keytab_file(void);
+int lp_kerberos_method(void);
 bool lp_defer_sharing_violations(void);
 bool lp_enable_privileges(void);
 bool lp_enable_asu_support(void);
@@ -5294,13 +5329,54 @@ NTSTATUS cli_rpc_pipe_open_krb5(struct cli_state *cli,
 NTSTATUS cli_get_session_key(TALLOC_CTX *mem_ctx,
 			     struct rpc_pipe_client *cli,
 			     DATA_BLOB *session_key);
+NTSTATUS rpc_pipe_open_local(TALLOC_CTX *mem_ctx,
+			     struct rpc_cli_smbd_conn *conn,
+			     const struct ndr_syntax_id *syntax,
+			     struct rpc_pipe_client **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_np.c  */
 
+struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
+					     struct event_context *ev,
+					     struct cli_state *cli,
+					     const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct rpc_cli_transport **presult);
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult);
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p);
+
+/* The following definitions come from rpc_client/rpc_transport_smbd.c  */
+
+struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
+					      struct event_context *ev,
+					      void (*stdout_callback)(char *buf,
+								      size_t len,
+								      void *priv),
+					      void *priv);
+NTSTATUS rpc_cli_smbd_conn_init_recv(struct async_req *req,
+				     TALLOC_CTX *mem_ctx,
+				     struct rpc_cli_smbd_conn **pconn);
+NTSTATUS rpc_cli_smbd_conn_init(TALLOC_CTX *mem_ctx,
+				struct rpc_cli_smbd_conn **pconn,
+				void (*stdout_callback)(char *buf,
+							size_t len,
+							void *priv),
+				void *priv);
+
+struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
+					       struct event_context *ev,
+					       struct rpc_cli_smbd_conn *conn,
+					       const struct ndr_syntax_id *abstract_syntax);
+NTSTATUS rpc_transport_smbd_init_recv(struct async_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      struct rpc_cli_transport **presult);
+NTSTATUS rpc_transport_smbd_init(TALLOC_CTX *mem_ctx,
+				 struct rpc_cli_smbd_conn *conn,
+				 const struct ndr_syntax_id *abstract_syntax,
+				 struct rpc_cli_transport **presult);
 
 /* The following definitions come from rpc_client/rpc_transport_sock.c  */
 
@@ -5600,100 +5676,29 @@ bool smb_io_relarraystr(const char *desc, RPC_BUFFER *buffer, int depth, uint16 
 bool smb_io_relsecdesc(const char *desc, RPC_BUFFER *buffer, int depth, SEC_DESC **secdesc);
 uint32 size_of_relative_string(UNISTR *string);
 
-/* The following definitions come from rpc_parse/parse_eventlog.c  */
-
-bool eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u,
-				 prs_struct *ps, int depth);
-bool eventlog_io_r_read_eventlog(const char *desc,
-				 EVENTLOG_Q_READ_EVENTLOG *q_u,
-				 EVENTLOG_R_READ_EVENTLOG *r_u,
-				 prs_struct *ps,
-				 int depth);
-
 /* The following definitions come from rpc_parse/parse_misc.c  */
 
 bool smb_io_time(const char *desc, NTTIME *nttime, prs_struct *ps, int depth);
 bool smb_io_nttime(const char *desc, prs_struct *ps, int depth, NTTIME *nttime);
-uint32 get_enum_hnd(ENUM_HND *enh);
-void init_enum_hnd(ENUM_HND *enh, uint32 hnd);
-bool smb_io_enum_hnd(const char *desc, ENUM_HND *hnd, prs_struct *ps, int depth);
 bool smb_io_dom_sid(const char *desc, DOM_SID *sid, prs_struct *ps, int depth);
-void init_dom_sid2(DOM_SID2 *sid2, const DOM_SID *sid);
-bool smb_io_dom_sid2_p(const char *desc, prs_struct *ps, int depth, DOM_SID2 **sid2);
-bool smb_io_dom_sid2(const char *desc, DOM_SID2 *sid, prs_struct *ps, int depth);
 bool smb_io_uuid(const char *desc, struct GUID *uuid, 
 		 prs_struct *ps, int depth);
-void init_str_hdr(STRHDR *hdr, int max_len, int len, uint32 buffer);
-bool smb_io_strhdr(const char *desc,  STRHDR *hdr, prs_struct *ps, int depth);
-void init_uni_hdr(UNIHDR *hdr, UNISTR2 *str2);
-bool smb_io_unihdr(const char *desc, UNIHDR *hdr, prs_struct *ps, int depth);
-void init_buf_hdr(BUFHDR *hdr, int max_len, int len);
-bool smb_io_hdrbuf_pre(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, uint32 *offset);
-bool smb_io_hdrbuf_post(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth, 
-				uint32 ptr_hdrbuf, uint32 max_len, uint32 len);
-bool smb_io_hdrbuf(const char *desc, BUFHDR *hdr, prs_struct *ps, int depth);
 void init_unistr(UNISTR *str, const char *buf);
 bool smb_io_unistr(const char *desc, UNISTR *uni, prs_struct *ps, int depth);
-void init_rpc_blob_uint32(RPC_DATA_BLOB *str, uint32 val);
-void init_rpc_blob_str(RPC_DATA_BLOB *str, const char *buf, int len);
-void init_rpc_blob_hex(RPC_DATA_BLOB *str, const char *buf);
-void init_rpc_blob_bytes(RPC_DATA_BLOB *str, uint8 *buf, size_t len);
 bool smb_io_buffer5(const char *desc, BUFFER5 *buf5, prs_struct *ps, int depth);
 void init_buf_unistr2(UNISTR2 *str, uint32 *ptr, const char *buf);
 void copy_unistr2(UNISTR2 *str, const UNISTR2 *from);
-void init_string2(STRING2 *str, const char *buf, size_t max_len, size_t str_len);
-bool smb_io_string2(const char *desc, STRING2 *str2, uint32 buffer, prs_struct *ps, int depth);
 void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags);
-void init_unistr4(UNISTR4 *uni4, const char *buf, enum unistr2_term_codes flags);
-void init_unistr4_w( TALLOC_CTX *ctx, UNISTR4 *uni4, const smb_ucs2_t *buf );
 void init_unistr2_w(TALLOC_CTX *ctx, UNISTR2 *str, const smb_ucs2_t *buf);
 void init_unistr2_from_unistr(TALLOC_CTX *ctx, UNISTR2 *to, const UNISTR *from);
 void init_unistr2_from_datablob(UNISTR2 *str, DATA_BLOB *blob) ;
 bool prs_io_unistr2_p(const char *desc, prs_struct *ps, int depth, UNISTR2 **uni2);
 bool prs_io_unistr2(const char *desc, prs_struct *ps, int depth, UNISTR2 *uni2 );
 bool smb_io_unistr2(const char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth);
-bool prs_unistr4(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_hdr(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_str(const char *desc, prs_struct *ps, int depth, UNISTR4 *uni4);
-bool prs_unistr4_array(const char *desc, prs_struct *ps, int depth, UNISTR4_ARRAY *array );
-bool init_unistr4_array( UNISTR4_ARRAY *array, uint32 count, const char **strings );
-void init_dom_rid(DOM_RID *prid, uint32 rid, uint16 type, uint32 idx);
-bool smb_io_dom_rid(const char *desc, DOM_RID *rid, prs_struct *ps, int depth);
-bool smb_io_dom_rid2(const char *desc, DOM_RID2 *rid, prs_struct *ps, int depth);
-void init_dom_rid3(DOM_RID3 *rid3, uint32 rid, uint8 type);
-bool smb_io_dom_rid3(const char *desc, DOM_RID3 *rid3, prs_struct *ps, int depth);
-void init_dom_rid4(DOM_RID4 *rid4, uint16 unknown, uint16 attr, uint32 rid);
-void init_clnt_srv(DOM_CLNT_SRV *logcln, const char *logon_srv,
-		   const char *comp_name);
-bool smb_io_clnt_srv(const char *desc, DOM_CLNT_SRV *logcln, prs_struct *ps, int depth);
-void init_log_info(DOM_LOG_INFO *loginfo, const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name);
-bool smb_io_log_info(const char *desc, DOM_LOG_INFO *loginfo, prs_struct *ps, int depth);
-bool smb_io_chal(const char *desc, DOM_CHAL *chal, prs_struct *ps, int depth);
-bool smb_io_cred(const char *desc,  DOM_CRED *cred, prs_struct *ps, int depth);
-void init_clnt_info2(DOM_CLNT_INFO2 *clnt,
-				const char *logon_srv, const char *comp_name,
-				const DOM_CRED *clnt_cred);
-bool smb_io_clnt_info2(const char *desc, DOM_CLNT_INFO2 *clnt, prs_struct *ps, int depth);
-void init_clnt_info(DOM_CLNT_INFO *clnt,
-		const char *logon_srv, const char *acct_name,
-		uint16 sec_chan, const char *comp_name,
-		const DOM_CRED *cred);
-bool smb_io_clnt_info(const char *desc,  DOM_CLNT_INFO *clnt, prs_struct *ps, int depth);
-void init_logon_id(DOM_LOGON_ID *logonid, uint32 log_id_low, uint32 log_id_high);
-bool smb_io_logon_id(const char *desc, DOM_LOGON_ID *logonid, prs_struct *ps, int depth);
-void init_owf_info(OWF_INFO *hash, const uint8 data[16]);
-bool smb_io_owf_info(const char *desc, OWF_INFO *hash, prs_struct *ps, int depth);
-bool smb_io_gid(const char *desc,  DOM_GID *gid, prs_struct *ps, int depth);
 bool smb_io_pol_hnd(const char *desc, POLICY_HND *pol, prs_struct *ps, int depth);
 void init_unistr3(UNISTR3 *str, const char *buf);
 bool smb_io_unistr3(const char *desc, UNISTR3 *name, prs_struct *ps, int depth);
 bool prs_uint64(const char *name, prs_struct *ps, int depth, uint64 *data64);
-bool smb_io_bufhdr2(const char *desc, BUFHDR2 *hdr, prs_struct *ps, int depth);
-bool smb_io_bufhdr4(const char *desc, BUFHDR4 *hdr, prs_struct *ps, int depth);
-bool smb_io_rpc_blob(const char *desc, RPC_DATA_BLOB *blob, prs_struct *ps, int depth);
-bool make_uni_hdr(UNIHDR *hdr, int len);
-bool make_bufhdr2(BUFHDR2 *hdr, uint32 info_level, uint32 length, uint32 buffer);
 uint32 str_len_uni(UNISTR *source);
 bool policy_handle_is_valid(const POLICY_HND *hnd);
 
@@ -5751,7 +5756,6 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 bool prs_uint16uni(bool charmode, const char *name, prs_struct *ps, int depth, uint16 *data16s, int len);
 bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uint32 *data32s, int len);
 bool prs_buffer5(bool charmode, const char *name, prs_struct *ps, int depth, BUFFER5 *str);
-bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STRING2 *str);
 bool prs_unistr2(bool charmode, const char *name, prs_struct *ps, int depth, UNISTR2 *str);
 bool prs_unistr3(bool charmode, const char *name, UNISTR3 *str, prs_struct *ps, int depth);
 bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str);
@@ -5778,8 +5782,7 @@ bool prs_data_blob(prs_struct *prs, DATA_BLOB *blob, TALLOC_CTX *mem_ctx);
 
 /* The following definitions come from rpc_parse/parse_rpc.c  */
 
-const char *cli_get_pipe_name_from_iface(TALLOC_CTX *mem_ctx,
-					 const struct ndr_syntax_id *interface);
+const char *get_pipe_name_from_iface(const struct ndr_syntax_id *interface);
 void init_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 bool smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
@@ -6172,33 +6175,43 @@ bool spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_st
 bool make_monitorui_buf( RPC_BUFFER *buf, const char *dllname );
 bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 
-/* The following definitions come from rpc_server/srv_eventlog.c  */
-
-NTSTATUS rpc_eventlog2_init(void);
-void eventlog2_get_pipe_fns(struct api_struct **fns, int *n_fns);
-
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
 TDB_CONTEXT *elog_init_tdb( char *tdbfilename );
 char *elog_tdbname(TALLOC_CTX *ctx, const char *name );
 int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention );
 bool prune_eventlog( TDB_CONTEXT * tdb );
-bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32 needed );
-ELOG_TDB *elog_open_tdb( char *logname, bool force_clear );
+ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only );
 int elog_close_tdb( ELOG_TDB *etdb, bool force_close );
-int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee );
-void fixup_eventlog_entry( Eventlog_entry * ee );
-bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor );
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb *entry, bool * eor );
+size_t fixup_eventlog_record_tdb(struct eventlog_Record_tdb *r);
+struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
+						  TDB_CONTEXT *tdb,
+						  uint32_t record_number);
+NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
+			       TDB_CONTEXT *tdb,
+			       struct eventlog_Record_tdb *r,
+			       uint32_t *record_number);
+NTSTATUS evlog_push_record(TALLOC_CTX *mem_ctx,
+			   TDB_CONTEXT *tdb,
+			   struct EVENTLOGRECORD *r,
+			   uint32_t *record_number);
+struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
+					 TDB_CONTEXT *tdb,
+					 uint32_t record_number);
+NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
+				      const struct EVENTLOGRECORD *e,
+				      struct eventlog_Record_tdb *t);
+NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
+				      const struct eventlog_Record_tdb *t,
+				      struct EVENTLOGRECORD *e);
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
-NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
-				EVENTLOG_Q_READ_EVENTLOG * q_u,
-				EVENTLOG_R_READ_EVENTLOG * r_u );
-
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
-bool init_pipe_handle_list(pipes_struct *p, const char *pipe_name);
+bool init_pipe_handle_list(pipes_struct *p,
+			   const struct ndr_syntax_id *syntax);
 bool create_policy_hnd(pipes_struct *p, POLICY_HND *hnd, void *data_ptr);
 bool find_policy_by_hnd(pipes_struct *p, POLICY_HND *hnd, void **data_p);
 bool close_policy_hnd(pipes_struct *p, POLICY_HND *hnd);
@@ -6221,7 +6234,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt,
 			  const char *srv,
 			  const struct ndr_interface_table *iface,
 			  const struct api_struct *cmds, int size);
-bool is_known_pipename(const char *cli_filename);
+bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
 bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p);
 bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p);
 bool api_pipe_ntlmssp_auth_process(pipes_struct *p, prs_struct *rpc_in,
@@ -6240,10 +6253,15 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 const char *client_address,
 		 struct auth_serversupplied_info *server_info,
 		 struct fake_file_handle **phandle);
-NTSTATUS np_write(struct fake_file_handle *handle, const uint8_t *data,
-		  size_t len, ssize_t *nwritten);
-NTSTATUS np_read(struct fake_file_handle *handle, uint8_t *data, size_t len,
-		 ssize_t *nread, bool *is_data_outstanding);
+struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				struct fake_file_handle *handle,
+				const uint8_t *data, size_t len);
+NTSTATUS np_write_recv(struct async_req *req, ssize_t *nwritten);
+struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+			       struct fake_file_handle *handle,
+			       uint8_t *data, size_t len);
+NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
+		      bool *is_data_outstanding);
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
@@ -6476,8 +6494,6 @@ REGVAL_CTR *svcctl_fetch_regvalues( const char *name, NT_USER_TOKEN *token );
 
 /* The following definitions come from smbd/aio.c  */
 
-void aio_request_done(uint16_t mid);
-bool aio_finished(void);
 void initialize_async_io_handler(void);
 bool schedule_aio_read_and_X(connection_struct *conn,
 			     struct smb_request *req,
@@ -6488,23 +6504,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 			      files_struct *fsp, char *data,
 			      SMB_OFF_T startpos,
 			      size_t numtowrite);
-int process_aio_queue(void);
 int wait_for_aio_completion(files_struct *fsp);
 void cancel_aio_by_fsp(files_struct *fsp);
-bool aio_finished(void);
-void initialize_async_io_handler(void);
-int process_aio_queue(void);
-bool schedule_aio_read_and_X(connection_struct *conn,
-			     struct smb_request *req,
-			     files_struct *fsp, SMB_OFF_T startpos,
-			     size_t smb_maxcnt);
-bool schedule_aio_write_and_X(connection_struct *conn,
-			      struct smb_request *req,
-			      files_struct *fsp, char *data,
-			      SMB_OFF_T startpos,
-			      size_t numtowrite);
-void cancel_aio_by_fsp(files_struct *fsp);
-int wait_for_aio_completion(files_struct *fsp);
+void smbd_aio_complete_mid(unsigned int mid);
 
 /* The following definitions come from smbd/blocking.c  */
 
@@ -6668,14 +6670,9 @@ uint32 dmapi_file_flags(const char * const path);
 
 /* The following definitions come from smbd/dnsregister.c  */
 
-void dns_register_close(struct dns_reg_state **dns_state_ptr);
-void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout);
-bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout);
+bool smbd_setup_mdns_registration(struct tevent_context *ev,
+				  TALLOC_CTX *mem_ctx,
+				  uint16_t port);
 
 /* The following definitions come from smbd/dosmode.c  */
 
@@ -7035,13 +7032,11 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 /* The following definitions come from smbd/oplock.c  */
 
 int32 get_number_of_exclusive_open_oplocks(void);
-bool oplock_message_waiting(void);
-void process_kernel_oplocks(struct messaging_context *msg_ctx);
+void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 bool set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
-int oplock_notify_fd(void);
 void reply_to_oplock_break_requests(files_struct *fsp);
 void release_level_2_oplocks_on_change(files_struct *fsp);
 void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e);
@@ -7116,6 +7111,8 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 /* The following definitions come from smbd/process.c  */
 
+void smbd_setup_sig_term_handler(void);
+void smbd_setup_sig_hup_handler(void);
 bool srv_send_smb(int fd, char *buffer, bool do_encrypt);
 int srv_set_message(char *buf,
                         int num_words,
@@ -7141,7 +7138,6 @@ struct idle_event *event_add_idle(struct event_context *event_ctx,
 						  void *private_data),
 				  void *private_data);
 NTSTATUS allow_new_trans(struct trans_state *list, int mid);
-void respond_to_all_remaining_local_messages(void);
 void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes);
 const char *smb_fn_name(int type);
 void add_to_common_flags2(uint32 v);
@@ -7149,6 +7145,7 @@ void remove_from_common_flags2(uint32 v);
 void construct_reply_common_req(struct smb_request *req, char *outbuf);
 size_t req_wct_ofs(struct smb_request *req);
 void chain_reply(struct smb_request *req);
+bool req_is_in_chain(struct smb_request *req);
 void check_reload(time_t t);
 void smbd_process(void);
 
@@ -7222,11 +7219,6 @@ void reply_ctemp(struct smb_request *req);
 NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			  uint32 dirtype, const char *name_in, bool has_wild);
 void reply_unlink(struct smb_request *req);
-void send_file_readbraw(connection_struct *conn,
-			files_struct *fsp,
-			SMB_OFF_T startpos,
-			size_t nread,
-			ssize_t mincount);
 void reply_readbraw(struct smb_request *req);
 void reply_lockread(struct smb_request *req);
 void reply_read(struct smb_request *req);
@@ -7400,7 +7392,6 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 /* The following definitions come from smbd/trans2.c  */
 
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
-uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		      files_struct *fsp, const char *fname,
 		      const char *ea_name, struct ea_struct *pea);
@@ -7618,7 +7609,7 @@ NTSTATUS nss_info_template_init( void );
 
 /* Misc protos */
 
-struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
+struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 				struct wb_context *wb_ctx, bool need_priv,
 				const struct winbindd_request *wb_req);
 NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,

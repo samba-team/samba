@@ -28,7 +28,8 @@
   message matching logic generic
 */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
+#include "ldb_handlers.h"
 
 /*
   add a attribute to the ldb_schema

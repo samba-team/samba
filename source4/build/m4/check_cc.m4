@@ -112,10 +112,6 @@ if test x$developer = xyes; then
 	    AX_CFLAGS_GCC_OPTION(-Wformat=2, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wdeclaration-after-statement, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wunused-macros, DEVELOPER_CFLAGS)
-	    AX_CFLAGS_GCC_OPTION(-Wno-unused-macros, CFLAG_NO_UNUSED_MACROS)
-	    AC_SUBST(CFLAG_NO_CAST_QUAL)
-	    AC_SUBST(CFLAG_NO_UNUSED_MACROS)
-	    AX_CFLAGS_GCC_OPTION(-Wno-cast-qual, CFLAG_NO_CAST_QUAL)
 #	    AX_CFLAGS_GCC_OPTION(-Wextra, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wc++-compat, DEVELOPER_CFLAGS)
 #	    AX_CFLAGS_GCC_OPTION(-Wmissing-prototypes, DEVELOPER_CFLAGS)
@@ -126,6 +122,13 @@ if test x$developer = xyes; then
 	    #
 	    AX_CFLAGS_GCC_OPTION(-Wno-format-y2k, DEVELOPER_CFLAGS)
 	    AX_CFLAGS_GCC_OPTION(-Wno-unused-parameter, DEVELOPER_CFLAGS)
+	    #
+	    # warnings we don't want just for some files e.g. swig bindings
+	    #
+	    AX_CFLAGS_GCC_OPTION(-Wno-cast-qual, CFLAG_NO_CAST_QUAL)
+	    AC_SUBST(CFLAG_NO_CAST_QUAL)
+	    AX_CFLAGS_GCC_OPTION(-Wno-unused-macros, CFLAG_NO_UNUSED_MACROS)
+	    AC_SUBST(CFLAG_NO_UNUSED_MACROS)
 	else
 	    AX_CFLAGS_IRIX_OPTION(-fullwarn, DEVELOPER_CFLAGS)
 	fi

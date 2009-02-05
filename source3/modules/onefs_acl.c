@@ -667,7 +667,7 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 		}
 
                 error = ifs_get_security_descriptor(fsp->fh->fd, security_info,
-		    &sd_size, sd);
+		    sd_size, &sd_size, sd);
                 if (error && (errno != EMSGSIZE)) {
 			DEBUG(0, ("Failed getting size of security descriptor! "
 			    "errno=%d\n", errno));

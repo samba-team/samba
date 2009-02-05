@@ -35,9 +35,9 @@
 */
 static void smbcli_transport_event_handler(struct tevent_context *ev, 
 					   struct tevent_fd *fde, 
-					   uint16_t flags, void *private)
+					   uint16_t flags, void *private_data)
 {
-	struct smbcli_transport *transport = talloc_get_type(private,
+	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
 	if (flags & EVENT_FD_READ) {
 		packet_recv(transport->packet);
@@ -61,13 +61,13 @@ static int transport_destructor(struct smbcli_transport *transport)
 /*
   handle receive errors
 */
-static void smbcli_transport_error(void *private, NTSTATUS status)
+static void smbcli_transport_error(void *private_data, NTSTATUS status)
 {
-	struct smbcli_transport *transport = talloc_get_type(private, struct smbcli_transport);
+	struct smbcli_transport *transport = talloc_get_type(private_data, struct smbcli_transport);
 	smbcli_transport_dead(transport, status);
 }
 
-static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
+static NTSTATUS smbcli_transport_finish_recv(void *private_data, DATA_BLOB blob);
 
 /*
   create a transport structure based on an established socket
@@ -308,16 +308,16 @@ again:
 }
 
 static void idle_handler(struct tevent_context *ev, 
-			 struct tevent_timer *te, struct timeval t, void *private)
+			 struct tevent_timer *te, struct timeval t, void *private_data)
 {
-	struct smbcli_transport *transport = talloc_get_type(private,
+	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
 	struct timeval next = timeval_add(&t, 0, transport->idle.period);
 	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
 						      transport,
 						      next,
 						      idle_handler, transport);
-	transport->idle.func(transport, transport->idle.private);
+	transport->idle.func(transport, transport->idle.private_data);
 }
 
 /*
@@ -327,10 +327,10 @@ static void idle_handler(struct tevent_context *ev,
 _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport, 
 				   void (*idle_func)(struct smbcli_transport *, void *),
 				   uint64_t period,
-				   void *private)
+				   void *private_data)
 {
 	transport->idle.func = idle_func;
-	transport->idle.private = private;
+	transport->idle.private_data = private_data;
 	transport->idle.period = period;
 
 	if (transport->socket->event.te != NULL) {
@@ -347,9 +347,9 @@ _PUBLIC_ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
   we have a full request in our receive buffer - match it to a pending request
   and process
  */
-static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
+static NTSTATUS smbcli_transport_finish_recv(void *private_data, DATA_BLOB blob)
 {
-	struct smbcli_transport *transport = talloc_get_type(private, 
+	struct smbcli_transport *transport = talloc_get_type(private_data,
 							     struct smbcli_transport);
 	uint8_t *buffer, *hdr, *vwv;
 	int len;
@@ -450,12 +450,12 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 	smb_setup_bufinfo(req);
 
 	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
-		int class = CVAL(req->in.hdr,HDR_RCLS);
+		int eclass = CVAL(req->in.hdr,HDR_RCLS);
 		int code = SVAL(req->in.hdr,HDR_ERR);
-		if (class == 0 && code == 0) {
+		if (eclass == 0 && code == 0) {
 			transport->error.e.nt_status = NT_STATUS_OK;
 		} else {
-			transport->error.e.nt_status = NT_STATUS_DOS(class, code);
+			transport->error.e.nt_status = NT_STATUS_DOS(eclass, code);
 		}
 	} else {
 		transport->error.e.nt_status = NT_STATUS(IVAL(req->in.hdr, HDR_RCLS));
@@ -542,9 +542,9 @@ _PUBLIC_ bool smbcli_transport_process(struct smbcli_transport *transport)
   handle timeouts of individual smb requests
 */
 static void smbcli_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
-				   struct timeval t, void *private)
+				   struct timeval t, void *private_data)
 {
-	struct smbcli_request *req = talloc_get_type(private, struct smbcli_request);
+	struct smbcli_request *req = talloc_get_type(private_data, struct smbcli_request);
 
 	if (req->state == SMBCLI_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);

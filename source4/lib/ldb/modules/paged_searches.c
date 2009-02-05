@@ -33,7 +33,7 @@
  */
 
 #include "includes.h"
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 #define PS_DEFAULT_PAGE_SIZE 500
 /* 500 objects per query seem to be a decent compromise
@@ -211,10 +211,12 @@ static int ps_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int ps_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct private_data *private_data;
 	struct ps_context *ac;
 
-	private_data = talloc_get_type(module->private_data, struct private_data);
+	private_data = talloc_get_type(ldb_module_get_private(module), struct private_data);
+	ldb = ldb_module_get_ctx(module);
 
 	/* check if paging is supported and if there is a any control */
 	if (!private_data || !private_data->paged_supported || req->controls) {
@@ -226,7 +228,7 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc_zero(req, struct ps_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -241,10 +243,13 @@ static int ps_search(struct ldb_module *module, struct ldb_request *req)
 
 static int ps_next_request(struct ps_context *ac) {
 
+	struct ldb_context *ldb;
 	struct ldb_paged_control *control;
 	struct ldb_control **controls;
 	struct ldb_request *new_req;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	controls = talloc_array(ac, struct ldb_control *, 2);
 	if (!controls) {
@@ -270,7 +275,7 @@ static int ps_next_request(struct ps_context *ac) {
 	controls[0]->data = control;
 	controls[1] = NULL;
 
-	ret = ldb_build_search_req_ex(&new_req, ac->module->ldb, ac,
+	ret = ldb_build_search_req_ex(&new_req, ldb, ac,
 					ac->req->op.search.base,
 					ac->req->op.search.scope,
 					ac->req->op.search.tree,
@@ -324,26 +329,30 @@ static int check_supported_paged(struct ldb_request *req,
 
 static int ps_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	static const char *attrs[] = { "supportedControl", NULL };
 	struct private_data *data;
 	struct ldb_dn *base;
 	int ret;
 	struct ldb_request *req;
 
+	ldb = ldb_module_get_ctx(module);
+
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	module->private_data = data;
 	data->paged_supported = false;
 
-	base = ldb_dn_new(module, module->ldb, "");
+	ldb_module_set_private(module, data);
+
+	base = ldb_dn_new(module, ldb, "");
 	if (base == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ret = ldb_build_search_req(&req, module->ldb, module,
+	ret = ldb_build_search_req(&req, ldb, module,
 				   base, LDB_SCOPE_BASE,
 				   "(objectClass=*)",
 				   attrs, NULL,

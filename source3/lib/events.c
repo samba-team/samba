@@ -83,45 +83,24 @@ bool event_add_to_select_args(struct tevent_context *ev,
 bool run_events(struct tevent_context *ev,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
-	bool fired = false;
-	struct tevent_fd *fde, *next;
+	struct tevent_fd *fde;
+	struct timeval now;
 
 	if (ev->signal_events &&
 	    tevent_common_check_signal(ev)) {
 		return true;
 	}
 
-	/* Run all events that are pending, not just one (as we
-	   did previously. */
+	GetTimeOfDay(&now);
 
-	while (ev->timer_events) {
-		struct timeval now;
-		GetTimeOfDay(&now);
+	if ((ev->timer_events != NULL)
+	    && (timeval_compare(&now, &ev->timer_events->next_event) >= 0)) {
 
-		if (timeval_compare(
-			    &now, &ev->timer_events->next_event) < 0) {
-			/* Nothing to do yet */
-			DEBUG(11, ("run_events: Nothing to do\n"));
-			break;
-		}
+		DEBUG(10, ("Running timed event \"%s\" %p\n",
+			   ev->timer_events->handler_name, ev->timer_events));
 
-		DEBUG(10, ("Running event \"%s\" %p\n",
-			   ev->timer_events->handler_name,
-			   ev->timer_events));
-
-		ev->timer_events->handler(
-			ev,
-			ev->timer_events, now,
-			ev->timer_events->private_data);
-
-		fired = true;
-	}
-
-	if (fired) {
-		/*
-		 * We might have changed the socket status during the timed
-		 * events, return to run select again.
-		 */
+		ev->timer_events->handler(ev, ev->timer_events, now,
+					  ev->timer_events->private_data);
 		return true;
 	}
 
@@ -129,23 +108,22 @@ bool run_events(struct tevent_context *ev,
 		/*
 		 * No fd ready
 		 */
-		return fired;
+		return false;
 	}
 
-	for (fde = ev->fd_events; fde; fde = next) {
+	for (fde = ev->fd_events; fde; fde = fde->next) {
 		uint16 flags = 0;
 
-		next = fde->next;
 		if (FD_ISSET(fde->fd, read_fds)) flags |= EVENT_FD_READ;
 		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
 
 		if (flags & fde->flags) {
 			fde->handler(ev, fde, flags, fde->private_data);
-			fired = true;
+			return true;
 		}
 	}
 
-	return fired;
+	return false;
 }
 
 

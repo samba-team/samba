@@ -19,10 +19,12 @@ PREFIX=$6
 shift 6
 failed=0
 
-samba4bindir=`dirname $0`/../../source4/bin
-smbclient=$samba4bindir/smbclient
-samba4kinit=$samba4bindir/samba4kinit
-net=$samba4bindir/net
+samba4bindir="$BUILDDIR/bin"
+smbclient="$samba4bindir/smbclient$EXEEXT"
+samba4kinit="$samba4bindir/samba4kinit$EXEEXT"
+net="$samba4bindir/net$EXEEXT"
+rkpty="$samba4bindir/rkpty$EXEEXT"
+samba4kpasswd="$samba4bindir/samba4kpasswd$EXEEXT"
 enableaccount="$PYTHON `dirname $0`/../../source4/setup/enableaccount"
 
 . `dirname $0`/subunit.sh
@@ -68,7 +70,7 @@ testit "enable user with kerberos cache" $VALGRIND $enableaccount nettestuser -H
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
 
-testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
@@ -76,7 +78,7 @@ NEWUSERPASS=testPaSS@34%
 testit "change user password with 'net password change' (rpc)" $VALGRIND $net password change -W$DOMAIN -U$DOMAIN\\nettestuser%$USERPASS $CONFIGURATION  -k no $NEWUSERPASS $@ || failed=`expr $failed + 1`
 
 echo $NEWUSERPASS > ./tmpuserpassfile
-testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 
@@ -95,9 +97,9 @@ send ${NEWUSERPASS}\n
 expect Success
 EOF
 
-testit "change user password with kpasswd" $samba4bindir/rkpty ./tmpkpasswdscript $samba4bindir/samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
+testit "change user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd nettestuser@$REALM || failed=`expr $failed + 1`
 
-testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@78%
 echo $NEWUSERPASS > ./tmpuserpassfile
@@ -112,9 +114,9 @@ send ${NEWUSERPASS}\n
 expect Success
 EOF
 
-testit "set user password with kpasswd" $samba4bindir/rkpty ./tmpkpasswdscript $samba4bindir/samba4kpasswd --cache=$PREFIX/tmpccache nettestuser@$REALM || failed=`expr $failed + 1`
+testit "set user password with kpasswd" $rkpty ./tmpkpasswdscript $samba4kpasswd --cache=$PREFIX/tmpccache nettestuser@$REALM || failed=`expr $failed + 1`
 
-testit "kinit with user password" $samba4bindir/samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
+testit "kinit with user password" $samba4kinit --password-file=./tmpuserpassfile --request-pac nettestuser@$REALM   || failed=`expr $failed + 1`
 
 test_smbclient "Test login with user kerberos ccache" 'ls' -k yes || failed=`expr $failed + 1`
 

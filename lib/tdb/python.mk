@@ -1,8 +1,6 @@
-[PYTHON::swig_tdb]
+[PYTHON::pytdb]
 LIBRARY_REALNAME = tdb.$(SHLIBEXT)
 PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
 
-swig_tdb_OBJ_FILES = $(tdbsrcdir)/pytdb.o
-
-$(swig_tdb_OBJ_FILES): CFLAGS+=$(CFLAG_NO_CAST_QUAL)
+pytdb_OBJ_FILES = $(tdbsrcdir)/pytdb.o
 

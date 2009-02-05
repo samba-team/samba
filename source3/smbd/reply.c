@@ -1816,7 +1816,7 @@ void reply_open_and_X(struct smb_request *req)
 			END_PROFILE(SMBopenX);
 			return;
 		}
-		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
+		sbuf.st_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
 	}
 
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
@@ -2728,11 +2728,12 @@ static void reply_readbraw_error(void)
  Use sendfile in readbraw.
 ****************************************************************************/
 
-void send_file_readbraw(connection_struct *conn,
-			files_struct *fsp,
-			SMB_OFF_T startpos,
-			size_t nread,
-			ssize_t mincount)
+static void send_file_readbraw(connection_struct *conn,
+			       struct smb_request *req,
+			       files_struct *fsp,
+			       SMB_OFF_T startpos,
+			       size_t nread,
+			       ssize_t mincount)
 {
 	char *outbuf = NULL;
 	ssize_t ret=0;
@@ -2745,7 +2746,7 @@ void send_file_readbraw(connection_struct *conn,
 	 * reply_readbraw has already checked the length.
 	 */
 
-	if ( (chain_size == 0) && (nread > 0) && (fsp->base_fsp == NULL) &&
+	if ( !req_is_in_chain(req) && (nread > 0) && (fsp->base_fsp == NULL) &&
 	    (fsp->wcp == NULL) && lp_use_sendfile(SNUM(conn)) ) {
 		ssize_t sendfile_read = -1;
 		char header[4];
@@ -2963,7 +2964,7 @@ void reply_readbraw(struct smb_request *req)
 		(unsigned long)mincount,
 		(unsigned long)nread ) );
 
-	send_file_readbraw(conn, fsp, startpos, nread, mincount);
+	send_file_readbraw(conn, req, fsp, startpos, nread, mincount);
 
 	DEBUG(5,("reply_readbraw finished\n"));
 	END_PROFILE(SMBreadbraw);
@@ -3229,7 +3230,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 * on a train in Germany :-). JRA.
 	 */
 
-	if ((chain_size == 0) && (CVAL(req->vwv+0, 0) == 0xFF) &&
+	if (!req_is_in_chain(req) &&
 	    !is_encrypted_packet(req->inbuf) && (fsp->base_fsp == NULL) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
@@ -5615,7 +5616,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
-		if (SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) == -1) {
+		int ret = -1;
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+		}
+		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
@@ -5720,6 +5727,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	const char *dname;
 	long offset = 0;
 	int create_options = 0;
+	bool posix_pathnames = lp_posix_pathnames();
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
@@ -5831,7 +5839,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, directory, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, directory, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, directory, &sbuf1);
+		}
 
 		if (S_ISDIR(sbuf1.st_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
@@ -5848,7 +5860,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			0,				/* file_attributes */
+			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
 			NULL,				/* sd */
@@ -5947,7 +5959,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, fname, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, fname, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, fname, &sbuf1);
+		}
 
 		create_options = 0;
 
@@ -5966,7 +5982,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			0,				/* file_attributes */
+			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
 			NULL,				/* sd */
@@ -7166,7 +7182,14 @@ void reply_setattrE(struct smb_request *req)
 			return;
 		}
 	} else {
-		if (SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf) == -1) {
+		int ret = -1;
+
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf);
+		}
+		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
 			END_PROFILE(SMBsetattrE);
@@ -7281,7 +7304,7 @@ void reply_getattrE(struct smb_request *req)
 		SIVAL(req->outbuf, smb_vwv6, 0);
 		SIVAL(req->outbuf, smb_vwv8, 0);
 	} else {
-		uint32 allocation_size = get_allocation_size(conn,fsp, &sbuf);
+		uint32 allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp, &sbuf);
 		SIVAL(req->outbuf, smb_vwv6, (uint32)sbuf.st_size);
 		SIVAL(req->outbuf, smb_vwv8, allocation_size);
 	}

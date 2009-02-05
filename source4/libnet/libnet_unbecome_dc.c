@@ -275,14 +275,14 @@ static void unbecomeDC_send_cldap(struct libnet_UnbecomeDC_state *s)
 	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
 	if (composite_nomem(req, c)) return;
 	req->async.fn		= unbecomeDC_recv_cldap;
-	req->async.private	= s;
+	req->async.private_data	= s;
 }
 
 static void unbecomeDC_connect_ldap(struct libnet_UnbecomeDC_state *s);
 
 static void unbecomeDC_recv_cldap(struct cldap_request *req)
 {
-	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private,
+	struct libnet_UnbecomeDC_state *s = talloc_get_type(req->async.private_data,
 					    struct libnet_UnbecomeDC_state);
 	struct composite_context *c = s->creq;
 

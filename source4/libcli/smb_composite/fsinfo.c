@@ -47,7 +47,7 @@ static NTSTATUS fsinfo_connect(struct composite_context *c,
 					 state->fsinfo);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
-	state->req->async.private = c;
+	state->req->async.private_data = c;
 	state->req->async.fn = fsinfo_raw_handler;
 
 	state->stage = FSINFO_QUERY;
@@ -110,7 +110,7 @@ static void fsinfo_state_handler(struct composite_context *creq)
 */
 static void fsinfo_raw_handler(struct smbcli_request *req)
 {
-	struct composite_context *c = talloc_get_type(req->async.private, 
+	struct composite_context *c = talloc_get_type(req->async.private_data,
 						      struct composite_context);
 	fsinfo_state_handler(c);
 }

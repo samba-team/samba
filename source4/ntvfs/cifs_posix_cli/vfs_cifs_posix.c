@@ -51,21 +51,21 @@ static NTSTATUS cifspsx_connect(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, const char *sharename)
 {
 	struct stat st;
-	struct cifspsx_private *private;
+	struct cifspsx_private *p;
 	struct share_config *scfg = ntvfs->ctx->config;
 
-	private = talloc(ntvfs, struct cifspsx_private);
-	NT_STATUS_HAVE_NO_MEMORY(private);
-	private->ntvfs = ntvfs;
-	private->next_search_handle = 0;
-	private->connectpath = talloc_strdup(private, share_string_option(scfg, SHARE_PATH, ""));
-	private->open_files = NULL;
-	private->search = NULL;
+	p = talloc(ntvfs, struct cifspsx_private);
+	NT_STATUS_HAVE_NO_MEMORY(p);
+	p->ntvfs = ntvfs;
+	p->next_search_handle = 0;
+	p->connectpath = talloc_strdup(p, share_string_option(scfg, SHARE_PATH, ""));
+	p->open_files = NULL;
+	p->search = NULL;
 
 	/* the directory must exist */
-	if (stat(private->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
+	if (stat(p->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
 		DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", 
-			 private->connectpath, sharename));
+			 p->connectpath, sharename));
 		return NT_STATUS_BAD_NETWORK_NAME;
 	}
 
@@ -74,7 +74,7 @@ static NTSTATUS cifspsx_connect(struct ntvfs_module_context *ntvfs,
 	ntvfs->ctx->dev_type = talloc_strdup(ntvfs->ctx, "A:");
 	NT_STATUS_HAVE_NO_MEMORY(ntvfs->ctx->dev_type);
 
-	ntvfs->private_data = private;
+	ntvfs->private_data = p;
 
 	DEBUG(0,("WARNING: ntvfs cifs posix: connect to share [%s] with ROOT privileges!!!\n",sharename));
 
@@ -92,12 +92,12 @@ static NTSTATUS cifspsx_disconnect(struct ntvfs_module_context *ntvfs)
 /*
   find open file handle given fd
 */
-static struct cifspsx_file *find_fd(struct cifspsx_private *private, struct ntvfs_handle *handle)
+static struct cifspsx_file *find_fd(struct cifspsx_private *cp, struct ntvfs_handle *handle)
 {
 	struct cifspsx_file *f;
 	void *p;
 
-	p = ntvfs_handle_get_backend_data(handle, private->ntvfs);
+	p = ntvfs_handle_get_backend_data(handle, cp->ntvfs);
 	if (!p) return NULL;
 
 	f = talloc_get_type(p, struct cifspsx_file);
@@ -278,7 +278,7 @@ static NTSTATUS cifspsx_qpathinfo(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_qfileinfo(struct ntvfs_module_context *ntvfs,
 			       struct ntvfs_request *req, union smb_fileinfo *info)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 	struct stat st;
 
@@ -286,7 +286,7 @@ static NTSTATUS cifspsx_qfileinfo(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_qfileinfo(ntvfs, req, info);
 	}
 
-	f = find_fd(private, info->generic.in.file.ntvfs);
+	f = find_fd(p, info->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -305,7 +305,7 @@ static NTSTATUS cifspsx_qfileinfo(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_open(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_open *io)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	char *unix_path;
 	struct stat st;
 	int fd, flags;
@@ -394,7 +394,7 @@ do_open:
 	f->name = talloc_strdup(f, unix_path);
 	NT_STATUS_HAVE_NO_MEMORY(f->name);
 
-	DLIST_ADD(private->open_files, f);
+	DLIST_ADD(p->open_files, f);
 
 	status = ntvfs_handle_set_backend_data(handle, ntvfs, f);
 	NT_STATUS_NOT_OK_RETURN(status);
@@ -495,7 +495,7 @@ static NTSTATUS cifspsx_copy(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_read(struct ntvfs_module_context *ntvfs,
 			  struct ntvfs_request *req, union smb_read *rd)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 	ssize_t ret;
 
@@ -503,7 +503,7 @@ static NTSTATUS cifspsx_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	f = find_fd(private, rd->readx.in.file.ntvfs);
+	f = find_fd(p, rd->readx.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -529,7 +529,7 @@ static NTSTATUS cifspsx_read(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_write(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req, union smb_write *wr)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 	ssize_t ret;
 
@@ -539,7 +539,7 @@ static NTSTATUS cifspsx_write(struct ntvfs_module_context *ntvfs,
 
 	CHECK_READ_ONLY(req);
 
-	f = find_fd(private, wr->writex.in.file.ntvfs);
+	f = find_fd(p, wr->writex.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -575,14 +575,14 @@ static NTSTATUS cifspsx_flush(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_flush *io)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 
 	switch (io->generic.level) {
 	case RAW_FLUSH_FLUSH:
 	case RAW_FLUSH_SMB2:
 		/* ignore the additional unknown option in SMB2 */
-		f = find_fd(private, io->generic.in.file.ntvfs);
+		f = find_fd(p, io->generic.in.file.ntvfs);
 		if (!f) {
 			return NT_STATUS_INVALID_HANDLE;
 		}
@@ -590,7 +590,7 @@ static NTSTATUS cifspsx_flush(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 
 	case RAW_FLUSH_ALL:
-		for (f=private->open_files;f;f=f->next) {
+		for (f=p->open_files;f;f=f->next) {
 			fsync(f->fd);
 		}
 		return NT_STATUS_OK;
@@ -606,7 +606,7 @@ static NTSTATUS cifspsx_close(struct ntvfs_module_context *ntvfs,
 			   struct ntvfs_request *req,
 			   union smb_close *io)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 
 	if (io->generic.level != RAW_CLOSE_CLOSE) {
@@ -614,7 +614,7 @@ static NTSTATUS cifspsx_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	f = find_fd(private, io->close.in.file.ntvfs);
+	f = find_fd(p, io->close.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -623,7 +623,7 @@ static NTSTATUS cifspsx_close(struct ntvfs_module_context *ntvfs,
 		return map_nt_error_from_unix(errno);
 	}
 
-	DLIST_REMOVE(private->open_files, f);
+	DLIST_REMOVE(p->open_files, f);
 	talloc_free(f->name);
 	talloc_free(f);
 
@@ -653,7 +653,7 @@ static NTSTATUS cifspsx_logoff(struct ntvfs_module_context *ntvfs,
 */
 static NTSTATUS cifspsx_async_setup(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req, 
-				 void *private)
+				 void *private_data)
 {
 	return NT_STATUS_OK;
 }
@@ -694,13 +694,13 @@ static NTSTATUS cifspsx_setfileinfo(struct ntvfs_module_context *ntvfs,
 				 struct ntvfs_request *req, 
 				 union smb_setfileinfo *info)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct cifspsx_file *f;
 	struct utimbuf unix_times;
 
 	CHECK_READ_ONLY(req);
 
-	f = find_fd(private, info->generic.in.file.ntvfs);
+	f = find_fd(p, info->generic.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -746,14 +746,14 @@ static NTSTATUS cifspsx_setfileinfo(struct ntvfs_module_context *ntvfs,
 static NTSTATUS cifspsx_fsinfo(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, union smb_fsinfo *fs)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct stat st;
 
 	if (fs->generic.level != RAW_QFS_GENERIC) {
 		return ntvfs_map_fsinfo(ntvfs, req, fs);
 	}
 
-	if (sys_fsusage(private->connectpath, 
+	if (sys_fsusage(p->connectpath,
 			&fs->generic.out.blocks_free, 
 			&fs->generic.out.blocks_total) == -1) {
 		return map_nt_error_from_unix(errno);
@@ -761,7 +761,7 @@ static NTSTATUS cifspsx_fsinfo(struct ntvfs_module_context *ntvfs,
 
 	fs->generic.out.block_size = 512;
 
-	if (stat(private->connectpath, &st) != 0) {
+	if (stat(p->connectpath, &st) != 0) {
 		return NT_STATUS_DISK_CORRUPT_ERROR;
 	}
 	
@@ -789,13 +789,13 @@ static NTSTATUS cifspsx_fsattr(struct ntvfs_module_context *ntvfs,
 			    struct ntvfs_request *req, union smb_fsattr *fs)
 {
 	struct stat st;
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 
 	if (fs->generic.level != RAW_FSATTR_GENERIC) {
 		return ntvfs_map_fsattr(ntvfs, req, fs);
 	}
 
-	if (stat(private->connectpath, &st) == -1) {
+	if (stat(p->connectpath, &st) == -1) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -833,7 +833,7 @@ static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 {
 	struct cifspsx_dir *dir;
 	int i;
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct search_state *search;
 	union smb_search_data file;
 	uint_t max_count;
@@ -846,7 +846,7 @@ static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	search = talloc_zero(private, struct search_state);
+	search = talloc_zero(p, struct search_state);
 	if (!search) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -858,7 +858,7 @@ static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FOOBAR;
 	}
 
-	search->handle = private->next_search_handle;
+	search->handle = p->next_search_handle;
 	search->dir = dir;
 
 	if (dir->count < max_count) {
@@ -892,8 +892,8 @@ static NTSTATUS cifspsx_search_first(struct ntvfs_module_context *ntvfs,
 	    ((io->t2ffirst.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
 		talloc_free(search);
 	} else {
-		private->next_search_handle++;
-		DLIST_ADD(private->search, search);
+		p->next_search_handle++;
+		DLIST_ADD(p->search, search);
 	}
 
 	return NT_STATUS_OK;
@@ -907,7 +907,7 @@ static NTSTATUS cifspsx_search_next(struct ntvfs_module_context *ntvfs,
 {
 	struct cifspsx_dir *dir;
 	int i;
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct search_state *search;
 	union smb_search_data file;
 	uint_t max_count;
@@ -920,7 +920,7 @@ static NTSTATUS cifspsx_search_next(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	for (search=private->search; search; search = search->next) {
+	for (search=p->search; search; search = search->next) {
 		if (search->handle == io->t2fnext.in.handle) break;
 	}
 	
@@ -984,7 +984,7 @@ found:
 	/* work out if we are going to keep the search state */
 	if ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE) ||
 	    ((io->t2fnext.in.flags & FLAG_TRANS2_FIND_CLOSE_IF_END) && (i == dir->count))) {
-		DLIST_REMOVE(private->search, search);
+		DLIST_REMOVE(p->search, search);
 		talloc_free(search);
 	}
 
@@ -995,10 +995,10 @@ found:
 static NTSTATUS cifspsx_search_close(struct ntvfs_module_context *ntvfs,
 				  struct ntvfs_request *req, union smb_search_close *io)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	struct search_state *search;
 
-	for (search=private->search; search; search = search->next) {
+	for (search=p->search; search; search = search->next) {
 		if (search->handle == io->findclose.in.handle) break;
 	}
 	
@@ -1007,7 +1007,7 @@ static NTSTATUS cifspsx_search_close(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FOOBAR;
 	}
 
-	DLIST_REMOVE(private->search, search);
+	DLIST_REMOVE(p->search, search);
 	talloc_free(search);
 
 	return NT_STATUS_OK;

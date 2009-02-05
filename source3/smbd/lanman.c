@@ -6,17 +6,17 @@
 
    SMB Version handling
    Copyright (C) John H Terpstra 1995-1998
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    */
@@ -876,9 +876,9 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	/* remove any trailing username */
 	if ((p = strchr_m(QueueName,'%')))
 		*p = 0;
- 
+
 	DEBUG(3,("api_DosPrintQGetInfo uLevel=%d name=%s\n",uLevel,QueueName));
- 
+
 	/* check it's a supported varient */
 	if (!prefix_ok(str1,"zWrLh"))
 		return False;
@@ -899,11 +899,11 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 		SSVAL(*rparam,4,0);
 		return(True);
 	}
- 
+
 	snum = find_service(QueueName);
 	if ( !(lp_snum_ok(snum) && lp_print_ok(snum)) )
 		return False;
-		
+
 	if (uLevel==52) {
 		count = get_printerdrivernumber(snum);
 		DEBUG(3,("api_DosPrintQGetInfo: Driver files count: %d\n",count));
@@ -934,7 +934,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	}
 
 	*rdata_len = desc.usedlen;
-  
+
 	/*
 	 * We must set the return code to ERRbuftoosmall
 	 * in order to support lanman style printing with Win NT/2k
@@ -942,7 +942,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	 */
 	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
- 
+
 	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
@@ -954,7 +954,7 @@ static bool api_DosPrintQGetInfo(connection_struct *conn, uint16 vuid,
 	SSVALS(*rparam,0,desc.errcode);
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,desc.neededlen);
-  
+
 	DEBUG(4,("printqgetinfo: errorcode %d\n",desc.errcode));
 
 	SAFE_FREE(queue);
@@ -986,7 +986,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	print_status_struct *status = NULL;
 	int *subcntarr = NULL;
 	int queuecnt = 0, subcnt = 0, succnt = 0;
- 
+
 	if (!param_format || !output_format1 || !p) {
 		return False;
 	}
@@ -994,7 +994,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	memset((char *)&desc,'\0',sizeof(desc));
 
 	DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
- 
+
 	if (!prefix_ok(param_format,"WrLeh")) {
 		return False;
 	}
@@ -1071,7 +1071,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	}
 
 	SAFE_FREE(subcntarr);
- 
+
 	*rdata_len = desc.usedlen;
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
@@ -1082,7 +1082,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,succnt);
 	SSVAL(*rparam,6,queuecnt);
-  
+
 	for (i = 0; i < queuecnt; i++) {
 		if (queue) {
 			SAFE_FREE(queue[i]);
@@ -1091,7 +1091,7 @@ static bool api_DosPrintQEnum(connection_struct *conn, uint16 vuid,
 
 	SAFE_FREE(queue);
 	SAFE_FREE(status);
-  
+
 	return True;
 
   err:
@@ -1248,11 +1248,11 @@ static int get_server_info(uint32 servertype,
 			DEBUG(4,("s: dom mismatch "));
 			ok = False;
 		}
-    
+
 		if (!strequal(domain, s->domain) && !(servertype & SV_TYPE_DOMAIN_ENUM)) {
 			ok = False;
 		}
-    
+
 		/* We should never return a server type with a SV_TYPE_LOCAL_LIST_ONLY set. */
 		s->type &= ~SV_TYPE_LOCAL_LIST_ONLY;
 
@@ -1266,7 +1266,7 @@ static int get_server_info(uint32 servertype,
 				s->name, s->type, s->comment, s->domain));
 		}
 	}
-  
+
 	TALLOC_FREE(lines);
 	return count;
 }
@@ -1284,7 +1284,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 	char* p2;
 	int l2;
 	int len;
- 
+
 	switch (uLevel) {
 		case 0:
 			struct_len = 16;
@@ -1295,7 +1295,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 		default:
 			return -1;
 	}
- 
+
 	if (!buf) {
 		len = 0;
 		switch (uLevel) {
@@ -1308,7 +1308,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 		*stringspace = len;
 		return struct_len + len;
 	}
-  
+
 	len = struct_len;
 	p = *buf;
 	if (*buflen < struct_len) {
@@ -1324,7 +1324,7 @@ static int fill_srv_info(struct srv_info_struct *service,
 	if (!baseaddr) {
 		baseaddr = p;
 	}
-  
+
 	switch (uLevel) {
 		case 0:
 			push_ascii(p,service->name, MAX_NETBIOSNAME_LEN, STR_TERMINATE);
@@ -1416,7 +1416,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	if (!check_server_info(uLevel,str2)) {
 		return False;
 	}
-  
+
 	DEBUG(4, ("server request level: %s %8x ", str2, servertype));
 	DEBUG(4, ("domains_req:%s ", BOOLSTR(domain_request)));
 	DEBUG(4, ("local_only:%s\n", BOOLSTR(local_request)));
@@ -1454,7 +1454,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 			data_len += fill_srv_info(s,uLevel,0,&f_len,0,&s_len,0);
 			DEBUG(4,("fill_srv_info %20s %8x %25s %15s\n",
 				s->name, s->type, s->comment, s->domain));
-      
+
 			if (data_len <= buf_len) {
 				counted++;
 				fixed_len += f_len;
@@ -1470,7 +1470,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 	if (!*rdata) {
 		return False;
 	}
-  
+
 	p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
@@ -1493,7 +1493,7 @@ static bool api_RNetServerEnum(connection_struct *conn, uint16 vuid,
 			count2--;
 		}
 	}
-  
+
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
@@ -1540,9 +1540,9 @@ static bool api_RNetGroupGetUsers(connection_struct *conn, uint16 vuid,
 	if (!prefix_ok(str1,"zWrLeh")) {
 		return False;
 	}
-  
+
 	*rdata_len = 0;
-  
+
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
@@ -1599,7 +1599,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 	char* p2;
 	int l2;
 	int len;
- 
+
 	switch( uLevel ) {
 		case 0:
 			struct_len = 13;
@@ -1616,8 +1616,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		default:
 			return -1;
 	}
-  
- 
+
 	if (!buf) {
 		len = 0;
 
@@ -1635,7 +1634,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		}
 		return struct_len + len;
 	}
-  
+
 	len = struct_len;
 	p = *buf;
 	if ((*buflen) < struct_len) {
@@ -1653,9 +1652,9 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 	if (!baseaddr) {
 		baseaddr = p;
 	}
-  
+
 	push_ascii(p,lp_servicename(snum),13, STR_TERMINATE);
-  
+
 	if (uLevel > 0) {
 		int type;
 
@@ -1671,7 +1670,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		SIVAL(p,16,PTR_DIFF(p2,baseaddr));
 		len += CopyExpanded(conn,snum,&p2,lp_comment(snum),&l2);
 	}
-  
+
 	if (uLevel > 1) {
 		SSVAL(p,20,ACCESS_READ|ACCESS_WRITE|ACCESS_CREATE); /* permissions */
 		SSVALS(p,22,-1);		/* max uses */
@@ -1680,7 +1679,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		len += CopyAndAdvance(&p2,lp_pathname(snum),&l2);
 		memset(p+30,0,SHPWLEN+2); /* passwd (reserved), pad field */
 	}
-  
+
 	if (uLevel > 2) {
 		memset(p+40,0,SHPWLEN+2);
 		SSVAL(p,50,0);
@@ -1691,7 +1690,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		SSVAL(p,64,0);
 		SSVAL(p,66,0);
 	}
-       
+
 	if (stringbuf) {
 		(*buf) = p + struct_len;
 		(*buflen) -= struct_len;
@@ -1718,7 +1717,7 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	char *p = skip_string(param,tpscnt,netname);
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	int snum;
-  
+
 	if (!str1 || !str2 || !netname || !p) {
 		return False;
 	}
@@ -1727,7 +1726,7 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	if (snum < 0) {
 		return False;
 	}
-  
+
 	/* check it's a supported varient */
 	if (!prefix_ok(str1,"zWrLh")) {
 		return False;
@@ -1735,7 +1734,7 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	if (!check_share_info(uLevel,str2)) {
 		return False;
 	}
- 
+
 	*rdata = smb_realloc_limit(*rdata,mdrcnt);
 	if (!*rdata) {
 		return False;
@@ -1745,7 +1744,7 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	if (*rdata_len < 0) {
 		return False;
 	}
- 
+
 	*rparam_len = 6;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
@@ -1754,7 +1753,7 @@ static bool api_RNetShareGetInfo(connection_struct *conn,uint16 vuid,
 	SSVAL(*rparam,0,NERR_Success);
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
- 
+
 	return True;
 }
 
@@ -1790,7 +1789,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	int i;
 	int data_len, fixed_len, string_len;
 	int f_len = 0, s_len = 0;
- 
+
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
@@ -1801,7 +1800,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	if (!check_share_info(uLevel,str2)) {
 		return False;
 	}
-  
+
 	/* Ensure all the usershares are loaded. */
 	become_root();
 	load_registry_shares();
@@ -1834,7 +1833,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	if (!*rdata) {
 		return False;
 	}
- 
+
 	p2 = (*rdata) + fixed_len;	/* auxiliary data (strings) will go here */
 	p = *rdata;
 	f_len = fixed_len;
@@ -1853,7 +1852,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 			}
 		}
 	}
-  
+
 	*rparam_len = 8;
 	*rparam = smb_realloc_limit(*rparam,*rparam_len);
 	if (!*rparam) {
@@ -1863,7 +1862,7 @@ static bool api_RNetShareEnum( connection_struct *conn, uint16 vuid,
 	SSVAL(*rparam,2,0);
 	SSVAL(*rparam,4,counted);
 	SSVAL(*rparam,6,total);
-  
+
 	DEBUG(3,("RNetShareEnum gave %d entries of %d (%d %d %d %d)\n",
 		counted,total,uLevel,
 		buf_len,*rdata_len,mdrcnt));
@@ -2004,7 +2003,7 @@ static bool api_RNetShareAdd(connection_struct *conn,uint16 vuid,
 	SSVAL(*rparam,2,0);		/* converter word */
 	SSVAL(*rparam,4,*rdata_len);
 	*rdata_len = 0;
-  
+
 	return True;
 
   error_exit:
@@ -2042,7 +2041,7 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	struct samr_displayentry *entries;
 
 	int num_entries;
- 
+
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
@@ -2282,8 +2281,11 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	int num_users=0;
 	int errflags=0;
 	int i, resume_context, cli_buf_size;
-	struct pdb_search *search;
-	struct samr_displayentry *users;
+	uint32_t resume_handle;
+
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle samr_handle, domain_handle;
+	NTSTATUS status;
 
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
@@ -2328,40 +2330,88 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 
-	become_root();
-	search = pdb_search_users(ACB_NORMAL);
-	unbecome_root();
-	if (search == NULL) {
-		DEBUG(0, ("api_RNetUserEnum:unable to open sam database.\n"));
-		return False;
+	status = rpc_pipe_open_internal(
+		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		conn->server_info, &samr_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
-	become_root();
-	num_users = pdb_search_entries(search, resume_context, 0xffffffff,
-				       &users);
-	unbecome_root();
+	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+
+	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
+					get_global_sam_sid(), &domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
 
 	errflags=NERR_Success;
 
-	for (i=0; i<num_users; i++) {
-		const char *name = users[i].account_name;
+	resume_handle = 0;
 
-		if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)&&(strlen(name)<=21)) {
-			strlcpy(p,name,PTR_DIFF(endp,p));
-			DEBUG(10,("api_RNetUserEnum:adding entry %d username "
-				  "%s\n",count_sent,p));
-			p += 21;
-			count_sent++;
-		} else {
-			/* set overflow error */
-			DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
-				  "username %s\n",count_sent,name));
-			errflags=234;
+	while (true) {
+		struct samr_SamArray *sam_entries;
+		uint32_t num_entries;
+
+		status = rpccli_samr_EnumDomainUsers(samr_pipe, talloc_tos(),
+						     &domain_handle,
+						     &resume_handle,
+						     0, &sam_entries, 1,
+						     &num_entries);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+				   "%s\n", nt_errstr(status)));
 			break;
 		}
+
+		if (num_entries == 0) {
+			DEBUG(10, ("rpccli_samr_EnumDomainUsers returned "
+				   "no entries -- done\n"));
+			break;
+		}
+
+		for (i=0; i<num_entries; i++) {
+			const char *name;
+
+			name = sam_entries->entries[i].name.string;
+
+			if(((PTR_DIFF(p,*rdata)+21)<=*rdata_len)
+			   &&(strlen(name)<=21)) {
+				strlcpy(p,name,PTR_DIFF(endp,p));
+				DEBUG(10,("api_RNetUserEnum:adding entry %d "
+					  "username %s\n",count_sent,p));
+				p += 21;
+				count_sent++;
+			} else {
+				/* set overflow error */
+				DEBUG(10,("api_RNetUserEnum:overflow on entry %d "
+					  "username %s\n",count_sent,name));
+				errflags=234;
+				break;
+			}
+		}
+
+		if (errflags != NERR_Success) {
+			break;
+		}
+
+		TALLOC_FREE(sam_entries);
 	}
 
-	pdb_search_destroy(search);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -2538,7 +2588,7 @@ static bool api_SetUserPassword(connection_struct *conn,uint16 vuid,
 
 	memset((char *)pass1,'\0',sizeof(fstring));
 	memset((char *)pass2,'\0',sizeof(fstring));	 
-	 
+
 	return(True);
 }
 
@@ -2677,7 +2727,7 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 	}
 
 	errcode = NERR_notsupported;
-	
+
 	switch (function) {
 	case 81:		/* delete */ 
 		if (print_job_delete(conn->server_info, snum, jobid, &werr))
@@ -2695,7 +2745,7 @@ static bool api_RDosPrintJobDel(connection_struct *conn,uint16 vuid,
 
 	if (!W_ERROR_IS_OK(werr))
 		errcode = W_ERROR_V(werr);
-	
+
  out:
 	SSVAL(*rparam,0,errcode);	
 	SSVAL(*rparam,2,0);		/* converter word */
@@ -2845,9 +2895,9 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
 			 sharename));
 		return False;
 	}
-  
+
 	*rdata_len = 0;
-	
+
 	/* check it's a supported varient */
 	if ((strcmp(str1,"WWsTP")) || 
 	    (!check_printjob_info(&desc,uLevel,str2)))
@@ -2884,7 +2934,7 @@ static bool api_PrintJobInfo(connection_struct *conn, uint16 vuid,
  out:
 	SSVALS(*rparam,0,errcode);
 	SSVAL(*rparam,2,0);		/* converter word */
-	
+
 	return(True);
 }
 
@@ -3638,7 +3688,7 @@ static bool api_WWkstaUserLogon(connection_struct *conn,uint16 vuid,
 	desc.buflen = mdrcnt;
 	desc.subformat = NULL;
 	desc.format = str2;
-  
+
 	if (init_package(&desc,1,0)) {
 		PACKI(&desc,"W",0);		/* code */
 		PACKS(&desc,"B21",name);	/* eff. name */
@@ -3870,11 +3920,11 @@ static bool api_WPrintJobEnumerate(connection_struct *conn, uint16 vuid,
 	if (strcmp(str1,"zWrLeh") != 0) {
 		return False;
 	}
-    
+
 	if (uLevel > 2) {
 		return False;	/* defined only for uLevel 0,1,2 */
 	}
-    
+
 	if (!check_printjob_info(&desc,uLevel,str2)) { 
 		return False;
 	}

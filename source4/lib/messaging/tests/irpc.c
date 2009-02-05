@@ -54,9 +54,9 @@ static NTSTATUS irpc_AddOne(struct irpc_message *irpc, struct echo_AddOne *r)
   a deferred reply to echodata
 */
 static void deferred_echodata(struct tevent_context *ev, struct tevent_timer *te, 
-			      struct timeval t, void *private)
+			      struct timeval t, void *private_data)
 {
-	struct irpc_message *irpc = talloc_get_type(private, struct irpc_message);
+	struct irpc_message *irpc = talloc_get_type(private_data, struct irpc_message);
 	struct echo_EchoData *r = irpc->data;
 	r->out.out_data = talloc_memdup(r, r->in.in_data, r->in.len);
 	if (r->out.out_data == NULL) {
@@ -87,7 +87,7 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	struct echo_AddOne r;
 	NTSTATUS status;
 	const struct irpc_test_data *data = (const struct irpc_test_data *)_data;
-	uint32_t value = (uint32_t)_value;
+	uint32_t value = *(const uint32_t *)_value;
 
 	/* make the call */
 	r.in.in_data = value;
@@ -145,7 +145,7 @@ static bool test_echodata(struct torture_context *tctx,
 static void irpc_callback(struct irpc_request *irpc)
 {
 	struct echo_AddOne *r = (struct echo_AddOne *)irpc->r;
-	int *pong_count = (int *)irpc->async.private;
+	int *pong_count = (int *)irpc->async.private_data;
 	NTSTATUS status = irpc_call_recv(irpc);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("irpc call failed - %s\n", nt_errstr(status));
@@ -186,7 +186,7 @@ static bool test_speed(struct torture_context *tctx,
 		torture_assert(tctx, irpc != NULL, "AddOne send failed");
 
 		irpc->async.fn = irpc_callback;
-		irpc->async.private = &pong_count;
+		irpc->async.private_data = &pong_count;
 
 		ping_count++;
 
@@ -261,7 +261,7 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 
 	for (i = 0; i < 5; i++) {
 		torture_tcase_add_test_const(tcase, "addone", test_addone,
-				(void *)values[i]);
+				(void *)&values[i]);
 	}
 
 	torture_tcase_add_test_const(tcase, "echodata", test_echodata, NULL);

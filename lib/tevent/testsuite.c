@@ -27,9 +27,9 @@
 static int fde_count;
 
 static void fde_handler(struct tevent_context *ev_ctx, struct tevent_fd *f, 
-			uint16_t flags, void *private)
+			uint16_t flags, void *private_data)
 {
-	int *fd = (int *)private;
+	int *fd = (int *)private_data;
 	char c;
 #ifdef SA_SIGINFO
 	kill(getpid(), SIGUSR1);
@@ -41,16 +41,16 @@ static void fde_handler(struct tevent_context *ev_ctx, struct tevent_fd *f,
 }
 
 static void finished_handler(struct tevent_context *ev_ctx, struct tevent_timer *te,
-			     struct timeval tval, void *private)
+			     struct timeval tval, void *private_data)
 {
-	int *finished = (int *)private;
+	int *finished = (int *)private_data;
 	(*finished) = 1;
 }
 
 static void count_handler(struct tevent_context *ev_ctx, struct signal_event *te,
-			  int signum, int count, void *info, void *private)
+			  int signum, int count, void *info, void *private_data)
 {
-	int *countp = (int *)private;
+	int *countp = (int *)private_data;
 	(*countp) += count;
 }
 

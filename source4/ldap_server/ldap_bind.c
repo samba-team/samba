@@ -100,9 +100,9 @@ struct ldapsrv_sasl_context {
 	struct socket_context *sasl_socket;
 };
 
-static void ldapsrv_set_sasl(void *private) 
+static void ldapsrv_set_sasl(void *private_data)
 {
-	struct ldapsrv_sasl_context *ctx = talloc_get_type(private, struct ldapsrv_sasl_context);
+	struct ldapsrv_sasl_context *ctx = talloc_get_type(private_data, struct ldapsrv_sasl_context);
 	talloc_steal(ctx->conn->connection, ctx->sasl_socket);
 	talloc_unlink(ctx->conn->connection, ctx->conn->connection->socket);
 

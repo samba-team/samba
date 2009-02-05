@@ -21,7 +21,7 @@
    License along with this library; if not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "ldb_includes.h"
+#include "ldb.h"
 #include "tools/cmdline.h"
 
 #if (_SAMBA_BUILD_ >= 4)
@@ -91,7 +91,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 	ret = talloc_zero(ldb, struct ldb_cmdline);
 	if (ret == NULL) {
-		ldb_oom(ldb);
+		fprintf(stderr, "Out of memory!\n");
 		goto failed;
 	}
 
@@ -139,7 +139,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 			options.options = talloc_realloc(ret, options.options, 
 							 const char *, num_options+3);
 			if (options.options == NULL) {
-				ldb_oom(ldb);
+				fprintf(stderr, "Out of memory!\n");
 				goto failed;
 			}
 			options.options[num_options] = poptGetOptArg(pc);
@@ -156,7 +156,7 @@ struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 
 			options.controls = talloc_array(ret, char *, cc + 1);
 			if (options.controls == NULL) {
-				ldb_oom(ldb);
+				fprintf(stderr, "Out of memory!\n");
 				goto failed;
 			}
 			for (p = cs, cc = 0; p != NULL; cc++) {

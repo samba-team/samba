@@ -510,7 +510,7 @@ static NTSTATUS benchrw_close(struct torture_context *tctx,
 	NT_STATUS_HAVE_NO_MEMORY(req);
 	/*register the callback function!*/
 	req->async.fn = benchrw_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 	
 	return NT_STATUS_OK;
 }
@@ -521,7 +521,7 @@ static void benchrw_callback(struct smbcli_request *req);
 
 static void benchrw_rw_callback(struct smbcli_request *req)
 {
-	struct benchrw_state *state = req->async.private;
+	struct benchrw_state *state = req->async.private_data;
 	struct torture_context *tctx = state->tctx;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
@@ -596,7 +596,7 @@ static NTSTATUS benchrw_readwrite(struct torture_context *tctx,
 	NT_STATUS_HAVE_NO_MEMORY(req);
 	/*register the callback function!*/
 	req->async.fn = benchrw_rw_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 	
 	return NT_STATUS_OK;
 }
@@ -644,7 +644,7 @@ static NTSTATUS benchrw_open(struct torture_context *tctx,
 	
 	/*register the callback function!*/
 	req->async.fn = benchrw_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 	return NT_STATUS_OK;
 } 
 
@@ -691,7 +691,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,
 	
 	/*register the callback function!*/
 	req->async.fn = benchrw_callback;
-	req->async.private = state;
+	req->async.private_data = state;
 		
 	return NT_STATUS_OK;
 }
@@ -701,7 +701,7 @@ static NTSTATUS benchrw_mkdir(struct torture_context *tctx,
 */
 static void benchrw_callback(struct smbcli_request *req)
 {
-	struct benchrw_state *state = req->async.private;
+	struct benchrw_state *state = req->async.private_data;
 	struct torture_context *tctx = state->tctx;
 	
 	/*dont send new requests when torture_numops is reached*/
@@ -913,7 +913,7 @@ bool run_benchrw(struct torture_context *tctx)
 				req = smb_raw_mkdir_send(state[i]->cli,&parms);
 				/* register callback fn + private data */
 				req->async.fn = benchrw_callback;
-				req->async.private=state[i];
+				req->async.private_data=state[i];
 				break;
 			/* error occured , finish */
 			case ERROR:

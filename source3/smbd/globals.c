@@ -22,10 +22,9 @@
 
 #if defined(WITH_AIO)
 struct aio_extra *aio_list_head = NULL;
+struct tevent_signal *aio_signal_event = NULL;
 int aio_pending_size = 0;
-sig_atomic_t aio_signals_received = 0;
 int outstanding_aio_calls = 0;
-uint16 *aio_pending_array = NULL;
 #endif
 
 /* dlink list we store pending lock records on. */
@@ -125,8 +124,6 @@ int max_send = BUFFER_SIZE;
  * Can be modified by the max xmit parameter.
  */
 int max_recv = BUFFER_SIZE;
-SIG_ATOMIC_T reload_after_sighup = 0;
-SIG_ATOMIC_T got_sig_term = 0;
 uint16 last_session_tag = UID_FIELD_INVALID;
 int trans_num = 0;
 char *orig_inbuf = NULL;
@@ -172,11 +169,6 @@ struct vfs_init_function_entry *backends = NULL;
 char *sparse_buf = NULL;
 char *LastDir = NULL;
 
-#if HAVE_KERNEL_OPLOCKS_LINUX
-SIG_ATOMIC_T oplock_signals_received = 0;
-SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-#endif
-
 /* Current number of oplocks we have outstanding. */
 int32_t exclusive_oplocks_open = 0;
 int32_t level_II_oplocks_open = 0;
@@ -186,7 +178,6 @@ struct kernel_oplocks *koplocks = NULL;
 struct notify_mid_map *notify_changes_by_mid = NULL;
 
 int am_parent = 1;
-SIG_ATOMIC_T got_sig_cld = 0;
 int server_fd = -1;
 struct event_context *smbd_event_ctx = NULL;
 struct messaging_context *smbd_msg_ctx = NULL;
@@ -205,8 +196,4 @@ void smbd_init_globals(void)
 	ZERO_STRUCT(conn_ctx_stack);
 
 	ZERO_STRUCT(sec_ctx_stack);
-
-#if HAVE_KERNEL_OPLOCKS_LINUX
-	ZERO_STRUCT(fd_pending_array);
-#endif
 }

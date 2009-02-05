@@ -41,14 +41,14 @@ struct new_conn_state {
 	struct socket_context *sock;
 	struct loadparm_context *lp_ctx;
 	void (*new_conn)(struct tevent_context *, struct loadparm_context *lp_ctx, struct socket_context *, uint32_t , void *);
-	void *private;
+	void *private_data;
 };
 
 static void *thread_connection_fn(void *thread_parm)
 {
 	struct new_conn_state *new_conn = talloc_get_type(thread_parm, struct new_conn_state);
 
-	new_conn->new_conn(new_conn->ev, new_conn->lp_ctx, new_conn->sock, pthread_self(), new_conn->private);
+	new_conn->new_conn(new_conn->ev, new_conn->lp_ctx, new_conn->sock, pthread_self(), new_conn->private_data);
 
 	/* run this connection from here */
 	event_loop_wait(new_conn->ev);
@@ -68,7 +68,7 @@ static void thread_accept_connection(struct tevent_context *ev,
 						      struct loadparm_context *,
 						      struct socket_context *, 
 						      uint32_t , void *), 
-				     void *private)
+				     void *private_data)
 {		
 	NTSTATUS status;
 	int rc;
@@ -87,7 +87,7 @@ static void thread_accept_connection(struct tevent_context *ev,
 	}
 
 	state->new_conn = new_conn;
-	state->private  = private;
+	state->private_data  = private_data;
 	state->lp_ctx   = lp_ctx;
 	state->ev       = ev2;
 
@@ -125,7 +125,7 @@ struct new_task_state {
 	struct loadparm_context *lp_ctx;
 	void (*new_task)(struct tevent_context *, struct loadparm_context *, 
 			 uint32_t , void *);
-	void *private;
+	void *private_data;
 };
 
 static void *thread_task_fn(void *thread_parm)
@@ -133,7 +133,7 @@ static void *thread_task_fn(void *thread_parm)
 	struct new_task_state *new_task = talloc_get_type(thread_parm, struct new_task_state);
 
 	new_task->new_task(new_task->ev, new_task->lp_ctx, pthread_self(), 
-			   new_task->private);
+			   new_task->private_data);
 
 	/* run this connection from here */
 	event_loop_wait(new_task->ev);
@@ -152,7 +152,7 @@ static void thread_new_task(struct tevent_context *ev,
 			    void (*new_task)(struct tevent_context *, 
 					     struct loadparm_context *,
 					     uint32_t , void *), 
-			    void *private)
+			    void *private_data)
 {		
 	int rc;
 	pthread_t thread_id;
@@ -171,7 +171,7 @@ static void thread_new_task(struct tevent_context *ev,
 
 	state->new_task = new_task;
 	state->lp_ctx   = lp_ctx;
-	state->private  = private;
+	state->private_data  = private_data;
 	state->ev       = ev2;
 
 	pthread_attr_init(&thread_attr);

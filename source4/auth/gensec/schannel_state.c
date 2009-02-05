@@ -20,16 +20,53 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "dsdb/samdb/samdb.h"
+#include "librpc/gen_ndr/ndr_security.h"
 #include "ldb_wrap.h"
 #include "../lib/util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/auth.h"
 #include "param/param.h"
 #include "auth/gensec/schannel_state.h"
+
+static struct ldb_val *schannel_dom_sid_ldb_val(TALLOC_CTX *mem_ctx,
+						struct smb_iconv_convenience *smbiconv,
+						struct dom_sid *sid)
+{
+	enum ndr_err_code ndr_err;
+	struct ldb_val *v;
+
+	v = talloc(mem_ctx, struct ldb_val);
+	if (!v) return NULL;
+
+	ndr_err = ndr_push_struct_blob(v, mem_ctx, smbiconv, sid,
+				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(v);
+		return NULL;
+	}
+
+	return v;
+}
+
+static struct dom_sid *schannel_ldb_val_dom_sid(TALLOC_CTX *mem_ctx,
+						 const struct ldb_val *v)
+{
+	enum ndr_err_code ndr_err;
+	struct dom_sid *sid;
+
+	sid = talloc(mem_ctx, struct dom_sid);
+	if (!sid) return NULL;
+
+	ndr_err = ndr_pull_struct_blob(v, sid, NULL, sid,
+					(ndr_pull_flags_fn_t)ndr_pull_dom_sid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		talloc_free(sid);
+		return NULL;
+	}
+	return sid;
+}
+
 
 /**
   connect to the schannel ldb
@@ -77,6 +114,8 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_message *msg;
 	struct ldb_val val, seed, client_state, server_state;
+	struct smb_iconv_convenience *smbiconv;
+	struct ldb_val *sid_val;
 	char *f;
 	char *sct;
 	int ret;
@@ -103,6 +142,12 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	smbiconv = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
+	sid_val = schannel_dom_sid_ldb_val(msg, smbiconv, creds->sid);
+	if (sid_val == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	val.data = creds->session_key;
 	val.length = sizeof(creds->session_key);
 
@@ -124,7 +169,7 @@ NTSTATUS schannel_store_session_key_ldb(TALLOC_CTX *mem_ctx,
 	ldb_msg_add_string(msg, "accountName", creds->account_name);
 	ldb_msg_add_string(msg, "computerName", creds->computer_name);
 	ldb_msg_add_string(msg, "flatname", creds->domain);
-	samdb_msg_add_dom_sid(ldb, mem_ctx, msg, "objectSid", creds->sid);
+	ldb_msg_add_value(msg, "objectSid", sid_val, NULL);
 
 	ldb_delete(ldb, msg->dn);
 
@@ -265,7 +310,17 @@ NTSTATUS schannel_fetch_session_key_ldb(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*creds)->sid = samdb_result_dom_sid(*creds, res->msgs[0], "objectSid");
+	val = ldb_msg_find_ldb_val(res->msgs[0], "objectSid");
+	if (val == NULL) {
+		DEBUG(1,("schannel: missing ObjectSid for client: %s\n", computer_name));
+		talloc_free(res);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	(*creds)->sid = schannel_ldb_val_dom_sid(*creds, val);
+	if ((*creds)->sid == NULL) {
+		talloc_free(res);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	talloc_free(res);
 	return NT_STATUS_OK;

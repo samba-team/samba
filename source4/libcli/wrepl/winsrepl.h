@@ -82,7 +82,7 @@ struct wrepl_request {
 
 	struct {
 		void (*fn)(struct wrepl_request *);
-		void *private;
+		void *private_data;
 	} async;
 };
 

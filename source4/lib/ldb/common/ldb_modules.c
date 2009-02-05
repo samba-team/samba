@@ -31,7 +31,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 
 #if (_SAMBA_BUILD_ >= 4)
 #include "includes.h"
@@ -485,6 +485,46 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}						\
 } while (0)
 
+
+struct ldb_module *ldb_module_new(TALLOC_CTX *memctx,
+				  struct ldb_context *ldb,
+				  const char *module_name,
+				  const struct ldb_module_ops *ops)
+{
+	struct ldb_module *module;
+
+	module = talloc(memctx, struct ldb_module);
+	if (!module) {
+		ldb_oom(ldb);
+		return NULL;
+	}
+	talloc_set_name_const(module, module_name);
+	module->ldb = ldb;
+	module->prev = module->next = NULL;
+	module->ops = ops;
+
+	return module;
+}
+
+const char * ldb_module_get_name(struct ldb_module *module)
+{
+	return module->ops->name;
+}
+
+struct ldb_context *ldb_module_get_ctx(struct ldb_module *module)
+{
+	return module->ldb;
+}
+
+void *ldb_module_get_private(struct ldb_module *module)
+{
+	return module->private_data;
+}
+
+void ldb_module_set_private(struct ldb_module *module, void *private_data)
+{
+	module->private_data = private_data;
+}
 
 /*
    helper functions to call the next module in chain

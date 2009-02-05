@@ -59,22 +59,22 @@ enum stdio_helper_mode {
 
 typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
 				      struct loadparm_context *lp_ctx,
-				      char *buf, int length, void **private,
+				      char *buf, int length, void **private1,
 				      unsigned int mux_id, void **private2);
 
 static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
 					struct loadparm_context *lp_ctx,
-					char *buf, int length, void **private,
+					char *buf, int length, void **private1,
 					unsigned int mux_id, void **private2);
 
 static void manage_gensec_request (enum stdio_helper_mode stdio_helper_mode, 
 				   struct loadparm_context *lp_ctx,
-				   char *buf, int length, void **private,
+				   char *buf, int length, void **private1,
 				   unsigned int mux_id, void **private2);
 
 static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
 					  struct loadparm_context *lp_ctx,
-					  char *buf, int length, void **private,
+					  char *buf, int length, void **private1,
 					  unsigned int mux_id, void **private2);
 
 static void manage_squid_request(struct loadparm_context *lp_ctx,
@@ -248,7 +248,7 @@ static NTSTATUS local_pw_check_specified(struct loadparm_context *lp_ctx,
 
 static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
 				       struct loadparm_context *lp_ctx,
-				       char *buf, int length, void **private,
+				       char *buf, int length, void **private1,
 				       unsigned int mux_id, void **private2) 
 {
 	char *user, *pass;	
@@ -280,7 +280,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 
 static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mode, 
 					 struct loadparm_context *lp_ctx,
-					 char *buf, int length, void **private,
+					 char *buf, int length, void **private1,
 					 unsigned int mux_id, void **password)  
 {
 	DATA_BLOB in;
@@ -298,7 +298,7 @@ static void manage_gensec_get_pw_request(enum stdio_helper_mode stdio_helper_mod
 
 	if (strncmp(buf, "PW ", 3) == 0) {
 
-		*password = talloc_strndup(*private /* hopefully the right gensec context, useful to use for talloc */,
+		*password = talloc_strndup(*private1 /* hopefully the right gensec context, useful to use for talloc */,
 					   (const char *)in.data, in.length);
 		
 		if (*password == NULL) {
@@ -380,7 +380,7 @@ static void gensec_want_feature_list(struct gensec_security *state, char* featur
 
 static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode, 
 				  struct loadparm_context *lp_ctx,
-				  char *buf, int length, void **private,
+				  char *buf, int length, void **private1,
 				  unsigned int mux_id, void **private2) 
 {
 	DATA_BLOB in;
@@ -405,15 +405,15 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 	TALLOC_CTX *mem_ctx;
 
-	if (*private) {
-		state = (struct gensec_ntlm_state *)*private;
+	if (*private1) {
+		state = (struct gensec_ntlm_state *)*private1;
 	} else {
 		state = talloc_zero(NULL, struct gensec_ntlm_state);
 		if (!state) {
 			mux_printf(mux_id, "BH No Memory\n");
 			exit(1);
 		}
-		*private = state;
+		*private1 = state;
 		if (opt_password) {
 			state->set_password = opt_password;
 		}
@@ -714,7 +714,7 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 
 static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
 					 struct loadparm_context *lp_ctx,
-					 char *buf, int length, void **private,
+					 char *buf, int length, void **private1,
 					 unsigned int mux_id, void **private2) 
 {
 	char *request, *parameter;	
@@ -922,7 +922,7 @@ static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_hel
 
 	static struct mux_private *mux_private;
 	static void *normal_private;
-	void **private;
+	void **private1;
 
 	buf = talloc_strdup(NULL, "");
 
@@ -1004,13 +1004,13 @@ static void manage_squid_request(struct loadparm_context *lp_ctx, enum stdio_hel
 			       (sizeof(*mux_private->private_pointers) * (mux_private->max_mux - prev_max))); 
 		};
 
-		private = &mux_private->private_pointers[mux_id];
+		private1 = &mux_private->private_pointers[mux_id];
 	} else {
 		c = buf;
-		private = &normal_private;
+		private1 = &normal_private;
 	}
 
-	fn(helper_mode, lp_ctx, c, length, private, mux_id, private2);
+	fn(helper_mode, lp_ctx, c, length, private1, mux_id, private2);
 	talloc_free(buf);
 }
 

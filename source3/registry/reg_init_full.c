@@ -72,14 +72,6 @@ WERROR registry_init_full(void)
 		goto fail;
 	}
 
-	/* setup the necessary keys and values */
-
-	werr = init_registry_data();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(0, ("Failed to initialize data in registry!\n"));
-		goto fail;
-	}
-
 	/* build the cache tree of registry hooks */
 
 	for ( i=0; reg_hooks[i].keyname; i++ ) {

@@ -31,8 +31,6 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
-
 #include "ldb_tdb.h"
 
 /*
@@ -112,9 +110,11 @@ static int msg_add_distinguished_name(struct ldb_message *msg)
 static int msg_add_all_elements(struct ldb_module *module, struct ldb_message *ret,
 				const struct ldb_message *msg)
 {
-	struct ldb_context *ldb = module->ldb;
+	struct ldb_context *ldb;
 	unsigned int i;
 	int check_duplicates = (ret->num_elements != 0);
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (msg_add_distinguished_name(ret) != 0) {
 		return -1;
@@ -207,7 +207,8 @@ static struct ldb_message *ltdb_pull_attrs(struct ldb_module *module,
 */
 static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	TDB_DATA tdb_key, tdb_data;
 
 	if (ldb_dn_is_null(dn)) {
@@ -239,7 +240,8 @@ static int ltdb_search_base(struct ldb_module *module, struct ldb_dn *dn)
 */
 int ltdb_search_dn1(struct ldb_module *module, struct ldb_dn *dn, struct ldb_message *msg)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
 	TDB_DATA tdb_key, tdb_data;
 
@@ -371,11 +373,13 @@ int ltdb_filter_attrs(struct ldb_message *msg, const char * const *attrs)
  */
 static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *state)
 {
+	struct ldb_context *ldb;
 	struct ltdb_context *ac;
 	struct ldb_message *msg;
 	int ret;
 
 	ac = talloc_get_type(state, struct ltdb_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (key.dsize < 4 || 
 	    strncmp((char *)key.dptr, "DN=", 3) != 0) {
@@ -395,7 +399,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	if (!msg->dn) {
-		msg->dn = ldb_dn_new(msg, ac->module->ldb,
+		msg->dn = ldb_dn_new(msg, ldb,
 				     (char *)key.dptr + 3);
 		if (msg->dn == NULL) {
 			talloc_free(msg);
@@ -404,7 +408,7 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 	}
 
 	/* see if it matches the given expression */
-	if (!ldb_match_msg(ac->module->ldb, msg,
+	if (!ldb_match_msg(ldb, msg,
 			   ac->tree, ac->base, ac->scope)) {
 		talloc_free(msg);
 		return 0;
@@ -435,7 +439,8 @@ static int search_func(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, voi
 */
 static int ltdb_search_full(struct ltdb_context *ctx)
 {
-	struct ltdb_private *ltdb = talloc_get_type(ctx->module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(ctx->module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
 
 	if (ltdb->in_transaction != 0) {
@@ -457,12 +462,16 @@ static int ltdb_search_full(struct ltdb_context *ctx)
 */
 int ltdb_search(struct ltdb_context *ctx)
 {
+	struct ldb_context *ldb;
 	struct ldb_module *module = ctx->module;
 	struct ldb_request *req = ctx->req;
-	struct ltdb_private *ltdb = talloc_get_type(module->private_data, struct ltdb_private);
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	int ret;
 
-	req->handle->state = LDB_ASYNC_PENDING;
+	ldb = ldb_module_get_ctx(module);
+
+	ldb_request_set_state(req, LDB_ASYNC_PENDING);
 
 	if (ltdb_lock_read(module) != 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -483,12 +492,12 @@ int ltdb_search(struct ltdb_context *ctx)
 		/* Check what we should do with a NULL dn */
 		switch (req->op.search.scope) {
 		case LDB_SCOPE_BASE:
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "NULL Base DN invalid for a base search");
 			ret = LDB_ERR_INVALID_DN_SYNTAX;
 			break;
 		case LDB_SCOPE_ONELEVEL:
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "NULL Base DN invalid for a one-level search");
 			ret = LDB_ERR_INVALID_DN_SYNTAX;	
 			break;
@@ -500,7 +509,7 @@ int ltdb_search(struct ltdb_context *ctx)
 	} else if (ldb_dn_is_valid(req->op.search.base) == false) {
 
 		/* We don't want invalid base DNs here */
-		ldb_asprintf_errstring(module->ldb, 
+		ldb_asprintf_errstring(ldb, 
 				       "Invalid Base DN: %s", 
 				       ldb_dn_get_linearized(req->op.search.base));
 		ret = LDB_ERR_INVALID_DN_SYNTAX;
@@ -510,7 +519,7 @@ int ltdb_search(struct ltdb_context *ctx)
 		ret = ltdb_search_base(module, req->op.search.base);
 		
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "No such Base DN: %s", 
 					       ldb_dn_get_linearized(req->op.search.base));
 		}
@@ -539,7 +548,7 @@ int ltdb_search(struct ltdb_context *ctx)
 			/* Not indexed, so we need to do a full scan */
 			ret = ltdb_search_full(ctx);
 			if (ret != LDB_SUCCESS) {
-				ldb_set_errstring(module->ldb, "Indexed and full searches both failed!\n");
+				ldb_set_errstring(ldb, "Indexed and full searches both failed!\n");
 			}
 		}
 	}

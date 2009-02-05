@@ -1160,6 +1160,12 @@ bool winbindd_reinit_after_fork(const char *logfilename)
 		reopen_logs();
 	}
 
+	if (!winbindd_setup_sig_term_handler(false))
+		return false;
+	if (!winbindd_setup_sig_hup_handler(override_logfile ? NULL :
+					    logfilename))
+		return false;
+
 	/* Don't handle the same messages as our parent. */
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_SMB_CONF_UPDATED, NULL);
@@ -1354,7 +1360,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 	}
 
 	if (child->domain && child->domain->primary &&
-	    !lp_use_kerberos_keytab() &&
+	    !USE_KERBEROS_KEYTAB &&
 	    lp_server_role() == ROLE_DOMAIN_MEMBER) {
 
 		struct timeval next_change;
@@ -1378,11 +1384,6 @@ static bool fork_domain_child(struct winbindd_child *child)
 		struct timeval *tp;
 		struct timeval now;
 		TALLOC_CTX *frame = talloc_stackframe();
-
-		/* check for signals */
-		winbind_check_sigterm(false);
-		winbind_check_sighup(override_logfile ? NULL :
-				child->logfilename);
 
 		if (run_events(winbind_event_context(), 0, NULL, NULL)) {
 			TALLOC_FREE(frame);

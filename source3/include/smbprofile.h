@@ -127,6 +127,10 @@ enum profile_stats_values
 #define syscall_lstat_count __profile_stats_value(PR_VALUE_SYSCALL_LSTAT, count)
 #define syscall_lstat_time __profile_stats_value(PR_VALUE_SYSCALL_LSTAT, time)
 
+	PR_VALUE_SYSCALL_GET_ALLOC_SIZE,
+#define syscall_get_alloc_size_count __profile_stats_value(PR_VALUE_SYSCALL_GET_ALLOC_SIZE, count)
+#define syscall_get_alloc_size_time __profile_stats_value(PR_VALUE_SYSCALL_GET_ALLOC_SIZE, time)
+
 	PR_VALUE_SYSCALL_UNLINK,
 #define syscall_unlink_count __profile_stats_value(PR_VALUE_SYSCALL_UNLINK, count)
 #define syscall_unlink_time __profile_stats_value(PR_VALUE_SYSCALL_UNLINK, time)

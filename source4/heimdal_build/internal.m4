@@ -33,6 +33,9 @@ esac
 
 ])
 
+AC_CHECK_TYPE(u_char, uint8_t)
+AC_CHECK_TYPE(u_int32_t, uint32_t)
+
 dnl Not all systems have err.h, so we provide a replacement. Heimdal
 dnl unconditionally #includes <err.h>, so we need to create an err.h,
 dnl but we can't just have a static one because we don't want to use

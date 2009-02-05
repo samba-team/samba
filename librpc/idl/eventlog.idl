@@ -58,6 +58,108 @@ import "lsa.idl", "security.idl";
 		[value(size)] uint32 size2;
 	} eventlog_Record;
 
+	/* compat structure for samba3 on-disc eventlog format,
+	   this is *NOT* used on the wire. - gd */
+
+	typedef [flag(NDR_NOALIGN|NDR_PAHEX),public] struct {
+		uint32 size;
+		[charset(DOS),value("eLfL")] uint8 reserved[4];
+		uint32 record_number;
+		time_t time_generated;
+		time_t time_written;
+		uint32 event_id;
+		eventlogEventTypes event_type;
+		[range(0,256)] uint16 num_of_strings;
+		uint16 event_category;
+		uint16 reserved_flags;
+		uint32 closing_record_number;
+		uint32 stringoffset;
+		[value(sid.length)] uint32 sid_length;
+		uint32 sid_offset;
+		[value(data.length)] uint32 data_length;
+		uint32 data_offset;
+		[value(2*strlen_m_term(source_name))] uint32 source_name_len;
+		nstring source_name;
+		[value(2*strlen_m_term(computer_name))] uint32 computer_name_len;
+		nstring computer_name;
+		uint32 sid_padding;
+		DATA_BLOB sid;
+		[value(2*ndr_size_string_array(strings, num_of_strings, STR_NULLTERM))] uint32 strings_len;
+		nstring strings[num_of_strings];
+		DATA_BLOB data;
+		uint32 padding;
+	} eventlog_Record_tdb;
+
+	typedef [v1_enum] enum {
+		ELF_LOGFILE_HEADER_DIRTY	= 0x0001,
+		ELF_LOGFILE_HEADER_WRAP		= 0x0002,
+		ELF_LOGFILE_LOGFULL_WRITTEN	= 0x0004,
+		ELF_LOGFILE_ARCHIVE_SET		= 0x0008
+	} EVENTLOG_HEADER_FLAGS;
+
+	typedef [public] struct {
+		[value(0x30)] uint32 HeaderSize;
+		[charset(DOS),value("LfLe")] uint8 Signature[4];
+		[value(1)] uint32 MajorVersion;
+		[value(1)] uint32 MinorVersion;
+		uint32 StartOffset;
+		uint32 EndOffset;
+		uint32 CurrentRecordNumber;
+		uint32 OldestRecordNumber;
+		uint32 MaxSize;
+		EVENTLOG_HEADER_FLAGS Flags;
+		uint32 Retention;
+		[value(0x30)] uint32 EndHeaderSize;
+	} EVENTLOGHEADER;
+
+	typedef [public,gensize] struct {
+		uint32 Length;
+		[charset(DOS),value("LfLe")] uint8 Reserved[4];
+		uint32 RecordNumber;
+		time_t TimeGenerated;
+		time_t TimeWritten;
+		uint32 EventID;
+		eventlogEventTypes EventType;
+		uint16 NumStrings;
+		uint16 EventCategory;
+		uint16 ReservedFlags;
+		uint32 ClosingRecordNumber;
+		[value(56+2*(strlen_m_term(SourceName)+strlen_m_term(Computername))+UserSidLength)] uint32 StringOffset;
+		[value(ndr_size_dom_sid0(&UserSid, ndr->flags))] uint32 UserSidLength;
+		[value(56+2*(strlen_m_term(SourceName)+strlen_m_term(Computername)))] uint32 UserSidOffset;
+		uint32 DataLength;
+		[value(56+2*(strlen_m_term(SourceName)+strlen_m_term(Computername))+UserSidLength+(2*ndr_size_string_array(Strings, NumStrings, STR_NULLTERM)))] uint32 DataOffset;
+		nstring SourceName;
+		nstring Computername;
+		[flag(NDR_ALIGN4),subcontext(0),subcontext_size(UserSidLength)] dom_sid0 UserSid;
+		nstring Strings[NumStrings];
+		[flag(NDR_PAHEX)] uint8 Data[DataLength];
+		astring Pad;
+		[value(Length)] uint32 Length2;
+	} EVENTLOGRECORD;
+
+	typedef [public] struct {
+		[value(0x28)] uint32 RecordSizeBeginning;
+		[value(0x11111111)] uint32 One;
+		[value(0x22222222)] uint32 Two;
+		[value(0x33333333)] uint32 Three;
+		[value(0x44444444)] uint32 Four;
+		uint32 BeginRecord;
+		uint32 EndRecord;
+		uint32 CurrentRecordNumber;
+		uint32 OldestRecordNumber;
+		[value(0x28)] uint32 RecordSizeEnd;
+	} EVENTLOGEOF;
+
+	/* the following is true for a non-wrapped evt file (e.g. backups
+	 * generated and viewed with eventvwr) */
+
+	typedef [public] struct {
+		EVENTLOGHEADER hdr;
+		EVENTLOGRECORD records[hdr.CurrentRecordNumber-hdr.OldestRecordNumber];
+		EVENTLOGEOF eof;
+	} EVENTLOG_EVT_FILE;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS eventlog_ClearEventLogW(

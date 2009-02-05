@@ -21,9 +21,7 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_private.h"
+#include "ldb_private.h"
 #include "system/time.h"
 #include "dsdb/samdb/samdb.h"
 #include "version.h"
@@ -56,13 +54,15 @@ static int do_attribute_explicit(const char * const *attrs, const char *name)
 */
 static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *msg, const char * const *attrs)
 {
-	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
+	struct ldb_context *ldb;
+	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	char **server_sasl;
 	const struct dsdb_schema *schema;
 
-	schema = dsdb_get_schema(module->ldb);
+	ldb = ldb_module_get_ctx(module);
+	schema = dsdb_get_schema(ldb);
 
-	msg->dn = ldb_dn_new(msg, module->ldb, NULL);
+	msg->dn = ldb_dn_new(msg, ldb, NULL);
 
 	/* don't return the distinduishedName, cn and name attributes */
 	ldb_msg_remove_attr(msg, "distinguishedName");
@@ -101,7 +101,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
  		}
 	}
 
-	server_sasl = talloc_get_type(ldb_get_opaque(module->ldb, "supportedSASLMechanims"), 
+	server_sasl = talloc_get_type(ldb_get_opaque(ldb, "supportedSASLMechanims"), 
 				       char *);
 	if (server_sasl && do_attribute(attrs, "supportedSASLMechanisms")) {
 		int i;
@@ -119,7 +119,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 
 	if (do_attribute(attrs, "highestCommittedUSN")) {
 		uint64_t seq_num;
-		int ret = ldb_sequence_number(module->ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
+		int ret = ldb_sequence_number(ldb, LDB_SEQ_HIGHEST_SEQ, &seq_num);
 		if (ret == LDB_SUCCESS) {
 			if (ldb_msg_add_fmt(msg, "highestCommittedUSN", 
 					    "%llu", (unsigned long long)seq_num) != 0) {
@@ -169,7 +169,7 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 		const char *dn_str;
 
 		if (schema && schema->fsmo.we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_schema_dn(module->ldb));
+			dn_str = ldb_dn_get_linearized(samdb_schema_dn(ldb));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
 					goto failed;
@@ -177,10 +177,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			}
 		}
 
-		naming_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_naming_fsmo"),
+		naming_fsmo = talloc_get_type(ldb_get_opaque(ldb, "dsdb_naming_fsmo"),
 					      struct dsdb_naming_fsmo);
 		if (naming_fsmo && naming_fsmo->we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_partitions_dn(module->ldb, msg));
+			dn_str = ldb_dn_get_linearized(samdb_partitions_dn(ldb, msg));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
 					goto failed;
@@ -188,10 +188,10 @@ static int rootdse_add_dynamic(struct ldb_module *module, struct ldb_message *ms
 			}
 		}
 
-		pdc_fsmo = talloc_get_type(ldb_get_opaque(module->ldb, "dsdb_pdc_fsmo"),
+		pdc_fsmo = talloc_get_type(ldb_get_opaque(ldb, "dsdb_pdc_fsmo"),
 					   struct dsdb_pdc_fsmo);
 		if (pdc_fsmo && pdc_fsmo->we_are_master) {
-			dn_str = ldb_dn_get_linearized(samdb_base_dn(module->ldb));
+			dn_str = ldb_dn_get_linearized(samdb_base_dn(ldb));
 			if (dn_str && dn_str[0]) {
 				if (ldb_msg_add_fmt(msg, "validFSMOs", "%s", dn_str) != 0) {
 					goto failed;
@@ -227,11 +227,14 @@ struct rootdse_context {
 static struct rootdse_context *rootdse_init_context(struct ldb_module *module,
 						    struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct rootdse_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct rootdse_context);
 	if (ac == NULL) {
-		ldb_set_errstring(module->ldb, "Out of Memory");
+		ldb_set_errstring(ldb, "Out of Memory");
 		return NULL;
 	}
 
@@ -296,9 +299,12 @@ static int rootdse_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct rootdse_context *ac;
 	struct ldb_request *down_req;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* see if its for the rootDSE - only a base search on the "" DN qualifies */
 	if (!(req->op.search.scope == LDB_SCOPE_BASE && ldb_dn_is_null(req->op.search.base))) {
@@ -312,8 +318,8 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* in our db we store the rootDSE with a DN of @ROOTDSE */
-	ret = ldb_build_search_req(&down_req, module->ldb, ac,
-					ldb_dn_new(ac, module->ldb, "@ROOTDSE"),
+	ret = ldb_build_search_req(&down_req, ldb, ac,
+					ldb_dn_new(ac, ldb, "@ROOTDSE"),
 					LDB_SCOPE_BASE,
 					NULL,
 					req->op.search.attrs,
@@ -329,7 +335,7 @@ static int rootdse_search(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_register_control(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
+	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	char **list;
 
 	list = talloc_realloc(priv, priv->controls, char *, priv->num_controls + 1);
@@ -350,7 +356,7 @@ static int rootdse_register_control(struct ldb_module *module, struct ldb_reques
 
 static int rootdse_register_partition(struct ldb_module *module, struct ldb_request *req)
 {
-	struct private_data *priv = talloc_get_type(module->private_data, struct private_data);
+	struct private_data *priv = talloc_get_type(ldb_module_get_private(module), struct private_data);
 	struct ldb_dn **list;
 
 	list = talloc_realloc(priv, priv->partitions, struct ldb_dn *, priv->num_partitions + 1);
@@ -387,7 +393,10 @@ static int rootdse_request(struct ldb_module *module, struct ldb_request *req)
 
 static int rootdse_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	struct private_data *data;
+
+	ldb = ldb_module_get_ctx(module);
 
 	data = talloc(module, struct private_data);
 	if (data == NULL) {
@@ -398,15 +407,16 @@ static int rootdse_init(struct ldb_module *module)
 	data->controls = NULL;
 	data->num_partitions = 0;
 	data->partitions = NULL;
-	module->private_data = data;
+	ldb_module_set_private(module, data);
 
-	ldb_set_default_dns(module->ldb);
+	ldb_set_default_dns(ldb);
 
 	return ldb_next_init(module);
 }
 
 static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_result *ext_res;
 	int ret;
 	struct ldb_dn *schema_dn;
@@ -418,7 +428,9 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 	if (!ldb_dn_is_null(req->op.mod.message->dn)) {
 		return ldb_next_request(module, req);
 	}
-	
+
+	ldb = ldb_module_get_ctx(module);
+
 	/*
 		dn is empty so check for schemaUpdateNow attribute
 		"The type of modification and values specified in the LDAP modify operation do not matter." MSDN
@@ -428,15 +440,15 @@ static int rootdse_modify(struct ldb_module *module, struct ldb_request *req)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	schema_dn = samdb_schema_dn(module->ldb);
+	schema_dn = samdb_schema_dn(ldb);
 	if (!schema_dn) {
-		ldb_reset_err_string(module->ldb);
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_reset_err_string(ldb);
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "rootdse_modify: no schema dn present: (skip ldb_extended call)\n");
 		return ldb_next_request(module, req);
 	}
 
-	ret = ldb_extended(module->ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
+	ret = ldb_extended(ldb, DSDB_EXTENDED_SCHEMA_UPDATE_NOW_OID, schema_dn, &ext_res);
 	if (ret != LDB_SUCCESS) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

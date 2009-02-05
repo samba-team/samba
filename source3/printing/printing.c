@@ -22,8 +22,6 @@
 #include "includes.h"
 #include "printing.h"
 
-extern SIG_ATOMIC_T got_sig_term;
-extern SIG_ATOMIC_T reload_after_sighup;
 extern struct current_user current_user;
 extern userdom_struct current_user_info;
 
@@ -1427,6 +1425,9 @@ void start_background_queue(void)
 			smb_panic("reinit_after_fork() failed");
 		}
 
+		smbd_setup_sig_term_handler();
+		smbd_setup_sig_hup_handler();
+
 		claim_connection( NULL, "smbd lpq backend",
 			FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
@@ -1482,19 +1483,6 @@ void start_background_queue(void)
 			if (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds)) {
                                 exit_server_cleanly(NULL);
 			}
-
-			/* check for some essential signals first */
-
-                        if (got_sig_term) {
-                                exit_server_cleanly(NULL);
-                        }
-
-                        if (reload_after_sighup) {
-                                change_to_root_user();
-                                DEBUG(1,("Reloading services after SIGHUP\n"));
-                                reload_services(False);
-                                reload_after_sighup = 0;
-                        }
 
 			if (run_events(smbd_event_context(), ret, &r_fds, &w_fds)) {
 				continue;

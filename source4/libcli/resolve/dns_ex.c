@@ -37,6 +37,11 @@
 #include "libcli/composite/composite.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "libcli/resolve/resolve.h"
+
+#ifdef class
+#undef class
+#endif
+
 #include "heimdal/lib/roken/resolve.h"
 
 struct dns_ex_state {

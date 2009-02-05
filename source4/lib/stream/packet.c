@@ -37,7 +37,7 @@ struct packet_context {
 	struct socket_context *sock;
 	struct tevent_context *ev;
 	size_t packet_size;
-	void *private;
+	void *private_data;
 	struct tevent_fd *fde;
 	bool serialise;
 	int processing;
@@ -105,9 +105,9 @@ _PUBLIC_ void packet_set_error_handler(struct packet_context *pc, packet_error_h
 /*
   set the private pointer passed to the callback functions
 */
-_PUBLIC_ void packet_set_private(struct packet_context *pc, void *private)
+_PUBLIC_ void packet_set_private(struct packet_context *pc, void *private_data)
 {
-	pc->private = private;
+	pc->private_data = private_data;
 }
 
 /*
@@ -184,15 +184,15 @@ static void packet_error(struct packet_context *pc, NTSTATUS status)
 {
 	pc->sock = NULL;
 	if (pc->error_handler) {
-		pc->error_handler(pc->private, status);
+		pc->error_handler(pc->private_data, status);
 		return;
 	}
 	/* default error handler is to free the callers private pointer */
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 		DEBUG(0,("packet_error on %s - %s\n", 
-			 talloc_get_name(pc->private), nt_errstr(status)));
+			 talloc_get_name(pc->private_data), nt_errstr(status)));
 	}
-	talloc_free(pc->private);
+	talloc_free(pc->private_data);
 	return;
 }
 
@@ -210,9 +210,9 @@ static void packet_eof(struct packet_context *pc)
   used to put packets on event boundaries
 */
 static void packet_next_event(struct tevent_context *ev, struct tevent_timer *te, 
-			      struct timeval t, void *private)
+			      struct timeval t, void *private_data)
 {
-	struct packet_context *pc = talloc_get_type(private, struct packet_context);
+	struct packet_context *pc = talloc_get_type(private_data, struct packet_context);
 	if (pc->num_read != 0 && pc->packet_size != 0 &&
 	    pc->packet_size <= pc->num_read) {
 		packet_recv(pc);
@@ -330,7 +330,7 @@ next_partial:
 	/* see if its a full request */
 	blob = pc->partial;
 	blob.length = pc->num_read;
-	status = pc->full_request(pc->private, blob, &pc->packet_size);
+	status = pc->full_request(pc->private_data, blob, &pc->packet_size);
 	if (NT_STATUS_IS_ERR(status)) {
 		packet_error(pc, status);
 		return;
@@ -375,7 +375,7 @@ next_partial:
 
 	pc->busy = true;
 
-	status = pc->callback(pc->private, blob);
+	status = pc->callback(pc->private_data, blob);
 
 	pc->busy = false;
 
@@ -409,7 +409,7 @@ next_partial:
 	blob = pc->partial;
 	blob.length = pc->num_read;
 
-	status = pc->full_request(pc->private, blob, &pc->packet_size);
+	status = pc->full_request(pc->private_data, blob, &pc->packet_size);
 	if (NT_STATUS_IS_ERR(status)) {
 		packet_error(pc, status);
 		return;
@@ -495,7 +495,7 @@ _PUBLIC_ void packet_queue_run(struct packet_context *pc)
 */
 _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
 				       packet_send_callback_fn_t send_callback, 
-				       void *private)
+				       void *private_data)
 {
 	struct send_element *el;
 	el = talloc(pc, struct send_element);
@@ -505,7 +505,7 @@ _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob
 	el->blob = blob;
 	el->nsent = 0;
 	el->send_callback = send_callback;
-	el->send_callback_private = private;
+	el->send_callback_private = private_data;
 
 	/* if we aren't going to free the packet then we must reference it
 	   to ensure it doesn't disappear before going out */
@@ -517,7 +517,7 @@ _PUBLIC_ NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob
 		talloc_steal(el, blob.data);
 	}
 
-	if (private && !talloc_reference(el, private)) {
+	if (private_data && !talloc_reference(el, private_data)) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -538,7 +538,7 @@ _PUBLIC_ NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob)
 /*
   a full request checker for NBT formatted packets (first 3 bytes are length)
 */
-_PUBLIC_ NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t *size)
+_PUBLIC_ NTSTATUS packet_full_request_nbt(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;
@@ -555,7 +555,7 @@ _PUBLIC_ NTSTATUS packet_full_request_nbt(void *private, DATA_BLOB blob, size_t 
   work out if a packet is complete for protocols that use a 32 bit network byte
   order length
 */
-_PUBLIC_ NTSTATUS packet_full_request_u32(void *private, DATA_BLOB blob, size_t *size)
+_PUBLIC_ NTSTATUS packet_full_request_u32(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 4) {
 		return STATUS_MORE_ENTRIES;

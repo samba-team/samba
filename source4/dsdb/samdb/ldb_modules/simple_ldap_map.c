@@ -27,9 +27,7 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_private.h"
-#include "ldb/include/ldb_errors.h"
+#include "ldb/include/ldb_module.h"
 #include "ldb/ldb_map/ldb_map.h"
 
 #include "librpc/gen_ndr/ndr_misc.h"
@@ -105,7 +103,7 @@ static struct ldb_val guid_ns_string(struct ldb_module *module, TALLOC_CTX *ctx,
 static struct ldb_val val_copy(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
 	struct ldb_val out = data_blob(NULL, 0);
-	ldb_handler_copy(module->ldb, ctx, val, &out);
+	out = ldb_val_dup(ctx, val);
 
 	return out;
 }
@@ -113,10 +111,11 @@ static struct ldb_val val_copy(struct ldb_module *module, TALLOC_CTX *ctx, const
 /* Ensure we always convert sids into binary, so the backend doesn't have to know about both forms */
 static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_val out = data_blob(NULL, 0);
-	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectSid");
+	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, "objectSid");
 
-	if (a->syntax->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
+	if (a->syntax->canonicalise_fn(ldb, ctx, val, &out) != LDB_SUCCESS) {
 		return data_blob(NULL, 0);
 	}
 
@@ -126,18 +125,19 @@ static struct ldb_val sid_always_binary(struct ldb_module *module, TALLOC_CTX *c
 /* Ensure we always convert objectCategory into a DN */
 static struct ldb_val objectCategory_always_dn(struct ldb_module *module, TALLOC_CTX *ctx, const struct ldb_val *val)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct ldb_dn *dn;
 	struct ldb_val out = data_blob(NULL, 0);
-	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(module->ldb, "objectCategory");
+	const struct ldb_schema_attribute *a = ldb_schema_attribute_by_name(ldb, "objectCategory");
 
-	dn = ldb_dn_from_ldb_val(ctx, module->ldb, val);
+	dn = ldb_dn_from_ldb_val(ctx, ldb, val);
 	if (dn && ldb_dn_validate(dn)) {
 		talloc_free(dn);
 		return val_copy(module, ctx, val);
 	}
 	talloc_free(dn);
 
-	if (a->syntax->canonicalise_fn(module->ldb, ctx, val, &out) != LDB_SUCCESS) {
+	if (a->syntax->canonicalise_fn(ldb, ctx, val, &out) != LDB_SUCCESS) {
 		return data_blob(NULL, 0);
 	}
 
@@ -603,6 +603,7 @@ static int get_seq_callback(struct ldb_request *req,
 
 static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	int ret;
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
@@ -620,16 +621,18 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	struct ldb_seqnum_result *seqr;
 	struct ldb_extended *ext;
 
+	ldb = ldb_module_get_ctx(module);
+
 	seq = talloc_get_type(req->op.extended.data, struct ldb_seqnum_request);
 
-	map_private = talloc_get_type(module->private_data, struct map_private);
+	map_private = talloc_get_type(ldb_module_get_private(module), struct map_private);
 
 	entryuuid_private = talloc_get_type(map_private->caller_private, struct entryuuid_private);
 
 	/* All this to get the DN of the parition, so we can search the right thing */
 	partition_ctrl = ldb_request_get_control(req, DSDB_CONTROL_CURRENT_PARTITION_OID);
 	if (!partition_ctrl) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "entryuuid_sequence_number: no current partition control found");
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
@@ -638,7 +641,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 				    struct dsdb_control_current_partition);
 	SMB_ASSERT(partition && partition->version == DSDB_CONTROL_CURRENT_PARTITION_VERSION);
 
-	ret = ldb_build_search_req(&search_req, module->ldb, req,
+	ret = ldb_build_search_req(&search_req, ldb, req,
 				   partition->dn, LDB_SCOPE_BASE,
 				   NULL, contextCSN_attr, NULL,
 				   &seq_num, get_seq_callback,

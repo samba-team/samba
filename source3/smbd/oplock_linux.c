@@ -43,19 +43,6 @@
 #define F_SETSIG 10
 #endif
 
-/****************************************************************************
- Handle a LEASE signal, incrementing the signals_received and blocking the signal.
-****************************************************************************/
-
-static void signal_handler(int sig, siginfo_t *info, void *unused)
-{
-	if (oplock_signals_received < FD_PENDING_SIZE - 1) {
-		fd_pending_array[oplock_signals_received] = (SIG_ATOMIC_T)info->si_fd;
-		oplock_signals_received++;
-	} /* Else signal is lost. */
-	sys_select_signal(RT_SIGNAL_LEASE);
-}
-
 /*
  * public function to get linux lease capability. Needed by some VFS modules (eg. gpfs.c)
  */
@@ -101,24 +88,17 @@ int linux_setlease(int fd, int leasetype)
  * oplock break protocol.
 ****************************************************************************/
 
-static files_struct *linux_oplock_receive_message(struct kernel_oplocks *ctx)
+static void linux_oplock_signal_handler(struct tevent_context *ev_ctx,
+					struct tevent_signal *se,
+					int signum, int count,
+					void *_info, void *private_data)
 {
-	int fd;
+	siginfo_t *info = (siginfo_t *)_info;
+	int fd = info->si_fd;
 	files_struct *fsp;
 
-	BlockSignals(True, RT_SIGNAL_LEASE);
-	fd = fd_pending_array[0];
 	fsp = file_find_fd(fd);
-	fd_pending_array[0] = (SIG_ATOMIC_T)-1;
-	if (oplock_signals_received > 1)
-                memmove(CONST_DISCARD(void *, &fd_pending_array[0]),
-                        CONST_DISCARD(void *, &fd_pending_array[1]),
-			sizeof(SIG_ATOMIC_T)*(oplock_signals_received-1));
-	oplock_signals_received--;
-	/* now we can receive more signals */
-	BlockSignals(False, RT_SIGNAL_LEASE);
-
-	return fsp;
+	break_kernel_oplock(smbd_messaging_context(), fsp);
 }
 
 /****************************************************************************
@@ -180,15 +160,6 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 }
 
 /****************************************************************************
- See if a oplock message is waiting.
-****************************************************************************/
-
-static bool linux_oplock_msg_waiting(struct kernel_oplocks *ctx)
-{
-	return oplock_signals_received != 0;
-}
-
-/****************************************************************************
  See if the kernel supports oplocks.
 ****************************************************************************/
 
@@ -208,16 +179,14 @@ static bool linux_oplocks_available(void)
 ****************************************************************************/
 
 static const struct kernel_oplocks_ops linux_koplocks = {
-	.receive_message	= linux_oplock_receive_message,
 	.set_oplock		= linux_set_kernel_oplock,
 	.release_oplock		= linux_release_kernel_oplock,
-	.msg_waiting		= linux_oplock_msg_waiting
 };
 
 struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 {
-        struct sigaction act;
 	struct kernel_oplocks *ctx;
+	struct tevent_signal *se;
 
 	if (!linux_oplocks_available()) {
 		DEBUG(3,("Linux kernel oplocks not available\n"));
@@ -232,19 +201,18 @@ struct kernel_oplocks *linux_init_kernel_oplocks(TALLOC_CTX *mem_ctx)
 
 	ctx->ops = &linux_koplocks;
 
-	ZERO_STRUCT(act);
-
-	act.sa_handler = NULL;
-	act.sa_sigaction = signal_handler;
-	act.sa_flags = SA_SIGINFO;
-	sigemptyset( &act.sa_mask );
-	if (sigaction(RT_SIGNAL_LEASE, &act, NULL) != 0) {
-		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler\n"));
+	se = tevent_add_signal(smbd_event_context(),
+			       ctx,
+			       RT_SIGNAL_LEASE, SA_SIGINFO,
+			       linux_oplock_signal_handler,
+			       ctx);
+	if (!se) {
+		DEBUG(0,("Failed to setup RT_SIGNAL_LEASE handler"));
+		TALLOC_FREE(ctx);
 		return NULL;
 	}
 
-	/* the signal can start off blocked due to a bug in bash */
-	BlockSignals(False, RT_SIGNAL_LEASE);
+	ctx->private_data = se;
 
 	DEBUG(3,("Linux kernel oplocks enabled\n"));
 

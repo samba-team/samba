@@ -449,9 +449,9 @@ notcon:
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
+NTSTATUS smbsrv_recv_smb2_request(void *private_data, DATA_BLOB blob)
 {
-	struct smbsrv_connection *smb_conn = talloc_get_type(private, struct smbsrv_connection);
+	struct smbsrv_connection *smb_conn = talloc_get_type(private_data, struct smbsrv_connection);
 	struct smb2srv_request *req;
 	struct timeval cur_time = timeval_current();
 	uint32_t protocol_version;

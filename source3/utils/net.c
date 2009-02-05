@@ -589,6 +589,14 @@ static struct functable net_func[] = {
 		"  Use 'net help lua' to get more information about 'net "
 		"lua' commands."
 	},
+	{	"eventlog",
+		net_eventlog,
+		NET_TRANSPORT_LOCAL,
+		"Dump Win32 *.evt eventlog files",
+		"  Use 'net help eventlog' to get more information about 'net "
+		"eventlog' commands."
+	},
+
 #ifdef WITH_FAKE_KASERVER
 	{	"afs",
 		net_afs,

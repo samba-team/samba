@@ -771,6 +771,138 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 	return SVAL(cli->inbuf,smb_vwv2 + 1);
 }
 
+struct async_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
+				    struct event_context *ev,
+				    struct cli_state *cli,
+				    const char *fname,
+				    uint32_t CreatFlags,
+				    uint32_t DesiredAccess,
+				    uint32_t FileAttributes,
+				    uint32_t ShareAccess,
+				    uint32_t CreateDisposition,
+				    uint32_t CreateOptions,
+				    uint8_t SecurityFlags)
+{
+	struct async_req *result;
+	uint8_t *bytes;
+	size_t converted_len;
+	uint16_t vwv[24];
+
+	SCVAL(vwv+0, 0, 0xFF);
+	SCVAL(vwv+0, 1, 0);
+	SSVAL(vwv+1, 0, 0);
+	SCVAL(vwv+2, 0, 0);
+
+	if (cli->use_oplocks) {
+		CreatFlags |= (REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK);
+	}
+	SIVAL(vwv+3, 1, CreatFlags);
+	SIVAL(vwv+5, 1, 0x0);	/* RootDirectoryFid */
+	SIVAL(vwv+7, 1, DesiredAccess);
+	SIVAL(vwv+9, 1, 0x0);	/* AllocationSize */
+	SIVAL(vwv+11, 1, 0x0);	/* AllocationSize */
+	SIVAL(vwv+13, 1, FileAttributes);
+	SIVAL(vwv+15, 1, ShareAccess);
+	SIVAL(vwv+17, 1, CreateDisposition);
+	SIVAL(vwv+19, 1, CreateOptions);
+	SIVAL(vwv+21, 1, 0x02);	/* ImpersonationLevel */
+	SCVAL(vwv+23, 1, SecurityFlags);
+
+	bytes = talloc_array(talloc_tos(), uint8_t, 0);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli),
+				   fname, strlen(fname)+1,
+				   &converted_len);
+
+	/* sigh. this copes with broken netapp filer behaviour */
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), "", 1, NULL);
+
+	if (bytes == NULL) {
+		return NULL;
+	}
+
+	SIVAL(vwv+2, 1, converted_len);
+
+	result = cli_request_send(mem_ctx, ev, cli, SMBntcreateX, 0,
+				  24, vwv, 0, talloc_get_size(bytes), bytes);
+	TALLOC_FREE(bytes);
+	return result;
+}
+
+NTSTATUS cli_ntcreate_recv(struct async_req *req, uint16_t *pfnum)
+{
+	uint8_t wct;
+	uint16_t *vwv;
+	uint16_t num_bytes;
+	uint8_t *bytes;
+	NTSTATUS status;
+
+	if (async_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	status = cli_pull_reply(req, &wct, &vwv, &num_bytes, &bytes);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (wct < 3) {
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
+	}
+
+	*pfnum = SVAL(vwv+2, 1);
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_ntcreate(struct cli_state *cli,
+		      const char *fname,
+		      uint32_t CreatFlags,
+		      uint32_t DesiredAccess,
+		      uint32_t FileAttributes,
+		      uint32_t ShareAccess,
+		      uint32_t CreateDisposition,
+		      uint32_t CreateOptions,
+		      uint8_t SecurityFlags,
+		      uint16_t *pfid)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
+
+	if (cli->fd_event != NULL) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	req = cli_ntcreate_send(frame, ev, cli, fname, CreatFlags,
+				DesiredAccess, FileAttributes, ShareAccess,
+				CreateDisposition, CreateOptions,
+				SecurityFlags);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
+	}
+
+	status = cli_ntcreate_recv(req, pfid);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  Open a file.
 ****************************************************************************/
@@ -781,7 +913,9 @@ int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OPEN, 0x0, 0x0);
 }
 
-uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
+uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2,
+			    const char *str, size_t str_len,
+			    size_t *pconverted_size)
 {
 	size_t buflen;
 	char *converted;
@@ -806,7 +940,7 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 
 	if (!convert_string_allocate(talloc_tos(), CH_UNIX,
 				     ucs2 ? CH_UTF16LE : CH_DOS,
-				     str, strlen(str)+1, &converted,
+				     str, str_len, &converted,
 				     &converted_size, true)) {
 		return NULL;
 	}
@@ -821,6 +955,11 @@ uint8_t *smb_bytes_push_str(uint8_t *buf, bool ucs2, const char *str)
 	memcpy(buf + buflen, converted, converted_size);
 
 	TALLOC_FREE(converted);
+
+	if (pconverted_size) {
+		*pconverted_size = converted_size;
+	}
+
 	return buf;
 }
 
@@ -890,12 +1029,8 @@ struct async_req *cli_open_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	bytes = talloc_array(talloc_tos(), uint8_t, 0);
-	if (bytes == NULL) {
-		return NULL;
-	}
-
-	bytes = smb_bytes_push_str(
-		bytes, (cli->capabilities & CAP_UNICODE) != 0, fname);
+	bytes = smb_bytes_push_str(bytes, cli_ucs2(cli), fname,
+				   strlen(fname)+1, NULL);
 	if (bytes == NULL) {
 		return NULL;
 	}
@@ -914,7 +1049,7 @@ NTSTATUS cli_open_recv(struct async_req *req, int *fnum)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -992,7 +1127,7 @@ NTSTATUS cli_close_recv(struct async_req *req)
 	uint8_t *bytes;
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 

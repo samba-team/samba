@@ -81,9 +81,9 @@ static void wrepl_request_timeout_handler(struct tevent_context *ev, struct teve
 /*
   handle recv events 
 */
-static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
+static NTSTATUS wrepl_finish_recv(void *private_data, DATA_BLOB packet_blob_in)
 {
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private, struct wrepl_socket);
+	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data, struct wrepl_socket);
 	struct wrepl_request *req = wrepl_socket->recv_queue;
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -123,9 +123,9 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
   handler for winrepl events
 */
 static void wrepl_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-			  uint16_t flags, void *private)
+			  uint16_t flags, void *private_data)
 {
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private, 
+	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data,
 							    struct wrepl_socket);
 	if (flags & EVENT_FD_READ) {
 		packet_recv(wrepl_socket->packet);
@@ -136,9 +136,9 @@ static void wrepl_handler(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 }
 
-static void wrepl_error(void *private, NTSTATUS status)
+static void wrepl_error(void *private_data, NTSTATUS status)
 {
-	struct wrepl_socket *wrepl_socket = talloc_get_type(private, 
+	struct wrepl_socket *wrepl_socket = talloc_get_type(private_data,
 							    struct wrepl_socket);
 	wrepl_socket_dead(wrepl_socket, status);
 }

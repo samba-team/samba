@@ -31,6 +31,10 @@
  * SUCH DAMAGE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "krb5.h"
 #include "krb5_locl.h"
 #include "hdb_locl.h"

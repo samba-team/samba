@@ -50,9 +50,9 @@ static int websrv_destructor(struct websrv_context *web)
 */
 static void websrv_timeout(struct tevent_context *event_context, 
 			   struct tevent_timer *te, 
-			   struct timeval t, void *private)
+			   struct timeval t, void *private_data)
 {
-	struct websrv_context *web = talloc_get_type(private, struct websrv_context);
+	struct websrv_context *web = talloc_get_type(private_data, struct websrv_context);
 	struct stream_connection *conn = web->conn;
 	web->conn = NULL;
 	/* TODO: send a message to any running esp context on this connection
@@ -145,7 +145,7 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct web_server_data *wdata;
-	struct websrv_context *web = talloc_get_type(conn->private, 
+	struct websrv_context *web = talloc_get_type(conn->private_data,
 						     struct websrv_context);
 	NTSTATUS status;
 	uint8_t buf[1024];
@@ -202,7 +202,7 @@ static void websrv_recv(struct stream_connection *conn, uint16_t flags)
 		 destroy the stack variables being used by that
 		 rendering process when we handle the timeout. */
 		if (!talloc_reference(web->task, web)) goto failed;
-		wdata = talloc_get_type(web->task->private, struct web_server_data);
+		wdata = talloc_get_type(web->task->private_data, struct web_server_data);
 		if (wdata == NULL) goto failed;
 		wdata->http_process_input(wdata, web);
 		talloc_unlink(web->task, web);
@@ -220,7 +220,7 @@ failed:
 */
 static void websrv_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct websrv_context *web = talloc_get_type(conn->private, 
+	struct websrv_context *web = talloc_get_type(conn->private_data,
 						     struct websrv_context);
 	NTSTATUS status;
 	size_t nsent;
@@ -251,8 +251,8 @@ static void websrv_send(struct stream_connection *conn, uint16_t flags)
 */
 static void websrv_accept(struct stream_connection *conn)
 {
-	struct task_server *task = talloc_get_type(conn->private, struct task_server);
-	struct web_server_data *wdata = talloc_get_type(task->private, struct web_server_data);
+	struct task_server *task = talloc_get_type(conn->private_data, struct task_server);
+	struct web_server_data *wdata = talloc_get_type(task->private_data, struct web_server_data);
 	struct websrv_context *web;
 	struct socket_context *tls_socket;
 
@@ -261,7 +261,7 @@ static void websrv_accept(struct stream_connection *conn)
 
 	web->task = task;
 	web->conn = conn;
-	conn->private = web;
+	conn->private_data = web;
 	talloc_set_destructor(web, websrv_destructor);
 
 	event_add_timed(conn->event.ctx, web, 
@@ -343,7 +343,7 @@ static void websrv_task_init(struct task_server *task)
 	wdata = talloc_zero(task, struct web_server_data);
 	if (wdata == NULL)goto failed;
 
-	task->private = wdata;
+	task->private_data = wdata;
 	
 	wdata->tls_params = tls_initialise(wdata, task->lp_ctx);
 	if (wdata->tls_params == NULL) goto failed;

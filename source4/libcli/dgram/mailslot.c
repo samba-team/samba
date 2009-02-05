@@ -52,7 +52,7 @@ static int dgram_mailslot_destructor(struct dgram_mailslot_handler *dgmslot)
 struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dgmsock,
 						     const char *mailslot_name,
 						     dgram_mailslot_handler_t handler,
-						     void *private)
+						     void *private_data)
 {
 	struct dgram_mailslot_handler *dgmslot;
 
@@ -66,7 +66,7 @@ struct dgram_mailslot_handler *dgram_mailslot_listen(struct nbt_dgram_socket *dg
 		return NULL;
 	}
 	dgmslot->handler = handler;
-	dgmslot->private = private;
+	dgmslot->private_data = private_data;
 
 	DLIST_ADD(dgmsock->mailslot_handlers, dgmslot);
 	talloc_set_destructor(dgmslot, dgram_mailslot_destructor);
@@ -115,7 +115,7 @@ const char *dgram_mailslot_name(struct nbt_dgram_packet *packet)
 struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgmsock,
 						   const char *mailslot_name,
 						   dgram_mailslot_handler_t handler,
-						   void *private)
+						   void *private_data)
 {
 	char *name;
 	int i;
@@ -131,7 +131,7 @@ struct dgram_mailslot_handler *dgram_mailslot_temp(struct nbt_dgram_socket *dgms
 			talloc_free(name);
 			return NULL;
 		}
-		dgmslot = dgram_mailslot_listen(dgmsock, name, handler, private);
+		dgmslot = dgram_mailslot_listen(dgmsock, name, handler, private_data);
 		talloc_free(name);
 		if (dgmslot != NULL) {
 			return dgmslot;

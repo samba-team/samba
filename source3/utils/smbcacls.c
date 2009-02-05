@@ -76,8 +76,9 @@ static NTSTATUS cli_lsa_lookup_sid(struct cli_state *cli,
 	char **domains;
 	char **names;
 
-	if (!cli_send_tconX(cli, "IPC$", "?????", "", 0)) {
-		return cli_nt_error(cli);
+	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,
@@ -124,8 +125,9 @@ static NTSTATUS cli_lsa_lookup_name(struct cli_state *cli,
 	DOM_SID *sids;
 	enum lsa_SidType *types;
 
-	if (!cli_send_tconX(cli, "IPC$", "?????", "", 0)) {
-		return cli_nt_error(cli);
+	status = cli_tcon_andx(cli, "IPC$", "?????", "", 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc.syntax_id,

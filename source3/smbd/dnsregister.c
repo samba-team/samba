@@ -35,18 +35,16 @@
 #include <dns_sd.h>
 
 struct dns_reg_state {
+	struct tevent_context *event_ctx;
+	uint16_t port;
 	DNSServiceRef srv_ref;
-	struct timed_event *retry_handler;
+	struct tevent_timer *te;
+	int fd;
+	struct tevent_fd *fde;
 };
 
-void dns_register_close(struct dns_reg_state **dns_state_ptr)
+static int dns_reg_state_destructor(struct dns_reg_state *dns_state)
 {
-	struct dns_reg_state *dns_state = *dns_state_ptr;
-
-	if (dns_state == NULL) {
-		return;
-	}
-
 	if (dns_state->srv_ref != NULL) {
 		/* Close connection to the mDNS daemon */
 		DNSServiceRefDeallocate(dns_state->srv_ref);
@@ -54,81 +52,52 @@ void dns_register_close(struct dns_reg_state **dns_state_ptr)
 	}
 
 	/* Clear event handler */
-	if (dns_state->retry_handler != NULL) {
-		TALLOC_FREE(dns_state->retry_handler);
-		dns_state->retry_handler = NULL;
+	TALLOC_FREE(dns_state->te);
+	TALLOC_FREE(dns_state->fde);
+	dns_state->fd = -1;
+
+	return 0;
+}
+
+static void dns_register_smbd_retry(struct tevent_context *ctx,
+				    struct tevent_timer *te,
+				    struct timeval now,
+				    void *private_data);
+static void dns_register_smbd_fde_handler(struct tevent_context *ev,
+					  struct tevent_fd *fde,
+					  uint16_t flags,
+					  void *private_data);
+
+static bool dns_register_smbd_schedule(struct dns_reg_state *dns_state,
+				       struct timeval tval)
+{
+	dns_reg_state_destructor(dns_state);
+
+	dns_state->te = tevent_add_timer(dns_state->event_ctx,
+					 dns_state,
+					 tval,
+					 dns_register_smbd_retry,
+					 dns_state);
+	if (!dns_state->te) {
+		return false;
 	}
 
-	talloc_free(dns_state);
-	*dns_state_ptr = NULL;
+	return true;
 }
 
-static void dns_register_smbd_retry(struct event_context *ctx,
-                                   struct timed_event *te,
-                                   const struct timeval *now,
-                                   void *private_data)
+static void dns_register_smbd_retry(struct tevent_context *ctx,
+				    struct tevent_timer *te,
+				    struct timeval now,
+				    void *private_data)
 {
-	struct dns_reg_state *dns_state = (struct dns_reg_state *)private_data;
-
-	/* Clear previous registration state to force new
-	 * registration attempt. Clears event handler.
-	 */
-	dns_register_close(&dns_state);
-}
-
-static void schedule_dns_register_smbd_retry(struct dns_reg_state *dns_state,
-		struct timeval *timeout)
-{
-	struct timed_event * event;
-
-	dns_state->srv_ref = NULL;
-	event= event_add_timed(smbd_event_context(),
-			NULL,
-			timeval_current_ofs(DNS_REG_RETRY_INTERVAL, 0),
-			dns_register_smbd_retry,
-			dns_state);
-
-	dns_state->retry_handler = event;
-	get_timed_events_timeout(smbd_event_context(), timeout);
-}
-
-/* Kick off a mDNS request to register the "_smb._tcp" on the specified port.
- * We really ought to register on all the ports we are listening on. This will
- * have to be an exercise for some-one who knows the DNS registration API a bit
- * better.
- */
-void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout)
-{
-	int mdnsd_conn_fd;
+	struct dns_reg_state *dns_state = talloc_get_type_abort(private_data,
+					  struct dns_reg_state);
 	DNSServiceErrorType err;
-	struct dns_reg_state *dns_state = *dns_state_ptr;
 
-	if (dns_state == NULL) {
-		*dns_state_ptr = dns_state = talloc(NULL, struct dns_reg_state);
-		if (dns_state == NULL) {
-			return;
-		}
-	}
+	dns_reg_state_destructor(dns_state);
 
-	/* Quit if a re-try attempt has been scheduled.  */
-	if (dns_state->retry_handler != NULL) {
-		return;
-	}
-
-	/* If a registration is active add conn
-	 * fd to select listen_set and return
-	 */
-	if (dns_state->srv_ref != NULL) {
-		mdnsd_conn_fd = DNSServiceRefSockFD(dns_state->srv_ref);
-		FD_SET(mdnsd_conn_fd, listen_set);
-		return;
-	}
-
-	DEBUG(6, ("registering _smb._tcp service on port %d\n", port));
+	DEBUG(6, ("registering _smb._tcp service on port %d\n",
+		  dns_state->port));
 
 	/* Register service with DNS. Connects with the mDNS
 	 * daemon running on the local system to perform DNS
@@ -140,7 +109,7 @@ void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
 			"_smb._tcp" /* service type */,
 			NULL /* domain */,
 			"" /* SRV target host name */,
-			htons(port),
+			htons(dns_state->port),
 			0 /* TXT record len */,
 			NULL /* TXT record data */,
 			NULL /* callback func */,
@@ -150,62 +119,81 @@ void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
 		/* Failed to register service. Schedule a re-try attempt.
 		 */
 		DEBUG(3, ("unable to register with mDNS (err %d)\n", err));
-		schedule_dns_register_smbd_retry(dns_state, timeout);
-		return;
+		goto retry;
 	}
 
-	mdnsd_conn_fd = DNSServiceRefSockFD(dns_state->srv_ref);
-	FD_SET(mdnsd_conn_fd, listen_set);
-	*maxfd = MAX(*maxfd, mdnsd_conn_fd);
-	*timeout = timeval_zero();
+	dns_state->fd = DNSServiceRefSockFD(dns_state->srv_ref);
+	if (dns_state->fd == -1) {
+		goto retry;
+	}
 
+	dns_state->fde = tevent_add_fd(dns_state->event_ctx,
+				       dns_state,
+				       dns_state->fd,
+				       TEVENT_FD_READ,
+				       dns_register_smbd_fde_handler,
+				       dns_state);
+	if (!dns_state->fde) {
+		goto retry;
+	}
+
+	return;
+ retry:
+	dns_register_smbd_schedule(dns_state,
+		timeval_current_ofs(DNS_REG_RETRY_INTERVAL, 0));
 }
 
 /* Processes reply from mDNS daemon. Returns true if a reply was received */
-bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout)
+static void dns_register_smbd_fde_handler(struct tevent_context *ev,
+					  struct tevent_fd *fde,
+					  uint16_t flags,
+					  void *private_data)
 {
-	int mdnsd_conn_fd = -1;
+	struct dns_reg_state *dns_state = talloc_get_type_abort(private_data,
+					  struct dns_reg_state);
+	DNSServiceErrorType err;
 
-	if (dns_state->srv_ref == NULL) {
+	err = DNSServiceProcessResult(dns_state->srv_ref);
+	if (err != kDNSServiceErr_NoError) {
+		DEBUG(3, ("failed to process mDNS result (err %d), re-trying\n",
+			    err));
+		goto retry;
+	}
+
+	talloc_free(dns_state);
+	return;
+
+ retry:
+	dns_register_smbd_schedule(dns_state,
+		timeval_current_ofs(DNS_REG_RETRY_INTERVAL, 0));
+}
+
+bool smbd_setup_mdns_registration(struct tevent_context *ev,
+				  TALLOC_CTX *mem_ctx,
+				  uint16_t port)
+{
+	struct dns_reg_state *dns_state;
+
+	dns_state = talloc_zero(mem_ctx, struct dns_reg_state);
+	if (dns_state == NULL) {
 		return false;
 	}
+	dns_state->event_ctx = ev;
+	dns_state->port = port;
+	dns_state->fd = -1;
 
-	mdnsd_conn_fd = DNSServiceRefSockFD(dns_state->srv_ref);
+	talloc_set_destructor(dns_state, dns_reg_state_destructor);
 
-	/* Process reply from daemon. Handles any errors. */
-	if ((mdnsd_conn_fd != -1) && (FD_ISSET(mdnsd_conn_fd,lfds)) ) {
-		DNSServiceErrorType err;
-		
-		err = DNSServiceProcessResult(dns_state->srv_ref);
-		if (err != kDNSServiceErr_NoError) {
-			DEBUG(3, ("failed to process mDNS result (err %d), re-trying\n",
-				    err));
-			schedule_dns_register_smbd_retry(dns_state, timeout);
-		}
-
-		return true;
-	}
-
-	return false;
+	return dns_register_smbd_schedule(dns_state, timeval_zero());
 }
 
 #else /* WITH_DNSSD_SUPPORT */
 
- void dns_register_smbd(struct dns_reg_state ** dns_state_ptr,
-		unsigned port,
-		int *maxfd,
-		fd_set *listen_set,
-		struct timeval *timeout)
-{}
-
- void dns_register_close(struct dns_reg_state ** dns_state_ptr)
-{}
-
- bool dns_register_smbd_reply(struct dns_reg_state *dns_state,
-		fd_set *lfds, struct timeval *timeout)
+bool smbd_setup_mdns_registration(struct tevent_context *ev,
+				  TALLOC_CTX *mem_ctx,
+				  uint16_t port)
 {
-	return false;
+	return true;
 }
 
 #endif /* WITH_DNSSD_SUPPORT */

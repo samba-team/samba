@@ -1,17 +1,44 @@
 #!/bin/sh
 
-if [ $# != 3 -a $# != 4 ]; then
-	echo "$0 <directory> <all | quick> <smbtorture4> [<shrdir>]"
+if [ $# -lt 2 ]; then
+	echo "$0 <directory> <all | quick> [-t <smbtorture4>] [-s <shrdir>] " \
+	     "[-c <custom conf>]"
 	exit 1
 fi
 
-SMBTORTURE4=$3
-SUBTESTS=$2
+##
+## Setup the required args
+##
+DIRECTORY=$1; shift;
+SUBTESTS=$1; shift;
+
+##
+## Parse oprtional args
+##
+while getopts s:c:t: f
+do
+    case $f in
+	t)	SMBTORTURE4=$OPTARG;;
+	s)	ALT_SHRDIR_ARG=$OPTARG;;
+	c)      CUSTOM_CONF_ARG=$OPTARG;;
+    esac
+done
+
+echo "Running selftest with the following"
+echo "Selftest Directory: $DIRECTORY"
+echo "Subtests to Run: $SUBTESTS"
+echo "smbtorture4 Path: $SMBTORTURE4"
+echo "Alternative Share Dir: $ALT_SHRDIR_ARG"
+echo "Custom Configuration: $CUSTOM_CONF_ARG"
+
+if [ $CUSTOM_CONF_ARG ]; then
+    INCLUDE_CUSTOM_CONF="include = $CUSTOM_CONF_ARG"
+fi
 
 ##
 ## create the test directory
 ##
-PREFIX=`echo $1 | sed s+//+/+`
+PREFIX=`echo $DIRECTORY | sed s+//+/+`
 mkdir -p $PREFIX || exit $?
 OLD_PWD=`pwd`
 cd $PREFIX || exit $?
@@ -68,7 +95,10 @@ export WINBINDD_SOCKET_DIR WINBINDD_PRIV_PIPE_DIR
 PATH=bin:$PATH
 export PATH
 
-SAMBA4BINDIR=`dirname $SMBTORTURE4`
+if [ $SMBTORTURE4 ]; then
+    SAMBA4BINDIR=`dirname $SMBTORTURE4`
+fi
+
 SAMBA4SHAREDDIR="$SAMBA4BINDIR/shared"
 
 export SAMBA4SHAREDDIR
@@ -116,8 +146,8 @@ chmod 755 $WINBINDD_SOCKET_DIR
 ##
 ## Create an alternate shrdir if one was specified.
 ##
-if [ $# = 4 ]; then
-    ALT_SHRDIR=`echo $4 | sed s+//+/+`
+if [ $ALT_SHRDIR_ARG ]; then
+    ALT_SHRDIR=`echo $ALT_SHRDIR_ARG | sed s+//+/+`
     mkdir -p $ALT_SHRDIR || exit $?
     OLD_PWD=`pwd`
     cd $ALT_SHRDIR || exit $?
@@ -140,8 +170,6 @@ cat >$COMMONCONFFILE<<EOF
 	private dir = $PRIVATEDIR
 	pid directory = $PIDDIR
 	lock directory = $LOCKDIR
-	state directory = $LOCKDIR
-	cache directory = $LOCKDIR
 	log file = $LOGDIR/log.%m
 	log level = 0
 
@@ -177,6 +205,9 @@ cat >$SERVERCONFFILE<<EOF
 	panic action = $SCRIPTDIR/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	include = $COMMONCONFFILE
 
+	state directory = $LOCKDIR
+	cache directory = $LOCKDIR
+
 	passdb backend = tdbsam
 
 	domain master = yes
@@ -200,8 +231,6 @@ cat >$SERVERCONFFILE<<EOF
 
 #	min receivefile size = 4000
 
-[tmp]
-	path = $SHRDIR
 	read only = no
 	smbd:sharedelay = 100000
 	smbd:writetimeupdatedelay = 500000
@@ -209,6 +238,12 @@ cat >$SERVERCONFFILE<<EOF
 	map system = yes
 	create mask = 755
 	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_depot.so
+
+	#Include user defined custom parameters if set
+	$INCLUDE_CUSTOM_CONF
+
+[tmp]
+	path = $SHRDIR
 [hideunread]
 	copy = tmp
 	hide unreadable = yes

@@ -4,6 +4,7 @@
  *  Copyright (C) Marcin Krzysztof Porwit    2005,
  *  Copyright (C) Brian Moran                2005.
  *  Copyright (C) Gerald (Jerry) Carter      2005.
+ *  Copyright (C) Guenther Deschner          2009.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -269,7 +270,7 @@ bool prune_eventlog( TDB_CONTEXT * tdb )
 /********************************************************************
 ********************************************************************/
 
-bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
+static bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 {
 	int calcd_size;
 	int MaxSize, Retention;
@@ -312,7 +313,7 @@ bool can_write_to_eventlog( TDB_CONTEXT * tdb, int32_t needed )
 /*******************************************************************
 *******************************************************************/
 
-ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
+ELOG_TDB *elog_open_tdb( const char *logname, bool force_clear, bool read_only )
 {
 	TDB_CONTEXT *tdb = NULL;
 	uint32_t vers_id;
@@ -321,6 +322,13 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 	ELOG_TDB *tdb_node = NULL;
 	char *eventlogdir;
 	TALLOC_CTX *ctx = talloc_tos();
+
+	/* check for invalid options */
+
+	if (force_clear && read_only) {
+		DEBUG(1,("elog_open_tdb: Invalid flags\n"));
+		return NULL;
+	}
 
 	/* first see if we have an open context */
 
@@ -363,7 +371,7 @@ ELOG_TDB *elog_open_tdb( char *logname, bool force_clear )
 
 	if ( !force_clear ) {
 
-		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, O_RDWR , 0 );
+		tdb = tdb_open_log( tdbpath, 0, TDB_DEFAULT, read_only ? O_RDONLY : O_RDWR , 0 );
 		if ( tdb ) {
 			vers_id = tdb_fetch_int32( tdb, EVT_VERSION );
 
@@ -437,148 +445,6 @@ int elog_close_tdb( ELOG_TDB *etdb, bool force_close )
 	return 0;
 }
 
-
-/*******************************************************************
- write an eventlog entry. Note that we have to lock, read next
- eventlog, increment, write, write the record, unlock
-
- coming into this, ee has the eventlog record, and the auxilliary date
- (computer name, etc.) filled into the other structure. Before packing
- into a record, this routine will calc the appropriate padding, etc.,
- and then blast out the record in a form that can be read back in
-*******************************************************************/
-
-#define MARGIN 512
-
-int write_eventlog_tdb( TDB_CONTEXT * the_tdb, Eventlog_entry * ee )
-{
-	int32 next_record;
-	uint8 *packed_ee;
-	TALLOC_CTX *mem_ctx = NULL;
-	TDB_DATA kbuf, ebuf;
-	uint32_t n_packed;
-
-	if ( !ee )
-		return 0;
-
-	mem_ctx = talloc_init( "write_eventlog_tdb" );
-
-	if ( mem_ctx == NULL )
-		return 0;
-
-	/* discard any entries that have bogus time, which usually indicates a bogus entry as well. */
-	if ( ee->record.time_generated == 0 )
-		return 0;
-
-	/* todo - check for sanity in next_record */
-
-	fixup_eventlog_entry( ee );
-
-	if ( !can_write_to_eventlog( the_tdb, ee->record.length ) ) {
-		DEBUG( 3, ( "Can't write to Eventlog, no room \n" ) );
-		talloc_destroy( mem_ctx );
-		return 0;
-	}
-
-	/* alloc mem for the packed version */
-	packed_ee = (uint8 *)TALLOC( mem_ctx, ee->record.length + MARGIN );
-	if ( !packed_ee ) {
-		talloc_destroy( mem_ctx );
-		return 0;
-	}
-
-	/* need to read the record number and insert it into the entry here */
-
-	/* lock */
-	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
-	/* read */
-	next_record = tdb_fetch_int32( the_tdb, EVT_NEXT_RECORD );
-
-	n_packed =
-		tdb_pack( (uint8 *)packed_ee, ee->record.length + MARGIN,
-			  "ddddddwwwwddddddBBdBBBd", ee->record.length,
-			  ee->record.reserved1, next_record,
-			  ee->record.time_generated, ee->record.time_written,
-			  ee->record.event_id, ee->record.event_type,
-			  ee->record.num_strings, ee->record.event_category,
-			  ee->record.reserved2,
-			  ee->record.closing_record_number,
-			  ee->record.string_offset,
-			  ee->record.user_sid_length,
-			  ee->record.user_sid_offset, ee->record.data_length,
-			  ee->record.data_offset,
-			  ee->data_record.source_name_len,
-			  ee->data_record.source_name,
-			  ee->data_record.computer_name_len,
-			  ee->data_record.computer_name,
-			  ee->data_record.sid_padding,
-			  ee->record.user_sid_length, ee->data_record.sid,
-			  ee->data_record.strings_len,
-			  ee->data_record.strings,
-			  ee->data_record.user_data_len,
-			  ee->data_record.user_data,
-			  ee->data_record.data_padding );
-
-	/*DEBUG(3,("write_eventlog_tdb: packed into  %d\n",n_packed)); */
-
-	/* increment the record count */
-
-	kbuf.dsize = sizeof( int32 );
-	kbuf.dptr = (uint8 * ) & next_record;
-
-	ebuf.dsize = n_packed;
-	ebuf.dptr = (uint8 *)packed_ee;
-
-	if ( tdb_store( the_tdb, kbuf, ebuf, 0 ) ) {
-		/* DEBUG(1,("write_eventlog_tdb: Can't write record %d to eventlog\n",next_record)); */
-		tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
-		talloc_destroy( mem_ctx );
-		return 0;
-	}
-	next_record++;
-	tdb_store_int32( the_tdb, EVT_NEXT_RECORD, next_record );
-	tdb_unlock_bystring( the_tdb, EVT_NEXT_RECORD );
-	talloc_destroy( mem_ctx );
-	return ( next_record - 1 );
-}
-
-/*******************************************************************
- calculate the correct fields etc for an eventlog entry
-*******************************************************************/
-
-void fixup_eventlog_entry( Eventlog_entry * ee )
-{
-	/* fix up the eventlog entry structure as necessary */
-
-	ee->data_record.sid_padding =
-		( ( 4 -
-		    ( ( ee->data_record.source_name_len +
-			ee->data_record.computer_name_len ) % 4 ) ) % 4 );
-	ee->data_record.data_padding =
-		( 4 -
-		  ( ( ee->data_record.strings_len +
-		      ee->data_record.user_data_len ) % 4 ) ) % 4;
-	ee->record.length = sizeof( Eventlog_record );
-	ee->record.length += ee->data_record.source_name_len;
-	ee->record.length += ee->data_record.computer_name_len;
-	if ( ee->record.user_sid_length == 0 ) {
-		/* Should not pad to a DWORD boundary for writing out the sid if there is
-		   no SID, so just propagate the padding to pad the data */
-		ee->data_record.data_padding += ee->data_record.sid_padding;
-		ee->data_record.sid_padding = 0;
-	}
-	/* DEBUG(10, ("sid_padding is [%d].\n", ee->data_record.sid_padding)); */
-	/* DEBUG(10, ("data_padding is [%d].\n", ee->data_record.data_padding)); */
-
-	ee->record.length += ee->data_record.sid_padding;
-	ee->record.length += ee->record.user_sid_length;
-	ee->record.length += ee->data_record.strings_len;
-	ee->record.length += ee->data_record.user_data_len;
-	ee->record.length += ee->data_record.data_padding;
-	/* need another copy of length at the end of the data */
-	ee->record.length += sizeof( ee->record.length );
-}
-
 /********************************************************************
  Note that it's a pretty good idea to initialize the Eventlog_entry
  structure to zero's before calling parse_logentry on an batch of
@@ -587,9 +453,8 @@ void fixup_eventlog_entry( Eventlog_entry * ee )
  going in.
 ********************************************************************/
 
-bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
+bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb *entry, bool * eor )
 {
-	TALLOC_CTX *ctx = talloc_tos();
 	char *start = NULL, *stop = NULL;
 
 	start = line;
@@ -609,32 +474,32 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 
 	if ( 0 == strncmp( start, "LEN", stop - start ) ) {
 		/* This will get recomputed later anyway -- probably not necessary */
-		entry->record.length = atoi( stop + 1 );
+		entry->size = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "RS1", stop - start ) ) {
 		/* For now all these reserved entries seem to have the same value,
 		   which can be hardcoded to int(1699505740) for now */
-		entry->record.reserved1 = atoi( stop + 1 );
+		entry->reserved = talloc_strdup(mem_ctx, "eLfL");
 	} else if ( 0 == strncmp( start, "RCN", stop - start ) ) {
-		entry->record.record_number = atoi( stop + 1 );
+		entry->record_number = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "TMG", stop - start ) ) {
-		entry->record.time_generated = atoi( stop + 1 );
+		entry->time_generated = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "TMW", stop - start ) ) {
-		entry->record.time_written = atoi( stop + 1 );
+		entry->time_written = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "EID", stop - start ) ) {
-		entry->record.event_id = atoi( stop + 1 );
+		entry->event_id = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "ETP", stop - start ) ) {
 		if ( strstr( start, "ERROR" ) ) {
-			entry->record.event_type = EVENTLOG_ERROR_TYPE;
+			entry->event_type = EVENTLOG_ERROR_TYPE;
 		} else if ( strstr( start, "WARNING" ) ) {
-			entry->record.event_type = EVENTLOG_WARNING_TYPE;
+			entry->event_type = EVENTLOG_WARNING_TYPE;
 		} else if ( strstr( start, "INFO" ) ) {
-			entry->record.event_type = EVENTLOG_INFORMATION_TYPE;
+			entry->event_type = EVENTLOG_INFORMATION_TYPE;
 		} else if ( strstr( start, "AUDIT_SUCCESS" ) ) {
-			entry->record.event_type = EVENTLOG_AUDIT_SUCCESS;
+			entry->event_type = EVENTLOG_AUDIT_SUCCESS;
 		} else if ( strstr( start, "AUDIT_FAILURE" ) ) {
-			entry->record.event_type = EVENTLOG_AUDIT_FAILURE;
+			entry->event_type = EVENTLOG_AUDIT_FAILURE;
 		} else if ( strstr( start, "SUCCESS" ) ) {
-			entry->record.event_type = EVENTLOG_SUCCESS;
+			entry->event_type = EVENTLOG_SUCCESS;
 		} else {
 			/* some other eventlog type -- currently not defined in MSDN docs, so error out */
 			return False;
@@ -644,27 +509,26 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 /*
   else if(0 == strncmp(start, "NST", stop - start))
   {
-  entry->record.num_strings = atoi(stop + 1);
+  entry->num_of_strings = atoi(stop + 1);
   }
 */
 	else if ( 0 == strncmp( start, "ECT", stop - start ) ) {
-		entry->record.event_category = atoi( stop + 1 );
+		entry->event_category = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "RS2", stop - start ) ) {
-		entry->record.reserved2 = atoi( stop + 1 );
+		entry->reserved_flags = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "CRN", stop - start ) ) {
-		entry->record.closing_record_number = atoi( stop + 1 );
+		entry->closing_record_number = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "USL", stop - start ) ) {
-		entry->record.user_sid_length = atoi( stop + 1 );
+		entry->sid_length = atoi( stop + 1 );
 	} else if ( 0 == strncmp( start, "SRC", stop - start ) ) {
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.source_name_len = rpcstr_push_talloc(ctx,
-				&entry->data_record.source_name,
-				stop);
-		if (entry->data_record.source_name_len == (uint32_t)-1 ||
-				entry->data_record.source_name == NULL) {
+		entry->source_name_len = strlen_m_term(stop);
+		entry->source_name = talloc_strdup(mem_ctx, stop);
+		if (entry->source_name_len == (uint32_t)-1 ||
+				entry->source_name == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "SRN", stop - start ) ) {
@@ -672,54 +536,43 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.computer_name_len = rpcstr_push_talloc(ctx,
-				&entry->data_record.computer_name,
-				stop);
-		if (entry->data_record.computer_name_len == (uint32_t)-1 ||
-				entry->data_record.computer_name == NULL) {
+		entry->computer_name_len = strlen_m_term(stop);
+		entry->computer_name = talloc_strdup(mem_ctx, stop);
+		if (entry->computer_name_len == (uint32_t)-1 ||
+				entry->computer_name == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "SID", stop - start ) ) {
+		smb_ucs2_t *dummy = NULL;
 		stop++;
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->record.user_sid_length = rpcstr_push_talloc(ctx,
-				&entry->data_record.sid,
+		entry->sid_length = rpcstr_push_talloc(mem_ctx,
+				&dummy,
 				stop);
-		if (entry->record.user_sid_length == (uint32_t)-1 ||
-				entry->data_record.sid == NULL) {
+		entry->sid = data_blob_talloc(mem_ctx, dummy, entry->sid_length);
+		if (entry->sid_length == (uint32_t)-1 ||
+				entry->sid.data == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
-		smb_ucs2_t *temp = NULL;
 		size_t tmp_len;
-		uint32_t old_len;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */
 		while ( isspace(stop[0])) {
 			stop++;
 		}
-		tmp_len = rpcstr_push_talloc(ctx,
-						&temp,
-						stop);
-		if (tmp_len == (size_t)-1 || !temp) {
+		tmp_len = strlen_m_term(stop);
+		if (tmp_len == (size_t)-1) {
 			return false;
 		}
-		old_len = entry->data_record.strings_len;
-		entry->data_record.strings = (smb_ucs2_t *)TALLOC_REALLOC_ARRAY(ctx,
-						entry->data_record.strings,
-						char,
-						old_len + tmp_len);
-		if (!entry->data_record.strings) {
+		if (!add_string_to_array(mem_ctx, stop, &entry->strings,
+					 (int *)&entry->num_of_strings)) {
 			return false;
 		}
-		memcpy(((char *)entry->data_record.strings) + old_len,
-				temp,
-				tmp_len);
-		entry->data_record.strings_len += tmp_len;
-		entry->record.num_strings++;
+		entry->strings_len += tmp_len;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
 		/* skip past initial ":" */
 		stop++;
@@ -727,10 +580,9 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		while ( isspace( stop[0] ) ) {
 			stop++;
 		}
-		entry->data_record.user_data_len = strlen(stop);
-		entry->data_record.user_data = talloc_strdup(ctx,
-						stop);
-		if (!entry->data_record.user_data) {
+		entry->data_length = strlen_m(stop);
+		entry->data = data_blob_talloc(mem_ctx, stop, entry->data_length);
+		if (!entry->data.data) {
 			return false;
 		}
 	} else {
@@ -741,4 +593,360 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor )
 		return true;
 	}
 	return true;
+}
+
+/*******************************************************************
+ calculate the correct fields etc for an eventlog entry
+*******************************************************************/
+
+size_t fixup_eventlog_record_tdb(struct eventlog_Record_tdb *r)
+{
+	size_t size = 56; /* static size of integers before buffers start */
+
+	r->source_name_len = strlen_m_term(r->source_name) * 2;
+	r->computer_name_len = strlen_m_term(r->computer_name) * 2;
+	r->strings_len = ndr_size_string_array(r->strings,
+		r->num_of_strings, LIBNDR_FLAG_STR_NULLTERM) * 2;
+
+	/* fix up the eventlog entry structure as necessary */
+	r->sid_padding = ( ( 4 - ( ( r->source_name_len + r->computer_name_len ) % 4 ) ) % 4 );
+	r->padding =       ( 4 - ( ( r->strings_len + r->data_length ) % 4 ) ) % 4;
+
+	if (r->sid_length == 0) {
+		/* Should not pad to a DWORD boundary for writing out the sid if there is
+		   no SID, so just propagate the padding to pad the data */
+		r->padding += r->sid_padding;
+		r->sid_padding = 0;
+	}
+
+	size += r->source_name_len;
+	size += r->computer_name_len;
+	size += r->sid_padding;
+	size += r->sid_length;
+	size += r->strings_len;
+	size += r->data_length;
+	size += r->padding;
+	/* need another copy of length at the end of the data */
+	size += sizeof(r->size);
+
+	r->size = size;
+
+	return size;
+}
+
+
+/********************************************************************
+ ********************************************************************/
+
+struct eventlog_Record_tdb *evlog_pull_record_tdb(TALLOC_CTX *mem_ctx,
+						  TDB_CONTEXT *tdb,
+						  uint32_t record_number)
+{
+	struct eventlog_Record_tdb *r;
+	TDB_DATA data, key;
+
+	int32_t srecno;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+
+	srecno = record_number;
+	key.dptr = (unsigned char *)&srecno;
+	key.dsize = sizeof(int32_t);
+
+	data = tdb_fetch(tdb, key);
+	if (data.dsize == 0) {
+		DEBUG(8,("evlog_pull_record_tdb: "
+			"Can't find a record for the key, record %d\n",
+			record_number));
+		return NULL;
+	}
+
+	r = talloc_zero(mem_ctx, struct eventlog_Record_tdb);
+	if (!r) {
+		goto done;
+	}
+
+	blob = data_blob_const(data.dptr, data.dsize);
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, r,
+			   (ndr_pull_flags_fn_t)ndr_pull_eventlog_Record_tdb);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(10,("evlog_pull_record_tdb: failed to decode record %d\n",
+			record_number));
+		TALLOC_FREE(r);
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(eventlog_Record_tdb, r);
+	}
+
+	DEBUG(10,("evlog_pull_record_tdb: retrieved entry for record %d\n",
+		record_number));
+ done:
+	SAFE_FREE(data.dptr);
+
+	return r;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+struct EVENTLOGRECORD *evlog_pull_record(TALLOC_CTX *mem_ctx,
+					 TDB_CONTEXT *tdb,
+					 uint32_t record_number)
+{
+	struct eventlog_Record_tdb *t;
+	struct EVENTLOGRECORD *r;
+	NTSTATUS status;
+
+	r = talloc_zero(mem_ctx, struct EVENTLOGRECORD);
+	if (!r) {
+		return NULL;
+	}
+
+	t = evlog_pull_record_tdb(r, tdb, record_number);
+	if (!t) {
+		talloc_free(r);
+		return NULL;
+	}
+
+	status = evlog_tdb_entry_to_evt_entry(r, t, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(r);
+		return NULL;
+	}
+
+	r->Length = r->Length2 = ndr_size_EVENTLOGRECORD(r, NULL, 0);
+
+	return r;
+}
+
+/********************************************************************
+ write an eventlog entry. Note that we have to lock, read next
+ eventlog, increment, write, write the record, unlock
+
+ coming into this, ee has the eventlog record, and the auxilliary date
+ (computer name, etc.) filled into the other structure. Before packing
+ into a record, this routine will calc the appropriate padding, etc.,
+ and then blast out the record in a form that can be read back in
+ ********************************************************************/
+
+NTSTATUS evlog_push_record_tdb(TALLOC_CTX *mem_ctx,
+			       TDB_CONTEXT *tdb,
+			       struct eventlog_Record_tdb *r,
+			       uint32_t *record_number)
+{
+	TDB_DATA kbuf, ebuf;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	int ret;
+
+	if (!r) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!can_write_to_eventlog(tdb, r->size)) {
+		return NT_STATUS_EVENTLOG_CANT_START;
+	}
+
+	/* need to read the record number and insert it into the entry here */
+
+	/* lock */
+	ret = tdb_lock_bystring_with_timeout(tdb, EVT_NEXT_RECORD, 1);
+	if (ret == -1) {
+		return NT_STATUS_LOCK_NOT_GRANTED;
+	}
+
+	/* read */
+	r->record_number = tdb_fetch_int32(tdb, EVT_NEXT_RECORD);
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, NULL, r,
+		      (ndr_push_flags_fn_t)ndr_push_eventlog_Record_tdb);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	/* increment the record count */
+
+	kbuf.dsize = sizeof(int32_t);
+	kbuf.dptr = (uint8_t *)&r->record_number;
+
+	ebuf.dsize = blob.length;
+	ebuf.dptr  = blob.data;
+
+	ret = tdb_store(tdb, kbuf, ebuf, 0);
+	if (ret == -1) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
+	}
+
+	ret = tdb_store_int32(tdb, EVT_NEXT_RECORD, r->record_number + 1);
+	if (ret == -1) {
+		tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+		return NT_STATUS_EVENTLOG_FILE_CORRUPT;
+	}
+	tdb_unlock_bystring(tdb, EVT_NEXT_RECORD);
+
+	if (record_number) {
+		*record_number = r->record_number;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_push_record(TALLOC_CTX *mem_ctx,
+			   TDB_CONTEXT *tdb,
+			   struct EVENTLOGRECORD *r,
+			   uint32_t *record_number)
+{
+	struct eventlog_Record_tdb *t;
+	NTSTATUS status;
+
+	t = talloc_zero(mem_ctx, struct eventlog_Record_tdb);
+	if (!t) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = evlog_evt_entry_to_tdb_entry(t, r, t);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(t);
+		return status;
+	}
+
+	status = evlog_push_record_tdb(mem_ctx, tdb, t, record_number);
+	talloc_free(t);
+
+	return status;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_evt_entry_to_tdb_entry(TALLOC_CTX *mem_ctx,
+				      const struct EVENTLOGRECORD *e,
+				      struct eventlog_Record_tdb *t)
+{
+	uint32_t i;
+
+	ZERO_STRUCTP(t);
+
+	t->size				= e->Length;
+	t->reserved			= e->Reserved;
+	t->record_number		= e->RecordNumber;
+	t->time_generated		= e->TimeGenerated;
+	t->time_written			= e->TimeWritten;
+	t->event_id			= e->EventID;
+	t->event_type			= e->EventType;
+	t->num_of_strings		= e->NumStrings;
+	t->event_category		= e->EventCategory;
+	t->reserved_flags		= e->ReservedFlags;
+	t->closing_record_number	= e->ClosingRecordNumber;
+
+	t->stringoffset			= e->StringOffset;
+	t->sid_length			= e->UserSidLength;
+	t->sid_offset			= e->UserSidOffset;
+	t->data_length			= e->DataLength;
+	t->data_offset			= e->DataOffset;
+
+	t->source_name_len		= 2 * strlen_m_term(e->SourceName);
+	t->source_name			= talloc_strdup(mem_ctx, e->SourceName);
+	NT_STATUS_HAVE_NO_MEMORY(t->source_name);
+
+	t->computer_name_len		= 2 * strlen_m_term(e->Computername);
+	t->computer_name		= talloc_strdup(mem_ctx, e->Computername);
+	NT_STATUS_HAVE_NO_MEMORY(t->computer_name);
+
+	/* t->sid_padding; */
+	if (e->UserSidLength > 0) {
+		const char *sid_str = NULL;
+		smb_ucs2_t *dummy = NULL;
+		sid_str = sid_string_talloc(mem_ctx, &e->UserSid);
+		t->sid_length = rpcstr_push_talloc(mem_ctx, &dummy, sid_str);
+		if (t->sid_length == -1) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		t->sid = data_blob_talloc(mem_ctx, (uint8_t *)dummy, t->sid_length);
+		NT_STATUS_HAVE_NO_MEMORY(t->sid.data);
+	}
+
+	t->strings			= talloc_array(mem_ctx, const char *, e->NumStrings);
+	for (i=0; i < e->NumStrings; i++) {
+		t->strings[i]		= talloc_strdup(t->strings, e->Strings[i]);
+		NT_STATUS_HAVE_NO_MEMORY(t->strings[i]);
+	}
+
+	t->strings_len			= 2 * ndr_size_string_array(t->strings, t->num_of_strings, LIBNDR_FLAG_STR_NULLTERM);
+	t->data				= data_blob_talloc(mem_ctx, e->Data, e->DataLength);
+	/* t->padding			= r->Pad; */
+
+	return NT_STATUS_OK;
+}
+
+/********************************************************************
+ ********************************************************************/
+
+NTSTATUS evlog_tdb_entry_to_evt_entry(TALLOC_CTX *mem_ctx,
+				      const struct eventlog_Record_tdb *t,
+				      struct EVENTLOGRECORD *e)
+{
+	uint32_t i;
+
+	ZERO_STRUCTP(e);
+
+	e->Length		= t->size;
+	e->Reserved		= t->reserved;
+	e->RecordNumber		= t->record_number;
+	e->TimeGenerated	= t->time_generated;
+	e->TimeWritten		= t->time_written;
+	e->EventID		= t->event_id;
+	e->EventType		= t->event_type;
+	e->NumStrings		= t->num_of_strings;
+	e->EventCategory	= t->event_category;
+	e->ReservedFlags	= t->reserved_flags;
+	e->ClosingRecordNumber	= t->closing_record_number;
+
+	e->StringOffset		= t->stringoffset;
+	e->UserSidLength	= t->sid_length;
+	e->UserSidOffset	= t->sid_offset;
+	e->DataLength		= t->data_length;
+	e->DataOffset		= t->data_offset;
+
+	e->SourceName		= talloc_strdup(mem_ctx, t->source_name);
+	NT_STATUS_HAVE_NO_MEMORY(e->SourceName);
+
+	e->Computername		= talloc_strdup(mem_ctx, t->computer_name);
+	NT_STATUS_HAVE_NO_MEMORY(e->Computername);
+
+	if (t->sid_length > 0) {
+		const char *sid_str = NULL;
+		size_t len;
+		if (!convert_string_talloc(mem_ctx, CH_UTF16, CH_UNIX,
+					   t->sid.data, t->sid.length,
+					   &sid_str, &len, false)) {
+			return NT_STATUS_INVALID_SID;
+		}
+		if (len > 0) {
+			e->UserSid = *string_sid_talloc(mem_ctx, sid_str);
+		}
+	}
+
+	e->Strings		= talloc_array(mem_ctx, const char *, t->num_of_strings);
+	for (i=0; i < t->num_of_strings; i++) {
+		e->Strings[i] = talloc_strdup(e->Strings, t->strings[i]);
+		NT_STATUS_HAVE_NO_MEMORY(e->Strings[i]);
+	}
+
+	e->Data			= (uint8_t *)talloc_memdup(mem_ctx, t->data.data, t->data_length);
+	e->Pad			= talloc_strdup(mem_ctx, "");
+	NT_STATUS_HAVE_NO_MEMORY(e->Pad);
+
+	e->Length2		= t->size;
+
+	return NT_STATUS_OK;
 }

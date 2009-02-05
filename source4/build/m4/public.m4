@@ -201,11 +201,9 @@ CEOF
 
 for ac_var in $ac_subst_vars
 do
-    eval ac_val=\$$ac_var
-	if test "$ac_var" != "ECHO_C" 
-	then
-		echo "$ac_var => '$ac_val'," >> $1
-	fi
+	eval ac_val=\$$ac_var
+	# quote ' (\x27) inside '...' and make sure \ isn't eaten by shells, so use perl:
+	QAC_VAL=$ac_val QAC_VAR=$ac_var perl -e '$myval="$ENV{QAC_VAL}"; $myval =~ s/\x27/\\\x27/g ; print $ENV{QAC_VAR}." => \x27$myval\x27,\n"' >> $1
 done
 
 cat >>$1<<CEOF

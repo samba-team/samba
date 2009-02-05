@@ -41,7 +41,7 @@ static void nbench_log(struct ntvfs_request *req,
 static void nbench_log(struct ntvfs_request *req,
 		       const char *format, ...)
 {
-	struct nbench_private *private = req->async_states->ntvfs->private_data;
+	struct nbench_private *nprivates = req->async_states->ntvfs->private_data;
 	va_list ap;
 	char *s = NULL;
 
@@ -49,7 +49,7 @@ static void nbench_log(struct ntvfs_request *req,
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	write(private->log_fd, s, strlen(s));
+	write(nprivates->log_fd, s, strlen(s));
 	free(s);
 }
 
@@ -671,11 +671,11 @@ static void nbench_async_setup_send(struct ntvfs_request *req)
 */
 static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req,
-				   void *private)
+				   void *private_data)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, async_setup, NULL, (ntvfs, req, private));
+	PASS_THRU_REQ(ntvfs, req, async_setup, NULL, (ntvfs, req, private_data));
 
 	return status;
 }

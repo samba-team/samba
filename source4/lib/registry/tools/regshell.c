@@ -159,12 +159,12 @@ static WERROR cmd_set(struct regshell_context *ctx, int argc, char **argv)
 
 static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 {
-	struct registry_key *new = NULL;
+	struct registry_key *nkey = NULL;
 	WERROR error;
 
 	if(argc == 2) {
 		error = reg_open_key(ctx->registry, ctx->current, argv[1],
-				     &new);
+				     &nkey);
 		if(!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error opening specified key: %s\n",
 				win_errstr(error)));
@@ -172,7 +172,7 @@ static WERROR cmd_ck(struct regshell_context *ctx, int argc, char **argv)
 		}
 
 		ctx->path = talloc_asprintf(ctx, "%s\\%s", ctx->path, argv[1]);
-		ctx->current = new;
+		ctx->current = nkey;
 	}
 	printf("New path is: %s\n", ctx->path);
 

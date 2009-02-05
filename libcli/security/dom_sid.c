@@ -1,34 +1,34 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Samba utility functions
 
    Copyright (C) Stefan (metze) Metzmacher 	2002-2004
    Copyright (C) Andrew Tridgell 		1992-2004
    Copyright (C) Jeremy Allison  		1999
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
 #include "librpc/gen_ndr/security.h"
-#include "libcli/security/security.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.
-*****************************************************************/  
+*****************************************************************/
 
-static int dom_sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid *sid2)
+static int dom_sid_compare_auth(const struct dom_sid *sid1,
+				const struct dom_sid *sid2)
 {
 	int i;
 
@@ -51,7 +51,7 @@ static int dom_sid_compare_auth(const struct dom_sid *sid1, const struct dom_sid
 
 /*****************************************************************
  Compare two sids.
-*****************************************************************/  
+*****************************************************************/
 
 int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
@@ -77,18 +77,22 @@ int dom_sid_compare(const struct dom_sid *sid1, const struct dom_sid *sid2)
 
 /*****************************************************************
  Compare two sids.
-*****************************************************************/  
+*****************************************************************/
 
 bool dom_sid_equal(const struct dom_sid *sid1, const struct dom_sid *sid2)
 {
 	return dom_sid_compare(sid1, sid2) == 0;
 }
 
+/* Yes, I did think about multibyte issues here, and for all I can see there's
+ * none of those for parsing a SID. */
+#undef strncasecmp
+
 bool dom_sid_parse(const char *sidstr, struct dom_sid *ret)
 {
 	uint_t rev, ia, num_sub_auths, i;
 	char *p;
-  
+
 	if (strncasecmp(sidstr, "S-", 2)) {
 		return false;
 	}
@@ -176,7 +180,7 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
 {
 	struct dom_sid *ret;
 	int i;
-	
+
 	if (!dom_sid) {
 		return NULL;
 	}
@@ -206,8 +210,8 @@ struct dom_sid *dom_sid_dup(TALLOC_CTX *mem_ctx, const struct dom_sid *dom_sid)
   add a rid to a domain dom_sid to make a full dom_sid. This function
   returns a new sid in the supplied memory context
 */
-struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
-				const struct dom_sid *domain_sid, 
+struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx,
+				const struct dom_sid *domain_sid,
 				uint32_t rid)
 {
 	struct dom_sid *sid;
@@ -251,7 +255,7 @@ NTSTATUS dom_sid_split_rid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 /*
   return true if the 2nd sid is in the domain given by the first sid
 */
-bool dom_sid_in_domain(const struct dom_sid *domain_sid, 
+bool dom_sid_in_domain(const struct dom_sid *domain_sid,
 		       const struct dom_sid *sid)
 {
 	int i;
@@ -281,7 +285,7 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 	int i, ofs, maxlen;
 	uint32_t ia;
 	char *ret;
-	
+
 	if (!sid) {
 		return talloc_strdup(mem_ctx, "(NULL SID)");
 	}
@@ -295,12 +299,13 @@ char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 		(sid->id_auth[3] << 16) +
 		(sid->id_auth[2] << 24);
 
-	ofs = snprintf(ret, maxlen, "S-%u-%lu", 
+	ofs = snprintf(ret, maxlen, "S-%u-%lu",
 		       (unsigned int)sid->sid_rev_num, (unsigned long)ia);
 
 	for (i = 0; i < sid->num_auths; i++) {
-		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
+		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu",
+				(unsigned long)sid->sub_auths[i]);
 	}
-	
+
 	return ret;
 }

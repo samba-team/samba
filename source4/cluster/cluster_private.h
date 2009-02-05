@@ -36,7 +36,7 @@ struct cluster_ops {
 				 cluster_message_fn_t handler);
 	NTSTATUS (*message_send)(struct cluster_ops *ops,
 				 struct server_id server, DATA_BLOB *data);	
-	void *private; /* backend state */
+	void *private_data; /* backend state */
 };
 
 void cluster_set_ops(struct cluster_ops *new_ops);

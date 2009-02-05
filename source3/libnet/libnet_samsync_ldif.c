@@ -345,100 +345,129 @@ static NTSTATUS map_populate_groups(TALLOC_CTX *mem_ctx,
 	groupmap[0].sambaSID	= talloc_asprintf(mem_ctx, "%s-512", sid);
 	groupmap[0].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Domain Admins,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[0].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[0].group_dn);
+	if (groupmap[0].sambaSID == NULL || groupmap[0].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[0].rid	= 512;
 	accountmap[0].cn	= talloc_strdup(mem_ctx, "Domain Admins");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[0].cn);
+	if (accountmap[0].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[1].rid		= 513;
 	groupmap[1].gidNumber	= 513;
 	groupmap[1].sambaSID	= talloc_asprintf(mem_ctx, "%s-513", sid);
 	groupmap[1].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Domain Users,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[1].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[1].group_dn);
+	if (groupmap[1].sambaSID == NULL || groupmap[1].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[1].rid	= 513;
 	accountmap[1].cn	= talloc_strdup(mem_ctx, "Domain Users");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[1].cn);
+	if (accountmap[1].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[2].rid		= 514;
 	groupmap[2].gidNumber	= 514;
 	groupmap[2].sambaSID	= talloc_asprintf(mem_ctx, "%s-514", sid);
 	groupmap[2].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Domain Guests,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[2].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[2].group_dn);
+	if (groupmap[2].sambaSID == NULL || groupmap[2].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[2].rid	= 514;
 	accountmap[2].cn	= talloc_strdup(mem_ctx, "Domain Guests");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[2].cn);
+	if (accountmap[2].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[3].rid		= 515;
 	groupmap[3].gidNumber	= 515;
 	groupmap[3].sambaSID	= talloc_asprintf(mem_ctx, "%s-515", sid);
 	groupmap[3].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Domain Computers,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[3].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[3].group_dn);
+	if (groupmap[3].sambaSID == NULL || groupmap[3].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[3].rid	= 515;
 	accountmap[3].cn	= talloc_strdup(mem_ctx, "Domain Computers");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[3].cn);
+	if (accountmap[3].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[4].rid		= 544;
 	groupmap[4].gidNumber	= 544;
 	groupmap[4].sambaSID	= talloc_asprintf(mem_ctx, "%s-544", builtin_sid);
 	groupmap[4].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Administrators,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[4].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[4].group_dn);
+	if (groupmap[4].sambaSID == NULL || groupmap[4].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[4].rid	= 515;
 	accountmap[4].cn	= talloc_strdup(mem_ctx, "Administrators");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[4].cn);
+	if (accountmap[4].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[5].rid		= 550;
 	groupmap[5].gidNumber	= 550;
 	groupmap[5].sambaSID	= talloc_asprintf(mem_ctx, "%s-550", builtin_sid);
 	groupmap[5].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Print Operators,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[5].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[5].group_dn);
+	if (groupmap[5].sambaSID == NULL || groupmap[5].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[5].rid	= 550;
 	accountmap[5].cn	= talloc_strdup(mem_ctx, "Print Operators");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[5].cn);
+	if (accountmap[5].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[6].rid		= 551;
 	groupmap[6].gidNumber	= 551;
 	groupmap[6].sambaSID	= talloc_asprintf(mem_ctx, "%s-551", builtin_sid);
 	groupmap[6].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Backup Operators,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[6].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[6].group_dn);
+	if (groupmap[6].sambaSID == NULL || groupmap[6].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[6].rid	= 551;
 	accountmap[6].cn	= talloc_strdup(mem_ctx, "Backup Operators");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[6].cn);
+	if (accountmap[6].cn == NULL) {
+		goto err;
+	}
 
 	groupmap[7].rid		= 552;
 	groupmap[7].gidNumber	= 552;
 	groupmap[7].sambaSID	= talloc_asprintf(mem_ctx, "%s-552", builtin_sid);
 	groupmap[7].group_dn	= talloc_asprintf(mem_ctx,
 		"cn=Replicators,ou=%s,%s", group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[7].sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap[7].group_dn);
+	if (groupmap[7].sambaSID == NULL || groupmap[7].group_dn == NULL) {
+		goto err;
+	}
 
 	accountmap[7].rid	= 551;
 	accountmap[7].cn	= talloc_strdup(mem_ctx, "Replicators");
-	NT_STATUS_HAVE_NO_MEMORY(accountmap[7].cn);
+	if (accountmap[7].cn == NULL) {
+		goto err;
+	}
 
 	SAFE_FREE(group_attr);
 
 	return NT_STATUS_OK;
+
+  err:
+
+	SAFE_FREE(group_attr);
+	return NT_STATUS_NO_MEMORY;
 }
 
 /*
@@ -542,8 +571,10 @@ static NTSTATUS fetch_group_info_to_ldif(TALLOC_CTX *mem_ctx,
 	groupmap->sambaSID	= talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
 	groupmap->group_dn	= talloc_asprintf(mem_ctx,
 	     "cn=%s,ou=%s,%s", groupname, group_attr, suffix);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->group_dn);
+	if (groupmap->sambaSID == NULL || groupmap->group_dn == NULL) {
+		SAFE_FREE(group_attr);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", groupname, group_attr,
@@ -776,7 +807,10 @@ static NTSTATUS fetch_alias_info_to_ldif(TALLOC_CTX *mem_ctx,
 	g_rid = r->rid;
 	groupmap->gidNumber = ldif_gid;
 	groupmap->sambaSID = talloc_asprintf(mem_ctx, "%s-%d", sid, g_rid);
-	NT_STATUS_HAVE_NO_MEMORY(groupmap->sambaSID);
+	if (groupmap->sambaSID == NULL) {
+		SAFE_FREE(group_attr);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Write the data to the temporary add ldif file */
 	fprintf(add_fd, "# %s, %s, %s\n", aliasname, group_attr,

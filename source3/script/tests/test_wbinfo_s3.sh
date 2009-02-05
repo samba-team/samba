@@ -14,8 +14,10 @@ password="$4"
 shift 4
 ADDARGS="$*"
 
+test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`
 . $incdir/test_functions.sh
+}
 
 OLDIFS=$IFS;
 

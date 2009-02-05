@@ -40,9 +40,9 @@ struct smb2srv_find_state {
 };
 
 /* callback function for SMB2 Find */
-static bool smb2srv_find_callback(void *private, const union smb_search_data *file)
+static bool smb2srv_find_callback(void *private_data, const union smb_search_data *file)
 {
-	struct smb2srv_find_state *state = talloc_get_type(private, struct smb2srv_find_state);
+	struct smb2srv_find_state *state = talloc_get_type(private_data, struct smb2srv_find_state);
 	struct smb2_find *info = state->info;
 	uint32_t old_length;
 	NTSTATUS status;

@@ -20,10 +20,9 @@
 #if defined(WITH_AIO)
 struct aio_extra;
 extern struct aio_extra *aio_list_head;
+extern struct tevent_signal *aio_signal_event;
 extern int aio_pending_size;
-extern sig_atomic_t aio_signals_received;
 extern int outstanding_aio_calls;
-extern uint16_t *aio_pending_array;
 #endif
 
 /* dlink list we store pending lock records on. */
@@ -124,8 +123,6 @@ extern int max_send;
  * Can be modified by the max xmit parameter.
  */
 extern int max_recv;
-extern SIG_ATOMIC_T reload_after_sighup;
-extern SIG_ATOMIC_T got_sig_term;
 extern uint16 last_session_tag;
 extern int trans_num;
 extern char *orig_inbuf;
@@ -184,12 +181,6 @@ extern struct vfs_init_function_entry *backends;
 extern char *sparse_buf;
 extern char *LastDir;
 
-#if HAVE_KERNEL_OPLOCKS_LINUX
-extern SIG_ATOMIC_T oplock_signals_received;
-#define FD_PENDING_SIZE 100
-extern SIG_ATOMIC_T fd_pending_array[FD_PENDING_SIZE];
-#endif
-
 /* Current number of oplocks we have outstanding. */
 extern int32_t exclusive_oplocks_open;
 extern int32_t level_II_oplocks_open;
@@ -199,7 +190,6 @@ extern struct kernel_oplocks *koplocks;
 extern struct notify_mid_map *notify_changes_by_mid;
 
 extern int am_parent;
-extern SIG_ATOMIC_T got_sig_cld;
 extern int server_fd;
 extern struct event_context *smbd_event_ctx;
 extern struct messaging_context *smbd_msg_ctx;

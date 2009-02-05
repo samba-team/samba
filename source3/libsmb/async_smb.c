@@ -152,32 +152,6 @@ bool cli_in_chain(struct cli_state *cli)
 }
 
 /**
- * Is the SMB command able to hold an AND_X successor
- * @param[in] cmd	The SMB command in question
- * @retval Can we add a chained request after "cmd"?
- */
-
-static bool is_andx_req(uint8_t cmd)
-{
-	switch (cmd) {
-	case SMBtconX:
-	case SMBlockingX:
-	case SMBopenX:
-	case SMBreadX:
-	case SMBwriteX:
-	case SMBsesssetupX:
-	case SMBulogoffX:
-	case SMBntcreateX:
-		return true;
-		break;
-	default:
-		break;
-	}
-
-	return false;
-}
-
-/**
  * @brief Find the smb_cmd offset of the last command pushed
  * @param[in] buf	The buffer we're building up
  * @retval		Where can we put our next andx cmd?
@@ -1005,7 +979,7 @@ static void handle_incoming_pdu(struct cli_state *cli)
 		   nt_errstr(status)));
 
 	for (req = cli->outstanding_requests; req; req = req->next) {
-		async_req_error(req->async[0], status);
+		async_req_nterror(req->async[0], status);
 	}
 	return;
 }
@@ -1022,7 +996,7 @@ static void cli_state_handler(struct event_context *event_ctx,
 			      struct fd_event *event, uint16 flags, void *p)
 {
 	struct cli_state *cli = (struct cli_state *)p;
-	struct cli_request *req;
+	struct cli_request *req, *next;
 	NTSTATUS status;
 
 	DEBUG(11, ("cli_state_handler called with flags %d\n", flags));
@@ -1128,10 +1102,15 @@ static void cli_state_handler(struct event_context *event_ctx,
 	return;
 
  sock_error:
-	for (req = cli->outstanding_requests; req; req = req->next) {
-		int i;
-		for (i=0; i<req->num_async; i++) {
-			async_req_error(req->async[i], status);
+
+	for (req = cli->outstanding_requests; req; req = next) {
+		int i, num_async;
+
+		next = req->next;
+		num_async = req->num_async;
+
+		for (i=0; i<num_async; i++) {
+			async_req_nterror(req->async[i], status);
 		}
 	}
 	TALLOC_FREE(cli->fd_event);

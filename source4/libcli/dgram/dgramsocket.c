@@ -140,9 +140,9 @@ static void dgm_socket_send(struct nbt_dgram_socket *dgmsock)
   handle fd events on a nbt_dgram_socket
 */
 static void dgm_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-			       uint16_t flags, void *private)
+			       uint16_t flags, void *private_data)
 {
-	struct nbt_dgram_socket *dgmsock = talloc_get_type(private, 
+	struct nbt_dgram_socket *dgmsock = talloc_get_type(private_data,
 							   struct nbt_dgram_socket);
 	if (flags & EVENT_FD_WRITE) {
 		dgm_socket_send(dgmsock);
@@ -200,10 +200,10 @@ NTSTATUS dgram_set_incoming_handler(struct nbt_dgram_socket *dgmsock,
 				    void (*handler)(struct nbt_dgram_socket *, 
 						    struct nbt_dgram_packet *, 
 						    struct socket_address *),
-				    void *private)
+				    void *private_data)
 {
 	dgmsock->incoming.handler = handler;
-	dgmsock->incoming.private = private;
+	dgmsock->incoming.private_data = private_data;
 	EVENT_FD_READABLE(dgmsock->fde);
 	return NT_STATUS_OK;
 }

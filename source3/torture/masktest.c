@@ -249,9 +249,10 @@ static struct cli_state *connect_one(char *share)
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
-		DEBUG(0,("tree connect failed: %s\n", cli_errstr(c)));
+	status = cli_tcon_andx(c, share, "?????", password,
+			       strlen(password)+1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("tree connect failed: %s\n", nt_errstr(status)));
 		cli_shutdown(c);
 		return NULL;
 	}

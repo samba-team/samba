@@ -74,7 +74,7 @@ static void prefork_accept_connection(struct tevent_context *ev,
 				       void (*new_conn)(struct tevent_context *,
 							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
-				       void *private)
+				       void *private_data)
 {
 	NTSTATUS status;
 	struct socket_context *connected_socket;
@@ -86,9 +86,9 @@ static void prefork_accept_connection(struct tevent_context *ev,
 		return;
 	}
 
-	talloc_steal(private, connected_socket);
+	talloc_steal(private_data, connected_socket);
 
-	new_conn(ev, lp_ctx, connected_socket, cluster_id(pid, socket_get_fd(connected_socket)), private);
+	new_conn(ev, lp_ctx, connected_socket, cluster_id(pid, socket_get_fd(connected_socket)), private_data);
 }
 
 /*
@@ -98,7 +98,7 @@ static void prefork_new_task(struct tevent_context *ev,
 			     struct loadparm_context *lp_ctx,
 			     const char *service_name,
 			     void (*new_task_fn)(struct tevent_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
-			     void *private)
+			     void *private_data)
 {
 	pid_t pid;
 	int i, num_children;
@@ -120,7 +120,7 @@ static void prefork_new_task(struct tevent_context *ev,
 	/* the service has given us a private pointer that
 	   encapsulates the context it needs for this new connection -
 	   everything else will be freed */
-	talloc_steal(ev2, private);
+	talloc_steal(ev2, private_data);
 
 	/* this will free all the listening sockets and all state that
 	   is not associated with this new connection */
@@ -131,7 +131,7 @@ static void prefork_new_task(struct tevent_context *ev,
 	prefork_reload_after_fork();
 
 	/* setup this new connection: process will bind to it's sockets etc */
-	new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private);
+	new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private_data);
 
 	num_children = lp_parm_int(lp_ctx, NULL, "prefork children", service_name, 0);
 	if (num_children == 0) {

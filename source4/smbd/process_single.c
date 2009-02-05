@@ -43,7 +43,7 @@ static void single_accept_connection(struct tevent_context *ev,
 						      struct loadparm_context *,
 						      struct socket_context *, 
 						      struct server_id , void *), 
-				     void *private)
+				     void *private_data)
 {
 	NTSTATUS status;
 	struct socket_context *connected_socket;
@@ -67,12 +67,12 @@ static void single_accept_connection(struct tevent_context *ev,
 		return;
 	}
 
-	talloc_steal(private, connected_socket);
+	talloc_steal(private_data, connected_socket);
 
 	/* The cluster_id(0, fd) cannot collide with the incrementing
 	 * task below, as the first component is 0, not 1 */
 	new_conn(ev, lp_ctx, connected_socket, 
-		 cluster_id(0, socket_get_fd(connected_socket)), private);
+		 cluster_id(0, socket_get_fd(connected_socket)), private_data);
 }
 
 /*
@@ -82,7 +82,7 @@ static void single_new_task(struct tevent_context *ev,
 			    struct loadparm_context *lp_ctx, 
 			    const char *service_name,
 			    void (*new_task)(struct tevent_context *, struct loadparm_context *, struct server_id, void *), 
-			    void *private)
+			    void *private_data)
 {
 	static uint32_t taskid = 0;
        
@@ -90,7 +90,7 @@ static void single_new_task(struct tevent_context *ev,
 	 * in the accept connection above, and unlikly to collide with
 	 * PIDs from process modal standard (don't run samba as
 	 * init) */
-	new_task(ev, lp_ctx, cluster_id(1, taskid++), private);
+	new_task(ev, lp_ctx, cluster_id(1, taskid++), private_data);
 }
 
 

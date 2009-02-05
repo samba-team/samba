@@ -111,8 +111,8 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	struct auth_serversupplied_info *server_info;
-	struct hdb_ldb_private *private = talloc_get_type(client->ctx, struct hdb_ldb_private);
-	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
+	struct hdb_ldb_private *p = talloc_get_type(client->ctx, struct hdb_ldb_private);
+	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_get_pac context");
 	unsigned int userAccountControl;
 
 	if (!mem_ctx) {
@@ -120,16 +120,16 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	}
 
 	/* The user account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(p->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
 		*pac = NULL;
 		return 0;
 	}
 
-	nt_status = authsam_make_server_info(mem_ctx, private->samdb, 
-					     private->netbios_name,
-					     private->msg, 
-					     private->realm_ref_msg,
+	nt_status = authsam_make_server_info(mem_ctx, p->samdb,
+					     p->netbios_name,
+					     p->msg,
+					     p->realm_ref_msg,
 					     data_blob(NULL, 0),
 					     data_blob(NULL, 0),
 					     &server_info);
@@ -139,7 +139,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 		return ENOMEM;
 	}
 
-	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info, pac);
+	ret = make_pac(context, mem_ctx, p->iconv_convenience, server_info, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -156,25 +156,25 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 
 	unsigned int userAccountControl;
 
-	struct hdb_ldb_private *private = talloc_get_type(server->ctx, struct hdb_ldb_private);
+	struct hdb_ldb_private *p = talloc_get_type(server->ctx, struct hdb_ldb_private);
 
 	struct auth_serversupplied_info *server_info_out;
 
-	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
+	TALLOC_CTX *mem_ctx = talloc_named(p, 0, "samba_get_pac context");
 	
 	if (!mem_ctx) {
 		return ENOMEM;
 	}
 
 	/* The service account may be set not to want the PAC */
-	userAccountControl = ldb_msg_find_attr_as_uint(private->msg, "userAccountControl", 0);
+	userAccountControl = ldb_msg_find_attr_as_uint(p->msg, "userAccountControl", 0);
 	if (userAccountControl & UF_NO_AUTH_DATA_REQUIRED) {
 		talloc_free(mem_ctx);
 		*pac = NULL;
 		return 0;
 	}
 
-	ret = kerberos_pac_to_server_info(mem_ctx, private->iconv_convenience,
+	ret = kerberos_pac_to_server_info(mem_ctx, p->iconv_convenience,
 					  *pac, context, &server_info_out);
 
 	/* We will compleatly regenerate this pac */
@@ -185,7 +185,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ret;
 	}
 
-	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info_out, pac);
+	ret = make_pac(context, mem_ctx, p->iconv_convenience, server_info_out, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -236,7 +236,7 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 	krb5_error_code ret;
 	NTSTATUS nt_status;
 	TALLOC_CTX *tmp_ctx = talloc_new(entry_ex->ctx);
-	struct hdb_ldb_private *private = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
+	struct hdb_ldb_private *p = talloc_get_type(entry_ex->ctx, struct hdb_ldb_private);
 	char *name, *workstation = NULL;
 	HostAddresses *addresses = req->req_body.addresses;
 	int i;
@@ -272,10 +272,10 @@ krb5_error_code samba_kdc_check_client_access(void *priv,
 
 	/* we allow all kinds of trusts here */
 	nt_status = authsam_account_ok(tmp_ctx, 
-				       private->samdb, 
+				       p->samdb,
 				       MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT | MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT,
-				       private->msg,
-				       private->realm_ref_msg,
+				       p->msg,
+				       p->realm_ref_msg,
 				       workstation,
 				       name, true);
 	free(name);

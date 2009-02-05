@@ -103,7 +103,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 {
 	NTSTATUS status;
 	struct dcesrv_socket_context *dcesrv_sock = 
-		talloc_get_type(srv_conn->private, struct dcesrv_socket_context);
+		talloc_get_type(srv_conn->private_data, struct dcesrv_socket_context);
 	struct dcesrv_connection *dcesrv_conn = NULL;
 
 	if (!srv_conn->session_info) {
@@ -144,7 +144,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 		dcesrv_conn->auth_state.session_key = dcesrv_inherited_session_key;
 	}
 
-	srv_conn->private = dcesrv_conn;
+	srv_conn->private_data = dcesrv_conn;
 
 	irpc_add_name(srv_conn->msg_ctx, "rpc_server");
 
@@ -154,7 +154,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 {
 	NTSTATUS status;
-	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
+	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private_data, struct dcesrv_connection);
 	DATA_BLOB tmp_blob;
 	size_t nread;
 
@@ -200,7 +200,7 @@ static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
 
 static void dcesrv_sock_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private, struct dcesrv_connection);
+	struct dcesrv_connection *dce_conn = talloc_get_type(conn->private_data, struct dcesrv_connection);
 	NTSTATUS status;
 
 	status = dcesrv_output(dce_conn, conn->socket, dcerpc_write_fn);

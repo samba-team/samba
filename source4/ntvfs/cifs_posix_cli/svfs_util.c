@@ -39,17 +39,17 @@
 char *cifspsx_unix_path(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, const char *name)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	char *ret;
 
 	if (*name != '\\') {
-		ret = talloc_asprintf(req, "%s/%s", private->connectpath, name);
+		ret = talloc_asprintf(req, "%s/%s", p->connectpath, name);
 	} else {
-		ret = talloc_asprintf(req, "%s%s", private->connectpath, name);
+		ret = talloc_asprintf(req, "%s%s", p->connectpath, name);
 	}
 	all_string_sub(ret, "\\", "/", 0);
 
-	strlower(ret + strlen(private->connectpath));
+	strlower(ret + strlen(p->connectpath));
 
 	return ret;
 }
@@ -145,13 +145,13 @@ struct cifspsx_dir *cifspsx_list_unix(TALLOC_CTX *mem_ctx, struct ntvfs_request 
 */
 struct cifspsx_dir *cifspsx_list(struct ntvfs_module_context *ntvfs, struct ntvfs_request *req, const char *pattern)
 {
-	struct cifspsx_private *private = ntvfs->private_data;
+	struct cifspsx_private *p = ntvfs->private_data;
 	char *unix_path;
 
 	unix_path = cifspsx_unix_path(ntvfs, req, pattern);
 	if (!unix_path) { return NULL; }
 
-	return cifspsx_list_unix(private, req, unix_path);
+	return cifspsx_list_unix(p, req, unix_path);
 }
 
 

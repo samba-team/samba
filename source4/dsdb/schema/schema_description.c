@@ -313,7 +313,7 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 	return schema_entry;
 }
 
-char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *class) 
+char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass)
 {
 	char *schema_description;
 	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
@@ -325,21 +325,22 @@ char *schema_class_to_description(TALLOC_CTX *mem_ctx, const struct dsdb_class *
 		= schema_class_description(mem_ctx, 
 					   TARGET_AD_SCHEMA_SUBENTRY,
 					   " ",
-					   class->governsID_oid,
-					   class->lDAPDisplayName,
+					   sclass->governsID_oid,
+					   sclass->lDAPDisplayName,
 					   NULL, 
-					   class->subClassOf,
-					   class->objectClassCategory,
+					   sclass->subClassOf,
+					   sclass->objectClassCategory,
 					   dsdb_attribute_list(tmp_ctx, 
-							       class, DSDB_SCHEMA_ALL_MUST),
+							       sclass, DSDB_SCHEMA_ALL_MUST),
 					   dsdb_attribute_list(tmp_ctx, 
-							       class, DSDB_SCHEMA_ALL_MAY),
+							       sclass, DSDB_SCHEMA_ALL_MAY),
 					   NULL);
 	talloc_free(tmp_ctx);
 	return schema_description;
 }
-char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_class *class,
-				     const struct dsdb_schema *schema) 
+
+char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_class *sclass,
+				     const struct dsdb_schema *schema)
 {
 	int i;
 	char *schema_description;
@@ -353,8 +354,8 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 		return NULL;
 	}
 
-	aux_class_list = merge_attr_list(tmp_ctx, aux_class_list, class->systemAuxiliaryClass);
-	aux_class_list = merge_attr_list(tmp_ctx, aux_class_list, class->auxiliaryClass);
+	aux_class_list = merge_attr_list(tmp_ctx, aux_class_list, sclass->systemAuxiliaryClass);
+	aux_class_list = merge_attr_list(tmp_ctx, aux_class_list, sclass->auxiliaryClass);
 
 	for (i=0; aux_class_list && aux_class_list[i]; i++) {
 		aux_class = dsdb_class_by_lDAPDisplayName(schema, aux_class_list[i]);
@@ -370,8 +371,8 @@ char *schema_class_to_dITContentRule(TALLOC_CTX *mem_ctx, const struct dsdb_clas
 		= schema_class_description(mem_ctx, 
 					   TARGET_AD_SCHEMA_SUBENTRY,
 					   " ",
-					   class->governsID_oid,
-					   class->lDAPDisplayName,
+					   sclass->governsID_oid,
+					   sclass->lDAPDisplayName,
 					   (const char **)aux_class_list,
 					   NULL, /* Must not specify a
 						  * SUP (subclass) in

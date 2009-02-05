@@ -215,19 +215,6 @@ AC_ARG_WITH(logfilebase,
 
 
 #################################################
-# set ctdb source directory location
-AC_ARG_WITH(ctdb,
-[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
-[ case "$withval" in
-  yes|no)
-    AC_MSG_WARN([--with-ctdb called without argument])
-  ;;
-  * )
-    ctdbdir="$withval"
-    ;;
-  esac])
-
-#################################################
 # set shared modules (internal lib) directory location
 AC_ARG_WITH(modulesdir,
 [AS_HELP_STRING([--with-modulesdir=DIR], [Where to put shared modules ($libdir)])],
@@ -297,7 +284,6 @@ AC_SUBST(lockdir)
 AC_SUBST(piddir)
 AC_SUBST(ncalrpcdir)
 AC_SUBST(logfilebase)
-AC_SUBST(ctdbdir)
 AC_SUBST(privatedir)
 AC_SUBST(swatdir)
 AC_SUBST(bindir)
@@ -337,7 +323,7 @@ AC_ARG_WITH(selftest-shrdir,
     AC_MSG_WARN([--with-selftest-shrdir called without argument - will use default])
   ;;
   * )
-    selftest_shrdir="$withval"
+    selftest_shrdir="-s $withval"
     ;;
   esac
 ])
@@ -346,6 +332,8 @@ AC_ARG_WITH(selftest-shrdir,
 # set path of samba4's smbtorture
 smbtorture4_path=""
 AC_SUBST(smbtorture4_path)
+smbtorture4_option=""
+AC_SUBST(smbtorture4_option)
 AC_ARG_WITH(smbtorture4_path,
 [AS_HELP_STRING([--with-smbtorture4-path=PATH], [The path to a samba4 smbtorture for make test (none)])],
 [ case "$withval" in
@@ -357,6 +345,27 @@ AC_ARG_WITH(smbtorture4_path,
     if test -z "$smbtorture4_path" -a ! -f $smbtorture4_path; then
     	AC_MSG_ERROR(['$smbtorture_path' does not  exist!])
     fi
+    smbtorture4_option="-t $withval"
+  ;;
+ esac
+])
+
+#################################################
+# set custom conf for make test
+selftest_custom_conf=""
+AC_SUBST(selftest_custom_conf)
+AC_ARG_WITH(selftest_custom_conf,
+[AS_HELP_STRING([--with-selftest-custom-conf=PATH], [An optional custom smb.conf that is included in the server smb.conf during make test(none)])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_ERROR([--with-selftest-custom-conf should take a path])
+  ;;
+  * )
+    selftest_custom_conf="$withval"
+    if test -z "$selftest_custom_conf" -a ! -f $selftest_custom_conf; then
+	AC_MSG_ERROR(['$selftest_custom_conf' does not  exist!])
+    fi
+    selftest_custom_conf="-c $withval"
   ;;
  esac
 ])

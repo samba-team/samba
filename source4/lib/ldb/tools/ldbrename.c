@@ -33,7 +33,7 @@
  *  Author: Stefan Metzmacher
  */
 
-#include "ldb_includes.h"
+#include "ldb.h"
 #include "tools/cmdline.h"
 
 static void usage(void)

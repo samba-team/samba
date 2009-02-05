@@ -961,15 +961,10 @@ static NTSTATUS cm_prepare_connection(const struct winbindd_domain *domain,
 
 	winbindd_set_locator_kdc_envs(domain);
 
-	if (!cli_send_tconX(*cli, "IPC$", "IPC", "", 0)) {
+	result = cli_tcon_andx(*cli, "IPC$", "IPC", "", 0);
 
-		result = cli_nt_error(*cli);
-
+	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(1,("failed tcon_X with %s\n", nt_errstr(result)));
-
-		if (NT_STATUS_IS_OK(result))
-			result = NT_STATUS_UNSUCCESSFUL;
-
 		goto done;
 	}
 

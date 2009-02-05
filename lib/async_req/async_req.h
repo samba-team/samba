@@ -20,7 +20,7 @@
 #ifndef __ASYNC_REQ_H__
 #define __ASYNC_REQ_H__
 
-#include "includes.h"
+#include "lib/talloc/talloc.h"
 
 /**
  * An async request moves between the following 4 states:
@@ -40,9 +40,17 @@ enum async_req_state {
 	 */
 	ASYNC_REQ_DONE,
 	/**
-	 * an error has occured
+	 * A user error has occured
 	 */
-	ASYNC_REQ_ERROR
+	ASYNC_REQ_USER_ERROR,
+	/**
+	 * Request timed out
+	 */
+	ASYNC_REQ_TIMED_OUT,
+	/**
+	 * No memory in between
+	 */
+	ASYNC_REQ_NO_MEMORY
 };
 
 /**
@@ -92,9 +100,9 @@ struct async_req {
 	 * @brief status code when finished
 	 *
 	 * This status can be queried in the async completion function. It
-	 * will be set to NT_STATUS_OK when everything went fine.
+	 * will be set to 0 when everything went fine.
 	 **/
-	NTSTATUS status;
+	uint64_t error;
 
 	/**
 	 * @brief What to do on completion
@@ -121,32 +129,31 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req);
 
 void async_req_done(struct async_req *req);
 
-void async_req_error(struct async_req *req, NTSTATUS status);
-
-bool async_post_status(struct async_req *req, struct event_context *ev,
-		       NTSTATUS status);
+void async_req_error(struct async_req *req, uint64_t error);
 
 bool async_req_nomem(const void *p, struct async_req *req);
 
-bool async_req_is_error(struct async_req *req, NTSTATUS *status);
+bool async_post_error(struct async_req *req, struct tevent_context *ev,
+		      uint64_t error);
 
-NTSTATUS async_req_simple_recv(struct async_req *req);
+bool async_req_is_error(struct async_req *req, enum async_req_state *state,
+			uint64_t *error);
 
-bool async_req_set_timeout(struct async_req *req, struct event_context *ev,
+bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to);
 
 struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct event_context *ev,
+				  struct tevent_context *ev,
 				  struct timeval to);
 
-NTSTATUS async_wait_recv(struct async_req *req);
+bool async_wait_recv(struct async_req *req);
 
 struct async_req_queue;
 
 struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx);
 
 bool async_req_enqueue(struct async_req_queue *queue,
-		       struct event_context *ev,
+		       struct tevent_context *ev,
 		       struct async_req *req,
 		       void (*trigger)(struct async_req *req));
 

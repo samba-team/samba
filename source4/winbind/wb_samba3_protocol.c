@@ -28,7 +28,7 @@
   work out if a packet is complete for protocols that use a 32 bit host byte
   order length
 */
-NTSTATUS wbsrv_samba3_packet_full_request(void *private, DATA_BLOB blob, size_t *size)
+NTSTATUS wbsrv_samba3_packet_full_request(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	uint32_t *len;
 	if (blob.length < 4) {
@@ -270,10 +270,10 @@ NTSTATUS wbsrv_samba3_send_reply(struct wbsrv_samba3_call *call)
 	return status;
 }
 
-NTSTATUS wbsrv_samba3_process(void *private, DATA_BLOB blob)
+NTSTATUS wbsrv_samba3_process(void *private_data, DATA_BLOB blob)
 {
 	NTSTATUS status;
-	struct wbsrv_connection *wbconn = talloc_get_type(private, 
+	struct wbsrv_connection *wbconn = talloc_get_type(private_data,
 							  struct wbsrv_connection);
 	struct wbsrv_samba3_call *call;
 	status = wbsrv_samba3_pull_request(blob, wbconn, &call);

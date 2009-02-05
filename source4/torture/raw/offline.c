@@ -159,7 +159,7 @@ static void savefile_callback(struct composite_context *ctx)
  */
 static void setoffline_callback(struct smbcli_request *req) 
 {
-	struct offline_state *state = req->async.private;
+	struct offline_state *state = req->async.private_data;
 	NTSTATUS status;
 
 	status = smbcli_request_simple_recv(req);
@@ -183,7 +183,7 @@ static void setoffline_callback(struct smbcli_request *req)
  */
 static void getoffline_callback(struct smbcli_request *req) 
 {
-	struct offline_state *state = req->async.private;
+	struct offline_state *state = req->async.private_data;
 	NTSTATUS status;
 	union smb_fileinfo io;
 
@@ -286,7 +286,7 @@ static void test_offline(struct offline_state *state)
 		}
 		
 		state->req->async.fn = setoffline_callback;
-		state->req->async.private = state;
+		state->req->async.private_data = state;
 		break;
 	}
 
@@ -303,7 +303,7 @@ static void test_offline(struct offline_state *state)
 		}
 		
 		state->req->async.fn = getoffline_callback;
-		state->req->async.private = state;
+		state->req->async.private_data = state;
 		break;
 	}
 
@@ -318,7 +318,7 @@ static void test_offline(struct offline_state *state)
 
 static void echo_completion(struct smbcli_request *req)
 {
-	struct offline_state *state = (struct offline_state *)req->async.private;
+	struct offline_state *state = (struct offline_state *)req->async.private_data;
 	NTSTATUS status = smbcli_request_simple_recv(req);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE) ||
 	    NT_STATUS_EQUAL(status, NT_STATUS_LOCAL_DISCONNECT)) {
@@ -380,7 +380,7 @@ static void report_rate(struct tevent_context *ev, struct tevent_timer *te,
 		p.in.size = 0;
 		p.in.data = NULL;
 		req = smb_raw_echo_send(state[i].tree->session->transport, &p);
-		req->async.private = &state[i];
+		req->async.private_data = &state[i];
 		req->async.fn      = echo_completion;
 	}
 }

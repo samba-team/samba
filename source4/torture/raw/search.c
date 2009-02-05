@@ -31,9 +31,9 @@
 /*
   callback function for single_search
 */
-static bool single_search_callback(void *private, const union smb_search_data *file)
+static bool single_search_callback(void *private_data, const union smb_search_data *file)
 {
-	union smb_search_data *data = (union smb_search_data *)private;
+	union smb_search_data *data = (union smb_search_data *)private_data;
 
 	*data = *file;
 
@@ -510,9 +510,9 @@ struct multiple_result {
 /*
   callback function for multiple_search
 */
-static bool multiple_search_callback(void *private, const union smb_search_data *file)
+static bool multiple_search_callback(void *private_data, const union smb_search_data *file)
 {
-	struct multiple_result *data = (struct multiple_result *)private;
+	struct multiple_result *data = (struct multiple_result *)private_data;
 
 
 	data->count++;

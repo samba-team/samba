@@ -98,6 +98,7 @@ ntvfssrcdir := ntvfs
 ntptrsrcdir := ntptr
 librpcsrcdir := librpc
 libclisrcdir := libcli
+libclicommonsrcdir := ../libcli
 libclinbtsrcdir := ../libcli/nbt
 pyscriptsrcdir := $(srcdir)/scripting/python
 kdcsrcdir := kdc
@@ -145,12 +146,11 @@ endif
 clean::
 	@find ../lib ../libcli ../librpc ../nsswitch -name '*.o' -o -name '*.ho' | xargs rm -f
 
-DEFAULT_HEADERS = $(srcdir)/../lib/util/dlinklist.h \
-		  $(srcdir)/version.h
+PUBLIC_HEADES += $(srcdir)/version.h
 
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(PLUGINS)
-headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+headers:: $(PUBLIC_HEADERS)
 manpages:: $(MANPAGES)
 all:: showflags $(ALL_PREDEP) binaries modules pythonmods libraries headers
 everything:: all
@@ -233,7 +233,7 @@ installlib:: $(SHARED_LIBS) $(STATIC_LIBS) installdirs
 	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader:: headers installdirs
-	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(includedir) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(includedir) $(PUBLIC_HEADERS)
 
 installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(datadir) $(srcdir)

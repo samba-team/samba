@@ -60,8 +60,8 @@ static void named_pipe_handover_connection(void *private_data)
 	/*
 	 * remove the named_pipe layer together with its packet layer
 	 */
-	conn->ops	= pipe_conn->pipe_sock->ops;
-	conn->private	= pipe_conn->pipe_sock->private_data;
+	conn->ops		= pipe_conn->pipe_sock->ops;
+	conn->private_data	= pipe_conn->pipe_sock->private_data;
 	talloc_free(pipe_conn);
 
 	/* we're now ready to start receiving events on this stream */
@@ -209,7 +209,7 @@ reply:
 static void named_pipe_recv(struct stream_connection *conn, uint16_t flags)
 {
 	struct named_pipe_connection *pipe_conn = talloc_get_type(
-		conn->private, struct named_pipe_connection);
+		conn->private_data, struct named_pipe_connection);
 
 	DEBUG(10,("named_pipe_recv\n"));
 
@@ -222,7 +222,7 @@ static void named_pipe_recv(struct stream_connection *conn, uint16_t flags)
 static void named_pipe_send(struct stream_connection *conn, uint16_t flags)
 {
 	struct named_pipe_connection *pipe_conn = talloc_get_type(
-		conn->private, struct named_pipe_connection);
+		conn->private_data, struct named_pipe_connection);
 
 	packet_queue_run(pipe_conn->packet);
 }
@@ -238,7 +238,7 @@ static void named_pipe_recv_error(void *private_data, NTSTATUS status)
 	stream_terminate_connection(pipe_conn->connection, nt_errstr(status));
 }
 
-static NTSTATUS named_pipe_full_request(void *private, DATA_BLOB blob, size_t *size)
+static NTSTATUS named_pipe_full_request(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < 8) {
 		return STATUS_MORE_ENTRIES;
@@ -262,7 +262,7 @@ static NTSTATUS named_pipe_full_request(void *private, DATA_BLOB blob, size_t *s
 static void named_pipe_accept(struct stream_connection *conn)
 {
 	struct named_pipe_socket *pipe_sock = talloc_get_type(
-		conn->private, struct named_pipe_socket);
+		conn->private_data, struct named_pipe_socket);
 	struct named_pipe_connection *pipe_conn;
 
 	DEBUG(5,("named_pipe_accept\n"));
@@ -291,7 +291,7 @@ static void named_pipe_accept(struct stream_connection *conn)
 	pipe_conn->pipe_sock = pipe_sock;
 
 	pipe_conn->connection = conn;
-	conn->private = pipe_conn;
+	conn->private_data = pipe_conn;
 }
 
 static const struct stream_server_ops named_pipe_stream_ops = {

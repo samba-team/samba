@@ -406,8 +406,7 @@ static void handle_aio_completion(struct event_context *event_ctx,
 
 	DEBUG(10, ("mid %d finished\n", (int)mid));
 
-	aio_request_done(mid);
-	process_aio_queue();
+	smbd_aio_complete_mid(mid);
 }
 
 static int aio_child_destructor(struct aio_child *child)

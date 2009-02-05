@@ -125,9 +125,10 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 
 	while (1) {
 		DATA_BLOB blob;
-		struct eventlog_Record rec;
-		struct ndr_pull *ndr;
+		struct EVENTLOGRECORD rec;
 		enum ndr_err_code ndr_err;
+		uint32_t size = 0;
+		uint32_t pos = 0;
 
 		/* Read first for number of bytes in record */
 
@@ -140,6 +141,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_END_OF_FILE)) {
+			/* FIXME: still need to decode then */
 			break;
 		}
 
@@ -156,17 +158,32 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
 
 		/* Decode a user-marshalled record */
+		size = IVAL(r.out.data, pos);
 
-		blob.length = *r.out.sent_size;
-		blob.data = talloc_steal(tctx, r.out.data);
+		while (size > 0) {
 
-		ndr = ndr_pull_init_blob(&blob, tctx, lp_iconv_convenience(tctx->lp_ctx));
+			blob = data_blob_const(r.out.data + pos, size);
+			dump_data(0, blob.data, blob.length);
 
-		ndr_err = ndr_pull_eventlog_Record(
-			ndr, NDR_SCALARS|NDR_BUFFERS, &rec);
-		status = ndr_map_error2ntstatus(ndr_err);
+			ndr_err = ndr_pull_struct_blob_all(&blob, tctx,
+				lp_iconv_convenience(tctx->lp_ctx), &rec,
+				(ndr_pull_flags_fn_t)ndr_pull_EVENTLOGRECORD);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				status = ndr_map_error2ntstatus(ndr_err);
+				torture_assert_ntstatus_ok(tctx, status,
+					"ReadEventLog failed parsing event log record");
+			}
 
-		NDR_PRINT_DEBUG(eventlog_Record, &rec);
+			NDR_PRINT_DEBUG(EVENTLOGRECORD, &rec);
+
+			pos += size;
+
+			if (pos + 4 > *r.out.sent_size) {
+				break;
+			}
+
+			size = IVAL(r.out.data, pos);
+		}
 
 		torture_assert_ntstatus_ok(tctx, status,
 				"ReadEventLog failed parsing event log record");

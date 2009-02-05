@@ -314,7 +314,7 @@ struct verify_state {
 
 static void verify_handler(struct irpc_request *ireq)
 {
-	struct verify_state *s = talloc_get_type(ireq->async.private,
+	struct verify_state *s = talloc_get_type(ireq->async.private_data,
 				 struct verify_state);
 	struct winsdb_record *rec = s->rec;
 	const char *action;
@@ -495,7 +495,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 		NT_STATUS_HAVE_NO_MEMORY(ireq);
 
 		ireq->async.fn		= verify_handler;
-		ireq->async.private	= s;
+		ireq->async.private_data= s;
 
 		talloc_steal(service, s);
 	}

@@ -35,7 +35,7 @@
   see RFC2849 for the LDIF format definition
 */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 #include "system/locale.h"
 
 /*

@@ -1,5 +1,6 @@
 AC_SUBST(BLDSHARED)
-smbtorture4_path=bin/smbtorture4
+smbtorture4_path="bin/smbtorture4"
+smbtorture4_option="-t bin/smbtorture4"
 m4_include(build/m4/public.m4)
 
 m4_include(../m4/check_python.m4)
@@ -17,6 +18,24 @@ pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_pyth
 AC_MSG_RESULT($pythondir)
 
 AC_SUBST(pythondir)
+
+SMB_EXT_LIB(LIBREPLACE_EXT, [${LIBDL} ${CRYPT_LIBS}])
+SMB_ENABLE(LIBREPLACE_EXT)
+
+SMB_EXT_LIB(LIBREPLACE_NETWORK, [${LIBREPLACE_NETWORK_LIBS}])
+SMB_ENABLE(LIBREPLACE_NETWORK)
+
+SMB_SUBSYSTEM(LIBREPLACE,
+	[${LIBREPLACE_OBJS}],
+	[LIBREPLACE_EXT LIBREPLACE_NETWORK],
+	[-I../lib/replace])
+
+LIBREPLACE_HOSTCC_OBJS=`echo ${LIBREPLACE_OBJS} |sed -e 's/\.o/\.ho/g'`
+
+SMB_SUBSYSTEM(LIBREPLACE_HOSTCC,
+	[${LIBREPLACE_HOSTCC_OBJS}],
+	[],
+	[-I../lib/replace])
 
 m4_include(lib/smbreadline/readline.m4)
 m4_include(heimdal_build/internal.m4)
@@ -71,7 +90,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTEVENT, tevent >= 0.9.2,
 
 SMB_INCLUDE_MK(../lib/tevent/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = 0.9.1,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = 0.9.3,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)

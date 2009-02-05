@@ -323,7 +323,7 @@ static void wsgi_process_http_input(struct web_server_data *wdata,
 				    struct websrv_context *web)
 {
 	PyObject *py_environ, *result, *item, *iter;
-	PyObject *request_handler = wdata->private;
+	PyObject *request_handler = (PyObject *)wdata->private_data;
 	struct socket_address *socket_address;
 
 	web_request_Object *py_web = PyObject_New(web_request_Object, &web_request_Type);
@@ -386,6 +386,6 @@ bool wsgi_initialize(struct web_server_data *wdata)
 		DEBUG(0, ("Unable to find SWAT\n"));
 		return false;
 	}
-	wdata->private = py_swat;
+	wdata->private_data = py_swat;
 	return true;
 }

@@ -28,7 +28,7 @@
 static void smb_raw_search_backend(struct smbcli_request *req,
 				   TALLOC_CTX *mem_ctx,
 				   uint16_t count, 
-				   void *private,
+				   void *private_data,
 				   smbcli_search_callback callback)
 
 {
@@ -57,7 +57,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 		search_data.search.size             = IVAL(p, 26);
 		smbcli_req_pull_ascii(&req->in.bufinfo, mem_ctx, &name, p+30, 13, STR_ASCII);
 		search_data.search.name = name;
-		if (!callback(private, &search_data)) {
+		if (!callback(private_data, &search_data)) {
 			break;
 		}
 		p += 43;
@@ -69,7 +69,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 ****************************************************************************/
 static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
-					 union smb_search_first *io, void *private,
+					 union smb_search_first *io, void *private_data,
 					 smbcli_search_callback callback)
 
 {
@@ -99,7 +99,7 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 
 	if (NT_STATUS_IS_OK(req->status)) {
 		io->search_first.out.count = SVAL(req->in.vwv, VWV(0));	
-		smb_raw_search_backend(req, mem_ctx, io->search_first.out.count, private, callback);
+		smb_raw_search_backend(req, mem_ctx, io->search_first.out.count, private_data, callback);
 	}
 
 	return smbcli_request_destroy(req);
@@ -110,7 +110,7 @@ static NTSTATUS smb_raw_search_first_old(struct smbcli_tree *tree,
 ****************************************************************************/
 static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 					TALLOC_CTX *mem_ctx,
-					union smb_search_next *io, void *private,
+					union smb_search_next *io, void *private_data,
 					smbcli_search_callback callback)
 
 {
@@ -146,7 +146,7 @@ static NTSTATUS smb_raw_search_next_old(struct smbcli_tree *tree,
 
 	if (NT_STATUS_IS_OK(req->status)) {
 		io->search_next.out.count = SVAL(req->in.vwv, VWV(0));
-		smb_raw_search_backend(req, mem_ctx, io->search_next.out.count, private, callback);
+		smb_raw_search_backend(req, mem_ctx, io->search_next.out.count, private_data, callback);
 	}
 	
 	return smbcli_request_destroy(req);
@@ -682,7 +682,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 					 uint16_t flags,
 					 int16_t count,
 					 DATA_BLOB *blob,
-					 void *private,
+					 void *private_data,
 					 smbcli_search_callback callback)
 
 {
@@ -703,7 +703,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
 
 		/* the callback function can tell us that no more will
 		   fit - in that case we stop, but it isn't an error */
-		if (!callback(private, &search_data)) {
+		if (!callback(private_data, &search_data)) {
 			break;
 		}
 
@@ -721,7 +721,7 @@ static NTSTATUS smb_raw_t2search_backend(struct smbcli_tree *tree,
  */
 _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 			      TALLOC_CTX *mem_ctx,
-			      union smb_search_first *io, void *private,
+			      union smb_search_first *io, void *private_data,
 			      smbcli_search_callback callback)
 {
 	DATA_BLOB p_blob, d_blob;
@@ -731,7 +731,7 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	case RAW_SEARCH_SEARCH:
 	case RAW_SEARCH_FFIRST:
 	case RAW_SEARCH_FUNIQUE:
-		return smb_raw_search_first_old(tree, mem_ctx, io, private, callback);
+		return smb_raw_search_first_old(tree, mem_ctx, io, private_data, callback);
 
 	case RAW_SEARCH_TRANS2:
 		break;
@@ -760,7 +760,7 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
 	status = smb_raw_t2search_backend(tree, mem_ctx,
 					  io->generic.data_level, 
 					  io->t2ffirst.in.flags, io->t2ffirst.out.count,
-					  &d_blob, private, callback);
+					  &d_blob, private_data, callback);
 	
 	return status;
 }
@@ -769,7 +769,7 @@ _PUBLIC_ NTSTATUS smb_raw_search_first(struct smbcli_tree *tree,
  */
 NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 			     TALLOC_CTX *mem_ctx,
-			     union smb_search_next *io, void *private,
+			     union smb_search_next *io, void *private_data,
 			     smbcli_search_callback callback)
 {
 	DATA_BLOB p_blob, d_blob;
@@ -778,7 +778,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	switch (io->generic.level) {
 	case RAW_SEARCH_SEARCH:
 	case RAW_SEARCH_FFIRST:
-		return smb_raw_search_next_old(tree, mem_ctx, io, private, callback);
+		return smb_raw_search_next_old(tree, mem_ctx, io, private_data, callback);
 
 	case RAW_SEARCH_FUNIQUE:
 		return NT_STATUS_INVALID_LEVEL;
@@ -809,7 +809,7 @@ NTSTATUS smb_raw_search_next(struct smbcli_tree *tree,
 	status = smb_raw_t2search_backend(tree, mem_ctx,
 					  io->generic.data_level, 
 					  io->t2fnext.in.flags, io->t2fnext.out.count,
-					  &d_blob, private, callback);
+					  &d_blob, private_data, callback);
 	
 	return status;
 }

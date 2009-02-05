@@ -85,7 +85,7 @@
 #define FLAG_CHECK(c, flag) (char_flags[(unsigned char)(c)] & (flag))
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
-static const char * const basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char basechars[36] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */

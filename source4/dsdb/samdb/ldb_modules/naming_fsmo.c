@@ -22,9 +22,7 @@
 */
 
 #include "includes.h"
-#include "lib/ldb/include/ldb.h"
-#include "lib/ldb/include/ldb_errors.h"
-#include "lib/ldb/include/ldb_private.h"
+#include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
@@ -33,6 +31,7 @@
 
 static int naming_fsmo_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	TALLOC_CTX *mem_ctx;
 	struct ldb_dn *naming_dn;
 	struct dsdb_naming_fsmo *naming_fsmo;
@@ -43,15 +42,17 @@ static int naming_fsmo_init(struct ldb_module *module)
 		NULL
 	};
 
+	ldb = ldb_module_get_ctx(module);
+
 	mem_ctx = talloc_new(module);
 	if (!mem_ctx) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	naming_dn = samdb_partitions_dn(module->ldb, mem_ctx);
+	naming_dn = samdb_partitions_dn(ldb, mem_ctx);
 	if (!naming_dn) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
@@ -59,55 +60,55 @@ static int naming_fsmo_init(struct ldb_module *module)
 
 	naming_fsmo = talloc_zero(mem_ctx, struct dsdb_naming_fsmo);
 	if (!naming_fsmo) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	module->private_data = naming_fsmo;
+	ldb_module_set_private(module, naming_fsmo);
 
-	ret = ldb_search(module->ldb, mem_ctx, &naming_res,
+	ret = ldb_search(ldb, mem_ctx, &naming_res,
 			 naming_dn, LDB_SCOPE_BASE,
 			 naming_attrs, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
 	if (ret != LDB_SUCCESS) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "naming_fsmo_init: failed to search the cross-ref container: %s: %s",
-			      ldb_strerror(ret), ldb_errstring(module->ldb));
+			      ldb_strerror(ret), ldb_errstring(ldb));
 		talloc_free(mem_ctx);
 		return ret;
 	}
 	if (naming_res->count == 0) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (naming_res->count > 1) {
-		ldb_debug_set(module->ldb, LDB_DEBUG_FATAL,
+		ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 			      "naming_fsmo_init: [%u] cross-ref containers found on a base search",
 			      naming_res->count);
 		talloc_free(mem_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
 
-	naming_fsmo->master_dn = ldb_msg_find_attr_as_dn(module->ldb, naming_fsmo, naming_res->msgs[0], "fSMORoleOwner");
-	if (ldb_dn_compare(samdb_ntds_settings_dn(module->ldb), naming_fsmo->master_dn) == 0) {
+	naming_fsmo->master_dn = ldb_msg_find_attr_as_dn(ldb, naming_fsmo, naming_res->msgs[0], "fSMORoleOwner");
+	if (ldb_dn_compare(samdb_ntds_settings_dn(ldb), naming_fsmo->master_dn) == 0) {
 		naming_fsmo->we_are_master = true;
 	} else {
 		naming_fsmo->we_are_master = false;
 	}
 
-	if (ldb_set_opaque(module->ldb, "dsdb_naming_fsmo", naming_fsmo) != LDB_SUCCESS) {
-		ldb_oom(module->ldb);
+	if (ldb_set_opaque(ldb, "dsdb_naming_fsmo", naming_fsmo) != LDB_SUCCESS) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	talloc_steal(module, naming_fsmo);
 
-	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
+	ldb_debug(ldb, LDB_DEBUG_TRACE,
 			  "naming_fsmo_init: we are master: %s\n",
 			  (naming_fsmo->we_are_master?"yes":"no"));
 

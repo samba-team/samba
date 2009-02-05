@@ -432,10 +432,13 @@ smb_complete_connection(const char *myname,
 		return NULL;
 	}
 
-	if (!cli_send_tconX(cli, share, "?????", password, strlen(password) + 1)) {
-		fprintf(stderr, "ERROR: Tree connect failed (%s)\n", cli_errstr(cli));
+	nt_status = cli_tcon_andx(cli, share, "?????", password,
+				  strlen(password) + 1);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		fprintf(stderr, "ERROR: Tree connect failed (%s)\n",
+			nt_errstr(nt_status));
 
-		if (get_exit_code(cli, cli_nt_error(cli)) == 2) {
+		if (get_exit_code(cli, nt_status) == 2) {
 			*need_auth = true;
 		}
 

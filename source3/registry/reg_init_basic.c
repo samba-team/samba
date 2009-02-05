@@ -37,6 +37,14 @@ WERROR registry_init_common(void)
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0, ("Failed to initialize the reghook cache: %s\n",
 			  win_errstr(werr)));
+		goto done;
+	}
+
+	/* setup the necessary keys and values */
+
+	werr = init_registry_data();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("Failed to initialize data in registry!\n"));
 	}
 
 done:

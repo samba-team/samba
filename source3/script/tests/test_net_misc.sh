@@ -7,8 +7,10 @@ NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 NETTIME="${NET} time"
 NETLOOKUP="${NET} lookup"
 
+test x"$TEST_FUNCTIONS_SH" != x"INCLUDED" && {
 incdir=`dirname $0`
 . $incdir/test_functions.sh
+}
 
 failed=0
 
@@ -16,7 +18,7 @@ test_time()
 {
 	PARAM="$1"
 
-	${NETTIME} ${PARAM} -S localhost2
+	${NETTIME} -S ${SERVER} ${PARAM}
 }
 
 test_lookup()

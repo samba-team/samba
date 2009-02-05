@@ -1353,8 +1353,10 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->name, &group_sid,
-						      &group_gid))) {
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->have_idmap_config
+						      ? domain->name : "",
+						      &group_sid, &group_gid)))
+		{
 			union unid_t id;
 			enum lsa_SidType type;
 

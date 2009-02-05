@@ -47,7 +47,7 @@ struct stream_socket {
 	struct tevent_context *event_ctx;
 	const struct model_ops *model_ops;
 	struct socket_context *sock;
-	void *private;
+	void *private_data;
 };
 
 
@@ -101,16 +101,16 @@ static void stream_io_handler(struct stream_connection *conn, uint16_t flags)
 }
 
 static void stream_io_handler_fde(struct tevent_context *ev, struct tevent_fd *fde, 
-				  uint16_t flags, void *private)
+				  uint16_t flags, void *private_data)
 {
-	struct stream_connection *conn = talloc_get_type(private, 
+	struct stream_connection *conn = talloc_get_type(private_data,
 							 struct stream_connection);
 	stream_io_handler(conn, flags);
 }
 
-void stream_io_handler_callback(void *private, uint16_t flags) 
+void stream_io_handler_callback(void *private_data, uint16_t flags)
 {
-	struct stream_connection *conn = talloc_get_type(private, 
+	struct stream_connection *conn = talloc_get_type(private_data,
 							 struct stream_connection);
 	stream_io_handler(conn, flags);
 }
@@ -136,7 +136,7 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	srv_conn->private       = private_data;
+	srv_conn->private_data  = private_data;
 	srv_conn->model_ops     = model_ops;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= cluster_id(0, 0);
@@ -163,9 +163,9 @@ NTSTATUS stream_new_connection_merge(struct tevent_context *ev,
 static void stream_new_connection(struct tevent_context *ev,
 				  struct loadparm_context *lp_ctx,
 				  struct socket_context *sock, 
-				  struct server_id server_id, void *private)
+				  struct server_id server_id, void *private_data)
 {
-	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
+	struct stream_socket *stream_socket = talloc_get_type(private_data, struct stream_socket);
 	struct stream_connection *srv_conn;
 	struct socket_address *c, *s;
 
@@ -177,7 +177,7 @@ static void stream_new_connection(struct tevent_context *ev,
 
 	talloc_steal(srv_conn, sock);
 
-	srv_conn->private       = stream_socket->private;
+	srv_conn->private_data	= stream_socket->private_data;
 	srv_conn->model_ops     = stream_socket->model_ops;
 	srv_conn->socket	= sock;
 	srv_conn->server_id	= server_id;
@@ -235,9 +235,9 @@ static void stream_new_connection(struct tevent_context *ev,
   called when someone opens a connection to one of our listening ports
 */
 static void stream_accept_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-				  uint16_t flags, void *private)
+				  uint16_t flags, void *private_data)
 {
-	struct stream_socket *stream_socket = talloc_get_type(private, struct stream_socket);
+	struct stream_socket *stream_socket = talloc_get_type(private_data, struct stream_socket);
 
 	/* ask the process model to create us a process for this new
 	   connection.  When done, it calls stream_new_connection()
@@ -263,7 +263,7 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 			     const char *sock_addr,
 			     uint16_t *port,
 			     const char *socket_options,
-			     void *private)
+			     void *private_data)
 {
 	NTSTATUS status;
 	struct stream_socket *stream_socket;
@@ -352,7 +352,7 @@ NTSTATUS stream_setup_socket(struct tevent_context *event_context,
 	tevent_fd_set_close_fn(fde, socket_tevent_fd_close_fn);
 	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
 
-	stream_socket->private          = talloc_reference(stream_socket, private);
+	stream_socket->private_data     = talloc_reference(stream_socket, private_data);
 	stream_socket->ops              = stream_ops;
 	stream_socket->event_ctx	= event_context;
 	stream_socket->model_ops        = model_ops;

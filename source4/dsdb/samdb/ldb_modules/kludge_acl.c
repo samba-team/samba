@@ -31,9 +31,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
+#include "ldb_module.h"
 #include "auth/auth.h"
 #include "libcli/security/security.h"
 #include "dsdb/samdb/samdb.h"
@@ -52,15 +50,17 @@ struct kludge_private_data {
 
 static enum security_user_level what_is_user(struct ldb_module *module) 
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(module->ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	return security_session_user_level(session_info);
 }
 
 static const char *user_name(TALLOC_CTX *mem_ctx, struct ldb_module *module) 
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct auth_session_info *session_info
-		= (struct auth_session_info *)ldb_get_opaque(module->ldb, "sessionInfo");
+		= (struct auth_session_info *)ldb_get_opaque(ldb, "sessionInfo");
 	if (!session_info) {
 		return "UNKNOWN (NULL)";
 	}
@@ -152,7 +152,7 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	struct ldb_message_element *oc_el;
 	struct ldb_message_element *allowedClasses;
 	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
-	const struct dsdb_class *class;
+	const struct dsdb_class *sclass;
 	int i, j, ret;
 
  	/* If we don't have a schema yet, we can't do anything... */
@@ -172,14 +172,14 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 	oc_el = ldb_msg_find_element(msg, "objectClass");
 
 	for (i=0; oc_el && i < oc_el->num_values; i++) {
-		class = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
-		if (!class) {
+		sclass = dsdb_class_by_lDAPDisplayName(schema, (const char *)oc_el->values[i].data);
+		if (!sclass) {
 			/* We don't know this class?  what is going on? */
 			continue;
 		}
 
-		for (j=0; class->possibleInferiors && class->possibleInferiors[j]; j++) {
-			ldb_msg_add_string(msg, attrName, class->possibleInferiors[j]);
+		for (j=0; sclass->possibleInferiors && sclass->possibleInferiors[j]; j++) {
+			ldb_msg_add_string(msg, attrName, sclass->possibleInferiors[j]);
 		}
 	}
 		
@@ -209,12 +209,14 @@ static int kludge_acl_childClasses(struct ldb_context *ldb, struct ldb_message *
 
 static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct kludge_acl_context *ac;
 	struct kludge_private_data *data;
 	int i, ret;
 
 	ac = talloc_get_type(req->context, struct kludge_acl_context);
-	data = talloc_get_type(ac->module->private_data, struct kludge_private_data);
+	data = talloc_get_type(ldb_module_get_private(ac->module), struct kludge_private_data);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -228,7 +230,7 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 	switch (ares->type) {
 	case LDB_REPLY_ENTRY:
 		if (ac->allowedAttributes) {
-			ret = kludge_acl_allowedAttributes(ac->module->ldb,
+			ret = kludge_acl_allowedAttributes(ldb,
 						   ares->message,
 						   "allowedAttributes");
 			if (ret != LDB_SUCCESS) {
@@ -236,7 +238,7 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 			}
 		}
 		if (ac->allowedChildClasses) {
-			ret = kludge_acl_childClasses(ac->module->ldb,
+			ret = kludge_acl_childClasses(ldb,
 						ares->message,
 						"allowedChildClasses");
 			if (ret != LDB_SUCCESS) {
@@ -249,14 +251,14 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 			switch (ac->user_type) {
 			case SECURITY_SYSTEM:
 				if (ac->allowedAttributesEffective) {
-					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
+					ret = kludge_acl_allowedAttributes(ldb, ares->message,
 									"allowedAttributesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}
 				}
 				if (ac->allowedChildClassesEffective) {
-					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
+					ret = kludge_acl_childClasses(ldb, ares->message,
 									"allowedChildClassesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
@@ -266,14 +268,14 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 			case SECURITY_ADMINISTRATOR:
 				if (ac->allowedAttributesEffective) {
-					ret = kludge_acl_allowedAttributes(ac->module->ldb, ares->message,
+					ret = kludge_acl_allowedAttributes(ldb, ares->message,
 									"allowedAttributesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
 					}
 				}
 				if (ac->allowedChildClassesEffective) {
-					ret = kludge_acl_childClasses(ac->module->ldb, ares->message,
+					ret = kludge_acl_childClasses(ldb, ares->message,
 									"allowedChildClassesEffective");
 					if (ret != LDB_SUCCESS) {
 						return ldb_module_done(ac->req, NULL, NULL, ret);
@@ -316,6 +318,7 @@ static int kludge_acl_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct kludge_acl_context *ac;
 	struct ldb_request *down_req;
 	struct kludge_private_data *data;
@@ -324,13 +327,15 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	struct ldb_control *sd_control;
 	struct ldb_control **sd_saved_controls;
 
+	ldb = ldb_module_get_ctx(module);
+
 	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	data = talloc_get_type(module->private_data, struct kludge_private_data);
+	data = talloc_get_type(ldb_module_get_private(module), struct kludge_private_data);
 
 	ac->module = module;
 	ac->req = req;
@@ -372,7 +377,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	ret = ldb_build_search_req_ex(&down_req,
-					module->ldb, ac,
+					ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,
@@ -402,13 +407,14 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 /* ANY change type */
 static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	enum security_user_level user_type = what_is_user(module);
 	switch (user_type) {
 	case SECURITY_SYSTEM:
 	case SECURITY_ADMINISTRATOR:
 		return ldb_next_request(module, req);
 	default:
-		ldb_asprintf_errstring(module->ldb,
+		ldb_asprintf_errstring(ldb,
 				       "kludge_acl_change: "
 				       "attempted database modify not permitted. "
 				       "User %s is not SYSTEM or an administrator",
@@ -419,6 +425,7 @@ static int kludge_acl_change(struct ldb_module *module, struct ldb_request *req)
 
 static int kludge_acl_extended(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	enum security_user_level user_type;
 
 	/* allow everybody to read the sequence number */
@@ -434,7 +441,7 @@ static int kludge_acl_extended(struct ldb_module *module, struct ldb_request *re
 	case SECURITY_ADMINISTRATOR:
 		return ldb_next_request(module, req);
 	default:
-		ldb_asprintf_errstring(module->ldb,
+		ldb_asprintf_errstring(ldb,
 				       "kludge_acl_change: "
 				       "attempted database modify not permitted. "
 				       "User %s is not SYSTEM or an administrator",
@@ -445,6 +452,7 @@ static int kludge_acl_extended(struct ldb_module *module, struct ldb_request *re
 
 static int kludge_acl_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	int ret, i;
 	TALLOC_CTX *mem_ctx = talloc_new(module);
 	static const char *attrs[] = { "passwordAttribute", NULL };
@@ -454,22 +462,24 @@ static int kludge_acl_init(struct ldb_module *module)
 
 	struct kludge_private_data *data;
 
+	ldb = ldb_module_get_ctx(module);
+
 	data = talloc(module, struct kludge_private_data);
 	if (data == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	data->password_attrs = NULL;
-	module->private_data = data;
+	ldb_module_set_private(module, data);
 
 	if (!mem_ctx) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_search(module->ldb, mem_ctx, &res,
-			 ldb_dn_new(mem_ctx, module->ldb, "@KLUDGEACL"),
+	ret = ldb_search(ldb, mem_ctx, &res,
+			 ldb_dn_new(mem_ctx, ldb, "@KLUDGEACL"),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		goto done;
@@ -492,7 +502,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
 	if (!data->password_attrs) {
 		talloc_free(mem_ctx);
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	for (i=0; i < password_attributes->num_values; i++) {
@@ -503,7 +513,7 @@ static int kludge_acl_init(struct ldb_module *module)
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SD_FLAGS_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_ERROR,
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}

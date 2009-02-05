@@ -1,6 +1,5 @@
 AC_CHECK_FUNCS(writev)
 AC_CHECK_FUNCS(readv)
-AC_CHECK_FUNCS(gethostbyname2)
 
 ############################################
 # check for unix domain sockets

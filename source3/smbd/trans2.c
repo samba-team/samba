@@ -29,7 +29,6 @@
 
 extern enum protocol_types Protocol;
 
-#define get_file_size(sbuf) ((sbuf).st_size)
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
 static char *store_file_unix_basic(connection_struct *conn,
@@ -57,31 +56,6 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 		val = SMB_ROUNDUP(val,rval);
 	}
 	return val;
-}
-
-/********************************************************************
- Given a stat buffer return the allocated size on disk, taking into
- account sparse files.
-********************************************************************/
-
-uint64_t get_allocation_size(connection_struct *conn, files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
-{
-	uint64_t ret;
-
-	if(S_ISDIR(sbuf->st_mode)) {
-		return 0;
-	}
-
-#if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	ret = (uint64_t)STAT_ST_BLOCKSIZE * (uint64_t)sbuf->st_blocks;
-#else
-	ret = (uint64_t)get_file_size(*sbuf);
-#endif
-
-	if (fsp && fsp->initial_allocation_size)
-		ret = MAX(ret,fsp->initial_allocation_size);
-
-	return smb_roundup(conn, ret);
 }
 
 /****************************************************************************
@@ -1034,7 +1008,7 @@ static void call_trans2open(connection_struct *conn,
 		return;
 	}
 
-	size = get_file_size(sbuf);
+	size = get_file_size_stat(&sbuf);
 	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
@@ -1424,9 +1398,9 @@ static bool get_lanman2_dir_entry(TALLOC_CTX *ctx,
 			}
 
 			if (!(mode & aDIR)) {
-				file_size = get_file_size(sbuf);
+				file_size = get_file_size_stat(&sbuf);
 			}
-			allocation_size = get_allocation_size(conn,NULL,&sbuf);
+			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,NULL,&sbuf);
 
 			mdate_ts = get_mtimespec(&sbuf);
 			adate_ts = get_atimespec(&sbuf);
@@ -3523,10 +3497,10 @@ static char *store_file_unix_basic(connection_struct *conn,
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
 	DEBUG(4,("store_file_unix_basic: st_mode=%o\n",(int)psbuf->st_mode));
 
-	SOFF_T(pdata,0,get_file_size(*psbuf));             /* File size 64 Bit */
+	SOFF_T(pdata,0,get_file_size_stat(psbuf));             /* File size 64 Bit */
 	pdata += 8;
 
-	SOFF_T(pdata,0,get_allocation_size(conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
+	SOFF_T(pdata,0,SMB_VFS_GET_ALLOC_SIZE(conn,fsp,psbuf)); /* Number of bytes used on disk - 64 Bit */
 	pdata += 8;
 
 	put_long_date_timespec(pdata,get_ctimespec(psbuf));       /* Change Time 64 Bit */
@@ -4094,7 +4068,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 	fullpathname = fname;
 	if (!(mode & aDIR))
-		file_size = get_file_size(sbuf);
+		file_size = get_file_size_stat(&sbuf);
 
 	/* Pull out any data sent here before we realloc. */
 	switch (info_level) {
@@ -4180,7 +4154,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	mtime_ts = get_mtimespec(&sbuf);
 	atime_ts = get_atimespec(&sbuf);
 
-	allocation_size = get_allocation_size(conn,fsp,&sbuf);
+	allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn,fsp,&sbuf);
 
 	if (!fsp) {
 		/* Do we have this path open ? */
@@ -4188,7 +4162,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		fileid = vfs_file_id_from_sbuf(conn, &sbuf);
 		fsp1 = file_find_di_first(fileid);
 		if (fsp1 && fsp1->initial_allocation_size) {
-			allocation_size = get_allocation_size(conn, fsp1, &sbuf);
+			allocation_size = SMB_VFS_GET_ALLOC_SIZE(conn, fsp1, &sbuf);
 		}
 	}
 
@@ -5044,7 +5018,7 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 
 	DEBUG(6,("smb_set_file_size: size: %.0f ", (double)size));
 
-	if (size == get_file_size(*psbuf)) {
+	if (size == get_file_size_stat(psbuf)) {
 		return NT_STATUS_OK;
 	}
 
@@ -5832,7 +5806,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	if (fsp && fsp->fh->fd != -1) {
 		/* Open file handle. */
 		/* Only change if needed. */
-		if (allocation_size != get_file_size(*psbuf)) {
+		if (allocation_size != get_file_size_stat(psbuf)) {
 			if (vfs_allocate_file_space(fsp, allocation_size) == -1) {
 				return map_nt_error_from_unix(errno);
 			}
@@ -5874,7 +5848,7 @@ static NTSTATUS smb_set_file_allocation_info(connection_struct *conn,
 	}
 
 	/* Only change if needed. */
-	if (allocation_size != get_file_size(*psbuf)) {
+	if (allocation_size != get_file_size_stat(psbuf)) {
 		if (vfs_allocate_file_space(new_fsp, allocation_size) == -1) {
 			status = map_nt_error_from_unix(errno);
 			close_file(req, new_fsp, NORMAL_CLOSE);
@@ -6101,7 +6075,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		/* Ensure we don't try and change anything else. */
 		raw_unixmode = SMB_MODE_NO_CHANGE;
-		size = get_file_size(*psbuf);
+		size = get_file_size_stat(psbuf);
 		ft.atime = get_atimespec(psbuf);
 		ft.mtime = get_mtimespec(psbuf);
 		/* 
@@ -6117,7 +6091,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	 * */
 
 	if (!size) {
-		size = get_file_size(*psbuf);
+		size = get_file_size_stat(psbuf);
 	}
 #endif
 

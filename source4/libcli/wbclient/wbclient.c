@@ -117,7 +117,7 @@ struct composite_context *wbc_sids_to_xids_send(struct wbc_context *wbc_ctx,
 static void sids_to_xids_recv_ids(struct irpc_request *req)
 {
 	struct wbc_idmap_state *state = talloc_get_type_abort(
-							req->async.private,
+							req->async.private_data,
 							struct wbc_idmap_state);
 
 	state->ctx->status = irpc_call_recv(state->irpc_req);
@@ -183,7 +183,7 @@ struct composite_context *wbc_xids_to_sids_send(struct wbc_context *wbc_ctx,
 static void xids_to_sids_recv_ids(struct irpc_request *req)
 {
 	struct wbc_idmap_state *state = talloc_get_type_abort(
-							req->async.private,
+							req->async.private_data,
 							struct wbc_idmap_state);
 
 	state->ctx->status = irpc_call_recv(state->irpc_req);

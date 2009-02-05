@@ -35,9 +35,9 @@
 */
 static void smb2_transport_event_handler(struct tevent_context *ev, 
 					 struct tevent_fd *fde, 
-					 uint16_t flags, void *private)
+					 uint16_t flags, void *private_data)
 {
-	struct smb2_transport *transport = talloc_get_type(private,
+	struct smb2_transport *transport = talloc_get_type(private_data,
 							   struct smb2_transport);
 	if (flags & EVENT_FD_READ) {
 		packet_recv(transport->packet);
@@ -61,14 +61,14 @@ static int transport_destructor(struct smb2_transport *transport)
 /*
   handle receive errors
 */
-static void smb2_transport_error(void *private, NTSTATUS status)
+static void smb2_transport_error(void *private_data, NTSTATUS status)
 {
-	struct smb2_transport *transport = talloc_get_type(private, 
+	struct smb2_transport *transport = talloc_get_type(private_data,
 							   struct smb2_transport);
 	smb2_transport_dead(transport, status);
 }
 
-static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob);
+static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob);
 
 /*
   create a transport structure based on an established socket
@@ -181,9 +181,9 @@ static NTSTATUS smb2_handle_oplock_break(struct smb2_transport *transport,
   we have a full request in our receive buffer - match it to a pending request
   and process
  */
-static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
+static NTSTATUS smb2_transport_finish_recv(void *private_data, DATA_BLOB blob)
 {
-	struct smb2_transport *transport = talloc_get_type(private, 
+	struct smb2_transport *transport = talloc_get_type(private_data,
 							     struct smb2_transport);
 	uint8_t *buffer, *hdr;
 	int len;
@@ -302,9 +302,9 @@ error:
   handle timeouts of individual smb requests
 */
 static void smb2_timeout_handler(struct tevent_context *ev, struct tevent_timer *te, 
-				 struct timeval t, void *private)
+				 struct timeval t, void *private_data)
 {
-	struct smb2_request *req = talloc_get_type(private, struct smb2_request);
+	struct smb2_request *req = talloc_get_type(private_data, struct smb2_request);
 
 	if (req->state == SMB2_REQUEST_RECV) {
 		DLIST_REMOVE(req->transport->pending_recv, req);
@@ -381,16 +381,16 @@ void smb2_transport_send(struct smb2_request *req)
 }
 
 static void idle_handler(struct tevent_context *ev, 
-			 struct tevent_timer *te, struct timeval t, void *private)
+			 struct tevent_timer *te, struct timeval t, void *private_data)
 {
-	struct smb2_transport *transport = talloc_get_type(private,
+	struct smb2_transport *transport = talloc_get_type(private_data,
 							   struct smb2_transport);
 	struct timeval next = timeval_add(&t, 0, transport->idle.period);
 	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, 
 						      transport,
 						      next,
 						      idle_handler, transport);
-	transport->idle.func(transport, transport->idle.private);
+	transport->idle.func(transport, transport->idle.private_data);
 }
 
 /*
@@ -400,10 +400,10 @@ static void idle_handler(struct tevent_context *ev,
 void smb2_transport_idle_handler(struct smb2_transport *transport, 
 				 void (*idle_func)(struct smb2_transport *, void *),
 				 uint64_t period,
-				 void *private)
+				 void *private_data)
 {
 	transport->idle.func = idle_func;
-	transport->idle.private = private;
+	transport->idle.private_data = private_data;
 	transport->idle.period = period;
 
 	if (transport->socket->event.te != NULL) {

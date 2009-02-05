@@ -1260,28 +1260,28 @@ static NTSTATUS dcesrv_lsa_DeleteTrustedDomain(struct dcesrv_call_state *dce_cal
 				      struct lsa_DeleteTrustedDomain *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomain open;
-	struct lsa_DeleteObject delete;
+	struct lsa_OpenTrustedDomain opn;
+	struct lsa_DeleteObject del;
 	struct dcesrv_handle *h;
 
-	open.in.handle = r->in.handle;
-	open.in.sid = r->in.dom_sid;
-	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
-	if (!open.out.trustdom_handle) {
+	opn.in.handle = r->in.handle;
+	opn.in.sid = r->in.dom_sid;
+	opn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	opn.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!opn.out.trustdom_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = dcesrv_lsa_OpenTrustedDomain(dce_call, mem_ctx, &open);
+	status = dcesrv_lsa_OpenTrustedDomain(dce_call, mem_ctx, &opn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	DCESRV_PULL_HANDLE(h, opn.out.trustdom_handle, DCESRV_HANDLE_ANY);
 	talloc_steal(mem_ctx, h);
 
-	delete.in.handle = open.out.trustdom_handle;
-	delete.out.handle = open.out.trustdom_handle;
-	status = dcesrv_lsa_DeleteObject(dce_call, mem_ctx, &delete);
+	del.in.handle = opn.out.trustdom_handle;
+	del.out.handle = opn.out.trustdom_handle;
+	status = dcesrv_lsa_DeleteObject(dce_call, mem_ctx, &del);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1407,26 +1407,27 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoBySid(struct dcesrv_call_state 
 						struct lsa_QueryTrustedDomainInfoBySid *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomain open;
+	struct lsa_OpenTrustedDomain opn;
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
-	open.in.handle = r->in.handle;
-	open.in.sid = r->in.dom_sid;
-	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
-	if (!open.out.trustdom_handle) {
+
+	opn.in.handle = r->in.handle;
+	opn.in.sid = r->in.dom_sid;
+	opn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	opn.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!opn.out.trustdom_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = dcesrv_lsa_OpenTrustedDomain(dce_call, mem_ctx, &open);
+	status = dcesrv_lsa_OpenTrustedDomain(dce_call, mem_ctx, &opn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* Ensure this handle goes away at the end of this call */
-	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	DCESRV_PULL_HANDLE(h, opn.out.trustdom_handle, DCESRV_HANDLE_ANY);
 	talloc_steal(mem_ctx, h);
 
-	query.in.trustdom_handle = open.out.trustdom_handle;
+	query.in.trustdom_handle = opn.out.trustdom_handle;
 	query.in.level = r->in.level;
 	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);
@@ -1455,26 +1456,27 @@ static NTSTATUS dcesrv_lsa_QueryTrustedDomainInfoByName(struct dcesrv_call_state
 						 struct lsa_QueryTrustedDomainInfoByName *r)
 {
 	NTSTATUS status;
-	struct lsa_OpenTrustedDomainByName open;
+	struct lsa_OpenTrustedDomainByName opn;
 	struct lsa_QueryTrustedDomainInfo query;
 	struct dcesrv_handle *h;
-	open.in.handle = r->in.handle;
-	open.in.name = *r->in.trusted_domain;
-	open.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	open.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
-	if (!open.out.trustdom_handle) {
+
+	opn.in.handle = r->in.handle;
+	opn.in.name = *r->in.trusted_domain;
+	opn.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	opn.out.trustdom_handle = talloc(mem_ctx, struct policy_handle);
+	if (!opn.out.trustdom_handle) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	status = dcesrv_lsa_OpenTrustedDomainByName(dce_call, mem_ctx, &open);
+	status = dcesrv_lsa_OpenTrustedDomainByName(dce_call, mem_ctx, &opn);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 	
 	/* Ensure this handle goes away at the end of this call */
-	DCESRV_PULL_HANDLE(h, open.out.trustdom_handle, DCESRV_HANDLE_ANY);
+	DCESRV_PULL_HANDLE(h, opn.out.trustdom_handle, DCESRV_HANDLE_ANY);
 	talloc_steal(mem_ctx, h);
 
-	query.in.trustdom_handle = open.out.trustdom_handle;
+	query.in.trustdom_handle = opn.out.trustdom_handle;
 	query.in.level = r->in.level;
 	query.out.info = r->out.info;
 	status = dcesrv_lsa_QueryTrustedDomainInfo(dce_call, mem_ctx, &query);

@@ -46,13 +46,13 @@ NTSTATUS ntvfs_disconnect(struct ntvfs_context *ntvfs_ctx)
 
 /* async setup - called by a backend that wants to setup any state for
    a async request */
-NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private)
+NTSTATUS ntvfs_async_setup(struct ntvfs_request *req, void *private_data)
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->async_setup) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->async_setup(ntvfs, req, private);
+	return ntvfs->ops->async_setup(ntvfs, req, private_data);
 }
 
 /* filesystem operations */
@@ -148,24 +148,24 @@ NTSTATUS ntvfs_copy(struct ntvfs_request *req, struct smb_copy *cp)
 }
 
 /* directory search */
-NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *io, void *private,
-				     bool ntvfs_callback(void *private, const union smb_search_data *file))
+NTSTATUS ntvfs_search_first(struct ntvfs_request *req, union smb_search_first *io, void *private_data,
+				     bool ntvfs_callback(void *private_data, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->search_first) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->search_first(ntvfs, req, io, private, ntvfs_callback);
+	return ntvfs->ops->search_first(ntvfs, req, io, private_data, ntvfs_callback);
 }
 
-NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private,
-				    bool ntvfs_callback(void *private, const union smb_search_data *file))
+NTSTATUS ntvfs_search_next(struct ntvfs_request *req, union smb_search_next *io, void *private_data,
+				    bool ntvfs_callback(void *private_data, const union smb_search_data *file))
 {
 	struct ntvfs_module_context *ntvfs = req->ctx->modules;
 	if (!ntvfs->ops->search_next) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->ops->search_next(ntvfs, req, io, private, ntvfs_callback);
+	return ntvfs->ops->search_next(ntvfs, req, io, private_data, ntvfs_callback);
 }
 
 NTSTATUS ntvfs_search_close(struct ntvfs_request *req, union smb_search_close *io)
@@ -354,12 +354,12 @@ NTSTATUS ntvfs_next_disconnect(struct ntvfs_module_context *ntvfs)
 /* async_setup - called when setting up for a async request */
 NTSTATUS ntvfs_next_async_setup(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req, 
-					 void *private)
+					 void *private_data)
 {
 	if (!ntvfs->next || !ntvfs->next->ops->async_setup) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->async_setup(ntvfs->next, req, private);
+	return ntvfs->next->ops->async_setup(ntvfs->next, req, private_data);
 }
 
 /* filesystem operations */
@@ -468,24 +468,24 @@ NTSTATUS ntvfs_next_open(struct ntvfs_module_context *ntvfs,
 /* directory search */
 NTSTATUS ntvfs_next_search_first(struct ntvfs_module_context *ntvfs, 
 					  struct ntvfs_request *req,
-					  union smb_search_first *io, void *private,
-					  bool (*callback)(void *private, const union smb_search_data *file))
+					  union smb_search_first *io, void *private_data,
+					  bool (*callback)(void *private_data, const union smb_search_data *file))
 {
 	if (!ntvfs->next || !ntvfs->next->ops->search_first) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->search_first(ntvfs->next, req, io, private, callback);
+	return ntvfs->next->ops->search_first(ntvfs->next, req, io, private_data, callback);
 }
 
 NTSTATUS ntvfs_next_search_next(struct ntvfs_module_context *ntvfs, 
 					 struct ntvfs_request *req,
-					 union smb_search_next *io, void *private,
-					 bool (*callback)(void *private, const union smb_search_data *file))
+					 union smb_search_next *io, void *private_data,
+					 bool (*callback)(void *private_data, const union smb_search_data *file))
 {
 	if (!ntvfs->next || !ntvfs->next->ops->search_next) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
-	return ntvfs->next->ops->search_next(ntvfs->next, req, io, private, callback);
+	return ntvfs->next->ops->search_next(ntvfs->next, req, io, private_data, callback);
 }
 
 NTSTATUS ntvfs_next_search_close(struct ntvfs_module_context *ntvfs, 

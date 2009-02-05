@@ -93,7 +93,7 @@ static void rpc_np_write_done(struct async_req *subreq)
 	status = cli_write_andx_recv(subreq, &state->written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -105,7 +105,7 @@ static NTSTATUS rpc_np_write_recv(struct async_req *req, ssize_t *pwritten)
 		req->private_data, struct rpc_np_write_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*pwritten = state->written;
@@ -169,13 +169,13 @@ static void rpc_np_read_done(struct async_req *subreq)
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(subreq);
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	if (state->received > state->size) {
 		TALLOC_FREE(subreq);
-		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -189,7 +189,7 @@ static NTSTATUS rpc_np_read_recv(struct async_req *req, ssize_t *preceived)
 		req->private_data, struct rpc_np_read_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*preceived = state->received;
@@ -251,7 +251,7 @@ static void rpc_np_trans_done(struct async_req *subreq)
 				&state->rdata, &state->rdata_len);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 	async_req_done(req);
@@ -264,7 +264,7 @@ static NTSTATUS rpc_np_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 		req->private_data, struct rpc_np_trans_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*prdata = talloc_move(mem_ctx, &state->rdata);
@@ -272,49 +272,129 @@ static NTSTATUS rpc_np_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+struct rpc_transport_np_init_state {
+	struct rpc_cli_transport *transport;
+	struct rpc_transport_np_state *transport_np;
+};
+
+static void rpc_transport_np_init_pipe_open(struct async_req *subreq);
+
+struct async_req *rpc_transport_np_init_send(TALLOC_CTX *mem_ctx,
+					     struct event_context *ev,
+					     struct cli_state *cli,
+					     const struct ndr_syntax_id *abstract_syntax)
+{
+	struct async_req *result, *subreq;
+	struct rpc_transport_np_init_state *state;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct rpc_transport_np_init_state)) {
+		return NULL;
+	}
+
+	state->transport = talloc(state, struct rpc_cli_transport);
+	if (state->transport == NULL) {
+		goto fail;
+	}
+	state->transport_np = talloc(state->transport,
+				     struct rpc_transport_np_state);
+	if (state->transport_np == NULL) {
+		goto fail;
+	}
+	state->transport->priv = state->transport_np;
+
+	state->transport_np->pipe_name = get_pipe_name_from_iface(
+		abstract_syntax);
+	state->transport_np->cli = cli;
+
+	subreq = cli_ntcreate_send(
+		state, ev, cli, state->transport_np->pipe_name,	0,
+		DESIRED_ACCESS_PIPE, 0, FILE_SHARE_READ|FILE_SHARE_WRITE,
+		FILE_OPEN, 0, 0);
+	if (subreq == NULL) {
+		goto fail;
+	}
+	subreq->async.fn = rpc_transport_np_init_pipe_open;
+	subreq->async.priv = result;
+	return result;
+
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void rpc_transport_np_init_pipe_open(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct rpc_transport_np_init_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_transport_np_init_state);
+	NTSTATUS status;
+
+	status = cli_ntcreate_recv(subreq, &state->transport_np->fnum);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_nterror(req, status);
+		return;
+	}
+
+	talloc_set_destructor(state->transport_np,
+			      rpc_transport_np_state_destructor);
+	async_req_done(req);
+}
+
+NTSTATUS rpc_transport_np_init_recv(struct async_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    struct rpc_cli_transport **presult)
+{
+	struct rpc_transport_np_init_state *state = talloc_get_type_abort(
+		req->private_data, struct rpc_transport_np_init_state);
+	NTSTATUS status;
+
+	if (async_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	state->transport->write_send = rpc_np_write_send;
+	state->transport->write_recv = rpc_np_write_recv;
+	state->transport->read_send = rpc_np_read_send;
+	state->transport->read_recv = rpc_np_read_recv;
+	state->transport->trans_send = rpc_np_trans_send;
+	state->transport->trans_recv = rpc_np_trans_recv;
+
+	*presult = talloc_move(mem_ctx, &state->transport);
+	return NT_STATUS_OK;
+}
+
 NTSTATUS rpc_transport_np_init(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 			       const struct ndr_syntax_id *abstract_syntax,
 			       struct rpc_cli_transport **presult)
 {
-	struct rpc_cli_transport *result;
-	struct rpc_transport_np_state *state;
-	int fnum;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct event_context *ev;
+	struct async_req *req;
+	NTSTATUS status;
 
-	result = talloc(mem_ctx, struct rpc_cli_transport);
-	if (result == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	ev = event_context_init(frame);
+	if (ev == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
-	state = talloc(result, struct rpc_transport_np_state);
-	if (state == NULL) {
-		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+
+	req = rpc_transport_np_init_send(frame, ev, cli, abstract_syntax);
+	if (req == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
-	result->priv = state;
 
-	state->cli = cli;
-	state->pipe_name = cli_get_pipe_name_from_iface(
-		state, abstract_syntax);
-
-	fnum = cli_nt_create(cli, state->pipe_name, DESIRED_ACCESS_PIPE);
-	if (fnum == -1) {
-		DEBUG(3,("rpc_pipe_open_np: cli_nt_create failed on pipe %s "
-			 "to machine %s.  Error was %s\n", state->pipe_name,
-			 cli->desthost, cli_errstr(cli)));
-		TALLOC_FREE(result);
-		return cli_get_nt_error(cli);
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(ev);
 	}
-	state->fnum = fnum;
-	talloc_set_destructor(state, rpc_transport_np_state_destructor);
 
-	result->write_send = rpc_np_write_send;
-	result->write_recv = rpc_np_write_recv;
-	result->read_send = rpc_np_read_send;
-	result->read_recv = rpc_np_read_recv;
-	result->trans_send = rpc_np_trans_send;
-	result->trans_recv = rpc_np_trans_recv;
-
-	*presult = result;
-	return NT_STATUS_OK;
+	status = rpc_transport_np_init_recv(req, mem_ctx, presult);
+ fail:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 struct cli_state *rpc_pipe_np_smb_conn(struct rpc_pipe_client *p)

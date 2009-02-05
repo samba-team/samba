@@ -103,7 +103,7 @@ static struct cluster_ops cluster_local_ops = {
 	.backend_handle       = local_backend_handle,
 	.message_init         = local_message_init,
 	.message_send         = local_message_send,
-	.private              = NULL
+	.private_data         = NULL
 };
 
 void cluster_local_init(void)

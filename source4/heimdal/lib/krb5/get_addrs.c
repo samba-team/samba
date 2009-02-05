@@ -43,7 +43,9 @@ struct mbuf;
 #ifdef HAVE_NET_IF_H
 #include <net/if.h>
 #endif
+#ifdef HAVE_IFADDR_H
 #include <ifaddrs.h>
+#endif
 
 static krb5_error_code
 gethostname_fallback (krb5_context context, krb5_addresses *res)

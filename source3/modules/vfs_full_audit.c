@@ -155,6 +155,8 @@ static int smb_full_audit_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_STRUCT_STAT *sbuf);
 static int smb_full_audit_lstat(vfs_handle_struct *handle,
 		       const char *path, SMB_STRUCT_STAT *sbuf);
+static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
+		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 static int smb_full_audit_unlink(vfs_handle_struct *handle,
 			const char *path);
 static int smb_full_audit_chmod(vfs_handle_struct *handle,
@@ -403,6 +405,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_lstat),	SMB_VFS_OP_LSTAT,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_alloc_size),	SMB_VFS_OP_GET_ALLOC_SIZE,
+	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_unlink),	SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_chmod),	SMB_VFS_OP_CHMOD,
@@ -597,6 +601,7 @@ static struct {
 	{ SMB_VFS_OP_STAT,	"stat" },
 	{ SMB_VFS_OP_FSTAT,	"fstat" },
 	{ SMB_VFS_OP_LSTAT,	"lstat" },
+	{ SMB_VFS_OP_GET_ALLOC_SIZE,	"get_alloc_size" },
 	{ SMB_VFS_OP_UNLINK,	"unlink" },
 	{ SMB_VFS_OP_CHMOD,	"chmod" },
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
@@ -1323,6 +1328,18 @@ static int smb_full_audit_lstat(vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_LSTAT, (result >= 0), handle, "%s", path);
 
 	return result;    
+}
+
+static int smb_full_audit_get_alloc_size(vfs_handle_struct *handle,
+		       files_struct *fsp, const SMB_STRUCT_STAT *sbuf)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_GET_ALLOC_SIZE(handle, fsp, sbuf);
+
+	do_log(SMB_VFS_OP_GET_ALLOC_SIZE, (result >= 0), handle, "%d", result);
+
+	return result;
 }
 
 static int smb_full_audit_unlink(vfs_handle_struct *handle,

@@ -1,1 +1,1 @@
-. $SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP
+. $SCRIPTDIR/test_smbclient_s3.sh $SERVER $SERVER_IP $USERNAME $PASSWORD

@@ -28,6 +28,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
 
+/* idmap version determines auto-conversion - this is the database
+   structure version specifier. */
+
+#define IDMAP_VERSION 2
+
 /* High water mark keys */
 #define HWM_GROUP  "GROUP HWM"
 #define HWM_USER   "USER HWM"

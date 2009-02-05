@@ -28,7 +28,6 @@
 #include "librpc/gen_ndr/security.h"
 #include "../tdb/include/tdb.h"
 #include "tdb_wrap.h"
-#include "../lib/util/util_ldb.h"
 #include "libcli/security/security.h"
 #include "lib/events/events.h"
 #include "param/param.h"

@@ -31,8 +31,6 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
-
 #include "ldb_tdb.h"
 
 #define LTDB_FLAG_CASE_INSENSITIVE (1<<0)
@@ -57,9 +55,13 @@ static const struct {
 */
 static void ltdb_attributes_unload(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg;
 	int i;
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (ltdb->cache->attributes == NULL) {
 		/* no previously loaded attributes */
@@ -68,7 +70,7 @@ static void ltdb_attributes_unload(struct ldb_module *module)
 
 	msg = ltdb->cache->attributes;
 	for (i=0;i<msg->num_elements;i++) {
-		ldb_schema_attribute_remove(module->ldb, msg->elements[i].name);
+		ldb_schema_attribute_remove(ldb, msg->elements[i].name);
 	}
 
 	talloc_free(ltdb->cache->attributes);
@@ -104,12 +106,16 @@ static int ltdb_attributes_flags(struct ldb_message_element *el, unsigned *v)
 */
 static int ltdb_attributes_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg = ltdb->cache->attributes;
 	struct ldb_dn *dn;
 	int i, r;
 
-	dn = ldb_dn_new(module, module->ldb, LTDB_ATTRIBUTES);
+	ldb = ldb_module_get_ctx(module);
+
+	dn = ldb_dn_new(module, ldb, LTDB_ATTRIBUTES);
 	if (dn == NULL) goto failed;
 
 	r = ltdb_search_dn1(module, dn, msg);
@@ -128,7 +134,7 @@ static int ltdb_attributes_load(struct ldb_module *module)
 		const struct ldb_schema_syntax *s;
 
 		if (ltdb_attributes_flags(&msg->elements[i], &flags) != 0) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'\n", msg->elements[i].name);
+			ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid @ATTRIBUTES element for '%s'\n", msg->elements[i].name);
 			goto failed;
 		}
 		switch (flags & ~LTDB_FLAG_HIDDEN) {
@@ -142,22 +148,22 @@ static int ltdb_attributes_load(struct ldb_module *module)
 			syntax = LDB_SYNTAX_INTEGER;
 			break;
 		default:
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, 
+			ldb_debug(ldb, LDB_DEBUG_ERROR, 
 				  "Invalid flag combination 0x%x for '%s' in @ATTRIBUTES\n",
 				  flags, msg->elements[i].name);
 			goto failed;
 		}
 
-		s = ldb_standard_syntax_by_name(module->ldb, syntax);
+		s = ldb_standard_syntax_by_name(ldb, syntax);
 		if (s == NULL) {
-			ldb_debug(module->ldb, LDB_DEBUG_ERROR, 
+			ldb_debug(ldb, LDB_DEBUG_ERROR, 
 				  "Invalid attribute syntax '%s' for '%s' in @ATTRIBUTES\n",
 				  syntax, msg->elements[i].name);
 			goto failed;
 		}
 
 		flags |= LDB_ATTR_FLAG_ALLOCATED;
-		if (ldb_schema_attribute_add_with_syntax(module->ldb, msg->elements[i].name, flags, s) != 0) {
+		if (ldb_schema_attribute_add_with_syntax(ldb, msg->elements[i].name, flags, s) != 0) {
 			goto failed;
 		}
 	}
@@ -173,7 +179,9 @@ failed:
 */
 static int ltdb_baseinfo_init(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg;
 	struct ldb_message_element el;
 	struct ldb_val val;
@@ -182,6 +190,8 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 	   set in ltdb_cache_free(). Thanks to Jon for pointing this
 	   out. */
 	const char *initial_sequence_number = "1";
+
+	ldb = ldb_module_get_ctx(module);
 
 	ltdb->sequence_number = atof(initial_sequence_number);
 
@@ -192,7 +202,7 @@ static int ltdb_baseinfo_init(struct ldb_module *module)
 
 	msg->num_elements = 1;
 	msg->elements = &el;
-	msg->dn = ldb_dn_new(msg, module->ldb, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
 	if (!msg->dn) {
 		goto failed;
 	}
@@ -226,7 +236,8 @@ failed:
  */
 static void ltdb_cache_free(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 
 	ltdb->sequence_number = 0;
 	talloc_free(ltdb->cache);
@@ -248,12 +259,16 @@ int ltdb_cache_reload(struct ldb_module *module)
 */
 int ltdb_cache_load(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_dn *baseinfo_dn = NULL, *options_dn = NULL;
 	struct ldb_dn *indexlist_dn = NULL;
 	uint64_t seq;
 	struct ldb_message *baseinfo = NULL, *options = NULL;
 	int r;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* a very fast check to avoid extra database reads */
 	if (ltdb->cache != NULL && 
@@ -275,7 +290,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	baseinfo = talloc(ltdb->cache, struct ldb_message);
 	if (baseinfo == NULL) goto failed;
 
-	baseinfo_dn = ldb_dn_new(module, module->ldb, LTDB_BASEINFO);
+	baseinfo_dn = ldb_dn_new(module, ldb, LTDB_BASEINFO);
 	if (baseinfo_dn == NULL) goto failed;
 
 	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo);
@@ -307,7 +322,7 @@ int ltdb_cache_load(struct ldb_module *module)
 	options = talloc(ltdb->cache, struct ldb_message);
 	if (options == NULL) goto failed;
 
-	options_dn = ldb_dn_new(options, module->ldb, LTDB_OPTIONS);
+	options_dn = ldb_dn_new(options, ldb, LTDB_OPTIONS);
 	if (options_dn == NULL) goto failed;
 
 	r= ltdb_search_dn1(module, options_dn, options);
@@ -336,7 +351,7 @@ int ltdb_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 	    
-	indexlist_dn = ldb_dn_new(module, module->ldb, LTDB_INDEXLIST);
+	indexlist_dn = ldb_dn_new(module, ldb, LTDB_INDEXLIST);
 	if (indexlist_dn == NULL) goto failed;
 
 	r = ltdb_search_dn1(module, indexlist_dn, ltdb->cache->indexlist);
@@ -369,7 +384,9 @@ failed:
 */
 int ltdb_increase_sequence_number(struct ldb_module *module)
 {
-	struct ltdb_private *ltdb = (struct ltdb_private *)module->private_data;
+	struct ldb_context *ldb;
+	void *data = ldb_module_get_private(module);
+	struct ltdb_private *ltdb = talloc_get_type(data, struct ltdb_private);
 	struct ldb_message *msg;
 	struct ldb_message_element el[2];
 	struct ldb_val val;
@@ -377,6 +394,8 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 	time_t t = time(NULL);
 	char *s = NULL;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	msg = talloc(ltdb, struct ldb_message);
 	if (msg == NULL) {
@@ -392,7 +411,7 @@ int ltdb_increase_sequence_number(struct ldb_module *module)
 
 	msg->num_elements = ARRAY_SIZE(el);
 	msg->elements = el;
-	msg->dn = ldb_dn_new(msg, module->ldb, LTDB_BASEINFO);
+	msg->dn = ldb_dn_new(msg, ldb, LTDB_BASEINFO);
 	if (msg->dn == NULL) {
 		talloc_free(msg);
 		errno = ENOMEM;

@@ -595,6 +595,29 @@ _PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ size_t ndr_size_string_array(const char **a, uint32_t count, int flags)
+{
+	uint32_t i;
+	size_t size = 0;
+
+	switch (flags & LIBNDR_STRING_FLAGS) {
+	case LIBNDR_FLAG_STR_NULLTERM:
+		for (i = 0; i < count; i++) {
+			size += strlen_m_term(a[i]);
+		}
+		break;
+	case LIBNDR_FLAG_STR_NOTERM:
+		for (i = 0; i < count; i++) {
+			size += strlen_m(a[i]);
+		}
+		break;
+	default:
+		return 0;
+	}
+
+	return size;
+}
+
 /**
  * Return number of elements in a string including the last (zeroed) element 
  */

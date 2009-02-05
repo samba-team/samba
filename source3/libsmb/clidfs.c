@@ -275,9 +275,10 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	/* must be a normal share */
 
-	if (!cli_send_tconX(c, sharename, "?????",
-				password, strlen(password)+1)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
+	status = cli_tcon_andx(c, sharename, "?????",
+			       password, strlen(password)+1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("tree connect failed: %s\n", nt_errstr(status));
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -1077,7 +1078,7 @@ static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 	/* check for the referral */
 
-	if (!cli_send_tconX(cli, "IPC$", "IPC", NULL, 0)) {
+	if (!NT_STATUS_IS_OK(cli_tcon_andx(cli, "IPC$", "IPC", NULL, 0))) {
 		return false;
 	}
 

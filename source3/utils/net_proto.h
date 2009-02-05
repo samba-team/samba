@@ -427,6 +427,9 @@ int net_usershare(struct net_context *c, int argc, const char **argv);
 
 int net_lua(struct net_context *c, int argc, const char **argv);
 
+/* The following definitions come from utils/net_eventlog.c  */
+
+int net_eventlog(struct net_context *c, int argc, const char **argv);
 
 /* The following definitions come from utils/net_util.c  */
 

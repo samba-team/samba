@@ -1,6 +1,7 @@
 TEST_FORMAT = plain
 
-SELFTEST = $(LD_LIBPATH_OVERRIDE) $(PERL) $(selftestdir)/selftest.pl --prefix=${selftest_prefix} \
+SELFTEST = $(LD_LIBPATH_OVERRIDE) PYTHON=$(PYTHON) \
+    $(PERL) $(selftestdir)/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/selftest/knownfail \
 	--format=$(TEST_FORMAT) \

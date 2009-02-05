@@ -32,7 +32,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct asq_context {
 
@@ -63,11 +63,14 @@ struct asq_context {
 
 static struct asq_context *asq_context_init(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct asq_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct asq_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
@@ -206,8 +209,11 @@ static int asq_reqs_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 static int asq_build_first_request(struct asq_context *ac, struct ldb_request **base_req)
 {
+	struct ldb_context *ldb;
 	const char **base_attrs;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	ac->req_attrs = ac->req->op.search.attrs;
 	ac->req_attribute = talloc_strdup(ac, ac->asq_ctrl->source_attribute);
@@ -222,7 +228,7 @@ static int asq_build_first_request(struct asq_context *ac, struct ldb_request **
 
 	base_attrs[1] = NULL;
 
-	ret = ldb_build_search_req(base_req, ac->module->ldb, ac,
+	ret = ldb_build_search_req(base_req, ldb, ac,
 					ac->req->op.search.base,
 					LDB_SCOPE_BASE,
 					NULL,
@@ -239,6 +245,7 @@ static int asq_build_first_request(struct asq_context *ac, struct ldb_request **
 
 static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 {
+	struct ldb_context *ldb;
 	struct ldb_control **saved_controls;
 	struct ldb_control *control;
 	struct ldb_dn *dn;
@@ -248,6 +255,8 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 	if (ac->base_res == NULL) {
 		return LDB_ERR_NO_SUCH_OBJECT;
 	}
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	el = ldb_msg_find_element(ac->base_res->message, ac->req_attribute);
 	/* no values found */
@@ -266,7 +275,7 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 
 	for (i = 0; i < el->num_values; i++) {
 
-		dn = ldb_dn_new(ac, ac->module->ldb,
+		dn = ldb_dn_new(ac, ldb,
 				(const char *)el->values[i].data);
 		if ( ! ldb_dn_validate(dn)) {
 			ac->asq_ret = ASQ_CTRL_INVALID_ATTRIBUTE_SYNTAX;
@@ -275,7 +284,7 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 		}
 
 		ret = ldb_build_search_req_ex(&ac->reqs[i],
-						ac->module->ldb, ac,
+						ldb, ac,
 						dn, LDB_SCOPE_BASE,
 						ac->req->op.search.tree,
 						ac->req_attrs,
@@ -298,8 +307,11 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 
 static int asq_search_continue(struct asq_context *ac)
 {
+	struct ldb_context *ldb;
 	bool terminated = false;
 	int ret;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	switch (ac->step) {
 	case ASQ_SEARCH_BASE:
@@ -312,7 +324,7 @@ static int asq_search_continue(struct asq_context *ac)
 
 		ac->step = ASQ_SEARCH_MULTI;
 
-		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+		return ldb_request(ldb, ac->reqs[ac->cur_req]);
 
 	case ASQ_SEARCH_MULTI:
 
@@ -323,7 +335,7 @@ static int asq_search_continue(struct asq_context *ac)
 			return asq_search_terminate(ac);
 		}
 
-		return ldb_request(ac->module->ldb, ac->reqs[ac->cur_req]);
+		return ldb_request(ldb, ac->reqs[ac->cur_req]);
 	}
 
 	return LDB_ERR_OPERATIONS_ERROR;
@@ -331,10 +343,13 @@ static int asq_search_continue(struct asq_context *ac)
 
 static int asq_search(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *base_req;
 	struct ldb_control *control;
 	struct asq_context *ac;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* check if there's a paged request control */
 	control = ldb_request_get_control(req, LDB_CONTROL_ASQ_OID);
@@ -366,16 +381,19 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->step = ASQ_SEARCH_BASE;
 
-	return ldb_request(module->ldb, base_req);
+	return ldb_request(ldb, base_req);
 }
 
 static int asq_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_ASQ_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING, "asq: Unable to register control with rootdse!\n");
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "asq: Unable to register control with rootdse!\n");
 	}
 
 	return ldb_next_init(module);

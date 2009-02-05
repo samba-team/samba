@@ -159,18 +159,19 @@ sub wait_for_start($$)
 
 	# This will return quickly when things are up, but be slow if we 
 	# need to wait for (eg) SSL init 
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
-	system("bin/nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
+	my $nmblookup = $self->bindir_path("nmblookup");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{SERVER}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{SERVER}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSNAME}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} $testenv_vars->{NETBIOSALIAS}");
+	system("$nmblookup $testenv_vars->{CONFIGURATION} -U $testenv_vars->{SERVER_IP} $testenv_vars->{NETBIOSALIAS}");
 
 	print $self->getlog_env($testenv_vars);
 }
@@ -520,7 +521,6 @@ sub provision($$$$$$)
 	my $unix_uid = $>;
 	my $unix_gids_str = $);
 	my @unix_gids = split(" ", $unix_gids_str);
-	my $srcdir="$RealBin/..";
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
 	my $prefix_abs = abs_path($prefix);
 	my $tmpdir = "$prefix_abs/tmp";
@@ -718,6 +718,9 @@ nogroup:x:65534:nobody
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");
 	}
+	if (defined($ENV{PYTHON})) {
+		push (@provision_options, $ENV{PYTHON});
+	}
 	push (@provision_options, "$self->{setupdir}/provision");
 	push (@provision_options, split(' ', $configuration));
 	push (@provision_options, "--host-name=$netbiosname");
@@ -752,10 +755,14 @@ nogroup:x:65534:nobody
 		WINBINDD_SOCKET_DIR => $winbindd_socket_dir,
 		NCALRPCDIR => $ncalrpcdir,
 		LOCKDIR => $lockdir,
+		SERVERCONFFILE => $conffile,
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $swiface,
 		NSS_WRAPPER_PASSWD => $nsswrap_passwd,
 		NSS_WRAPPER_GROUP => $nsswrap_group,
+		SMBD_TEST_FIFO => "$prefix/smbd_test.fifo",
+		SMBD_TEST_LOG => "$prefix/smbd_test.log",
+		SMBD_TEST_LOG_POS => 0,
 	};
 
 	if (defined($self->{ldap})) {
@@ -813,10 +820,6 @@ sub provision_member($$$)
 
 	system($cmd) == 0 or die("Join failed\n$cmd");
 
-	$ret->{SMBD_TEST_FIFO} = "$prefix/smbd_test.fifo";
-	$ret->{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
-	$ret->{SMBD_TEST_LOG_POS} = 0;
-
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
@@ -842,9 +845,6 @@ sub provision_dc($$)
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
 
-	$ret->{SMBD_TEST_FIFO} = "$prefix/server_test.fifo";
-	$ret->{SMBD_TEST_LOG} = "$prefix/server_test.log";
-	$ret->{SMBD_TEST_LOG_POS} = 0;
 	return $ret;
 }
 

@@ -33,9 +33,23 @@
 #include "system/time.h"
 #include "system/wait.h"
 
+/* only do the C++ reserved word check when we compile
+   to include --with-developer since too many systems
+   still have comflicts with their header files (e.g. IRIX 6.4) */
+
+#if !defined(__cplusplus) && defined(DEVELOPER)
+#define class #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define private #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define public #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define protected #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define template #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define this #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define new #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define delete #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#define friend #error DONT_USE_CPLUSPLUS_RESERVED_NAMES
+#endif
+
 /* Lists, trees, caching, database... */
-#include <stdlib.h>
-#include <stdbool.h>
 #include <talloc.h>
 #ifndef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)

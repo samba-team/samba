@@ -148,7 +148,7 @@ NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
 	NTSTATUS status;
 	size_t size;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -297,7 +297,7 @@ struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx,
 	state->top_req = 0;
 
 	if (size == 0) {
-		if (!async_post_status(result, ev, NT_STATUS_OK)) {
+		if (!async_post_ntstatus(result, ev, NT_STATUS_OK)) {
 			goto failed;
 		}
 		return result;
@@ -367,7 +367,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 	status = cli_read_andx_recv(read_req, &read_state->data.read.received,
 				    &read_state->data.read.rcvbuf);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(state->req, status);
+		async_req_nterror(state->req, status);
 		return;
 	}
 
@@ -404,7 +404,7 @@ static void cli_pull_read_done(struct async_req *read_req)
 				     top_read->data.read.received,
 				     state->priv);
 		if (!NT_STATUS_IS_OK(status)) {
-			async_req_error(state->req, status);
+			async_req_nterror(state->req, status);
 			return;
 		}
 		state->pushed += top_read->data.read.received;
@@ -455,7 +455,7 @@ NTSTATUS cli_pull_recv(struct async_req *req, SMB_OFF_T *received)
 		req->private_data, struct cli_pull_state);
 	NTSTATUS status;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 	*received = state->pushed;
@@ -792,7 +792,7 @@ NTSTATUS cli_write_andx_recv(struct async_req *req, size_t *pwritten)
 	NTSTATUS status;
 	size_t written;
 
-	if (async_req_is_error(req, &status)) {
+	if (async_req_is_nterror(req, &status)) {
 		return status;
 	}
 
@@ -879,14 +879,14 @@ static void cli_writeall_written(struct async_req *subreq)
 	status = cli_write_andx_recv(subreq, &written);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(req, status);
+		async_req_nterror(req, status);
 		return;
 	}
 
 	state->written += written;
 
 	if (state->written > state->size) {
-		async_req_error(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		async_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
 
@@ -902,7 +902,7 @@ static void cli_writeall_written(struct async_req *subreq)
 				     state->buf + state->written,
 				     state->offset + state->written, to_write);
 	if (subreq == NULL) {
-		async_req_error(req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -912,7 +912,7 @@ static void cli_writeall_written(struct async_req *subreq)
 
 static NTSTATUS cli_writeall_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 struct cli_push_state {
@@ -1018,7 +1018,7 @@ struct async_req *cli_push_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	}
 
 	if (i == 0) {
-		if (!async_post_status(result, ev, NT_STATUS_OK)) {
+		if (!async_post_ntstatus(result, ev, NT_STATUS_OK)) {
 			goto failed;
 		}
 		return result;
@@ -1047,7 +1047,7 @@ static void cli_push_written(struct async_req *req)
 	}
 
 	if (i == state->num_reqs) {
-		async_req_error(state->req, NT_STATUS_INTERNAL_ERROR);
+		async_req_nterror(state->req, NT_STATUS_INTERNAL_ERROR);
 		return;
 	}
 
@@ -1055,7 +1055,7 @@ static void cli_push_written(struct async_req *req)
 	TALLOC_FREE(state->reqs[i]);
 	req = NULL;
 	if (!NT_STATUS_IS_OK(status)) {
-		async_req_error(state->req, status);
+		async_req_nterror(state->req, status);
 		return;
 	}
 
@@ -1081,7 +1081,7 @@ static void cli_push_written(struct async_req *req)
 		state->reqs, state->ev, state->cli, state->fnum,
 		state->mode, buf, state->start_offset + state->sent, to_write);
 	if (state->reqs[i] == NULL) {
-		async_req_error(state->req, NT_STATUS_NO_MEMORY);
+		async_req_nterror(state->req, NT_STATUS_NO_MEMORY);
 		return;
 	}
 
@@ -1094,7 +1094,7 @@ static void cli_push_written(struct async_req *req)
 
 NTSTATUS cli_push_recv(struct async_req *req)
 {
-	return async_req_simple_recv(req);
+	return async_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_push(struct cli_state *cli, uint16_t fnum, uint16_t mode,

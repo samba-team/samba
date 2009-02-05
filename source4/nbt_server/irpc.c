@@ -36,7 +36,8 @@
 static NTSTATUS nbtd_information(struct irpc_message *msg, 
 				 struct nbtd_information *r)
 {
-	struct nbtd_server *server = talloc_get_type(msg->private, struct nbtd_server);
+	struct nbtd_server *server = talloc_get_type(msg->private_data,
+						     struct nbtd_server);
 
 	switch (r->in.level) {
 	case NBTD_INFO_STATISTICS:
@@ -64,7 +65,7 @@ static void getdc_recv_netlogon_reply(struct dgram_mailslot_handler *dgmslot,
 				      struct socket_address *src)
 {
 	struct getdc_state *s =
-		talloc_get_type(dgmslot->private, struct getdc_state);
+		talloc_get_type(dgmslot->private_data, struct getdc_state);
 	const char *p;
 	struct nbt_netlogon_response netlogon;
 	NTSTATUS status;
@@ -111,7 +112,7 @@ static NTSTATUS nbtd_getdcname(struct irpc_message *msg,
 			       struct nbtd_getdcname *req)
 {
 	struct nbtd_server *server =
-		talloc_get_type(msg->private, struct nbtd_server);
+		talloc_get_type(msg->private_data, struct nbtd_server);
 	struct nbtd_interface *iface = nbtd_find_request_iface(server, req->in.ip_address, true);
 	struct getdc_state *s;
 	struct nbt_netlogon_packet p;

@@ -7,6 +7,9 @@ AC_CACHE_CHECK([for broken readdir],libreplace_cv_READDIR_NEEDED,[
 	[libreplace_cv_READDIR_NEEDED="assuming not"])
 ])
 
+AC_CHECK_FUNCS(dirfd)
+AC_HAVE_DECL(dirfd, [#include <dirent.h>])
+
 #
 # try to replace with getdirentries() if needed
 #

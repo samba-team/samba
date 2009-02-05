@@ -204,40 +204,137 @@ void send_trans_reply(connection_struct *conn,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static void api_rpc_trans_reply(connection_struct *conn,
-				struct smb_request *req,
-				files_struct *fsp,
-				int max_trans_reply)
-{
-	bool is_data_outstanding;
-	uint8_t *rdata = SMB_MALLOC_ARRAY(uint8_t, max_trans_reply);
-	ssize_t data_len;
-	NTSTATUS status;
+struct dcerpc_cmd_state {
+	struct fake_file_handle *handle;
+	uint8_t *data;
+	size_t num_data;
+	size_t max_read;
+};
 
-	if(rdata == NULL) {
-		DEBUG(0,("api_rpc_trans_reply: malloc fail.\n"));
+static void api_dcerpc_cmd_write_done(struct async_req *subreq);
+static void api_dcerpc_cmd_read_done(struct async_req *subreq);
+
+static void api_dcerpc_cmd(connection_struct *conn, struct smb_request *req,
+			   files_struct *fsp, uint8_t *data, size_t length,
+			   size_t max_read)
+{
+	struct async_req *subreq;
+	struct dcerpc_cmd_state *state;
+
+	if (!fsp_is_np(fsp)) {
+		api_no_reply(conn, req);
+		return;
+	}
+
+	state = talloc(req, struct dcerpc_cmd_state);
+	if (state == NULL) {
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	req->async_priv = state;
 
-	if (!fsp_is_np(fsp)) {
-		SAFE_FREE(rdata);
-		api_no_reply(conn,req);
+	state->handle = fsp->fake_file_handle;
+
+	/*
+	 * This memdup severely sucks. But doing it properly essentially means
+	 * to rewrite lanman.c, something which I don't really want to do now.
+	 */
+	state->data = (uint8_t *)talloc_memdup(state, data, length);
+	if (state->data == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	state->num_data = length;
+	state->max_read = max_read;
 
-	status = np_read(fsp->fake_file_handle, rdata, max_trans_reply,
-			 &data_len, &is_data_outstanding);
-	if (!NT_STATUS_IS_OK(status)) {
-		SAFE_FREE(rdata);
-		api_no_reply(conn,req);
+	subreq = np_write_send(state, smbd_event_context(), state->handle,
+			       state->data, length);
+	if (subreq == NULL) {
+		TALLOC_FREE(state);
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
+	subreq->async.fn = api_dcerpc_cmd_write_done;
+	subreq->async.priv = talloc_move(conn, &req);
+}
 
-	send_trans_reply(conn, req, NULL, 0, (char *)rdata, data_len,
-			 is_data_outstanding);
-	SAFE_FREE(rdata);
+static void api_dcerpc_cmd_write_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct dcerpc_cmd_state *state = talloc_get_type_abort(
+		req->async_priv, struct dcerpc_cmd_state);
+	NTSTATUS status;
+	ssize_t nwritten = -1;
+
+	status = np_write_recv(subreq, &nwritten);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_IS_OK(status) || (nwritten != state->num_data)) {
+		DEBUG(10, ("Could not write to pipe: %s (%d/%d)\n",
+			   nt_errstr(status), (int)state->num_data,
+			   (int)nwritten));
+		reply_nterror(req, NT_STATUS_PIPE_NOT_AVAILABLE);
+		goto send;
+	}
+
+	state->data = TALLOC_REALLOC_ARRAY(state, state->data, uint8_t,
+					   state->max_read);
+	if (state->data == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto send;
+	}
+
+	subreq = np_read_send(req->conn, smbd_event_context(),
+			      state->handle, state->data, state->max_read);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto send;
+	}
+
+	subreq->async.fn = api_dcerpc_cmd_read_done;
+	subreq->async.priv = req;
 	return;
+
+ send:
+	if (!srv_send_smb(
+		    smbd_server_fd(), (char *)req->outbuf,
+		    IS_CONN_ENCRYPTED(req->conn) || req->encrypted)) {
+		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+	}
+	TALLOC_FREE(req);
+}
+
+static void api_dcerpc_cmd_read_done(struct async_req *subreq)
+{
+	struct smb_request *req = talloc_get_type_abort(
+		subreq->async.priv, struct smb_request);
+	struct dcerpc_cmd_state *state = talloc_get_type_abort(
+		req->async_priv, struct dcerpc_cmd_state);
+	NTSTATUS status;
+	ssize_t nread;
+	bool is_data_outstanding;
+
+	status = np_read_recv(subreq, &nread, &is_data_outstanding);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("Could not read from to pipe: %s\n",
+			   nt_errstr(status)));
+		reply_nterror(req, status);
+
+		if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
+				  IS_CONN_ENCRYPTED(req->conn)
+				  ||req->encrypted)) {
+			exit_server_cleanly("construct_reply: srv_send_smb "
+					    "failed.");
+		}
+		TALLOC_FREE(req);
+		return;
+	}
+
+	send_trans_reply(req->conn, req, NULL, 0, (char *)state->data, nread,
+			 is_data_outstanding);
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
@@ -310,7 +407,6 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	struct files_struct *fsp;
 	int pnum;
 	int subcommand;
-	NTSTATUS status;
 
 	DEBUG(5,("api_fd_reply\n"));
 
@@ -360,14 +456,8 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 	switch (subcommand) {
 	case TRANSACT_DCERPCCMD: {
 		/* dce/rpc command */
-		ssize_t nwritten;
-		status = np_write(fsp->fake_file_handle, data, tdscnt,
-				  &nwritten);
-		if (!NT_STATUS_IS_OK(status)) {
-			api_no_reply(conn, req);
-			return;
-		}
-		api_rpc_trans_reply(conn, req, fsp, mdrcnt);
+		api_dcerpc_cmd(conn, req, fsp, (uint8_t *)data, tdscnt,
+			       mdrcnt);
 		break;
 	}
 	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:

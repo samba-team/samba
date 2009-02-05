@@ -30,6 +30,7 @@ LIBSAMBA-UTIL_OBJ_FILES = $(addprefix $(libutilsrcdir)/, \
 		params.o)
 
 PUBLIC_HEADERS += $(addprefix $(libutilsrcdir)/, util.h \
+				 dlinklist.h \
 				 attr.h \
 				 byteorder.h \
 				 data_blob.h \

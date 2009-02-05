@@ -200,9 +200,9 @@ static void kdc_recv_handler(struct kdc_socket *kdc_socket)
   handle fd events on a KDC socket
 */
 static void kdc_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-			       uint16_t flags, void *private)
+			       uint16_t flags, void *private_data)
 {
-	struct kdc_socket *kdc_socket = talloc_get_type(private, struct kdc_socket);
+	struct kdc_socket *kdc_socket = talloc_get_type(private_data, struct kdc_socket);
 	if (flags & EVENT_FD_WRITE) {
 		kdc_send_handler(kdc_socket);
 	} 
@@ -219,9 +219,9 @@ static void kdc_tcp_terminate_connection(struct kdc_tcp_connection *kdcconn, con
 /*
   receive a full packet on a KDC connection
 */
-static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
+static NTSTATUS kdc_tcp_recv(void *private_data, DATA_BLOB blob)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, 
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(private_data,
 							     struct kdc_tcp_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(kdcconn);
@@ -285,7 +285,7 @@ static NTSTATUS kdc_tcp_recv(void *private, DATA_BLOB blob)
 */
 static void kdc_tcp_recv_handler(struct stream_connection *conn, uint16_t flags)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
 	packet_recv(kdcconn->packet);
 }
@@ -293,9 +293,10 @@ static void kdc_tcp_recv_handler(struct stream_connection *conn, uint16_t flags)
 /*
   called on a tcp recv error
 */
-static void kdc_tcp_recv_error(void *private, NTSTATUS status)
+static void kdc_tcp_recv_error(void *private_data, NTSTATUS status)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(private, struct kdc_tcp_connection);
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(private_data,
+					     struct kdc_tcp_connection);
 	kdc_tcp_terminate_connection(kdcconn, nt_errstr(status));
 }
 
@@ -304,7 +305,7 @@ static void kdc_tcp_recv_error(void *private, NTSTATUS status)
 */
 static void kdc_tcp_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private, 
+	struct kdc_tcp_connection *kdcconn = talloc_get_type(conn->private_data,
 							     struct kdc_tcp_connection);
 	packet_queue_run(kdcconn->packet);
 }
@@ -356,7 +357,7 @@ static bool kdc_process(struct kdc_server *kdc,
 */
 static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_fn_t process_fn)
 {
-	struct kdc_server *kdc = talloc_get_type(conn->private, struct kdc_server);
+	struct kdc_server *kdc = talloc_get_type(conn->private_data, struct kdc_server);
 	struct kdc_tcp_connection *kdcconn;
 
 	kdcconn = talloc_zero(conn, struct kdc_tcp_connection);
@@ -367,7 +368,7 @@ static void kdc_tcp_generic_accept(struct stream_connection *conn, kdc_process_f
 	kdcconn->conn	 = conn;
 	kdcconn->kdc	 = kdc;
 	kdcconn->process = process_fn;
-	conn->private    = kdcconn;
+	conn->private_data    = kdcconn;
 
 	kdcconn->packet = packet_init(kdcconn);
 	if (kdcconn->packet == NULL) {
@@ -565,7 +566,7 @@ static NTSTATUS kdc_check_generic_kerberos(struct irpc_message *msg,
 	struct PAC_Validate pac_validate;
 	DATA_BLOB srv_sig;
 	struct PAC_SIGNATURE_DATA kdc_sig;
-	struct kdc_server *kdc = talloc_get_type(msg->private, struct kdc_server);
+	struct kdc_server *kdc = talloc_get_type(msg->private_data, struct kdc_server);
 	enum ndr_err_code ndr_err;
 	krb5_enctype etype;
 	int ret;

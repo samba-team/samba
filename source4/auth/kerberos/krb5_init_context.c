@@ -65,11 +65,11 @@ static krb5_error_code smb_krb5_context_destroy_2(struct smb_krb5_context *ctx)
 }
 
 /* We never close down the DEBUG system, and no need to unreference the use */
-static void smb_krb5_debug_close(void *private) {
+static void smb_krb5_debug_close(void *private_data) {
 	return;
 }
 
-static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private) 
+static void smb_krb5_debug_wrapper(const char *timestr, const char *msg, void *private_data)
 {
 	DEBUG(2, ("Kerberos: %s\n", msg));
 }
@@ -117,9 +117,9 @@ static void smb_krb5_socket_recv(struct smb_krb5_socket *smb_krb5)
 	talloc_free(tmp_ctx);
 }
 
-static NTSTATUS smb_krb5_full_packet(void *private, DATA_BLOB data) 
+static NTSTATUS smb_krb5_full_packet(void *private_data, DATA_BLOB data)
 {
-	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private_data, struct smb_krb5_socket);
 	talloc_steal(smb_krb5, data.data);
 	smb_krb5->reply = data;
 	smb_krb5->reply.length -= 4;
@@ -132,16 +132,16 @@ static NTSTATUS smb_krb5_full_packet(void *private, DATA_BLOB data)
 */
 static void smb_krb5_request_timeout(struct tevent_context *event_ctx, 
 				  struct tevent_timer *te, struct timeval t,
-				  void *private)
+				  void *private_data)
 {
-	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private_data, struct smb_krb5_socket);
 	DEBUG(5,("Timed out smb_krb5 packet\n"));
 	smb_krb5->status = NT_STATUS_IO_TIMEOUT;
 }
 
-static void smb_krb5_error_handler(void *private, NTSTATUS status) 
+static void smb_krb5_error_handler(void *private_data, NTSTATUS status)
 {
-	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private_data, struct smb_krb5_socket);
 	smb_krb5->status = status;
 }
 
@@ -170,9 +170,9 @@ static void smb_krb5_socket_send(struct smb_krb5_socket *smb_krb5)
   handle fd events on a smb_krb5_socket
 */
 static void smb_krb5_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-				 uint16_t flags, void *private)
+				 uint16_t flags, void *private_data)
 {
-	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private, struct smb_krb5_socket);
+	struct smb_krb5_socket *smb_krb5 = talloc_get_type(private_data, struct smb_krb5_socket);
 	switch (smb_krb5->hi->proto) {
 	case KRB5_KRBHST_UDP:
 		if (flags & TEVENT_FD_READ) {

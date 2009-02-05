@@ -36,7 +36,7 @@ struct connect_state {
 
 static void socket_connect_handler(struct tevent_context *ev,
 				   struct tevent_fd *fde, 
-				   uint16_t flags, void *private);
+				   uint16_t flags, void *private_data);
 
 /*
   call the real socket_connect() call, and setup event handler
@@ -118,10 +118,10 @@ struct composite_context *socket_connect_send(struct socket_context *sock,
 */
 static void socket_connect_handler(struct tevent_context *ev,
 				   struct tevent_fd *fde, 
-				   uint16_t flags, void *private)
+				   uint16_t flags, void *private_data)
 {
 	struct composite_context *result =
-		talloc_get_type(private, struct composite_context);
+		talloc_get_type(private_data, struct composite_context);
 	struct connect_state *state = talloc_get_type(result->private_data,
 						      struct connect_state);
 

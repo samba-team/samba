@@ -610,7 +610,8 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 	AUTH_NTLMSSP_STATE *a = p->auth.a_u.auth_ntlmssp_state;
 	bool ret;
 
-	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n", p->name));
+	DEBUG(5,("pipe_ntlmssp_verify_final: pipe %s checking user details\n",
+		 get_pipe_name_from_iface(&p->syntax)));
 
 	ZERO_STRUCT(reply);
 
@@ -634,7 +635,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SIGN)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet integrity requested "
 				"but client declined signing.\n",
-					p->name ));
+				get_pipe_name_from_iface(&p->syntax)));
 			return False;
 		}
 	}
@@ -642,7 +643,7 @@ static bool pipe_ntlmssp_verify_final(pipes_struct *p, DATA_BLOB *p_resp_blob)
 		if (!(a->ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_SEAL)) {
 			DEBUG(0,("pipe_ntlmssp_verify_final: pipe %s : packet privacy requested "
 				"but client declined sealing.\n",
-					p->name ));
+				get_pipe_name_from_iface(&p->syntax)));
 			return False;
 		}
 	}
@@ -962,14 +963,14 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	int i=0;
 	struct pipe_rpc_fns *context_fns;
 
-	DEBUG(3,("check_bind_req for %s\n", p->name));
+	DEBUG(3,("check_bind_req for %s\n",
+		 get_pipe_name_from_iface(&p->syntax)));
 
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 
 	for (i=0; i<rpc_lookup_size; i++) {
 		DEBUGADD(10, ("checking %s\n", rpc_lookup[i].pipe.clnt));
-		if (strequal(rpc_lookup[i].pipe.clnt, p->name)
-		    && ndr_syntax_id_equal(
+		if (ndr_syntax_id_equal(
 			    abstract, &rpc_lookup[i].rpc_interface)
 		    && ndr_syntax_id_equal(
 			    transfer, &ndr_transfer_syntax)) {
@@ -1056,7 +1057,7 @@ NTSTATUS rpc_srv_register(int version, const char *clnt, const char *srv,
  * @param[in] cli_filename	The pipe name requested by the client
  * @result			Do we want to serve this?
  */
-bool is_known_pipename(const char *cli_filename)
+bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax)
 {
 	const char *pipename = cli_filename;
 	int i;
@@ -1076,6 +1077,7 @@ bool is_known_pipename(const char *cli_filename)
 
 	for (i=0; i<rpc_lookup_size; i++) {
 		if (strequal(pipename, rpc_lookup[i].pipe.clnt)) {
+			*syntax = rpc_lookup[i].rpc_interface;
 			return true;
 		}
 	}
@@ -1145,7 +1147,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	}
 	DEBUG(3,("pipe_spnego_auth_bind_negotiate: Got secblob of size %lu\n", (unsigned long)secblob.length));
 
-	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || lp_use_kerberos_keytab()) ) {
+	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) || USE_KERBEROS_KEYTAB) ) {
 		bool ret = pipe_spnego_auth_bind_kerberos(p, rpc_in_p, pauth_info, &secblob, pout_auth);
 		data_blob_free(&secblob);
 		data_blob_free(&blob);
@@ -1530,7 +1532,8 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	/* No rebinds on a bound pipe - use alter context. */
 	if (p->pipe_bound) {
-		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound pipe %s.\n", p->pipe_srv_name));
+		DEBUG(2,("api_pipe_bind_req: rejecting bind request on bound "
+			 "pipe %s.\n", get_pipe_name_from_iface(&p->syntax)));
 		return setup_bind_nak(p);
 	}
 
@@ -1589,16 +1592,20 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 					&hdr_rb.rpc_context[0].abstract)) {
 			DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
 				rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-			fstrcpy(p->name, rpc_lookup[i].pipe.clnt);
-			fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
 			break;
 		}
 	}
 
 	if (i == rpc_lookup_size) {
-		if (NT_STATUS_IS_ERR(smb_probe_module("rpc", p->name))) {
+		NTSTATUS status;
+
+		status = smb_probe_module(
+			"rpc", get_pipe_name_from_iface(
+				&hdr_rb.rpc_context[0].abstract));
+
+		if (NT_STATUS_IS_ERR(status)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
-                                p->name ));
+                                get_pipe_name_from_iface(&hdr_rb.rpc_context[0].abstract)));
 			prs_mem_free(&outgoing_rpc);
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
@@ -1607,23 +1614,26 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
                 }
 
                 for (i = 0; i < rpc_lookup_size; i++) {
-                       if (strequal(rpc_lookup[i].pipe.clnt, p->name)) {
+                       if (strequal(rpc_lookup[i].pipe.clnt,
+				    get_pipe_name_from_iface(&p->syntax))) {
                                DEBUG(3, ("api_pipe_bind_req: \\PIPE\\%s -> \\PIPE\\%s\n",
                                          rpc_lookup[i].pipe.clnt, rpc_lookup[i].pipe.srv));
-                               fstrcpy(p->pipe_srv_name, rpc_lookup[i].pipe.srv);
                                break;
                        }
                 }
 
 		if (i == rpc_lookup_size) {
-			DEBUG(0, ("module %s doesn't provide functions for pipe %s!\n", p->name, p->name));
+			DEBUG(0, ("module %s doesn't provide functions for "
+				  "pipe %s!\n",
+				  get_pipe_name_from_iface(&p->syntax),
+				  get_pipe_name_from_iface(&p->syntax)));
 			goto err_exit;
 		}
 	}
 
 	/* name has to be \PIPE\xxxxx */
 	fstrcpy(ack_pipe_name, "\\PIPE\\");
-	fstrcat(ack_pipe_name, p->pipe_srv_name);
+	fstrcat(ack_pipe_name, rpc_lookup[i].pipe.srv);
 
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
@@ -2233,7 +2243,7 @@ void free_pipe_rpc_context( PIPE_RPC_FNS *list )
 	return;	
 }
 
-static bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
+static bool api_rpcTNP(pipes_struct *p,
 		       const struct api_struct *api_rpc_cmds, int n_cmds);
 
 /****************************************************************************
@@ -2258,7 +2268,8 @@ bool api_pipe_request(pipes_struct *p)
 		changed_user = True;
 	}
 
-	DEBUG(5, ("Requested \\PIPE\\%s\n", p->name));
+	DEBUG(5, ("Requested \\PIPE\\%s\n",
+		  get_pipe_name_from_iface(&p->syntax)));
 
 	/* get the set of RPC functions for this context */
 
@@ -2266,12 +2277,13 @@ bool api_pipe_request(pipes_struct *p)
 
 	if ( pipe_fns ) {
 		TALLOC_CTX *frame = talloc_stackframe();
-		ret = api_rpcTNP(p, p->name, pipe_fns->cmds, pipe_fns->n_cmds);
+		ret = api_rpcTNP(p, pipe_fns->cmds, pipe_fns->n_cmds);
 		TALLOC_FREE(frame);
 	}
 	else {
 		DEBUG(0,("api_pipe_request: No rpc function table associated with context [%d] on pipe [%s]\n",
-			p->hdr_req.context_id, p->name));
+			p->hdr_req.context_id,
+			get_pipe_name_from_iface(&p->syntax)));
 	}
 
 	if (changed_user) {
@@ -2285,18 +2297,22 @@ bool api_pipe_request(pipes_struct *p)
  Calls the underlying RPC function for a named pipe.
  ********************************************************************/
 
-static bool api_rpcTNP(pipes_struct *p, const char *rpc_name, 
+static bool api_rpcTNP(pipes_struct *p,
 		       const struct api_struct *api_rpc_cmds, int n_cmds)
 {
 	int fn_num;
-	fstring name;
 	uint32 offset1, offset2;
 
 	/* interpret the command */
-	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
+	DEBUG(4,("api_rpcTNP: %s op 0x%x - ",
+		 get_pipe_name_from_iface(&p->syntax), p->hdr_req.opnum));
 
-	slprintf(name, sizeof(name)-1, "in_%s", rpc_name);
-	prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
+	if (DEBUGLEVEL >= 50) {
+		fstring name;
+		slprintf(name, sizeof(name)-1, "in_%s",
+			 get_pipe_name_from_iface(&p->syntax));
+		prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
+	}
 
 	for (fn_num = 0; fn_num < n_cmds; fn_num++) {
 		if (api_rpc_cmds[fn_num].opnum == p->hdr_req.opnum && api_rpc_cmds[fn_num].fn != NULL) {
@@ -2322,7 +2338,9 @@ static bool api_rpcTNP(pipes_struct *p, const char *rpc_name,
                 fn_num, api_rpc_cmds[fn_num].fn));
 	/* do the actual command */
 	if(!api_rpc_cmds[fn_num].fn(p)) {
-		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
+		DEBUG(0,("api_rpcTNP: %s: %s failed.\n",
+			 get_pipe_name_from_iface(&p->syntax),
+			 api_rpc_cmds[fn_num].name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
 	}
@@ -2341,13 +2359,18 @@ static bool api_rpcTNP(pipes_struct *p, const char *rpc_name,
 		return True;
 	}
 
-	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
 	offset2 = prs_offset(&p->out_data.rdata);
 	prs_set_offset(&p->out_data.rdata, offset1);
-	prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
+	if (DEBUGLEVEL >= 50) {
+		fstring name;
+		slprintf(name, sizeof(name)-1, "out_%s",
+			 get_pipe_name_from_iface(&p->syntax));
+		prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);
+	}
 	prs_set_offset(&p->out_data.rdata, offset2);
 
-	DEBUG(5,("api_rpcTNP: called %s successfully\n", rpc_name));
+	DEBUG(5,("api_rpcTNP: called %s successfully\n",
+		 get_pipe_name_from_iface(&p->syntax)));
 
 	/* Check for buffer underflow in rpc parsing */
 

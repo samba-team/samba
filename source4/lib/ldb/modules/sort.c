@@ -31,7 +31,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_module.h"
 
 struct opaque {
 	struct ldb_context *ldb;
@@ -104,6 +104,9 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 {
 	struct sort_context *ac = talloc_get_type(opaque, struct sort_context);
 	struct ldb_message_element *el1, *el2;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ac || ac->sort_result != 0) {
 		/* an error occurred previously,
@@ -122,17 +125,20 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 	}
 
 	if (ac->reverse)
-		return ac->a->syntax->comparison_fn(ac->module->ldb, ac, &el2->values[0], &el1->values[0]);
+		return ac->a->syntax->comparison_fn(ldb, ac, &el2->values[0], &el1->values[0]);
 
-	return ac->a->syntax->comparison_fn(ac->module->ldb, ac, &el1->values[0], &el2->values[0]);
+	return ac->a->syntax->comparison_fn(ldb, ac, &el1->values[0], &el2->values[0]);
 }
 
 static int server_sort_results(struct sort_context *ac)
 {
+	struct ldb_context *ldb;
 	struct ldb_reply *ares;
 	int i, ret;
 
-	ac->a = ldb_schema_attribute_by_name(ac->module->ldb, ac->attributeName);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	ac->a = ldb_schema_attribute_by_name(ldb, ac->attributeName);
 	ac->sort_result = 0;
 
 	ldb_qsort(ac->msgs, ac->num_msgs,
@@ -179,9 +185,11 @@ static int server_sort_results(struct sort_context *ac)
 static int server_sort_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct sort_context *ac;
+	struct ldb_context *ldb;
 	int ret;
 
 	ac = talloc_get_type(req->context, struct sort_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -197,7 +205,7 @@ static int server_sort_search_callback(struct ldb_request *req, struct ldb_reply
 		ac->msgs = talloc_realloc(ac, ac->msgs, struct ldb_message *, ac->num_msgs + 2);
 		if (! ac->msgs) {
 			talloc_free(ares);
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -212,7 +220,7 @@ static int server_sort_search_callback(struct ldb_request *req, struct ldb_reply
 		ac->referrals = talloc_realloc(ac, ac->referrals, char *, ac->num_refs + 2);
 		if (! ac->referrals) {
 			talloc_free(ares);
-			ldb_oom(ac->module->ldb);
+			ldb_oom(ldb);
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
 		}
@@ -242,7 +250,10 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	struct ldb_control **controls;
 	struct ldb_request *down_req;
 	struct sort_context *ac;
+	struct ldb_context *ldb;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	/* check if there's a paged request control */
 	control = ldb_request_get_control(req, LDB_CONTROL_SERVER_SORT_OID);
@@ -253,7 +264,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 
 	ac = talloc_zero(req, struct sort_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -291,7 +302,7 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 	ac->orderingRule = sort_ctrls[0]->orderingRule;
 	ac->reverse = sort_ctrls[0]->reverse;
 
-	ret = ldb_build_search_req_ex(&down_req, module->ldb, ac,
+	ret = ldb_build_search_req_ex(&down_req, ldb, ac,
 					req->op.search.base,
 					req->op.search.scope,
 					req->op.search.tree,
@@ -316,11 +327,14 @@ static int server_sort_search(struct ldb_module *module, struct ldb_request *req
 
 static int server_sort_init(struct ldb_module *module)
 {
+	struct ldb_context *ldb;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_SERVER_SORT_OID);
 	if (ret != LDB_SUCCESS) {
-		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			"server_sort:"
 			"Unable to register control with rootdse!\n");
 	}

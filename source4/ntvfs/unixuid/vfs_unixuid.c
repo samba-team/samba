@@ -170,7 +170,7 @@ static NTSTATUS nt_token_to_unix_security(struct ntvfs_module_context *ntvfs,
 static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 				       struct ntvfs_request *req, struct unix_sec_ctx **sec)
 {
-	struct unixuid_private *private = ntvfs->private_data;
+	struct unixuid_private *priv = ntvfs->private_data;
 	struct security_token *token;
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
@@ -186,20 +186,20 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (token == private->last_token) {
-		newsec = private->last_sec_ctx;
+	if (token == priv->last_token) {
+		newsec = priv->last_sec_ctx;
 	} else {
 		status = nt_token_to_unix_security(ntvfs, req, token, &newsec);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(*sec);
 			return status;
 		}
-		if (private->last_sec_ctx) {
-			talloc_free(private->last_sec_ctx);
+		if (priv->last_sec_ctx) {
+			talloc_free(priv->last_sec_ctx);
 		}
-		private->last_sec_ctx = newsec;
-		private->last_token = token;
-		talloc_steal(private, newsec);
+		priv->last_sec_ctx = newsec;
+		priv->last_token = token;
+		talloc_steal(priv, newsec);
 	}
 
 	status = set_unix_security(newsec);
@@ -233,24 +233,24 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 				struct ntvfs_request *req, const char *sharename)
 {
-	struct unixuid_private *private;
+	struct unixuid_private *priv;
 	NTSTATUS status;
 
-	private = talloc(ntvfs, struct unixuid_private);
-	if (!private) {
+	priv = talloc(ntvfs, struct unixuid_private);
+	if (!priv) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	private->wbc_ctx = wbc_init(private, ntvfs->ctx->msg_ctx,
+	priv->wbc_ctx = wbc_init(priv, ntvfs->ctx->msg_ctx,
 				    ntvfs->ctx->event_ctx);
-	if (private->wbc_ctx == NULL) {
-		talloc_free(private);
+	if (priv->wbc_ctx == NULL) {
+		talloc_free(priv);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ntvfs->private_data = private;
-	private->last_sec_ctx = NULL;
-	private->last_token = NULL;
+	ntvfs->private_data = priv;
+	priv->last_sec_ctx = NULL;
+	priv->last_token = NULL;
 
 	/* we don't use PASS_THRU_REQ here, as the connect operation runs with 
 	   root privileges. This allows the backends to setup any database
@@ -265,10 +265,10 @@ static NTSTATUS unixuid_connect(struct ntvfs_module_context *ntvfs,
 */
 static NTSTATUS unixuid_disconnect(struct ntvfs_module_context *ntvfs)
 {
-	struct unixuid_private *private = ntvfs->private_data;
+	struct unixuid_private *priv = ntvfs->private_data;
 	NTSTATUS status;
 
-	talloc_free(private);
+	talloc_free(priv);
 	ntvfs->private_data = NULL;
 
 	status = ntvfs_next_disconnect(ntvfs);
@@ -509,12 +509,12 @@ static NTSTATUS unixuid_exit(struct ntvfs_module_context *ntvfs,
 static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
 			      struct ntvfs_request *req)
 {
-	struct unixuid_private *private = ntvfs->private_data;
+	struct unixuid_private *priv = ntvfs->private_data;
 	NTSTATUS status;
 
 	PASS_THRU_REQ(ntvfs, req, logoff, (ntvfs, req));
 
-	private->last_token = NULL;
+	priv->last_token = NULL;
 
 	return status;
 }
@@ -524,11 +524,11 @@ static NTSTATUS unixuid_logoff(struct ntvfs_module_context *ntvfs,
 */
 static NTSTATUS unixuid_async_setup(struct ntvfs_module_context *ntvfs,
 				    struct ntvfs_request *req, 
-				    void *private)
+				    void *private_data)
 {
 	NTSTATUS status;
 
-	PASS_THRU_REQ(ntvfs, req, async_setup, (ntvfs, req, private));
+	PASS_THRU_REQ(ntvfs, req, async_setup, (ntvfs, req, private_data));
 
 	return status;
 }

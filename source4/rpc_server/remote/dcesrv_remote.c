@@ -39,7 +39,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 {
         NTSTATUS status;
 	const struct ndr_interface_table *table;
-        struct dcesrv_remote_private *private;
+	struct dcesrv_remote_private *priv;
 	const char *binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "binding");
 	const char *user, *pass, *domain;
 	struct cli_credentials *credentials;
@@ -47,13 +47,13 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_remote", "use_machine_account", false);
 
-	private = talloc(dce_call->conn, struct dcesrv_remote_private);
-	if (!private) {
+	priv = talloc(dce_call->conn, struct dcesrv_remote_private);
+	if (!priv) {
 		return NT_STATUS_NO_MEMORY;	
 	}
 	
-	private->c_pipe = NULL;
-	dce_call->context->private = private;
+	priv->c_pipe = NULL;
+	dce_call->context->private_data = priv;
 
 	if (!binding) {
 		DEBUG(0,("You must specify a DCE/RPC binding string\n"));
@@ -72,7 +72,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 	if (user && pass) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using specified account\n"));
-		credentials = cli_credentials_init(private);
+		credentials = cli_credentials_init(priv);
 		if (!credentials) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -84,7 +84,7 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		cli_credentials_set_password(credentials, pass, CRED_SPECIFIED);
 	} else if (machine_account) {
 		DEBUG(5, ("dcerpc_remote: RPC Proxy: Using machine account\n"));
-		credentials = cli_credentials_init(private);
+		credentials = cli_credentials_init(priv);
 		cli_credentials_set_conf(credentials, dce_call->conn->dce_ctx->lp_ctx);
 		if (domain) {
 			cli_credentials_set_domain(credentials, domain, CRED_SPECIFIED);
@@ -101,8 +101,8 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_connect(private, 
-				     &(private->c_pipe), binding, table,
+	status = dcerpc_pipe_connect(priv,
+				     &(priv->c_pipe), binding, table,
 				     credentials, dce_call->event_ctx,
 				     dce_call->conn->dce_ctx->lp_ctx);
 
@@ -116,9 +116,9 @@ static NTSTATUS remote_op_bind(struct dcesrv_call_state *dce_call, const struct 
 
 static void remote_op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
-	struct dcesrv_remote_private *private = (struct dcesrv_remote_private *)context->private;
+	struct dcesrv_remote_private *priv = (struct dcesrv_remote_private *)context->private_data;
 
-	talloc_free(private->c_pipe);
+	talloc_free(priv->c_pipe);
 
 	return;	
 }
@@ -126,7 +126,7 @@ static void remote_op_unbind(struct dcesrv_connection_context *context, const st
 static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
 	enum ndr_err_code ndr_err;
-	const struct ndr_interface_table *table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	const struct ndr_interface_table *table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
@@ -156,32 +156,32 @@ static NTSTATUS remote_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CT
 
 static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
-	struct dcesrv_remote_private *private = dce_call->context->private;
+	struct dcesrv_remote_private *priv = dce_call->context->private_data;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
-	const struct ndr_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	const struct ndr_interface_call *call;
 	const char *name;
 
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
 
-	if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+	if (priv->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);		
 	}
 
-	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+	priv->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	/* we didn't use the return code of this function as we only check the last_fault_code */
-	dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx,r);
+	dcerpc_ndr_request(priv->c_pipe, NULL, table, opnum, mem_ctx,r);
 
-	dce_call->fault_code = private->c_pipe->last_fault_code;
+	dce_call->fault_code = priv->c_pipe->last_fault_code;
 	if (dce_call->fault_code != 0) {
 		DEBUG(0,("dcesrv_remote: call[%s] failed with: %s!\n",name, dcerpc_errstr(mem_ctx, dce_call->fault_code)));
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
 	if ((dce_call->fault_code == 0) && 
-	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
+	    (priv->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_OUT, r);		
 	}
 
@@ -191,7 +191,7 @@ static NTSTATUS remote_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
 	enum ndr_err_code ndr_err;
-	const struct ndr_interface_table *table = dce_call->context->iface->private;
+	const struct ndr_interface_table *table = dce_call->context->iface->private_data;
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 
         /* unravel the NDR for the packet */
@@ -207,7 +207,7 @@ static NTSTATUS remote_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS remote_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
 	int i;
-	const struct ndr_interface_table *table = iface->private;
+	const struct ndr_interface_table *table = iface->private_data;
 
 	for (i=0;i<table->endpoints->count;i++) {
 		NTSTATUS ret;
@@ -268,7 +268,7 @@ static bool remote_fill_interface(struct dcesrv_interface *iface, const struct n
 	iface->reply = remote_op_reply;
 	iface->ndr_push = remote_op_ndr_push;
 
-	iface->private = if_tabl;
+	iface->private_data = if_tabl;
 
 	return true;
 }

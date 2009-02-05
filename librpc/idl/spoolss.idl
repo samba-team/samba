@@ -10,7 +10,7 @@ import "misc.idl", "security.idl", "winreg.idl";
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
   helpstring("Spooler SubSystem"),
-  helper("librpc/ndr/ndr_spoolss_buf.h")
+  helper("../librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
 	typedef [v1_enum] enum winreg_Type winreg_Type;
@@ -393,7 +393,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x06 */
-	[todo] WERROR spoolss_DeletePrinter(
+	WERROR spoolss_DeletePrinter(
+		[in] policy_handle *handle
 	);
 
 	/******************/
@@ -1290,7 +1291,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 change_low,
 		[in,unique] spoolss_NotifyOptionsContainer *container,
-		[out, unique] spoolss_NotifyInfo *info
+		[out,ref] spoolss_NotifyInfo **info
 	);
 
 	/******************/

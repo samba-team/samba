@@ -2,7 +2,7 @@
 # Start MODULE ldb_objectguid
 [MODULE::ldb_objectguid]
 SUBSYSTEM = LIBLDB
-PRIVATE_DEPENDENCIES = LIBTALLOC LIBEVENTS LIBNDR
+PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBEVENTS LIBNDR
 INIT_FUNCTION = LDB_MODULE(objectguid)
 # End MODULE ldb_objectguid
 ################################################

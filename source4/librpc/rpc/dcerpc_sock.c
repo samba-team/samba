@@ -85,9 +85,9 @@ static void sock_dead(struct dcerpc_connection *p, NTSTATUS status)
 /*
   handle socket recv errors
 */
-static void sock_error_handler(void *private, NTSTATUS status)
+static void sock_error_handler(void *private_data, NTSTATUS status)
 {
-	struct dcerpc_connection *p = talloc_get_type(private, 
+	struct dcerpc_connection *p = talloc_get_type(private_data,
 						      struct dcerpc_connection);
 	sock_dead(p, status);
 }
@@ -95,7 +95,7 @@ static void sock_error_handler(void *private, NTSTATUS status)
 /*
   check if a blob is a complete packet
 */
-static NTSTATUS sock_complete_packet(void *private, DATA_BLOB blob, size_t *size)
+static NTSTATUS sock_complete_packet(void *private_data, DATA_BLOB blob, size_t *size)
 {
 	if (blob.length < DCERPC_FRAG_LEN_OFFSET+2) {
 		return STATUS_MORE_ENTRIES;
@@ -110,9 +110,9 @@ static NTSTATUS sock_complete_packet(void *private, DATA_BLOB blob, size_t *size
 /*
   process recv requests
 */
-static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
+static NTSTATUS sock_process_recv(void *private_data, DATA_BLOB blob)
 {
-	struct dcerpc_connection *p = talloc_get_type(private, 
+	struct dcerpc_connection *p = talloc_get_type(private_data,
 						      struct dcerpc_connection);
 	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 	sock->pending_reads--;
@@ -127,9 +127,9 @@ static NTSTATUS sock_process_recv(void *private, DATA_BLOB blob)
   called when a IO is triggered by the events system
 */
 static void sock_io_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-			    uint16_t flags, void *private)
+			    uint16_t flags, void *private_data)
 {
-	struct dcerpc_connection *p = talloc_get_type(private, 
+	struct dcerpc_connection *p = talloc_get_type(private_data,
 						      struct dcerpc_connection);
 	struct sock_private *sock = (struct sock_private *)p->transport.private_data;
 

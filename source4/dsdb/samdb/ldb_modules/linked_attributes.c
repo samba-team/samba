@@ -29,10 +29,7 @@
  */
 
 #include "includes.h"
-#include "ldb/include/ldb.h"
-#include "ldb/include/ldb_errors.h"
-#include "ldb/include/ldb_private.h"
-#include "ldb/include/dlinklist.h"
+#include "ldb_module.h"
 #include "dsdb/samdb/samdb.h"
 
 struct la_op_store {
@@ -65,15 +62,18 @@ struct la_context {
 static struct la_context *linked_attributes_init(struct ldb_module *module,
 						 struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct la_context *ac;
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = talloc_zero(req, struct la_context);
 	if (ac == NULL) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return NULL;
 	}
 
-	ac->schema = dsdb_get_schema(module->ldb);
+	ac->schema = dsdb_get_schema(ldb);
 	ac->module = module;
 	ac->req = req;
 
@@ -86,19 +86,22 @@ static int la_store_op(struct la_context *ac,
 		       enum la_op op, struct ldb_val *dn,
 			const char *name)
 {
+	struct ldb_context *ldb;
 	struct la_op_store *os;
 	struct ldb_dn *op_dn;
 
-	op_dn = ldb_dn_from_ldb_val(ac, ac->module->ldb, dn);
+	ldb = ldb_module_get_ctx(ac->module);
+
+	op_dn = ldb_dn_from_ldb_val(ac, ldb, dn);
 	if (!op_dn) {
-		ldb_asprintf_errstring(ac->module->ldb, 
+		ldb_asprintf_errstring(ldb, 
 				       "could not parse attribute as a DN");
 		return LDB_ERR_INVALID_DN_SYNTAX;
 	}
 
 	os = talloc_zero(ac, struct la_op_store);
 	if (!os) {
-		ldb_oom(ac->module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -108,7 +111,7 @@ static int la_store_op(struct la_context *ac,
 
 	os->name = talloc_strdup(os, name);
 	if (!os->name) {
-		ldb_oom(ac->module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -136,11 +139,14 @@ static int la_down_req(struct la_context *ac);
 /* add */
 static int linked_attributes_add(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	const struct dsdb_attribute *target_attr;
 	struct la_context *ac;
 	const char *attr_name;
 	int ret;
 	int i, j;
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (ldb_dn_is_special(req->op.add.message->dn)) {
 		/* do not manipulate our control entries */
@@ -164,7 +170,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "attribute %s is not a valid attribute in schema", el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
 		}
@@ -175,7 +181,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 		
 		if ((schema_attr->linkID & 1) == 1) {
 			/* Odd is for the target.  Illigal to modify */
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "attribute %s must not be modified directly, it is a linked attribute", el->name);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
@@ -222,6 +228,7 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 
 static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	const struct dsdb_attribute *schema_attr;
 	const struct dsdb_attribute *target_attr;
 	struct ldb_message_element *search_el;
@@ -232,6 +239,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	int ret = LDB_SUCCESS;
 
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 	rc = ac->rc;
 
 	if (!ares) {
@@ -248,7 +256,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 	case LDB_REPLY_ENTRY:
 
 		if (ldb_dn_compare(ares->message->dn, ac->req->op.mod.message->dn) != 0) {
-			ldb_asprintf_errstring(ac->module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "linked_attributes: %s is not the DN we were looking for", ldb_dn_get_linearized(ares->message->dn));
 			/* Guh?  We only asked for this DN */
 			talloc_free(ares);
@@ -263,7 +271,7 @@ static int la_mod_search_callback(struct ldb_request *req, struct ldb_reply *are
 
 			schema_attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, rc->el[i].name);
 			if (!schema_attr) {
-				ldb_asprintf_errstring(ac->module->ldb,
+				ldb_asprintf_errstring(ldb,
 					"attribute %s is not a valid attribute in schema",
 					rc->el[i].name);
 				talloc_free(ares);
@@ -348,12 +356,15 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	/* Determine the effect of the modification */
 	/* Apply the modify to the linked entry */
 
+	struct ldb_context *ldb;
 	int i, j;
 	struct la_context *ac;
 	struct ldb_request *search_req;
 	const char **attrs;
 
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
 
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
 		/* do not manipulate our control entries */
@@ -372,7 +383,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 
 	ac->rc = talloc_zero(ac, struct replace_context);
 	if (!ac->rc) {
-		ldb_oom(module->ldb);
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -384,7 +395,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		const struct dsdb_attribute *schema_attr
 			= dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 		if (!schema_attr) {
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "attribute %s is not a valid attribute in schema", el->name);
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
 		}
@@ -395,7 +406,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		
 		if ((schema_attr->linkID & 1) == 1) {
 			/* Odd is for the target.  Illegal to modify */
-			ldb_asprintf_errstring(module->ldb, 
+			ldb_asprintf_errstring(ldb, 
 					       "attribute %s must not be modified directly, it is a linked attribute", el->name);
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}
@@ -466,7 +477,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 						   struct ldb_message_element,
 						   ac->rc->num_elements +1);
 			if (!search_el) {
-				ldb_oom(module->ldb);
+				ldb_oom(ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 			ac->rc->el = search_el;
@@ -482,7 +493,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		
 		attrs = talloc_array(ac->rc, const char *, ac->rc->num_elements + 1);
 		if (!attrs) {
-			ldb_oom(module->ldb);
+			ldb_oom(ldb);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		for (i = 0; ac->rc && i < ac->rc->num_elements; i++) {
@@ -491,7 +502,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		attrs[i] = NULL;
 		
 		/* The callback does all the hard work here */
-		ret = ldb_build_search_req(&search_req, module->ldb, ac,
+		ret = ldb_build_search_req(&search_req, ldb, ac,
 					   req->op.mod.message->dn,
 					   LDB_SCOPE_BASE,
 					   "(objectClass=*)", attrs,
@@ -523,6 +534,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 /* delete, rename */
 static int linked_attributes_del(struct ldb_module *module, struct ldb_request *req)
 {
+	struct ldb_context *ldb;
 	struct ldb_request *search_req;
 	struct la_context *ac;
 	const char **attrs;
@@ -537,6 +549,8 @@ static int linked_attributes_del(struct ldb_module *module, struct ldb_request *
 	   - Wait for each modify result
 	   - Regain our sainity
 	*/
+
+	ldb = ldb_module_get_ctx(module);
 
 	ac = linked_attributes_init(module, req);
 	if (!ac) {
@@ -553,7 +567,7 @@ static int linked_attributes_del(struct ldb_module *module, struct ldb_request *
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ret = ldb_build_search_req(&search_req, module->ldb, req,
+	ret = ldb_build_search_req(&search_req, ldb, req,
 				   req->op.del.dn, LDB_SCOPE_BASE,
 				   "(objectClass=*)", attrs,
 				   NULL,
@@ -601,6 +615,7 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 static int la_op_search_callback(struct ldb_request *req,
 				 struct ldb_reply *ares)
 {
+	struct ldb_context *ldb;
 	struct la_context *ac;
 	const struct dsdb_attribute *schema_attr;
 	const struct dsdb_attribute *target_attr;
@@ -610,6 +625,7 @@ static int la_op_search_callback(struct ldb_request *req,
 	int ret;
 
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -647,7 +663,7 @@ static int la_op_search_callback(struct ldb_request *req,
 			break;
 		default:
 			talloc_free(ares);
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb,
 					  "operations must be delete or rename");
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -658,7 +674,7 @@ static int la_op_search_callback(struct ldb_request *req,
 
 			schema_attr = dsdb_attribute_by_lDAPDisplayName(ac->schema, el->name);
 			if (!schema_attr) {
-				ldb_asprintf_errstring(ac->module->ldb,
+				ldb_asprintf_errstring(ldb,
 					"attribute %s is not a valid attribute"
 					" in schema", el->name);
 				talloc_free(ares);
@@ -737,7 +753,7 @@ static int la_op_search_callback(struct ldb_request *req,
 			
 		default:
 			talloc_free(ares);
-			ldb_set_errstring(ac->module->ldb,
+			ldb_set_errstring(ldb,
 					  "operations must be delete or rename");
 			return ldb_module_done(ac->req, NULL, NULL,
 						LDB_ERR_OPERATIONS_ERROR);
@@ -764,7 +780,7 @@ static int la_do_mod_request(struct la_context *ac)
 				       ac->op_response, LDB_SUCCESS);
 	}
 
-	ldb = ac->module->ldb;
+	ldb = ldb_module_get_ctx(ac->module);
 
 	/* Create the modify request */
 	new_msg = ldb_msg_new(ac);
@@ -797,7 +813,7 @@ static int la_do_mod_request(struct la_context *ac)
 	}
 
 #if 0
-	ldb_debug(ac->module->ldb, LDB_DEBUG_WARNING,
+	ldb_debug(ldb, LDB_DEBUG_WARNING,
 		  "link on %s %s: %s %s\n", 
 		  ldb_dn_get_linearized(new_msg->dn), ret_el->name, 
 		  ret_el->values[0].data, ac->ops->op == LA_OP_ADD ? "added" : "deleted");
@@ -822,9 +838,11 @@ static int la_do_mod_request(struct la_context *ac)
 static int la_mod_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct la_context *ac;
+	struct ldb_context *ldb;
 	struct la_op_store *os;
 
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -836,7 +854,7 @@ static int la_mod_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb,
+		ldb_set_errstring(ldb,
 				  "invalid ldb_reply_type in callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -860,7 +878,10 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	int ret;
 	struct la_context *ac;
+	struct ldb_context *ldb;
+
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -872,7 +893,7 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb,
+		ldb_set_errstring(ldb,
 				  "invalid ldb_reply_type in callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -903,7 +924,10 @@ static int la_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct ldb_request *search_req;
 	const char **attrs;
 	WERROR werr;
+	struct ldb_context *ldb;
+
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -915,7 +939,7 @@ static int la_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb,
+		ldb_set_errstring(ldb,
 				  "invalid ldb_reply_type in callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -927,7 +951,7 @@ static int la_rename_callback(struct ldb_request *req, struct ldb_reply *ares)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	
-	ret = ldb_build_search_req(&search_req, ac->module->ldb, req,
+	ret = ldb_build_search_req(&search_req, ldb, req,
 				   ac->req->op.rename.newdn, LDB_SCOPE_BASE,
 				   "(objectClass=*)", attrs,
 				   NULL,
@@ -964,7 +988,10 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	int ret;
 	struct la_context *ac;
+	struct ldb_context *ldb;
+
 	ac = talloc_get_type(req->context, struct la_context);
+	ldb = ldb_module_get_ctx(ac->module);
 
 	if (!ares) {
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -976,7 +1003,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 	}
 
 	if (ares->type != LDB_REPLY_DONE) {
-		ldb_set_errstring(ac->module->ldb,
+		ldb_set_errstring(ldb,
 				  "invalid ldb_reply_type in callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
@@ -989,7 +1016,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 		
 		/* The callback does all the hard work here - we need
 		 * the objectGUID and SID of the added record */
-		ret = ldb_build_search_req(&search_req, ac->module->ldb, ac,
+		ret = ldb_build_search_req(&search_req, ldb, ac,
 					   ac->req->op.add.message->dn,
 					   LDB_SCOPE_BASE,
 					   "(objectClass=*)", attrs,
@@ -1023,31 +1050,34 @@ static int la_down_req(struct la_context *ac)
 {
 	struct ldb_request *down_req;
 	int ret;
+	struct ldb_context *ldb;
+
+	ldb = ldb_module_get_ctx(ac->module);
 
 	switch (ac->req->operation) {
 	case LDB_ADD:
-		ret = ldb_build_add_req(&down_req, ac->module->ldb, ac,
+		ret = ldb_build_add_req(&down_req, ldb, ac,
 					ac->req->op.add.message,
 					ac->req->controls,
 					ac, la_add_callback,
 					ac->req);
 		break;
 	case LDB_MODIFY:
-		ret = ldb_build_mod_req(&down_req, ac->module->ldb, ac,
+		ret = ldb_build_mod_req(&down_req, ldb, ac,
 					ac->req->op.mod.message,
 					ac->req->controls,
 					ac, la_mod_del_callback,
 					ac->req);
 		break;
 	case LDB_DELETE:
-		ret = ldb_build_del_req(&down_req, ac->module->ldb, ac,
+		ret = ldb_build_del_req(&down_req, ldb, ac,
 					ac->req->op.del.dn,
 					ac->req->controls,
 					ac, la_mod_del_callback,
 					ac->req);
 		break;
 	case LDB_RENAME:
-		ret = ldb_build_rename_req(&down_req, ac->module->ldb, ac,
+		ret = ldb_build_rename_req(&down_req, ldb, ac,
 					   ac->req->op.rename.olddn,
 					   ac->req->op.rename.newdn,
 					   ac->req->controls,

@@ -33,7 +33,7 @@
  *  Author: Simo Sorce
  */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 #include <ctype.h>
 
 #define LDB_DN_NULL_FAILED(x) if (!(x)) goto failed

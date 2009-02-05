@@ -110,9 +110,9 @@ static NTSTATUS signing_failure(struct ntp_signd_connection *ntp_signdconn,
 /*
   receive a full packet on a NTP_SIGND connection
 */
-static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
+static NTSTATUS ntp_signd_recv(void *private_data, DATA_BLOB wrapped_input)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private, 
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data,
 							     struct ntp_signd_connection);
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	TALLOC_CTX *tmp_ctx = talloc_new(ntp_signdconn);
@@ -263,7 +263,7 @@ static NTSTATUS ntp_signd_recv(void *private, DATA_BLOB wrapped_input)
 */
 static void ntp_signd_recv_handler(struct stream_connection *conn, uint16_t flags)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private, 
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private_data,
 							     struct ntp_signd_connection);
 	packet_recv(ntp_signdconn->packet);
 }
@@ -271,9 +271,9 @@ static void ntp_signd_recv_handler(struct stream_connection *conn, uint16_t flag
 /*
   called on a tcp recv error
 */
-static void ntp_signd_recv_error(void *private, NTSTATUS status)
+static void ntp_signd_recv_error(void *private_data, NTSTATUS status)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private, struct ntp_signd_connection);
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(private_data, struct ntp_signd_connection);
 	ntp_signd_terminate_connection(ntp_signdconn, nt_errstr(status));
 }
 
@@ -282,7 +282,7 @@ static void ntp_signd_recv_error(void *private, NTSTATUS status)
 */
 static void ntp_signd_send(struct stream_connection *conn, uint16_t flags)
 {
-	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private, 
+	struct ntp_signd_connection *ntp_signdconn = talloc_get_type(conn->private_data,
 							     struct ntp_signd_connection);
 	packet_queue_run(ntp_signdconn->packet);
 }
@@ -292,7 +292,7 @@ static void ntp_signd_send(struct stream_connection *conn, uint16_t flags)
 */
 static void ntp_signd_accept(struct stream_connection *conn)
 {
-	struct ntp_signd_server *ntp_signd = talloc_get_type(conn->private, struct ntp_signd_server);
+	struct ntp_signd_server *ntp_signd = talloc_get_type(conn->private_data, struct ntp_signd_server);
 	struct ntp_signd_connection *ntp_signdconn;
 
 	ntp_signdconn = talloc_zero(conn, struct ntp_signd_connection);
@@ -302,7 +302,7 @@ static void ntp_signd_accept(struct stream_connection *conn)
 	}
 	ntp_signdconn->conn	 = conn;
 	ntp_signdconn->ntp_signd	 = ntp_signd;
-	conn->private    = ntp_signdconn;
+	conn->private_data    = ntp_signdconn;
 
 	ntp_signdconn->packet = packet_init(ntp_signdconn);
 	if (ntp_signdconn->packet == NULL) {

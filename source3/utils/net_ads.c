@@ -1920,7 +1920,7 @@ int net_ads_changetrustpw(struct net_context *c, int argc, const char **argv)
 
 	d_printf("Password change for principal %s succeeded.\n", host_principal);
 
-	if (lp_use_kerberos_keytab()) {
+	if (USE_SYSTEM_KEYTAB) {
 		d_printf("Attempting to update system keytab with new password.\n");
 		if (ads_keytab_create_default(ads)) {
 			d_printf("Failed to update system keytab.\n");
@@ -2241,9 +2241,9 @@ int net_ads_keytab(struct net_context *c, int argc, const char **argv)
 		{NULL, NULL, 0, NULL, NULL}
 	};
 
-	if (!lp_use_kerberos_keytab()) {
-		d_printf("\nWarning: \"use kerberos keytab\" must be set to \"true\" in order to \
-use keytab functions.\n");
+	if (!USE_KERBEROS_KEYTAB) {
+		d_printf("\nWarning: \"kerberos method\" must be set to a "
+		    "keytab method to use keytab functions.\n");
 	}
 
 	return net_run_function(c, argc, argv, "net ads keytab", func);

@@ -168,7 +168,7 @@ static struct ldb_dn *winsdb_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 	return dn;
 }
 
-static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, const struct ldb_dn *dn, struct nbt_name **_name)
+static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct nbt_name **_name)
 {
 	NTSTATUS status;
 	struct nbt_name *name;

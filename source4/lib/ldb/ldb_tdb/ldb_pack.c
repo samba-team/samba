@@ -31,7 +31,6 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
 #include "ldb_tdb.h"
 
 /* change this if the data format ever changes */
@@ -79,12 +78,14 @@ int ltdb_pack_data(struct ldb_module *module,
 		   const struct ldb_message *message,
 		   struct TDB_DATA *data)
 {
-	struct ldb_context *ldb = module->ldb;
+	struct ldb_context *ldb;
 	unsigned int i, j, real_elements=0;
 	size_t size;
 	const char *dn;
 	uint8_t *p;
 	size_t len;
+
+	ldb = ldb_module_get_ctx(module);
 
 	dn = ldb_dn_get_linearized(message->dn);
 	if (dn == NULL) {
@@ -159,13 +160,14 @@ int ltdb_unpack_data(struct ldb_module *module,
 		     const struct TDB_DATA *data,
 		     struct ldb_message *message)
 {
-	struct ldb_context *ldb = module->ldb;
+	struct ldb_context *ldb;
 	uint8_t *p;
 	unsigned int remaining;
 	unsigned int i, j;
 	unsigned format;
 	size_t len;
 
+	ldb = ldb_module_get_ctx(module);
 	message->elements = NULL;
 
 	p = data->dptr;

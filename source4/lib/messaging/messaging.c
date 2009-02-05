@@ -64,7 +64,7 @@ struct messaging_context {
 struct dispatch_fn {
 	struct dispatch_fn *next, *prev;
 	uint32_t msg_type;
-	void *private;
+	void *private_data;
 	msg_callback_t fn;
 };
 
@@ -94,7 +94,7 @@ static void irpc_handler(struct messaging_context *, void *,
 /*
  A useful function for testing the message system.
 */
-static void ping_message(struct messaging_context *msg, void *private, 
+static void ping_message(struct messaging_context *msg, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
 {
 	DEBUG(1,("INFO: Received PING message from server %u.%u [%.*s]\n",
@@ -109,7 +109,7 @@ static void ping_message(struct messaging_context *msg, void *private,
 static NTSTATUS irpc_uptime(struct irpc_message *msg, 
 			    struct irpc_uptime *r)
 {
-	struct messaging_context *ctx = talloc_get_type(msg->private, struct messaging_context);
+	struct messaging_context *ctx = talloc_get_type(msg->private_data, struct messaging_context);
 	*r->out.start_time = timeval_to_nttime(&ctx->start_time);
 	return NT_STATUS_OK;
 }
@@ -149,7 +149,7 @@ static void messaging_dispatch(struct messaging_context *msg, struct messaging_r
 		next = d->next;
 		data.data = rec->packet.data + sizeof(*rec->header);
 		data.length = rec->header->length;
-		d->fn(msg, d->private, d->msg_type, rec->header->from, &data);
+		d->fn(msg, d->private_data, d->msg_type, rec->header->from, &data);
 	}
 	rec->header->length = 0;
 }
@@ -217,9 +217,9 @@ static NTSTATUS try_send(struct messaging_rec *rec)
   retry backed off messages
 */
 static void msg_retry_timer(struct tevent_context *ev, struct tevent_timer *te, 
-			    struct timeval t, void *private)
+			    struct timeval t, void *private_data)
 {
-	struct messaging_context *msg = talloc_get_type(private, 
+	struct messaging_context *msg = talloc_get_type(private_data,
 							struct messaging_context);
 	msg->retry_te = NULL;
 
@@ -339,9 +339,9 @@ static void messaging_recv_handler(struct messaging_context *msg)
   handle a socket event
 */
 static void messaging_handler(struct tevent_context *ev, struct tevent_fd *fde, 
-			      uint16_t flags, void *private)
+			      uint16_t flags, void *private_data)
 {
-	struct messaging_context *msg = talloc_get_type(private, 
+	struct messaging_context *msg = talloc_get_type(private_data,
 							struct messaging_context);
 	if (flags & EVENT_FD_WRITE) {
 		messaging_send_handler(msg);
@@ -355,7 +355,7 @@ static void messaging_handler(struct tevent_context *ev, struct tevent_fd *fde,
 /*
   Register a dispatch function for a particular message type.
 */
-NTSTATUS messaging_register(struct messaging_context *msg, void *private,
+NTSTATUS messaging_register(struct messaging_context *msg, void *private_data,
 			    uint32_t msg_type, msg_callback_t fn)
 {
 	struct dispatch_fn *d;
@@ -376,7 +376,7 @@ NTSTATUS messaging_register(struct messaging_context *msg, void *private,
 	d = talloc_zero(msg->dispatch, struct dispatch_fn);
 	NT_STATUS_HAVE_NO_MEMORY(d);
 	d->msg_type = msg_type;
-	d->private = private;
+	d->private_data = private_data;
 	d->fn = fn;
 
 	DLIST_ADD(msg->dispatch[msg_type], d);
@@ -388,7 +388,7 @@ NTSTATUS messaging_register(struct messaging_context *msg, void *private,
   register a temporary message handler. The msg_type is allocated
   above MSG_TMP_BASE
 */
-NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
+NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private_data,
 				msg_callback_t fn, uint32_t *msg_type)
 {
 	struct dispatch_fn *d;
@@ -396,7 +396,7 @@ NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
 
 	d = talloc_zero(msg->dispatch, struct dispatch_fn);
 	NT_STATUS_HAVE_NO_MEMORY(d);
-	d->private = private;
+	d->private_data = private_data;
 	d->fn = fn;
 
 	id = idr_get_new_above(msg->dispatch_tree, d, MSG_TMP_BASE, UINT16_MAX);
@@ -414,7 +414,7 @@ NTSTATUS messaging_register_tmp(struct messaging_context *msg, void *private,
 /*
   De-register the function for a particular message type.
 */
-void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private)
+void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void *private_data)
 {
 	struct dispatch_fn *d, *next;
 
@@ -429,7 +429,7 @@ void messaging_deregister(struct messaging_context *msg, uint32_t msg_type, void
 
 	for (d = msg->dispatch[msg_type]; d; d = next) {
 		next = d->next;
-		if (d->private == private) {
+		if (d->private_data == private_data) {
 			DLIST_REMOVE(msg->dispatch[msg_type], d);
 			talloc_free(d);
 		}
@@ -631,7 +631,7 @@ struct irpc_list {
 	const struct ndr_interface_table *table;
 	int callnum;
 	irpc_function_t fn;
-	void *private;
+	void *private_data;
 };
 
 
@@ -640,7 +640,7 @@ struct irpc_list {
 */
 NTSTATUS irpc_register(struct messaging_context *msg_ctx, 
 		       const struct ndr_interface_table *table, 
-		       int callnum, irpc_function_t fn, void *private)
+		       int callnum, irpc_function_t fn, void *private_data)
 {
 	struct irpc_list *irpc;
 
@@ -659,7 +659,7 @@ NTSTATUS irpc_register(struct messaging_context *msg_ctx,
 	irpc->table   = table;
 	irpc->callnum = callnum;
 	irpc->fn      = fn;
-	irpc->private = private;
+	irpc->private_data = private_data;
 	irpc->uuid = irpc->table->syntax_id.uuid;
 
 	return NT_STATUS_OK;
@@ -768,7 +768,7 @@ static void irpc_handler_request(struct messaging_context *msg_ctx,
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
 	/* make the call */
-	m->private     = i->private;
+	m->private_data= i->private_data;
 	m->defer_reply = false;
 	m->msg_ctx     = msg_ctx;
 	m->irpc        = i;
@@ -793,7 +793,7 @@ failed:
 /*
   handle an incoming irpc message
 */
-static void irpc_handler(struct messaging_context *msg_ctx, void *private, 
+static void irpc_handler(struct messaging_context *msg_ctx, void *private_data,
 			 uint32_t msg_type, struct server_id src, DATA_BLOB *packet)
 {
 	struct irpc_message *m;
@@ -844,9 +844,9 @@ static int irpc_destructor(struct irpc_request *irpc)
   timeout a irpc request
 */
 static void irpc_timeout(struct tevent_context *ev, struct tevent_timer *te, 
-			 struct timeval t, void *private)
+			 struct timeval t, void *private_data)
 {
-	struct irpc_request *irpc = talloc_get_type(private, struct irpc_request);
+	struct irpc_request *irpc = talloc_get_type(private_data, struct irpc_request);
 	irpc->status = NT_STATUS_IO_TIMEOUT;
 	irpc->done = true;
 	if (irpc->async.fn) {

@@ -388,7 +388,7 @@ bool smbcli_handle_oplock_break(struct smbcli_transport *transport, uint_t len, 
 		uint16_t tid = SVAL(hdr, HDR_TID);
 		uint16_t fnum = SVAL(vwv,VWV(2));
 		uint8_t level = CVAL(vwv,VWV(3)+1);
-		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private);
+		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private_data);
 	}
 
 	return true;

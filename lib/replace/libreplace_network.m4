@@ -7,7 +7,14 @@ LIBREPLACE_NETWORK_OBJS=""
 LIBREPLACE_NETWORK_LIBS=""
 
 AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
-AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
+AC_CHECK_HEADERS(netinet/in_systm.h)
+AC_CHECK_HEADERS([netinet/ip.h], [], [],[#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN_SYSTM_H
+#include <netinet/in_systm.h>
+#endif])
+AC_CHECK_HEADERS(netinet/tcp.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux

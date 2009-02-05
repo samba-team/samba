@@ -18,8 +18,8 @@ PREFIX=$5
 shift 5
 failed=0
 
-samba4bindir=`dirname $0`/../../bin
-locktest=$samba4bindir/locktest
+samba4bindir="$BUILDDIR/bin"
+locktest="$samba4bindir/locktest$EXEEXT"
 
 . `dirname $0`/../../../testprogs/blackbox/subunit.sh
 

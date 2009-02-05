@@ -6,6 +6,7 @@
 #ifndef _HEADER_NDR_drsblobs
 #define _HEADER_NDR_drsblobs
 
+#include "../librpc/ndr/ndr_drsblobs.h"
 #define NDR_DRSBLOBS_UUID "12345778-1234-abcd-0001-00000001"
 #define NDR_DRSBLOBS_VERSION 0.0
 #define NDR_DRSBLOBS_NAME "drsblobs"

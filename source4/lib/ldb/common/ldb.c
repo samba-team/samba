@@ -32,7 +32,7 @@
  *  Author: Andrew Tridgell
  */
 
-#include "ldb_includes.h"
+#include "ldb_private.h"
 
 /*
    initialise a ldb context
@@ -481,6 +481,11 @@ void ldb_set_create_perms(struct ldb_context *ldb, unsigned int perms)
 	ldb->create_perms = perms;
 }
 
+unsigned int ldb_get_create_perms(struct ldb_context *ldb)
+{
+	return ldb->create_perms;
+}
+
 void ldb_set_event_context(struct ldb_context *ldb, struct tevent_context *ev)
 {
 	ldb->ev_ctx = ev;
@@ -489,6 +494,16 @@ void ldb_set_event_context(struct ldb_context *ldb, struct tevent_context *ev)
 struct tevent_context * ldb_get_event_context(struct ldb_context *ldb)
 {
 	return ldb->ev_ctx;
+}
+
+void ldb_request_set_state(struct ldb_request *req, int state)
+{
+	req->handle->state = state;
+}
+
+int ldb_request_get_status(struct ldb_request *req)
+{
+	return req->handle->status;
 }
 
 /*

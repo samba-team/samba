@@ -151,7 +151,7 @@ static __inline__ void st_le32(uint32_t *addr, const uint32_t val)
 
 #if HAVE_ASM_BYTEORDER
 
-#define  _PTRPOS(buf,pos) (((const uint8_t *)buf)+(pos))
+#define  _PTRPOS(buf,pos) (((const uint8_t *)(buf))+(pos))
 #define SVAL(buf,pos) ld_le16((const uint16_t *)_PTRPOS(buf,pos))
 #define IVAL(buf,pos) ld_le32((const uint32_t *)_PTRPOS(buf,pos))
 #define SSVAL(buf,pos,val) st_le16((uint16_t *)_PTRPOS(buf,pos), val)

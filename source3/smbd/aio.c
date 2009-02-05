@@ -109,58 +109,6 @@ static struct aio_extra *find_aio_ex(uint16 mid)
 *****************************************************************************/
 
 /****************************************************************************
- Signal handler when an aio request completes.
-*****************************************************************************/
-
-void aio_request_done(uint16_t mid)
-{
-	if (aio_signals_received < aio_pending_size) {
-		aio_pending_array[aio_signals_received] = mid;
-		aio_signals_received++;
-	}
-	/* Else signal is lost. */
-}
-
-static void signal_handler(int sig, siginfo_t *info, void *unused)
-{
-	aio_request_done(info->si_value.sival_int);
-	sys_select_signal(RT_SIGNAL_AIO);
-}
-
-/****************************************************************************
- Is there a signal waiting ?
-*****************************************************************************/
-
-bool aio_finished(void)
-{
-	return (aio_signals_received != 0);
-}
-
-/****************************************************************************
- Initialize the signal handler for aio read/write.
-*****************************************************************************/
-
-void initialize_async_io_handler(void)
-{
-	struct sigaction act;
-
-	aio_pending_size = lp_maxmux();
-	aio_pending_array = SMB_MALLOC_ARRAY(uint16, aio_pending_size);
-	SMB_ASSERT(aio_pending_array != NULL);
-
-	ZERO_STRUCT(act);
-	act.sa_sigaction = signal_handler;
-	act.sa_flags = SA_SIGINFO;
-	sigemptyset( &act.sa_mask );
-	if (sigaction(RT_SIGNAL_AIO, &act, NULL) != 0) {
-                DEBUG(0,("Failed to setup RT_SIGNAL_AIO handler\n"));
-        }
-
-	/* the signal can start off blocked due to a bug in bash */
-	BlockSignals(False, RT_SIGNAL_AIO);
-}
-
-/****************************************************************************
  Set up an aio request from a SMBreadX call.
 *****************************************************************************/
 
@@ -193,8 +141,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
-	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
+        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return False;
 	}
 
@@ -290,8 +237,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 
 	/* Only do this on non-chained and non-chaining reads not using the
 	 * write cache. */
-        if (chain_size !=0 || (CVAL(req->vwv+0, 0) != 0xFF)
-	    || (lp_write_cache_size(SNUM(conn)) != 0) ) {
+        if (req_is_in_chain(req) || (lp_write_cache_size(SNUM(conn)) != 0)) {
 		return False;
 	}
 
@@ -573,57 +519,47 @@ static bool handle_aio_completed(struct aio_extra *aio_ex, int *perr)
  Returns non-zero errno if fail or zero if all ok.
 *****************************************************************************/
 
-int process_aio_queue(void)
+void smbd_aio_complete_mid(unsigned int mid)
 {
-	int i;
+	files_struct *fsp = NULL;
+	struct aio_extra *aio_ex = find_aio_ex(mid);
 	int ret = 0;
 
-	BlockSignals(True, RT_SIGNAL_AIO);
+	DEBUG(10,("smbd_aio_complete_mid: mid[%u]\n", mid));
 
-	DEBUG(10,("process_aio_queue: signals_received = %d\n",
-		  (int)aio_signals_received));
-	DEBUG(10,("process_aio_queue: outstanding_aio_calls = %d\n",
-		  outstanding_aio_calls));
-
-	if (!aio_signals_received) {
-		BlockSignals(False, RT_SIGNAL_AIO);
-		return 0;
+	if (!aio_ex) {
+		DEBUG(3,("smbd_aio_complete_mid: Can't find record to "
+			 "match mid %u.\n", mid));
+		srv_cancel_sign_response(mid);
+		return;
 	}
 
-	/* Drain all the complete aio_reads. */
-	for (i = 0; i < aio_signals_received; i++) {
-		uint16 mid = aio_pending_array[i];
-		files_struct *fsp = NULL;
-		struct aio_extra *aio_ex = find_aio_ex(mid);
-
-		if (!aio_ex) {
-			DEBUG(3,("process_aio_queue: Can't find record to "
-				 "match mid %u.\n", (unsigned int)mid));
-			srv_cancel_sign_response(mid);
-			continue;
-		}
-
-		fsp = aio_ex->fsp;
-		if (fsp == NULL) {
-			/* file was closed whilst I/O was outstanding. Just
-			 * ignore. */
-			DEBUG( 3,( "process_aio_queue: file closed whilst "
-				   "aio outstanding.\n"));
-			srv_cancel_sign_response(mid);
-			continue;
-		}
-
-		if (!handle_aio_completed(aio_ex, &ret)) {
-			continue;
-		}
-
-		TALLOC_FREE(aio_ex);
+	fsp = aio_ex->fsp;
+	if (fsp == NULL) {
+		/* file was closed whilst I/O was outstanding. Just
+		 * ignore. */
+		DEBUG( 3,( "smbd_aio_complete_mid: file closed whilst "
+			   "aio outstanding (mid[%u]).\n", mid));
+		srv_cancel_sign_response(mid);
+		return;
 	}
 
-	outstanding_aio_calls -= aio_signals_received;
-	aio_signals_received = 0;
-	BlockSignals(False, RT_SIGNAL_AIO);
-	return ret;
+	if (!handle_aio_completed(aio_ex, &ret)) {
+		return;
+	}
+
+	TALLOC_FREE(aio_ex);
+}
+
+static void smbd_aio_signal_handler(struct tevent_context *ev_ctx,
+				    struct tevent_signal *se,
+				    int signum, int count,
+				    void *_info, void *private_data)
+{
+	siginfo_t *info = (siginfo_t *)_info;
+	unsigned int mid = (unsigned int)info->si_value.sival_int;
+
+	smbd_aio_complete_mid(mid);
 }
 
 /****************************************************************************
@@ -755,19 +691,28 @@ void cancel_aio_by_fsp(files_struct *fsp)
 	}
 }
 
-#else
-bool aio_finished(void)
-{
-	return False;
-}
+/****************************************************************************
+ Initialize the signal handler for aio read/write.
+*****************************************************************************/
 
 void initialize_async_io_handler(void)
 {
+	aio_signal_event = tevent_add_signal(smbd_event_context(),
+					     smbd_event_context(),
+					     RT_SIGNAL_AIO, SA_SIGINFO,
+					     smbd_aio_signal_handler,
+					     NULL);
+	if (!aio_signal_event) {
+		exit_server("Failed to setup RT_SIGNAL_AIO handler");
+	}
+
+	/* tevent supports 100 signal with SA_SIGINFO */
+	aio_pending_size = 100;
 }
 
-int process_aio_queue(void)
+#else
+void initialize_async_io_handler(void)
 {
-	return False;
 }
 
 bool schedule_aio_read_and_X(connection_struct *conn,
@@ -795,4 +740,7 @@ int wait_for_aio_completion(files_struct *fsp)
 {
 	return ENOSYS;
 }
+
+void smbd_aio_complete_mid(unsigned int mid);
+
 #endif

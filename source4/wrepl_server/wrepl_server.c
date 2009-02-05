@@ -464,7 +464,7 @@ static void wreplsrv_task_init(struct task_server *task)
 	}
 	service->task		= task;
 	service->startup_time	= timeval_current();
-	task->private		= service;
+	task->private_data	= service;
 
 	/*
 	 * setup up all partners, and open the winsdb

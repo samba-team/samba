@@ -250,6 +250,7 @@ struct global {
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
 	int ldap_ssl;
+	bool ldap_ssl_ads;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
 	int ldap_debug_level;
@@ -322,7 +323,8 @@ struct global {
 	bool bHostnameLookups;
 	bool bUnixExtensions;
 	bool bDisableNetbios;
-	bool bUseKerberosKeytab;
+	char * szDedicatedKeytabFile;
+	int  iKerberosMethod;
 	bool bDeferSharingViolations;
 	bool bEnablePrivileges;
 	bool bASUSupport;
@@ -858,6 +860,17 @@ static const struct enum_list enum_map_to_guest[] = {
 static const struct enum_list enum_config_backend[] = {
 	{CONFIG_BACKEND_FILE, "file"},
 	{CONFIG_BACKEND_REGISTRY, "registry"},
+	{-1, NULL}
+};
+
+/* ADS kerberos ticket verification options */
+
+static const struct enum_list enum_kerberos_method[] = {
+	{KERBEROS_VERIFY_SECRETS, "default"},
+	{KERBEROS_VERIFY_SECRETS, "secrets only"},
+	{KERBEROS_VERIFY_SYSTEM_KEYTAB, "system keytab"},
+	{KERBEROS_VERIFY_DEDICATED_KEYTAB, "dedicated keytab"},
+	{KERBEROS_VERIFY_SECRETS_AND_KEYTAB, "secrets and keytab"},
 	{-1, NULL}
 };
 
@@ -1745,14 +1758,24 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 	{
-		.label		= "use kerberos keytab",
-		.type		= P_BOOL,
+		.label		= "dedicated keytab file",
+		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bUseKerberosKeytab,
+		.ptr		= &Globals.szDedicatedKeytabFile,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "kerberos method",
+		.type		= P_ENUM,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.iKerberosMethod,
+		.special	= NULL,
+		.enum_list	= enum_kerberos_method,
+		.flags		= FLAG_ADVANCED,
+	},
+
 
 	{N_("Logging Options"), P_SEP, P_SEPARATOR},
 
@@ -3589,6 +3612,15 @@ static struct parm_struct parm_table[] = {
 		.flags		= FLAG_ADVANCED,
 	},
 	{
+		.label		= "ldap ssl ads",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ldap_ssl_ads,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
 		.label		= "ldap timeout",
 		.type		= P_INTEGER,
 		.p_class	= P_GLOBAL,
@@ -4900,6 +4932,7 @@ static void init_globals(bool first_time_only)
 
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_ssl = LDAP_SSL_START_TLS;
+	Globals.ldap_ssl_ads = False;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
@@ -5244,6 +5277,7 @@ FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
+FN_GLOBAL_BOOL(lp_ldap_ssl_ads, &Globals.ldap_ssl_ads)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
@@ -5322,7 +5356,8 @@ FN_GLOBAL_BOOL(lp_client_use_spnego, &Globals.bClientUseSpnego)
 FN_GLOBAL_BOOL(lp_hostname_lookups, &Globals.bHostnameLookups)
 FN_LOCAL_PARM_BOOL(lp_change_notify, bChangeNotify)
 FN_LOCAL_PARM_BOOL(lp_kernel_change_notify, bKernelChangeNotify)
-FN_GLOBAL_BOOL(lp_use_kerberos_keytab, &Globals.bUseKerberosKeytab)
+FN_GLOBAL_STRING(lp_dedicated_keytab_file, &Globals.szDedicatedKeytabFile)
+FN_GLOBAL_INTEGER(lp_kerberos_method, &Globals.iKerberosMethod)
 FN_GLOBAL_BOOL(lp_defer_sharing_violations, &Globals.bDeferSharingViolations)
 FN_GLOBAL_BOOL(lp_enable_privileges, &Globals.bEnablePrivileges)
 FN_GLOBAL_BOOL(lp_enable_asu_support, &Globals.bASUSupport)

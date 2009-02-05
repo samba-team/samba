@@ -36,14 +36,14 @@ sub teardown_env($$)
 
 	my $smbdpid = read_pid($envvars, "smbd");
 	my $nmbdpid = read_pid($envvars, "nmbd");
-#	my $winbinddpid = read_pid($envvars, "winbindd");
+	my $winbinddpid = read_pid($envvars, "winbindd");
 
 	$self->stop_sig_term($smbdpid);
 	$self->stop_sig_term($nmbdpid);
-#	$self->stop_sig_term($winbinddpid);
+	$self->stop_sig_term($winbinddpid);
 	$self->stop_sig_kill($smbdpid);
 	$self->stop_sig_kill($nmbdpid);
-#	$self->stop_sig_kill($winbinddpid);
+	$self->stop_sig_kill($winbinddpid);
 
 	return 0;
 }
@@ -76,7 +76,7 @@ sub getlog_env($$)
 
 	$ret .= $self->getlog_env_app($envvars, "SMBD");
 	$ret .= $self->getlog_env_app($envvars, "NMBD");
-#	$ret .= $self->getlog_env_app($envvars, "WINBINDD");
+	$ret .= $self->getlog_env_app($envvars, "WINBINDD");
 
 	return $ret;
 }
@@ -95,6 +95,11 @@ sub setup_env($$$)
 	
 	if ($envname eq "dc") {
 		return $self->setup_dc("$path/dc");
+	} elsif ($envname eq "member") {
+		if (not defined($self->{vars}->{dc})) {
+			$self->setup_dc("$path/dc");
+		}
+		return $self->setup_member("$path/member", $self->{vars}->{dc});
 	} else {
 		return undef;
 	}
@@ -104,7 +109,18 @@ sub setup_dc($$)
 {
 	my ($self, $path) = @_;
 
-	my $vars = $self->provision($path, "dc");
+	print "PROVISIONING DC...";
+
+	my $dc_options = "
+	domain master = yes
+	domain logons = yes
+";
+
+	my $vars = $self->provision($path,
+				    "LOCALDC2",
+				    2,
+				    "localdc2pass",
+				    $dc_options);
 
 	$self->check_or_start($vars,
 			      ($ENV{NMBD_MAXTIME} or 2700),
@@ -113,7 +129,50 @@ sub setup_dc($$)
 
 	$self->wait_for_start($vars);
 
+	$self->{vars}->{dc} = $vars;
+
 	return $vars;
+}
+
+sub setup_member($$$)
+{
+	my ($self, $prefix, $dcvars) = @_;
+
+	print "PROVISIONING MEMBER...";
+
+	my $member_options = "
+	security = domain
+";
+	my $ret = $self->provision($prefix,
+				   "LOCALMEMBER3",
+				   3,
+				   "localmember3pass",
+				   $member_options);
+
+	$ret or die("Unable to provision");
+
+	my $net = $self->binpath("net");
+	my $cmd = "";
+	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	$cmd .= "$net join $ret->{CONFIGURATION} $dcvars->{DOMAIN} member";
+	$cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	system($cmd) == 0 or die("Join failed\n$cmd");
+
+	$self->check_or_start($ret,
+			      ($ENV{NMBD_MAXTIME} or 2700),
+			      ($ENV{WINBINDD_MAXTIME} or 2700),
+			      ($ENV{SMBD_MAXTIME} or 2700));
+
+	$self->wait_for_start($ret);
+
+	$ret->{DC_SERVER} = $dcvars->{SERVER};
+	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
+	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
+
+	return $ret;
 }
 
 sub stop($)
@@ -160,7 +219,12 @@ sub check_or_start($$$$) {
 		open STDOUT, ">$env_vars->{NMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
 
+		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
+		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
+		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
 		my @optargs = ("-d0");
 		if (defined($ENV{NMBD_OPTIONS})) {
@@ -179,26 +243,36 @@ sub check_or_start($$$$) {
 	write_pid($env_vars, "nmbd", $pid);
 	print "DONE\n";
 
-# disable winbindd until the build-farm faked_users work with it
-#	unlink($env_vars->{WINBINDD_TEST_LOG});
-#	print "STARTING WINBINDD...";
-#	$pid = fork();
-#	if ($pid == 0) {
-#		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
-#		open STDERR, '>&STDOUT';
-#
-#		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
-#
-#		my @optargs = ("-d0");
-#		if (defined($ENV{WINBINDD_OPTIONS})) {
-#			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
-#		}
-#
-#		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
-#		exec($self->binpath("timelimit"), $winbindd_maxtime, $ENV{WINBINDD_VALGRIND}, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
-#	}
-#	write_pid($env_vars, "winbindd", $pid);
-#	print "DONE\n";
+	unlink($env_vars->{WINBINDD_TEST_LOG});
+	print "STARTING WINBINDD...";
+	$pid = fork();
+	if ($pid == 0) {
+		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
+		open STDERR, '>&STDOUT';
+
+		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+
+		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
+		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
+		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
+
+		my @optargs = ("-d0");
+		if (defined($ENV{WINBINDD_OPTIONS})) {
+			@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
+		}
+
+		$ENV{MAKE_TEST_BINARY} = $self->binpath("winbindd");
+
+		my @preargs = ($self->binpath("timelimit"), $winbindd_maxtime);
+		if(defined($ENV{WINBINDD_VALGRIND})) {
+			@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
+		}
+
+		exec(@preargs, $self->binpath("winbindd"), "-F", "-S", "--no-process-group", "-s", $env_vars->{SERVERCONFFILE}, @optargs) or die("Unable to start winbindd: $!");
+	}
+	write_pid($env_vars, "winbindd", $pid);
+	print "DONE\n";
 
 	unlink($env_vars->{SMBD_TEST_LOG});
 	print "STARTING SMBD...";
@@ -207,7 +281,12 @@ sub check_or_start($$$$) {
 		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
 		open STDERR, '>&STDOUT';
 
+		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+
 		$ENV{WINBINDD_SOCKET_DIR} = $env_vars->{WINBINDD_SOCKET_DIR};
+
+		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
+		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
 
 		$ENV{MAKE_TEST_BINARY} = $self->binpath("smbd");
 		my @optargs = ("-d0");
@@ -234,7 +313,6 @@ sub create_clientconf($$$)
 	my $logdir = "$prefix/logs";
 	my $piddir = "$prefix/pid";
 	my $privatedir = "$prefix/private";
-	my $scriptdir = "$RealBin/..";
 	my $conffile = "$prefix/smb.conf";
 
 	my $torture_interfaces='127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.0.0.10/8,127.0.0.11/8';
@@ -253,33 +331,33 @@ sub create_clientconf($$$)
 
 	netbios name = TORTURE_6
 	interfaces = $torture_interfaces
-	panic action = $scriptdir/gdb_backtrace \%d %\$(MAKE_TEST_BINARY)
+	panic action = $RealBin/gdb_backtrace \%d %\$(MAKE_TEST_BINARY)
 
 	passdb backend = tdbsam
 	";
 	close(CONF);
 }
 
-sub provision($$$)
+sub provision($$$$$$)
 {
-	my ($self, $prefix, $role) = @_;
+	my ($self, $prefix, $server, $swiface, $password, $extra_options) = @_;
 
 	##
 	## setup the various environment variables we need
 	##
 
 	my %ret = ();
-	my $server = "LOCALHOST2";
-	my $server_ip = "127.0.0.2";
+	my $server_ip = "127.0.0.$swiface";
 	my $domain = "SAMBA-TEST";
 
-	my $username = `PATH=/usr/ucb:$ENV{PATH} whoami`;
-	chomp $username;
-	my $password = "test";
+	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
+	chomp $unix_name;
+	my $unix_uid = $>;
+	my $unix_gids_str = $);
+	my @unix_gids = split(" ", $unix_gids_str);
 
-	my $srcdir="$RealBin/..";
-	my $scriptdir="$srcdir/selftest";
 	my $prefix_abs = abs_path($prefix);
+	my $bindir_abs = abs_path($self->{bindir});
 
 	my @dirs = ();
 
@@ -315,9 +393,18 @@ sub provision($$$)
 
 	my $conffile="$libdir/server.conf";
 
+	my $nss_wrapper_pl = "$ENV{PERL} $RealBin/../lib/nss_wrapper/nss_wrapper.pl";
+	my $nss_wrapper_passwd = "$privatedir/passwd";
+	my $nss_wrapper_group = "$privatedir/group";
+
 	open(CONF, ">$conffile") or die("Unable to open $conffile");
 	print CONF "
 [global]
+	netbios name = $server
+	interfaces = $server_ip/8
+	bind interfaces only = yes
+	panic action = $RealBin/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+
 	workgroup = $domain
 
 	private dir = $privatedir
@@ -328,16 +415,16 @@ sub provision($$$)
 
 	name resolve order = bcast
 
-	netbios name = $server
-	interfaces = $server_ip/8
-	bind interfaces only = yes
-	panic action = $scriptdir/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+	state directory = $lockdir
+	cache directory = $lockdir
 
 	passdb backend = tdbsam
 
-	; Necessary to add the build farm hacks
-	add user script = /bin/false
-	add machine script = /bin/false
+	time server = yes
+
+	add user script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action add --name %u
+	add machine script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action add --name %u
+	delete user script = $nss_wrapper_pl --path $nss_wrapper_passwd --type passwd --action delete --name %u
 
 	kernel oplocks = no
 	kernel change notify = no
@@ -346,24 +433,34 @@ sub provision($$$)
 	printing = bsd
 	printcap name = /dev/null
 
-";
-
-	if ($role eq "dc") {
-		print CONF "\tdomain logons = yes\n";
-		print CONF "\tdomain master = yes\n";
-	}
-
-print CONF "
-
 	winbindd:socket dir = $wbsockdir
+	idmap uid = 100000-200000
+	idmap gid = 100000-200000
 
-[tmp]
-	path = $shrdir
+#	min receivefile size = 4000
+
 	read only = no
 	smbd:sharedelay = 100000
+	smbd:writetimeupdatedelay = 500000
 	map hidden = yes
 	map system = yes
 	create mask = 755
+	vfs objects = $bindir_abs/xattr_tdb.so $bindir_abs/streams_depot.so
+
+	# Begin extra options
+	$extra_options
+	# End extra options
+
+	#Include user defined custom parameters if set
+";
+
+	if (defined($ENV{INCLUDE_CUSTOM_CONF})) {
+		print CONF "\t$ENV{INCLUDE_CUSTOM_CONF}\n";
+	}
+
+	print CONF "
+[tmp]
+	path = $shrdir
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
@@ -387,26 +484,52 @@ print CONF "
 	## create a test account
 	##
 
-	open(PWD, "|".$self->binpath("smbpasswd")." -c $conffile -L -s -a $username >/dev/null");
+	open(PASSWD, ">$nss_wrapper_passwd") or die("Unable to open $nss_wrapper_passwd");
+	print PASSWD "nobody:x:65534:65533:nobody gecos:$prefix_abs:/bin/false
+$unix_name:x:$unix_uid:$unix_gids[0]:$unix_name gecos:$prefix_abs:/bin/false
+";
+	close(PASSWD);
+
+	open(GROUP, ">$nss_wrapper_group") or die("Unable to open $nss_wrapper_group");
+	print GROUP "nobody:x:65533:
+nogroup:x:65534:nobody
+$unix_name-group:x:$unix_gids[0]:
+";
+	close(GROUP);
+
+	$ENV{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
+	$ENV{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
+
+	open(PWD, "|".$self->binpath("smbpasswd")." -c $conffile -L -s -a $unix_name >/dev/null");
 	print PWD "$password\n$password\n";
 	close(PWD) or die("Unable to set password for test account");
+
+	delete $ENV{NSS_WRAPPER_PASSWD};
+	delete $ENV{NSS_WRAPPER_GROUP};
 
 	print "DONE\n";
 
 	$ret{SERVER_IP} = $server_ip;
 	$ret{NMBD_TEST_LOG} = "$prefix/nmbd_test.log";
+	$ret{NMBD_TEST_LOG_POS} = 0;
 	$ret{WINBINDD_TEST_LOG} = "$prefix/winbindd_test.log";
+	$ret{WINBINDD_TEST_LOG_POS} = 0;
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
+	$ret{SMBD_TEST_LOG_POS} = 0;
 	$ret{SERVERCONFFILE} = $conffile;
 	$ret{CONFIGURATION} ="-s $conffile";
 	$ret{SERVER} = $server;
-	$ret{USERNAME} = $username;
+	$ret{USERNAME} = $unix_name;
 	$ret{DOMAIN} = $domain;
 	$ret{NETBIOSNAME} = $server;
 	$ret{PASSWORD} = $password;
 	$ret{PIDDIR} = $piddir;
 	$ret{WINBINDD_SOCKET_DIR} = $wbsockdir;
 	$ret{WINBINDD_PRIV_PIPE_DIR} = $wbsockprivdir;
+	$ret{SOCKET_WRAPPER_DEFAULT_IFACE} = $swiface;
+	$ret{NSS_WRAPPER_PASSWD} = $nss_wrapper_passwd;
+	$ret{NSS_WRAPPER_GROUP} = $nss_wrapper_group;
+
 	return \%ret;
 }
 

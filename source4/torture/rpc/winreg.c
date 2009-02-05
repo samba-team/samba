@@ -104,7 +104,7 @@ static bool test_NotifyChangeKeyValue(struct dcerpc_pipe *p,
 
 static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			   struct policy_handle *handle, const char *name,
-			   const char *class)
+			   const char *kclass)
 {
 	struct winreg_CreateKey r;
 	struct policy_handle newhandle;
@@ -114,7 +114,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	r.in.handle = handle;
 	r.out.new_handle = &newhandle;
 	init_winreg_String(&r.in.name, name);
-	init_winreg_String(&r.in.keyclass, class);
+	init_winreg_String(&r.in.keyclass, kclass);
 	r.in.options = 0x0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
@@ -135,7 +135,7 @@ static bool test_CreateKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, const char *name,
-			      const char *class,
+			      const char *kclass,
 			      struct policy_handle *newhandle)
 {
 	struct winreg_CreateKey r;
@@ -169,7 +169,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 	r.in.handle = handle;
 	r.out.new_handle = newhandle;
 	init_winreg_String(&r.in.name, name);
-	init_winreg_String(&r.in.keyclass, class);
+	init_winreg_String(&r.in.keyclass, kclass);
 	r.in.options = 0x0;
 	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.action_taken = r.out.action_taken = &action_taken;
@@ -1393,7 +1393,7 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 
 static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
-			      struct policy_handle *handle, char *class)
+			      struct policy_handle *handle, char *kclass)
 {
 	struct winreg_QueryInfoKey r;
 	uint32_t num_subkeys, max_subkeylen, max_classlen,
@@ -1415,7 +1415,7 @@ static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 	r.out.classname = talloc(tctx, struct winreg_String);
 
 	r.in.classname = talloc(tctx, struct winreg_String);
-	init_winreg_String(r.in.classname, class);
+	init_winreg_String(r.in.classname, kclass);
 
 	torture_assert_ntstatus_ok(tctx,
 				   dcerpc_winreg_QueryInfoKey(p, tctx, &r),
@@ -1435,18 +1435,18 @@ static bool test_EnumKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 			 bool test_security)
 {
 	struct winreg_EnumKey r;
-	struct winreg_StringBuf class, name;
+	struct winreg_StringBuf kclass, name;
 	NTSTATUS status;
 	NTTIME t = 0;
 
-	class.name   = "";
-	class.size   = 1024;
+	kclass.name   = "";
+	kclass.size   = 1024;
 
 	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 	r.in.name = &name;
-	r.in.keyclass = &class;
+	r.in.keyclass = &kclass;
 	r.out.name = &name;
 	r.in.last_changed_time = &t;
 

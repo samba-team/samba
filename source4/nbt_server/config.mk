@@ -18,7 +18,7 @@ $(eval $(call proto_header_template,$(nbt_serversrcdir)/wins/winsdb_proto.h,$(WI
 SUBSYSTEM = LIBLDB
 INIT_FUNCTION = LDB_MODULE(wins_ldb)
 PRIVATE_DEPENDENCIES = \
-		LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
+		LIBLDB LIBNETIF LIBSAMBA-HOSTCONFIG LIBSAMBA-UTIL
 # End MODULE ldb_wins_ldb
 #######################
 
