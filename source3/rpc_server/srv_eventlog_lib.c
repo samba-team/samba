@@ -551,9 +551,11 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 		entry->sid_length = rpcstr_push_talloc(mem_ctx,
 				&dummy,
 				stop);
+		if (entry->sid_length == (uint32_t)-1) {
+			return false;
+		}
 		entry->sid = data_blob_talloc(mem_ctx, dummy, entry->sid_length);
-		if (entry->sid_length == (uint32_t)-1 ||
-				entry->sid.data == NULL) {
+		if (entry->sid.data == NULL) {
 			return false;
 		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
