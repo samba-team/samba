@@ -34,8 +34,7 @@ struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
     if (py_obj == Py_None) {
         return cli_credentials_init_anon(NULL);
     }
-	
-    /* FIXME: Check type? */
+
     return PyCredentials_AsCliCredentials(py_obj);
 }
 
@@ -53,7 +52,7 @@ static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwar
 
 static PyObject *py_creds_get_username(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_username(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_username(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_username(py_talloc_Object *self, PyObject *args)
@@ -63,12 +62,12 @@ static PyObject *py_creds_set_username(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_username(self->ptr, newval, obt));
+	return PyBool_FromLong(cli_credentials_set_username(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_get_password(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_password(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_password(PyCredentials_AsCliCredentials(self)));
 }
 
 
@@ -79,12 +78,12 @@ static PyObject *py_creds_set_password(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_password(self->ptr, newval, obt));
+	return PyBool_FromLong(cli_credentials_set_password(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_get_domain(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_domain(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_domain(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_domain(py_talloc_Object *self, PyObject *args)
@@ -94,12 +93,12 @@ static PyObject *py_creds_set_domain(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_domain(self->ptr, newval, obt));
+	return PyBool_FromLong(cli_credentials_set_domain(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_get_realm(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_realm(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_realm(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_realm(py_talloc_Object *self, PyObject *args)
@@ -109,12 +108,12 @@ static PyObject *py_creds_set_realm(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_realm(self->ptr, newval, obt));
+	return PyBool_FromLong(cli_credentials_set_realm(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_get_bind_dn(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_bind_dn(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_bind_dn(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_bind_dn(py_talloc_Object *self, PyObject *args)
@@ -123,12 +122,12 @@ static PyObject *py_creds_set_bind_dn(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &newval))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_bind_dn(self->ptr, newval));
+	return PyBool_FromLong(cli_credentials_set_bind_dn(PyCredentials_AsCliCredentials(self), newval));
 }
 
 static PyObject *py_creds_get_workstation(py_talloc_Object *self)
 {
-	return PyString_FromStringOrNULL(cli_credentials_get_workstation(self->ptr));
+	return PyString_FromStringOrNULL(cli_credentials_get_workstation(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_workstation(py_talloc_Object *self, PyObject *args)
@@ -138,33 +137,33 @@ static PyObject *py_creds_set_workstation(py_talloc_Object *self, PyObject *args
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	return PyBool_FromLong(cli_credentials_set_workstation(self->ptr, newval, obt));
+	return PyBool_FromLong(cli_credentials_set_workstation(PyCredentials_AsCliCredentials(self), newval, obt));
 }
 
 static PyObject *py_creds_is_anonymous(py_talloc_Object *self)
 {
-	return PyBool_FromLong(cli_credentials_is_anonymous(self->ptr));
+	return PyBool_FromLong(cli_credentials_is_anonymous(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_anonymous(py_talloc_Object *self)
 {
-	cli_credentials_set_anonymous(self->ptr);
+	cli_credentials_set_anonymous(PyCredentials_AsCliCredentials(self));
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_authentication_requested(py_talloc_Object *self)
 {
-        return PyBool_FromLong(cli_credentials_authentication_requested(self->ptr));
+        return PyBool_FromLong(cli_credentials_authentication_requested(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_wrong_password(py_talloc_Object *self)
 {
-        return PyBool_FromLong(cli_credentials_wrong_password(self->ptr));
+        return PyBool_FromLong(cli_credentials_wrong_password(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_set_cmdline_callbacks(py_talloc_Object *self)
 {
-        return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(self->ptr));
+        return PyBool_FromLong(cli_credentials_set_cmdline_callbacks(PyCredentials_AsCliCredentials(self)));
 }
 
 static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
@@ -174,15 +173,15 @@ static PyObject *py_creds_parse_string(py_talloc_Object *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s|i", &newval, &obt))
 		return NULL;
 
-	cli_credentials_parse_string(self->ptr, newval, obt);
+	cli_credentials_parse_string(PyCredentials_AsCliCredentials(self), newval, obt);
 	Py_RETURN_NONE;
 }
 
 static PyObject *py_creds_get_nt_hash(py_talloc_Object *self)
 {
-	const struct samr_Password *ntpw = cli_credentials_get_nt_hash(self->ptr, self->ptr);
+	const struct samr_Password *ntpw = cli_credentials_get_nt_hash(PyCredentials_AsCliCredentials(self), self->ptr);
 
-	return PyString_FromStringAndSize((char *)ntpw->hash, 16);
+	return PyString_FromStringAndSize(discard_const_p(char, ntpw->hash), 16);
 }
 
 static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *args)
@@ -191,7 +190,7 @@ static PyObject *py_creds_set_kerberos_state(py_talloc_Object *self, PyObject *a
 	if (!PyArg_ParseTuple(args, "i", &state))
 		return NULL;
 
-        cli_credentials_set_kerberos_state(self->ptr, state);
+	cli_credentials_set_kerberos_state(PyCredentials_AsCliCredentials(self), state);
 	Py_RETURN_NONE;
 }
 
@@ -206,7 +205,7 @@ static PyObject *py_creds_guess(py_talloc_Object *self, PyObject *args)
 	if (lp_ctx == NULL) 
 		return NULL;
 
-	cli_credentials_guess(self->ptr, lp_ctx);
+	cli_credentials_guess(PyCredentials_AsCliCredentials(self), lp_ctx);
 
 	Py_RETURN_NONE;
 }
@@ -223,7 +222,7 @@ static PyObject *py_creds_set_machine_account(py_talloc_Object *self, PyObject *
 	if (lp_ctx == NULL) 
 		return NULL;
 
-	status = cli_credentials_set_machine_account(self->ptr, lp_ctx);
+	status = cli_credentials_set_machine_account(PyCredentials_AsCliCredentials(self), lp_ctx);
 	PyErr_NTSTATUS_IS_ERR_RAISE(status);
 
 	Py_RETURN_NONE;
