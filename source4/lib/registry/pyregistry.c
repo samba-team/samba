@@ -18,29 +18,32 @@
 */
 
 #include "includes.h"
+#include <tevent.h>
 #include <Python.h>
 #include "libcli/util/pyerrors.h"
 #include "lib/registry/registry.h"
 #include "scripting/python/modules.h" /* for py_iconv_convenience() */
 #include <pytalloc.h>
-#include <tevent.h>
+#include "auth/credentials/pycredentials.h"
 #include "param/pyparam.h"
 
 #ifndef Py_RETURN_NONE
 #define Py_RETURN_NONE return Py_INCREF(Py_None), Py_None
 #endif
 
-extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
-
 PyAPI_DATA(PyTypeObject) PyRegistryKey;
 PyAPI_DATA(PyTypeObject) PyRegistry;
 PyAPI_DATA(PyTypeObject) PyHiveKey;
+
+/*#define PyRegistryKey_AsRegistryKey(obj) py_talloc_get_type(obj, struct registry_key)*/
+#define PyRegistry_AsRegistryContext(obj) py_talloc_get_type(obj, struct registry_context)
+#define PyHiveKey_AsHiveKey(obj) py_talloc_get_type(obj, struct hive_key)
 
 static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
 {
 	char *name;
 	WERROR result;
-	struct registry_context *ctx = py_talloc_get_ptr(self);
+	struct registry_context *ctx = PyRegistry_AsRegistryContext(self);
 	struct registry_key *key;
 
 	if (!PyArg_ParseTuple(args, "s", &name))
@@ -56,7 +59,7 @@ static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
 {
 	char *path;
 	WERROR result;
-	struct registry_context *ctx = py_talloc_get_ptr(self);
+	struct registry_context *ctx = PyRegistry_AsRegistryContext(self);
 
 	if (!PyArg_ParseTuple(args, "s", &path))
 		return NULL;
@@ -70,7 +73,7 @@ static PyObject *py_key_del_abs(PyObject *self, PyObject *args)
 static PyObject *py_get_predefined_key(PyObject *self, PyObject *args)
 {
 	uint32_t hkey;
-	struct registry_context *ctx = py_talloc_get_ptr(self);
+	struct registry_context *ctx = PyRegistry_AsRegistryContext(self);
 	WERROR result;
 	struct registry_key *key;
 
@@ -87,7 +90,7 @@ static PyObject *py_diff_apply(PyObject *self, PyObject *args)
 {
 	char *filename;
 	WERROR result;
-	struct registry_context *ctx = py_talloc_get_ptr(self);
+	struct registry_context *ctx = PyRegistry_AsRegistryContext(self);
 	if (!PyArg_ParseTuple(args, "s", &filename))
 		return NULL;
 
@@ -99,7 +102,7 @@ static PyObject *py_diff_apply(PyObject *self, PyObject *args)
 
 static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 {
-	struct registry_context *ctx = py_talloc_get_ptr(self);
+	struct registry_context *ctx = PyRegistry_AsRegistryContext(self);
 	uint32_t hkey;
 	PyObject *py_hivekey, *py_elements = Py_None;
 	const char **elements;
@@ -124,7 +127,7 @@ static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 
 	SMB_ASSERT(ctx != NULL);
 
-	result = reg_mount_hive(ctx, py_talloc_get_ptr(py_hivekey), hkey, elements);
+	result = reg_mount_hive(ctx, PyHiveKey_AsHiveKey(py_hivekey), hkey, elements);
 	PyErr_WERROR_IS_ERR_RAISE(result);
 
 	Py_RETURN_NONE;
@@ -166,7 +169,7 @@ PyTypeObject PyRegistry = {
 static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
 {
 	char *name;
-	struct hive_key *key = py_talloc_get_ptr(self);
+	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 	WERROR result;
 
 	if (!PyArg_ParseTuple(args, "s", &name))
@@ -182,7 +185,7 @@ static PyObject *py_hive_key_del(PyObject *self, PyObject *args)
 static PyObject *py_hive_key_flush(PyObject *self)
 {
 	WERROR result;
-	struct hive_key *key = py_talloc_get_ptr(self);
+	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
 	result = hive_key_flush(key);
 	PyErr_WERROR_IS_ERR_RAISE(result);
@@ -194,7 +197,7 @@ static PyObject *py_hive_key_del_value(PyObject *self, PyObject *args)
 {
 	char *name;
 	WERROR result;
-	struct hive_key *key = py_talloc_get_ptr(self);
+	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
@@ -212,7 +215,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	uint32_t type;
 	DATA_BLOB value;
 	WERROR result;
-	struct hive_key *key = py_talloc_get_ptr(self);
+	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
 	if (!PyArg_ParseTuple(args, "siz#", &name, &type, &value.data, &value.length))
 		return NULL;
