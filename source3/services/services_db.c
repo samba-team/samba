@@ -567,7 +567,8 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	WERROR wresult;
 	char *path = NULL;
 	REGVAL_CTR *values = NULL;
-	prs_struct ps;
+	DATA_BLOB blob;
+	NTSTATUS status;
 	bool ret = False;
 
 	/* now add the security descriptor */
@@ -593,21 +594,18 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 
 	/* stream the printer security descriptor */
 
-	if (!prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, key, MARSHALL)) {
-		DEBUG(0,("svcctl_set_secdesc: prs_init() failed!\n"));
+	status = marshall_sec_desc(ctx, sec_desc, &blob.data, &blob.length);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("svcctl_set_secdesc: ndr_push_struct_blob() failed!\n"));
 		TALLOC_FREE( key );
 		return False;
 	}
 
-	if ( sec_io_desc("sec_desc", &sec_desc, &ps, 0 ) ) {
-		uint32 offset = prs_offset( &ps );
-		regval_ctr_addvalue( values, "Security", REG_BINARY, prs_data_p(&ps), offset );
-		ret = store_reg_values( key, values );
-	}
+	regval_ctr_addvalue( values, "Security", REG_BINARY, (const char *)blob.data, blob.length);
+	ret = store_reg_values( key, values );
 
 	/* cleanup */
 
-	prs_mem_free( &ps );
 	TALLOC_FREE( key);
 
 	return ret;
