@@ -1255,10 +1255,9 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		struct np_proxy_state *p = talloc_get_type_abort(
 			handle->private_data, struct np_proxy_state);
 
-		state->nread = len;
 		state->fd = p->fd;
 
-		subreq = recvall_send(state, ev, p->fd, data, len, 0);
+		subreq = async_recv(state, ev, p->fd, data, len, 0);
 		if (subreq == NULL) {
 			goto fail;
 		}
@@ -1283,14 +1282,21 @@ static void np_read_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct np_read_state *state = talloc_get_type_abort(
 		req->private_data, struct np_read_state);
-	NTSTATUS status;
+	ssize_t result;
+	int sys_errno;
 	int available = 0;
 
-	status = recvall_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	result = async_syscall_result_ssize_t(subreq, &sys_errno);
+	if (result == -1) {
+		async_req_nterror(req, map_nt_error_from_unix(sys_errno));
 		return;
 	}
+	if (result == 0) {
+		async_req_nterror(req, NT_STATUS_END_OF_FILE);
+		return;
+	}
+
+	state->nread = result;
 
 	/*
 	 * We don't look at the ioctl result. We don't really care if there is
