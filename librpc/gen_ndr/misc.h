@@ -42,4 +42,10 @@ enum netr_SchannelType
 #endif
 ;
 
+struct KRB5_EDATA_NTSTATUS {
+	NTSTATUS ntstatus;
+	uint32_t unknown1;
+	uint32_t unknown2;
+}/* [public] */;
+
 #endif /* _HEADER_misc */

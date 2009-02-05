@@ -20,4 +20,7 @@ void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, const stru
 enum ndr_err_code ndr_push_netr_SchannelType(struct ndr_push *ndr, int ndr_flags, enum netr_SchannelType r);
 enum ndr_err_code ndr_pull_netr_SchannelType(struct ndr_pull *ndr, int ndr_flags, enum netr_SchannelType *r);
 void ndr_print_netr_SchannelType(struct ndr_print *ndr, const char *name, enum netr_SchannelType r);
+enum ndr_err_code ndr_push_KRB5_EDATA_NTSTATUS(struct ndr_push *ndr, int ndr_flags, const struct KRB5_EDATA_NTSTATUS *r);
+enum ndr_err_code ndr_pull_KRB5_EDATA_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, struct KRB5_EDATA_NTSTATUS *r);
+void ndr_print_KRB5_EDATA_NTSTATUS(struct ndr_print *ndr, const char *name, const struct KRB5_EDATA_NTSTATUS *r);
 #endif /* _HEADER_NDR_misc */
