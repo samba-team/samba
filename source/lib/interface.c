@@ -151,7 +151,8 @@ int iface_count_v4_nl(void)
 }
 
 /****************************************************************************
- Return a pointer to the in_addr of the first IPv4 interface.
+ Return a pointer to the in_addr of the first IPv4 interface that's
+ not 0.0.0.0.
 **************************************************************************/
 
 const struct in_addr *first_ipv4_iface(void)
@@ -159,7 +160,9 @@ const struct in_addr *first_ipv4_iface(void)
 	struct interface *i;
 
 	for (i=local_interfaces;i ;i=i->next) {
-		if (i->ip.ss_family == AF_INET) {
+		if ((i->ip.ss_family == AF_INET) &&
+		    (!is_zero_ip_v4(((struct sockaddr_in *)&i->ip)->sin_addr)))
+		{
 			break;
 		}
 	}

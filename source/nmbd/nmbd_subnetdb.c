@@ -287,7 +287,8 @@ bool create_subnets(void)
 	}
 
 	if (lp_we_are_a_wins_server()) {
-		/* Pick the first interface IPv4 address as the WINS server ip. */
+		/* Pick the first interface IPv4 address as the WINS server
+		 * ip. */
 		const struct in_addr *nip = first_ipv4_iface();
 
 		if (!nip) {

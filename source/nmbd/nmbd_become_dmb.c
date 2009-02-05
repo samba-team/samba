@@ -128,7 +128,8 @@ in workgroup %s on subnet %s\n",
 
 		work->dmb_name = nmbname;
 
-		/* Pick the first interface IPv4 address as the domain master browser ip. */
+		/* Pick the first interface IPv4 address as the domain master
+		 * browser ip. */
 		nip = first_ipv4_iface();
 		if (!nip) {
 			DEBUG(0,("become_domain_master_stage2: "
