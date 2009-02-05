@@ -127,6 +127,7 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 			no_match = true;
 		} else if (utdv_val1 && !utdv_val) {
 			no_match = true;
+		} else if (!utdv_val1 && !utdv_val) {
 		} else if (utdv_val1->length != utdv_val->length) {
 			no_match = true;
 		} else if (utdv_val1->length && memcmp(utdv_val1->data, utdv_val->data, utdv_val->length) != 0) {
