@@ -462,7 +462,7 @@ _PUBLIC_ NTSTATUS auth_register(const struct auth_operations *ops)
 				  struct auth_backend, num_backends+1);
 	NT_STATUS_HAVE_NO_MEMORY(backends);
 
-	new_ops = talloc_memdup(backends, ops, sizeof(*ops));
+	new_ops = (struct auth_operations *)talloc_memdup(backends, ops, sizeof(*ops));
 	NT_STATUS_HAVE_NO_MEMORY(new_ops);
 	new_ops->name = talloc_strdup(new_ops, ops->name);
 	NT_STATUS_HAVE_NO_MEMORY(new_ops->name);
