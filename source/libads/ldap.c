@@ -672,7 +672,7 @@ got_connection:
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	if (lp_parm_bool(-1, "ldap ssl", "ads", false)) {
+	if ( lp_ldap_ssl_ads() ) {
 		status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
 		if (!ADS_ERR_OK(status)) {
 			goto out;
