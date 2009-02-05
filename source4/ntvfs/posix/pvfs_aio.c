@@ -145,7 +145,7 @@ NTSTATUS pvfs_aio_pwrite(struct ntvfs_request *req, union smb_write *wr,
 	state = talloc(req, struct pvfs_aio_write_state);
 	NT_STATUS_HAVE_NO_MEMORY(state);
 
-        io_prep_pwrite(&iocb, f->handle->fd, wr->writex.in.data,
+	io_prep_pwrite(&iocb, f->handle->fd, discard_const(wr->writex.in.data),
 		       wr->writex.in.count, wr->writex.in.offset);
 	state->ae = tevent_add_aio(req->ctx->event_ctx, req->ctx->event_ctx, &iocb,
 				   pvfs_aio_write_handler, state);
