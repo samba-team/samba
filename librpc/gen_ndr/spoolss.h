@@ -912,6 +912,10 @@ struct spoolss_AddPrinter {
 
 struct spoolss_DeletePrinter {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 
@@ -1841,7 +1845,7 @@ struct spoolss_RemoteFindNextPrinterChangeNotifyEx {
 	} in;
 
 	struct {
-		struct spoolss_NotifyInfo *info;/* [unique] */
+		struct spoolss_NotifyInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 
