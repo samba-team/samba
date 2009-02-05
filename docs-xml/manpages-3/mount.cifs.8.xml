@@ -372,9 +372,9 @@ port 445 is tried and if no response then port 139 is tried.
                 <term>noacl</term>
                 <listitem><para>Do not allow POSIX ACL operations even if server would support them.</para><para>
 		The CIFS client can get and set POSIX ACLs (getfacl, setfacl) to Samba servers
-		version 3.10 and later.  Setting POSIX ACLs requires enabling both XATTR and
+		version 3.0.10 and later.  Setting POSIX ACLs requires enabling both XATTR and
 		then POSIX support in the CIFS configuration options when building the cifs
-		module.  POSIX ACL support can be disabled on a per mount basic by specifying
+		module.  POSIX ACL support can be disabled on a per mount basis by specifying
 		"noacl" on mount.</para>
 		</listitem>
 	</varlistentry>
