@@ -209,7 +209,11 @@ ctdb_check_tcp_ports() {
   # check availability of netcat or netstat first
   NETCAT=""
   NETSTAT=""
-  if [ -x /usr/bin/netcat ]; then
+  if [ -x /usr/bin/netstat ]; then
+      NETSTAT=/usr/bin/netstat
+  elif [ -x /bin/netstat ]; then
+      NETSTAT=/bin/netstat
+  elif [ -x /usr/bin/netcat ]; then
       NETCAT=/usr/bin/netcat
   elif [ -x /bin/netcat ]; then
       NETCAT=/bin/netcat
@@ -217,10 +221,6 @@ ctdb_check_tcp_ports() {
       NETCAT=/usr/bin/nc
   elif [ -x /bin/nc ]; then
       NETCAT=/bin/nc
-  elif [ -x /usr/bin/netstat ]; then
-      NETSTAT=/usr/bin/netstat
-  elif [ -x /bin/netstat ]; then
-      NETSTAT=/bin/netstat
   fi
 
   for p in $wait_ports; do
