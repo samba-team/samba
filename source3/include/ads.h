@@ -364,12 +364,6 @@ typedef void **ADS_MODLIST;
 
 #ifdef HAVE_KRB5
 typedef struct {
-	NTSTATUS ntstatus;
-	uint32 unknown1;
-	uint32 unknown2; /* 0x00000001 */
-} KRB5_EDATA_NTSTATUS;
-
-typedef struct {
 #if defined(HAVE_MAGIC_IN_KRB5_ADDRESS) && defined(HAVE_ADDRTYPE_IN_KRB5_ADDRESS) /* MIT */
 	krb5_address **addrs;
 #elif defined(HAVE_KRB5_ADDRESSES) /* Heimdal */

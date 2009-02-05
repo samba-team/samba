@@ -56,47 +56,14 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-static bool smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx, 
-				    DATA_BLOB *edata_blob, 
-				    KRB5_EDATA_NTSTATUS *edata)
-{
-	bool ret = False;
-	prs_struct ps;
-
-	if (!mem_ctx || !edata_blob || !edata) 
-		return False;
-
-	if (!prs_init(&ps, edata_blob->length, mem_ctx, UNMARSHALL))
-		return False;
-
-	if (!prs_copy_data_in(&ps, (char *)edata_blob->data, edata_blob->length))
-		goto out;
-
-	prs_set_offset(&ps, 0);
-
-	if (!prs_ntstatus("ntstatus", &ps, 1, &edata->ntstatus))
-		goto out;
-
-	if (!prs_uint32("unknown1", &ps, 1, &edata->unknown1))
-		goto out;
-
-	if (!prs_uint32("unknown2", &ps, 1, &edata->unknown2)) /* only seen 00000001 here */
-		goto out;
-
-	ret = True;
- out:
-	prs_mem_free(&ps);
-
-	return ret;
-}
-
  static bool smb_krb5_get_ntstatus_from_krb5_error(krb5_error *error,
 						   NTSTATUS *nt_status)
 {
 	DATA_BLOB edata;
 	DATA_BLOB unwrapped_edata;
 	TALLOC_CTX *mem_ctx;
-	KRB5_EDATA_NTSTATUS parsed_edata;
+	struct KRB5_EDATA_NTSTATUS parsed_edata;
+	enum ndr_err_code ndr_err;
 
 #ifdef HAVE_E_DATA_POINTER_IN_KRB5_ERROR
 	edata = data_blob(error->e_data->data, error->e_data->length);
@@ -122,7 +89,10 @@ static bool smb_krb5_err_io_nstatus(TALLOC_CTX *mem_ctx,
 
 	data_blob_free(&edata);
 
-	if (!smb_krb5_err_io_nstatus(mem_ctx, &unwrapped_edata, &parsed_edata)) {
+	ndr_err = ndr_pull_struct_blob_all(&unwrapped_edata, mem_ctx, NULL,
+			&parsed_edata,
+			(ndr_pull_flags_fn_t)ndr_pull_KRB5_EDATA_NTSTATUS);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		data_blob_free(&unwrapped_edata);
 		TALLOC_FREE(mem_ctx);
 		return False;
