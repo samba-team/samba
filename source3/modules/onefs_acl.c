@@ -620,19 +620,11 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	    fsp->fsp_name, security_info));
 
 	if (fsp->fh->fd == -1) {
-		enum ifs_ace_rights desired_access = 0;
-
-		if (security_info & (OWNER_SECURITY_INFORMATION |
-		     GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION))
-			desired_access |= IFS_RTS_STD_READ_CONTROL;
-		if (security_info & SACL_SECURITY_INFORMATION)
-			desired_access |= IFS_RTS_SACL_ACCESS;
-
 		if ((fsp->fh->fd = onefs_sys_create_file(handle->conn,
 							 -1,
 							 fsp->fsp_name,
-							 desired_access,
-							 desired_access,
+							 0,
+							 0,
 							 0,
 							 0,
 							 0,
@@ -906,21 +898,11 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	fd = fsp->fh->fd;
 	if (fd == -1) {
-		enum ifs_ace_rights desired_access = 0;
-
-		if (security_info_sent &
-		    (OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION))
-			desired_access |= IFS_RTS_STD_WRITE_OWNER;
-		if (security_info_sent & DACL_SECURITY_INFORMATION)
-			desired_access |= IFS_RTS_STD_WRITE_DAC;
-		if (security_info_sent & SACL_SECURITY_INFORMATION)
-			desired_access |= IFS_RTS_SACL_ACCESS;
-
 		if ((fd = onefs_sys_create_file(handle->conn,
 						-1,
 						fsp->fsp_name,
-						desired_access,
-						desired_access,
+						0,
+						0,
 						0,
 						0,
 						0,
