@@ -5616,7 +5616,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
-		if (SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf) == -1) {
+		int ret = -1;
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn,fsp->fsp_name,&sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn,fsp->fsp_name,&sbuf);
+		}
+		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	}
@@ -5721,6 +5727,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	const char *dname;
 	long offset = 0;
 	int create_options = 0;
+	bool posix_pathnames = lp_posix_pathnames();
 
 	ZERO_STRUCT(sbuf1);
 	ZERO_STRUCT(sbuf2);
@@ -5832,7 +5839,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, directory, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, directory, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, directory, &sbuf1);
+		}
 
 		if (S_ISDIR(sbuf1.st_mode)) {
 			create_options |= FILE_DIRECTORY_FILE;
@@ -5849,7 +5860,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			0,				/* file_attributes */
+			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
 			NULL,				/* sd */
@@ -5948,7 +5959,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		}
 
 		ZERO_STRUCT(sbuf1);
-		SMB_VFS_STAT(conn, fname, &sbuf1);
+		if (posix_pathnames) {
+			SMB_VFS_LSTAT(conn, fname, &sbuf1);
+		} else {
+			SMB_VFS_STAT(conn, fname, &sbuf1);
+		}
 
 		create_options = 0;
 
@@ -5967,7 +5982,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			0,				/* file_attributes */
+			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
 			0,				/* oplock_request */
 			0,				/* allocation_size */
 			NULL,				/* sd */
@@ -7167,7 +7182,14 @@ void reply_setattrE(struct smb_request *req)
 			return;
 		}
 	} else {
-		if (SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf) == -1) {
+		int ret = -1;
+
+		if (fsp->posix_open) {
+			ret = SMB_VFS_LSTAT(conn, fsp->fsp_name, &sbuf);
+		} else {
+			ret = SMB_VFS_STAT(conn, fsp->fsp_name, &sbuf);
+		}
+		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
 			END_PROFILE(SMBsetattrE);

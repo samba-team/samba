@@ -126,7 +126,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *stream = NULL;
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
+	bool posix_pathnames = false;
 	NTSTATUS result;
+	int ret = -1;
 
 	SET_STAT_INVALID(*pst);
 	*pp_conv_path = NULL;
@@ -225,7 +227,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (!lp_posix_pathnames()) {
+	posix_pathnames = lp_posix_pathnames();
+
+	if (!posix_pathnames) {
 		stream = strchr_m(name, ':');
 
 		if (stream != NULL) {
@@ -268,7 +272,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * stat the name - if it exists then we are all done!
 	 */
 
-	if (SMB_VFS_STAT(conn,name,&st) == 0) {
+	if (posix_pathnames) {
+		ret = SMB_VFS_LSTAT(conn,name,&st);
+	} else {
+		ret = SMB_VFS_STAT(conn,name,&st);
+	}
+
+	if (ret == 0) {
 		/* Ensure we catch all names with in "/."
 		   this is disallowed under Windows. */
 		const char *p = strstr(name, "/."); /* mb safe. */
@@ -380,7 +390,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		 * Check if the name exists up to this point.
 		 */
 
-		if (SMB_VFS_STAT(conn,name, &st) == 0) {
+		if (posix_pathnames) {
+			ret = SMB_VFS_LSTAT(conn,name, &st);
+		} else {
+			ret = SMB_VFS_STAT(conn,name, &st);
+		}
+
+		if (ret == 0) {
 			/*
 			 * It exists. it must either be a directory or this must
 			 * be the last part of the path for it to be OK.
@@ -598,7 +614,13 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * if it exists. JRA.
 				 */
 
-				if (SMB_VFS_STAT(conn,name, &st) == 0) {
+				if (posix_pathnames) {
+					ret = SMB_VFS_LSTAT(conn,name, &st);
+				} else {
+					ret = SMB_VFS_STAT(conn,name, &st);
+				}
+
+				if (ret == 0) {
 					*pst = st;
 				} else {
 					SET_STAT_INVALID(st);
