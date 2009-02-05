@@ -35,4 +35,10 @@ interface misc
 		SEC_CHAN_DOMAIN      = 4,
 		SEC_CHAN_BDC         = 6
 	} netr_SchannelType;
+
+	typedef [public] struct {
+		NTSTATUS ntstatus;
+		uint32 unknown1;
+		uint32 unknown2; /* 0x00000001 */
+	} KRB5_EDATA_NTSTATUS;
 }
