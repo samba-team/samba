@@ -701,7 +701,7 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	}
 
 	if (*str == 0) {
-		blob.data = discard_const(str);
+		blob.data = discard_const_p(uint8_t, str);
 		blob.length = 0;
 		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}
