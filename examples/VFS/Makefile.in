@@ -9,12 +9,14 @@ SHLIBEXT	= @SHLIBEXT@
 OBJEXT		= @OBJEXT@ 
 FLAGS		=  $(CFLAGS) $(CPPFLAGS) -fPIC \
 		-Iinclude -I$(SAMBA_SOURCE)/include \
-		-I$(SAMBA_SOURCE)/popt  \
-		-I$(SAMBA_SOURCE)/lib/replace  \
-		-I$(SAMBA_SOURCE)/lib/talloc  \
-		-I$(SAMBA_SOURCE)/lib/tdb/include  \
-		-I$(SAMBA_SOURCE)/smbwrapper \
+		-I$(SAMBA_SOURCE)/../popt  \
+		-I$(SAMBA_SOURCE)/../lib/replace  \
+		-I$(SAMBA_SOURCE)/../lib/talloc  \
+		-I$(SAMBA_SOURCE)/../lib/tevent  \
+		-I$(SAMBA_SOURCE)/../lib/tdb/include  \
 		-I$(SAMBA_SOURCE)/librpc \
+		-I$(SAMBA_SOURCE)/../librpc \
+		-I$(SAMBA_SOURCE)/../ \
 		-I$(SAMBA_SOURCE) -I.
 
 
