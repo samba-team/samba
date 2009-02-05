@@ -64,7 +64,7 @@ static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
 				      const char *value_name,
 				      uint32_t value_type, DATA_BLOB value_data)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	uint32_t buf;
 	
 	preg_write_utf16(data->ic, data->fd, "[");
@@ -86,12 +86,12 @@ static WERROR reg_preg_diff_set_value(void *_data, const char *key_name,
 
 static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	char *parent_name;
 	DATA_BLOB blob;
 
 	parent_name = talloc_strndup(data->ctx, key_name, strrchr(key_name, '\\')-key_name);
-	blob.data = (void *)talloc_strndup(data->ctx, key_name+(strrchr(key_name, '\\')-key_name)+1, 
+	blob.data = (uint8_t *)talloc_strndup(data->ctx, key_name+(strrchr(key_name, '\\')-key_name)+1,
 			strlen(key_name)-(strrchr(key_name, '\\')-key_name));
 	blob.length = strlen((char *)blob.data)+1;
 	
@@ -103,13 +103,13 @@ static WERROR reg_preg_diff_del_key(void *_data, const char *key_name)
 static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 				      const char *value_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	char *val;
 	DATA_BLOB blob;
 
 	val = talloc_asprintf(data->ctx, "**Del.%s", value_name);
 
-	blob.data = (void *)talloc(data->ctx, uint32_t);
+	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
 	*(uint32_t *)blob.data = 0;
 	blob.length = 4;
 	return reg_preg_diff_set_value(data, key_name, val, REG_DWORD, blob);
@@ -117,10 +117,10 @@ static WERROR reg_preg_diff_del_value(void *_data, const char *key_name,
 
 static WERROR reg_preg_diff_del_all_values(void *_data, const char *key_name)
 {
-	struct preg_data *data = _data;
+	struct preg_data *data = (struct preg_data *)_data;
 	DATA_BLOB blob;
 
-	blob.data = (void *)talloc(data->ctx, uint32_t);
+	blob.data = (uint8_t *)talloc(data->ctx, uint32_t);
 	*(uint32_t *)blob.data = 0;	
 	blob.length = 4;
 
