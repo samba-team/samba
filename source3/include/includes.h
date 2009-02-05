@@ -619,7 +619,6 @@ struct smb_iconv_convenience *lp_iconv_convenience(void *lp_ctx);
 #include "ntlmssp.h"
 #include "auth.h"
 #include "ntdomain.h"
-#include "rpc_lsa.h"
 #include "reg_objects.h"
 #include "reg_db.h"
 #include "rpc_spoolss.h"
