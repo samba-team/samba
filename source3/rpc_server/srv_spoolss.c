@@ -428,7 +428,7 @@ static bool api_spoolss_getprinterdriver2(pipes_struct *p)
 
 static bool api_spoolss_startpageprinter(pipes_struct *p)
 {
-	return proxy_spoolss_call(p, NDR_SPOOLSS_STARTDOCPRINTER);
+	return proxy_spoolss_call(p, NDR_SPOOLSS_STARTPAGEPRINTER);
 }
 
 /********************************************************************
