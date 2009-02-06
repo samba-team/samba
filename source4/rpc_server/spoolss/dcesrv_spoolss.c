@@ -42,6 +42,8 @@ enum spoolss_handle {
 	((info)?ndr_size_##fn##_info(dce_call, ic, level, count, info):0)
 
 #define SPOOLSS_BUFFER_OK(val_true,val_false) ((r->in.offered >= r->out.needed)?val_true:val_false)
+/* FIXME: temporary macro, will be removed soon - gd */
+#define SPOOLSS_BUFFER_OK_P(val_true,val_false) ((r->in.offered >= *r->out.needed)?val_true:val_false)
 
 static WERROR dcesrv_spoolss_parse_printer_name(TALLOC_CTX *mem_ctx, const char *name,
 					 const char **_server_name,
@@ -412,9 +414,9 @@ static WERROR dcesrv_spoolss_GetPrinterDriverDirectory(struct dcesrv_call_state 
 	status = ntptr_GetPrinterDriverDirectory(ntptr, mem_ctx, r);
 	W_ERROR_NOT_OK_RETURN(status);
 
-	r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, ic, r->out.info, r->in.level);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
-	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_DriverDirectoryInfo, ic, r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK_P(r->out.info, NULL);
+	return SPOOLSS_BUFFER_OK_P(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
@@ -716,9 +718,9 @@ static WERROR dcesrv_spoolss_GetForm(struct dcesrv_call_state *dce_call, TALLOC_
 			return WERR_FOOBAR;
 	}
 
-	r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, ic, r->out.info, r->in.level);
-	r->out.info	= SPOOLSS_BUFFER_OK(r->out.info, NULL);
-	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_INSUFFICIENT_BUFFER);
+	*r->out.needed	= SPOOLSS_BUFFER_UNION(spoolss_FormInfo, ic, r->out.info, r->in.level);
+	r->out.info	= SPOOLSS_BUFFER_OK_P(r->out.info, NULL);
+	return SPOOLSS_BUFFER_OK_P(WERR_OK, WERR_INSUFFICIENT_BUFFER);
 }
 
 
