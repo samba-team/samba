@@ -1240,7 +1240,7 @@ struct _spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum spoolss_PrinterDataType *type;/* [ref] */
 		DATA_BLOB data;
 		uint32_t *needed;/* [ref] */
 		WERROR result;
@@ -1269,8 +1269,8 @@ struct spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType type;
-		union spoolss_PrinterData data;/* [subcontext_size(offered),subcontext(4),switch_is(type)] */
+		enum spoolss_PrinterDataType *type;/* [ref] */
+		union spoolss_PrinterData data;/* [subcontext_size(offered),subcontext(4),switch_is(*type)] */
 		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
