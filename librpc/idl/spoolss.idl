@@ -1528,11 +1528,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] [string,charset(UTF16)] uint16 function_name[],
 		[in] DATA_BLOB in_data,
 		[in,value(r->in.in_data.length)] uint32 _in_data_length,
-		[in] uint32 offered,
-		[in] uint32 unknown1,
-		[out] DATA_BLOB out_data,
-		[out] uint32 needed,
-		[out] uint32 unknown2
+		[out,ref] [size_is(out_data_size)] uint8 *out_data,
+		[in] uint32 out_data_size,
+		[out,ref] uint32 *needed,
+		[in,out,ref] uint32 *status_code
 	);
 
 	/******************/
