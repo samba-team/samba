@@ -156,12 +156,14 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinterData gpd;
 	uint32_t needed;
+	enum spoolss_PrinterDataType type;
 
 	torture_comment(tctx, "Testing GetPrinterData(%s).\n", value_name);
 	gpd.in.handle = handle;
 	gpd.in.value_name = value_name;
 	gpd.in.offered = 4;
 	gpd.out.needed = &needed;
+	gpd.out.type = &type;
 
 	status = dcerpc_spoolss_GetPrinterData(p, tctx, &gpd);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed.");
