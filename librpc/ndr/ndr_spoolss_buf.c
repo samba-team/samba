@@ -481,7 +481,7 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 			NDR_CHECK(ndr_pull___spoolss_GetPrinterData(_ndr_data, flags, &__r));
 			r->out.data	= __r.out.data;
 		} else {
-			r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
+			*r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
 		}
 	}
 	return NDR_ERR_SUCCESS;
