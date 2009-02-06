@@ -1003,6 +1003,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	struct spoolss_EndDocPrinter e;
 	int i;
 	uint32_t job_id;
+	uint32_t num_written;
 
 	torture_comment(tctx, "Testing StartDocPrinter\n");
 
@@ -1032,6 +1033,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 
 		w.in.handle		= handle;
 		w.in.data		= data_blob_string_const(talloc_asprintf(tctx,"TortureTestPage: %d\nData\n",i));
+		w.out.num_written	= &num_written;
 
 		status = dcerpc_spoolss_WritePrinter(p, tctx, &w);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_WritePrinter failed");
