@@ -2617,12 +2617,14 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
 	DATA_BLOB blob;
+	uint32_t needed;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
 	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", servername);
 	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
+	r.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2638,14 +2640,14 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 		return false;
 	}
 
-	blob = data_blob_talloc_zero(mem_ctx, r.out.needed);
+	blob = data_blob_talloc_zero(mem_ctx, needed);
 	if (blob.data == NULL) {
 		d_printf("(%s) data_blob_talloc failed\n", __location__);
 		return false;
 	}
 
 	r.in.buffer = &blob;
-	r.in.offered = r.out.needed;
+	r.in.offered = needed;
 
 	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {

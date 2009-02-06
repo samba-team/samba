@@ -155,11 +155,13 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData gpd;
+	uint32_t needed;
 
 	torture_comment(tctx, "Testing GetPrinterData(%s).\n", value_name);
 	gpd.in.handle = handle;
 	gpd.in.value_name = value_name;
 	gpd.in.offered = 4;
+	gpd.out.needed = &needed;
 
 	status = dcerpc_spoolss_GetPrinterData(p, tctx, &gpd);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed.");
@@ -182,20 +184,22 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinters ep;
 	DATA_BLOB blob = data_blob_talloc_zero(ctx, initial_blob_size);
+	uint32_t needed;
 
 	ep.in.flags = PRINTER_ENUM_NAME;
 	ep.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	ep.in.level = 2;
 	ep.in.buffer = &blob;
 	ep.in.offered = initial_blob_size;
+	ep.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed.");
 
 	if (W_ERROR_EQUAL(ep.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(ctx, ep.out.needed);
+		blob = data_blob_talloc_zero(ctx, needed);
 		ep.in.buffer = &blob;
-		ep.in.offered = ep.out.needed;
+		ep.in.offered = needed;
 		status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
 		torture_assert_ntstatus_ok(tctx, status,"EnumPrinters failed.");
 	}
@@ -309,6 +313,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumForms ef;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, initial_blob_size);
+	uint32_t needed;
 
 	torture_comment(tctx, "Testing EnumForms\n");
 
@@ -316,14 +321,15 @@ static bool test_EnumForms(struct torture_context *tctx,
 	ef.in.level = 1;
 	ef.in.buffer = (initial_blob_size == 0)?NULL:&blob;
 	ef.in.offered = initial_blob_size;
+	ef.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
 	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
 	if (W_ERROR_EQUAL(ef.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(tctx, ef.out.needed);
+		blob = data_blob_talloc_zero(tctx, needed);
 		ef.in.buffer = &blob;
-		ef.in.offered = ef.out.needed;
+		ef.in.offered = needed;
 		status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
 		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 	}
