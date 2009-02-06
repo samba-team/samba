@@ -57,12 +57,6 @@ static bool api_spoolss_EnumPrinters(pipes_struct *p)
 		return false;
 	}
 
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.result = _spoolss_EnumPrinters(p, r);
 
 	if (p->rng_fault_state) {
@@ -384,12 +378,6 @@ static bool api_spoolss_EnumJobs(pipes_struct *p)
 
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -858,12 +846,6 @@ static bool api_spoolss_EnumPrinterDrivers(pipes_struct *p)
 		return false;
 	}
 
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.result = _spoolss_EnumPrinterDrivers(p, r);
 
 	if (p->rng_fault_state) {
@@ -1251,12 +1233,6 @@ static bool api_spoolss_EnumPrintProcessors(pipes_struct *p)
 
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -2098,12 +2074,6 @@ static bool api_spoolss_GetPrinterData(pipes_struct *p)
 		return false;
 	}
 
-	r->out.data = talloc_zero(r, union spoolss_PrinterData);
-	if (r->out.data == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
 		talloc_free(r);
@@ -2722,12 +2692,6 @@ static bool api_spoolss_EnumForms(pipes_struct *p)
 		return false;
 	}
 
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.result = _spoolss_EnumForms(p, r);
 
 	if (p->rng_fault_state) {
@@ -2814,12 +2778,6 @@ static bool api_spoolss_EnumPorts(pipes_struct *p)
 		return false;
 	}
 
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
 	r->out.result = _spoolss_EnumPorts(p, r);
 
 	if (p->rng_fault_state) {
@@ -2902,12 +2860,6 @@ static bool api_spoolss_EnumMonitors(pipes_struct *p)
 
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
-	r->out.count = talloc_zero(r, uint32_t);
-	if (r->out.count == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -7527,11 +7479,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
 			r->out.result = _spoolss_EnumPrinters(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
@@ -7581,11 +7528,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -7647,11 +7589,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
 			r->out.result = _spoolss_EnumPrinterDrivers(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
@@ -7701,11 +7638,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -7804,11 +7736,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.data = talloc_zero(mem_ctx, union spoolss_PrinterData);
-			if (r->out.data == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
@@ -7886,11 +7813,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
 			r->out.result = _spoolss_EnumForms(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
@@ -7908,11 +7830,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
 			r->out.result = _spoolss_EnumPorts(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
@@ -7927,11 +7844,6 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
-			r->out.count = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.count == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
