@@ -667,7 +667,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
 		[in,switch_is(level)] spoolss_DocumentInfo info,
-		[out] uint32 job_id
+		[out,ref] uint32 *job_id
 	);
 
 	/******************/
