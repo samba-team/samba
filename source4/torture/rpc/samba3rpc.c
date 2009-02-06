@@ -2668,6 +2668,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 	struct spoolss_GetPrinter r;
 	DATA_BLOB blob;
 	NTSTATUS status;
+	uint32_t needed;
 
 	mem_ctx = talloc_new(ctx);
 	if (mem_ctx == NULL) {
@@ -2678,6 +2679,7 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 	r.in.level = level;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
+	r.out.needed = &needed;
 
 	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2697,14 +2699,14 @@ static NTSTATUS getprinterinfo(TALLOC_CTX *ctx, struct dcerpc_pipe *pipe,
 
 	r.in.handle = handle;
 	r.in.level = level;
-	blob = data_blob_talloc(mem_ctx, NULL, r.out.needed);
+	blob = data_blob_talloc(mem_ctx, NULL, needed);
 	if (blob.data == NULL) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	memset(blob.data, 0, blob.length);
 	r.in.buffer = &blob;
-	r.in.offered = r.out.needed;
+	r.in.offered = needed;
 
 	status = dcerpc_spoolss_GetPrinter(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {

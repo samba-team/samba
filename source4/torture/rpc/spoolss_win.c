@@ -220,6 +220,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinter gp;
 	DATA_BLOB blob = data_blob_talloc_zero(ctx, initial_blob_size);
+	uint32_t needed;
 
 	torture_comment(tctx, "Test GetPrinter level %d\n", level);
 
@@ -227,14 +228,15 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	gp.in.level = level;
 	gp.in.buffer = (initial_blob_size == 0)?NULL:&blob;
 	gp.in.offered = initial_blob_size;
+	gp.out.needed = &needed;
 
 	status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
 	if (W_ERROR_EQUAL(gp.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(ctx, gp.out.needed);
+		blob = data_blob_talloc_zero(ctx, needed);
 		gp.in.buffer = &blob;
-		gp.in.offered = gp.out.needed;
+		gp.in.offered = needed;
 		status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 	}
