@@ -575,8 +575,8 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 
 	W_ERROR_NOT_OK_RETURN(status);
 
-	*r->out.needed	= ndr_size_spoolss_PrinterData(&r->out.data, r->out.type, ic, 0);
-	r->out.type	= SPOOLSS_BUFFER_OK(r->out.type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
+	*r->out.needed	= ndr_size_spoolss_PrinterData(&r->out.data, *r->out.type, ic, 0);
+	*r->out.type	= SPOOLSS_BUFFER_OK(*r->out.type, SPOOLSS_PRINTER_DATA_TYPE_NULL);
 	r->out.data	= SPOOLSS_BUFFER_OK(r->out.data, r->out.data);
 	return SPOOLSS_BUFFER_OK(WERR_OK, WERR_MORE_DATA);
 }
