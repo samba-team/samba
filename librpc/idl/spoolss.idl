@@ -682,7 +682,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] DATA_BLOB data,
 		[in,value(r->in.data.length)] uint32 _data_size,
-		[out] uint32 num_written
+		[out,ref] uint32 *num_written
 	);
 
 	/******************/
