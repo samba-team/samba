@@ -9029,7 +9029,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, 
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -9044,6 +9047,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, 
 	TALLOC_CTX *_mem_save_server_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -9080,6 +9084,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -9094,7 +9100,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, 
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -9193,7 +9205,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinters(struct ndr_print *ndr, const char *
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -9589,7 +9604,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumJobs(struct ndr_push *ndr, int 
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -9603,6 +9621,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumJobs(struct ndr_pull *ndr, int 
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -9629,6 +9648,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumJobs(struct ndr_pull *ndr, int 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -9643,7 +9664,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumJobs(struct ndr_pull *ndr, int 
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -9741,7 +9768,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumJobs(struct ndr_print *ndr, const char *name
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -10136,7 +10166,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinterDrivers(struct ndr_push 
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -10153,6 +10186,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull 
 	TALLOC_CTX *_mem_save_environment_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -10206,6 +10240,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -10220,7 +10256,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrinterDrivers(struct ndr_pull 
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -10324,7 +10366,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterDrivers(struct ndr_print *ndr, const 
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -10751,7 +10796,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrintProcessors(struct ndr_push
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -10768,6 +10816,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull
 	TALLOC_CTX *_mem_save_environment_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -10821,6 +10870,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -10835,7 +10886,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPrintProcessors(struct ndr_pull
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -10939,7 +10996,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrintProcessors(struct ndr_print *ndr, const
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -11582,7 +11642,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_GetPrinterData(struct ndr_push *ndr
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_spoolss_PrinterDataType(ndr, NDR_SCALARS, r->out.type));
 		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->out.data));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11591,6 +11654,7 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_GetPrinterData(struct ndr_push *ndr
 _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_GetPrinterData(struct ndr_pull *ndr, int flags, struct _spoolss_GetPrinterData *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -11609,11 +11673,19 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_GetPrinterData(struct ndr_pull *ndr
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_spoolss_PrinterDataType(ndr, NDR_SCALARS, &r->out.type));
 		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->out.data));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11669,7 +11741,10 @@ _PUBLIC_ void ndr_print_spoolss_GetPrinterData(struct ndr_print *ndr, const char
 		ndr_print_spoolss_PrinterDataType(ndr, "type", r->out.type);
 		ndr_print_set_switch_value(ndr, &r->out.data, r->out.type);
 		ndr_print_spoolss_PrinterData(ndr, "data", &r->out.data);
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -12278,7 +12353,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumForms(struct ndr_push *ndr, int
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -12292,6 +12370,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumForms(struct ndr_pull *ndr, int
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -12316,6 +12395,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumForms(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -12330,7 +12411,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumForms(struct ndr_pull *ndr, int
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -12426,7 +12513,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumForms(struct ndr_print *ndr, const char *nam
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -12456,7 +12546,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPorts(struct ndr_push *ndr, int
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -12471,6 +12564,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPorts(struct ndr_pull *ndr, int
 	TALLOC_CTX *_mem_save_servername_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -12506,6 +12600,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPorts(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -12520,7 +12616,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumPorts(struct ndr_pull *ndr, int
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -12618,7 +12720,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumPorts(struct ndr_print *ndr, const char *nam
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -12648,7 +12753,10 @@ _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumMonitors(struct ndr_push *ndr, 
 		if (r->out.info) {
 			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.needed));
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->out.count));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -12663,6 +12771,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumMonitors(struct ndr_pull *ndr, 
 	TALLOC_CTX *_mem_save_servername_0;
 	TALLOC_CTX *_mem_save_buffer_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -12698,6 +12807,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumMonitors(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -12712,7 +12823,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull__spoolss_EnumMonitors(struct ndr_pull *ndr, 
 			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.needed));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->out.count));
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -12810,7 +12927,10 @@ _PUBLIC_ void ndr_print_spoolss_EnumMonitors(struct ndr_print *ndr, const char *
 			ndr->depth--;
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "needed", r->out.needed);
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "count", r->out.count);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
