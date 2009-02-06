@@ -71,6 +71,7 @@
 
 const char *thisprogram;
 int verboseflag = 0;
+int fakemnt = 0;
 static int got_password = 0;
 static int got_user = 0;
 static int got_domain = 0;
@@ -1018,7 +1019,7 @@ int main(int argc, char ** argv)
 	char * resolved_path = NULL;
 	char * temp;
 	char * dev_name;
-	int rc;
+	int rc = 0;
 	int rsize = 0;
 	int wsize = 0;
 	int nomtab = 0;
@@ -1087,8 +1088,8 @@ int main(int argc, char ** argv)
 			mount_cifs_usage ();
 			exit(EX_USAGE);
 		case 'n':
-		    ++nomtab;
-		    break;
+			++nomtab;
+			break;
 		case 'b':
 #ifdef MS_BIND
 			flags |= MS_BIND;
@@ -1195,6 +1196,9 @@ int main(int argc, char ** argv)
 			get_password_from_file(0 /* stdin */,NULL);
 			break;
 		case 't':
+			break;
+		case 'f':
+			++fakemnt;
 			break;
 		default:
 			printf("unknown mount option %c\n",c);
@@ -1376,8 +1380,7 @@ mount_retry:
 	/* convert all '\\' to '/' in share portion so that /proc/mounts looks pretty */
 	replace_char(dev_name, '\\', '/', strlen(share_name));
 
-	if(mount(dev_name, mountpoint, "cifs", flags, options)) {
-	/* remember to kill daemon on error */
+	if(!fakemnt && mount(dev_name, mountpoint, "cifs", flags, options)) {
 		switch (errno) {
 		case 0:
 			printf("mount failed but no error number set\n");
@@ -1401,6 +1404,8 @@ mount_retry:
 		printf("Refer to the mount.cifs(8) manual page (e.g.man mount.cifs)\n");
 		rc = EX_FAIL;
 	} else {
+		if (nomtab)
+			goto mount_exit;
 		atexit(unlock_mtab);
 		rc = lock_mtab();
 		if (rc) {
