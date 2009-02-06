@@ -36,8 +36,9 @@ PyAPI_DATA(PyTypeObject) PyRegistry;
 PyAPI_DATA(PyTypeObject) PyHiveKey;
 
 /*#define PyRegistryKey_AsRegistryKey(obj) py_talloc_get_type(obj, struct registry_key)*/
-#define PyRegistry_AsRegistryContext(obj) py_talloc_get_type(obj, struct registry_context)
-#define PyHiveKey_AsHiveKey(obj) py_talloc_get_type(obj, struct hive_key)
+#define PyRegistry_AsRegistryContext(obj) ((struct registry_context *)py_talloc_get_ptr(obj))
+#define PyHiveKey_AsHiveKey(obj) ((struct hive_key*)py_talloc_get_ptr(obj))
+
 
 static PyObject *py_get_predefined_key_by_name(PyObject *self, PyObject *args)
 {
