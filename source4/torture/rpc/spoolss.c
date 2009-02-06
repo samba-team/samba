@@ -1152,11 +1152,15 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
+	uint32_t type;
+	uint32_t needed;
 
 	r.in.handle = handle;
 	r.in.key_name = key_name;
 	r.in.value_name = value_name;
 	r.in.offered = 0;
+	r.out.type = &type;
+	r.out.needed = &needed;
 
 	torture_comment(tctx, "Testing GetPrinterDataEx\n");
 
@@ -1170,7 +1174,8 @@ static bool test_GetPrinterDataEx(struct torture_context *tctx,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_MORE_DATA)) {
-		r.in.offered = r.out.needed;
+		r.in.offered = needed;
+		r.out.buffer = talloc_array(tctx, uint8_t, needed);
 
 		status = dcerpc_spoolss_GetPrinterDataEx(p, tctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinterDataEx failed");
