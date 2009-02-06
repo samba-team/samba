@@ -1467,10 +1467,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 	[public] WERROR spoolss_EnumPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
+		[out,ref] [size_is(offered)] uint8 *buffer,
 		[in] 	 uint32 offered,
-		[out] 	 DATA_BLOB buffer,
-		[out] 	 uint32 needed,
-		[out] 	 uint32 count
+		[out,ref] uint32 *needed,
+		[out,ref] uint32 *count
 	);
 
 	/******************/
