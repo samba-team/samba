@@ -131,7 +131,7 @@
 				"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",\
 				(unsigned)r->in.offered, (unsigned)_ndr_info->data_size);\
 		}\
-		if (r->out.needed <= _ndr_info->data_size) {\
+		if (*r->out.needed <= _ndr_info->data_size) {\
 			struct __##fn __r;\
 			__r.in.level	= r->in.level;\
 			__r.in.count	= r->out.count;\
@@ -471,7 +471,7 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 				"SPOOLSS Buffer: r->in.offered[%u] doesn't match length of out buffer[%u]",
 				(unsigned)r->in.offered, (unsigned)_r.out.data.length);
 		}
-		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
+		if (_r.out.data.length > 0 && *r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
