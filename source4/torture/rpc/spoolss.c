@@ -191,6 +191,7 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		}
 	};
 	int i;
+	uint32_t needed;
 
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		int level = levels[i].level;
@@ -201,6 +202,7 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		r.in.level		= level;
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
+		r.out.needed		= &needed;
 
 		torture_comment(tctx, "Testing GetPrinterDriverDirectory level %u\n", r.in.level);
 
@@ -210,10 +212,10 @@ static bool test_GetPrinterDriverDirectory(struct torture_context *tctx,
 		torture_assert_werr_equal(tctx, r.out.result, WERR_INSUFFICIENT_BUFFER, 
 			"GetPrinterDriverDirectory unexpected return code");
 
-		blob = data_blob_talloc(ctx, NULL, r.out.needed);
+		blob = data_blob_talloc(ctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
-		r.in.offered = r.out.needed;
+		r.in.offered = needed;
 
 		status = dcerpc_spoolss_GetPrinterDriverDirectory(p, ctx, &r);
 		torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_GetPrinterDriverDirectory failed");
