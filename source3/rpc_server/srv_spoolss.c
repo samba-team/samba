@@ -35,7 +35,7 @@ static bool proxy_spoolss_call(pipes_struct *p, uint8_t opnum)
 	struct api_struct *fns;
 	int n_fns;
 
-	spoolss2_get_pipe_fns(&fns, &n_fns);
+	spoolss_get_pipe_fns(&fns, &n_fns);
 
 	if (opnum >= n_fns) {
 		return false;
