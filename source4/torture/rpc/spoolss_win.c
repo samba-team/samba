@@ -276,6 +276,9 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 gpd2;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, 87424);
+	uint32_t needed;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	torture_comment(tctx, "Testing GetPrinterDriver2\n");
 
@@ -286,6 +289,9 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	gpd2.in.offered = 87424;
 	gpd2.in.client_major_version = 3;
 	gpd2.in.client_minor_version = 0;
+	gpd2.out.needed = &needed;
+	gpd2.out.server_major_version = &server_major_version;
+	gpd2.out.server_minor_version = &server_minor_version;
 
 	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &gpd2);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterDriver2 failed");

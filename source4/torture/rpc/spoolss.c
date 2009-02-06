@@ -1605,6 +1605,9 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
+	uint32_t needed;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	r.in.handle = handle;
 	r.in.architecture = "W32X86";
@@ -1613,6 +1616,9 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	r.in.offered = 0;
 	r.in.client_major_version = 0;
 	r.in.client_minor_version = 0;
+	r.out.needed = &needed;
+	r.out.server_major_version = &server_major_version;
+	r.out.server_minor_version = &server_minor_version;
 
 	printf("Testing GetPrinterDriver2\n");
 
@@ -1623,7 +1629,7 @@ static bool test_GetPrinterDriver2(struct dcerpc_pipe *p,
 	}
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		r.in.offered = r.out.needed;
+		r.in.offered = needed;
 		status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &r);
 	}
 		
