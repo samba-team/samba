@@ -881,7 +881,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
-		[out] uint32 needed
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
