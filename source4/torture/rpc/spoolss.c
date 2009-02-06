@@ -888,12 +888,14 @@ static bool test_GetJob(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetJob r;
+	uint32_t needed;
 
 	r.in.handle = handle;
 	r.in.job_id = job_id;
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
+	r.out.needed = &needed;
 
 	torture_comment(tctx, "Testing GetJob\n");
 
@@ -901,10 +903,10 @@ static bool test_GetJob(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "GetJob failed");
 
 	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
+		DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
 		data_blob_clear(&blob);
 		r.in.buffer = &blob;
-		r.in.offered = r.out.needed;
+		r.in.offered = needed;
 
 		status = dcerpc_spoolss_GetJob(p, tctx, &r);
 
