@@ -378,17 +378,22 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrinterDataEx epde;
+	uint32_t needed;
+	uint32_t count;
 
 	torture_comment(tctx, "Testing EnumPrinterDataEx(%s)\n", key);
 
 	epde.in.handle = handle;
 	epde.in.key_name = talloc_strdup(tctx, key);
 	epde.in.offered = 0;
+	epde.out.needed = &needed;
+	epde.out.count = &count;
 
 	status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDataEx failed.");
 	if (W_ERROR_EQUAL(epde.out.result, WERR_MORE_DATA)) {
-		epde.in.offered = epde.out.needed;
+		epde.in.offered = needed;
+		epde.out.buffer = talloc_array(tctx, uint8_t, needed);
 		status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterDataEx failed.");
