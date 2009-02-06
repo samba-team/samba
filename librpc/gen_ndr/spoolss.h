@@ -842,7 +842,7 @@ struct spoolss_GetJob {
 
 	struct {
 		union spoolss_JobInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -949,7 +949,7 @@ struct spoolss_GetPrinter {
 
 	struct {
 		union spoolss_PrinterInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1034,7 +1034,7 @@ struct spoolss_GetPrinterDriverDirectory {
 
 	struct {
 		union spoolss_DriverDirectoryInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1131,7 +1131,7 @@ struct spoolss_StartDocPrinter {
 	} in;
 
 	struct {
-		uint32_t job_id;
+		uint32_t *job_id;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1158,7 +1158,7 @@ struct spoolss_WritePrinter {
 	} in;
 
 	struct {
-		uint32_t num_written;
+		uint32_t *num_written;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1196,8 +1196,8 @@ struct spoolss_ReadPrinter {
 	} in;
 
 	struct {
-		DATA_BLOB data;
-		uint32_t _data_size;/* [value(r->out.data.length)] */
+		uint8_t *data;/* [ref,size_is(data_size)] */
+		uint32_t *_data_size;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1381,7 +1381,7 @@ struct spoolss_GetForm {
 
 	struct {
 		union spoolss_FormInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1697,9 +1697,9 @@ struct spoolss_GetPrinterDriver2 {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
-		uint32_t server_major_version;
-		uint32_t server_minor_version;
+		uint32_t *needed;/* [ref] */
+		uint32_t *server_major_version;/* [ref] */
+		uint32_t *server_minor_version;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1987,9 +1987,9 @@ struct spoolss_GetPrinterDataEx {
 	} in;
 
 	struct {
-		uint32_t type;
-		DATA_BLOB buffer;
-		uint32_t needed;
+		uint32_t *type;/* [ref] */
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2004,9 +2004,9 @@ struct spoolss_EnumPrinterDataEx {
 	} in;
 
 	struct {
-		DATA_BLOB buffer;
-		uint32_t needed;
-		uint32_t count;
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref] */
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2017,13 +2017,12 @@ struct spoolss_EnumPrinterKey {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
-		uint32_t needed;
+		uint32_t key_buffer_size;
 	} in;
 
 	struct {
-		uint32_t key_buffer_size;
-		uint16_t *key_buffer;
-		uint32_t needed;
+		uint16_t *key_buffer;/* [ref,size_is(key_buffer_size/2)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2098,14 +2097,14 @@ struct spoolss_XcvData {
 		const char *function_name;/* [charset(UTF16)] */
 		DATA_BLOB in_data;
 		uint32_t _in_data_length;/* [value(r->in.in_data.length)] */
-		uint32_t offered;
-		uint32_t unknown1;
+		uint32_t out_data_size;
+		uint32_t *status_code;/* [ref] */
 	} in;
 
 	struct {
-		DATA_BLOB out_data;
-		uint32_t needed;
-		uint32_t unknown2;
+		uint8_t *out_data;/* [ref,size_is(out_data_size)] */
+		uint32_t *needed;/* [ref] */
+		uint32_t *status_code;/* [ref] */
 		WERROR result;
 	} out;
 

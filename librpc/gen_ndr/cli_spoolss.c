@@ -173,7 +173,7 @@ NTSTATUS rpccli_spoolss_GetJob(struct rpc_pipe_client *cli,
 			       DATA_BLOB *buffer /* [in] [unique] */,
 			       uint32_t offered /* [in]  */,
 			       union spoolss_JobInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
-			       uint32_t needed /* [out]  */,
+			       uint32_t *needed /* [out] [ref] */,
 			       WERROR *werror)
 {
 	struct spoolss_GetJob r;
@@ -212,7 +212,7 @@ NTSTATUS rpccli_spoolss_GetJob(struct rpc_pipe_client *cli,
 	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	return NT_STATUS_NOT_SUPPORTED;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -427,7 +427,7 @@ NTSTATUS rpccli_spoolss_GetPrinter(struct rpc_pipe_client *cli,
 				   DATA_BLOB *buffer /* [in] [unique] */,
 				   uint32_t offered /* [in]  */,
 				   union spoolss_PrinterInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
-				   uint32_t needed /* [out]  */,
+				   uint32_t *needed /* [out] [ref] */,
 				   WERROR *werror)
 {
 	struct spoolss_GetPrinter r;
@@ -465,7 +465,7 @@ NTSTATUS rpccli_spoolss_GetPrinter(struct rpc_pipe_client *cli,
 	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	return NT_STATUS_NOT_SUPPORTED;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -624,7 +624,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverDirectory(struct rpc_pipe_client *cli,
 						  DATA_BLOB *buffer /* [in] [unique] */,
 						  uint32_t offered /* [in]  */,
 						  union spoolss_DriverDirectoryInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
-						  uint32_t needed /* [out]  */,
+						  uint32_t *needed /* [out] [ref] */,
 						  WERROR *werror)
 {
 	struct spoolss_GetPrinterDriverDirectory r;
@@ -663,7 +663,7 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverDirectory(struct rpc_pipe_client *cli,
 	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	return NT_STATUS_NOT_SUPPORTED;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -868,7 +868,7 @@ NTSTATUS rpccli_spoolss_StartDocPrinter(struct rpc_pipe_client *cli,
 					struct policy_handle *handle /* [in] [ref] */,
 					uint32_t level /* [in]  */,
 					union spoolss_DocumentInfo info /* [in] [switch_is(level)] */,
-					uint32_t job_id /* [out]  */,
+					uint32_t *job_id /* [out] [ref] */,
 					WERROR *werror)
 {
 	struct spoolss_StartDocPrinter r;
@@ -902,7 +902,7 @@ NTSTATUS rpccli_spoolss_StartDocPrinter(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
+	*job_id = *r.out.job_id;
 
 	/* Return result */
 	if (werror) {
@@ -960,7 +960,7 @@ NTSTATUS rpccli_spoolss_WritePrinter(struct rpc_pipe_client *cli,
 				     struct policy_handle *handle /* [in] [ref] */,
 				     DATA_BLOB data /* [in]  */,
 				     uint32_t _data_size /* [in] [value(r->in.data.length)] */,
-				     uint32_t num_written /* [out]  */,
+				     uint32_t *num_written /* [out] [ref] */,
 				     WERROR *werror)
 {
 	struct spoolss_WritePrinter r;
@@ -994,7 +994,7 @@ NTSTATUS rpccli_spoolss_WritePrinter(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
+	*num_written = *r.out.num_written;
 
 	/* Return result */
 	if (werror) {
@@ -1093,9 +1093,9 @@ NTSTATUS rpccli_spoolss_AbortPrinter(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_spoolss_ReadPrinter(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *handle /* [in] [ref] */,
+				    uint8_t *data /* [out] [ref,size_is(data_size)] */,
 				    uint32_t data_size /* [in]  */,
-				    DATA_BLOB data /* [out]  */,
-				    uint32_t _data_size /* [out] [value(r->out.data.length)] */,
+				    uint32_t *_data_size /* [out] [ref] */,
 				    WERROR *werror)
 {
 	struct spoolss_ReadPrinter r;
@@ -1128,8 +1128,8 @@ NTSTATUS rpccli_spoolss_ReadPrinter(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
+	memcpy(data, r.out.data, r.in.data_size * sizeof(*data));
+	*_data_size = *r.out._data_size;
 
 	/* Return result */
 	if (werror) {
@@ -1553,7 +1553,7 @@ NTSTATUS rpccli_spoolss_GetForm(struct rpc_pipe_client *cli,
 				DATA_BLOB *buffer /* [in] [unique] */,
 				uint32_t offered /* [in]  */,
 				union spoolss_FormInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
-				uint32_t needed /* [out]  */,
+				uint32_t *needed /* [out] [ref] */,
 				WERROR *werror)
 {
 	struct spoolss_GetForm r;
@@ -1592,7 +1592,7 @@ NTSTATUS rpccli_spoolss_GetForm(struct rpc_pipe_client *cli,
 	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	return NT_STATUS_NOT_SUPPORTED;
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -2494,9 +2494,9 @@ NTSTATUS rpccli_spoolss_GetPrinterDriver2(struct rpc_pipe_client *cli,
 					  uint32_t client_major_version /* [in]  */,
 					  uint32_t client_minor_version /* [in]  */,
 					  DATA_BLOB *info /* [out] [unique] */,
-					  uint32_t needed /* [out]  */,
-					  uint32_t server_major_version /* [out]  */,
-					  uint32_t server_minor_version /* [out]  */,
+					  uint32_t *needed /* [out] [ref] */,
+					  uint32_t *server_major_version /* [out] [ref] */,
+					  uint32_t *server_minor_version /* [out] [ref] */,
 					  WERROR *werror)
 {
 	struct spoolss_GetPrinterDriver2 r;
@@ -2537,9 +2537,9 @@ NTSTATUS rpccli_spoolss_GetPrinterDriver2(struct rpc_pipe_client *cli,
 	if (info && r.out.info) {
 		*info = *r.out.info;
 	}
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
+	*needed = *r.out.needed;
+	*server_major_version = *r.out.server_major_version;
+	*server_minor_version = *r.out.server_minor_version;
 
 	/* Return result */
 	if (werror) {
@@ -3637,10 +3637,10 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 					 struct policy_handle *handle /* [in] [ref] */,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
+					 uint32_t *type /* [out] [ref] */,
+					 uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					 uint32_t offered /* [in]  */,
-					 uint32_t type /* [out]  */,
-					 DATA_BLOB buffer /* [out]  */,
-					 uint32_t needed /* [out]  */,
+					 uint32_t *needed /* [out] [ref] */,
 					 WERROR *werror)
 {
 	struct spoolss_GetPrinterDataEx r;
@@ -3675,9 +3675,9 @@ NTSTATUS rpccli_spoolss_GetPrinterDataEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
+	*type = *r.out.type;
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -3691,10 +3691,10 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle /* [in] [ref] */,
 					  const char *key_name /* [in] [charset(UTF16)] */,
+					  uint8_t *buffer /* [out] [ref,size_is(offered)] */,
 					  uint32_t offered /* [in]  */,
-					  DATA_BLOB buffer /* [out]  */,
-					  uint32_t needed /* [out]  */,
-					  uint32_t count /* [out]  */,
+					  uint32_t *needed /* [out] [ref] */,
+					  uint32_t *count /* [out] [ref] */,
 					  WERROR *werror)
 {
 	struct spoolss_EnumPrinterDataEx r;
@@ -3728,9 +3728,9 @@ NTSTATUS rpccli_spoolss_EnumPrinterDataEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
+	memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	*needed = *r.out.needed;
+	*count = *r.out.count;
 
 	/* Return result */
 	if (werror) {
@@ -3744,9 +3744,9 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *handle /* [in] [ref] */,
 				       const char *key_name /* [in] [charset(UTF16)] */,
-				       uint32_t key_buffer_size /* [out]  */,
-				       uint16_t *key_buffer /* [out]  */,
-				       uint32_t needed /* [in,out]  */,
+				       uint16_t *key_buffer /* [out] [ref,size_is(key_buffer_size/2)] */,
+				       uint32_t key_buffer_size /* [in]  */,
+				       uint32_t *needed /* [out] [ref] */,
 				       WERROR *werror)
 {
 	struct spoolss_EnumPrinterKey r;
@@ -3755,7 +3755,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.key_name = key_name;
-	r.in.needed = needed;
+	r.in.key_buffer_size = key_buffer_size;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_EnumPrinterKey, &r);
@@ -3780,9 +3780,8 @@ NTSTATUS rpccli_spoolss_EnumPrinterKey(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
-	memcpy(key_buffer, r.out.key_buffer, key_buffer_size * sizeof(*key_buffer));
-	return NT_STATUS_NOT_SUPPORTED;
+	memcpy(key_buffer, r.out.key_buffer, r.in.key_buffer_size / 2 * sizeof(*key_buffer));
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -4091,11 +4090,10 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 				const char *function_name /* [in] [charset(UTF16)] */,
 				DATA_BLOB in_data /* [in]  */,
 				uint32_t _in_data_length /* [in] [value(r->in.in_data.length)] */,
-				uint32_t offered /* [in]  */,
-				uint32_t unknown1 /* [in]  */,
-				DATA_BLOB out_data /* [out]  */,
-				uint32_t needed /* [out]  */,
-				uint32_t unknown2 /* [out]  */,
+				uint8_t *out_data /* [out] [ref,size_is(out_data_size)] */,
+				uint32_t out_data_size /* [in]  */,
+				uint32_t *needed /* [out] [ref] */,
+				uint32_t *status_code /* [in,out] [ref] */,
 				WERROR *werror)
 {
 	struct spoolss_XcvData r;
@@ -4106,8 +4104,8 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 	r.in.function_name = function_name;
 	r.in.in_data = in_data;
 	r.in._in_data_length = _in_data_length;
-	r.in.offered = offered;
-	r.in.unknown1 = unknown1;
+	r.in.out_data_size = out_data_size;
+	r.in.status_code = status_code;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_XcvData, &r);
@@ -4132,9 +4130,9 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
-	return NT_STATUS_NOT_SUPPORTED;
+	memcpy(out_data, r.out.out_data, r.in.out_data_size * sizeof(*out_data));
+	*needed = *r.out.needed;
+	*status_code = *r.out.status_code;
 
 	/* Return result */
 	if (werror) {

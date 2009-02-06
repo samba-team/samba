@@ -1787,7 +1787,7 @@ static bool api_spoolss_ReadPrinter(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.data = talloc_zero(r, DATA_BLOB);
+	r->out.data = talloc_zero_array(r, uint8_t, r->in.data_size);
 	if (r->out.data == NULL) {
 		talloc_free(r);
 		return false;
@@ -6064,7 +6064,7 @@ static bool api_spoolss_GetPrinterDataEx(pipes_struct *p)
 		return false;
 	}
 
-	r->out.buffer = talloc_zero(r, DATA_BLOB);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
@@ -6150,7 +6150,7 @@ static bool api_spoolss_EnumPrinterDataEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.buffer = talloc_zero(r, DATA_BLOB);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.offered);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
 		return false;
@@ -6242,15 +6242,14 @@ static bool api_spoolss_EnumPrinterKey(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.needed = r->in.needed;
-	r->out.key_buffer_size = talloc_zero(r, uint32_t);
-	if (r->out.key_buffer_size == NULL) {
+	r->out.key_buffer = talloc_zero_array(r, uint16_t, r->in.key_buffer_size / 2);
+	if (r->out.key_buffer == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.key_buffer = talloc_zero_array(r, uint16_t, r->out.key_buffer_size);
-	if (r->out.key_buffer == NULL) {
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -6840,7 +6839,8 @@ static bool api_spoolss_XcvData(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.out_data = talloc_zero(r, DATA_BLOB);
+	r->out.status_code = r->in.status_code;
+	r->out.out_data = talloc_zero_array(r, uint8_t, r->in.out_data_size);
 	if (r->out.out_data == NULL) {
 		talloc_free(r);
 		return false;
@@ -6848,12 +6848,6 @@ static bool api_spoolss_XcvData(pipes_struct *p)
 
 	r->out.needed = talloc_zero(r, uint32_t);
 	if (r->out.needed == NULL) {
-		talloc_free(r);
-		return false;
-	}
-
-	r->out.unknown2 = talloc_zero(r, uint32_t);
-	if (r->out.unknown2 == NULL) {
 		talloc_free(r);
 		return false;
 	}
@@ -7770,7 +7764,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_READPRINTER: {
 			struct spoolss_ReadPrinter *r = (struct spoolss_ReadPrinter *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.data = talloc_zero(mem_ctx, DATA_BLOB);
+			r->out.data = talloc_zero_array(mem_ctx, uint8_t, r->in.data_size);
 			if (r->out.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -8266,7 +8260,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.buffer = talloc_zero(mem_ctx, DATA_BLOB);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -8283,7 +8277,7 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_ENUMPRINTERDATAEX: {
 			struct spoolss_EnumPrinterDataEx *r = (struct spoolss_EnumPrinterDataEx *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.buffer = talloc_zero(mem_ctx, DATA_BLOB);
+			r->out.buffer = talloc_zero_array(mem_ctx, uint8_t, r->in.offered);
 			if (r->out.buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
@@ -8305,14 +8299,13 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_ENUMPRINTERKEY: {
 			struct spoolss_EnumPrinterKey *r = (struct spoolss_EnumPrinterKey *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.needed = r->in.needed;
-			r->out.key_buffer_size = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.key_buffer_size == NULL) {
+			r->out.key_buffer = talloc_zero_array(mem_ctx, uint16_t, r->in.key_buffer_size / 2);
+			if (r->out.key_buffer == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.key_buffer = talloc_zero_array(mem_ctx, uint16_t, r->out.key_buffer_size);
-			if (r->out.key_buffer == NULL) {
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
@@ -8365,18 +8358,14 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 		case NDR_SPOOLSS_XCVDATA: {
 			struct spoolss_XcvData *r = (struct spoolss_XcvData *)_r;
 			ZERO_STRUCT(r->out);
-			r->out.out_data = talloc_zero(mem_ctx, DATA_BLOB);
+			r->out.status_code = r->in.status_code;
+			r->out.out_data = talloc_zero_array(mem_ctx, uint8_t, r->in.out_data_size);
 			if (r->out.out_data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
 			r->out.needed = talloc_zero(mem_ctx, uint32_t);
 			if (r->out.needed == NULL) {
-			return NT_STATUS_NO_MEMORY;
-			}
-
-			r->out.unknown2 = talloc_zero(mem_ctx, uint32_t);
-			if (r->out.unknown2 == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
