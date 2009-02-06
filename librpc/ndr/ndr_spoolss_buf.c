@@ -421,7 +421,7 @@ enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flag
 			_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
-			__r.in.type	= r->out.type;
+			__r.in.type	= *r->out.type;
 			__r.out.data	= r->out.data;
 			NDR_CHECK(ndr_push___spoolss_GetPrinterData(_ndr_info, flags, &__r));
 			if (r->in.offered > _ndr_info->offset) {
@@ -476,7 +476,7 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 			_ndr_data->flags= ndr->flags;
-			__r.in.type	= r->out.type;
+			__r.in.type	= *r->out.type;
 			__r.out.data	= r->out.data;
 			NDR_CHECK(ndr_pull___spoolss_GetPrinterData(_ndr_data, flags, &__r));
 			r->out.data	= __r.out.data;
