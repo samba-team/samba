@@ -549,12 +549,6 @@ static int net_conf_addshare(struct smbconf_ctx *conf_ctx,
 		goto done;
 	}
 
-	if (getpwnam(sharename)) {
-		d_fprintf(stderr, "ERROR: share name %s is already a valid "
-			  "system user name.\n", sharename);
-		goto done;
-	}
-
 	if (strequal(sharename, GLOBAL_NAME)) {
 		d_fprintf(stderr,
 			  "ERROR: 'global' is not a valid share name.\n");
