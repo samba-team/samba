@@ -347,14 +347,16 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	epk.in.handle = handle;
 	epk.in.key_name = talloc_strdup(tctx, key);
-	epk.in.needed = needed;
+	epk.in.key_buffer_size = 0;
+	epk.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
 
 
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
-		epk.in.needed = epk.out.needed;
+		epk.in.key_buffer_size = needed;
+		epk.out.key_buffer = talloc_array(tctx, uint16_t, needed/2);
 		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterKey failed");
@@ -363,7 +365,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
 	convert_string_talloc_convenience(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
-			CH_UNIX, epk.out.key_buffer, epk.out.needed,
+			CH_UNIX, epk.out.key_buffer, *epk.out.needed,
 			(void**)&ctx->printer_keys);
 
 	return true;
