@@ -605,12 +605,14 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	struct spoolss_GetPrinter r;
 	uint16_t levels[] = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 	int i;
+	uint32_t needed;
 	
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		r.in.handle = handle;
 		r.in.level = levels[i];
 		r.in.buffer = NULL;
 		r.in.offered = 0;
+		r.out.needed = &needed;
 
 		torture_comment(tctx, "Testing GetPrinter level %u\n", r.in.level);
 
@@ -618,10 +620,10 @@ static bool test_GetPrinter(struct torture_context *tctx,
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 		
 		if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
-			DATA_BLOB blob = data_blob_talloc(tctx, NULL, r.out.needed);
+			DATA_BLOB blob = data_blob_talloc(tctx, NULL, needed);
 			data_blob_clear(&blob);
 			r.in.buffer = &blob;
-			r.in.offered = r.out.needed;
+			r.in.offered = needed;
 			status = dcerpc_spoolss_GetPrinter(p, tctx, &r);
 		}
 		
