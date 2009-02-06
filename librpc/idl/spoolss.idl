@@ -767,7 +767,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out] 	 spoolss_PrinterDataType type,
+		[out,ref] spoolss_PrinterDataType *type,
 		[out] 	 DATA_BLOB data,
 		[out,ref] uint32 *needed
 	);
@@ -779,8 +779,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out] 	 spoolss_PrinterDataType type,
-		[out,subcontext(4),subcontext_size(offered),switch_is(type)] spoolss_PrinterData data,
+		[out,ref] spoolss_PrinterDataType *type,
+		[out,subcontext(4),subcontext_size(offered),switch_is(*type)] spoolss_PrinterData data,
 		[out,ref] uint32 *needed
 	);
 
