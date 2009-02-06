@@ -4063,10 +4063,14 @@ bool set_unix_posix_default_acl(connection_struct *conn, const char *fname, SMB_
 {
 	SMB_ACL_T def_acl = NULL;
 
-	if (num_def_acls && !S_ISDIR(psbuf->st_mode)) {
-		DEBUG(5,("set_unix_posix_default_acl: Can't set default ACL on non-directory file %s\n", fname ));
-		errno = EISDIR;
-		return False;
+	if (!S_ISDIR(psbuf->st_mode)) {
+		if (num_def_acls) {
+			DEBUG(5,("set_unix_posix_default_acl: Can't set default ACL on non-directory file %s\n", fname ));
+			errno = EISDIR;
+			return False;
+		} else {
+			return True;
+		}
 	}
 
 	if (!num_def_acls) {
