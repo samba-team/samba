@@ -1009,6 +1009,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	s.in.handle		= handle;
 	s.in.level		= 1;
 	s.in.info.info1		= &info1;
+	s.out.job_id		= &job_id;
 	info1.document_name	= "TorturePrintJob";
 	info1.output_file	= NULL;
 	info1.datatype		= "RAW";
@@ -1016,8 +1017,6 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	status = dcerpc_spoolss_StartDocPrinter(p, tctx, &s);
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_StartDocPrinter failed");
 	torture_assert_werr_ok(tctx, s.out.result, "StartDocPrinter failed");
-
-	job_id = s.out.job_id;
 
 	for (i=1; i < 4; i++) {
 		torture_comment(tctx, "Testing StartPagePrinter: Page[%d]\n", i);
