@@ -1027,7 +1027,7 @@ int main(int argc, char ** argv)
 	char * resolved_path = NULL;
 	char * temp;
 	char * dev_name;
-	int rc;
+	int rc = 0;
 	int rsize = 0;
 	int wsize = 0;
 	int nomtab = 0;
