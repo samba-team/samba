@@ -727,7 +727,9 @@ rsa_private_key_export(hx509_context context,
 }
 
 static BIGNUM *
-rsa_get_internal(hx509_context context, hx509_private_key key, const char *type)
+rsa_get_internal(hx509_context context,
+		 hx509_private_key key,
+		 const char *type)
 {
     if (strcasecmp(type, "rsa-modulus") == 0) {
 	return BN_dup(key->private_key.rsa->n);
@@ -747,6 +749,59 @@ static hx509_private_key_ops rsa_private_key_ops = {
     rsa_private_key_import,
     rsa_generate_private_key,
     rsa_get_internal
+};
+
+static int
+ecdsa_private_key2SPKI(hx509_context context,
+		       hx509_private_key private_key,
+		       SubjectPublicKeyInfo *spki)
+{
+    memset(spki, 0, sizeof(*spki));
+    return ENOMEM;
+}
+
+static int
+ecdsa_private_key_export(hx509_context context,
+			 const hx509_private_key key,
+			 heim_octet_string *data)
+{
+    return ENOMEM;
+}
+
+static int
+ecdsa_private_key_import(hx509_context context,
+			 const void *data,
+			 size_t len,
+			 hx509_private_key private_key)
+{
+    return ENOMEM;
+}
+
+static int
+ecdsa_generate_private_key(hx509_context context,
+			   struct hx509_generate_private_context *ctx,
+			   hx509_private_key private_key)
+{
+    return ENOMEM;
+}
+
+static BIGNUM *
+ecdsa_get_internal(hx509_context context, 
+		   hx509_private_key key, 
+		   const char *type)
+{
+    return NULL;
+}
+
+
+static hx509_private_key_ops ecdsa_private_key_ops = {
+    "EC PRIVATE KEY",
+    oid_id_pkcs1_rsaEncryption,
+    ecdsa_private_key2SPKI,
+    ecdsa_private_key_export,
+    ecdsa_private_key_import,
+    ecdsa_generate_private_key,
+    ecdsa_get_internal
 };
 
 
@@ -1215,7 +1270,7 @@ static const struct signature_alg md2_alg = {
 
 /*
  * Order matter in this structure, "best" first for each "key
- * compatible" type (type is RSA, DSA, none, etc)
+ * compatible" type (type is ECDSA, RSA, DSA, none, etc)
  */
 
 static const struct signature_alg *sig_algs[] = {
@@ -1253,6 +1308,7 @@ find_sig_alg(const heim_oid *oid)
 
 static struct hx509_private_key_ops *private_algs[] = {
     &rsa_private_key_ops,
+    &ecdsa_private_key_ops,
     NULL
 };
 
