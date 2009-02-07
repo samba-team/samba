@@ -77,7 +77,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, RPC_MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
@@ -128,7 +128,7 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	 * change the type to UNMARSALLING before processing the stream.
 	 */
 
-	if(!prs_init(&p->in_data.data, RPC_MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		talloc_destroy(p->mem_ctx);
 		close_policy_by_pipe(p);

@@ -267,12 +267,12 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 
 	extra_space -= (ps->buffer_size - ps->data_offset);
 	if(ps->buffer_size == 0) {
-		/*
-		 * Ensure we have at least a PDU's length, or extra_space, whichever
-		 * is greater.
-		 */
 
-		new_size = MAX(RPC_MAX_PDU_FRAG_LEN,extra_space);
+		/*
+		 * Start with 128 bytes (arbitrary value), enough for small rpc
+		 * requests
+		 */
+		new_size = MAX(128, extra_space);
 
 		if((ps->data_p = (char *)SMB_MALLOC(new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Malloc failure for size %u.\n", (unsigned int)new_size));
@@ -281,10 +281,13 @@ bool prs_grow(prs_struct *ps, uint32 extra_space)
 		memset(ps->data_p, '\0', (size_t)new_size );
 	} else {
 		/*
-		 * If the current buffer size is bigger than the space needed, just 
-		 * double it, else add extra_space.
+		 * If the current buffer size is bigger than the space needed,
+		 * just double it, else add extra_space. Always keep 64 bytes
+		 * more, so that after we added a large blob we don't have to
+		 * realloc immediately again.
 		 */
-		new_size = MAX(ps->buffer_size*2, ps->buffer_size + extra_space);		
+		new_size = MAX(ps->buffer_size*2,
+			       ps->buffer_size + extra_space + 64);
 
 		if ((ps->data_p = (char *)SMB_REALLOC(ps->data_p, new_size)) == NULL) {
 			DEBUG(0,("prs_grow: Realloc failure for size %u.\n",
