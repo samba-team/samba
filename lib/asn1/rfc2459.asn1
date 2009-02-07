@@ -72,6 +72,17 @@ id-dhpublicnumber OBJECT IDENTIFIER ::= {
         iso(1) member-body(2) us(840) ansi-x942(10046)
         number-type(2) 1 }
 
+id-ecPublicKey OBJECT IDENTIFIER ::= {
+       iso(1) member-body(2) us(840) ansi-X9-62(10045) keyType(2) 1 }
+
+id-ecDH OBJECT IDENTIFIER ::= {
+       iso(1) identified-organization(3) certicom(132) schemes(1)
+       ecdh(12) }
+
+id-ecMQV OBJECT IDENTIFIER ::= {
+       iso(1) identified-organization(3) certicom(132) schemes(1)
+       ecmqv(13) }
+
 id-x9-57 OBJECT IDENTIFIER ::= {
         iso(1) member-body(2) us(840) ansi-x942(10046)
 	4 }
@@ -348,6 +359,16 @@ DSAParams  ::=  SEQUENCE {
 	p	INTEGER,
 	q	INTEGER,
 	g	INTEGER
+}
+
+-- draft-ietf-pkix-ecc-subpubkeyinfo-11
+
+ECPoint ::= OCTET STRING
+
+ECParameters ::= CHOICE {
+	namedCurve         OBJECT IDENTIFIER
+	-- implicitCurve   NULL
+	-- specifiedCurve  SpecifiedECDomain
 }
 
 -- really pkcs1
