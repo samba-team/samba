@@ -4791,7 +4791,7 @@ bool get_a_builtin_ntform(UNISTR2 *uni_formname,nt_forms_struct *form);
 bool get_a_builtin_ntform_by_string(const char *form_name, nt_forms_struct *form);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-bool add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count);
 bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret);
 bool delete_a_form_by_string(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret);
 void update_a_form(nt_forms_struct **list, const FORM *form, int count);
@@ -6359,7 +6359,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u);
 WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u);
 WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
-WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u);
 WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u);
 WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u);
 WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u);

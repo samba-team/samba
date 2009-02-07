@@ -8452,13 +8452,15 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_AddForm
+****************************************************************/
 
-WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u)
+WERROR _spoolss_AddForm(pipes_struct *p,
+			struct spoolss_AddForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	FORM *form = &q_u->form;
+	POLICY_HND *handle = r->in.handle;
+	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
 	int snum;
 	WERROR status = WERR_OK;
@@ -8468,10 +8470,11 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	DEBUG(5,("spoolss_addform\n"));
+	DEBUG(5,("_spoolss_AddForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_addform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_AddForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8496,7 +8499,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 
 	/* can't add if builtin */
 
-	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
 		status = WERR_FILE_EXISTS;
 		goto done;
 	}
@@ -10203,17 +10206,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddForm
-****************************************************************/
-
-WERROR _spoolss_AddForm(pipes_struct *p,
-			struct spoolss_AddForm *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

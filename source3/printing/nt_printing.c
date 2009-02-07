@@ -893,11 +893,10 @@ int write_ntforms(nt_forms_struct **list, int number)
 /****************************************************************************
 add a form struct at the end of the list
 ****************************************************************************/
-bool add_a_form(nt_forms_struct **list, const FORM *form, int *count)
+bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count)
 {
 	int n=0;
 	bool update;
-	fstring form_name;
 
 	/*
 	 * NT tries to add forms even when
@@ -906,10 +905,9 @@ bool add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 	 */
 
 	update=False;
-	
-	unistr2_to_ascii(form_name, &form->name, sizeof(form_name));
+
 	for (n=0; n<*count; n++) {
-		if ( strequal((*list)[n].name, form_name) ) {
+		if ( strequal((*list)[n].name, form->form_name) ) {
 			update=True;
 			break;
 		}
@@ -920,20 +918,20 @@ bool add_a_form(nt_forms_struct **list, const FORM *form, int *count)
 			DEBUG(0,("add_a_form: failed to enlarge forms list!\n"));
 			return False;
 		}
-		unistr2_to_ascii((*list)[n].name, &form->name, sizeof((*list)[n].name));
+		fstrcpy((*list)[n].name, form->form_name);
 		(*count)++;
 	}
-	
-	(*list)[n].flag=form->flags;
-	(*list)[n].width=form->size_x;
-	(*list)[n].length=form->size_y;
-	(*list)[n].left=form->left;
-	(*list)[n].top=form->top;
-	(*list)[n].right=form->right;
-	(*list)[n].bottom=form->bottom;
+
+	(*list)[n].flag		= form->flags;
+	(*list)[n].width	= form->size.width;
+	(*list)[n].length	= form->size.height;
+	(*list)[n].left		= form->area.left;
+	(*list)[n].top		= form->area.top;
+	(*list)[n].right	= form->area.right;
+	(*list)[n].bottom	= form->area.bottom;
 
 	DEBUG(6,("add_a_form: Successfully %s form [%s]\n", 
-		update ? "updated" : "added", form_name));
+		update ? "updated" : "added", form->form_name));
 
 	return True;
 }
