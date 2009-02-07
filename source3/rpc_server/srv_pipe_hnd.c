@@ -192,6 +192,15 @@ static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 			(unsigned int)data_to_copy, (unsigned int)len_needed_to_complete_hdr,
 			(unsigned int)p->in_data.pdu_received_len ));
 
+	if (p->in_data.current_in_pdu == NULL) {
+		p->in_data.current_in_pdu = talloc_array(p, uint8_t,
+							 RPC_HEADER_LEN);
+	}
+	if (p->in_data.current_in_pdu == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return -1;
+	}
+
 	memcpy((char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len], data, len_needed_to_complete_hdr);
 	p->in_data.pdu_received_len += len_needed_to_complete_hdr;
 
@@ -311,6 +320,14 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	p->in_data.pdu_needed_len = (uint32)p->hdr.frag_len - RPC_HEADER_LEN;
 
 	prs_mem_free(&rpc_in);
+
+	p->in_data.current_in_pdu = TALLOC_REALLOC_ARRAY(
+		p, p->in_data.current_in_pdu, uint8_t, p->hdr.frag_len);
+	if (p->in_data.current_in_pdu == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		set_incoming_fault(p);
+		return -1;
+	}
 
 	return 0; /* No extra data processed. */
 }
@@ -635,6 +652,7 @@ static void process_complete_pdu(pipes_struct *p)
 		/*
 		 * Reset the lengths. We're ready for a new pdu.
 		 */
+		TALLOC_FREE(p->in_data.current_in_pdu);
 		p->in_data.pdu_needed_len = 0;
 		p->in_data.pdu_received_len = 0;
 	}

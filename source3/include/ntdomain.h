@@ -89,7 +89,7 @@ typedef struct _input_data {
 	 * pdu is seen, then the data is copied into the in_data
 	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
 	 */
-	unsigned char current_in_pdu[RPC_MAX_PDU_FRAG_LEN];
+	uint8_t *current_in_pdu;
 
 	/*
 	 * The amount of data needed to complete the in_pdu.
