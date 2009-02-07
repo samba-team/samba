@@ -91,7 +91,7 @@ id-ecdsa-with-SHA256 OBJECT IDENTIFIER ::= {
 
 -- some EC group ids
 
-id-EC-group-secp256r1 OBJECT IDENTIFIER ::= {
+id-ec-group-secp256r1 OBJECT IDENTIFIER ::= {
        iso(1) member-body(2) us(840) ansi-X9-62(10045) curves(3)
        prime(1) 7 }
 
