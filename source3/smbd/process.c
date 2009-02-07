@@ -1623,6 +1623,7 @@ void chain_reply(struct smb_request *req)
 			exit_server_cleanly("chain_reply: srv_send_smb "
 					    "failed.");
 		}
+		TALLOC_FREE(req);
 		return;
 	}
 
@@ -1737,6 +1738,7 @@ void chain_reply(struct smb_request *req)
 			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
+	TALLOC_FREE(req);
 }
 
 /****************************************************************************
