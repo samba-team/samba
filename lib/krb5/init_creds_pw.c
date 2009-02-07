@@ -231,8 +231,9 @@ process_last_request(krb5_context context,
     time_t t;
     size_t i;
 
-    if (ctx->prompter == NULL)
-        return 0;
+    /*
+     * First check if there is a API consumer.
+     */
 
     realm = krb5_principal_get_realm (context, ctx->cred.client);
     lr = &ctx->enc_part.last_req;
@@ -241,7 +242,7 @@ process_last_request(krb5_context context,
 	krb5_last_req_entry **lre;
 
 	lre = calloc(lr->len + 1, sizeof(**lre));
-	if (lre) {
+	if (lre == NULL) {
 	    krb5_set_error_message(context, ENOMEM,
 				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
@@ -261,6 +262,13 @@ process_last_request(krb5_context context,
 	    free(lre[i]);
 	free(lre);
     }
+
+    /*
+     * Now check if we should prompt the user
+     */
+
+    if (ctx->prompter == NULL)
+        return 0;
 
     krb5_timeofday (context, &sec);
 
