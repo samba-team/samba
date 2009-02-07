@@ -378,6 +378,11 @@ ECParameters ::= CHOICE {
 	-- specifiedCurve  SpecifiedECDomain
 }
 
+ECDSA-Sig-Value ::= SEQUENCE {
+     r  INTEGER,
+     s  INTEGER
+}
+
 -- really pkcs1
 
 RSAPublicKey ::= SEQUENCE {
