@@ -97,7 +97,11 @@ sub ParseOutputArgument($$$)
 		# to allocate a structure of the right size.
 		my $env = GenerateFunctionInEnv($fn, "r.");
 		my $size_is = ParseExpr($e->{LEVELS}[$level]->{SIZE_IS}, $env, $e->{ORIGINAL});
-		$self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		if (has_property($e, "charset")) {
+		    $self->pidl("memcpy(CONST_DISCARD(char *, $e->{NAME}), r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		} else {
+		    $self->pidl("memcpy($e->{NAME}, r.out.$e->{NAME}, $size_is * sizeof(*$e->{NAME}));");
+		}
 	} else {
 		$self->pidl("*$e->{NAME} = *r.out.$e->{NAME};");
 	}
