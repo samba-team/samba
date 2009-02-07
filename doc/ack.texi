@@ -53,6 +53,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Guido Günther
 @item Jason McIntyre
 @item Johan Ihrén
+@item John Center
 @item Jun-ichiro itojun Hagino
 @item KAMADA Ken'ichi
 @item Ken Hornstein
