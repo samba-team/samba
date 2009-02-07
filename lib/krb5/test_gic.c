@@ -42,8 +42,7 @@ static krb5_error_code
 lr_proc(krb5_context context, krb5_last_req_entry **e, void *ctx)
 {
     while (e && *e) {
-	printf("e type: %d\n", (*e)->lr_type);
-	printf("e value: %d\n", (*e)->value);
+	printf("e type: %d value: %d\n", (*e)->lr_type, (*e)->value);
 	e++;
     }
     return 0;
