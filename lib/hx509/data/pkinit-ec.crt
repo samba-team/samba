@@ -1,0 +1,51 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 7 (0x7)
+        Signature Algorithm: sha1WithRSAEncryption
+        Issuer: CN=hx509 Test Root CA, C=SE
+        Validity
+            Not Before: Feb  7 10:55:20 2009 GMT
+            Not After : Feb  5 10:55:20 2019 GMT
+        Subject: C=SE, CN=pkinit-ec
+        Subject Public Key Info:
+            Public Key Algorithm: id-ecPublicKey
+            EC Public Key:
+                pub: 
+                    04:f1:86:84:2d:06:d2:69:5a:17:51:9a:a3:33:89:
+                    67:e5:31:1c:09:15:30:a4:4c:31:09:d7:a9:28:6f:
+                    65:4c:21:15:d1:61:dd:fa:fd:46:42:b3:d0:aa:74:
+                    34:18:c3:b7:4a:91:8f:02:99:6a:0e:7f:9d:56:69:
+                    97:9c:1a:97:d4
+                ASN1 OID: prime256v1
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment
+            X509v3 Subject Key Identifier: 
+                86:38:16:EB:73:29:4B:4A:C5:A4:A4:B8:92:EF:44:E4:9E:41:D2:88
+            X509v3 Subject Alternative Name: 
+                othername:<unsupported>
+    Signature Algorithm: sha1WithRSAEncryption
+        5e:16:72:c3:32:7d:19:f7:4b:38:a7:a2:1c:e1:f0:42:0b:07:
+        e0:36:aa:44:92:4b:1b:18:fa:1a:ba:fb:4f:e5:a8:01:8e:2b:
+        3e:66:29:52:ba:e5:c1:75:97:49:cb:9e:42:33:2c:ba:2a:62:
+        12:78:28:95:22:6a:f4:fc:61:d5:4f:26:5b:b3:ea:9e:d0:07:
+        e6:6d:08:af:9c:a9:98:e1:28:91:77:ef:bd:5e:b3:e1:f4:f6:
+        e4:39:9b:9a:3c:d2:78:7c:f1:d1:29:f8:22:82:20:5e:3b:3b:
+        3d:99:fa:62:39:97:51:41:c0:f1:0e:52:2f:8a:ca:ee:1c:d3:
+        85:00
+-----BEGIN CERTIFICATE-----
+MIIB7TCCAVagAwIBAgIBBzANBgkqhkiG9w0BAQUFADAqMRswGQYDVQQDDBJoeDUw
+OSBUZXN0IFJvb3QgQ0ExCzAJBgNVBAYTAlNFMB4XDTA5MDIwNzEwNTUyMFoXDTE5
+MDIwNTEwNTUyMFowITELMAkGA1UEBhMCU0UxEjAQBgNVBAMMCXBraW5pdC1lYzBZ
+MBMGByqGSM49AgEGCCqGSM49AwEHA0IABPGGhC0G0mlaF1GaozOJZ+UxHAkVMKRM
+MQnXqShvZUwhFdFh3fr9RkKz0Kp0NBjDt0qRjwKZag5/nVZpl5wal9SjczBxMAkG
+A1UdEwQCMAAwCwYDVR0PBAQDAgXgMB0GA1UdDgQWBBSGOBbrcylLSsWkpLiS70Tk
+nkHSiDA4BgNVHREEMTAvoC0GBisGAQUCAqAjMCGgDRsLVEVTVC5INUwuU0WhEDAO
+oAMCAQGhBzAFGwNiYXIwDQYJKoZIhvcNAQEFBQADgYEAXhZywzJ9GfdLOKeiHOHw
+QgsH4DaqRJJLGxj6Grr7T+WoAY4rPmYpUrrlwXWXScueQjMsuipiEngolSJq9Pxh
+1U8mW7PqntAH5m0Ir5ypmOEokXfvvV6z4fT25DmbmjzSeHzx0Sn4IoIgXjs7PZn6
+YjmXUUHA8Q5SL4rK7hzThQA=
+-----END CERTIFICATE-----

@@ -80,7 +80,7 @@ gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
 gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
 gen_cert "/CN=pkinit/C=SE" "ca" "pkinit" "pkinit_client"
 $openssl ecparam -name secp256r1 -out eccurve.pem
-gen_cert "/CN=pkinit-ec/C=SE" "ca" "pkinit" "pkinit_client" "XXX" ec:eccurve.pem
+gen_cert "/CN=pkinit-ec/C=SE" "ca" "pkinit-ec" "pkinit_client" "XXX" ec:eccurve.pem
 gen_cert "/C=SE/CN=pkinit/CN=pkinit-proxy" "pkinit" "proxy" "proxy_cert" pkinit-proxy
 gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
 gen_cert "/CN=www.test.h5l.se/C=SE" "ca" "https" "https"
