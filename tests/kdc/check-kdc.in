@@ -78,6 +78,7 @@ hxtool="${TESTS_ENVIRONMENT} ../../lib/hx509/hxtool"
 kimpersonate="${TESTS_ENVIRONMENT} ../../kuser/kimpersonate -k ${keytab} --ccache=${ocache}"
 test_renew="${TESTS_ENVIRONMENT} ../../lib/krb5/test_renew"
 test_ap_req="${TESTS_ENVIRONMENT} ../../lib/krb5/test_ap-req"
+test_gic="${TESTS_ENVIRONMENT} ../../lib/krb5/test_gic"
 
 KRB5_CONFIG="${objdir}/@KDCCONF@"
 export KRB5_CONFIG
@@ -134,6 +135,10 @@ ${kadmin} modify --alias=${alias2}@${R} ${alias1}@${R}
 ${kadmin} add -p cross1 --use-defaults krbtgt/${R2}@${R} || exit 1
 ${kadmin} add -p cross2 --use-defaults krbtgt/${R}@${R2} || exit 1
 
+${kadmin} add -p foo --use-defaults pw-expire@${R} || exit 1
+${kadmin} modify --pw-expiration-time=+1day  pw-expire@${R} || exit 1
+
+echo "Check parser"
 ${kadmin} add -p foo --use-defaults -- -p || exit 1
 ${kadmin} delete -- -p || exit 1
 
@@ -489,6 +494,19 @@ ${kdestroy}
 echo "testing removal of keytab"
 ${ktutil} -k ${keytab} destroy || { ec=1 ; eval "${testfailed}"; }
 test -f ${keytabfile} && { ec=1 ; eval "${testfailed}"; }
+
+echo "Getting client pw expire"; > messages.log
+${kinit} --password-file=${objdir}/foopassword \
+        pw-expire@${R} 2>kinit-log.tmp|| \
+	{ ec=1 ; eval "${testfailed}"; }
+grep 'Your password will expire' kinit-log.tmp > /dev/null || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "   kinit passes"
+${test_gic} --client=pw-expire@${R} --password=foo > kinit-log.tmp 2>/dev/null
+${EGREP} "^e type: 6" kinit-log.tmp > /dev/null  || \
+	{ ec=1 ; eval "${testfailed}"; }
+echo "   test_gic passes"
+${kdestroy}
 
 echo "killing kdc (${kdcpid})"
 sh ${srcdir}/leaks-kill.sh kdc $kdcpid || exit 1
