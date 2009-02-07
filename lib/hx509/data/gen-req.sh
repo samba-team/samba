@@ -5,15 +5,16 @@
 # otherName section for pkinit certificates.
 #
 
-openssl=$HOME/src/openssl/openssl-0.9.8e/apps/openssl
+openssl=openssl
 
 gen_cert()
 {
+	keytype=${6:-rsa:1024}
 	${openssl} req \
 		-new \
 		-subj "$1" \
 		-config openssl.cnf \
-		-newkey rsa:1024 \
+		-newkey $keytype \
 		-sha1 \
 		-nodes \
 		-keyout out.key \
@@ -78,6 +79,8 @@ gen_cert "/CN=Revoke cert/C=SE" "ca" "revoke" "usr"
 gen_cert "/CN=Test cert KeyEncipherment/C=SE" "ca" "test-ke-only" "usr_ke"
 gen_cert "/CN=Test cert DigitalSignature/C=SE" "ca" "test-ds-only" "usr_ds"
 gen_cert "/CN=pkinit/C=SE" "ca" "pkinit" "pkinit_client"
+$openssl ecparam -name secp256r1 -out eccurve.pem
+gen_cert "/CN=pkinit-ec/C=SE" "ca" "pkinit" "pkinit_client" "XXX" ec:eccurve.pem
 gen_cert "/C=SE/CN=pkinit/CN=pkinit-proxy" "pkinit" "proxy" "proxy_cert" pkinit-proxy
 gen_cert "/CN=kdc/C=SE" "ca" "kdc" "pkinit_kdc"
 gen_cert "/CN=www.test.h5l.se/C=SE" "ca" "https" "https"
