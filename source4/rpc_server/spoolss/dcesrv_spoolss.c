@@ -564,6 +564,9 @@ static WERROR dcesrv_spoolss_GetPrinterData(struct dcesrv_call_state *dce_call, 
 	if (!handle)
 		return WERR_BADFID;
 
+	r->out.type = talloc_zero(mem_ctx, enum spoolss_PrinterDataType);
+	W_ERROR_HAVE_NO_MEMORY(r->out.type);
+
 	switch (handle->type) {
 		case NTPTR_HANDLE_SERVER:
 			status = ntptr_GetPrintServerData(handle, mem_ctx, r);
