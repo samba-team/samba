@@ -260,6 +260,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumJobs ej;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, 1024);
+	uint32_t needed;
 
 	torture_comment(tctx, "Test EnumJobs\n");
 
@@ -267,6 +268,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	ej.in.level = 2;
 	ej.in.buffer = &blob;
 	ej.in.offered = 1024;
+	ej.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
