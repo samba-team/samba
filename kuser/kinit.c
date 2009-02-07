@@ -169,7 +169,7 @@ static struct getargs args[] = {
     { "enterprise",0,   arg_flag, &enterprise_flag,
       NP_("parse principal as a KRB5-NT-ENTERPRISE name", "") },
 #ifdef PKINIT
-    { "pk-enterprise",	'C',	arg_flag,	&pk_enterprise_flag,
+    { "pk-enterprise",	0,	arg_flag,	&pk_enterprise_flag,
       NP_("use enterprise name from certificate", "") },
 
     { "pk-user",	'C',	arg_string,	&pk_user_id,
