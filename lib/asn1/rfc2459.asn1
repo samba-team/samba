@@ -72,6 +72,8 @@ id-dhpublicnumber OBJECT IDENTIFIER ::= {
         iso(1) member-body(2) us(840) ansi-x942(10046)
         number-type(2) 1 }
 
+-- ECC
+
 id-ecPublicKey OBJECT IDENTIFIER ::= {
        iso(1) member-body(2) us(840) ansi-X9-62(10045) keyType(2) 1 }
 
@@ -83,9 +85,14 @@ id-ecMQV OBJECT IDENTIFIER ::= {
        iso(1) identified-organization(3) certicom(132) schemes(1)
        ecmqv(13) }
 
+id-ecdsa-with-SHA256 OBJECT IDENTIFIER ::= {
+     iso(1) member-body(2) us(840) ansi-X9-62(10045) signatures(4)
+     ecdsa-with-SHA2(3) 2 }
+
+-- DSA
+
 id-x9-57 OBJECT IDENTIFIER ::= {
-        iso(1) member-body(2) us(840) ansi-x942(10046)
-	4 }
+        iso(1) member-body(2) us(840) ansi-x942(10046) 4 }
 
 id-dsa OBJECT IDENTIFIER ::=		{ id-x9-57 1 }
 id-dsa-with-sha1 OBJECT IDENTIFIER ::=		{ id-x9-57 3 }
