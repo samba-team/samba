@@ -33,8 +33,8 @@ CLEANFILES = snprintf.c strtok_r.c strdup.c strupr.c getprogname.c
 
 LDADD =						\
 	libsl.la				\
-	$(LIB_roken)				\
-	$(LEXLIB)
+	$(LEXLIB)				\
+	$(LIB_roken)
 
 strtok_r.c:
 	$(LN_S) $(srcdir)/../roken/strtok_r.c .
