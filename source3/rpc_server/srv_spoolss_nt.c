@@ -5792,7 +5792,8 @@ WERROR _spoolss_StartPagePrinter(pipes_struct *p,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(3,("Error in startpageprinter printer handle\n"));
+		DEBUG(3,("_spoolss_StartPagePrinter: "
+			"Error in startpageprinter printer handle\n"));
 		return WERR_BADFID;
 	}
 
@@ -5813,7 +5814,8 @@ WERROR _spoolss_EndPagePrinter(pipes_struct *p,
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_endpageprinter: Invalid handle (%s:%u:%u).\n",OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_EndPagePrinter: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -5997,7 +5999,8 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
 	WERROR 		errcode = WERR_OK;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_abortprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_AbortPrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
