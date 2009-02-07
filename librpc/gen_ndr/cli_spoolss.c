@@ -3397,7 +3397,7 @@ NTSTATUS rpccli_spoolss_EnumPrinterData(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	memcpy(value_name, r.out.value_name, r.in.value_offered / 2 * sizeof(*value_name));
+	memcpy(CONST_DISCARD(char *, value_name), r.out.value_name, r.in.value_offered / 2 * sizeof(*value_name));
 	*value_needed = *r.out.value_needed;
 	*printerdata_type = *r.out.printerdata_type;
 	*buffer = *r.out.buffer;
