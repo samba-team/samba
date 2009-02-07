@@ -2353,6 +2353,7 @@ static bool api_RNetUserEnum(connection_struct *conn, uint16 vuid,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
 			  nt_errstr(status)));
+		rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
 		return false;
 	}
 
