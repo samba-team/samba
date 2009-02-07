@@ -65,10 +65,9 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 
 	/* Reset the offset counters. */
 	o_data->data_sent_length = 0;
-	o_data->current_pdu_len = 0;
 	o_data->current_pdu_sent = 0;
 
-	memset(o_data->current_pdu, '\0', sizeof(o_data->current_pdu));
+	prs_mem_free(&o_data->frag);
 
 	/* Free any memory in the current return data buffer. */
 	prs_mem_free(&o_data->rdata);
@@ -829,17 +828,24 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 	 * PDU.
 	 */
 
-	if((pdu_remaining = p->out_data.current_pdu_len - p->out_data.current_pdu_sent) > 0) {
+	pdu_remaining = prs_offset(&p->out_data.frag)
+		- p->out_data.current_pdu_sent;
+
+	if (pdu_remaining > 0) {
 		data_returned = (ssize_t)MIN(n, pdu_remaining);
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
 			  get_pipe_name_from_iface(&p->syntax),
-			  (unsigned int)p->out_data.current_pdu_len,
+			  (unsigned int)prs_offset(&p->out_data.frag),
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
 
-		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
+		memcpy(data,
+		       prs_data_p(&p->out_data.frag)
+		       + p->out_data.current_pdu_sent,
+		       data_returned);
+
 		p->out_data.current_pdu_sent += (uint32)data_returned;
 		goto out;
 	}
@@ -876,14 +882,14 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 		return -1;
 	}
 
-	data_returned = MIN(n, p->out_data.current_pdu_len);
+	data_returned = MIN(n, prs_offset(&p->out_data.frag));
 
-	memcpy( data, p->out_data.current_pdu, (size_t)data_returned);
+	memcpy( data, prs_data_p(&p->out_data.frag), (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
 
   out:
+	(*is_data_outstanding) = prs_offset(&p->out_data.frag) > n;
 
-	(*is_data_outstanding) = p->out_data.current_pdu_len > n;
 	return data_returned;
 }
 
@@ -898,6 +904,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		return False;
 	}
 
+	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 

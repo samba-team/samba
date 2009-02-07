@@ -70,13 +70,10 @@ typedef struct _output_data {
 	uint32 data_sent_length;
 
 	/*
-	 * The current PDU being returned. This inclues
+	 * The current fragment being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	unsigned char current_pdu[RPC_MAX_PDU_FRAG_LEN];
-
-	/* The amount of data in the current_pdu buffer. */
-	uint32 current_pdu_len;
+	prs_struct frag;
 
 	/* The amount of data sent from the current PDU. */
 	uint32 current_pdu_sent;
