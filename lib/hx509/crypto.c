@@ -65,15 +65,6 @@ struct hx509_private_key_ops {
 				struct hx509_generate_private_context *,
 				hx509_private_key);
     BIGNUM *(*get_internal)(hx509_context, hx509_private_key, const char *);
-    int (*handle_alg)(const hx509_private_key,
-		      const AlgorithmIdentifier *,
-		      enum crypto_op_type);
-    int (*sign)(hx509_context context,
-		const hx509_private_key,
-		const AlgorithmIdentifier *,
-		const heim_octet_string *,
-		AlgorithmIdentifier *,
-		heim_octet_string *);
 };
 
 struct hx509_private_key {
@@ -1415,13 +1406,6 @@ _hx509_create_signature(hx509_context context,
 			heim_octet_string *sig)
 {
     const struct signature_alg *md;
-
-    if (signer && signer->ops && signer->ops->handle_alg &&
-	(*signer->ops->handle_alg)(signer, alg, COT_SIGN))
-    {
-	return (*signer->ops->sign)(context, signer, alg, data,
-				    signatureAlgorithm, sig);
-    }
 
     md = find_sig_alg(&alg->algorithm);
     if (md == NULL) {
