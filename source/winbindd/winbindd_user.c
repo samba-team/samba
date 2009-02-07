@@ -85,6 +85,7 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 		DEBUG(5,("winbindd_fill_pwent: Failed to find domain for %s.  "
 			 "Disabling name alias support\n", dom_name));
 		nt_status = NT_STATUS_NO_SUCH_DOMAIN;
+		return false;
 	}
 
 	/* Resolve the uid number */
