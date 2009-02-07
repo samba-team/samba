@@ -242,6 +242,7 @@ gen_files_rfc2459 =					\
 	asn1_id_ecDH.x					\
 	asn1_id_ecMQV.x					\
 	asn1_id_ecPublicKey.x				\
+	asn1_id_ec_group_secp256r1.x			\
 	asn1_id_ecdsa_with_SHA256.x			\
 	asn1_id_heim_rsa_pkcs1_x509.x			\
 	asn1_id_ms_cert_enroll_domaincontroller.x	\
