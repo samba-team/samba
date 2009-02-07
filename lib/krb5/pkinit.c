@@ -60,7 +60,13 @@ struct krb5_pk_cert {
 
 struct krb5_pk_init_ctx_data {
     struct krb5_pk_identity *id;
-    DH *dh;
+    enum { USE_RSA, USE_DH, USE_ECDH } keyex;
+    union {
+	DH *dh;
+#ifdef HAVE_OPENSSL
+	EC_KEY *eckey;
+#endif
+    } u;
     krb5_data *clientDHNonce;
     struct krb5_dh_moduli **m;
     hx509_peer_info peer;
@@ -325,7 +331,6 @@ static krb5_error_code
 build_auth_pack(krb5_context context,
 		unsigned nonce,
 		krb5_pk_init_ctx ctx,
-		DH *dh,
 		const KDC_REQ_BODY *body,
 		AuthPack *a)
 {
@@ -374,11 +379,11 @@ build_auth_pack(krb5_context context,
     if (ret)
 	return ret;
 
-    if (dh) {
-	DomainParameters dp;
-	heim_integer dh_pub_key;
+    if (ctx->keyex == USE_DH || ctx->keyex == USE_ECDH) {
 	krb5_data dhbuf;
 	size_t size;
+
+	krb5_data_zero(&dhbuf);
 
 	if (1 /* support_cached_dh */) {
 	    ALLOC(a->clientDHNonce, 1);
@@ -401,60 +406,89 @@ build_auth_pack(krb5_context context,
 	ALLOC(a->clientPublicValue, 1);
 	if (a->clientPublicValue == NULL)
 	    return ENOMEM;
-	ret = der_copy_oid(oid_id_dhpublicnumber(),
-			   &a->clientPublicValue->algorithm.algorithm);
-	if (ret)
-	    return ret;
-	
-	memset(&dp, 0, sizeof(dp));
 
-	ret = BN_to_integer(context, dh->p, &dp.p);
-	if (ret) {
+	if (ctx->keyex == USE_DH) {
+	    DH *dh = ctx->u.dh;
+	    DomainParameters dp;
+	    heim_integer dh_pub_key;
+
+	    ret = der_copy_oid(oid_id_dhpublicnumber(),
+			       &a->clientPublicValue->algorithm.algorithm);
+	    if (ret)
+		return ret;
+	    
+	    memset(&dp, 0, sizeof(dp));
+	    
+	    ret = BN_to_integer(context, dh->p, &dp.p);
+	    if (ret) {
+		free_DomainParameters(&dp);
+		return ret;
+	    }
+	    ret = BN_to_integer(context, dh->g, &dp.g);
+	    if (ret) {
+		free_DomainParameters(&dp);
+		return ret;
+	    }
+	    ret = BN_to_integer(context, dh->q, &dp.q);
+	    if (ret) {
+		free_DomainParameters(&dp);
+		return ret;
+	    }
+	    dp.j = NULL;
+	    dp.validationParms = NULL;
+	    
+	    a->clientPublicValue->algorithm.parameters =
+		malloc(sizeof(*a->clientPublicValue->algorithm.parameters));
+	    if (a->clientPublicValue->algorithm.parameters == NULL) {
+		free_DomainParameters(&dp);
+		return ret;
+	    }
+	    
+	    ASN1_MALLOC_ENCODE(DomainParameters,
+			       a->clientPublicValue->algorithm.parameters->data,
+			       a->clientPublicValue->algorithm.parameters->length,
+			       &dp, &size, ret);
 	    free_DomainParameters(&dp);
-	    return ret;
-	}
-	ret = BN_to_integer(context, dh->g, &dp.g);
-	if (ret) {
-	    free_DomainParameters(&dp);
-	    return ret;
-	}
-	ret = BN_to_integer(context, dh->q, &dp.q);
-	if (ret) {
-	    free_DomainParameters(&dp);
-	    return ret;
-	}
-	dp.j = NULL;
-	dp.validationParms = NULL;
+	    if (ret)
+		return ret;
+	    if (size != a->clientPublicValue->algorithm.parameters->length)
+		krb5_abortx(context, "Internal ASN1 encoder error");
+	    
+	    ret = BN_to_integer(context, dh->pub_key, &dh_pub_key);
+	    if (ret)
+		return ret;
+	    
+	    ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
+			       &dh_pub_key, &size, ret);
+	    der_free_heim_integer(&dh_pub_key);
+	    if (ret)
+		return ret;
+	    if (size != dhbuf.length)
+		krb5_abortx(context, "asn1 internal error");
+	} else if (ctx->keyex == USE_ECDH) {
+#ifdef HAVE_OPENSSL
+	    ret = der_copy_oid(oid_id_ecPublicKey(),
+			       &a->clientPublicValue->algorithm.algorithm);
+	    if (ret)
+		return ret;
 
-	a->clientPublicValue->algorithm.parameters =
-	    malloc(sizeof(*a->clientPublicValue->algorithm.parameters));
-	if (a->clientPublicValue->algorithm.parameters == NULL) {
-	    free_DomainParameters(&dp);
-	    return ret;
-	}
+	    ctx->u.eckey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+	    if (ctx->u.eckey == NULL)
+		return ENOMEM;
 
-	ASN1_MALLOC_ENCODE(DomainParameters,
-			   a->clientPublicValue->algorithm.parameters->data,
-			   a->clientPublicValue->algorithm.parameters->length,
-			   &dp, &size, ret);
-	free_DomainParameters(&dp);
-	if (ret)
-	    return ret;
-	if (size != a->clientPublicValue->algorithm.parameters->length)
-	    krb5_abortx(context, "Internal ASN1 encoder error");
+	    ret = EC_KEY_generate_key(ctx->u.eckey);
+	    if (ret != 1)
+		return EINVAL;
 
-	ret = BN_to_integer(context, dh->pub_key, &dh_pub_key);
-	if (ret)
-	    return ret;
+	    /* XXX stuff domain and public key into dhbuf */
 
-	ASN1_MALLOC_ENCODE(DHPublicKey, dhbuf.data, dhbuf.length,
-			   &dh_pub_key, &size, ret);
-	der_free_heim_integer(&dh_pub_key);
-	if (ret)
-	    return ret;
-	if (size != dhbuf.length)
-	    krb5_abortx(context, "asn1 internal error");
-
+	    dhbuf.data = NULL;
+	    dhbuf.length = 0;
+#else
+	    return EINVAL;
+#endif
+	} else
+	    krb5_abortx(context, "internal error");
 	a->clientPublicValue->subjectPublicKey.length = dhbuf.length * 8;
 	a->clientPublicValue->subjectPublicKey.data = dhbuf.data;
     }
@@ -558,7 +592,7 @@ pk_mk_padata(krb5_context context,
 	
 	memset(&ap, 0, sizeof(ap));
 
-	ret = build_auth_pack(context, nonce, ctx, ctx->dh, req_body, &ap);
+	ret = build_auth_pack(context, nonce, ctx, req_body, &ap);
 	if (ret) {
 	    free_AuthPack(&ap);
 	    goto out;
@@ -1228,7 +1262,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     p = kdc_dh_info.subjectPublicKey.data;
     size = (kdc_dh_info.subjectPublicKey.length + 7) / 8;
 
-    {
+    if (ctx->keyex == USE_DH) {
 	DHPublicKey k;
 	ret = decode_DHPublicKey(p, size, &k, NULL);
 	if (ret) {
@@ -1244,30 +1278,38 @@ pk_rd_pa_reply_dh(krb5_context context,
 	    ret = ENOMEM;
 	    goto out;
 	}
-    }
 
-    dh_gen_keylen = DH_size(ctx->dh);
-    size = BN_num_bytes(ctx->dh->p);
-    if (size < dh_gen_keylen)
-	size = dh_gen_keylen;
 
-    dh_gen_key = malloc(size);
-    if (dh_gen_key == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	dh_gen_keylen = DH_size(ctx->u.dh);
+	size = BN_num_bytes(ctx->u.dh->p);
+	if (size < dh_gen_keylen)
+	    size = dh_gen_keylen;
+
+	dh_gen_key = malloc(size);
+	if (dh_gen_key == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, N_("malloc: out of memory", ""));
+	    goto out;
+	}
+	memset(dh_gen_key, 0, size - dh_gen_keylen);
+	
+	dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
+				       kdc_dh_pubkey, ctx->u.dh);
+	if (dh_gen_keylen == -1) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret,
+				   N_("PKINIT: Can't compute Diffie-Hellman key", ""));
+	    goto out;
+	}
+    } else {
+#ifdef HAVE_OPENSSL
+	krb5_abortx(context, "implement ECDH");
+#else
+	ret = EINVAL;
+#endif
 	goto out;
     }
-    memset(dh_gen_key, 0, size - dh_gen_keylen);
-
-    dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
-				   kdc_dh_pubkey, ctx->dh);
-    if (dh_gen_keylen == -1) {
-	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_message(context, ret,
-			       N_("PKINIT: Can't compute Diffie-Hellman key", ""));
-	goto out;
-    }
-
+	
     *key = malloc (sizeof (**key));
     if (*key == NULL) {
 	ret = ENOMEM;
@@ -1293,7 +1335,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (kdc_dh_pubkey)
 	BN_free(kdc_dh_pubkey);
     if (dh_gen_key) {
-	memset(dh_gen_key, 0, DH_size(ctx->dh));
+	memset(dh_gen_key, 0, DH_size(ctx->u.dh));
 	free(dh_gen_key);
     }
     if (host)
@@ -2047,9 +2089,18 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
     if (opt->opt_private == NULL || opt->opt_private->pk_init_ctx == NULL)
 	return;
     ctx = opt->opt_private->pk_init_ctx;
-    if (ctx->dh)
-	DH_free(ctx->dh);
-    ctx->dh = NULL;
+    switch (ctx->keyex) {
+    case USE_DH:
+	DH_free(ctx->u.dh);
+	break;
+    case USE_RSA:
+	break;
+    case USE_ECDH: 
+#ifdef HAVE_OPENSSL
+	EC_KEY_free(ctx->u.eckey);
+#endif
+	break;
+    }
     if (ctx->id) {
 	hx509_verify_destroy_ctx(ctx->id->verify_ctx);
 	hx509_certs_free(&ctx->id->certs);
@@ -2101,9 +2152,6 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 			       N_("malloc: out of memory", ""));
 	return ENOMEM;
     }
-    opt->opt_private->pk_init_ctx->dh = NULL;
-    opt->opt_private->pk_init_ctx->id = NULL;
-    opt->opt_private->pk_init_ctx->clientDHNonce = NULL;
     opt->opt_private->pk_init_ctx->require_binding = 0;
     opt->opt_private->pk_init_ctx->require_eku = 1;
     opt->opt_private->pk_init_ctx->require_krbtgt_otherName = 1;
@@ -2145,9 +2193,14 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	return ret;
     }
 
+    /* XXX select cert here so we know if we will use ECDH or DH */
+
     if ((flags & 2) == 0) {
 	const char *moduli_file;
 	unsigned long dh_min_bits;
+
+	opt->opt_private->pk_init_ctx->keyex = USE_DH;
+
 
 	moduli_file = krb5_config_get_string(context, NULL,
 					     "libdefaults",
@@ -2167,15 +2220,15 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    return ret;
 	}
 	
-	opt->opt_private->pk_init_ctx->dh = DH_new();
-	if (opt->opt_private->pk_init_ctx->dh == NULL) {
+	opt->opt_private->pk_init_ctx->u.dh = DH_new();
+	if (opt->opt_private->pk_init_ctx->u.dh == NULL) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    krb5_set_error_message(context, ENOMEM,
 				   N_("malloc: out of memory", ""));
 	    return ENOMEM;
 	}
 
-	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->dh,
+	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->u.dh,
 			      dh_min_bits,
 			      opt->opt_private->pk_init_ctx->m);
 	if (ret) {
@@ -2183,12 +2236,14 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    return ret;
 	}
 
-	if (DH_generate_key(opt->opt_private->pk_init_ctx->dh) != 1) {
+	if (DH_generate_key(opt->opt_private->pk_init_ctx->u.dh) != 1) {
 	    _krb5_get_init_creds_opt_free_pkinit(opt);
 	    krb5_set_error_message(context, ENOMEM,
 				   N_("pkinit: failed to generate DH key", ""));
 	    return ENOMEM;
 	}
+    } else {
+	opt->opt_private->pk_init_ctx->keyex = USE_RSA;
     }
 
     return 0;
