@@ -239,7 +239,6 @@ gen_files_rfc2459 =					\
 	asn1_id_domainComponent.x			\
 	asn1_id_dsa.x					\
 	asn1_id_dsa_with_sha1.x				\
-	asn1_id_ec.x					\
 	asn1_id_ecDH.x					\
 	asn1_id_ecMQV.x					\
 	asn1_id_ecPublicKey.x				\
