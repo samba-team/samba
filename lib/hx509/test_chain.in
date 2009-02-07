@@ -187,6 +187,16 @@ ${hxtool} verify \
     anchor:FILE:$srcdir/data/ca.crt \
     crl:FILE:$srcdir/data/crl1.der > /dev/null && exit 1
 
+echo "eccert -> root"
+${hxtool} verify --missing-revoke \
+	cert:FILE:$srcdir/data/secp160r2TestServer.cert.pem \
+	anchor:FILE:$srcdir/data/secp160r1TestCA.cert.pem > /dev/null || exit 1
+
+echo "eccert -> root"
+${hxtool} verify --missing-revoke \
+	cert:FILE:$srcdir/data/secp160r2TestClient.cert.pem \
+	anchor:FILE:$srcdir/data/secp160r1TestCA.cert.pem > /dev/null || exit 1
+
 echo "proxy cert"
 ${hxtool} verify --missing-revoke \
     --allow-proxy-certificate \
