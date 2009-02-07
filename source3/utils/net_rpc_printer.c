@@ -1668,8 +1668,10 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 
 		for (f = 0; f < num_forms; f++) {
 
-			FORM form;
+			union spoolss_AddFormInfo info;
+			struct spoolss_AddFormInfo1 info1;
 			fstring form_name;
+			NTSTATUS status;
 
 			/* only migrate FORM_PRINTER types, according to jerry
 			   FORM_BUILTIN-types are hard-coded in samba */
@@ -1685,20 +1687,24 @@ NTSTATUS rpc_printer_migrate_forms_internals(struct net_context *c,
 					f, form_name, forms[f].flag);
 
 			/* is there a more elegant way to do that ? */
-			form.flags 	= FORM_PRINTER;
-			form.size_x	= forms[f].width;
-			form.size_y	= forms[f].length;
-			form.left	= forms[f].left;
-			form.top	= forms[f].top;
-			form.right	= forms[f].right;
-			form.bottom	= forms[f].bottom;
+			info1.flags 		= FORM_PRINTER;
+			info1.size.width	= forms[f].width;
+			info1.size.height	= forms[f].length;
+			info1.area.left		= forms[f].left;
+			info1.area.top		= forms[f].top;
+			info1.area.right	= forms[f].right;
+			info1.area.bottom	= forms[f].bottom;
+			info1.form_name		= form_name;
 
-			init_unistr2(&form.name, form_name, UNI_STR_TERMINATE);
+			info.info1 = &info1;
 
 			/* FIXME: there might be something wrong with samba's
 			   builtin-forms */
-			result = rpccli_spoolss_addform(pipe_hnd_dst, mem_ctx,
-				&hnd_dst, 1, &form);
+			status = rpccli_spoolss_AddForm(pipe_hnd_dst, mem_ctx,
+							&hnd_dst,
+							1,
+							info,
+							&result);
 			if (!W_ERROR_IS_OK(result)) {
 				d_printf("\tAddForm form %d: [%s] refused.\n",
 					f, form_name);

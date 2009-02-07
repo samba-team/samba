@@ -1642,10 +1642,12 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 {
 	POLICY_HND handle;
 	WERROR werror;
+	NTSTATUS status;
 	char *servername = NULL, *printername = NULL;
-	FORM form;
 	bool got_handle = False;
-	
+	union spoolss_AddFormInfo info;
+	struct spoolss_AddFormInfo1 info1;
+
 	/* Parse the command arguments */
 
 	if (argc != 3) {
@@ -1676,19 +1678,25 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Dummy up some values for the form data */
 
-	form.flags = FORM_USER;
-	form.size_x = form.size_y = 100;
-	form.left = 0;
-	form.top = 10;
-	form.right = 20;
-	form.bottom = 30;
+	info1.flags		= FORM_USER;
+	info1.form_name		= argv[2];
+	info1.size.width	= 100;
+	info1.size.height	= 100;
+	info1.area.left		= 0;
+	info1.area.top		= 10;
+	info1.area.right	= 20;
+	info1.area.bottom	= 30;
 
-	init_unistr2(&form.name, argv[2], UNI_STR_TERMINATE);
+	info.info1 = &info1;
 
 	/* Add the form */
 
 
-	werror = rpccli_spoolss_addform(cli, mem_ctx, &handle, 1, &form);
+	status = rpccli_spoolss_AddForm(cli, mem_ctx,
+					&handle,
+					1,
+					info,
+					&werror);
 
  done:
 	if (got_handle)
