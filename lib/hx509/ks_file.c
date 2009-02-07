@@ -50,7 +50,8 @@ static int
 parse_certificate(hx509_context context, const char *fn,
 		  struct hx509_collector *c,
 		  const hx509_pem_header *headers,
-		  const void *data, size_t len)
+		  const void *data, size_t len,
+		  const AlgorithmIdentifier *ai)
 {
     hx509_cert cert;
     int ret;
@@ -130,10 +131,11 @@ out:
 }
 
 static int
-parse_rsa_private_key(hx509_context context, const char *fn,
-		      struct hx509_collector *c,
-		      const hx509_pem_header *headers,
-		      const void *data, size_t len)
+parse_private_key(hx509_context context, const char *fn,
+		  struct hx509_collector *c,
+		  const hx509_pem_header *headers,
+		  const void *data, size_t len,
+		  const AlgorithmIdentifier *ai)
 {
     int ret = 0;
     const char *enc;
@@ -159,7 +161,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 
 	if (strcmp(enc, "4,ENCRYPTED") != 0) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "RSA key encrypted in unknown method %s "
+				   "Private key encrypted in unknown method %s "
 				   "in file",
 				   enc, fn);
 	    hx509_clear_error_string(context);
@@ -169,7 +171,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	dek = hx509_pem_find_header(headers, "DEK-Info");
 	if (dek == NULL) {
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "Encrypted RSA missing DEK-Info");
+				   "Encrypted private key missing DEK-Info");
 	    return HX509_PARSING_KEY_FAILED;
 	}
 
@@ -201,7 +203,7 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	if (cipher == NULL) {
 	    free(ivdata);
 	    hx509_set_error_string(context, 0, HX509_ALG_NOT_SUPP,
-				   "RSA key encrypted with "
+				   "Private key encrypted with "
 				   "unsupported cipher: %s",
 				   type);
 	    free(type);
@@ -218,7 +220,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	if (ssize < 0 || ssize < PKCS5_SALT_LEN || ssize < EVP_CIPHER_iv_length(cipher)) {
 	    free(ivdata);
 	    hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
-				   "Salt have wrong length in RSA key file");
+				   "Salt have wrong length in "
+				   "private key file");
 	    return HX509_PARSING_KEY_FAILED;
 	}
 	
@@ -231,9 +234,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 		password = pw->val[i];
 		passwordlen = strlen(password);
 		
-		ret = try_decrypt(context, c, hx509_signature_rsa(),
-				  cipher, ivdata, password, passwordlen,
-				  data, len);
+		ret = try_decrypt(context, c, ai, cipher, ivdata, 
+				  password, passwordlen, data, len);
 		if (ret == 0) {
 		    decrypted = 1;
 		    break;
@@ -253,9 +255,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 
 	    ret = hx509_lock_prompt(lock, &prompt);
 	    if (ret == 0)
-		ret = try_decrypt(context, c, hx509_signature_rsa(),
-				  cipher, ivdata, password, strlen(password),
-				  data, len);
+		ret = try_decrypt(context, c, ai, cipher, ivdata, password, 
+				  strlen(password), data, len);
 	    /* XXX add password to lock password collection ? */
 	    memset(password, 0, sizeof(password));
 	}
@@ -267,12 +268,8 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 	keydata.data = rk_UNCONST(data);
 	keydata.length = len;
 
-	ret = _hx509_collector_private_key_add(context,
-					       c,
-					       hx509_signature_rsa(),
-					       NULL,
-					       &keydata,
-					       NULL);
+	ret = _hx509_collector_private_key_add(context, c, ai, NULL,
+					       &keydata, NULL);
     }
 
     return ret;
@@ -282,10 +279,15 @@ parse_rsa_private_key(hx509_context context, const char *fn,
 struct pem_formats {
     const char *name;
     int (*func)(hx509_context, const char *, struct hx509_collector *,
-		const hx509_pem_header *, const void *, size_t);
+		const hx509_pem_header *, const void *, size_t,
+		const AlgorithmIdentifier *);
+    const AlgorithmIdentifier *(*ai)(void);
 } formats[] = {
-    { "CERTIFICATE", parse_certificate },
-    { "RSA PRIVATE KEY", parse_rsa_private_key }
+    { "CERTIFICATE", parse_certificate, NULL },
+    { "RSA PRIVATE KEY", parse_private_key, hx509_signature_rsa }
+#if 0
+    { "EC PRIVATE KEY", parse_private_key, hx509_signature_rsa } /* XXX */
+#endif
 };
 
 
@@ -305,7 +307,12 @@ pem_func(hx509_context context, const char *type,
     for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
 	const char *q = formats[j].name;
 	if (strcasecmp(type, q) == 0) {
-	    ret = (*formats[j].func)(context, NULL, pem_ctx->c,  header, data, len);
+	    const AlgorithmIdentifier *ai = NULL;
+	    if (formats[j].ai != NULL)
+		ai = (*formats[j].ai)();
+
+	    ret = (*formats[j].func)(context, NULL, pem_ctx->c, 
+				     header, data, len, ai);
 	    if (ret == 0)
 		break;
 	}
@@ -409,7 +416,11 @@ file_init_common(hx509_context context,
 	    }
 
 	    for (i = 0; i < sizeof(formats)/sizeof(formats[0]); i++) {
-		ret = (*formats[i].func)(context, p, pem_ctx.c, NULL, ptr, length);
+		const AlgorithmIdentifier *ai = NULL;
+		if (formats[i].ai != NULL)
+		    ai = (*formats[i].ai)();
+
+		ret = (*formats[i].func)(context, p, pem_ctx.c, NULL, ptr, length, ai);
 		if (ret == 0)
 		    break;
 	    }
