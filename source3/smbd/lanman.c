@@ -2037,10 +2037,11 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
 
-	struct pdb_search *search;
-	struct samr_displayentry *entries;
-
-	int num_entries;
+	uint32_t num_groups;
+	uint32_t resume_handle;
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle samr_handle, domain_handle;
+	NTSTATUS status;
 
 	if (!str1 || !str2 || !p) {
 		return False;
@@ -2062,25 +2063,37 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 		return False;
 	}
 
-	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	become_root();
-	search = pdb_search_groups();
-	unbecome_root();
+	status = rpc_pipe_open_internal(
+		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		conn->server_info, &samr_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
 
-	if (search == NULL) {
-		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
-		return False;
+	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(status)));
+		return false;
+	}
+
+	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+					SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS,
+					get_global_sam_sid(), &domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(status)));
+		rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
+		return false;
 	}
 
 	resume_context = get_safe_SVAL(param,tpscnt,p,0,-1);
 	cli_buf_size= get_safe_SVAL(param,tpscnt,p,2,0);
 	DEBUG(10,("api_RNetGroupEnum:resume context: %d, client buffer size: "
 		  "%d\n", resume_context, cli_buf_size));
-
-	become_root();
-	num_entries = pdb_search_entries(search, resume_context, 0xffffffff,
-					 &entries);
-	unbecome_root();
 
 	*rdata_len = cli_buf_size;
 	*rdata = smb_realloc_limit(*rdata,*rdata_len);
@@ -2090,25 +2103,63 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 
 	p = *rdata;
 
-	for(i=0; i<num_entries; i++) {
-		fstring name;
-		fstrcpy(name, entries[i].account_name);
-		if( ((PTR_DIFF(p,*rdata)+21) <= *rdata_len) ) {
-			/* truncate the name at 21 chars. */
-			memcpy(p, name, 21); 
-			DEBUG(10,("adding entry %d group %s\n", i, p));
-			p += 21;
-			p += 5; /* Both NT4 and W2k3SP1 do padding here.
-				   No idea why... */
-		} else {
-			/* set overflow error */
-			DEBUG(3,("overflow on entry %d group %s\n", i, name));
-			errflags=234;
+	errflags = NERR_Success;
+	num_groups = 0;
+	resume_handle = 0;
+
+	while (true) {
+		struct samr_SamArray *sam_entries;
+		uint32_t num_entries;
+
+		status = rpccli_samr_EnumDomainGroups(samr_pipe, talloc_tos(),
+						      &domain_handle,
+						      &resume_handle,
+						      &sam_entries, 1,
+						      &num_entries);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("rpccli_samr_EnumDomainGroups returned "
+				   "%s\n", nt_errstr(status)));
 			break;
 		}
+
+		if (num_entries == 0) {
+			DEBUG(10, ("rpccli_samr_EnumDomainGroups returned "
+				   "no entries -- done\n"));
+			break;
+		}
+
+		for(i=0; i<num_entries; i++) {
+			const char *name;
+
+			name = sam_entries->entries[i].name.string;
+
+			if( ((PTR_DIFF(p,*rdata)+21) > *rdata_len) ) {
+				/* set overflow error */
+				DEBUG(3,("overflow on entry %d group %s\n", i,
+					 name));
+				errflags=234;
+				break;
+			}
+
+			/* truncate the name at 21 chars. */
+			memset(p, 0, 21);
+			strlcpy(p, name, 21);
+			DEBUG(10,("adding entry %d group %s\n", i, p));
+			p += 21;
+			p += 5; /* Both NT4 and W2k3SP1 do padding here.  No
+				 * idea why... */
+			num_groups += 1;
+		}
+
+		if (errflags != NERR_Success) {
+			break;
+		}
+
+		TALLOC_FREE(sam_entries);
 	}
 
-	pdb_search_destroy(search);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
 
 	*rdata_len = PTR_DIFF(p,*rdata);
 
@@ -2119,8 +2170,8 @@ static bool api_RNetGroupEnum(connection_struct *conn,uint16 vuid,
 	}
   	SSVAL(*rparam, 0, errflags);
   	SSVAL(*rparam, 2, 0);		/* converter word */
-  	SSVAL(*rparam, 4, i);	/* is this right?? */
- 	SSVAL(*rparam, 6, resume_context+num_entries);	/* is this right?? */
+	SSVAL(*rparam, 4, num_groups);	/* is this right?? */
+	SSVAL(*rparam, 6, resume_context+num_groups);	/* is this right?? */
 
 	return(True);
 }
