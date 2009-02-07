@@ -98,6 +98,12 @@ id-ec-group-secp256r1 OBJECT IDENTIFIER ::= {
        iso(1) member-body(2) us(840) ansi-X9-62(10045) curves(3)
        prime(1) 7 }
 
+id-ec-group-secp160r1 OBJECT IDENTIFIER ::= {
+       iso(1) identified-organization(3) certicom(132) 0 8 }
+
+id-ec-group-secp160r2 OBJECT IDENTIFIER ::= {
+       iso(1) identified-organization(3) certicom(132) 0 30 }
+
 -- DSA
 
 id-x9-57 OBJECT IDENTIFIER ::= {
