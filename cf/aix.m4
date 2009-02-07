@@ -15,7 +15,7 @@ case "$host" in
 esac
 
 AM_CONDITIONAL(AIX, test "$aix" != no)dnl
-AM_CONDITIONAL(AIX4, test "$aix" = 4)
+AM_CONDITIONAL(AIX4, test "$aix" = 4)dnl
 
 
 AC_ARG_ENABLE(dynamic-afs,
@@ -45,8 +45,11 @@ fi
 AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$enable_dynamic_afs" != no)dnl
 AC_SUBST(AIX_EXTRA_KAFS)dnl
 
+if test "$aix" != no; then
+	AC_DEFINE([_ALL_SOURCE],1,[Required for functional/sane headers on AIX])
+fi
+
 AH_BOTTOM([#if _AIX
-#define _ALL_SOURCE
 /* XXX this is gross, but kills about a gazillion warnings */
 struct ether_addr;
 struct sockaddr;

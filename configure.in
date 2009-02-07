@@ -29,6 +29,10 @@ AB_INIT
 
 rk_SYS_LARGEFILE
 
+rk_AIX
+rk_IRIX
+rk_SUNOS
+
 dnl
 dnl this is needed to run the configure tests against glibc
 dnl
@@ -214,10 +218,6 @@ rk_TEST_PACKAGE(hesiod,[#include <hesiod.h>],-lhesiod,,, HESIOD)
 
 KRB_C_BIGENDIAN
 AC_C_INLINE
-
-rk_AIX
-rk_IRIX
-rk_SUNOS
 
 KRB_CHECK_X
 
