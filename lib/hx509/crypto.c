@@ -83,6 +83,9 @@ struct hx509_private_key {
     union {
 	RSA *rsa;
 	void *keydata;
+#ifdef HAVE_OPENSSL
+	EC_KEY *ecdsa;
+#endif
     } private_key;
     /* new crypto layer */
     hx509_private_key_ops *ops;
@@ -174,6 +177,181 @@ set_digest_alg(DigestAlgorithmIdentifier *id,
     }
     return 0;
 }
+
+#ifdef HAVE_OPENSSL
+
+/*
+ *
+ */
+
+static int
+ecdsa_verify_signature(hx509_context context,
+		       const struct signature_alg *sig_alg,
+		       const Certificate *signer,
+		       const AlgorithmIdentifier *alg,
+		       const heim_octet_string *data,
+		       const heim_octet_string *sig)
+{
+    const SubjectPublicKeyInfo *spi;
+    heim_octet_string digest;
+    int ret;
+    EC_KEY *key = NULL;
+    size_t size;
+    ECParameters ecparam;
+    int groupnid;
+    EC_GROUP *group;
+    const unsigned char *p;
+    long len;
+    const AlgorithmIdentifier *digest_alg;
+
+    if (der_heim_oid_cmp((*sig_alg->sig_oid)(), 
+			 oid_id_ecdsa_with_SHA256()) == 0) {
+	digest_alg = hx509_signature_sha256();
+    } else
+	return HX509_ALG_NOT_SUPP;
+
+    ret = _hx509_create_signature(context,
+				  NULL,
+				  digest_alg,
+				  data,
+				  NULL,
+				  &digest);
+    if (ret)
+	return ret;
+
+    /* set up EC KEY */
+    spi = &signer->tbsCertificate.subjectPublicKeyInfo;
+
+    if (der_heim_oid_cmp(&spi->algorithm.algorithm, oid_id_ecPublicKey()) != 0 ||
+	spi->algorithm.parameters == NULL)
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+
+#ifdef HAVE_OPENSSL
+    /*
+     * Find the group id
+     */
+
+    ret = decode_ECParameters(spi->algorithm.parameters->data,
+			      spi->algorithm.parameters->length,
+			      &ecparam, &size);
+    if (ret) {
+	der_free_octet_string(&digest);
+	return ret;
+    }
+
+    if (ecparam.element != choice_ECParameters_namedCurve) {
+	der_free_octet_string(&digest);
+	free_ECParameters(&ecparam);
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
+
+    /*
+     * Now map to openssl OID fun
+     */
+    groupnid = -1;
+
+    if (der_heim_oid_cmp(&ecparam.u.namedCurve, oid_id_ec_group_secp256r1()) == 0)
+	groupnid = NID_X9_62_prime256v1;
+
+    free_ECParameters(&ecparam);
+    if (groupnid == -1) {
+	der_free_octet_string(&digest);
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
+
+    key = EC_KEY_new();
+    group = EC_GROUP_new_by_curve_name(groupnid);
+    EC_KEY_set_group(key, group);
+    EC_GROUP_free(group);
+
+    p = spi->subjectPublicKey.data;
+    len = spi->subjectPublicKey.length;
+
+    if (o2i_ECPublicKey(&key, &p, len) == NULL) {
+	EC_KEY_free(key);
+	return HX509_CRYPTO_SIG_INVALID_FORMAT;
+    }
+#else
+    key = SubjectPublicKeyInfo2EC_KEY(spi);
+#endif
+
+    ret = ECDSA_verify(-1, digest.data, digest.length,
+		       sig->data, sig->length, key);
+    der_free_octet_string(&digest);
+    EC_KEY_free(key);
+    if (ret != 1) {
+	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
+	return ret;
+    }
+    
+    return ret;
+}
+
+static int
+ecdsa_create_signature(hx509_context context,
+		       const struct signature_alg *sig_alg,
+		       const hx509_private_key signer,
+		       const AlgorithmIdentifier *alg,
+		       const heim_octet_string *data,
+		       AlgorithmIdentifier *signatureAlgorithm,
+		       heim_octet_string *sig)
+{
+    const AlgorithmIdentifier *digest_alg;
+    heim_octet_string indata;
+    const heim_oid *sig_oid;
+    unsigned int siglen;
+    int ret;
+
+    sig_oid = (*sig_alg->sig_oid)();
+
+    if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA256()) == 0) {
+	digest_alg = hx509_signature_sha256();
+    } else
+	return HX509_ALG_NOT_SUPP;
+
+    if (signatureAlgorithm) {
+	ret = set_digest_alg(signatureAlgorithm, sig_oid, "\x05\x00", 2);
+	if (ret) {
+	    hx509_clear_error_string(context);
+	    return ret;
+	}
+    }
+
+    ret = _hx509_create_signature(context,
+				  NULL,
+				  digest_alg,
+				  data,
+				  NULL,
+				  &indata);
+
+    sig->length = ECDSA_size(signer->private_key.ecdsa);
+    sig->data = malloc(sig->length);
+    if (sig->data == NULL) {
+	der_free_octet_string(&indata);
+	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
+	return ENOMEM;
+    }
+
+    siglen = sig->length;
+
+    ret = ECDSA_sign(-1, indata.data, indata.length,
+		     sig->data, &siglen, signer->private_key.ecdsa);
+    der_free_octet_string(&indata);
+    if (ret != 1) {
+	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
+	hx509_set_error_string(context, 0, ret,
+			       "RSA private decrypt failed: %d", ret);
+	return ret;
+    }
+    if (siglen > sig->length)
+	_hx509_abort("RSA signature prelen longer the output len");
+
+    sig->length = ret;
+
+    return 0;
+}
+
+#endif /* HAVE_OPENSSL */
 
 /*
  *
@@ -862,6 +1040,22 @@ md2_verify_signature(hx509_context context,
     return 0;
 }
 
+#ifdef HAVE_OPENSSL
+
+static const struct signature_alg ecdsa_with_sha256_alg = {
+    "ecdsa-with-sha256",
+    oid_id_ecdsa_with_SHA256,
+    hx509_signature_ecdsa_with_sha256,
+    oid_id_ecPublicKey,
+    oid_id_sha256,
+    PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
+    0,
+    ecdsa_verify_signature,
+    ecdsa_create_signature
+};
+
+#endif
+
 static const struct signature_alg heim_rsa_pkcs1_x509 = {
     "rsa-pkcs1-x509",
     oid_id_heim_rsa_pkcs1_x509,
@@ -998,6 +1192,9 @@ static const struct signature_alg md2_alg = {
  */
 
 static const struct signature_alg *sig_algs[] = {
+#ifdef HAVE_OPENSSL
+    &ecdsa_with_sha256_alg,
+#endif
     &rsa_with_sha256_alg,
     &rsa_with_sha1_alg,
     &pkcs1_rsa_sha1_alg,
@@ -1464,6 +1661,11 @@ const AlgorithmIdentifier _hx509_signature_md2_data = {
     { 6, rk_UNCONST(md2_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
+static const unsigned ecdsa_with_sha256_oid[] ={ 1, 2, 840, 10045, 4, 3, 2 };
+const AlgorithmIdentifier _hx509_signature_ecdsa_with_sha256_data = {
+    { 7, rk_UNCONST(ecdsa_with_sha256_oid) }, NULL
+};
+
 static const unsigned rsa_with_sha512_oid[] ={ 1, 2, 840, 113549, 1, 1, 13 };
 const AlgorithmIdentifier _hx509_signature_rsa_with_sha512_data = {
     { 7, rk_UNCONST(rsa_with_sha512_oid) }, NULL
@@ -1542,6 +1744,10 @@ hx509_signature_md5(void)
 const AlgorithmIdentifier *
 hx509_signature_md2(void)
 { return &_hx509_signature_md2_data; }
+
+const AlgorithmIdentifier *
+hx509_signature_ecdsa_with_sha256(void)
+{ return &_hx509_signature_ecdsa_with_sha256_data; }
 
 const AlgorithmIdentifier *
 hx509_signature_rsa_with_sha512(void)
