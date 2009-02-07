@@ -8,6 +8,7 @@ bin_PROGRAMS = verify_krb5_conf
 
 noinst_PROGRAMS =				\
 	krbhst-test				\
+	test_gic				\
 	test_alname				\
 	test_crypto				\
 	test_get_addrs				\
