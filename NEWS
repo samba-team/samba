@@ -14,8 +14,8 @@ Release Notes - Heimdal - Version Heimdal 1.3
    kinit/klist/kdestroy and Kerberos library.
  - Remove Kerberos 4 support in application (still in KDC)
  - Deprecate DES
- - Support i18n password in windows domains (using utf8)
- - More complete API emulation of OpenSSL in hcrypto 
+ - Support i18n password in windows domains (using UTF-8)
+ - More complete API emulation of OpenSSL in hcrypto
 
  API changes
 
