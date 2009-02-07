@@ -1708,21 +1708,6 @@ typedef struct _form
 }
 FORM;
 
-typedef struct spool_q_addform
-{
-	POLICY_HND handle;
-	uint32 level;
-	uint32 level2;		/* This should really be part of the FORM structure */
-	FORM form;
-}
-SPOOL_Q_ADDFORM;
-
-typedef struct spool_r_addform
-{
-	WERROR status;
-}
-SPOOL_R_ADDFORM;
-
 typedef struct spool_q_setform
 {
 	POLICY_HND handle;

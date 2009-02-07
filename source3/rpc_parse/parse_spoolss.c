@@ -5821,51 +5821,6 @@ static bool spoolss_io_addform(const char *desc, FORM *f, uint32 ptr, prs_struct
 /*******************************************************************
 ********************************************************************/  
 
-bool spoolss_io_q_addform(const char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
-{
-	uint32 useless_ptr=1;
-	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if(!prs_uint32("level",  ps, depth, &q_u->level))
-		return False;
-	if(!prs_uint32("level2", ps, depth, &q_u->level2))
-		return False;
-
-	if (q_u->level==1)
-	{
-		if(!prs_uint32("useless_ptr", ps, depth, &useless_ptr))
-			return False;
-		if(!spoolss_io_addform("", &q_u->form, useless_ptr, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_addform(const char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_addform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_werror("status",	ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool spoolss_io_q_setform(const char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=1;
@@ -6956,21 +6911,6 @@ bool smb_io_printprocessordirectory_1(const char *desc, RPC_BUFFER *buffer, PRIN
 
 	if (!smb_io_unistr(desc, &info->name, ps, depth))
 		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_addform(SPOOL_Q_ADDFORM *q_u, POLICY_HND *handle, 
-			    int level, FORM *form)
-{
-	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	q_u->level = level;
-	q_u->level2 = level;
-	memcpy(&q_u->form, form, sizeof(FORM));
 
 	return True;
 }

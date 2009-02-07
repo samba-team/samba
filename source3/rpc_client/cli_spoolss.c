@@ -1154,31 +1154,6 @@ WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, FORM *form)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ADDFORM in;
-	SPOOL_R_ADDFORM out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_addform( &in, handle, level, form );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ADDFORM,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_addform,
-	            spoolss_io_r_addform, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, uint32 level, 
 			   const char *form_name, FORM *form)
