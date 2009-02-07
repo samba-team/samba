@@ -89,6 +89,9 @@ id-ecdsa-with-SHA256 OBJECT IDENTIFIER ::= {
      iso(1) member-body(2) us(840) ansi-X9-62(10045) signatures(4)
      ecdsa-with-SHA2(3) 2 }
 
+id-ecdsa-with-SHA1 OBJECT IDENTIFIER ::= {
+     iso(1) member-body(2) us(840) ansi-X9-62(10045) signatures(4) 1 }
+
 -- some EC group ids
 
 id-ec-group-secp256r1 OBJECT IDENTIFIER ::= {
