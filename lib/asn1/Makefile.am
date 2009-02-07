@@ -187,6 +187,7 @@ gen_files_rfc2459 =					\
 	asn1_DomainParameters.x				\
 	asn1_ECParameters.x				\
 	asn1_ECPoint.x					\
+	asn1_ECDSA_Sig_Value.x				\
 	asn1_ExtKeyUsage.x				\
 	asn1_Extension.x				\
 	asn1_Extensions.x				\
