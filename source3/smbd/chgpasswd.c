@@ -47,8 +47,6 @@
 
 #include "includes.h"
 
-extern struct passdb_ops pdb_ops;
-
 static NTSTATUS check_oem_password(const char *user,
 				   uchar password_encrypted_with_lm_hash[516],
 				   const uchar old_lm_hash_encrypted[16],
