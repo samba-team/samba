@@ -2194,17 +2194,17 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	int uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	const char *level_string;
 	int count=0;
-	struct samu *sampw = NULL;
 	bool ret = False;
-	DOM_SID *sids;
-	gid_t *gids;
-	size_t num_groups;
-	size_t i;
-	NTSTATUS result;
-	DOM_SID user_sid;
-	enum lsa_SidType type;
+	uint32_t i;
 	char *endp = NULL;
-	TALLOC_CTX *mem_ctx;
+
+	struct rpc_pipe_client *samr_pipe;
+	struct policy_handle samr_handle, domain_handle, user_handle;
+	struct lsa_String name;
+	struct lsa_Strings names;
+	struct samr_Ids type, rid;
+	struct samr_RidWithAttributeArray *rids;
+	NTSTATUS status;
 
 	if (!str1 || !str2 || !UserName || !p) {
 		return False;
@@ -2244,59 +2244,75 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 	p = *rdata;
 	endp = *rdata + *rdata_len;
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return False;
+	status = rpc_pipe_open_internal(
+		talloc_tos(), &ndr_table_samr.syntax_id, rpc_samr_dispatch,
+		conn->server_info, &samr_pipe);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: Could not connect to samr: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
-	if ( !(sampw = samu_new(mem_ctx)) ) {
-		DEBUG(0, ("samu_new() failed!\n"));
-		TALLOC_FREE(mem_ctx);
-		return False;
+	status = rpccli_samr_Connect2(samr_pipe, talloc_tos(), global_myname(),
+				      SAMR_ACCESS_OPEN_DOMAIN, &samr_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_Connect2 failed: %s\n",
+			  nt_errstr(status)));
+		return false;
 	}
 
-	/* Lookup the user information; This should only be one of
-	   our accounts (not remote domains) */
-
-	become_root();					/* ROOT BLOCK */
-
-	if (!lookup_name(mem_ctx, UserName, LOOKUP_NAME_ALL,
-			 NULL, NULL, &user_sid, &type)) {
-		DEBUG(10, ("lookup_name(%s) failed\n", UserName));
-		goto done;
+	status = rpccli_samr_OpenDomain(samr_pipe, talloc_tos(), &samr_handle,
+					SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
+					get_global_sam_sid(), &domain_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_OpenDomain failed: %s\n",
+			  nt_errstr(status)));
+		goto close_sam;
 	}
 
-	if (type != SID_NAME_USER) {
+	name.string = UserName;
+
+	status = rpccli_samr_LookupNames(samr_pipe, talloc_tos(),
+					 &domain_handle, 1, &name,
+					 &rid, &type);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(status)));
+		goto close_domain;
+	}
+
+	if (type.ids[0] != SID_NAME_USER) {
 		DEBUG(10, ("%s is a %s, not a user\n", UserName,
-			   sid_type_lookup(type)));
-		goto done;
+			   sid_type_lookup(type.ids[0])));
+		goto close_domain;
 	}
 
-	if ( !pdb_getsampwsid(sampw, &user_sid) ) {
-		DEBUG(10, ("pdb_getsampwsid(%s) failed for user %s\n",
-			   sid_string_dbg(&user_sid), UserName));
-		goto done;
+	status = rpccli_samr_OpenUser(samr_pipe, talloc_tos(),
+				      &domain_handle,
+				      SAMR_USER_ACCESS_GET_GROUPS,
+				      rid.ids[0], &user_handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(status)));
+		goto close_domain;
 	}
 
-	gids = NULL;
-	sids = NULL;
-	num_groups = 0;
-
-	result = pdb_enum_group_memberships(mem_ctx, sampw,
-					    &sids, &gids, &num_groups);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10, ("pdb_enum_group_memberships failed for %s\n",
-			   UserName));
-		goto done;
+	status = rpccli_samr_GetGroupsForUser(samr_pipe, talloc_tos(),
+					      &user_handle, &rids);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("api_RNetUserEnum: samr_LookupNames failed: %s\n",
+			  nt_errstr(status)));
+		goto close_user;
 	}
 
-	for (i=0; i<num_groups; i++) {
-		const char *grp_name;
+	for (i=0; i<rids->count; i++) {
 
-		if ( lookup_sid(mem_ctx, &sids[i], NULL, &grp_name, NULL) ) {
-			strlcpy(p, grp_name, PTR_DIFF(endp,p));
+		status = rpccli_samr_LookupRids(samr_pipe, talloc_tos(),
+						&domain_handle,
+						1, &rids->rids[i].rid,
+						&names, &type);
+		if (NT_STATUS_IS_OK(status) && (names.count == 1)) {
+			strlcpy(p, names.names[0].string, PTR_DIFF(endp,p));
 			p += 21;
 			count++;
 		}
@@ -2309,10 +2325,12 @@ static bool api_NetUserGetGroups(connection_struct *conn,uint16 vuid,
 
 	ret = True;
 
-done:
-	unbecome_root();				/* END ROOT BLOCK */
-
-	TALLOC_FREE(mem_ctx);
+ close_user:
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &user_handle);
+ close_domain:
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &domain_handle);
+ close_sam:
+	rpccli_samr_Close(samr_pipe, talloc_tos(), &samr_handle);
 
 	return ret;
 }
