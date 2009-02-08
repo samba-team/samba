@@ -7378,41 +7378,35 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_GetForm
+****************************************************************/
 
-WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u)
+WERROR _spoolss_GetForm(pipes_struct *p,
+			struct spoolss_GetForm *r)
 {
-	uint32 level = q_u->level;
-	UNISTR2 *uni_formname = &q_u->formname;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
+	uint32 level = r->in.level;
+	uint32 offered = r->in.offered;
+	uint32 *needed = r->out.needed;
 
 	nt_forms_struct *list=NULL;
 	nt_forms_struct builtin_form;
 	bool foundBuiltin;
-	FORM_1 form_1;
-	fstring form_name;
-	int buffer_size=0;
+	union spoolss_FormInfo info;
+	struct spoolss_FormInfo1 form_1;
 	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
-
-	DEBUG(4,("_spoolss_getform\n"));
+	DEBUG(4,("_spoolss_GetForm\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	foundBuiltin = get_a_builtin_ntform(uni_formname,&builtin_form);
+	foundBuiltin = get_a_builtin_ntform_by_string(r->in.form_name, &builtin_form);
 	if (!foundBuiltin) {
 		numofforms = get_ntforms(&list);
 		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
@@ -7424,17 +7418,19 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	switch (level) {
 	case 1:
 		if (foundBuiltin) {
-			fill_form_1(&form_1, &builtin_form);
+			fill_form_info_1(p->mem_ctx, &form_1, &builtin_form);
 		} else {
 
 			/* Check if the requested name is in the list of form structures */
 			for (i=0; i<numofforms; i++) {
 
-				DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
+				DEBUG(4,("_spoolss_GetForm: checking form %s (want %s)\n",
+					list[i].name, r->in.form_name));
 
-				if (strequal(form_name, list[i].name)) {
-					DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
-					fill_form_1(&form_1, &list[i]);
+				if (strequal(r->in.form_name, list[i].name)) {
+					DEBUGADD(6,("Found form %s number [%d]\n",
+						r->in.form_name, i));
+					fill_form_info_1(p->mem_ctx, &form_1, &list[i]);
 					break;
 				}
 			}
@@ -7446,17 +7442,20 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		}
 		/* check the required size. */
 
-		*needed=spoolss_size_form_1(&form_1);
+		info.info1 = form_1;
 
-		if (*needed > offered)
+		*needed = ndr_size_spoolss_FormInfo(&info, 1, NULL, 0);
+
+		if (*needed > offered) {
+			r->out.info = NULL;
 			return WERR_INSUFFICIENT_BUFFER;
+		}
 
-		if (!rpcbuf_alloc_size(buffer, buffer_size))
-			return WERR_NOMEM;
+		r->out.info->info1 = form_1;
 
 		/* fill the buffer with the form structures */
-		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
-		smb_io_form_1("", buffer, &form_1, 0);
+		DEBUGADD(6,("adding form %s [%d] to buffer\n",
+			r->in.form_name, i));
 
 		return WERR_OK;
 
@@ -10230,17 +10229,6 @@ WERROR _spoolss_SetPrinterData(pipes_struct *p,
 
 WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 				     struct spoolss_WaitForPrinterChange *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetForm
-****************************************************************/
-
-WERROR _spoolss_GetForm(pipes_struct *p,
-			struct spoolss_GetForm *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

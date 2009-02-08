@@ -668,27 +668,7 @@ static bool api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 static bool api_spoolss_getform(pipes_struct *p)
 {
-	SPOOL_Q_GETFORM q_u;
-	SPOOL_R_GETFORM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_getform("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_getform: unable to unmarshall SPOOL_Q_GETFORM.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_getform(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_getform("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_GETFORM);
 }
 
 /****************************************************************************
