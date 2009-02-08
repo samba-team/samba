@@ -1822,15 +1822,34 @@ static void display_form(FORM_1 *form)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_form_info1(struct spoolss_FormInfo1 *r)
+{
+	printf("%s\n" \
+		"\tflag: %s (%d)\n" \
+		"\twidth: %d, length: %d\n" \
+		"\tleft: %d, right: %d, top: %d, bottom: %d\n\n",
+		r->form_name, get_form_flag(r->flags), r->flags,
+		r->size.width, r->size.height,
+		r->area.left, r->area.right,
+		r->area.top, r->area.bottom);
+}
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				    int argc, const char **argv)
 {
 	POLICY_HND handle;
 	WERROR werror;
+	NTSTATUS status;
 	char *servername = NULL, *printername = NULL;
-	FORM_1 form;
 	bool got_handle = False;
-	
+	DATA_BLOB buffer;
+	uint32_t offered = 0;
+	union spoolss_FormInfo info;
+	uint32_t needed;
+
 	/* Parse the command arguments */
 
 	if (argc != 3) {
@@ -1860,13 +1879,34 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Get the form */
 
-	werror = rpccli_spoolss_getform(cli, mem_ctx, &handle, argv[2], 1, &form);
+	status = rpccli_spoolss_GetForm(cli, mem_ctx,
+					&handle,
+					argv[2],
+					1,
+					NULL,
+					offered,
+					&info,
+					&needed,
+					&werror);
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		buffer = data_blob_talloc(mem_ctx, NULL, needed);
+		offered = needed;
+		status = rpccli_spoolss_GetForm(cli, mem_ctx,
+						&handle,
+						argv[2],
+						1,
+						&buffer,
+						offered,
+						&info,
+						&needed,
+						&werror);
+	}
 
-	if (!W_ERROR_IS_OK(werror))
-		goto done;
+	if (!NT_STATUS_IS_OK(status)) {
+		return werror;
+	}
 
-	display_form(&form);
-
+	display_form_info1(&info.info1);
  done:
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
