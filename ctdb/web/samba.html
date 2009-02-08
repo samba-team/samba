@@ -65,10 +65,16 @@ A suitable file can be found in the dbench distribution at http://samba.org/ftp/
 <h3>CTDB_MANAGES_SAMBA</h3>
 This is a parameter in /etc/sysconfig/ctdb<br><br>
 When this parameter is set to "yes" CTDB will start/stop/restart the local samba daemon as the cluster configuration changes.<br><br>
-When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots:
+When this parameter is set you should also make sure that samba is NOT started by default by the linux system when it boots, e.g.
 <pre>
-  chkconfig samba off
+  chkconfig smb off
 </pre>
+on a Redhat system and
+<pre>
+  chkconfig smb off
+  chkconfig nmb off
+</pre>
+on a SuSE system.
 
 Example:
 <pre>

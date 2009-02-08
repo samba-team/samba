@@ -13,12 +13,30 @@ loadconfig() {
     fi
 }
 
+##############################################################
+# determine on what type of system (init style) we are running
+detect_init_style() {
+    # only do detection if not already set:
+    test "x$CTDB_INIT_STYLE" != "x" && return
+
+    if [ -x /sbin/startproc ]; then
+        CTDB_INIT_STYLE="suse"
+    elif [ -x /sbin/start-stop-daemon ]; then
+        CTDB_INIT_STYLE="ubuntu"
+    else
+        CTDB_INIT_STYLE="redhat"
+    fi
+}
 
 ######################################################
 # simulate /sbin/service on platforms that don't have it
 service() { 
   service_name="$1"
   op="$2"
+
+  # do nothing, when no service was specified
+  test "x$service_name" = "x" && return
+
   if [ -x /sbin/service ]; then
       /sbin/service "$service_name" "$op"
   elif [ -x /etc/init.d/$service_name ]; then
@@ -33,6 +51,10 @@ service() {
 nice_service() { 
   service_name="$1"
   op="$2"
+
+  # do nothing, when no service was specified
+  test "x$service_name" = "x" && return
+
   if [ -x /sbin/service ]; then
       nice /sbin/service "$service_name" "$op"
   elif [ -x /etc/init.d/$service_name ]; then
@@ -183,17 +205,41 @@ ctdb_check_tcp_ports() {
   shift
   wait_ports="$*"
   [ -z "$wait_ports" ] && return;
+
+  # check availability of netcat or netstat first
+  NETCAT=""
+  NETSTAT=""
+  if [ -x /usr/bin/netstat ]; then
+      NETSTAT=/usr/bin/netstat
+  elif [ -x /bin/netstat ]; then
+      NETSTAT=/bin/netstat
+  elif [ -x /usr/bin/netcat ]; then
+      NETCAT=/usr/bin/netcat
+  elif [ -x /bin/netcat ]; then
+      NETCAT=/bin/netcat
+  elif [ -x /usr/bin/nc ]; then
+      NETCAT=/usr/bin/nc
+  elif [ -x /bin/nc ]; then
+      NETCAT=/bin/nc
+  fi
+
   for p in $wait_ports; do
       all_ok=1
-      if [ -x /usr/bin/netcat ]; then
-          /usr/bin/netcat -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ -x /usr/bin/nc ]; then
-          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
-      elif [ -x /usr/bin/netstat ]; then
-          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
-      elif [ -x /bin/netstat ]; then
-          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
+
+      if [ "x${NETCAT}" != "x" ]; then
+          ${NETCAT} -z 127.0.0.1 $p > /dev/null || all_ok=0
+      elif [ "x${NETSTAT}" != "x" ]; then
+          if ! ${NETSTAT} -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ; then
+              if ! ${NETSTAT} -a -n | egrep ":::$p .*LISTEN" > /dev/null ; then
+                  all_ok=0
+              fi
+          fi
+      else
+          echo "ERROR: neither netcat (or nc) nor netstat found!"
+          echo "ERROR: can't monitor ${service_name} tcp port ${p}"
+          all_ok=0
       fi
+
       [ $all_ok -eq 1 ] || {
 	  echo "ERROR: $service_name tcp port $p is not responding"
 	  exit 1

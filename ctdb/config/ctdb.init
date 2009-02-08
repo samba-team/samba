@@ -12,7 +12,7 @@
 ### BEGIN INIT INFO
 # Provides:            ctdb
 # Required-Start:      $network
-# Required-Stop:
+# Required-Stop:       $network
 # Default-Stop:
 # Default-Start:       3 5
 # Short-Description:   start and stop ctdb service
@@ -80,19 +80,16 @@ CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 	CTDB_OPTIONS="$CTDB_OPTIONS --script-log-level=$CTDB_SCRIPT_LOG_LEVEL"
 }
 
-if [ "$CTDB_VALGRIND" = "yes" ]; then
-    init_style="valgrind"
-else if [ -x /sbin/startproc ]; then
-    init_style="suse"
-else if [ -x /sbin/start-stop-daemon ]; then
-	init_style="ubuntu"
-    else
-	init_style="redhat"
-    fi
-fi
+detect_init_style
+export CTDB_INIT_STYLE
+
+if [ "x$CTDB_VALGRIND" = "xyes" ]; then
+	init_style="valgrind"
+else
+	init_style="$CTDB_INIT_STYLE"
 fi
 
-reset_retval() {
+set_retval() {
 	return $1
 }
 

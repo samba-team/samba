@@ -20,8 +20,6 @@
 #ifndef _CTDB_H
 #define _CTDB_H
 
-#include <netinet/in.h>
-
 #define CTDB_IMMEDIATE_MIGRATION	0x00000001
 struct ctdb_call {
 	int call_id;

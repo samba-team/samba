@@ -1,5 +1,5 @@
 #!/bin/sh
-# event strict to manage httpd in a cluster environment
+# event sript to manage httpd in a cluster environment
 
 . $CTDB_BASE/functions
 loadconfig ctdb

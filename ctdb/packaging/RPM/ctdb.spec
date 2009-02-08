@@ -4,8 +4,8 @@ Summary: Clustered TDB
 Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
-Version: 1.0
-Release: 69
+Version: 1.0.71
+Release: 1
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -34,7 +34,14 @@ ctdb is the clustered database used by samba
 
 %build
 
-CC="gcc"
+## check for ccache
+if ccache -h >/dev/null 2>&1 ; then
+	CC="ccache gcc"
+else
+	CC="gcc"
+fi
+
+export CC
 
 ## always run autogen.sh
 ./autogen.sh
@@ -121,6 +128,18 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Mon Feb 2 2009 : Version 1.0.71
+ - Additional ipv6 fixes from Michael Adams
+* Fri Jan 16 2009 : Version 1.0.70
+ - IPv6 support is completed. this is backward compatible with ipv4-only
+   systems. To use IPv6 with samba and ctdb you need current GIT of samba 3.3
+   or michael adams samba-ctdeb branch.
+ - Many enhancements to the build system and scripts to make it more SUSE
+   friendly by Michael Adams.
+ - Change of how the naming of the package is structured. We are now
+   using "1.0.70" as a release and "-1" as the revision instead of as
+   previously using "1.0" as release and ".70" as the revision.
+   By Michael Adams.
 * Thu Dec 18 2008 : Version 1.0.69
  - Various fixes to scripts by M Adam
  - Dont call ctdb_fatal() when the transport is down during shutdown

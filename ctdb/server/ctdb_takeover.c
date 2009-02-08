@@ -485,6 +485,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 	for (i=0;i<nlines;i++) {
 		unsigned mask;
 		ctdb_sock_addr addr;
+		const char *addrstr;
 		const char *iface;
 		char *tok, *line;
 
@@ -499,11 +500,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			continue;
 		}
 		tok = strtok(line, " \t");
-		if (!tok || !parse_ip_mask(tok, &addr, &mask)) {
-			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
-			talloc_free(lines);
-			return -1;
-		}
+		addrstr = tok;
 		tok = strtok(NULL, " \t");
 		if (tok == NULL) {
 			if (NULL == ctdb->default_public_interface) {
@@ -517,6 +514,11 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 			iface = tok;
 		}
 
+		if (!addrstr || !parse_ip_mask(addrstr, iface, &addr, &mask)) {
+			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
+			talloc_free(lines);
+			return -1;
+		}
 		if (ctdb_add_public_address(ctdb, &addr, mask, iface)) {
 			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);

@@ -194,12 +194,22 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
   we try to bind to it, and if that fails then we don't have that IP
   on an interface
  */
-bool ctdb_sys_have_ip(ctdb_sock_addr *addr)
+bool ctdb_sys_have_ip(ctdb_sock_addr *_addr)
 {
 	int s;
 	int ret;
+	ctdb_sock_addr __addr = *_addr;
+	ctdb_sock_addr *addr = &__addr;
 	
-	addr->ip.sin_port = 0;
+	switch (addr->sa.sa_family) {
+	case AF_INET:
+		addr->ip.sin_port = 0;
+		break;
+	case AF_INET6:
+		addr->ip6.sin6_port = 0;
+		break;
+	}
+
 	s = socket(addr->sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s == -1) {
 		return false;

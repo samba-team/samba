@@ -381,7 +381,7 @@ bool parse_ipv4(const char *s, unsigned port, struct sockaddr_in *sin)
 	return true;
 }
 
-static bool parse_ipv6(const char *s, unsigned port, ctdb_sock_addr *saddr)
+static bool parse_ipv6(const char *s, const char *iface, unsigned port, ctdb_sock_addr *saddr)
 {
 	saddr->ip6.sin6_family   = AF_INET6;
 	saddr->ip6.sin6_port     = htons(port);
@@ -391,6 +391,10 @@ static bool parse_ipv6(const char *s, unsigned port, ctdb_sock_addr *saddr)
 	if (inet_pton(AF_INET6, s, &saddr->ip6.sin6_addr) != 1) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to translate %s into sin6_addr\n", s));
 		return false;
+	}
+
+	if (iface && IN6_IS_ADDR_LINKLOCAL(&saddr->ip6.sin6_addr)) {
+		saddr->ip6.sin6_scope_id = if_nametoindex(iface);
 	}
 
 	return true;
@@ -431,12 +435,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(s, ':');
-	if (p == NULL) {
-		ret = parse_ipv4(s, port, &saddr->ip);
-	} else {
-		ret = parse_ipv6(s, port, saddr);
-	}
+	ret = parse_ip(s, NULL, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;
@@ -445,7 +444,7 @@ bool parse_ip_port(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse an ip
  */
-bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
+bool parse_ip(const char *addr, const char *iface, ctdb_sock_addr *saddr)
 {
 	char *p;
 	bool ret;
@@ -455,7 +454,7 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
 	if (p == NULL) {
 		ret = parse_ipv4(addr, 0, &saddr->ip);
 	} else {
-		ret = parse_ipv6(addr, 0, saddr);
+		ret = parse_ipv6(addr, iface, 0, saddr);
 	}
 
 	return ret;
@@ -464,7 +463,7 @@ bool parse_ip(const char *addr, ctdb_sock_addr *saddr)
 /*
   parse a ip/mask pair
  */
-bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
+bool parse_ip_mask(const char *str, const char *iface, ctdb_sock_addr *addr, unsigned *mask)
 {
 	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 	char *s, *p;
@@ -497,12 +496,7 @@ bool parse_ip_mask(const char *str, ctdb_sock_addr *addr, unsigned *mask)
 
 
 	/* now is this a ipv4 or ipv6 address ?*/
-	p = index(s, ':');
-	if (p == NULL) {
-		ret = parse_ipv4(s, 0, &addr->ip);
-	} else {
-		ret = parse_ipv6(s, 0, addr);
-	}
+	ret = parse_ip(s, iface, addr);
 
 	talloc_free(tmp_ctx);
 	return ret;

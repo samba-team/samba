@@ -376,104 +376,56 @@ only be present if an error occured.
 
 Example : RECOVERY LOG ON RECMASTER
 ====================================
-2008/12/01 09:57:28.110732 [ 4933]: 10.0.0.21:4379: node 10.0.0.24:4379 is dead:
- 2 connected
+2008/12/01 09:57:28.110732 [ 4933]: 10.0.0.21:4379: node 10.0.0.24:4379 is dead: 2 connected
 2008/12/01 09:57:28.110838 [ 4933]: Tearing down connection to dead node :3
-2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:2682 The vnnmap count
- is different from the number of active nodes. 4 vs 3
-2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1327 Starting do_reco
-very
-2008/12/01 09:57:28.967297 [ 4935]: ctdb_recovery_lock: Got recovery lock on '/g
-pfs/.ctdb/shared'
-2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1355 Recovery initiat
-ed due to problem with node 0
-2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1381 Recovery - creat
-ed remote databases
-2008/12/01 09:57:28.973543 [ 4933]: server/ctdb_recover.c:589 Recovery mode set 
-to ACTIVE
-2008/12/01 09:57:28.974823 [ 4933]: server/ctdb_recover.c:904 startrecovery even
-tscript has been invoked
-2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1431 started transact
-ions on all nodes
-2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x42fe72c5
-2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x42fe72c5 of size 0
-2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x1421fb78
-2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x1421fb78 of size 0
-2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0xc0bdde6a
-2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0xc0bdde6a of size 0
-2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x17055d90
-2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x17055d90 of size 8
-2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x7bbbd26c
-2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x7bbbd26c of size 1
-2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0xf2a58948
-2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0xf2a58948 of size 51
-2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x92380e87
-2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x92380e87 of size 17
-2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x63501287
-2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x63501287 of size 1
-2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0xe98e08b6
-2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0xe98e08b6 of size 4
-2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0x2672a57f
-2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0x2672a57f of size 28
-2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulle
-d remote database 0xb775fff6
-2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushe
-d remote database 0xb775fff6 of size 6
-2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1440 Recovery - start
-ing database commits
-2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1452 Recovery - commi
-tted databases
-2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1502 Recovery - updat
-ed vnnmap
-2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1511 Recovery - updat
-ed recmaster
-2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1522 Recovery - updat
-ed flags
-2008/12/01 09:57:29.305235 [ 4933]: server/ctdb_recover.c:589 Recovery mode set 
-to NORMAL
-2008/12/01 09:57:29.307245 [ 4935]: server/ctdb_recoverd.c:1531 Recovery - disab
-led recovery mode
-2008/12/01 09:57:29.307245 [ 4935]: Deterministic IPs enabled. Resetting all ip 
-allocations
-2008/12/01 09:57:29.311071 [ 4933]: takeoverip called for an ip '10.0.0.201' tha
-t is not a public address
-2008/12/01 09:57:29.311186 [ 4933]: takeoverip called for an ip '10.0.0.202' tha
-t is not a public address
-2008/12/01 09:57:29.311204 [ 4933]: takeoverip called for an ip '10.0.0.203' tha
-t is not a public address
-2008/12/01 09:57:29.311299 [ 4933]: takeoverip called for an ip '10.0.0.204' tha
-t is not a public address
-2008/12/01 09:57:29.537210 [ 4935]: server/ctdb_recoverd.c:1542 Recovery - takei
-p finished
+2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:2682 The vnnmap count is different from the number of active nodes. 4 vs 3
+2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1327 Starting do_recovery
+2008/12/01 09:57:28.967297 [ 4935]: ctdb_recovery_lock: Got recovery lock on '/gpfs/.ctdb/shared'
+2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1355 Recovery initiated due to problem with node 0
+2008/12/01 09:57:28.967297 [ 4935]: server/ctdb_recoverd.c:1381 Recovery - created remote databases
+2008/12/01 09:57:28.973543 [ 4933]: server/ctdb_recover.c:589 Recovery mode set to ACTIVE
+2008/12/01 09:57:28.974823 [ 4933]: server/ctdb_recover.c:904 startrecovery eventscript has been invoked
+2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1431 started transactions on all nodes
+2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x42fe72c5
+2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x42fe72c5 of size 0
+2008/12/01 09:57:29.187264 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x1421fb78
+2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x1421fb78 of size 0
+2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0xc0bdde6a
+2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0xc0bdde6a of size 0
+2008/12/01 09:57:29.197262 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x17055d90
+2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x17055d90 of size 8
+2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x7bbbd26c
+2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x7bbbd26c of size 1
+2008/12/01 09:57:29.207261 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0xf2a58948
+2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0xf2a58948 of size 51
+2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x92380e87
+2008/12/01 09:57:29.217259 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x92380e87 of size 17
+2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x63501287
+2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x63501287 of size 1
+2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0xe98e08b6
+2008/12/01 09:57:29.227258 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0xe98e08b6 of size 4
+2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0x2672a57f
+2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0x2672a57f of size 28
+2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1268 Recovery - pulled remote database 0xb775fff6
+2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1230 Recovery - pushed remote database 0xb775fff6 of size 6
+2008/12/01 09:57:29.237256 [ 4935]: server/ctdb_recoverd.c:1440 Recovery - starting database commits
+2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1452 Recovery - committed databases
+2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1502 Recovery - updated vnnmap
+2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1511 Recovery - updated recmaster
+2008/12/01 09:57:29.297247 [ 4935]: server/ctdb_recoverd.c:1522 Recovery - updated flags
+2008/12/01 09:57:29.305235 [ 4933]: server/ctdb_recover.c:589 Recovery mode set to NORMAL
+2008/12/01 09:57:29.307245 [ 4935]: server/ctdb_recoverd.c:1531 Recovery - disabled recovery mode
+2008/12/01 09:57:29.307245 [ 4935]: Deterministic IPs enabled. Resetting all ip allocations
+2008/12/01 09:57:29.311071 [ 4933]: takeoverip called for an ip '10.0.0.201' that is not a public address
+2008/12/01 09:57:29.311186 [ 4933]: takeoverip called for an ip '10.0.0.202' that is not a public address
+2008/12/01 09:57:29.311204 [ 4933]: takeoverip called for an ip '10.0.0.203' that is not a public address
+2008/12/01 09:57:29.311299 [ 4933]: takeoverip called for an ip '10.0.0.204' that is not a public address
+2008/12/01 09:57:29.537210 [ 4935]: server/ctdb_recoverd.c:1542 Recovery - takeip finished
 2008/12/01 09:57:29.545404 [ 4933]: Recovery has finished
-2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1551 Recovery - finis
-hed the recovered event
-2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1557 Recovery complet
-e
-2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1565 New recoveries s
-upressed for the rerecovery timeout
-2008/12/01 09:57:39.815648 [ 4935]: server/ctdb_recoverd.c:1567 Rerecovery timeo
-ut elapsed. Recovery reactivated.
+2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1551 Recovery - finished the recovered event
+2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1557 Recovery complete
+2008/12/01 09:57:29.807169 [ 4935]: server/ctdb_recoverd.c:1565 New recoveries supressed for the rerecovery timeout
+2008/12/01 09:57:39.815648 [ 4935]: server/ctdb_recoverd.c:1567 Rerecovery timeout elapsed. Recovery reactivated.
 
 
 

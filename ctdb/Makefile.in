@@ -187,8 +187,8 @@ install: all
 	${INSTALLCMD} -m 644 include/ctdb_private.h $(DESTDIR)$(includedir) # for samba3
 	${INSTALLCMD} -m 644 config/functions $(DESTDIR)$(etcdir)/ctdb
 	${INSTALLCMD} -m 755 config/statd-callout $(DESTDIR)$(etcdir)/ctdb
-	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)/$(docdir)/ctdb/README.eventscripts
-	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)/$(docdir)/ctdb/recovery-process.txt
+	${INSTALLCMD} -m 644 config/events.d/README $(DESTDIR)$(docdir)/ctdb/README.eventscripts
+	${INSTALLCMD} -m 644 doc/recovery-process.txt $(DESTDIR)$(docdir)/ctdb/recovery-process.txt
 	${INSTALLCMD} -m 755 config/events.d/00.ctdb $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/10.interface $(DESTDIR)$(etcdir)/ctdb/events.d
 	${INSTALLCMD} -m 755 config/events.d/20.multipathd $(DESTDIR)$(etcdir)/ctdb/events.d
