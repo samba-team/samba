@@ -573,8 +573,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	}
 
 	result->sam_account = sampass;
-	/* Ensure that the sampass will be freed with the result */
-	talloc_steal(result, sampass);
 	result->unix_name = pwd->pw_name;
 	/* Ensure that we keep pwd->pw_name, because we will free pwd below */
 	talloc_steal(result, pwd->pw_name);
@@ -665,6 +663,8 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		 pdb_get_username(sampass), result->unix_name));
 
 	*server_info = result;
+	/* Ensure that the sampass will be freed with the result */
+	talloc_steal(result, sampass);
 
 	return NT_STATUS_OK;
 }
