@@ -7248,6 +7248,27 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 /****************************************************************************
 ****************************************************************************/
 
+static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
+			       struct spoolss_FormInfo1 *form,
+			       nt_forms_struct *list)
+{
+	form->form_name		= talloc_strdup(mem_ctx, list->name);
+	W_ERROR_HAVE_NO_MEMORY(form->form_name);
+
+	form->flags		= list->flag;
+	form->size.width	= list->width;
+	form->size.height	= list->length;
+	form->area.left		= list->left;
+	form->area.top		= list->top;
+	form->area.right	= list->right;
+	form->area.bottom	= list->bottom;
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
 	uint32 level = q_u->level;
