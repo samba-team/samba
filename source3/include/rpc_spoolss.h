@@ -1263,24 +1263,6 @@ typedef struct spool_r_enumforms
 }
 SPOOL_R_ENUMFORMS;
 
-typedef struct spool_q_getform
-{
-	POLICY_HND handle;
-	UNISTR2 formname;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETFORM;
-
-typedef struct spool_r_getform
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETFORM;
-
 typedef struct spool_printer_info_level_1
 {
 	uint32 flags;

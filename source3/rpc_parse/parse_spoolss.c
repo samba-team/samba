@@ -4094,65 +4094,6 @@ bool spoolss_io_r_enumforms(const char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct
 }
 
 /*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_getform(const char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth)
-{
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_getform");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;			
-	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;		
-	if (!smb_io_unistr2("", &q_u->formname,True,ps,depth))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("level", ps, depth, &q_u->level))
-		return False;	
-	
-	if (!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_getform(const char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_getform");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("size of buffer needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Parse a SPOOL_R_ENUMPORTS structure.
 ********************************************************************/  
 
@@ -6826,23 +6767,6 @@ bool smb_io_printprocessordirectory_1(const char *desc, RPC_BUFFER *buffer, PRIN
 		return False;
 
 	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
-                            const char *formname, uint32 level, 
-			    RPC_BUFFER *buffer, uint32 offered)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-        q_u->level = level;
-        init_unistr2(&q_u->formname, formname, UNI_STR_TERMINATE);
-        q_u->buffer=buffer;
-        q_u->offered=offered;
-
-        return True;
 }
 
 /*******************************************************************
