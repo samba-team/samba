@@ -5469,9 +5469,6 @@ WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      char *name, char *environment,
 					      fstring procdir);
-WERROR rpccli_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, 
-			   const char *form_name, FORM *form);
 WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			   POLICY_HND *handle, const char *formname, 
 			   uint32 level, FORM_1 *form);
@@ -6053,8 +6050,6 @@ bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, 
 bool spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_resetprinter(const char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_resetprinter(const char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_setform(const char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_setform(const char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getjob(const char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_getjob(const char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth);
 void free_devmode(DEVICEMODE *devmode);
@@ -6101,8 +6096,6 @@ bool make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTOR
 bool spoolss_io_q_getprintprocessordirectory(const char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprintprocessordirectory(const char *desc, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u, prs_struct *ps, int depth);
 bool smb_io_printprocessordirectory_1(const char *desc, RPC_BUFFER *buffer, PRINTPROCESSOR_DIRECTORY_1 *info, int depth);
-bool make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
-			    int level, const char *form_name, FORM *form);
 bool make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle, 
                             const char *formname, uint32 level, 
 			    RPC_BUFFER *buffer, uint32 offered);
@@ -6353,7 +6346,6 @@ WERROR _spoolss_enumprinterdata(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATA *q_u, S
 WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SPOOL_R_SETPRINTERDATA *r_u);
 WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u);
 WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u);
-WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u);
 WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, SPOOL_R_ENUMPRINTPROCESSORS *r_u);
 WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u);
 WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_u, SPOOL_R_ENUMPRINTMONITORS *r_u);

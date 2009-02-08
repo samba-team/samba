@@ -5783,93 +5783,6 @@ bool spoolss_io_r_resetprinter(const char *desc, SPOOL_R_RESETPRINTER *r_u, prs_
 }
 
 /*******************************************************************
-********************************************************************/  
-
-static bool spoolss_io_addform(const char *desc, FORM *f, uint32 ptr, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_addform");
-	depth++;
-	if(!prs_align(ps))
-		return False;
-
-	if (ptr!=0)
-	{
-		if(!prs_uint32("flags",    ps, depth, &f->flags))
-			return False;
-		if(!prs_uint32("name_ptr", ps, depth, &f->name_ptr))
-			return False;
-		if(!prs_uint32("size_x",   ps, depth, &f->size_x))
-			return False;
-		if(!prs_uint32("size_y",   ps, depth, &f->size_y))
-			return False;
-		if(!prs_uint32("left",     ps, depth, &f->left))
-			return False;
-		if(!prs_uint32("top",      ps, depth, &f->top))
-			return False;
-		if(!prs_uint32("right",    ps, depth, &f->right))
-			return False;
-		if(!prs_uint32("bottom",   ps, depth, &f->bottom))
-			return False;
-
-		if(!smb_io_unistr2("", &f->name, f->name_ptr, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_setform(const char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
-{
-	uint32 useless_ptr=1;
-	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if(!smb_io_unistr2("", &q_u->name, True, ps, depth))
-		return False;
-	      
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("level",  ps, depth, &q_u->level))
-		return False;
-	if(!prs_uint32("level2", ps, depth, &q_u->level2))
-		return False;
-
-	if (q_u->level==1)
-	{
-		if(!prs_uint32("useless_ptr", ps, depth, &useless_ptr))
-			return False;
-		if(!spoolss_io_addform("", &q_u->form, useless_ptr, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_setform(const char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_setform");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_werror("status",	ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Parse a SPOOL_R_GETJOB structure.
 ********************************************************************/  
 
@@ -6911,22 +6824,6 @@ bool smb_io_printprocessordirectory_1(const char *desc, RPC_BUFFER *buffer, PRIN
 
 	if (!smb_io_unistr(desc, &info->name, ps, depth))
 		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_setform(SPOOL_Q_SETFORM *q_u, POLICY_HND *handle, 
-			    int level, const char *form_name, FORM *form)
-{
-	memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	q_u->level = level;
-	q_u->level2 = level;
-	memcpy(&q_u->form, form, sizeof(FORM));
-	init_unistr2(&q_u->name, form_name, UNI_STR_TERMINATE);
 
 	return True;
 }
