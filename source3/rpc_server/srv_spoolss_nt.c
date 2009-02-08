@@ -8580,7 +8580,7 @@ WERROR _spoolss_DeleteForm(pipes_struct *p,
 
 	count = get_ntforms(&list);
 
-	if ( !delete_a_form_by_string(&list, form_name, &count, &status ))
+	if ( !delete_a_form(&list, form_name, &count, &status ))
 		goto done;
 
 	/*

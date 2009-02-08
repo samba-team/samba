@@ -940,7 +940,7 @@ bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *
  Delete a named form struct.
 ****************************************************************************/
 
-bool delete_a_form_by_string(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret)
+bool delete_a_form(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret)
 {
 	char *key = NULL;
 	int n=0;
@@ -971,15 +971,6 @@ bool delete_a_form_by_string(nt_forms_struct **list, const char *del_name, int *
 	}
 	SAFE_FREE(key);
 	return true;
-}
-
-bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret)
-{
-	fstring form_name;
-
-	unistr2_to_ascii(form_name, del_name, sizeof(form_name));
-
-	return delete_a_form_by_string(list, form_name, count, ret);
 }
 
 /****************************************************************************
