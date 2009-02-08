@@ -1827,7 +1827,7 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 		return WERR_NOMEM;
 	}
 	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1])) {
+	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
 		SAFE_FREE(servername);
 		return WERR_NOMEM;
 	}
