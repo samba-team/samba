@@ -986,28 +986,26 @@ bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
  Update a form struct.
 ****************************************************************************/
 
-void update_a_form(nt_forms_struct **list, const FORM *form, int count)
+void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count)
 {
 	int n=0;
-	fstring form_name;
-	unistr2_to_ascii(form_name, &(form->name), sizeof(form_name));
 
-	DEBUG(106, ("[%s]\n", form_name));
+	DEBUG(106, ("[%s]\n", form->form_name));
 	for (n=0; n<count; n++) {
 		DEBUGADD(106, ("n [%d]:[%s]\n", n, (*list)[n].name));
-		if (!strncmp((*list)[n].name, form_name, strlen(form_name)))
+		if (!strncmp((*list)[n].name, form->form_name, strlen(form->form_name)))
 			break;
 	}
 
 	if (n==count) return;
 
-	(*list)[n].flag=form->flags;
-	(*list)[n].width=form->size_x;
-	(*list)[n].length=form->size_y;
-	(*list)[n].left=form->left;
-	(*list)[n].top=form->top;
-	(*list)[n].right=form->right;
-	(*list)[n].bottom=form->bottom;
+	(*list)[n].flag		= form->flags;
+	(*list)[n].width	= form->size.width;
+	(*list)[n].length	= form->size.height;
+	(*list)[n].left		= form->area.left;
+	(*list)[n].top		= form->area.top;
+	(*list)[n].right	= form->area.right;
+	(*list)[n].bottom	= form->area.bottom;
 }
 
 /****************************************************************************

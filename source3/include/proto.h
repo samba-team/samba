@@ -4794,7 +4794,7 @@ int write_ntforms(nt_forms_struct **list, int number);
 bool add_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int *count);
 bool delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR *ret);
 bool delete_a_form_by_string(nt_forms_struct **list, const char *del_name, int *count, WERROR *ret);
-void update_a_form(nt_forms_struct **list, const FORM *form, int count);
+void update_a_form(nt_forms_struct **list, struct spoolss_AddFormInfo1 *form, int count);
 int get_ntdrivers(fstring **list, const char *architecture, uint32 version);
 const char *get_short_archi(const char *long_archi);
 WERROR clean_up_driver_struct(struct pipes_struct *rpc_pipe,

@@ -8598,13 +8598,15 @@ done:
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_SetForm
+****************************************************************/
 
-WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u)
+WERROR _spoolss_SetForm(pipes_struct *p,
+			struct spoolss_SetForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	FORM *form = &q_u->form;
+	POLICY_HND *handle = r->in.handle;
+	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
 	int snum;
 	WERROR status = WERR_OK;
@@ -8614,10 +8616,11 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
- 	DEBUG(5,("spoolss_setform\n"));
+	DEBUG(5,("_spoolss_SetForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8634,13 +8637,13 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	}
 
 	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
+		DEBUG(2,("_spoolss_SetForm: denied by handle permissions\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
 	/* can't set if builtin */
-	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -10217,17 +10220,6 @@ WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
 
 WERROR _spoolss_GetForm(pipes_struct *p,
 			struct spoolss_GetForm *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_SetForm
-****************************************************************/
-
-WERROR _spoolss_SetForm(pipes_struct *p,
-			struct spoolss_SetForm *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
