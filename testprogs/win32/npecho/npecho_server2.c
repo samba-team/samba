@@ -15,16 +15,32 @@ int main(int argc, char *argv[])
 	HANDLE h;
 	DWORD numread = 0;
 	char *outbuffer = malloc(sizeof(ECHODATA));
+	BOOL msgmode = FALSE;
+	DWORD type = 0;
 
 	if (argc == 1) {
-		printf("Usage: %s pipename\n", argv[0]);
-		printf("  Where pipename is something like \\\\servername\\NPECHO\n");
-		return -1;
+		goto usage;
+	} else if (argc >= 3) {
+		if (strcmp(argv[2], "byte") == 0) {
+			msgmode = FALSE;
+		} else if (strcmp(argv[2], "message") == 0) {
+			msgmode = TRUE;
+		} else {
+			goto usage;
+		}
+	}
+
+	if (msgmode == TRUE) {
+		printf("using message mode\n");
+		type = PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT;
+	} else {
+		printf("using byte mode\n");
+		type = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT;
 	}
 
 	h = CreateNamedPipe(argv[1],
 			    PIPE_ACCESS_DUPLEX,
-			    PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
+			    type,
 			    PIPE_UNLIMITED_INSTANCES,
 			    1024,
 			    1024,
@@ -52,4 +68,9 @@ int main(int argc, char *argv[])
 	CloseHandle(h);
 
 	return 0;
+usage:
+	printf("Usage: %s pipename [mode]\n", argv[0]);
+	printf("  Where pipename is something like \\\\servername\\PIPE\\NPECHO\n");
+	printf("  Where mode is 'byte' or 'message'\n");
+	return -1;
 }

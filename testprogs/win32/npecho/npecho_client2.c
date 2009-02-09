@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	Sleep(1000);
+	Sleep(5000);
 
 	if (!ReadFile(h, outbuffer, sizeof(ECHODATA)*2, &numread, NULL)) {
 		printf("Error reading: %d\n", GetLastError());
