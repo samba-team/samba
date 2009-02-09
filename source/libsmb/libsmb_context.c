@@ -94,6 +94,7 @@ smbc_new_context(void)
         smbc_setFunctionLseek(context, SMBC_lseek_ctx);
         smbc_setFunctionFtruncate(context, SMBC_ftruncate_ctx);
         smbc_setFunctionStat(context, SMBC_stat_ctx);
+        smbc_setFunctionFstatVFS(context, SMBC_fstatvfs_ctx);
         smbc_setFunctionFstat(context, SMBC_fstat_ctx);
         smbc_setFunctionOpendir(context, SMBC_opendir_ctx);
         smbc_setFunctionClosedir(context, SMBC_closedir_ctx);
