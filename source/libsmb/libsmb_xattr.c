@@ -1501,7 +1501,7 @@ cacl_set(TALLOC_CTX *ctx,
          struct cli_state *ipc_cli,
          POLICY_HND *pol,
          const char *filename,
-         const char *the_acl,
+         char *the_acl,
          int mode,
          int flags)
 {
@@ -1531,8 +1531,7 @@ cacl_set(TALLOC_CTX *ctx,
                         the_acl = p + 1;
                 }
                 
-                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric,
-                                    CONST_DISCARD(char *, the_acl));
+                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, the_acl);
                 
                 if (!sd) {
 			errno = EINVAL;
@@ -2114,11 +2113,13 @@ SMBC_getxattr_ctx(SMBCCTX *context,
             StrCaseCmp(name, "system.dos_attr.inode") == 0) {
                 
                 /* Yup. */
+                char *filename = (char *) name;
                 ret = cacl_get(context, talloc_tos(), srv,
                                ipc_srv == NULL ? NULL : ipc_srv->cli, 
                                &ipc_srv->pol, path,
-                               CONST_DISCARD(char *, name),
-                               CONST_DISCARD(char *, value), size);
+                               filename,
+                               CONST_DISCARD(char *, value),
+                               size);
                 if (ret < 0 && errno == 0) {
                         errno = SMBC_errno(context, srv->cli);
                 }
@@ -2237,7 +2238,8 @@ SMBC_removexattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_set(talloc_tos(), srv->cli,
                                ipc_srv->cli, &ipc_srv->pol, path,
-                               name + 19, SMBC_XATTR_MODE_REMOVE, 0);
+                               CONST_DISCARD(char *, name) + 19,
+                               SMBC_XATTR_MODE_REMOVE, 0);
 		TALLOC_FREE(frame);
                 return ret;
         }
