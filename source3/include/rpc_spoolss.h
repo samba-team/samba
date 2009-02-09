@@ -526,19 +526,6 @@ typedef struct spool_r_getprinterdata
 }
 SPOOL_R_GETPRINTERDATA;
 
-typedef struct spool_q_deleteprinterdata
-{
-	POLICY_HND handle;
-	UNISTR2 valuename;
-}
-SPOOL_Q_DELETEPRINTERDATA;
-
-typedef struct spool_r_deleteprinterdata
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDATA;
-
 typedef struct spool_q_deleteprinterdriver
 {
 	uint32 server_ptr;
