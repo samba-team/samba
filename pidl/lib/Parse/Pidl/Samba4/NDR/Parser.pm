@@ -2173,7 +2173,7 @@ sub ParseFunctionPull($$)
 			if (grep(/in/, @{$e->{DIRECTION}})) {
 				$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, ($size) * sizeof(*r->in.$e->{NAME}));");
 			} else {
-				$self->pidl("memset(discard_const_p(struct $fn->{NAME} *, r->out.$e->{NAME}), 0, ($size) * sizeof(*r->out.$e->{NAME}));");
+				$self->pidl("memset(r->out.$e->{NAME}, 0, ($size) * sizeof(*r->out.$e->{NAME}));");
 			}
 		} else {
 			$self->pidl("NDR_PULL_ALLOC($ndr, r->out.$e->{NAME});");
