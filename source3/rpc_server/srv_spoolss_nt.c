@@ -5905,28 +5905,30 @@ WERROR _spoolss_EndPagePrinter(pipes_struct *p,
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+/****************************************************************
+ _spoolss_StartDocPrinter
+****************************************************************/
 
-WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, SPOOL_R_STARTDOCPRINTER *r_u)
+WERROR _spoolss_StartDocPrinter(pipes_struct *p,
+				struct spoolss_StartDocPrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	DOC_INFO *docinfo = &q_u->doc_info_container.docinfo;
-	uint32 *jobid = &r_u->jobid;
-	TALLOC_CTX *ctx = p->mem_ctx;
-	DOC_INFO_1 *info_1 = &docinfo->doc_info_1;
+	POLICY_HND *handle = r->in.handle;
+	uint32_t *jobid = r->out.job_id;
+	struct spoolss_DocumentInfo1 *info_1;
 	int snum;
-	char *jobname = NULL;
-	fstring datatype;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_startdocprinter: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_StartDocPrinter: "
+			"Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
+
+	if (r->in.level != 1) {
+		return WERR_UNKNOWN_LEVEL;
+	}
+
+	info_1 = r->in.info.info1;
 
 	/*
 	 * a nice thing with NT is it doesn't listen to what you tell it.
@@ -5936,9 +5938,8 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	 * So I add checks like in NT Server ...
 	 */
 
-	if (info_1->p_datatype != 0) {
-		unistr2_to_ascii(datatype, &info_1->datatype, sizeof(datatype));
-		if (strcmp(datatype, "RAW") != 0) {
+	if (info_1->datatype) {
+		if (strcmp(info_1->datatype, "RAW") != 0) {
 			(*jobid)=0;
 			return WERR_INVALID_DATATYPE;
 		}
@@ -5949,9 +5950,8 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 		return WERR_BADFID;
 	}
 
-	jobname = unistr2_to_ascii_talloc(ctx, &info_1->docname);
-
-	Printer->jobid = print_job_start(p->server_info, snum, jobname,
+	Printer->jobid = print_job_start(p->server_info, snum,
+					 CONST_DISCARD(char *,info_1->document_name),
 					 Printer->nt_devmode);
 
 	/* An error occured in print_job_start() so return an appropriate
@@ -10217,17 +10217,6 @@ WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 
 WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 					   struct spoolss_GetPrintProcessorDirectory *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_StartDocPrinter
-****************************************************************/
-
-WERROR _spoolss_StartDocPrinter(pipes_struct *p,
-				struct spoolss_StartDocPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
