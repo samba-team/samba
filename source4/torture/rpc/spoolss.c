@@ -1045,6 +1045,33 @@ static bool test_SetJob(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AddJob(struct torture_context *tctx,
+			struct dcerpc_pipe *p,
+			struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct spoolss_AddJob r;
+	uint32_t needed;
+
+	r.in.level = 0;
+	r.in.handle = handle;
+	r.in.offered = 0;
+	r.out.needed = &needed;
+
+	torture_comment(tctx, "Testing AddJob\n");
+
+	status = dcerpc_spoolss_AddJob(p, tctx, &r);
+	torture_assert_werr_equal(tctx, r.out.result, WERR_UNKNOWN_LEVEL, "AddJob failed");
+
+	r.in.level = 1;
+
+	status = dcerpc_spoolss_AddJob(p, tctx, &r);
+	torture_assert_werr_equal(tctx, r.out.result, WERR_INVALID_PARAM, "AddJob failed");
+
+	return true;
+}
+
+
 static bool test_EnumJobs(struct torture_context *tctx, 
 			  struct dcerpc_pipe *p, 
 			  struct policy_handle *handle)
@@ -1084,6 +1111,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 		info = r.out.info;
 
 		for (j = 0; j < count; j++) {
+
 			test_GetJob(tctx, p, handle, info[j].info1.job_id);
 			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
 			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
@@ -1163,6 +1191,7 @@ static bool test_DoPrintTest(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, "dcerpc_spoolss_EndDocPrinter failed");
 	torture_assert_werr_ok(tctx, e.out.result, "EndDocPrinter failed");
 
+	ret &= test_AddJob(tctx, p, handle);
 	ret &= test_EnumJobs(tctx, p, handle);
 
 	ret &= test_SetJob(tctx, p, handle, job_id, SPOOLSS_JOB_CONTROL_DELETE);
