@@ -1466,23 +1466,6 @@ typedef struct spool_r_getjob
 }
 SPOOL_R_GETJOB;
 
-typedef struct spool_q_replyopenprinter
-{
-	UNISTR2 string;
-	uint32 printer;
-	uint32 type;
-	uint32 unknown0;
-	uint32 unknown1;
-}
-SPOOL_Q_REPLYOPENPRINTER;
-
-typedef struct spool_r_replyopenprinter
-{
-	POLICY_HND handle;
-	WERROR status;
-}
-SPOOL_R_REPLYOPENPRINTER;
-
 typedef struct spool_q_rrpcn
 {
 	POLICY_HND handle;

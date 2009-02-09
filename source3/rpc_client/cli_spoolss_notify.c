@@ -29,42 +29,6 @@
  * back channel.
  */
 
-/* Send a ReplyOpenPrinter request.  This rpc is made by the printer
-   server to the printer client in response to a rffpcnex request.
-   The rrfpcnex request names a printer and a handle (the printerlocal
-   value) and this rpc establishes a back-channel over which printer
-   notifications are performed. */
-
-WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				      const char *printer, uint32 printerlocal, uint32 type, 
-				      POLICY_HND *handle)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_REPLYOPENPRINTER q;
-	SPOOL_R_REPLYOPENPRINTER r;
-	WERROR result = W_ERROR(ERRgeneral);
-	
-	/* Initialise input parameters */
-
-	make_spoolss_q_replyopenprinter(&q, printer, printerlocal, type);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_REPLYOPENPRINTER,
-		q, r,
-		qbuf, rbuf,
-		spoolss_io_q_replyopenprinter,
-		spoolss_io_r_replyopenprinter,
-		WERR_GENERAL_FAILURE );
-
-	/* Return result */
-
-	memcpy(handle, &r.handle, sizeof(r.handle));
-	result = r.status;
-
-	return result;
-}
-
 /*********************************************************************
  This SPOOLSS_REPLY_RRPCN function is used to send a change 
  notification event when the registration **did** use 
