@@ -1504,7 +1504,18 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x54 */
-	[todo] WERROR spoolss_DeletePrinterDriverEx(
+	typedef [public,bitmap32bit] bitmap {
+		DPD_DELETE_UNUSED_FILES		= 0x00000001,
+		DPD_DELETE_SPECIFIC_VERSION	= 0x00000002,
+		DPD_DELETE_ALL_FILES		= 0x00000004
+	} spoolss_DeleteDriverFlags;
+
+	WERROR spoolss_DeletePrinterDriverEx(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in] [string,charset(UTF16)] uint16 architecture[],
+		[in] [string,charset(UTF16)] uint16 driver[],
+		[in] spoolss_DeleteDriverFlags delete_flags,
+		[in] uint32 version
 	);
 
 	/******************/
