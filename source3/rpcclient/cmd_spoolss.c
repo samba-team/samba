@@ -1562,6 +1562,7 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result = WERR_OK;
+	NTSTATUS status;
 	fstring			servername;
 	int			i;
 	
@@ -1577,9 +1578,14 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++) {
 		/* make the call to remove the driver */
-		result = rpccli_spoolss_deleteprinterdriver(
-			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
-
+		status = rpccli_spoolss_DeletePrinterDriver(cli, mem_ctx,
+							    servername,
+							    archi_table[i].long_archi,
+							    argv[1],
+							    &result);
+		if (!NT_STATUS_IS_OK(status)) {
+			return result;
+		}
 		if ( !W_ERROR_IS_OK(result) ) {
 			if ( !W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ) {
 				printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
