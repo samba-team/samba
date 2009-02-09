@@ -1273,32 +1273,6 @@ WERROR rpccli_spoolss_enumjobs(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_setjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			  POLICY_HND *hnd, uint32 jobid, uint32 level, 
-			  uint32 command)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETJOB in;
-	SPOOL_R_SETJOB out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_setjob( &in, hnd, jobid, level, command );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_SETJOB,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_setjob,
-	            spoolss_io_r_setjob, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			  POLICY_HND *hnd, uint32 jobid, uint32 level,
 			  JOB_INFO_CTR *ctr)

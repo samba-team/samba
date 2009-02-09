@@ -3388,50 +3388,6 @@ bool spoolss_io_q_enumjobs(const char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *
 }
 
 /*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_setjob(const char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_setjob");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_setjob(const char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_setjob");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-	if(!prs_uint32("jobid", ps, depth, &q_u->jobid))
-		return False;
-	/* 
-	 * level is usually 0. If (level!=0) then I'm in trouble !
-	 * I will try to generate setjob command with level!=0, one day.
-	 */
-	if(!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-	if(!prs_uint32("command", ps, depth, &q_u->command))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Parse a SPOOL_R_ENUMPRINTERDRIVERS structure.
 ********************************************************************/  
 
@@ -6042,25 +5998,6 @@ bool make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle,
         q_u->level = level;
         q_u->buffer=buffer;
         q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_setjob(SPOOL_Q_SETJOB *q_u, POLICY_HND *handle, 
-			   uint32 jobid, uint32 level, uint32 command)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	q_u->jobid = jobid;
-        q_u->level = level;
-
-	/* Hmm - the SPOOL_Q_SETJOB structure has a JOB_INFO ctr in it but
-	   the server side code has it marked as unused. */
-
-        q_u->command = command;
 
 	return True;
 }

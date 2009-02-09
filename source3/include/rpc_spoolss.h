@@ -995,24 +995,6 @@ typedef struct job_info_info
 }
 JOB_INFO;
 
-typedef struct spool_q_setjob
-{
-	POLICY_HND handle;
-	uint32 jobid;
-	uint32 level;
-	JOB_INFO ctr;
-	uint32 command;
-
-}
-SPOOL_Q_SETJOB;
-
-typedef struct spool_r_setjob
-{
-	WERROR status;
-
-}
-SPOOL_R_SETJOB;
-
 typedef struct spool_q_enumprinterdrivers
 {
 	uint32 name_ptr;
