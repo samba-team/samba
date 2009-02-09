@@ -6872,10 +6872,12 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 	return wret;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_ScheduleJob
+****************************************************************/
 
-WERROR _spoolss_schedulejob( pipes_struct *p, SPOOL_Q_SCHEDULEJOB *q_u, SPOOL_R_SCHEDULEJOB *r_u)
+WERROR _spoolss_ScheduleJob(pipes_struct *p,
+			    struct spoolss_ScheduleJob *r)
 {
 	return WERR_OK;
 }
@@ -10162,17 +10164,6 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 
 WERROR _spoolss_ReadPrinter(pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_ScheduleJob
-****************************************************************/
-
-WERROR _spoolss_ScheduleJob(pipes_struct *p,
-			    struct spoolss_ScheduleJob *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

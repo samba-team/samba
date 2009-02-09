@@ -503,27 +503,7 @@ static bool api_spoolss_enumjobs(pipes_struct *p)
 
 static bool api_spoolss_schedulejob(pipes_struct *p)
 {
-	SPOOL_Q_SCHEDULEJOB q_u;
-	SPOOL_R_SCHEDULEJOB r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_schedulejob("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_schedulejob: unable to unmarshall SPOOL_Q_SCHEDULEJOB.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_schedulejob(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_schedulejob("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_schedulejob: unable to marshall SPOOL_R_SCHEDULEJOB.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_SCHEDULEJOB);
 }
 
 /****************************************************************************
