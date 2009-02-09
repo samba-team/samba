@@ -4563,7 +4563,7 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
 	if (is_myname_or_ipaddr(s))
 		 return WERR_CAN_NOT_COMPLETE;
 
-	return enum_all_printers_info_1(PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
+	return enum_all_printers_info_1(PRINTER_ENUM_NAME, buffer, offered, needed, returned);
 }
 
 /********************************************************************
