@@ -2589,6 +2589,7 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 					POLICY_HND *handle, struct sockaddr_storage *client_ss)
 {
 	WERROR result;
+	NTSTATUS status;
 
 	/*
 	 * If it's the first connection, contact the client
@@ -2620,14 +2621,15 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 
 	smb_connections++;
 
-	result = rpccli_spoolss_reply_open_printer(notify_cli_pipe,
-			talloc_tos(),
-			printer,
-			localprinter,
-			type,
-			handle);
-
-	if (!W_ERROR_IS_OK(result))
+	status = rpccli_spoolss_ReplyOpenPrinter(notify_cli_pipe, talloc_tos(),
+						 printer,
+						 localprinter,
+						 type,
+						 0,
+						 NULL,
+						 handle,
+						 &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
 		DEBUG(5,("srv_spoolss_reply_open_printer: Client RPC returned [%s]\n",
 			win_errstr(result)));
 
