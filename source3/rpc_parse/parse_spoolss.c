@@ -1395,48 +1395,6 @@ bool spoolss_io_r_deleteprinterdata(const char *desc, SPOOL_R_DELETEPRINTERDATA 
 }
 
 /*******************************************************************
- * read a structure.
- * called from spoolss_q_deleteprinterdataex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_deleteprinterdataex(const char *desc, SPOOL_Q_DELETEPRINTERDATAEX *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterdataex");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	
-	if (!smb_io_unistr2("keyname  ", &q_u->keyname, True, ps, depth))
-		return False;
-	if (!smb_io_unistr2("valuename", &q_u->valuename, True, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_deleteprinterdataex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_deleteprinterdataex(const char *desc, SPOOL_R_DELETEPRINTERDATAEX *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdataex");
-	depth++;
-	
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  * write a structure.
  * called from spoolss_r_getprinterdata (srv_spoolss.c)
  ********************************************************************/
@@ -6870,21 +6828,6 @@ bool make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u,
 {
         memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
 	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_deleteprinterdataex(SPOOL_Q_DELETEPRINTERDATAEX *q_u, 
-					POLICY_HND *handle, char *key,
-					char *value)
-{
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-	init_unistr2(&q_u->valuename, value, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->keyname, key, UNI_STR_TERMINATE);
 
 	return True;
 }

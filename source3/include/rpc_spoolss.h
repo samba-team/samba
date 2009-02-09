@@ -1819,21 +1819,6 @@ typedef struct spool_r_setprinterdataex
 SPOOL_R_SETPRINTERDATAEX;
 
 
-typedef struct spool_q_deleteprinterdataex
-{
-	POLICY_HND handle;
-	UNISTR2 keyname;
-	UNISTR2 valuename;
-}
-SPOOL_Q_DELETEPRINTERDATAEX;
-
-typedef struct spool_r_deleteprinterdataex
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDATAEX;
-
-
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
