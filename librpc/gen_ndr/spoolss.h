@@ -748,6 +748,11 @@ union spoolss_UserLevel {
 #define PRINTER_ACCESS_USE ( 0x00000008 )
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
 
+/* bitmap spoolss_DeleteDriverFlags */
+#define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
+#define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
+#define DPD_DELETE_ALL_FILES ( 0x00000004 )
+
 
 struct _spoolss_EnumPrinters {
 	struct {
@@ -2064,6 +2069,14 @@ struct spoolss_53 {
 
 
 struct spoolss_DeletePrinterDriverEx {
+	struct {
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *architecture;/* [charset(UTF16)] */
+		const char *driver;/* [charset(UTF16)] */
+		uint32_t delete_flags;
+		uint32_t version;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

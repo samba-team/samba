@@ -9006,6 +9006,30 @@ _PUBLIC_ void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *nam
 	}
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DPD_DELETE_UNUSED_FILES", DPD_DELETE_UNUSED_FILES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DPD_DELETE_SPECIFIC_VERSION", DPD_DELETE_SPECIFIC_VERSION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DPD_DELETE_ALL_FILES", DPD_DELETE_ALL_FILES, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrinters *r)
 {
 	if (flags & NDR_IN) {
@@ -16079,6 +16103,23 @@ _PUBLIC_ void ndr_print_spoolss_53(struct ndr_print *ndr, const char *name, int 
 static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriverEx(struct ndr_push *ndr, int flags, const struct spoolss_DeletePrinterDriverEx *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server));
+		if (r->in.server) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server, ndr_charset_length(r->in.server, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.architecture, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.architecture, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.architecture, ndr_charset_length(r->in.architecture, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.driver, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.driver, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.driver, ndr_charset_length(r->in.driver, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_spoolss_DeleteDriverFlags(ndr, NDR_SCALARS, r->in.delete_flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.version));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -16088,7 +16129,43 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriverEx(struct ndr_push 
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriverEx(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterDriverEx *r)
 {
+	uint32_t _ptr_server;
+	TALLOC_CTX *_mem_save_server_0;
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
+		if (_ptr_server) {
+			NDR_PULL_ALLOC(ndr, r->in.server);
+		} else {
+			r->in.server = NULL;
+		}
+		if (r->in.server) {
+			_mem_save_server_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.server, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server));
+			if (ndr_get_array_length(ndr, &r->in.server) > ndr_get_array_size(ndr, &r->in.server)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server), ndr_get_array_length(ndr, &r->in.server));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server, ndr_get_array_length(ndr, &r->in.server), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_0, 0);
+		}
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.architecture));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.architecture));
+		if (ndr_get_array_length(ndr, &r->in.architecture) > ndr_get_array_size(ndr, &r->in.architecture)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.architecture), ndr_get_array_length(ndr, &r->in.architecture));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.architecture, ndr_get_array_length(ndr, &r->in.architecture), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.driver));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.driver));
+		if (ndr_get_array_length(ndr, &r->in.driver) > ndr_get_array_size(ndr, &r->in.driver)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.driver), ndr_get_array_length(ndr, &r->in.driver));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.driver, ndr_get_array_length(ndr, &r->in.driver), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_spoolss_DeleteDriverFlags(ndr, NDR_SCALARS, &r->in.delete_flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.version));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -16106,6 +16183,16 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrinterDriverEx(struct ndr_print *ndr, con
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_DeletePrinterDriverEx");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "server", r->in.server);
+		ndr->depth++;
+		if (r->in.server) {
+			ndr_print_string(ndr, "server", r->in.server);
+		}
+		ndr->depth--;
+		ndr_print_string(ndr, "architecture", r->in.architecture);
+		ndr_print_string(ndr, "driver", r->in.driver);
+		ndr_print_spoolss_DeleteDriverFlags(ndr, "delete_flags", r->in.delete_flags);
+		ndr_print_uint32(ndr, "version", r->in.version);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

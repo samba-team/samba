@@ -478,6 +478,11 @@ NTSTATUS rpccli_spoolss_53(struct rpc_pipe_client *cli,
 			   WERROR *werror);
 NTSTATUS rpccli_spoolss_DeletePrinterDriverEx(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
+					      const char *server /* [in] [unique,charset(UTF16)] */,
+					      const char *architecture /* [in] [charset(UTF16)] */,
+					      const char *driver /* [in] [charset(UTF16)] */,
+					      uint32_t delete_flags /* [in]  */,
+					      uint32_t version /* [in]  */,
 					      WERROR *werror);
 NTSTATUS rpccli_spoolss_55(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,

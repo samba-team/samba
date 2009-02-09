@@ -3924,12 +3924,22 @@ NTSTATUS rpccli_spoolss_53(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_DeletePrinterDriverEx(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
+					      const char *server /* [in] [unique,charset(UTF16)] */,
+					      const char *architecture /* [in] [charset(UTF16)] */,
+					      const char *driver /* [in] [charset(UTF16)] */,
+					      uint32_t delete_flags /* [in]  */,
+					      uint32_t version /* [in]  */,
 					      WERROR *werror)
 {
 	struct spoolss_DeletePrinterDriverEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server = server;
+	r.in.architecture = architecture;
+	r.in.driver = driver;
+	r.in.delete_flags = delete_flags;
+	r.in.version = version;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_DeletePrinterDriverEx, &r);
