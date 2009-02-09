@@ -969,19 +969,6 @@ typedef struct spool_r_enumjobs
 }
 SPOOL_R_ENUMJOBS;
 
-typedef struct spool_q_schedulejob
-{
-	POLICY_HND handle;
-	uint32 jobid;
-}
-SPOOL_Q_SCHEDULEJOB;
-
-typedef struct spool_r_schedulejob
-{
-	WERROR status;
-}
-SPOOL_R_SCHEDULEJOB;
-
 typedef struct s_port_info_1
 {
 	UNISTR port_name;
