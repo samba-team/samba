@@ -9483,36 +9483,38 @@ done:
         return status;
 }
 
-/********************************************************************
- * spoolss_deleteprinterkey
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterKey
+****************************************************************/
 
-WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
+WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
+				 struct spoolss_DeletePrinterKey *r)
 {
-	POLICY_HND		*handle = &q_u->handle;
-	Printer_entry 		*Printer = find_printer_index_by_hnd(p, &q_u->handle);
-	fstring 		key;
+	POLICY_HND		*handle = r->in.handle;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum=0;
 	WERROR			status;
 
-	DEBUG(5,("spoolss_deleteprinterkey\n"));
+	DEBUG(5,("_spoolss_DeletePrinterKey\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeletePrinterKey: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
 	/* if keyname == NULL, return error */
 
-	if ( !q_u->keyname.buffer )
+	if ( !r->in.key_name )
 		return WERR_INVALID_PARAM;
 
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_deleteprinterkey: printer properties change denied by handle\n"));
+		DEBUG(3, ("_spoolss_DeletePrinterKey: "
+			"printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -9522,9 +9524,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 
 	/* delete the key and all subneys */
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key));
-
-	status = delete_all_printer_data( printer->info_2, key );
+	status = delete_all_printer_data( printer->info_2, r->in.key_name );
 
 	if ( W_ERROR_IS_OK(status) )
 		status = mod_a_printer(printer, 2);
@@ -10727,17 +10727,6 @@ WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
 
 WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 			       struct spoolss_EnumPrinterKey *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeletePrinterKey
-****************************************************************/
-
-WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
-				 struct spoolss_DeletePrinterKey *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
