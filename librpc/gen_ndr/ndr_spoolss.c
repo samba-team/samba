@@ -10615,10 +10615,6 @@ _PUBLIC_ void ndr_print_spoolss_GetPrinterDriverDirectory(struct ndr_print *ndr,
 static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriver(struct ndr_push *ndr, int flags, const struct spoolss_DeletePrinterDriver *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.handle == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server));
 		if (r->in.server) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server, CH_UTF16)));
@@ -10644,16 +10640,8 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterDriver(struct ndr_push *n
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterDriver(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterDriver *r)
 {
 	uint32_t _ptr_server;
-	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_server_0;
 	if (flags & NDR_IN) {
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.handle);
-		}
-		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
 		if (_ptr_server) {
 			NDR_PULL_ALLOC(ndr, r->in.server);
@@ -10703,10 +10691,6 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrinterDriver(struct ndr_print *ndr, const
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_DeletePrinterDriver");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "handle", r->in.handle);
-		ndr->depth++;
-		ndr_print_policy_handle(ndr, "handle", r->in.handle);
-		ndr->depth--;
 		ndr_print_ptr(ndr, "server", r->in.server);
 		ndr->depth++;
 		if (r->in.server) {
@@ -15985,6 +15969,14 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrinterDataEx(struct ndr_print *ndr, const
 static enum ndr_err_code ndr_push_spoolss_DeletePrinterKey(struct ndr_push *ndr, int flags, const struct spoolss_DeletePrinterKey *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.key_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.key_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.key_name, ndr_charset_length(r->in.key_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -15994,7 +15986,22 @@ static enum ndr_err_code ndr_push_spoolss_DeletePrinterKey(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_spoolss_DeletePrinterKey(struct ndr_pull *ndr, int flags, struct spoolss_DeletePrinterKey *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.key_name));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.key_name));
+		if (ndr_get_array_length(ndr, &r->in.key_name) > ndr_get_array_size(ndr, &r->in.key_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.key_name), ndr_get_array_length(ndr, &r->in.key_name));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -16012,6 +16019,11 @@ _PUBLIC_ void ndr_print_spoolss_DeletePrinterKey(struct ndr_print *ndr, const ch
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_DeletePrinterKey");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_string(ndr, "key_name", r->in.key_name);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

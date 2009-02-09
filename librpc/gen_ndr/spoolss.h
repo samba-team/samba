@@ -1043,7 +1043,6 @@ struct spoolss_GetPrinterDriverDirectory {
 
 struct spoolss_DeletePrinterDriver {
 	struct {
-		struct policy_handle *handle;/* [ref] */
 		const char *server;/* [unique,charset(UTF16)] */
 		const char *architecture;/* [charset(UTF16)] */
 		const char *driver;/* [charset(UTF16)] */
@@ -2044,6 +2043,11 @@ struct spoolss_DeletePrinterDataEx {
 
 
 struct spoolss_DeletePrinterKey {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *key_name;/* [charset(UTF16)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

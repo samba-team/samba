@@ -103,7 +103,6 @@ NTSTATUS rpccli_spoolss_GetPrinterDriverDirectory(struct rpc_pipe_client *cli,
 						  WERROR *werror);
 NTSTATUS rpccli_spoolss_DeletePrinterDriver(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
-					    struct policy_handle *handle /* [in] [ref] */,
 					    const char *server /* [in] [unique,charset(UTF16)] */,
 					    const char *architecture /* [in] [charset(UTF16)] */,
 					    const char *driver /* [in] [charset(UTF16)] */,
@@ -471,6 +470,8 @@ NTSTATUS rpccli_spoolss_DeletePrinterDataEx(struct rpc_pipe_client *cli,
 					    WERROR *werror);
 NTSTATUS rpccli_spoolss_DeletePrinterKey(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle /* [in] [ref] */,
+					 const char *key_name /* [in] [charset(UTF16)] */,
 					 WERROR *werror);
 NTSTATUS rpccli_spoolss_53(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
