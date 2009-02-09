@@ -1802,8 +1802,8 @@ struct spoolss_ReplyOpenPrinter {
 		const char *server_name;/* [charset(UTF16)] */
 		uint32_t printer_local;
 		enum winreg_Type type;
-		uint32_t unknown1;
-		uint32_t unknown2;
+		uint32_t bufsize;/* [range(0,512)] */
+		uint8_t *buffer;/* [unique,size_is(bufsize)] */
 	} in;
 
 	struct {

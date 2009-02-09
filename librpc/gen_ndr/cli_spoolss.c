@@ -2743,8 +2743,8 @@ NTSTATUS rpccli_spoolss_ReplyOpenPrinter(struct rpc_pipe_client *cli,
 					 const char *server_name /* [in] [charset(UTF16)] */,
 					 uint32_t printer_local /* [in]  */,
 					 enum winreg_Type type /* [in]  */,
-					 uint32_t unknown1 /* [in]  */,
-					 uint32_t unknown2 /* [in]  */,
+					 uint32_t bufsize /* [in] [range(0,512)] */,
+					 uint8_t *buffer /* [in] [unique,size_is(bufsize)] */,
 					 struct policy_handle *handle /* [out] [ref] */,
 					 WERROR *werror)
 {
@@ -2755,8 +2755,8 @@ NTSTATUS rpccli_spoolss_ReplyOpenPrinter(struct rpc_pipe_client *cli,
 	r.in.server_name = server_name;
 	r.in.printer_local = printer_local;
 	r.in.type = type;
-	r.in.unknown1 = unknown1;
-	r.in.unknown2 = unknown2;
+	r.in.bufsize = bufsize;
+	r.in.buffer = buffer;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_ReplyOpenPrinter, &r);
