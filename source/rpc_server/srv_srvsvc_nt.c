@@ -2316,6 +2316,8 @@ WERROR _srvsvc_NetDiskEnum(pipes_struct *p,
 
 	/*allow one struct srvsvc_NetDiskInfo0 for null terminator*/
 
+	r->out.info->count = 0;
+
 	for(i = 0; i < MAX_SERVER_DISK_ENTRIES -1 && (disk_name = next_server_disk_enum(&resume)); i++) {
 
 		r->out.info->count++;
