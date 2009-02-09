@@ -595,7 +595,6 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x0d */
 	WERROR spoolss_DeletePrinterDriver(
-		[in,ref] policy_handle *handle,
 		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] [string,charset(UTF16)] uint16 architecture[],
 		[in] [string,charset(UTF16)] uint16 driver[]
