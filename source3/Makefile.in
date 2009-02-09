@@ -665,6 +665,7 @@ VFS_ACL_TDB_OBJ = modules/vfs_acl_tdb.o
 VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
 		modules/onefs_open.o modules/onefs_streams.o
+PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -2554,6 +2555,10 @@ bin/acl_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_TDB_OBJ)
 bin/onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ONEFS_OBJ) @ONEFS_LIBS@
+
+bin/pc_onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_ONEFS_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(PERFCOUNT_ONEFS_OBJ)
 
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
