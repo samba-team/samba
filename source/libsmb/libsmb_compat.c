@@ -330,6 +330,14 @@ smbc_fstat(int fd,
 }
 
 int
+smbc_fstatvfs(int fd,
+              struct statvfs *st)
+{
+	SMBCFILE * file = find_fd(fd);
+        return smbc_getFunctionFstatVFS(statcont)(statcont, file, st);
+}
+
+int
 smbc_ftruncate(int fd,
                off_t size)
 {

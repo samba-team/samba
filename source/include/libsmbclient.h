@@ -174,6 +174,22 @@ typedef enum smbc_smb_encrypt_level
 } smbc_smb_encrypt_level;
 
 
+/**
+ * Capabilities set in the f_flag field of struct statvfs, from
+ * smbc_statvfs(). These may be OR-ed together to reflect a full set of
+ * available capabilities.
+ */
+typedef enum smbc_vfs_capability
+{
+    /* Defined by POSIX or in Linux include files (low-order bits) */
+    SMBC_VFS_CAP_RDONLY         = (1 << 0),
+
+    /* Specific to libsmbclient (high-order bits) */
+    SMBC_VFS_CAP_DFS            = (1 << 29),
+    SMBC_VFS_CAP_CASE_SENSITIVE = (1 << 30),
+    SMBC_VFS_CAP_UNIXCIFS       = (1 << 31)
+} smbc_vfs_capability;
+
 typedef int smbc_bool;
 
 
@@ -852,6 +868,12 @@ typedef int (*smbc_fstat_fn)(SMBCCTX *c,
                              struct stat *st);
 smbc_fstat_fn smbc_getFunctionFstat(SMBCCTX *c);
 void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
+
+typedef int (*smbc_fstatvfs_fn)(SMBCCTX *c,
+                                SMBCFILE *file,
+                                struct statvfs *st);
+smbc_fstatvfs_fn smbc_getFunctionFstatVFS(SMBCCTX *c);
+void smbc_setFunctionFstatVFS(SMBCCTX *c, smbc_fstatvfs_fn fn);
 
 typedef int (*smbc_ftruncate_fn)(SMBCCTX *c,
                                  SMBCFILE *f,
@@ -1590,6 +1612,29 @@ int smbc_stat(const char *url, struct stat *st);
  */
 int smbc_fstat(int fd, struct stat *st);
 
+
+/**@ingroup attribute
+ * Get file system information via an file descriptor.
+ * 
+ * @param fd        Open file handle from smbc_open(), smbc_creat(),
+ *                  or smbc_opendir()
+ *
+ * @param st        pointer to a buffer that will be filled with 
+ *                  standard Unix struct statvfs information.
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             Unix fstatvfs()
+ *
+ */
+int
+smbc_fstatvfs(int fd,
+              struct statvfs *st);
 
 /**@ingroup attribute
  * Truncate a file given a file descriptor

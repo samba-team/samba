@@ -300,3 +300,24 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	return 0;
         
 }
+
+/*
+ * Routine to obtain file system information given an fd
+ */
+
+int
+SMBC_fstatvfs_ctx(SMBCCTX *context,
+                  SMBCFILE *file,
+                  struct statvfs *st)
+{
+        /* Initialize all fields (at least until we actually use them) */
+        memset(st, 0, sizeof(*st));
+
+        /* See if the server has UNIX CIFS support */
+        if (SERVER_HAS_UNIX_CIFS(file->srv->cli))
+        {
+                st->f_flag |= SMBC_VFS_CAP_UNIXCIFS;
+        }
+
+        return 0;
+}
