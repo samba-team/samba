@@ -736,9 +736,10 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 		pipe_hnd->srv_name_slash, username, printername2, access_required));
 
 	/* open printer */
-	result = rpccli_spoolss_open_printer_ex(pipe_hnd, mem_ctx, printername2,
-			"", access_required,
-			pipe_hnd->srv_name_slash, username, hnd);
+	result = rpccli_spoolss_openprinter_ex(pipe_hnd, mem_ctx,
+					       printername2,
+					       access_required,
+					       hnd);
 
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {

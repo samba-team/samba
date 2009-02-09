@@ -319,11 +319,11 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 		DEBUG(3, ("Insufficient memory\n"));
 		return WERR_NOMEM;
 	}
-	
-	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
-					     "", MAXIMUM_ALLOWED_ACCESS, 
-					     cli->srv_name_slash, cli->auth->user_name,
-					     &pol);
+
+	result = rpccli_spoolss_openprinter_ex(cli, mem_ctx,
+					       printername,
+					       SEC_FLAG_MAXIMUM_ALLOWED,
+					       &pol);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, win_errstr(result)));
