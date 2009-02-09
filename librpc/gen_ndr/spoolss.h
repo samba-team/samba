@@ -1961,7 +1961,7 @@ struct spoolss_EnumPrinterData {
 	} in;
 
 	struct {
-		const char *value_name;/* [ref,charset(UTF16),size_is(value_offered/2)] */
+		const char *value_name;/* [charset(UTF16),size_is(value_offered/2)] */
 		uint32_t *value_needed;/* [ref] */
 		uint32_t *printerdata_type;/* [ref] */
 		DATA_BLOB *buffer;/* [ref] */

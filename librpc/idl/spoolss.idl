@@ -1478,7 +1478,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	WERROR spoolss_EnumPrinterData(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
-		[out,ref,size_is(value_offered/2),charset(UTF16)] uint16 *value_name,
+		[out,size_is(value_offered/2),charset(UTF16)] uint16 value_name[],
 		[in]     uint32 value_offered,
 		[out,ref] uint32 *value_needed,
 		[out,ref] uint32 *printerdata_type,

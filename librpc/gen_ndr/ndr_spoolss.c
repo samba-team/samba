@@ -15247,9 +15247,6 @@ static enum ndr_err_code ndr_push_spoolss_EnumPrinterData(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.data_offered));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.value_name == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.value_offered / 2));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->out.value_name, r->in.value_offered / 2, sizeof(uint16_t), CH_UTF16));
 		if (r->out.value_needed == NULL) {
@@ -15293,8 +15290,6 @@ static enum ndr_err_code ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.enum_index));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.value_offered));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.data_offered));
-		NDR_PULL_ALLOC_N(ndr, r->out.value_name, r->in.value_offered / 2);
-		memset(r->out.value_name, 0, (r->in.value_offered / 2) * sizeof(*r->out.value_name));
 		NDR_PULL_ALLOC(ndr, r->out.value_needed);
 		ZERO_STRUCTP(r->out.value_needed);
 		NDR_PULL_ALLOC(ndr, r->out.printerdata_type);
@@ -15365,10 +15360,7 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrinterData(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_EnumPrinterData");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "value_name", r->out.value_name);
-		ndr->depth++;
 		ndr_print_string(ndr, "value_name", r->out.value_name);
-		ndr->depth--;
 		ndr_print_ptr(ndr, "value_needed", r->out.value_needed);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "value_needed", *r->out.value_needed);
