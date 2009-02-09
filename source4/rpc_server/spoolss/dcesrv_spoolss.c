@@ -1180,8 +1180,8 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	W_ERROR_HAVE_NO_MEMORY(rop.in.server_name);
 	rop.in.printer_local = 0;
 	rop.in.type = REG_NONE;
-	rop.in.unknown1 = 0;
-	rop.in.unknown2 = 0;
+	rop.in.bufsize = 0;
+	rop.in.buffer = NULL;
 	rop.out.handle = &notify_handle;
 
 	status = dcerpc_spoolss_ReplyOpenPrinter(p, mem_ctx, &rop);
