@@ -8420,26 +8420,24 @@ WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R
 	return WERR_OK;
 }
 
+/****************************************************************
+ _spoolss_DeletePrinterData
+****************************************************************/
 
-/****************************************************************************
-****************************************************************************/
-
-WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u)
+WERROR _spoolss_DeletePrinterData(pipes_struct *p,
+				  struct spoolss_DeletePrinterData *r)
 {
-	POLICY_HND 	*handle = &q_u->handle;
-	UNISTR2 	*value = &q_u->valuename;
-
+	POLICY_HND 	*handle = r->in.handle;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
-	char *valuename = NULL;
-	TALLOC_CTX *ctx = p->mem_ctx;
 
-	DEBUG(5,("spoolss_deleteprinterdata\n"));
+	DEBUG(5,("_spoolss_DeletePrinterData\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeletePrinterData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8447,7 +8445,8 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties change denied by handle\n"));
+		DEBUG(3, ("_spoolss_DeletePrinterData: "
+			"printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -8455,19 +8454,18 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	valuename = unistr2_to_ascii_talloc(ctx, value);
-	if (!valuename) {
+	if (!r->in.value_name) {
 		free_a_printer(&printer, 2);
 		return WERR_NOMEM;
 	}
 
-	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
+	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY,
+					r->in.value_name );
 
 	if ( W_ERROR_IS_OK(status) )
 		mod_a_printer( printer, 2 );
 
 	free_a_printer(&printer, 2);
-	TALLOC_FREE(valuename);
 
 	return status;
 }
@@ -10652,17 +10650,6 @@ WERROR _spoolss_47(pipes_struct *p,
 
 WERROR _spoolss_EnumPrinterData(pipes_struct *p,
 				struct spoolss_EnumPrinterData *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeletePrinterData
-****************************************************************/
-
-WERROR _spoolss_DeletePrinterData(pipes_struct *p,
-				  struct spoolss_DeletePrinterData *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
