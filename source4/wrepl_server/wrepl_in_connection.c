@@ -236,8 +236,8 @@ NTSTATUS wreplsrv_in_connection_merge(struct wreplsrv_partner *partner,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/*
-	 * make the wreplsrv_in_connection structure a child of the 
-	 * stream_connection, to match the hierachie of wreplsrv_accept
+	 * make the wreplsrv_in_connection structure a child of the
+	 * stream_connection, to match the hierarchy of wreplsrv_accept
 	 */
 	wrepl_in->conn		= conn;
 	talloc_steal(conn, wrepl_in);
