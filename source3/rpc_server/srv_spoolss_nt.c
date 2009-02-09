@@ -7915,7 +7915,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	 * server.  Right now, we just need to send ourselves a message
 	 * to update each printer bound to this driver.   --jerry
 	 */
-	
+
 	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
 		DEBUG(0,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
 			driver_name));
