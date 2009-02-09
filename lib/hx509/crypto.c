@@ -315,6 +315,8 @@ ecdsa_create_signature(hx509_context context,
 
     if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA256()) == 0) {
 	digest_alg = hx509_signature_sha256();
+    } else if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA1()) == 0) {
+	digest_alg = hx509_signature_sha1();
     } else
 	return HX509_ALG_NOT_SUPP;
 
@@ -1314,7 +1316,7 @@ static struct key2sigalg {
     const AlgorithmIdentifier *(*sigalg)(void);
 } key2sigalgs[] = {
     { oid_id_pkcs1_rsaEncryption, hx509_signature_rsa_with_sha256 },
-    { oid_id_ecPublicKey, hx509_signature_ecdsa_with_sha256 }
+    { oid_id_ecPublicKey, hx509_signature_ecdsa_with_sha1 }
 };
 
 
