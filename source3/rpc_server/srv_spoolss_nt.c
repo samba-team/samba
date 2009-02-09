@@ -6903,19 +6903,19 @@ WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u
 	}
 
 	switch (command) {
-	case JOB_CONTROL_CANCEL:
-	case JOB_CONTROL_DELETE:
+	case SPOOLSS_JOB_CONTROL_CANCEL:
+	case SPOOLSS_JOB_CONTROL_DELETE:
 		if (print_job_delete(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case JOB_CONTROL_PAUSE:
+	case SPOOLSS_JOB_CONTROL_PAUSE:
 		if (print_job_pause(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case JOB_CONTROL_RESTART:
-	case JOB_CONTROL_RESUME:
+	case SPOOLSS_JOB_CONTROL_RESTART:
+	case SPOOLSS_JOB_CONTROL_RESUME:
 		if (print_job_resume(p->server_info, snum, jobid, &errcode)) {
 			errcode = WERR_OK;
 		}

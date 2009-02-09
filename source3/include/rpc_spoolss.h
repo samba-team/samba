@@ -1022,12 +1022,6 @@ typedef struct spool_r_enumports
 }
 SPOOL_R_ENUMPORTS;
 
-#define JOB_CONTROL_PAUSE              1
-#define JOB_CONTROL_RESUME             2
-#define JOB_CONTROL_CANCEL             3
-#define JOB_CONTROL_RESTART            4
-#define JOB_CONTROL_DELETE             5
-
 typedef struct job_info_info
 {
 	union
