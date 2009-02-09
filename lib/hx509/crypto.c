@@ -347,13 +347,12 @@ ecdsa_create_signature(hx509_context context,
 		     sig->data, &siglen, signer->private_key.ecdsa);
     der_free_octet_string(&indata);
     if (ret != 1) {
-	ret = HX509_CMS_FAILED_CREATE_SIGATURE;
-	hx509_set_error_string(context, 0, ret,
-			       "RSA private decrypt failed: %d", ret);
-	return ret;
+	hx509_set_error_string(context, 0, HX509_CMS_FAILED_CREATE_SIGATURE,
+			       "ECDSA sign failed: %d", ret);
+	return HX509_CMS_FAILED_CREATE_SIGATURE;
     }
     if (siglen > sig->length)
-	_hx509_abort("RSA signature prelen longer the output len");
+	_hx509_abort("ECDSA signature prelen longer the output len");
 
     sig->length = ret;
 
@@ -1307,6 +1306,26 @@ find_sig_alg(const heim_oid *oid)
     for (i = 0; sig_algs[i]; i++)
 	if (der_heim_oid_cmp((*sig_algs[i]->sig_oid)(), oid) == 0)
 	    return sig_algs[i];
+    return NULL;
+}
+
+static struct key2sigalg {
+    const heim_oid *(*keytype)(void);
+    const AlgorithmIdentifier *(*sigalg)(void);
+} key2sigalgs[] = {
+    { oid_id_pkcs1_rsaEncryption, hx509_signature_rsa_with_sha256 },
+    { oid_id_ecPublicKey, hx509_signature_ecdsa_with_sha256 }
+};
+
+
+static const AlgorithmIdentifier *
+def_sigalg_for_keytype(const heim_oid *oid)
+{
+    size_t i;
+    for (i = 0; i < sizeof(key2sigalgs)/sizeof(key2sigalgs[0]); i++) {
+	if (der_heim_oid_cmp((key2sigalgs[i].keytype)(), oid) == 0)
+	    return (key2sigalgs[i].sigalg)();
+    }
     return NULL;
 }
 
@@ -2890,7 +2909,6 @@ find_keytype(const hx509_private_key key)
     return (*md->key_oid)();
 }
 
-
 int
 hx509_crypto_select(const hx509_context context,
 		    int type,
@@ -2898,7 +2916,7 @@ hx509_crypto_select(const hx509_context context,
 		    hx509_peer_info peer,
 		    AlgorithmIdentifier *selected)
 {
-    const AlgorithmIdentifier *def;
+    const AlgorithmIdentifier *def = NULL;
     size_t i, j;
     int ret, bits;
 
@@ -2910,7 +2928,10 @@ hx509_crypto_select(const hx509_context context,
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
-	def = _hx509_crypto_default_sig_alg;
+	if (source)
+	    def = def_sigalg_for_keytype((source->ops->key_oid)());
+	if (def == NULL)
+	    def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
 	bits = SIG_SECRET;
 	def = _hx509_crypto_default_secret_alg;
