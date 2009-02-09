@@ -301,7 +301,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
                 SSVAL(aio_ex->outbuf,smb_vwv4,(numtowrite>>16)&1);
 		show_msg(aio_ex->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),aio_ex->outbuf,
-				IS_CONN_ENCRYPTED(fsp->conn))) {
+				IS_CONN_ENCRYPTED(fsp->conn),
+				&req->pcd)) {
 			exit_server_cleanly("handle_aio_write: srv_send_smb "
 					    "failed.");
 		}
@@ -375,7 +376,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!srv_send_smb(smbd_server_fd(),outbuf,
-			IS_CONN_ENCRYPTED(aio_ex->fsp->conn))) {
+			IS_CONN_ENCRYPTED(aio_ex->fsp->conn), NULL)) {
 		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
 				    "failed.");
 	}
@@ -472,7 +473,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	}
 
 	show_msg(outbuf);
-	if (!srv_send_smb(smbd_server_fd(),outbuf,IS_CONN_ENCRYPTED(fsp->conn))) {
+	if (!srv_send_smb(smbd_server_fd(),outbuf,IS_CONN_ENCRYPTED(fsp->conn),
+			  NULL)) {
 		exit_server_cleanly("handle_aio_write: srv_send_smb failed.");
 	}
 

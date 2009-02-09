@@ -344,6 +344,7 @@ struct global {
 	int iminreceivefile;
 	struct param_opt_struct *param_opt;
 	int cups_connection_timeout;
+	char *szSMBPerfcountModule;
 };
 
 static struct global Globals;
@@ -4258,6 +4259,15 @@ static struct parm_struct parm_table[] = {
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
+	{
+		.label		= "perfcount module",
+		.type		= P_STRING,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.szSMBPerfcountModule,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED,
+	},
 
 	{N_("VFS module options"), P_SEP, P_SEPARATOR},
 
@@ -5163,6 +5173,7 @@ FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
 FN_GLOBAL_BOOL(lp_utmp, &Globals.bUtmp)
 FN_GLOBAL_STRING(lp_rootdir, &Globals.szRootdir)
+FN_GLOBAL_STRING(lp_smb_perfcount_module, &Globals.szSMBPerfcountModule)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)

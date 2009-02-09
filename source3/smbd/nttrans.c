@@ -230,7 +230,8 @@ void send_nt_replies(connection_struct *conn,
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
-				IS_CONN_ENCRYPTED(conn))) {
+				IS_CONN_ENCRYPTED(conn),
+				&req->pcd)) {
 			exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
 		}
 
@@ -1823,6 +1824,8 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 	   because I don't want to break anything... --metze
 	FSP_BELONGS_CONN(fsp,conn);*/
 
+	SMB_PERFCOUNT_SET_IOCTL(&req->pcd, function);
+
 	switch (function) {
 	case FSCTL_SET_SPARSE:
 		/* pretend this succeeded - tho strictly we should
@@ -2488,6 +2491,9 @@ static void handle_nttrans(connection_struct *conn,
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
 	}
+
+
+	SMB_PERFCOUNT_SET_SUBOP(&req->pcd, state->call);
 
 	/* Now we must call the relevant NT_TRANS function */
 	switch(state->call) {

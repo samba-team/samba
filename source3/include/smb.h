@@ -613,6 +613,7 @@ struct current_user {
 	NT_USER_TOKEN *nt_user_token;
 };
 
+
 struct smb_request {
 	uint8_t cmd;
 	uint16 flags2;
@@ -640,6 +641,7 @@ struct smb_request {
 	size_t unread_bytes;
 	bool encrypted;
 	connection_struct *conn;
+	struct smb_perfcount_data pcd;
 
 	/*
 	 * Chained request handling
@@ -717,6 +719,7 @@ struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
 	struct timed_event *te;
+	struct smb_perfcount_data pcd;
 	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;

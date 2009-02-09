@@ -492,7 +492,7 @@ void reply_special(char *inbuf)
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	srv_send_smb(smbd_server_fd(), outbuf, false);
+	srv_send_smb(smbd_server_fd(), outbuf, false, NULL);
 	return;
 }
 
@@ -3293,6 +3293,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 
 		/* No outbuf here means successful sendfile. */
 		TALLOC_FREE(req->outbuf);
+		SMB_PERFCOUNT_SET_MSGLEN_OUT(&req->pcd, nread);
+		SMB_PERFCOUNT_END(&req->pcd);
 		return;
 	}
 #endif
@@ -3590,7 +3592,8 @@ void reply_writebraw(struct smb_request *req)
 	show_msg(buf);
 	if (!srv_send_smb(smbd_server_fd(),
 			buf,
-			IS_CONN_ENCRYPTED(conn))) {
+			IS_CONN_ENCRYPTED(conn),
+			&req->pcd)) {
 		exit_server_cleanly("reply_writebraw: srv_send_smb "
 			"failed.");
 	}
@@ -4647,7 +4650,8 @@ void reply_echo(struct smb_request *req)
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
-				IS_CONN_ENCRYPTED(conn)||req->encrypted))
+				IS_CONN_ENCRYPTED(conn)||req->encrypted,
+				&req->pcd))
 			exit_server_cleanly("reply_echo: srv_send_smb failed.");
 	}
 

@@ -144,7 +144,7 @@ static void change_notify_reply_packet(connection_struct *conn,
 
 	show_msg((char *)req->outbuf);
 	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
-			  req->encrypted)) {
+			  req->encrypted, &req->pcd)) {
 		exit_server_cleanly("change_notify_reply_packet: srv_send_smb "
 				    "failed.");
 	}

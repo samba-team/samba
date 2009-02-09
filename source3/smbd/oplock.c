@@ -406,7 +406,8 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
 			break_msg,
-			IS_CONN_ENCRYPTED(fsp->conn))) {
+			IS_CONN_ENCRYPTED(fsp->conn),
+			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 
@@ -513,7 +514,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
 			break_msg,
-			IS_CONN_ENCRYPTED(fsp->conn))) {
+			IS_CONN_ENCRYPTED(fsp->conn),
+			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 
@@ -592,7 +594,8 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	show_msg(break_msg);
 	if (!srv_send_smb(smbd_server_fd(),
 			break_msg,
-			IS_CONN_ENCRYPTED(fsp->conn))) {
+			IS_CONN_ENCRYPTED(fsp->conn),
+			NULL)) {
 		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 

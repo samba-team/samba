@@ -192,6 +192,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		return False;
 	}
 
+	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &req->pcd);
 	blr->req = talloc_move(blr, &req);
 
 	DLIST_ADD_END(blocking_lock_queue, blr, blocking_lock_record *);
@@ -266,7 +267,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
 
 	reply_nterror(blr->req, status);
 	if (!srv_send_smb(smbd_server_fd(), (char *)blr->req->outbuf,
-			  blr->req->encrypted)) {
+			  blr->req->encrypted, NULL)) {
 		exit_server_cleanly("generic_blocking_lock_error: srv_send_smb failed.");
 	}
 	TALLOC_FREE(blr->req->outbuf);
@@ -347,7 +348,8 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
 
 		if (!srv_send_smb(smbd_server_fd(),
 				  (char *)blr->req->outbuf,
-				  IS_CONN_ENCRYPTED(blr->fsp->conn))) {
+				  IS_CONN_ENCRYPTED(blr->fsp->conn),
+				  NULL)) {
 			exit_server_cleanly("blocking_lock_reply_error: "
 					    "srv_send_smb failed.");
 		}

@@ -216,7 +216,8 @@ static void pipe_write_done(struct async_req *subreq)
 
  send:
 	if (!srv_send_smb(smbd_server_fd(), (char *)req->outbuf,
-			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted)) {
+			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
+			  &req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
 	TALLOC_FREE(req);

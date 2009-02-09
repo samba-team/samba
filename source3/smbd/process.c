@@ -32,9 +32,10 @@ static void construct_reply_common(struct smb_request *req, const char *inbuf,
  Send an smb to a fd.
 ****************************************************************************/
 
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt)
+bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
+	          struct smb_perfcount_data *pcd)
 {
-	size_t len;
+	size_t len = 0;
 	size_t nwritten=0;
 	ssize_t ret;
 	char *buf_out = buffer;
@@ -48,7 +49,7 @@ bool srv_send_smb(int fd, char *buffer, bool do_encrypt)
 			DEBUG(0, ("send_smb: SMB encryption failed "
 				"on outgoing packet! Error %s\n",
 				nt_errstr(status) ));
-			return false;
+			goto out;
 		}
 	}
 
@@ -60,12 +61,15 @@ bool srv_send_smb(int fd, char *buffer, bool do_encrypt)
 			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
 				(int)len,(int)ret, strerror(errno) ));
 			srv_free_enc_buffer(buf_out);
-			return false;
+			goto out;
 		}
 		nwritten += ret;
 	}
 
+	SMB_PERFCOUNT_SET_MSGLEN_OUT(pcd, len);
 	srv_free_enc_buffer(buf_out);
+out:
+	SMB_PERFCOUNT_END(pcd);
 	return true;
 }
 
@@ -373,6 +377,7 @@ void init_smb_request(struct smb_request *req,
 	req->conn = conn_find(req->tid);
 	req->chain_fsp = NULL;
 	req->chain_outbuf = NULL;
+	smb_init_perfcount_data(&req->pcd);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
@@ -390,12 +395,13 @@ void init_smb_request(struct smb_request *req,
 			(unsigned int)req_size));
 		exit_server_cleanly("Invalid SMB request");
 	}
+
 	req->outbuf = NULL;
 }
 
 static void process_smb(struct smbd_server_connection *conn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			bool encrypted);
+			bool encrypted, struct smb_perfcount_data *deferred_pcd);
 
 static void smbd_deferred_open_timer(struct event_context *ev,
 				     struct timed_event *te,
@@ -421,7 +427,7 @@ static void smbd_deferred_open_timer(struct event_context *ev,
 
 	process_smb(smbd_server_conn, inbuf,
 		    msg->buf.length, 0,
-		    msg->encrypted);
+		    msg->encrypted, &msg->pcd);
 }
 
 /****************************************************************************
@@ -453,6 +459,7 @@ static bool push_queued_message(struct smb_request *req,
 
 	msg->request_time = request_time;
 	msg->encrypted = req->encrypted;
+	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &msg->pcd);
 
 	if (private_data) {
 		msg->private_data = data_blob_talloc(msg, private_data,
@@ -1354,7 +1361,9 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
  Construct a reply to the incoming packet.
 ****************************************************************************/
 
-static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool encrypted)
+static void construct_reply(char *inbuf, int size, size_t unread_bytes,
+			    bool encrypted,
+			    struct smb_perfcount_data *deferred_pcd)
 {
 	connection_struct *conn;
 	struct smb_request *req;
@@ -1362,8 +1371,18 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
+
 	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
 	req->inbuf  = (uint8_t *)talloc_move(req, &inbuf);
+
+	/* we popped this message off the queue - keep original perf data */
+	if (deferred_pcd)
+		req->pcd = *deferred_pcd;
+	else {
+		SMB_PERFCOUNT_START(&req->pcd);
+		SMB_PERFCOUNT_SET_OP(&req->pcd, req->cmd);
+		SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, size);
+	}
 
 	conn = switch_message(req->cmd, req, size);
 
@@ -1386,7 +1405,8 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 
 	if (!srv_send_smb(smbd_server_fd(),
 			(char *)req->outbuf,
-			IS_CONN_ENCRYPTED(conn)||req->encrypted)) {
+			IS_CONN_ENCRYPTED(conn)||req->encrypted,
+			&req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
 
@@ -1398,10 +1418,9 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool enc
 /****************************************************************************
  Process an smb from the client
 ****************************************************************************/
-
 static void process_smb(struct smbd_server_connection *conn,
 			uint8_t *inbuf, size_t nread, size_t unread_bytes,
-			bool encrypted)
+			bool encrypted, struct smb_perfcount_data *deferred_pcd)
 {
 	int msg_type = CVAL(inbuf,0);
 
@@ -1423,8 +1442,7 @@ static void process_smb(struct smbd_server_connection *conn,
 
 	show_msg((char *)inbuf);
 
-	construct_reply((char *)inbuf,nread,unread_bytes,encrypted);
-
+	construct_reply((char *)inbuf,nread,unread_bytes,encrypted,deferred_pcd);
 	trans_num++;
 
 done:
@@ -1617,15 +1635,23 @@ void chain_reply(struct smb_request *req)
 		 */
 		smb_setlen((char *)(req->chain_outbuf),
 			   talloc_get_size(req->chain_outbuf) - 4);
+
 		if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
 				  IS_CONN_ENCRYPTED(req->conn)
-				  ||req->encrypted)) {
+				  ||req->encrypted,
+				  &req->pcd)) {
 			exit_server_cleanly("chain_reply: srv_send_smb "
 					    "failed.");
 		}
 		TALLOC_FREE(req);
+
 		return;
 	}
+
+	/* add a new perfcounter for this element of chain */
+	SMB_PERFCOUNT_ADD(&req->pcd);
+	SMB_PERFCOUNT_SET_OP(&req->pcd, chain_cmd);
+	SMB_PERFCOUNT_SET_MSGLEN_IN(&req->pcd, smblen);
 
 	/*
 	 * Check if the client tries to fool us. The request so far uses the
@@ -1735,7 +1761,8 @@ void chain_reply(struct smb_request *req)
 	show_msg((char *)(req->chain_outbuf));
 
 	if (!srv_send_smb(smbd_server_fd(), (char *)req->chain_outbuf,
-			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted)) {
+			  IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
+			  &req->pcd)) {
 		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
 	TALLOC_FREE(req);
@@ -1823,7 +1850,7 @@ static void smbd_server_connection_read_handler(struct smbd_server_connection *c
 	}
 
 process:
-	process_smb(conn, inbuf, inbuf_len, unread_bytes, encrypted);
+	process_smb(conn, inbuf, inbuf_len, unread_bytes, encrypted, NULL);
 }
 
 static void smbd_server_connection_handler(struct event_context *ev,
@@ -1988,13 +2015,15 @@ void smbd_process(void)
 		unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 		DEBUG( 1, ("Connection denied from %s\n",
 			   client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
+		(void)srv_send_smb(smbd_server_fd(),(char *)buf,false, NULL);
 		exit_server_cleanly("connection denied");
 	}
 
 	static_init_rpc;
 
 	init_modules();
+
+	smb_perfcount_init();
 
 	if (!init_account_policy()) {
 		exit_server("Could not open account policy tdb.\n");

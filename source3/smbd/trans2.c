@@ -832,7 +832,8 @@ void send_trans2_replies(connection_struct *conn,
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
-				IS_CONN_ENCRYPTED(conn)))
+				IS_CONN_ENCRYPTED(conn),
+				&req->pcd))
 			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
 
 		TALLOC_FREE(req->outbuf);
@@ -7467,6 +7468,8 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 			return;
 		}
 	}
+
+	SMB_PERFCOUNT_SET_SUBOP(&req->pcd, state->call);
 
 	/* Now we must call the relevant TRANS2 function */
 	switch(state->call)  {

@@ -4358,6 +4358,8 @@ void lp_set_posix_pathnames(void);
 enum brl_flavour lp_posix_cifsu_locktype(files_struct *fsp);
 void lp_set_posix_default_cifsx_readwrite_locktype(enum brl_flavour val);
 int lp_min_receive_file_size(void);
+char* lp_smb_perfcount_module(void);
+
 
 /* The following definitions come from param/params.c  */
 
@@ -6978,7 +6980,8 @@ SEC_DESC *get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname);
 
 void smbd_setup_sig_term_handler(void);
 void smbd_setup_sig_hup_handler(void);
-bool srv_send_smb(int fd, char *buffer, bool do_encrypt);
+bool srv_send_smb(int fd, char *buffer, bool do_encrypt,
+		  struct smb_perfcount_data *pcd);
 int srv_set_message(char *buf,
                         int num_words,
                         int num_bytes,

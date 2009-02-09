@@ -108,6 +108,7 @@ MODULESDIR = @modulesdir@
 INCLUDEDIR=@includedir@
 PAMMODULESDIR = @pammodulesdir@
 VFSLIBDIR = $(MODULESDIR)/vfs
+PERFCOUNTLIBDIR = $(MODULESDIR)/perfcount
 PDBLIBDIR = $(MODULESDIR)/pdb
 RPCLIBDIR = $(MODULESDIR)/rpc
 IDMAPLIBDIR = $(MODULESDIR)/idmap
@@ -220,6 +221,7 @@ NSS_MODULES = @NSS_MODULES@
 SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
 VFS_MODULES = @VFS_MODULES@
+PERFCOUNT_MODULES = @PERFCOUNT_MODULES@
 PDB_MODULES = @PDB_MODULES@
 RPC_MODULES = @RPC_MODULES@
 IDMAP_MODULES = @IDMAP_MODULES@
@@ -229,7 +231,7 @@ NSS_INFO_MODULES = @NSS_INFO_MODULES@
 GPEXT_MODULES = @GPEXT_MODULES@
 MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
           $(CHARSET_MODULES) $(AUTH_MODULES) $(NSS_INFO_MODULES) \
-	  $(GPEXT_MODULES)
+	  $(GPEXT_MODULES) $(PERFCOUNT_MODULES)
 
 EXTRA_ALL_TARGETS = @EXTRA_ALL_TARGETS@
 
@@ -698,7 +700,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
+	       smbd/vfs.o smbd/perfcount.o smbd/statcache.o smbd/seal.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
@@ -2689,6 +2691,7 @@ installmodules:: modules installdirs
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(GPEXTLIBDIR) $(GPEXT_MODULES)
+	@$(SHELL) $(srcdir)/script/installmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PERFCOUNTLIBDIR) $(PERFCOUNT_MODULES)
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ NDS_ldapsam_compat.@SHLIBEXT@
 	@$(SHELL) $(srcdir)/script/linkmodules.sh $(DESTDIR)$(PDBLIBDIR) ldapsam.@SHLIBEXT@ ldapsam_compat.@SHLIBEXT@
@@ -2780,6 +2783,7 @@ uninstallmodules::
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(CHARSETLIBDIR) $(CHARSET_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(AUTHLIBDIR) $(AUTH_MODULES)
 	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(GPEXTLIBDIR) $(GPEXT_MODULES)
+	@$(SHELL) $(srcdir)/script/uninstallmodules.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(prefix) $(PERFCOUNTLIBDIR) $(PERFCOUNT_MODULES)
 
 uninstallscripts::
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS_BIN) $(DESTDIR)$(BINDIR) $(SCRIPTS)
