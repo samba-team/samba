@@ -57,7 +57,7 @@ ${hxtool} cms-create-sd \
 echo "verify signed data (ec)"
 ${hxtool} cms-verify-sd \
 	--missing-revoke \
-	--anchors=FILE:$srcdir/data/secp160r1TestCA.cert.pem
+	--anchors=FILE:$srcdir/data/secp160r1TestCA.cert.pem \
 	sd.data sd.data.out > /dev/null || exit 1
 cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
