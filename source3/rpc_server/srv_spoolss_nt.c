@@ -6572,16 +6572,19 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_FindClosePrinterNotify
+****************************************************************/
 
-WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
+WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
+				       struct spoolss_FindClosePrinterNotify *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_fcpn: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_FindClosePrinterNotify: "
+			"Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -10454,17 +10457,6 @@ WERROR _spoolss_FindFirstPrinterChangeNotification(pipes_struct *p,
 
 WERROR _spoolss_FindNextPrinterChangeNotification(pipes_struct *p,
 						  struct spoolss_FindNextPrinterChangeNotification *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_FindClosePrinterNotify
-****************************************************************/
-
-WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
-				       struct spoolss_FindClosePrinterNotify *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
