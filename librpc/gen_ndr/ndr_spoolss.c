@@ -11546,7 +11546,7 @@ static enum ndr_err_code ndr_pull_spoolss_ReadPrinter(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.data_size));
 		NDR_PULL_ALLOC_N(ndr, r->out.data, r->in.data_size);
-		memset(CONST_DISCARD(struct spoolss_ReadPrinter *,r->out.data), 0, (r->in.data_size) * sizeof(*r->out.data));
+		memset(r->out.data, 0, (r->in.data_size) * sizeof(*r->out.data));
 		NDR_PULL_ALLOC(ndr, r->out._data_size);
 		ZERO_STRUCTP(r->out._data_size);
 	}
@@ -15294,7 +15294,7 @@ static enum ndr_err_code ndr_pull_spoolss_EnumPrinterData(struct ndr_pull *ndr, 
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.value_offered));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.data_offered));
 		NDR_PULL_ALLOC_N(ndr, r->out.value_name, r->in.value_offered / 2);
-		memset(CONST_DISCARD(struct spoolss_EnumPrinterData *,r->out.value_name), 0, (r->in.value_offered / 2) * sizeof(*r->out.value_name));
+		memset(r->out.value_name, 0, (r->in.value_offered / 2) * sizeof(*r->out.value_name));
 		NDR_PULL_ALLOC(ndr, r->out.value_needed);
 		ZERO_STRUCTP(r->out.value_needed);
 		NDR_PULL_ALLOC(ndr, r->out.printerdata_type);
@@ -15742,7 +15742,7 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterDataEx(struct ndr_pull *ndr,
 		NDR_PULL_ALLOC(ndr, r->out.type);
 		ZERO_STRUCTP(r->out.type);
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.offered);
-		memset(CONST_DISCARD(struct spoolss_GetPrinterDataEx *,r->out.buffer), 0, (r->in.offered) * sizeof(*r->out.buffer));
+		memset(r->out.buffer, 0, (r->in.offered) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 	}
@@ -15870,7 +15870,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_EnumPrinterDataEx(struct ndr_pull *n
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.offered);
-		memset(CONST_DISCARD(struct spoolss_EnumPrinterDataEx *,r->out.buffer), 0, (r->in.offered) * sizeof(*r->out.buffer));
+		memset(r->out.buffer, 0, (r->in.offered) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 		NDR_PULL_ALLOC(ndr, r->out.count);
@@ -15999,7 +15999,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_EnumPrinterKey(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.key_name, ndr_get_array_length(ndr, &r->in.key_name), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.key_buffer_size));
 		NDR_PULL_ALLOC_N(ndr, r->out.key_buffer, r->in.key_buffer_size / 2);
-		memset(CONST_DISCARD(struct spoolss_EnumPrinterKey *,r->out.key_buffer), 0, (r->in.key_buffer_size / 2) * sizeof(*r->out.key_buffer));
+		memset(r->out.key_buffer, 0, (r->in.key_buffer_size / 2) * sizeof(*r->out.key_buffer));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 	}
@@ -16563,7 +16563,7 @@ static enum ndr_err_code ndr_pull_spoolss_XcvData(struct ndr_pull *ndr, int flag
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.status_code));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_status_code_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC_N(ndr, r->out.out_data, r->in.out_data_size);
-		memset(CONST_DISCARD(struct spoolss_XcvData *,r->out.out_data), 0, (r->in.out_data_size) * sizeof(*r->out.out_data));
+		memset(r->out.out_data, 0, (r->in.out_data_size) * sizeof(*r->out.out_data));
 		NDR_PULL_ALLOC(ndr, r->out.needed);
 		ZERO_STRUCTP(r->out.needed);
 		NDR_PULL_ALLOC(ndr, r->out.status_code);

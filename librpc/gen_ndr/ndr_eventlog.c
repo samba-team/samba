@@ -1783,7 +1783,7 @@ static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, i
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.data, r->in.number_of_bytes);
-		memset(CONST_DISCARD(struct eventlog_ReadEventLogW *,r->out.data), 0, (r->in.number_of_bytes) * sizeof(*r->out.data));
+		memset(r->out.data, 0, (r->in.number_of_bytes) * sizeof(*r->out.data));
 		NDR_PULL_ALLOC(ndr, r->out.sent_size);
 		ZERO_STRUCTP(r->out.sent_size);
 		NDR_PULL_ALLOC(ndr, r->out.real_size);
@@ -2634,7 +2634,7 @@ static enum ndr_err_code ndr_pull_eventlog_GetLogIntormation(struct ndr_pull *nd
 			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
 		}
 		NDR_PULL_ALLOC_N(ndr, r->out.buffer, r->in.buf_size);
-		memset(CONST_DISCARD(struct eventlog_GetLogIntormation *,r->out.buffer), 0, (r->in.buf_size) * sizeof(*r->out.buffer));
+		memset(r->out.buffer, 0, (r->in.buf_size) * sizeof(*r->out.buffer));
 		NDR_PULL_ALLOC(ndr, r->out.bytes_needed);
 		ZERO_STRUCTP(r->out.bytes_needed);
 	}
