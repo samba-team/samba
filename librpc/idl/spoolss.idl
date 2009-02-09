@@ -736,7 +736,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x19 */
-	[todo] WERROR spoolss_ScheduleJob(
+	WERROR spoolss_ScheduleJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 jobid
 	);
 
 	/******************/
