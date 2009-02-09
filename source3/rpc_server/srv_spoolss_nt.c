@@ -2087,18 +2087,19 @@ done:
 	return status;
 }
 
-/********************************************************************
- * spoolss_deleteprinterdriverex
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterDriverEx
+****************************************************************/
 
-WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u)
+WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
+				      struct spoolss_DeletePrinterDriverEx *r)
 {
-	fstring				driver;
-	fstring				arch;
+	char *driver;
+	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
-	uint32				flags = q_u->delete_flags;
+	uint32_t			flags = r->in.delete_flags;
 	bool				delete_files;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
@@ -2116,8 +2117,8 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		return WERR_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
+	driver = CONST_DISCARD(char *, r->in.driver);
+	arch   = CONST_DISCARD(char *, r->in.architecture);
 
 	/* check that we have a valid driver name first */
 	if ((version=get_version_id(arch)) == -1) {
@@ -2126,7 +2127,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	}
 
 	if ( flags & DPD_DELETE_SPECIFIC_VERSION )
-		version = q_u->version;
+		version = r->in.version;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
@@ -10728,17 +10729,6 @@ WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
 
 WERROR _spoolss_53(pipes_struct *p,
 		   struct spoolss_53 *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeletePrinterDriverEx
-****************************************************************/
-
-WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
-				      struct spoolss_DeletePrinterDriverEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
