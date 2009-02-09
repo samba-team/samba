@@ -5428,6 +5428,11 @@ NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_client/cli_spoolss.c  */
 
+WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *printername,
+				     uint32_t access_desired,
+				     struct policy_handle *handle);
 WERROR rpccli_spoolss_open_printer_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				const char *printername, const char *datatype, uint32 access_required,
 				const char *station, const char *username, POLICY_HND *pol);

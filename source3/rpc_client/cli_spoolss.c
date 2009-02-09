@@ -25,6 +25,55 @@
 #include "includes.h"
 #include "rpc_client.h"
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_OpenPrinterEx
+**********************************************************************/
+
+WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *printername,
+				     uint32_t access_desired,
+				     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	WERROR werror;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	union spoolss_UserLevel userlevel;
+	struct spoolss_UserLevel1 level1;
+
+	ZERO_STRUCT(devmode_ctr);
+
+	level1.size	= 28;
+	level1.client	= cli->srv_name_slash;
+	level1.user	= cli->auth->user_name;
+	level1.build	= 1381;
+	level1.major	= 2;
+	level1.minor	= 0;
+	level1.processor = 0;
+
+	userlevel.level1 = &level1;
+
+	status = rpccli_spoolss_OpenPrinterEx(cli, mem_ctx,
+					      printername,
+					      NULL,
+					      devmode_ctr,
+					      access_desired,
+					      1, /* level */
+					      userlevel,
+					      handle,
+					      &werror);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return WERR_OK;
+}
+
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/
