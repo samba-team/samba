@@ -6611,24 +6611,21 @@ WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_AddJob
+****************************************************************/
 
-WERROR _spoolss_addjob(pipes_struct *p, SPOOL_Q_ADDJOB *q_u, SPOOL_R_ADDJOB *r_u)
+WERROR _spoolss_AddJob(pipes_struct *p,
+		       struct spoolss_AddJob *r)
 {
-	/* that's an [in out] buffer */
-
-	if (!q_u->buffer && (q_u->offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
+	/* this is what a NT server returns for AddJob. AddJob must fail on
+	 * non-local printers */
 
-	r_u->needed = 0;
-	return WERR_INVALID_PARAM; /* this is what a NT server
-                                           returns for AddJob. AddJob
-                                           must fail on non-local
-                                           printers */
+	return WERR_INVALID_PARAM;
 }
 
 /****************************************************************************
@@ -10165,17 +10162,6 @@ WERROR _spoolss_StartDocPrinter(pipes_struct *p,
 
 WERROR _spoolss_ReadPrinter(pipes_struct *p,
 			    struct spoolss_ReadPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddJob
-****************************************************************/
-
-WERROR _spoolss_AddJob(pipes_struct *p,
-		       struct spoolss_AddJob *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
