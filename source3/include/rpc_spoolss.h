@@ -873,23 +873,6 @@ typedef struct add_jobinfo_1
 ADD_JOBINFO_1;
 
 
-typedef struct spool_q_addjob
-{
-	POLICY_HND handle;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_ADDJOB;
-
-typedef struct spool_r_addjob
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_ADDJOB;
-
 /*
  * I'm really wondering how many different time formats
  * I will have to cope with

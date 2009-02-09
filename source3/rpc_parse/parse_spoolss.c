@@ -3449,60 +3449,6 @@ bool spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_stru
 /*******************************************************************
 ********************************************************************/  
 
-bool spoolss_io_r_addjob(const char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_q_addjob(const char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if(!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-	
-	if(!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumjobs");
