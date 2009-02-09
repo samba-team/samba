@@ -1913,13 +1913,14 @@ static WERROR _spoolss_enddocprinter_internal(pipes_struct *p, POLICY_HND *handl
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_closeprinter
- ********************************************************************/
+/****************************************************************
+ _spoolss_ClosePrinter
+****************************************************************/
 
-WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u)
+WERROR _spoolss_ClosePrinter(pipes_struct *p,
+			     struct spoolss_ClosePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
@@ -1934,26 +1935,24 @@ WERROR _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R
 	   Previous code just copied the value of the closed
 	   handle.    --jerry */
 
-	memset(&r_u->handle, '\0', sizeof(r_u->handle));
+	ZERO_STRUCTP(r->out.handle);
 
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_deleteprinter
+/****************************************************************
+ _spoolss_DeletePrinter
+****************************************************************/
 
- ********************************************************************/
-
-WERROR _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u)
+WERROR _spoolss_DeletePrinter(pipes_struct *p,
+			      struct spoolss_DeletePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	WERROR result;
 
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter_internal(p, handle);  /* print job was not closed */
-
-	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	result = delete_printer_handle(p, handle);
 
@@ -1991,14 +1990,15 @@ static int get_version_id (char * arch)
 	return -1;
 }
 
-/********************************************************************
- * _spoolss_deleteprinterdriver
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterDriver
+****************************************************************/
 
-WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, SPOOL_R_DELETEPRINTERDRIVER *r_u)
+WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
+				    struct spoolss_DeletePrinterDriver *r)
 {
-	fstring				driver;
-	fstring				arch;
+	char *driver;
+	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
@@ -2019,9 +2019,6 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
-
 	/* check that we have a valid driver name first */
 
 	if ((version=get_version_id(arch)) == -1)
@@ -2029,6 +2026,9 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
+
+	driver = CONST_DISCARD(char *, r->in.driver);
+	arch   = CONST_DISCARD(char *, r->in.architecture);
 
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
 	{
@@ -2087,18 +2087,19 @@ done:
 	return status;
 }
 
-/********************************************************************
- * spoolss_deleteprinterdriverex
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterDriverEx
+****************************************************************/
 
-WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u)
+WERROR _spoolss_DeletePrinterDriverEx(pipes_struct *p,
+				      struct spoolss_DeletePrinterDriverEx *r)
 {
-	fstring				driver;
-	fstring				arch;
+	char *driver;
+	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
-	uint32				flags = q_u->delete_flags;
+	uint32_t			flags = r->in.delete_flags;
 	bool				delete_files;
 	WERROR				status;
 	WERROR				status_win2k = WERR_ACCESS_DENIED;
@@ -2116,8 +2117,8 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 		return WERR_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
+	driver = CONST_DISCARD(char *, r->in.driver);
+	arch   = CONST_DISCARD(char *, r->in.architecture);
 
 	/* check that we have a valid driver name first */
 	if ((version=get_version_id(arch)) == -1) {
@@ -2126,7 +2127,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	}
 
 	if ( flags & DPD_DELETE_SPECIFIC_VERSION )
-		version = q_u->version;
+		version = r->in.version;
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
@@ -4562,7 +4563,7 @@ static WERROR enum_all_printers_info_1_network(fstring name, RPC_BUFFER *buffer,
 	if (is_myname_or_ipaddr(s))
 		 return WERR_CAN_NOT_COMPLETE;
 
-	return enum_all_printers_info_1(PRINTER_ENUM_UNKNOWN_8, buffer, offered, needed, returned);
+	return enum_all_printers_info_1(PRINTER_ENUM_NAME, buffer, offered, needed, returned);
 }
 
 /********************************************************************
@@ -5780,17 +5781,21 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	return WERR_UNKNOWN_LEVEL;
 }
 
-/****************************************************************************
-****************************************************************************/
 
-WERROR _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u, SPOOL_R_STARTPAGEPRINTER *r_u)
+/****************************************************************
+ _spoolss_StartPagePrinter
+****************************************************************/
+
+WERROR _spoolss_StartPagePrinter(pipes_struct *p,
+				 struct spoolss_StartPagePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(3,("Error in startpageprinter printer handle\n"));
+		DEBUG(3,("_spoolss_StartPagePrinter: "
+			"Error in startpageprinter printer handle\n"));
 		return WERR_BADFID;
 	}
 
@@ -5798,18 +5803,21 @@ WERROR _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_EndPagePrinter
+****************************************************************/
 
-WERROR _spoolss_endpageprinter(pipes_struct *p, SPOOL_Q_ENDPAGEPRINTER *q_u, SPOOL_R_ENDPAGEPRINTER *r_u)
+WERROR _spoolss_EndPagePrinter(pipes_struct *p,
+			       struct spoolss_EndPagePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	int snum;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_endpageprinter: Invalid handle (%s:%u:%u).\n",OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_EndPagePrinter: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -5884,34 +5892,36 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	return WERR_OK;
 }
 
-/********************************************************************
- * api_spoolss_getprinter
- * called from the spoolss dispatcher
- *
- ********************************************************************/
+/****************************************************************
+ _spoolss_EndDocPrinter
+****************************************************************/
 
-WERROR _spoolss_enddocprinter(pipes_struct *p, SPOOL_Q_ENDDOCPRINTER *q_u, SPOOL_R_ENDDOCPRINTER *r_u)
+WERROR _spoolss_EndDocPrinter(pipes_struct *p,
+			      struct spoolss_EndDocPrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 
 	return _spoolss_enddocprinter_internal(p, handle);
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_WritePrinter
+****************************************************************/
 
-WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R_WRITEPRINTER *r_u)
+WERROR _spoolss_WritePrinter(pipes_struct *p,
+			     struct spoolss_WritePrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 buffer_size = q_u->buffer_size;
-	uint8 *buffer = q_u->buffer;
-	uint32 *buffer_written = &q_u->buffer_size2;
+	POLICY_HND *handle = r->in.handle;
+	uint32 buffer_size = r->in._data_size;
+	uint8 *buffer = r->in.data.data;
+	uint32 *buffer_written = &r->in._data_size;
 	int snum;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_writeprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
-		r_u->buffer_written = q_u->buffer_size2;
+		DEBUG(2,("_spoolss_WritePrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(handle)));
+		*r->out.num_written = r->in._data_size;
 		return WERR_BADFID;
 	}
 
@@ -5921,14 +5931,14 @@ WERROR _spoolss_writeprinter(pipes_struct *p, SPOOL_Q_WRITEPRINTER *q_u, SPOOL_R
 	(*buffer_written) = (uint32)print_job_write(snum, Printer->jobid, (const char *)buffer,
 					(SMB_OFF_T)-1, (size_t)buffer_size);
 	if (*buffer_written == (uint32)-1) {
-		r_u->buffer_written = 0;
+		*r->out.num_written = 0;
 		if (errno == ENOSPC)
 			return WERR_NO_SPOOL_SPACE;
 		else
 			return WERR_ACCESS_DENIED;
 	}
 
-	r_u->buffer_written = q_u->buffer_size2;
+	*r->out.num_written = r->in._data_size;
 
 	return WERR_OK;
 }
@@ -5978,21 +5988,24 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 	return errcode;
 }
 
-/********************************************************************
- * api_spoolss_abortprinter
+
+/****************************************************************
+ _spoolss_AbortPrinter
  * From MSDN: "Deletes printer's spool file if printer is configured
  * for spooling"
- ********************************************************************/
+****************************************************************/
 
-WERROR _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u)
+WERROR _spoolss_AbortPrinter(pipes_struct *p,
+			     struct spoolss_AbortPrinter *r)
 {
-	POLICY_HND	*handle = &q_u->handle;
+	POLICY_HND	*handle = r->in.handle;
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 	int		snum;
 	WERROR 		errcode = WERR_OK;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_abortprinter: Invalid handle (%s:%u:%u)\n",OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_AbortPrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -6559,16 +6572,19 @@ WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SET
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_FindClosePrinterNotify
+****************************************************************/
 
-WERROR _spoolss_fcpn(pipes_struct *p, SPOOL_Q_FCPN *q_u, SPOOL_R_FCPN *r_u)
+WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
+				       struct spoolss_FindClosePrinterNotify *r)
 {
-	POLICY_HND *handle = &q_u->handle;
+	POLICY_HND *handle = r->in.handle;
 	Printer_entry *Printer= find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_fcpn: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_FindClosePrinterNotify: "
+			"Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -7237,6 +7253,27 @@ static void fill_form_1(FORM_1 *form, nt_forms_struct *list)
 /****************************************************************************
 ****************************************************************************/
 
+static WERROR fill_form_info_1(TALLOC_CTX *mem_ctx,
+			       struct spoolss_FormInfo1 *form,
+			       nt_forms_struct *list)
+{
+	form->form_name		= talloc_strdup(mem_ctx, list->name);
+	W_ERROR_HAVE_NO_MEMORY(form->form_name);
+
+	form->flags		= list->flag;
+	form->size.width	= list->width;
+	form->size.height	= list->length;
+	form->area.left		= list->left;
+	form->area.top		= list->top;
+	form->area.right	= list->right;
+	form->area.bottom	= list->bottom;
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
 WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u)
 {
 	uint32 level = q_u->level;
@@ -7346,41 +7383,35 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	}
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_GetForm
+****************************************************************/
 
-WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *r_u)
+WERROR _spoolss_GetForm(pipes_struct *p,
+			struct spoolss_GetForm *r)
 {
-	uint32 level = q_u->level;
-	UNISTR2 *uni_formname = &q_u->formname;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
+	uint32 level = r->in.level;
+	uint32 offered = r->in.offered;
+	uint32 *needed = r->out.needed;
 
 	nt_forms_struct *list=NULL;
 	nt_forms_struct builtin_form;
 	bool foundBuiltin;
-	FORM_1 form_1;
-	fstring form_name;
-	int buffer_size=0;
+	union spoolss_FormInfo info;
+	struct spoolss_FormInfo1 form_1;
 	int numofforms=0, i=0;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (offered!=0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
-
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name));
-
-	DEBUG(4,("_spoolss_getform\n"));
+	DEBUG(4,("_spoolss_GetForm\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
 	DEBUGADD(5,("Info level [%d]\n",          level));
 
-	foundBuiltin = get_a_builtin_ntform(uni_formname,&builtin_form);
+	foundBuiltin = get_a_builtin_ntform_by_string(r->in.form_name, &builtin_form);
 	if (!foundBuiltin) {
 		numofforms = get_ntforms(&list);
 		DEBUGADD(5,("Number of forms [%d]\n",     numofforms));
@@ -7392,17 +7423,19 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	switch (level) {
 	case 1:
 		if (foundBuiltin) {
-			fill_form_1(&form_1, &builtin_form);
+			fill_form_info_1(p->mem_ctx, &form_1, &builtin_form);
 		} else {
 
 			/* Check if the requested name is in the list of form structures */
 			for (i=0; i<numofforms; i++) {
 
-				DEBUG(4,("_spoolss_getform: checking form %s (want %s)\n", list[i].name, form_name));
+				DEBUG(4,("_spoolss_GetForm: checking form %s (want %s)\n",
+					list[i].name, r->in.form_name));
 
-				if (strequal(form_name, list[i].name)) {
-					DEBUGADD(6,("Found form %s number [%d]\n", form_name, i));
-					fill_form_1(&form_1, &list[i]);
+				if (strequal(r->in.form_name, list[i].name)) {
+					DEBUGADD(6,("Found form %s number [%d]\n",
+						r->in.form_name, i));
+					fill_form_info_1(p->mem_ctx, &form_1, &list[i]);
 					break;
 				}
 			}
@@ -7414,17 +7447,20 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 		}
 		/* check the required size. */
 
-		*needed=spoolss_size_form_1(&form_1);
+		info.info1 = form_1;
 
-		if (*needed > offered)
+		*needed = ndr_size_spoolss_FormInfo(&info, 1, NULL, 0);
+
+		if (*needed > offered) {
+			r->out.info = NULL;
 			return WERR_INSUFFICIENT_BUFFER;
+		}
 
-		if (!rpcbuf_alloc_size(buffer, buffer_size))
-			return WERR_NOMEM;
+		r->out.info->info1 = form_1;
 
 		/* fill the buffer with the form structures */
-		DEBUGADD(6,("adding form %s [%d] to buffer\n", form_name, i));
-		smb_io_form_1("", buffer, &form_1, 0);
+		DEBUGADD(6,("adding form %s [%d] to buffer\n",
+			r->in.form_name, i));
 
 		return WERR_OK;
 
@@ -7882,7 +7918,7 @@ WERROR _spoolss_addprinterdriver(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVER *q_u,
 	 * server.  Right now, we just need to send ourselves a message
 	 * to update each printer bound to this driver.   --jerry
 	 */
-	
+
 	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
 		DEBUG(0,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
 			driver_name));
@@ -8389,26 +8425,24 @@ WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R
 	return WERR_OK;
 }
 
+/****************************************************************
+ _spoolss_DeletePrinterData
+****************************************************************/
 
-/****************************************************************************
-****************************************************************************/
-
-WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u)
+WERROR _spoolss_DeletePrinterData(pipes_struct *p,
+				  struct spoolss_DeletePrinterData *r)
 {
-	POLICY_HND 	*handle = &q_u->handle;
-	UNISTR2 	*value = &q_u->valuename;
-
+	POLICY_HND 	*handle = r->in.handle;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
-	char *valuename = NULL;
-	TALLOC_CTX *ctx = p->mem_ctx;
 
-	DEBUG(5,("spoolss_deleteprinterdata\n"));
+	DEBUG(5,("_spoolss_DeletePrinterData\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeletePrinterData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8416,7 +8450,8 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties change denied by handle\n"));
+		DEBUG(3, ("_spoolss_DeletePrinterData: "
+			"printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -8424,30 +8459,31 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	valuename = unistr2_to_ascii_talloc(ctx, value);
-	if (!valuename) {
+	if (!r->in.value_name) {
 		free_a_printer(&printer, 2);
 		return WERR_NOMEM;
 	}
 
-	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY, valuename );
+	status = delete_printer_dataex( printer, SPOOL_PRINTERDATA_KEY,
+					r->in.value_name );
 
 	if ( W_ERROR_IS_OK(status) )
 		mod_a_printer( printer, 2 );
 
 	free_a_printer(&printer, 2);
-	TALLOC_FREE(valuename);
 
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_AddForm
+****************************************************************/
 
-WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM *r_u)
+WERROR _spoolss_AddForm(pipes_struct *p,
+			struct spoolss_AddForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	FORM *form = &q_u->form;
+	POLICY_HND *handle = r->in.handle;
+	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
 	int snum;
 	WERROR status = WERR_OK;
@@ -8457,10 +8493,11 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	DEBUG(5,("spoolss_addform\n"));
+	DEBUG(5,("_spoolss_AddForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_addform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_AddForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8485,7 +8522,7 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 
 	/* can't add if builtin */
 
-	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
 		status = WERR_FILE_EXISTS;
 		goto done;
 	}
@@ -8514,13 +8551,15 @@ done:
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_DeleteForm
+****************************************************************/
 
-WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DELETEFORM *r_u)
+WERROR _spoolss_DeleteForm(pipes_struct *p,
+			   struct spoolss_DeleteForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	UNISTR2 *form_name = &q_u->name;
+	POLICY_HND *handle = r->in.handle;
+	const char *form_name = r->in.form_name;
 	nt_forms_struct tmpForm;
 	int count=0;
 	nt_forms_struct *list=NULL;
@@ -8529,10 +8568,11 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	WERROR status = WERR_OK;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 
-	DEBUG(5,("spoolss_deleteform\n"));
+	DEBUG(5,("_spoolss_DeleteForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeleteForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8549,14 +8589,14 @@ WERROR _spoolss_deleteform( pipes_struct *p, SPOOL_Q_DELETEFORM *q_u, SPOOL_R_DE
 	}
 
 	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_deleteform: denied by handle permissions.\n"));
+		DEBUG(2,("_spoolss_DeleteForm: denied by handle permissions.\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
 	/* can't delete if builtin */
 
-	if (get_a_builtin_ntform(form_name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form_name,&tmpForm)) {
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -8581,13 +8621,15 @@ done:
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_SetForm
+****************************************************************/
 
-WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *r_u)
+WERROR _spoolss_SetForm(pipes_struct *p,
+			struct spoolss_SetForm *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	FORM *form = &q_u->form;
+	POLICY_HND *handle = r->in.handle;
+	struct spoolss_AddFormInfo1 *form = r->in.info.info1;
 	nt_forms_struct tmpForm;
 	int snum;
 	WERROR status = WERR_OK;
@@ -8597,10 +8639,11 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
- 	DEBUG(5,("spoolss_setform\n"));
+	DEBUG(5,("_spoolss_SetForm\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setform: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetForm: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -8617,13 +8660,13 @@ WERROR _spoolss_setform(pipes_struct *p, SPOOL_Q_SETFORM *q_u, SPOOL_R_SETFORM *
 	}
 
 	if ( !(Printer->access_granted & (PRINTER_ACCESS_ADMINISTER|SERVER_ACCESS_ADMINISTER)) ) {
-		DEBUG(2,("_spoolss_setform: denied by handle permissions\n"));
+		DEBUG(2,("_spoolss_SetForm: denied by handle permissions\n"));
 		status = WERR_ACCESS_DENIED;
 		goto done;
 	}
 
 	/* can't set if builtin */
-	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
+	if (get_a_builtin_ntform_by_string(form->form_name, &tmpForm)) {
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -9325,29 +9368,24 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	return status;
 }
 
+/****************************************************************
+ _spoolss_DeletePrinterDataEx
+****************************************************************/
 
-/********************************************************************
- * spoolss_deleteprinterdataex
- ********************************************************************/
-
-WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX *q_u, SPOOL_R_DELETEPRINTERDATAEX *r_u)
+WERROR _spoolss_DeletePrinterDataEx(pipes_struct *p,
+				    struct spoolss_DeletePrinterDataEx *r)
 {
-	POLICY_HND 	*handle = &q_u->handle;
-	UNISTR2 	*value = &q_u->valuename;
-	UNISTR2 	*key = &q_u->keyname;
-
+	POLICY_HND 	*handle = r->in.handle;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 		snum=0;
 	WERROR 		status = WERR_OK;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
-	char *valuename = NULL;
-	char *keyname = NULL;
-	TALLOC_CTX *ctx = p->mem_ctx;
 
-	DEBUG(5,("spoolss_deleteprinterdataex\n"));
+	DEBUG(5,("_spoolss_DeletePrinterDataEx\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterdata: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeletePrinterDataEx: "
+			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -9355,13 +9393,12 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_deleteprinterdataex: printer properties change denied by handle\n"));
+		DEBUG(3, ("_spoolss_DeletePrinterDataEx: "
+			"printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	valuename = unistr2_to_ascii_talloc(ctx, value);
-	keyname = unistr2_to_ascii_talloc(ctx, key);
-	if (!valuename || !keyname) {
+	if (!r->in.value_name || !r->in.key_name) {
 		return WERR_NOMEM;
 	}
 
@@ -9369,7 +9406,7 @@ WERROR _spoolss_deleteprinterdataex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATAEX
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-	status = delete_printer_dataex( printer, keyname, valuename );
+	status = delete_printer_dataex( printer, r->in.key_name, r->in.value_name );
 
 	if ( W_ERROR_IS_OK(status) )
 		mod_a_printer( printer, 2 );
@@ -9451,36 +9488,38 @@ done:
         return status;
 }
 
-/********************************************************************
- * spoolss_deleteprinterkey
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterKey
+****************************************************************/
 
-WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u, SPOOL_R_DELETEPRINTERKEY *r_u)
+WERROR _spoolss_DeletePrinterKey(pipes_struct *p,
+				 struct spoolss_DeletePrinterKey *r)
 {
-	POLICY_HND		*handle = &q_u->handle;
-	Printer_entry 		*Printer = find_printer_index_by_hnd(p, &q_u->handle);
-	fstring 		key;
+	POLICY_HND		*handle = r->in.handle;
+	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum=0;
 	WERROR			status;
 
-	DEBUG(5,("spoolss_deleteprinterkey\n"));
+	DEBUG(5,("_spoolss_DeletePrinterKey\n"));
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_deleteprinterkey: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_DeletePrinterKey: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
 	/* if keyname == NULL, return error */
 
-	if ( !q_u->keyname.buffer )
+	if ( !r->in.key_name )
 		return WERR_INVALID_PARAM;
 
 	if (!get_printer_snum(p, handle, &snum, NULL))
 		return WERR_BADFID;
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
-		DEBUG(3, ("_spoolss_deleteprinterkey: printer properties change denied by handle\n"));
+		DEBUG(3, ("_spoolss_DeletePrinterKey: "
+			"printer properties change denied by handle\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -9490,9 +9529,7 @@ WERROR _spoolss_deleteprinterkey(pipes_struct *p, SPOOL_Q_DELETEPRINTERKEY *q_u,
 
 	/* delete the key and all subneys */
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key));
-
-	status = delete_all_printer_data( printer->info_2, key );
+	status = delete_all_printer_data( printer->info_2, r->in.key_name );
 
 	if ( W_ERROR_IS_OK(status) )
 		status = mod_a_printer(printer, 2);
@@ -9941,3 +9978,872 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	return WERR_INVALID_PRINT_MONITOR;
 }
+/****************************************************************
+ _spoolss_EnumPrinters
+****************************************************************/
+
+WERROR _spoolss_EnumPrinters(pipes_struct *p,
+			     struct spoolss_EnumPrinters *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_OpenPrinter
+****************************************************************/
+
+WERROR _spoolss_OpenPrinter(pipes_struct *p,
+			    struct spoolss_OpenPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetJob
+****************************************************************/
+
+WERROR _spoolss_SetJob(pipes_struct *p,
+		       struct spoolss_SetJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetJob
+****************************************************************/
+
+WERROR _spoolss_GetJob(pipes_struct *p,
+		       struct spoolss_GetJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumJobs
+****************************************************************/
+
+WERROR _spoolss_EnumJobs(pipes_struct *p,
+			 struct spoolss_EnumJobs *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinter
+****************************************************************/
+
+WERROR _spoolss_AddPrinter(pipes_struct *p,
+			   struct spoolss_AddPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinter
+****************************************************************/
+
+WERROR _spoolss_SetPrinter(pipes_struct *p,
+			   struct spoolss_SetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinter
+****************************************************************/
+
+WERROR _spoolss_GetPrinter(pipes_struct *p,
+			   struct spoolss_GetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterDriver
+****************************************************************/
+
+WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
+				 struct spoolss_AddPrinterDriver *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterDrivers
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
+				   struct spoolss_EnumPrinterDrivers *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriver
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
+				 struct spoolss_GetPrinterDriver *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriverDirectory
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
+					  struct spoolss_GetPrinterDriverDirectory *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrintProcessor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
+				  struct spoolss_AddPrintProcessor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrintProcessors
+****************************************************************/
+
+WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
+				    struct spoolss_EnumPrintProcessors *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrintProcessorDirectory
+****************************************************************/
+
+WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
+					   struct spoolss_GetPrintProcessorDirectory *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_StartDocPrinter
+****************************************************************/
+
+WERROR _spoolss_StartDocPrinter(pipes_struct *p,
+				struct spoolss_StartDocPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReadPrinter
+****************************************************************/
+
+WERROR _spoolss_ReadPrinter(pipes_struct *p,
+			    struct spoolss_ReadPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddJob
+****************************************************************/
+
+WERROR _spoolss_AddJob(pipes_struct *p,
+		       struct spoolss_AddJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ScheduleJob
+****************************************************************/
+
+WERROR _spoolss_ScheduleJob(pipes_struct *p,
+			    struct spoolss_ScheduleJob *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterData
+****************************************************************/
+
+WERROR _spoolss_GetPrinterData(pipes_struct *p,
+			       struct spoolss_GetPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinterData
+****************************************************************/
+
+WERROR _spoolss_SetPrinterData(pipes_struct *p,
+			       struct spoolss_SetPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_WaitForPrinterChange
+****************************************************************/
+
+WERROR _spoolss_WaitForPrinterChange(pipes_struct *p,
+				     struct spoolss_WaitForPrinterChange *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumForms
+****************************************************************/
+
+WERROR _spoolss_EnumForms(pipes_struct *p,
+			  struct spoolss_EnumForms *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPorts
+****************************************************************/
+
+WERROR _spoolss_EnumPorts(pipes_struct *p,
+			  struct spoolss_EnumPorts *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumMonitors
+****************************************************************/
+
+WERROR _spoolss_EnumMonitors(pipes_struct *p,
+			     struct spoolss_EnumMonitors *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPort
+****************************************************************/
+
+WERROR _spoolss_AddPort(pipes_struct *p,
+			struct spoolss_AddPort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ConfigurePort
+****************************************************************/
+
+WERROR _spoolss_ConfigurePort(pipes_struct *p,
+			      struct spoolss_ConfigurePort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePort
+****************************************************************/
+
+WERROR _spoolss_DeletePort(pipes_struct *p,
+			   struct spoolss_DeletePort *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_CreatePrinterIC
+****************************************************************/
+
+WERROR _spoolss_CreatePrinterIC(pipes_struct *p,
+				struct spoolss_CreatePrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_PlayGDIScriptOnPrinterIC
+****************************************************************/
+
+WERROR _spoolss_PlayGDIScriptOnPrinterIC(pipes_struct *p,
+					 struct spoolss_PlayGDIScriptOnPrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterIC
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterIC(pipes_struct *p,
+				struct spoolss_DeletePrinterIC *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterConnection
+****************************************************************/
+
+WERROR _spoolss_AddPrinterConnection(pipes_struct *p,
+				     struct spoolss_AddPrinterConnection *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrinterConnection
+****************************************************************/
+
+WERROR _spoolss_DeletePrinterConnection(pipes_struct *p,
+					struct spoolss_DeletePrinterConnection *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_PrinterMessageBox
+****************************************************************/
+
+WERROR _spoolss_PrinterMessageBox(pipes_struct *p,
+				  struct spoolss_PrinterMessageBox *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddMonitor
+****************************************************************/
+
+WERROR _spoolss_AddMonitor(pipes_struct *p,
+			   struct spoolss_AddMonitor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeleteMonitor
+****************************************************************/
+
+WERROR _spoolss_DeleteMonitor(pipes_struct *p,
+			      struct spoolss_DeleteMonitor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrintProcessor
+****************************************************************/
+
+WERROR _spoolss_DeletePrintProcessor(pipes_struct *p,
+				     struct spoolss_DeletePrintProcessor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrintProvidor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProvidor(pipes_struct *p,
+				 struct spoolss_AddPrintProvidor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_DeletePrintProvidor
+****************************************************************/
+
+WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
+				    struct spoolss_DeletePrintProvidor *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrintProcDataTypes
+****************************************************************/
+
+WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
+				       struct spoolss_EnumPrintProcDataTypes *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ResetPrinter
+****************************************************************/
+
+WERROR _spoolss_ResetPrinter(pipes_struct *p,
+			     struct spoolss_ResetPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDriver2
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDriver2(pipes_struct *p,
+				  struct spoolss_GetPrinterDriver2 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_FindFirstPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_FindFirstPrinterChangeNotification(pipes_struct *p,
+						   struct spoolss_FindFirstPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_FindNextPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_FindNextPrinterChangeNotification(pipes_struct *p,
+						  struct spoolss_FindNextPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterFindFirstPrinterChangeNotificationOld
+****************************************************************/
+
+WERROR _spoolss_RouterFindFirstPrinterChangeNotificationOld(pipes_struct *p,
+							    struct spoolss_RouterFindFirstPrinterChangeNotificationOld *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReplyOpenPrinter
+****************************************************************/
+
+WERROR _spoolss_ReplyOpenPrinter(pipes_struct *p,
+				 struct spoolss_ReplyOpenPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterReplyPrinter
+****************************************************************/
+
+WERROR _spoolss_RouterReplyPrinter(pipes_struct *p,
+				   struct spoolss_RouterReplyPrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ReplyClosePrinter
+****************************************************************/
+
+WERROR _spoolss_ReplyClosePrinter(pipes_struct *p,
+				  struct spoolss_ReplyClosePrinter *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPortEx
+****************************************************************/
+
+WERROR _spoolss_AddPortEx(pipes_struct *p,
+			  struct spoolss_AddPortEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterFindFirstPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p,
+							 struct spoolss_RouterFindFirstPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SpoolerInit
+****************************************************************/
+
+WERROR _spoolss_SpoolerInit(pipes_struct *p,
+			    struct spoolss_SpoolerInit *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_ResetPrinterEx
+****************************************************************/
+
+WERROR _spoolss_ResetPrinterEx(pipes_struct *p,
+			       struct spoolss_ResetPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RemoteFindFirstPrinterChangeNotifyEx
+****************************************************************/
+
+WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
+						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RouterRefreshPrinterChangeNotification
+****************************************************************/
+
+WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p,
+						       struct spoolss_RouterRefreshPrinterChangeNotification *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_RemoteFindNextPrinterChangeNotifyEx
+****************************************************************/
+
+WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p,
+						    struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_44
+****************************************************************/
+
+WERROR _spoolss_44(pipes_struct *p,
+		   struct spoolss_44 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_OpenPrinterEx
+****************************************************************/
+
+WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
+			      struct spoolss_OpenPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterEx
+****************************************************************/
+
+WERROR _spoolss_AddPrinterEx(pipes_struct *p,
+			     struct spoolss_AddPrinterEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_47
+****************************************************************/
+
+WERROR _spoolss_47(pipes_struct *p,
+		   struct spoolss_47 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterData
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterData(pipes_struct *p,
+				struct spoolss_EnumPrinterData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4a
+****************************************************************/
+
+WERROR _spoolss_4a(pipes_struct *p,
+		   struct spoolss_4a *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4b
+****************************************************************/
+
+WERROR _spoolss_4b(pipes_struct *p,
+		   struct spoolss_4b *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_4c
+****************************************************************/
+
+WERROR _spoolss_4c(pipes_struct *p,
+		   struct spoolss_4c *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_SetPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_SetPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_GetPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_GetPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterDataEx
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterDataEx(pipes_struct *p,
+				  struct spoolss_EnumPrinterDataEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_EnumPrinterKey
+****************************************************************/
+
+WERROR _spoolss_EnumPrinterKey(pipes_struct *p,
+			       struct spoolss_EnumPrinterKey *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_53
+****************************************************************/
+
+WERROR _spoolss_53(pipes_struct *p,
+		   struct spoolss_53 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_55
+****************************************************************/
+
+WERROR _spoolss_55(pipes_struct *p,
+		   struct spoolss_55 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_56
+****************************************************************/
+
+WERROR _spoolss_56(pipes_struct *p,
+		   struct spoolss_56 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_57
+****************************************************************/
+
+WERROR _spoolss_57(pipes_struct *p,
+		   struct spoolss_57 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_XcvData
+****************************************************************/
+
+WERROR _spoolss_XcvData(pipes_struct *p,
+			struct spoolss_XcvData *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_AddPrinterDriverEx
+****************************************************************/
+
+WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
+				   struct spoolss_AddPrinterDriverEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5a
+****************************************************************/
+
+WERROR _spoolss_5a(pipes_struct *p,
+		   struct spoolss_5a *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5b
+****************************************************************/
+
+WERROR _spoolss_5b(pipes_struct *p,
+		   struct spoolss_5b *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5c
+****************************************************************/
+
+WERROR _spoolss_5c(pipes_struct *p,
+		   struct spoolss_5c *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5d
+****************************************************************/
+
+WERROR _spoolss_5d(pipes_struct *p,
+		   struct spoolss_5d *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5e
+****************************************************************/
+
+WERROR _spoolss_5e(pipes_struct *p,
+		   struct spoolss_5e *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+ _spoolss_5f
+****************************************************************/
+
+WERROR _spoolss_5f(pipes_struct *p,
+		   struct spoolss_5f *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+

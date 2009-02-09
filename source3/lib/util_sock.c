@@ -1051,17 +1051,17 @@ static void open_socket_out_connected(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct open_socket_out_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_state);
-	NTSTATUS status;
+	int err;
 	int sys_errno;
 
-	status = async_connect_recv(subreq, &sys_errno);
+	err = async_connect_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
-	if (NT_STATUS_IS_OK(status)) {
+	if (err == 0) {
 		async_req_done(req);
 		return;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)
+	if ((sys_errno == ETIME)
 	    || (sys_errno == EINPROGRESS)
 	    || (sys_errno == EALREADY)
 	    || (sys_errno == EAGAIN)) {
@@ -1082,7 +1082,7 @@ static void open_socket_out_connected(struct async_req *subreq)
 		}
 		if (!async_req_set_timeout(subreq, state->ev,
 					   timeval_set(0, state->wait_nsec))) {
-			async_req_nterror(req, NT_STATUS_NO_MEMORY);
+			async_req_error(req, ENOMEM);
 			return;
 		}
 		subreq->async.fn = open_socket_out_connected;
@@ -1098,17 +1098,17 @@ static void open_socket_out_connected(struct async_req *subreq)
 #endif
 
 	/* real error */
-	async_req_nterror(req, map_nt_error_from_unix(sys_errno));
+	async_req_error(req, sys_errno);
 }
 
 NTSTATUS open_socket_out_recv(struct async_req *req, int *pfd)
 {
 	struct open_socket_out_state *state = talloc_get_type_abort(
 		req->private_data, struct open_socket_out_state);
-	NTSTATUS status;
+	int err;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
+	if (async_req_is_errno(req, &err)) {
+		return map_nt_error_from_unix(err);
 	}
 	*pfd = state->fd;
 	state->fd = -1;

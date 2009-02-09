@@ -482,31 +482,6 @@ WERROR rpccli_spoolss_open_printer_ex(struct rpc_pipe_client *cli, TALLOC_CTX *m
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_CLOSEPRINTER in;
-	SPOOL_R_CLOSEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_closeprinter( &in, pol );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_CLOSEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_closeprinter,
-	            spoolss_io_r_closeprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
@@ -1061,66 +1036,6 @@ WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_deleteprinterdriverex(struct rpc_pipe_client *cli, 
-                                         TALLOC_CTX *mem_ctx, const char *arch,
-                                         const char *driver, int version)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERDRIVEREX in;
-	SPOOL_R_DELETEPRINTERDRIVEREX out;
-	fstring server;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-	strupper_m(server);
-
-	make_spoolss_q_deleteprinterdriverex( mem_ctx, &in, server, arch, driver, version );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERDRIVEREX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterdriverex,
-	            spoolss_io_r_deleteprinterdriverex, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;	
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteprinterdriver (struct rpc_pipe_client *cli, 
-					TALLOC_CTX *mem_ctx, const char *arch,
-					const char *driver)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERDRIVER in;
-        SPOOL_R_DELETEPRINTERDRIVER out;
-	fstring server;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	make_spoolss_q_deleteprinterdriver( mem_ctx, &in, server, arch, driver );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERDRIVER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterdriver,
-	            spoolss_io_r_deleteprinterdriver, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;	
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      char *name, char *environment,
@@ -1173,138 +1088,6 @@ WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 	
 	fstrcpy(procdir, "Not implemented!");
 	
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, FORM *form)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ADDFORM in;
-	SPOOL_R_ADDFORM out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_addform( &in, handle, level, form );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ADDFORM,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_addform,
-	            spoolss_io_r_addform, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, uint32 level, 
-			   const char *form_name, FORM *form)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETFORM in;
-	SPOOL_R_SETFORM out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_setform( &in, handle, level, form_name, form );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_SETFORM,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_setform,
-	            spoolss_io_r_setform, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *handle, const char *formname, 
-			   uint32 level, FORM_1 *form)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETFORM in;
-	SPOOL_R_GETFORM out;
-	RPC_BUFFER buffer;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETFORM,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getform,
-	            spoolss_io_r_getform, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_getform( &in, handle, formname, level, &buffer, offered );
-	
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETFORM,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getform,
-		            spoolss_io_r_getform, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-
-	if (!smb_io_form_1("", out.buffer, form, 0)) {
-		return WERR_GENERAL_FAILURE;
-	}
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *handle, const char *form_name)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEFORM in;
-	SPOOL_R_DELETEFORM out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_deleteform( &in, handle, form_name );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEFORM,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteform,
-	            spoolss_io_r_deleteform, 
-	            WERR_GENERAL_FAILURE );
-		    
 	return out.status;
 }
 
@@ -1534,56 +1317,6 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_startpageprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_STARTPAGEPRINTER in;
-	SPOOL_R_STARTPAGEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_startpageprinter( &in, hnd );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_STARTPAGEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_startpageprinter,
-	            spoolss_io_r_startpageprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_endpageprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENDPAGEPRINTER in;
-	SPOOL_R_ENDPAGEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_endpageprinter( &in, hnd );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENDPAGEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_endpageprinter,
-	            spoolss_io_r_endpageprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, char *docname, 
 				   char *outputfile, char *datatype, 
@@ -1609,31 +1342,6 @@ WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *m
 
 	*jobid = out.jobid;
 
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_enddocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				  POLICY_HND *hnd)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ENDDOCPRINTER in;
-	SPOOL_R_ENDDOCPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_enddocprinter( &in, hnd );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ENDDOCPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_enddocprinter,
-	            spoolss_io_r_enddocprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
 	return out.status;
 }
 
@@ -1913,86 +1621,6 @@ WERROR rpccli_spoolss_enumprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX 
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_writeprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				POLICY_HND *hnd, uint32 data_size, char *data,
-				uint32 *num_written)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_WRITEPRINTER in;
-	SPOOL_R_WRITEPRINTER out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_writeprinter( &in, hnd, data_size, data );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_WRITEPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_writeprinter,
-	            spoolss_io_r_writeprinter, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if (num_written)
-		*num_written = out.buffer_written;
-		
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				     POLICY_HND *hnd, char *valuename)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERDATA in;
-	SPOOL_R_DELETEPRINTERDATA out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_deleteprinterdata( &in, hnd, valuename );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERDATA,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterdata,
-	            spoolss_io_r_deleteprinterdata, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				       POLICY_HND *hnd, char *keyname, 
-				       char *valuename)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERDATAEX in;
-	SPOOL_R_DELETEPRINTERDATAEX out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_deleteprinterdataex( &in, hnd, keyname, valuename );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERDATAEX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterdataex,
-	            spoolss_io_r_deleteprinterdataex, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *keyname,
 				  uint16 **keylist, uint32 *len)
@@ -2043,31 +1671,6 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 			*len = out.keys.buf_len * 2;
 	}
 
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd, char *keyname)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERKEY in;
-	SPOOL_R_DELETEPRINTERKEY out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_deleteprinterkey( &in, hnd, keyname );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERKEY,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterkey,
-	            spoolss_io_r_deleteprinterkey, 
-	            WERR_GENERAL_FAILURE );
-		    
 	return out.status;
 }
 

@@ -27,11 +27,11 @@ AC_ARG_WITH(fhs,
 
 AC_SUBST(libdir)
 
-SAMBA_SOURCE="../../source"
+SAMBA_SOURCE="../../source3"
 ####################################################
 # set the location location of the samba source tree
 AC_ARG_WITH(samba-source,
-[  --with-samba-source=DIR Where is the samba source tree (../../source)],
+[  --with-samba-source=DIR Where is the samba source tree (../../source3)],
 [ case "$withval" in
   yes|no)
   #
@@ -337,11 +337,11 @@ AC_CACHE_CHECK([whether building shared libraries actually works],
    ac_cv_shlib_works=no
    # try building a trivial shared library
    if test "$PICSUFFIX" = "po"; then
-     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.po ${srcdir-.}/../../source/tests/shlib.c &&
+     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.po ${srcdir-.}/../../tests/shlib.c &&
        $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes
    else
-     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.$PICSUFFIX ${srcdir-.}/tests/shlib.c &&
+     $CC $CPPFLAGS $CFLAGS $PICFLAGS -c -o shlib.$PICSUFFIX ${srcdir-.}/../../tests/shlib.c &&
        mv shlib.$PICSUFFIX shlib.po &&
        $CC $CPPFLAGS $CFLAGS `eval echo $LDSHFLAGS` -o "shlib.$SHLIBEXT" shlib.po &&
        ac_cv_shlib_works=yes

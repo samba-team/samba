@@ -61,7 +61,6 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	uint32 data_space_available;
 	uint32 data_len_left;
 	uint32 data_len;
-	prs_struct outgoing_pdu;
 	NTSTATUS status;
 	DATA_BLOB auth_blob;
 	RPC_HDR_AUTH auth_info;
@@ -105,8 +104,8 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		return False;
 	}
 
-	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN -
-					RPC_HDR_AUTH_LEN - NTLMSSP_SIG_SIZE;
+	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
+		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN - NTLMSSP_SIG_SIZE;
 
 	/*
 	 * The amount we send is the minimum of the available
@@ -150,27 +149,27 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init_empty( &outgoing_pdu, p->mem_ctx, MARSHALL);
-	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/* Store the header in the data stream. */
-	if(!smb_io_rpc_hdr("hdr", &p->hdr, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr("hdr", &p->hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to marshall RPC_HDR.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Copy the data into the PDU. */
 
-	if(!prs_append_some_prs_data(&outgoing_pdu, &p->out_data.rdata, p->out_data.data_sent_length, data_len)) {
+	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
+				     p->out_data.data_sent_length, data_len)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to copy %u bytes of data.\n", (unsigned int)data_len));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -179,10 +178,11 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 		char pad[8];
 
 		memset(pad, '\0', 8);
-		if (!prs_copy_data_in(&outgoing_pdu, pad, ss_padding_len)) {
+		if (!prs_copy_data_in(&p->out_data.frag, pad,
+				      ss_padding_len)) {
 			DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes of pad data.\n",
 					(unsigned int)ss_padding_len));
-			prs_mem_free(&outgoing_pdu);
+			prs_mem_free(&p->out_data.frag);
 			return False;
 		}
 	}
@@ -201,9 +201,10 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	}
 
 	init_rpc_hdr_auth(&auth_info, auth_type, auth_level, ss_padding_len, 1 /* context id. */);
-	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &p->out_data.frag,
+				0)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to marshall RPC_HDR_AUTH.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -212,43 +213,48 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	switch (p->auth.auth_level) {
 		case PIPE_AUTH_LEVEL_PRIVACY:
 			/* Data portion is encrypted. */
-			status = ntlmssp_seal_packet(a->ntlmssp_state,
-							(unsigned char *)prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
-							data_len + ss_padding_len,
-							(unsigned char *)prs_data_p(&outgoing_pdu),
-							(size_t)prs_offset(&outgoing_pdu),
-							&auth_blob);
+			status = ntlmssp_seal_packet(
+				a->ntlmssp_state,
+				(uint8_t *)prs_data_p(&p->out_data.frag)
+				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+				data_len + ss_padding_len,
+				(unsigned char *)prs_data_p(&p->out_data.frag),
+				(size_t)prs_offset(&p->out_data.frag),
+				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				data_blob_free(&auth_blob);
-				prs_mem_free(&outgoing_pdu);
+				prs_mem_free(&p->out_data.frag);
 				return False;
 			}
 			break;
 		case PIPE_AUTH_LEVEL_INTEGRITY:
 			/* Data is signed. */
-			status = ntlmssp_sign_packet(a->ntlmssp_state,
-							(unsigned char *)prs_data_p(&outgoing_pdu) + RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
-							data_len + ss_padding_len,
-							(unsigned char *)prs_data_p(&outgoing_pdu),
-							(size_t)prs_offset(&outgoing_pdu),
-							&auth_blob);
+			status = ntlmssp_sign_packet(
+				a->ntlmssp_state,
+				(unsigned char *)prs_data_p(&p->out_data.frag)
+				+ RPC_HEADER_LEN + RPC_HDR_RESP_LEN,
+				data_len + ss_padding_len,
+				(unsigned char *)prs_data_p(&p->out_data.frag),
+				(size_t)prs_offset(&p->out_data.frag),
+				&auth_blob);
 			if (!NT_STATUS_IS_OK(status)) {
 				data_blob_free(&auth_blob);
-				prs_mem_free(&outgoing_pdu);
+				prs_mem_free(&p->out_data.frag);
 				return False;
 			}
 			break;
 		default:
-			prs_mem_free(&outgoing_pdu);
+			prs_mem_free(&p->out_data.frag);
 			return False;
 	}
 
 	/* Append the auth blob. */
-	if (!prs_copy_data_in(&outgoing_pdu, (char *)auth_blob.data, NTLMSSP_SIG_SIZE)) {
+	if (!prs_copy_data_in(&p->out_data.frag, (char *)auth_blob.data,
+			      NTLMSSP_SIG_SIZE)) {
 		DEBUG(0,("create_next_pdu_ntlmssp: failed to add %u bytes auth blob.\n",
 				(unsigned int)NTLMSSP_SIG_SIZE));
 		data_blob_free(&auth_blob);
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -259,10 +265,8 @@ static bool create_next_pdu_ntlmssp(pipes_struct *p)
 	 */
 
 	p->out_data.data_sent_length += data_len;
-	p->out_data.current_pdu_len = p->hdr.frag_len;
 	p->out_data.current_pdu_sent = 0;
 
-	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -278,7 +282,6 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
-	prs_struct outgoing_pdu;
 	uint32 data_pos;
 
 	/*
@@ -318,8 +321,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		return False;
 	}
 
-	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN -
-					RPC_HDR_AUTH_LEN - RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
+	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
+		- RPC_HDR_RESP_LEN - RPC_HDR_AUTH_LEN
+		- RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN;
 
 	/*
 	 * The amount we send is the minimum of the available
@@ -357,30 +361,30 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init_empty( &outgoing_pdu, p->mem_ctx, MARSHALL);
-	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/* Store the header in the data stream. */
-	if(!smb_io_rpc_hdr("hdr", &p->hdr, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr("hdr", &p->hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Store the current offset. */
-	data_pos = prs_offset(&outgoing_pdu);
+	data_pos = prs_offset(&p->out_data.frag);
 
 	/* Copy the data into the PDU. */
 
-	if(!prs_append_some_prs_data(&outgoing_pdu, &p->out_data.rdata, p->out_data.data_sent_length, data_len)) {
+	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
+				     p->out_data.data_sent_length, data_len)) {
 		DEBUG(0,("create_next_pdu_schannel: failed to copy %u bytes of data.\n", (unsigned int)data_len));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -388,9 +392,10 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	if (ss_padding_len) {
 		char pad[8];
 		memset(pad, '\0', 8);
-		if (!prs_copy_data_in(&outgoing_pdu, pad, ss_padding_len)) {
+		if (!prs_copy_data_in(&p->out_data.frag, pad,
+				      ss_padding_len)) {
 			DEBUG(0,("create_next_pdu_schannel: failed to add %u bytes of pad data.\n", (unsigned int)ss_padding_len));
-			prs_mem_free(&outgoing_pdu);
+			prs_mem_free(&p->out_data.frag);
 			return False;
 		}
 	}
@@ -399,11 +404,9 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 		/*
 		 * Schannel processing.
 		 */
-		char *data;
 		RPC_HDR_AUTH auth_info;
 		RPC_AUTH_SCHANNEL_CHK verf;
 
-		data = prs_data_p(&outgoing_pdu) + data_pos;
 		/* Check it's the type of reply we were expecting to decode */
 
 		init_rpc_hdr_auth(&auth_info,
@@ -412,20 +415,21 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 					RPC_AUTH_LEVEL_PRIVACY : RPC_AUTH_LEVEL_INTEGRITY,
 				ss_padding_len, 1);
 
-		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info, &outgoing_pdu, 0)) {
+		if(!smb_io_rpc_hdr_auth("hdr_auth", &auth_info,
+					&p->out_data.frag, 0)) {
 			DEBUG(0,("create_next_pdu_schannel: failed to marshall RPC_HDR_AUTH.\n"));
-			prs_mem_free(&outgoing_pdu);
+			prs_mem_free(&p->out_data.frag);
 			return False;
 		}
 
 		schannel_encode(p->auth.a_u.schannel_auth, 
-			      p->auth.auth_level,
-			      SENDER_IS_ACCEPTOR,
-			      &verf, data, data_len + ss_padding_len);
+				p->auth.auth_level, SENDER_IS_ACCEPTOR, &verf,
+				prs_data_p(&p->out_data.frag) + data_pos,
+				data_len + ss_padding_len);
 
 		if (!smb_io_rpc_auth_schannel_chk("", RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN, 
-				&verf, &outgoing_pdu, 0)) {
-			prs_mem_free(&outgoing_pdu);
+				&verf, &p->out_data.frag, 0)) {
+			prs_mem_free(&p->out_data.frag);
 			return False;
 		}
 
@@ -437,10 +441,8 @@ static bool create_next_pdu_schannel(pipes_struct *p)
 	 */
 
 	p->out_data.data_sent_length += data_len;
-	p->out_data.current_pdu_len = p->hdr.frag_len;
 	p->out_data.current_pdu_sent = 0;
 
-	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -455,7 +457,6 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	uint32 data_len;
 	uint32 data_space_available;
 	uint32 data_len_left;
-	prs_struct outgoing_pdu;
 
 	/*
 	 * If we're in the fault state, keep returning fault PDU's until
@@ -494,7 +495,8 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 		return False;
 	}
 
-	data_space_available = sizeof(p->out_data.current_pdu) - RPC_HEADER_LEN - RPC_HDR_RESP_LEN;
+	data_space_available = RPC_MAX_PDU_FRAG_LEN - RPC_HEADER_LEN
+		- RPC_HDR_RESP_LEN;
 
 	/*
 	 * The amount we send is the minimum of the available
@@ -530,27 +532,27 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 * data.
 	 */
 
-	prs_init_empty( &outgoing_pdu, p->mem_ctx, MARSHALL);
-	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/* Store the header in the data stream. */
-	if(!smb_io_rpc_hdr("hdr", &p->hdr, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr("hdr", &p->hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_noath: failed to marshall RPC_HDR.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
 		DEBUG(0,("create_next_pdu_noath: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	/* Copy the data into the PDU. */
 
-	if(!prs_append_some_prs_data(&outgoing_pdu, &p->out_data.rdata, p->out_data.data_sent_length, data_len)) {
+	if(!prs_append_some_prs_data(&p->out_data.frag, &p->out_data.rdata,
+				     p->out_data.data_sent_length, data_len)) {
 		DEBUG(0,("create_next_pdu_noauth: failed to copy %u bytes of data.\n", (unsigned int)data_len));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -559,10 +561,8 @@ static bool create_next_pdu_noauth(pipes_struct *p)
 	 */
 
 	p->out_data.data_sent_length += data_len;
-	p->out_data.current_pdu_len = p->hdr.frag_len;
 	p->out_data.current_pdu_sent = 0;
 
-	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -778,7 +778,6 @@ bool api_pipe_bind_auth3(pipes_struct *p, prs_struct *rpc_in_p)
 
 static bool setup_bind_nak(pipes_struct *p)
 {
-	prs_struct outgoing_rpc;
 	RPC_HDR nak_hdr;
 	uint16 zero = 0;
 
@@ -791,8 +790,7 @@ static bool setup_bind_nak(pipes_struct *p)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init_empty( &outgoing_rpc, p->mem_ctx, MARSHALL);
-	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Initialize a bind_nak header.
@@ -805,9 +803,9 @@ static bool setup_bind_nak(pipes_struct *p)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &nak_hdr, &outgoing_rpc, 0)) {
+	if(!smb_io_rpc_hdr("", &nak_hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("setup_bind_nak: marshalling of RPC_HDR failed.\n"));
-		prs_mem_free(&outgoing_rpc);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
@@ -815,13 +813,12 @@ static bool setup_bind_nak(pipes_struct *p)
 	 * Now add the reject reason.
 	 */
 
-	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero)) {
-		prs_mem_free(&outgoing_rpc);
+	if(!prs_uint16("reject code", &p->out_data.frag, 0, &zero)) {
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	p->out_data.data_sent_length = 0;
-	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
 	p->out_data.current_pdu_sent = 0;
 
 	if (p->auth.auth_data_free_func) {
@@ -840,7 +837,6 @@ static bool setup_bind_nak(pipes_struct *p)
 
 bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 {
-	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
 	RPC_HDR_RESP hdr_resp;
 	RPC_HDR_FAULT fault_resp;
@@ -854,8 +850,7 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 	 * header and are never sending more than one PDU here.
 	 */
 
-	prs_init_empty( &outgoing_pdu, p->mem_ctx, MARSHALL);
-	prs_give_memory( &outgoing_pdu, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/*
 	 * Initialize a fault header.
@@ -877,29 +872,27 @@ bool setup_fault_pdu(pipes_struct *p, NTSTATUS status)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &fault_hdr, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr("", &fault_hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("setup_fault_pdu: marshalling of RPC_HDR failed.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_resp("resp", &hdr_resp, &p->out_data.frag, 0)) {
 		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_RESP.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
-	if(!smb_io_rpc_hdr_fault("fault", &fault_resp, &outgoing_pdu, 0)) {
+	if(!smb_io_rpc_hdr_fault("fault", &fault_resp, &p->out_data.frag, 0)) {
 		DEBUG(0,("setup_fault_pdu: failed to marshall RPC_HDR_FAULT.\n"));
-		prs_mem_free(&outgoing_pdu);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	p->out_data.data_sent_length = 0;
-	p->out_data.current_pdu_len = prs_offset(&outgoing_pdu);
 	p->out_data.current_pdu_sent = 0;
 
-	prs_mem_free(&outgoing_pdu);
 	return True;
 }
 
@@ -1525,7 +1518,6 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
 	prs_struct out_auth;
-	prs_struct outgoing_rpc;
 	int i = 0;
 	int auth_len = 0;
 	unsigned int auth_type = RPC_ANONYMOUS_AUTH_TYPE;
@@ -1537,15 +1529,13 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		return setup_bind_nak(p);
 	}
 
-	prs_init_empty( &outgoing_rpc, p->mem_ctx, MARSHALL);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/* 
 	 * Marshall directly into the outgoing PDU space. We
 	 * must do this as we need to set to the bind response
 	 * header and are never sending more than one PDU here.
 	 */
-
-	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
 	 * Setup the memory to marshall the ba header, and the
@@ -1554,13 +1544,13 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
 	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_bind_req: malloc out_hdr_ba failed.\n"));
-		prs_mem_free(&outgoing_rpc);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_bind_req: malloc out_auth failed.\n"));
-		prs_mem_free(&outgoing_rpc);
+		prs_mem_free(&p->out_data.frag);
 		prs_mem_free(&out_hdr_ba);
 		return False;
 	}
@@ -1606,7 +1596,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		if (NT_STATUS_IS_ERR(status)) {
                        DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
                                 get_pipe_name_from_iface(&hdr_rb.rpc_context[0].abstract)));
-			prs_mem_free(&outgoing_rpc);
+			prs_mem_free(&p->out_data.frag);
 			prs_mem_free(&out_hdr_ba);
 			prs_mem_free(&out_auth);
 
@@ -1764,7 +1754,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &p->hdr, &outgoing_rpc, 0)) {
+	if(!smb_io_rpc_hdr("", &p->hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("api_pipe_bind_req: marshalling of RPC_HDR failed.\n"));
 		goto err_exit;
 	}
@@ -1773,12 +1763,12 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Now add the RPC_HDR_BA and any auth needed.
 	 */
 
-	if(!prs_append_prs_data( &outgoing_rpc, &out_hdr_ba)) {
+	if(!prs_append_prs_data(&p->out_data.frag, &out_hdr_ba)) {
 		DEBUG(0,("api_pipe_bind_req: append of RPC_HDR_BA failed.\n"));
 		goto err_exit;
 	}
 
-	if (auth_len && !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
+	if (auth_len && !prs_append_prs_data( &p->out_data.frag, &out_auth)) {
 		DEBUG(0,("api_pipe_bind_req: append of auth info failed.\n"));
 		goto err_exit;
 	}
@@ -1788,7 +1778,6 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 */
 
 	p->out_data.data_sent_length = 0;
-	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
 	p->out_data.current_pdu_sent = 0;
 
 	prs_mem_free(&out_hdr_ba);
@@ -1798,7 +1787,7 @@ bool api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 
   err_exit:
 
-	prs_mem_free(&outgoing_rpc);
+	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
 	return setup_bind_nak(p);
@@ -1818,18 +1807,15 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	fstring ack_pipe_name;
 	prs_struct out_hdr_ba;
 	prs_struct out_auth;
-	prs_struct outgoing_rpc;
 	int auth_len = 0;
 
-	prs_init_empty( &outgoing_rpc, p->mem_ctx, MARSHALL);
+	prs_init_empty(&p->out_data.frag, p->mem_ctx, MARSHALL);
 
 	/* 
 	 * Marshall directly into the outgoing PDU space. We
 	 * must do this as we need to set to the bind response
 	 * header and are never sending more than one PDU here.
 	 */
-
-	prs_give_memory( &outgoing_rpc, (char *)p->out_data.current_pdu, sizeof(p->out_data.current_pdu), False);
 
 	/*
 	 * Setup the memory to marshall the ba header, and the
@@ -1838,13 +1824,13 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 
 	if(!prs_init(&out_hdr_ba, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_alter_context: malloc out_hdr_ba failed.\n"));
-		prs_mem_free(&outgoing_rpc);
+		prs_mem_free(&p->out_data.frag);
 		return False;
 	}
 
 	if(!prs_init(&out_auth, 1024, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("api_pipe_alter_context: malloc out_auth failed.\n"));
-		prs_mem_free(&outgoing_rpc);
+		prs_mem_free(&p->out_data.frag);
 		prs_mem_free(&out_hdr_ba);
 		return False;
 	}
@@ -1958,7 +1944,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Marshall the header into the outgoing PDU.
 	 */
 
-	if(!smb_io_rpc_hdr("", &p->hdr, &outgoing_rpc, 0)) {
+	if(!smb_io_rpc_hdr("", &p->hdr, &p->out_data.frag, 0)) {
 		DEBUG(0,("api_pipe_alter_context: marshalling of RPC_HDR failed.\n"));
 		goto err_exit;
 	}
@@ -1967,12 +1953,12 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Now add the RPC_HDR_BA and any auth needed.
 	 */
 
-	if(!prs_append_prs_data( &outgoing_rpc, &out_hdr_ba)) {
+	if(!prs_append_prs_data(&p->out_data.frag, &out_hdr_ba)) {
 		DEBUG(0,("api_pipe_alter_context: append of RPC_HDR_BA failed.\n"));
 		goto err_exit;
 	}
 
-	if (auth_len && !prs_append_prs_data( &outgoing_rpc, &out_auth)) {
+	if (auth_len && !prs_append_prs_data(&p->out_data.frag, &out_auth)) {
 		DEBUG(0,("api_pipe_alter_context: append of auth info failed.\n"));
 		goto err_exit;
 	}
@@ -1982,7 +1968,6 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 	 */
 
 	p->out_data.data_sent_length = 0;
-	p->out_data.current_pdu_len = prs_offset(&outgoing_rpc);
 	p->out_data.current_pdu_sent = 0;
 
 	prs_mem_free(&out_hdr_ba);
@@ -1992,7 +1977,7 @@ bool api_pipe_alter_context(pipes_struct *p, prs_struct *rpc_in_p)
 
   err_exit:
 
-	prs_mem_free(&outgoing_rpc);
+	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&out_hdr_ba);
 	prs_mem_free(&out_auth);
 	return setup_bind_nak(p);

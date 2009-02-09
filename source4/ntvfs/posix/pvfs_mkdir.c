@@ -96,7 +96,8 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 		    struct ntvfs_request *req, union smb_mkdir *md)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct pvfs_filename *name;
 	mode_t mode;
@@ -153,7 +154,8 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 		    struct ntvfs_request *req, struct smb_rmdir *rd)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct pvfs_filename *name;
 

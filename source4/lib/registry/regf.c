@@ -543,7 +543,7 @@ static WERROR regf_get_value(TALLOC_CTX *ctx, struct hive_key *key,
 
 	if (vk->data_length & 0x80000000) {
 		vk->data_length &=~0x80000000;
-		data->data = talloc_memdup(ctx, (uint8_t *)&vk->data_offset, vk->data_length);
+		data->data = (uint8_t *)talloc_memdup(ctx, (uint8_t *)&vk->data_offset, vk->data_length);
 		data->length = vk->data_length;
 	} else {
 		*data = hbin_get(regf, vk->data_offset);

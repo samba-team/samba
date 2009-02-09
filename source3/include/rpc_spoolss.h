@@ -217,57 +217,6 @@
 
 #define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
 
-#define PRINTER_CHANGE_ADD_PRINTER			0x00000001
-#define PRINTER_CHANGE_SET_PRINTER			0x00000002
-#define PRINTER_CHANGE_DELETE_PRINTER			0x00000004
-#define PRINTER_CHANGE_FAILED_CONNECTION_PRINTER	0x00000008
-#define PRINTER_CHANGE_PRINTER	(PRINTER_CHANGE_ADD_PRINTER | \
-				 PRINTER_CHANGE_SET_PRINTER | \
-				 PRINTER_CHANGE_DELETE_PRINTER | \
-				 PRINTER_CHANGE_FAILED_CONNECTION_PRINTER )
-
-#define PRINTER_CHANGE_ADD_JOB				0x00000100
-#define PRINTER_CHANGE_SET_JOB				0x00000200
-#define PRINTER_CHANGE_DELETE_JOB			0x00000400
-#define PRINTER_CHANGE_WRITE_JOB			0x00000800
-#define PRINTER_CHANGE_JOB	(PRINTER_CHANGE_ADD_JOB | \
-				 PRINTER_CHANGE_SET_JOB | \
-				 PRINTER_CHANGE_DELETE_JOB | \
-				 PRINTER_CHANGE_WRITE_JOB )
-
-#define PRINTER_CHANGE_ADD_FORM				0x00010000
-#define PRINTER_CHANGE_SET_FORM				0x00020000
-#define PRINTER_CHANGE_DELETE_FORM			0x00040000
-#define PRINTER_CHANGE_FORM	(PRINTER_CHANGE_ADD_FORM | \
-				 PRINTER_CHANGE_SET_FORM | \
-				 PRINTER_CHANGE_DELETE_FORM )
-
-#define PRINTER_CHANGE_ADD_PORT				0x00100000
-#define PRINTER_CHANGE_CONFIGURE_PORT			0x00200000
-#define PRINTER_CHANGE_DELETE_PORT			0x00400000
-#define PRINTER_CHANGE_PORT	(PRINTER_CHANGE_ADD_PORT | \
-				 PRINTER_CHANGE_CONFIGURE_PORT | \
-				 PRINTER_CHANGE_DELETE_PORT )
-
-#define PRINTER_CHANGE_ADD_PRINT_PROCESSOR		0x01000000
-#define PRINTER_CHANGE_DELETE_PRINT_PROCESSOR		0x04000000
-#define PRINTER_CHANGE_PRINT_PROCESSOR	(PRINTER_CHANGE_ADD_PRINT_PROCESSOR | \
-					 PRINTER_CHANGE_DELETE_PRINT_PROCESSOR )
-
-#define PRINTER_CHANGE_ADD_PRINTER_DRIVER		0x10000000
-#define PRINTER_CHANGE_SET_PRINTER_DRIVER		0x20000000
-#define PRINTER_CHANGE_DELETE_PRINTER_DRIVER		0x40000000
-#define PRINTER_CHANGE_PRINTER_DRIVER	(PRINTER_CHANGE_ADD_PRINTER_DRIVER | \
-					 PRINTER_CHANGE_SET_PRINTER_DRIVER | \
-					 PRINTER_CHANGE_DELETE_PRINTER_DRIVER )
-
-#define PRINTER_CHANGE_TIMEOUT				0x80000000
-#define PRINTER_CHANGE_ALL	(PRINTER_CHANGE_JOB | \
-				 PRINTER_CHANGE_FORM | \
-				 PRINTER_CHANGE_PORT | \
-				 PRINTER_CHANGE_PRINT_PROCESSOR | \
-				 PRINTER_CHANGE_PRINTER_DRIVER )
-
 #define PRINTER_NOTIFY_INFO_DISCARDED	0x1
 
 /*
@@ -317,14 +266,6 @@ PRINTER_MESSAGE_INFO;
 #define DEF_PRIORITY	 1
 
 /* the flags of each printers */
-#define PRINTER_ENUM_UNKNOWN_8         0x00000008
-#define PRINTER_ENUM_ICONMASK		0x00ff0000
-
-/* FLAGS for SPOOLSS_DELETEPRINTERDRIVEREX */
-
-#define DPD_DELETE_UNUSED_FILES		0x00000001
-#define DPD_DELETE_SPECIFIC_VERSION	0x00000002
-#define DPD_DELETE_ALL_FILES		0x00000004
 
 #define DRIVER_ANY_VERSION		0xffffffff
 #define DRIVER_MAX_VERSION		4
@@ -532,90 +473,6 @@ typedef struct spool_r_getprinterdata
 }
 SPOOL_R_GETPRINTERDATA;
 
-typedef struct spool_q_deleteprinterdata
-{
-	POLICY_HND handle;
-	UNISTR2 valuename;
-}
-SPOOL_Q_DELETEPRINTERDATA;
-
-typedef struct spool_r_deleteprinterdata
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDATA;
-
-typedef struct spool_q_closeprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_CLOSEPRINTER;
-
-typedef struct spool_r_closeprinter
-{
-	POLICY_HND handle;
-	WERROR status;
-}
-SPOOL_R_CLOSEPRINTER;
-
-typedef struct spool_q_startpageprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_STARTPAGEPRINTER;
-
-typedef struct spool_r_startpageprinter
-{
-	WERROR status;
-}
-SPOOL_R_STARTPAGEPRINTER;
-
-typedef struct spool_q_endpageprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_ENDPAGEPRINTER;
-
-typedef struct spool_r_endpageprinter
-{
-	WERROR status;
-}
-SPOOL_R_ENDPAGEPRINTER;
-
-
-typedef struct spool_q_deleteprinterdriver
-{
-	uint32 server_ptr;
-	UNISTR2 server;
-	UNISTR2 arch;
-	UNISTR2 driver;
-}
-SPOOL_Q_DELETEPRINTERDRIVER;
-
-typedef struct spool_r_deleteprinterdriver
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDRIVER;
-
-typedef struct spool_q_deleteprinterdriverex
-{
-	uint32 server_ptr;
-	UNISTR2 server;
-	UNISTR2 arch;
-	UNISTR2 driver;
-	uint32 delete_flags;
-	uint32 version;
-}
-SPOOL_Q_DELETEPRINTERDRIVEREX;
-
-typedef struct spool_r_deleteprinterdriverex
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDRIVEREX;
-
-
 typedef struct spool_doc_info_1
 {
 	uint32 p_docname;
@@ -654,34 +511,6 @@ typedef struct spool_r_startdocprinter
 	WERROR status;
 }
 SPOOL_R_STARTDOCPRINTER;
-
-typedef struct spool_q_enddocprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_ENDDOCPRINTER;
-
-typedef struct spool_r_enddocprinter
-{
-	WERROR status;
-}
-SPOOL_R_ENDDOCPRINTER;
-
-typedef struct spool_q_writeprinter
-{
-	POLICY_HND handle;
-	uint32 buffer_size;
-	uint8 *buffer;
-	uint32 buffer_size2;
-}
-SPOOL_Q_WRITEPRINTER;
-
-typedef struct spool_r_writeprinter
-{
-	uint32 buffer_written;
-	WERROR status;
-}
-SPOOL_R_WRITEPRINTER;
 
 typedef struct spool_notify_option
 {
@@ -762,20 +591,6 @@ typedef struct spool_r_rfnpcnex
 	WERROR status;
 }
 SPOOL_R_RFNPCNEX;
-
-/* Find Close Printer Notify */
-typedef struct spool_q_fcpn
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_FCPN;
-
-typedef struct spool_r_fcpn
-{
-	WERROR status;
-}
-SPOOL_R_FCPN;
-
 
 typedef struct printer_info_0
 {
@@ -1329,24 +1144,6 @@ typedef struct spool_r_enumforms
 }
 SPOOL_R_ENUMFORMS;
 
-typedef struct spool_q_getform
-{
-	POLICY_HND handle;
-	UNISTR2 formname;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETFORM;
-
-typedef struct spool_r_getform
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETFORM;
-
 typedef struct spool_printer_info_level_1
 {
 	uint32 flags;
@@ -1514,28 +1311,6 @@ typedef struct spool_r_setprinter
 	WERROR status;
 }
 SPOOL_R_SETPRINTER;
-
-/********************************************/
-
-typedef struct {
-	POLICY_HND handle;
-} SPOOL_Q_DELETEPRINTER;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SPOOL_R_DELETEPRINTER;
-
-/********************************************/
-
-typedef struct {
-	POLICY_HND handle;
-} SPOOL_Q_ABORTPRINTER;
-
-typedef struct {
-	WERROR status;
-} SPOOL_R_ABORTPRINTER;
-
 
 /********************************************/
 
@@ -1796,50 +1571,6 @@ typedef struct _form
 }
 FORM;
 
-typedef struct spool_q_addform
-{
-	POLICY_HND handle;
-	uint32 level;
-	uint32 level2;		/* This should really be part of the FORM structure */
-	FORM form;
-}
-SPOOL_Q_ADDFORM;
-
-typedef struct spool_r_addform
-{
-	WERROR status;
-}
-SPOOL_R_ADDFORM;
-
-typedef struct spool_q_setform
-{
-	POLICY_HND handle;
-	UNISTR2 name;
-	uint32 level;
-	uint32 level2;
-	FORM form;
-}
-SPOOL_Q_SETFORM;
-
-typedef struct spool_r_setform
-{
-	WERROR status;
-}
-SPOOL_R_SETFORM;
-
-typedef struct spool_q_deleteform
-{
-	POLICY_HND handle;
-	UNISTR2 name;
-}
-SPOOL_Q_DELETEFORM;
-
-typedef struct spool_r_deleteform
-{
-	WERROR status;
-}
-SPOOL_R_DELETEFORM;
-
 typedef struct spool_q_getjob
 {
 	POLICY_HND handle;
@@ -1975,21 +1706,6 @@ typedef struct spool_r_setprinterdataex
 SPOOL_R_SETPRINTERDATAEX;
 
 
-typedef struct spool_q_deleteprinterdataex
-{
-	POLICY_HND handle;
-	UNISTR2 keyname;
-	UNISTR2 valuename;
-}
-SPOOL_Q_DELETEPRINTERDATAEX;
-
-typedef struct spool_r_deleteprinterdataex
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDATAEX;
-
-
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
@@ -2005,19 +1721,6 @@ typedef struct spool_r_enumprinterkey
 	WERROR status;
 }
 SPOOL_R_ENUMPRINTERKEY;
-
-typedef struct spool_q_deleteprinterkey
-{
-	POLICY_HND handle;
-	UNISTR2 keyname;
-}
-SPOOL_Q_DELETEPRINTERKEY;
-
-typedef struct spool_r_deleteprinterkey
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERKEY;
 
 typedef struct printer_enum_values
 {

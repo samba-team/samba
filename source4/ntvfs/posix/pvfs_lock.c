@@ -90,7 +90,8 @@ static void pvfs_lock_async_failed(struct pvfs_state *pvfs,
 */
 static void pvfs_pending_lock_continue(void *private_data, enum pvfs_wait_notice reason)
 {
-	struct pvfs_pending_lock *pending = private_data;
+	struct pvfs_pending_lock *pending = talloc_get_type(private_data,
+					    struct pvfs_pending_lock);
 	struct pvfs_state *pvfs = pending->pvfs;
 	struct pvfs_file *f = pending->f;
 	struct ntvfs_request *req = pending->req;
@@ -277,7 +278,8 @@ static NTSTATUS pvfs_lock_cancel(struct pvfs_state *pvfs, struct ntvfs_request *
 NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		   struct ntvfs_request *req, union smb_lock *lck)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 	struct smb_lock_entry *locks;
 	int i;

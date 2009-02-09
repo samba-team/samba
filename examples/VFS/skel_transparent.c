@@ -46,9 +46,9 @@ static void skel_disconnect(vfs_handle_struct *handle)
 	SMB_VFS_NEXT_DISCONNECT(handle);
 }
 
-static SMB_BIG_UINT skel_disk_free(vfs_handle_struct *handle,  const char *path,
-	bool small_query, SMB_BIG_UINT *bsize,
-	SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+static uint64_t skel_disk_free(vfs_handle_struct *handle,  const char *path,
+	bool small_query, uint64_t *bsize,
+	uint64_t *dfree, uint64_t *dsize)
 {
 	return SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, 
 					 dfree, dsize);

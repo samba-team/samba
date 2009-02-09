@@ -13,9 +13,9 @@
 	script.</para>
 
 	<para>LDAP connections should be secured where possible. This may be
-	done setting either this parameter to
+	done setting <emphasis>either</emphasis> this parameter to
 	<parameter moreinfo="none">Start_tls</parameter>
-	or by specifying <parameter moreinfo="none">ldaps://</parameter> in
+	<emphasis>or</emphasis> by specifying <parameter moreinfo="none">ldaps://</parameter> in
         the URL argument of <smbconfoption name="passdb backend"/>.</para>
 
 	<para>The <smbconfoption name="ldap ssl"/> can be set to one of
@@ -32,6 +32,17 @@
 			communicating with the directory server.</para>
 		</listitem>
 	</itemizedlist>
+	<para>
+	Please note that this parameter does only affect <emphasis>rpc</emphasis>
+	methods. To enable the LDAPv3 StartTLS extended operation (RFC2830) for
+	<emphasis>ads</emphasis>, set
+	<smbconfoption name="ldap ssl">yes</smbconfoption>
+	<emphasis>and</emphasis>
+	<smbconfoption name="ldap ssl ads">yes</smbconfoption>.
+	See <refentrytitle>smb.conf</refentrytitle><manvolnum>5</manvolnum>
+	for more information on	<smbconfoption name="ldap ssl ads"/>.
+        </para>
+
 </description>
 <value type="default">start tls</value>
 </samba:parameter>

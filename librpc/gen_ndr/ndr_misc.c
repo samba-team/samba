@@ -132,3 +132,39 @@ _PUBLIC_ void ndr_print_netr_SchannelType(struct ndr_print *ndr, const char *nam
 	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_KRB5_EDATA_NTSTATUS(struct ndr_push *ndr, int ndr_flags, const struct KRB5_EDATA_NTSTATUS *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->ntstatus));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_KRB5_EDATA_NTSTATUS(struct ndr_pull *ndr, int ndr_flags, struct KRB5_EDATA_NTSTATUS *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->ntstatus));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_KRB5_EDATA_NTSTATUS(struct ndr_print *ndr, const char *name, const struct KRB5_EDATA_NTSTATUS *r)
+{
+	ndr_print_struct(ndr, name, "KRB5_EDATA_NTSTATUS");
+	ndr->depth++;
+	ndr_print_NTSTATUS(ndr, "ntstatus", r->ntstatus);
+	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_uint32(ndr, "unknown2", r->unknown2);
+	ndr->depth--;
+}
+

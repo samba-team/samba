@@ -131,7 +131,7 @@
 				"SPOOLSS Buffer: offered[%u] doesn't match length of buffer[%u]",\
 				(unsigned)r->in.offered, (unsigned)_ndr_info->data_size);\
 		}\
-		if (r->out.needed <= _ndr_info->data_size) {\
+		if (*r->out.needed <= _ndr_info->data_size) {\
 			struct __##fn __r;\
 			__r.in.level	= r->in.level;\
 			__r.in.count	= r->out.count;\
@@ -421,7 +421,7 @@ enum ndr_err_code ndr_push_spoolss_GetPrinterData(struct ndr_push *ndr, int flag
 			_ndr_info = ndr_push_init_ctx(ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_info);
 			_ndr_info->flags= ndr->flags;
-			__r.in.type	= r->out.type;
+			__r.in.type	= *r->out.type;
 			__r.out.data	= r->out.data;
 			NDR_CHECK(ndr_push___spoolss_GetPrinterData(_ndr_info, flags, &__r));
 			if (r->in.offered > _ndr_info->offset) {
@@ -471,17 +471,17 @@ enum ndr_err_code ndr_pull_spoolss_GetPrinterData(struct ndr_pull *ndr, int flag
 				"SPOOLSS Buffer: r->in.offered[%u] doesn't match length of out buffer[%u]",
 				(unsigned)r->in.offered, (unsigned)_r.out.data.length);
 		}
-		if (_r.out.data.length > 0 && r->out.needed <= _r.out.data.length) {
+		if (_r.out.data.length > 0 && *r->out.needed <= _r.out.data.length) {
 			struct __spoolss_GetPrinterData __r;
 			struct ndr_pull *_ndr_data = ndr_pull_init_blob(&_r.out.data, ndr, ndr->iconv_convenience);
 			NDR_ERR_HAVE_NO_MEMORY(_ndr_data);
 			_ndr_data->flags= ndr->flags;
-			__r.in.type	= r->out.type;
+			__r.in.type	= *r->out.type;
 			__r.out.data	= r->out.data;
 			NDR_CHECK(ndr_pull___spoolss_GetPrinterData(_ndr_data, flags, &__r));
 			r->out.data	= __r.out.data;
 		} else {
-			r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
+			*r->out.type	= SPOOLSS_PRINTER_DATA_TYPE_NULL;
 		}
 	}
 	return NDR_ERR_SUCCESS;

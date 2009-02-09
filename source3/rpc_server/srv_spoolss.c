@@ -27,6 +27,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*******************************************************************
+ ********************************************************************/
+
+static bool proxy_spoolss_call(pipes_struct *p, uint8_t opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	spoolss_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("SPOOLSS function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /********************************************************************
  * api_spoolss_open_printer_ex (rarely seen - older call)
  ********************************************************************/
@@ -126,28 +147,7 @@ static bool api_spoolss_getprinterdata(pipes_struct *p)
 
 static bool api_spoolss_deleteprinterdata(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTERDATA q_u;
-	SPOOL_R_DELETEPRINTERDATA r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* read the stream and fill the struct */
-	if (!spoolss_io_q_deleteprinterdata("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdata: unable to unmarshall SPOOL_Q_DELETEPRINTERDATA.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterdata( p, &q_u, &r_u );
-
-	if (!spoolss_io_r_deleteprinterdata("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterdata: unable to marshall SPOOL_R_DELETEPRINTERDATA.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTERDATA);
 }
 
 /********************************************************************
@@ -158,27 +158,7 @@ static bool api_spoolss_deleteprinterdata(pipes_struct *p)
 
 static bool api_spoolss_closeprinter(pipes_struct *p)
 {
-	SPOOL_Q_CLOSEPRINTER q_u;
-	SPOOL_R_CLOSEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_closeprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_closeprinter: unable to unmarshall SPOOL_Q_CLOSEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_closeprinter(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_closeprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_closeprinter: unable to marshall SPOOL_R_CLOSEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_CLOSEPRINTER);
 }
 
 /********************************************************************
@@ -189,27 +169,7 @@ static bool api_spoolss_closeprinter(pipes_struct *p)
 
 static bool api_spoolss_abortprinter(pipes_struct *p)
 {
-	SPOOL_Q_ABORTPRINTER q_u;
-	SPOOL_R_ABORTPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_abortprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_abortprinter: unable to unmarshall SPOOL_Q_ABORTPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_abortprinter(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_abortprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_abortprinter: unable to marshall SPOOL_R_ABORTPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ABORTPRINTER);
 }
 
 /********************************************************************
@@ -220,29 +180,8 @@ static bool api_spoolss_abortprinter(pipes_struct *p)
 
 static bool api_spoolss_deleteprinter(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTER q_u;
-	SPOOL_R_DELETEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_deleteprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinter: unable to unmarshall SPOOL_Q_DELETEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_deleteprinter(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_deleteprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTER);
 }
-
 
 /********************************************************************
  * api_spoolss_deleteprinterdriver
@@ -252,27 +191,7 @@ static bool api_spoolss_deleteprinter(pipes_struct *p)
 
 static bool api_spoolss_deleteprinterdriver(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTERDRIVER q_u;
-	SPOOL_R_DELETEPRINTERDRIVER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_deleteprinterdriver("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdriver: unable to unmarshall SPOOL_Q_DELETEPRINTERDRIVER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_deleteprinterdriver(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_deleteprinterdriver("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinter: unable to marshall SPOOL_R_DELETEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTERDRIVER);
 }
 
 
@@ -448,27 +367,7 @@ static bool api_spoolss_getprinterdriver2(pipes_struct *p)
 
 static bool api_spoolss_startpageprinter(pipes_struct *p)
 {
-	SPOOL_Q_STARTPAGEPRINTER q_u;
-	SPOOL_R_STARTPAGEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_startpageprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_startpageprinter: unable to unmarshall SPOOL_Q_STARTPAGEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_startpageprinter(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_startpageprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_startpageprinter: unable to marshall SPOOL_R_STARTPAGEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_STARTPAGEPRINTER);
 }
 
 /********************************************************************
@@ -479,27 +378,7 @@ static bool api_spoolss_startpageprinter(pipes_struct *p)
 
 static bool api_spoolss_endpageprinter(pipes_struct *p)
 {
-	SPOOL_Q_ENDPAGEPRINTER q_u;
-	SPOOL_R_ENDPAGEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_endpageprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_endpageprinter: unable to unmarshall SPOOL_Q_ENDPAGEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_endpageprinter(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_endpageprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_endpageprinter: unable to marshall SPOOL_R_ENDPAGEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENDPAGEPRINTER);
 }
 
 /********************************************************************
@@ -535,27 +414,7 @@ static bool api_spoolss_startdocprinter(pipes_struct *p)
 
 static bool api_spoolss_enddocprinter(pipes_struct *p)
 {
-	SPOOL_Q_ENDDOCPRINTER q_u;
-	SPOOL_R_ENDDOCPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_enddocprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_enddocprinter: unable to unmarshall SPOOL_Q_ENDDOCPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_enddocprinter(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_enddocprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_enddocprinter: unable to marshall SPOOL_R_ENDDOCPRINTER.\n"));
-		return False;
-	}
-
-	return True;		
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ENDDOCPRINTER);
 }
 
 /********************************************************************
@@ -563,27 +422,7 @@ static bool api_spoolss_enddocprinter(pipes_struct *p)
 
 static bool api_spoolss_writeprinter(pipes_struct *p)
 {
-	SPOOL_Q_WRITEPRINTER q_u;
-	SPOOL_R_WRITEPRINTER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_writeprinter("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_writeprinter: unable to unmarshall SPOOL_Q_WRITEPRINTER.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_writeprinter(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_writeprinter("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_writeprinter: unable to marshall SPOOL_R_WRITEPRINTER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_WRITEPRINTER);
 }
 
 /****************************************************************************
@@ -620,27 +459,7 @@ static bool api_spoolss_setprinter(pipes_struct *p)
 
 static bool api_spoolss_fcpn(pipes_struct *p)
 {
-	SPOOL_Q_FCPN q_u;
-	SPOOL_R_FCPN r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_fcpn("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_fcpn: unable to unmarshall SPOOL_Q_FCPN.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_fcpn(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_fcpn("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_fcpn: unable to marshall SPOOL_R_FCPN.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_FINDCLOSEPRINTERNOTIFY);
 }
 
 /****************************************************************************
@@ -788,27 +607,7 @@ static bool api_spoolss_enumprinterdrivers(pipes_struct *p)
 
 static bool api_spoolss_getform(pipes_struct *p)
 {
-	SPOOL_Q_GETFORM q_u;
-	SPOOL_R_GETFORM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_getform("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_getform: unable to unmarshall SPOOL_Q_GETFORM.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_getform(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_getform("",&r_u,rdata,0)) {
-		DEBUG(0,("spoolss_io_r_getform: unable to marshall SPOOL_R_GETFORM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_GETFORM);
 }
 
 /****************************************************************************
@@ -1047,27 +846,7 @@ static bool api_spoolss_reset_printer(pipes_struct *p)
 ****************************************************************************/
 static bool api_spoolss_addform(pipes_struct *p)
 {
-	SPOOL_Q_ADDFORM q_u;
-	SPOOL_R_ADDFORM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_addform("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_addform: unable to unmarshall SPOOL_Q_ADDFORM.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_addform(p, &q_u, &r_u);
-	
-	if(!spoolss_io_r_addform("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_addform: unable to marshall SPOOL_R_ADDFORM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ADDFORM);
 }
 
 /****************************************************************************
@@ -1075,27 +854,7 @@ static bool api_spoolss_addform(pipes_struct *p)
 
 static bool api_spoolss_deleteform(pipes_struct *p)
 {
-	SPOOL_Q_DELETEFORM q_u;
-	SPOOL_R_DELETEFORM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteform("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteform: unable to unmarshall SPOOL_Q_DELETEFORM.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteform(p, &q_u, &r_u);
-	
-	if(!spoolss_io_r_deleteform("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteform: unable to marshall SPOOL_R_DELETEFORM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEFORM);
 }
 
 /****************************************************************************
@@ -1103,27 +862,7 @@ static bool api_spoolss_deleteform(pipes_struct *p)
 
 static bool api_spoolss_setform(pipes_struct *p)
 {
-	SPOOL_Q_SETFORM q_u;
-	SPOOL_R_SETFORM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_setform("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_setform: unable to unmarshall SPOOL_Q_SETFORM.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_setform(p, &q_u, &r_u);
-				      
-	if(!spoolss_io_r_setform("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_setform: unable to marshall SPOOL_R_SETFORM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_SETFORM);
 }
 
 /****************************************************************************
@@ -1420,27 +1159,7 @@ static bool api_spoolss_getprintprocessordirectory(pipes_struct *p)
 
 static bool api_spoolss_deleteprinterdataex(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTERDATAEX q_u;
-	SPOOL_R_DELETEPRINTERDATAEX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterdataex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdataex: unable to unmarshall SPOOL_Q_DELETEPRINTERDATAEX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterdataex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterdataex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterdataex: unable to marshall SPOOL_R_DELETEPRINTERDATAEX.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTERDATAEX);
 }
 
 /****************************************************************************
@@ -1448,27 +1167,7 @@ static bool api_spoolss_deleteprinterdataex(pipes_struct *p)
 
 static bool api_spoolss_deleteprinterkey(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTERKEY q_u;
-	SPOOL_R_DELETEPRINTERKEY r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterkey("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterkey: unable to unmarshall SPOOL_Q_DELETEPRINTERKEY.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterkey(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterkey("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterkey: unable to marshall SPOOL_R_DELETEPRINTERKEY.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTERKEY);
 }
 
 /****************************************************************************
@@ -1513,27 +1212,7 @@ static bool api_spoolss_addprinterdriverex(pipes_struct *p)
 
 static bool api_spoolss_deleteprinterdriverex(pipes_struct *p)
 {
-	SPOOL_Q_DELETEPRINTERDRIVEREX q_u;
-	SPOOL_R_DELETEPRINTERDRIVEREX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_deleteprinterdriverex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_deleteprinterdriverex: unable to unmarshall SPOOL_Q_DELETEPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_deleteprinterdriverex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_deleteprinterdriverex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_deleteprinterdriverex: unable to marshall SPOOL_R_DELETEPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_DELETEPRINTERDRIVEREX);
 }
 
 /****************************************************************************
@@ -1624,35 +1303,13 @@ static bool api_spoolss_xcvdataport(pipes_struct *p)
  {"SPOOLSS_XCVDATAPORT",               SPOOLSS_XCVDATAPORT,               api_spoolss_xcvdataport               },
 };
 
-void spoolss_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void spoolss2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_spoolss_cmds;
 	*n_fns = sizeof(api_spoolss_cmds) / sizeof(struct api_struct);
 }
 
-static const char * const spoolss_endpoint_strings[] = {
-	"ncacn_np:[\\pipe\\spoolss]",
-};
-
-static const struct ndr_interface_string_array spoolss_endpoints = {
-	.count = 1,
-	.names = spoolss_endpoint_strings
-};
-
-const struct ndr_interface_table ndr_table_spoolss = {
-	.name		= "spoolss",
-	.syntax_id	= {
-		{ 0x12345678, 0x1234, 0xabcd, { 0xef, 0x00 },
-		  { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab } }, 0x01
-	},
-	.helpstring	= "Spooler SubSystem",
-	.num_calls	= 0x60,
-	.calls		= NULL,	/* unused in s3 so far */
-	.endpoints	= &spoolss_endpoints,
-	.authservices	= NULL 	/* unused in s3 so far */
-};
-
-NTSTATUS rpc_spoolss_init(void)
+NTSTATUS rpc_spoolss2_init(void)
 {
 	return rpc_srv_register(
 		SMB_RPC_INTERFACE_VERSION, "spoolss", "spoolss",

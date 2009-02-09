@@ -203,29 +203,21 @@ static bool idmap_tdb_upgrade(struct db_context *db)
 	return True;
 }
 
-static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
-				  bool check_config,
-				  struct db_context **dbctx)
+static NTSTATUS idmap_tdb_load_ranges(void)
 {
-	NTSTATUS ret;
-	TALLOC_CTX *ctx;
-	char *tdbfile = NULL;
-	struct db_context *db = NULL;
-	int32_t version;
 	uid_t low_uid = 0;
 	uid_t high_uid = 0;
 	gid_t low_gid = 0;
 	gid_t high_gid = 0;
-	bool config_error = false;
 
-	/* load ranges */
-	if (!lp_idmap_uid(&low_uid, &high_uid)
-	    || !lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap uid or idmap gid missing\n"));
-		config_error = true;
-		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+	if (!lp_idmap_uid(&low_uid, &high_uid)) {
+		DEBUG(1, ("idmap uid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!lp_idmap_gid(&low_gid, &high_gid)) {
+		DEBUG(1, ("idmap gid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	idmap_tdb_state.low_uid = low_uid;
@@ -235,29 +227,41 @@ static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
 
 	if (idmap_tdb_state.high_uid <= idmap_tdb_state.low_uid) {
 		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		config_error = true;
-		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	if (idmap_tdb_state.high_gid <= idmap_tdb_state.low_gid) {
 		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS idmap_tdb_open_db(TALLOC_CTX *memctx,
+				  bool check_config,
+				  struct db_context **dbctx)
+{
+	NTSTATUS ret;
+	TALLOC_CTX *ctx;
+	char *tdbfile = NULL;
+	struct db_context *db = NULL;
+	int32_t version;
+	bool config_error = false;
+
+	ret = idmap_tdb_load_ranges();
+	if (!NT_STATUS_IS_OK(ret)) {
 		config_error = true;
 		if (check_config) {
-			return NT_STATUS_UNSUCCESSFUL;
+			return ret;
 		}
 	}
 
 	/* use our own context here */
-	ctx = talloc_new(memctx);
-	if (!ctx) {
-		DEBUG(0, ("Out of memory!\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	ctx = talloc_stackframe();
 
 	/* use the old database if present */
-	tdbfile = talloc_strdup(ctx, state_path("winbindd_idmap.tdb"));
+	tdbfile = state_path("winbindd_idmap.tdb");
 	if (!tdbfile) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
@@ -402,6 +406,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	const char *hwmtype;
 	uint32_t high_hwm;
 	uint32_t hwm;
+	int res;
 
 	/* Get current high water mark */
 	switch (xid->type) {
@@ -423,7 +428,14 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	res = idmap_alloc_db->transaction_start(idmap_alloc_db);
+	if (res != 0) {
+		DEBUG(1, (__location__ " Failed to start transaction.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	if ((hwm = dbwrap_fetch_int32(idmap_alloc_db, hwmkey)) == -1) {
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
@@ -431,6 +443,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -438,6 +451,7 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	ret = dbwrap_change_uint32_atomic(idmap_alloc_db, hwmkey, &hwm, 1);
 	if (ret != 0) {
 		DEBUG(0, ("Fatal error while fetching a new %s value\n!", hwmtype));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -445,9 +459,16 @@ static NTSTATUS idmap_tdb_allocate_id(struct unixid *xid)
 	if (hwm > high_hwm) {
 		DEBUG(1, ("Fatal Error: %s range full!! (max: %lu)\n", 
 			  hwmtype, (unsigned long)high_hwm));
+		idmap_alloc_db->transaction_cancel(idmap_alloc_db);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
+	res = idmap_alloc_db->transaction_commit(idmap_alloc_db);
+	if (res != 0) {
+		DEBUG(1, (__location__ " Failed to commit transaction.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	xid->id = hwm;
 	DEBUG(10,("New %s = %d\n", hwmtype, hwm));
 
@@ -694,10 +715,10 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
-	fstring tmp;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	if ((keystr = talloc_asprintf(
-		     ctx, "%s", sid_to_fstring(tmp, map->sid))) == NULL) {
+	keystr = sid_string_talloc(tmp_ctx, map->sid);
+	if (keystr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -706,7 +727,7 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(ctx->db, NULL, keystr);
+	data = dbwrap_fetch_bystring(ctx->db, tmp_ctx, keystr);
 	if (!data.dptr) {
 		DEBUG(10,("Record %s not found\n", keystr));
 		ret = NT_STATUS_NONE_MAPPED;
@@ -730,8 +751,6 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 		DEBUG(2, ("Found INVALID record %s -> %s\n", keystr, (const char *)data.dptr));
 		ret = NT_STATUS_INTERNAL_DB_ERROR;
 	}
-	
-	TALLOC_FREE(data.dptr);
 
 	/* apply filters before returning result */
 	if ((ctx->filter_low_id && (map->xid.id < ctx->filter_low_id)) ||
@@ -742,7 +761,7 @@ static NTSTATUS idmap_tdb_sid_to_id(struct idmap_tdb_context *ctx, struct id_map
 	}
 
 done:
-	talloc_free(keystr);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 

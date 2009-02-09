@@ -155,11 +155,15 @@ static bool test_GetPrinterData(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData gpd;
+	uint32_t needed;
+	enum spoolss_PrinterDataType type;
 
 	torture_comment(tctx, "Testing GetPrinterData(%s).\n", value_name);
 	gpd.in.handle = handle;
 	gpd.in.value_name = value_name;
 	gpd.in.offered = 4;
+	gpd.out.needed = &needed;
+	gpd.out.type = &type;
 
 	status = dcerpc_spoolss_GetPrinterData(p, tctx, &gpd);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterData failed.");
@@ -182,20 +186,22 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPrinters ep;
 	DATA_BLOB blob = data_blob_talloc_zero(ctx, initial_blob_size);
+	uint32_t needed;
 
 	ep.in.flags = PRINTER_ENUM_NAME;
 	ep.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 	ep.in.level = 2;
 	ep.in.buffer = &blob;
 	ep.in.offered = initial_blob_size;
+	ep.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinters failed.");
 
 	if (W_ERROR_EQUAL(ep.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(ctx, ep.out.needed);
+		blob = data_blob_talloc_zero(ctx, needed);
 		ep.in.buffer = &blob;
-		ep.in.offered = ep.out.needed;
+		ep.in.offered = needed;
 		status = dcerpc_spoolss_EnumPrinters(p, ctx, &ep);
 		torture_assert_ntstatus_ok(tctx, status,"EnumPrinters failed.");
 	}
@@ -220,6 +226,7 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinter gp;
 	DATA_BLOB blob = data_blob_talloc_zero(ctx, initial_blob_size);
+	uint32_t needed;
 
 	torture_comment(tctx, "Test GetPrinter level %d\n", level);
 
@@ -227,14 +234,15 @@ static bool test_GetPrinter(struct torture_context *tctx,
 	gp.in.level = level;
 	gp.in.buffer = (initial_blob_size == 0)?NULL:&blob;
 	gp.in.offered = initial_blob_size;
+	gp.out.needed = &needed;
 
 	status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 
 	if (W_ERROR_EQUAL(gp.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(ctx, gp.out.needed);
+		blob = data_blob_talloc_zero(ctx, needed);
 		gp.in.buffer = &blob;
-		gp.in.offered = gp.out.needed;
+		gp.in.offered = needed;
 		status = dcerpc_spoolss_GetPrinter(p, tctx, &gp);
 		torture_assert_ntstatus_ok(tctx, status, "GetPrinter failed");
 	}
@@ -252,6 +260,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumJobs ej;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, 1024);
+	uint32_t needed;
 
 	torture_comment(tctx, "Test EnumJobs\n");
 
@@ -259,6 +268,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	ej.in.level = 2;
 	ej.in.buffer = &blob;
 	ej.in.offered = 1024;
+	ej.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumJobs(p, tctx, &ej);
 	torture_assert_ntstatus_ok(tctx, status, "EnumJobs failed");
@@ -274,6 +284,9 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 gpd2;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, 87424);
+	uint32_t needed;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	torture_comment(tctx, "Testing GetPrinterDriver2\n");
 
@@ -284,6 +297,9 @@ static bool test_GetPrinterDriver2(struct torture_context *tctx,
 	gpd2.in.offered = 87424;
 	gpd2.in.client_major_version = 3;
 	gpd2.in.client_minor_version = 0;
+	gpd2.out.needed = &needed;
+	gpd2.out.server_major_version = &server_major_version;
+	gpd2.out.server_minor_version = &server_minor_version;
 
 	status = dcerpc_spoolss_GetPrinterDriver2(p, tctx, &gpd2);
 	torture_assert_ntstatus_ok(tctx, status, "GetPrinterDriver2 failed");
@@ -301,6 +317,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumForms ef;
 	DATA_BLOB blob = data_blob_talloc_zero(tctx, initial_blob_size);
+	uint32_t needed;
 
 	torture_comment(tctx, "Testing EnumForms\n");
 
@@ -308,14 +325,15 @@ static bool test_EnumForms(struct torture_context *tctx,
 	ef.in.level = 1;
 	ef.in.buffer = (initial_blob_size == 0)?NULL:&blob;
 	ef.in.offered = initial_blob_size;
+	ef.out.needed = &needed;
 
 	status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
 	torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 
 	if (W_ERROR_EQUAL(ef.out.result, WERR_INSUFFICIENT_BUFFER)) {
-		blob = data_blob_talloc_zero(tctx, ef.out.needed);
+		blob = data_blob_talloc_zero(tctx, needed);
 		ef.in.buffer = &blob;
-		ef.in.offered = ef.out.needed;
+		ef.in.offered = needed;
 		status = dcerpc_spoolss_EnumForms(p, tctx, &ef);
 		torture_assert_ntstatus_ok(tctx, status, "EnumForms failed");
 	}
@@ -339,14 +357,17 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 
 	epk.in.handle = handle;
 	epk.in.key_name = talloc_strdup(tctx, key);
-	epk.in.needed = needed;
+	epk.in.key_buffer_size = 0;
+	epk.out.needed = &needed;
+	epk.out.key_buffer = talloc_array(tctx, uint16_t, 0);
 
 	status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterKey failed");
 
 
 	if (W_ERROR_EQUAL(epk.out.result, WERR_MORE_DATA)) {
-		epk.in.needed = epk.out.needed;
+		epk.in.key_buffer_size = needed;
+		epk.out.key_buffer = talloc_array(tctx, uint16_t, needed/2);
 		status = dcerpc_spoolss_EnumPrinterKey(p, tctx, &epk);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterKey failed");
@@ -355,7 +376,7 @@ static bool test_EnumPrinterKey(struct torture_context *tctx,
 	torture_assert_werr_ok(tctx, epk.out.result, "EnumPrinterKey failed");
 
 	convert_string_talloc_convenience(ctx, lp_iconv_convenience(tctx->lp_ctx), CH_UTF16,
-			CH_UNIX, epk.out.key_buffer, epk.out.needed,
+			CH_UNIX, epk.out.key_buffer, *epk.out.needed,
 			(void**)&ctx->printer_keys);
 
 	return true;
@@ -370,17 +391,23 @@ static bool test_EnumPrinterDataEx(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_EnumPrinterDataEx epde;
+	uint32_t needed;
+	uint32_t count;
 
 	torture_comment(tctx, "Testing EnumPrinterDataEx(%s)\n", key);
 
 	epde.in.handle = handle;
 	epde.in.key_name = talloc_strdup(tctx, key);
 	epde.in.offered = 0;
+	epde.out.needed = &needed;
+	epde.out.count = &count;
+	epde.out.buffer = talloc_array(tctx, uint8_t, 0);
 
 	status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
 	torture_assert_ntstatus_ok(tctx, status, "EnumPrinterDataEx failed.");
 	if (W_ERROR_EQUAL(epde.out.result, WERR_MORE_DATA)) {
-		epde.in.offered = epde.out.needed;
+		epde.in.offered = needed;
+		epde.out.buffer = talloc_array(tctx, uint8_t, needed);
 		status = dcerpc_spoolss_EnumPrinterDataEx(p, tctx, &epde);
 		torture_assert_ntstatus_ok(tctx, status,
 				"EnumPrinterDataEx failed.");

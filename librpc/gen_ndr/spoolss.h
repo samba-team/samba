@@ -8,7 +8,15 @@
 #ifndef _HEADER_spoolss
 #define _HEADER_spoolss
 
+#define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
+#define PRINTER_CHANGE_PRINTER	( (PRINTER_CHANGE_ADD_PRINTER|PRINTER_CHANGE_SET_PRINTER|PRINTER_CHANGE_DELETE_PRINTER|PRINTER_CHANGE_FAILED_CONNECTION_PRINTER) )
+#define PRINTER_CHANGE_JOB	( (PRINTER_CHANGE_ADD_JOB|PRINTER_CHANGE_SET_JOB|PRINTER_CHANGE_DELETE_JOB|PRINTER_CHANGE_WRITE_JOB) )
+#define PRINTER_CHANGE_FORM	( (PRINTER_CHANGE_ADD_FORM|PRINTER_CHANGE_SET_FORM|PRINTER_CHANGE_DELETE_FORM) )
+#define PRINTER_CHANGE_PORT	( (PRINTER_CHANGE_ADD_PORT|PRINTER_CHANGE_CONFIGURE_PORT|PRINTER_CHANGE_DELETE_PORT) )
+#define PRINTER_CHANGE_PRINT_PROCESSOR	( (PRINTER_CHANGE_ADD_PRINT_PROCESSOR|PRINTER_CHANGE_DELETE_PRINT_PROCESSOR) )
+#define PRINTER_CHANGE_PRINTER_DRIVER	( (PRINTER_CHANGE_ADD_PRINTER_DRIVER|PRINTER_CHANGE_SET_PRINTER_DRIVER|PRINTER_CHANGE_DELETE_PRINTER_DRIVER) )
+#define PRINTER_CHANGE_ALL	( (PRINTER_CHANGE_JOB|PRINTER_CHANGE_FORM|PRINTER_CHANGE_PORT|PRINTER_CHANGE_PRINT_PROCESSOR|PRINTER_CHANGE_PRINTER_DRIVER) )
 #define SERVER_ALL_ACCESS	( SEC_STD_REQUIRED|SERVER_ACCESS_ADMINISTER|SERVER_ACCESS_ENUMERATE )
 #define SERVER_READ	( SEC_STD_READ_CONTROL|SERVER_ACCESS_ENUMERATE )
 #define SERVER_WRITE	( STANDARD_RIGHTS_WRITE_ACCESS|SERVER_ACCESS_ADMINISTER|SERVER_ACCESS_ENUMERATE )
@@ -596,6 +604,28 @@ union spoolss_MonitorInfo {
 	struct spoolss_MonitorInfo2 info2;/* [case(2)] */
 }/* [relative_base,nodiscriminant,public] */;
 
+/* bitmap spoolss_PrinterChangeFlags */
+#define PRINTER_CHANGE_ADD_PRINTER ( 0x00000001 )
+#define PRINTER_CHANGE_SET_PRINTER ( 0x00000002 )
+#define PRINTER_CHANGE_DELETE_PRINTER ( 0x00000004 )
+#define PRINTER_CHANGE_FAILED_CONNECTION_PRINTER ( 0x00000008 )
+#define PRINTER_CHANGE_ADD_JOB ( 0x00000100 )
+#define PRINTER_CHANGE_SET_JOB ( 0x00000200 )
+#define PRINTER_CHANGE_DELETE_JOB ( 0x00000400 )
+#define PRINTER_CHANGE_WRITE_JOB ( 0x00000800 )
+#define PRINTER_CHANGE_ADD_FORM ( 0x00010000 )
+#define PRINTER_CHANGE_SET_FORM ( 0x00020000 )
+#define PRINTER_CHANGE_DELETE_FORM ( 0x00040000 )
+#define PRINTER_CHANGE_ADD_PORT ( 0x00100000 )
+#define PRINTER_CHANGE_CONFIGURE_PORT ( 0x00200000 )
+#define PRINTER_CHANGE_DELETE_PORT ( 0x00400000 )
+#define PRINTER_CHANGE_ADD_PRINT_PROCESSOR ( 0x01000000 )
+#define PRINTER_CHANGE_DELETE_PRINT_PROCESSOR ( 0x04000000 )
+#define PRINTER_CHANGE_ADD_PRINTER_DRIVER ( 0x10000000 )
+#define PRINTER_CHANGE_SET_PRINTER_DRIVER ( 0x20000000 )
+#define PRINTER_CHANGE_DELETE_PRINTER_DRIVER ( 0x40000000 )
+#define PRINTER_CHANGE_TIMEOUT ( 0x80000000 )
+
 enum spoolss_Field
 #ifndef USE_UINT_ENUMS
  {
@@ -748,6 +778,11 @@ union spoolss_UserLevel {
 #define PRINTER_ACCESS_USE ( 0x00000008 )
 #define JOB_ACCESS_ADMINISTER ( 0x00000010 )
 
+/* bitmap spoolss_DeleteDriverFlags */
+#define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
+#define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
+#define DPD_DELETE_ALL_FILES ( 0x00000004 )
+
 
 struct _spoolss_EnumPrinters {
 	struct {
@@ -760,7 +795,7 @@ struct _spoolss_EnumPrinters {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -792,7 +827,7 @@ struct spoolss_EnumPrinters {
 
 	struct {
 		union spoolss_PrinterInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -842,7 +877,7 @@ struct spoolss_GetJob {
 
 	struct {
 		union spoolss_JobInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -861,7 +896,7 @@ struct _spoolss_EnumJobs {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -894,7 +929,7 @@ struct spoolss_EnumJobs {
 
 	struct {
 		union spoolss_JobInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -949,7 +984,7 @@ struct spoolss_GetPrinter {
 
 	struct {
 		union spoolss_PrinterInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -975,7 +1010,7 @@ struct _spoolss_EnumPrinterDrivers {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1007,7 +1042,7 @@ struct spoolss_EnumPrinterDrivers {
 
 	struct {
 		union spoolss_DriverInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1034,7 +1069,7 @@ struct spoolss_GetPrinterDriverDirectory {
 
 	struct {
 		union spoolss_DriverDirectoryInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1043,7 +1078,6 @@ struct spoolss_GetPrinterDriverDirectory {
 
 struct spoolss_DeletePrinterDriver {
 	struct {
-		struct policy_handle *handle;/* [ref] */
 		const char *server;/* [unique,charset(UTF16)] */
 		const char *architecture;/* [charset(UTF16)] */
 		const char *driver;/* [charset(UTF16)] */
@@ -1057,6 +1091,13 @@ struct spoolss_DeletePrinterDriver {
 
 
 struct spoolss_AddPrintProcessor {
+	struct {
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *architecture;/* [charset(UTF16)] */
+		const char *path_name;/* [charset(UTF16)] */
+		const char *print_processor_name;/* [charset(UTF16)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -1075,7 +1116,7 @@ struct _spoolss_EnumPrintProcessors {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1107,7 +1148,7 @@ struct spoolss_EnumPrintProcessors {
 
 	struct {
 		union spoolss_PrintProcessorInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1131,7 +1172,7 @@ struct spoolss_StartDocPrinter {
 	} in;
 
 	struct {
-		uint32_t job_id;
+		uint32_t *job_id;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1158,7 +1199,7 @@ struct spoolss_WritePrinter {
 	} in;
 
 	struct {
-		uint32_t num_written;
+		uint32_t *num_written;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1196,8 +1237,8 @@ struct spoolss_ReadPrinter {
 	} in;
 
 	struct {
-		DATA_BLOB data;
-		uint32_t _data_size;/* [value(r->out.data.length)] */
+		uint8_t *data;/* [ref,size_is(data_size)] */
+		uint32_t *_data_size;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1240,9 +1281,9 @@ struct _spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType type;
+		enum spoolss_PrinterDataType *type;/* [ref] */
 		DATA_BLOB data;
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1269,9 +1310,9 @@ struct spoolss_GetPrinterData {
 	} in;
 
 	struct {
-		enum spoolss_PrinterDataType type;
-		union spoolss_PrinterData data;/* [subcontext_size(offered),subcontext(4),switch_is(type)] */
-		uint32_t needed;
+		enum spoolss_PrinterDataType *type;/* [ref] */
+		union spoolss_PrinterData data;/* [subcontext_size(offered),subcontext(4),switch_is(*type)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1381,7 +1422,7 @@ struct spoolss_GetForm {
 
 	struct {
 		union spoolss_FormInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1413,7 +1454,7 @@ struct _spoolss_EnumForms {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1444,7 +1485,7 @@ struct spoolss_EnumForms {
 
 	struct {
 		union spoolss_FormInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1462,7 +1503,7 @@ struct _spoolss_EnumPorts {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1493,7 +1534,7 @@ struct spoolss_EnumPorts {
 
 	struct {
 		union spoolss_PortInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1511,7 +1552,7 @@ struct _spoolss_EnumMonitors {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1542,7 +1583,7 @@ struct spoolss_EnumMonitors {
 
 	struct {
 		union spoolss_MonitorInfo *info;/* [unique,switch_is(level),size_is(count)] */
-		uint32_t needed;
+		uint32_t *needed;/* [ref] */
 		uint32_t count;
 		WERROR result;
 	} out;
@@ -1697,9 +1738,9 @@ struct spoolss_GetPrinterDriver2 {
 
 	struct {
 		DATA_BLOB *info;/* [unique] */
-		uint32_t needed;
-		uint32_t server_major_version;
-		uint32_t server_minor_version;
+		uint32_t *needed;/* [ref] */
+		uint32_t *server_major_version;/* [ref] */
+		uint32_t *server_minor_version;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1760,6 +1801,13 @@ struct spoolss_ReplyOpenPrinter {
 
 
 struct spoolss_RouterReplyPrinter {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t flags;
+		uint32_t bufsize;/* [range(0,512)] */
+		uint8_t *buffer;/* [unique,size_is(bufsize)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -1987,9 +2035,9 @@ struct spoolss_GetPrinterDataEx {
 	} in;
 
 	struct {
-		uint32_t type;
-		DATA_BLOB buffer;
-		uint32_t needed;
+		uint32_t *type;/* [ref] */
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2004,9 +2052,9 @@ struct spoolss_EnumPrinterDataEx {
 	} in;
 
 	struct {
-		DATA_BLOB buffer;
-		uint32_t needed;
-		uint32_t count;
+		uint8_t *buffer;/* [ref,size_is(offered)] */
+		uint32_t *needed;/* [ref] */
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2017,13 +2065,12 @@ struct spoolss_EnumPrinterKey {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		const char *key_name;/* [charset(UTF16)] */
-		uint32_t needed;
+		uint32_t key_buffer_size;
 	} in;
 
 	struct {
-		uint32_t key_buffer_size;
-		uint16_t *key_buffer;
-		uint32_t needed;
+		uint16_t *key_buffer;/* [ref,size_is(key_buffer_size/2)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -2046,6 +2093,11 @@ struct spoolss_DeletePrinterDataEx {
 
 struct spoolss_DeletePrinterKey {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *key_name;/* [charset(UTF16)] */
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 
@@ -2061,6 +2113,14 @@ struct spoolss_53 {
 
 
 struct spoolss_DeletePrinterDriverEx {
+	struct {
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *architecture;/* [charset(UTF16)] */
+		const char *driver;/* [charset(UTF16)] */
+		uint32_t delete_flags;
+		uint32_t version;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;
@@ -2098,14 +2158,14 @@ struct spoolss_XcvData {
 		const char *function_name;/* [charset(UTF16)] */
 		DATA_BLOB in_data;
 		uint32_t _in_data_length;/* [value(r->in.in_data.length)] */
-		uint32_t offered;
-		uint32_t unknown1;
+		uint32_t out_data_size;
+		uint32_t *status_code;/* [ref] */
 	} in;
 
 	struct {
-		DATA_BLOB out_data;
-		uint32_t needed;
-		uint32_t unknown2;
+		uint8_t *out_data;/* [ref,size_is(out_data_size)] */
+		uint32_t *needed;/* [ref] */
+		uint32_t *status_code;/* [ref] */
 		WERROR result;
 	} out;
 

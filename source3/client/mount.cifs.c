@@ -85,6 +85,7 @@
 
 const char *thisprogram;
 int verboseflag = 0;
+int fakemnt = 0;
 static int got_password = 0;
 static int got_user = 0;
 static int got_domain = 0;
@@ -1030,7 +1031,7 @@ int main(int argc, char ** argv)
 	char * resolved_path = NULL;
 	char * temp;
 	char * dev_name;
-	int rc;
+	int rc = 0;
 	int rsize = 0;
 	int wsize = 0;
 	int nomtab = 0;
@@ -1103,8 +1104,8 @@ int main(int argc, char ** argv)
 			mount_cifs_usage ();
 			exit(EX_USAGE);
 		case 'n':
-		    ++nomtab;
-		    break;
+			++nomtab;
+			break;
 		case 'b':
 #ifdef MS_BIND
 			flags |= MS_BIND;
@@ -1208,6 +1209,9 @@ int main(int argc, char ** argv)
 			get_password_from_file(0 /* stdin */,NULL);
 			break;
 		case 't':
+			break;
+		case 'f':
+			++fakemnt;
 			break;
 		default:
 			printf("unknown mount option %c\n",c);
@@ -1410,7 +1414,7 @@ mount_retry:
 		}
 	}
 
-	if (mount(dev_name, mountpoint, "cifs", flags, options)) {
+	if (!fakemnt && mount(dev_name, mountpoint, "cifs", flags, options)) {
 		switch (errno) {
 		case ECONNREFUSED:
 		case EHOSTUNREACH:
@@ -1440,6 +1444,8 @@ mount_retry:
 		goto mount_exit;
 	}
 
+	if (nomtab)
+		goto mount_exit;
 	atexit(unlock_mtab);
 	rc = lock_mtab();
 	if (rc) {

@@ -95,6 +95,55 @@ struct async_syscall_state {
 };
 
 /**
+ * @brief Map async_req states to unix-style errnos
+ * @param[in]  req	The async req to get the state from
+ * @param[out] err	Pointer to take the unix-style errno
+ *
+ * @return true if the async_req is in an error state, false otherwise
+ */
+
+bool async_req_is_errno(struct async_req *req, int *err)
+{
+	enum async_req_state state;
+	uint64_t error;
+
+	if (!async_req_is_error(req, &state, &error)) {
+		return false;
+	}
+
+	switch (state) {
+	case ASYNC_REQ_USER_ERROR:
+		*err = (int)error;
+		break;
+	case ASYNC_REQ_TIMED_OUT:
+#ifdef HAVE_ETIMEDOUT
+		*err = ETIMEDOUT;
+#else
+		*err = EIO;
+#endif
+		break;
+	case ASYNC_REQ_NO_MEMORY:
+		*err = ENOMEM;
+		break;
+	default:
+		*err = EIO;
+		break;
+	}
+	return true;
+}
+
+int async_req_simple_recv_errno(struct async_req *req)
+{
+	int err;
+
+	if (async_req_is_errno(req, &err)) {
+		return err;
+	}
+
+	return 0;
+}
+
+/**
  * @brief Create a new async syscall req
  * @param[in] mem_ctx	The memory context to hang the result off
  * @param[in] ev	The event context to work from
@@ -239,7 +288,7 @@ static void async_send_callback(struct tevent_context *ev,
 	struct param_send *p = &state->param.param_send;
 
 	if (state->syscall_type != ASYNC_SYSCALL_SEND) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -306,7 +355,7 @@ static void async_sendall_callback(struct tevent_context *ev,
 	struct param_sendall *p = &state->param.param_sendall;
 
 	if (state->syscall_type != ASYNC_SYSCALL_SENDALL) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -316,18 +365,18 @@ static void async_sendall_callback(struct tevent_context *ev,
 	state->sys_errno = errno;
 
 	if (state->result.result_ssize_t == -1) {
-		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_error(req, state->sys_errno);
 		return;
 	}
 
 	if (state->result.result_ssize_t == 0) {
-		async_req_nterror(req, NT_STATUS_END_OF_FILE);
+		async_req_error(req, EOF);
 		return;
 	}
 
 	p->sent += state->result.result_ssize_t;
 	if (p->sent > p->length) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -374,9 +423,20 @@ struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return result;
 }
 
-NTSTATUS sendall_recv(struct async_req *req)
+ssize_t sendall_recv(struct async_req *req, int *perr)
 {
-	return async_req_simple_recv_ntstatus(req);
+	struct async_syscall_state *state = talloc_get_type_abort(
+		req->private_data, struct async_syscall_state);
+	int err;
+
+	err = async_req_simple_recv_errno(req);
+
+	if (err != 0) {
+		*perr = err;
+		return -1;
+	}
+
+	return state->result.result_ssize_t;
 }
 
 /**
@@ -398,7 +458,7 @@ static void async_recv_callback(struct tevent_context *ev,
 	struct param_recv *p = &state->param.param_recv;
 
 	if (state->syscall_type != ASYNC_SYSCALL_RECV) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -466,7 +526,7 @@ static void async_recvall_callback(struct tevent_context *ev,
 	struct param_recvall *p = &state->param.param_recvall;
 
 	if (state->syscall_type != ASYNC_SYSCALL_RECVALL) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -476,18 +536,18 @@ static void async_recvall_callback(struct tevent_context *ev,
 	state->sys_errno = errno;
 
 	if (state->result.result_ssize_t == -1) {
-		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_error(req, state->sys_errno);
 		return;
 	}
 
 	if (state->result.result_ssize_t == 0) {
-		async_req_nterror(req, NT_STATUS_END_OF_FILE);
+		async_req_error(req, EIO);
 		return;
 	}
 
 	p->received += state->result.result_ssize_t;
 	if (p->received > p->length) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, EIO);
 		return;
 	}
 
@@ -533,9 +593,20 @@ struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	return result;
 }
 
-NTSTATUS recvall_recv(struct async_req *req)
+ssize_t recvall_recv(struct async_req *req, int *perr)
 {
-	return async_req_simple_recv_ntstatus(req);
+	struct async_syscall_state *state = talloc_get_type_abort(
+		req->private_data, struct async_syscall_state);
+	int err;
+
+	err = async_req_simple_recv_errno(req);
+
+	if (err != 0) {
+		*perr = err;
+		return -1;
+	}
+
+	return state->result.result_ssize_t;
 }
 
 struct async_connect_state {
@@ -570,7 +641,6 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	struct async_req *result;
 	struct async_connect_state *state;
 	struct tevent_fd *fde;
-	NTSTATUS status;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct async_connect_state)) {
@@ -595,7 +665,6 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	state->result = connect(fd, address, address_len);
 	if (state->result == 0) {
 		state->sys_errno = 0;
-		status = NT_STATUS_OK;
 		goto post_status;
 	}
 
@@ -617,17 +686,16 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
 			   async_connect_connected, result);
 	if (fde == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+		state->sys_errno = ENOMEM;
 		goto post_status;
 	}
 	return result;
 
  post_errno:
 	state->sys_errno = errno;
-	status = map_nt_error_from_unix(state->sys_errno);
  post_status:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	if (!async_post_ntstatus(result, ev, status)) {
+	if (!async_post_error(result, ev, state->sys_errno)) {
 		goto fail;
 	}
 	return result;
@@ -675,7 +743,7 @@ static void async_connect_connected(struct tevent_context *ev,
 		DEBUG(10, ("connect returned %s\n", strerror(errno)));
 
 		fcntl(state->fd, F_SETFL, state->old_sockflags);
-		async_req_nterror(req, map_nt_error_from_unix(state->sys_errno));
+		async_req_error(req, state->sys_errno);
 		return;
 	}
 
@@ -683,21 +751,23 @@ static void async_connect_connected(struct tevent_context *ev,
 	async_req_done(req);
 }
 
-NTSTATUS async_connect_recv(struct async_req *req, int *perrno)
+int async_connect_recv(struct async_req *req, int *perrno)
 {
 	struct async_connect_state *state = talloc_get_type_abort(
 		req->private_data, struct async_connect_state);
-	NTSTATUS status;
+	int err;
 
 	fcntl(state->fd, F_SETFL, state->old_sockflags);
 
-	*perrno = state->sys_errno;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
+	if (async_req_is_errno(req, &err)) {
+		*perrno = err;
+		return -1;
 	}
 	if (state->sys_errno == 0) {
-		return NT_STATUS_OK;
+		return 0;
 	}
-	return map_nt_error_from_unix(state->sys_errno);
+
+	*perrno = state->sys_errno;
+	return -1;
 }

@@ -18,8 +18,7 @@
 */
 
 #include "includes.h"
-#include "winbindd/winbindd.h"
-#include "winbindd/winbindd_proto.h"
+#include "wbc_async.h"
 
 static int make_nonstd_fd(int fd)
 {
@@ -131,12 +130,6 @@ static bool winbind_closed_fd(int fd)
 	return false;
 }
 
-struct wb_context {
-	struct async_req_queue *queue;
-	int fd;
-	bool is_priv;
-};
-
 struct wb_context *wb_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct wb_context *result;
@@ -163,7 +156,7 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	struct sockaddr_un sunaddr;
 	struct stat st;
 	char *path = NULL;
-	NTSTATUS status;
+	wbcErr wbc_err;
 
 	if (wb_ctx->fd != -1) {
 		close(wb_ctx->fd);
@@ -173,13 +166,13 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	/* Check permissions on unix socket directory */
 
 	if (lstat(dir, &st) == -1) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		wbc_err = WBC_ERR_WINBIND_NOT_AVAILABLE;
 		goto post_status;
 	}
 
 	if (!S_ISDIR(st.st_mode) ||
 	    (st.st_uid != 0 && st.st_uid != geteuid())) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		wbc_err = WBC_ERR_WINBIND_NOT_AVAILABLE;
 		goto post_status;
 	}
 
@@ -202,13 +195,13 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	if ((lstat(sunaddr.sun_path, &st) == -1)
 	    || !S_ISSOCK(st.st_mode)
 	    || (st.st_uid != 0 && st.st_uid != geteuid())) {
-		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		wbc_err = WBC_ERR_WINBIND_NOT_AVAILABLE;
 		goto post_status;
 	}
 
 	wb_ctx->fd = make_safe_fd(socket(AF_UNIX, SOCK_STREAM, 0));
 	if (wb_ctx->fd == -1) {
-		status = map_nt_error_from_unix(errno);
+		wbc_err = map_wbc_err_from_errno(errno);
 		goto post_status;
 	}
 
@@ -226,24 +219,22 @@ static struct async_req *wb_connect_send(TALLOC_CTX *mem_ctx,
 	return req;
 
  nomem:
-	status = NT_STATUS_NO_MEMORY;
+	wbc_err = WBC_ERR_NO_MEMORY;
  post_status:
 	req = async_req_new(mem_ctx);
 	if (req == NULL) {
 		return NULL;
 	}
-	if (async_post_ntstatus(req, ev, status)) {
+	if (async_post_error(req, ev, wbc_err)) {
 		return req;
 	}
 	TALLOC_FREE(req);
 	return NULL;
 }
 
-static NTSTATUS wb_connect_recv(struct async_req *req)
+static wbcErr wb_connect_recv(struct async_req *req)
 {
-	int dummy;
-
-	return async_connect_recv(req, &dummy);
+	return async_req_simple_recv_wbcerr(req);
 }
 
 static struct winbindd_request *winbindd_request_copy(
@@ -295,8 +286,8 @@ static struct async_req *wb_int_trans_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (winbind_closed_fd(fd)) {
-		if (!async_post_ntstatus(result, ev,
-					 NT_STATUS_PIPE_DISCONNECTED)) {
+		if (!async_post_error(result, ev,
+				      WBC_ERR_WINBIND_NOT_AVAILABLE)) {
 			goto fail;
 		}
 		return result;
@@ -329,18 +320,18 @@ static void wb_int_trans_write_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_int_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_int_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_req_write_recv(subreq);
+	wbc_err = wb_req_write_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
+		async_req_error(req, wbc_err);
 		return;
 	}
 
 	subreq = wb_resp_read_send(state, state->ev, state->fd);
 	if (subreq == NULL) {
-		async_req_nterror(req, NT_STATUS_NO_MEMORY);
+		async_req_error(req, WBC_ERR_NO_MEMORY);
 	}
 	subreq->async.fn = wb_int_trans_read_done;
 	subreq->async.priv = req;
@@ -352,32 +343,32 @@ static void wb_int_trans_read_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_int_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_int_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_resp_read_recv(subreq, state, &state->wb_resp);
+	wbc_err = wb_resp_read_recv(subreq, state, &state->wb_resp);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
+		async_req_error(req, wbc_err);
 		return;
 	}
 
 	async_req_done(req);
 }
 
-static NTSTATUS wb_int_trans_recv(struct async_req *req,
-				  TALLOC_CTX *mem_ctx,
-				  struct winbindd_response **presponse)
+static wbcErr wb_int_trans_recv(struct async_req *req,
+				TALLOC_CTX *mem_ctx,
+				struct winbindd_response **presponse)
 {
 	struct wb_int_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_int_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
+	if (async_req_is_wbcerr(req, &wbc_err)) {
+		return wbc_err;
 	}
 
 	*presponse = talloc_move(mem_ctx, &state->wb_resp);
-	return NT_STATUS_OK;
+	return WBC_ERR_SUCCESS;
 }
 
 static const char *winbindd_socket_dir(void)
@@ -448,13 +439,13 @@ static void wb_open_pipe_connect_nonpriv_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_open_pipe_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_open_pipe_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_connect_recv(subreq);
+	wbc_err = wb_connect_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
 		state->wb_ctx->is_priv = true;
-		async_req_nterror(req, status);
+		async_req_error(req, wbc_err);
 		return;
 	}
 
@@ -478,12 +469,12 @@ static void wb_open_pipe_ping_done(struct async_req *subreq)
 	struct wb_open_pipe_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp;
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_int_trans_recv(subreq, state, &wb_resp);
+	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
+		async_req_error(req, wbc_err);
 		return;
 	}
 
@@ -511,12 +502,12 @@ static void wb_open_pipe_getpriv_done(struct async_req *subreq)
 	struct wb_open_pipe_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_open_pipe_state);
 	struct winbindd_response *wb_resp = NULL;
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_int_trans_recv(subreq, state, &wb_resp);
+	wbc_err = wb_int_trans_recv(subreq, state, &wb_resp);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
+		async_req_error(req, wbc_err);
 		return;
 	}
 
@@ -540,21 +531,21 @@ static void wb_open_pipe_connect_priv_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_open_pipe_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_open_pipe_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_connect_recv(subreq);
+	wbc_err = wb_connect_recv(subreq);
 	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	if (!WBC_ERROR_IS_OK(wbc_err)) {
+		async_req_error(req, wbc_err);
 		return;
 	}
 	state->wb_ctx->is_priv = true;
 	async_req_done(req);
 }
 
-static NTSTATUS wb_open_pipe_recv(struct async_req *req)
+static wbcErr wb_open_pipe_recv(struct async_req *req)
 {
-	return async_req_simple_recv_ntstatus(req);
+	return async_req_simple_recv_wbcerr(req);
 }
 
 struct wb_trans_state {
@@ -631,27 +622,26 @@ struct async_req *wb_trans_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 
 static bool wb_trans_retry(struct async_req *req,
 			   struct wb_trans_state *state,
-			   NTSTATUS status)
+			   wbcErr wbc_err)
 {
 	struct async_req *subreq;
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (WBC_ERROR_IS_OK(wbc_err)) {
 		return false;
 	}
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)
-	    || NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+	if (wbc_err == WBC_ERR_WINBIND_NOT_AVAILABLE) {
 		/*
 		 * Winbind not around or we can't connect to the pipe. Fail
 		 * immediately.
 		 */
-		async_req_nterror(req, status);
+		async_req_error(req, wbc_err);
 		return true;
 	}
 
 	state->num_retries -= 1;
 	if (state->num_retries == 0) {
-		async_req_nterror(req, status);
+		async_req_error(req, wbc_err);
 		return true;
 	}
 
@@ -685,7 +675,7 @@ static void wb_trans_retry_wait_done(struct async_req *subreq)
 	ret = async_wait_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (ret) {
-		async_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		async_req_error(req, WBC_ERR_UNKNOWN_FAILURE);
 		return;
 	}
 
@@ -704,12 +694,12 @@ static void wb_trans_connect_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_open_pipe_recv(subreq);
+	wbc_err = wb_open_pipe_recv(subreq);
 	TALLOC_FREE(subreq);
 
-	if (wb_trans_retry(req, state, status)) {
+	if (wb_trans_retry(req, state, wbc_err)) {
 		return;
 	}
 
@@ -729,29 +719,29 @@ static void wb_trans_done(struct async_req *subreq)
 		subreq->async.priv, struct async_req);
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	status = wb_int_trans_recv(subreq, state, &state->wb_resp);
+	wbc_err = wb_int_trans_recv(subreq, state, &state->wb_resp);
 	TALLOC_FREE(subreq);
 
-	if (wb_trans_retry(req, state, status)) {
+	if (wb_trans_retry(req, state, wbc_err)) {
 		return;
 	}
 
 	async_req_done(req);
 }
 
-NTSTATUS wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		       struct winbindd_response **presponse)
+wbcErr wb_trans_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+		     struct winbindd_response **presponse)
 {
 	struct wb_trans_state *state = talloc_get_type_abort(
 		req->private_data, struct wb_trans_state);
-	NTSTATUS status;
+	wbcErr wbc_err;
 
-	if (async_req_is_nterror(req, &status)) {
-		return status;
+	if (async_req_is_wbcerr(req, &wbc_err)) {
+		return wbc_err;
 	}
 
 	*presponse = talloc_move(mem_ctx, &state->wb_resp);
-	return NT_STATUS_OK;
+	return WBC_ERR_SUCCESS;
 }

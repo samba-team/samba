@@ -70,13 +70,10 @@ typedef struct _output_data {
 	uint32 data_sent_length;
 
 	/*
-	 * The current PDU being returned. This inclues
+	 * The current fragment being returned. This inclues
 	 * headers, data and authentication footer.
 	 */
-	unsigned char current_pdu[RPC_MAX_PDU_FRAG_LEN];
-
-	/* The amount of data in the current_pdu buffer. */
-	uint32 current_pdu_len;
+	prs_struct frag;
 
 	/* The amount of data sent from the current PDU. */
 	uint32 current_pdu_sent;
@@ -89,7 +86,7 @@ typedef struct _input_data {
 	 * pdu is seen, then the data is copied into the in_data
 	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
 	 */
-	unsigned char current_in_pdu[RPC_MAX_PDU_FRAG_LEN];
+	uint8_t *current_in_pdu;
 
 	/*
 	 * The amount of data needed to complete the in_pdu.

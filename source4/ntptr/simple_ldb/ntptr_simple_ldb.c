@@ -127,43 +127,43 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 {
 	struct dcerpc_server_info *server_info = lp_dcerpc_server_info(mem_ctx, server->ntptr->lp_ctx);
 	if (strcmp("W3SvcInstalled", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return WERR_OK;
 	} else if (strcmp("BeepEnabled", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return WERR_OK;
 	} else if (strcmp("EventLog", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return WERR_OK;
 	} else if (strcmp("NetPopup", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return WERR_OK;
 	} else if (strcmp("NetPopupToComputer", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return  WERR_OK;
 	} else if (strcmp("MajorVersion", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 3;
 		return WERR_OK;
 	} else if (strcmp("MinorVersion", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 0;
 		return WERR_OK;
 	} else if (strcmp("DefaultSpoolDirectory", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
 		r->out.data.string	= "C:\\PRINTERS";
 		return  WERR_OK;
 	} else if (strcmp("Architecture", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
 		r->out.data.string	= SPOOLSS_ARCHITECTURE_NT_X86;
 		return  WERR_OK;
 	} else if (strcmp("DsPresent", r->in.value_name) == 0) {
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_UINT32;
 		r->out.data.value	= 1;
 		return WERR_OK;
 	} else if (strcmp("OSVersion", r->in.value_name) == 0) {
@@ -181,7 +181,7 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_GENERAL_FAILURE;
 		}
 
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
 		r->out.data.binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("OSVersionEx", r->in.value_name) == 0) {
@@ -201,13 +201,13 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 			return WERR_GENERAL_FAILURE;
 		}
 
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_BINARY;
 		r->out.data.binary	= blob;
 		return WERR_OK;
 	} else if (strcmp("DNSMachineName", r->in.value_name) == 0) {
 		if (!lp_realm(server->ntptr->lp_ctx)) return WERR_INVALID_PARAM;
 
-		r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
+		*r->out.type		= SPOOLSS_PRINTER_DATA_TYPE_STRING;
 		r->out.data.string	= talloc_asprintf(mem_ctx, "%s.%s",
 								   lp_netbios_name(server->ntptr->lp_ctx),
 								   lp_realm(server->ntptr->lp_ctx));

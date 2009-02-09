@@ -51,7 +51,7 @@ NTSTATUS pvfs_acl_register(const struct pvfs_acl_ops *ops)
 	backends = talloc_realloc(talloc_autofree_context(), backends, struct pvfs_acl_backend, num_backends+1);
 	NT_STATUS_HAVE_NO_MEMORY(backends);
 
-	new_ops = talloc_memdup(backends, ops, sizeof(*ops));
+	new_ops = (struct pvfs_acl_ops *)talloc_memdup(backends, ops, sizeof(*ops));
 	new_ops->name = talloc_strdup(new_ops, ops->name);
 
 	backends[num_backends].ops = new_ops;

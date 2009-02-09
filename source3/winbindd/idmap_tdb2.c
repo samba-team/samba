@@ -54,6 +54,43 @@ static struct db_context *idmap_tdb2;
 
 static NTSTATUS idmap_tdb2_alloc_load(void);
 
+static NTSTATUS idmap_tdb2_load_ranges(void)
+{
+	uid_t low_uid = 0;
+	uid_t high_uid = 0;
+	gid_t low_gid = 0;
+	gid_t high_gid = 0;
+
+	if (!lp_idmap_uid(&low_uid, &high_uid)) {
+		DEBUG(1, ("idmap uid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!lp_idmap_gid(&low_gid, &high_gid)) {
+		DEBUG(1, ("idmap gid missing\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	idmap_tdb2_state.low_uid = low_uid;
+	idmap_tdb2_state.high_uid = high_uid;
+	idmap_tdb2_state.low_gid = low_gid;
+	idmap_tdb2_state.high_gid = high_gid;
+
+	if (idmap_tdb2_state.high_uid <= idmap_tdb2_state.low_uid) {
+		DEBUG(1, ("idmap uid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
+		DEBUG(1, ("idmap gid range missing or invalid\n"));
+		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
+
 /*
   open the permanent tdb
  */
@@ -94,10 +131,7 @@ static NTSTATUS idmap_tdb2_open_db(void)
 */
 static NTSTATUS idmap_tdb2_alloc_load(void)
 {
-	uid_t low_uid = 0;
-	uid_t high_uid = 0;
-	gid_t low_gid = 0;
-	gid_t high_gid = 0;
+	NTSTATUS status;
 	uint32 low_id;
 
 	/* see if a idmap script is configured */
@@ -111,27 +145,15 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 
 	/* load ranges */
 
+	status = idmap_tdb2_load_ranges();
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	/* Create high water marks for group and user id */
-	if (!lp_idmap_uid(&low_uid, &high_uid)
-	    || !lp_idmap_gid(&low_gid, &high_gid)) {
-		DEBUG(1, ("idmap uid or idmap gid missing\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
-	idmap_tdb2_state.low_uid = low_uid;
-	idmap_tdb2_state.high_uid = high_uid;
-	idmap_tdb2_state.low_gid = low_gid;
-	idmap_tdb2_state.high_gid = high_gid;
-
-	if (idmap_tdb2_state.high_uid <= idmap_tdb2_state.low_uid) {
-		DEBUG(1, ("idmap uid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
-					  HWM_USER)) == -1) ||
-	    (low_id < idmap_tdb2_state.low_uid)) {
+	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_USER);
+	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_uid)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_USER,
 					     idmap_tdb2_state.low_uid))) {
@@ -141,15 +163,8 @@ static NTSTATUS idmap_tdb2_alloc_load(void)
 		}
 	}
 
-	if (idmap_tdb2_state.high_gid <= idmap_tdb2_state.low_gid) {
-		DEBUG(1, ("idmap gid range missing or invalid\n"));
-		DEBUGADD(1, ("idmap will be unable to map foreign SIDs\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	if (((low_id = dbwrap_fetch_int32(idmap_tdb2,
-					  HWM_GROUP)) == -1) ||
-	    (low_id < idmap_tdb2_state.low_gid)) {
+	low_id = dbwrap_fetch_int32(idmap_tdb2, HWM_GROUP);
+	if ((low_id == -1) || (low_id < idmap_tdb2_state.low_gid)) {
 		if (!NT_STATUS_IS_OK(dbwrap_trans_store_int32(
 					     idmap_tdb2, HWM_GROUP,
 					     idmap_tdb2_state.low_gid))) {
@@ -557,12 +572,13 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	TDB_DATA data;
 	char *keystr;
 	unsigned long rec_id = 0;
-	NTSTATUS status;
+	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 
-	status = idmap_tdb2_open_db();
-	NT_STATUS_NOT_OK_RETURN(status);
+	ret = idmap_tdb2_open_db();
+	NT_STATUS_NOT_OK_RETURN(ret);
 
-	if ((keystr = sid_string_talloc(ctx, map->sid)) == NULL) {
+	keystr = sid_string_talloc(tmp_ctx, map->sid);
+	if (keystr == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -571,7 +587,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	DEBUG(10,("Fetching record %s\n", keystr));
 
 	/* Check if sid is present in database */
-	data = dbwrap_fetch_bystring(idmap_tdb2, keystr, keystr);
+	data = dbwrap_fetch_bystring(idmap_tdb2, tmp_ctx, keystr);
 	if (!data.dptr) {
 		fstring idstr;
 
@@ -626,7 +642,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	}
 
 done:
-	talloc_free(keystr);
+	talloc_free(tmp_ctx);
 	return ret;
 }
 

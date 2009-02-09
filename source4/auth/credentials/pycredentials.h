@@ -25,6 +25,6 @@
 PyAPI_DATA(PyTypeObject) PyCredentials;
 struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);
 #define PyCredentials_Check(py_obj) PyObject_TypeCheck(py_obj, &PyCredentials)
-#define PyCredentials_AsCliCredentials(py_obj) py_talloc_get_ptr(py_obj)
+#define PyCredentials_AsCliCredentials(py_obj) py_talloc_get_type(py_obj, struct cli_credentials)
 
 #endif /*  _PYCREDENTIALS_H_ */

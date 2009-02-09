@@ -141,8 +141,621 @@ interface libnetapi
 	} SERVER_INFO_102;
 
 	[public] typedef struct {
+		uint32 sv402_ulist_mtime;
+		uint32 sv402_glist_mtime;
+		uint32 sv402_alist_mtime;
+		string sv402_alerts;
+		uint32 sv402_security;
+		uint32 sv402_numadmin;
+		uint32 sv402_lanmask;
+		string sv402_guestacct;
+		uint32 sv402_chdevs;
+		uint32 sv402_chdevq;
+		uint32 sv402_chdevjobs;
+		uint32 sv402_connections;
+		uint32 sv402_shares;
+		uint32 sv402_openfiles;
+		uint32 sv402_sessopens;
+		uint32 sv402_sessvcs;
+		uint32 sv402_sessreqs;
+		uint32 sv402_opensearch;
+		uint32 sv402_activelocks;
+		uint32 sv402_numreqbuf;
+		uint32 sv402_sizreqbuf;
+		uint32 sv402_numbigbuf;
+		uint32 sv402_numfiletasks;
+		uint32 sv402_alertsched;
+		uint32 sv402_erroralert;
+		uint32 sv402_logonalert;
+		uint32 sv402_accessalert;
+		uint32 sv402_diskalert;
+		uint32 sv402_netioalert;
+		uint32 sv402_maxauditsz;
+		string sv402_srvheuristics;
+	} SERVER_INFO_402;
+
+	[public] typedef struct {
+		uint32 sv403_ulist_mtime;
+		uint32 sv403_glist_mtime;
+		uint32 sv403_alist_mtime;
+		string sv403_alerts;
+		uint32 sv403_security;
+		uint32 sv403_numadmin;
+		uint32 sv403_lanmask;
+		string sv403_guestacct;
+		uint32 sv403_chdevs;
+		uint32 sv403_chdevq;
+		uint32 sv403_chdevjobs;
+		uint32 sv403_connections;
+		uint32 sv403_shares;
+		uint32 sv403_openfiles;
+		uint32 sv403_sessopens;
+		uint32 sv403_sessvcs;
+		uint32 sv403_sessreqs;
+		uint32 sv403_opensearch;
+		uint32 sv403_activelocks;
+		uint32 sv403_numreqbuf;
+		uint32 sv403_sizreqbuf;
+		uint32 sv403_numbigbuf;
+		uint32 sv403_numfiletasks;
+		uint32 sv403_alertsched;
+		uint32 sv403_erroralert;
+		uint32 sv403_logonalert;
+		uint32 sv403_accessalert;
+		uint32 sv403_diskalert;
+		uint32 sv403_netioalert;
+		uint32 sv403_maxauditsz;
+		string sv403_srvheuristics;
+		uint32 sv403_auditedevents;
+		uint32 sv403_autoprofile;
+		string sv403_autopath;
+	} SERVER_INFO_403;
+
+	[public] typedef struct {
+		uint32 sv502_sessopens;
+		uint32 sv502_sessvcs;
+		uint32 sv502_opensearch;
+		uint32 sv502_sizreqbuf;
+		uint32 sv502_initworkitems;
+		uint32 sv502_maxworkitems;
+		uint32 sv502_rawworkitems;
+		uint32 sv502_irpstacksize;
+		uint32 sv502_maxrawbuflen;
+		uint32 sv502_sessusers;
+		uint32 sv502_sessconns;
+		uint32 sv502_maxpagedmemoryusage;
+		uint32 sv502_maxnonpagedmemoryusage;
+		boolean8 sv502_enablesoftcompat;
+		boolean8 sv502_enableforcedlogoff;
+		boolean8 sv502_timesource;
+		boolean8 sv502_acceptdownlevelapis;
+		boolean8 sv502_lmannounce;
+	} SERVER_INFO_502;
+
+	[public] typedef struct {
+		uint32 sv503_sessopens;
+		uint32 sv503_sessvcs;
+		uint32 sv503_opensearch;
+		uint32 sv503_sizreqbuf;
+		uint32 sv503_initworkitems;
+		uint32 sv503_maxworkitems;
+		uint32 sv503_rawworkitems;
+		uint32 sv503_irpstacksize;
+		uint32 sv503_maxrawbuflen;
+		uint32 sv503_sessusers;
+		uint32 sv503_sessconns;
+		uint32 sv503_maxpagedmemoryusage;
+		uint32 sv503_maxnonpagedmemoryusage;
+		boolean8 sv503_enablesoftcompat;
+		boolean8 sv503_enableforcedlogoff;
+		boolean8 sv503_timesource;
+		boolean8 sv503_acceptdownlevelapis;
+		boolean8 sv503_lmannounce;
+		string sv503_domain;
+		uint32 sv503_maxcopyreadlen;
+		uint32 sv503_maxcopywritelen;
+		uint32 sv503_minkeepsearch;
+		uint32 sv503_maxkeepsearch;
+		uint32 sv503_minkeepcomplsearch;
+		uint32 sv503_maxkeepcomplsearch;
+		uint32 sv503_threadcountadd;
+		uint32 sv503_numblockthreads;
+		uint32 sv503_scavtimeout;
+		uint32 sv503_minrcvqueue;
+		uint32 sv503_minfreeworkitems;
+		uint32 sv503_xactmemsize;
+		uint32 sv503_threadpriority;
+		uint32 sv503_maxmpxct;
+		uint32 sv503_oplockbreakwait;
+		uint32 sv503_oplockbreakresponsewait;
+		boolean8 sv503_enableoplocks;
+		boolean8 sv503_enableoplockforceclose;
+		boolean8 sv503_enablefcbopens;
+		boolean8 sv503_enableraw;
+		boolean8 sv503_enablesharednetdrives;
+		uint32 sv503_minfreeconnections;
+		uint32 sv503_maxfreeconnections;
+	} SERVER_INFO_503;
+
+	[public] typedef struct {
+		uint32 sv599_sessopens;
+		uint32 sv599_sessvcs;
+		uint32 sv599_opensearch;
+		uint32 sv599_sizreqbuf;
+		uint32 sv599_initworkitems;
+		uint32 sv599_maxworkitems;
+		uint32 sv599_rawworkitems;
+		uint32 sv599_irpstacksize;
+		uint32 sv599_maxrawbuflen;
+		uint32 sv599_sessusers;
+		uint32 sv599_sessconns;
+		uint32 sv599_maxpagedmemoryusage;
+		uint32 sv599_maxnonpagedmemoryusage;
+		boolean8 sv599_enablesoftcompat;
+		boolean8 sv599_enableforcedlogoff;
+		boolean8 sv599_timesource;
+		boolean8 sv599_acceptdownlevelapis;
+		boolean8 sv599_lmannounce;
+		string sv599_domain;
+		uint32 sv599_maxcopyreadlen;
+		uint32 sv599_maxcopywritelen;
+		uint32 sv599_minkeepsearch;
+		uint32 sv599_maxkeepsearch;
+		uint32 sv599_minkeepcomplsearch;
+		uint32 sv599_maxkeepcomplsearch;
+		uint32 sv599_threadcountadd;
+		uint32 sv599_numblockthreads;
+		uint32 sv599_scavtimeout;
+		uint32 sv599_minrcvqueue;
+		uint32 sv599_minfreeworkitems;
+		uint32 sv599_xactmemsize;
+		uint32 sv599_threadpriority;
+		uint32 sv599_maxmpxct;
+		uint32 sv599_oplockbreakwait;
+		uint32 sv599_oplockbreakresponsewait;
+		boolean8 sv599_enableoplocks;
+		boolean8 sv599_enableoplockforceclose;
+		boolean8 sv599_enablefcbopens;
+		boolean8 sv599_enableraw;
+		boolean8 sv599_enablesharednetdrives;
+		uint32 sv599_minfreeconnections;
+		uint32 sv599_maxfreeconnections;
+		uint32 sv599_initsesstable;
+		uint32 sv599_initconntable;
+		uint32 sv599_initfiletable;
+		uint32 sv599_initsearchtable;
+		uint32 sv599_alertschedule;
+		uint32 sv599_errorthreshold;
+		uint32 sv599_networkerrorthreshold;
+		uint32 sv599_diskspacethreshold;
+		uint32 sv599_reserved;
+		uint32 sv599_maxlinkdelay;
+		uint32 sv599_minlinkthroughput;
+		uint32 sv599_linkinfovalidtime;
+		uint32 sv599_scavqosinfoupdatetime;
+		uint32 sv599_maxworkitemidletime;
+	} SERVER_INFO_599;
+
+	[public] typedef struct {
+		uint32 sv598_maxrawworkitems;
+		uint32 sv598_maxthreadsperqueue;
+		uint32 sv598_producttype;
+		uint32 sv598_serversize;
+		uint32 sv598_connectionlessautodisc;
+		uint32 sv598_sharingviolationretries;
+		uint32 sv598_sharingviolationdelay;
+		uint32 sv598_maxglobalopensearch;
+		uint32 sv598_removeduplicatesearches;
+		uint32 sv598_lockviolationoffset;
+		uint32 sv598_lockviolationdelay;
+		uint32 sv598_mdlreadswitchover;
+		uint32 sv598_cachedopenlimit;
+		uint32 sv598_otherqueueaffinity;
+		boolean8  sv598_restrictnullsessaccess;
+		boolean8  sv598_enablewfw311directipx;
+		uint32 sv598_queuesamplesecs;
+		uint32 sv598_balancecount;
+		uint32 sv598_preferredaffinity;
+		uint32 sv598_maxfreerfcbs;
+		uint32 sv598_maxfreemfcbs;
+		uint32 sv598_maxfreelfcbs;
+		uint32 sv598_maxfreepagedpoolchunks;
+		uint32 sv598_minpagedpoolchunksize;
+		uint32 sv598_maxpagedpoolchunksize;
+		boolean8 sv598_sendsfrompreferredprocessor;
+		uint32 sv598_cacheddirectorylimit;
+		uint32 sv598_maxcopylength;
+		boolean8 sv598_enablecompression;
+		boolean8 sv598_autosharewks;
+		boolean8 sv598_autoshareserver;
+		boolean8 sv598_enablesecuritysignature;
+		boolean8 sv598_requiresecuritysignature;
+		uint32 sv598_minclientbuffersize;
+		GUID sv598_serverguid;
+		uint32 sv598_ConnectionNoSessionsTimeout;
+		uint32 sv598_IdleThreadTimeOut;
+		boolean8 sv598_enableW9xsecuritysignature;
+		boolean8 sv598_enforcekerberosreauthentication;
+		boolean8 sv598_disabledos;
+		uint32 sv598_lowdiskspaceminimum;
+		boolean8 sv598_disablestrictnamechecking;
+	} SERVER_INFO_598;
+
+	[public] typedef struct {
 		string sv1005_comment;
 	} SERVER_INFO_1005;
+
+	[public] typedef struct {
+		uint32 sv1107_users;
+	} SERVER_INFO_1107;
+
+	[public] typedef struct {
+		int32 sv1010_disc;
+	} SERVER_INFO_1010;
+
+	[public] typedef struct {
+		boolean8  sv1016_hidden;
+	} SERVER_INFO_1016;
+
+	[public] typedef struct {
+		uint32 sv1017_announce;
+	} SERVER_INFO_1017;
+
+	[public] typedef struct {
+		uint32 sv1018_anndelta;
+	} SERVER_INFO_1018;
+
+	[public] typedef struct {
+		uint32 sv1501_sessopens;
+	} SERVER_INFO_1501;
+
+	[public] typedef struct {
+		uint32 sv1502_sessvcs;
+	} SERVER_INFO_1502;
+
+	[public] typedef struct {
+		uint32 sv1503_opensearch;
+	} SERVER_INFO_1503;
+
+	[public] typedef struct {
+		uint32 sv1506_maxworkitems;
+	} SERVER_INFO_1506;
+
+	[public] typedef struct {
+		uint32 sv1509_maxrawbuflen;
+	} SERVER_INFO_1509;
+
+	[public] typedef struct {
+		uint32 sv1510_sessusers;
+	} SERVER_INFO_1510;
+
+	[public] typedef struct {
+		uint32 sv1511_sessconns;
+	} SERVER_INFO_1511;
+
+	[public] typedef struct {
+		uint32 sv1512_maxnonpagedmemoryusage;
+	} SERVER_INFO_1512;
+
+	[public] typedef struct {
+		uint32 sv1513_maxpagedmemoryusage;
+	} SERVER_INFO_1513;
+
+	[public] typedef struct {
+		boolean8 sv1514_enablesoftcompat;
+	} SERVER_INFO_1514;
+
+	[public] typedef struct {
+		boolean8  sv1515_enableforcedlogoff;
+	} SERVER_INFO_1515;
+
+	[public] typedef struct {
+		boolean8  sv1516_timesource;
+	} SERVER_INFO_1516;
+
+	[public] typedef struct {
+		boolean8  sv1518_lmannounce;
+	} SERVER_INFO_1518;
+
+	[public] typedef struct {
+		uint32 sv1520_maxcopyreadlen;
+	} SERVER_INFO_1520;
+
+	[public] typedef struct {
+		uint32 sv1521_maxcopywritelen;
+	} SERVER_INFO_1521;
+
+	[public] typedef struct {
+		uint32 sv1522_minkeepsearch;
+	} SERVER_INFO_1522;
+
+	[public] typedef struct {
+		uint32 sv1523_maxkeepsearch;
+	} SERVER_INFO_1523;
+
+	[public] typedef struct {
+		uint32 sv1524_minkeepcomplsearch;
+	} SERVER_INFO_1524;
+
+	[public] typedef struct {
+		uint32 sv1525_maxkeepcomplsearch;
+	} SERVER_INFO_1525;
+
+	[public] typedef struct {
+		uint32 sv1528_scavtimeout;
+	} SERVER_INFO_1528;
+
+	[public] typedef struct {
+		uint32 sv1529_minrcvqueue;
+	} SERVER_INFO_1529;
+
+	[public] typedef struct {
+		uint32 sv1530_minfreeworkitems;
+	} SERVER_INFO_1530;
+
+	[public] typedef struct {
+		uint32 sv1533_maxmpxct;
+	} SERVER_INFO_1533;
+
+	[public] typedef struct {
+		uint32 sv1534_oplockbreakwait;
+	} SERVER_INFO_1534;
+
+	[public] typedef struct {
+		uint32 sv1535_oplockbreakresponsewait;
+	} SERVER_INFO_1535;
+
+	[public] typedef struct {
+		boolean8 sv1536_enableoplocks;
+	} SERVER_INFO_1536;
+
+	[public] typedef struct {
+		boolean8 sv1537_enableoplockforceclose;
+	} SERVER_INFO_1537;
+
+	[public] typedef struct {
+		boolean8 sv1538_enablefcbopens;
+	} SERVER_INFO_1538;
+
+	[public] typedef struct {
+		boolean8 sv1539_enableraw;
+	} SERVER_INFO_1539;
+
+	[public] typedef struct {
+		boolean8 sv1540_enablesharednetdrives;
+	} SERVER_INFO_1540;
+
+	[public] typedef struct {
+		boolean8 sv1541_minfreeconnections;
+	} SERVER_INFO_1541;
+
+	[public] typedef struct {
+		boolean8 sv1542_maxfreeconnections;
+	} SERVER_INFO_1542;
+
+	[public] typedef struct {
+		uint32 sv1543_initsesstable;
+	} SERVER_INFO_1543;
+
+	[public] typedef struct {
+		uint32 sv1544_initconntable;
+	} SERVER_INFO_1544;
+
+	[public] typedef struct {
+		uint32 sv1545_initfiletable;
+	} SERVER_INFO_1545;
+
+	[public] typedef struct {
+		uint32 sv1546_initsearchtable;
+	} SERVER_INFO_1546;
+
+	[public] typedef struct {
+		uint32 sv1547_alertschedule;
+	} SERVER_INFO_1547;
+
+	[public] typedef struct {
+		uint32 sv1548_errorthreshold;
+	} SERVER_INFO_1548;
+
+	[public] typedef struct {
+		uint32 sv1549_networkerrorthreshold;
+	} SERVER_INFO_1549;
+
+	[public] typedef struct {
+		uint32 sv1550_diskspacethreshold;
+	} SERVER_INFO_1550;
+
+	[public] typedef struct {
+		uint32 sv1552_maxlinkdelay;
+	} SERVER_INFO_1552;
+
+	[public] typedef struct {
+		uint32 sv1553_minlinkthroughput;
+	} SERVER_INFO_1553;
+
+	[public] typedef struct {
+		uint32 sv1554_linkinfovalidtime;
+	} SERVER_INFO_1554;
+
+	[public] typedef struct {
+		uint32 sv1555_scavqosinfoupdatetime;
+	} SERVER_INFO_1555;
+
+	[public] typedef struct {
+		uint32 sv1556_maxworkitemidletime;
+	} SERVER_INFO_1556;
+
+	[public] typedef struct {
+		uint32 sv1557_maxrawworkitems;
+	} SERVER_INFO_1557;
+
+	[public] typedef struct {
+		uint32 sv1560_producttype;
+	} SERVER_INFO_1560;
+
+	[public] typedef struct {
+		uint32 sv1561_serversize;
+	} SERVER_INFO_1561;
+
+	[public] typedef struct {
+		uint32 sv1562_connectionlessautodisc;
+	} SERVER_INFO_1562;
+
+	[public] typedef struct {
+		uint32 sv1563_sharingviolationretries;
+	} SERVER_INFO_1563;
+
+	[public] typedef struct {
+		uint32 sv1564_sharingviolationdelay;
+	} SERVER_INFO_1564;
+
+	[public] typedef struct {
+		uint32 sv1565_maxglobalopensearch;
+	} SERVER_INFO_1565;
+
+	[public] typedef struct {
+		boolean8 sv1566_removeduplicatesearches;
+	} SERVER_INFO_1566;
+
+	[public] typedef struct {
+		uint32 sv1567_lockviolationretries;
+	} SERVER_INFO_1567;
+
+	[public] typedef struct {
+		uint32 sv1568_lockviolationoffset;
+	} SERVER_INFO_1568;
+
+	[public] typedef struct {
+		uint32 sv1569_lockviolationdelay;
+	} SERVER_INFO_1569;
+
+	[public] typedef struct {
+		uint32 sv1570_mdlreadswitchover;
+	} SERVER_INFO_1570;
+
+	[public] typedef struct {
+		uint32 sv1571_cachedopenlimit;
+	} SERVER_INFO_1571;
+
+	[public] typedef struct {
+		uint32 sv1572_criticalthreads;
+	} SERVER_INFO_1572;
+
+	[public] typedef struct {
+		uint32 sv1573_restrictnullsessaccess;
+	} SERVER_INFO_1573;
+
+	[public] typedef struct {
+		uint32 sv1574_enablewfw311directipx;
+	} SERVER_INFO_1574;
+
+	[public] typedef struct {
+		uint32 sv1575_otherqueueaffinity;
+	} SERVER_INFO_1575;
+
+	[public] typedef struct {
+		uint32 sv1576_queuesamplesecs;
+	} SERVER_INFO_1576;
+
+	[public] typedef struct {
+		uint32 sv1577_balancecount;
+	} SERVER_INFO_1577;
+
+	[public] typedef struct {
+		uint32 sv1578_preferredaffinity;
+	} SERVER_INFO_1578;
+
+	[public] typedef struct {
+		uint32 sv1579_maxfreerfcbs;
+	} SERVER_INFO_1579;
+
+	[public] typedef struct {
+		uint32 sv1580_maxfreemfcbs;
+	} SERVER_INFO_1580;
+
+	[public] typedef struct {
+		uint32 sv1581_maxfreemlcbs;
+	} SERVER_INFO_1581;
+
+	[public] typedef struct {
+		uint32 sv1582_maxfreepagedpoolchunks;
+	} SERVER_INFO_1582;
+
+	[public] typedef struct {
+		uint32 sv1583_minpagedpoolchunksize;
+	} SERVER_INFO_1583;
+
+	[public] typedef struct {
+		uint32 sv1584_maxpagedpoolchunksize;
+	} SERVER_INFO_1584;
+
+	[public] typedef struct {
+		boolean8 sv1585_sendsfrompreferredprocessor;
+	} SERVER_INFO_1585;
+
+	[public] typedef struct {
+		uint32 sv1586_maxthreadsperqueue;
+	} SERVER_INFO_1586;
+
+	[public] typedef struct {
+		uint32 sv1587_cacheddirectorylimit;
+	} SERVER_INFO_1587;
+
+	[public] typedef struct {
+		uint32 sv1588_maxcopylength;
+	} SERVER_INFO_1588;
+
+	[public] typedef struct {
+		uint32 sv1590_enablecompression;
+	} SERVER_INFO_1590;
+
+	[public] typedef struct {
+		uint32 sv1591_autosharewks;
+	} SERVER_INFO_1591;
+
+	[public] typedef struct {
+		uint32 sv1592_autosharewks;
+	} SERVER_INFO_1592;
+
+	[public] typedef struct {
+		uint32 sv1593_enablesecuritysignature;
+	} SERVER_INFO_1593;
+
+	[public] typedef struct {
+		uint32 sv1594_requiresecuritysignature;
+	} SERVER_INFO_1594;
+
+	[public] typedef struct {
+		uint32 sv1595_minclientbuffersize;
+	} SERVER_INFO_1595;
+
+	[public] typedef struct {
+		uint32 sv1596_ConnectionNoSessionsTimeout;
+	} SERVER_INFO_1596;
+
+	[public] typedef struct {
+		uint32 sv1597_IdleThreadTimeOut;
+	} SERVER_INFO_1597;
+
+	[public] typedef struct {
+		uint32 sv1598_enableW9xsecuritysignature;
+	} SERVER_INFO_1598;
+
+	[public] typedef struct {
+		boolean8 sv1598_enforcekerberosreauthentication;
+	} SERVER_INFO_1599;
+
+	[public] typedef struct {
+		boolean8 sv1598_disabledos;
+	} SERVER_INFO_1600;
+
+	[public] typedef struct {
+		uint32 sv1598_lowdiskspaceminimum;
+	} SERVER_INFO_1601;
+
+	[public] typedef struct {
+		boolean8 sv_1598_disablestrictnamechecking;
+	} SERVER_INFO_1602;
 
 	[nopush,nopull] NET_API_STATUS NetServerGetInfo(
 		[in,unique] string *server_name,

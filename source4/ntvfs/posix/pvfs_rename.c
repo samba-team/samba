@@ -103,7 +103,7 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	char *dest, *d;
 
 	/* the length is bounded by the length of the two strings combined */
-	dest = talloc_size(mem_ctx, strlen(fname) + strlen(pattern) + 1);
+	dest = talloc_array(mem_ctx, char, strlen(fname) + strlen(pattern) + 1);
 	if (dest == NULL) {
 		return NULL;
 	}
@@ -132,6 +132,8 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	}
 
 	*d = 0;
+
+	talloc_set_name_const(dest, dest);
 
 	return dest;
 }
@@ -247,7 +249,8 @@ static NTSTATUS pvfs_rename_setup_retry(struct ntvfs_module_context *ntvfs,
 					struct odb_lock *lck,
 					NTSTATUS status)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct timeval end_time;
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
@@ -393,7 +396,8 @@ static NTSTATUS pvfs_rename_wildcard(struct pvfs_state *pvfs,
 static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 			       struct ntvfs_request *req, union smb_rename *ren)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
 	struct odb_lock *lck = NULL;
@@ -470,7 +474,8 @@ static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
 				   struct ntvfs_request *req, union smb_rename *ren,
 				   struct pvfs_filename *name1)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct odb_lock *lck = NULL;
 
@@ -522,7 +527,8 @@ static NTSTATUS pvfs_rename_stream(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 			       struct ntvfs_request *req, union smb_rename *ren)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
 	struct odb_lock *lck = NULL;
@@ -630,7 +636,8 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		     struct ntvfs_request *req, union smb_rename *ren)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 
 	switch (ren->generic.level) {

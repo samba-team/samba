@@ -65,10 +65,9 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 
 	/* Reset the offset counters. */
 	o_data->data_sent_length = 0;
-	o_data->current_pdu_len = 0;
 	o_data->current_pdu_sent = 0;
 
-	memset(o_data->current_pdu, '\0', sizeof(o_data->current_pdu));
+	prs_mem_free(&o_data->frag);
 
 	/* Free any memory in the current return data buffer. */
 	prs_mem_free(&o_data->rdata);
@@ -77,7 +76,7 @@ static bool pipe_init_outgoing_data(pipes_struct *p)
 	 * Initialize the outgoing RPC data buffer.
 	 * we will use this as the raw data area for replying to rpc requests.
 	 */	
-	if(!prs_init(&o_data->rdata, RPC_MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&o_data->rdata, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("pipe_init_outgoing_data: malloc fail.\n"));
 		return False;
 	}
@@ -128,7 +127,7 @@ static struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	 * change the type to UNMARSALLING before processing the stream.
 	 */
 
-	if(!prs_init(&p->in_data.data, RPC_MAX_PDU_FRAG_LEN, p->mem_ctx, MARSHALL)) {
+	if(!prs_init(&p->in_data.data, 128, p->mem_ctx, MARSHALL)) {
 		DEBUG(0,("open_rpc_pipe_p: malloc fail for in_data struct.\n"));
 		talloc_destroy(p->mem_ctx);
 		close_policy_by_pipe(p);
@@ -191,6 +190,15 @@ static ssize_t fill_rpc_header(pipes_struct *p, char *data, size_t data_to_copy)
 	DEBUG(10,("fill_rpc_header: data_to_copy = %u, len_needed_to_complete_hdr = %u, receive_len = %u\n",
 			(unsigned int)data_to_copy, (unsigned int)len_needed_to_complete_hdr,
 			(unsigned int)p->in_data.pdu_received_len ));
+
+	if (p->in_data.current_in_pdu == NULL) {
+		p->in_data.current_in_pdu = talloc_array(p, uint8_t,
+							 RPC_HEADER_LEN);
+	}
+	if (p->in_data.current_in_pdu == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return -1;
+	}
 
 	memcpy((char *)&p->in_data.current_in_pdu[p->in_data.pdu_received_len], data, len_needed_to_complete_hdr);
 	p->in_data.pdu_received_len += len_needed_to_complete_hdr;
@@ -311,6 +319,14 @@ static ssize_t unmarshall_rpc_header(pipes_struct *p)
 	p->in_data.pdu_needed_len = (uint32)p->hdr.frag_len - RPC_HEADER_LEN;
 
 	prs_mem_free(&rpc_in);
+
+	p->in_data.current_in_pdu = TALLOC_REALLOC_ARRAY(
+		p, p->in_data.current_in_pdu, uint8_t, p->hdr.frag_len);
+	if (p->in_data.current_in_pdu == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		set_incoming_fault(p);
+		return -1;
+	}
 
 	return 0; /* No extra data processed. */
 }
@@ -635,6 +651,7 @@ static void process_complete_pdu(pipes_struct *p)
 		/*
 		 * Reset the lengths. We're ready for a new pdu.
 		 */
+		TALLOC_FREE(p->in_data.current_in_pdu);
 		p->in_data.pdu_needed_len = 0;
 		p->in_data.pdu_received_len = 0;
 	}
@@ -811,17 +828,24 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 	 * PDU.
 	 */
 
-	if((pdu_remaining = p->out_data.current_pdu_len - p->out_data.current_pdu_sent) > 0) {
+	pdu_remaining = prs_offset(&p->out_data.frag)
+		- p->out_data.current_pdu_sent;
+
+	if (pdu_remaining > 0) {
 		data_returned = (ssize_t)MIN(n, pdu_remaining);
 
 		DEBUG(10,("read_from_pipe: %s: current_pdu_len = %u, "
 			  "current_pdu_sent = %u returning %d bytes.\n",
 			  get_pipe_name_from_iface(&p->syntax),
-			  (unsigned int)p->out_data.current_pdu_len,
+			  (unsigned int)prs_offset(&p->out_data.frag),
 			  (unsigned int)p->out_data.current_pdu_sent,
 			  (int)data_returned));
 
-		memcpy( data, &p->out_data.current_pdu[p->out_data.current_pdu_sent], (size_t)data_returned);
+		memcpy(data,
+		       prs_data_p(&p->out_data.frag)
+		       + p->out_data.current_pdu_sent,
+		       data_returned);
+
 		p->out_data.current_pdu_sent += (uint32)data_returned;
 		goto out;
 	}
@@ -858,14 +882,14 @@ static ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_
 		return -1;
 	}
 
-	data_returned = MIN(n, p->out_data.current_pdu_len);
+	data_returned = MIN(n, prs_offset(&p->out_data.frag));
 
-	memcpy( data, p->out_data.current_pdu, (size_t)data_returned);
+	memcpy( data, prs_data_p(&p->out_data.frag), (size_t)data_returned);
 	p->out_data.current_pdu_sent += (uint32)data_returned;
 
   out:
+	(*is_data_outstanding) = prs_offset(&p->out_data.frag) > n;
 
-	(*is_data_outstanding) = p->out_data.current_pdu_len > n;
 	return data_returned;
 }
 
@@ -880,6 +904,7 @@ static int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 		return False;
 	}
 
+	prs_mem_free(&p->out_data.frag);
 	prs_mem_free(&p->out_data.rdata);
 	prs_mem_free(&p->in_data.data);
 
@@ -1195,11 +1220,12 @@ static void np_write_done(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
-	NTSTATUS status;
+	int err;
+	ssize_t ret;
 
-	status = sendall_recv(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		async_req_nterror(req, status);
+	ret = sendall_recv(subreq, &err);
+	if (ret < 0) {
+		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 	async_req_done(req);

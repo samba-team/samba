@@ -216,6 +216,58 @@ static void merge_stat(SMB_STRUCT_STAT *stream_sbuf,
 	stream_sbuf->st_flags |= base_sbuf->st_flags & dos_flags;
 }
 
+/* fake timestamps */
+static void onefs_adjust_stat_time(vfs_handle_struct *handle, const char *fname,
+				   SMB_STRUCT_STAT *sbuf)
+{
+	struct onefs_vfs_config cfg;
+	struct timeval tv_now = {0, 0};
+	bool static_mtime = False;
+	bool static_atime = False;
+
+	if (!onefs_get_config(SNUM(handle->conn),
+			      ONEFS_VFS_CONFIG_FAKETIMESTAMPS, &cfg)) {
+		return;
+	}
+
+	if (IS_MTIME_STATIC_PATH(handle->conn, &cfg, fname)) {
+		sbuf->st_mtime = sbuf->st_birthtime;
+		static_mtime = True;
+	}
+	if (IS_ATIME_STATIC_PATH(handle->conn, &cfg, fname)) {
+		sbuf->st_atime = sbuf->st_birthtime;
+		static_atime = True;
+	}
+
+	if (IS_CTIME_NOW_PATH(handle->conn, &cfg, fname)) {
+		if (cfg.ctime_slop < 0) {
+			sbuf->st_birthtime = INT_MAX - 1;
+		} else {
+			GetTimeOfDay(&tv_now);
+			sbuf->st_birthtime = tv_now.tv_sec + cfg.ctime_slop;
+		}
+	}
+
+	if (!static_mtime && IS_MTIME_NOW_PATH(handle->conn,&cfg,fname)) {
+		if (cfg.mtime_slop < 0) {
+			sbuf->st_mtime = INT_MAX - 1;
+		} else {
+			if (tv_now.tv_sec == 0)
+				GetTimeOfDay(&tv_now);
+			sbuf->st_mtime = tv_now.tv_sec + cfg.mtime_slop;
+		}
+	}
+	if (!static_atime && IS_ATIME_NOW_PATH(handle->conn,&cfg,fname)) {
+		if (cfg.atime_slop < 0) {
+			sbuf->st_atime = INT_MAX - 1;
+		} else {
+			if (tv_now.tv_sec == 0)
+				GetTimeOfDay(&tv_now);
+			sbuf->st_atime = tv_now.tv_sec + cfg.atime_slop;
+		}
+	}
+}
+
 static int stat_stream(vfs_handle_struct *handle, const char *base,
 		       const char *stream, SMB_STRUCT_STAT *sbuf, int flags)
 {
@@ -257,15 +309,16 @@ int onefs_stat(vfs_handle_struct *handle, const char *path,
 		return ret;
 
 	if (!is_stream) {
-		return SMB_VFS_NEXT_STAT(handle, path, sbuf);
+		ret = SMB_VFS_NEXT_STAT(handle, path, sbuf);
+	} else if (!stream) {
+		/* If it's the ::$DATA stream just stat the base file name. */
+		ret = SMB_VFS_NEXT_STAT(handle, base, sbuf);
+	} else {
+		ret = stat_stream(handle, base, stream, sbuf, 0);
 	}
 
-	/* If it's the ::$DATA stream just stat the base file name. */
-	if (!stream) {
-		return SMB_VFS_NEXT_STAT(handle, base, sbuf);
-	}
-
-	return stat_stream(handle, base, stream, sbuf, 0);
+	onefs_adjust_stat_time(handle, path, sbuf);
+	return ret;
 }
 
 int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
@@ -288,6 +341,7 @@ int onefs_fstat(vfs_handle_struct *handle, struct files_struct *fsp,
 		}
 	}
 
+	onefs_adjust_stat_time(handle, fsp->fsp_name, sbuf);
 	return ret;
 }
 
@@ -304,15 +358,17 @@ int onefs_lstat(vfs_handle_struct *handle, const char *path,
 		return ret;
 
 	if (!is_stream) {
-		return SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+		ret = SMB_VFS_NEXT_LSTAT(handle, path, sbuf);
+	} else if (!stream) {
+		/* If it's the ::$DATA stream just stat the base file name. */
+		ret = SMB_VFS_NEXT_LSTAT(handle, base, sbuf);
+	} else {
+		ret = stat_stream(handle, base, stream, sbuf,
+				  AT_SYMLINK_NOFOLLOW);
 	}
 
-	/* If it's the ::$DATA stream just stat the base file name. */
-	if (!stream) {
-		return SMB_VFS_NEXT_LSTAT(handle, base, sbuf);
-	}
-
-	return stat_stream(handle, base, stream, sbuf, AT_SYMLINK_NOFOLLOW);
+	onefs_adjust_stat_time(handle, path, sbuf);
+	return ret;
 }
 
 int onefs_unlink(vfs_handle_struct *handle, const char *path)

@@ -38,7 +38,8 @@ static NTSTATUS pvfs_ioctl_old(struct ntvfs_module_context *ntvfs,
 static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
 			     struct ntvfs_request *req, union smb_ioctl *io)
 {
-	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_state *pvfs = talloc_get_type(ntvfs->private_data,
+				  struct pvfs_state);
 	struct pvfs_file *f;
 
 	f = pvfs_find_fd(pvfs, req, io->ntioctl.in.file.ntvfs);
