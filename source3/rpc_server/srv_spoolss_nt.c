@@ -6957,14 +6957,16 @@ WERROR _spoolss_ScheduleJob(pipes_struct *p,
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_SetJob
+****************************************************************/
 
-WERROR _spoolss_setjob(pipes_struct *p, SPOOL_Q_SETJOB *q_u, SPOOL_R_SETJOB *r_u)
+WERROR _spoolss_SetJob(pipes_struct *p,
+		       struct spoolss_SetJob *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 jobid = q_u->jobid;
-	uint32 command = q_u->command;
+	POLICY_HND *handle = r->in.handle;
+	uint32 jobid = r->in.job_id;
+	uint32 command = r->in.command;
 
 	int snum;
 	WERROR errcode = WERR_BADFUNC;
@@ -10085,17 +10087,6 @@ WERROR _spoolss_EnumPrinters(pipes_struct *p,
 
 WERROR _spoolss_OpenPrinter(pipes_struct *p,
 			    struct spoolss_OpenPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_SetJob
-****************************************************************/
-
-WERROR _spoolss_SetJob(pipes_struct *p,
-		       struct spoolss_SetJob *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
