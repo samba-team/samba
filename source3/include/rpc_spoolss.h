@@ -645,20 +645,6 @@ typedef struct spool_r_rfnpcnex
 }
 SPOOL_R_RFNPCNEX;
 
-/* Find Close Printer Notify */
-typedef struct spool_q_fcpn
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_FCPN;
-
-typedef struct spool_r_fcpn
-{
-	WERROR status;
-}
-SPOOL_R_FCPN;
-
-
 typedef struct printer_info_0
 {
 	UNISTR printername;
