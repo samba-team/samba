@@ -1201,7 +1201,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 								   PRINTER_CHANGE_PORT |
 								   PRINTER_CHANGE_PRINT_PROCESSOR |
 								   PRINTER_CHANGE_PRINTER_DRIVER); /* 0x7777FFFF */
-	[todo] WERROR spoolss_RouterReplyPrinter(
+	WERROR spoolss_RouterReplyPrinter(
+		[in,ref] policy_handle *handle,
+		[in] spoolss_PrinterChangeFlags flags,
+		[in,range(0,512)] uint32 bufsize,
+		[in,unique,size_is(bufsize)] uint8 *buffer
 	);
 
 	/******************/
