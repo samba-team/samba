@@ -943,7 +943,11 @@ bool fsp_is_np(struct files_struct *fsp)
 }
 
 struct np_proxy_state {
+	struct async_req_queue *read_queue;
 	int fd;
+
+	uint8_t *msg;
+	size_t sent;
 };
 
 static int np_proxy_state_destructor(struct np_proxy_state *state)
@@ -1097,6 +1101,13 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+	result->msg = NULL;
+
+	result->read_queue = async_req_queue_init(result);
+	if (result->read_queue == NULL) {
+		goto fail;
+	}
+
 	return result;
 
  fail:
@@ -1244,19 +1255,45 @@ NTSTATUS np_write_recv(struct async_req *req, ssize_t *pnwritten)
 	return NT_STATUS_OK;
 }
 
+static ssize_t rpc_frag_more_fn(uint8_t *buf, size_t buflen, void *priv)
+{
+	prs_struct hdr_prs;
+	struct rpc_hdr_info hdr;
+	bool ret;
+
+	if (buflen > RPC_HEADER_LEN) {
+		return 0;
+	}
+	prs_init_empty(&hdr_prs, talloc_tos(), UNMARSHALL);
+	prs_give_memory(&hdr_prs, (char *)buf, RPC_HEADER_LEN, false);
+	ret = smb_io_rpc_hdr("", &hdr, &hdr_prs, 0);
+	prs_mem_free(&hdr_prs);
+
+	if (!ret) {
+		return -1;
+	}
+
+	return (hdr.frag_len - RPC_HEADER_LEN);
+}
+
 struct np_read_state {
-	ssize_t nread;
+	struct event_context *ev;
+	struct np_proxy_state *p;
+	uint8_t *data;
+	size_t len;
+
+	size_t nread;
 	bool is_data_outstanding;
-	int fd;
 };
 
+static void np_read_trigger(struct async_req *req);
 static void np_read_done(struct async_req *subreq);
 
 struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			       struct fake_file_handle *handle,
 			       uint8_t *data, size_t len)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
 	struct np_read_state *state;
 	NTSTATUS status;
 
@@ -1281,14 +1318,35 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		struct np_proxy_state *p = talloc_get_type_abort(
 			handle->private_data, struct np_proxy_state);
 
-		state->fd = p->fd;
+		if (p->msg != NULL) {
+			size_t thistime;
 
-		subreq = async_recv(state, ev, p->fd, data, len, 0);
-		if (subreq == NULL) {
+			thistime = MIN(talloc_get_size(p->msg) - p->sent,
+				       len);
+
+			memcpy(data, p->msg+p->sent, thistime);
+			state->nread = thistime;
+			p->sent += thistime;
+
+			if (p->sent < talloc_get_size(p->msg)) {
+				state->is_data_outstanding = true;
+			} else {
+				state->is_data_outstanding = false;
+				TALLOC_FREE(p->msg);
+			}
+			status = NT_STATUS_OK;
+			goto post_status;
+		}
+
+		state->ev = ev;
+		state->p = p;
+		state->data = data;
+		state->len = len;
+
+		if (!async_req_enqueue(p->read_queue, ev, result,
+				       np_read_trigger)) {
 			goto fail;
 		}
-		subreq->async.fn = np_read_done;
-		subreq->async.priv = result;
 		return result;
 	}
 
@@ -1302,36 +1360,53 @@ struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	return NULL;
 }
 
+static void np_read_trigger(struct async_req *req)
+{
+	struct np_read_state *state = talloc_get_type_abort(
+		req->private_data, struct np_read_state);
+	struct async_req *subreq;
+
+	subreq = read_pkt_send(state, state->ev, state->p->fd, RPC_HEADER_LEN,
+			       rpc_frag_more_fn, NULL);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = np_read_done;
+	subreq->async.priv = req;
+}
+
 static void np_read_done(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
 	struct np_read_state *state = talloc_get_type_abort(
 		req->private_data, struct np_read_state);
-	ssize_t result;
-	int sys_errno;
-	int available = 0;
+	ssize_t received;
+	size_t thistime;
+	int err;
 
-	result = async_syscall_result_ssize_t(subreq, &sys_errno);
-	if (result == -1) {
-		async_req_nterror(req, map_nt_error_from_unix(sys_errno));
-		return;
-	}
-	if (result == 0) {
-		async_req_nterror(req, NT_STATUS_END_OF_FILE);
+	received = read_pkt_recv(subreq, state->p, &state->p->msg, &err);
+	TALLOC_FREE(subreq);
+	if (received == -1) {
+		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
 
-	state->nread = result;
+	thistime = MIN(received, state->len);
 
-	/*
-	 * We don't look at the ioctl result. We don't really care if there is
-	 * data available, because this is racy anyway.
-	 */
-	ioctl(state->fd, FIONREAD, &available);
-	state->is_data_outstanding = (available > 0);
+	memcpy(state->data, state->p->msg, thistime);
+	state->p->sent = thistime;
+	state->nread = thistime;
+
+	if (state->p->sent < received) {
+		state->is_data_outstanding = true;
+	} else {
+		TALLOC_FREE(state->p->msg);
+		state->is_data_outstanding = false;
+	}
 
 	async_req_done(req);
+	return;
 }
 
 NTSTATUS np_read_recv(struct async_req *req, ssize_t *nread,
