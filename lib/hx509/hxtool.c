@@ -395,7 +395,7 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 				  pool,
 				  &o);
     if (ret)
-	errx(1, "hx509_cms_create_signed: %d", ret);
+	hx509_err(context, 1, ret, "hx509_cms_create_signed: %d", ret);
 
     hx509_certs_free(&anchors);
     hx509_certs_free(&pool);
