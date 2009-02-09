@@ -1740,8 +1740,8 @@ static bool test_ReplyOpenPrinter(struct torture_context *tctx,
 	r.in.server_name = "earth";
 	r.in.printer_local = 2;
 	r.in.type = REG_DWORD;
-	r.in.unknown1 = 0;
-	r.in.unknown2 = 0;
+	r.in.bufsize = 0;
+	r.in.buffer = NULL;
 	r.out.handle = &h;
 
 	torture_assert_ntstatus_ok(tctx, 
