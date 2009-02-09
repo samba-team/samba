@@ -183,11 +183,17 @@ static int smbrun_internal(const char *cmd, int *outfd, bool sanitize)
 #endif
 
 	{
-		const char *newcmd = sanitize ? escape_shell_string(cmd) : cmd;
-		if (!newcmd) {
-			exit(82);
+		char *newcmd = NULL;
+		if (sanitize) {
+			newcmd = escape_shell_string(cmd);
+			if (!newcmd)
+				exit(82);
 		}
-		execl("/bin/sh","sh","-c",newcmd,NULL);  
+
+		execl("/bin/sh","sh","-c",
+		    newcmd ? (const char *)newcmd : cmd, NULL);
+
+		SAFE_FREE(newcmd);
 	}
 	
 	/* not reached */

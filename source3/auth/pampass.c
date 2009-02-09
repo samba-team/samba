@@ -276,7 +276,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	fstring current_prompt;
 	fstring current_reply;
 	struct smb_pam_userdata *udp = (struct smb_pam_userdata *)appdata_ptr;
-	struct chat_struct *pw_chat= make_pw_chat(lp_passwd_chat());
+	struct chat_struct *pw_chat;
 	struct chat_struct *t;
 	bool found; 
 	*resp = NULL;
@@ -286,7 +286,7 @@ static int smb_pam_passchange_conv(int num_msg,
 	if (num_msg <= 0)
 		return PAM_CONV_ERR;
 
-	if (pw_chat == NULL)
+	if ((pw_chat = make_pw_chat(lp_passwd_chat())) == NULL)
 		return PAM_CONV_ERR;
 
 	/*

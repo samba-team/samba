@@ -526,7 +526,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	char *error_string;
 	uint8 lm_key[8]; 
 	uint8 user_sess_key[16]; 
-	char *unix_name;
+	char *unix_name = NULL;
 
 	nt_status = contact_winbind_auth_crap(ntlmssp_state->user, ntlmssp_state->domain,
 					      ntlmssp_state->workstation,
@@ -549,7 +549,6 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		}
 		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state,
 							    unix_name);
-		SAFE_FREE(unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
 		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
@@ -558,6 +557,8 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		       error_string ? error_string : "unknown error (NULL)"));
 		ntlmssp_state->auth_context = NULL;
 	}
+
+	SAFE_FREE(unix_name);
 	return nt_status;
 }
 

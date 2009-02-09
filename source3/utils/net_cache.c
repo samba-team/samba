@@ -216,7 +216,7 @@ static int net_cache_del(struct net_context *c, int argc, const char **argv)
 static int net_cache_get(struct net_context *c, int argc, const char **argv)
 {
 	const char* keystr = argv[0];
-	char* valuestr;
+	char* valuestr = NULL;
 	time_t timeout;
 
 	if (argc < 1 || c->display_usage) {
@@ -226,6 +226,7 @@ static int net_cache_get(struct net_context *c, int argc, const char **argv)
 
 	if (gencache_get(keystr, &valuestr, &timeout)) {
 		print_cache_entry(keystr, valuestr, timeout, NULL);
+		SAFE_FREE(valuestr);
 		return 0;
 	}
 

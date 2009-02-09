@@ -123,6 +123,7 @@ static int net_ads_cldap_netlogon(struct net_context *c, ADS_STRUCT *ads)
 static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
+	int ret;
 
 	if (c->display_usage) {
 		d_printf("Usage:\n"
@@ -133,6 +134,7 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 
 	if (!ADS_ERR_OK(ads_startup_nobind(c, false, &ads))) {
 		d_fprintf(stderr, "Didn't find the cldap server!\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -141,7 +143,9 @@ static int net_ads_lookup(struct net_context *c, int argc, const char **argv)
 		ads->ldap.port = 389;
 	}
 
-	return net_ads_cldap_netlogon(c, ads);
+	ret = net_ads_cldap_netlogon(c, ads);
+	ads_destroy(&ads);
+	return ret;
 }
 
 
@@ -166,6 +170,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 
 	if (!ads || !ads->config.realm) {
 		d_fprintf(stderr, "Didn't find the ldap server!\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -189,6 +194,7 @@ static int net_ads_info(struct net_context *c, int argc, const char **argv)
 	d_printf("KDC server: %s\n", ads->auth.kdc_server );
 	d_printf("Server time offset: %d\n", ads->auth.time_offset );
 
+	ads_destroy(&ads);
 	return 0;
 }
 
@@ -383,6 +389,7 @@ static int net_ads_workgroup(struct net_context *c, int argc, const char **argv)
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
 	if ( !ads_cldap_netlogon_5(talloc_tos(), addr, ads->server.realm, &reply ) ) {
 		d_fprintf(stderr, "CLDAP query failed!\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
@@ -1847,6 +1854,7 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	if (!ads->config.realm) {
 		d_fprintf(stderr, "Didn't find the kerberos server!\n");
+		ads_destroy(&ads);
 		return -1;
 	}
 
