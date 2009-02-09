@@ -602,7 +602,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0e */
-	[todo] WERROR spoolss_AddPrintProcessor(
+	WERROR spoolss_AddPrintProcessor(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in] [string,charset(UTF16)] uint16 architecture[],
+		[in] [string,charset(UTF16)] uint16 path_name[],
+		[in] [string,charset(UTF16)] uint16 print_processor_name[]
 	);
 
 	/******************/
