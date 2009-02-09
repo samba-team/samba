@@ -526,24 +526,6 @@ typedef struct spool_r_getprinterdata
 }
 SPOOL_R_GETPRINTERDATA;
 
-typedef struct spool_q_deleteprinterdriverex
-{
-	uint32 server_ptr;
-	UNISTR2 server;
-	UNISTR2 arch;
-	UNISTR2 driver;
-	uint32 delete_flags;
-	uint32 version;
-}
-SPOOL_Q_DELETEPRINTERDRIVEREX;
-
-typedef struct spool_r_deleteprinterdriverex
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERDRIVEREX;
-
-
 typedef struct spool_doc_info_1
 {
 	uint32 p_docname;

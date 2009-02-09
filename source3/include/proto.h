@@ -5458,9 +5458,6 @@ WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli,
 				     PRINTER_DRIVER_CTR *ctr);
 WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 level, PRINTER_INFO_CTR*ctr);
-WERROR rpccli_spoolss_deleteprinterdriverex(struct rpc_pipe_client *cli, 
-                                         TALLOC_CTX *mem_ctx, const char *arch,
-                                         const char *driver, int version);
 WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      char *name, char *environment,
@@ -5825,12 +5822,6 @@ bool spoolss_io_q_open_printer(const char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_
 bool spoolss_io_r_open_printer(const char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_open_printer_ex(const char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_open_printer_ex(const char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
-bool make_spoolss_q_deleteprinterdriverex( TALLOC_CTX *mem_ctx,
-                                           SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, 
-                                           const char *server,
-                                           const char* arch, 
-                                           const char* driver,
-                                           int version);
 bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				   const POLICY_HND *handle,
 				   const char *valuename, uint32 size);
@@ -5840,8 +5831,6 @@ bool make_spoolss_q_getprinterdataex(SPOOL_Q_GETPRINTERDATAEX *q_u,
 				     const char *valuename, uint32 size);
 bool spoolss_io_q_getprinterdata(const char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth);
-bool spoolss_io_q_deleteprinterdriverex(const char *desc, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_deleteprinterdriverex(const char *desc, SPOOL_R_DELETEPRINTERDRIVEREX *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_startdocprinter(const char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_startdocprinter(const char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_rffpcnex(const char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, int depth);
@@ -6206,7 +6195,6 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u);
 bool convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
-WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, SPOOL_R_DELETEPRINTERDRIVEREX *r_u);
 WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value,
                                   uint32 type, uint8 *data, int real_len  );
 WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
