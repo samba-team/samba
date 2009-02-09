@@ -9978,6 +9978,22 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	return WERR_INVALID_PRINT_MONITOR;
 }
+
+/****************************************************************
+ _spoolss_AddPrintProcessor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
+				  struct spoolss_AddPrintProcessor *r)
+{
+	/* for now, just indicate success and ignore the add.  We'll
+	   automatically set the winprint processor for printer
+	   entries later.  Used to debug the LexMark Optra S 1855 PCL
+	   driver --jerry */
+
+	return WERR_OK;
+}
+
 /****************************************************************
  _spoolss_EnumPrinters
 ****************************************************************/
@@ -10105,17 +10121,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 					  struct spoolss_GetPrinterDriverDirectory *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddPrintProcessor
-****************************************************************/
-
-WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
-				  struct spoolss_AddPrintProcessor *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
