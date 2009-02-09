@@ -1618,19 +1618,6 @@ typedef struct spool_r_routerreplyprinter
 }
 SPOOL_R_ROUTERREPLYPRINTER;
 
-typedef struct spool_q_replycloseprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_REPLYCLOSEPRINTER;
-
-typedef struct spool_r_replycloseprinter
-{
-	POLICY_HND handle;
-	WERROR status;
-}
-SPOOL_R_REPLYCLOSEPRINTER;
-
 typedef struct spool_q_rrpcn
 {
 	POLICY_HND handle;

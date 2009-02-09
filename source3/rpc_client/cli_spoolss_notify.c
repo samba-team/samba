@@ -65,35 +65,6 @@ WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX
 	return result;
 }
 
-/* Close a back-channel notification connection */
-
-WERROR rpccli_spoolss_reply_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				       POLICY_HND *handle)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_REPLYCLOSEPRINTER q;
-	SPOOL_R_REPLYCLOSEPRINTER r;
-	WERROR result = W_ERROR(ERRgeneral);
-
-	/* Initialise input parameters */
-
-	make_spoolss_q_reply_closeprinter(&q, handle);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_REPLYCLOSEPRINTER,
-		q, r,
-		qbuf, rbuf,
-		spoolss_io_q_replycloseprinter,
-		spoolss_io_r_replycloseprinter,
-		WERR_GENERAL_FAILURE );
-
-	/* Return result */
-
-	result = r.status;
-	return result;
-}
-
 /*********************************************************************
  This SPOOLSS_ROUTERREPLYPRINTER function is used to send a change 
  notification event when the registration **did not** use 

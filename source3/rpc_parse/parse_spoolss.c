@@ -5643,59 +5643,6 @@ bool spoolss_io_r_routerreplyprinter (const char *desc, SPOOL_R_ROUTERREPLYPRINT
 	return True;
 }
 
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd)
-{      
-	if (q_u == NULL)
-		return False;
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-
-	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_Q_REPLYCLOSEPRINTER structure.
-********************************************************************/  
-
-bool spoolss_io_q_replycloseprinter(const char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_replycloseprinter");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_R_REPLYCLOSEPRINTER structure.
-********************************************************************/  
-
-bool spoolss_io_r_replycloseprinter(const char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&r_u->handle,ps,depth))
-		return False;
-
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
 #if 0	/* JERRY - not currently used but could be :-) */
 
 /*******************************************************************

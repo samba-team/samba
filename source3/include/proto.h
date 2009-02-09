@@ -5507,8 +5507,6 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				      const char *printer, uint32 printerlocal, uint32 type, 
 				      POLICY_HND *handle);
-WERROR rpccli_spoolss_reply_close_printer(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				       POLICY_HND *handle);
 WERROR rpccli_spoolss_routerreplyprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				      POLICY_HND *pol, uint32 condition, uint32 change_id);
 WERROR rpccli_spoolss_rrpcn(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
@@ -6025,9 +6023,6 @@ bool make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_H
 					uint32 condition, uint32 change_id);
 bool spoolss_io_q_routerreplyprinter (const char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_routerreplyprinter (const char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth);
-bool make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HND *hnd);
-bool spoolss_io_q_replycloseprinter(const char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_replycloseprinter(const char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 			        uint32 change_low, uint32 change_high,
 				SPOOL_NOTIFY_INFO *info);
