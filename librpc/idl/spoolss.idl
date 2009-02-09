@@ -117,6 +117,15 @@ import "misc.idl", "security.idl", "winreg.idl";
 		PRINTER_ENUM_HIDE        = 0x01000000
 	} spoolss_EnumPrinterFlags;
 
+	const int PRINTER_ENUM_ICONMASK = (PRINTER_ENUM_ICON1 |
+					   PRINTER_ENUM_ICON2 |
+					   PRINTER_ENUM_ICON3 |
+					   PRINTER_ENUM_ICON4 |
+					   PRINTER_ENUM_ICON5 |
+					   PRINTER_ENUM_ICON6 |
+					   PRINTER_ENUM_ICON7 |
+					   PRINTER_ENUM_ICON8); /* 0x00ff0000 */
+
 	typedef struct {
 		spoolss_EnumPrinterFlags flags;
 		[relative] nstring *name;

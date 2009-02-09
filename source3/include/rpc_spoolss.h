@@ -266,7 +266,6 @@ PRINTER_MESSAGE_INFO;
 #define DEF_PRIORITY	 1
 
 /* the flags of each printers */
-#define PRINTER_ENUM_ICONMASK		0x00ff0000
 
 #define DRIVER_ANY_VERSION		0xffffffff
 #define DRIVER_MAX_VERSION		4
