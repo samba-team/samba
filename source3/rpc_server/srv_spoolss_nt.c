@@ -150,6 +150,7 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 {
 	WERROR result;
+	NTSTATUS status;
 
 	/*
 	 * Tell the specific printing tdb we no longer want messages for this printer
@@ -165,11 +166,10 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe,
-				talloc_tos(),
-				handle);
-
-	if (!W_ERROR_IS_OK(result))
+	status = rpccli_spoolss_ReplyClosePrinter(notify_cli_pipe, talloc_tos(),
+						  handle,
+						  &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
 			win_errstr(result)));
 
