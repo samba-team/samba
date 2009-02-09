@@ -1493,7 +1493,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x52 */
-	[todo] WERROR spoolss_DeletePrinterKey(
+	WERROR spoolss_DeletePrinterKey(
+		[in,ref] policy_handle *handle,
+		[in] [string,charset(UTF16)] uint16 key_name[]
 	);
 
 	/******************/
