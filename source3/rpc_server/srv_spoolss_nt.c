@@ -1990,14 +1990,15 @@ static int get_version_id (char * arch)
 	return -1;
 }
 
-/********************************************************************
- * _spoolss_deleteprinterdriver
- ********************************************************************/
+/****************************************************************
+ _spoolss_DeletePrinterDriver
+****************************************************************/
 
-WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER *q_u, SPOOL_R_DELETEPRINTERDRIVER *r_u)
+WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
+				    struct spoolss_DeletePrinterDriver *r)
 {
-	fstring				driver;
-	fstring				arch;
+	char *driver;
+	char *arch;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	NT_PRINTER_DRIVER_INFO_LEVEL	info_win2k;
 	int				version;
@@ -2018,9 +2019,6 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 		return WERR_ACCESS_DENIED;
 	}
 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver));
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch));
-
 	/* check that we have a valid driver name first */
 
 	if ((version=get_version_id(arch)) == -1)
@@ -2028,6 +2026,9 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
+
+	driver = CONST_DISCARD(char *, r->in.driver);
+	arch   = CONST_DISCARD(char *, r->in.architecture);
 
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
 	{
@@ -10100,17 +10101,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 					  struct spoolss_GetPrinterDriverDirectory *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_DeletePrinterDriver
-****************************************************************/
-
-WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
-				    struct spoolss_DeletePrinterDriver *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
