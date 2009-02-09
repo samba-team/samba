@@ -722,12 +722,20 @@ NTSTATUS rpccli_spoolss_DeletePrinterDriver(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_AddPrintProcessor(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
+					  const char *server /* [in] [unique,charset(UTF16)] */,
+					  const char *architecture /* [in] [charset(UTF16)] */,
+					  const char *path_name /* [in] [charset(UTF16)] */,
+					  const char *print_processor_name /* [in] [charset(UTF16)] */,
 					  WERROR *werror)
 {
 	struct spoolss_AddPrintProcessor r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server = server;
+	r.in.architecture = architecture;
+	r.in.path_name = path_name;
+	r.in.print_processor_name = print_processor_name;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrintProcessor, &r);
@@ -2768,12 +2776,20 @@ NTSTATUS rpccli_spoolss_ReplyOpenPrinter(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_RouterReplyPrinter(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle /* [in] [ref] */,
+					   uint32_t flags /* [in]  */,
+					   uint32_t bufsize /* [in] [range(0,512)] */,
+					   uint8_t *buffer /* [in] [unique,size_is(bufsize)] */,
 					   WERROR *werror)
 {
 	struct spoolss_RouterReplyPrinter r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.flags = flags;
+	r.in.bufsize = bufsize;
+	r.in.buffer = buffer;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinter, &r);
