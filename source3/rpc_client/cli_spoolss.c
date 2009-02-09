@@ -1366,37 +1366,6 @@ WERROR rpccli_spoolss_getjob(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_startdocprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *hnd, char *docname, 
-				   char *outputfile, char *datatype, 
-				   uint32 *jobid)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_STARTDOCPRINTER in;
-	SPOOL_R_STARTDOCPRINTER out;
-	uint32 level = 1;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_startdocprinter( &in, hnd, level, docname, 
-		outputfile, datatype );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_STARTDOCPRINTER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_startdocprinter,
-	            spoolss_io_r_startdocprinter, 
-	            WERR_GENERAL_FAILURE );
-
-	*jobid = out.jobid;
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, const char *valuename, 
 				  REGISTRY_VALUE *value)

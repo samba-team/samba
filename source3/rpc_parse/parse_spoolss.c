@@ -71,109 +71,6 @@ bool make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
 }
 
 /*******************************************************************
-reads or writes an DOC_INFO structure.
-********************************************************************/  
-
-static bool smb_io_doc_info_1(const char *desc, DOC_INFO_1 *info_1, prs_struct *ps, int depth)
-{
-	if (info_1 == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_doc_info_1");
-	depth++;
- 
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("p_docname",    ps, depth, &info_1->p_docname))
-		return False;
-	if(!prs_uint32("p_outputfile", ps, depth, &info_1->p_outputfile))
-		return False;
-	if(!prs_uint32("p_datatype",   ps, depth, &info_1->p_datatype))
-		return False;
-
-	if(!smb_io_unistr2("", &info_1->docname,    info_1->p_docname,    ps, depth))
-		return False;
-	if(!smb_io_unistr2("", &info_1->outputfile, info_1->p_outputfile, ps, depth))
-		return False;
-	if(!smb_io_unistr2("", &info_1->datatype,   info_1->p_datatype,   ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an DOC_INFO structure.
-********************************************************************/  
-
-static bool smb_io_doc_info(const char *desc, DOC_INFO *info, prs_struct *ps, int depth)
-{
-	uint32 useless_ptr=0;
-	
-	if (info == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_doc_info");
-	depth++;
- 
-	if(!prs_align(ps))
-		return False;
-        
-	if(!prs_uint32("switch_value", ps, depth, &info->switch_value))
-		return False;
-	
-	if(!prs_uint32("doc_info_X ptr", ps, depth, &useless_ptr))
-		return False;
-
-	switch (info->switch_value)
-	{
-		case 1:	
-			if(!smb_io_doc_info_1("",&info->doc_info_1, ps, depth))
-				return False;
-			break;
-		case 2:
-			/*
-			  this is just a placeholder
-			  
-			  MSDN July 1998 says doc_info_2 is only on
-			  Windows 95, and as Win95 doesn't do RPC to print
-			  this case is nearly impossible
-			  
-			  Maybe one day with Windows for dishwasher 2037 ...
-			  
-			*/
-			/* smb_io_doc_info_2("",&info->doc_info_2, ps, depth); */
-			break;
-		default:
-			DEBUG(0,("Something is obviously wrong somewhere !\n"));
-			break;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes an DOC_INFO_CONTAINER structure.
-********************************************************************/  
-
-static bool smb_io_doc_info_container(const char *desc, DOC_INFO_CONTAINER *cont, prs_struct *ps, int depth)
-{
-	if (cont == NULL) return False;
-
-	prs_debug(ps, depth, desc, "smb_io_doc_info_container");
-	depth++;
- 
-	if(!prs_align(ps))
-		return False;
-        
-	if(!prs_uint32("level", ps, depth, &cont->level))
-		return False;
-	
-	if(!smb_io_doc_info("",&cont->docinfo, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes an NOTIFY OPTION TYPE structure.
 ********************************************************************/  
 
@@ -1337,47 +1234,6 @@ bool spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, 
 	if (!prs_werror("status", ps, depth, &r_u->status))
 		return False;
 		
-	return True;
-}
-
-/*******************************************************************
- * read a structure.
- * called from spoolss_q_startdocprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_startdocprinter(const char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_startdocprinter");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-	
-	if(!smb_io_doc_info_container("",&q_u->doc_info_container, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_startdocprinter (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_startdocprinter(const char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_startdocprinter");
-	depth++;
-	if(!prs_uint32("jobid", ps, depth, &r_u->jobid))
-		return False;
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
 	return True;
 }
 
@@ -6222,46 +6078,6 @@ bool make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle,
         q_u->level = level;
         q_u->buffer = buffer;
         q_u->offered = offered;
-
-	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, 
-				    POLICY_HND *handle, uint32 level,
-				    char *docname, char *outputfile,
-				    char *datatype)
-{
-	DOC_INFO_CONTAINER *ctr = &q_u->doc_info_container;
-
-        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
-
-	ctr->level = level;
-
-	switch (level) {
-	case 1:
-		ctr->docinfo.switch_value = level;
-
-		ctr->docinfo.doc_info_1.p_docname = docname ? 1 : 0;
-		ctr->docinfo.doc_info_1.p_outputfile = outputfile ? 1 : 0;
-		ctr->docinfo.doc_info_1.p_datatype = datatype ? 1 : 0;
-
-		init_unistr2(&ctr->docinfo.doc_info_1.docname, docname, UNI_STR_TERMINATE);
-		init_unistr2(&ctr->docinfo.doc_info_1.outputfile, outputfile, UNI_STR_TERMINATE);
-		init_unistr2(&ctr->docinfo.doc_info_1.datatype, datatype, UNI_STR_TERMINATE);
-
-		break;
-	case 2:
-		/* DOC_INFO_2 is only used by Windows 9x and since it
-	           doesn't do printing over RPC we don't have to worry
-  	           about it. */
-	default:
-		DEBUG(3, ("unsupported info level %d\n", level));
-		return False;
-	}
 
 	return True;
 }

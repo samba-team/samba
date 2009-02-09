@@ -473,45 +473,6 @@ typedef struct spool_r_getprinterdata
 }
 SPOOL_R_GETPRINTERDATA;
 
-typedef struct spool_doc_info_1
-{
-	uint32 p_docname;
-	uint32 p_outputfile;
-	uint32 p_datatype;
-	UNISTR2 docname;
-	UNISTR2 outputfile;
-	UNISTR2 datatype;
-}
-DOC_INFO_1;
-
-typedef struct spool_doc_info
-{
-	uint32 switch_value;
-	DOC_INFO_1 doc_info_1;
-}
-DOC_INFO;
-
-typedef struct spool_doc_info_container
-{
-	uint32 level;
-	DOC_INFO docinfo;
-}
-DOC_INFO_CONTAINER;
-
-typedef struct spool_q_startdocprinter
-{
-	POLICY_HND handle;
-	DOC_INFO_CONTAINER doc_info_container;
-}
-SPOOL_Q_STARTDOCPRINTER;
-
-typedef struct spool_r_startdocprinter
-{
-	uint32 jobid;
-	WERROR status;
-}
-SPOOL_R_STARTDOCPRINTER;
-
 typedef struct spool_notify_option
 {
 	uint32 version;
