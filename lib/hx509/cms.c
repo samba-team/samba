@@ -992,7 +992,7 @@ hx509_cms_verify_signed(hx509_context context,
 					 &signer_info->signature);
 	    if (ret)
 		hx509_set_error_string(context, HX509_ERROR_APPEND, ret,
-				       "Failed to verify sigature in "
+				       "Failed to verify signature in "
 				       "CMS SignedData");
 	}
         if (signer_info->signedAttrs)
