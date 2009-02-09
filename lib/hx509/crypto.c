@@ -286,6 +286,15 @@ ecdsa_verify_signature(hx509_context context,
     der_free_octet_string(&digest);
     EC_KEY_free(key);
     if (ret != 1) {
+#ifdef HAVE_OPENSSL
+	unsigned long l;
+	
+	ERR_load_ERR_strings();
+	ERR_load_crypto_strings();
+	
+	while ((l=ERR_get_error()))
+	    fprintf(stderr,"ERROR:%s\n", ERR_error_string(l,NULL));
+#endif
 	ret = HX509_CRYPTO_SIG_INVALID_FORMAT;
 	return ret;
     }
@@ -356,7 +365,7 @@ ecdsa_create_signature(hx509_context context,
     if (siglen > sig->length)
 	_hx509_abort("ECDSA signature prelen longer the output len");
 
-    sig->length = ret;
+    sig->length = siglen;
 
     return 0;
 }
