@@ -8,10 +8,33 @@
    Portions (from capconvert.c) (C) Andrew Tridgell 1997
    Portions (from text2pcap.c) (C) Ashok Narayanan 2001
 
-   Example use with -h parameter: 
-   	log2pcaphex < samba-log-file | text2pcap -T 139,139 - foo.pcap
+   Example:
+	Output NBSS(SMB) packets in hex and convert to pcap adding
+	Eth/IP/TCP headers
 
-   TODO: Have correct IP and TCP checksums.
+	log2pcap -h < samba.log | text2pcap -T 139,139 - samba.pcap
+
+	Output directly to pcap format without Eth headers or TCP
+	sequence numbers
+
+	log2pcap samba.log samba.pcap
+
+    TODO:
+	- Hex to text2pcap outputs are not properly parsed in Wireshark
+	  the NBSS or SMB level.  This is a bug.
+	- Writing directly to pcap format doesn't include sequence numbers
+	  in the TCP packets
+	- Check if a packet is a response or request and set IP to/from
+	  addresses accordingly.  Currently all packets come from the same
+	  dummy IP and go to the same dummy IP
+	- Add a message when done parsing about the number of pacekts
+	  processed
+	- Parse NBSS packet header data from log file
+	- Have correct IP and TCP checksums.
+
+   Warning:
+	Samba log level 10 outputs a max of 512 bytes from the packet data
+	section.  Packets larger than this will be truncated.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,8 +58,8 @@
 
 #include <assert.h>
 
-bool quiet = 0;
-bool hexformat = 0;
+int quiet = 0;
+int hexformat = 0;
 
 #define itoa(a) ((a) < 0xa?'0'+(a):'A' + (a-0xa))
 
@@ -95,7 +118,7 @@ typedef struct {
 
 static hdr_tcp_t HDR_TCP = {139, 139, 0, 0, 0x50, 0, 0, 0, 0};
 
-static void print_pcap_header(FILE *out)
+void print_pcap_header(FILE *out)
 {
 	struct tcpdump_file_header h;
 	h.magic = TCPDUMP_MAGIC;
@@ -108,7 +131,7 @@ static void print_pcap_header(FILE *out)
 	fwrite(&h, sizeof(struct tcpdump_file_header), 1, out);
 }
 
-static void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
+void print_pcap_packet(FILE *out, unsigned char *data, long length, long caplen)
 {
 	static int i = 0;
 	struct tcpdump_packet p;
@@ -121,7 +144,7 @@ static void print_pcap_packet(FILE *out, unsigned char *data, long length, long 
 	fwrite(data, sizeof(unsigned char), caplen, out);
 }
 
-static void print_hex_packet(FILE *out, unsigned char *data, long length)
+void print_hex_packet(FILE *out, unsigned char *data, long length)
 {
 	long i,cur = 0;
 	while(cur < length) {
@@ -135,13 +158,13 @@ static void print_hex_packet(FILE *out, unsigned char *data, long length)
 	}
 }
 
-static void print_netbios_packet(FILE *out, unsigned char *data, long length, long actual_length)
+void print_netbios_packet(FILE *out, unsigned char *data, long length, long actual_length)
 {	
 	unsigned char *newdata; long offset = 0;
 	long newlen;
 	
 	newlen = length+sizeof(HDR_IP)+sizeof(HDR_TCP);
-	newdata = (unsigned char *)malloc(newlen);
+	newdata = malloc(newlen);
 
 	HDR_IP.packet_length = htons(newlen);
 	HDR_TCP.window = htons(0x2000);
@@ -156,68 +179,115 @@ static void print_netbios_packet(FILE *out, unsigned char *data, long length, lo
 }
 
 unsigned char *curpacket = NULL;
-long curpacket_len = 0;
+unsigned short curpacket_len = 0;
+long line_num = 0;
 
-static void read_log_msg(FILE *in, unsigned char **_buffer, long *buffersize, long *data_offset, long *data_length)
+/* Read the log message produced by lib/util.c:show_msg() containing the:
+ *  SMB_HEADER
+ *  SMB_PARAMETERS
+ *  SMB_DATA.ByteCount
+ *
+ * Example:
+ * [2007/04/08 20:41:39, 5] lib/util.c:show_msg(516)
+ *   size=144
+ *   smb_com=0x73
+ *   smb_rcls=0
+ *   smb_reh=0
+ *   smb_err=0
+ *   smb_flg=136
+ *   smb_flg2=49153
+ *   smb_tid=1
+ *   smb_pid=65279
+ *   smb_uid=0
+ *   smb_mid=64
+ *   smt_wct=3
+ *   smb_vwv[ 0]=  117 (0x75)
+ *   smb_vwv[ 1]=  128 (0x80)
+ *   smb_vwv[ 2]=    1 (0x1)
+ *   smb_bcc=87
+ */
+void read_log_msg(FILE *in, unsigned char **_buffer, unsigned short *buffersize, long *data_offset, long *data_length)
 {
 	unsigned char *buffer;
 	int tmp; long i;
-	assert(fscanf(in, " size=%ld\n", buffersize));
-	*buffersize+=4; /* for netbios */
-	buffer = (unsigned char *)malloc(*buffersize);
-	memset(buffer, 0, *buffersize);
-	/* NetBIOS */
+	assert(fscanf(in, " size=%hu\n", buffersize)); line_num++;
+	buffer = malloc(*buffersize+4); /* +4 for NBSS Header */
+	memset(buffer, 0, *buffersize+4);
+	/* NetBIOS Session Service */
 	buffer[0] = 0x00;
 	buffer[1] = 0x00;
-	memcpy(buffer+2, &buffersize, 2);
+	memcpy(buffer+2, &buffersize, 2); /* TODO: need to copy as little-endian regardless of platform */
+	/* SMB Packet */
 	buffer[4] = 0xFF;
 	buffer[5] = 'S';
 	buffer[6] = 'M';
 	buffer[7] = 'B';
-	assert(fscanf(in, "  smb_com=0x%x\n", &tmp)); buffer[smb_com] = tmp;
-	assert(fscanf(in, "  smb_rcls=%d\n", &tmp)); buffer[smb_rcls] = tmp;
-	assert(fscanf(in, "  smb_reh=%d\n", &tmp)); buffer[smb_reh] = tmp;
-	assert(fscanf(in, "  smb_err=%d\n", &tmp)); memcpy(buffer+smb_err, &tmp, 2);
-	assert(fscanf(in, "  smb_flg=%d\n", &tmp)); buffer[smb_flg] = tmp;
-	assert(fscanf(in, "  smb_flg2=%d\n", &tmp)); memcpy(buffer+smb_flg2, &tmp, 2);
-	assert(fscanf(in, "  smb_tid=%d\n", &tmp)); memcpy(buffer+smb_tid, &tmp, 2);
-	assert(fscanf(in, "  smb_pid=%d\n", &tmp)); memcpy(buffer+smb_pid, &tmp, 2);
-	assert(fscanf(in, "  smb_uid=%d\n", &tmp)); memcpy(buffer+smb_uid, &tmp, 2);
-	assert(fscanf(in, "  smb_mid=%d\n", &tmp)); memcpy(buffer+smb_mid, &tmp, 2);
-	assert(fscanf(in, "  smt_wct=%d\n", &tmp)); buffer[smb_wct] = tmp;
+	assert(fscanf(in, "  smb_com=0x%x\n", &tmp)); buffer[smb_com] = tmp; line_num++;
+	assert(fscanf(in, "  smb_rcls=%d\n", &tmp)); buffer[smb_rcls] = tmp; line_num++;
+	assert(fscanf(in, "  smb_reh=%d\n", &tmp)); buffer[smb_reh] = tmp; line_num++;
+	assert(fscanf(in, "  smb_err=%d\n", &tmp)); memcpy(buffer+smb_err, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smb_flg=%d\n", &tmp)); buffer[smb_flg] = tmp; line_num++;
+	assert(fscanf(in, "  smb_flg2=%d\n", &tmp)); memcpy(buffer+smb_flg2, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smb_tid=%d\n", &tmp)); memcpy(buffer+smb_tid, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smb_pid=%d\n", &tmp)); memcpy(buffer+smb_pid, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smb_uid=%d\n", &tmp)); memcpy(buffer+smb_uid, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smb_mid=%d\n", &tmp)); memcpy(buffer+smb_mid, &tmp, 2); line_num++;
+	assert(fscanf(in, "  smt_wct=%d\n", &tmp)); buffer[smb_wct] = tmp; line_num++;
 	for(i = 0; i < buffer[smb_wct]; i++) {
-		assert(fscanf(in, "  smb_vwv[%*2d]=%*5d (0x%X)\n", &tmp));
+		assert(fscanf(in, "  smb_vwv[%*3d]=%*5d (0x%X)\n", &tmp)); line_num++;
 		memcpy(buffer+smb_vwv+i*2, &tmp, 2);
 	}
 
 	*data_offset = smb_vwv+buffer[smb_wct]*2;
-	assert(fscanf(in, "  smb_bcc=%ld\n", data_length)); buffer[(*data_offset)] = *data_length;
+	assert(fscanf(in, "  smb_bcc=%ld\n", data_length)); buffer[(*data_offset)] = *data_length; line_num++;
 	(*data_offset)+=2;
 	*_buffer = buffer;
 }
 
-static long read_log_data(FILE *in, unsigned char *buffer, long data_length)
+/* Read the log message produced by lib/util.c:dump_data() containing:
+ *  SMB_DATA.Bytes
+ *
+ * Example:
+ * [2007/04/08 20:41:39, 10] lib/util.c:dump_data(2243)
+ *   [000] 00 55 00 6E 00 69 00 78  00 00 00 53 00 61 00 6D  .U.n.i.x ...S.a.m
+ *   [010] 00 62 00 61 00 20 00 33  00 2E 00 30 00 2E 00 32  .b.a. .3 ...0...2
+ *   [020] 00 34 00 2D 00 49 00 73  00 69 00 6C 00 6F 00 6E  .4.-.I.s .i.l.o.n
+ *   [030] 00 20 00 4F 00 6E 00 65  00 46 00 53 00 20 00 76  . .O.n.e .F.S. .v
+ *   [040] 00 34 00 2E 00 30 00 00  00 49 00 53 00 49 00 4C  .4...0.. .I.S.I.L
+ *   [050] 00 4F 00 4E 00 00 00                              .O.N...
+ */
+long read_log_data(FILE *in, unsigned char *buffer, long data_length)
 {
 	long i, addr; char real[2][16]; int ret;
 	unsigned int tmp;
 	for(i = 0; i < data_length; i++) {
 		if(i % 16 == 0){
-			if(i != 0) { /* Read data after each line */
-				assert(fscanf(in, "%8s %8s", real[0], real[1]) == 2);
+			if(i != 0) {
+				/* Read and discard the ascii data after each line. */
+				assert(fscanf(in, "  %8c %8c\n", real[0], real[1]) == 2);
 			}
-			ret = fscanf(in, "  [%03lX]", &addr);
+			ret = fscanf(in, "  [%03lX]", &addr); line_num++;
 			if(!ret) {
-				if(!quiet)fprintf(stderr, "Only first %ld bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i);
+				if(!quiet)
+					fprintf(stderr, "%ld: Only first %ld bytes are logged, "
+					    "packet trace will be incomplete\n", line_num, i-1);
 				return i-1;
 			}
 			assert(addr == i);
 		}
 		if(!fscanf(in, "%02X", &tmp)) {
-			if(!quiet)fprintf(stderr, "Only first %ld bytes are logged, packet trace will be incomplete\nTry a higher log level\n", i-1);
+			if(!quiet)
+				fprintf(stderr, "%ld: Log message formated incorrectly. "
+				    "Only first %ld bytes are logged, packet trace will "
+				    "be incomplete\n", line_num, i-1);
+			while ((tmp = getc(in)) != '\n');
 			return i-1;
 		}
 		buffer[i] = tmp;
 	}
+
+	/* Consume the newline so we don't increment num_lines twice */
+	while ((tmp = getc(in)) != '\n');
 	return data_length;
 }
 
@@ -228,13 +298,13 @@ int main (int argc, char **argv)
 	int opt;
 	poptContext pc;
 	char buffer[4096];
-	long data_offset = 0, data_length;
+	long data_offset, data_length;
 	long data_bytes_read = 0;
 	int in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "quiet", 'q', POPT_ARG_NONE, NULL, 'q', "Be quiet, don't output warnings" },
-		{ "hex", 'h', POPT_ARG_NONE, NULL, 'h', "Output format readable by text2pcap" },
+		{ "quiet", 'q', POPT_ARG_NONE, &quiet, 0, "Be quiet, don't output warnings" },
+		{ "hex", 'h', POPT_ARG_NONE, &hexformat, 0, "Output format readable by text2pcap" },
 		POPT_TABLEEND
 	};
 	
@@ -245,12 +315,6 @@ int main (int argc, char **argv)
 	
 	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'q':
-			quiet = true;
-			break;
-		case 'h':
-			hexformat = true;
-			break;
 		}
 	}
 
@@ -281,7 +345,7 @@ int main (int argc, char **argv)
 	if(!hexformat)print_pcap_header(out);
 
 	while(!feof(in)) {
-		fgets(buffer, sizeof(buffer), in);
+		fgets(buffer, sizeof(buffer), in); line_num++;
 		if(buffer[0] == '[') { /* Header */
 			if(strstr(buffer, "show_msg")) {
 				in_packet++;
