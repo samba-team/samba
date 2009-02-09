@@ -1061,10 +1061,13 @@ static void open_socket_out_connected(struct async_req *subreq)
 		return;
 	}
 
-	if ((sys_errno == ETIME)
-	    || (sys_errno == EINPROGRESS)
-	    || (sys_errno == EALREADY)
-	    || (sys_errno == EAGAIN)) {
+	if (
+#ifdef ETIMEDOUT
+		(sys_errno == ETIMEDOUT) ||
+#endif
+		(sys_errno == EINPROGRESS) ||
+		(sys_errno == EALREADY) ||
+		(sys_errno == EAGAIN)) {
 
 		/*
 		 * retry

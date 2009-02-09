@@ -116,10 +116,10 @@ bool async_req_is_errno(struct async_req *req, int *err)
 		*err = (int)error;
 		break;
 	case ASYNC_REQ_TIMED_OUT:
-#ifdef HAVE_ETIMEDOUT
+#ifdef ETIMEDOUT
 		*err = ETIMEDOUT;
 #else
-		*err = EIO;
+		*err = EAGAIN;
 #endif
 		break;
 	case ASYNC_REQ_NO_MEMORY:
