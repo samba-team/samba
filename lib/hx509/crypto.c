@@ -308,6 +308,9 @@ ecdsa_create_signature(hx509_context context,
     unsigned int siglen;
     int ret;
 
+    if (der_heim_oid_cmp((signer->ops->key_oid)(), oid_id_ecPublicKey()) != 0)
+	return HX509_ALG_NOT_SUPP;
+
     sig_oid = (*sig_alg->sig_oid)();
 
     if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA256()) == 0) {
@@ -498,6 +501,9 @@ rsa_create_signature(hx509_context context,
     const heim_oid *sig_oid;
     size_t size;
     int ret;
+
+    if (der_heim_oid_cmp((signer->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) != 0)
+	return HX509_ALG_NOT_SUPP;
 
     if (alg)
 	sig_oid = &alg->algorithm;
@@ -765,7 +771,18 @@ ecdsa_private_key_import(hx509_context context,
 			 size_t len,
 			 hx509_private_key private_key)
 {
-    return ENOMEM;
+    const unsigned char *p = data;
+
+    private_key->private_key.ecdsa =
+	d2i_ECPrivateKey(NULL, &p, len);
+    if (private_key->private_key.ecdsa == NULL) {
+	hx509_set_error_string(context, 0, HX509_PARSING_KEY_FAILED,
+			       "Failed to parse EC private key");
+	return HX509_PARSING_KEY_FAILED;
+    }
+    private_key->signature_alg = oid_id_ecdsa_with_SHA256();
+
+    return 0;
 }
 
 static int
@@ -787,7 +804,7 @@ ecdsa_get_internal(hx509_context context,
 
 static hx509_private_key_ops ecdsa_private_key_ops = {
     "EC PRIVATE KEY",
-    oid_id_pkcs1_rsaEncryption,
+    oid_id_ecPublicKey,
     ecdsa_private_key2SPKI,
     ecdsa_private_key_export,
     ecdsa_private_key_import,
@@ -1729,6 +1746,11 @@ const AlgorithmIdentifier _hx509_signature_md2_data = {
     { 6, rk_UNCONST(md2_oid_tree) }, rk_UNCONST(&null_entry_oid)
 };
 
+static const unsigned ecPublicKey[] ={ 1, 2, 840, 10045, 2, 1 };
+const AlgorithmIdentifier _hx509_signature_ecPublicKey = {
+    { 6, rk_UNCONST(ecPublicKey) }, NULL
+};
+
 static const unsigned ecdsa_with_sha256_oid[] ={ 1, 2, 840, 10045, 4, 3, 2 };
 const AlgorithmIdentifier _hx509_signature_ecdsa_with_sha256_data = {
     { 7, rk_UNCONST(ecdsa_with_sha256_oid) }, NULL
@@ -1817,6 +1839,10 @@ hx509_signature_md5(void)
 const AlgorithmIdentifier *
 hx509_signature_md2(void)
 { return &_hx509_signature_md2_data; }
+
+const AlgorithmIdentifier *
+hx509_signature_ecPublicKey(void)
+{ return &_hx509_signature_ecPublicKey; }
 
 const AlgorithmIdentifier *
 hx509_signature_ecdsa_with_sha256(void)
@@ -1927,8 +1953,13 @@ _hx509_private_key_free(hx509_private_key *key)
     if (--(*key)->ref > 0)
 	return 0;
 
-    if ((*key)->private_key.rsa)
-	RSA_free((*key)->private_key.rsa);
+    if (der_heim_oid_cmp(((*key)->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) == 0) {
+	if ((*key)->private_key.rsa)
+	    RSA_free((*key)->private_key.rsa);
+    } else if (der_heim_oid_cmp(((*key)->ops->key_oid)(), oid_id_ecPublicKey()) == 0) {
+	if ((*key)->private_key.ecdsa)
+	    EC_KEY_free((*key)->private_key.ecdsa);
+    }
     (*key)->private_key.rsa = NULL;
     free(*key);
     *key = NULL;
@@ -2777,8 +2808,8 @@ out:
  */
 
 
-int
-_hx509_match_keys(hx509_cert c, hx509_private_key private_key)
+static int
+match_keys_rsa(hx509_cert c, hx509_private_key private_key)
 {
     const Certificate *cert;
     const SubjectPublicKeyInfo *spi;
@@ -2832,6 +2863,18 @@ _hx509_match_keys(hx509_cert c, hx509_private_key private_key)
 
     return ret == 1;
 }
+
+int
+_hx509_match_keys(hx509_cert c, hx509_private_key key)
+{
+    if (der_heim_oid_cmp((key->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) == 0)
+	return match_keys_rsa(c, key);
+    if (der_heim_oid_cmp((key->ops->key_oid)(), oid_id_ecPublicKey()) == 0)
+	return 1; /* XXX */
+    return 0;
+
+}
+
 
 static const heim_oid *
 find_keytype(const hx509_private_key key)
