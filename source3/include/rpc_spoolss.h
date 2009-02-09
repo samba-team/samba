@@ -1602,22 +1602,6 @@ typedef struct spool_r_replyopenprinter
 }
 SPOOL_R_REPLYOPENPRINTER;
 
-typedef struct spool_q_routerreplyprinter
-{
-	POLICY_HND handle;
-	uint32 condition;
-	uint32 unknown1;	/* 0x00000001 */
-	uint32 change_id;
-	uint8  unknown2[5];	/* 0x0000000001 */
-}
-SPOOL_Q_ROUTERREPLYPRINTER;
-
-typedef struct spool_r_routerreplyprinter
-{
-	WERROR status;
-}
-SPOOL_R_ROUTERREPLYPRINTER;
-
 typedef struct spool_q_rrpcn
 {
 	POLICY_HND handle;

@@ -66,40 +66,6 @@ WERROR rpccli_spoolss_reply_open_printer(struct rpc_pipe_client *cli, TALLOC_CTX
 }
 
 /*********************************************************************
- This SPOOLSS_ROUTERREPLYPRINTER function is used to send a change 
- notification event when the registration **did not** use 
- SPOOL_NOTIFY_OPTION_TYPE structure to specify the events to monitor.
- Also see cli_spolss_reply_rrpcn()
- *********************************************************************/
- 
-WERROR rpccli_spoolss_routerreplyprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol, uint32 condition, uint32 change_id)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ROUTERREPLYPRINTER q;
-        SPOOL_R_ROUTERREPLYPRINTER r;
-	WERROR result = W_ERROR(ERRgeneral);
-
-	/* Initialise input parameters */
-
-	make_spoolss_q_routerreplyprinter(&q, pol, condition, change_id);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ROUTERREPLYPRINTER,
-		q, r,
-		qbuf, rbuf,
-		spoolss_io_q_routerreplyprinter,
-		spoolss_io_r_routerreplyprinter,
-		WERR_GENERAL_FAILURE );
-
-	/* Return output parameters */
-
-	result = r.status;
-	return result;	
-}
-
-/*********************************************************************
  This SPOOLSS_REPLY_RRPCN function is used to send a change 
  notification event when the registration **did** use 
  SPOOL_NOTIFY_OPTION_TYPE structure to specify the events to monitor
