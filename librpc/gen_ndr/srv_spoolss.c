@@ -1921,6 +1921,14 @@ static bool api_spoolss_AddJob(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_AddJob, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.buffer = r->in.buffer;
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_AddJob(p, r);
 
 	if (p->rng_fault_state) {
@@ -7718,6 +7726,13 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_ADDJOB: {
 			struct spoolss_AddJob *r = (struct spoolss_AddJob *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.buffer = r->in.buffer;
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_AddJob(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

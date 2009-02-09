@@ -167,9 +167,16 @@ NTSTATUS rpccli_spoolss_EndDocPrinter(struct rpc_pipe_client *cli,
 				      WERROR *werror);
 NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle /* [in] [ref] */,
+			       uint32_t level /* [in]  */,
+			       uint8_t *buffer /* [in,out] [unique,size_is(offered)] */,
+			       uint32_t offered /* [in]  */,
+			       uint32_t *needed /* [out] [ref] */,
 			       WERROR *werror);
 NTSTATUS rpccli_spoolss_ScheduleJob(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
+				    struct policy_handle *handle /* [in] [ref] */,
+				    uint32_t jobid /* [in]  */,
 				    WERROR *werror);
 NTSTATUS rpccli_spoolss_GetPrinterData(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,

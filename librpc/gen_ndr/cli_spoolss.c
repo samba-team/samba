@@ -1190,12 +1190,21 @@ NTSTATUS rpccli_spoolss_EndDocPrinter(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle /* [in] [ref] */,
+			       uint32_t level /* [in]  */,
+			       uint8_t *buffer /* [in,out] [unique,size_is(offered)] */,
+			       uint32_t offered /* [in]  */,
+			       uint32_t *needed /* [out] [ref] */,
 			       WERROR *werror)
 {
 	struct spoolss_AddJob r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddJob, &r);
@@ -1220,6 +1229,10 @@ NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	if (buffer && r.out.buffer) {
+		memcpy(buffer, r.out.buffer, r.in.offered * sizeof(*buffer));
+	}
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {
@@ -1231,12 +1244,16 @@ NTSTATUS rpccli_spoolss_AddJob(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_ScheduleJob(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
+				    struct policy_handle *handle /* [in] [ref] */,
+				    uint32_t jobid /* [in]  */,
 				    WERROR *werror)
 {
 	struct spoolss_ScheduleJob r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.jobid = jobid;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_ScheduleJob, &r);

@@ -1259,6 +1259,15 @@ struct spoolss_EndDocPrinter {
 
 struct spoolss_AddJob {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t level;
+		uint32_t offered;
+		uint8_t *buffer;/* [unique,size_is(offered)] */
+	} in;
+
+	struct {
+		uint32_t *needed;/* [ref] */
+		uint8_t *buffer;/* [unique,size_is(offered)] */
 		WERROR result;
 	} out;
 
@@ -1266,6 +1275,11 @@ struct spoolss_AddJob {
 
 
 struct spoolss_ScheduleJob {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t jobid;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

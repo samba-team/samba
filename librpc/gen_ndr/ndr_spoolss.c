@@ -11665,8 +11665,28 @@ _PUBLIC_ void ndr_print_spoolss_EndDocPrinter(struct ndr_print *ndr, const char 
 static enum ndr_err_code ndr_push_spoolss_AddJob(struct ndr_push *ndr, int flags, const struct spoolss_AddJob *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.buffer));
+		if (r->in.buffer) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.buffer, r->in.offered));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.buffer));
+		if (r->out.buffer) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->out.buffer, r->in.offered));
+		}
+		if (r->out.needed == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.needed));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11674,10 +11694,68 @@ static enum ndr_err_code ndr_push_spoolss_AddJob(struct ndr_push *ndr, int flags
 
 static enum ndr_err_code ndr_pull_spoolss_AddJob(struct ndr_pull *ndr, int flags, struct spoolss_AddJob *r)
 {
+	uint32_t _ptr_buffer;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_buffer_0;
+	TALLOC_CTX *_mem_save_needed_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_buffer));
+		if (_ptr_buffer) {
+			NDR_PULL_ALLOC(ndr, r->in.buffer);
+		} else {
+			r->in.buffer = NULL;
+		}
+		if (r->in.buffer) {
+			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.buffer, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		NDR_PULL_ALLOC(ndr, r->out.needed);
+		ZERO_STRUCTP(r->out.needed);
+		if (r->in.buffer) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.buffer, r->in.offered));
+		}
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_buffer));
+		if (_ptr_buffer) {
+			NDR_PULL_ALLOC(ndr, r->out.buffer);
+		} else {
+			r->out.buffer = NULL;
+		}
+		if (r->out.buffer) {
+			_mem_save_buffer_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.buffer, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.buffer));
+			NDR_PULL_ALLOC_N(ndr, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->out.buffer, ndr_get_array_size(ndr, &r->out.buffer)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_0, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.needed);
+		}
+		_mem_save_needed_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.needed, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.needed));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_needed_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
+		if (r->out.buffer) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.buffer, r->in.offered));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -11692,11 +11770,33 @@ _PUBLIC_ void ndr_print_spoolss_AddJob(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_AddJob");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		if (r->in.buffer) {
+			ndr_print_array_uint8(ndr, "buffer", r->in.buffer, r->in.offered);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "offered", r->in.offered);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_AddJob");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "buffer", r->out.buffer);
+		ndr->depth++;
+		if (r->out.buffer) {
+			ndr_print_array_uint8(ndr, "buffer", r->out.buffer, r->in.offered);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "needed", r->out.needed);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "needed", *r->out.needed);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -11706,6 +11806,11 @@ _PUBLIC_ void ndr_print_spoolss_AddJob(struct ndr_print *ndr, const char *name, 
 static enum ndr_err_code ndr_push_spoolss_ScheduleJob(struct ndr_push *ndr, int flags, const struct spoolss_ScheduleJob *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.jobid));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -11715,7 +11820,16 @@ static enum ndr_err_code ndr_push_spoolss_ScheduleJob(struct ndr_push *ndr, int 
 
 static enum ndr_err_code ndr_pull_spoolss_ScheduleJob(struct ndr_pull *ndr, int flags, struct spoolss_ScheduleJob *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.jobid));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -11733,6 +11847,11 @@ _PUBLIC_ void ndr_print_spoolss_ScheduleJob(struct ndr_print *ndr, const char *n
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_ScheduleJob");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "jobid", r->in.jobid);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
