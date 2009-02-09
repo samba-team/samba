@@ -1066,36 +1066,6 @@ WERROR rpccli_spoolss_deleteprinterdriverex(struct rpc_pipe_client *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_deleteprinterdriver (struct rpc_pipe_client *cli, 
-					TALLOC_CTX *mem_ctx, const char *arch,
-					const char *driver)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERDRIVER in;
-        SPOOL_R_DELETEPRINTERDRIVER out;
-	fstring server;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	make_spoolss_q_deleteprinterdriver( mem_ctx, &in, server, arch, driver );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERDRIVER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterdriver,
-	            spoolss_io_r_deleteprinterdriver, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;	
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      char *name, char *environment,
