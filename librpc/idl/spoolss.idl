@@ -1160,8 +1160,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,string,charset(UTF16)] uint16 server_name[],
 		[in] uint32 printer_local,
 		[in] winreg_Type type,
-		[in] uint32 unknown1,
-		[in] uint32 unknown2,
+		[in,range(0,512)] uint32 bufsize,
+		[in,unique,size_is(bufsize)] uint8 *buffer,
 		[out,ref] policy_handle *handle
 	);
 
