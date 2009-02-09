@@ -296,7 +296,7 @@ sub parse_asn1($$)
 	if (! defined $cpp) {
 		$cpp = "cpp"
 	}
-	my $data = `$cpp $filename`;
+	my $data = `$cpp -xc $filename`;
 	$/ = $saved_delim;
 
         $self->YYData->{INPUT} = $data;
