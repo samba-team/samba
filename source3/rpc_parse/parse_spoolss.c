@@ -6328,60 +6328,6 @@ bool spoolss_io_r_enumprinterkey(const char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, 
  * read a structure.
  ********************************************************************/  
 
-bool make_spoolss_q_deleteprinterkey(SPOOL_Q_DELETEPRINTERKEY *q_u, 
-				     POLICY_HND *hnd, char *keyname)
-{
-	DEBUG(5,("make_spoolss_q_deleteprinterkey\n"));
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	init_unistr2(&q_u->keyname, keyname, UNI_STR_TERMINATE);
-
-	return True;
-}
-
-/*******************************************************************
- * read a structure.
- ********************************************************************/  
-
-bool spoolss_io_q_deleteprinterkey(const char *desc, SPOOL_Q_DELETEPRINTERKEY *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_deleteprinterkey");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-		
-	if(!smb_io_unistr2("", &q_u->keyname, True, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- ********************************************************************/  
-
-bool spoolss_io_r_deleteprinterkey(const char *desc, SPOOL_R_DELETEPRINTERKEY *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterkey");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-		
-	if(!prs_werror("status",     ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
- * read a structure.
- ********************************************************************/  
-
 bool spoolss_io_q_enumprinterdataex(const char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdataex");

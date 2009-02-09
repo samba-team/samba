@@ -1734,29 +1734,4 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return out.status;
 }
 
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_deleteprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd, char *keyname)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_DELETEPRINTERKEY in;
-	SPOOL_R_DELETEPRINTERKEY out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_deleteprinterkey( &in, hnd, keyname );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_DELETEPRINTERKEY,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_deleteprinterkey,
-	            spoolss_io_r_deleteprinterkey, 
-	            WERR_GENERAL_FAILURE );
-		    
-	return out.status;
-}
-
 /** @} **/

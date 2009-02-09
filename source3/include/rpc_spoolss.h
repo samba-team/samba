@@ -1822,19 +1822,6 @@ typedef struct spool_r_enumprinterkey
 }
 SPOOL_R_ENUMPRINTERKEY;
 
-typedef struct spool_q_deleteprinterkey
-{
-	POLICY_HND handle;
-	UNISTR2 keyname;
-}
-SPOOL_Q_DELETEPRINTERKEY;
-
-typedef struct spool_r_deleteprinterkey
-{
-	WERROR status;
-}
-SPOOL_R_DELETEPRINTERKEY;
-
 typedef struct printer_enum_values
 {
 	UNISTR valuename;
