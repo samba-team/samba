@@ -726,7 +726,12 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x18 */
-	[todo] WERROR spoolss_AddJob(
+	WERROR spoolss_AddJob(
+		[in,ref] policy_handle *handle,
+		[in] uint32 level,
+		[in,out,unique] [size_is(offered)] uint8 *buffer,
+		[in] uint32 offered,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
