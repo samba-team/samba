@@ -898,31 +898,7 @@ static bool api_spoolss_enumprintprocessors(pipes_struct *p)
 
 static bool api_spoolss_addprintprocessor(pipes_struct *p)
 {
-	SPOOL_Q_ADDPRINTPROCESSOR q_u;
-	SPOOL_R_ADDPRINTPROCESSOR r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_addprintprocessor("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_addprintprocessor: unable to unmarshall SPOOL_Q_ADDPRINTPROCESSOR.\n"));
-		return False;
-	}
-	
-	/* for now, just indicate success and ignore the add.  We'll
-	   automatically set the winprint processor for printer
-	   entries later.  Used to debug the LexMark Optra S 1855 PCL
-	   driver --jerry */
-	r_u.status = WERR_OK;
-
-	if(!spoolss_io_r_addprintprocessor("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_addprintprocessor: unable to marshall SPOOL_R_ADDPRINTPROCESSOR.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ADDPRINTPROCESSOR);
 }
 
 /****************************************************************************

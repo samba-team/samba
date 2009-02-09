@@ -150,6 +150,7 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 {
 	WERROR result;
+	NTSTATUS status;
 
 	/*
 	 * Tell the specific printing tdb we no longer want messages for this printer
@@ -165,11 +166,10 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
 		return;
 	}
 
-	result = rpccli_spoolss_reply_close_printer(notify_cli_pipe,
-				talloc_tos(),
-				handle);
-
-	if (!W_ERROR_IS_OK(result))
+	status = rpccli_spoolss_ReplyClosePrinter(notify_cli_pipe, talloc_tos(),
+						  handle,
+						  &result);
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result))
 		DEBUG(0,("srv_spoolss_replycloseprinter: reply_close_printer failed [%s].\n",
 			win_errstr(result)));
 
@@ -9978,6 +9978,22 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 	return WERR_INVALID_PRINT_MONITOR;
 }
+
+/****************************************************************
+ _spoolss_AddPrintProcessor
+****************************************************************/
+
+WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
+				  struct spoolss_AddPrintProcessor *r)
+{
+	/* for now, just indicate success and ignore the add.  We'll
+	   automatically set the winprint processor for printer
+	   entries later.  Used to debug the LexMark Optra S 1855 PCL
+	   driver --jerry */
+
+	return WERR_OK;
+}
+
 /****************************************************************
  _spoolss_EnumPrinters
 ****************************************************************/
@@ -10105,17 +10121,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 					  struct spoolss_GetPrinterDriverDirectory *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddPrintProcessor
-****************************************************************/
-
-WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
-				  struct spoolss_AddPrintProcessor *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

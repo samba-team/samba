@@ -98,7 +98,6 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
 {
 	WERROR 	        werror;
 	fstring		printername;
-	fstring		servername, user;
 	POLICY_HND	hnd;
 
 	if (argc != 2) {
@@ -109,16 +108,14 @@ static WERROR cmd_spoolss_open_printer_ex(struct rpc_pipe_client *cli,
 	if (!cli)
             return WERR_GENERAL_FAILURE;
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
 	fstrcpy(printername, argv[1]);
 
 	/* Open the printer handle */
 
 	werror = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", PRINTER_ALL_ACCESS,
-					     servername, user, &hnd);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &hnd);
 
 	if (W_ERROR_IS_OK(werror)) {
 		printf("Printer %s opened successfully\n", printername);
@@ -473,8 +470,6 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername,
-			servername,
-			user,
 			comment;
 
 	if (argc == 1 || argc > 3) {
@@ -488,15 +483,12 @@ static WERROR cmd_spoolss_setprinter(struct rpc_pipe_client *cli,
 		fstrcpy(comment, argv[2]);
 	}
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 
 	/* get a printer handle */
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
-				PRINTER_ALL_ACCESS, servername,
-				user, &pol);
+				PRINTER_ALL_ACCESS, cli->srv_name_slash,
+				cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -539,8 +531,6 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
 	fstring 	printername,
-			servername,
-			user,
 			new_printername;
 
 	if (argc == 1 || argc > 3) {
@@ -554,15 +544,12 @@ static WERROR cmd_spoolss_setprintername(struct rpc_pipe_client *cli,
 		fstrcpy(new_printername, argv[2]);
 	}
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 
 	/* get a printer handle */
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
-				PRINTER_ALL_ACCESS, servername,
-				user, &pol);
+				PRINTER_ALL_ACCESS, cli->srv_name_slash,
+				cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -603,9 +590,7 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 	uint32 		info_level = 1;
 	bool 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
-	fstring 	printername,
-			servername,
-			user;
+	fstring 	printername;
 
 	if (argc == 1 || argc > 3) {
 		printf("Usage: %s <printername> [level]\n", argv[0]);
@@ -617,16 +602,14 @@ static WERROR cmd_spoolss_getprinter(struct rpc_pipe_client *cli,
 		info_level = atoi(argv[2]);
 	}
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 
 	/* get a printer handle */
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &pol);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -741,9 +724,7 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          result;
 	bool 		opened_hnd = False;
-	fstring 	printername,
-			servername,
-			user;
+	fstring 	printername;
 	const char *valuename;
 	REGISTRY_VALUE value;
 
@@ -756,20 +737,18 @@ static WERROR cmd_spoolss_getprinterdata(struct rpc_pipe_client *cli,
 
 	/* Open a printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
 	if (strncmp(argv[1], ".", sizeof(".")) == 0)
-		fstrcpy(printername, servername);
+		fstrcpy(printername, cli->srv_name_slash);
 	else
-		slprintf(printername, sizeof(servername)-1, "%s\\%s",
-			  servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+		slprintf(printername, sizeof(printername)-1, "%s\\%s",
+			  cli->srv_name_slash, argv[1]);
 
 	/* get a printer handle */
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &pol);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -806,9 +785,7 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	POLICY_HND 	pol;
 	WERROR          result;
 	bool 		opened_hnd = False;
-	fstring 	printername,
-			servername,
-			user;
+	fstring 	printername;
 	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
 
@@ -823,20 +800,18 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 
 	/* Open a printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
 	if (strncmp(argv[1], ".", sizeof(".")) == 0)
-		fstrcpy(printername, servername);
+		fstrcpy(printername, cli->srv_name_slash);
 	else
 		slprintf(printername, sizeof(printername)-1, "%s\\%s",
-			  servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+			  cli->srv_name_slash, argv[1]);
 
 	/* get a printer handle */
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &pol);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -986,9 +961,7 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	uint32		info_level = 3;
 	bool 		opened_hnd = False;
 	PRINTER_DRIVER_CTR 	ctr;
-	fstring 	printername,
-			servername,
-			user;
+	fstring 	printername;
 	uint32		i;
 	bool		success = False;
 
@@ -999,10 +972,7 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
-	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 	if (argc == 3)
 		info_level = atoi(argv[2]);
 
@@ -1010,7 +980,8 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 	werror = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
 					     PRINTER_ACCESS_USE,
-					     servername, user, &pol);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(werror)) {
 		printf("Error opening printer handle for %s!\n", printername);
@@ -1374,7 +1345,6 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	uint32			level = 2;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
-	fstring			servername;
 
 	/* parse the command arguments */
 	if (argc != 5)
@@ -1382,9 +1352,6 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 		printf ("Usage: %s <name> <shared name> <driver> <port>\n", argv[0]);
 		return WERR_OK;
         }
-
-        slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-        strupper_m(servername);
 
 	/* Fill in the DRIVER_INFO_2 struct */
 	ZERO_STRUCT(info2);
@@ -1434,9 +1401,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 	bool			opened_hnd = False;
 	PRINTER_INFO_CTR	ctr;
 	PRINTER_INFO_2		info2;
-	fstring			servername,
-				printername,
-				user;
+	fstring			printername;
 
 	/* parse the command arguments */
 	if (argc != 3)
@@ -1445,16 +1410,14 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 		return WERR_OK;
         }
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	slprintf(printername, sizeof(printername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 
 	/* Get a printer handle */
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
 					     PRINTER_ALL_ACCESS,
-					     servername, user, &pol);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -1573,7 +1536,6 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 {
 	WERROR result = WERR_OK;
 	NTSTATUS status;
-	fstring			servername;
 	int			i;
 
 	/* parse the command arguments */
@@ -1582,14 +1544,11 @@ static WERROR cmd_spoolss_deletedriver(struct rpc_pipe_client *cli,
 		return WERR_OK;
         }
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++) {
 		/* make the call to remove the driver */
 		status = rpccli_spoolss_DeletePrinterDriver(cli, mem_ctx,
-							    servername,
+							    cli->srv_name_slash,
 							    archi_table[i].long_archi,
 							    argv[1],
 							    &result);
@@ -1619,7 +1578,7 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 					    int argc, const char **argv)
 {
 	WERROR result;
-	char *servername = NULL, *environment = NULL;
+	char *environment = NULL;
 	fstring procdir;
 
 	/* parse the command arguments */
@@ -1628,23 +1587,17 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 		return WERR_OK;
         }
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost) < 0)
-		return WERR_NOMEM;
-	strupper_m(servername);
-
 	if (asprintf(&environment, "%s", (argc == 2) ? argv[1] :
 		     PRINTER_DRIVER_ARCHITECTURE) < 0) {
-		SAFE_FREE(servername);
 		return WERR_NOMEM;
 	}
 
 	result = rpccli_spoolss_getprintprocessordirectory(
-		cli, mem_ctx, servername, environment, procdir);
+		cli, mem_ctx, cli->srv_name_slash, environment, procdir);
 
 	if (W_ERROR_IS_OK(result))
 		printf("%s\n", procdir);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(environment);
 
 	return result;
@@ -1659,7 +1612,7 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	POLICY_HND handle;
 	WERROR werror;
 	NTSTATUS status;
-	char *servername = NULL, *printername = NULL;
+	char *printername = NULL;
 	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
@@ -1673,18 +1626,13 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Get a printer handle */
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost) == -1) {
-		return WERR_NOMEM;
-	}
-	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
-		SAFE_FREE(servername);
+	if (asprintf(&printername, "%s\\%s", cli->srv_name_slash, argv[1]) == -1) {
 		return WERR_NOMEM;
 	}
 
 	werror = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
 					     PRINTER_ALL_ACCESS,
-					     servername, cli->auth->user_name,
+					     cli->srv_name_slash, cli->auth->user_name,
 					     &handle);
 
 	if (!W_ERROR_IS_OK(werror))
@@ -1718,7 +1666,6 @@ static WERROR cmd_spoolss_addform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(printername);
 
 	return werror;
@@ -1733,7 +1680,7 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	POLICY_HND handle;
 	WERROR werror;
 	NTSTATUS status;
-	char *servername = NULL, *printername = NULL;
+	char *printername = NULL;
 	bool got_handle = False;
 	union spoolss_AddFormInfo info;
 	struct spoolss_AddFormInfo1 info1;
@@ -1747,18 +1694,13 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Get a printer handle */
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost)) {
-		return WERR_NOMEM;
-	}
-	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
-		SAFE_FREE(servername);
+	if (asprintf(&printername, "%s\\%s", cli->srv_name_slash, argv[1]) == -1) {
 		return WERR_NOMEM;
 	}
 
 	werror = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS,
-		servername, cli->auth->user_name, &handle);
+		cli->srv_name_slash, cli->auth->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1791,7 +1733,6 @@ static WERROR cmd_spoolss_setform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(printername);
 
 	return werror;
@@ -1859,7 +1800,7 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	POLICY_HND handle;
 	WERROR werror;
 	NTSTATUS status;
-	char *servername = NULL, *printername = NULL;
+	char *printername = NULL;
 	bool got_handle = False;
 	DATA_BLOB buffer;
 	uint32_t offered = 0;
@@ -1875,18 +1816,13 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 
 	/* Get a printer handle */
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost) == -1) {
-		return WERR_NOMEM;
-	}
-	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
-		SAFE_FREE(servername);
+	if (asprintf(&printername, "%s\\%s", cli->srv_name_slash, argv[1]) == -1) {
 		return WERR_NOMEM;
 	}
 
 	werror = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS,
-		servername, cli->auth->user_name, &handle);
+		cli->srv_name_slash, cli->auth->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1927,7 +1863,6 @@ static WERROR cmd_spoolss_getform(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(printername);
 
 	return werror;
@@ -1943,7 +1878,7 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	POLICY_HND handle;
 	WERROR werror;
 	NTSTATUS status;
-	char *servername = NULL, *printername = NULL;
+	char *printername = NULL;
 	bool got_handle = False;
 
 	/* Parse the command arguments */
@@ -1955,18 +1890,13 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 
 	/* Get a printer handle */
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost) == -1) {
-		return WERR_NOMEM;
-	}
-	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
-		SAFE_FREE(servername);
+	if (asprintf(&printername, "%s\\%s", cli->srv_name_slash, argv[1]) == -1) {
 		return WERR_NOMEM;
 	}
 
 	werror = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS,
-		servername, cli->auth->user_name, &handle);
+		cli->srv_name_slash, cli->auth->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -1987,7 +1917,6 @@ static WERROR cmd_spoolss_deleteform(struct rpc_pipe_client *cli,
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(printername);
 
 	return werror;
@@ -2002,7 +1931,7 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 {
 	POLICY_HND handle;
 	WERROR werror;
-	char *servername = NULL, *printername = NULL;
+	char *printername = NULL;
 	bool got_handle = False;
 	uint32 num_forms, level = 1, i;
 	FORM_1 *forms;
@@ -2016,18 +1945,13 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 
 	/* Get a printer handle */
 
-	if (asprintf(&servername, "\\\\%s", cli->desthost) == -1) {
-		return WERR_NOMEM;
-	}
-	strupper_m(servername);
-	if (asprintf(&printername, "%s\\%s", servername, argv[1]) == -1) {
-		SAFE_FREE(servername);
+	if (asprintf(&printername, "%s\\%s", cli->srv_name_slash, argv[1]) == -1) {
 		return WERR_NOMEM;
 	}
 
 	werror = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS,
-		servername, cli->auth->user_name, &handle);
+		cli->srv_name_slash, cli->auth->user_name, &handle);
 
 	if (!W_ERROR_IS_OK(werror))
 		goto done;
@@ -2053,7 +1977,6 @@ static WERROR cmd_spoolss_enum_forms(struct rpc_pipe_client *cli,
 	if (got_handle)
 		rpccli_spoolss_ClosePrinter(cli, mem_ctx, &handle, NULL);
 
-	SAFE_FREE(servername);
 	SAFE_FREE(printername);
 
 	return werror;
@@ -2067,7 +1990,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 					    int argc, const char **argv)
 {
 	WERROR result;
-	fstring servername, printername, user;
+	fstring printername;
 	POLICY_HND pol;
 	bool opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
@@ -2084,10 +2007,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	slprintf(printername, sizeof(servername)-1, "%s\\%s", servername, argv[1]);
-	fstrcpy(user, cli->auth->user_name);
+	slprintf(printername, sizeof(printername)-1, "%s\\%s", cli->srv_name_slash, argv[1]);
 
 	value.type = REG_NONE;
 
@@ -2115,8 +2035,9 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 
 	/* get a printer handle */
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
-					     MAXIMUM_ALLOWED_ACCESS, servername,
-					     user, &pol);
+					     MAXIMUM_ALLOWED_ACCESS,
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &pol);
 	if (!W_ERROR_IS_OK(result))
 		goto done;
 
@@ -2280,7 +2201,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 	uint32 level = 1, num_jobs, i;
 	bool got_hnd = False;
 	char *printername = NULL;
-	fstring servername, user;
 	POLICY_HND hnd;
 	JOB_INFO_CTR ctr;
 
@@ -2294,9 +2214,6 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 
 	/* Open printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
 	printername = talloc_asprintf(mem_ctx, "\\\\%s\\", cli->desthost);
 	if (!printername) {
 		return WERR_NOMEM;
@@ -2309,7 +2226,8 @@ static WERROR cmd_spoolss_enum_jobs(struct rpc_pipe_client *cli,
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &hnd);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2356,7 +2274,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 	uint32 i=0, val_needed, data_needed;
 	bool got_hnd = False;
 	char *printername = NULL;
-	fstring servername, user;
 	POLICY_HND hnd;
 
 	if (argc != 2) {
@@ -2366,9 +2283,6 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 
 	/* Open printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
 	printername = talloc_asprintf(mem_ctx, "\\\\%s\\", cli->desthost);
 	if (!printername) {
 		return WERR_NOMEM;
@@ -2381,7 +2295,8 @@ static WERROR cmd_spoolss_enum_data( struct rpc_pipe_client *cli,
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &hnd);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2422,7 +2337,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 	uint32 i;
 	bool got_hnd = False;
 	char *printername = NULL;
-	fstring servername, user;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
 	REGVAL_CTR *ctr = NULL;
@@ -2436,10 +2350,6 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 
 	/* Open printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
-
 	printername = talloc_asprintf(mem_ctx, "\\\\%s\\", cli->desthost);
 	if (!printername) {
 		return WERR_NOMEM;
@@ -2452,7 +2362,8 @@ static WERROR cmd_spoolss_enum_data_ex( struct rpc_pipe_client *cli,
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &hnd);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2492,7 +2403,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 	WERROR result;
 	bool got_hnd = False;
 	char *printername = NULL;
-	fstring servername, user;
 	const char *keyname = NULL;
 	POLICY_HND hnd;
 	uint16 *keylist = NULL, *curkey;
@@ -2509,10 +2419,6 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 
 	/* Open printer handle */
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-	fstrcpy(user, cli->auth->user_name);
-
 	printername = talloc_asprintf(mem_ctx, "\\\\%s\\", cli->desthost);
 	if (!printername) {
 		return WERR_NOMEM;
@@ -2526,7 +2432,8 @@ static WERROR cmd_spoolss_enum_printerkey( struct rpc_pipe_client *cli,
 
 	result = rpccli_spoolss_open_printer_ex(cli, mem_ctx, printername,
 					     "", MAXIMUM_ALLOWED_ACCESS,
-					     servername, user, &hnd);
+					     cli->srv_name_slash,
+					     cli->auth->user_name, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -2583,16 +2490,13 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 
 	/* Open printer */
 
-	slprintf(servername, sizeof(servername) - 1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
-
 	slprintf(printername, sizeof(printername) - 1, "\\\\%s\\%s",
 		 cli->desthost, argv[1]);
 	strupper_m(printername);
 
 	result = rpccli_spoolss_open_printer_ex(
 		cli, mem_ctx, printername, "", MAXIMUM_ALLOWED_ACCESS,
-		servername, cli->auth->user_name, &hnd);
+		cli->srv_name_slash, cli->auth->user_name, &hnd);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("Error opening %s\n", argv[1]);
@@ -2633,7 +2537,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	strupper_m(servername);
 
 	result = rpccli_spoolss_rffpcnex(
-		cli, mem_ctx, &hnd, 0, 0, servername, 123, &option);
+		cli, mem_ctx, &hnd, 0, 0, cli->srv_name_slash, 123, &option);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("Error rffpcnex %s\n", argv[1]);

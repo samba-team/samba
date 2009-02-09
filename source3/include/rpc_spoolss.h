@@ -1395,23 +1395,6 @@ typedef struct spool_r_getprinterdriverdirectory
 }
 SPOOL_R_GETPRINTERDRIVERDIR;
 
-typedef struct spool_q_addprintprocessor
-{
-	uint32 server_ptr;
-	UNISTR2 server;
-	UNISTR2 environment;
-	UNISTR2 path;
-	UNISTR2 name;
-}
-SPOOL_Q_ADDPRINTPROCESSOR;
-
-typedef struct spool_r_addprintprocessor
-{
-	WERROR status;
-}
-SPOOL_R_ADDPRINTPROCESSOR;
-
-
 typedef struct spool_q_enumprintprocessors
 {
 	uint32 name_ptr;
@@ -1618,35 +1601,6 @@ typedef struct spool_r_replyopenprinter
 	WERROR status;
 }
 SPOOL_R_REPLYOPENPRINTER;
-
-typedef struct spool_q_routerreplyprinter
-{
-	POLICY_HND handle;
-	uint32 condition;
-	uint32 unknown1;	/* 0x00000001 */
-	uint32 change_id;
-	uint8  unknown2[5];	/* 0x0000000001 */
-}
-SPOOL_Q_ROUTERREPLYPRINTER;
-
-typedef struct spool_r_routerreplyprinter
-{
-	WERROR status;
-}
-SPOOL_R_ROUTERREPLYPRINTER;
-
-typedef struct spool_q_replycloseprinter
-{
-	POLICY_HND handle;
-}
-SPOOL_Q_REPLYCLOSEPRINTER;
-
-typedef struct spool_r_replycloseprinter
-{
-	POLICY_HND handle;
-	WERROR status;
-}
-SPOOL_R_REPLYCLOSEPRINTER;
 
 typedef struct spool_q_rrpcn
 {

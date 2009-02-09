@@ -726,38 +726,35 @@ static bool net_spoolss_open_printer_ex(struct rpc_pipe_client *pipe_hnd,
 					POLICY_HND *hnd)
 {
 	WERROR result;
-	fstring servername, printername2;
+	fstring printername2;
 
-	slprintf(servername, sizeof(servername)-1, "\\\\%s",
-		 pipe_hnd->desthost);
-
-	fstrcpy(printername2, servername);
+	fstrcpy(printername2, pipe_hnd->srv_name_slash);
 	fstrcat(printername2, "\\");
 	fstrcat(printername2, printername);
 
 	DEBUG(10,("connecting to: %s as %s for %s and access: %x\n",
-		servername, username, printername2, access_required));
+		pipe_hnd->srv_name_slash, username, printername2, access_required));
 
 	/* open printer */
 	result = rpccli_spoolss_open_printer_ex(pipe_hnd, mem_ctx, printername2,
 			"", access_required,
-			servername, username, hnd);
+			pipe_hnd->csrv_name_slash, username, hnd);
 
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
 		d_fprintf(stderr, "no access to printer [%s] on [%s] for user [%s] granted\n",
-			printername2, servername, username);
+			printername2, pipe_hnd->csrv_name_slash, username);
 		return false;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
 		d_fprintf(stderr, "cannot open printer %s on server %s: %s\n",
-			printername2, servername, win_errstr(result));
+			printername2, pipe_hnd->csrv_name_slash, win_errstr(result));
 		return false;
 	}
 
 	DEBUG(2,("got printer handle for printer: %s, server: %s\n",
-		printername2, servername));
+		printername2, pipe_hnd->csrv_name_slash));
 
 	return true;
 }
