@@ -1504,12 +1504,14 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result, ret = WERR_UNKNOWN_PRINTER_DRIVER;
- 
+	NTSTATUS status;
+
 	int   i;
 	int vers = -1;
  
 	const char *arch = NULL;
- 
+	uint32_t delete_flags = 0;
+
 	/* parse the command arguments */
 	if (argc < 2 || argc > 4) {
 		printf ("Usage: %s <driver> [arch] [version]\n", argv[0]);
@@ -1520,8 +1522,11 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
 		arch = argv[2];
 	if (argc == 4)
 		vers = atoi (argv[3]);
- 
- 
+
+	if (vers >= 0) {
+		delete_flags |= DPD_DELETE_SPECIFIC_VERSION;
+	}
+
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++) {
 
@@ -1532,8 +1537,13 @@ static WERROR cmd_spoolss_deletedriverex(struct rpc_pipe_client *cli,
 			continue;
 
 		/* make the call to remove the driver */
-		result = rpccli_spoolss_deleteprinterdriverex(
-			cli, mem_ctx, archi_table[i].long_archi, argv[1], archi_table[i].version); 
+		status = rpccli_spoolss_DeletePrinterDriverEx(cli, mem_ctx,
+							      cli->srv_name_slash,
+							      archi_table[i].long_archi,
+							      argv[1],
+							      delete_flags,
+							      archi_table[i].version,
+							      &result);
 
 		if ( !W_ERROR_IS_OK(result) ) 
 		{
