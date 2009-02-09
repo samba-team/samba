@@ -1395,23 +1395,6 @@ typedef struct spool_r_getprinterdriverdirectory
 }
 SPOOL_R_GETPRINTERDRIVERDIR;
 
-typedef struct spool_q_addprintprocessor
-{
-	uint32 server_ptr;
-	UNISTR2 server;
-	UNISTR2 environment;
-	UNISTR2 path;
-	UNISTR2 name;
-}
-SPOOL_Q_ADDPRINTPROCESSOR;
-
-typedef struct spool_r_addprintprocessor
-{
-	WERROR status;
-}
-SPOOL_R_ADDPRINTPROCESSOR;
-
-
 typedef struct spool_q_enumprintprocessors
 {
 	uint32 name_ptr;

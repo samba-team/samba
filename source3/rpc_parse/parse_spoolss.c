@@ -5013,57 +5013,6 @@ bool spoolss_io_q_enumprintprocessors(const char *desc, SPOOL_Q_ENUMPRINTPROCESS
 /*******************************************************************
 ********************************************************************/  
 
-bool spoolss_io_q_addprintprocessor(const char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_addprintprocessor");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("server_ptr", ps, depth, &q_u->server_ptr))
-		return False;
-	if (!smb_io_unistr2("server", &q_u->server, q_u->server_ptr, ps, depth))
-		return False;
-		
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_unistr2("environment", &q_u->environment, True, ps, depth))
-		return False;
-		
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_unistr2("path", &q_u->path, True, ps, depth))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_unistr2("name", &q_u->name, True, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
-
-bool spoolss_io_r_addprintprocessor(const char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_addprintproicessor");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
-}
-
-/*******************************************************************
-********************************************************************/  
-
 bool spoolss_io_r_enumprintprocdatatypes(const char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocdatatypes");
