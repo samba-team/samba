@@ -60,6 +60,9 @@ typedef uint32_t NTSTATUS;
 #define ERROR_INSUFFICIENT_BUFFER	  NT_STATUS(0x007a)
 #define ERROR_INVALID_DATATYPE		  NT_STATUS(0x070c)
 
+/* XXX Win7 Status code: Name unknown. */
+#define NT_STATUS_WIN7_INVALID_RANGE NT_STATUS(0xC0000000 | 0x01a1)
+
 /* Win32 Error codes extracted using a loop in smbclient then printing a
    netmon sniff to a file. */
 
