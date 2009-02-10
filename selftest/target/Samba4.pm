@@ -544,7 +544,6 @@ sub provision_raw_prepare($$$$$$)
 	$ctx->{unix_gids_str} = $);
 	@{$ctx->{unix_gids}} = split(" ", $ctx->{unix_gids_str});
 
-	$ctx->{tmpdir} = "$prefix_abs/tmp";
 	$ctx->{etcdir} = "$prefix_abs/etc";
 	$ctx->{piddir} = "$prefix_abs/pid";
 	$ctx->{smb_conf} = "$ctx->{etcdir}/smb.conf";
@@ -573,9 +572,7 @@ sub provision_raw_prepare($$$$$$)
 	push(@{$ctx->{directories}}, $ctx->{ncalrpcdir});
 	push(@{$ctx->{directories}}, $ctx->{lockdir});
 
-	push(@{$ctx->{directories}}, $ctx->{tmpdir});
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test1");
-	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test2");
+	$ctx->{smb_conf_extra_options} = "";
 
 	return $ctx;
 }
@@ -613,8 +610,6 @@ sub provision_raw_run($$)
 	panic action = $RealBin/gdb_backtrace \%PID% \%PROG%
 	wins support = yes
 	server role = $ctx->{server_role}
-	max xmit = 32K
-	server max protocol = SMB2
 	notify:inotify = false
 	ldb:nosync = true
 #We don't want to pass our self-tests if the PAC code is wrong
@@ -622,57 +617,9 @@ sub provision_raw_run($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 
-[tmp]
-	path = $ctx->{tmpdir}
-	read only = no
-	ntvfs handler = posix
-	posix:sharedelay = 100000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
-	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
-
-[test1]
-	path = $ctx->{tmpdir}/test1
-	read only = no
-	ntvfs handler = posix
-	posix:sharedelay = 100000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
-	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
-
-[test2]
-	path = $ctx->{tmpdir}/test2
-	read only = no
-	ntvfs handler = posix
-	posix:sharedelay = 100000
-	posix:eadb = $ctx->{lockdir}/eadb.tdb
-	posix:oplocktimeout = 3
-	posix:writetimeupdatedelay = 500000
-
-[cifs]
-	read only = no
-	ntvfs handler = cifs
-	cifs:server = $ctx->{netbiosname}
-	cifs:share = tmp
-#There is no username specified here, instead the client is expected
-#to log in with kerberos, and the serverwill use delegated credentials.
-
-[simple]
-	path = $ctx->{tmpdir}
-	read only = no
-	ntvfs handler = simple
-
-[sysvol]
-	path = $ctx->{lockdir}/sysvol
-	read only = yes
-
-[netlogon]
-	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
-	read only = no
-
-[cifsposix]
-	copy = simple
-	ntvfs handler = cifsposix
+	# Begin extra options
+	$ctx->{smb_conf_extra_options}
+	# End extra options
 ";
 	close(CONFFILE);
 
@@ -844,6 +791,69 @@ sub provision($$$$$$)
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $netbiosname, $netbiosalias,
 					       $swiface, $password);
+
+	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test1");
+	push(@{$ctx->{directories}}, "$ctx->{tmpdir}/test2");
+
+	$ctx->{smb_conf_extra_options} = "
+
+	max xmit = 32K
+	server max protocol = SMB2
+
+[tmp]
+	path = $ctx->{tmpdir}
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
+
+[test1]
+	path = $ctx->{tmpdir}/test1
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
+
+[test2]
+	path = $ctx->{tmpdir}/test2
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $ctx->{lockdir}/eadb.tdb
+	posix:oplocktimeout = 3
+	posix:writetimeupdatedelay = 500000
+
+[cifs]
+	read only = no
+	ntvfs handler = cifs
+	cifs:server = $ctx->{netbiosname}
+	cifs:share = tmp
+#There is no username specified here, instead the client is expected
+#to log in with kerberos, and the serverwill use delegated credentials.
+
+[simple]
+	path = $ctx->{tmpdir}
+	read only = no
+	ntvfs handler = simple
+
+[sysvol]
+	path = $ctx->{lockdir}/sysvol
+	read only = yes
+
+[netlogon]
+	path = $ctx->{lockdir}/sysvol/$ctx->{dnsname}/scripts
+	read only = no
+
+[cifsposix]
+	copy = simple
+	ntvfs handler = cifsposix
+";
 
 	my $ret = $self->provision_raw_run($ctx);
 
