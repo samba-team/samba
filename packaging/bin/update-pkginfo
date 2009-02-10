@@ -15,6 +15,11 @@ if [ $# -ne 3 ]; then
     exit 1
 fi
 
+DIRNAME=$(dirname $0)
+TOPDIR=${DIRNAME}/../../
+PACKAGINGDIR=${TOPDIR}/packaging
+
+pushd ${PACKAGINGDIR} > /dev/null 2>&1
 for f in `find . -type f -name "*.tmpl"`; do
         f2=`echo $f | sed s/.tmpl//g`
         echo $f2
@@ -23,4 +28,4 @@ for f in `find . -type f -name "*.tmpl"`; do
 		-e s/PREVISION/${REVISION}/g \
 		-e s/PRPMREV/${RPMREVISION}/g < $f > $f2
 done
-
+popd > /dev/null 2>&1
