@@ -179,16 +179,16 @@ typedef enum smbc_smb_encrypt_level
  * smbc_statvfs(). These may be OR-ed together to reflect a full set of
  * available capabilities.
  */
-typedef enum smbc_vfs_capability
+typedef enum smbc_vfs_feature
 {
     /* Defined by POSIX or in Linux include files (low-order bits) */
-    SMBC_VFS_CAP_RDONLY         = (1 << 0),
+    SMBC_VFS_FEATURE_RDONLY         = (1 << 0),
 
     /* Specific to libsmbclient (high-order bits) */
-    SMBC_VFS_CAP_DFS            = (1 << 29),
-    SMBC_VFS_CAP_CASE_SENSITIVE = (1 << 30),
-    SMBC_VFS_CAP_UNIXCIFS       = (1 << 31)
-} smbc_vfs_capability;
+    SMBC_VFS_FEATURE_NO_DFS           = (1 << 29),
+    SMBC_VFS_FEATURE_CASE_INSENSITIVE = (1 << 30),
+    SMBC_VFS_FEATURE_NO_UNIXCIFS      = (1 << 31)
+} smbc_vfs_feature;
 
 typedef int smbc_bool;
 

@@ -70,27 +70,35 @@ int main(int argc, char * argv[])
         {
             perror("fstatvfs");
         }
-        else if (statvfsbuf.f_flag == 0)
-        {
-            printf("No capabilities found\n");
-        }
         else
         {
-            printf("Capabilities: ");
+            printf("Features: ");
 
-            if (statvfsbuf.f_flag & SMBC_VFS_CAP_UNIXCIFS)
+            if (statvfsbuf.f_flag & SMBC_VFS_FEATURE_NO_UNIXCIFS)
             {
-                printf("UNIXCIFS ");
+                printf("NO_UNIXCIFS ");
+            }
+            else
+            {
+                printf("unixcifs ");
             }
 
-            if (statvfsbuf.f_flag & SMBC_VFS_CAP_CASE_SENSITIVE)
+            if (statvfsbuf.f_flag & SMBC_VFS_FEATURE_CASE_INSENSITIVE)
             {
-                printf("CASE_SENSITIVE ");
+                printf("CASE_INSENSITIVE ");
+            }
+            else
+            {
+                printf("case_sensitive ");
             }
 
-            if (statvfsbuf.f_flag & SMBC_VFS_CAP_DFS)
+            if (statvfsbuf.f_flag & SMBC_VFS_FEATURE_NO_DFS)
             {
-                printf("DFS ");
+                printf("NO_DFS ");
+            }
+            else
+            {
+                printf("dfs ");
             }
 
             printf("\n");
