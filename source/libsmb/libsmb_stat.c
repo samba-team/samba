@@ -316,9 +316,18 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         /* Initialize all fields (at least until we actually use them) */
         memset(st, 0, sizeof(*st));
 
+        /*
+         * The state of each flag is such that the same bits are unset as
+         * would typically be unset on a local file system on a POSIX OS. Thus
+         * the bit is on, for example, only for case-insensitive file systems
+         * since most POSIX file systems are case sensitive and fstatvfs()
+         * would typically return zero in these bits on such a local file
+         * system.
+         */
+
         /* See if the server has UNIX CIFS support */
-        if (SERVER_HAS_UNIX_CIFS(cli)) {
-                st->f_flag |= SMBC_VFS_CAP_UNIXCIFS;
+        if (! SERVER_HAS_UNIX_CIFS(cli)) {
+                st->f_flag |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
         }
 
         /* See if the share is case sensitive */
@@ -328,18 +337,18 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                  * the share. We have no choice but to use the
                  * user-specified case sensitivity setting.
                  */
-                if (smbc_getOptionCaseSensitive(context)) {
-                        st->f_flag |= SMBC_VFS_CAP_CASE_SENSITIVE;
+                if (! smbc_getOptionCaseSensitive(context)) {
+                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         } else {
-                if (fs_attrs & FILE_CASE_SENSITIVE_SEARCH) {
-                        st->f_flag |= SMBC_VFS_CAP_CASE_SENSITIVE;
+                if (! (fs_attrs & FILE_CASE_SENSITIVE_SEARCH)) {
+                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         }
 
         /* See if DFS is supported */
-	if ((cli->capabilities & CAP_DFS) && cli->dfsroot) {
-                st->f_flag |= SMBC_VFS_CAP_DFS;
+	if (! (cli->capabilities & CAP_DFS) ||  ! cli->dfsroot) {
+                st->f_flag |= SMBC_VFS_FEATURE_NO_DFS;
         }
 
         return 0;
