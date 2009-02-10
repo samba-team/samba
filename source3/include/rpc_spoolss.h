@@ -261,25 +261,6 @@ PRINTER_MESSAGE_INFO;
 #define DRIVER_MAX_VERSION		4
 
 
-/* this struct is undocumented */
-/* thanks to the ddk ... */
-typedef struct {
-	uint32 size;		/* length of user_name & client_name + 2? */
-	UNISTR2 *client_name;
-	UNISTR2 *user_name;
-	uint32 build;
-	uint32 major;
-	uint32 minor;
-	uint32 processor;
-} SPOOL_USER_1;
-
-typedef struct {
-	uint32 level;
-	union {
-		SPOOL_USER_1 *user1;
-	} user;
-} SPOOL_USER_CTR;
-
 /* 
  * Devicemode structure
  */
@@ -965,21 +946,6 @@ typedef struct spool_r_setprinter
 SPOOL_R_SETPRINTER;
 
 /********************************************/
-
-typedef struct {
-	UNISTR2 *server_name;
-	uint32 level;
-	SPOOL_PRINTER_INFO_LEVEL info;
-	DEVMODE_CTR devmode_ctr;
-	SEC_DESC_BUF *secdesc_ctr;
-	uint32 user_switch;
-	SPOOL_USER_CTR user_ctr;
-} SPOOL_Q_ADDPRINTEREX;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SPOOL_R_ADDPRINTEREX;
 
 typedef struct spool_q_enumprintprocessors
 {
