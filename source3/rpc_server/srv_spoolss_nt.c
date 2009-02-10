@@ -7781,11 +7781,13 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_srv_name,
-				const SPOOL_PRINTER_INFO_LEVEL *info,
-				DEVICEMODE *devmode, SEC_DESC_BUF *sec_desc_buf,
-				uint32 user_switch, const SPOOL_USER_CTR *user,
-				POLICY_HND *handle)
+static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
+					   const char *server,
+					   struct spoolss_SetPrinterInfoCtr *info_ctr,
+					   struct spoolss_DeviceMode *devmode,
+					   struct security_descriptor *sec_desc,
+					   struct spoolss_UserLevelCtr *user_ctr,
+					   POLICY_HND *handle)
 {
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	fstring	name;
@@ -7798,7 +7800,7 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	}
 
 	/* convert from UNICODE to ASCII - this allocates the info_2 struct inside *printer.*/
-	if (!convert_printer_info(info, printer, 2)) {
+	if (!convert_printer_info_new(info_ctr, printer)) {
 		free_a_printer(&printer, 2);
 		return WERR_NOMEM;
 	}
@@ -7871,8 +7873,9 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		*/
 		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
 
-		if (!convert_devicemode(printer->info_2->printername, devmode,
-				&printer->info_2->devmode))
+		if (!convert_devicemode_new(printer->info_2->printername,
+					    devmode,
+					    &printer->info_2->devmode))
 			return  WERR_NOMEM;
 	}
 
@@ -7896,31 +7899,27 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_AddPrinterEx
+****************************************************************/
 
-WERROR _spoolss_addprinterex( pipes_struct *p, SPOOL_Q_ADDPRINTEREX *q_u, SPOOL_R_ADDPRINTEREX *r_u)
+WERROR _spoolss_AddPrinterEx(pipes_struct *p,
+			     struct spoolss_AddPrinterEx *r)
 {
-	UNISTR2 *uni_srv_name = q_u->server_name;
-	uint32 level = q_u->level;
-	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
-	DEVICEMODE *devmode = q_u->devmode_ctr.devmode;
-	SEC_DESC_BUF *sdb = q_u->secdesc_ctr;
-	uint32 user_switch = q_u->user_switch;
-	SPOOL_USER_CTR *user = &q_u->user_ctr;
-	POLICY_HND *handle = &r_u->handle;
-
-	switch (level) {
-		case 1:
-			/* we don't handle yet */
-			/* but I know what to do ... */
-			return WERR_UNKNOWN_LEVEL;
-		case 2:
-			return spoolss_addprinterex_level_2(p, uni_srv_name, info,
-							    devmode, sdb,
-							    user_switch, user, handle);
-		default:
-			return WERR_UNKNOWN_LEVEL;
+	switch (r->in.info_ctr->level) {
+	case 1:
+		/* we don't handle yet */
+		/* but I know what to do ... */
+		return WERR_UNKNOWN_LEVEL;
+	case 2:
+		return spoolss_addprinterex_level_2(p, r->in.server,
+						    r->in.info_ctr,
+						    r->in.devmode_ctr->devmode,
+						    r->in.secdesc_ctr->sd,
+						    r->in.userlevel_ctr,
+						    r->out.handle);
+	default:
+		return WERR_UNKNOWN_LEVEL;
 	}
 }
 
@@ -10607,17 +10606,6 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
 
 WERROR _spoolss_44(pipes_struct *p,
 		   struct spoolss_44 *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_AddPrinterEx
-****************************************************************/
-
-WERROR _spoolss_AddPrinterEx(pipes_struct *p,
-			     struct spoolss_AddPrinterEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
