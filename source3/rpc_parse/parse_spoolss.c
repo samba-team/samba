@@ -925,62 +925,6 @@ bool make_spoolss_printer_info_7(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_7
 	return True;
 }
 
-
-/*******************************************************************
- * read a structure.
- * called from spoolss_q_open_printer_ex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_open_printer(const char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_open_printer");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_io_unistr2_p("ptr", ps, depth, &q_u->printername))
-		return False;
-	if (!prs_io_unistr2("printername", ps, depth, q_u->printername))
-		return False;
-	
-	if (!prs_align(ps))
-		return False;
-
-	if (!spoolss_io_printer_default("", &q_u->printer_default, ps, depth))
-		return False;
-		
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from static spoolss_r_open_printer_ex (srv_spoolss.c)
- * called from spoolss_open_printer_ex (cli_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_open_printer(const char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL) return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_r_open_printer");
-	depth++;
-	
-	if (!prs_align(ps))
-		return False;
-
-	if (!smb_io_pol_hnd("printer handle",&(r_u->handle),ps,depth))
-		return False;	
-
-	if (!prs_werror("status", ps, depth, &(r_u->status)))
-		return False;
-		
-	return True;
-}
-
 /*******************************************************************
  * make a structure.
  ********************************************************************/

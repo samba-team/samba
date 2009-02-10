@@ -394,18 +394,6 @@ PRINTER_DEFAULT;
 
 /********************************************/
 
-typedef struct {
-	UNISTR2 *printername;
-	PRINTER_DEFAULT printer_default;
-} SPOOL_Q_OPEN_PRINTER;
-
-typedef struct {
-	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
-	WERROR status;
-} SPOOL_R_OPEN_PRINTER;
-
-/********************************************/
-
 typedef struct spool_notify_option_type
 {
 	uint16 type;

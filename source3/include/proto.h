@@ -5805,8 +5805,6 @@ bool make_spoolss_printer_info_3(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_3
 				PRINTER_INFO_3 *info);
 bool make_spoolss_printer_info_7(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_7 **spool_info7, 
 				PRINTER_INFO_7 *info);
-bool spoolss_io_q_open_printer(const char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_open_printer(const char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 				   const POLICY_HND *handle,
 				   const char *valuename, uint32 size);
@@ -6151,7 +6149,6 @@ void reset_all_printerdata(struct messaging_context *msg,
 			   uint32_t msg_type,
 			   struct server_id server_id,
 			   DATA_BLOB *data);
-WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R_OPEN_PRINTER *r_u);
 bool convert_devicemode(const char *printername, const DEVICEMODE *devmode,
 				NT_DEVICEMODE **pp_nt_devmode);
 WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, const char *value,
