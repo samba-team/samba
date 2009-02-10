@@ -310,13 +310,36 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                   SMBCFILE *file,
                   struct statvfs *st)
 {
+	uint32 fs_attrs = 0;
+	struct cli_state *cli = file->srv->cli;
+
         /* Initialize all fields (at least until we actually use them) */
         memset(st, 0, sizeof(*st));
 
         /* See if the server has UNIX CIFS support */
-        if (SERVER_HAS_UNIX_CIFS(file->srv->cli))
-        {
+        if (SERVER_HAS_UNIX_CIFS(cli)) {
                 st->f_flag |= SMBC_VFS_CAP_UNIXCIFS;
+        }
+
+        /* See if the share is case sensitive */
+        if (!cli_get_fs_attr_info(cli, &fs_attrs)) {
+                /*
+                 * We can't determine the case sensitivity of
+                 * the share. We have no choice but to use the
+                 * user-specified case sensitivity setting.
+                 */
+                if (smbc_getOptionCaseSensitive(context)) {
+                        st->f_flag |= SMBC_VFS_CAP_CASE_SENSITIVE;
+                }
+        } else {
+                if (fs_attrs & FILE_CASE_SENSITIVE_SEARCH) {
+                        st->f_flag |= SMBC_VFS_CAP_CASE_SENSITIVE;
+                }
+        }
+
+        /* See if DFS is supported */
+	if ((cli->capabilities & CAP_DFS) && cli->dfsroot) {
+                st->f_flag |= SMBC_VFS_CAP_DFS;
         }
 
         return 0;
