@@ -17,9 +17,9 @@ TOPDIR=${DIRNAME}/../../
 SRCDIR=${TOPDIR}/source
 VERSION_H=${SRCDIR}/include/version.h
 
-pushd ${SRCDIR}
+pushd ${SRCDIR} > /dev/null 2>&1
 ./script/mkversion.sh
-popd
+popd > /dev/null 2>&1
 
 if [ ! -f ${VERSION_H} ] ; then
 	echo "Error creating version.h"
