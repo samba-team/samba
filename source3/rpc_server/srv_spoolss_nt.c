@@ -1754,6 +1754,73 @@ static bool convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 	return False;
 }
 
+/****************************************************************************
+****************************************************************************/
+
+static bool printer_info2_to_nt_printer_info2(struct spoolss_SetPrinterInfo2 *r,
+					      NT_PRINTER_INFO_LEVEL_2 *d)
+{
+	DEBUG(7,("printer_info2_to_nt_printer_info2\n"));
+
+	if (!r || !d) {
+		return false;
+	}
+
+	d->attributes		= r->attributes;
+	d->priority		= r->priority;
+	d->default_priority	= r->defaultpriority;
+	d->starttime		= r->starttime;
+	d->untiltime		= r->untiltime;
+	d->status		= r->status;
+	d->cjobs		= r->cjobs;
+
+	fstrcpy(d->servername,	r->servername);
+	fstrcpy(d->printername, r->printername);
+	fstrcpy(d->sharename,	r->sharename);
+	fstrcpy(d->portname,	r->portname);
+	fstrcpy(d->drivername,	r->drivername);
+	slprintf(d->comment, sizeof(d->comment)-1, "%s", r->comment);
+	fstrcpy(d->location,	r->location);
+	fstrcpy(d->sepfile,	r->sepfile);
+	fstrcpy(d->printprocessor, r->printprocessor);
+	fstrcpy(d->datatype,	r->datatype);
+	fstrcpy(d->parameters,	r->parameters);
+
+	return true;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static bool convert_printer_info_new(struct spoolss_SetPrinterInfoCtr *info_ctr,
+				     NT_PRINTER_INFO_LEVEL *printer)
+{
+	bool ret;
+
+	switch (info_ctr->level) {
+	case 2:
+		/* allocate memory if needed.  Messy because
+		   convert_printer_info is used to update an existing
+		   printer or build a new one */
+
+		if (!printer->info_2) {
+			printer->info_2 = TALLOC_ZERO_P(printer, NT_PRINTER_INFO_LEVEL_2);
+			if (!printer->info_2) {
+				DEBUG(0,("convert_printer_info_new: "
+					"talloc() failed!\n"));
+				return false;
+			}
+		}
+
+		ret = printer_info2_to_nt_printer_info2(info_ctr->info.info2,
+							printer->info_2);
+		printer->info_2->setuptime = time(NULL);
+		return ret;
+	}
+
+	return false;
+}
+
 static bool convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
                                  	NT_PRINTER_DRIVER_INFO_LEVEL *printer, uint32 level)
 {
