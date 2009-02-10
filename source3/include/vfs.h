@@ -115,6 +115,7 @@
 /* Leave at 25 - not yet released. Add get_alloc_size call. -- tprouty. */
 /* Leave at 25 - not yet released. Add SMB_STRUCT_STAT to readdir. - sdann */
 /* Leave at 25 - not yet released. Add init_search_op call. - sdann */
+/* Leave at 25 - not yet released. Add locking calls. -- zkirsch. */
 
 #define SMB_VFS_INTERFACE_VERSION 25
 
@@ -142,6 +143,7 @@ struct vfs_statvfs_struct;
 struct smb_request;
 struct ea_list;
 struct smb_file_time;
+struct blocking_lock_record;
 
 /*
     Available VFS operations. These values must be in sync with vfs_ops struct
@@ -218,6 +220,9 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
 	SMB_VFS_OP_GET_REAL_FILENAME,
+	SMB_VFS_OP_BRL_LOCK_WINDOWS,
+	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
+	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 
 	/* NT ACL operations. */
 
@@ -393,6 +398,22 @@ struct vfs_ops {
 					 TALLOC_CTX *mem_ctx,
 					 char **found_name);
 
+		NTSTATUS (*brl_lock_windows)(struct vfs_handle_struct *handle,
+					     struct byte_range_lock *br_lck,
+					     struct lock_struct *plock,
+					     bool blocking_lock,
+					     struct blocking_lock_record *blr);
+
+		bool (*brl_unlock_windows)(struct vfs_handle_struct *handle,
+					   struct messaging_context *msg_ctx,
+					   struct byte_range_lock *br_lck,
+					   const struct lock_struct *plock);
+
+		bool (*brl_cancel_windows)(struct vfs_handle_struct *handle,
+					   struct byte_range_lock *br_lck,
+					   struct lock_struct *plock,
+					   struct blocking_lock_record *blr);
+
 		/* NT ACL operations. */
 
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
@@ -531,6 +552,9 @@ struct vfs_ops {
 		struct vfs_handle_struct *file_id_create;
 		struct vfs_handle_struct *streaminfo;
 		struct vfs_handle_struct *get_real_filename;
+		struct vfs_handle_struct *brl_lock_windows;
+		struct vfs_handle_struct *brl_unlock_windows;
+		struct vfs_handle_struct *brl_cancel_windows;
 
 		/* NT ACL operations. */
 

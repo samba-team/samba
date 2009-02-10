@@ -3040,6 +3040,7 @@ void reply_lockread(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
+			NULL,
 			NULL);
 	TALLOC_FREE(br_lck);
 
@@ -4514,6 +4515,7 @@ void reply_lock(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
+			NULL,
 			NULL);
 
 	TALLOC_FREE(br_lck);
@@ -6904,6 +6906,9 @@ void reply_lockingX(struct smb_request *req)
 				offset,
 				WINDOWS_LOCK);
 
+		DEBUG(10, ("reply_lockingX: unlock returned %s\n",
+		    nt_errstr(status)));
+
 		if (NT_STATUS_V(status)) {
 			END_PROFILE(SMBlockingX);
 			reply_nterror(req, status);
@@ -6945,19 +6950,22 @@ void reply_lockingX(struct smb_request *req)
 			  fsp->fsp_name, (int)lock_timeout ));
 
 		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+			struct blocking_lock_record *blr;
+
 			if (lp_blocking_locks(SNUM(conn))) {
 
 				/* Schedule a message to ourselves to
 				   remove the blocking lock record and
 				   return the right error. */
 
-				if (!blocking_lock_cancel(fsp,
+				blr = blocking_lock_cancel(fsp,
 						lock_pid,
 						offset,
 						count,
 						WINDOWS_LOCK,
 						locktype,
-						NT_STATUS_FILE_LOCK_CONFLICT)) {
+						NT_STATUS_FILE_LOCK_CONFLICT);
+				if (blr == NULL) {
 					END_PROFILE(SMBlockingX);
 					reply_nterror(
 						req,
@@ -6972,7 +6980,8 @@ void reply_lockingX(struct smb_request *req)
 						lock_pid,
 						count,
 						offset,
-						WINDOWS_LOCK);
+						WINDOWS_LOCK,
+						blr);
 		} else {
 			bool blocking_lock = lock_timeout ? True : False;
 			bool defer_lock = False;
@@ -6988,7 +6997,8 @@ void reply_lockingX(struct smb_request *req)
 					WINDOWS_LOCK,
 					blocking_lock,
 					&status,
-					&block_smbpid);
+					&block_smbpid,
+					NULL);
 
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 				/* Windows internal resolution for blocking locks seems

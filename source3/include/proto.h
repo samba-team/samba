@@ -3379,8 +3379,14 @@ struct packet_struct *receive_unexpected(enum packet_type packet_type, int id,
 
 bool brl_same_context(const struct lock_context *ctx1, 
 			     const struct lock_context *ctx2);
+NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool blocking_lock);
 void brl_init(bool read_only);
 void brl_shutdown(void);
+
+NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
+		struct lock_struct *plock,
+		bool blocking_lock);
+
 NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		struct byte_range_lock *br_lck,
 		uint32 smbpid,
@@ -3390,7 +3396,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		bool blocking_lock,
-		uint32 *psmbpid);
+		uint32 *psmbpid,
+		struct blocking_lock_record *blr);
 bool brl_unlock(struct messaging_context *msg_ctx,
 		struct byte_range_lock *br_lck,
 		uint32 smbpid,
@@ -3398,6 +3405,9 @@ bool brl_unlock(struct messaging_context *msg_ctx,
 		br_off start,
 		br_off size,
 		enum brl_flavour lock_flav);
+bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
+			       struct byte_range_lock *br_lck,
+			       const struct lock_struct *plock);
 bool brl_locktest(struct byte_range_lock *br_lck,
 		uint32 smbpid,
 		struct server_id pid,
@@ -3417,7 +3427,10 @@ bool brl_lock_cancel(struct byte_range_lock *br_lck,
 		struct server_id pid,
 		br_off start,
 		br_off size,
-		enum brl_flavour lock_flav);
+		enum brl_flavour lock_flav,
+		struct blocking_lock_record *blr);
+bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
+		struct lock_struct *plock);
 void brl_close_fnum(struct messaging_context *msg_ctx,
 		    struct byte_range_lock *br_lck);
 int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
@@ -3456,7 +3469,8 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
-			uint32 *plock_pid);
+			uint32 *plock_pid,
+			struct blocking_lock_record *blr);
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			uint32 lock_pid,
@@ -3467,7 +3481,8 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
 			uint64_t count,
 			uint64_t offset,
-			enum brl_flavour lock_flav);
+			enum brl_flavour lock_flav,
+			struct blocking_lock_record *blr);
 void locking_close_file(struct messaging_context *msg_ctx,
 			files_struct *fsp);
 bool locking_init(void);
@@ -6342,6 +6357,7 @@ void smbd_aio_complete_mid(unsigned int mid);
 
 /* The following definitions come from smbd/blocking.c  */
 
+void process_blocking_lock_queue(void);
 bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		struct smb_request *req,
 		files_struct *fsp,
@@ -6356,7 +6372,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck);
 void remove_pending_lock_requests_by_mid(int mid);
 bool blocking_lock_was_deferred(int mid);
-bool blocking_lock_cancel(files_struct *fsp,
+struct blocking_lock_record *blocking_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
 			uint64_t offset,
 			uint64_t count,

@@ -75,4 +75,24 @@ struct lock_struct {
 	enum brl_flavour lock_flav;
 };
 
+/****************************************************************************
+ This is the structure to queue to implement blocking locks.
+*****************************************************************************/
+
+struct blocking_lock_record {
+	struct blocking_lock_record *next;
+	struct blocking_lock_record *prev;
+	struct files_struct *fsp;
+	struct timeval expire_time;
+	int lock_num;
+	uint64_t offset;
+	uint64_t count;
+	uint32_t lock_pid;
+	uint32_t blocking_pid; /* PID that blocks us. */
+	enum brl_flavour lock_flav;
+	enum brl_type lock_type;
+	struct smb_request *req;
+	void *blr_private; /* Implementation specific. */
+};
+
 #endif /* _LOCKING_H_ */

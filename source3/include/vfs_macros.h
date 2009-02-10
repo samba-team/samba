@@ -88,6 +88,9 @@
 #define SMB_VFS_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops.file_id_create((conn)->vfs.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs.ops.streaminfo((conn)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 #define SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs.ops.get_real_filename((conn)->vfs.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
+#define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock, blr) ((conn)->vfs.ops.brl_lock_windows((conn)->vfs.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
+#define SMB_VFS_BRL_UNLOCK_WINDOWS(conn, msg_ctx, br_lck, plock) ((conn)->vfs.ops.brl_unlock_windows((conn)->vfs.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
+#define SMB_VFS_BRL_CANCEL_WINDOWS(conn, br_lck, plock, blr) ((conn)->vfs.ops.brl_cancel_windows((conn)->vfs.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -217,6 +220,9 @@
 #define SMB_VFS_OPAQUE_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops_opaque.file_id_create((conn)->vfs_opaque.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_OPAQUE_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs_opaque.ops.streaminfo((conn)->vfs_opaque.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 #define SMB_VFS_OPAQUE_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_opaque.ops.get_real_filename((conn)->vfs_opaque.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
+#define SMB_VFS_OPAQUE_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock, blr) ((conn)->vfs_opaque.ops.brl_lock_windows((conn)->vfs_opaque.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
+#define SMB_VFS_OPAQUE_BRL_UNLOCK_WINDOWS(conn, msg_ctx, br_lck, plock) ((conn)->vfs_opaque.ops.brl_unlock_windows((conn)->vfs_opaque.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
+#define SMB_VFS_OPAQUE_BRL_CANCEL_WINDOWS(conn, br_lck, plock, blr) ((conn)->vfs_opaque.ops.brl_cancel_windows((conn)->vfs_opaque.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -347,6 +353,9 @@
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs_next.ops.streaminfo((handle)->vfs_next.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 #define SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx, found_name) ((handle)->vfs_next.ops.get_real_filename((handle)->vfs_next.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
+#define SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock, blocking_lock, blr) ((handle)->vfs_next.ops.brl_lock_windows((handle)->vfs_next.handles.brl_lock_windows, (br_lck), (plock), (blocking_lock), (blr)))
+#define SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck, plock) ((handle)->vfs_next.ops.brl_unlock_windows((handle)->vfs_next.handles.brl_unlock_windows, (msg_ctx), (br_lck), (plock)))
+#define SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr) ((handle)->vfs_next.ops.brl_cancel_windows((handle)->vfs_next.handles.brl_cancel_windows, (br_lck), (plock), (blr)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))

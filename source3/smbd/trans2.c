@@ -5628,7 +5628,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 							POSIX_LOCK,
 							blocking_lock,
 							&status,
-							&block_smbpid);
+							&block_smbpid,
+							NULL);
 
 		if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 			/*

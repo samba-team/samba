@@ -177,6 +177,34 @@ NTSTATUS query_lock(files_struct *fsp,
 	return status;
 }
 
+static void increment_current_lock_count(files_struct *fsp,
+    enum brl_flavour lock_flav)
+{
+	if (lock_flav == WINDOWS_LOCK &&
+	    fsp->current_lock_count != NO_LOCKING_COUNT) {
+		/* blocking ie. pending, locks also count here,
+		 * as this is an efficiency counter to avoid checking
+		 * the lock db. on close. JRA. */
+
+		fsp->current_lock_count++;
+	} else {
+		/* Notice that this has had a POSIX lock request.
+		 * We can't count locks after this so forget them.
+		 */
+		fsp->current_lock_count = NO_LOCKING_COUNT;
+	}
+}
+
+static void decrement_current_lock_count(files_struct *fsp,
+    enum brl_flavour lock_flav)
+{
+	if (lock_flav == WINDOWS_LOCK &&
+	    fsp->current_lock_count != NO_LOCKING_COUNT) {
+		SMB_ASSERT(fsp->current_lock_count > 0);
+		fsp->current_lock_count--;
+	}
+}
+
 /****************************************************************************
  Utility function called by locking requests.
 ****************************************************************************/
@@ -190,7 +218,8 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
-			uint32 *plock_pid)
+			uint32 *plock_pid,
+			struct blocking_lock_record *blr)
 {
 	struct byte_range_lock *br_lck = NULL;
 
@@ -206,9 +235,11 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
-	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f requested for fnum %d file %s\n",
+	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%.0f len=%.0f "
+		"blocking_lock=%s requested for fnum %d file %s\n",
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
-		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
+		(double)offset, (double)count, blocking_lock ? "true" :
+		"false", fsp->fnum, fsp->fsp_name));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
@@ -225,22 +256,12 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			lock_type,
 			lock_flav,
 			blocking_lock,
-			plock_pid);
+			plock_pid,
+			blr);
 
-	if (lock_flav == WINDOWS_LOCK &&
-			fsp->current_lock_count != NO_LOCKING_COUNT) {
-		/* blocking ie. pending, locks also count here,
-		 * as this is an efficiency counter to avoid checking
-		 * the lock db. on close. JRA. */
+	DEBUG(10, ("do_lock: returning status=%s\n", nt_errstr(*perr)));
 
-		fsp->current_lock_count++;
-	} else {
-		/* Notice that this has had a POSIX lock request.
-		 * We can't count locks after this so forget them.
-		 */
-		fsp->current_lock_count = NO_LOCKING_COUNT;
-	}
-
+	increment_current_lock_count(fsp, lock_flav);
 	return br_lck;
 }
 
@@ -289,12 +310,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_RANGE_NOT_LOCKED;
 	}
 
-	if (lock_flav == WINDOWS_LOCK &&
-			fsp->current_lock_count != NO_LOCKING_COUNT) {
-		SMB_ASSERT(fsp->current_lock_count > 0);
-		fsp->current_lock_count--;
-	}
-
+	decrement_current_lock_count(fsp, lock_flav);
 	return NT_STATUS_OK;
 }
 
@@ -306,11 +322,14 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint32 lock_pid,
 			uint64_t count,
 			uint64_t offset,
-			enum brl_flavour lock_flav)
+			enum brl_flavour lock_flav,
+			struct blocking_lock_record *blr)
 {
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
-	
+
+	SMB_ASSERT(blr);
+
 	if (!fsp->can_lock) {
 		return fsp->is_directory ?
 			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
@@ -333,8 +352,9 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 			procid_self(),
 			offset,
 			count,
-			lock_flav);
-   
+			lock_flav,
+			blr);
+
 	TALLOC_FREE(br_lck);
 
 	if (!ok) {
@@ -342,12 +362,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
-	if (lock_flav == WINDOWS_LOCK &&
-			fsp->current_lock_count != NO_LOCKING_COUNT) {
-		SMB_ASSERT(fsp->current_lock_count > 0);
-		fsp->current_lock_count--;
-	}
-
+	decrement_current_lock_count(fsp, lock_flav);
 	return NT_STATUS_OK;
 }
 

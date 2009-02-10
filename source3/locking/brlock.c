@@ -228,7 +228,7 @@ static bool brl_pending_overlap(const struct lock_struct *lock, const struct loc
  app depends on this ?
 ****************************************************************************/
 
-static NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool blocking_lock)
+NTSTATUS brl_lock_failed(files_struct *fsp, const struct lock_struct *lock, bool blocking_lock)
 {
 	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
@@ -305,13 +305,15 @@ static int lock_compare(const struct lock_struct *lck1,
  Lock a range of bytes - Windows lock semantics.
 ****************************************************************************/
 
-static NTSTATUS brl_lock_windows(struct byte_range_lock *br_lck,
-			struct lock_struct *plock, bool blocking_lock)
+NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
+    struct lock_struct *plock, bool blocking_lock)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = br_lck->lock_data;
 	NTSTATUS status;
+
+	SMB_ASSERT(plock->lock_type != UNLOCK_LOCK);
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		/* Do any Windows or POSIX locks conflict ? */
@@ -781,7 +783,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		bool blocking_lock,
-		uint32 *psmbpid)
+		uint32 *psmbpid,
+		struct blocking_lock_record *blr)
 {
 	NTSTATUS ret;
 	struct lock_struct lock;
@@ -807,7 +810,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		ret = brl_lock_windows(br_lck, &lock, blocking_lock);
+		ret = SMB_VFS_BRL_LOCK_WINDOWS(br_lck->fsp->conn, br_lck,
+		    &lock, blocking_lock, blr);
 	} else {
 		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
 	}
@@ -828,13 +832,15 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
-static bool brl_unlock_windows(struct messaging_context *msg_ctx,
+bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 			       struct byte_range_lock *br_lck,
 			       const struct lock_struct *plock)
 {
 	unsigned int i, j;
 	struct lock_struct *locks = br_lck->lock_data;
 	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
+
+	SMB_ASSERT(plock->lock_type == UNLOCK_LOCK);
 
 #if ZERO_ZERO
 	/* Delete write locks by preference... The lock list
@@ -1130,7 +1136,8 @@ bool brl_unlock(struct messaging_context *msg_ctx,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		return brl_unlock_windows(msg_ctx, br_lck, &lock);
+		return SMB_VFS_BRL_UNLOCK_WINDOWS(br_lck->fsp->conn, msg_ctx,
+		    br_lck, &lock);
 	} else {
 		return brl_unlock_posix(msg_ctx, br_lck, &lock);
 	}
@@ -1266,32 +1273,54 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 /****************************************************************************
  Remove a particular pending lock.
 ****************************************************************************/
-
 bool brl_lock_cancel(struct byte_range_lock *br_lck,
 		uint32 smbpid,
 		struct server_id pid,
 		br_off start,
 		br_off size,
-		enum brl_flavour lock_flav)
+		enum brl_flavour lock_flav,
+		struct blocking_lock_record *blr)
+{
+	bool ret;
+	struct lock_struct lock;
+
+	lock.context.smbpid = smbpid;
+	lock.context.pid = pid;
+	lock.context.tid = br_lck->fsp->conn->cnum;
+	lock.start = start;
+	lock.size = size;
+	lock.fnum = br_lck->fsp->fnum;
+	lock.lock_flav = lock_flav;
+	/* lock.lock_type doesn't matter */
+
+	if (lock_flav == WINDOWS_LOCK) {
+		ret = SMB_VFS_BRL_CANCEL_WINDOWS(br_lck->fsp->conn, br_lck,
+		    &lock, blr);
+	} else {
+		ret = brl_lock_cancel_default(br_lck, &lock);
+	}
+
+	return ret;
+}
+
+bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
+		struct lock_struct *plock)
 {
 	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;
-	struct lock_context context;
 
-	context.smbpid = smbpid;
-	context.pid = pid;
-	context.tid = br_lck->fsp->conn->cnum;
+	SMB_ASSERT(plock);
 
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
 
 		/* For pending locks we *always* care about the fnum. */
-		if (brl_same_context(&lock->context, &context) &&
-				lock->fnum == br_lck->fsp->fnum &&
+		if (brl_same_context(&lock->context, &plock->context) &&
+				lock->fnum == plock->fnum &&
 				IS_PENDING_LOCK(lock->lock_type) &&
-				lock->lock_flav == lock_flav &&
-				lock->start == start &&
-				lock->size == size) {
+				lock->lock_flav == plock->lock_flav &&
+				lock->start == plock->start &&
+				lock->size == plock->size) {
 			break;
 		}
 	}
@@ -1460,7 +1489,6 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 /****************************************************************************
  Ensure this set of lock entries is valid.
 ****************************************************************************/
-
 static bool validate_lock_entries(unsigned int *pnum_entries, struct lock_struct **pplocks)
 {
 	unsigned int i;

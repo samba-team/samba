@@ -1113,6 +1113,41 @@ static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
 				 found_name);
 }
 
+static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
+					 struct byte_range_lock *br_lck,
+					 struct lock_struct *plock,
+					 bool blocking_lock,
+					 struct blocking_lock_record *blr)
+{
+	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
+
+	/* Note: blr is not used in the default implementation. */
+	return brl_lock_windows_default(br_lck, plock, blocking_lock);
+}
+
+static bool vfswrap_brl_unlock_windows(struct vfs_handle_struct *handle,
+				       struct messaging_context *msg_ctx,
+				       struct byte_range_lock *br_lck,
+			               const struct lock_struct *plock)
+{
+	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
+
+	return brl_unlock_windows_default(msg_ctx, br_lck, plock);
+}
+
+static bool vfswrap_brl_cancel_windows(struct vfs_handle_struct *handle,
+				       struct byte_range_lock *br_lck,
+				       struct lock_struct *plock,
+				       struct blocking_lock_record *blr)
+{
+	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
+
+	/* Note: blr is not used in the default implementation. */
+	return brl_lock_cancel_default(br_lck, plock);
+}
+
+/* NT ACL operations. */
+
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
@@ -1539,6 +1574,12 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_get_real_filename),	SMB_VFS_OP_GET_REAL_FILENAME,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_brl_lock_windows),	SMB_VFS_OP_BRL_LOCK_WINDOWS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_brl_unlock_windows),SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_brl_cancel_windows),SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */
