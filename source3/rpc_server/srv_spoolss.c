@@ -77,34 +77,13 @@ static bool api_spoolss_open_printer(pipes_struct *p)
 	return True;
 }
 
-
 /********************************************************************
  * api_spoolss_open_printer_ex
  ********************************************************************/
 
 static bool api_spoolss_open_printer_ex(pipes_struct *p)
 {
-	SPOOL_Q_OPEN_PRINTER_EX q_u;
-	SPOOL_R_OPEN_PRINTER_EX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_open_printer_ex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_open_printer_ex: unable to unmarshall SPOOL_Q_OPEN_PRINTER_EX.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_open_printer_ex( p, &q_u, &r_u);
-
-	if (!spoolss_io_r_open_printer_ex("",&r_u,rdata,0)){
-		DEBUG(0,("spoolss_io_r_open_printer_ex: unable to marshall SPOOL_R_OPEN_PRINTER_EX.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_OPENPRINTEREX);
 }
 
 /********************************************************************

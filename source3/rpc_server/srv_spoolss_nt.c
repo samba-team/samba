@@ -1623,26 +1623,24 @@ static bool convert_devicemode_new(const char *printername,
 	return true;
 }
 
-/********************************************************************
- ********************************************************************/
+/****************************************************************
+ _spoolss_OpenPrinterEx
+****************************************************************/
 
-WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
+WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
+			      struct spoolss_OpenPrinterEx *r)
 {
-	PRINTER_DEFAULT 	*printer_default = &q_u->printer_default;
-	POLICY_HND 		*handle = &r_u->handle;
-
-	fstring name;
+	POLICY_HND 		*handle = r->out.handle;
+	char *name = CONST_DISCARD(char *, r->in.printername);
 	int snum;
 	Printer_entry *Printer=NULL;
 
-	if (!q_u->printername) {
+	if (!name) {
 		return WERR_INVALID_PARAM;
 	}
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
-
-	unistr2_to_ascii(name, q_u->printername, sizeof(name));
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
@@ -1652,7 +1650,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	Printer=find_printer_index_by_hnd(p, handle);
 	if ( !Printer ) {
-		DEBUG(0,(" _spoolss_open_printer_ex: logic error.  Can't find printer "
+		DEBUG(0,("_spoolss_OpenPrinterEx: logic error.  Can't find printer "
 			"handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
 		return WERR_INVALID_PARAM;
@@ -1693,15 +1691,15 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		/* Map standard access rights to object specific access rights */
 
-		se_map_standard(&printer_default->access_required,
+		se_map_standard(&r->in.access_mask,
 				&printserver_std_mapping);
 
 		/* Deny any object specific bits that don't apply to print
 		   servers (i.e printer and job specific bits) */
 
-		printer_default->access_required &= SPECIFIC_RIGHTS_MASK;
+		r->in.access_mask &= SPECIFIC_RIGHTS_MASK;
 
-		if (printer_default->access_required &
+		if (r->in.access_mask &
 		    ~(SERVER_ACCESS_ADMINISTER | SERVER_ACCESS_ENUMERATE)) {
 			DEBUG(3, ("access DENIED for non-printserver bits\n"));
 			close_printer_handle(p, handle);
@@ -1710,7 +1708,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 		/* Allow admin access */
 
-		if ( printer_default->access_required & SERVER_ACCESS_ADMINISTER )
+		if ( r->in.access_mask & SERVER_ACCESS_ADMINISTER )
 		{
 			SE_PRIV se_printop = SE_PRINT_OPERATOR;
 
@@ -1734,14 +1732,14 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 				return WERR_ACCESS_DENIED;
 			}
 
-			printer_default->access_required = SERVER_ACCESS_ADMINISTER;
+			r->in.access_mask = SERVER_ACCESS_ADMINISTER;
 		}
 		else
 		{
-			printer_default->access_required = SERVER_ACCESS_ENUMERATE;
+			r->in.access_mask = SERVER_ACCESS_ENUMERATE;
 		}
 
-		DEBUG(4,("Setting print server access = %s\n", (printer_default->access_required == SERVER_ACCESS_ADMINISTER)
+		DEBUG(4,("Setting print server access = %s\n", (r->in.access_mask == SERVER_ACCESS_ADMINISTER)
 			? "SERVER_ACCESS_ADMINISTER" : "SERVER_ACCESS_ENUMERATE" ));
 
 		/* We fall through to return WERR_OK */
@@ -1756,11 +1754,11 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 			return WERR_BADFID;
 		}
 
-		se_map_standard(&printer_default->access_required, &printer_std_mapping);
+		se_map_standard(&r->in.access_mask, &printer_std_mapping);
 
 		/* map an empty access mask to the minimum access mask */
-		if (printer_default->access_required == 0x0)
-			printer_default->access_required = PRINTER_ACCESS_USE;
+		if (r->in.access_mask == 0x0)
+			r->in.access_mask = PRINTER_ACCESS_USE;
 
 		/*
 		 * If we are not serving the printer driver for this printer,
@@ -1769,9 +1767,9 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		 */
 
 		if (lp_use_client_driver(snum)
-			&& (printer_default->access_required & PRINTER_ACCESS_ADMINISTER))
+			&& (r->in.access_mask & PRINTER_ACCESS_ADMINISTER))
 		{
-			printer_default->access_required = PRINTER_ACCESS_USE;
+			r->in.access_mask = PRINTER_ACCESS_USE;
 		}
 
 		/* check smb.conf parameters and the the sec_desc */
@@ -1784,24 +1782,24 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		if (!user_ok_token(uidtoname(p->server_info->utok.uid), NULL,
 				   p->server_info->ptok, snum) ||
 		    !print_access_check(p->server_info, snum,
-					printer_default->access_required)) {
+					r->in.access_mask)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
 
-		if ((printer_default->access_required & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
+		if ((r->in.access_mask & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
 			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
 			close_printer_handle(p, handle);
 			return WERR_ACCESS_DENIED;
 		}
 
-		if (printer_default->access_required & PRINTER_ACCESS_ADMINISTER)
-			printer_default->access_required = PRINTER_ACCESS_ADMINISTER;
+		if (r->in.access_mask & PRINTER_ACCESS_ADMINISTER)
+			r->in.access_mask = PRINTER_ACCESS_ADMINISTER;
 		else
-			printer_default->access_required = PRINTER_ACCESS_USE;
+			r->in.access_mask = PRINTER_ACCESS_USE;
 
-		DEBUG(4,("Setting printer access = %s\n", (printer_default->access_required == PRINTER_ACCESS_ADMINISTER)
+		DEBUG(4,("Setting printer access = %s\n", (r->in.access_mask == PRINTER_ACCESS_ADMINISTER)
 			? "PRINTER_ACCESS_ADMINISTER" : "PRINTER_ACCESS_USE" ));
 
 		break;
@@ -1811,7 +1809,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 		return WERR_BADFID;
 	}
 
-	Printer->access_granted = printer_default->access_required;
+	Printer->access_granted = r->in.access_mask;
 
 	/*
 	 * If the client sent a devmode in the OpenPrinter() call, then
@@ -1819,20 +1817,21 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 	 */
 
 	 if ( (Printer->printer_type != SPLHND_SERVER)
-	 	&& q_u->printer_default.devmode_cont.devmode_ptr )
+		&& r->in.devmode_ctr.devmode )
 	 {
-	 	convert_devicemode( Printer->sharename, q_u->printer_default.devmode_cont.devmode,
-			&Printer->nt_devmode );
+		convert_devicemode_new(Printer->sharename,
+				       r->in.devmode_ctr.devmode,
+				       &Printer->nt_devmode);
 	 }
 
 #if 0	/* JERRY -- I'm doubtful this is really effective */
 	/* HACK ALERT!!! Sleep for 1/3 of a second to try trigger a LAN/WAN
 	   optimization in Windows 2000 clients  --jerry */
 
-	if ( (printer_default->access_required == PRINTER_ACCESS_ADMINISTER)
+	if ( (r->in.access_mask == PRINTER_ACCESS_ADMINISTER)
 		&& (RA_WIN2K == get_remote_arch()) )
 	{
-		DEBUG(10,("_spoolss_open_printer_ex: Enabling LAN/WAN hack for Win2k clients.\n"));
+		DEBUG(10,("_spoolss_OpenPrinterEx: Enabling LAN/WAN hack for Win2k clients.\n"));
 		sys_usleep( 500000 );
 	}
 #endif
@@ -10626,17 +10625,6 @@ WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p,
 
 WERROR _spoolss_44(pipes_struct *p,
 		   struct spoolss_44 *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_OpenPrinterEx
-****************************************************************/
-
-WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
-			      struct spoolss_OpenPrinterEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
