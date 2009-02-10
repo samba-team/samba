@@ -90,7 +90,7 @@ static int smb_full_audit_get_shadow_copy_data(struct vfs_handle_struct *handle,
 static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 				const char *path,
 				struct vfs_statvfs_struct *statbuf);
-
+static int smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle);
 static SMB_STRUCT_DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr);
 static SMB_STRUCT_DIRENT *smb_full_audit_readdir(vfs_handle_struct *handle,
@@ -335,11 +335,13 @@ static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct fi
 static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts);
+static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp);
 
 /* VFS operations */
 
 static vfs_op_tuple audit_op_tuples[] = {
-    
+
 	/* Disk operations */
 
 	{SMB_VFS_OP(smb_full_audit_connect),	SMB_VFS_OP_CONNECT,
@@ -355,6 +357,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	{SMB_VFS_OP(smb_full_audit_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_statvfs),	SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_LOGGER},
 
 	/* Directory operations */
@@ -520,7 +524,7 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,
 	 SMB_VFS_LAYER_LOGGER},
-	
+
 	/* EA operations. */
 
 	{SMB_VFS_OP(smb_full_audit_getxattr),	SMB_VFS_OP_GETXATTR,
@@ -547,7 +551,7 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_fsetxattr),	SMB_VFS_OP_FSETXATTR,
 	 SMB_VFS_LAYER_LOGGER},
-	
+
 	{SMB_VFS_OP(smb_full_audit_aio_read),	SMB_VFS_OP_AIO_READ,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_aio_write),	SMB_VFS_OP_AIO_WRITE,
@@ -562,9 +566,11 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_aio_suspend),SMB_VFS_OP_AIO_SUSPEND,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_aio_force),SMB_VFS_OP_AIO_FORCE,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* Finish VFS operations definition */
-	
+
 	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,
 	 SMB_VFS_LAYER_NOOP}
 };
@@ -682,7 +688,7 @@ static struct {
 	{ SMB_VFS_OP_IS_OFFLINE, "aio_is_offline" },
 	{ SMB_VFS_OP_SET_OFFLINE, "aio_set_offline" },
 	{ SMB_VFS_OP_LAST, NULL }
-};	
+};
 
 static int audit_syslog_facility(vfs_handle_struct *handle)
 {
@@ -1018,6 +1024,17 @@ static int smb_full_audit_statvfs(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
 
 	do_log(SMB_VFS_OP_STATVFS, (result >= 0), handle, "");
+
+	return result;
+}
+
+static int smb_full_audit_fs_capabilities(struct vfs_handle_struct *handle)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_FS_CAPABILITIES(handle);
+
+	do_log(SMB_VFS_OP_FS_CAPABILITIES, true, handle, "");
 
 	return result;
 }
@@ -2310,6 +2327,17 @@ static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct f
 	return result;
 }
 
+static bool smb_full_audit_aio_force(struct vfs_handle_struct *handle,
+				     struct files_struct *fsp)
+{
+	bool result;
+
+	result = SMB_VFS_NEXT_AIO_FORCE(handle, fsp);
+	do_log(SMB_VFS_OP_AIO_FORCE, result, handle,
+		"%s", fsp->fsp_name);
+
+	return result;
+}
 
 NTSTATUS vfs_full_audit_init(void);
 NTSTATUS vfs_full_audit_init(void)
