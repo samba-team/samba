@@ -470,10 +470,12 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #define SMB_BIG_UINT unsigned long long
 #define SMB_BIG_INT long long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define BIG_UINT(p, ofs) ((((SMB_BIG_UINT) IVAL(p,(ofs)+4))<<32)|IVAL(p,ofs))
 #else
 #define SMB_BIG_UINT unsigned long
 #define SMB_BIG_INT long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define BIG_UINT(p, ofs) (IVAL(p,ofs))
 #endif
 
 #define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)

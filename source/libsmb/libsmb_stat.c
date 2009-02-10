@@ -312,6 +312,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 {
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
+                
 
         /* Initialize all fields (at least until we actually use them) */
         memset(st, 0, sizeof(*st));
@@ -327,7 +328,70 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 
         /* See if the server has UNIX CIFS support */
         if (! SERVER_HAS_UNIX_CIFS(cli)) {
+                SMB_BIG_UINT total_allocation_units;
+                SMB_BIG_UINT caller_allocation_units;
+                SMB_BIG_UINT actual_allocation_units;
+                SMB_BIG_UINT sectors_per_allocation_unit;
+                SMB_BIG_UINT bytes_per_sector;
+                
+                /* Nope. If size data is available... */
+                if (cli_get_fs_full_size_info(cli,
+                                              &total_allocation_units,
+                                              &caller_allocation_units,
+                                              &actual_allocation_units,
+                                              &sectors_per_allocation_unit,
+                                              &bytes_per_sector)) {
+
+                        /* ... then provide it */
+                        st->f_bsize =
+                                (unsigned long) bytes_per_sector;
+                        st->f_frsize =
+                                (unsigned long) sectors_per_allocation_unit;
+                        st->f_blocks =
+                                (fsblkcnt_t) total_allocation_units;
+                        st->f_bfree =
+                                (fsblkcnt_t) actual_allocation_units;
+                }
+
                 st->f_flag |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
+        } else {
+                uint32 optimal_transfer_size;
+                uint32 block_size;
+                SMB_BIG_UINT total_blocks;
+                SMB_BIG_UINT blocks_available;
+                SMB_BIG_UINT user_blocks_available;
+                SMB_BIG_UINT total_file_nodes;
+                SMB_BIG_UINT free_file_nodes;
+                SMB_BIG_UINT fs_identifier;
+
+                /* Has UNIXCIFS. If POSIX filesystem info is available... */
+                if (cli_get_posix_fs_info(cli,
+                                          &optimal_transfer_size,
+                                          &block_size,
+                                          &total_blocks,
+                                          &blocks_available,
+                                          &user_blocks_available,
+                                          &total_file_nodes,
+                                          &free_file_nodes,
+                                          &fs_identifier)) {
+
+                        /* ... then what's provided here takes precedence. */
+                        st->f_bsize =
+                                (unsigned long) block_size;
+                        st->f_blocks =
+                                (fsblkcnt_t) total_blocks;
+                        st->f_bfree =
+                                (fsblkcnt_t) blocks_available;
+                        st->f_bavail =
+                                (fsblkcnt_t) user_blocks_available;
+                        st->f_files =
+                                (fsfilcnt_t) total_file_nodes;
+                        st->f_ffree =
+                                (fsfilcnt_t) free_file_nodes;
+                        st->f_fsid =
+                                (unsigned long) fs_identifier;
+                        
+                }
         }
 
         /* See if the share is case sensitive */

@@ -72,7 +72,20 @@ int main(int argc, char * argv[])
         }
         else
         {
-            printf("Features: ");
+            printf("\n");
+            printf("Block Size: %lu\n", statvfsbuf.f_bsize);
+            printf("Fragment Size: %lu\n", statvfsbuf.f_frsize);
+            printf("Blocks: %llu\n", statvfsbuf.f_blocks);
+            printf("Free Blocks: %llu\n", statvfsbuf.f_bfree);
+            printf("Available Blocks: %llu\n", statvfsbuf.f_bavail);
+            printf("Files : %llu\n", statvfsbuf.f_files);
+            printf("Free Files: %llu\n", statvfsbuf.f_ffree);
+            printf("Available Files: %llu\n", statvfsbuf.f_favail);
+            printf("File System ID: %lu\n", statvfsbuf.f_fsid);
+            printf("\n");
+
+            printf("Flags: 0x%lx\n", statvfsbuf.f_flag);
+            printf("Extended Features: ");
 
             if (statvfsbuf.f_flag & SMBC_VFS_FEATURE_NO_UNIXCIFS)
             {

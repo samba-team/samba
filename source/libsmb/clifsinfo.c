@@ -303,6 +303,151 @@ cleanup:
 	return ret;
 }
 
+bool cli_get_fs_full_size_info(struct cli_state *cli,
+                               SMB_BIG_UINT *total_allocation_units,
+                               SMB_BIG_UINT *caller_allocation_units,
+                               SMB_BIG_UINT *actual_allocation_units,
+                               SMB_BIG_UINT *sectors_per_allocation_unit,
+                               SMB_BIG_UINT *bytes_per_sector)
+{
+	bool ret = False;
+	uint16 setup;
+	char param[2];
+	char *rparam=NULL, *rdata=NULL;
+	unsigned int rparam_count=0, rdata_count=0;
+
+	setup = TRANSACT2_QFSINFO;
+
+	SSVAL(param,0,SMB_FS_FULL_SIZE_INFORMATION);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
+		    0, 0,
+		    &setup, 1, 0,
+		    param, 2, 0,
+		    NULL, 0, 560)) {
+		goto cleanup;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                              &rparam, &rparam_count,
+                              &rdata, &rdata_count)) {
+		goto cleanup;
+	}
+
+	if (cli_is_error(cli)) {
+		ret = False;
+		goto cleanup;
+	} else {
+		ret = True;
+	}
+
+	if (rdata_count != 32) {
+		goto cleanup;
+	}
+
+	if (total_allocation_units) {
+                *total_allocation_units = BIG_UINT(rdata, 0);
+	}
+	if (caller_allocation_units) {
+		*caller_allocation_units = BIG_UINT(rdata,8);
+	}
+	if (actual_allocation_units) {
+		*actual_allocation_units = BIG_UINT(rdata,16);
+	}
+	if (sectors_per_allocation_unit) {
+		*sectors_per_allocation_unit = IVAL(rdata,24);
+	}
+	if (bytes_per_sector) {
+		*bytes_per_sector = IVAL(rdata,28);
+	}
+
+cleanup:
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+
+	return ret;
+}
+
+bool cli_get_posix_fs_info(struct cli_state *cli,
+                           uint32 *optimal_transfer_size,
+                           uint32 *block_size,
+                           SMB_BIG_UINT *total_blocks,
+                           SMB_BIG_UINT *blocks_available,
+                           SMB_BIG_UINT *user_blocks_available,
+                           SMB_BIG_UINT *total_file_nodes,
+                           SMB_BIG_UINT *free_file_nodes,
+                           SMB_BIG_UINT *fs_identifier)
+{
+	bool ret = False;
+	uint16 setup;
+	char param[2];
+	char *rparam=NULL, *rdata=NULL;
+	unsigned int rparam_count=0, rdata_count=0;
+
+	setup = TRANSACT2_QFSINFO;
+
+	SSVAL(param,0,SMB_QUERY_POSIX_FS_INFO);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		    NULL,
+		    0, 0,
+		    &setup, 1, 0,
+		    param, 2, 0,
+		    NULL, 0, 560)) {
+		goto cleanup;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                              &rparam, &rparam_count,
+                              &rdata, &rdata_count)) {
+		goto cleanup;
+	}
+
+	if (cli_is_error(cli)) {
+		ret = False;
+		goto cleanup;
+	} else {
+		ret = True;
+	}
+
+	if (rdata_count != 56) {
+		goto cleanup;
+	}
+
+	if (optimal_transfer_size) {
+                *optimal_transfer_size = IVAL(rdata, 0);
+	}
+	if (block_size) {
+		*block_size = IVAL(rdata,4);
+	}
+	if (total_blocks) {
+		*total_blocks = BIG_UINT(rdata,8);
+	}
+	if (blocks_available) {
+		*blocks_available = BIG_UINT(rdata,16);
+	}
+	if (user_blocks_available) {
+		*user_blocks_available = BIG_UINT(rdata,24);
+	}
+	if (total_file_nodes) {
+		*total_file_nodes = BIG_UINT(rdata,32);
+	}
+	if (free_file_nodes) {
+		*free_file_nodes = BIG_UINT(rdata,40);
+	}
+	if (fs_identifier) {
+		*fs_identifier = BIG_UINT(rdata,48);
+	}
+
+cleanup:
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
+
+	return ret;
+}
+
+
 /******************************************************************************
  Send/receive the request encryption blob.
 ******************************************************************************/
