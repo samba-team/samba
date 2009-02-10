@@ -327,11 +327,14 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, win_errstr(result)));
+		SAFE_FREE(printername);
 		return result;
 	}
 	
-	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) 
+	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )  {
+		SAFE_FREE(printername);
 		return WERR_NOMEM;
+	}
 
 	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
 
@@ -347,8 +350,10 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 		}
 	}
 	
-	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
+	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) {
+		SAFE_FREE(printername);
 		return WERR_NOMEM;
+	}
 
 	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
 
@@ -369,6 +374,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	TALLOC_FREE( dsspooler_ctr );
 
 	rpccli_spoolss_ClosePrinter(cli, mem_ctx, &pol, NULL);
+	SAFE_FREE(printername);
 
 	return result;
 }
