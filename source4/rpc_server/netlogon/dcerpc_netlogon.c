@@ -1166,7 +1166,7 @@ static WERROR dcesrv_netr_DsRAddressToSitenamesW(struct dcesrv_call_state *dce_c
 static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				   struct netr_DsRGetDCNameEx2 *r)
 {
-	const char * const attrs[] = { "dnsDomain", "objectGUID", NULL };
+	const char * const attrs[] = { "objectGUID", NULL };
 	void *sam_ctx;
 	struct ldb_message **res;
 	struct ldb_dn *domain_dn;
@@ -1178,6 +1178,12 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	sam_ctx = samdb_connect(mem_ctx, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx, dce_call->conn->auth_state.session_info);
 	if (sam_ctx == NULL) {
 		return WERR_DS_SERVICE_UNAVAILABLE;
+	}
+
+	/* Win7-beta will send the domain name in the form the user typed, so we have to cope
+	   with both the short and long form here */
+	if (strcasecmp(r->in.domain_name, lp_workgroup(dce_call->conn->dce_ctx->lp_ctx)) == 0) {
+		r->in.domain_name = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	}
 
 	domain_dn = samdb_dns_domain_to_dn(sam_ctx, mem_ctx,
@@ -1205,8 +1211,8 @@ static WERROR dcesrv_netr_DsRGetDCNameEx2(struct dcesrv_call_state *dce_call, TA
 	W_ERROR_HAVE_NO_MEMORY(info->dc_address);
 	info->dc_address_type		= DS_ADDRESS_TYPE_INET;
 	info->domain_guid		= samdb_result_guid(res[0], "objectGUID");
-	info->domain_name		= samdb_result_string(res[0], "dnsDomain", NULL);
-	info->forest_name		= samdb_result_string(res[0], "dnsDomain", NULL);
+	info->domain_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	info->forest_name		= lp_realm(dce_call->conn->dce_ctx->lp_ctx);
 	info->dc_flags			= DS_DNS_FOREST |
 					  DS_DNS_DOMAIN |
 					  DS_DNS_CONTROLLER |
