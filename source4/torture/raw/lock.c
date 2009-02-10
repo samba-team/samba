@@ -410,8 +410,6 @@ static bool test_pidhigh(struct torture_context *tctx,
 		goto done;
 	}
 
-	cli->session->pid |= 0x10000;
-
 	cli->session->pid = 2;
 
 	if (smbcli_read(cli->tree, fnum, &c, 0, 1) == 1) {
