@@ -1549,6 +1549,81 @@ WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R
 }
 
 /********************************************************************
+ FIXME: temporary convert_devicemode_new function
+ ********************************************************************/
+
+static bool convert_devicemode_new(const char *printername,
+				   struct spoolss_DeviceMode *devmode,
+				   NT_DEVICEMODE **pp_nt_devmode)
+{
+	NT_DEVICEMODE *nt_devmode = *pp_nt_devmode;
+
+	/*
+	 * Ensure nt_devmode is a valid pointer
+	 * as we will be overwriting it.
+	 */
+
+	if (nt_devmode == NULL) {
+		DEBUG(5, ("convert_devicemode_new: allocating a generic devmode\n"));
+		if ((nt_devmode = construct_nt_devicemode(printername)) == NULL)
+			return false;
+	}
+
+	rpcstr_push(nt_devmode->devicename, devmode->devicename, 31, 0);
+	rpcstr_push(nt_devmode->formname, devmode->formname, 31, 0);
+
+	nt_devmode->specversion		= devmode->specversion;
+	nt_devmode->driverversion	= devmode->driverversion;
+	nt_devmode->size		= devmode->size;
+	nt_devmode->fields		= devmode->fields;
+	nt_devmode->orientation		= devmode->orientation;
+	nt_devmode->papersize		= devmode->papersize;
+	nt_devmode->paperlength		= devmode->paperlength;
+	nt_devmode->paperwidth		= devmode->paperwidth;
+	nt_devmode->scale		= devmode->scale;
+	nt_devmode->copies		= devmode->copies;
+	nt_devmode->defaultsource	= devmode->defaultsource;
+	nt_devmode->printquality	= devmode->printquality;
+	nt_devmode->color		= devmode->color;
+	nt_devmode->duplex		= devmode->duplex;
+	nt_devmode->yresolution		= devmode->yresolution;
+	nt_devmode->ttoption		= devmode->ttoption;
+	nt_devmode->collate		= devmode->collate;
+
+	nt_devmode->logpixels		= devmode->logpixels;
+	nt_devmode->bitsperpel		= devmode->bitsperpel;
+	nt_devmode->pelswidth		= devmode->pelswidth;
+	nt_devmode->pelsheight		= devmode->pelsheight;
+	nt_devmode->displayflags	= devmode->displayflags;
+	nt_devmode->displayfrequency	= devmode->displayfrequency;
+	nt_devmode->icmmethod		= devmode->icmmethod;
+	nt_devmode->icmintent		= devmode->icmintent;
+	nt_devmode->mediatype		= devmode->mediatype;
+	nt_devmode->dithertype		= devmode->dithertype;
+	nt_devmode->reserved1		= devmode->reserved1;
+	nt_devmode->reserved2		= devmode->reserved2;
+	nt_devmode->panningwidth	= devmode->panningwidth;
+	nt_devmode->panningheight	= devmode->panningheight;
+
+	/*
+	 * Only change private and driverextra if the incoming devmode
+	 * has a new one. JRA.
+	 */
+
+	if ((devmode->__driverextra_length != 0) && (devmode->driverextra_data.data != NULL)) {
+		SAFE_FREE(nt_devmode->nt_dev_private);
+		nt_devmode->driverextra = devmode->__driverextra_length;
+		if((nt_devmode->nt_dev_private=SMB_MALLOC_ARRAY(uint8, nt_devmode->driverextra)) == NULL)
+			return false;
+		memcpy(nt_devmode->nt_dev_private, devmode->driverextra_data.data, nt_devmode->driverextra);
+	}
+
+	*pp_nt_devmode = nt_devmode;
+
+	return true;
+}
+
+/********************************************************************
  ********************************************************************/
 
 WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
