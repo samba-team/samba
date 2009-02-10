@@ -1399,67 +1399,37 @@ void reset_all_printerdata(struct messaging_context *msg,
 	return;
 }
 
-/********************************************************************
- * Convert a SPOOL_Q_OPEN_PRINTER structure to a
- * SPOOL_Q_OPEN_PRINTER_EX structure
- ********************************************************************/
+/****************************************************************
+ _spoolss_OpenPrinter
+****************************************************************/
 
-static WERROR convert_to_openprinterex(TALLOC_CTX *ctx, SPOOL_Q_OPEN_PRINTER_EX *q_u_ex, SPOOL_Q_OPEN_PRINTER *q_u)
+WERROR _spoolss_OpenPrinter(pipes_struct *p,
+			    struct spoolss_OpenPrinter *r)
 {
-	if (!q_u_ex || !q_u)
-		return WERR_OK;
+	struct spoolss_OpenPrinterEx e;
+	WERROR werr;
 
-	DEBUG(8,("convert_to_openprinterex\n"));
+	ZERO_STRUCT(e.in.userlevel);
 
-	if ( q_u->printername ) {
-		q_u_ex->printername = TALLOC_ZERO_P( ctx, UNISTR2 );
-		if (q_u_ex->printername == NULL)
-			return WERR_NOMEM;
-		copy_unistr2(q_u_ex->printername, q_u->printername);
-	}
+	e.in.printername	= r->in.printername;
+	e.in.datatype		= r->in.datatype;
+	e.in.devmode_ctr	= r->in.devmode_ctr;
+	e.in.access_mask	= r->in.access_mask;
+	e.in.level		= 0;
 
-	copy_printer_default(ctx, &q_u_ex->printer_default, &q_u->printer_default);
+	e.out.handle		= r->out.handle;
 
-	return WERR_OK;
-}
+	werr = _spoolss_OpenPrinterEx(p, &e);
 
-/********************************************************************
- * spoolss_open_printer
- *
- * called from the spoolss dispatcher
- ********************************************************************/
-
-WERROR _spoolss_open_printer(pipes_struct *p, SPOOL_Q_OPEN_PRINTER *q_u, SPOOL_R_OPEN_PRINTER *r_u)
-{
-	SPOOL_Q_OPEN_PRINTER_EX q_u_ex;
-	SPOOL_R_OPEN_PRINTER_EX r_u_ex;
-
-	if (!q_u || !r_u)
-		return WERR_NOMEM;
-
-	ZERO_STRUCT(q_u_ex);
-	ZERO_STRUCT(r_u_ex);
-
-	/* convert the OpenPrinter() call to OpenPrinterEx() */
-
-	r_u_ex.status = convert_to_openprinterex(p->mem_ctx, &q_u_ex, q_u);
-	if (!W_ERROR_IS_OK(r_u_ex.status))
-		return r_u_ex.status;
-
-	r_u_ex.status = _spoolss_open_printer_ex(p, &q_u_ex, &r_u_ex);
-
-	/* convert back to OpenPrinter() */
-
-	memcpy(r_u, &r_u_ex, sizeof(*r_u));
-
-	if (W_ERROR_EQUAL(r_u->status, WERR_INVALID_PARAM)) {
+	if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
 		/* OpenPrinterEx returns this for a bad
 		 * printer name. We must return WERR_INVALID_PRINTER_NAME
 		 * instead.
 		 */
-		r_u->status = WERR_INVALID_PRINTER_NAME;
+		werr = WERR_INVALID_PRINTER_NAME;
 	}
-	return r_u->status;
+
+	return werr;
 }
 
 /********************************************************************
@@ -9989,17 +9959,6 @@ WERROR _spoolss_AddPrintProcessor(pipes_struct *p,
 
 WERROR _spoolss_EnumPrinters(pipes_struct *p,
 			     struct spoolss_EnumPrinters *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_OpenPrinter
-****************************************************************/
-
-WERROR _spoolss_OpenPrinter(pipes_struct *p,
-			    struct spoolss_OpenPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
