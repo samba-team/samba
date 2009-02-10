@@ -509,9 +509,9 @@ EOF
 #
 # provision_raw_prepare() is also used by Samba34.pm!
 #
-sub provision_raw_prepare($$$$$$)
+sub provision_raw_prepare($$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4) = @_;
 	my $ctx;
 
 	-d $prefix or mkdir($prefix, 0777) or die("Unable to create $prefix");
@@ -529,6 +529,7 @@ sub provision_raw_prepare($$$$$$)
 	$ctx->{netbiosalias} = $netbiosalias;
 	$ctx->{swiface} = $swiface;
 	$ctx->{password} = $password;
+	$ctx->{kdc_ipv4} = $kdc_ipv4;
 
 	$ctx->{server_loglevel} = 1;
 	$ctx->{username} = "administrator";
@@ -667,18 +668,18 @@ sub provision_raw_step1($$)
 
 [realms]
  $ctx->{realm} = {
-  kdc = 127.0.0.1:88
-  admin_server = 127.0.0.1:88
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
   default_domain = $ctx->{dnsname}
  }
  $ctx->{dnsname} = {
-  kdc = 127.0.0.1:88
-  admin_server = 127.0.0.1:88
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
   default_domain = $ctx->{dnsname}
  }
  $ctx->{domain} = {
-  kdc = 127.0.0.1:88
-  admin_server = 127.0.0.1:88
+  kdc = $ctx->{kdc_ipv4}:88
+  admin_server = $ctx->{kdc_ipv4}:88
   default_domain = $ctx->{dnsname}
  }
 
@@ -767,13 +768,13 @@ sub provision_raw_step2($$$)
 	return $ret;
 }
 
-sub provision($$$$$$)
+sub provision($$$$$$$)
 {
-	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password) = @_;
+	my ($self, $prefix, $server_role, $netbiosname, $netbiosalias, $swiface, $password, $kdc_ipv4) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, $server_role,
 					       $netbiosname, $netbiosalias,
-					       $swiface, $password);
+					       $swiface, $password, $kdc_ipv4);
 
 	$ctx->{tmpdir} = "$ctx->{prefix_abs}/tmp";
 	push(@{$ctx->{directories}}, "$ctx->{tmpdir}");
@@ -895,7 +896,8 @@ sub provision_member($$$)
 				   "localmember3",
 				   "localmember",
 				   3,
-				   "localmemberpass");
+				   "localmemberpass",
+				   $dcvars->{SERVER_IP});
 
 	$ret or die("Unable to provision");
 
@@ -928,7 +930,8 @@ sub provision_dc($$)
 				   "localdc1",
 				   "localdc",
 				   1,
-				   "localdcpass");
+				   "localdcpass",
+				   "127.0.0.1");
 
 	$self->add_wins_config("$prefix/private") or 
 		die("Unable to add wins configuration");
