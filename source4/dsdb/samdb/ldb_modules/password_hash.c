@@ -109,6 +109,7 @@ struct setup_password_fields_io {
 	struct {
 		const struct ldb_val *cleartext_utf8;
 		const struct ldb_val *cleartext_utf16;
+		struct ldb_val quoted_utf16;
 		struct samr_Password *nt_hash;
 		struct samr_Password *lm_hash;
 	} n;
@@ -2102,6 +2103,7 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 	struct ldb_message *orig_msg;
 	struct ldb_message *searched_msg;
 	struct setup_password_fields_io io;
+	const struct ldb_val *quoted_utf16;
 	int ret;
 
 	ldb = ldb_module_get_ctx(ac->module);
@@ -2138,7 +2140,34 @@ static int password_hash_mod_do_mod(struct ph_context *ac)
 
 	io.n.cleartext_utf8		= ldb_msg_find_ldb_val(orig_msg, "userPassword");
 	io.n.cleartext_utf16		= ldb_msg_find_ldb_val(orig_msg, "clearTextPassword");
-	io.n.nt_hash			= samdb_result_hash(io.ac, orig_msg, "unicodePwd");
+
+	/* this rather strange looking piece of code is there to
+	   handle a ldap client setting a password remotely using the
+	   unicodePwd ldap field. The syntax is that the password is
+	   in UTF-16LE, with a " at either end. Unfortunately the
+	   unicodePwd field is also used to store the nt hashes
+	   internally in Samba, and is used in the nt hash format on
+	   the wire in DRS replication, so we have a single name for
+	   two distinct values. The code below leaves us with a small
+	   chance (less than 1 in 2^32) of a mixup, if someone manages
+	   to create a MD4 hash which starts and ends in 0x22 0x00, as
+	   that would then be treated as a UTF16 password rather than
+	   a nthash */
+	quoted_utf16			= ldb_msg_find_ldb_val(orig_msg, "unicodePwd");
+	if (quoted_utf16 && 
+	    quoted_utf16->length >= 4 &&
+	    quoted_utf16->data[0] == '"' && 
+	    quoted_utf16->data[1] == 0 && 
+	    quoted_utf16->data[quoted_utf16->length-2] == '"' && 
+	    quoted_utf16->data[quoted_utf16->length-1] == 0) {
+		io.n.quoted_utf16.data = talloc_memdup(orig_msg, quoted_utf16->data+2, quoted_utf16->length-4);
+		io.n.quoted_utf16.length = quoted_utf16->length-4;
+		io.n.cleartext_utf16 = &io.n.quoted_utf16;
+		io.n.nt_hash = NULL;
+	} else {
+		io.n.nt_hash		= samdb_result_hash(io.ac, orig_msg, "unicodePwd");
+	}
+
 	io.n.lm_hash			= samdb_result_hash(io.ac, orig_msg, "dBCSPwd");
 
 	io.o.kvno			= samdb_result_uint(searched_msg, "msDs-KeyVersionNumber", 0);
