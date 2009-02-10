@@ -502,35 +502,6 @@ static bool decode_forms_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_open_printer_ex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				const char *printername, const char *datatype, uint32 access_required,
-				const char *station, const char *username, POLICY_HND *pol)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_OPEN_PRINTER_EX in;
-	SPOOL_R_OPEN_PRINTER_EX out;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_open_printer_ex( &in, printername, datatype,
-		access_required, station, username );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_OPENPRINTEREX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_open_printer_ex,
-	            spoolss_io_r_open_printer_ex, 
-	            WERR_GENERAL_FAILURE );
-
-	memcpy( pol, &out.handle, sizeof(POLICY_HND) );
-	
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enum_printers(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 char *name, uint32 flags, uint32 level,
 				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
