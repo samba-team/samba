@@ -265,6 +265,55 @@ _PUBLIC_ void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_DeviceModeFields(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DeviceModeFields(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_ORIENTATION", DEVMODE_ORIENTATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PAPERSIZE", DEVMODE_PAPERSIZE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PAPERLENGTH", DEVMODE_PAPERLENGTH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PAPERWIDTH", DEVMODE_PAPERWIDTH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_SCALE", DEVMODE_SCALE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_POSITION", DEVMODE_POSITION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_NUP", DEVMODE_NUP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_COPIES", DEVMODE_COPIES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_DEFAULTSOURCE", DEVMODE_DEFAULTSOURCE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PRINTQUALITY", DEVMODE_PRINTQUALITY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_COLOR", DEVMODE_COLOR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_DUPLEX", DEVMODE_DUPLEX, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_YRESOLUTION", DEVMODE_YRESOLUTION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_TTOPTION", DEVMODE_TTOPTION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_COLLATE", DEVMODE_COLLATE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_FORMNAME", DEVMODE_FORMNAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_LOGPIXELS", DEVMODE_LOGPIXELS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_BITSPERPEL", DEVMODE_BITSPERPEL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PELSWIDTH", DEVMODE_PELSWIDTH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PELSHEIGHT", DEVMODE_PELSHEIGHT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_DISPLAYFLAGS", DEVMODE_DISPLAYFLAGS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_DISPLAYFREQUENCY", DEVMODE_DISPLAYFREQUENCY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_ICMMETHOD", DEVMODE_ICMMETHOD, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_ICMINTENT", DEVMODE_ICMINTENT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_MEDIATYPE", DEVMODE_MEDIATYPE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_DITHERTYPE", DEVMODE_DITHERTYPE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PANNINGWIDTH", DEVMODE_PANNINGWIDTH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DEVMODE_PANNINGHEIGHT", DEVMODE_PANNINGHEIGHT, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -274,7 +323,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->driverversion));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->size));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->driverextra_data.length));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->fields));
+		NDR_CHECK(ndr_push_spoolss_DeviceModeFields(ndr, NDR_SCALARS, r->fields));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->orientation));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->papersize));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->paperlength));
@@ -329,7 +378,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->driverversion));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->size));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->__driverextra_length));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->fields));
+		NDR_CHECK(ndr_pull_spoolss_DeviceModeFields(ndr, NDR_SCALARS, &r->fields));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->orientation));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->papersize));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->paperlength));
@@ -384,7 +433,7 @@ _PUBLIC_ void ndr_print_spoolss_DeviceMode(struct ndr_print *ndr, const char *na
 	ndr_print_uint16(ndr, "driverversion", r->driverversion);
 	ndr_print_uint16(ndr, "size", r->size);
 	ndr_print_uint16(ndr, "__driverextra_length", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->driverextra_data.length:r->__driverextra_length);
-	ndr_print_uint32(ndr, "fields", r->fields);
+	ndr_print_spoolss_DeviceModeFields(ndr, "fields", r->fields);
 	ndr_print_uint16(ndr, "orientation", r->orientation);
 	ndr_print_uint16(ndr, "papersize", r->papersize);
 	ndr_print_uint16(ndr, "paperlength", r->paperlength);

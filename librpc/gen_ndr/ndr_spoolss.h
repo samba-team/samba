@@ -207,6 +207,7 @@ extern const struct ndr_interface_table ndr_table_spoolss;
 #define NDR_SPOOLSS_CALL_COUNT (96)
 void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, const struct spoolss_Time *r);
 void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo0 *r);
+void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r);
 enum ndr_err_code ndr_pull_spoolss_DeviceMode(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DeviceMode *r);
 void ndr_print_spoolss_DeviceMode(struct ndr_print *ndr, const char *name, const struct spoolss_DeviceMode *r);
