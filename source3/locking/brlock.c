@@ -652,7 +652,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 			memcpy(&tp[count], curr_lock, sizeof(struct lock_struct));
 			count++;
 		} else {
-			unsigned int tmp_count;
+			unsigned int tmp_count = 0;
 
 			/* POSIX conflict semantics are different. */
 			if (brl_conflict_posix(curr_lock, plock)) {
