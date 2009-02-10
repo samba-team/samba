@@ -186,13 +186,15 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-NTSTATUS make_user_info_map(auth_usersupplied_info **user_info, 
-			    const char *smb_name, 
-			    const char *client_domain, 
-			    const char *wksta_name, 
- 			    DATA_BLOB *lm_pwd, DATA_BLOB *nt_pwd,
- 			    DATA_BLOB *lm_interactive_pwd, DATA_BLOB *nt_interactive_pwd,
-			    DATA_BLOB *plaintext, 
+NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
+			    const char *smb_name,
+			    const char *client_domain,
+			    const char *wksta_name,
+			    DATA_BLOB *lm_pwd,
+			    DATA_BLOB *nt_pwd,
+			    DATA_BLOB *lm_interactive_pwd,
+			    DATA_BLOB *nt_interactive_pwd,
+			    DATA_BLOB *plaintext,
 			    bool encrypted)
 {
 	const char *domain;
@@ -200,12 +202,12 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	bool was_mapped;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
-	was_mapped = map_username(internal_username); 
-	
-	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
-	      client_domain, smb_name, wksta_name));
-	
-	/* don't allow "" as a domain, fixes a Win9X bug 
+	was_mapped = map_username(internal_username);
+
+	DEBUG(5, ("Mapping user [%s]\\[%s] from workstation [%s]\n",
+		 client_domain, smb_name, wksta_name));
+
+	/* don't allow "" as a domain, fixes a Win9X bug
 	   where it doens't supply a domain for logon script
 	   'net use' commands.                                 */
 
@@ -214,16 +216,27 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	else
 		domain = lp_workgroup();
 
-	/* do what win2k does.  Always map unknown domains to our own
-	   and let the "passdb backend" handle unknown users. */
+	/* If you connect to a Windows domain member using a bogus domain name,
+	 * the Windows box will map the BOGUS\user to SAMNAME\user.  Thus, if
+	 * the Windows box is a DC the name will become DOMAIN\user and be
+	 * authenticated against AD, if the Windows box is a member server but
+	 * not a DC the name will become WORKSTATION\user.  A standalone
+	 * non-domain member box will also map to WORKSTATION\user. */
 
-	if ( !is_trusted_domain(domain) && !strequal(domain, get_global_sam_name()) ) 
-		domain = my_sam_name();
-	
-	/* we know that it is a trusted domain (and we are allowing them) or it is our domain */
-	
-	result = make_user_info(user_info, smb_name, internal_username, 
-			      client_domain, domain, wksta_name, 
+	if (!is_trusted_domain(domain) &&
+	    !strequal(domain, get_global_sam_name()) )
+	{
+		domain = get_global_sam_name();
+		DEBUG(5, ("Mapped domain from [%s] to [%s] for user [%s] on "
+			  "workstation [%s]\n",
+			  client_domain, domain, smb_name, wksta_name));
+	}
+
+	/* we know that it is a trusted domain (and we are allowing them) or it
+	 * is our domain */
+
+	result = make_user_info(user_info, smb_name, internal_username,
+			      client_domain, domain, wksta_name,
 			      lm_pwd, nt_pwd,
 			      lm_interactive_pwd, nt_interactive_pwd,
 			      plaintext, encrypted);

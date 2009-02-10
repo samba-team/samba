@@ -4420,7 +4420,6 @@ bool sid_check_is_in_our_domain(const DOM_SID *sid);
 
 /* The following definitions come from passdb/passdb.c  */
 
-const char *my_sam_name(void);
 struct samu *samu_new( TALLOC_CTX *ctx );
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd);
 NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd);
