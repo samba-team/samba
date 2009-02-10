@@ -944,6 +944,7 @@ bool fsp_is_np(struct files_struct *fsp)
 
 struct np_proxy_state {
 	struct async_req_queue *read_queue;
+	struct async_req_queue *write_queue;
 	int fd;
 
 	uint8_t *msg;
@@ -1107,6 +1108,10 @@ static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	if (result->read_queue == NULL) {
 		goto fail;
 	}
+	result->write_queue = async_req_queue_init(result);
+	if (result->write_queue == NULL) {
+		goto fail;
+	}
 
 	return result;
 
@@ -1164,16 +1169,21 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 struct np_write_state {
+	struct event_context *ev;
+	struct np_proxy_state *p;
+	const uint8_t *data;
+	size_t len;
 	ssize_t nwritten;
 };
 
+static void np_write_trigger(struct async_req *req);
 static void np_write_done(struct async_req *subreq);
 
 struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct fake_file_handle *handle,
 				const uint8_t *data, size_t len)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
 	struct np_write_state *state;
 	NTSTATUS status;
 
@@ -1206,14 +1216,15 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 		struct np_proxy_state *p = talloc_get_type_abort(
 			handle->private_data, struct np_proxy_state);
 
-		state->nwritten = len;
+		state->ev = ev;
+		state->p = p;
+		state->data = data;
+		state->len = len;
 
-		subreq = sendall_send(state, ev, p->fd, data, len, 0);
-		if (subreq == NULL) {
+		if (!async_req_enqueue(p->write_queue, ev, result,
+				       np_write_trigger)) {
 			goto fail;
 		}
-		subreq->async.fn = np_write_done;
-		subreq->async.priv = result;
 		return result;
 	}
 
@@ -1227,18 +1238,36 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 	return NULL;
 }
 
+static void np_write_trigger(struct async_req *req)
+{
+	struct np_write_state *state = talloc_get_type_abort(
+		req->private_data, struct np_write_state);
+	struct async_req *subreq;
+
+	subreq = sendall_send(state, state->ev, state->p->fd, state->data,
+			      state->len, 0);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = np_write_done;
+	subreq->async.priv = req;
+}
+
 static void np_write_done(struct async_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
 		subreq->async.priv, struct async_req);
+	struct np_write_state *state = talloc_get_type_abort(
+		req->private_data, struct np_write_state);
+	ssize_t received;
 	int err;
-	ssize_t ret;
 
-	ret = sendall_recv(subreq, &err);
-	if (ret < 0) {
+	received = sendall_recv(subreq, &err);
+	if (received < 0) {
 		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
 	}
+	state->nwritten = received;
 	async_req_done(req);
 }
 
