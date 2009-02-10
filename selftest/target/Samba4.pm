@@ -557,7 +557,6 @@ sub provision_raw_prepare($$$$$$)
 	$ctx->{nsswrap_passwd} = "$ctx->{etcdir}/passwd";
 	$ctx->{nsswrap_group} = "$ctx->{etcdir}/group";
 
-	$ctx->{ldapdir} = "$ctx->{privatedir}/ldap";
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
 	$ctx->{ipv4} = "127.0.0.$swiface";
@@ -574,13 +573,42 @@ sub provision_raw_prepare($$$$$$)
 
 	$ctx->{smb_conf_extra_options} = "";
 
+	my @provision_options = ();
+	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
+	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
+	if (defined($ENV{GDB_PROVISION})) {
+		push (@provision_options, "gdb --args python");
+	}
+	if (defined($ENV{VALGRIND_PROVISION})) {
+		push (@provision_options, "valgrind");
+	}
+	if (defined($ENV{PYTHON})) {
+		push (@provision_options, $ENV{PYTHON});
+	}
+	push (@provision_options, "$self->{setupdir}/provision");
+	push (@provision_options, "--configfile=$ctx->{smb_conf}");
+	push (@provision_options, "--host-name=$ctx->{netbiosname}");
+	push (@provision_options, "--host-ip=$ctx->{ipv4}");
+	push (@provision_options, "--quiet");
+	push (@provision_options, "--domain=$ctx->{domain}");
+	push (@provision_options, "--realm=$ctx->{realm}");
+	push (@provision_options, "--adminpass=$ctx->{password}");
+	push (@provision_options, "--krbtgtpass=krbtgt$ctx->{password}");
+	push (@provision_options, "--machinepass=machine$ctx->{password}");
+	push (@provision_options, "--root=$ctx->{unix_name}");
+	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
+
+	@{$ctx->{provision_options}} = @provision_options;
+
 	return $ctx;
 }
 
 #
-# provision_raw_run() is also used by Samba34.pm!
+# provision_raw_step1() is also used by Samba34.pm!
 #
-sub provision_raw_run($$)
+# Step1 creates the basic configuration
+#
+sub provision_raw_step1($$)
 {
 	my ($self, $ctx) = @_;
 
@@ -696,36 +724,6 @@ nogroup:x:65534:nobody
 
 	(system("($testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global 2> /dev/null | grep -i \"^$ctx->{netbiosname}\" ) >/dev/null 2>&1") == 0) or die("Failed to create a valid smb.conf configuration! $self->{bindir}/testparm $configuration -v --suppress-prompt --parameter-name=\"netbios name\" --section-name=global");
 
-	my @provision_options = ();
-	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
-	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
-	if (defined($ENV{GDB_PROVISION})) {
-		push (@provision_options, "gdb --args python");
-	}
-	if (defined($ENV{VALGRIND_PROVISION})) {
-		push (@provision_options, "valgrind");
-	}
-	if (defined($ENV{PYTHON})) {
-		push (@provision_options, $ENV{PYTHON});
-	}
-	push (@provision_options, "$self->{setupdir}/provision");
-	push (@provision_options, split(' ', $configuration));
-	push (@provision_options, "--host-name=$ctx->{netbiosname}");
-	push (@provision_options, "--host-ip=$ctx->{ipv4}");
-	push (@provision_options, "--quiet");
-	push (@provision_options, "--domain=$ctx->{domain}");
-	push (@provision_options, "--realm=$ctx->{realm}");
-	push (@provision_options, "--adminpass=$ctx->{password}");
-	push (@provision_options, "--krbtgtpass=krbtgt$ctx->{password}");
-	push (@provision_options, "--machinepass=machine$ctx->{password}");
-	push (@provision_options, "--root=$ctx->{unix_name}");
-
-	push (@provision_options, "--server-role=\"$ctx->{server_role}\"");
-
-	my $ldap_uri= "$ctx->{ldapdir}/ldapi";
-	$ldap_uri =~ s|/|%2F|g;
-	$ldap_uri = "ldapi://$ldap_uri";
-
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		PIDDIR => $ctx->{piddir},
@@ -733,7 +731,6 @@ nogroup:x:65534:nobody
 		SERVER_IP => $ctx->{ipv4},
 		NETBIOSNAME => $ctx->{netbiosname},
 		NETBIOSALIAS => $ctx->{netbiosalias},
-		LDAP_URI => $ldap_uri,
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
 		REALM => $ctx->{realm},
@@ -752,34 +749,20 @@ nogroup:x:65534:nobody
 		SAMBA_TEST_LOG_POS => 0,
 	};
 
-	if (defined($self->{ldap})) {
+	return $ret;
+}
 
-	push (@provision_options, "--ldap-backend=$ldap_uri");
-		system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+#
+# provision_raw_step2() is also used by Samba34.pm!
+#
+# Step2 runs the provision script
+#
+sub provision_raw_step2($$$)
+{
+	my ($self, $ctx, $ret) = @_;
 
-		push (@provision_options, "--password=$ctx->{password}");
-
-		if ($self->{ldap} eq "openldap") {
-			push (@provision_options, "--username=samba-admin");
-			($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx->{ldapdir}, $configuration) or die("Unable to create openldap directories");
-			push (@provision_options, "--ldap-backend-type=openldap");
-		} elsif ($self->{ldap} eq "fedora-ds") {
-			push (@provision_options, "--simple-bind-dn=cn=Manager,$ctx->{localbasedn}");
-			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx->{ldapdir}, $configuration) or die("Unable to create fedora ds directories");
-			push (@provision_options, "--ldap-backend-type=fedora-ds");
-		}
-
-		$self->slapd_start($ret) or
-			die("couldn't start slapd");
-	}
-
-	my $provision_cmd = join(" ", @provision_options);
+	my $provision_cmd = join(" ", @{$ctx->{provision_options}});
 	(system($provision_cmd) == 0) or die("Unable to provision: \n$provision_cmd\n");
-
-	if (defined($self->{ldap})) {
-		$self->slapd_stop($ret) or
-			die("couldn't stop slapd");
-	}
 
 	return $ret;
 }
@@ -855,7 +838,49 @@ sub provision($$$$$$)
 	ntvfs handler = cifsposix
 ";
 
-	my $ret = $self->provision_raw_run($ctx);
+	if (defined($self->{ldap})) {
+		$ctx->{ldapdir} = "$ctx->{privatedir}/ldap";
+		push(@{$ctx->{directories}}, "$ctx->{ldapdir}");
+
+		my $ldap_uri= "$ctx->{ldapdir}/ldapi";
+		$ldap_uri =~ s|/|%2F|g;
+		$ldap_uri = "ldapi://$ldap_uri";
+		$ctx->{ldap_uri} = $ldap_uri;
+	}
+
+	my $ret = $self->provision_raw_step1($ctx);
+
+	if (defined($self->{ldap})) {
+		my $configuration = "--configfile=$ctx->{smb_conf}";
+
+		$ret->{LDAP_URI} = $ctx->{ldap_uri};
+		push (@{$ctx->{provision_options}},"--ldap-backend=$ctx->{ldap_uri}");
+
+		system("$self->{setupdir}/provision-backend $configuration --ldap-admin-pass=$ctx->{password} --root=$ctx->{unix_name} --realm=$ctx->{realm} --domain=$ctx->{domain} --host-name=$ctx->{netbiosname} --ldap-backend-type=$self->{ldap}>&2") == 0 or die("backend provision failed");
+
+		push (@{$ctx->{provision_options}}, "--password=$ctx->{password}");
+
+		if ($self->{ldap} eq "openldap") {
+			push (@{$ctx->{provision_options}}, "--username=samba-admin");
+			push (@{$ctx->{provision_options}}, "--ldap-backend-type=openldap");
+
+			($ret->{SLAPD_CONF}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx->{ldapdir}, $configuration) or die("Unable to create openldap directories");
+
+		} elsif ($self->{ldap} eq "fedora-ds") {
+			push (@{$ctx->{provision_options}}, "--simple-bind-dn=cn=Manager,$ctx->{localbasedn}");
+			push (@{$ctx->{provision_options}}, "--ldap-backend-type=fedora-ds");
+
+			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx->{ldapdir}, $configuration) or die("Unable to create fedora ds directories");
+		}
+
+		$self->slapd_start($ret) or die("couldn't start slapd");
+	}
+
+	$ret = $self->provision_raw_step2($ctx, $ret);
+
+	if (defined($self->{ldap})) {
+		$self->slapd_stop($ret) or die("couldn't stop slapd");
+	}
 
 	return $ret;
 }
