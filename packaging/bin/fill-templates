@@ -42,5 +42,6 @@ VERSION=`echo ${VERSION} | sed 's/\"//g'`
 
 echo "VERSION: ${VERSION}"
 
+pushd ${TOPDIR}/packaging > /dev/null 2>&1
 ${TOPDIR}/packaging/bin/update-pkginfo "${VERSION}" 1 ""
-
+popd > /dev/null 2>&1
