@@ -180,6 +180,22 @@ NTSTATUS onefs_streaminfo(vfs_handle_struct *handle,
 int onefs_vtimes_streams(vfs_handle_struct *handle, const char *fname,
 			 int flags, struct timespec times[3]);
 
+NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
+				struct byte_range_lock *br_lck,
+				struct lock_struct *plock,
+				bool blocking_lock,
+				struct blocking_lock_record *blr);
+
+bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
+			      struct messaging_context *msg_ctx,
+			      struct byte_range_lock *br_lck,
+			      const struct lock_struct *plock);
+
+bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
+			      struct byte_range_lock *br_lck,
+			      struct lock_struct *plock,
+			      struct blocking_lock_record *blr);
+
 NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info, SEC_DESC **ppdesc);
 
@@ -188,6 +204,7 @@ NTSTATUS onefs_get_nt_acl(vfs_handle_struct *handle, const char* name,
 
 NTSTATUS onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info_sent, SEC_DESC *psd);
+
 /*
  * Utility functions
  */
@@ -216,7 +233,5 @@ int onefs_sys_create_file(connection_struct *conn,
 			  struct security_descriptor *sd,
 			  uint32_t ntfs_flags,
 			  int *granted_oplock);
-
-
 
 #endif /* _ONEFS_H */
