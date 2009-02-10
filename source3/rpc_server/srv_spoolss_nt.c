@@ -2019,6 +2019,9 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	}
 
+	driver = CONST_DISCARD(char *, r->in.driver);
+	arch   = CONST_DISCARD(char *, r->in.architecture);
+
 	/* check that we have a valid driver name first */
 
 	if ((version=get_version_id(arch)) == -1)
@@ -2026,9 +2029,6 @@ WERROR _spoolss_DeletePrinterDriver(pipes_struct *p,
 
 	ZERO_STRUCT(info);
 	ZERO_STRUCT(info_win2k);
-
-	driver = CONST_DISCARD(char *, r->in.driver);
-	arch   = CONST_DISCARD(char *, r->in.architecture);
 
 	if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version)))
 	{
