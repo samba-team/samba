@@ -14,8 +14,6 @@ if [ $# -ne 3 ]; then
     echo Usage: update-pkginfo VERSION RELEASE REVISION
     exit 1
 fi
-# PREV=`echo ${REVISION} | sed 's/[^0-9]//g'`
-# PREV="."`echo ${REVISION} | sed 's/[0-9]//g'`".${PREV}"
 
 for f in `find . -type f -name "*.tmpl"`; do
         f2=`echo $f | sed s/.tmpl//g`
