@@ -57,13 +57,44 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 unknown29;
 	} spoolss_PrinterInfo0;
 
+	typedef [bitmap32bit] bitmap {
+		DEVMODE_ORIENTATION		= 0x00000001,
+		DEVMODE_PAPERSIZE		= 0x00000002,
+		DEVMODE_PAPERLENGTH		= 0x00000004,
+		DEVMODE_PAPERWIDTH		= 0x00000008,
+		DEVMODE_SCALE			= 0x00000010,
+		DEVMODE_POSITION		= 0x00000020,
+		DEVMODE_NUP			= 0x00000040,
+		DEVMODE_COPIES			= 0x00000100,
+		DEVMODE_DEFAULTSOURCE		= 0x00000200,
+		DEVMODE_PRINTQUALITY		= 0x00000400,
+		DEVMODE_COLOR			= 0x00000800,
+		DEVMODE_DUPLEX			= 0x00001000,
+		DEVMODE_YRESOLUTION		= 0x00002000,
+		DEVMODE_TTOPTION		= 0x00004000,
+		DEVMODE_COLLATE			= 0x00008000,
+		DEVMODE_FORMNAME		= 0x00010000,
+		DEVMODE_LOGPIXELS		= 0x00020000,
+		DEVMODE_BITSPERPEL		= 0x00040000,
+		DEVMODE_PELSWIDTH		= 0x00080000,
+		DEVMODE_PELSHEIGHT		= 0x00100000,
+		DEVMODE_DISPLAYFLAGS		= 0x00200000,
+		DEVMODE_DISPLAYFREQUENCY	= 0x00400000,
+		DEVMODE_ICMMETHOD		= 0x00800000,
+		DEVMODE_ICMINTENT		= 0x01000000,
+		DEVMODE_MEDIATYPE		= 0x02000000,
+		DEVMODE_DITHERTYPE		= 0x04000000,
+		DEVMODE_PANNINGWIDTH		= 0x08000000,
+		DEVMODE_PANNINGHEIGHT		= 0x10000000
+	} spoolss_DeviceModeFields;
+
 	typedef [public,gensize] struct {
 		[charset(UTF16)] uint16 devicename[32];
 		uint16 specversion;
 		uint16 driverversion;
 		uint16 size;
 		[value(r->driverextra_data.length)] uint16 __driverextra_length;
-		uint32 fields;
+		spoolss_DeviceModeFields fields;
 		uint16 orientation;
 		uint16 papersize;
 		uint16 paperlength;
