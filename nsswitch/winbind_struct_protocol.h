@@ -143,6 +143,9 @@ enum winbindd_cmd {
 	/* Various group queries */
 	WINBINDD_GETUSERDOMGROUPS,
 
+	/* lookup local groups */
+	WINBINDD_GETSIDALIASES,
+
 	/* Initialize connection in a child */
 	WINBINDD_INIT_CONNECTION,
 

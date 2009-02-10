@@ -112,6 +112,8 @@ enum winbindd_result winbindd_dual_list_groups(struct winbindd_domain *domain,
                                                struct winbindd_cli_state *state);
 bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 		   size_t num_sids, char **result, ssize_t *len);
+bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+		   DOM_SID **sids, size_t *num_sids);
 enum winbindd_result winbindd_dual_lookuprids(struct winbindd_domain *domain,
 					      struct winbindd_cli_state *state);
 void winbindd_getsidaliases_async(struct winbindd_domain *domain,
@@ -342,6 +344,7 @@ void winbindd_list_groups(struct winbindd_cli_state *state);
 void winbindd_getgroups(struct winbindd_cli_state *state);
 void winbindd_getusersids(struct winbindd_cli_state *state);
 void winbindd_getuserdomgroups(struct winbindd_cli_state *state);
+void winbindd_getsidaliases(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *domain,
 						    struct winbindd_cli_state *state);
 bool get_sam_group_entries(struct getent_state *ent);

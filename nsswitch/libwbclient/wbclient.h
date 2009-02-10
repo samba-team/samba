@@ -61,6 +61,7 @@ const char *wbcErrorString(wbcErr error);
  *  0.2: Added wbcRemoveUidMapping()
  *       Added wbcRemoveGidMapping()
  *  0.3: Added wbcGetpwsid()
+ *	 Added wbcGetSidAliases()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
 #define WBCLIENT_MINOR_VERSION 3
@@ -615,6 +616,15 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 bool domain_groups_only,
 			 uint32_t *num_sids,
 			 struct wbcDomainSid **sids);
+
+/*
+ * @brief Get alias membership for sids
+ **/
+wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
+			struct wbcDomainSid *sids,
+			uint32_t num_sids,
+			uint32_t **alias_rids,
+			uint32_t *num_alias_rids);
 
 /**
  * @brief Lists Users

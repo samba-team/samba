@@ -1670,6 +1670,17 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const char ***names, enum lsa_SidType **types);
 bool winbind_allocate_uid(uid_t *uid);
 bool winbind_allocate_gid(gid_t *gid);
+bool winbind_get_groups(TALLOC_CTX *mem_ctx,
+			const char *account,
+			uint32_t *num_groups,
+			gid_t ** _groups);
+bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
+			     const DOM_SID *dom_sid,
+		             const DOM_SID *members,
+			     size_t num_members,
+			     uint32_t **pp_alias_rids,
+			     size_t *p_num_alias_rids);
+
 
 /* The following definitions come from lib/wins_srv.c  */
 
