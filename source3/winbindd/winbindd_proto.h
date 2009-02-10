@@ -495,6 +495,7 @@ enum winbindd_result winbindd_dual_userinfo(struct winbindd_domain *domain,
 					    struct winbindd_cli_state *state);
 void winbindd_getpwnam(struct winbindd_cli_state *state);
 void winbindd_getpwuid(struct winbindd_cli_state *state);
+void winbindd_getpwsid(struct winbindd_cli_state *state);
 void winbindd_setpwent(struct winbindd_cli_state *state);
 void winbindd_endpwent(struct winbindd_cli_state *state);
 void winbindd_getpwent(struct winbindd_cli_state *state);

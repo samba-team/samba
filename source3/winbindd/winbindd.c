@@ -420,6 +420,7 @@ static struct winbindd_dispatch_table {
 
 	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
 	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
+	{ WINBINDD_GETPWSID, winbindd_getpwsid, "GETPWSID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },

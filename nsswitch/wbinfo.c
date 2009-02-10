@@ -202,6 +202,31 @@ static bool wbinfo_get_uidinfo(int uid)
 	return true;
 }
 
+static bool wbinfo_get_user_sidinfo(const char *sid_str)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct passwd *pwd = NULL;
+	struct wbcDomainSid sid;
+
+	wbc_status = wbcStringToSid(sid_str, &sid);
+	wbc_status = wbcGetpwsid(&sid, &pwd);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+
+	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+		 pwd->pw_name,
+		 pwd->pw_passwd,
+		 pwd->pw_uid,
+		 pwd->pw_gid,
+		 pwd->pw_gecos,
+		 pwd->pw_dir,
+		 pwd->pw_shell);
+
+	return true;
+}
+
+
 /* pull grent for a given group */
 static bool wbinfo_get_groupinfo(const char *group)
 {
@@ -1564,6 +1589,7 @@ enum {
 	OPT_LIST_ALL_DOMAINS,
 	OPT_LIST_OWN_DOMAIN,
 	OPT_UID_INFO,
+	OPT_USER_SIDINFO,
 	OPT_GROUP_INFO,
 	OPT_GID_INFO,
 	OPT_VERBOSE,
@@ -1622,6 +1648,7 @@ int main(int argc, char **argv, char **envp)
 		{ "user-info", 'i', POPT_ARG_STRING, &string_arg, 'i', "Get user info", "USER" },
 		{ "uid-info", 0, POPT_ARG_INT, &int_arg, OPT_UID_INFO, "Get user info from uid", "UID" },
 		{ "group-info", 0, POPT_ARG_STRING, &string_arg, OPT_GROUP_INFO, "Get group info", "GROUP" },
+		{ "user-sidinfo", 0, POPT_ARG_STRING, &string_arg, OPT_USER_SIDINFO, "Get user info from sid", "SID" },
 		{ "gid-info", 0, POPT_ARG_INT, &int_arg, OPT_GID_INFO, "Get group info from gid", "GID" },
 		{ "user-groups", 'r', POPT_ARG_STRING, &string_arg, 'r', "Get user groups", "USER" },
 		{ "user-domgroups", 0, POPT_ARG_STRING, &string_arg,
@@ -1857,6 +1884,13 @@ int main(int argc, char **argv, char **envp)
 			if (!wbinfo_get_userinfo(string_arg)) {
 				d_fprintf(stderr, "Could not get info for user %s\n",
 						  string_arg);
+				goto done;
+			}
+			break;
+		case OPT_USER_SIDINFO:
+			if ( !wbinfo_get_user_sidinfo(string_arg)) {
+				d_fprintf(stderr, "Could not get info for user sid %s\n",
+				    string_arg);
 				goto done;
 			}
 			break;

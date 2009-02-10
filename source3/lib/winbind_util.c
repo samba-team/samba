@@ -24,6 +24,43 @@
 
 #include "nsswitch/libwbclient/wbclient.h"
 
+struct passwd * winbind_getpwnam(const char * name)
+{
+	wbcErr result;
+	struct passwd * tmp_pwd = NULL;
+	struct passwd * pwd = NULL;
+
+	result = wbcGetpwnam(name, &tmp_pwd);
+	if (result != WBC_ERR_SUCCESS)
+		return pwd;
+
+	pwd = tcopy_passwd(talloc_tos(), tmp_pwd);
+
+	wbcFreeMemory(tmp_pwd);
+
+	return pwd;
+}
+
+struct passwd * winbind_getpwsid(const DOM_SID *sid)
+{
+	wbcErr result;
+	struct passwd * tmp_pwd = NULL;
+	struct passwd * pwd = NULL;
+	struct wbcDomainSid dom_sid;
+
+	memcpy(&dom_sid, sid, sizeof(dom_sid));
+
+	result = wbcGetpwsid(&dom_sid, &tmp_pwd);
+	if (result != WBC_ERR_SUCCESS)
+		return pwd;
+
+	pwd = tcopy_passwd(talloc_tos(), tmp_pwd);
+
+	wbcFreeMemory(tmp_pwd);
+
+	return pwd;
+}
+
 /* Call winbindd to convert a name to a sid */
 
 bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
@@ -235,6 +272,16 @@ bool winbind_allocate_gid(gid_t *gid)
 }
 
 #else      /* WITH_WINBIND */
+
+struct passwd * winbind_getpwnam(const char * name)
+{
+	return NULL;
+}
+
+struct passwd * winbind_getpwsid(const DOM_SID *sid)
+{
+	return NULL;
+}
 
 bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
                          enum lsa_SidType *name_type)
