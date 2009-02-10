@@ -1242,6 +1242,15 @@ bool is_valid_policy_hnd(const POLICY_HND *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
+struct async_req *read_pkt_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				int fd, size_t initial,
+				ssize_t (*more)(uint8_t *buf, size_t buflen,
+						void *priv),
+				void *priv);
+ssize_t read_pkt_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+		      uint8_t **pbuf, int *perr);
+
 
 /* The following definitions come from lib/util_file.c  */
 

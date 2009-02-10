@@ -3234,3 +3234,102 @@ const char *strip_hostname(const char *s)
 
 	return s;
 }
+
+struct read_pkt_state {
+	struct event_context *ev;
+	int fd;
+	uint8_t *buf;
+	ssize_t (*more)(uint8_t *buf, size_t buflen, void *priv);
+	void *priv;
+};
+
+static void read_pkt_done(struct async_req *subreq);
+
+struct async_req *read_pkt_send(TALLOC_CTX *mem_ctx,
+				struct event_context *ev,
+				int fd, size_t initial,
+				ssize_t (*more)(uint8_t *buf, size_t buflen,
+						void *priv),
+				void *priv)
+{
+	struct async_req *result, *subreq;
+	struct read_pkt_state *state;
+
+	if (!async_req_setup(mem_ctx, &result, &state,
+			     struct read_pkt_state)) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->fd = fd;
+	state->more = more;
+
+	state->buf = talloc_array(state, uint8_t, initial);
+	if (state->buf == NULL) {
+		goto fail;
+	}
+	subreq = recvall_send(state, ev, fd, state->buf, initial, 0);
+	if (subreq == NULL) {
+		goto fail;
+	}
+	subreq->async.fn = read_pkt_done;
+	subreq->async.priv = result;
+	return result;
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void read_pkt_done(struct async_req *subreq)
+{
+	struct async_req *req = talloc_get_type_abort(
+		subreq->async.priv, struct async_req);
+	struct read_pkt_state *state = talloc_get_type_abort(
+		req->private_data, struct read_pkt_state);
+	size_t current_size;
+	ssize_t received;
+	ssize_t more;
+	int err;
+
+	received = recvall_recv(subreq, &err);
+	TALLOC_FREE(subreq);
+	if (received == -1) {
+		async_req_error(req, err);
+		return;
+	}
+	current_size = talloc_get_size(state->buf);
+
+	more = state->more(state->buf, current_size, state->priv);
+	if (more < 0) {
+		async_req_error(req, EIO);
+		return;
+	}
+	if (more == 0) {
+		async_req_done(req);
+		return;
+	}
+	state->buf = TALLOC_REALLOC_ARRAY(state, state->buf, uint8_t,
+					  current_size + more);
+	if (async_req_nomem(state->buf, req)) {
+		return;
+	}
+	subreq = recvall_send(state, state->ev, state->fd,
+			      state->buf + current_size, more, 0);
+	if (async_req_nomem(subreq, req)) {
+		return;
+	}
+	subreq->async.fn = read_pkt_done;
+	subreq->async.priv = req;
+}
+
+ssize_t read_pkt_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
+		      uint8_t **pbuf, int *perr)
+{
+	struct read_pkt_state *state = talloc_get_type_abort(
+		req->private_data, struct read_pkt_state);
+
+	if (async_req_is_errno(req, perr)) {
+		return -1;
+	}
+	*pbuf = talloc_move(mem_ctx, &state->buf);
+	return talloc_get_size(*pbuf);
+}
