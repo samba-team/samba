@@ -211,8 +211,6 @@
 
 #define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
 
-#define PRINTER_NOTIFY_INFO_DISCARDED	0x1
-
 /*
  * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
  * when sending messages to other smbd's
