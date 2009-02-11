@@ -477,12 +477,18 @@ NTSTATUS rpccli_spoolss_GetPrinter(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_AddPrinterDriver(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
+					 const char *servername /* [in] [ref,charset(UTF16)] */,
+					 uint32_t level /* [in]  */,
+					 union spoolss_AddDriverInfo info /* [in] [switch_is(level)] */,
 					 WERROR *werror)
 {
 	struct spoolss_AddPrinterDriver r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.level = level;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrinterDriver, &r);
@@ -4189,12 +4195,20 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_AddPrinterDriverEx(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *servername /* [in] [ref,charset(UTF16)] */,
+					   uint32_t level /* [in]  */,
+					   union spoolss_AddDriverInfo info /* [in] [switch_is(level)] */,
+					   uint32_t flags /* [in]  */,
 					   WERROR *werror)
 {
 	struct spoolss_AddPrinterDriverEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.level = level;
+	r.in.info = info;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrinterDriverEx, &r);

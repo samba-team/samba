@@ -76,6 +76,9 @@ NTSTATUS rpccli_spoolss_GetPrinter(struct rpc_pipe_client *cli,
 				   WERROR *werror);
 NTSTATUS rpccli_spoolss_AddPrinterDriver(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx,
+					 const char *servername /* [in] [ref,charset(UTF16)] */,
+					 uint32_t level /* [in]  */,
+					 union spoolss_AddDriverInfo info /* [in] [switch_is(level)] */,
 					 WERROR *werror);
 NTSTATUS rpccli_spoolss_EnumPrinterDrivers(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
@@ -521,6 +524,10 @@ NTSTATUS rpccli_spoolss_XcvData(struct rpc_pipe_client *cli,
 				WERROR *werror);
 NTSTATUS rpccli_spoolss_AddPrinterDriverEx(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *servername /* [in] [ref,charset(UTF16)] */,
+					   uint32_t level /* [in]  */,
+					   union spoolss_AddDriverInfo info /* [in] [switch_is(level)] */,
+					   uint32_t flags /* [in]  */,
 					   WERROR *werror);
 NTSTATUS rpccli_spoolss_5a(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,

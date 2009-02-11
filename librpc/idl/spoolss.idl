@@ -1751,7 +1751,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x59 */
-	[public,todo] WERROR spoolss_AddPrinterDriverEx(
+	[public] WERROR spoolss_AddPrinterDriverEx(
+		[in] [string,charset(UTF16)] uint16 *servername,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_AddDriverInfo info,
+		[in] uint32 flags
 	);
 
 	/******************/
