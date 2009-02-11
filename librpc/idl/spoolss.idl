@@ -1442,8 +1442,6 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x42 */
-	[todo] WERROR spoolss_RouterReplyPrinterEx(
-	);
 
 	typedef struct {
 		uint32 size;
@@ -1486,6 +1484,25 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 count;
 		[size_is(count)] spoolss_Notify notifies[];
 	} spoolss_NotifyInfo;
+
+	typedef [switch_type(uint32)] union {
+		[case(0)] spoolss_NotifyInfo *info0;
+	} spoolss_ReplyPrinterInfo;
+
+	typedef [bitmap32bit] bitmap {
+		PRINTER_NOTIFY_INFO_DISCARDED		= 0x00000001,
+		PRINTER_NOTIFY_INFO_DISCARDNOTED	= 0x00010000,
+		PRINTER_NOTIFY_INFO_COLOR_MISMATCH	= 0x00080000
+	} spoolss_PrinterNotifyFlags;
+
+	WERROR spoolss_RouterReplyPrinterEx(
+		[in,ref] policy_handle *handle,
+		[in] uint32 color,
+		[in] spoolss_PrinterChangeFlags flags,
+		[out,ref] spoolss_PrinterNotifyFlags *reply_result,
+		[in] uint32 reply_type,
+		[in,switch_is(reply_type)] spoolss_ReplyPrinterInfo info
+	);
 
 	/******************/
 	/* Function: 0x43 */
