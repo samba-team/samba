@@ -1177,9 +1177,7 @@ NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
 
 	*r->out.sam = samr_array;
 	*r->out.num_entries = num_groups;
-	/* this was missing, IMHO:
 	*r->out.resume_handle = num_groups + *r->in.resume_handle;
-	*/
 
 	DEBUG(5,("_samr_EnumDomainGroups: %d\n", __LINE__));
 
