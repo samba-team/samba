@@ -10473,22 +10473,22 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_RouterRefreshPrinterChangeNotification
+ _spoolss_RouterReplyPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p,
-						       struct spoolss_RouterRefreshPrinterChangeNotification *r)
+WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p,
+				     struct spoolss_RouterReplyPrinterEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
- _spoolss_RemoteFindNextPrinterChangeNotifyEx
+ _dcesrv_spoolss_RouterRefreshPrinterChangeNotify
 ****************************************************************/
 
-WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p,
-						    struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
+						 struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
