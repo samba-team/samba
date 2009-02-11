@@ -45,7 +45,7 @@ parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
-parser.add_option("--interactive", help="Ask for names")
+parser.add_option("--interactive", help="Ask for names", action="store_true")
 parser.add_option("--setupdir", type="string", metavar="DIR", 
 		help="directory with setup files")
 parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
