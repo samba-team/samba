@@ -321,8 +321,12 @@ generate_constant (const Symbol *s)
 	}
 
 	fprintf (headerfile, "} */\n");
-	fprintf (headerfile, "const heim_oid *oid_%s(void);\n\n",
+	fprintf (headerfile, "const heim_oid *oid_%s(void);\n",
 		 s->gen_name);
+	fprintf (headerfile,
+		 "extern const heim_oid asn1_oid_%s;\n\n",
+		 s->gen_name);
+
 
 	fprintf (codefile, "static unsigned oid_%s_variable_num[%d] =  {",
 		 s->gen_name, len);
@@ -331,13 +335,13 @@ generate_constant (const Symbol *s)
 	}
 	fprintf(codefile, "};\n");
 
-	fprintf (codefile, "static const heim_oid oid_%s_variable = "
+	fprintf (codefile, "const heim_oid asn1_oid_%s_variable = "
 		 "{ %d, oid_%s_variable_num };\n\n",
 		 s->gen_name, len, s->gen_name);
 
 	fprintf (codefile, "const heim_oid *oid_%s(void)\n"
 		 "{\n"
-		 "return &oid_%s_variable;\n"
+		 "return &asn1_oid_%s_variable;\n"
 		 "}\n\n",
 		 s->gen_name, s->gen_name);
 
