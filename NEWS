@@ -7,15 +7,16 @@ Release Notes - Heimdal - Version Heimdal 1.3
  - Support BER in ASN.1 library (needed for CMS)
  - Support decryption in Keychain private keys
  - Support for new sqlite based credential cache
- - Try both to KDC referals the the common DNS reverse lookup in GSS-API.
+ - Try both to KDC referals the the common DNS reverse lookup in GSS-API
  - Fix the KCM not not leak resources on failure
- - Add IPv6 support to iprop.
+ - Add IPv6 support to iprop
  - Support localization of error strings in
-   kinit/klist/kdestroy and Kerberos library.
+   kinit/klist/kdestroy and Kerberos library
  - Remove Kerberos 4 support in application (still in KDC)
  - Deprecate DES
  - Support i18n password in windows domains (using UTF-8)
  - More complete API emulation of OpenSSL in hcrypto
+ - Basic support for ECDSA when using OpenSSL
 
  API changes
 
