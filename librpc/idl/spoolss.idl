@@ -483,12 +483,15 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x09 */
-	[todo] WERROR spoolss_AddPrinterDriver(
-	);
+
+	typedef [public,gensize] struct {
+		[value((ndr_size_spoolss_StringArray(r, ndr->iconv_convenience, ndr->flags)-4)/2)] uint32 _ndr_size;
+		/*[subcontext(0),subcontext_size(_ndr_size*2)]*/ nstring_array string;
+	} spoolss_StringArray;
 
 	typedef struct {
-		[relative] nstring *driver_name;
-	} spoolss_DriverInfo1;
+		[string,charset(UTF16)] uint16 *driver_name;
+	} spoolss_AddDriverInfo1;
 
 	typedef [v1_enum] enum {
 		SPOOLSS_DRIVER_VERSION_9X	= 0,
@@ -496,6 +499,97 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_DRIVER_VERSION_NT4	= 2,
 		SPOOLSS_DRIVER_VERSION_200X	= 3
 	} spoolss_DriverOSVersion;
+
+	typedef struct {
+		spoolss_DriverOSVersion version;
+		[string,charset(UTF16)] uint16 *driver_name;
+		[string,charset(UTF16)] uint16 *architecture;
+		[string,charset(UTF16)] uint16 *driver_path;
+		[string,charset(UTF16)] uint16 *data_file;
+		[string,charset(UTF16)] uint16 *config_file;
+	} spoolss_AddDriverInfo2;
+
+	typedef struct {
+		spoolss_DriverOSVersion version;
+		[string,charset(UTF16)] uint16 *driver_name;
+		[string,charset(UTF16)] uint16 *architecture;
+		[string,charset(UTF16)] uint16 *driver_path;
+		[string,charset(UTF16)] uint16 *data_file;
+		[string,charset(UTF16)] uint16 *config_file;
+		[string,charset(UTF16)] uint16 *help_file;
+		[string,charset(UTF16)] uint16 *monitor_name;
+		[string,charset(UTF16)] uint16 *default_datatype;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		spoolss_StringArray *dependent_files;
+	} spoolss_AddDriverInfo3;
+
+	typedef struct {
+		spoolss_DriverOSVersion version;
+		[string,charset(UTF16)] uint16 *driver_name;
+		[string,charset(UTF16)] uint16 *architecture;
+		[string,charset(UTF16)] uint16 *driver_path;
+		[string,charset(UTF16)] uint16 *data_file;
+		[string,charset(UTF16)] uint16 *config_file;
+		[string,charset(UTF16)] uint16 *help_file;
+		[string,charset(UTF16)] uint16 *monitor_name;
+		[string,charset(UTF16)] uint16 *default_datatype;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		spoolss_StringArray *dependent_files;
+		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
+		spoolss_StringArray *previous_names;
+	} spoolss_AddDriverInfo4;
+
+	typedef struct {
+		spoolss_DriverOSVersion version;
+		[string,charset(UTF16)] uint16 *driver_name;
+		[string,charset(UTF16)] uint16 *architecture;
+		[string,charset(UTF16)] uint16 *driver_path;
+		[string,charset(UTF16)] uint16 *data_file;
+		[string,charset(UTF16)] uint16 *config_file;
+		uint32 driver_attributes;
+		uint32 config_version;
+		uint32 driver_version;
+	} spoolss_AddDriverInfo5;
+
+	typedef struct {
+		spoolss_DriverOSVersion version;
+		[string,charset(UTF16)] uint16 *driver_name;
+		[string,charset(UTF16)] uint16 *architecture;
+		[string,charset(UTF16)] uint16 *driver_path;
+		[string,charset(UTF16)] uint16 *data_file;
+		[string,charset(UTF16)] uint16 *config_file;
+		[string,charset(UTF16)] uint16 *help_file;
+		[string,charset(UTF16)] uint16 *monitor_name;
+		[string,charset(UTF16)] uint16 *default_datatype;
+		[value(((ndr_size_spoolss_StringArray(dependent_files, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_dependent_files;
+		spoolss_StringArray *dependent_files;
+		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
+		spoolss_StringArray *previous_names;
+		NTTIME driver_data;
+		hyper driver_version;
+		[string,charset(UTF16)] uint16 *manufacturer_name;
+		[string,charset(UTF16)] uint16 *manufacturer_url;
+		[string,charset(UTF16)] uint16 *hardware_id;
+		[string,charset(UTF16)] uint16 *provider;
+	} spoolss_AddDriverInfo6;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] spoolss_AddDriverInfo1 *info1;
+		[case(2)] spoolss_AddDriverInfo2 *info2;
+		[case(3)] spoolss_AddDriverInfo3 *info3;
+		[case(4)] spoolss_AddDriverInfo4 *info4;
+		[case(6)] spoolss_AddDriverInfo6 *info6;
+	} spoolss_AddDriverInfo;
+
+	WERROR spoolss_AddPrinterDriver(
+		[in] [string,charset(UTF16)] uint16 *servername,
+		[in] uint32 level,
+		[in,switch_is(level)] spoolss_AddDriverInfo info
+	);
+
+	typedef struct {
+		[relative] nstring *driver_name;
+	} spoolss_DriverInfo1;
 
 	typedef struct {
 		spoolss_DriverOSVersion version;
