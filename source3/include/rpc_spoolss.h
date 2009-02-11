@@ -270,13 +270,6 @@ PRINTER_MESSAGE_INFO;
 #define DRIVER_ANY_VERSION		0xffffffff
 #define DRIVER_MAX_VERSION		4
 
-/* FLAGS for SPOOLSS_ADDPRINTERDRIVEREX */
-
-#define APD_STRICT_UPGRADE		0x00000001
-#define APD_STRICT_DOWNGRADE		0x00000002
-#define APD_COPY_ALL_FILES		0x00000004
-#define APD_COPY_NEW_FILES		0x00000008
-
 
 /* this struct is undocumented */
 /* thanks to the ddk ... */
