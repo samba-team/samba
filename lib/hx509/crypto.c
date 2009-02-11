@@ -50,7 +50,7 @@ struct hx509_generate_private_context {
 
 struct hx509_private_key_ops {
     const char *pemtype;
-    const heim_oid *(*key_oid)(void);
+    const heim_oid *key_oid;
     int (*get_spki)(hx509_context,
 		    const hx509_private_key,
 		    SubjectPublicKeyInfo *);
@@ -308,7 +308,7 @@ ecdsa_create_signature(hx509_context context,
     unsigned int siglen;
     int ret;
 
-    if (der_heim_oid_cmp((signer->ops->key_oid)(), oid_id_ecPublicKey()) != 0)
+    if (der_heim_oid_cmp(signer->ops->key_oid, oid_id_ecPublicKey()) != 0)
 	return HX509_ALG_NOT_SUPP;
 
     sig_oid = (*sig_alg->sig_oid)();
@@ -503,7 +503,7 @@ rsa_create_signature(hx509_context context,
     size_t size;
     int ret;
 
-    if (der_heim_oid_cmp((signer->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) != 0)
+    if (der_heim_oid_cmp(signer->ops->key_oid, oid_id_pkcs1_rsaEncryption()) != 0)
 	return HX509_ALG_NOT_SUPP;
 
     if (alg)
@@ -741,7 +741,7 @@ rsa_get_internal(hx509_context context,
 
 static hx509_private_key_ops rsa_private_key_ops = {
     "RSA PRIVATE KEY",
-    oid_id_pkcs1_rsaEncryption,
+    &asn1_oid_id_pkcs1_rsaEncryption,
     rsa_private_key2SPKI,
     rsa_private_key_export,
     rsa_private_key_import,
@@ -805,7 +805,7 @@ ecdsa_get_internal(hx509_context context,
 
 static hx509_private_key_ops ecdsa_private_key_ops = {
     "EC PRIVATE KEY",
-    oid_id_ecPublicKey,
+    &asn1_oid_id_ecPublicKey,
     ecdsa_private_key2SPKI,
     ecdsa_private_key_export,
     ecdsa_private_key_import,
@@ -1348,7 +1348,7 @@ find_private_alg(const heim_oid *oid)
     for (i = 0; private_algs[i]; i++) {
 	if (private_algs[i]->key_oid == NULL)
 	    continue;
-	if (der_heim_oid_cmp((*private_algs[i]->key_oid)(), oid) == 0)
+	if (der_heim_oid_cmp(private_algs[i]->key_oid, oid) == 0)
 	    return private_algs[i];
     }
     return NULL;
@@ -1974,10 +1974,10 @@ _hx509_private_key_free(hx509_private_key *key)
     if (--(*key)->ref > 0)
 	return 0;
 
-    if (der_heim_oid_cmp(((*key)->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) == 0) {
+    if (der_heim_oid_cmp((*key)->ops->key_oid, oid_id_pkcs1_rsaEncryption()) == 0) {
 	if ((*key)->private_key.rsa)
 	    RSA_free((*key)->private_key.rsa);
-    } else if (der_heim_oid_cmp(((*key)->ops->key_oid)(), oid_id_ecPublicKey()) == 0) {
+    } else if (der_heim_oid_cmp((*key)->ops->key_oid, oid_id_ecPublicKey()) == 0) {
 	if ((*key)->private_key.ecdsa)
 	    EC_KEY_free((*key)->private_key.ecdsa);
     }
@@ -2003,7 +2003,7 @@ _hx509_private_key_oid(hx509_context context,
 		       heim_oid *data)
 {
     int ret;
-    ret = der_copy_oid((*key->ops->key_oid)(), data);
+    ret = der_copy_oid(key->ops->key_oid, data);
     if (ret)
 	hx509_set_error_string(context, 0, ret, "malloc out of memory");
     return ret;
@@ -2888,9 +2888,9 @@ match_keys_rsa(hx509_cert c, hx509_private_key private_key)
 int
 _hx509_match_keys(hx509_cert c, hx509_private_key key)
 {
-    if (der_heim_oid_cmp((key->ops->key_oid)(), oid_id_pkcs1_rsaEncryption()) == 0)
+    if (der_heim_oid_cmp(key->ops->key_oid, oid_id_pkcs1_rsaEncryption()) == 0)
 	return match_keys_rsa(c, key);
-    if (der_heim_oid_cmp((key->ops->key_oid)(), oid_id_ecPublicKey()) == 0)
+    if (der_heim_oid_cmp(key->ops->key_oid, oid_id_ecPublicKey()) == 0)
 	return 1; /* XXX */
     return 0;
 
@@ -2931,7 +2931,7 @@ hx509_crypto_select(const hx509_context context,
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
 	if (source)
-	    def = def_sigalg_for_keytype((source->ops->key_oid)());
+	    def = def_sigalg_for_keytype(source->ops->key_oid);
 	if (def == NULL)
 	    def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
