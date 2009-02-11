@@ -7381,6 +7381,8 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 			return WERR_BADFID;
 	}
 
+	ZERO_STRUCT(form_1);
+
 	switch (level) {
 	case 1:
 		if (foundBuiltin) {
