@@ -454,7 +454,7 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                       credentials=credentials, lp=lp)
         # Wipes the database
         samdb.erase()
-    except:
+    except LdbError:
         os.unlink(samdb_path)
         samdb = SamDB(samdb_path, session_info=session_info, 
                       credentials=credentials, lp=lp)
@@ -647,7 +647,7 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
     # Wipes the database
     try:
         templates_ldb.erase()
-    except:
+    except LdbError:
         os.unlink(path)
 
     templates_ldb.load_ldif_file_add(setup_path("provision_templates_init.ldif"))
@@ -1222,7 +1222,7 @@ def provision_backend(setup_dir=None, message=None,
     schemadb_path = os.path.join(paths.ldapdir, "schema-tmp.ldb")
     try:
         os.unlink(schemadb_path)
-    except:
+    except OSError:
         pass
 
     schemadb = Ldb(schemadb_path, lp=lp)
