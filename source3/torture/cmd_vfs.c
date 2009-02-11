@@ -141,8 +141,6 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 
 static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	const char *user;
-	const char *group;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_DIRENT *dent = NULL;
 
@@ -178,9 +176,9 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		printf(" Inode: %10u", (unsigned int)st.st_ino);
 		printf(" Links: %10u\n", (unsigned int)st.st_nlink);
 		printf("  Access: %05o", (st.st_mode) & 007777);
-		printf(" Uid: %5lu/%.16s Gid: %5lu/%.16s\n",
-		       (unsigned long)st.st_uid, user,
-		       (unsigned long)st.st_gid, group);
+		printf(" Uid: %5lu Gid: %5lu\n",
+		       (unsigned long)st.st_uid,
+		       (unsigned long)st.st_gid);
 		printf("  Access: %s", ctime(&(st.st_atime)));
 		printf("  Modify: %s", ctime(&(st.st_mtime)));
 		printf("  Change: %s", ctime(&(st.st_ctime)));
