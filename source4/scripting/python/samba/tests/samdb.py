@@ -19,7 +19,7 @@
 from samba.auth import system_session
 from samba.credentials import Credentials
 import os
-from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf
+from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf, find_setup_dir
 from samba.samdb import SamDB
 from samba.tests import cmdline_loadparm, TestCaseInTempDir
 from samba.dcerpc import security
@@ -30,7 +30,7 @@ from samba import param
 class SamDBTestCase(TestCaseInTempDir):
 
     def setup_path(self, relpath):
-        return os.path.join("setup", relpath)
+        return os.path.join(find_setup_dir(), relpath)
 
     def setUp(self):
         super(SamDBTestCase, self).setUp()
