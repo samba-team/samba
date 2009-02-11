@@ -572,9 +572,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	struct passwd *pwd;
 	gid_t *gids;
 	auth_serversupplied_info *result;
-	int i;
-	size_t num_gids;
-	DOM_SID unix_group_sid;
 	const char *username = pdb_get_username(sampass);
 	NTSTATUS status;
 
@@ -640,30 +637,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("pdb_enum_group_memberships failed: %s\n",
 				   nt_errstr(status)));
-			result->sam_account = NULL; /* Don't free on error exit. */
-			TALLOC_FREE(result);
-			return status;
-		}
-	}
-
-	/* Add the "Unix Group" SID for each gid to catch mapped groups
-	   and their Unix equivalent.  This is to solve the backwards 
-	   compatibility problem of 'valid users = +ntadmin' where 
-	   ntadmin has been paired with "Domain Admins" in the group 
-	   mapping table.  Otherwise smb.conf would need to be changed
-	   to 'valid user = "Domain Admins"'.  --jerry */
-	
-	num_gids = result->num_sids;
-	for ( i=0; i<num_gids; i++ ) {
-		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
-			DEBUG(1,("make_server_info_sam: Failed to create SID "
-				"for gid %d!\n", gids[i]));
-			continue;
-		}
-		status = add_sid_to_array_unique(result, &unix_group_sid,
-						 &result->sids,
-						 &result->num_sids);
-		if (!NT_STATUS_IS_OK(status)) {
 			result->sam_account = NULL; /* Don't free on error exit. */
 			TALLOC_FREE(result);
 			return status;
