@@ -109,14 +109,14 @@ static const uint8_t RFFPCNEX_out_data[] = {
   0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8_t RFNPCNEX_in_data[] = {
+static const uint8_t RRPCN_in_data[] = {
   0x00, 0x00, 0x00, 0x00, 0x1e, 0x9b, 0x8b, 0xe5, 0x32, 0x9a, 0xd5, 0x45,
   0xa8, 0x0a, 0x10, 0x30, 0x5b, 0x87, 0x6f, 0x69, 0x01, 0x00, 0x00, 0x00,
   0x44, 0x0d, 0x0b, 0x00, 0x02, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-static const uint8_t RFNPCNEX_out_data[] = {
+static const uint8_t RRPCN_out_data[] = {
   0x00, 0x00, 0x02, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
@@ -459,8 +459,8 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindFirstPrinterChangeNotifyEx, RFFPCNEX_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindFirstPrinterChangeNotifyEx, RFFPCNEX_out_data, NDR_OUT, NULL );
 
-	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindNextPrinterChangeNotifyEx, RFNPCNEX_in_data, NDR_IN, NULL );
-	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RemoteFindNextPrinterChangeNotifyEx, RFNPCNEX_out_data, NDR_OUT, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RouterRefreshPrinterChangeNotify, RRPCN_in_data, NDR_IN, NULL );
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_RouterRefreshPrinterChangeNotify, RRPCN_out_data, NDR_OUT, NULL );
 
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumForms, enumforms_in_data, NDR_IN, NULL );
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_EnumForms, enumforms_out_data, NDR_OUT, NULL );
