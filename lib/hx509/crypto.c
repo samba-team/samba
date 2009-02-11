@@ -466,7 +466,6 @@ ecdsa_available(const hx509_private_key signer,
 {
     const struct signature_alg *sig;
     const EC_GROUP *group;
-    size_t signlen;
     BN_CTX *bnctx = NULL;
     BIGNUM *order = NULL;
     int ret = 0;
