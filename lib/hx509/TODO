@@ -1,5 +1,11 @@
 $Id$
 
+Rewrite private key operations to allow the key to select the signing type.
+
+Stop using the oid_() function macro and access the variable directly.
+
+Identify key-type by oid and clean up the mess what keys mean.
+
 x501 name
 	parsing
 	comparing (ldap canonlisation rules)
