@@ -2241,7 +2241,7 @@ bool test_nttransrename(struct torture_context *tctx, struct smbcli_state *cli1)
 	*/
 	io.generic.level = RAW_OPEN_NTCREATEX;
 	io.ntcreatex.in.root_fid = 0;
-	io.ntcreatex.in.access_mask = 0;/* ask for no access at all */;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
 	io.ntcreatex.in.alloc_size = 0;
 	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
