@@ -65,6 +65,14 @@ description: %s
         for msg in self.parse_ldif(add):
             self.add(msg[1])
 
+    def add_stock_foreign_sids(self):
+        domaindn = self.domain_dn()
+        self.add_foreign(domaindn, "S-1-5-7", "Anonymous")
+        self.add_foreign(domaindn, "S-1-1-0", "World")
+        self.add_foreign(domaindn, "S-1-5-2", "Network")
+        self.add_foreign(domaindn, "S-1-5-18", "System")
+        self.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
+
     def enable_account(self, user_dn):
         """Enable an account.
         

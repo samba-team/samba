@@ -394,7 +394,6 @@ def make_smbconf(smbconf, setup_path, hostname, domain, realm, serverrole,
             })
 
 
-
 def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
                         users_gid, wheel_gid):
     """setup reasonable name mappings for sam names to unix names.
@@ -408,11 +407,7 @@ def setup_name_mappings(samdb, idmap, sid, domaindn, root_uid, nobody_uid,
     :param users_gid: gid of the UNIX users group.
     :param wheel_gid: gid of the UNIX wheel group."""
     # add some foreign sids if they are not present already
-    samdb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
-    samdb.add_foreign(domaindn, "S-1-1-0", "World")
-    samdb.add_foreign(domaindn, "S-1-5-2", "Network")
-    samdb.add_foreign(domaindn, "S-1-5-18", "System")
-    samdb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
+    samdb.add_stock_foreign_sids()
 
     idmap.setup_name_mapping("S-1-5-7", idmap.TYPE_UID, nobody_uid)
     idmap.setup_name_mapping("S-1-5-32-544", idmap.TYPE_GID, wheel_gid)
@@ -1422,6 +1417,7 @@ def provision_backend(setup_dir=None, message=None,
             "--domain=" + names.domain,
             "--server-role='" + serverrole + "'"]
     message("Run provision with: " + " ".join(args))
+
 
 def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
