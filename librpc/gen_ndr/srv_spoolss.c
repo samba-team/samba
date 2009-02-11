@@ -5096,6 +5096,13 @@ static bool api_spoolss_RouterReplyPrinterEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinterEx, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.reply_result = talloc_zero(r, uint32_t);
+	if (r->out.reply_result == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_RouterReplyPrinterEx(p, r);
 
 	if (p->rng_fault_state) {
@@ -8071,6 +8078,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_ROUTERREPLYPRINTEREX: {
 			struct spoolss_RouterReplyPrinterEx *r = (struct spoolss_RouterReplyPrinterEx *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.reply_result = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.reply_result == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_RouterReplyPrinterEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

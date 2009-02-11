@@ -384,6 +384,12 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 							     WERROR *werror);
 NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
+					     struct policy_handle *handle /* [in] [ref] */,
+					     uint32_t color /* [in]  */,
+					     uint32_t flags /* [in]  */,
+					     uint32_t *reply_result /* [out] [ref] */,
+					     uint32_t reply_type /* [in]  */,
+					     union spoolss_ReplyPrinterInfo info /* [in] [switch_is(reply_type)] */,
 					     WERROR *werror);
 NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client *cli,
 							 TALLOC_CTX *mem_ctx,

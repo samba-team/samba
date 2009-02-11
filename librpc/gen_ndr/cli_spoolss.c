@@ -3109,12 +3109,23 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 
 NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
+					     struct policy_handle *handle /* [in] [ref] */,
+					     uint32_t color /* [in]  */,
+					     uint32_t flags /* [in]  */,
+					     uint32_t *reply_result /* [out] [ref] */,
+					     uint32_t reply_type /* [in]  */,
+					     union spoolss_ReplyPrinterInfo info /* [in] [switch_is(reply_type)] */,
 					     WERROR *werror)
 {
 	struct spoolss_RouterReplyPrinterEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.color = color;
+	r.in.flags = flags;
+	r.in.reply_type = reply_type;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinterEx, &r);
@@ -3139,6 +3150,7 @@ NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*reply_result = *r.out.reply_result;
 
 	/* Return result */
 	if (werror) {

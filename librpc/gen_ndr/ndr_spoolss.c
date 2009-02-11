@@ -10602,6 +10602,124 @@ _PUBLIC_ void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_ReplyPrinterInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_ReplyPrinterInfo *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case 0: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
+			break; }
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case 0:
+				if (r->info0) {
+					NDR_CHECK(ndr_push_spoolss_NotifyInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->info0));
+				}
+			break;
+
+			default:
+				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_ReplyPrinterInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_ReplyPrinterInfo *r)
+{
+	int level;
+	uint32_t _level;
+	TALLOC_CTX *_mem_save_info0_0;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+		}
+		switch (level) {
+			case 0: {
+				uint32_t _ptr_info0;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info0));
+				if (_ptr_info0) {
+					NDR_PULL_ALLOC(ndr, r->info0);
+				} else {
+					r->info0 = NULL;
+				}
+			break; }
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case 0:
+				if (r->info0) {
+					_mem_save_info0_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->info0, 0);
+					NDR_CHECK(ndr_pull_spoolss_NotifyInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->info0));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info0_0, 0);
+				}
+			break;
+
+			default:
+				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_ReplyPrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_ReplyPrinterInfo *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "spoolss_ReplyPrinterInfo");
+	switch (level) {
+		case 0:
+			ndr_print_ptr(ndr, "info0", r->info0);
+			ndr->depth++;
+			if (r->info0) {
+				ndr_print_spoolss_NotifyInfo(ndr, "info0", r->info0);
+			}
+			ndr->depth--;
+		break;
+
+		default:
+			ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+static enum ndr_err_code ndr_push_spoolss_PrinterNotifyFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_PrinterNotifyFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PrinterNotifyFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_NOTIFY_INFO_DISCARDED", PRINTER_NOTIFY_INFO_DISCARDED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_NOTIFY_INFO_DISCARDNOTED", PRINTER_NOTIFY_INFO_DISCARDNOTED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_NOTIFY_INFO_COLOR_MISMATCH", PRINTER_NOTIFY_INFO_COLOR_MISMATCH, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_UserLevel1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_UserLevel1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -16670,8 +16788,21 @@ _PUBLIC_ void ndr_print_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_
 static enum ndr_err_code ndr_push_spoolss_RouterReplyPrinterEx(struct ndr_push *ndr, int flags, const struct spoolss_RouterReplyPrinterEx *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.color));
+		NDR_CHECK(ndr_push_spoolss_PrinterChangeFlags(ndr, NDR_SCALARS, r->in.flags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.reply_type));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.info, r->in.reply_type));
+		NDR_CHECK(ndr_push_spoolss_ReplyPrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.reply_result == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_spoolss_PrinterNotifyFlags(ndr, NDR_SCALARS, *r->out.reply_result));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -16679,9 +16810,34 @@ static enum ndr_err_code ndr_push_spoolss_RouterReplyPrinterEx(struct ndr_push *
 
 static enum ndr_err_code ndr_pull_spoolss_RouterReplyPrinterEx(struct ndr_pull *ndr, int flags, struct spoolss_RouterReplyPrinterEx *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_reply_result_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.color));
+		NDR_CHECK(ndr_pull_spoolss_PrinterChangeFlags(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.reply_type));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.reply_type));
+		NDR_CHECK(ndr_pull_spoolss_ReplyPrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		NDR_PULL_ALLOC(ndr, r->out.reply_result);
+		ZERO_STRUCTP(r->out.reply_result);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.reply_result);
+		}
+		_mem_save_reply_result_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.reply_result, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_spoolss_PrinterNotifyFlags(ndr, NDR_SCALARS, r->out.reply_result));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reply_result_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -16697,11 +16853,24 @@ _PUBLIC_ void ndr_print_spoolss_RouterReplyPrinterEx(struct ndr_print *ndr, cons
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_RouterReplyPrinterEx");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "color", r->in.color);
+		ndr_print_spoolss_PrinterChangeFlags(ndr, "flags", r->in.flags);
+		ndr_print_uint32(ndr, "reply_type", r->in.reply_type);
+		ndr_print_set_switch_value(ndr, &r->in.info, r->in.reply_type);
+		ndr_print_spoolss_ReplyPrinterInfo(ndr, "info", &r->in.info);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_RouterReplyPrinterEx");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "reply_result", r->out.reply_result);
+		ndr->depth++;
+		ndr_print_spoolss_PrinterNotifyFlags(ndr, "reply_result", *r->out.reply_result);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

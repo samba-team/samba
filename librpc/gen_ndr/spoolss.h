@@ -877,6 +877,15 @@ struct spoolss_NotifyInfo {
 	struct spoolss_Notify *notifies;/* [size_is(count)] */
 };
 
+union spoolss_ReplyPrinterInfo {
+	struct spoolss_NotifyInfo *info0;/* [unique,case(0)] */
+}/* [switch_type(uint32)] */;
+
+/* bitmap spoolss_PrinterNotifyFlags */
+#define PRINTER_NOTIFY_INFO_DISCARDED ( 0x00000001 )
+#define PRINTER_NOTIFY_INFO_DISCARDNOTED ( 0x00010000 )
+#define PRINTER_NOTIFY_INFO_COLOR_MISMATCH ( 0x00080000 )
+
 struct spoolss_UserLevel1 {
 	uint32_t size;
 	const char *client;/* [unique,charset(UTF16)] */
@@ -2029,6 +2038,15 @@ struct spoolss_RemoteFindFirstPrinterChangeNotifyEx {
 
 struct spoolss_RouterReplyPrinterEx {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t color;
+		uint32_t flags;
+		uint32_t reply_type;
+		union spoolss_ReplyPrinterInfo info;/* [switch_is(reply_type)] */
+	} in;
+
+	struct {
+		uint32_t *reply_result;/* [ref] */
 		WERROR result;
 	} out;
 

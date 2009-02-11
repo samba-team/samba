@@ -315,6 +315,8 @@ void ndr_print_spoolss_NotifyBlob(struct ndr_print *ndr, const char *name, const
 void ndr_print_spoolss_NotifyData(struct ndr_print *ndr, const char *name, const union spoolss_NotifyData *r);
 void ndr_print_spoolss_Notify(struct ndr_print *ndr, const char *name, const struct spoolss_Notify *r);
 void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyInfo *r);
+void ndr_print_spoolss_ReplyPrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_ReplyPrinterInfo *r);
+void ndr_print_spoolss_PrinterNotifyFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_UserLevel1(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel1 *r);
 void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, const union spoolss_UserLevel *r);
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
