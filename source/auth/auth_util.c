@@ -700,13 +700,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	size_t i;
-	
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		DEBUG(0, ("talloc_new failed\n"));
-		return NT_STATUS_NO_MEMORY;
-	}
+	struct dom_sid tmp_sid;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -758,8 +752,46 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 		add_gid_to_array_unique(server_info, gid, &server_info->groups,
 					&server_info->n_groups);
 	}
-	
+
+	if (!uid_to_unix_users_sid(server_info->uid, &tmp_sid)) {
+		DEBUG(1,("create_local_token: Failed to create SID "
+			"for uid %d!\n", server_info->uid));
+	}
+	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
+				&server_info->ptok->user_sids,
+				&server_info->ptok->num_sids);
+
+	if (!gid_to_unix_groups_sid( server_info->gid, &tmp_sid)) {
+		DEBUG(1,("create_local_token: Failed to create SID "
+			"for gid %d!\n", server_info->gid));
+	}
+	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
+				&server_info->ptok->user_sids,
+				&server_info->ptok->num_sids);
+
+	for ( i=0; i<server_info->ngroups; i++ ) {
+		if (!gid_to_unix_groups_sid( server_info->groups[i], &tmp_sid ) ) {
+			DEBUG(1,("create_local_token: Failed to create SID "
+				"for gid %d!\n", server_info->groups[i]));
+			continue;
+		}
+		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
+					&server_info->ptok->user_sids,
+					&server_info->ptok->num_sids);
+	}
+
 	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
+	debug_unix_user_token(DBGC_AUTH, 10,
+			      server_info->uid,
+			      server_info->gid,
+			      server_info->ngroups,
+			      server_info->groups);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		DEBUG(0, ("talloc_new failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	status = log_nt_token(mem_ctx, server_info->ptok);
 
