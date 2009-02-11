@@ -16638,7 +16638,7 @@ _PUBLIC_ void ndr_print_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_RouterRefreshPrinterChangeNotification(struct ndr_push *ndr, int flags, const struct spoolss_RouterRefreshPrinterChangeNotification *r)
+static enum ndr_err_code ndr_push_spoolss_RouterReplyPrinterEx(struct ndr_push *ndr, int flags, const struct spoolss_RouterReplyPrinterEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -16648,7 +16648,7 @@ static enum ndr_err_code ndr_push_spoolss_RouterRefreshPrinterChangeNotification
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_RouterRefreshPrinterChangeNotification(struct ndr_pull *ndr, int flags, struct spoolss_RouterRefreshPrinterChangeNotification *r)
+static enum ndr_err_code ndr_pull_spoolss_RouterReplyPrinterEx(struct ndr_pull *ndr, int flags, struct spoolss_RouterReplyPrinterEx *r)
 {
 	if (flags & NDR_IN) {
 	}
@@ -16658,20 +16658,20 @@ static enum ndr_err_code ndr_pull_spoolss_RouterRefreshPrinterChangeNotification
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_RouterRefreshPrinterChangeNotification(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterRefreshPrinterChangeNotification *r)
+_PUBLIC_ void ndr_print_spoolss_RouterReplyPrinterEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterReplyPrinterEx *r)
 {
-	ndr_print_struct(ndr, name, "spoolss_RouterRefreshPrinterChangeNotification");
+	ndr_print_struct(ndr, name, "spoolss_RouterReplyPrinterEx");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "spoolss_RouterRefreshPrinterChangeNotification");
+		ndr_print_struct(ndr, "in", "spoolss_RouterReplyPrinterEx");
 		ndr->depth++;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "spoolss_RouterRefreshPrinterChangeNotification");
+		ndr_print_struct(ndr, "out", "spoolss_RouterReplyPrinterEx");
 		ndr->depth++;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -16679,7 +16679,7 @@ _PUBLIC_ void ndr_print_spoolss_RouterRefreshPrinterChangeNotification(struct nd
 	ndr->depth--;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_push_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_push *ndr, int flags, const struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_push *ndr, int flags, const struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -16705,7 +16705,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_RemoteFindNextPrinterChangeNotifyEx(
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_pull *ndr, int flags, struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_pull *ndr, int flags, struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	uint32_t _ptr_container;
 	uint32_t _ptr_info;
@@ -16763,15 +16763,15 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_RemoteFindNextPrinterChangeNotifyEx(
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+_PUBLIC_ void ndr_print_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
-	ndr_print_struct(ndr, name, "spoolss_RemoteFindNextPrinterChangeNotifyEx");
+	ndr_print_struct(ndr, name, "spoolss_RouterRefreshPrinterChangeNotify");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "spoolss_RemoteFindNextPrinterChangeNotifyEx");
+		ndr_print_struct(ndr, "in", "spoolss_RouterRefreshPrinterChangeNotify");
 		ndr->depth++;
 		ndr_print_ptr(ndr, "handle", r->in.handle);
 		ndr->depth++;
@@ -16787,7 +16787,7 @@ _PUBLIC_ void ndr_print_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_p
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "spoolss_RemoteFindNextPrinterChangeNotifyEx");
+		ndr_print_struct(ndr, "out", "spoolss_RouterRefreshPrinterChangeNotify");
 		ndr->depth++;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
@@ -19414,19 +19414,19 @@ static const struct ndr_interface_call spoolss_calls[] = {
 		false,
 	},
 	{
-		"spoolss_RouterRefreshPrinterChangeNotification",
-		sizeof(struct spoolss_RouterRefreshPrinterChangeNotification),
-		(ndr_push_flags_fn_t) ndr_push_spoolss_RouterRefreshPrinterChangeNotification,
-		(ndr_pull_flags_fn_t) ndr_pull_spoolss_RouterRefreshPrinterChangeNotification,
-		(ndr_print_function_t) ndr_print_spoolss_RouterRefreshPrinterChangeNotification,
+		"spoolss_RouterReplyPrinterEx",
+		sizeof(struct spoolss_RouterReplyPrinterEx),
+		(ndr_push_flags_fn_t) ndr_push_spoolss_RouterReplyPrinterEx,
+		(ndr_pull_flags_fn_t) ndr_pull_spoolss_RouterReplyPrinterEx,
+		(ndr_print_function_t) ndr_print_spoolss_RouterReplyPrinterEx,
 		false,
 	},
 	{
-		"spoolss_RemoteFindNextPrinterChangeNotifyEx",
-		sizeof(struct spoolss_RemoteFindNextPrinterChangeNotifyEx),
-		(ndr_push_flags_fn_t) ndr_push_spoolss_RemoteFindNextPrinterChangeNotifyEx,
-		(ndr_pull_flags_fn_t) ndr_pull_spoolss_RemoteFindNextPrinterChangeNotifyEx,
-		(ndr_print_function_t) ndr_print_spoolss_RemoteFindNextPrinterChangeNotifyEx,
+		"spoolss_RouterRefreshPrinterChangeNotify",
+		sizeof(struct spoolss_RouterRefreshPrinterChangeNotify),
+		(ndr_push_flags_fn_t) ndr_push_spoolss_RouterRefreshPrinterChangeNotify,
+		(ndr_pull_flags_fn_t) ndr_pull_spoolss_RouterRefreshPrinterChangeNotify,
+		(ndr_print_function_t) ndr_print_spoolss_RouterRefreshPrinterChangeNotify,
 		false,
 	},
 	{

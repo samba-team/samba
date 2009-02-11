@@ -2017,7 +2017,7 @@ struct spoolss_RemoteFindFirstPrinterChangeNotifyEx {
 };
 
 
-struct spoolss_RouterRefreshPrinterChangeNotification {
+struct spoolss_RouterReplyPrinterEx {
 	struct {
 		WERROR result;
 	} out;
@@ -2025,7 +2025,7 @@ struct spoolss_RouterRefreshPrinterChangeNotification {
 };
 
 
-struct spoolss_RemoteFindNextPrinterChangeNotifyEx {
+struct spoolss_RouterRefreshPrinterChangeNotify {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t change_low;

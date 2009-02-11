@@ -67,8 +67,8 @@ WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p, struct
 WERROR _spoolss_SpoolerInit(pipes_struct *p, struct spoolss_SpoolerInit *r);
 WERROR _spoolss_ResetPrinterEx(pipes_struct *p, struct spoolss_ResetPrinterEx *r);
 WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p, struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r);
-WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p, struct spoolss_RouterRefreshPrinterChangeNotification *r);
-WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p, struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r);
+WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p, struct spoolss_RouterReplyPrinterEx *r);
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p, struct spoolss_RouterRefreshPrinterChangeNotify *r);
 WERROR _spoolss_44(pipes_struct *p, struct spoolss_44 *r);
 WERROR _spoolss_OpenPrinterEx(pipes_struct *p, struct spoolss_OpenPrinterEx *r);
 WERROR _spoolss_AddPrinterEx(pipes_struct *p, struct spoolss_AddPrinterEx *r);
@@ -165,8 +165,8 @@ WERROR _spoolss_RouterFindFirstPrinterChangeNotification(pipes_struct *p, struct
 WERROR _spoolss_SpoolerInit(pipes_struct *p, struct spoolss_SpoolerInit *r);
 WERROR _spoolss_ResetPrinterEx(pipes_struct *p, struct spoolss_ResetPrinterEx *r);
 WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p, struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r);
-WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p, struct spoolss_RouterRefreshPrinterChangeNotification *r);
-WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p, struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r);
+WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p, struct spoolss_RouterReplyPrinterEx *r);
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p, struct spoolss_RouterRefreshPrinterChangeNotify *r);
 WERROR _spoolss_44(pipes_struct *p, struct spoolss_44 *r);
 WERROR _spoolss_OpenPrinterEx(pipes_struct *p, struct spoolss_OpenPrinterEx *r);
 WERROR _spoolss_AddPrinterEx(pipes_struct *p, struct spoolss_AddPrinterEx *r);
