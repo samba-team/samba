@@ -5925,18 +5925,18 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 		return WERR_BADFID;
 
 	switch (command) {
-	case PRINTER_CONTROL_PAUSE:
+	case SPOOLSS_PRINTER_CONTROL_PAUSE:
 		if (print_queue_pause(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case PRINTER_CONTROL_RESUME:
-	case PRINTER_CONTROL_UNPAUSE:
+	case SPOOLSS_PRINTER_CONTROL_RESUME:
+	case SPOOLSS_PRINTER_CONTROL_UNPAUSE:
 		if (print_queue_resume(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case PRINTER_CONTROL_PURGE:
+	case SPOOLSS_PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
