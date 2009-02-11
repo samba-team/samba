@@ -99,5 +99,11 @@ struct tevent_req *wbcPing_send(TALLOC_CTX *mem_ctx,
 			       struct wb_context *wb_ctx);
 wbcErr wbcPing_recv(struct tevent_req *req);
 
+struct tevent_req *wbcInterfaceVersion_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct wb_context *wb_ctx);
+wbcErr wbcInterfaceVersion_recv(struct tevent_req *req,
+			        uint32_t *interface_version);
+
 
 #endif /*_WBC_ASYNC_H_*/
