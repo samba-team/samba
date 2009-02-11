@@ -744,6 +744,11 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 		open_access_mask |= FILE_WRITE_DATA;
 	}
 
+	if (lp_parm_bool(SNUM(fsp->conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_SACL, PARM_IGNORE_SACL_DEFAULT)) {
+		access_mask &= ~SYSTEM_SECURITY_ACCESS;
+	}
+
 	DEBUG(10, ("onefs_open_file_ntcreate: fname=%s, after mapping "
 		   "open_access_mask=%#x, access_mask=0x%x\n",
 		   fname, open_access_mask, access_mask));
