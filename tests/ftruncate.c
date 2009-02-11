@@ -16,6 +16,10 @@ main()
 	int *buf;
 	int fd = open(DATA,O_RDWR|O_CREAT|O_TRUNC,0666);
 
+	if (fd == -1) {
+		exit(1);
+	}
+
 	ftruncate(fd, LEN);
 
 	unlink(DATA);
