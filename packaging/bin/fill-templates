@@ -13,7 +13,7 @@
 # License: GPL
 
 DIRNAME=$(dirname $0)
-TOPDIR=${DIRNAME}/../../
+TOPDIR=${DIRNAME}/../..
 SRCDIR=${TOPDIR}/source3
 VERSION_H=${SRCDIR}/include/version.h
 
