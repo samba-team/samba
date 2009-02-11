@@ -1614,7 +1614,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] spoolss_DevmodeContainer devmode_ctr,
 		[in,unique] security_descriptor *secdesc,
 		[in] uint32 ulevel,
-		[in,switch_is(ulevel)] spoolss_UserLevel userlevel
+		[in,switch_is(ulevel)] spoolss_UserLevel userlevel,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
