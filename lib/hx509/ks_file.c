@@ -304,7 +304,6 @@ pem_func(hx509_context context, const char *type,
 
     for (j = 0; j < sizeof(formats)/sizeof(formats[0]); j++) {
 	const char *q = formats[j].name;
-	printf("matching %s with %s\n", type, q);
 	if (strcasecmp(type, q) == 0) {
 	    const AlgorithmIdentifier *ai = NULL;
 	    if (formats[j].ai != NULL)
