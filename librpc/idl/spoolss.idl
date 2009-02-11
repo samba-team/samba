@@ -1751,11 +1751,23 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x59 */
+
+	typedef [bitmap32bit] bitmap {
+		APD_STRICT_UPGRADE		= 0x00000001,
+		APD_STRICT_DOWNGRADE		= 0x00000002,
+		APD_COPY_ALL_FILES		= 0x00000004,
+		APD_COPY_NEW_FILES		= 0x00000008,
+		APD_COPY_FROM_DIRECTORY		= 0x00000010,
+		APD_DONT_COPY_FILES_TO_CLUSTER	= 0x00001000,
+		APD_COPY_TO_ALL_SPOOLERS	= 0x00002000,
+		APD_RETURN_BLOCKING_STATUS_CODE = 0x00010000
+	} spoolss_AddPrinterDriverExFlags;
+
 	[public] WERROR spoolss_AddPrinterDriverEx(
 		[in] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
 		[in,switch_is(level)] spoolss_AddDriverInfo info,
-		[in] uint32 flags
+		[in] spoolss_AddPrinterDriverExFlags flags
 	);
 
 	/******************/
