@@ -335,13 +335,13 @@ generate_constant (const Symbol *s)
 	}
 	fprintf(codefile, "};\n");
 
-	fprintf (codefile, "const heim_oid asn1_oid_%s_variable = "
+	fprintf (codefile, "const heim_oid asn1_oid_%s = "
 		 "{ %d, oid_%s_variable_num };\n\n",
 		 s->gen_name, len, s->gen_name);
 
 	fprintf (codefile, "const heim_oid *oid_%s(void)\n"
 		 "{\n"
-		 "return &asn1_oid_%s_variable;\n"
+		 "return &asn1_oid_%s;\n"
 		 "}\n\n",
 		 s->gen_name, s->gen_name);
 
