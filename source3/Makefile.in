@@ -2841,42 +2841,7 @@ include/build_env.h: script/build_env.sh
 proto::
 
 etags::
-	etags `find $(srcdir) -name "*.[ch]"`
-	etags --append `find $(srcdir)/../lib -name "*.[ch]"`
-	etags --append `find $(srcdir)/../librpc -name "*.[ch]"`
-	etags --append `find $(srcdir)/../libcli -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/client -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/auth -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/rpc_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/kdc -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/winbind -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/scripting -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/heimdal_build -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/libcli -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/ntp_signd -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/ldap_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/smb_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/include -name "*.[ch]"`
-	etags --append `find $(srcdir)/../nsswitch -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/cldap_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/utils -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/librpc -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/libnet -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/web_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/heimdal -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/wrepl_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/dynconfig -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/param -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/lib -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/nbt_server -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/build -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/ntvfs -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/torture -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/cluster -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/ntptr -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/smbd -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/script -name "*.[ch]"`
-	etags --append `find $(srcdir)/../source4/dsdb -name "*.[ch]"`
+	find $(srcdir)/.. -name "*.[ch]" | xargs -n 100 etags --append
 
 ctags::
 	ctags `find $(srcdir)/.. -name "*.[ch]" | grep -v include/proto\.h`
