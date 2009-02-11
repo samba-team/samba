@@ -1087,8 +1087,42 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		}
 
 		if ( sending_msg_count ) {
-			rpccli_spoolss_rrpcn( notify_cli_pipe, mem_ctx, &p->notify.client_hnd,
-					data_len, data, p->notify.change, 0 );
+			NTSTATUS status;
+			WERROR werr;
+			union spoolss_ReplyPrinterInfo info;
+			struct spoolss_NotifyInfo info0;
+			uint32_t reply_result;
+
+			info0.version	= 0x2;
+			info0.flags	= count ? 0x00020000 /* ??? */ : PRINTER_NOTIFY_INFO_DISCARDED;
+			info0.count	= count;
+			info0.notifies	= notifies;
+
+			info.info0 = &info0;
+
+			status = rpccli_spoolss_RouterReplyPrinterEx(notify_cli_pipe, mem_ctx,
+								     &p->notify.client_hnd,
+								     p->notify.change, /* color */
+								     p->notify.flags,
+								     &reply_result,
+								     0, /* reply_type, must be 0 */
+								     info,
+								     &werr);
+			if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(werr)) {
+				DEBUG(1,("RouterReplyPrinterEx to client: %s failed: %s\n",
+					notify_cli_pipe->srv_name_slash,
+					win_errstr(werr)));
+			}
+			switch (reply_result) {
+				case 0:
+					break;
+				case PRINTER_NOTIFY_INFO_DISCARDED:
+				case PRINTER_NOTIFY_INFO_DISCARDNOTED:
+				case PRINTER_NOTIFY_INFO_COLOR_MISMATCH:
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
