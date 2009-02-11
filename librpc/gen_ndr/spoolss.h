@@ -903,6 +903,16 @@ union spoolss_UserLevel {
 #define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
 #define DPD_DELETE_ALL_FILES ( 0x00000004 )
 
+/* bitmap spoolss_AddPrinterDriverExFlags */
+#define APD_STRICT_UPGRADE ( 0x00000001 )
+#define APD_STRICT_DOWNGRADE ( 0x00000002 )
+#define APD_COPY_ALL_FILES ( 0x00000004 )
+#define APD_COPY_NEW_FILES ( 0x00000008 )
+#define APD_COPY_FROM_DIRECTORY ( 0x00000010 )
+#define APD_DONT_COPY_FILES_TO_CLUSTER ( 0x00001000 )
+#define APD_COPY_TO_ALL_SPOOLERS ( 0x00002000 )
+#define APD_RETURN_BLOCKING_STATUS_CODE ( 0x00010000 )
+
 
 struct _spoolss_EnumPrinters {
 	struct {

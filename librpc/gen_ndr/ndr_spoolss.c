@@ -10828,6 +10828,35 @@ _PUBLIC_ void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_AddPrinterDriverExFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_AddPrinterDriverExFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_AddPrinterDriverExFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_STRICT_UPGRADE", APD_STRICT_UPGRADE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_STRICT_DOWNGRADE", APD_STRICT_DOWNGRADE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_COPY_ALL_FILES", APD_COPY_ALL_FILES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_COPY_NEW_FILES", APD_COPY_NEW_FILES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_COPY_FROM_DIRECTORY", APD_COPY_FROM_DIRECTORY, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_DONT_COPY_FILES_TO_CLUSTER", APD_DONT_COPY_FILES_TO_CLUSTER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_COPY_TO_ALL_SPOOLERS", APD_COPY_TO_ALL_SPOOLERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "APD_RETURN_BLOCKING_STATUS_CODE", APD_RETURN_BLOCKING_STATUS_CODE, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrinters *r)
 {
 	if (flags & NDR_IN) {
@@ -18580,7 +18609,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_AddPrinterDriverEx(struct ndr_push *
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.info, r->in.level));
 		NDR_CHECK(ndr_push_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
+		NDR_CHECK(ndr_push_spoolss_AddPrinterDriverExFlags(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -18601,7 +18630,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_AddPrinterDriverEx(struct ndr_pull *
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.level));
 		NDR_CHECK(ndr_pull_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_CHECK(ndr_pull_spoolss_AddPrinterDriverExFlags(ndr, NDR_SCALARS, &r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -18626,7 +18655,7 @@ _PUBLIC_ void ndr_print_spoolss_AddPrinterDriverEx(struct ndr_print *ndr, const 
 		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.info, r->in.level);
 		ndr_print_spoolss_AddDriverInfo(ndr, "info", &r->in.info);
-		ndr_print_uint32(ndr, "flags", r->in.flags);
+		ndr_print_spoolss_AddPrinterDriverExFlags(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

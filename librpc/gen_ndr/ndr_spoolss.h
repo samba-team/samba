@@ -320,6 +320,7 @@ void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, const 
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_spoolss_AddPrinterDriverExFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrinters *r);
 enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinters *r);
 void ndr_print__spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int flags, const struct _spoolss_EnumPrinters *r);
