@@ -197,10 +197,10 @@ ecdsa_verify_signature(hx509_context context,
 
     /* XXX */
     if (der_heim_oid_cmp((*sig_alg->sig_oid)(), 
-			 oid_id_ecdsa_with_SHA256()) == 0) {
+			 &asn1_oid_id_ecdsa_with_SHA256) == 0) {
 	digest_alg = hx509_signature_sha256();
     } else if (der_heim_oid_cmp((*sig_alg->sig_oid)(), 
-			 oid_id_ecdsa_with_SHA1()) == 0) {
+				&asn1_oid_id_ecdsa_with_SHA1) == 0) {
 	digest_alg = hx509_signature_sha1();
     } else
 	return HX509_ALG_NOT_SUPP;
@@ -220,7 +220,7 @@ ecdsa_verify_signature(hx509_context context,
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
 
 
-    if (der_heim_oid_cmp(&spi->algorithm.algorithm, oid_id_ecPublicKey()) != 0 ||
+    if (der_heim_oid_cmp(&spi->algorithm.algorithm, &asn1_oid_id_ecPublicKey) != 0 ||
 	spi->algorithm.parameters == NULL)
 	return HX509_CRYPTO_SIG_INVALID_FORMAT;
 
@@ -248,11 +248,11 @@ ecdsa_verify_signature(hx509_context context,
      */
     groupnid = -1;
 
-    if (der_heim_oid_cmp(&ecparam.u.namedCurve, oid_id_ec_group_secp256r1()) == 0)
+    if (der_heim_oid_cmp(&ecparam.u.namedCurve, &asn1_oid_id_ec_group_secp256r1) == 0)
 	groupnid = NID_X9_62_prime256v1;
-    else if (der_heim_oid_cmp(&ecparam.u.namedCurve, oid_id_ec_group_secp160r1()) == 0)
+    else if (der_heim_oid_cmp(&ecparam.u.namedCurve, &asn1_oid_id_ec_group_secp160r1) == 0)
 	groupnid = NID_secp160r1;
-    else if (der_heim_oid_cmp(&ecparam.u.namedCurve, oid_id_ec_group_secp160r2()) == 0)
+    else if (der_heim_oid_cmp(&ecparam.u.namedCurve, &asn1_oid_id_ec_group_secp160r2) == 0)
 	groupnid = NID_secp160r2;
 
     free_ECParameters(&ecparam);
@@ -308,14 +308,14 @@ ecdsa_create_signature(hx509_context context,
     unsigned int siglen;
     int ret;
 
-    if (der_heim_oid_cmp(signer->ops->key_oid, oid_id_ecPublicKey()) != 0)
+    if (der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_ecPublicKey) != 0)
 	return HX509_ALG_NOT_SUPP;
 
     sig_oid = (*sig_alg->sig_oid)();
 
-    if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA256()) == 0) {
+    if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_ecdsa_with_SHA256) == 0) {
 	digest_alg = hx509_signature_sha256();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_ecdsa_with_SHA1()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_ecdsa_with_SHA1) == 0) {
 	digest_alg = hx509_signature_sha1();
     } else
 	return HX509_ALG_NOT_SUPP;
@@ -503,7 +503,7 @@ rsa_create_signature(hx509_context context,
     size_t size;
     int ret;
 
-    if (der_heim_oid_cmp(signer->ops->key_oid, oid_id_pkcs1_rsaEncryption()) != 0)
+    if (der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) != 0)
 	return HX509_ALG_NOT_SUPP;
 
     if (alg)
@@ -511,19 +511,19 @@ rsa_create_signature(hx509_context context,
     else
 	sig_oid = signer->signature_alg;
 
-    if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_sha256WithRSAEncryption()) == 0) {
+    if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_pkcs1_sha256WithRSAEncryption) == 0) {
 	digest_alg = hx509_signature_sha256();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_sha1WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_pkcs1_sha1WithRSAEncryption) == 0) {
 	digest_alg = hx509_signature_sha1();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_pkcs1_md5WithRSAEncryption) == 0) {
 	digest_alg = hx509_signature_md5();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_md5WithRSAEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_pkcs1_md5WithRSAEncryption) == 0) {
 	digest_alg = hx509_signature_md5();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_dsa_with_sha1()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_dsa_with_sha1) == 0) {
 	digest_alg = hx509_signature_sha1();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_pkcs1_rsaEncryption()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0) {
 	digest_alg = hx509_signature_sha1();
-    } else if (der_heim_oid_cmp(sig_oid, oid_id_heim_rsa_pkcs1_x509()) == 0) {
+    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_heim_rsa_pkcs1_x509) == 0) {
 	digest_alg = NULL;
     } else
 	return HX509_ALG_NOT_SUPP;
@@ -608,7 +608,7 @@ rsa_private_key_import(hx509_context context,
 			       "Failed to parse RSA key");
 	return HX509_PARSING_KEY_FAILED;
     }
-    private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
+    private_key->signature_alg = &asn1_oid_id_pkcs1_sha1WithRSAEncryption;
 
     return 0;
 }
@@ -631,7 +631,7 @@ rsa_private_key2SPKI(hx509_context context,
     }
     spki->subjectPublicKey.length = len * 8;
 
-    ret = set_digest_alg(&spki->algorithm,oid_id_pkcs1_rsaEncryption(),
+    ret = set_digest_alg(&spki->algorithm, &asn1_oid_id_pkcs1_rsaEncryption,
 			 "\x05\x00", 2);
     if (ret) {
 	hx509_set_error_string(context, 0, ret, "malloc - out of memory");
@@ -685,7 +685,7 @@ rsa_generate_private_key(hx509_context context,
 			       "Failed to generate RSA key");
 	return HX509_PARSING_KEY_FAILED;
     }
-    private_key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
+    private_key->signature_alg = &asn1_oid_id_pkcs1_sha1WithRSAEncryption;
 
     return 0;
 }
@@ -781,7 +781,7 @@ ecdsa_private_key_import(hx509_context context,
 			       "Failed to parse EC private key");
 	return HX509_PARSING_KEY_FAILED;
     }
-    private_key->signature_alg = oid_id_ecdsa_with_SHA256();
+    private_key->signature_alg = &asn1_oid_id_ecdsa_with_SHA256;
 
     return 0;
 }
@@ -916,7 +916,7 @@ dsa_parse_private_key(hx509_context context,
 	d2i_DSAPrivateKey(NULL, &p, len);
     if (private_key->private_key.dsa == NULL)
 	return EINVAL;
-    private_key->signature_alg = oid_id_dsa_with_sha1();
+    private_key->signature_alg = &asn1_oid_id_dsa_with_sha1;
 
     return 0;
 /* else */
@@ -2888,9 +2888,9 @@ match_keys_rsa(hx509_cert c, hx509_private_key private_key)
 int
 _hx509_match_keys(hx509_cert c, hx509_private_key key)
 {
-    if (der_heim_oid_cmp(key->ops->key_oid, oid_id_pkcs1_rsaEncryption()) == 0)
+    if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0)
 	return match_keys_rsa(c, key);
-    if (der_heim_oid_cmp(key->ops->key_oid, oid_id_ecPublicKey()) == 0)
+    if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0)
 	return 1; /* XXX */
     return 0;
 
