@@ -28,6 +28,7 @@ import uuid
 from samba import param
 
 class SamDBTestCase(TestCaseInTempDir):
+
     def setUp(self):
         super(SamDBTestCase, self).setUp()
         invocationid = str(uuid.uuid4())
