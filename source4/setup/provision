@@ -35,7 +35,7 @@ from samba.credentials import DONT_USE_KERBEROS
 from samba.auth import system_session
 import samba.getopt as options
 from samba import param
-from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS
+from samba.provision import provision, FILL_FULL, FILL_NT4SYNC, FILL_DRS, find_setup_dir
 
 # how do we make this case insensitive??
 
@@ -168,7 +168,7 @@ creds.set_kerberos_state(DONT_USE_KERBEROS)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = os.path.dirname(__file__)
+	setup_dir = find_setup_dir()
 
 samdb_fill = FILL_FULL
 if opts.blank:

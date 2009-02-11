@@ -45,6 +45,23 @@ from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
 
 __docformat__ = "restructuredText"
 
+
+def find_setup_dir():
+    """Find the setup directory used by provision."""
+    dirname = os.path.dirname(__file__)
+    if "/site-packages/" in dirname:
+        prefix = dirname[:dirname.index("/site-packages/")]
+        for suffix in ["share/setup", "share/samba/setup", "setup"]:
+            ret = os.path.join(prefix, suffix)
+            if os.path.isdir(ret):
+                return ret
+    # In source tree
+    ret = os.path.join(dirname, "../../../setup")
+    if os.path.isdir(ret):
+        return ret
+    raise Exception("Unable to find setup directory.")
+
+
 DEFAULTSITE = "Default-First-Site-Name"
 
 class InvalidNetbiosName(Exception):

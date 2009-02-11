@@ -65,13 +65,14 @@ else:
     smbconf = os.path.join(libdir, "smb.conf")
 samba3 = Samba3(libdir, smbconf)
 
+from samba.provision import find_setup_dir
 from samba.upgrade import upgrade_provision
 
 message("Provisioning\n")
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = os.path.dirname(__file__)
+	setup_dir = find_setup_dir()
 
 lp = sambaopts.get_loadparm()
 smbconf = lp.configfile

@@ -34,7 +34,7 @@ from samba import param
 
 from samba.auth import system_session
 import samba.getopt as options
-from samba.provision import provision_backend
+from samba.provision import provision_backend, find_setup_dir
 
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)
@@ -94,7 +94,7 @@ else:
 
 setup_dir = opts.setupdir
 if setup_dir is None:
-	setup_dir = os.path.dirname(__file__)
+	setup_dir = find_setup_dir()
 
 provision_backend(setup_dir=setup_dir, message=message, smbconf=smbconf, targetdir=opts.targetdir,
 		  realm=opts.realm, domain=opts.domain,
