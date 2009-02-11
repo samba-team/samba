@@ -299,6 +299,8 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	if (c_realm && *c_realm)
 		got_realm = True;
 
+ again:
+
 	/* we need to try once with the realm name and fallback to the
 	   netbios domain name if we fail (if netbios has not been disabled */
 
@@ -349,8 +351,6 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	}
 
 	sitename = sitename_fetch(realm);
-
- again:
 
 	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
 		(got_realm ? "realm" : "domain"), realm));
