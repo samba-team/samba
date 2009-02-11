@@ -24,9 +24,6 @@ x509 policy mappings support
 
 CRL delta support
 
-crypto
-	make signing alg depend on signer if not given
-
 Qualified statement
 	https://bugzilla.mozilla.org/show_bug.cgi?id=277797#c2
 
