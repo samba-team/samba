@@ -29,6 +29,9 @@ from samba import param
 
 class SamDBTestCase(TestCaseInTempDir):
 
+    def setup_path(self, relpath):
+        return os.path.join("setup", relpath)
+
     def setUp(self):
         super(SamDBTestCase, self).setUp()
         invocationid = str(uuid.uuid4())
@@ -38,7 +41,6 @@ class SamDBTestCase(TestCaseInTempDir):
         schemadn = "CN=Schema," + configdn
         domainguid = str(uuid.uuid4())
         policyguid = str(uuid.uuid4())
-        setup_path = lambda x: os.path.join("setup", x)
         creds = Credentials()
         creds.set_anonymous()
         domainsid = security.random_sid()
@@ -52,21 +54,21 @@ class SamDBTestCase(TestCaseInTempDir):
         serverrole="domain controller"
 
         smbconf = os.path.join(self.tempdir, "smb.conf")
-        make_smbconf(smbconf, setup_path, hostname, domain, dnsdomain, serverrole, 
-                     self.tempdir)
+        make_smbconf(smbconf, self.setup_path, hostname, domain, dnsdomain, 
+                     serverrole, self.tempdir)
 
-        lp = param.LoadParm()
-        lp.load(smbconf)
+        self.lp = param.LoadParm()
+        self.lp.load(smbconf)
 
-        names = guess_names(lp=lp, hostname=hostname, 
+        names = guess_names(lp=self.lp, hostname=hostname, 
                             domain=domain, dnsdomain=dnsdomain, 
                             serverrole=serverrole, 
                             domaindn=self.domaindn, configdn=configdn, 
                             schemadn=schemadn)
         setup_templatesdb(os.path.join(self.tempdir, "templates.ldb"), 
-                          setup_path, session_info=session_info, 
-                          credentials=creds, lp=cmdline_loadparm)
-        self.samdb = setup_samdb(path, setup_path, session_info, creds, 
+                          self.setup_path, session_info=session_info, 
+                          credentials=creds, lp=self.lp)
+        self.samdb = setup_samdb(path, self.setup_path, session_info, creds, 
                                  cmdline_loadparm, names, 
                                  lambda x: None, domainsid, 
                                  "# no aci", domainguid, 
