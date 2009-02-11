@@ -590,13 +590,13 @@ static NTSTATUS sam_lookup_groupmem(struct winbindd_domain *domain,
 				  sid_type_lookup(lsa_names[i].type)));
 			continue;
 		}
-		if (!((*names)[i] = talloc_strdup((*names),
+		if (!((*names)[num_mapped] = talloc_strdup((*names),
 						  lsa_names[i].name))) {
 			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		(*name_types)[i] = lsa_names[i].type;
+		(*name_types)[num_mapped] = lsa_names[i].type;
 
 		num_mapped += 1;
 	}
