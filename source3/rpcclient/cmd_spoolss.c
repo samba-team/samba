@@ -2593,7 +2593,7 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc,
 				     const char **argv)
 {
-	const char *printername = argv[1];
+	const char *printername;
 	char *printername_path = NULL;
 	struct cli_state *cli_server2 = NULL;
 	struct rpc_pipe_client *cli2 = NULL;
@@ -2605,6 +2605,8 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 		printf("Usage: %s <printer> <server>\n", argv[0]);
 		return WERR_OK;
 	}
+
+	printername = argv[1];
 
 	/* first get the connection to the remote server */
 
