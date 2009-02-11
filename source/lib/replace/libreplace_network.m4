@@ -353,6 +353,7 @@ AC_CACHE_CHECK([for ipv6 support],libreplace_cv_HAVE_IPV6,[
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <netinet/in.h>
 		],
 		[
 struct sockaddr_storage sa_store;
