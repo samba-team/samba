@@ -88,6 +88,7 @@ static void rpc_cli_smbd_stdout_reader(struct event_context *ev,
 		TALLOC_FREE(fde);
 		return;
 	}
+	buf[nread] = '\0';
 
 	if (conn->stdout_callback.fn != NULL) {
 		conn->stdout_callback.fn(buf, nread,
