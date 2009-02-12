@@ -694,6 +694,10 @@ static void smbd_parent_loop(struct smbd_parent_context *parent)
 			continue;
 		}
 
+		/* socket error */
+		if (num < 0)
+			exit_server_cleanly("socket error");
+
 		/* If the idle timeout fired and we don't have any connected
 		 * users, exit gracefully. We should be running under a process
 		 * controller that will restart us if necessry.

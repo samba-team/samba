@@ -1478,9 +1478,13 @@ void start_background_queue(void)
 
 			ret = sys_select(maxfd, &r_fds, &w_fds, NULL, &to);
 
-			/* If pause_pipe[1] is closed it means the parent smbd
-			 * and children exited or aborted. */
-			if (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds)) {
+			/*
+			 * If pause_pipe[1] is closed it means the parent smbd
+			 * and children exited or aborted. If sys_select()
+			 * failed, then something more sinister is wrong
+			 */
+			if ((ret < 0) ||
+			    (ret == 1 && FD_ISSET(pause_pipe[1], &r_fds))) {
                                 exit_server_cleanly(NULL);
 			}
 

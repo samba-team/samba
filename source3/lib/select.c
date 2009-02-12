@@ -59,7 +59,17 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 
 	if (initialised != sys_getpid()) {
 		if (pipe(select_pipe) == -1)
-			smb_panic("Could not create select pipe");
+		{
+			DEBUG(0, ("sys_select: pipe failed (%s)\n",
+				strerror(errno)));
+			if (readfds != NULL)
+				FD_ZERO(readfds);
+			if (writefds != NULL)
+				FD_ZERO(writefds);
+			if (errorfds != NULL)
+				FD_ZERO(errorfds);
+			return -1;
+		}
 
 		/*
 		 * These next two lines seem to fix a bug with the Linux
