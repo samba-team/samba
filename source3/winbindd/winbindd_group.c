@@ -1867,3 +1867,118 @@ enum winbindd_result winbindd_dual_getuserdomgroups(struct winbindd_domain *doma
 
 	return WINBINDD_OK;
 }
+
+void winbindd_getsidaliases(struct winbindd_cli_state *state)
+{
+	DOM_SID domain_sid;
+	struct winbindd_domain *domain;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	if (!string_to_sid(&domain_sid, state->request.data.sid)) {
+		DEBUG(1, ("Could not get convert sid %s from string\n",
+			  state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	/* Get info for the domain */
+	if ((domain = find_domain_from_sid_noinit(&domain_sid)) == NULL) {
+		DEBUG(0,("could not find domain entry for sid %s\n",
+			 sid_string_dbg(&domain_sid)));
+		request_error(state);
+		return;
+	}
+
+	sendto_domain(state, domain);
+}
+
+enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
+						 struct winbindd_cli_state *state)
+{
+	DOM_SID *sids = NULL;
+	size_t num_sids = 0;
+	char *sidstr = NULL;
+	ssize_t len;
+	size_t i;
+	uint32 num_aliases;
+	uint32 *alias_rids;
+	NTSTATUS result;
+
+	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
+
+	sidstr = state->request.extra_data.data;
+	if (sidstr == NULL) {
+		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
+		if (!sidstr) {
+			DEBUG(0, ("Out of memory\n"));
+			return WINBINDD_ERROR;
+		}
+	}
+
+	DEBUG(10, ("Sidlist: %s\n", sidstr));
+
+	if (!parse_sidlist(state->mem_ctx, sidstr, &sids, &num_sids)) {
+		DEBUG(0, ("Could not parse SID list: %s\n", sidstr));
+		return WINBINDD_ERROR;
+	}
+
+	num_aliases = 0;
+	alias_rids = NULL;
+
+	result = domain->methods->lookup_useraliases(domain,
+						     state->mem_ctx,
+						     num_sids, sids,
+						     &num_aliases,
+						     &alias_rids);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(3, ("Could not lookup_useraliases: %s\n",
+			  nt_errstr(result)));
+		return WINBINDD_ERROR;
+	}
+
+	num_sids = 0;
+	sids = NULL;
+	sidstr = NULL;
+
+	DEBUG(10, ("Got %d aliases\n", num_aliases));
+
+	for (i=0; i<num_aliases; i++) {
+		DOM_SID sid;
+		DEBUGADD(10, (" rid %d\n", alias_rids[i]));
+		sid_copy(&sid, &domain->sid);
+		sid_append_rid(&sid, alias_rids[i]);
+		result = add_sid_to_array(state->mem_ctx, &sid, &sids,
+					  &num_sids);
+		if (!NT_STATUS_IS_OK(result)) {
+			return WINBINDD_ERROR;
+		}
+	}
+
+
+	if (!print_sidlist(state->mem_ctx, sids, num_sids, &sidstr, &len)) {
+		DEBUG(0, ("Could not print_sidlist\n"));
+		state->response.extra_data.data = NULL;
+		return WINBINDD_ERROR;
+	}
+
+	state->response.extra_data.data = NULL;
+
+	if (sidstr) {
+		state->response.extra_data.data = SMB_STRDUP(sidstr);
+		if (!state->response.extra_data.data) {
+			DEBUG(0, ("Out of memory\n"));
+			return WINBINDD_ERROR;
+		}
+		DEBUG(10, ("aliases_list: %s\n",
+			   (char *)state->response.extra_data.data));
+		state->response.length += len+1;
+		state->response.data.num_entries = num_sids;
+	}
+
+	return WINBINDD_OK;
+}
+
+

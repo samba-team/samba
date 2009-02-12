@@ -382,16 +382,22 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 							     uint32_t printer_local /* [in]  */,
 							     struct spoolss_NotifyOptionsContainer *t1 /* [in] [unique] */,
 							     WERROR *werror);
-NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotification(struct rpc_pipe_client *cli,
-							       TALLOC_CTX *mem_ctx,
-							       WERROR *werror);
-NTSTATUS rpccli_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct rpc_pipe_client *cli,
-							    TALLOC_CTX *mem_ctx,
-							    struct policy_handle *handle /* [in] [ref] */,
-							    uint32_t change_low /* [in]  */,
-							    struct spoolss_NotifyOptionsContainer *container /* [in] [unique] */,
-							    struct spoolss_NotifyInfo **info /* [out] [ref] */,
-							    WERROR *werror);
+NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx,
+					     struct policy_handle *handle /* [in] [ref] */,
+					     uint32_t color /* [in]  */,
+					     uint32_t flags /* [in]  */,
+					     uint32_t *reply_result /* [out] [ref] */,
+					     uint32_t reply_type /* [in]  */,
+					     union spoolss_ReplyPrinterInfo info /* [in] [switch_is(reply_type)] */,
+					     WERROR *werror);
+NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client *cli,
+							 TALLOC_CTX *mem_ctx,
+							 struct policy_handle *handle /* [in] [ref] */,
+							 uint32_t change_low /* [in]  */,
+							 struct spoolss_NotifyOptionsContainer *container /* [in] [unique] */,
+							 struct spoolss_NotifyInfo **info /* [out] [ref] */,
+							 WERROR *werror);
 NTSTATUS rpccli_spoolss_44(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,
 			   WERROR *werror);

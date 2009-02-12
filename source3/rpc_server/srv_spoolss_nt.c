@@ -5925,18 +5925,18 @@ static WERROR control_printer(POLICY_HND *handle, uint32 command,
 		return WERR_BADFID;
 
 	switch (command) {
-	case PRINTER_CONTROL_PAUSE:
+	case SPOOLSS_PRINTER_CONTROL_PAUSE:
 		if (print_queue_pause(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case PRINTER_CONTROL_RESUME:
-	case PRINTER_CONTROL_UNPAUSE:
+	case SPOOLSS_PRINTER_CONTROL_RESUME:
+	case SPOOLSS_PRINTER_CONTROL_UNPAUSE:
 		if (print_queue_resume(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
 		break;
-	case PRINTER_CONTROL_PURGE:
+	case SPOOLSS_PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(p->server_info, snum, &errcode)) {
 			errcode = WERR_OK;
 		}
@@ -7380,6 +7380,8 @@ WERROR _spoolss_GetForm(pipes_struct *p,
 		if (numofforms == 0)
 			return WERR_BADFID;
 	}
+
+	ZERO_STRUCT(form_1);
 
 	switch (level) {
 	case 1:
@@ -10473,22 +10475,22 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
 }
 
 /****************************************************************
- _spoolss_RouterRefreshPrinterChangeNotification
+ _spoolss_RouterReplyPrinterEx
 ****************************************************************/
 
-WERROR _spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p,
-						       struct spoolss_RouterRefreshPrinterChangeNotification *r)
+WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p,
+				     struct spoolss_RouterReplyPrinterEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
- _spoolss_RemoteFindNextPrinterChangeNotifyEx
+ _dcesrv_spoolss_RouterRefreshPrinterChangeNotify
 ****************************************************************/
 
-WERROR _spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p,
-						    struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
+						 struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

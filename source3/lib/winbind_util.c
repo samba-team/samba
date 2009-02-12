@@ -24,6 +24,43 @@
 
 #include "nsswitch/libwbclient/wbclient.h"
 
+struct passwd * winbind_getpwnam(const char * name)
+{
+	wbcErr result;
+	struct passwd * tmp_pwd = NULL;
+	struct passwd * pwd = NULL;
+
+	result = wbcGetpwnam(name, &tmp_pwd);
+	if (result != WBC_ERR_SUCCESS)
+		return pwd;
+
+	pwd = tcopy_passwd(talloc_tos(), tmp_pwd);
+
+	wbcFreeMemory(tmp_pwd);
+
+	return pwd;
+}
+
+struct passwd * winbind_getpwsid(const DOM_SID *sid)
+{
+	wbcErr result;
+	struct passwd * tmp_pwd = NULL;
+	struct passwd * pwd = NULL;
+	struct wbcDomainSid dom_sid;
+
+	memcpy(&dom_sid, sid, sizeof(dom_sid));
+
+	result = wbcGetpwsid(&dom_sid, &tmp_pwd);
+	if (result != WBC_ERR_SUCCESS)
+		return pwd;
+
+	pwd = tcopy_passwd(talloc_tos(), tmp_pwd);
+
+	wbcFreeMemory(tmp_pwd);
+
+	return pwd;
+}
+
 /* Call winbindd to convert a name to a sid */
 
 bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
@@ -234,7 +271,86 @@ bool winbind_allocate_gid(gid_t *gid)
 	return (ret == WBC_ERR_SUCCESS);
 }
 
+bool winbind_get_groups(TALLOC_CTX * mem_ctx, const char *account, uint32_t *num_groups, gid_t **_groups)
+{
+	wbcErr ret;
+	uint32_t ngroups;
+	gid_t *group_list = NULL;
+
+	ret = wbcGetGroups(account, &ngroups, &group_list);
+	if (ret != WBC_ERR_SUCCESS)
+		return false;
+
+	*_groups = TALLOC_ARRAY(mem_ctx, gid_t, ngroups);
+	if (*_groups == NULL) {
+	    wbcFreeMemory(group_list);
+	    return false;
+	}
+
+	memcpy(*_groups, group_list, ngroups* sizeof(gid_t));
+	*num_groups = ngroups;
+
+	wbcFreeMemory(group_list);
+	return true;
+}
+
+bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
+			     const DOM_SID *dom_sid,
+			     const DOM_SID *members,
+			     size_t num_members,
+			     uint32_t **pp_alias_rids,
+			     size_t *p_num_alias_rids)
+{
+	wbcErr ret;
+	struct wbcDomainSid domain_sid;
+	struct wbcDomainSid *sid_list = NULL;
+	size_t i;
+	uint32_t * rids;
+	size_t num_rids;
+
+	memcpy(&domain_sid, dom_sid, sizeof(*dom_sid));
+
+	sid_list = TALLOC_ARRAY(mem_ctx, struct wbcDomainSid, num_members);
+
+	for (i=0; i < num_members; i++) {
+	    memcpy(&sid_list[i], &members[i], sizeof(sid_list[i]));
+	}
+
+	ret = wbcGetSidAliases(&domain_sid,
+			       sid_list,
+			       num_members,
+			       &rids,
+			       &num_rids);
+	if (ret != WBC_ERR_SUCCESS) {
+		wbcFreeMemory(rids);
+		return false;
+	}
+
+	*pp_alias_rids = TALLOC_ARRAY(mem_ctx, uint32_t, num_rids);
+	if (*pp_alias_rids == NULL) {
+		wbcFreeMemory(rids);
+		return false;
+	}
+
+	memcpy(*pp_alias_rids, rids, sizeof(uint32_t) * num_rids);
+
+	*p_num_alias_rids = num_rids;
+	wbcFreeMemory(rids);
+
+	return true;
+}
+
 #else      /* WITH_WINBIND */
+
+struct passwd * winbind_getpwnam(const char * name)
+{
+	return NULL;
+}
+
+struct passwd * winbind_getpwsid(const DOM_SID *sid)
+{
+	return NULL;
+}
 
 bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
                          enum lsa_SidType *name_type)
@@ -314,6 +430,21 @@ bool winbind_allocate_uid(uid_t *uid)
 /* Ask Winbind to allocate a new gid for us */
 
 bool winbind_allocate_gid(gid_t *gid)
+{
+	return false;
+}
+
+bool winbind_get_groups(TALLOC_CTX *mem_ctx, const char *account, uint32_t *num_groups, gid_t **_groups)
+{
+	return false;
+}
+
+bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
+			     const DOM_SID *dom_sid,
+			     const DOM_SID *members,
+			     size_t num_members,
+			     uint32_t **pp_alias_rids,
+			     size_t *p_num_alias_rids)
 {
 	return false;
 }

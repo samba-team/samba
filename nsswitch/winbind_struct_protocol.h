@@ -39,9 +39,11 @@
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 #define WINBINDD_LOCATOR_KDC_ADDRESS "WINBINDD_LOCATOR_KDC_ADDRESS"
 
-/* Update this when you change the interface.  */
-
-#define WINBIND_INTERFACE_VERSION 20
+/* Update this when you change the interface.
+ * 21: added WINBINDD_GETPWSID
+ *     added WINBINDD_GETSIDALIASES
+ */
+#define WINBIND_INTERFACE_VERSION 21
 
 /* Have to deal with time_t being 4 or 8 bytes due to structure alignment.
    On a 64bit Linux box, we have to support a constant structure size
@@ -60,6 +62,7 @@ enum winbindd_cmd {
 
 	WINBINDD_GETPWNAM,
 	WINBINDD_GETPWUID,
+	WINBINDD_GETPWSID,
 	WINBINDD_GETGRNAM,
 	WINBINDD_GETGRGID,
 	WINBINDD_GETGROUPS,
@@ -139,6 +142,9 @@ enum winbindd_cmd {
 
 	/* Various group queries */
 	WINBINDD_GETUSERDOMGROUPS,
+
+	/* lookup local groups */
+	WINBINDD_GETSIDALIASES,
 
 	/* Initialize connection in a child */
 	WINBINDD_INIT_CONNECTION,

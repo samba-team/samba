@@ -5058,18 +5058,18 @@ static bool api_spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p)
 	return true;
 }
 
-static bool api_spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p)
+static bool api_spoolss_RouterReplyPrinterEx(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct spoolss_RouterRefreshPrinterChangeNotification *r;
+	struct spoolss_RouterReplyPrinterEx *r;
 
-	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREPLYPRINTEREX];
 
-	r = talloc(talloc_tos(), struct spoolss_RouterRefreshPrinterChangeNotification);
+	r = talloc(talloc_tos(), struct spoolss_RouterReplyPrinterEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -5093,10 +5093,17 @@ static bool api_spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(spoolss_RouterRefreshPrinterChangeNotification, r);
+		NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinterEx, r);
 	}
 
-	r->out.result = _spoolss_RouterRefreshPrinterChangeNotification(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.reply_result = talloc_zero(r, uint32_t);
+	if (r->out.reply_result == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _spoolss_RouterReplyPrinterEx(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -5105,7 +5112,7 @@ static bool api_spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(spoolss_RouterRefreshPrinterChangeNotification, r);
+		NDR_PRINT_OUT_DEBUG(spoolss_RouterReplyPrinterEx, r);
 	}
 
 	push = ndr_push_init_ctx(r, NULL);
@@ -5131,18 +5138,18 @@ static bool api_spoolss_RouterRefreshPrinterChangeNotification(pipes_struct *p)
 	return true;
 }
 
-static bool api_spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p)
+static bool api_spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r;
+	struct spoolss_RouterRefreshPrinterChangeNotify *r;
 
-	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX];
+	call = &ndr_table_spoolss.calls[NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY];
 
-	r = talloc(talloc_tos(), struct spoolss_RemoteFindNextPrinterChangeNotifyEx);
+	r = talloc(talloc_tos(), struct spoolss_RouterRefreshPrinterChangeNotify);
 	if (r == NULL) {
 		return false;
 	}
@@ -5166,7 +5173,7 @@ static bool api_spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(spoolss_RemoteFindNextPrinterChangeNotifyEx, r);
+		NDR_PRINT_IN_DEBUG(spoolss_RouterRefreshPrinterChangeNotify, r);
 	}
 
 	ZERO_STRUCT(r->out);
@@ -5176,7 +5183,7 @@ static bool api_spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p)
 		return false;
 	}
 
-	r->out.result = _spoolss_RemoteFindNextPrinterChangeNotifyEx(p, r);
+	r->out.result = _spoolss_RouterRefreshPrinterChangeNotify(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -5185,7 +5192,7 @@ static bool api_spoolss_RemoteFindNextPrinterChangeNotifyEx(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(spoolss_RemoteFindNextPrinterChangeNotifyEx, r);
+		NDR_PRINT_OUT_DEBUG(spoolss_RouterRefreshPrinterChangeNotify, r);
 	}
 
 	push = ndr_push_init_ctx(r, NULL);
@@ -7428,8 +7435,8 @@ static struct api_struct api_spoolss_cmds[] =
 	{"SPOOLSS_SPOOLERINIT", NDR_SPOOLSS_SPOOLERINIT, api_spoolss_SpoolerInit},
 	{"SPOOLSS_RESETPRINTEREX", NDR_SPOOLSS_RESETPRINTEREX, api_spoolss_ResetPrinterEx},
 	{"SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX", NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX, api_spoolss_RemoteFindFirstPrinterChangeNotifyEx},
-	{"SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION", NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION, api_spoolss_RouterRefreshPrinterChangeNotification},
-	{"SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX", NDR_SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX, api_spoolss_RemoteFindNextPrinterChangeNotifyEx},
+	{"SPOOLSS_ROUTERREPLYPRINTEREX", NDR_SPOOLSS_ROUTERREPLYPRINTEREX, api_spoolss_RouterReplyPrinterEx},
+	{"SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY", NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY, api_spoolss_RouterRefreshPrinterChangeNotify},
 	{"SPOOLSS_44", NDR_SPOOLSS_44, api_spoolss_44},
 	{"SPOOLSS_OPENPRINTEREX", NDR_SPOOLSS_OPENPRINTEREX, api_spoolss_OpenPrinterEx},
 	{"SPOOLSS_ADDPRINTEREX", NDR_SPOOLSS_ADDPRINTEREX, api_spoolss_AddPrinterEx},
@@ -8069,21 +8076,27 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 			return NT_STATUS_OK;
 		}
 
-		case NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION: {
-			struct spoolss_RouterRefreshPrinterChangeNotification *r = (struct spoolss_RouterRefreshPrinterChangeNotification *)_r;
-			r->out.result = _spoolss_RouterRefreshPrinterChangeNotification(cli->pipes_struct, r);
+		case NDR_SPOOLSS_ROUTERREPLYPRINTEREX: {
+			struct spoolss_RouterReplyPrinterEx *r = (struct spoolss_RouterReplyPrinterEx *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.reply_result = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.reply_result == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.result = _spoolss_RouterReplyPrinterEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 
-		case NDR_SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX: {
-			struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r = (struct spoolss_RemoteFindNextPrinterChangeNotifyEx *)_r;
+		case NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY: {
+			struct spoolss_RouterRefreshPrinterChangeNotify *r = (struct spoolss_RouterRefreshPrinterChangeNotify *)_r;
 			ZERO_STRUCT(r->out);
 			r->out.info = talloc_zero(mem_ctx, struct spoolss_NotifyInfo *);
 			if (r->out.info == NULL) {
 			return NT_STATUS_NO_MEMORY;
 			}
 
-			r->out.result = _spoolss_RemoteFindNextPrinterChangeNotifyEx(cli->pipes_struct, r);
+			r->out.result = _spoolss_RouterRefreshPrinterChangeNotify(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
 

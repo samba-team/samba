@@ -559,6 +559,8 @@ int main(int argc,char *argv[])
 		lp_set_cmdline(cmdline_lp_ctx, "torture:samba3", "true");
 	} else if (strcmp(target, "samba4") == 0) {
 		lp_set_cmdline(cmdline_lp_ctx, "torture:samba4", "true");
+	} else if (strcmp(target, "win7") == 0) {
+		lp_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
 	}
 
 	if (max_runtime) {

@@ -491,6 +491,145 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 	return wbc_status;
 }
 
+static inline
+wbcErr _sid_to_rid(struct wbcDomainSid *sid, uint32_t *rid)
+{
+	if (sid->num_auths < 1) {
+		return WBC_ERR_INVALID_RESPONSE;
+	}
+	*rid = sid->sub_auths[sid->num_auths - 1];
+
+	return WBC_ERR_SUCCESS;
+}
+
+/* Get alias membership for sids */
+wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
+			struct wbcDomainSid *sids,
+			uint32_t num_sids,
+			uint32_t **alias_rids,
+			uint32_t *num_alias_rids)
+{
+	uint32_t i;
+	const char *s;
+	struct winbindd_request request;
+	struct winbindd_response response;
+	char *sid_string = NULL;
+	ssize_t sid_len;
+	ssize_t extra_data_len = 0;
+	char * extra_data = NULL;
+	ssize_t buflen = 0;
+	struct wbcDomainSid sid;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	uint32_t * rids = NULL;
+
+	/* Initialise request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	if (!dom_sid) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	wbc_status = wbcSidToString(dom_sid, &sid_string);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	strncpy(request.data.sid, sid_string, sizeof(request.data.sid)-1);
+	wbcFreeMemory(sid_string);
+	sid_string = NULL;
+
+	/* Lets assume each sid is around 54 characters
+	 * S-1-5-AAAAAAAAAAA-BBBBBBBBBBB-CCCCCCCCCCC-DDDDDDDDDDD\n */
+	buflen = 54 * num_sids;
+	extra_data = talloc_array(NULL, char, buflen);
+	if (!extra_data) {
+		wbc_status = WBC_ERR_NO_MEMORY;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	/* Build the sid list */
+	for (i=0; i<num_sids; i++) {
+		if (sid_string) {
+			wbcFreeMemory(sid_string);
+			sid_string = NULL;
+		}
+		wbc_status = wbcSidToString(&sids[i], &sid_string);
+		BAIL_ON_WBC_ERROR(wbc_status);
+
+		sid_len = strlen(sid_string);
+
+		if (buflen < extra_data_len + sid_len + 2) {
+			buflen *= 2;
+			extra_data = talloc_realloc(NULL, extra_data,
+			    char, buflen);
+			if (!extra_data) {
+				wbc_status = WBC_ERR_NO_MEMORY;
+				BAIL_ON_WBC_ERROR(wbc_status);
+			}
+		}
+
+		strncpy(&extra_data[extra_data_len], sid_string,
+			buflen - extra_data_len);
+		extra_data_len += sid_len;
+		extra_data[extra_data_len++] = '\n';
+		extra_data[extra_data_len] = '\0';
+	}
+
+	request.extra_data.data = extra_data;
+	request.extra_len = extra_data_len;
+
+	wbc_status = wbcRequestResponse(WINBINDD_GETSIDALIASES,
+					&request,
+					&response);
+	BAIL_ON_WBC_ERROR(wbc_status);
+
+	if (response.data.num_entries &&
+	    !response.extra_data.data) {
+		wbc_status = WBC_ERR_INVALID_RESPONSE;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	rids = talloc_array(NULL, uint32_t,
+			    response.data.num_entries);
+	BAIL_ON_PTR_ERROR(sids, wbc_status);
+
+	s = (const char *)response.extra_data.data;
+	for (i = 0; i < response.data.num_entries; i++) {
+		char *n = strchr(s, '\n');
+		if (n) {
+			*n = '\0';
+		}
+		wbc_status = wbcStringToSid(s, &sid);
+		BAIL_ON_WBC_ERROR(wbc_status);
+		wbc_status = _sid_to_rid(&sid, &rids[i]);
+		BAIL_ON_WBC_ERROR(wbc_status);
+		s += strlen(s) + 1;
+	}
+
+	*num_alias_rids = response.data.num_entries;
+	*alias_rids = rids;
+	rids = NULL;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	if (sid_string) {
+		wbcFreeMemory(sid_string);
+	}
+	if (extra_data) {
+		talloc_free(extra_data);
+	}
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+	if (rids) {
+		talloc_free(rids);
+	}
+
+	return wbc_status;
+}
+
+
 /* Lists Users */
 wbcErr wbcListUsers(const char *domain_name,
 		    uint32_t *_num_users,

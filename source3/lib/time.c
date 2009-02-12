@@ -360,12 +360,12 @@ struct timespec get_create_timespec(const SMB_STRUCT_STAT *pst,bool fake_dirs)
 		return ret;
 	}
 
-#if defined(HAVE_STAT_ST_BIRTHTIMESPEC)
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
 	ret = pst->st_birthtimespec;
-#elif defined(HAVE_STAT_ST_BIRTHTIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIMENSEC)
 	ret.tv_sec = pst->st_birthtime;
 	ret.tv_nsec = pst->st_birthtimenspec;
-#elif defined(HAVE_STAT_ST_BIRTHTIME)
+#elif defined(HAVE_STRUCT_STAT_ST_BIRTHTIME)
 	ret.tv_sec = pst->st_birthtime;
 	ret.tv_nsec = 0;
 #else
@@ -397,24 +397,24 @@ struct timespec get_atimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_nsec = 0;
 	return ret;
 #else
-#if defined(HAVE_STAT_ST_ATIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	return pst->st_atim;
-#elif defined(HAVE_STAT_ST_ATIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	struct timespec ret;
 	ret.tv_sec = pst->st_atime;
 	ret.tv_nsec = pst->st_atimensec;
 	return ret;
-#elif defined(HAVE_STAT_ST_ATIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	struct timespec ret;
 	ret.tv_sec = pst->st_atime;
 	ret.tv_nsec = pst->st_atime_n;
 	return ret;
-#elif defined(HAVE_STAT_ST_UATIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	struct timespec ret;
 	ret.tv_sec = pst->st_atime;
 	ret.tv_nsec = pst->st_uatime * 1000;
 	return ret;
-#elif defined(HAVE_STAT_ST_ATIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	return pst->st_atimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
@@ -428,18 +428,18 @@ void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	/* Old system - no ns timestamp. */
 	pst->st_atime = ts.tv_sec;
 #else
-#if defined(HAVE_STAT_ST_ATIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	pst->st_atim = ts;
-#elif defined(HAVE_STAT_ST_ATIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	pst->st_atime = ts.tv_sec;
 	pst->st_atimensec = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_ATIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	pst->st_atime = ts.tv_sec;
 	pst->st_atime_n = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_UATIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	pst->st_atime = ts.tv_sec;
 	pst->st_uatime = ts.tv_nsec / 1000;
-#elif defined(HAVE_STAT_ST_ATIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	pst->st_atimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
@@ -457,24 +457,24 @@ struct timespec get_mtimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_nsec = 0;
 	return ret;
 #else
-#if defined(HAVE_STAT_ST_MTIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	return pst->st_mtim;
-#elif defined(HAVE_STAT_ST_MTIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	struct timespec ret;
 	ret.tv_sec = pst->st_mtime;
 	ret.tv_nsec = pst->st_mtimensec;
 	return ret;
-#elif defined(HAVE_STAT_ST_MTIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	struct timespec ret;
 	ret.tv_sec = pst->st_mtime;
 	ret.tv_nsec = pst->st_mtime_n;
 	return ret;
-#elif defined(HAVE_STAT_ST_UMTIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	struct timespec ret;
 	ret.tv_sec = pst->st_mtime;
 	ret.tv_nsec = pst->st_umtime * 1000;
 	return ret;
-#elif defined(HAVE_STAT_ST_MTIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	return pst->st_mtimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
@@ -488,18 +488,18 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	/* Old system - no ns timestamp. */
 	pst->st_mtime = ts.tv_sec;
 #else
-#if defined(HAVE_STAT_ST_MTIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	pst->st_mtim = ts;
-#elif defined(HAVE_STAT_ST_MTIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	pst->st_mtime = ts.tv_sec;
 	pst->st_mtimensec = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_MTIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	pst->st_mtime = ts.tv_sec;
 	pst->st_mtime_n = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_UMTIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	pst->st_mtime = ts.tv_sec;
 	pst->st_umtime = ts.tv_nsec / 1000;
-#elif defined(HAVE_STAT_ST_MTIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	pst->st_mtimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
@@ -517,24 +517,24 @@ struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_nsec = 0;
 	return ret;
 #else
-#if defined(HAVE_STAT_ST_CTIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	return pst->st_ctim;
-#elif defined(HAVE_STAT_ST_CTIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	struct timespec ret;
 	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = pst->st_ctimensec;
 	return ret;
-#elif defined(HAVE_STAT_ST_CTIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	struct timespec ret;
 	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = pst->st_ctime_n;
 	return ret;
-#elif defined(HAVE_STAT_ST_UCTIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	struct timespec ret;
 	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = pst->st_uctime * 1000;
 	return ret;
-#elif defined(HAVE_STAT_ST_CTIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	return pst->st_ctimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
@@ -548,18 +548,18 @@ void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	/* Old system - no ns timestamp. */
 	pst->st_ctime = ts.tv_sec;
 #else
-#if defined(HAVE_STAT_ST_CTIM)
+#if defined(HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC)
 	pst->st_ctim = ts;
-#elif defined(HAVE_STAT_ST_CTIMENSEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMENSEC)
 	pst->st_ctime = ts.tv_sec;
 	pst->st_ctimensec = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_CTIME_N)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIME_N)
 	pst->st_ctime = ts.tv_sec;
 	pst->st_ctime_n = ts.tv_nsec;
-#elif defined(HAVE_STAT_ST_UCTIME)
+#elif defined(HAVE_STRUCT_STAT_ST_UMTIME)
 	pst->st_ctime = ts.tv_sec;
 	pst->st_uctime = ts.tv_nsec / 1000;
-#elif defined(HAVE_STAT_ST_CTIMESPEC)
+#elif defined(HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
 	pst->st_ctimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 

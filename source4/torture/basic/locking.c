@@ -610,7 +610,7 @@ ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 		  NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4));
 
 	EXPECTED(ret, true);
-	torture_comment(tctx, "the same process %s unlock the stack of 4 locks\n", ret?"can":"cannot"); 
+	torture_comment(tctx, "the same process %s unlock the stack of 3 locks\n", ret?"can":"cannot");
 
 	/* Ensure the next unlock fails. */
 	ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4));

@@ -632,8 +632,8 @@ bool print_sidlist(TALLOC_CTX *mem_ctx, const DOM_SID *sids,
 	return True;
 }
 
-static bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
-			  DOM_SID **sids, size_t *num_sids)
+bool parse_sidlist(TALLOC_CTX *mem_ctx, char *sidstr,
+		   DOM_SID **sids, size_t *num_sids)
 {
 	char *p, *q;
 
@@ -820,92 +820,6 @@ void winbindd_getsidaliases_async(struct winbindd_domain *domain,
 
 	do_async_domain(mem_ctx, domain, &request, getsidaliases_recv,
 			(void *)cont, private_data);
-}
-
-enum winbindd_result winbindd_dual_getsidaliases(struct winbindd_domain *domain,
-						 struct winbindd_cli_state *state)
-{
-	DOM_SID *sids = NULL;
-	size_t num_sids = 0;
-	char *sidstr = NULL;
-	ssize_t len;
-	size_t i;
-	uint32 num_aliases;
-	uint32 *alias_rids;
-	NTSTATUS result;
-
-	DEBUG(3, ("[%5lu]: getsidaliases\n", (unsigned long)state->pid));
-
-	sidstr = state->request.extra_data.data;
-	if (sidstr == NULL) {
-		sidstr = talloc_strdup(state->mem_ctx, "\n"); /* No SID */
-		if (!sidstr) {
-			DEBUG(0, ("Out of memory\n"));
-			return WINBINDD_ERROR;
-		}
-	}
-
-	DEBUG(10, ("Sidlist: %s\n", sidstr));
-
-	if (!parse_sidlist(state->mem_ctx, sidstr, &sids, &num_sids)) {
-		DEBUG(0, ("Could not parse SID list: %s\n", sidstr));
-		return WINBINDD_ERROR;
-	}
-
-	num_aliases = 0;
-	alias_rids = NULL;
-
-	result = domain->methods->lookup_useraliases(domain,
-						     state->mem_ctx,
-						     num_sids, sids,
-						     &num_aliases,
-						     &alias_rids);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(3, ("Could not lookup_useraliases: %s\n",
-			  nt_errstr(result)));
-		return WINBINDD_ERROR;
-	}
-
-	num_sids = 0;
-	sids = NULL;
-	sidstr = NULL;
-
-	DEBUG(10, ("Got %d aliases\n", num_aliases));
-
-	for (i=0; i<num_aliases; i++) {
-		DOM_SID sid;
-		DEBUGADD(10, (" rid %d\n", alias_rids[i]));
-		sid_copy(&sid, &domain->sid);
-		sid_append_rid(&sid, alias_rids[i]);
-		result = add_sid_to_array(state->mem_ctx, &sid, &sids,
-					  &num_sids);
-		if (!NT_STATUS_IS_OK(result)) {
-			return WINBINDD_ERROR;
-		}
-	}
-
-
-	if (!print_sidlist(state->mem_ctx, sids, num_sids, &sidstr, &len)) {
-		DEBUG(0, ("Could not print_sidlist\n"));
-		state->response.extra_data.data = NULL;
-		return WINBINDD_ERROR;
-	}
-
-	state->response.extra_data.data = NULL;
-
-	if (sidstr) {
-		state->response.extra_data.data = SMB_STRDUP(sidstr);
-		if (!state->response.extra_data.data) {
-			DEBUG(0, ("Out of memory\n"));
-			return WINBINDD_ERROR;
-		}
-		DEBUG(10, ("aliases_list: %s\n",
-			   (char *)state->response.extra_data.data));
-		state->response.length += len+1;
-	}
-
-	return WINBINDD_OK;
 }
 
 struct gettoken_state {

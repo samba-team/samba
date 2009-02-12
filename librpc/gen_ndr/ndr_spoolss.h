@@ -144,9 +144,9 @@ extern const struct ndr_interface_table ndr_table_spoolss;
 
 #define NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX (0x41)
 
-#define NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION (0x42)
+#define NDR_SPOOLSS_ROUTERREPLYPRINTEREX (0x42)
 
-#define NDR_SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX (0x43)
+#define NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY (0x43)
 
 #define NDR_SPOOLSS_44 (0x44)
 
@@ -315,11 +315,14 @@ void ndr_print_spoolss_NotifyBlob(struct ndr_print *ndr, const char *name, const
 void ndr_print_spoolss_NotifyData(struct ndr_print *ndr, const char *name, const union spoolss_NotifyData *r);
 void ndr_print_spoolss_Notify(struct ndr_print *ndr, const char *name, const struct spoolss_Notify *r);
 void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyInfo *r);
+void ndr_print_spoolss_ReplyPrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_ReplyPrinterInfo *r);
+void ndr_print_spoolss_PrinterNotifyFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_UserLevel1(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel1 *r);
 void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, const union spoolss_UserLevel *r);
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_spoolss_AddPrinterDriverExFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrinters *r);
 enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinters *r);
 void ndr_print__spoolss_EnumPrinters(struct ndr_print *ndr, const char *name, int flags, const struct _spoolss_EnumPrinters *r);
@@ -473,10 +476,10 @@ void ndr_print_spoolss_ResetPrinterEx(struct ndr_print *ndr, const char *name, i
 enum ndr_err_code ndr_push_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_push *ndr, int flags, const struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r);
 enum ndr_err_code ndr_pull_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_pull *ndr, int flags, struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r);
 void ndr_print_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r);
-void ndr_print_spoolss_RouterRefreshPrinterChangeNotification(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterRefreshPrinterChangeNotification *r);
-enum ndr_err_code ndr_push_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_push *ndr, int flags, const struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r);
-enum ndr_err_code ndr_pull_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_pull *ndr, int flags, struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r);
-void ndr_print_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r);
+void ndr_print_spoolss_RouterReplyPrinterEx(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterReplyPrinterEx *r);
+enum ndr_err_code ndr_push_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_push *ndr, int flags, const struct spoolss_RouterRefreshPrinterChangeNotify *r);
+enum ndr_err_code ndr_pull_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_pull *ndr, int flags, struct spoolss_RouterRefreshPrinterChangeNotify *r);
+void ndr_print_spoolss_RouterRefreshPrinterChangeNotify(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_RouterRefreshPrinterChangeNotify *r);
 void ndr_print_spoolss_44(struct ndr_print *ndr, const char *name, int flags, const struct spoolss_44 *r);
 enum ndr_err_code ndr_push_spoolss_OpenPrinterEx(struct ndr_push *ndr, int flags, const struct spoolss_OpenPrinterEx *r);
 enum ndr_err_code ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, int flags, struct spoolss_OpenPrinterEx *r);

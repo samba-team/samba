@@ -217,8 +217,8 @@ static void getpwsid_queryuser_recv(void *private_data, bool success,
 static void getpwsid_sid2uid_recv(void *private_data, bool success, uid_t uid);
 static void getpwsid_sid2gid_recv(void *private_data, bool success, gid_t gid);
 
-static void winbindd_getpwsid(struct winbindd_cli_state *state,
-			      const DOM_SID *sid)
+static void getpwsid_queryuser(struct winbindd_cli_state *state,
+			        const DOM_SID *sid)
 {
 	struct getpwsid_state *s;
 
@@ -509,7 +509,7 @@ static void getpwnam_name2sid_recv(void *private_data, bool success,
 		check_domain_trusted(domname, sid);
 	}
 
-	winbindd_getpwsid(state, sid);
+	getpwsid_queryuser(state, sid);
 }
 
 static void getpwuid_recv(void *private_data, bool success, const char *sid)
@@ -535,7 +535,7 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 		return;
 	}
 
-	winbindd_getpwsid(state, &user_sid);
+	getpwsid_queryuser(state, &user_sid);
 }
 
 /* Return a password structure given a uid number */
@@ -551,6 +551,26 @@ void winbindd_getpwuid(struct winbindd_cli_state *state)
 	/* if this turns to be too slow we will add here
 	 * a direct query to the cache */
 	winbindd_uid2sid_async(state->mem_ctx, uid, getpwuid_recv, state);
+}
+
+/* Return a password structure given a sid */
+void winbindd_getpwsid(struct winbindd_cli_state *state)
+{
+	DOM_SID sid;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
+	DEBUG(3, ("[%5lu]: getpwsid %s\n", (unsigned long)state->pid,
+		  state->request.data.sid));
+
+	if (!string_to_sid(&sid, state->request.data.sid)) {
+		DEBUG(5, ("%s not a SID\n", state->request.data.sid));
+		request_error(state);
+		return;
+	}
+
+	getpwsid_queryuser(state, &sid);
 }
 
 /*

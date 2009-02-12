@@ -1197,20 +1197,20 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 
 
 /* 
-  spoolss_RouterRefreshPrinterChangeNotification 
+  spoolss_RouterReplyPrinterEx
 */
-static WERROR dcesrv_spoolss_RouterRefreshPrinterChangeNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_RouterRefreshPrinterChangeNotification *r)
+static WERROR dcesrv_spoolss_RouterReplyPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterReplyPrinterEx *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  spoolss_RemoteFindNextPrinterChangeNotifyEx 
+  spoolss_RouterRefreshPrinterChangeNotify
 */
-static WERROR dcesrv_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct spoolss_RemoteFindNextPrinterChangeNotifyEx *r)
+static WERROR dcesrv_spoolss_RouterRefreshPrinterChangeNotify(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }

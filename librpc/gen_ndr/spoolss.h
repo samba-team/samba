@@ -877,6 +877,15 @@ struct spoolss_NotifyInfo {
 	struct spoolss_Notify *notifies;/* [size_is(count)] */
 };
 
+union spoolss_ReplyPrinterInfo {
+	struct spoolss_NotifyInfo *info0;/* [unique,case(0)] */
+}/* [switch_type(uint32)] */;
+
+/* bitmap spoolss_PrinterNotifyFlags */
+#define PRINTER_NOTIFY_INFO_DISCARDED ( 0x00000001 )
+#define PRINTER_NOTIFY_INFO_DISCARDNOTED ( 0x00010000 )
+#define PRINTER_NOTIFY_INFO_COLOR_MISMATCH ( 0x00080000 )
+
 struct spoolss_UserLevel1 {
 	uint32_t size;
 	const char *client;/* [unique,charset(UTF16)] */
@@ -902,6 +911,16 @@ union spoolss_UserLevel {
 #define DPD_DELETE_UNUSED_FILES ( 0x00000001 )
 #define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
 #define DPD_DELETE_ALL_FILES ( 0x00000004 )
+
+/* bitmap spoolss_AddPrinterDriverExFlags */
+#define APD_STRICT_UPGRADE ( 0x00000001 )
+#define APD_STRICT_DOWNGRADE ( 0x00000002 )
+#define APD_COPY_ALL_FILES ( 0x00000004 )
+#define APD_COPY_NEW_FILES ( 0x00000008 )
+#define APD_COPY_FROM_DIRECTORY ( 0x00000010 )
+#define APD_DONT_COPY_FILES_TO_CLUSTER ( 0x00001000 )
+#define APD_COPY_TO_ALL_SPOOLERS ( 0x00002000 )
+#define APD_RETURN_BLOCKING_STATUS_CODE ( 0x00010000 )
 
 
 struct _spoolss_EnumPrinters {
@@ -2017,15 +2036,24 @@ struct spoolss_RemoteFindFirstPrinterChangeNotifyEx {
 };
 
 
-struct spoolss_RouterRefreshPrinterChangeNotification {
+struct spoolss_RouterReplyPrinterEx {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t color;
+		uint32_t flags;
+		uint32_t reply_type;
+		union spoolss_ReplyPrinterInfo info;/* [switch_is(reply_type)] */
+	} in;
+
+	struct {
+		uint32_t *reply_result;/* [ref] */
 		WERROR result;
 	} out;
 
 };
 
 
-struct spoolss_RemoteFindNextPrinterChangeNotifyEx {
+struct spoolss_RouterRefreshPrinterChangeNotify {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t change_low;

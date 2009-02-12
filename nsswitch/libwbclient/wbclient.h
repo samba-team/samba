@@ -60,9 +60,11 @@ const char *wbcErrorString(wbcErr error);
  *  0.1: Initial version
  *  0.2: Added wbcRemoveUidMapping()
  *       Added wbcRemoveGidMapping()
+ *  0.3: Added wbcGetpwsid()
+ *	 Added wbcGetSidAliases()
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 2
+#define WBCLIENT_MINOR_VERSION 3
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -615,6 +617,15 @@ wbcErr wbcLookupUserSids(const struct wbcDomainSid *user_sid,
 			 uint32_t *num_sids,
 			 struct wbcDomainSid **sids);
 
+/*
+ * @brief Get alias membership for sids
+ **/
+wbcErr wbcGetSidAliases(const struct wbcDomainSid *dom_sid,
+			struct wbcDomainSid *sids,
+			uint32_t num_sids,
+			uint32_t **alias_rids,
+			uint32_t *num_alias_rids);
+
 /**
  * @brief Lists Users
  **/
@@ -835,6 +846,17 @@ wbcErr wbcGetpwnam(const char *name, struct passwd **pwd);
  * @return #wbcErr
  **/
 wbcErr wbcGetpwuid(uid_t uid, struct passwd **pwd);
+
+/**
+ * @brief Fill in a struct passwd* for a domain user based
+ *   on sid
+ *
+ * @param sid       Sid to lookup
+ * @param **pwd     Pointer to resulting struct passwd* from the query.
+ *
+ * @return #wbcErr
+ **/
+wbcErr wbcGetpwsid(struct wbcDomainSid * sid, struct passwd **pwd);
 
 /**
  * @brief Fill in a struct passwd* for a domain user based

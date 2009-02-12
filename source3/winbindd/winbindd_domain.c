@@ -110,6 +110,10 @@ static const struct winbindd_child_dispatch_table domain_dispatch_table[] = {
 		.struct_cmd	= WINBINDD_DUAL_GETSIDALIASES,
 		.struct_fn	= winbindd_dual_getsidaliases,
 	},{
+		.name		= "GETSIDALIASES",
+		.struct_cmd	= WINBINDD_GETSIDALIASES,
+		.struct_fn	= winbindd_dual_getsidaliases,
+	},{
 		.name		= "CCACHE_NTLM_AUTH",
 		.struct_cmd	= WINBINDD_CCACHE_NTLMAUTH,
 		.struct_fn	= winbindd_dual_ccache_ntlm_auth,

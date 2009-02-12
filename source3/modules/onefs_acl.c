@@ -619,6 +619,12 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	DEBUG(5, ("Getting sd for file %s. security_info=%u\n",
 	    fsp->fsp_name, security_info));
 
+	if (lp_parm_bool(SNUM(fsp->conn), PARM_ONEFS_TYPE,
+		PARM_IGNORE_SACL, PARM_IGNORE_SACL_DEFAULT)) {
+		DEBUG(5, ("Ignoring SACL on %s.\n", fsp->fsp_name));
+		security_info &= ~SACL_SECURITY_INFORMATION;
+	}
+
 	if (fsp->fh->fd == -1) {
 		if ((fsp->fh->fd = onefs_sys_create_file(handle->conn,
 							 -1,

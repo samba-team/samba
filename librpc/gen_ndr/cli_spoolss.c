@@ -3107,23 +3107,34 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotification(struct rpc_pipe_client *cli,
-							       TALLOC_CTX *mem_ctx,
-							       WERROR *werror)
+NTSTATUS rpccli_spoolss_RouterReplyPrinterEx(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx,
+					     struct policy_handle *handle /* [in] [ref] */,
+					     uint32_t color /* [in]  */,
+					     uint32_t flags /* [in]  */,
+					     uint32_t *reply_result /* [out] [ref] */,
+					     uint32_t reply_type /* [in]  */,
+					     union spoolss_ReplyPrinterInfo info /* [in] [switch_is(reply_type)] */,
+					     WERROR *werror)
 {
-	struct spoolss_RouterRefreshPrinterChangeNotification r;
+	struct spoolss_RouterReplyPrinterEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.color = color;
+	r.in.flags = flags;
+	r.in.reply_type = reply_type;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(spoolss_RouterRefreshPrinterChangeNotification, &r);
+		NDR_PRINT_IN_DEBUG(spoolss_RouterReplyPrinterEx, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_spoolss,
-				NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION,
+				NDR_SPOOLSS_ROUTERREPLYPRINTEREX,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3131,7 +3142,7 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotification(struct rpc_pipe_c
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(spoolss_RouterRefreshPrinterChangeNotification, &r);
+		NDR_PRINT_OUT_DEBUG(spoolss_RouterReplyPrinterEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3139,6 +3150,7 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotification(struct rpc_pipe_c
 	}
 
 	/* Return variables */
+	*reply_result = *r.out.reply_result;
 
 	/* Return result */
 	if (werror) {
@@ -3148,15 +3160,15 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotification(struct rpc_pipe_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct rpc_pipe_client *cli,
-							    TALLOC_CTX *mem_ctx,
-							    struct policy_handle *handle /* [in] [ref] */,
-							    uint32_t change_low /* [in]  */,
-							    struct spoolss_NotifyOptionsContainer *container /* [in] [unique] */,
-							    struct spoolss_NotifyInfo **info /* [out] [ref] */,
-							    WERROR *werror)
+NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client *cli,
+							 TALLOC_CTX *mem_ctx,
+							 struct policy_handle *handle /* [in] [ref] */,
+							 uint32_t change_low /* [in]  */,
+							 struct spoolss_NotifyOptionsContainer *container /* [in] [unique] */,
+							 struct spoolss_NotifyInfo **info /* [out] [ref] */,
+							 WERROR *werror)
 {
-	struct spoolss_RemoteFindNextPrinterChangeNotifyEx r;
+	struct spoolss_RouterRefreshPrinterChangeNotify r;
 	NTSTATUS status;
 
 	/* In parameters */
@@ -3165,13 +3177,13 @@ NTSTATUS rpccli_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct rpc_pipe_clie
 	r.in.container = container;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(spoolss_RemoteFindNextPrinterChangeNotifyEx, &r);
+		NDR_PRINT_IN_DEBUG(spoolss_RouterRefreshPrinterChangeNotify, &r);
 	}
 
 	status = cli->dispatch(cli,
 				mem_ctx,
 				&ndr_table_spoolss,
-				NDR_SPOOLSS_REMOTEFINDNEXTPRINTERCHANGENOTIFYEX,
+				NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3179,7 +3191,7 @@ NTSTATUS rpccli_spoolss_RemoteFindNextPrinterChangeNotifyEx(struct rpc_pipe_clie
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(spoolss_RemoteFindNextPrinterChangeNotifyEx, &r);
+		NDR_PRINT_OUT_DEBUG(spoolss_RouterRefreshPrinterChangeNotify, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

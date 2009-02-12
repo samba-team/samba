@@ -38,8 +38,34 @@
 		goto done; \
 	}} while (0)
 
+#define CHECK_STATUS_CONT(status, correct) do { \
+	if (!NT_STATUS_EQUAL(status, correct)) { \
+		printf("(%s) Incorrect status %s - should be %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct)); \
+		ret = false; \
+	}} while (0)
+
+#define CHECK_STATUS_OR(status, correct1, correct2) do { \
+	if ((!NT_STATUS_EQUAL(status, correct1)) && \
+	    (!NT_STATUS_EQUAL(status, correct2))) { \
+		printf("(%s) Incorrect status %s - should be %s or %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct1), \
+		       nt_errstr(correct2)); \
+		ret = false; \
+		goto done; \
+	}} while (0)
+
+#define CHECK_STATUS_OR_CONT(status, correct1, correct2) do { \
+	if ((!NT_STATUS_EQUAL(status, correct1)) && \
+	    (!NT_STATUS_EQUAL(status, correct2))) { \
+		printf("(%s) Incorrect status %s - should be %s or %s\n", \
+		       __location__, nt_errstr(status), nt_errstr(correct1), \
+		       nt_errstr(correct2)); \
+		ret = false; \
+	}} while (0)
 #define BASEDIR "\\testlock"
 
+#define TARGET_IS_WIN7(_tctx) (torture_setting_bool(_tctx, "win7", false))
 
 /*
   test SMBlock and SMBunlock ops
@@ -337,15 +363,25 @@ static bool test_lockx(struct torture_context *tctx, struct smbcli_state *cli)
 	lock[0].pid++;
 	lock[0].count = 2;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
+	if (TARGET_IS_WIN7(tctx))
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	else
+		CHECK_STATUS(status, NT_STATUS_OK);
 	lock[0].pid--;
 	io.lockx.in.ulock_cnt = 1;
 	io.lockx.in.lock_cnt = 0;
 	lock[0].count = 1;
 	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_OK);
-	status = smb_raw_lock(cli->tree, &io);
-	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	/* XXX This is very strange - Win7 gives us an invalid range when we
+	 * unlock the range even though the range is locked! Win7 bug? */
+	if (TARGET_IS_WIN7(tctx))
+		CHECK_STATUS(status, NT_STATUS_WIN7_INVALID_RANGE);
+	else {
+		CHECK_STATUS(status, NT_STATUS_OK);
+		status = smb_raw_lock(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+	}
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -353,7 +389,6 @@ done:
 	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
-
 
 /*
   test high pid
@@ -409,8 +444,6 @@ static bool test_pidhigh(struct torture_context *tctx,
 		ret = false;
 		goto done;
 	}
-
-	cli->session->pid |= 0x10000;
 
 	cli->session->pid = 2;
 
@@ -1321,6 +1354,525 @@ done:
 	return ret;
 }
 
+struct double_lock_test {
+	struct smb_lock_entry lock1;
+	struct smb_lock_entry lock2;
+	NTSTATUS exp_status;
+};
+
+/**
+ * Tests zero byte locks.
+ */
+struct double_lock_test zero_byte_tests[] = {
+	/* {pid, offset, count}, {pid, offset, count}, status */
+
+	/** First, takes a zero byte lock at offset 10. Then:
+	*   - Taking 0 byte lock at 10 should succeed.
+	*   - Taking 1 byte locks at 9,10,11 should succeed.
+	*   - Taking 2 byte lock at 9 should fail.
+	*   - Taking 2 byte lock at 10 should succeed.
+	*   - Taking 3 byte lock at 9 should fail.
+	*/
+	{{1000, 10, 0}, {1001, 10, 0}, NT_STATUS_OK},
+	{{1000, 10, 0}, {1001, 9, 1},  NT_STATUS_OK},
+	{{1000, 10, 0}, {1001, 10, 1}, NT_STATUS_OK},
+	{{1000, 10, 0}, {1001, 11, 1}, NT_STATUS_OK},
+	{{1000, 10, 0}, {1001, 9, 2},  NT_STATUS_LOCK_NOT_GRANTED},
+	{{1000, 10, 0}, {1001, 10, 2}, NT_STATUS_OK},
+	{{1000, 10, 0}, {1001, 9, 3},  NT_STATUS_LOCK_NOT_GRANTED},
+
+	/** Same, but opposite order. */
+	{{1001, 10, 0}, {1000, 10, 0}, NT_STATUS_OK},
+	{{1001, 9, 1},  {1000, 10, 0}, NT_STATUS_OK},
+	{{1001, 10, 1}, {1000, 10, 0}, NT_STATUS_OK},
+	{{1001, 11, 1}, {1000, 10, 0}, NT_STATUS_OK},
+	{{1001, 9, 2},  {1000, 10, 0}, NT_STATUS_LOCK_NOT_GRANTED},
+	{{1001, 10, 2}, {1000, 10, 0}, NT_STATUS_OK},
+	{{1001, 9, 3},  {1000, 10, 0}, NT_STATUS_LOCK_NOT_GRANTED},
+
+	/** Zero zero case. */
+	{{1000, 0, 0},  {1001, 0, 0},  NT_STATUS_OK},
+};
+
+static bool test_zerobytelocks(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_lock io;
+	struct smb_lock_entry zerozero;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum, i;
+	const char *fname = BASEDIR "\\zero.txt";
+
+	printf("Testing zero length byte range locks:\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	io.generic.level = RAW_LOCK_LOCKX;
+
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = false;
+		goto done;
+	}
+
+	/* Setup initial parameters */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.file.fnum = fnum;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES; /* Exclusive */
+	io.lockx.in.timeout = 0;
+
+	/* Try every combination of locks in zero_byte_tests. The first lock is
+	 * assumed to succeed. The second lock may contend, depending on the
+	 * expected status. */
+	for (i = 0;
+	     i < sizeof(zero_byte_tests) / sizeof(struct double_lock_test);
+	     i++) {
+		printf("  ... {%d, %llu, %llu} + {%d, %llu, %llu} = %s\n",
+		    zero_byte_tests[i].lock1.pid,
+		    zero_byte_tests[i].lock1.offset,
+		    zero_byte_tests[i].lock1.count,
+		    zero_byte_tests[i].lock2.pid,
+		    zero_byte_tests[i].lock2.offset,
+		    zero_byte_tests[i].lock2.count,
+		    nt_errstr(zero_byte_tests[i].exp_status));
+
+		/* Lock both locks. */
+		io.lockx.in.ulock_cnt = 0;
+		io.lockx.in.lock_cnt = 1;
+
+		io.lockx.in.locks = &zero_byte_tests[i].lock1;
+		status = smb_raw_lock(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+
+		io.lockx.in.locks = &zero_byte_tests[i].lock2;
+		status = smb_raw_lock(cli->tree, &io);
+
+		if (NT_STATUS_EQUAL(zero_byte_tests[i].exp_status,
+			NT_STATUS_LOCK_NOT_GRANTED)) {
+			/* Allow either of the failure messages and keep going
+			 * if we see the wrong status. */
+			CHECK_STATUS_OR_CONT(status,
+			    NT_STATUS_LOCK_NOT_GRANTED,
+			    NT_STATUS_FILE_LOCK_CONFLICT);
+
+		} else {
+			CHECK_STATUS_CONT(status,
+			    zero_byte_tests[i].exp_status);
+		}
+
+		/* Unlock both locks. */
+		io.lockx.in.ulock_cnt = 1;
+		io.lockx.in.lock_cnt = 0;
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+			status = smb_raw_lock(cli->tree, &io);
+			CHECK_STATUS(status, NT_STATUS_OK);
+		}
+
+		io.lockx.in.locks = &zero_byte_tests[i].lock1;
+		status = smb_raw_lock(cli->tree, &io);
+		CHECK_STATUS(status, NT_STATUS_OK);
+	}
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+static bool test_unlock(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_lock io;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum1, fnum2;
+	const char *fname = BASEDIR "\\unlock.txt";
+	struct smb_lock_entry lock1;
+	struct smb_lock_entry lock2;
+
+	printf("Testing LOCKX unlock:\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = false;
+		goto done;
+	}
+	fnum2 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum2 == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = false;
+		goto done;
+	}
+
+	/* Setup initial parameters */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.timeout = 0;
+
+	lock1.pid = cli->session->pid;
+	lock1.offset = 0;
+	lock1.count = 10;
+	lock2.pid = cli->session->pid - 1;
+	lock2.offset = 0;
+	lock2.count = 10;
+
+	/**
+	 * Take exclusive lock, then unlock it with a shared-unlock call.
+	 */
+	printf("  taking exclusive lock.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = 0;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("  unlock the exclusive with a shared unlock call.\n");
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("  try shared lock on pid2/fnum2, testing the unlock.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	io.lockx.in.file.fnum = fnum2;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/**
+	 * Unlock a shared lock with an exclusive-unlock call.
+	 */
+	printf("  unlock new shared lock with exclusive unlock call.\n");
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.mode = 0;
+	io.lockx.in.file.fnum = fnum2;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("  try exclusive lock on pid1, testing the unlock.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = 0;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/**
+	 * Test unlocking of 0-byte locks.
+	 */
+
+	printf("  lock shared and exclusive 0-byte locks, testing that Windows "
+	    "always unlocks the exclusive first.\n");
+	lock1.pid = cli->session->pid;
+	lock1.offset = 10;
+	lock1.count = 0;
+	lock2.pid = cli->session->pid;
+	lock2.offset = 5;
+	lock2.count = 10;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+
+	/* lock 0-byte shared
+	 * Note: Order of the shared/exclusive locks doesn't matter. */
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* lock 0-byte exclusive */
+	io.lockx.in.mode = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* test contention */
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	io.lockx.in.locks = &lock2;
+	io.lockx.in.file.fnum = fnum2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
+	    NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/* unlock */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* test - can we take a shared lock? */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	io.lockx.in.file.fnum = fnum2;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+
+	/* XXX Samba will fail this test. This is temporary(because this isn't
+	 * new to Win7, it succeeds in WinXP too), until I can come to a
+	 * resolution as to whether Samba should support this or not. There is
+	 * code to preference unlocking exclusive locks before shared locks,
+	 * but its wrapped with "#ifdef ZERO_ZERO". -zkirsch */
+	if (TARGET_IS_WIN7(tctx))
+		CHECK_STATUS(status, NT_STATUS_OK);
+	else {
+		CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
+		    NT_STATUS_FILE_LOCK_CONFLICT);
+	}
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+
+        /* XXX Same as above. */
+        if (TARGET_IS_WIN7(tctx))
+                CHECK_STATUS(status, NT_STATUS_OK);
+        else
+                CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smbcli_close(cli->tree, fnum1);
+	smbcli_close(cli->tree, fnum2);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+static bool test_multiple_unlock(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_lock io;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum1;
+	const char *fname = BASEDIR "\\unlock_multiple.txt";
+	struct smb_lock_entry lock1;
+	struct smb_lock_entry lock2;
+	struct smb_lock_entry locks[2];
+
+	printf("Testing LOCKX multiple unlock:\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = false;
+		goto done;
+	}
+
+	/* Setup initial parameters */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.timeout = 0;
+
+	lock1.pid = cli->session->pid;
+	lock1.offset = 0;
+	lock1.count = 10;
+	lock2.pid = cli->session->pid;
+	lock2.offset = 10;
+	lock2.count = 10;
+
+	locks[0] = lock1;
+	locks[1] = lock2;
+
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.mode = 0; /* exclusive */
+
+	/** Test1: Take second lock, but not first. */
+	printf("  unlock 2 locks, first one not locked. Expect no locks "
+	    "unlocked. \n");
+
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try to unlock both locks. */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = locks;
+
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	/* Second lock should not be unlocked. */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = &lock2;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/** Test2: Take first lock, but not second. */
+	printf("  unlock 2 locks, second one not locked. Expect first lock "
+	    "unlocked.\n");
+
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Try to unlock both locks. */
+	io.lockx.in.ulock_cnt = 2;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = locks;
+
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
+
+	/* First lock should be unlocked. */
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = &lock1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smbcli_close(cli->tree, fnum1);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+/**
+ * torture_locktest5 covers stacking pretty well, but its missing two tests:
+ * - stacking an exclusive on top of shared fails
+ * - stacking two exclusives fail
+ */
+static bool test_stacking(struct torture_context *tctx, struct smbcli_state *cli)
+{
+	union smb_lock io;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum1;
+	const char *fname = BASEDIR "\\stacking.txt";
+	struct smb_lock_entry lock1;
+	struct smb_lock_entry lock2;
+
+	printf("Testing stacking:\n");
+
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+
+	io.generic.level = RAW_LOCK_LOCKX;
+
+	fnum1 = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("Failed to create %s - %s\n", fname, smbcli_errstr(cli->tree));
+		ret = false;
+		goto done;
+	}
+
+	/* Setup initial parameters */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.timeout = 0;
+
+	lock1.pid = cli->session->pid;
+	lock1.offset = 0;
+	lock1.count = 10;
+	lock2.pid = cli->session->pid - 1;
+	lock2.offset = 0;
+	lock2.count = 10;
+
+	/**
+	 * Try to take a shared lock, then stack an exclusive.
+	 */
+	printf("  stacking an exclusive on top of a shared lock fails.\n");
+	io.lockx.in.file.fnum = fnum1;
+	io.lockx.in.locks = &lock1;
+
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
+	    NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/**
+	 * Prove that two exclusive locks do not stack.
+	 */
+	printf("  two exclusive locks do not stack.\n");
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	io.lockx.in.mode = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS_OR(status, NT_STATUS_LOCK_NOT_GRANTED,
+	    NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/* cleanup */
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smbcli_close(cli->tree, fnum1);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
 
 /* 
    basic testing of lock calls
@@ -1335,6 +1887,13 @@ struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "async", test_async);
 	torture_suite_add_1smb_test(suite, "errorcode", test_errorcode);
 	torture_suite_add_1smb_test(suite, "changetype", test_changetype);
+
+	torture_suite_add_1smb_test(suite, "stacking", test_stacking);
+	torture_suite_add_1smb_test(suite, "unlock", test_unlock);
+	torture_suite_add_1smb_test(suite, "multiple_unlock",
+	    test_multiple_unlock);
+	torture_suite_add_1smb_test(suite, "zerobytelocks",
+	    test_zerobytelocks);
 
 	return suite;
 }

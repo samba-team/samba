@@ -1660,6 +1660,8 @@ bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid);
 bool winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
 bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid);
 bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
+struct passwd * winbind_getpwnam(const char * sname);
+struct passwd * winbind_getpwsid(const DOM_SID *sid);
 wbcErr wb_is_trusted_domain(const char *domain);
 bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const DOM_SID *domain_sid,
@@ -1668,22 +1670,17 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const char ***names, enum lsa_SidType **types);
 bool winbind_allocate_uid(uid_t *uid);
 bool winbind_allocate_gid(gid_t *gid);
-bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
-                         enum lsa_SidType *name_type);
-bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
-			const char **domain, const char **name,
-                        enum lsa_SidType *name_type);
-bool winbind_ping(void);
-bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid);
-bool winbind_uid_to_sid(DOM_SID *sid, uid_t uid);
-bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid);
-bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid);
-wbcErr wb_is_trusted_domain(const char *domain);
-bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
-			 const DOM_SID *domain_sid,
-			 int num_rids, uint32 *rids,
-			 const char **domain_name,
-			 const char ***names, enum lsa_SidType **types);
+bool winbind_get_groups(TALLOC_CTX *mem_ctx,
+			const char *account,
+			uint32_t *num_groups,
+			gid_t ** _groups);
+bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
+			     const DOM_SID *dom_sid,
+		             const DOM_SID *members,
+			     size_t num_members,
+			     uint32_t **pp_alias_rids,
+			     size_t *p_num_alias_rids);
+
 
 /* The following definitions come from lib/wins_srv.c  */
 
@@ -4423,7 +4420,6 @@ bool sid_check_is_in_our_domain(const DOM_SID *sid);
 
 /* The following definitions come from passdb/passdb.c  */
 
-const char *my_sam_name(void);
 struct samu *samu_new( TALLOC_CTX *ctx );
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd);
 NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd);

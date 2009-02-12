@@ -122,12 +122,6 @@
 #define SPL_XCV_MONITOR_TCPMON    ",XcvMonitor Standard TCP/IP Port"
 
 
-#define PRINTER_CONTROL_UNPAUSE		0x00000000
-#define PRINTER_CONTROL_PAUSE		0x00000001
-#define PRINTER_CONTROL_RESUME		0x00000002
-#define PRINTER_CONTROL_PURGE		0x00000003
-#define PRINTER_CONTROL_SET_STATUS	0x00000004
-
 #define PRINTER_STATUS_OK               0x00000000
 #define JOB_ACCESS_READ			0x00000020
 
@@ -217,8 +211,6 @@
 
 #define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
 
-#define PRINTER_NOTIFY_INFO_DISCARDED	0x1
-
 /*
  * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
  * when sending messages to other smbd's
@@ -269,13 +261,6 @@ PRINTER_MESSAGE_INFO;
 
 #define DRIVER_ANY_VERSION		0xffffffff
 #define DRIVER_MAX_VERSION		4
-
-/* FLAGS for SPOOLSS_ADDPRINTERDRIVEREX */
-
-#define APD_STRICT_UPGRADE		0x00000001
-#define APD_STRICT_DOWNGRADE		0x00000002
-#define APD_COPY_ALL_FILES		0x00000004
-#define APD_COPY_NEW_FILES		0x00000008
 
 
 /* this struct is undocumented */
