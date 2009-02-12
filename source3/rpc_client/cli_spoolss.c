@@ -1394,33 +1394,6 @@ WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *me
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_setprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd, char *keyname, 
-				    REGISTRY_VALUE *value)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_SETPRINTERDATAEX in;
-	SPOOL_R_SETPRINTERDATAEX out;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        make_spoolss_q_setprinterdataex( &in, hnd, keyname, value->valuename, 
-		value->type, (char *)value->data_p, value->size);
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_SETPRINTERDATAEX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_setprinterdataex,
-	            spoolss_io_r_setprinterdataex, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enumprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				   POLICY_HND *hnd, uint32 ndx,
 				   uint32 value_offered, uint32 data_offered,

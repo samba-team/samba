@@ -4768,23 +4768,6 @@ bool make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, const POLICY_HND
 
 /*******************************************************************
 ********************************************************************/  
-bool make_spoolss_q_setprinterdataex(SPOOL_Q_SETPRINTERDATAEX *q_u, const POLICY_HND *hnd,
-				     char *key, char* value, uint32 data_type, char* data, 
-				     uint32 data_size)
-{
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-	q_u->type = data_type;
-	init_unistr2(&q_u->value, value, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->key, key, UNI_STR_TERMINATE);
-
-	q_u->max_len = q_u->real_len = data_size;
-	q_u->data = (unsigned char *)data;
-	
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/  
 
 bool spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
@@ -5163,79 +5146,6 @@ bool spoolss_io_r_reply_rrpcn(const char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_st
 		return False;
 
 	return True;		
-}
-
-/*******************************************************************
- * read a structure.
- ********************************************************************/  
-
-bool spoolss_io_q_setprinterdataex(const char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_setprinterdataex");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
-		return False;
-	if(!smb_io_unistr2("", &q_u->key, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unistr2("", &q_u->value, True, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("type", ps, depth, &q_u->type))
-		return False;
-
-	if(!prs_uint32("max_len", ps, depth, &q_u->max_len))
-		return False;
-
-	switch (q_u->type)
-	{
-		case 0x1:
-		case 0x3:
-		case 0x4:
-		case 0x7:
-			if (q_u->max_len) {
-				if (UNMARSHALLING(ps))
-    					q_u->data=PRS_ALLOC_MEM(ps, uint8, q_u->max_len);
-    				if(q_u->data == NULL)
-    					return False;
-    				if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
-    					return False;
-			}
-			if(!prs_align(ps))
-				return False;
-			break;
-	}	
-	
-	if(!prs_uint32("real_len", ps, depth, &q_u->real_len))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- ********************************************************************/  
-
-bool spoolss_io_r_setprinterdataex(const char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_setprinterdataex");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_werror("status",     ps, depth, &r_u->status))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
