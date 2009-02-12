@@ -409,6 +409,10 @@ static int traverse_sessionid(struct db_record *db, void *state)
 			d_printf("\nSamba version %s\n",samba_version_string());
 			d_printf("PID     Username      Group         Machine                        \n");
 			d_printf("-------------------------------------------------------------------\n");
+			if (lp_security() == SEC_SHARE) {
+				d_printf(" <processes do not show up in "
+				    "anonymous mode>\n");
+			}
 
 			db->traverse_read(db, traverse_sessionid, NULL);
 			TALLOC_FREE(db);
