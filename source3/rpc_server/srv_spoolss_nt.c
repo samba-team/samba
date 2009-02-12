@@ -3574,7 +3574,10 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spool
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->notifies = SMB_REALLOC_ARRAY(info->notifies, struct spoolss_Notify, info->count+1)) == NULL) {
+		info->notifies = TALLOC_REALLOC_ARRAY(info, info->notifies,
+						      struct spoolss_Notify,
+						      info->count + 1);
+		if (info->notifies == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			free_a_printer(&printer, 2);
 			return False;
@@ -3630,7 +3633,10 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->notifies = SMB_REALLOC_ARRAY(info->notifies, struct spoolss_Notify, info->count+1)) == NULL) {
+		info->notifies = TALLOC_REALLOC_ARRAY(info, info->notifies,
+						      struct spoolss_Notify,
+						      info->count + 1);
+		if (info->notifies == NULL) {
 			DEBUG(2,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
 		}

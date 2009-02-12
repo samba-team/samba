@@ -199,8 +199,6 @@ static bool api_spoolss_rffpcnex(pipes_struct *p)
 static bool api_spoolss_rfnpcnex(pipes_struct *p)
 {
 	return proxy_spoolss_call(p, NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY);
-	/* FIXME */
-//	SAFE_FREE(r_u.info.data);
 }
 
 
