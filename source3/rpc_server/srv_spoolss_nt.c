@@ -6061,8 +6061,7 @@ WERROR _spoolss_AbortPrinter(pipes_struct *p,
  * when updating a printer description
  ********************************************************************/
 
-static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
-				 const SPOOL_PRINTER_INFO_LEVEL *info,
+static WERROR update_printer_sec(POLICY_HND *handle,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
@@ -6348,9 +6347,9 @@ bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEV
  * when updating a printer description.
  ********************************************************************/
 
-static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
-                           const SPOOL_PRINTER_INFO_LEVEL *info,
-                           DEVICEMODE *devmode)
+static WERROR update_printer(pipes_struct *p, POLICY_HND *handle,
+			     struct spoolss_SetPrinterInfoCtr *info_ctr,
+			     struct spoolss_DeviceMode *devmode)
 {
 	int snum;
 	NT_PRINTER_INFO_LEVEL *printer = NULL, *old_printer = NULL;
@@ -6387,7 +6386,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	 * just read from the tdb in the pointer 'printer'.
 	 */
 
-	if (!convert_printer_info(info, printer, level)) {
+	if (!convert_printer_info_new(info_ctr, printer)) {
 		result =  WERR_NOMEM;
 		goto done;
 	}
@@ -6397,8 +6396,9 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		   convert it and link it*/
 
 		DEBUGADD(8,("update_printer: Converting the devicemode struct\n"));
-		if (!convert_devicemode(printer->info_2->printername, devmode,
-				&printer->info_2->devmode)) {
+		if (!convert_devicemode_new(printer->info_2->printername,
+					    devmode,
+					    &printer->info_2->devmode)) {
 			result =  WERR_NOMEM;
 			goto done;
 		}
@@ -6542,10 +6542,9 @@ done:
 /****************************************************************************
 ****************************************************************************/
 static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
-				   const SPOOL_PRINTER_INFO_LEVEL *info)
+					   struct spoolss_SetPrinterInfo7 *info7)
 {
 #ifdef HAVE_ADS
-	SPOOL_PRINTER_INFO_LEVEL_7 *info7 = info->info_7;
 	int snum;
 	Printer_entry *Printer;
 
@@ -6570,42 +6569,45 @@ static WERROR publish_or_unpublish_printer(pipes_struct *p, POLICY_HND *handle,
 	return WERR_UNKNOWN_LEVEL;
 #endif
 }
-/****************************************************************************
-****************************************************************************/
 
-WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SETPRINTER *r_u)
+/****************************************************************
+ _spoolss_SetPrinter
+****************************************************************/
+
+WERROR _spoolss_SetPrinter(pipes_struct *p,
+			   struct spoolss_SetPrinter *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 level = q_u->level;
-	SPOOL_PRINTER_INFO_LEVEL *info = &q_u->info;
-	DEVMODE_CTR devmode_ctr = q_u->devmode_ctr;
-	SEC_DESC_BUF *secdesc_ctr = q_u->secdesc_ctr;
-	uint32 command = q_u->command;
+	POLICY_HND *handle = r->in.handle;
 	WERROR result;
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setprinter: Invalid handle (%s:%u:%u)\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetPrinter: Invalid handle (%s:%u:%u)\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
 	/* check the level */
-	switch (level) {
+	switch (r->in.info_ctr->level) {
 		case 0:
-			return control_printer(handle, command, p);
+			return control_printer(handle, r->in.command, p);
 		case 2:
-			result = update_printer(p, handle, level, info, devmode_ctr.devmode);
+			result = update_printer(p, handle,
+						r->in.info_ctr,
+						r->in.devmode_ctr->devmode);
 			if (!W_ERROR_IS_OK(result))
 				return result;
-			if (secdesc_ctr)
-				result = update_printer_sec(handle, level, info, p, secdesc_ctr);
+			if (r->in.secdesc_ctr->sd)
+				result = update_printer_sec(handle, p,
+							    r->in.secdesc_ctr);
 			return result;
 		case 3:
-			return update_printer_sec(handle, level, info, p,
-						  secdesc_ctr);
+			return update_printer_sec(handle, p,
+						  r->in.secdesc_ctr);
 		case 7:
-			return publish_or_unpublish_printer(p, handle, info);
+			return publish_or_unpublish_printer(p, handle,
+							    r->in.info_ctr->info.info7);
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
@@ -10100,17 +10102,6 @@ WERROR _spoolss_EnumJobs(pipes_struct *p,
 
 WERROR _spoolss_AddPrinter(pipes_struct *p,
 			   struct spoolss_AddPrinter *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_SetPrinter
-****************************************************************/
-
-WERROR _spoolss_SetPrinter(pipes_struct *p,
-			   struct spoolss_SetPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

@@ -6245,7 +6245,6 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_u, SPOOL_R_GETPRINTERDRIVER2 *r_u);
 WERROR add_port_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, const char *portname, const char *uri );
 bool add_printer_hook(TALLOC_CTX *ctx, NT_USER_TOKEN *token, NT_PRINTER_INFO_LEVEL *printer);
-WERROR _spoolss_setprinter(pipes_struct *p, SPOOL_Q_SETPRINTER *q_u, SPOOL_R_SETPRINTER *r_u);
 WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJOBS *r_u);
 WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, SPOOL_R_ENUMPRINTERDRIVERS *r_u);
 WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMFORMS *r_u);
