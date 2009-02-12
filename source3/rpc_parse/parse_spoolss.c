@@ -1076,68 +1076,6 @@ bool spoolss_io_r_rffpcnex(const char *desc, SPOOL_R_RFFPCNEX *r_u, prs_struct *
 }
 
 /*******************************************************************
- * read a structure.
- * called from spoolss_q_rfnpcnex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_rfnpcnex(const char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_rfnpcnex");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-
-	if(!prs_uint32("change", ps, depth, &q_u->change))
-		return False;
-	
-	if(!prs_uint32("option_ptr", ps, depth, &q_u->option_ptr))
-		return False;
-	
-	if (q_u->option_ptr!=0) {
-	
-		if (UNMARSHALLING(ps))
-			if((q_u->option=PRS_ALLOC_MEM(ps,SPOOL_NOTIFY_OPTION,1)) == NULL)
-				return False;
-	
-		if(!smb_io_notify_option("notify option", q_u->option, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_rfnpcnex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_rfnpcnex(const char *desc, SPOOL_R_RFNPCNEX *r_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_r_rfnpcnex");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("info_ptr", ps, depth, &r_u->info_ptr))
-		return False;
-
-	if(!smb_io_notify_info("notify info", &r_u->info ,ps,depth))
-		return False;
-	
-	if(!prs_align(ps))
-		return False;
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  * return the length of a uint16 (obvious, but the code is clean)
  ********************************************************************/
 

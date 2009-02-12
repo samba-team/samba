@@ -458,24 +458,6 @@ typedef struct spool_r_rffpcnex
 }
 SPOOL_R_RFFPCNEX;
 
-/* Remote Find Next Printer Change Notify Ex */
-typedef struct spool_q_rfnpcnex
-{
-	POLICY_HND handle;
-	uint32 change;
-	uint32 option_ptr;
-	SPOOL_NOTIFY_OPTION *option;
-}
-SPOOL_Q_RFNPCNEX;
-
-typedef struct spool_r_rfnpcnex
-{
-	uint32 info_ptr;
-	SPOOL_NOTIFY_INFO info;
-	WERROR status;
-}
-SPOOL_R_RFNPCNEX;
-
 typedef struct printer_info_0
 {
 	UNISTR printername;
