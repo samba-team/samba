@@ -6142,71 +6142,71 @@ WERROR set_printer_dataex( NT_PRINTER_INFO_LEVEL *printer, const char *key, cons
 WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u);
 WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u);
 void spoolss_notify_server_name(int snum,
-				       SPOOL_NOTIFY_INFO_DATA *data,
+				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx);
 void spoolss_notify_printer_name(int snum,
-					SPOOL_NOTIFY_INFO_DATA *data,
+					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					NT_PRINTER_INFO_LEVEL *printer,
 					TALLOC_CTX *mem_ctx);
 void spoolss_notify_share_name(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx);
 void spoolss_notify_port_name(int snum,
-				     SPOOL_NOTIFY_INFO_DATA *data,
+				     struct spoolss_Notify *data,
 				     print_queue_struct *queue,
 				     NT_PRINTER_INFO_LEVEL *printer,
 				     TALLOC_CTX *mem_ctx);
 void spoolss_notify_driver_name(int snum,
-				       SPOOL_NOTIFY_INFO_DATA *data,
+				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx);
 void spoolss_notify_comment(int snum,
-				   SPOOL_NOTIFY_INFO_DATA *data,
+				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx);
 void spoolss_notify_location(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx);
 void spoolss_notify_sepfile(int snum,
-				   SPOOL_NOTIFY_INFO_DATA *data,
+				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx);
 void spoolss_notify_print_processor(int snum,
-					   SPOOL_NOTIFY_INFO_DATA *data,
+					   struct spoolss_Notify *data,
 					   print_queue_struct *queue,
 					   NT_PRINTER_INFO_LEVEL *printer,
 					   TALLOC_CTX *mem_ctx);
 void spoolss_notify_parameters(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx);
 void spoolss_notify_datatype(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx);
 void spoolss_notify_attributes(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx);
 void spoolss_notify_cjobs(int snum,
-				 SPOOL_NOTIFY_INFO_DATA *data,
+				 struct spoolss_Notify *data,
 				 print_queue_struct *queue,
 				 NT_PRINTER_INFO_LEVEL *printer,
 				 TALLOC_CTX *mem_ctx);
-void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id);
+void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 field, int id);
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
 DEVICEMODE *construct_dev_mode(const char *servicename);
 WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);

@@ -673,43 +673,93 @@ static bool is_monitoring_event(Printer_entry *p, uint16 notify_type,
 	return False;
 }
 
-/* Convert a notification message to a SPOOL_NOTIFY_INFO_DATA struct */
+#define SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(_data, _integer) \
+	_data->data.integer[0] = _integer; \
+	_data->data.integer[1] = 0;
 
-static void notify_one_value(struct spoolss_notify_msg *msg,
-			     SPOOL_NOTIFY_INFO_DATA *data,
-			     TALLOC_CTX *mem_ctx)
+
+#define SETUP_SPOOLSS_NOTIFY_DATA_STRING(_data, _p) \
+	_data->data.string.string = talloc_strdup(mem_ctx, _p); \
+	if (!_data->data.string.string) {\
+		_data->data.string.size = 0; \
+	} \
+	_data->data.string.size = strlen_m_term(_p) * 2;
+
+#define SETUP_SPOOLSS_NOTIFY_DATA_DEVMODE(_data, _devmode) \
+	_data->data.devmode.devmode = _devmode;
+
+#define SETUP_SPOOLSS_NOTIFY_DATA_SECDESC(_data, _size, _sd) \
+	_data->data.sd.sd = dup_sec_desc(mem_ctx, _sd); \
+	if (!_data->data.sd.sd) { \
+		_data->data.sd.sd_size = 0; \
+	} \
+	_data->data.sd.sd_size = _size;
+
+static void init_systemtime_buffer(TALLOC_CTX *mem_ctx,
+				   struct tm *t,
+				   const char **pp,
+				   uint32_t *plen)
 {
-	data->notify_data.value[0] = msg->notify.value[0];
-	data->notify_data.value[1] = 0;
-}
+	struct spoolss_Time st;
+	uint32_t len = 16;
+	char *p;
 
-static void notify_string(struct spoolss_notify_msg *msg,
-			  SPOOL_NOTIFY_INFO_DATA *data,
-			  TALLOC_CTX *mem_ctx)
-{
-	UNISTR2 unistr;
-
-	/* The length of the message includes the trailing \0 */
-
-	init_unistr2(&unistr, msg->notify.data, UNI_STR_TERMINATE);
-
-	data->notify_data.data.length = msg->len * 2;
-	data->notify_data.data.string = TALLOC_ARRAY(mem_ctx, uint16, msg->len);
-
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
+	if (!init_systemtime(&st, t)) {
 		return;
 	}
 
-	memcpy(data->notify_data.data.string, unistr.buffer, msg->len * 2);
+	p = talloc_array(mem_ctx, char, len);
+	if (!p) {
+		return;
+	}
+
+	/*
+	 * Systemtime must be linearized as a set of UINT16's.
+	 * Fix from Benjamin (Bj) Kuit bj@it.uts.edu.au
+	 */
+
+	SSVAL(p, 0, st.year);
+	SSVAL(p, 2, st.month);
+	SSVAL(p, 4, st.day_of_week);
+	SSVAL(p, 6, st.day);
+	SSVAL(p, 8, st.hour);
+	SSVAL(p, 10, st.minute);
+	SSVAL(p, 12, st.second);
+	SSVAL(p, 14, st.millisecond);
+
+	*pp = p;
+	*plen = len;
+}
+
+/* Convert a notification message to a struct spoolss_Notify */
+
+static void notify_one_value(struct spoolss_notify_msg *msg,
+			     struct spoolss_Notify *data,
+			     TALLOC_CTX *mem_ctx)
+{
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, msg->notify.value[0]);
+}
+
+static void notify_string(struct spoolss_notify_msg *msg,
+			  struct spoolss_Notify *data,
+			  TALLOC_CTX *mem_ctx)
+{
+	/* The length of the message includes the trailing \0 */
+
+	data->data.string.size = msg->len * 2;
+	data->data.string.string = talloc_strdup(mem_ctx, msg->notify.data);
+	if (!data->data.string.string) {
+		data->data.string.size = 0;
+		return;
+	}
 }
 
 static void notify_system_time(struct spoolss_notify_msg *msg,
-			       SPOOL_NOTIFY_INFO_DATA *data,
+			       struct spoolss_Notify *data,
 			       TALLOC_CTX *mem_ctx)
 {
-	SYSTEMTIME systime;
-	prs_struct ps;
+	data->data.string.string = NULL;
+	data->data.string.size = 0;
 
 	if (msg->len != sizeof(time_t)) {
 		DEBUG(5, ("notify_system_time: received wrong sized message (%d)\n",
@@ -717,42 +767,15 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 	}
 
-	if (!prs_init(&ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL)) {
-		DEBUG(5, ("notify_system_time: prs_init() failed\n"));
-		return;
-	}
-
-	if (!make_systemtime(&systime, gmtime((time_t *)msg->notify.data))) {
-		DEBUG(5, ("notify_system_time: unable to make systemtime\n"));
-		prs_mem_free(&ps);
-		return;
-	}
-
-	if (!spoolss_io_system_time("", &ps, 0, &systime)) {
-		prs_mem_free(&ps);
-		return;
-	}
-
-	data->notify_data.data.length = prs_offset(&ps);
-	if (prs_offset(&ps)) {
-		data->notify_data.data.string = (uint16 *)
-			TALLOC(mem_ctx, prs_offset(&ps));
-		if (!data->notify_data.data.string) {
-			prs_mem_free(&ps);
-			return;
-		}
-		prs_copy_all_data_out((char *)data->notify_data.data.string, &ps);
-	} else {
-		data->notify_data.data.string = NULL;
-	}
-
-	prs_mem_free(&ps);
+	init_systemtime_buffer(mem_ctx, gmtime((time_t *)msg->notify.data),
+			       &data->data.string.string,
+			       &data->data.string.size);
 }
 
 struct notify2_message_table {
 	const char *name;
 	void (*fn)(struct spoolss_notify_msg *msg,
-		   SPOOL_NOTIFY_INFO_DATA *data, TALLOC_CTX *mem_ctx);
+		   struct spoolss_Notify *data, TALLOC_CTX *mem_ctx);
 };
 
 static struct notify2_message_table printer_notify_table[] = {
@@ -966,9 +989,9 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 	/* loop over all printers */
 
 	for (p = printers_list; p; p = p->next) {
-		SPOOL_NOTIFY_INFO_DATA *data;
-		uint32	data_len = 0;
-		uint32 	id;
+		struct spoolss_Notify *notifies;
+		uint32_t count = 0;
+		uint32_t id;
 		int 	i;
 
 		/* Is there notification on this handle? */
@@ -989,12 +1012,10 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 
 		/* allocate the max entries possible */
 
-		data = TALLOC_ARRAY( mem_ctx, SPOOL_NOTIFY_INFO_DATA, msg_group->num_msgs);
-		if (!data) {
+		notifies = TALLOC_ZERO_ARRAY(mem_ctx, struct spoolss_Notify, msg_group->num_msgs);
+		if (!notifies) {
 			return;
 		}
-
-		ZERO_STRUCTP(data);
 
 		/* build the array of change notifications */
 
@@ -1044,17 +1065,17 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 				}
 			}
 
-			construct_info_data( &data[data_len], msg->type, msg->field, id );
+			construct_info_data( &notifies[count], msg->type, msg->field, id );
 
 			switch(msg->type) {
 			case PRINTER_NOTIFY_TYPE:
 				if ( printer_notify_table[msg->field].fn )
-					printer_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					printer_notify_table[msg->field].fn(msg, &notifies[count], mem_ctx);
 				break;
 
 			case JOB_NOTIFY_TYPE:
 				if ( job_notify_table[msg->field].fn )
-					job_notify_table[msg->field].fn(msg, &data[data_len], mem_ctx);
+					job_notify_table[msg->field].fn(msg, &notifies[count], mem_ctx);
 				break;
 
 			default:
@@ -1062,7 +1083,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 				goto done;
 			}
 
-			data_len++;
+			count++;
 		}
 
 		if ( sending_msg_count ) {
@@ -2901,25 +2922,12 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
  ********************************************************************/
 
 void spoolss_notify_server_name(int snum,
-				       SPOOL_NOTIFY_INFO_DATA *data,
+				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->servername);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->servername);
 }
 
 /*******************************************************************
@@ -2927,14 +2935,11 @@ void spoolss_notify_server_name(int snum,
  ********************************************************************/
 
 void spoolss_notify_printer_name(int snum,
-					SPOOL_NOTIFY_INFO_DATA *data,
+					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					NT_PRINTER_INFO_LEVEL *printer,
 					TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
 	/* the notify name should not contain the \\server\ part */
 	char *p = strrchr(printer->info_2->printername, '\\');
 
@@ -2944,17 +2949,7 @@ void spoolss_notify_printer_name(int snum,
 		p++;
 	}
 
-	len = rpcstr_push_talloc(mem_ctx, &temp, p);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, p);
 }
 
 /*******************************************************************
@@ -2962,26 +2957,12 @@ void spoolss_notify_printer_name(int snum,
  ********************************************************************/
 
 void spoolss_notify_share_name(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, lp_servicename(snum));
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
-
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, lp_servicename(snum));
 }
 
 /*******************************************************************
@@ -2989,27 +2970,12 @@ void spoolss_notify_share_name(int snum,
  ********************************************************************/
 
 void spoolss_notify_port_name(int snum,
-				     SPOOL_NOTIFY_INFO_DATA *data,
+				     struct spoolss_Notify *data,
 				     print_queue_struct *queue,
 				     NT_PRINTER_INFO_LEVEL *printer,
 				     TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	/* even if it's strange, that's consistant in all the code */
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->portname);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->portname);
 }
 
 /*******************************************************************
@@ -3018,25 +2984,12 @@ void spoolss_notify_port_name(int snum,
  ********************************************************************/
 
 void spoolss_notify_driver_name(int snum,
-				       SPOOL_NOTIFY_INFO_DATA *data,
+				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->drivername);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->drivername);
 }
 
 /*******************************************************************
@@ -3044,28 +2997,20 @@ void spoolss_notify_driver_name(int snum,
  ********************************************************************/
 
 void spoolss_notify_comment(int snum,
-				   SPOOL_NOTIFY_INFO_DATA *data,
+				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
+	char *p;
 
-	if (*printer->info_2->comment == '\0')
-		len = rpcstr_push_talloc(mem_ctx, &temp, lp_comment(snum));
-	else
-		len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->comment);
-
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
+	if (*printer->info_2->comment == '\0') {
+		p = lp_comment(snum);
 	} else {
-		data->notify_data.data.string = NULL;
+		p = printer->info_2->comment;
 	}
+
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->comment);
 }
 
 /*******************************************************************
@@ -3074,25 +3019,12 @@ void spoolss_notify_comment(int snum,
  ********************************************************************/
 
 void spoolss_notify_location(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->location);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->location);
 }
 
 /*******************************************************************
@@ -3101,14 +3033,13 @@ void spoolss_notify_location(int snum,
  ********************************************************************/
 
 static void spoolss_notify_devmode(int snum,
-				   SPOOL_NOTIFY_INFO_DATA *data,
+				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
 	/* for a dummy implementation we have to zero the fields */
-	data->notify_data.data.length = 0;
-	data->notify_data.data.string = NULL;
+	SETUP_SPOOLSS_NOTIFY_DATA_DEVMODE(data, NULL);
 }
 
 /*******************************************************************
@@ -3116,25 +3047,12 @@ static void spoolss_notify_devmode(int snum,
  ********************************************************************/
 
 void spoolss_notify_sepfile(int snum,
-				   SPOOL_NOTIFY_INFO_DATA *data,
+				   struct spoolss_Notify *data,
 				   print_queue_struct *queue,
 				   NT_PRINTER_INFO_LEVEL *printer,
 				   TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->sepfile);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->sepfile);
 }
 
 /*******************************************************************
@@ -3143,25 +3061,12 @@ void spoolss_notify_sepfile(int snum,
  ********************************************************************/
 
 void spoolss_notify_print_processor(int snum,
-					   SPOOL_NOTIFY_INFO_DATA *data,
+					   struct spoolss_Notify *data,
 					   print_queue_struct *queue,
 					   NT_PRINTER_INFO_LEVEL *printer,
 					   TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->printprocessor);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->printprocessor);
 }
 
 /*******************************************************************
@@ -3170,25 +3075,12 @@ void spoolss_notify_print_processor(int snum,
  ********************************************************************/
 
 void spoolss_notify_parameters(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->parameters);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->parameters);
 }
 
 /*******************************************************************
@@ -3197,25 +3089,12 @@ void spoolss_notify_parameters(int snum,
  ********************************************************************/
 
 void spoolss_notify_datatype(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, printer->info_2->datatype);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, printer->info_2->datatype);
 }
 
 /*******************************************************************
@@ -3225,13 +3104,14 @@ void spoolss_notify_datatype(int snum,
  ********************************************************************/
 
 static void spoolss_notify_security_desc(int snum,
-					 SPOOL_NOTIFY_INFO_DATA *data,
+					 struct spoolss_Notify *data,
 					 print_queue_struct *queue,
 					 NT_PRINTER_INFO_LEVEL *printer,
 					 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.sd.size = printer->info_2->secdesc_buf->sd_size;
-	data->notify_data.sd.desc = dup_sec_desc( mem_ctx, printer->info_2->secdesc_buf->sd ) ;
+	SETUP_SPOOLSS_NOTIFY_DATA_SECDESC(data,
+					  printer->info_2->secdesc_buf->sd_size,
+					  printer->info_2->secdesc_buf->sd);
 }
 
 /*******************************************************************
@@ -3240,13 +3120,12 @@ static void spoolss_notify_security_desc(int snum,
  ********************************************************************/
 
 void spoolss_notify_attributes(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = printer->info_2->attributes;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->attributes);
 }
 
 /*******************************************************************
@@ -3254,13 +3133,12 @@ void spoolss_notify_attributes(int snum,
  ********************************************************************/
 
 static void spoolss_notify_priority(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = printer->info_2->priority;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->priority);
 }
 
 /*******************************************************************
@@ -3268,13 +3146,12 @@ static void spoolss_notify_priority(int snum,
  ********************************************************************/
 
 static void spoolss_notify_default_priority(int snum,
-					    SPOOL_NOTIFY_INFO_DATA *data,
+					    struct spoolss_Notify *data,
 					    print_queue_struct *queue,
 					    NT_PRINTER_INFO_LEVEL *printer,
 					    TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = printer->info_2->default_priority;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->default_priority);
 }
 
 /*******************************************************************
@@ -3282,13 +3159,12 @@ static void spoolss_notify_default_priority(int snum,
  ********************************************************************/
 
 static void spoolss_notify_start_time(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = printer->info_2->starttime;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->starttime);
 }
 
 /*******************************************************************
@@ -3296,13 +3172,12 @@ static void spoolss_notify_start_time(int snum,
  ********************************************************************/
 
 static void spoolss_notify_until_time(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = printer->info_2->untiltime;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->untiltime);
 }
 
 /*******************************************************************
@@ -3310,7 +3185,7 @@ static void spoolss_notify_until_time(int snum,
  ********************************************************************/
 
 static void spoolss_notify_status(int snum,
-				  SPOOL_NOTIFY_INFO_DATA *data,
+				  struct spoolss_Notify *data,
 				  print_queue_struct *queue,
 				  NT_PRINTER_INFO_LEVEL *printer,
 				  TALLOC_CTX *mem_ctx)
@@ -3318,8 +3193,7 @@ static void spoolss_notify_status(int snum,
 	print_status_struct status;
 
 	print_queue_length(snum, &status);
-	data->notify_data.value[0]=(uint32) status.status;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, status.status);
 }
 
 /*******************************************************************
@@ -3327,13 +3201,12 @@ static void spoolss_notify_status(int snum,
  ********************************************************************/
 
 void spoolss_notify_cjobs(int snum,
-				 SPOOL_NOTIFY_INFO_DATA *data,
+				 struct spoolss_Notify *data,
 				 print_queue_struct *queue,
 				 NT_PRINTER_INFO_LEVEL *printer,
 				 TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0] = print_queue_length(snum, NULL);
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, print_queue_length(snum, NULL));
 }
 
 /*******************************************************************
@@ -3341,15 +3214,14 @@ void spoolss_notify_cjobs(int snum,
  ********************************************************************/
 
 static void spoolss_notify_average_ppm(int snum,
-				       SPOOL_NOTIFY_INFO_DATA *data,
+				       struct spoolss_Notify *data,
 				       print_queue_struct *queue,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       TALLOC_CTX *mem_ctx)
 {
 	/* always respond 8 pages per minutes */
 	/* a little hard ! */
-	data->notify_data.value[0] = printer->info_2->averageppm;
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, printer->info_2->averageppm);
 }
 
 /*******************************************************************
@@ -3357,25 +3229,12 @@ static void spoolss_notify_average_ppm(int snum,
  ********************************************************************/
 
 static void spoolss_notify_username(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, queue->fs_user);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, queue->fs_user);
 }
 
 /*******************************************************************
@@ -3383,13 +3242,12 @@ static void spoolss_notify_username(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_status(int snum,
-				      SPOOL_NOTIFY_INFO_DATA *data,
+				      struct spoolss_Notify *data,
 				      print_queue_struct *queue,
 				      NT_PRINTER_INFO_LEVEL *printer,
 				      TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=nt_printj_status(queue->status);
-	data->notify_data.value[1] = 0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, nt_printj_status(queue->status));
 }
 
 /*******************************************************************
@@ -3397,25 +3255,12 @@ static void spoolss_notify_job_status(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_name(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
-
-	len = rpcstr_push_talloc(mem_ctx, &temp, queue->fs_file);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, queue->fs_file);
 }
 
 /*******************************************************************
@@ -3423,7 +3268,7 @@ static void spoolss_notify_job_name(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_status_string(int snum,
-					     SPOOL_NOTIFY_INFO_DATA *data,
+					     struct spoolss_Notify *data,
 					     print_queue_struct *queue,
 					     NT_PRINTER_INFO_LEVEL *printer,
 					     TALLOC_CTX *mem_ctx)
@@ -3433,8 +3278,6 @@ static void spoolss_notify_job_status_string(int snum,
 	 */
 
 	const char *p = "";
-	smb_ucs2_t *temp = NULL;
-	uint32 len;
 
 #if 0 /* NO LONGER NEEDED - JRA. 02/22/2001 */
 	p = "unknown";
@@ -3455,17 +3298,7 @@ static void spoolss_notify_job_status_string(int snum,
 	}
 #endif /* NO LONGER NEEDED. */
 
-	len = rpcstr_push_talloc(mem_ctx, &temp, p);
-	if (len == (uint32)-1) {
-		len = 0;
-	}
-
-	data->notify_data.data.length = len;
-	if (len) {
-		data->notify_data.data.string = (uint16 *)temp;
-	} else {
-		data->notify_data.data.string = NULL;
-	}
+	SETUP_SPOOLSS_NOTIFY_DATA_STRING(data, p);
 }
 
 /*******************************************************************
@@ -3473,13 +3306,12 @@ static void spoolss_notify_job_status_string(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_time(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=0x0;
-	data->notify_data.value[1]=0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, 0);
 }
 
 /*******************************************************************
@@ -3487,39 +3319,37 @@ static void spoolss_notify_job_time(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_size(int snum,
-				    SPOOL_NOTIFY_INFO_DATA *data,
+				    struct spoolss_Notify *data,
 				    print_queue_struct *queue,
 				    NT_PRINTER_INFO_LEVEL *printer,
 				    TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=queue->size;
-	data->notify_data.value[1]=0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, queue->size);
 }
 
 /*******************************************************************
  * fill a notify_info_data with page info
  ********************************************************************/
 static void spoolss_notify_total_pages(int snum,
-				SPOOL_NOTIFY_INFO_DATA *data,
+				struct spoolss_Notify *data,
 				print_queue_struct *queue,
 				NT_PRINTER_INFO_LEVEL *printer,
 				TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=queue->page_count;
-	data->notify_data.value[1]=0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, queue->page_count);
 }
 
 /*******************************************************************
  * fill a notify_info_data with pages printed info.
  ********************************************************************/
 static void spoolss_notify_pages_printed(int snum,
-				SPOOL_NOTIFY_INFO_DATA *data,
+				struct spoolss_Notify *data,
 				print_queue_struct *queue,
 				NT_PRINTER_INFO_LEVEL *printer,
 				TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=0;  /* Add code when back-end tracks this */
-	data->notify_data.value[1]=0;
+	/* Add code when back-end tracks this */
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, 0);
 }
 
 /*******************************************************************
@@ -3527,13 +3357,12 @@ static void spoolss_notify_pages_printed(int snum,
  ********************************************************************/
 
 static void spoolss_notify_job_position(int snum,
-					SPOOL_NOTIFY_INFO_DATA *data,
+					struct spoolss_Notify *data,
 					print_queue_struct *queue,
 					NT_PRINTER_INFO_LEVEL *printer,
 					TALLOC_CTX *mem_ctx)
 {
-	data->notify_data.value[0]=queue->job;
-	data->notify_data.value[1]=0;
+	SETUP_SPOOLSS_NOTIFY_DATA_INTEGER(data, queue->job);
 }
 
 /*******************************************************************
@@ -3541,44 +3370,18 @@ static void spoolss_notify_job_position(int snum,
  ********************************************************************/
 
 static void spoolss_notify_submitted_time(int snum,
-					  SPOOL_NOTIFY_INFO_DATA *data,
+					  struct spoolss_Notify *data,
 					  print_queue_struct *queue,
 					  NT_PRINTER_INFO_LEVEL *printer,
 					  TALLOC_CTX *mem_ctx)
 {
-	struct tm *t;
-	uint32 len;
-	SYSTEMTIME st;
-	char *p;
+	data->data.string.string = NULL;
+	data->data.string.size = 0;
 
-	t=gmtime(&queue->time);
+	init_systemtime_buffer(mem_ctx, gmtime(&queue->time),
+			       &data->data.string.string,
+			       &data->data.string.size);
 
-	len = sizeof(SYSTEMTIME);
-
-	data->notify_data.data.length = len;
-	data->notify_data.data.string = (uint16 *)TALLOC(mem_ctx, len);
-
-	if (!data->notify_data.data.string) {
-		data->notify_data.data.length = 0;
-		return;
-	}
-
-	make_systemtime(&st, t);
-
-	/*
-	 * Systemtime must be linearized as a set of UINT16's.
-	 * Fix from Benjamin (Bj) Kuit bj@it.uts.edu.au
-	 */
-
-	p = (char *)data->notify_data.data.string;
-	SSVAL(p, 0, st.year);
-	SSVAL(p, 2, st.month);
-	SSVAL(p, 4, st.dayofweek);
-	SSVAL(p, 6, st.day);
-	SSVAL(p, 8, st.hour);
-        SSVAL(p, 10, st.minute);
-	SSVAL(p, 12, st.second);
-	SSVAL(p, 14, st.milliseconds);
 }
 
 struct s_notify_info_data_table
@@ -3587,7 +3390,7 @@ struct s_notify_info_data_table
 	uint16 field;
 	const char *name;
 	uint32 size;
-	void (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data,
+	void (*fn) (int snum, struct spoolss_Notify *data,
 		    print_queue_struct *queue,
 		    NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
 };
@@ -3725,16 +3528,12 @@ static bool search_notify(uint16 type, uint16 field, int *value)
 /****************************************************************************
 ****************************************************************************/
 
-void construct_info_data(SPOOL_NOTIFY_INFO_DATA *info_data, uint16 type, uint16 field, int id)
+void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 field, int id)
 {
-	info_data->type     = type;
-	info_data->field    = field;
-	info_data->reserved = 0;
-
-	info_data->size     = size_of_notify_info_data(type, field);
-	info_data->enc_type = type_of_notify_info_data(type, field);
-
-	info_data->id = id;
+	info_data->type			= type;
+	info_data->field		= field;
+	info_data->variable_type	= size_of_notify_info_data(type, field);
+	info_data->job_id		= id;
 }
 
 /*******************************************************************
@@ -3752,7 +3551,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data;
+	struct spoolss_Notify *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 
@@ -3773,7 +3572,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->data=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
+		if((info->data=SMB_REALLOC_ARRAY(info->data, struct spoolss_Notify, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			free_a_printer(&printer, 2);
 			return False;
@@ -3813,7 +3612,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 	uint16 type;
 	uint16 field;
 
-	SPOOL_NOTIFY_INFO_DATA *current_data;
+	struct spoolss_Notify *current_data;
 
 	DEBUG(4,("construct_notify_jobs_info\n"));
 
@@ -3829,7 +3628,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->data=SMB_REALLOC_ARRAY(info->data, SPOOL_NOTIFY_INFO_DATA, info->count+1)) == NULL) {
+		if((info->data=SMB_REALLOC_ARRAY(info->data, struct spoolss_Notify, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
 		}
