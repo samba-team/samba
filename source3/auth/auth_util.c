@@ -226,14 +226,18 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	if (!is_trusted_domain(domain) &&
 	    !strequal(domain, get_global_sam_name()) )
 	{
-		domain = get_global_sam_name();
-		DEBUG(5, ("Mapped domain from [%s] to [%s] for user [%s] on "
+		if (lp_map_untrusted_to_domain())
+			domain = my_sam_name();
+		else
+			domain = get_global_sam_name();
+		DEBUG(5, ("Mapped domain from [%s] to [%s] for user [%s] from "
 			  "workstation [%s]\n",
 			  client_domain, domain, smb_name, wksta_name));
 	}
 
-	/* we know that it is a trusted domain (and we are allowing them) or it
-	 * is our domain */
+	/* We know that the given domain is trusted (and we are allowing them),
+	 * it is our global SAM name, or for legacy behavior it is our
+	 * primary domain name */
 
 	result = make_user_info(user_info, smb_name, internal_username,
 			      client_domain, domain, wksta_name,

@@ -345,6 +345,7 @@ struct global {
 	struct param_opt_struct *param_opt;
 	int cups_connection_timeout;
 	char *szSMBPerfcountModule;
+	bool bMapUntrustedToDomain;
 };
 
 static struct global Globals;
@@ -1775,6 +1776,15 @@ static struct parm_struct parm_table[] = {
 		.special	= NULL,
 		.enum_list	= enum_kerberos_method,
 		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "map untrusted to domain",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.bMapUntrustedToDomain,
+		.special	= NULL,
+		.enum_list	= NULL,
+		.flags		= FLAG_ADVANCED | FLAG_GLOBAL,
 	},
 
 
@@ -5053,6 +5063,8 @@ static void init_globals(bool first_time_only)
 	Globals.bRegistryShares = False;
 
 	Globals.iminreceivefile = 0;
+
+	Globals.bMapUntrustedToDomain = false;
 }
 
 /*******************************************************************
@@ -5351,6 +5363,7 @@ FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_INTEGER(lp_max_stat_cache_size, &Globals.iMaxStatCacheSize)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
+FN_GLOBAL_BOOL(lp_map_untrusted_to_domain, &Globals.bMapUntrustedToDomain)
 FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)

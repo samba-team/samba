@@ -4067,6 +4067,7 @@ bool lp_nt_status_support(void);
 bool lp_stat_cache(void);
 int lp_max_stat_cache_size(void);
 bool lp_allow_trusted_domains(void);
+bool lp_map_untrusted_to_domain(void);
 int lp_restrict_anonymous(void);
 bool lp_lanman_auth(void);
 bool lp_ntlm_auth(void);
@@ -4435,6 +4436,7 @@ bool sid_check_is_in_our_domain(const DOM_SID *sid);
 
 /* The following definitions come from passdb/passdb.c  */
 
+const char *my_sam_name(void);
 struct samu *samu_new( TALLOC_CTX *ctx );
 NTSTATUS samu_set_unix(struct samu *user, const struct passwd *pwd);
 NTSTATUS samu_alloc_rid_unix(struct samu *user, const struct passwd *pwd);
