@@ -3386,10 +3386,10 @@ static void spoolss_notify_submitted_time(int snum,
 
 struct s_notify_info_data_table
 {
-	uint16 type;
-	uint16 field;
+	enum spoolss_NotifyType type;
+	enum spoolss_Field field;
 	const char *name;
-	uint32 size;
+	enum spoolss_NotifyTable variable_type;
 	void (*fn) (int snum, struct spoolss_Notify *data,
 		    print_queue_struct *queue,
 		    NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
@@ -3401,107 +3401,75 @@ struct s_notify_info_data_table
 
 static const struct s_notify_info_data_table notify_info_data_table[] =
 {
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         NOTIFY_STRING,   spoolss_notify_server_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        NOTIFY_STRING,   spoolss_notify_printer_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,          "PRINTER_NOTIFY_SHARE_NAME",          NOTIFY_STRING,   spoolss_notify_share_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,           "PRINTER_NOTIFY_PORT_NAME",           NOTIFY_STRING,   spoolss_notify_port_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,         "PRINTER_NOTIFY_DRIVER_NAME",         NOTIFY_STRING,   spoolss_notify_driver_name },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,             "PRINTER_NOTIFY_COMMENT",             NOTIFY_STRING,   spoolss_notify_comment },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,            "PRINTER_NOTIFY_LOCATION",            NOTIFY_STRING,   spoolss_notify_location },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DEVMODE,             "PRINTER_NOTIFY_DEVMODE",             NOTIFY_POINTER,   spoolss_notify_devmode },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SEPFILE,             "PRINTER_NOTIFY_SEPFILE",             NOTIFY_STRING,   spoolss_notify_sepfile },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINT_PROCESSOR,     "PRINTER_NOTIFY_PRINT_PROCESSOR",     NOTIFY_STRING,   spoolss_notify_print_processor },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PARAMETERS,          "PRINTER_NOTIFY_PARAMETERS",          NOTIFY_STRING,   spoolss_notify_parameters },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DATATYPE,            "PRINTER_NOTIFY_DATATYPE",            NOTIFY_STRING,   spoolss_notify_datatype },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SECURITY_DESCRIPTOR, "PRINTER_NOTIFY_SECURITY_DESCRIPTOR", NOTIFY_SECDESC,   spoolss_notify_security_desc },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_ATTRIBUTES,          "PRINTER_NOTIFY_ATTRIBUTES",          NOTIFY_ONE_VALUE, spoolss_notify_attributes },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRIORITY,            "PRINTER_NOTIFY_PRIORITY",            NOTIFY_ONE_VALUE, spoolss_notify_priority },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DEFAULT_PRIORITY,    "PRINTER_NOTIFY_DEFAULT_PRIORITY",    NOTIFY_ONE_VALUE, spoolss_notify_default_priority },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_START_TIME,          "PRINTER_NOTIFY_START_TIME",          NOTIFY_ONE_VALUE, spoolss_notify_start_time },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_UNTIL_TIME,          "PRINTER_NOTIFY_UNTIL_TIME",          NOTIFY_ONE_VALUE, spoolss_notify_until_time },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_STATUS,              "PRINTER_NOTIFY_STATUS",              NOTIFY_ONE_VALUE, spoolss_notify_status },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_STATUS_STRING,       "PRINTER_NOTIFY_STATUS_STRING",       NOTIFY_POINTER,   NULL },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_CJOBS,               "PRINTER_NOTIFY_CJOBS",               NOTIFY_ONE_VALUE, spoolss_notify_cjobs },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_AVERAGE_PPM,         "PRINTER_NOTIFY_AVERAGE_PPM",         NOTIFY_ONE_VALUE, spoolss_notify_average_ppm },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_PAGES,         "PRINTER_NOTIFY_TOTAL_PAGES",         NOTIFY_POINTER,   NULL },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PAGES_PRINTED,       "PRINTER_NOTIFY_PAGES_PRINTED",       NOTIFY_POINTER,   NULL },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_BYTES,         "PRINTER_NOTIFY_TOTAL_BYTES",         NOTIFY_POINTER,   NULL },
-{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_BYTES_PRINTED,       "PRINTER_NOTIFY_BYTES_PRINTED",       NOTIFY_POINTER,   NULL },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINTER_NAME,            "JOB_NOTIFY_PRINTER_NAME",            NOTIFY_STRING,   spoolss_notify_printer_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            NOTIFY_STRING,   spoolss_notify_server_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PORT_NAME,               "JOB_NOTIFY_PORT_NAME",               NOTIFY_STRING,   spoolss_notify_port_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_USER_NAME,               "JOB_NOTIFY_USER_NAME",               NOTIFY_STRING,   spoolss_notify_username },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_NOTIFY_NAME,             "JOB_NOTIFY_NOTIFY_NAME",             NOTIFY_STRING,   spoolss_notify_username },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DATATYPE,                "JOB_NOTIFY_DATATYPE",                NOTIFY_STRING,   spoolss_notify_datatype },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINT_PROCESSOR,         "JOB_NOTIFY_PRINT_PROCESSOR",         NOTIFY_STRING,   spoolss_notify_print_processor },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PARAMETERS,              "JOB_NOTIFY_PARAMETERS",              NOTIFY_STRING,   spoolss_notify_parameters },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DRIVER_NAME,             "JOB_NOTIFY_DRIVER_NAME",             NOTIFY_STRING,   spoolss_notify_driver_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DEVMODE,                 "JOB_NOTIFY_DEVMODE",                 NOTIFY_POINTER,   spoolss_notify_devmode },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS,                  "JOB_NOTIFY_STATUS",                  NOTIFY_ONE_VALUE, spoolss_notify_job_status },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS_STRING,           "JOB_NOTIFY_STATUS_STRING",           NOTIFY_STRING,   spoolss_notify_job_status_string },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SECURITY_DESCRIPTOR,     "JOB_NOTIFY_SECURITY_DESCRIPTOR",     NOTIFY_POINTER,   NULL },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DOCUMENT,                "JOB_NOTIFY_DOCUMENT",                NOTIFY_STRING,   spoolss_notify_job_name },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRIORITY,                "JOB_NOTIFY_PRIORITY",                NOTIFY_ONE_VALUE, spoolss_notify_priority },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_POSITION,                "JOB_NOTIFY_POSITION",                NOTIFY_ONE_VALUE, spoolss_notify_job_position },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SUBMITTED,               "JOB_NOTIFY_SUBMITTED",               NOTIFY_POINTER,   spoolss_notify_submitted_time },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_START_TIME,              "JOB_NOTIFY_START_TIME",              NOTIFY_ONE_VALUE, spoolss_notify_start_time },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_UNTIL_TIME,              "JOB_NOTIFY_UNTIL_TIME",              NOTIFY_ONE_VALUE, spoolss_notify_until_time },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TIME,                    "JOB_NOTIFY_TIME",                    NOTIFY_ONE_VALUE, spoolss_notify_job_time },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             NOTIFY_ONE_VALUE, spoolss_notify_total_pages },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           NOTIFY_ONE_VALUE, spoolss_notify_pages_printed },
-{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             NOTIFY_ONE_VALUE, spoolss_notify_job_size },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         NOTIFY_TABLE_STRING,   spoolss_notify_server_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,        "PRINTER_NOTIFY_PRINTER_NAME",        NOTIFY_TABLE_STRING,   spoolss_notify_printer_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,          "PRINTER_NOTIFY_SHARE_NAME",          NOTIFY_TABLE_STRING,   spoolss_notify_share_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,           "PRINTER_NOTIFY_PORT_NAME",           NOTIFY_TABLE_STRING,   spoolss_notify_port_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,         "PRINTER_NOTIFY_DRIVER_NAME",         NOTIFY_TABLE_STRING,   spoolss_notify_driver_name },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,             "PRINTER_NOTIFY_COMMENT",             NOTIFY_TABLE_STRING,   spoolss_notify_comment },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,            "PRINTER_NOTIFY_LOCATION",            NOTIFY_TABLE_STRING,   spoolss_notify_location },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DEVMODE,             "PRINTER_NOTIFY_DEVMODE",             NOTIFY_TABLE_DEVMODE,  spoolss_notify_devmode },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SEPFILE,             "PRINTER_NOTIFY_SEPFILE",             NOTIFY_TABLE_STRING,   spoolss_notify_sepfile },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINT_PROCESSOR,     "PRINTER_NOTIFY_PRINT_PROCESSOR",     NOTIFY_TABLE_STRING,   spoolss_notify_print_processor },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PARAMETERS,          "PRINTER_NOTIFY_PARAMETERS",          NOTIFY_TABLE_STRING,   spoolss_notify_parameters },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DATATYPE,            "PRINTER_NOTIFY_DATATYPE",            NOTIFY_TABLE_STRING,   spoolss_notify_datatype },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SECURITY_DESCRIPTOR, "PRINTER_NOTIFY_SECURITY_DESCRIPTOR", NOTIFY_TABLE_SECURITYDESCRIPTOR,   spoolss_notify_security_desc },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_ATTRIBUTES,          "PRINTER_NOTIFY_ATTRIBUTES",          NOTIFY_TABLE_DWORD,    spoolss_notify_attributes },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRIORITY,            "PRINTER_NOTIFY_PRIORITY",            NOTIFY_TABLE_DWORD,    spoolss_notify_priority },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DEFAULT_PRIORITY,    "PRINTER_NOTIFY_DEFAULT_PRIORITY",    NOTIFY_TABLE_DWORD,    spoolss_notify_default_priority },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_START_TIME,          "PRINTER_NOTIFY_START_TIME",          NOTIFY_TABLE_DWORD,    spoolss_notify_start_time },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_UNTIL_TIME,          "PRINTER_NOTIFY_UNTIL_TIME",          NOTIFY_TABLE_DWORD,    spoolss_notify_until_time },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_STATUS,              "PRINTER_NOTIFY_STATUS",              NOTIFY_TABLE_DWORD,    spoolss_notify_status },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_STATUS_STRING,       "PRINTER_NOTIFY_STATUS_STRING",       NOTIFY_TABLE_STRING,   NULL },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_CJOBS,               "PRINTER_NOTIFY_CJOBS",               NOTIFY_TABLE_DWORD,    spoolss_notify_cjobs },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_AVERAGE_PPM,         "PRINTER_NOTIFY_AVERAGE_PPM",         NOTIFY_TABLE_DWORD,    spoolss_notify_average_ppm },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_PAGES,         "PRINTER_NOTIFY_TOTAL_PAGES",         NOTIFY_TABLE_DWORD,    NULL },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PAGES_PRINTED,       "PRINTER_NOTIFY_PAGES_PRINTED",       NOTIFY_TABLE_DWORD,    NULL },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_TOTAL_BYTES,         "PRINTER_NOTIFY_TOTAL_BYTES",         NOTIFY_TABLE_DWORD,    NULL },
+{ PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_BYTES_PRINTED,       "PRINTER_NOTIFY_BYTES_PRINTED",       NOTIFY_TABLE_DWORD,    NULL },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINTER_NAME,            "JOB_NOTIFY_PRINTER_NAME",            NOTIFY_TABLE_STRING,   spoolss_notify_printer_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_MACHINE_NAME,            "JOB_NOTIFY_MACHINE_NAME",            NOTIFY_TABLE_STRING,   spoolss_notify_server_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PORT_NAME,               "JOB_NOTIFY_PORT_NAME",               NOTIFY_TABLE_STRING,   spoolss_notify_port_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_USER_NAME,               "JOB_NOTIFY_USER_NAME",               NOTIFY_TABLE_STRING,   spoolss_notify_username },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_NOTIFY_NAME,             "JOB_NOTIFY_NOTIFY_NAME",             NOTIFY_TABLE_STRING,   spoolss_notify_username },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DATATYPE,                "JOB_NOTIFY_DATATYPE",                NOTIFY_TABLE_STRING,   spoolss_notify_datatype },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRINT_PROCESSOR,         "JOB_NOTIFY_PRINT_PROCESSOR",         NOTIFY_TABLE_STRING,   spoolss_notify_print_processor },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PARAMETERS,              "JOB_NOTIFY_PARAMETERS",              NOTIFY_TABLE_STRING,   spoolss_notify_parameters },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DRIVER_NAME,             "JOB_NOTIFY_DRIVER_NAME",             NOTIFY_TABLE_STRING,   spoolss_notify_driver_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DEVMODE,                 "JOB_NOTIFY_DEVMODE",                 NOTIFY_TABLE_DEVMODE,  spoolss_notify_devmode },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS,                  "JOB_NOTIFY_STATUS",                  NOTIFY_TABLE_DWORD,    spoolss_notify_job_status },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_STATUS_STRING,           "JOB_NOTIFY_STATUS_STRING",           NOTIFY_TABLE_STRING,   spoolss_notify_job_status_string },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SECURITY_DESCRIPTOR,     "JOB_NOTIFY_SECURITY_DESCRIPTOR",     NOTIFY_TABLE_SECURITYDESCRIPTOR,   NULL },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_DOCUMENT,                "JOB_NOTIFY_DOCUMENT",                NOTIFY_TABLE_STRING,   spoolss_notify_job_name },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PRIORITY,                "JOB_NOTIFY_PRIORITY",                NOTIFY_TABLE_DWORD,    spoolss_notify_priority },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_POSITION,                "JOB_NOTIFY_POSITION",                NOTIFY_TABLE_DWORD,    spoolss_notify_job_position },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_SUBMITTED,               "JOB_NOTIFY_SUBMITTED",               NOTIFY_TABLE_TIME,     spoolss_notify_submitted_time },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_START_TIME,              "JOB_NOTIFY_START_TIME",              NOTIFY_TABLE_DWORD,    spoolss_notify_start_time },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_UNTIL_TIME,              "JOB_NOTIFY_UNTIL_TIME",              NOTIFY_TABLE_DWORD,    spoolss_notify_until_time },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TIME,                    "JOB_NOTIFY_TIME",                    NOTIFY_TABLE_DWORD,    spoolss_notify_job_time },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             NOTIFY_TABLE_DWORD,    spoolss_notify_total_pages },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           NOTIFY_TABLE_DWORD,    spoolss_notify_pages_printed },
+{ JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             NOTIFY_TABLE_DWORD,    spoolss_notify_job_size },
 { PRINT_TABLE_END, 0x0, NULL, 0x0, NULL },
 };
 
 /*******************************************************************
- Return the size of info_data structure.
+ Return the variable_type of info_data structure.
 ********************************************************************/
 
-static uint32 size_of_notify_info_data(uint16 type, uint16 field)
+static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
+						  enum spoolss_Field field)
 {
 	int i=0;
 
-	for (i = 0; i < (sizeof(notify_info_data_table)/sizeof(struct s_notify_info_data_table)); i++) {
-		if ( (notify_info_data_table[i].type == type)
-			&& (notify_info_data_table[i].field == field) ) {
-			switch(notify_info_data_table[i].size) {
-				case NOTIFY_ONE_VALUE:
-				case NOTIFY_TWO_VALUE:
-					return 1;
-				case NOTIFY_STRING:
-					return 2;
-
-				/* The only pointer notify data I have seen on
-				   the wire is the submitted time and this has
-				   the notify size set to 4. -tpot */
-
-				case NOTIFY_POINTER:
-					return 4;
-
-				case NOTIFY_SECDESC:
-					return 5;
-			}
+	for (i = 0; i < ARRAY_SIZE(notify_info_data_table); i++) {
+		if ( (notify_info_data_table[i].type == type) &&
+		     (notify_info_data_table[i].field == field) ) {
+			return notify_info_data_table[i].variable_type;
 		}
 	}
 
 	DEBUG(5, ("invalid notify data type %d/%d\n", type, field));
-
-	return 0;
-}
-
-/*******************************************************************
- Return the type of notify_info_data.
-********************************************************************/
-
-static uint32 type_of_notify_info_data(uint16 type, uint16 field)
-{
-	uint32 i=0;
-
-	for (i = 0; i < (sizeof(notify_info_data_table)/sizeof(struct s_notify_info_data_table)); i++) {
-		if (notify_info_data_table[i].type == type &&
-		    notify_info_data_table[i].field == field)
-			return notify_info_data_table[i].size;
-	}
 
 	return 0;
 }
@@ -3532,7 +3500,7 @@ void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 f
 {
 	info_data->type			= type;
 	info_data->field		= field;
-	info_data->variable_type	= size_of_notify_info_data(type, field);
+	info_data->variable_type	= variable_type_of_notify_info_data(type, field);
 	info_data->job_id		= id;
 }
 
@@ -3542,7 +3510,7 @@ void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 f
  *
  ********************************************************************/
 
-static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY_INFO *info, int
+static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spoolss_NotifyInfo *info, int
 					  snum, SPOOL_NOTIFY_OPTION_TYPE
 					  *option_type, uint32 id,
 					  TALLOC_CTX *mem_ctx)
@@ -3572,13 +3540,13 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->data=SMB_REALLOC_ARRAY(info->data, struct spoolss_Notify, info->count+1)) == NULL) {
+		if((info->notifies = SMB_REALLOC_ARRAY(info->notifies, struct spoolss_Notify, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_printer_info: failed to enlarge buffer info->data!\n"));
 			free_a_printer(&printer, 2);
 			return False;
 		}
 
-		current_data = &info->data[info->count];
+		current_data = &info->notifies[info->count];
 
 		construct_info_data(current_data, type, field, id);
 
@@ -3602,7 +3570,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, SPOOL_NOTIFY
  ********************************************************************/
 
 static bool construct_notify_jobs_info(print_queue_struct *queue,
-				       SPOOL_NOTIFY_INFO *info,
+				       struct spoolss_NotifyInfo *info,
 				       NT_PRINTER_INFO_LEVEL *printer,
 				       int snum, SPOOL_NOTIFY_OPTION_TYPE
 				       *option_type, uint32 id,
@@ -3628,12 +3596,12 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 		if (!search_notify(type, field, &j) )
 			continue;
 
-		if((info->data=SMB_REALLOC_ARRAY(info->data, struct spoolss_Notify, info->count+1)) == NULL) {
+		if((info->notifies = SMB_REALLOC_ARRAY(info->notifies, struct spoolss_Notify, info->count+1)) == NULL) {
 			DEBUG(2,("construct_notify_jobs_info: failed to enlarg buffer info->data!\n"));
 			return False;
 		}
 
-		current_data=&(info->data[info->count]);
+		current_data=&(info->notifies[info->count]);
 
 		construct_info_data(current_data, type, field, id);
 		notify_info_data_table[j].fn(snum, current_data, queue,
@@ -3675,7 +3643,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
  ********************************************************************/
 
 static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
-				      SPOOL_NOTIFY_INFO *info,
+				      struct spoolss_NotifyInfo *info,
 				      TALLOC_CTX *mem_ctx)
 {
 	int snum;
@@ -3691,9 +3659,10 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 		return WERR_BADFID;
 
 	option=Printer->notify.option;
-	info->version=2;
-	info->data=NULL;
-	info->count=0;
+
+	info->version	= 2;
+	info->notifies	= NULL;
+	info->count	= 0;
 
 	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without
 	   sending a ffpcn() request first */
@@ -3739,7 +3708,7 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
  *
  ********************************************************************/
 
-static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
+static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spoolss_NotifyInfo *info,
 				  TALLOC_CTX *mem_ctx)
 {
 	int snum;
@@ -3759,9 +3728,10 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 
 	option=Printer->notify.option;
 	id = 0x0;
-	info->version=2;
-	info->data=NULL;
-	info->count=0;
+
+	info->version	= 2;
+	info->notifies	= NULL;
+	info->count	= 0;
 
 	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without
 	   sending a ffpcn() request first */
