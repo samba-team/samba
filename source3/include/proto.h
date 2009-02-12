@@ -5530,6 +5530,11 @@ WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    const char *localmachine, uint32 printerlocal,
 			    SPOOL_NOTIFY_OPTION *option);
 
+/* The following definitions come from rpc_client/init_spoolss.c  */
+
+bool init_systemtime(struct spoolss_Time *r,
+		     struct tm *unixtime);
+
 /* The following definitions come from rpc_client/init_lsa.c  */
 
 void init_lsa_String(struct lsa_String *name, const char *s);

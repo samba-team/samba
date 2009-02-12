@@ -465,6 +465,7 @@ RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o
 LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       $(RPC_CLIENT_OBJ1) rpc_client/cli_reg.o $(RPC_CLIENT_OBJ) \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
+	       rpc_client/init_spoolss.o \
 	       rpc_client/init_samr.o \
 		   librpc/rpc/dcerpc.o \
 		   ../librpc/rpc/binding.o
