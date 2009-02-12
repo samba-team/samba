@@ -9,7 +9,7 @@ $(eval $(call proto_header_template,$(authsrcdir)/ntlmssp/msrpc_parse.h,$(MSRPC_
 [MODULE::gensec_ntlmssp]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_ntlmssp_init
-PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS auth
+PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS
 OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_ntlmssp
 ################################################

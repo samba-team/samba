@@ -482,16 +482,33 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 			break;
 		case GSS_SPNEGO_SERVER:
 		case SQUID_2_5_NTLMSSP:
+		{
+			const char *winbind_method[] = { "winbind", NULL };
+			struct auth_context *auth_context;
+
 			msg = messaging_client_init(state, lp_messaging_path(state, lp_ctx), 
 						    lp_iconv_convenience(lp_ctx), ev);
 			if (!msg) {
 				exit(1);
 			}
-			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, lp_gensec_settings(state, lp_ctx), 
-								 msg, &state->gensec_state))) {
+			nt_status = auth_context_create_methods(mem_ctx, 
+								winbind_method,
+								ev, 
+								msg, 
+								lp_ctx,
+								&auth_context);
+	
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				exit(1);
+			}
+			
+			if (!NT_STATUS_IS_OK(gensec_server_start(state, ev, 
+								 lp_gensec_settings(state, lp_ctx), 
+								 auth_context, &state->gensec_state))) {
 				exit(1);
 			}
 			break;
+		}
 		default:
 			abort();
 		}

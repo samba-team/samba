@@ -203,7 +203,7 @@ dcerpc_browser_OBJ_FILES = $(rpc_serversrcdir)/browser/dcesrv_browser.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_AUTH \
 		LIBNDR \
-		dcerpc
+		dcerpc samba_server_gensec
 
 dcerpc_server_OBJ_FILES = $(addprefix $(rpc_serversrcdir)/, \
 		dcerpc_server.o \

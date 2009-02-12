@@ -140,11 +140,13 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 	if (!conn->gensec) {
 		conn->session_info = NULL;
 
-		status = gensec_server_start(conn,
-					     conn->connection->event.ctx,
-					     lp_gensec_settings(conn, conn->lp_ctx),
-					     conn->connection->msg_ctx,
-					     &conn->gensec);
+		status = samba_server_gensec_start(conn,
+						   conn->connection->event.ctx,
+						   conn->connection->msg_ctx,
+						   conn->lp_ctx,
+						   conn->server_credentials,
+						   "ldap",
+						   &conn->gensec);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
 			result = LDAP_OPERATIONS_ERROR;
@@ -152,10 +154,6 @@ static NTSTATUS ldapsrv_BindSASL(struct ldapsrv_call *call)
 						 nt_errstr(status));
 		} else {
 		
-			gensec_set_target_service(conn->gensec, "ldap");
-			
-			gensec_set_credentials(conn->gensec, conn->server_credentials);
-			
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SIGN);
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_SEAL);
 			gensec_want_feature(conn->gensec, GENSEC_FEATURE_ASYNC_REPLIES);

@@ -434,8 +434,6 @@ _PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 {
 	NTSTATUS ret;
 
-	auth_init();
-
 	ret = gensec_register(&gensec_ntlmssp_security_ops);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(0,("Failed to register '%s' gensec backend!\n",

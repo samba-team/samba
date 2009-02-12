@@ -508,7 +508,7 @@ const char **gensec_security_oids(struct gensec_security *gensec_security,
 static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
-			     struct messaging_context *msg,
+ 			     struct auth_context *auth_context,
 			     struct gensec_security **gensec_security)
 {
 	if (ev == NULL) {
@@ -530,9 +530,9 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->want_features = 0;
 
 	(*gensec_security)->event_ctx = ev;
-	(*gensec_security)->msg_ctx = msg;
 	SMB_ASSERT(settings->lp_ctx != NULL);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, settings);
+	(*gensec_security)->auth_context = talloc_reference(*gensec_security, auth_context);
 
 	return NT_STATUS_OK;
 }
@@ -559,8 +559,9 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->subcontext = true;
 	(*gensec_security)->want_features = parent->want_features;
 	(*gensec_security)->event_ctx = parent->event_ctx;
-	(*gensec_security)->msg_ctx = parent->msg_ctx;
+	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
+	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 
 	return NT_STATUS_OK;
 }
@@ -599,10 +600,10 @@ _PUBLIC_ NTSTATUS gensec_client_start(TALLOC_CTX *mem_ctx,
   @note  The mem_ctx is only a parent and may be NULL.
 */
 _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
-			     struct tevent_context *ev,
-			     struct gensec_settings *settings,
-			     struct messaging_context *msg,
-			     struct gensec_security **gensec_security)
+				      struct tevent_context *ev,
+				      struct gensec_settings *settings,
+				      struct auth_context *auth_context,
+				      struct gensec_security **gensec_security)
 {
 	NTSTATUS status;
 
@@ -611,17 +612,12 @@ _PUBLIC_ NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (!msg) {
-		DEBUG(0,("gensec_server_start: no messaging context given!\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	if (!settings) {
 		DEBUG(0,("gensec_server_start: no settings given!\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = gensec_start(mem_ctx, ev, settings, msg, gensec_security);
+	status = gensec_start(mem_ctx, ev, settings, auth_context, gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

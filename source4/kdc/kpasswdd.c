@@ -483,14 +483,6 @@ bool kpasswdd_process(struct kdc_server *kdc,
 	ap_req = data_blob_const(&input->data[header_len], ap_req_len);
 	krb_priv_req = data_blob_const(&input->data[header_len + ap_req_len], krb_priv_len);
 	
-	nt_status = gensec_server_start(tmp_ctx, kdc->task->event_ctx, 
-					lp_gensec_settings(tmp_ctx, kdc->task->lp_ctx), kdc->task->msg_ctx, 
-					&gensec_security);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		talloc_free(tmp_ctx);
-		return false;
-	}
-
 	server_credentials = cli_credentials_init(tmp_ctx);
 	if (!server_credentials) {
 		DEBUG(1, ("Failed to init server credentials\n"));
@@ -517,7 +509,16 @@ bool kpasswdd_process(struct kdc_server *kdc,
 		return ret;
 	}
 	
-	nt_status = gensec_set_credentials(gensec_security, server_credentials);
+	/* We don't strictly need to call this wrapper, and could call
+	 * gensec_server_start directly, as we have no need for NTLM
+	 * and we have a PAC, but this ensures that the wrapper can be
+	 * safely extended for other helpful things in future */
+	nt_status = samba_server_gensec_start(tmp_ctx, kdc->task->event_ctx, 
+					      kdc->task->msg_ctx,
+					      kdc->task->lp_ctx,
+					      server_credentials,
+					      "kpasswd", 
+					      &gensec_security);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(tmp_ctx);
 		return false;

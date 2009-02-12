@@ -359,6 +359,8 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	int i;
 	struct auth_context *ctx;
 
+	auth_init();
+
 	if (!methods) {
 		DEBUG(0,("auth_context_create: No auth method list!?\n"));
 		return NT_STATUS_INTERNAL_ERROR;
@@ -404,6 +406,11 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	if (!ctx->methods) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}
+
+	ctx->check_password = auth_check_password;
+	ctx->get_challenge = auth_get_challenge;
+	ctx->set_challenge = auth_context_set_challenge;
+	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
 
 	*auth_ctx = ctx;
 

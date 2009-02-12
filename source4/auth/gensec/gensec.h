@@ -169,9 +169,13 @@ struct gensec_security {
 	bool subcontext;
 	uint32_t want_features;
 	struct tevent_context *event_ctx;
-	struct messaging_context *msg_ctx; /* only valid as server */
 	struct socket_address *my_addr, *peer_addr;
 	struct gensec_settings *settings;
+	
+	/* When we are a server, this may be filled in to provide an
+	 * NTLM authentication backend, and user lookup (such as if no
+	 * PAC is found) */
+	struct auth_context *auth_context;
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -185,6 +189,7 @@ struct gensec_critical_sizes {
 
 struct gensec_security;
 struct socket_context;
+struct auth_context;
 
 NTSTATUS gensec_socket_init(struct gensec_security *gensec_security,
 			    TALLOC_CTX *mem_ctx, 
@@ -274,7 +279,7 @@ const char *gensec_get_name_by_authtype(struct gensec_security *gensec_security,
 NTSTATUS gensec_server_start(TALLOC_CTX *mem_ctx, 
 			     struct tevent_context *ev,
 			     struct gensec_settings *settings,
-			     struct messaging_context *msg,
+			     struct auth_context *auth_context,
 			     struct gensec_security **gensec_security);
 NTSTATUS gensec_session_info(struct gensec_security *gensec_security, 
 			     struct auth_session_info **session_info);

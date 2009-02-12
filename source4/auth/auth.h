@@ -175,6 +175,20 @@ struct auth_context {
 
 	/* loadparm context */
 	struct loadparm_context *lp_ctx;
+
+	NTSTATUS (*check_password)(struct auth_context *auth_ctx,
+				   TALLOC_CTX *mem_ctx,
+				   const struct auth_usersupplied_info *user_info, 
+				   struct auth_serversupplied_info **server_info);
+	
+	NTSTATUS (*get_challenge)(struct auth_context *auth_ctx, const uint8_t **_chal);
+
+	bool (*challenge_may_be_modified)(struct auth_context *auth_ctx);
+
+	NTSTATUS (*set_challenge)(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
+	
+	
+
 };
 
 /* this structure is used by backends to determine the size of some critical types */
@@ -197,6 +211,8 @@ struct auth_critical_sizes {
 
 struct ldb_message;
 struct ldb_context;
+struct gensec_security;
+
 NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_t **_chal);
 NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 			    struct ldb_context *sam_ctx,
@@ -253,5 +269,13 @@ void auth_check_password_send(struct auth_context *auth_ctx,
 			      void (*callback)(struct auth_check_password_request *req, void *private_data),
 			      void *private_data);
 NTSTATUS auth_context_set_challenge(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
+
+NTSTATUS samba_server_gensec_start(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *event_ctx,
+				   struct messaging_context *msg_ctx,
+				   struct loadparm_context *lp_ctx,
+				   struct cli_credentials *server_credentials,
+				   const char *target_service,
+				   struct gensec_security **gensec_context);
 
 #endif /* _SMBAUTH_H_ */

@@ -15,6 +15,11 @@ auth_session_OBJ_FILES = $(addprefix $(authsrcdir)/, session.o)
 
 $(eval $(call proto_header_template,$(authsrcdir)/session_proto.h,$(auth_session_OBJ_FILES:.o=.c)))
 
+[SUBSYSTEM::samba_server_gensec]
+PUBLIC_DEPENDENCIES = CREDENTIALS GENSEC auth 
+
+samba_server_gensec_OBJ_FILES = $(addprefix $(authsrcdir)/, samba_server_gensec.o)
+
 [SUBSYSTEM::auth_system_session]
 PUBLIC_DEPENDENCIES = CREDENTIALS
 PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY 

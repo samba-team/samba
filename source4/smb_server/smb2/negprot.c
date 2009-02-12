@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "auth/credentials/credentials.h"
+#include "auth/auth.h"
 #include "auth/gensec/gensec.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/raw/raw_proto.h"
@@ -40,17 +41,6 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	NTSTATUS nt_status;
 	struct cli_credentials *server_credentials;
 
-	nt_status = gensec_server_start(req,
-					req->smb_conn->connection->event.ctx,
-					lp_gensec_settings(req, req->smb_conn->lp_ctx),
-					req->smb_conn->connection->msg_ctx,
-					&gensec_security);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
-		smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
-		return nt_status;
-	}
-
 	server_credentials = cli_credentials_init(req);
 	if (!server_credentials) {
 		smbsrv_terminate_connection(req->smb_conn, "Failed to init server credentials\n");
@@ -66,6 +56,19 @@ static NTSTATUS smb2srv_negprot_secblob(struct smb2srv_request *req, DATA_BLOB *
 	}
 
 	req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
+
+	nt_status = samba_server_gensec_start(req,
+					      req->smb_conn->connection->event.ctx,
+					      req->smb_conn->connection->msg_ctx,
+					      req->smb_conn->lp_ctx,
+					      server_credentials,
+					      "cifs",
+					      &gensec_security);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
+		smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
+		return nt_status;
+	}
 
 	gensec_set_target_service(gensec_security, "cifs");
 

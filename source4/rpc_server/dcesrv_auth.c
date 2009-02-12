@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "auth/auth.h"
 #include "param/param.h"
 
 /*
@@ -61,14 +62,6 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return false;
 	}
 
-	status = gensec_server_start(dce_conn, call->event_ctx, 
-				     lp_gensec_settings(dce_conn, call->conn->dce_ctx->lp_ctx), 
-				     call->msg_ctx, &auth->gensec_security);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to start GENSEC for DCERPC server: %s\n", nt_errstr(status)));
-		return false;
-	}
-
 	server_credentials 
 		= cli_credentials_init(call);
 	if (!server_credentials) {
@@ -84,7 +77,12 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		server_credentials = NULL;
 	}
 
-	gensec_set_credentials(auth->gensec_security, server_credentials);
+	status = samba_server_gensec_start(dce_conn, call->event_ctx, 
+					   call->msg_ctx,
+					   call->conn->dce_ctx->lp_ctx, 
+					   server_credentials,
+					   NULL,
+					   &auth->gensec_security);
 
 	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type, 
 					       auth->auth_info->auth_level);

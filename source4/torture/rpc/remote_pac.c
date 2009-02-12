@@ -106,7 +106,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = gensec_server_start(tctx, tctx->ev, 
 				     lp_gensec_settings(tctx, tctx->lp_ctx), 
-				     msg_server_ctx, &gensec_server_context);
+				     NULL, &gensec_server_context);
 	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
 
 	status = gensec_set_credentials(gensec_server_context, credentials);

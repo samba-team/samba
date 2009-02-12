@@ -350,23 +350,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		DATA_BLOB blob;
 		const char *oid;
 		NTSTATUS nt_status;
-
-		nt_status = gensec_server_start(req->smb_conn,
-						req->smb_conn->connection->event.ctx,
-						lp_gensec_settings(req->smb_conn, req->smb_conn->lp_ctx),
-						req->smb_conn->connection->msg_ctx,
-						&gensec_security);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
-			smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
-			return;
-		}
-
-		if (req->smb_conn->negotiate.auth_context) {
-			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
-			return;
-		}
-
+		
 		server_credentials 
 			= cli_credentials_init(req);
 		if (!server_credentials) {
@@ -382,6 +366,24 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 			server_credentials = NULL;
 		}
 
+		nt_status = samba_server_gensec_start(req,
+						      req->smb_conn->connection->event.ctx,
+						      req->smb_conn->connection->msg_ctx,
+						      req->smb_conn->lp_ctx,
+						      server_credentials,
+						      "cifs",
+						      &gensec_security);
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DEBUG(0, ("Failed to start GENSEC: %s\n", nt_errstr(nt_status)));
+			smbsrv_terminate_connection(req->smb_conn, "Failed to start GENSEC\n");
+			return;
+		}
+
+		if (req->smb_conn->negotiate.auth_context) {
+			smbsrv_terminate_connection(req->smb_conn, "reply_nt1: is this a secondary negprot?  auth_context is non-NULL!\n");
+			return;
+		}
 		req->smb_conn->negotiate.server_credentials = talloc_steal(req->smb_conn, server_credentials);
 
 		gensec_set_target_service(gensec_security, "cifs");
