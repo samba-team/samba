@@ -5409,6 +5409,13 @@ static bool api_spoolss_AddPrinterEx(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrinterEx, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.handle = talloc_zero(r, struct policy_handle);
+	if (r->out.handle == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_AddPrinterEx(p, r);
 
 	if (p->rng_fault_state) {
@@ -8120,6 +8127,12 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_ADDPRINTEREX: {
 			struct spoolss_AddPrinterEx *r = (struct spoolss_AddPrinterEx *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.handle = talloc_zero(mem_ctx, struct policy_handle);
+			if (r->out.handle == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_AddPrinterEx(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}

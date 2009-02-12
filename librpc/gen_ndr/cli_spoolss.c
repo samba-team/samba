@@ -3314,6 +3314,7 @@ NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 				     struct security_descriptor *secdesc /* [in] [unique] */,
 				     uint32_t ulevel /* [in]  */,
 				     union spoolss_UserLevel userlevel /* [in] [switch_is(ulevel)] */,
+				     struct policy_handle *handle /* [out] [ref] */,
 				     WERROR *werror)
 {
 	struct spoolss_AddPrinterEx r;
@@ -3351,6 +3352,7 @@ NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	if (werror) {

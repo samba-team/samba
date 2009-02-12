@@ -57,6 +57,65 @@ _PUBLIC_ void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+static size_t ndr_size_spoolss_Time(const struct spoolss_Time *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_Time, ic);
+}
+
+static enum ndr_err_code ndr_push_spoolss_TimeCtr(struct ndr_push *ndr, int ndr_flags, const struct spoolss_TimeCtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_size_spoolss_Time(r->time, ndr->iconv_convenience, ndr->flags)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->time));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->time) {
+			NDR_CHECK(ndr_push_spoolss_Time(ndr, NDR_SCALARS, r->time));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_TimeCtr(struct ndr_pull *ndr, int ndr_flags, struct spoolss_TimeCtr *r)
+{
+	uint32_t _ptr_time;
+	TALLOC_CTX *_mem_save_time_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_time));
+		if (_ptr_time) {
+			NDR_PULL_ALLOC(ndr, r->time);
+		} else {
+			r->time = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->time) {
+			_mem_save_time_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->time, 0);
+			NDR_CHECK(ndr_pull_spoolss_Time(ndr, NDR_SCALARS, r->time));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_time_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_TimeCtr(struct ndr_print *ndr, const char *name, const struct spoolss_TimeCtr *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_TimeCtr");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?ndr_size_spoolss_Time(r->time, ndr->iconv_convenience, ndr->flags):r->size);
+	ndr_print_ptr(ndr, "time", r->time);
+	ndr->depth++;
+	if (r->time) {
+		ndr_print_spoolss_Time(ndr, "time", r->time);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_PrinterInfo0(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrinterInfo0 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -10023,7 +10082,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyOptionsContainer(struct ndr_push
 	uint32_t cntr_options_1;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->options));
@@ -10089,7 +10148,7 @@ _PUBLIC_ void ndr_print_spoolss_NotifyOptionsContainer(struct ndr_print *ndr, co
 	uint32_t cntr_options_1;
 	ndr_print_struct(ndr, name, "spoolss_NotifyOptionsContainer");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "version", r->version);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->version);
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "options", r->options);
@@ -10110,7 +10169,7 @@ _PUBLIC_ void ndr_print_spoolss_NotifyOptionsContainer(struct ndr_print *ndr, co
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_NotifyUTF16String(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyUTF16String *r)
+static enum ndr_err_code ndr_push_spoolss_NotifyString(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyString *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -10126,7 +10185,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyUTF16String(struct ndr_push *ndr
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_NotifyUTF16String(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyUTF16String *r)
+static enum ndr_err_code ndr_pull_spoolss_NotifyString(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyString *r)
 {
 	uint32_t _ptr_string;
 	TALLOC_CTX *_mem_save_string_0;
@@ -10155,9 +10214,9 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyUTF16String(struct ndr_pull *ndr
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_NotifyUTF16String(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyUTF16String *r)
+_PUBLIC_ void ndr_print_spoolss_NotifyString(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyString *r)
 {
-	ndr_print_struct(ndr, name, "spoolss_NotifyUTF16String");
+	ndr_print_struct(ndr, name, "spoolss_NotifyString");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "size", r->size);
 	ndr_print_ptr(ndr, "string", r->string);
@@ -10169,163 +10228,32 @@ _PUBLIC_ void ndr_print_spoolss_NotifyUTF16String(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_spoolss_NotifyDOSString(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyDOSString *r)
+static enum ndr_err_code ndr_push_spoolss_NotifyTable(struct ndr_push *ndr, int ndr_flags, enum spoolss_NotifyTable r)
 {
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->string) {
-			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->size));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->string, r->size, sizeof(uint8_t), CH_DOS));
-		}
-	}
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_NotifyDOSString(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyDOSString *r)
+static enum ndr_err_code ndr_pull_spoolss_NotifyTable(struct ndr_pull *ndr, int ndr_flags, enum spoolss_NotifyTable *r)
 {
-	uint32_t _ptr_string;
-	TALLOC_CTX *_mem_save_string_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
-		if (_ptr_string) {
-			NDR_PULL_ALLOC(ndr, r->string);
-		} else {
-			r->string = NULL;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->string) {
-			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->string));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->string, ndr_get_array_size(ndr, &r->string), sizeof(uint8_t), CH_DOS));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
-		}
-		if (r->string) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->string, r->size));
-		}
-	}
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_spoolss_NotifyDOSString(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyDOSString *r)
+_PUBLIC_ void ndr_print_spoolss_NotifyTable(struct ndr_print *ndr, const char *name, enum spoolss_NotifyTable r)
 {
-	ndr_print_struct(ndr, name, "spoolss_NotifyDOSString");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "size", r->size);
-	ndr_print_ptr(ndr, "string", r->string);
-	ndr->depth++;
-	if (r->string) {
-		ndr_print_string(ndr, "string", r->string);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
+	const char *val = NULL;
 
-static enum ndr_err_code ndr_push_spoolss_NotifyBlobData(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyBlobData *r)
-{
-	uint32_t cntr_data_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 2));
-		for (cntr_data_0 = 0; cntr_data_0 < 8; cntr_data_0++) {
-			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->data[cntr_data_0]));
-		}
+	switch (r) {
+		case NOTIFY_TABLE_DWORD: val = "NOTIFY_TABLE_DWORD"; break;
+		case NOTIFY_TABLE_STRING: val = "NOTIFY_TABLE_STRING"; break;
+		case NOTIFY_TABLE_DEVMODE: val = "NOTIFY_TABLE_DEVMODE"; break;
+		case NOTIFY_TABLE_TIME: val = "NOTIFY_TABLE_TIME"; break;
+		case NOTIFY_TABLE_SECURITYDESCRIPTOR: val = "NOTIFY_TABLE_SECURITYDESCRIPTOR"; break;
 	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_NotifyBlobData(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyBlobData *r)
-{
-	uint32_t cntr_data_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 2));
-		for (cntr_data_0 = 0; cntr_data_0 < 8; cntr_data_0++) {
-			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->data[cntr_data_0]));
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_NotifyBlobData(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyBlobData *r)
-{
-	uint32_t cntr_data_0;
-	ndr_print_struct(ndr, name, "spoolss_NotifyBlobData");
-	ndr->depth++;
-	ndr->print(ndr, "%s: ARRAY(%d)", "data", (int)8);
-	ndr->depth++;
-	for (cntr_data_0=0;cntr_data_0<8;cntr_data_0++) {
-		char *idx_0=NULL;
-		if (asprintf(&idx_0, "[%d]", cntr_data_0) != -1) {
-			ndr_print_uint16(ndr, "data", r->data[cntr_data_0]);
-			free(idx_0);
-		}
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
-static enum ndr_err_code ndr_push_spoolss_NotifyBlob(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyBlob *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->len));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
-			NDR_CHECK(ndr_push_spoolss_NotifyBlobData(ndr, NDR_SCALARS, r->data));
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_spoolss_NotifyBlob(struct ndr_pull *ndr, int ndr_flags, struct spoolss_NotifyBlob *r)
-{
-	uint32_t _ptr_data;
-	TALLOC_CTX *_mem_save_data_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->len));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
-		if (_ptr_data) {
-			NDR_PULL_ALLOC(ndr, r->data);
-		} else {
-			r->data = NULL;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->data) {
-			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
-			NDR_CHECK(ndr_pull_spoolss_NotifyBlobData(ndr, NDR_SCALARS, r->data));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_spoolss_NotifyBlob(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyBlob *r)
-{
-	ndr_print_struct(ndr, name, "spoolss_NotifyBlob");
-	ndr->depth++;
-	ndr_print_uint32(ndr, "len", r->len);
-	ndr_print_ptr(ndr, "data", r->data);
-	ndr->depth++;
-	if (r->data) {
-		ndr_print_spoolss_NotifyBlobData(ndr, "data", r->data);
-	}
-	ndr->depth--;
-	ndr->depth--;
+	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
 static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int ndr_flags, const union spoolss_NotifyData *r)
@@ -10335,23 +10263,26 @@ static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int n
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
 			case 1: {
-				NDR_CHECK(ndr_push_dlong(ndr, NDR_SCALARS, r->integer));
+				uint32_t cntr_integer_0;
+				for (cntr_integer_0 = 0; cntr_integer_0 < 2; cntr_integer_0++) {
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->integer[cntr_integer_0]));
+				}
 			break; }
 
 			case 2: {
-				NDR_CHECK(ndr_push_spoolss_NotifyUTF16String(ndr, NDR_SCALARS, &r->utf16_string));
+				NDR_CHECK(ndr_push_spoolss_NotifyString(ndr, NDR_SCALARS, &r->string));
 			break; }
 
 			case 3: {
-				NDR_CHECK(ndr_push_spoolss_NotifyDOSString(ndr, NDR_SCALARS, &r->ascii_string));
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->devmode));
 			break; }
 
 			case 4: {
-				NDR_CHECK(ndr_push_spoolss_NotifyBlob(ndr, NDR_SCALARS, &r->blob));
+				NDR_CHECK(ndr_push_spoolss_TimeCtr(ndr, NDR_SCALARS, &r->time));
 			break; }
 
 			case 5: {
-				NDR_CHECK(ndr_push_spoolss_NotifyDOSString(ndr, NDR_SCALARS, &r->ascii_string));
+				NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS, &r->sd));
 			break; }
 
 			default:
@@ -10365,19 +10296,21 @@ static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int n
 			break;
 
 			case 2:
-				NDR_CHECK(ndr_push_spoolss_NotifyUTF16String(ndr, NDR_BUFFERS, &r->utf16_string));
+				NDR_CHECK(ndr_push_spoolss_NotifyString(ndr, NDR_BUFFERS, &r->string));
 			break;
 
 			case 3:
-				NDR_CHECK(ndr_push_spoolss_NotifyDOSString(ndr, NDR_BUFFERS, &r->ascii_string));
+				if (r->devmode) {
+					NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
+				}
 			break;
 
 			case 4:
-				NDR_CHECK(ndr_push_spoolss_NotifyBlob(ndr, NDR_BUFFERS, &r->blob));
+				NDR_CHECK(ndr_push_spoolss_TimeCtr(ndr, NDR_BUFFERS, &r->time));
 			break;
 
 			case 5:
-				NDR_CHECK(ndr_push_spoolss_NotifyDOSString(ndr, NDR_BUFFERS, &r->ascii_string));
+				NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_BUFFERS, &r->sd));
 			break;
 
 			default:
@@ -10391,6 +10324,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 {
 	int level;
 	uint32_t _level;
+	TALLOC_CTX *_mem_save_devmode_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -10399,23 +10333,32 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 		}
 		switch (level) {
 			case 1: {
-				NDR_CHECK(ndr_pull_dlong(ndr, NDR_SCALARS, &r->integer));
+				uint32_t cntr_integer_0;
+				for (cntr_integer_0 = 0; cntr_integer_0 < 2; cntr_integer_0++) {
+					NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->integer[cntr_integer_0]));
+				}
 			break; }
 
 			case 2: {
-				NDR_CHECK(ndr_pull_spoolss_NotifyUTF16String(ndr, NDR_SCALARS, &r->utf16_string));
+				NDR_CHECK(ndr_pull_spoolss_NotifyString(ndr, NDR_SCALARS, &r->string));
 			break; }
 
 			case 3: {
-				NDR_CHECK(ndr_pull_spoolss_NotifyDOSString(ndr, NDR_SCALARS, &r->ascii_string));
+				uint32_t _ptr_devmode;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
+				if (_ptr_devmode) {
+					NDR_PULL_ALLOC(ndr, r->devmode);
+				} else {
+					r->devmode = NULL;
+				}
 			break; }
 
 			case 4: {
-				NDR_CHECK(ndr_pull_spoolss_NotifyBlob(ndr, NDR_SCALARS, &r->blob));
+				NDR_CHECK(ndr_pull_spoolss_TimeCtr(ndr, NDR_SCALARS, &r->time));
 			break; }
 
 			case 5: {
-				NDR_CHECK(ndr_pull_spoolss_NotifyDOSString(ndr, NDR_SCALARS, &r->ascii_string));
+				NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS, &r->sd));
 			break; }
 
 			default:
@@ -10428,19 +10371,24 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 			break;
 
 			case 2:
-				NDR_CHECK(ndr_pull_spoolss_NotifyUTF16String(ndr, NDR_BUFFERS, &r->utf16_string));
+				NDR_CHECK(ndr_pull_spoolss_NotifyString(ndr, NDR_BUFFERS, &r->string));
 			break;
 
 			case 3:
-				NDR_CHECK(ndr_pull_spoolss_NotifyDOSString(ndr, NDR_BUFFERS, &r->ascii_string));
+				if (r->devmode) {
+					_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
+					NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
+				}
 			break;
 
 			case 4:
-				NDR_CHECK(ndr_pull_spoolss_NotifyBlob(ndr, NDR_BUFFERS, &r->blob));
+				NDR_CHECK(ndr_pull_spoolss_TimeCtr(ndr, NDR_BUFFERS, &r->time));
 			break;
 
 			case 5:
-				NDR_CHECK(ndr_pull_spoolss_NotifyDOSString(ndr, NDR_BUFFERS, &r->ascii_string));
+				NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_BUFFERS, &r->sd));
 			break;
 
 			default:
@@ -10453,27 +10401,42 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 _PUBLIC_ void ndr_print_spoolss_NotifyData(struct ndr_print *ndr, const char *name, const union spoolss_NotifyData *r)
 {
 	int level;
+	uint32_t cntr_integer_0;
 	level = ndr_print_get_switch_value(ndr, r);
 	ndr_print_union(ndr, name, level, "spoolss_NotifyData");
 	switch (level) {
 		case 1:
-			ndr_print_dlong(ndr, "integer", r->integer);
+			ndr->print(ndr, "%s: ARRAY(%d)", "integer", (int)2);
+			ndr->depth++;
+			for (cntr_integer_0=0;cntr_integer_0<2;cntr_integer_0++) {
+				char *idx_0=NULL;
+				if (asprintf(&idx_0, "[%d]", cntr_integer_0) != -1) {
+					ndr_print_uint32(ndr, "integer", r->integer[cntr_integer_0]);
+					free(idx_0);
+				}
+			}
+			ndr->depth--;
 		break;
 
 		case 2:
-			ndr_print_spoolss_NotifyUTF16String(ndr, "utf16_string", &r->utf16_string);
+			ndr_print_spoolss_NotifyString(ndr, "string", &r->string);
 		break;
 
 		case 3:
-			ndr_print_spoolss_NotifyDOSString(ndr, "ascii_string", &r->ascii_string);
+			ndr_print_ptr(ndr, "devmode", r->devmode);
+			ndr->depth++;
+			if (r->devmode) {
+				ndr_print_spoolss_DeviceMode(ndr, "devmode", r->devmode);
+			}
+			ndr->depth--;
 		break;
 
 		case 4:
-			ndr_print_spoolss_NotifyBlob(ndr, "blob", &r->blob);
+			ndr_print_spoolss_TimeCtr(ndr, "time", &r->time);
 		break;
 
 		case 5:
-			ndr_print_spoolss_NotifyDOSString(ndr, "ascii_string", &r->ascii_string);
+			ndr_print_sec_desc_buf(ndr, "sd", &r->sd);
 		break;
 
 		default:
@@ -10487,7 +10450,7 @@ static enum ndr_err_code ndr_push_spoolss_Notify(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_spoolss_NotifyType(ndr, NDR_SCALARS, r->type));
 		NDR_CHECK(ndr_push_spoolss_Field(ndr, NDR_SCALARS, r->field));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->variable_type));
+		NDR_CHECK(ndr_push_spoolss_NotifyTable(ndr, NDR_SCALARS, r->variable_type));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->job_id));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->data, r->variable_type));
 		NDR_CHECK(ndr_push_spoolss_NotifyData(ndr, NDR_SCALARS, &r->data));
@@ -10504,7 +10467,7 @@ static enum ndr_err_code ndr_pull_spoolss_Notify(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_spoolss_NotifyType(ndr, NDR_SCALARS, &r->type));
 		NDR_CHECK(ndr_pull_spoolss_Field(ndr, NDR_SCALARS, &r->field));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->variable_type));
+		NDR_CHECK(ndr_pull_spoolss_NotifyTable(ndr, NDR_SCALARS, &r->variable_type));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->job_id));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->data, r->variable_type));
 		NDR_CHECK(ndr_pull_spoolss_NotifyData(ndr, NDR_SCALARS, &r->data));
@@ -10521,7 +10484,7 @@ _PUBLIC_ void ndr_print_spoolss_Notify(struct ndr_print *ndr, const char *name, 
 	ndr->depth++;
 	ndr_print_spoolss_NotifyType(ndr, "type", r->type);
 	ndr_print_spoolss_Field(ndr, "field", r->field);
-	ndr_print_uint32(ndr, "variable_type", r->variable_type);
+	ndr_print_spoolss_NotifyTable(ndr, "variable_type", r->variable_type);
 	ndr_print_uint32(ndr, "job_id", r->job_id);
 	ndr_print_set_switch_value(ndr, &r->data, r->variable_type);
 	ndr_print_spoolss_NotifyData(ndr, "data", &r->data);
@@ -10534,7 +10497,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyInfo(struct ndr_push *ndr, int n
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->version));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		for (cntr_notifies_0 = 0; cntr_notifies_0 < r->count; cntr_notifies_0++) {
@@ -10586,7 +10549,7 @@ _PUBLIC_ void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *na
 	uint32_t cntr_notifies_0;
 	ndr_print_struct(ndr, name, "spoolss_NotifyInfo");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "version", r->version);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->version);
 	ndr_print_uint32(ndr, "flags", r->flags);
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr->print(ndr, "%s: ARRAY(%d)", "notifies", (int)r->count);
@@ -17211,6 +17174,10 @@ static enum ndr_err_code ndr_push_spoolss_AddPrinterEx(struct ndr_push *ndr, int
 		NDR_CHECK(ndr_push_spoolss_UserLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.userlevel));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.handle));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -17224,7 +17191,10 @@ static enum ndr_err_code ndr_pull_spoolss_AddPrinterEx(struct ndr_pull *ndr, int
 	TALLOC_CTX *_mem_save_server_0;
 	TALLOC_CTX *_mem_save_info_0;
 	TALLOC_CTX *_mem_save_secdesc_0;
+	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server));
 		if (_ptr_server) {
 			NDR_PULL_ALLOC(ndr, r->in.server);
@@ -17273,8 +17243,17 @@ static enum ndr_err_code ndr_pull_spoolss_AddPrinterEx(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulevel));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.userlevel, r->in.ulevel));
 		NDR_CHECK(ndr_pull_spoolss_UserLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.userlevel));
+		NDR_PULL_ALLOC(ndr, r->out.handle);
+		ZERO_STRUCTP(r->out.handle);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -17319,6 +17298,10 @@ _PUBLIC_ void ndr_print_spoolss_AddPrinterEx(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "spoolss_AddPrinterEx");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->out.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

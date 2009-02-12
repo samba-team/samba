@@ -206,6 +206,7 @@ extern const struct ndr_interface_table ndr_table_spoolss;
 
 #define NDR_SPOOLSS_CALL_COUNT (96)
 void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, const struct spoolss_Time *r);
+void ndr_print_spoolss_TimeCtr(struct ndr_print *ndr, const char *name, const struct spoolss_TimeCtr *r);
 void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo0 *r);
 void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r);
@@ -308,10 +309,8 @@ void ndr_print_spoolss_Field(struct ndr_print *ndr, const char *name, enum spool
 void ndr_print_spoolss_NotifyType(struct ndr_print *ndr, const char *name, enum spoolss_NotifyType r);
 void ndr_print_spoolss_NotifyOptionsArray(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyOptionsArray *r);
 void ndr_print_spoolss_NotifyOptionsContainer(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyOptionsContainer *r);
-void ndr_print_spoolss_NotifyUTF16String(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyUTF16String *r);
-void ndr_print_spoolss_NotifyDOSString(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyDOSString *r);
-void ndr_print_spoolss_NotifyBlobData(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyBlobData *r);
-void ndr_print_spoolss_NotifyBlob(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyBlob *r);
+void ndr_print_spoolss_NotifyString(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyString *r);
+void ndr_print_spoolss_NotifyTable(struct ndr_print *ndr, const char *name, enum spoolss_NotifyTable r);
 void ndr_print_spoolss_NotifyData(struct ndr_print *ndr, const char *name, const union spoolss_NotifyData *r);
 void ndr_print_spoolss_Notify(struct ndr_print *ndr, const char *name, const struct spoolss_Notify *r);
 void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *name, const struct spoolss_NotifyInfo *r);

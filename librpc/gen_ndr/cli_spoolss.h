@@ -420,6 +420,7 @@ NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 				     struct security_descriptor *secdesc /* [in] [unique] */,
 				     uint32_t ulevel /* [in]  */,
 				     union spoolss_UserLevel userlevel /* [in] [switch_is(ulevel)] */,
+				     struct policy_handle *handle /* [out] [ref] */,
 				     WERROR *werror);
 NTSTATUS rpccli_spoolss_47(struct rpc_pipe_client *cli,
 			   TALLOC_CTX *mem_ctx,

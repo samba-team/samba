@@ -41,6 +41,11 @@ struct spoolss_Time {
 	uint16_t minute;
 	uint16_t second;
 	uint16_t millisecond;
+}/* [gensize] */;
+
+struct spoolss_TimeCtr {
+	uint32_t size;/* [value(ndr_size_spoolss_Time(time,ndr->iconv_convenience,ndr->flags))] */
+	struct spoolss_Time *time;/* [unique] */
 };
 
 struct spoolss_PrinterInfo0 {
@@ -555,6 +560,34 @@ struct spoolss_DriverInfo6 {
 	const char * provider;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 };
 
+struct spoolss_DriverInfo8 {
+	enum spoolss_DriverOSVersion version;
+	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * architecture;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * driver_path;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * data_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * config_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * help_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char ** dependent_files;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	NTTIME driver_data;
+	uint64_t driver_version;
+	const char * manufacturer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * manufacturer_url;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * hardware_id;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * provider;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * print_processor;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * vendor_setup;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char ** color_profiles;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * inf_path;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	uint32_t printer_driver_attributes;
+	const char ** core_driver_dependencies;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	NTTIME min_inbox_driver_ver_date;
+	uint64_t min_inbox_driver_ver_version;
+};
+
 union spoolss_DriverInfo {
 	struct spoolss_DriverInfo1 info1;/* [case] */
 	struct spoolss_DriverInfo2 info2;/* [case(2)] */
@@ -830,48 +863,54 @@ struct spoolss_NotifyOptionsArray {
 };
 
 struct spoolss_NotifyOptionsContainer {
-	uint32_t version;
+	uint32_t version;/* [value(2)] */
 	uint32_t flags;
 	uint32_t count;
 	struct spoolss_NotifyOptionsArray *options;/* [unique,size_is(count)] */
 };
 
-struct spoolss_NotifyUTF16String {
+struct spoolss_NotifyString {
 	uint32_t size;
 	const char *string;/* [unique,charset(UTF16),size_is(size/2)] */
 };
 
-struct spoolss_NotifyDOSString {
-	uint32_t size;
-	const char *string;/* [unique,charset(DOS),size_is(size)] */
-};
-
-struct spoolss_NotifyBlobData {
-	uint16_t data[8];
-};
-
-struct spoolss_NotifyBlob {
-	uint32_t len;
-	struct spoolss_NotifyBlobData *data;/* [unique] */
-};
+enum spoolss_NotifyTable
+#ifndef USE_UINT_ENUMS
+ {
+	NOTIFY_TABLE_DWORD=0x0001,
+	NOTIFY_TABLE_STRING=0x0002,
+	NOTIFY_TABLE_DEVMODE=0x0003,
+	NOTIFY_TABLE_TIME=0x0004,
+	NOTIFY_TABLE_SECURITYDESCRIPTOR=0x0005
+}
+#else
+ { __donnot_use_enum_spoolss_NotifyTable=0x7FFFFFFF}
+#define NOTIFY_TABLE_DWORD ( 0x0001 )
+#define NOTIFY_TABLE_STRING ( 0x0002 )
+#define NOTIFY_TABLE_DEVMODE ( 0x0003 )
+#define NOTIFY_TABLE_TIME ( 0x0004 )
+#define NOTIFY_TABLE_SECURITYDESCRIPTOR ( 0x0005 )
+#endif
+;
 
 union spoolss_NotifyData {
-	int64_t integer;/* [case] */
-	struct spoolss_NotifyUTF16String utf16_string;/* [case(2)] */
-	struct spoolss_NotifyDOSString ascii_string;/* [case(3)] */
-	struct spoolss_NotifyBlob blob;/* [case(4)] */
+	uint32_t integer[2];/* [case] */
+	struct spoolss_NotifyString string;/* [case(2)] */
+	struct spoolss_DeviceMode *devmode;/* [unique,case(3)] */
+	struct spoolss_TimeCtr time;/* [case(4)] */
+	struct sec_desc_buf sd;/* [case(5)] */
 }/* [switch_type(uint32)] */;
 
 struct spoolss_Notify {
 	enum spoolss_NotifyType type;
 	enum spoolss_Field field;
-	uint32_t variable_type;
+	enum spoolss_NotifyTable variable_type;
 	uint32_t job_id;
 	union spoolss_NotifyData data;/* [switch_is(variable_type)] */
 };
 
 struct spoolss_NotifyInfo {
-	uint32_t version;
+	uint32_t version;/* [value(2)] */
 	uint32_t flags;
 	uint32_t count;
 	struct spoolss_Notify *notifies;/* [size_is(count)] */
@@ -2106,6 +2145,7 @@ struct spoolss_AddPrinterEx {
 	} in;
 
 	struct {
+		struct policy_handle *handle;/* [ref] */
 		WERROR result;
 	} out;
 
