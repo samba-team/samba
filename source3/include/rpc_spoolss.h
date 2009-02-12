@@ -1436,25 +1436,6 @@ typedef struct spool_r_rrpcn
 }
 SPOOL_R_REPLY_RRPCN;
 
-typedef struct spool_q_getprinterdataex
-{
-	POLICY_HND handle;
-	UNISTR2 keyname;
-        UNISTR2 valuename;
-	uint32 size;
-}
-SPOOL_Q_GETPRINTERDATAEX;
-
-typedef struct spool_r_getprinterdataex
-{
-	uint32 type;
-	uint32 size;
-	uint8 *data;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETPRINTERDATAEX;
-
 typedef struct spool_q_setprinterdataex
 {
 	POLICY_HND handle;

@@ -945,27 +945,6 @@ bool make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
 }
 
 /*******************************************************************
- * make a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getprinterdataex(SPOOL_Q_GETPRINTERDATAEX *q_u,
-				     const POLICY_HND *handle,
-				     const char *keyname, 
-				     const char *valuename, uint32 size)
-{
-        if (q_u == NULL) return False;
-
-        DEBUG(5,("make_spoolss_q_getprinterdataex\n"));
-
-        q_u->handle = *handle;
-	init_unistr2(&q_u->valuename, valuename, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->keyname, keyname, UNI_STR_TERMINATE);
-        q_u->size = size;
-
-        return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from spoolss_q_getprinterdata (srv_spoolss.c)
  ********************************************************************/
@@ -5184,79 +5163,6 @@ bool spoolss_io_r_reply_rrpcn(const char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_st
 		return False;
 
 	return True;		
-}
-
-/*******************************************************************
- * read a structure.
- * called from spoolss_q_getprinterdataex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_q_getprinterdataex(const char *desc, SPOOL_Q_GETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_q_getprinterdataex");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_pol_hnd("printer handle",&q_u->handle,ps,depth))
-		return False;
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_unistr2("keyname", &q_u->keyname,True,ps,depth))
-		return False;
-	if (!prs_align(ps))
-		return False;
-	if (!smb_io_unistr2("valuename", &q_u->valuename,True,ps,depth))
-		return False;
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("size", ps, depth, &q_u->size))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- * write a structure.
- * called from spoolss_r_getprinterdataex (srv_spoolss.c)
- ********************************************************************/
-
-bool spoolss_io_r_getprinterdataex(const char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdataex");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-	if (!prs_uint32("type", ps, depth, &r_u->type))
-		return False;
-	if (!prs_uint32("size", ps, depth, &r_u->size))
-		return False;
-	
-	if (UNMARSHALLING(ps) && r_u->size) {
-		r_u->data = PRS_ALLOC_MEM(ps, unsigned char, r_u->size);
-		if(!r_u->data)
-			return False;
-	}
-
-	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
-		return False;
-		
-	if (!prs_align(ps))
-		return False;
-	
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-		
-	return True;
 }
 
 /*******************************************************************

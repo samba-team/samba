@@ -1368,63 +1368,6 @@ WERROR rpccli_spoolss_getprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *me
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_getprinterdataex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *hnd, const char *keyname, 
-				    const char *valuename, 
-				    REGISTRY_VALUE *value)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTERDATAEX in;
-	SPOOL_R_GETPRINTERDATAEX out;
-	uint32 offered = 0;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	make_spoolss_q_getprinterdataex( &in, hnd, keyname, valuename, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDATAEX,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprinterdataex,
-	            spoolss_io_r_getprinterdataex, 
-	            WERR_GENERAL_FAILURE );
-
-	if ( W_ERROR_EQUAL( out.status, WERR_MORE_DATA ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		make_spoolss_q_getprinterdataex( &in, hnd, keyname, valuename, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDATAEX,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprinterdataex,
-		            spoolss_io_r_getprinterdataex, 
-		            WERR_GENERAL_FAILURE );
-	}
-
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;	
-
-	/* Return output parameters */
-
-	if (out.needed) {
-		value->data_p = (uint8 *)TALLOC_MEMDUP(mem_ctx, out.data, out.needed);
-	} else {
-		value->data_p = NULL;
-	}
-	value->type = out.type;
-	value->size = out.needed;
-	
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_setprinterdata(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				  POLICY_HND *hnd, REGISTRY_VALUE *value)
 {
