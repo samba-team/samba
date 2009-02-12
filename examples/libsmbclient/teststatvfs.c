@@ -38,33 +38,7 @@ int main(int argc, char * argv[])
             *p = '\0';
         }
     
-        /* Determine if it's a file or a folder */
-        if (smbc_stat(path, &statbuf) < 0)
-        {
-            perror("smbc_stat");
-            continue;
-        }
-
-        if (S_ISREG(statbuf.st_mode))
-        {
-            if ((fd = smbc_open(path, O_RDONLY, 0)) < 0)
-            {
-                perror("smbc_open");
-                continue;
-            }
-        }
-        else
-        {
-            if ((fd = smbc_opendir(path)) < 0)
-            {
-                perror("smbc_opendir");
-                continue;
-            }
-        }
-
-        ret = smbc_fstatvfs(fd, &statvfsbuf);
-
-        smbc_close(fd);
+        ret = smbc_statvfs(path, &statvfsbuf);
 
         if (ret < 0)
         {

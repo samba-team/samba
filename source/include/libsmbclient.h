@@ -185,7 +185,7 @@ typedef enum smbc_vfs_feature
     SMBC_VFS_FEATURE_RDONLY         = (1 << 0),
 
     /* Specific to libsmbclient (high-order bits) */
-    SMBC_VFS_FEATURE_NO_DFS           = (1 << 29),
+    SMBC_VFS_FEATURE_DFS              = (1 << 29),
     SMBC_VFS_FEATURE_CASE_INSENSITIVE = (1 << 30),
     SMBC_VFS_FEATURE_NO_UNIXCIFS      = (1 << 31)
 } smbc_vfs_feature;
@@ -868,6 +868,12 @@ typedef int (*smbc_fstat_fn)(SMBCCTX *c,
                              struct stat *st);
 smbc_fstat_fn smbc_getFunctionFstat(SMBCCTX *c);
 void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
+
+typedef int (*smbc_statvfs_fn)(SMBCCTX *c,
+                               char *path,
+                               struct statvfs *st);
+smbc_statvfs_fn smbc_getFunctionStatVFS(SMBCCTX *c);
+void smbc_setFunctionStatVFS(SMBCCTX *c, smbc_statvfs_fn fn);
 
 typedef int (*smbc_fstatvfs_fn)(SMBCCTX *c,
                                 SMBCFILE *file,
@@ -1614,6 +1620,28 @@ int smbc_fstat(int fd, struct stat *st);
 
 
 /**@ingroup attribute
+ * Get file system information for a specified path.
+ * 
+ * @param url       The smb url to get information for
+ *
+ * @param st        pointer to a buffer that will be filled with 
+ *                  standard Unix struct statvfs information.
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             Unix fstatvfs()
+ *
+ */
+int
+smbc_statvfs(char *url,
+             struct statvfs *st);
+
+/**@ingroup attribute
  * Get file system information via an file descriptor.
  * 
  * @param fd        Open file handle from smbc_open(), smbc_creat(),
@@ -1635,6 +1663,7 @@ int smbc_fstat(int fd, struct stat *st);
 int
 smbc_fstatvfs(int fd,
               struct statvfs *st);
+
 
 /**@ingroup attribute
  * Truncate a file given a file descriptor
