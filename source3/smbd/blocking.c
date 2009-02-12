@@ -28,7 +28,7 @@
  notify. It consists of the requesting SMB and the expiry time.
 *****************************************************************************/
 
-typedef struct blocking_lock_record {
+struct blocking_lock_record {
 	struct blocking_lock_record *next;
 	struct blocking_lock_record *prev;
 	files_struct *fsp;
@@ -41,7 +41,7 @@ typedef struct blocking_lock_record {
 	enum brl_flavour lock_flav;
 	enum brl_type lock_type;
 	struct smb_request *req;
-} blocking_lock_record;
+};
 
 /****************************************************************************
  Determine if this is a secondary element of a chained SMB.
@@ -75,7 +75,7 @@ static void brl_timeout_fn(struct event_context *event_ctx,
 
 static bool recalc_brl_timeout(void)
 {
-	blocking_lock_record *brl;
+	struct blocking_lock_record *blr;
 	struct timeval next_timeout;
 
 	TALLOC_FREE(brl_timeout);
@@ -136,7 +136,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		uint64_t count,
 		uint32_t blocking_pid)
 {
-	blocking_lock_record *blr;
+	struct blocking_lock_record *blr;
 	NTSTATUS status;
 
 	if(req_is_in_chain(req)) {
@@ -195,7 +195,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 	SMB_PERFCOUNT_DEFER_OP(&req->pcd, &req->pcd);
 	blr->req = talloc_move(blr, &req);
 
-	DLIST_ADD_END(blocking_lock_queue, blr, blocking_lock_record *);
+	DLIST_ADD_END(blocking_lock_queue, blr, struct blocking_lock_record *);
 	recalc_brl_timeout();
 
 	/* Ensure we'll receive messages when this is unlocked. */
@@ -221,7 +221,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
  Return a lockingX success SMB.
 *****************************************************************************/
 
-static void reply_lockingX_success(blocking_lock_record *blr)
+static void reply_lockingX_success(struct blocking_lock_record *blr)
 {
 	reply_outbuf(blr->req, 2, 0);
 
@@ -241,7 +241,7 @@ static void reply_lockingX_success(blocking_lock_record *blr)
  Return a generic lock fail error blocking call.
 *****************************************************************************/
 
-static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS status)
+static void generic_blocking_lock_error(struct blocking_lock_record *blr, NTSTATUS status)
 {
 	/* whenever a timeout is given w2k maps LOCK_NOT_GRANTED to
 	   FILE_LOCK_CONFLICT! (tridge) */
@@ -278,7 +278,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
  obtained first.
 *****************************************************************************/
 
-static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
+static void reply_lockingX_error(struct blocking_lock_record *blr, NTSTATUS status)
 {
 	files_struct *fsp = blr->fsp;
 	uint16 num_ulocks = SVAL(blr->req->vwv+6, 0);
@@ -330,7 +330,7 @@ static void reply_lockingX_error(blocking_lock_record *blr, NTSTATUS status)
  Return a lock fail error.
 *****************************************************************************/
 
-static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status)
+static void blocking_lock_reply_error(struct blocking_lock_record *blr, NTSTATUS status)
 {
 	switch(blr->req->cmd) {
 	case SMBlockingX:
@@ -366,7 +366,7 @@ static void blocking_lock_reply_error(blocking_lock_record *blr, NTSTATUS status
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static bool process_lockingX(blocking_lock_record *blr)
+static bool process_lockingX(struct blocking_lock_record *blr)
 {
 	unsigned char locktype = CVAL(blr->req->vwv+3, 0);
 	files_struct *fsp = blr->fsp;
@@ -457,7 +457,7 @@ Waiting....\n",
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static bool process_trans2(blocking_lock_record *blr)
+static bool process_trans2(struct blocking_lock_record *blr)
 {
 	char params[2];
 	NTSTATUS status;
@@ -500,7 +500,7 @@ static bool process_trans2(blocking_lock_record *blr)
  Returns True if we want to be removed from the list.
 *****************************************************************************/
 
-static bool blocking_lock_record_process(blocking_lock_record *blr)
+static bool blocking_lock_record_process(struct blocking_lock_record *blr)
 {
 	switch(blr->req->cmd) {
 		case SMBlockingX:
@@ -521,7 +521,7 @@ static bool blocking_lock_record_process(blocking_lock_record *blr)
 
 void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lock *br_lck)
 {
-	blocking_lock_record *blr, *next = NULL;
+	struct blocking_lock_record *blr, *next = NULL;
 
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		unsigned char locktype = 0;
@@ -566,7 +566,7 @@ void cancel_pending_lock_requests_by_fid(files_struct *fsp, struct byte_range_lo
 
 void remove_pending_lock_requests_by_mid(int mid)
 {
-	blocking_lock_record *blr, *next = NULL;
+	struct blocking_lock_record *blr, *next = NULL;
 
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		files_struct *fsp;
@@ -608,7 +608,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 
 bool blocking_lock_was_deferred(int mid)
 {
-	blocking_lock_record *blr, *next = NULL;
+	struct blocking_lock_record *blr, *next = NULL;
 
 	for(blr = blocking_lock_queue; blr; blr = next) {
 		next = blr->next;
@@ -640,7 +640,7 @@ static void received_unlock_msg(struct messaging_context *msg,
 static void process_blocking_lock_queue(void)
 {
 	struct timeval tv_curr = timeval_current();
-	blocking_lock_record *blr, *next = NULL;
+	struct blocking_lock_record *blr, *next = NULL;
 	bool recalc_timeout = False;
 
 	/*
@@ -722,7 +722,7 @@ static void process_blocking_lock_queue(void)
  Handle a cancel message. Lock already moved onto the cancel queue.
 *****************************************************************************/
 
-#define MSG_BLOCKING_LOCK_CANCEL_SIZE (sizeof(blocking_lock_record *) + sizeof(NTSTATUS))
+#define MSG_BLOCKING_LOCK_CANCEL_SIZE (sizeof(struct blocking_lock_record *) + sizeof(NTSTATUS))
 
 static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 						 void *private_data,
@@ -732,7 +732,7 @@ static void process_blocking_lock_cancel_message(struct messaging_context *ctx,
 {
 	NTSTATUS err;
 	const char *msg = (const char *)data->data;
-	blocking_lock_record *blr;
+	struct blocking_lock_record *blr;
 
 	if (data->data == NULL) {
 		smb_panic("process_blocking_lock_cancel_message: null msg");
@@ -768,7 +768,7 @@ bool blocking_lock_cancel(files_struct *fsp,
                         NTSTATUS err)
 {
 	char msg[MSG_BLOCKING_LOCK_CANCEL_SIZE];
-	blocking_lock_record *blr;
+	struct blocking_lock_record *blr;
 
 	if (!blocking_lock_cancel_state) {
 		/* Register our message. */
