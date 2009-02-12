@@ -309,7 +309,8 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 			printf("no memory");
 			exit(1);
 		}
-		if (asprintf(&smbd_cmd, "%s -F -S", smbd_cmd) == -1) {
+		if (asprintf(&smbd_cmd, "%s -F -S -d %d", smbd_cmd,
+			     DEBUGLEVEL) == -1) {
 			printf("no memory");
 			exit(1);
 		}
