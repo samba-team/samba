@@ -784,10 +784,16 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 {
 	POLICY_HND 	pol;
 	WERROR          result;
+	NTSTATUS	status;
 	bool 		opened_hnd = False;
 	fstring 	printername;
 	const char *valuename, *keyname;
 	REGISTRY_VALUE value;
+
+	uint32_t type;
+	uint8_t *buffer = NULL;
+	uint32_t offered = 0;
+	uint32_t needed;
 
 	if (argc != 4) {
 		printf("Usage: %s <printername> <keyname> <valuename>\n",
@@ -819,8 +825,37 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 
 	/* Get printer info */
 
-	result = rpccli_spoolss_getprinterdataex(cli, mem_ctx, &pol, keyname,
-		valuename, &value);
+	status = rpccli_spoolss_GetPrinterDataEx(cli, mem_ctx,
+						 &pol,
+						 keyname,
+						 valuename,
+						 &type,
+						 buffer,
+						 offered,
+						 &needed,
+						 &result);
+	if (W_ERROR_EQUAL(result, WERR_MORE_DATA)) {
+		offered = needed;
+		buffer = talloc_array(mem_ctx, uint8_t, needed);
+		status = rpccli_spoolss_GetPrinterDataEx(cli, mem_ctx,
+							 &pol,
+							 keyname,
+							 valuename,
+							 &type,
+							 buffer,
+							 offered,
+							 &needed,
+							 &result);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -828,8 +863,11 @@ static WERROR cmd_spoolss_getprinterdataex(struct rpc_pipe_client *cli,
 	/* Display printer data */
 
 	fstrcpy(value.valuename, valuename);
-	display_reg_value(value);
+	value.type = type;
+	value.size = needed;
+	value.data_p = buffer;
 
+	display_reg_value(value);
 
  done:
 	if (opened_hnd)
