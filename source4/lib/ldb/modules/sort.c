@@ -108,7 +108,7 @@ static int sort_compare(struct ldb_message **msg1, struct ldb_message **msg2, vo
 
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (!ac || ac->sort_result != 0) {
+	if (ac->sort_result != 0) {
 		/* an error occurred previously,
 		 * let's exit the sorting by returning always 0 */
 		return 0;
