@@ -300,3 +300,172 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	return 0;
         
 }
+
+
+/*
+ * Routine to obtain file system information given a path
+ */
+int
+SMBC_statvfs_ctx(SMBCCTX *context,
+                 char *path,
+                 struct statvfs *st)
+{
+        int             ret;
+        bool            bIsDir;
+        struct stat     statbuf;
+        SMBCFILE *      pFile;
+
+        /* Determine if the provided path is a file or a folder */
+        if (SMBC_stat_ctx(context, path, &statbuf) < 0) {
+                return -1;
+        }
+
+        /* Is it a file or a directory?  */
+        if (S_ISDIR(statbuf.st_mode)) {
+                /* It's a directory. */
+                if ((pFile = SMBC_opendir_ctx(context, path)) < 0) {
+                        return -1;
+                }
+                bIsDir = true;
+        } else if (S_ISREG(statbuf.st_mode)) {
+                /* It's a file. */
+                if ((pFile = SMBC_open_ctx(context, path, O_RDONLY, 0)) < 0) {
+                        return -1;
+                }
+                bIsDir = false;
+        } else {
+                /* It's neither a file nor a directory. Not supported. */
+                errno = ENOSYS;
+                return -1;
+        }
+
+        /* Now we have an open file handle, so just use SMBC_fstatvfs */
+        ret = SMBC_fstatvfs_ctx(context, pFile, st);
+
+        /* Close the file or directory */
+        if (bIsDir) {
+                SMBC_closedir_ctx(context, pFile);
+        } else {
+                SMBC_close_ctx(context, pFile);
+        }
+
+        return ret;
+}
+
+
+/*
+ * Routine to obtain file system information given an fd
+ */
+
+int
+SMBC_fstatvfs_ctx(SMBCCTX *context,
+                  SMBCFILE *file,
+                  struct statvfs *st)
+{
+	uint32 fs_attrs = 0;
+	struct cli_state *cli = file->srv->cli;
+                
+
+        /* Initialize all fields (at least until we actually use them) */
+        memset(st, 0, sizeof(*st));
+
+        /*
+         * The state of each flag is such that the same bits are unset as
+         * would typically be unset on a local file system on a POSIX OS. Thus
+         * the bit is on, for example, only for case-insensitive file systems
+         * since most POSIX file systems are case sensitive and fstatvfs()
+         * would typically return zero in these bits on such a local file
+         * system.
+         */
+
+        /* See if the server has UNIX CIFS support */
+        if (! SERVER_HAS_UNIX_CIFS(cli)) {
+                uint64_t total_allocation_units;
+                uint64_t caller_allocation_units;
+                uint64_t actual_allocation_units;
+                uint64_t sectors_per_allocation_unit;
+                uint64_t bytes_per_sector;
+                
+                /* Nope. If size data is available... */
+                if (cli_get_fs_full_size_info(cli,
+                                              &total_allocation_units,
+                                              &caller_allocation_units,
+                                              &actual_allocation_units,
+                                              &sectors_per_allocation_unit,
+                                              &bytes_per_sector)) {
+
+                        /* ... then provide it */
+                        st->f_bsize =
+                                (unsigned long) bytes_per_sector;
+                        st->f_frsize =
+                                (unsigned long) sectors_per_allocation_unit;
+                        st->f_blocks =
+                                (fsblkcnt_t) total_allocation_units;
+                        st->f_bfree =
+                                (fsblkcnt_t) actual_allocation_units;
+                }
+
+                st->f_flag |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
+        } else {
+                uint32 optimal_transfer_size;
+                uint32 block_size;
+                uint64_t total_blocks;
+                uint64_t blocks_available;
+                uint64_t user_blocks_available;
+                uint64_t total_file_nodes;
+                uint64_t free_file_nodes;
+                uint64_t fs_identifier;
+
+                /* Has UNIXCIFS. If POSIX filesystem info is available... */
+                if (cli_get_posix_fs_info(cli,
+                                          &optimal_transfer_size,
+                                          &block_size,
+                                          &total_blocks,
+                                          &blocks_available,
+                                          &user_blocks_available,
+                                          &total_file_nodes,
+                                          &free_file_nodes,
+                                          &fs_identifier)) {
+
+                        /* ... then what's provided here takes precedence. */
+                        st->f_bsize =
+                                (unsigned long) block_size;
+                        st->f_blocks =
+                                (fsblkcnt_t) total_blocks;
+                        st->f_bfree =
+                                (fsblkcnt_t) blocks_available;
+                        st->f_bavail =
+                                (fsblkcnt_t) user_blocks_available;
+                        st->f_files =
+                                (fsfilcnt_t) total_file_nodes;
+                        st->f_ffree =
+                                (fsfilcnt_t) free_file_nodes;
+                        st->f_fsid =
+                                (unsigned long) fs_identifier;
+                        
+                }
+        }
+
+        /* See if the share is case sensitive */
+        if (!cli_get_fs_attr_info(cli, &fs_attrs)) {
+                /*
+                 * We can't determine the case sensitivity of
+                 * the share. We have no choice but to use the
+                 * user-specified case sensitivity setting.
+                 */
+                if (! smbc_getOptionCaseSensitive(context)) {
+                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                }
+        } else {
+                if (! (fs_attrs & FILE_CASE_SENSITIVE_SEARCH)) {
+                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                }
+        }
+
+        /* See if DFS is supported */
+	if ((cli->capabilities & CAP_DFS) &&  cli->dfsroot) {
+                st->f_flag |= SMBC_VFS_FEATURE_DFS;
+        }
+
+        return 0;
+}

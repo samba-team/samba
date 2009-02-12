@@ -396,6 +396,7 @@ typedef sig_atomic_t volatile SIG_ATOMIC_T;
 #endif
 
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define BIG_UINT(p, ofs) ((((uint64_t) IVAL(p,(ofs)+4))<<32)|IVAL(p,ofs))
 #define IVAL2_TO_SMB_BIG_UINT(buf,off) ( (((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF)) | \
 		(( ((uint64_t)(IVAL((buf),(off+4)))) & ((uint64_t)0xFFFFFFFF) ) << 32 ) )
 

@@ -659,6 +659,30 @@ smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn)
         c->fstat = fn;
 }
 
+smbc_statvfs_fn
+smbc_getFunctionStatVFS(SMBCCTX *c)
+{
+        return c->internal->posix_emu.statvfs_fn;
+}
+
+void
+smbc_setFunctionStatVFS(SMBCCTX *c, smbc_statvfs_fn fn)
+{
+        c->internal->posix_emu.statvfs_fn = fn;
+}
+
+smbc_fstatvfs_fn
+smbc_getFunctionFstatVFS(SMBCCTX *c)
+{
+        return c->internal->posix_emu.fstatvfs_fn;
+}
+
+void
+smbc_setFunctionFstatVFS(SMBCCTX *c, smbc_fstatvfs_fn fn)
+{
+        c->internal->posix_emu.fstatvfs_fn = fn;
+}
+
 smbc_ftruncate_fn
 smbc_getFunctionFtruncate(SMBCCTX *c)
 {

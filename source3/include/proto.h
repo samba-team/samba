@@ -2606,6 +2606,21 @@ bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, u
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr);
 bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number);
 bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate);
+bool cli_get_fs_full_size_info(struct cli_state *cli,
+                               uint64_t *total_allocation_units,
+                               uint64_t *caller_allocation_units,
+                               uint64_t *actual_allocation_units,
+                               uint64_t *sectors_per_allocation_unit,
+                               uint64_t *bytes_per_sector);
+bool cli_get_posix_fs_info(struct cli_state *cli,
+                           uint32 *optimal_transfer_size,
+                           uint32 *block_size,
+                           uint64_t *total_blocks,
+                           uint64_t *blocks_available,
+                           uint64_t *user_blocks_available,
+                           uint64_t *total_file_nodes,
+                           uint64_t *free_file_nodes,
+                           uint64_t *fs_identifier);
 NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli, 
 				const char *user,
 				const char *pass,

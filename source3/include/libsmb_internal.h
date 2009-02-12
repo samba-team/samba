@@ -197,6 +197,8 @@ struct SMBC_internal_data {
                 smbc_stat_fn                    stat_fn;
                 smbc_fstat_fn                   fstat_fn;
 #endif
+                smbc_statvfs_fn                 statvfs_fn;
+                smbc_fstatvfs_fn                fstatvfs_fn;
                 smbc_ftruncate_fn               ftruncate_fn;
 #if 0 /* Left in libsmbclient.h for backward compatibility */
                 smbc_close_fn                   close_fn;
@@ -499,6 +501,18 @@ int
 SMBC_fstat_ctx(SMBCCTX *context,
                SMBCFILE *file,
                struct stat *st);
+
+
+int
+SMBC_statvfs_ctx(SMBCCTX *context,
+                 char *path,
+                 struct statvfs *st);
+
+
+int
+SMBC_fstatvfs_ctx(SMBCCTX *context,
+                  SMBCFILE *file,
+                  struct statvfs *st);
 
 
 /* Functions in libsmb_xattr.c */
