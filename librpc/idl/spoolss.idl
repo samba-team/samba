@@ -1481,6 +1481,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[size_is(size/2),unique,charset(UTF16)] uint16 *string;
 	} spoolss_NotifyString;
 
+	typedef [v1_enum] enum {
+		NOTIFY_TABLE_DWORD		= 0x0001,
+		NOTIFY_TABLE_STRING		= 0x0002,
+		NOTIFY_TABLE_DEVMODE		= 0x0003,
+		NOTIFY_TABLE_TIME		= 0x0004,
+		NOTIFY_TABLE_SECURITYDESCRIPTOR = 0x0005
+	} spoolss_NotifyTable;
+
 	typedef [switch_type(uint32)] union {
 		[case(1)] uint32 integer[2];
 		[case(2)] spoolss_NotifyString string;
@@ -1492,7 +1500,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	typedef struct {
 		spoolss_NotifyType type;
 		spoolss_Field field;
-		uint32 variable_type;
+		spoolss_NotifyTable variable_type;
 		uint32 job_id;
 		[switch_is(variable_type)] spoolss_NotifyData data;
 	} spoolss_Notify;
