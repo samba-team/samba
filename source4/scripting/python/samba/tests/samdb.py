@@ -21,7 +21,7 @@ from samba.credentials import Credentials
 import os
 from samba.provision import setup_samdb, guess_names, setup_templatesdb, make_smbconf, find_setup_dir
 from samba.samdb import SamDB
-from samba.tests import cmdline_loadparm, TestCaseInTempDir
+from samba.tests import TestCaseInTempDir
 from samba.dcerpc import security
 from unittest import TestCase
 import uuid
@@ -69,7 +69,7 @@ class SamDBTestCase(TestCaseInTempDir):
                           self.setup_path, session_info=session_info, 
                           credentials=creds, lp=self.lp)
         self.samdb = setup_samdb(path, self.setup_path, session_info, creds, 
-                                 cmdline_loadparm, names, 
+                                 self.lp, names, 
                                  lambda x: None, domainsid, 
                                  "# no aci", domainguid, 
                                  policyguid, False, "secret", 
