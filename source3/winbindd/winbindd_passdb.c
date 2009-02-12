@@ -40,9 +40,9 @@ static NTSTATUS enum_groups_internal(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	if (sidtype == SID_NAME_ALIAS) {
-		search = pdb_search_aliases(&domain->sid);
+		search = pdb_search_aliases(talloc_tos(), &domain->sid);
 	} else {
-		search = pdb_search_groups();
+		search = pdb_search_groups(talloc_tos());
 	}
 
 	if (search == NULL) goto done;
@@ -68,7 +68,7 @@ static NTSTATUS enum_groups_internal(struct winbindd_domain *domain,
 
 	result = NT_STATUS_OK;
  done:
-	pdb_search_destroy(search);
+	TALLOC_FREE(search);
 	return result;
 }
 
@@ -456,7 +456,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				uint32 *num_entries,
 				WINBIND_USERINFO **info)
 {
-	struct pdb_search *ps = pdb_search_users(ACB_NORMAL);
+	struct pdb_search *ps = pdb_search_users(talloc_tos(), ACB_NORMAL);
 	struct samr_displayentry *entries = NULL;
 	uint32 i;
 
@@ -473,7 +473,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 
 	*info = TALLOC_ZERO_ARRAY(mem_ctx, WINBIND_USERINFO, *num_entries);
 	if (!(*info)) {
-		pdb_search_destroy(ps);
+		TALLOC_FREE(ps);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -498,7 +498,7 @@ static NTSTATUS sam_query_user_list(struct winbindd_domain *domain,
 				DOMAIN_GROUP_RID_USERS);
 	}
 
-	pdb_search_destroy(ps);
+	TALLOC_FREE(ps);
 	return NT_STATUS_OK;
 }
 

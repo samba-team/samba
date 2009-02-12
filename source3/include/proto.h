@@ -4617,14 +4617,14 @@ bool pdb_sid_to_id(const DOM_SID *sid, union unid_t *id,
 bool pdb_rid_algorithm(void);
 bool pdb_new_rid(uint32 *rid);
 bool initialize_password_db(bool reload, struct event_context *event_ctx);
-struct pdb_search *pdb_search_init(enum pdb_search_type type);
-struct pdb_search *pdb_search_users(uint32 acct_flags);
-struct pdb_search *pdb_search_groups(void);
-struct pdb_search *pdb_search_aliases(const DOM_SID *sid);
+struct pdb_search *pdb_search_init(TALLOC_CTX *mem_ctx,
+				   enum pdb_search_type type);
+struct pdb_search *pdb_search_users(TALLOC_CTX *mem_ctx, uint32 acct_flags);
+struct pdb_search *pdb_search_groups(TALLOC_CTX *mem_ctx);
+struct pdb_search *pdb_search_aliases(TALLOC_CTX *mem_ctx, const DOM_SID *sid);
 uint32 pdb_search_entries(struct pdb_search *search,
 			  uint32 start_idx, uint32 max_entries,
 			  struct samr_displayentry **result);
-void pdb_search_destroy(struct pdb_search *search);
 bool pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
 			   time_t *pass_last_set_time);
 bool pdb_set_trusteddom_pw(const char* domain, const char* pwd,
