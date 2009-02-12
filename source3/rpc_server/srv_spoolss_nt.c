@@ -3794,24 +3794,31 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spool
 	return WERR_OK;
 }
 
-/********************************************************************
- * spoolss_rfnpcnex
- ********************************************************************/
+/****************************************************************
+ _spoolss_RouterRefreshPrinterChangeNotify
+****************************************************************/
 
-WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
+WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
+						 struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	SPOOL_NOTIFY_INFO *info = &r_u->info;
+	POLICY_HND *handle = r->in.handle;
+	struct spoolss_NotifyInfo *info;
 
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 	WERROR result = WERR_BADFID;
 
-	/* we always have a NOTIFY_INFO struct */
-	r_u->info_ptr=0x1;
+	/* we always have a spoolss_NotifyInfo struct */
+	info = talloc_zero(p->mem_ctx, struct spoolss_NotifyInfo);
+	if (!info) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
+	*r->out.info = info;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_rfnpcnex: Invalid handle (%s:%u:%u).\n",
-			 OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_RouterRefreshPrinterChangeNotify: "
+			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		goto done;
 	}
 
@@ -3830,8 +3837,10 @@ WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCN
 	Printer->notify.fnpcn = True;
 
 	if (Printer->notify.client_connected) {
-		DEBUG(10,("_spoolss_rfnpcnex: Saving change value in request [%x]\n", q_u->change));
-		Printer->notify.change = q_u->change;
+		DEBUG(10,("_spoolss_RouterRefreshPrinterChangeNotify: "
+			"Saving change value in request [%x]\n",
+			r->in.change_low));
+		Printer->notify.change = r->in.change_low;
 	}
 
 	/* just ignore the SPOOL_NOTIFY_OPTION */
@@ -10547,17 +10556,6 @@ WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
 
 WERROR _spoolss_RouterReplyPrinterEx(pipes_struct *p,
 				     struct spoolss_RouterReplyPrinterEx *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _dcesrv_spoolss_RouterRefreshPrinterChangeNotify
-****************************************************************/
-
-WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
-						 struct spoolss_RouterRefreshPrinterChangeNotify *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
