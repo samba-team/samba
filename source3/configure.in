@@ -421,7 +421,7 @@ default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
-   default_shared_modules="$default_shared_modules charset_weird"
+   default_shared_modules="$default_shared_modules charset_weird perfcount_test"
 fi
 
 #
@@ -6137,6 +6137,7 @@ SMB_MODULE(vfs_onefs, \$(VFS_ONEFS), "bin/onefs.$SHLIBEXT", VFS)
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
 SMB_MODULE(perfcount_onefs, \$(PERFCOUNT_ONEFS), "bin/pc_onefs.$SHLIBEXT", PERFCOUNT)
+SMB_MODULE(perfcount_test, \$(PERFCOUNT_TEST), "bin/pc_test.$SHLIBEXT", PERFCOUNT)
 SMB_SUBSYSTEM(PERFCOUNT,smbd/perfcount.o)
 
 SMB_MODULE(gpext_registry, libgpo/gpext/registry.o, "bin/registry.$SHLIBEXT", GPEXT)

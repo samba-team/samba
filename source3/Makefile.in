@@ -668,6 +668,7 @@ VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
 		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.c \
 		modules/onefs_cbrl.o
 PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
+PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -2561,6 +2562,10 @@ bin/onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_OBJ)
 bin/pc_onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_ONEFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(PERFCOUNT_ONEFS_OBJ)
+
+bin/pc_test.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_TEST_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(PERFCOUNT_TEST_OBJ)
 
 bin/registry.@SHLIBEXT@: $(BINARY_PREREQS) libgpo/gpext/registry.o
 	@echo "Building plugin $@"
