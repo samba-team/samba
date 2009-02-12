@@ -27,7 +27,13 @@ from unittest import TestCase
 import uuid
 from samba import param
 
+
 class SamDBTestCase(TestCaseInTempDir):
+    """Base-class for tests with a Sam Database.
+    
+    This is used by the Samba SamDB-tests, but e.g. also by the OpenChange
+    provisioning tests (which need a Sam).
+    """
 
     def setup_path(self, relpath):
         return os.path.join(find_setup_dir(), relpath)
@@ -81,6 +87,10 @@ class SamDBTestCase(TestCaseInTempDir):
                   'users.ldb', 'samdb.ldb', 'smb.conf']:
             os.remove(os.path.join(self.tempdir, f))
         super(SamDBTestCase, self).tearDown()
+
+
+class SamDBTests(SamDBTestCase):
+    """Tests for the SamDB implementation."""
 
     def test_add_foreign(self):
         self.samdb.add_foreign(self.domaindn, "S-1-5-7", "Somedescription")
