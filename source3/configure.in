@@ -703,18 +703,6 @@ CPPFLAGS="$old_CPPFLAGS"
 # subdirectory of headers.
 AC_CHECK_HEADERS(valgrind.h valgrind/valgrind.h valgrind/memcheck.h)
 
-# check for linux on amd64 since valgrind is not quite there yet
-case "$host_os" in
-	*linux*)
-		case "$UNAME_P" in
-			*x86_64*)
-				AC_DEFINE(HAVE_64BIT_LINUX,1,[Whether we are running on 64bit linux])
-				;;
-		esac
-		;;
-esac
-
-
 #
 # HPUX has a bug in that including shadow.h causes a re-definition of MAXINT.
 # This causes configure to fail to detect it. Check for shadow separately on HPUX.
