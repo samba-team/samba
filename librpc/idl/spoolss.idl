@@ -14,7 +14,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 ] interface spoolss
 {
 	typedef [v1_enum] enum winreg_Type winreg_Type;
-	typedef struct {
+	typedef [gensize] struct {
 		uint16 year;
 		uint16 month;
 		uint16 day_of_week;
@@ -24,6 +24,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint16 second;
 		uint16 millisecond;
 	} spoolss_Time;
+
+	typedef struct {
+		[value(ndr_size_spoolss_Time(time, ndr->iconv_convenience, ndr->flags))] uint32 size;
+		[unique] spoolss_Time *time;
+	} spoolss_TimeCtr;
 
 	typedef struct {
 		[relative] nstring *printername;
@@ -1474,28 +1479,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 	typedef struct {
 		uint32 size;
 		[size_is(size/2),unique,charset(UTF16)] uint16 *string;
-	} spoolss_NotifyUTF16String;
-
-	typedef struct {
-		uint32 size;
-		[size_is(size),charset(DOS)] uint8 *string;
-	} spoolss_NotifyDOSString;
-
-	typedef struct {
-		uint16 data[8];
-	} spoolss_NotifyBlobData;
-
-	typedef struct {
-		uint32 len;
-		[unique] spoolss_NotifyBlobData *data;
-	} spoolss_NotifyBlob;
+	} spoolss_NotifyString;
 
 	typedef [switch_type(uint32)] union {
-		[case(1)] dlong integer;
-		[case(2)] spoolss_NotifyUTF16String utf16_string;
-		[case(3)] spoolss_NotifyDOSString ascii_string;
-		[case(4)] spoolss_NotifyBlob blob;
-		[case(5)] spoolss_NotifyDOSString ascii_string;
+		[case(1)] uint32 integer[2];
+		[case(2)] spoolss_NotifyString string;
+		[case(3)] spoolss_DeviceMode *devmode;
+		[case(4)] spoolss_TimeCtr time;
+		[case(5)] sec_desc_buf sd;
 	} spoolss_NotifyData;
 
 	typedef struct {
