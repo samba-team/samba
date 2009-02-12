@@ -2223,7 +2223,7 @@ struct spoolss_SetPrinterDataEx {
 		const char *key_name;/* [charset(UTF16)] */
 		const char *value_name;/* [charset(UTF16)] */
 		uint32_t type;
-		DATA_BLOB buffer;
+		uint8_t *buffer;/* [ref,size_is(offered)] */
 		uint32_t offered;
 	} in;
 

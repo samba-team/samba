@@ -3636,7 +3636,7 @@ NTSTATUS rpccli_spoolss_SetPrinterDataEx(struct rpc_pipe_client *cli,
 					 const char *key_name /* [in] [charset(UTF16)] */,
 					 const char *value_name /* [in] [charset(UTF16)] */,
 					 uint32_t type /* [in]  */,
-					 DATA_BLOB buffer /* [in]  */,
+					 uint8_t *buffer /* [in] [ref,size_is(offered)] */,
 					 uint32_t offered /* [in]  */,
 					 WERROR *werror)
 {

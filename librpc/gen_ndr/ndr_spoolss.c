@@ -17705,7 +17705,11 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterDataEx(struct ndr_push *ndr,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.value_name, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.value_name, ndr_charset_length(r->in.value_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.type));
-		NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->in.buffer));
+		if (r->in.buffer == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.buffer, r->in.offered));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.offered));
 	}
 	if (flags & NDR_OUT) {
@@ -17740,8 +17744,15 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterDataEx(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.value_name, ndr_get_array_length(ndr, &r->in.value_name), sizeof(uint16_t), CH_UTF16));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.type));
-		NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->in.buffer));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
+		}
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offered));
+		if (r->in.buffer) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.buffer, r->in.offered));
+		}
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -17766,7 +17777,10 @@ _PUBLIC_ void ndr_print_spoolss_SetPrinterDataEx(struct ndr_print *ndr, const ch
 		ndr_print_string(ndr, "key_name", r->in.key_name);
 		ndr_print_string(ndr, "value_name", r->in.value_name);
 		ndr_print_uint32(ndr, "type", r->in.type);
-		ndr_print_DATA_BLOB(ndr, "buffer", r->in.buffer);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_array_uint8(ndr, "buffer", r->in.buffer, r->in.offered);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "offered", r->in.offered);
 		ndr->depth--;
 	}
