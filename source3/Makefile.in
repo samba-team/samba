@@ -2813,7 +2813,8 @@ TOPFILES=dynconfig.o localedir.o
 
 cleanlibs::
 	-rm -f ../lib/*/*.o ../lib/*/*/*.o \
-		../libcli/*.o ../libcli/*/*.o
+		../libcli/*.o ../libcli/*/*.o \
+		../librpc/*/*.o
 
 clean:: cleanlibs
 	-rm -f include/build_env.h
@@ -2822,15 +2823,13 @@ clean:: cleanlibs
 	-rm -f core */*~ *~ \
 		*/*.o */*/*.o */*/*/*.o \
 		../testsuite/*/*.o \
+		../nsswitch/*.o ../nsswitch/*/*.o ../nsswitch/*.@SHLIBEXT@ \
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) \
 		$(EVERYTHING_PROGS) \
 		bin/timelimit \
-		.headers.stamp */src/*.o \
-		../lib/*/*.o \
-		../libcli/*.o ../libcli/*/*.o \
-		../librpc/*/*.o
+		.headers.stamp */src/*.o
 	-rm -rf t_dir
 
 include/build_env.h: script/build_env.sh
