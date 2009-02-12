@@ -745,7 +745,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (lp_parm_bool(SNUM(fsp->conn), PARM_ONEFS_TYPE,
-		PARM_IGNORE_SACL, PARM_IGNORE_SACL_DEFAULT)) {
+		PARM_IGNORE_SACLS, PARM_IGNORE_SACLS_DEFAULT)) {
 		access_mask &= ~SYSTEM_SECURITY_ACCESS;
 	}
 

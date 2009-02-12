@@ -48,8 +48,8 @@ enum onefs_acl_wire_format
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
 #define PARM_CTIME_NOW		"ctime now files"
 #define PARM_CTIME_SLOP		"ctime now slop"
-#define PARM_IGNORE_SACL "ignore sacl"
-#define PARM_IGNORE_SACL_DEFAULT false
+#define PARM_IGNORE_SACLS "ignore sacls"
+#define PARM_IGNORE_SACLS_DEFAULT false
 #define PARM_MTIME_NOW		"mtime now files"
 #define PARM_MTIME_STATIC	"mtime static files"
 #define PARM_MTIME_SLOP		"mtime now slop"
