@@ -5524,10 +5524,6 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 /* The following definitions come from rpc_client/cli_spoolss_notify.c  */
 
-WERROR rpccli_spoolss_rrpcn(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			 POLICY_HND *pol, uint32 notify_data_len,
-			 SPOOL_NOTIFY_INFO_DATA *notify_data,
-			 uint32 change_low, uint32 change_high);
 WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			    POLICY_HND *pol, uint32 flags, uint32 options,
 			    const char *localmachine, uint32 printerlocal,
@@ -5992,11 +5988,6 @@ void free_printer_info_5(PRINTER_INFO_5 *printer);
 void free_printer_info_6(PRINTER_INFO_6 *printer);
 void free_printer_info_7(PRINTER_INFO_7 *printer);
 void free_job_info_2(JOB_INFO_2 *job);
-bool make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
-			        uint32 change_low, uint32 change_high,
-				SPOOL_NOTIFY_INFO *info);
-bool spoolss_io_q_reply_rrpcn(const char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_reply_rrpcn(const char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth);
 bool make_spoolss_q_enumprinterkey(SPOOL_Q_ENUMPRINTERKEY *q_u, 
 				   POLICY_HND *hnd, const char *key, 
 				   uint32 size);

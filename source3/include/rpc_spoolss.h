@@ -1331,25 +1331,6 @@ typedef struct spool_r_getjob
 }
 SPOOL_R_GETJOB;
 
-typedef struct spool_q_rrpcn
-{
-	POLICY_HND handle;
-	uint32 change_low;
-	uint32 change_high;
-	uint32 unknown0;
-	uint32 unknown1;
-	uint32 info_ptr;
-	SPOOL_NOTIFY_INFO info;	
-}
-SPOOL_Q_REPLY_RRPCN;
-
-typedef struct spool_r_rrpcn
-{
-	uint32 unknown0;
-	WERROR status;
-}
-SPOOL_R_REPLY_RRPCN;
-
 typedef struct spool_q_enumprinterkey
 {
 	POLICY_HND handle;
