@@ -552,10 +552,12 @@ static struct in6_addr interpret_addr6(const char *name)
 	char addr[INET6_ADDRSTRLEN];
 	struct in6_addr dest6;
 	const char *sp = name;
-	char *p = strchr_m(sp, '%');
+	char *p;
 	int ret;
 
 	if (sp == NULL) return in6addr_any;
+
+	p = strchr_m(sp, '%');
 
 	if (strcasecmp(sp, "localhost") == 0) {
 		sp = "::1";
