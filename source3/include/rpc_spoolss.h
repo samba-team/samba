@@ -406,36 +406,6 @@ typedef struct spool_notify_option
 }
 SPOOL_NOTIFY_OPTION;
 
-typedef struct spool_notify_info_data
-{
-	uint16 type;
-	uint16 field;
-	uint32 reserved;
-	uint32 id;
-	union {
-		uint32 value[2];
-		struct {
-			uint32 length;
-			uint16 *string;
-		} data;
-		struct {
-			uint32	size;
-			SEC_DESC *desc;
-		} sd;
-	}
-	notify_data;
-	uint32 size;
-	uint32 enc_type;
-} SPOOL_NOTIFY_INFO_DATA;
-
-typedef struct spool_notify_info
-{
-	uint32 version;
-	uint32 flags;
-	uint32 count;
-	SPOOL_NOTIFY_INFO_DATA *data;
-}
-SPOOL_NOTIFY_INFO;
 
 /* If the struct name looks obscure, yes it is ! */
 /* RemoteFindFirstPrinterChangeNotificationEx query struct */
