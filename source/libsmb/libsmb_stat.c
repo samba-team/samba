@@ -301,6 +301,58 @@ SMBC_fstat_ctx(SMBCCTX *context,
         
 }
 
+
+/*
+ * Routine to obtain file system information given a path
+ */
+int
+SMBC_statvfs_ctx(SMBCCTX *context,
+                 char *path,
+                 struct statvfs *st)
+{
+        int             ret;
+        bool            bIsDir;
+        struct stat     statbuf;
+        SMBCFILE *      pFile;
+
+        /* Determine if the provided path is a file or a folder */
+        if (SMBC_stat_ctx(context, path, &statbuf) < 0) {
+                return -1;
+        }
+
+        /* Is it a file or a directory?  */
+        if (S_ISDIR(statbuf.st_mode)) {
+                /* It's a directory. */
+                if ((pFile = SMBC_opendir_ctx(context, path)) < 0) {
+                        return -1;
+                }
+                bIsDir = true;
+        } else if (S_ISREG(statbuf.st_mode)) {
+                /* It's a file. */
+                if ((pFile = SMBC_open_ctx(context, path, O_RDONLY, 0)) < 0) {
+                        return -1;
+                }
+                bIsDir = false;
+        } else {
+                /* It's neither a file nor a directory. Not supported. */
+                errno = ENOSYS;
+                return -1;
+        }
+
+        /* Now we have an open file handle, so just use SMBC_fstatvfs */
+        ret = SMBC_fstatvfs_ctx(context, pFile, st);
+
+        /* Close the file or directory */
+        if (bIsDir) {
+                SMBC_closedir_ctx(context, pFile);
+        } else {
+                SMBC_close_ctx(context, pFile);
+        }
+
+        return ret;
+}
+
+
 /*
  * Routine to obtain file system information given an fd
  */
@@ -411,8 +463,8 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
         }
 
         /* See if DFS is supported */
-	if (! (cli->capabilities & CAP_DFS) ||  ! cli->dfsroot) {
-                st->f_flag |= SMBC_VFS_FEATURE_NO_DFS;
+	if ((cli->capabilities & CAP_DFS) &&  cli->dfsroot) {
+                st->f_flag |= SMBC_VFS_FEATURE_DFS;
         }
 
         return 0;

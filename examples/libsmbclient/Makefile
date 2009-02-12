@@ -24,6 +24,7 @@ TESTS=	testsmbc \
 	teststat \
 	teststat2 \
 	teststat3 \
+	teststatvfs \
 	testfstatvfs \
 	testtruncate \
 	testchmod \
@@ -73,6 +74,10 @@ teststat2: teststat2.o
 
 teststat3: teststat3.o
 	@echo Linking teststat3
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
+teststatvfs: teststatvfs.o
+	@echo Linking teststatvfs
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testfstatvfs: testfstatvfs.o
