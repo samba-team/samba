@@ -9221,37 +9221,34 @@ done:
 	return status;
 }
 
-/********************************************************************
- * spoolss_setprinterdataex
- ********************************************************************/
+/****************************************************************
+ _spoolss_SetPrinterDataEx
+****************************************************************/
 
-WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u, SPOOL_R_SETPRINTERDATAEX *r_u)
+WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_SetPrinterDataEx *r)
 {
-	POLICY_HND 		*handle = &q_u->handle;
-	uint32 			type = q_u->type;
-	uint8 			*data = q_u->data;
-	uint32 			real_len = q_u->real_len;
-
+	POLICY_HND		*handle = r->in.handle;
 	NT_PRINTER_INFO_LEVEL 	*printer = NULL;
 	int 			snum = 0;
 	WERROR 			status = WERR_OK;
 	Printer_entry 		*Printer = find_printer_index_by_hnd(p, handle);
-	fstring			valuename;
-	fstring			keyname;
 	char			*oid_string;
 
-	DEBUG(4,("_spoolss_setprinterdataex\n"));
+	DEBUG(4,("_spoolss_SetPrinterDataEx\n"));
 
         /* From MSDN documentation of SetPrinterDataEx: pass request to
            SetPrinterData if key is "PrinterDriverData" */
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_setprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_SetPrinterDataEx: "
+			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
 	if ( Printer->printer_type == SPLHND_SERVER ) {
-		DEBUG(10,("_spoolss_setprinterdataex: Not implemented for server handles yet\n"));
+		DEBUG(10,("_spoolss_SetPrinterDataEx: "
+			"Not implemented for server handles yet\n"));
 		return WERR_INVALID_PARAM;
 	}
 
@@ -9268,7 +9265,8 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER)
 	{
-		DEBUG(3, ("_spoolss_setprinterdataex: change denied by handle access permissions\n"));
+		DEBUG(3, ("_spoolss_SetPrinterDataEx: "
+			"change denied by handle access permissions\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -9276,12 +9274,9 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 	if (!W_ERROR_IS_OK(status))
 		return status;
 
-        unistr2_to_ascii( valuename, &q_u->value, sizeof(valuename));
-        unistr2_to_ascii( keyname, &q_u->key, sizeof(keyname));
-
 	/* check for OID in valuename */
 
-	if ( (oid_string = strchr( valuename, ',' )) != NULL )
+	if ( (oid_string = strchr( r->in.value_name, ',' )) != NULL )
 	{
 		*oid_string = '\0';
 		oid_string++;
@@ -9289,14 +9284,18 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 
 	/* save the registry data */
 
-	status = set_printer_dataex( printer, keyname, valuename, type, data, real_len );
+	status = set_printer_dataex( printer, r->in.key_name, r->in.value_name,
+				     r->in.type, r->in.buffer, r->in.offered );
 
 	if ( W_ERROR_IS_OK(status) )
 	{
 		/* save the OID if one was specified */
 		if ( oid_string ) {
-			fstrcat( keyname, "\\" );
-			fstrcat( keyname, SPOOL_OID_KEY );
+			char *str = talloc_asprintf(p->mem_ctx, "%s\\%s",
+				r->in.key_name, SPOOL_OID_KEY);
+			if (!str) {
+				return WERR_NOMEM;
+			}
 
 			/*
 			 * I'm not checking the status here on purpose.  Don't know
@@ -9305,7 +9304,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
 			 * this is right.    --jerry
 			 */
 
-			set_printer_dataex( printer, keyname, valuename,
+			set_printer_dataex( printer, str, r->in.value_name,
 			                    REG_SZ, (uint8 *)oid_string,
 					    strlen(oid_string)+1 );
 		}
@@ -10555,17 +10554,6 @@ WERROR _spoolss_4b(pipes_struct *p,
 
 WERROR _spoolss_4c(pipes_struct *p,
 		   struct spoolss_4c *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_SetPrinterDataEx
-****************************************************************/
-
-WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
-				 struct spoolss_SetPrinterDataEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
