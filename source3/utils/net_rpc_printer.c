@@ -865,10 +865,17 @@ static bool net_spoolss_setprinterdataex(struct rpc_pipe_client *pipe_hnd,
 					REGISTRY_VALUE *value)
 {
 	WERROR result;
+	NTSTATUS status;
 
 	/* setprinterdataex call */
-	result = rpccli_spoolss_setprinterdataex(pipe_hnd, mem_ctx, hnd,
-					      keyname, value);
+	status = rpccli_spoolss_SetPrinterDataEx(pipe_hnd, mem_ctx,
+						 hnd,
+						 keyname,
+						 value->valuename,
+						 value->type,
+						 value->data_p,
+						 value->size,
+						 &result);
 
 	if (!W_ERROR_IS_OK(result)) {
 		printf("could not set printerdataex: %s\n", win_errstr(result));
