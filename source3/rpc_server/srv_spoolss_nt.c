@@ -9132,22 +9132,20 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	return wstatus;
 }
 
-/********************************************************************
- spoolss_getprinterdataex
+/****************************************************************
+ _spoolss_GetPrinterDataEx
 
  From MSDN documentation of GetPrinterDataEx: pass request
  to GetPrinterData if key is "PrinterDriverData".
- ********************************************************************/
+****************************************************************/
 
-WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u, SPOOL_R_GETPRINTERDATAEX *r_u)
+WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
+				 struct spoolss_GetPrinterDataEx *r)
 {
-	POLICY_HND	*handle = &q_u->handle;
-	uint32 		in_size = q_u->size;
-	uint32 		*type = &r_u->type;
-	uint32 		*out_size = &r_u->size;
-	uint8 		**data = &r_u->data;
-	uint32 		*needed = &r_u->needed;
-	fstring 	keyname, valuename;
+	POLICY_HND	*handle = r->in.handle;
+	uint8 		*data = NULL;
+	const char	*keyname = r->in.key_name;
+	const char	*valuename = r->in.value_name;
 
 	Printer_entry 	*Printer = find_printer_index_by_hnd(p, handle);
 
@@ -9155,22 +9153,19 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	int 			snum = 0;
 	WERROR 			status = WERR_OK;
 
-	DEBUG(4,("_spoolss_getprinterdataex\n"));
+	DEBUG(4,("_spoolss_GetPrinterDataEx\n"));
 
-        unistr2_to_ascii(keyname, &q_u->keyname, sizeof(keyname));
-        unistr2_to_ascii(valuename, &q_u->valuename, sizeof(valuename));
-
-	DEBUG(10, ("_spoolss_getprinterdataex: key => [%s], value => [%s]\n",
+	DEBUG(10, ("_spoolss_GetPrinterDataEx: key => [%s], value => [%s]\n",
 		keyname, valuename));
 
 	/* in case of problem, return some default values */
 
-	*needed   = 0;
-	*type     = 0;
-	*out_size = in_size;
+	*r->out.needed	= 0;
+	*r->out.type	= 0;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_getprinterdataex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_GetPrinterDataEx: "
+			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		status = WERR_BADFID;
 		goto done;
 	}
@@ -9178,7 +9173,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	/* Is the handle to a printer or to the server? */
 
 	if (Printer->printer_type == SPLHND_SERVER) {
-		DEBUG(10,("_spoolss_getprinterdataex: Not implemented for server handles yet\n"));
+		DEBUG(10,("_spoolss_GetPrinterDataEx: "
+			"Not implemented for server handles yet\n"));
 		status = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -9197,7 +9193,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 	}
 
 	if ( lookup_printerkey( printer->info_2->data, keyname ) == -1 ) {
-		DEBUG(4,("_spoolss_getprinterdataex: Invalid keyname [%s]\n", keyname ));
+		DEBUG(4,("_spoolss_GetPrinterDataEx: "
+			"Invalid keyname [%s]\n", keyname ));
 		free_a_printer( &printer, 2 );
 		status = WERR_BADFILE;
 		goto done;
@@ -9205,29 +9202,19 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	/* When given a new keyname, we should just create it */
 
-	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename, type, data, needed, in_size );
+	status = get_printer_dataex( p->mem_ctx, printer, keyname, valuename,
+				     r->out.type, &data, r->out.needed,
+				     r->in.offered );
 
-	if (*needed > *out_size)
+	if (*r->out.needed > r->in.offered) {
 		status = WERR_MORE_DATA;
-
-done:
-	if ( !W_ERROR_IS_OK(status) )
-	{
-		DEBUG(5, ("error: allocating %d\n", *out_size));
-
-		/* reply this param doesn't exist */
-
-		if ( *out_size )
-		{
-			if( (*data=(uint8 *)TALLOC_ZERO(p->mem_ctx, *out_size*sizeof(uint8))) == NULL ) {
-				status = WERR_NOMEM;
-				goto done;
-			}
-		} else {
-			*data = NULL;
-		}
 	}
 
+	if (W_ERROR_IS_OK(status)) {
+		memcpy(r->out.buffer, data, r->in.offered);
+	}
+
+done:
 	if ( printer )
 	free_a_printer( &printer, 2 );
 
@@ -10579,17 +10566,6 @@ WERROR _spoolss_4c(pipes_struct *p,
 
 WERROR _spoolss_SetPrinterDataEx(pipes_struct *p,
 				 struct spoolss_SetPrinterDataEx *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetPrinterDataEx
-****************************************************************/
-
-WERROR _spoolss_GetPrinterDataEx(pipes_struct *p,
-				 struct spoolss_GetPrinterDataEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
