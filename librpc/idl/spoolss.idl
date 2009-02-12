@@ -1693,7 +1693,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 type,
-		[in] 	 DATA_BLOB buffer,
+		[in,ref] [size_is(offered)] uint8 *buffer,
 		[in] 	 uint32 offered
 	);
 
