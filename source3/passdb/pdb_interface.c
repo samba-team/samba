@@ -1947,7 +1947,7 @@ void pdb_search_destroy(struct pdb_search *search)
 }
 
 /*******************************************************************
- trustodm methods
+ trustdom methods
  *******************************************************************/
 
 bool pdb_get_trusteddom_pw(const char *domain, char** pwd, DOM_SID *sid, 
