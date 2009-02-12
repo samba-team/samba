@@ -334,7 +334,7 @@ struct async_req *rpc_cli_smbd_conn_init_send(TALLOC_CTX *mem_ctx,
 		goto nomem;
 	}
 
-	if (event_add_fd(ev, subreq, state->conn->stdout_fd, EVENT_FD_READ,
+	if (event_add_fd(ev, state, state->conn->stdout_fd, EVENT_FD_READ,
 			 rpc_cli_smbd_stdout_reader, state->conn) == NULL) {
 		goto nomem;
 	}
@@ -458,7 +458,7 @@ static struct tevent_req *rpc_smbd_write_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	if (event_add_fd(ev, subreq, transp->conn->stdout_fd, EVENT_FD_READ,
+	if (event_add_fd(ev, state, transp->conn->stdout_fd, EVENT_FD_READ,
 			 rpc_cli_smbd_stdout_reader, transp->conn) == NULL) {
 		goto fail;
 	}
@@ -529,7 +529,7 @@ static struct tevent_req *rpc_smbd_read_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	if (event_add_fd(ev, subreq, transp->conn->stdout_fd, EVENT_FD_READ,
+	if (event_add_fd(ev, state, transp->conn->stdout_fd, EVENT_FD_READ,
 			 rpc_cli_smbd_stdout_reader, transp->conn) == NULL) {
 		goto fail;
 	}
@@ -601,6 +601,11 @@ struct async_req *rpc_transport_smbd_init_send(TALLOC_CTX *mem_ctx,
 	}
 	state->transport_smbd->conn = conn;
 	state->transport->priv = state->transport_smbd;
+
+	if (event_add_fd(ev, state, conn->stdout_fd, EVENT_FD_READ,
+			 rpc_cli_smbd_stdout_reader, conn) == NULL) {
+		goto fail;
+	}
 
 	subreq = rpc_transport_np_init_send(state, ev, conn->cli,
 					    abstract_syntax);
