@@ -157,6 +157,21 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 	struct netr_NETLOGON_INFO_1 *info1;
 	struct netr_NETLOGON_INFO_2 *info2;
 	struct netr_NETLOGON_INFO_3 *info3;
+	const char *fn;
+
+	switch (p->hdr_req.opnum) {
+		case NDR_NETR_LOGONCONTROL:
+			fn = "_netr_LogonControl";
+			break;
+		case NDR_NETR_LOGONCONTROL2:
+			fn = "_netr_LogonControl2";
+			break;
+		case NDR_NETR_LOGONCONTROL2EX:
+			fn = "_netr_LogonControl2Ex";
+			break;
+		default:
+			return WERR_INVALID_PARAM;
+	}
 
 	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
 
@@ -203,8 +218,8 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 
 		default:
 			/* no idea what this should be */
-			DEBUG(0,("_netr_LogonControl2: unimplemented function level [%d]\n",
-				r->in.function_code));
+			DEBUG(0,("%s: unimplemented function level [%d]\n",
+				fn, r->in.function_code));
 			return WERR_UNKNOWN_LEVEL;
 	}
 
@@ -820,12 +835,15 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	struct auth_context *auth_context = NULL;
 	uint8_t pipe_session_key[16];
 	bool process_creds = true;
+	const char *fn;
 
 	switch (p->hdr_req.opnum) {
 		case NDR_NETR_LOGONSAMLOGON:
 			process_creds = true;
+			fn = "_netr_LogonSamLogon";
 			break;
 		case NDR_NETR_LOGONSAMLOGONEX:
+			fn = "_netr_LogonSamLogonEx";
 		default:
 			process_creds = false;
 	}
@@ -834,8 +852,8 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_netr_LogonSamLogon: client %s not using schannel for netlogon\n",
-			get_remote_machine_name() ));
+		DEBUG(0,("%s: client %s not using schannel for netlogon\n",
+			fn, get_remote_machine_name() ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -848,8 +866,8 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	r->out.validation->sam3 = sam3;
 	*r->out.authoritative = true; /* authoritative response */
 	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
-		DEBUG(0,("_netr_LogonSamLogon: bad validation_level value %d.\n",
-			(int)r->in.validation_level));
+		DEBUG(0,("%s: bad validation_level value %d.\n",
+			fn, (int)r->in.validation_level));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -879,9 +897,9 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 		/* checks and updates credentials.  creates reply credentials */
 		if (!netlogon_creds_server_step(p->dc, r->in.credential,  r->out.return_authenticator)) {
-			DEBUG(2,("_netr_LogonSamLogon: creds_server_step failed. Rejecting auth "
+			DEBUG(2,("%s: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
-				r->in.computer_name, p->dc->mach_acct ));
+				fn, r->in.computer_name, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
@@ -995,8 +1013,8 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
 
-	DEBUG(5,("_netr_LogonSamLogon: check_password returned status %s\n",
-		  nt_errstr(status)));
+	DEBUG(5,("%s: check_password returned status %s\n",
+		  fn, nt_errstr(status)));
 
 	/* Check account and password */
 
@@ -1016,8 +1034,8 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
-		DEBUG(5,("_netr_LogonSamLogon: Attempted domain logon as GUEST "
-			 "denied.\n"));
+		DEBUG(5,("%s: Attempted domain logon as GUEST "
+			 "denied.\n", fn));
 		TALLOC_FREE(server_info);
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -1055,7 +1073,7 @@ NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
 
 	/* Only allow this if the pipe is protected. */
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
-		DEBUG(0,("_net_sam_logon_ex: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_LogonSamLogonEx: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_INVALID_PARAMETER;
         }
