@@ -106,7 +106,7 @@ struct ldap_SearchRequest {
 	bool attributesonly;
 	struct ldb_parse_tree *tree;
 	int num_attributes;
-	const char **attributes;
+	const char * const *attributes;
 };
 
 struct ldap_SearchResEntry {

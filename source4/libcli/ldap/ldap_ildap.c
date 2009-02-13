@@ -69,7 +69,7 @@ _PUBLIC_ NTSTATUS ildap_search_bytree(struct ldap_connection *conn, const char *
 	msg->r.SearchRequest.attributesonly = attributesonly;
 	msg->r.SearchRequest.tree = tree;
 	msg->r.SearchRequest.num_attributes = n;
-	msg->r.SearchRequest.attributes = discard_const(attrs);
+	msg->r.SearchRequest.attributes = attrs;
 	msg->controls = control_req;
 
 	req = ldap_request_send(conn, msg);
