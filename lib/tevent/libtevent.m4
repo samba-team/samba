@@ -29,20 +29,10 @@ TEVENT_CFLAGS="-I$teventdir"
 TEVENT_OBJ="tevent.o tevent_fd.o tevent_timed.o tevent_signal.o tevent_debug.o tevent_util.o"
 TEVENT_OBJ="$TEVENT_OBJ tevent_standard.o tevent_select.o"
 
-tevent_cv_aio_support=no
 AC_CHECK_HEADERS(sys/epoll.h)
 AC_CHECK_FUNCS(epoll_create)
 if test x"$ac_cv_header_sys_epoll_h" = x"yes" -a x"$ac_cv_func_epoll_create" = x"yes"; then
    TEVENT_OBJ="$TEVENT_OBJ tevent_epoll.o"
    AC_DEFINE(HAVE_EPOLL, 1, [Whether epoll available])
-
-   # check for native Linux AIO interface
-   AC_CHECK_HEADERS(libaio.h)
-   AC_CHECK_LIB_EXT(aio, TEVENT_LIBS, io_getevents)
-   if test x"$ac_cv_header_libaio_h" = x"yes" -a x"$ac_cv_lib_ext_aio_io_getevents" = x"yes";then
-      TEVENT_OBJ="$TEVENT_OBJ tevent_aio.o"
-      tevent_cv_aio_support=yes
-      AC_DEFINE(HAVE_LINUX_AIO, 1, [Whether Linux AIO is available])
-   fi
 fi
 

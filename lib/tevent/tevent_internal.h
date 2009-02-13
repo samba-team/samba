@@ -46,14 +46,6 @@ struct tevent_ops {
 					  void *private_data,
 					  const char *handler_name,
 					  const char *location);
-	/* disk aio event functions */
-	struct tevent_aio *(*add_aio)(struct tevent_context *ev,
-				      TALLOC_CTX *mem_ctx,
-				      struct iocb *iocb,
-				      tevent_aio_handler_t handler,
-				      void *private_data,
-				      const char *handler_name,
-				      const char *location);
 	/* signal functions */
 	struct tevent_signal *(*add_signal)(struct tevent_context *ev,
 					    TALLOC_CTX *mem_ctx,
@@ -123,9 +115,6 @@ struct tevent_debug_ops {
 void tevent_debug(struct tevent_context *ev, enum tevent_debug_level level,
 		  const char *fmt, ...) PRINTF_ATTRIBUTE(3,4);
 
-/* aio event is private to the aio backend */
-struct tevent_aio;
-
 struct tevent_context {
 	/* the specific events implementation */
 	const struct tevent_ops *ops;
@@ -192,7 +181,4 @@ bool tevent_standard_init(void);
 bool tevent_select_init(void);
 #ifdef HAVE_EPOLL
 bool tevent_epoll_init(void);
-#endif
-#ifdef HAVE_LINUX_AIO
-bool tevent_aio_init(void);
 #endif

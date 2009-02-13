@@ -30,7 +30,6 @@ struct tevent_context;
 struct tevent_ops;
 struct tevent_fd;
 struct tevent_timer;
-struct tevent_aio;
 struct tevent_signal;
 
 /* event handler types */
@@ -52,10 +51,6 @@ typedef void (*tevent_signal_handler_t)(struct tevent_context *ev,
 					int count,
 					void *siginfo,
 					void *private_data);
-typedef void (*tevent_aio_handler_t)(struct tevent_context *ev,
-				     struct tevent_aio *ae,
-				     int ret,
-				     void *private_data);
 
 struct tevent_context *tevent_context_init(TALLOC_CTX *mem_ctx);
 struct tevent_context *tevent_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
@@ -96,18 +91,6 @@ struct tevent_signal *_tevent_add_signal(struct tevent_context *ev,
 #define tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data) \
 	_tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data, \
 			   #handler, __location__)
-
-struct iocb;
-struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
-				   TALLOC_CTX *mem_ctx,
-				   struct iocb *iocb,
-				   tevent_aio_handler_t handler,
-				   void *private_data,
-				   const char *handler_name,
-				   const char *location);
-#define tevent_add_aio(ev, mem_ctx, iocb, handler, private_data) \
-	_tevent_add_aio(ev, mem_ctx, iocb, handler, private_data, \
-			#handler, __location__)
 
 int tevent_loop_once(struct tevent_context *ev);
 int tevent_loop_wait(struct tevent_context *ev);
@@ -154,12 +137,10 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
 #define event_ops	tevent_ops
 #define fd_event	tevent_fd
 #define timed_event	tevent_timer
-#define aio_event	tevent_aio
 #define signal_event	tevent_signal
 
 #define event_fd_handler_t	tevent_fd_handler_t
 #define event_timed_handler_t	tevent_timer_handler_t
-#define event_aio_handler_t	tevent_aio_handler_t
 #define event_signal_handler_t	tevent_signal_handler_t
 
 #define event_context_init(mem_ctx) \
@@ -182,9 +163,6 @@ int tevent_set_debug_stderr(struct tevent_context *ev);
 
 #define event_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data) \
 	tevent_add_signal(ev, mem_ctx, signum, sa_flags, handler, private_data)
-
-#define event_add_aio(ev, mem_ctx, iocb, handler, private_data) \
-	tevent_add_aio(ev, mem_ctx, iocb, handler, private_data)
 
 #define event_loop_once(ev) \
 	tevent_loop_once(ev)

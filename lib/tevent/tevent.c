@@ -112,9 +112,6 @@ static void tevent_backend_init(void)
 #ifdef HAVE_EPOLL
 	tevent_epoll_init();
 #endif
-#ifdef HAVE_LINUX_AIO
-	tevent_aio_init();
-#endif
 }
 
 /*
@@ -257,22 +254,6 @@ struct tevent_fd *_tevent_add_fd(struct tevent_context *ev,
 {
 	return ev->ops->add_fd(ev, mem_ctx, fd, flags, handler, private_data,
 			       handler_name, location);
-}
-
-/*
-  add a disk aio event
-*/
-struct tevent_aio *_tevent_add_aio(struct tevent_context *ev,
-				   TALLOC_CTX *mem_ctx,
-				   struct iocb *iocb,
-				   tevent_aio_handler_t handler,
-				   void *private_data,
-				   const char *handler_name,
-				   const char *location)
-{
-	if (ev->ops->add_aio == NULL) return NULL;
-	return ev->ops->add_aio(ev, mem_ctx, iocb, handler, private_data,
-				handler_name, location);
 }
 
 /*
