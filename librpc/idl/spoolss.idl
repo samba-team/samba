@@ -30,6 +30,42 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[unique] spoolss_Time *time;
 	} spoolss_TimeCtr;
 
+	typedef enum {
+		PROCESSOR_ARCHITECTURE_INTEL		= 0x0000,
+		PROCESSOR_ARCHITECTURE_IA64		= 0x0006,
+		PROCESSOR_ARCHITECTURE_AMD64		= 0x0009
+	} spoolss_ProcessorArchitecture;
+
+	typedef [v1_enum] enum {
+		PROCESSOR_INTEL_386			= 0x00000182,
+		PROCESSOR_INTEL_486			= 0x000001E6,
+		PROCESSOR_INTEL_PENTIUM			= 0x0000024A,
+		PROCESSOR_INTEL_IA64			= 0x00000898,
+		PROCESSOR_AMD_X8664			= 0x000022A0
+	} spoolss_ProcessorType;
+
+	typedef [v1_enum] enum {
+		/* Windows 95, Windows 98, Windows Me, Windows NT4 */
+		SPOOLSS_MAJOR_VERSION_NT4_95_98_ME	= 0x00000004,
+		/* Windows 2000, Windows 2003, Windows XP */
+		SPOOLSS_MAJOR_VERSION_2000_2003_XP	= 0x00000005,
+		/* Windows Vista, Windows 2008 */
+		SPOOLSS_MAJOR_VERSION_2008_VISTA	= 0x00000006
+	} spoolss_MajorVersion;
+
+	typedef [v1_enum] enum {
+		/* Windows 2008, Windows Vista, Windows 2000, Windows NT4, Windows 95 */
+		SPOOLSS_MINOR_VERSION_0			= 0x00000000,
+		/* Windows XP */
+		SPOOLSS_MINOR_VERSION_XP		= 0x00000001,
+		/* Windows 2003, Windows XP x64 */
+		SPOOLSS_MINOR_VERSION_2003_XP64		= 0x00000002,
+		/* Windows 98 */
+		SPOOLSS_MINOR_VERSION_98		= 0x0000000a,
+		/* Windows Me */
+		SPOOLSS_MINOR_VERSION_ME		= 0x0000005a
+	} spoolss_MinorVersion;
+
 	typedef struct {
 		[relative] nstring *printername;
 		[relative] nstring *servername;
@@ -1644,13 +1680,32 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[string,charset(UTF16)] uint16 *client;
 		[string,charset(UTF16)] uint16 *user;
 		uint32 build;
-		uint32 major;
-		uint32 minor;
-		uint32 processor;
+		spoolss_MajorVersion major;
+		spoolss_MinorVersion minor;
+		spoolss_ProcessorArchitecture processor;
 	} spoolss_UserLevel1;
 
-	typedef union {
+	typedef struct {
+		uint32 not_used;
+	} spoolss_UserLevel2;
+
+	typedef struct {
+		uint32 size;
+		uint32 flags;
+		uint32 size2;
+		[string,charset(UTF16)] uint16 *client;
+		[string,charset(UTF16)] uint16 *user;
+		uint32 build;
+		spoolss_MajorVersion major;
+		spoolss_MinorVersion minor;
+		spoolss_ProcessorArchitecture processor;
+		udlong reserved;
+	} spoolss_UserLevel3;
+
+	typedef [switch_type(uint32)] union {
 		[case(1)]  spoolss_UserLevel1 *level1;
+		[case(2)]  spoolss_UserLevel2 *level2;
+		[case(3)]  spoolss_UserLevel3 *level3;
 	} spoolss_UserLevel;
 
 	typedef struct {
