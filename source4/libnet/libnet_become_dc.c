@@ -731,12 +731,12 @@ struct libnet_BecomeDC_state {
 	struct libnet_BecomeDC_Callbacks callbacks;
 };
 
-static void becomeDC_recv_cldap(struct cldap_request *req);
+static void becomeDC_recv_cldap(struct tevent_req *req);
 
 static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 {
 	struct composite_context *c = s->creq;
-	struct cldap_request *req;
+	struct tevent_req *req;
 
 	s->cldap.io.in.dest_address	= s->source_dsa.address;
 	s->cldap.io.in.dest_port	= lp_cldap_port(s->libnet->lp_ctx);
@@ -749,25 +749,27 @@ static void becomeDC_send_cldap(struct libnet_BecomeDC_state *s)
 	s->cldap.io.in.version		= NETLOGON_NT_VERSION_5 | NETLOGON_NT_VERSION_5EX;
 	s->cldap.io.in.map_response	= true;
 
-	s->cldap.sock = cldap_socket_init(s, s->libnet->event_ctx, 
-					  lp_iconv_convenience(s->libnet->lp_ctx));
-	if (composite_nomem(s->cldap.sock, c)) return;
+	c->status = cldap_socket_init(s, s->libnet->event_ctx,
+				      NULL, NULL, &s->cldap.sock);//TODO
+	if (!composite_is_ok(c)) return;
 
-	req = cldap_netlogon_send(s->cldap.sock, &s->cldap.io);
+	req = cldap_netlogon_send(s, s->cldap.sock, &s->cldap.io);
 	if (composite_nomem(req, c)) return;
-	req->async.fn		= becomeDC_recv_cldap;
-	req->async.private_data	= s;
+	tevent_req_set_callback(req, becomeDC_recv_cldap, s);
 }
 
 static void becomeDC_connect_ldap1(struct libnet_BecomeDC_state *s);
 
-static void becomeDC_recv_cldap(struct cldap_request *req)
+static void becomeDC_recv_cldap(struct tevent_req *req)
 {
-	struct libnet_BecomeDC_state *s = talloc_get_type(req->async.private_data,
+	struct libnet_BecomeDC_state *s = tevent_req_callback_data(req,
 					  struct libnet_BecomeDC_state);
 	struct composite_context *c = s->creq;
 
-	c->status = cldap_netlogon_recv(req, s, &s->cldap.io);
+	c->status = cldap_netlogon_recv(req,
+					lp_iconv_convenience(s->libnet->lp_ctx),
+					s, &s->cldap.io);
+	talloc_free(req);
 	if (!composite_is_ok(c)) return;
 
 	s->cldap.netlogon = s->cldap.io.out.netlogon.data.nt5_ex;

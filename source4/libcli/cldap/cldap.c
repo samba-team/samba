@@ -4,6 +4,7 @@
    cldap client library
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Stefan Metzmacher 2009
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,373 +33,421 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
+#include <tevent.h>
 #include "../lib/util/dlinklist.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_ndr.h"
 #include "libcli/cldap/cldap.h"
-#include "lib/socket/socket.h"
+#include "../lib/tsocket/tsocket.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "../lib/util/asn1.h"
+#include "../lib/util/tevent_ntstatus.h"
 
 /*
-  destroy a pending request
+  context structure for operations on cldap packets
 */
-static int cldap_request_destructor(struct cldap_request *req)
+struct cldap_socket {
+	/* the low level socket */
+	struct tsocket_context *sock;
+
+	/*
+	 * Are we in connected mode, which means
+	 * we get ICMP errors back instead of timing
+	 * out requests. And we can only send requests
+	 * to the connected peer.
+	 */
+	bool connected;
+
+	/*
+	 * we allow sync requests only, if the caller
+	 * did not pass an event context to cldap_socket_init()
+	 */
+	struct {
+		bool allow_poll;
+		struct tevent_context *ctx;
+	} event;
+
+	/* the queue for outgoing dgrams */
+	struct tevent_queue *send_queue;
+
+	/* do we have an async tsocket_recvfrom request pending */
+	struct tevent_req *recv_subreq;
+
+	struct {
+		/* a queue of pending search requests */
+		struct cldap_search_state *list;
+
+		/* mapping from message_id to pending request */
+		struct idr_context *idr;
+	} searches;
+
+	/* what to do with incoming request packets */
+	struct {
+		void (*handler)(struct cldap_socket *,
+				void *private_data,
+				struct cldap_incoming *);
+		void *private_data;
+	} incoming;
+};
+
+struct cldap_search_state {
+	struct cldap_search_state *prev, *next;
+
+	struct {
+		struct cldap_socket *cldap;
+	} caller;
+
+	int message_id;
+
+	struct {
+		uint32_t idx;
+		uint32_t delay;
+		uint32_t count;
+		struct tsocket_address *dest;
+		DATA_BLOB blob;
+	} request;
+
+	struct {
+		struct cldap_incoming *in;
+		struct asn1_data *asn1;
+	} response;
+
+	struct tevent_req *req;
+};
+
+static int cldap_socket_destructor(struct cldap_socket *c)
 {
-	if (req->state == CLDAP_REQUEST_SEND) {
-		DLIST_REMOVE(req->cldap->send_queue, req);
+	tsocket_disconnect(c->sock);
+
+	while (c->searches.list) {
+		struct cldap_search_state *s = c->searches.list;
+		DLIST_REMOVE(c->searches.list, s);
+		ZERO_STRUCT(s->caller);
 	}
-	if (!req->is_reply && req->message_id != 0) {
-		idr_remove(req->cldap->idr, req->message_id);
-		req->message_id = 0;
-	}
+
+	talloc_free(c->recv_subreq);
+	talloc_free(c->send_queue);
+	talloc_free(c->sock);
 	return 0;
+}
+
+static void cldap_recvfrom_done(struct tevent_req *subreq);
+
+static bool cldap_recvfrom_setup(struct cldap_socket *c)
+{
+	if (c->recv_subreq) {
+		return true;
+	}
+
+	if (!c->searches.list && !c->incoming.handler) {
+		return true;
+	}
+
+	c->recv_subreq = tsocket_recvfrom_send(c->sock, c);
+	if (!c->recv_subreq) {
+		return false;
+	}
+	tevent_req_set_callback(c->recv_subreq, cldap_recvfrom_done, c);
+
+	return true;
+}
+
+static void cldap_recvfrom_stop(struct cldap_socket *c)
+{
+	if (!c->recv_subreq) {
+		return;
+	}
+
+	if (c->searches.list || c->incoming.handler) {
+		return;
+	}
+
+	talloc_free(c->recv_subreq);
+	c->recv_subreq = NULL;
+}
+
+static void cldap_socket_recv_dgram(struct cldap_socket *c,
+				    struct cldap_incoming *in);
+
+static void cldap_recvfrom_done(struct tevent_req *subreq)
+{
+	struct cldap_socket *c = tevent_req_callback_data(subreq,
+				 struct cldap_socket);
+	struct cldap_incoming *in = NULL;
+	ssize_t ret;
+
+	c->recv_subreq = NULL;
+
+	in = talloc_zero(c, struct cldap_incoming);
+	if (!in) {
+		goto nomem;
+	}
+
+	ret = tsocket_recvfrom_recv(subreq,
+				    &in->recv_errno,
+				    in,
+				    &in->buf,
+				    &in->src);
+	talloc_free(subreq);
+	subreq = NULL;
+	if (ret >= 0) {
+		in->len = ret;
+	}
+	if (ret == -1 && in->recv_errno == 0) {
+		in->recv_errno = EIO;
+	}
+
+	/* this function should free or steal 'in' */
+	cldap_socket_recv_dgram(c, in);
+	in = NULL;
+
+	if (!cldap_recvfrom_setup(c)) {
+		goto nomem;
+	}
+
+	return;
+
+nomem:
+	talloc_free(subreq);
+	talloc_free(in);
+	/*TODO: call a dead socket handler */
+	return;
 }
 
 /*
   handle recv events on a cldap socket
 */
-static void cldap_socket_recv(struct cldap_socket *cldap)
+static void cldap_socket_recv_dgram(struct cldap_socket *c,
+				    struct cldap_incoming *in)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
-	NTSTATUS status;
-	struct socket_address *src;
 	DATA_BLOB blob;
-	size_t nread, dsize;
-	struct asn1_data *asn1 = asn1_init(tmp_ctx);
-	struct ldap_message *ldap_msg;
-	struct cldap_request *req;
+	struct asn1_data *asn1;
+	void *p;
+	struct cldap_search_state *search;
+	NTSTATUS status;
 
-	if (!asn1) return;
-
-	status = socket_pending(cldap->sock, &dsize);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return;
+	if (in->recv_errno != 0) {
+		goto error;
 	}
 
-	blob = data_blob_talloc(tmp_ctx, NULL, dsize);
-	if (blob.data == NULL) {
-		talloc_free(tmp_ctx);
-		return;
-	}
+	blob = data_blob_const(in->buf, in->len);
 
-	status = socket_recvfrom(cldap->sock, blob.data, blob.length, &nread,
-				 tmp_ctx, &src);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(tmp_ctx);
-		return;
+	asn1 = asn1_init(in);
+	if (!asn1) {
+		goto nomem;
 	}
-	blob.length = nread;
-
-	DEBUG(2,("Received cldap packet of length %d from %s:%d\n", 
-		 (int)blob.length, src->addr, src->port));
 
 	if (!asn1_load(asn1, blob)) {
-		DEBUG(2,("Failed to setup for asn.1 decode\n"));
-		talloc_free(tmp_ctx);
-		return;
+		goto nomem;
 	}
 
-	ldap_msg = talloc(tmp_ctx, struct ldap_message);
-	if (ldap_msg == NULL) {
-		talloc_free(tmp_ctx);
-		return;
+	in->ldap_msg = talloc(in, struct ldap_message);
+	if (in->ldap_msg == NULL) {
+		goto nomem;
 	}
 
 	/* this initial decode is used to find the message id */
-	status = ldap_decode(asn1, NULL, ldap_msg);
+	status = ldap_decode(asn1, NULL, in->ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("Failed to decode ldap message: %s\n", nt_errstr(status)));
-		talloc_free(tmp_ctx);
-		return;
+		goto nterror;
 	}
 
 	/* find the pending request */
-	req = idr_find(cldap->idr, ldap_msg->messageid);
-	if (req == NULL) {
-		if (cldap->incoming.handler) {
-			cldap->incoming.handler(cldap, ldap_msg, src);
-		} else {
-			DEBUG(2,("Mismatched cldap reply %u from %s:%d\n",
-				 ldap_msg->messageid, src->addr, src->port));
+	p = idr_find(c->searches.idr, in->ldap_msg->messageid);
+	if (p == NULL) {
+		if (!c->incoming.handler) {
+			goto done;
 		}
-		talloc_free(tmp_ctx);
+
+		/* this function should free or steal 'in' */
+		c->incoming.handler(c, c->incoming.private_data, in);
 		return;
 	}
 
-	req->asn1 = talloc_steal(req, asn1);
-	req->asn1->ofs = 0;
+	search = talloc_get_type(p, struct cldap_search_state);
+	search->response.in = talloc_move(search, &in);
+	search->response.asn1 = asn1;
+	search->response.asn1->ofs = 0;
 
-	req->state = CLDAP_REQUEST_DONE;
-	talloc_free(req->te);
+	tevent_req_done(search->req);
+	goto done;
 
-	talloc_free(tmp_ctx);
-
-	if (req->async.fn) {
-		req->async.fn(req);
+nomem:
+	in->recv_errno = ENOMEM;
+error:
+	status = map_nt_error_from_unix(in->recv_errno);
+nterror:
+	/* in connected mode the first pending search gets the error */
+	if (!c->connected) {
+		/* otherwise we just ignore the error */
+		goto done;
 	}
+	if (!c->searches.list) {
+		goto done;
+	}
+	tevent_req_nterror(c->searches.list->req, status);
+done:
+	talloc_free(in);
 }
 
 /*
-  handle request timeouts
+  initialise a cldap_sock
 */
-static void cldap_request_timeout(struct tevent_context *event_ctx, 
-				  struct tevent_timer *te, struct timeval t,
-				  void *private_data)
+NTSTATUS cldap_socket_init(TALLOC_CTX *mem_ctx,
+			   struct tevent_context *ev,
+			   const struct tsocket_address *local_addr,
+			   const struct tsocket_address *remote_addr,
+			   struct cldap_socket **_cldap)
 {
-	struct cldap_request *req = talloc_get_type(private_data, struct cldap_request);
-
-	/* possibly try again */
-	if (req->num_retries != 0) {
-		size_t len = req->encoded.length;
-
-		req->num_retries--;
-
-		socket_sendto(req->cldap->sock, &req->encoded, &len, 
-			      req->dest);
-
-		req->te = event_add_timed(req->cldap->event_ctx, req, 
-					  timeval_current_ofs(req->timeout, 0),
-					  cldap_request_timeout, req);
-		return;
-	}
-
-	req->state = CLDAP_REQUEST_ERROR;
-	req->status = NT_STATUS_IO_TIMEOUT;
-	if (req->async.fn) {
-		req->async.fn(req);
-	}
-}
-
-/*
-  handle send events on a cldap socket
-*/
-static void cldap_socket_send(struct cldap_socket *cldap)
-{
-	struct cldap_request *req;
+	struct cldap_socket *c = NULL;
+	struct tsocket_address *any = NULL;
 	NTSTATUS status;
+	int ret;
 
-	while ((req = cldap->send_queue)) {
-		size_t len;
-		
-		len = req->encoded.length;
-		status = socket_sendto(cldap->sock, &req->encoded, &len,
-				       req->dest);
-		if (NT_STATUS_IS_ERR(status)) {
-			DEBUG(0,("Failed to send cldap request of length %u to %s:%d\n",
-				 (unsigned)req->encoded.length, req->dest->addr, req->dest->port));
-			DLIST_REMOVE(cldap->send_queue, req);
-			req->state = CLDAP_REQUEST_ERROR;
-			req->status = status;
-			if (req->async.fn) {
-				req->async.fn(req);
-			}
-			continue;
-		}
-
-		if (!NT_STATUS_IS_OK(status)) return;
-
-		DLIST_REMOVE(cldap->send_queue, req);
-
-		if (req->is_reply) {
-			talloc_free(req);
-		} else {
-			req->state = CLDAP_REQUEST_WAIT;
-
-			req->te = event_add_timed(cldap->event_ctx, req, 
-						  timeval_current_ofs(req->timeout, 0),
-						  cldap_request_timeout, req);
-
-			EVENT_FD_READABLE(cldap->fde);
-		}
+	c = talloc_zero(mem_ctx, struct cldap_socket);
+	if (!c) {
+		goto nomem;
 	}
 
-	EVENT_FD_NOT_WRITEABLE(cldap->fde);
-	return;
-}
-
-
-/*
-  handle fd events on a cldap_socket
-*/
-static void cldap_socket_handler(struct tevent_context *ev, struct tevent_fd *fde,
-				 uint16_t flags, void *private_data)
-{
-	struct cldap_socket *cldap = talloc_get_type(private_data, struct cldap_socket);
-	if (flags & EVENT_FD_WRITE) {
-		cldap_socket_send(cldap);
-	} 
-	if (flags & EVENT_FD_READ) {
-		cldap_socket_recv(cldap);
+	if (!ev) {
+		ev = tevent_context_init(c);
+		if (!ev) {
+			goto nomem;
+		}
+		c->event.allow_poll = true;
 	}
+	c->event.ctx = ev;
+
+	if (!local_addr) {
+		ret = tsocket_address_inet_from_strings(c, "ipv4",
+							NULL, 0,
+							&any);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			goto nterror;
+		}
+		local_addr = any;
+	}
+
+	c->searches.idr = idr_init(c);
+	if (!c->searches.idr) {
+		goto nomem;
+	}
+
+	ret = tsocket_address_create_socket(local_addr,
+					    TSOCKET_TYPE_DGRAM,
+					    c, &c->sock);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		goto nterror;
+	}
+	talloc_free(any);
+
+	tsocket_set_event_context(c->sock, c->event.ctx);
+
+	if (remote_addr) {
+		ret = tsocket_connect(c->sock, remote_addr);
+		if (ret != 0) {
+			status = map_nt_error_from_unix(errno);
+			goto nterror;
+		}
+		c->connected = true;
+	}
+
+	c->send_queue = tevent_queue_create(c, "cldap_send_queue");
+	if (!c->send_queue) {
+		goto nomem;
+	}
+
+	talloc_set_destructor(c, cldap_socket_destructor);
+
+	*_cldap = c;
+	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+nterror:
+	talloc_free(c);
+	return status;
 }
-
-/*
-  initialise a cldap_socket. The event_ctx is optional, if provided
-  then operations will use that event context
-*/
-struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct tevent_context *event_ctx,
-				       struct smb_iconv_convenience *iconv_convenience)
-{
-	struct cldap_socket *cldap;
-	NTSTATUS status;
-
-	cldap = talloc(mem_ctx, struct cldap_socket);
-	if (cldap == NULL) goto failed;
-
-	cldap->event_ctx = talloc_reference(cldap, event_ctx);
-	if (cldap->event_ctx == NULL) goto failed;
-
-	cldap->idr = idr_init(cldap);
-	if (cldap->idr == NULL) goto failed;
-
-	status = socket_create("ip", SOCKET_TYPE_DGRAM, &cldap->sock, 0);
-	if (!NT_STATUS_IS_OK(status)) goto failed;
-
-	talloc_steal(cldap, cldap->sock);
-
-	cldap->fde = event_add_fd(cldap->event_ctx, cldap, 
-				      socket_get_fd(cldap->sock), 0,
-				      cldap_socket_handler, cldap);
-
-	cldap->send_queue = NULL;
-	cldap->incoming.handler = NULL;
-	cldap->iconv_convenience = iconv_convenience;
-	
-	return cldap;
-
-failed:
-	talloc_free(cldap);
-	return NULL;
-}
-
 
 /*
   setup a handler for incoming requests
 */
-NTSTATUS cldap_set_incoming_handler(struct cldap_socket *cldap,
-				  void (*handler)(struct cldap_socket *, struct ldap_message *, 
-						  struct socket_address *),
-				  void *private_data)
+NTSTATUS cldap_set_incoming_handler(struct cldap_socket *c,
+				    void (*handler)(struct cldap_socket *,
+						    void *private_data,
+						    struct cldap_incoming *),
+				    void *private_data)
 {
-	cldap->incoming.handler = handler;
-	cldap->incoming.private_data = private_data;
-	EVENT_FD_READABLE(cldap->fde);
+	if (c->connected) {
+		return NT_STATUS_PIPE_CONNECTED;
+	}
+
+	/* if sync requests are allowed, we don't allow an incoming handler */
+	if (c->event.allow_poll) {
+		return NT_STATUS_INVALID_PIPE_STATE;
+	}
+
+	c->incoming.handler = handler;
+	c->incoming.private_data = private_data;
+
+	if (!cldap_recvfrom_setup(c)) {
+		ZERO_STRUCT(c->incoming);
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	return NT_STATUS_OK;
 }
 
-/*
-  queue a cldap request for send
-*/
-struct cldap_request *cldap_search_send(struct cldap_socket *cldap, 
-					struct cldap_search *io)
-{
-	struct ldap_message *msg;
-	struct cldap_request *req;
-	struct ldap_SearchRequest *search;
+struct cldap_reply_state {
+	struct tsocket_address *dest;
+	DATA_BLOB blob;
+};
 
-	req = talloc_zero(cldap, struct cldap_request);
-	if (req == NULL) goto failed;
-
-	req->cldap       = cldap;
-	req->state       = CLDAP_REQUEST_SEND;
-	req->timeout     = io->in.timeout;
-	req->num_retries = io->in.retries;
-	req->is_reply    = false;
-	req->asn1        = asn1_init(req);
-	if (!req->asn1) {
-		goto failed;
-	}
-
-	req->dest = socket_address_from_strings(req, cldap->sock->backend_name,
-						io->in.dest_address, 
-						io->in.dest_port);
-	if (!req->dest) goto failed;
-
-	req->message_id = idr_get_new_random(cldap->idr, req, UINT16_MAX);
-	if (req->message_id == -1) goto failed;
-
-	talloc_set_destructor(req, cldap_request_destructor);
-
-	msg = talloc(req, struct ldap_message);
-	if (msg == NULL) goto failed;
-	msg->messageid       = req->message_id;
-	msg->type            = LDAP_TAG_SearchRequest;
-	msg->controls        = NULL;
-	search = &msg->r.SearchRequest;
-
-	search->basedn         = "";
-	search->scope          = LDAP_SEARCH_SCOPE_BASE;
-	search->deref          = LDAP_DEREFERENCE_NEVER;
-	search->timelimit      = 0;
-	search->sizelimit      = 0;
-	search->attributesonly = false;
-	search->num_attributes = str_list_length(io->in.attributes);
-	search->attributes     = io->in.attributes;
-	search->tree           = ldb_parse_tree(req, io->in.filter);
-	if (search->tree == NULL) {
-		goto failed;
-	}
-
-	if (!ldap_encode(msg, NULL, &req->encoded, req)) {
-		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-			 req->dest->addr, req->dest->port));
-		goto failed;
-	}
-
-	DLIST_ADD_END(cldap->send_queue, req, struct cldap_request *);
-
-	EVENT_FD_WRITEABLE(cldap->fde);
-
-	return req;
-
-failed:
-	talloc_free(req);
-	return NULL;
-}
-
+static void cldap_reply_state_destroy(struct tevent_req *req);
 
 /*
   queue a cldap reply for send
 */
 NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 {
+	struct cldap_reply_state *state = NULL;
 	struct ldap_message *msg;
-	struct cldap_request *req;
 	DATA_BLOB blob1, blob2;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	NTSTATUS status;
+	struct tevent_req *req;
 
-	req = talloc_zero(cldap, struct cldap_request);
-	if (req == NULL) goto failed;
-
-	req->cldap       = cldap;
-	req->state       = CLDAP_REQUEST_SEND;
-	req->is_reply    = true;
-	req->asn1        = asn1_init(req);
-	if (!req->asn1) {
-		goto failed;
+	if (cldap->connected) {
+		return NT_STATUS_PIPE_CONNECTED;
 	}
 
-	req->dest        = io->dest;
-	if (talloc_reference(req, io->dest) == NULL) goto failed;
+	if (!io->dest) {
+		return NT_STATUS_INVALID_ADDRESS;
+	}
 
-	talloc_set_destructor(req, cldap_request_destructor);
+	state = talloc(cldap, struct cldap_reply_state);
+	NT_STATUS_HAVE_NO_MEMORY(state);
 
-	msg = talloc(req, struct ldap_message);
-	if (msg == NULL) goto failed;
+	state->dest = tsocket_address_copy(io->dest, state);
+	if (!state->dest) {
+		goto nomem;
+	}
+
+	msg = talloc(state, struct ldap_message);
+	if (!msg) {
+		goto nomem;
+	}
+
 	msg->messageid       = io->messageid;
 	msg->controls        = NULL;
-	
+
 	if (io->response) {
 		msg->type = LDAP_TAG_SearchResultEntry;
 		msg->r.SearchResultEntry = *io->response;
 
-		if (!ldap_encode(msg, NULL, &blob1, req)) {
-			DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-				 req->dest->addr, req->dest->port));
+		if (!ldap_encode(msg, NULL, &blob1, state)) {
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto failed;
 		}
@@ -409,65 +458,283 @@ NTSTATUS cldap_reply_send(struct cldap_socket *cldap, struct cldap_reply *io)
 	msg->type = LDAP_TAG_SearchResultDone;
 	msg->r.SearchResultDone = *io->result;
 
-	if (!ldap_encode(msg, NULL, &blob2, req)) {
-		DEBUG(0,("Failed to encode cldap message to %s:%d\n",
-			 req->dest->addr, req->dest->port));
+	if (!ldap_encode(msg, NULL, &blob2, state)) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto failed;
 	}
+	talloc_free(msg);
 
-	req->encoded = data_blob_talloc(req, NULL, blob1.length + blob2.length);
-	if (req->encoded.data == NULL) goto failed;
+	state->blob = data_blob_talloc(state, NULL, blob1.length + blob2.length);
+	if (!state->blob.data) {
+		goto nomem;
+	}
 
-	memcpy(req->encoded.data, blob1.data, blob1.length);
-	memcpy(req->encoded.data+blob1.length, blob2.data, blob2.length);
+	memcpy(state->blob.data, blob1.data, blob1.length);
+	memcpy(state->blob.data+blob1.length, blob2.data, blob2.length);
+	data_blob_free(&blob1);
+	data_blob_free(&blob2);
 
-	DLIST_ADD_END(cldap->send_queue, req, struct cldap_request *);
-
-	EVENT_FD_WRITEABLE(cldap->fde);
+	req = tsocket_sendto_queue_send(state,
+					cldap->sock,
+					cldap->send_queue,
+					state->blob.data,
+					state->blob.length,
+					state->dest);
+	if (!req) {
+		goto nomem;
+	}
+	/* the callback will just free the state, as we don't need a result */
+	tevent_req_set_callback(req, cldap_reply_state_destroy, state);
 
 	return NT_STATUS_OK;
 
+nomem:
+	status = NT_STATUS_NO_MEMORY;
 failed:
-	talloc_free(req);
+	talloc_free(state);
 	return status;
+}
+
+static void cldap_reply_state_destroy(struct tevent_req *req)
+{
+	struct cldap_reply_state *state = tevent_req_callback_data(req,
+					  struct cldap_reply_state);
+
+	/* we don't want to know the result here, we just free the state */
+	talloc_free(req);
+	talloc_free(state);
+}
+
+static int cldap_search_state_destructor(struct cldap_search_state *s)
+{
+	if (s->caller.cldap) {
+		DLIST_REMOVE(s->caller.cldap->searches.list, s);
+		cldap_recvfrom_stop(s->caller.cldap);
+		ZERO_STRUCT(s->caller);
+	}
+
+	return 0;
+}
+
+static void cldap_search_state_queue_done(struct tevent_req *subreq);
+static void cldap_search_state_wakeup_done(struct tevent_req *subreq);
+
+/*
+  queue a cldap reply for send
+*/
+struct tevent_req *cldap_search_send(TALLOC_CTX *mem_ctx,
+				    struct cldap_socket *cldap,
+				    const struct cldap_search *io)
+{
+	struct tevent_req *req, *subreq;
+	struct cldap_search_state *state = NULL;
+	struct ldap_message *msg;
+	struct ldap_SearchRequest *search;
+	struct timeval now;
+	struct timeval end;
+	uint32_t i;
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cldap_search_state);
+	if (!req) {
+		return NULL;
+	}
+	state->req = req;
+	state->caller.cldap = cldap;
+
+	if (io->in.dest_address) {
+		if (cldap->connected) {
+			tevent_req_nterror(req, NT_STATUS_PIPE_CONNECTED);
+			goto post;
+		}
+		ret = tsocket_address_inet_from_strings(state,
+						        "ipv4",
+						        io->in.dest_address,
+						        io->in.dest_port,
+							&state->request.dest);
+		if (ret != 0) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			goto post;
+		}
+	} else {
+		if (!cldap->connected) {
+			tevent_req_nterror(req, NT_STATUS_INVALID_ADDRESS);
+			goto post;
+		}
+		state->request.dest = NULL;
+	}
+
+	state->message_id = idr_get_new_random(cldap->searches.idr,
+					       state, UINT16_MAX);
+	if (state->message_id == -1) {
+		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+		goto post;
+	}
+
+	msg = talloc(state, struct ldap_message);
+	if (tevent_req_nomem(msg, req)) {
+		goto post;
+	}
+
+	msg->messageid	= state->message_id;
+	msg->type	= LDAP_TAG_SearchRequest;
+	msg->controls	= NULL;
+	search = &msg->r.SearchRequest;
+
+	search->basedn		= "";
+	search->scope		= LDAP_SEARCH_SCOPE_BASE;
+	search->deref		= LDAP_DEREFERENCE_NEVER;
+	search->timelimit	= 0;
+	search->sizelimit	= 0;
+	search->attributesonly	= false;
+	search->num_attributes	= str_list_length(io->in.attributes);
+	search->attributes	= io->in.attributes;
+	search->tree		= ldb_parse_tree(msg, io->in.filter);
+	if (tevent_req_nomem(search->tree, req)) {
+		goto post;
+	}
+
+	if (!ldap_encode(msg, NULL, &state->request.blob, state)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto post;
+	}
+	talloc_free(msg);
+
+	state->request.idx = 0;
+	state->request.delay = 10*1000*1000;
+	state->request.count = 3;
+	if (io->in.timeout > 0) {
+		state->request.delay = io->in.timeout * 1000 * 1000;
+		state->request.count = io->in.retries + 1;
+	}
+
+	now = tevent_timeval_current();
+	end = now;
+	for (i = 0; i < state->request.count; i++) {
+		end = tevent_timeval_add(&end, 0, state->request.delay);
+	}
+
+	if (!tevent_req_set_endtime(req, state->caller.cldap->event.ctx, end)) {
+		tevent_req_nomem(NULL, req);
+		goto post;
+	}
+
+	subreq = tsocket_sendto_queue_send(state,
+					   state->caller.cldap->sock,
+					   state->caller.cldap->send_queue,
+					   state->request.blob.data,
+					   state->request.blob.length,
+					   state->request.dest);
+	if (tevent_req_nomem(subreq, req)) {
+		goto post;
+	}
+	tevent_req_set_callback(subreq, cldap_search_state_queue_done, req);
+
+	DLIST_ADD_END(cldap->searches.list, state, struct cldap_search_state *);
+	talloc_set_destructor(state, cldap_search_state_destructor);
+
+	return req;
+
+ post:
+	return tevent_req_post(req, cldap->event.ctx);
+}
+
+static void cldap_search_state_queue_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct cldap_search_state *state = tevent_req_data(req,
+					   struct cldap_search_state);
+	ssize_t ret;
+	int sys_errno = 0;
+	struct timeval next;
+
+	ret = tsocket_sendto_queue_recv(subreq, &sys_errno);
+	talloc_free(subreq);
+	if (ret == -1) {
+		NTSTATUS status;
+		status = map_nt_error_from_unix(sys_errno);
+		DLIST_REMOVE(state->caller.cldap->searches.list, state);
+		ZERO_STRUCT(state->caller.cldap);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	state->request.idx++;
+
+	/* wait for incoming traffic */
+	if (!cldap_recvfrom_setup(state->caller.cldap)) {
+		tevent_req_nomem(NULL, req);
+		return;
+	}
+
+	if (state->request.idx > state->request.count) {
+		/* we just wait for the response or a timeout */
+		return;
+	}
+
+	next = tevent_timeval_current_ofs(0, state->request.delay);
+	subreq = tevent_wakeup_send(state,
+				    state->caller.cldap->event.ctx,
+				    next);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cldap_search_state_wakeup_done, req);
+}
+
+static void cldap_search_state_wakeup_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct cldap_search_state *state = tevent_req_data(req,
+					   struct cldap_search_state);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	talloc_free(subreq);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		return;
+	}
+
+	subreq = tsocket_sendto_queue_send(state,
+					   state->caller.cldap->sock,
+					   state->caller.cldap->send_queue,
+					   state->request.blob.data,
+					   state->request.blob.length,
+					   state->request.dest);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cldap_search_state_queue_done, req);
 }
 
 /*
   receive a cldap reply
 */
-NTSTATUS cldap_search_recv(struct cldap_request *req, 
-			   TALLOC_CTX *mem_ctx, 
+NTSTATUS cldap_search_recv(struct tevent_req *req,
+			   TALLOC_CTX *mem_ctx,
 			   struct cldap_search *io)
 {
+	struct cldap_search_state *state = tevent_req_data(req,
+					   struct cldap_search_state);
 	struct ldap_message *ldap_msg;
 	NTSTATUS status;
 
-	if (req == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	while (req->state < CLDAP_REQUEST_DONE) {
-		if (event_loop_once(req->cldap->event_ctx) != 0) {
-			talloc_free(req);
-			return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
-		}
-	}
-
-	if (req->state == CLDAP_REQUEST_ERROR) {
-		status = req->status;
-		talloc_free(req);
-		return status;
+	if (tevent_req_is_nterror(req, &status)) {
+		goto failed;
 	}
 
 	ldap_msg = talloc(mem_ctx, struct ldap_message);
-	NT_STATUS_HAVE_NO_MEMORY(ldap_msg);
+	if (!ldap_msg) {
+		goto nomem;
+	}
 
-	status = ldap_decode(req->asn1, NULL, ldap_msg);
+	status = ldap_decode(state->response.asn1, NULL, ldap_msg);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2,("Failed to decode cldap search reply: %s\n", nt_errstr(status)));
-		talloc_free(req);
-		return status;
+		goto failed;
 	}
 
 	ZERO_STRUCT(io->out);
@@ -475,167 +742,283 @@ NTSTATUS cldap_search_recv(struct cldap_request *req,
 	/* the first possible form has a search result in first place */
 	if (ldap_msg->type == LDAP_TAG_SearchResultEntry) {
 		io->out.response = talloc(mem_ctx, struct ldap_SearchResEntry);
-		NT_STATUS_HAVE_NO_MEMORY(io->out.response);
+		if (!io->out.response) {
+			goto nomem;
+		}
 		*io->out.response = ldap_msg->r.SearchResultEntry;
 
 		/* decode the 2nd part */
-		status = ldap_decode(req->asn1, NULL, ldap_msg);
+		status = ldap_decode(state->response.asn1, NULL, ldap_msg);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2,("Failed to decode cldap search result entry: %s\n", nt_errstr(status)));
-			talloc_free(req);
-			return status;
+			goto failed;
 		}
 	}
 
 	if (ldap_msg->type != LDAP_TAG_SearchResultDone) {
-		talloc_free(req);
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+		status = NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
+		goto failed;
 	}
 
 	io->out.result = talloc(mem_ctx, struct ldap_Result);
-	NT_STATUS_HAVE_NO_MEMORY(io->out.result);
+	if (!io->out.result) {
+		goto nomem;
+	}
 	*io->out.result = ldap_msg->r.SearchResultDone;
 
-	talloc_free(req);
-
 	if (io->out.result->resultcode != LDAP_SUCCESS) {
-		return NT_STATUS_LDAP(io->out.result->resultcode);
+		status = NT_STATUS_LDAP(io->out.result->resultcode);
+		goto failed;
 	}
+
+	tevent_req_received(req);
 	return NT_STATUS_OK;
+
+nomem:
+	status = NT_STATUS_NO_MEMORY;
+failed:
+	tevent_req_received(req);
+	return status;
 }
 
 
 /*
   synchronous cldap search
 */
-NTSTATUS cldap_search(struct cldap_socket *cldap, 
-		      TALLOC_CTX *mem_ctx, 
+NTSTATUS cldap_search(struct cldap_socket *cldap,
+		      TALLOC_CTX *mem_ctx,
 		      struct cldap_search *io)
 {
-	struct cldap_request *req = cldap_search_send(cldap, io);
-	return cldap_search_recv(req, mem_ctx, io);
+	struct tevent_req *req;
+	NTSTATUS status;
+
+	if (!cldap->event.allow_poll) {
+		return NT_STATUS_INVALID_PIPE_STATE;
+	}
+
+	if (cldap->searches.list) {
+		return NT_STATUS_PIPE_BUSY;
+	}
+
+	req = cldap_search_send(mem_ctx, cldap, io);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	if (!tevent_req_poll(req, cldap->event.ctx)) {
+		talloc_free(req);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = cldap_search_recv(req, mem_ctx, io);
+	talloc_free(req);
+
+	return status;
 }
 
+struct cldap_netlogon_state {
+	struct cldap_search search;
+};
 
-
+static void cldap_netlogon_state_done(struct tevent_req *subreq);
 /*
   queue a cldap netlogon for send
 */
-struct cldap_request *cldap_netlogon_send(struct cldap_socket *cldap, 
-					  struct cldap_netlogon *io)
+struct tevent_req *cldap_netlogon_send(TALLOC_CTX *mem_ctx,
+				      struct cldap_socket *cldap,
+				      const struct cldap_netlogon *io)
 {
-	struct cldap_search search;
+	struct tevent_req *req, *subreq;
+	struct cldap_netlogon_state *state;
 	char *filter;
-	struct cldap_request *req;
-	const char *attr[] = { "NetLogon", NULL };
-	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
+	static const char * const attr[] = { "NetLogon", NULL };
 
-	filter = talloc_asprintf(tmp_ctx, "(&(NtVer=%s)", 
-				 ldap_encode_ndr_uint32(tmp_ctx, io->in.version));
-	if (filter == NULL) goto failed;
+	req = tevent_req_create(mem_ctx, &state,
+				struct cldap_netlogon_state);
+	if (!req) {
+		return NULL;
+	}
+
+	filter = talloc_asprintf(state, "(&(NtVer=%s)", 
+				 ldap_encode_ndr_uint32(state, io->in.version));
+	if (tevent_req_nomem(filter, req)) {
+		goto post;
+	}
 	if (io->in.user) {
 		filter = talloc_asprintf_append_buffer(filter, "(User=%s)", io->in.user);
-		if (filter == NULL) goto failed;
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	if (io->in.host) {
 		filter = talloc_asprintf_append_buffer(filter, "(Host=%s)", io->in.host);
-		if (filter == NULL) goto failed;
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	if (io->in.realm) {
 		filter = talloc_asprintf_append_buffer(filter, "(DnsDomain=%s)", io->in.realm);
-		if (filter == NULL) goto failed;
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	if (io->in.acct_control != -1) {
 		filter = talloc_asprintf_append_buffer(filter, "(AAC=%s)", 
-						ldap_encode_ndr_uint32(tmp_ctx, io->in.acct_control));
-		if (filter == NULL) goto failed;
+						ldap_encode_ndr_uint32(state, io->in.acct_control));
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	if (io->in.domain_sid) {
-		struct dom_sid *sid = dom_sid_parse_talloc(tmp_ctx, io->in.domain_sid);
-		if (sid == NULL) goto failed;
+		struct dom_sid *sid = dom_sid_parse_talloc(state, io->in.domain_sid);
+		if (tevent_req_nomem(sid, req)) {
+			goto post;
+		}
 		filter = talloc_asprintf_append_buffer(filter, "(domainSid=%s)",
-						ldap_encode_ndr_dom_sid(tmp_ctx, sid));
-		if (filter == NULL) goto failed;
+						ldap_encode_ndr_dom_sid(state, sid));
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	if (io->in.domain_guid) {
 		struct GUID guid;
 		NTSTATUS status;
 		status = GUID_from_string(io->in.domain_guid, &guid);
-		if (!NT_STATUS_IS_OK(status)) goto failed;
+		if (tevent_req_nterror(req, status)) {
+			goto post;
+		}
 		filter = talloc_asprintf_append_buffer(filter, "(DomainGuid=%s)",
-						ldap_encode_ndr_GUID(tmp_ctx, &guid));
-		if (filter == NULL) goto failed;
+						ldap_encode_ndr_GUID(state, &guid));
+		if (tevent_req_nomem(filter, req)) {
+			goto post;
+		}
 	}
 	filter = talloc_asprintf_append_buffer(filter, ")");
-	if (filter == NULL) goto failed;
+	if (tevent_req_nomem(filter, req)) {
+		goto post;
+	}
 
-	search.in.dest_address = io->in.dest_address;
-	search.in.dest_port    = io->in.dest_port;
-	search.in.filter       = filter;
-	search.in.attributes   = attr;
-	search.in.timeout      = 2;
-	search.in.retries      = 2;
+	if (io->in.dest_address) {
+		state->search.in.dest_address = talloc_strdup(state,
+						io->in.dest_address);
+		if (tevent_req_nomem(state->search.in.dest_address, req)) {
+			goto post;
+		}
+		state->search.in.dest_port = io->in.dest_port;
+	} else {
+		state->search.in.dest_address	= NULL;
+		state->search.in.dest_port	= 0;
+	}
+	state->search.in.filter		= filter;
+	state->search.in.attributes	= attr;
+	state->search.in.timeout	= 2;
+	state->search.in.retries	= 2;
 
-	req = cldap_search_send(cldap, &search);
+	subreq = cldap_search_send(state, cldap, &state->search);
+	if (tevent_req_nomem(subreq, req)) {
+		goto post;
+	}
+	tevent_req_set_callback(subreq, cldap_netlogon_state_done, req);
 
-	talloc_free(tmp_ctx);
 	return req;
-failed:
-	talloc_free(tmp_ctx);
-	return NULL;
+post:
+	return tevent_req_post(req, cldap->event.ctx);
 }
 
+static void cldap_netlogon_state_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(subreq,
+				 struct tevent_req);
+	struct cldap_netlogon_state *state = tevent_req_data(req,
+					     struct cldap_netlogon_state);
+	NTSTATUS status;
+
+	status = cldap_search_recv(subreq, state, &state->search);
+	talloc_free(subreq);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
 
 /*
   receive a cldap netlogon reply
 */
-NTSTATUS cldap_netlogon_recv(struct cldap_request *req, 
-			     TALLOC_CTX *mem_ctx, 
+NTSTATUS cldap_netlogon_recv(struct tevent_req *req,
+			     struct smb_iconv_convenience *iconv_convenience,
+			     TALLOC_CTX *mem_ctx,
 			     struct cldap_netlogon *io)
 {
+	struct cldap_netlogon_state *state = tevent_req_data(req,
+					     struct cldap_netlogon_state);
 	NTSTATUS status;
-	struct cldap_search search;
-	struct cldap_socket *cldap;
 	DATA_BLOB *data;
 
-	cldap = req->cldap;
-
-	status = cldap_search_recv(req, mem_ctx, &search);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	if (search.out.response == NULL) {
-		return NT_STATUS_NOT_FOUND;
+	if (tevent_req_is_nterror(req, &status)) {
+		goto failed;
 	}
 
-	if (search.out.response->num_attributes != 1 ||
-	    strcasecmp(search.out.response->attributes[0].name, "netlogon") != 0 ||
-	    search.out.response->attributes[0].num_values != 1 ||
-	    search.out.response->attributes[0].values->length < 2) {
-		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+	if (state->search.out.response == NULL) {
+		status = NT_STATUS_NOT_FOUND;
+		goto failed;
 	}
-	data = search.out.response->attributes[0].values;
 
-	status = pull_netlogon_samlogon_response(data, mem_ctx, req->cldap->iconv_convenience,
+	if (state->search.out.response->num_attributes != 1 ||
+	    strcasecmp(state->search.out.response->attributes[0].name, "netlogon") != 0 ||
+	    state->search.out.response->attributes[0].num_values != 1 ||
+	    state->search.out.response->attributes[0].values->length < 2) {
+		status = NT_STATUS_UNEXPECTED_NETWORK_ERROR;
+		goto failed;
+	}
+	data = state->search.out.response->attributes[0].values;
+
+	status = pull_netlogon_samlogon_response(data, mem_ctx,
+						 iconv_convenience,
 						 &io->out.netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto failed;
 	}
-	
+
 	if (io->in.map_response) {
 		map_netlogon_samlogon_response(&io->out.netlogon);
 	}
-	return NT_STATUS_OK;
+
+	status =  NT_STATUS_OK;
+failed:
+	tevent_req_received(req);
+	return status;
 }
 
 /*
   sync cldap netlogon search
 */
-NTSTATUS cldap_netlogon(struct cldap_socket *cldap, 
-			TALLOC_CTX *mem_ctx, struct cldap_netlogon *io)
+NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
+			struct smb_iconv_convenience *iconv_convenience,
+			TALLOC_CTX *mem_ctx,
+			struct cldap_netlogon *io)
 {
-	struct cldap_request *req = cldap_netlogon_send(cldap, io);
-	return cldap_netlogon_recv(req, mem_ctx, io);
+	struct tevent_req *req;
+	NTSTATUS status;
+
+	if (!cldap->event.allow_poll) {
+		return NT_STATUS_INVALID_PIPE_STATE;
+	}
+
+	if (cldap->searches.list) {
+		return NT_STATUS_PIPE_BUSY;
+	}
+
+	req = cldap_netlogon_send(mem_ctx, cldap, io);
+	NT_STATUS_HAVE_NO_MEMORY(req);
+
+	if (!tevent_req_poll(req, cldap->event.ctx)) {
+		talloc_free(req);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = cldap_netlogon_recv(req, iconv_convenience, mem_ctx, io);
+	talloc_free(req);
+
+	return status;
 }
 
 
@@ -643,16 +1026,16 @@ NTSTATUS cldap_netlogon(struct cldap_socket *cldap,
   send an empty reply (used on any error, so the client doesn't keep waiting
   or send the bad request again)
 */
-NTSTATUS cldap_empty_reply(struct cldap_socket *cldap, 
+NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
 			   uint32_t message_id,
-			   struct socket_address *src)
+			   struct tsocket_address *dest)
 {
 	NTSTATUS status;
 	struct cldap_reply reply;
 	struct ldap_Result result;
 
 	reply.messageid    = message_id;
-	reply.dest         = src;
+	reply.dest         = dest;
 	reply.response     = NULL;
 	reply.result       = &result;
 
@@ -667,9 +1050,9 @@ NTSTATUS cldap_empty_reply(struct cldap_socket *cldap,
   send an error reply (used on any error, so the client doesn't keep waiting
   or send the bad request again)
 */
-NTSTATUS cldap_error_reply(struct cldap_socket *cldap, 
+NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 			   uint32_t message_id,
-			   struct socket_address *src,
+			   struct tsocket_address *dest,
 			   int resultcode,
 			   const char *errormessage)
 {
@@ -678,7 +1061,7 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 	struct ldap_Result result;
 
 	reply.messageid    = message_id;
-	reply.dest         = src;
+	reply.dest         = dest;
 	reply.response     = NULL;
 	reply.result       = &result;
 
@@ -695,9 +1078,10 @@ NTSTATUS cldap_error_reply(struct cldap_socket *cldap,
 /*
   send a netlogon reply 
 */
-NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap, 
+NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
+			      struct smb_iconv_convenience *iconv_convenience,
 			      uint32_t message_id,
-			      struct socket_address *src,
+			      struct tsocket_address *dest,
 			      uint32_t version,
 			      struct netlogon_samlogon_response *netlogon)
 {
@@ -708,13 +1092,15 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 	DATA_BLOB blob;
 
-	status = push_netlogon_samlogon_response(&blob, tmp_ctx, cldap->iconv_convenience,
+	status = push_netlogon_samlogon_response(&blob, tmp_ctx,
+						 iconv_convenience,
 						 netlogon);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
 		return status;
 	}
 	reply.messageid    = message_id;
-	reply.dest         = src;
+	reply.dest         = dest;
 	reply.response     = &response;
 	reply.result       = &result;
 
@@ -734,5 +1120,4 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 
 	return status;
 }
-
 
