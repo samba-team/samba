@@ -44,7 +44,7 @@ static int ev_timeval_compare(const struct timeval *tv1, const struct timeval *t
 /**
   return a zero timeval
 */
-static struct timeval ev_timeval_zero(void)
+struct timeval ev_timeval_zero(void)
 {
 	struct timeval tv;
 	tv.tv_sec = 0;
