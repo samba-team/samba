@@ -8,7 +8,6 @@ ntlm_check_OBJ_FILES = $(addprefix $(authsrcdir)/ntlm/, ntlm_check.o)
 #######################
 # Start MODULE auth_sam
 [MODULE::auth_sam_module]
-# gensec_krb5 and gensec_gssapi depend on it
 INIT_FUNCTION = auth_sam_init
 SUBSYSTEM = auth
 PRIVATE_DEPENDENCIES = \

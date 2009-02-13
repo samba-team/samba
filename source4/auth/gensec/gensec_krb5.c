@@ -607,8 +607,23 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		DEBUG(5, ("krb5_ticket_get_authorization_data_type failed to find PAC: %s\n", 
 			  smb_get_krb5_error_message(context, 
 						     ret, mem_ctx)));
-		nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, gensec_security->settings->lp_ctx, principal_string,
-							  &server_info);
+		if (gensec_security->auth_context && 
+		    !gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
+			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s"));
+			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
+											     gensec_security->auth_context, 
+											     principal_string,
+											     &server_info);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				talloc_free(mem_ctx);
+				return nt_status;
+			}
+		} else {
+			DEBUG(1, ("Unable to find PAC in ticket from %s, failing to allow access\n",
+				  principal_string));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
 		krb5_free_principal(context, client_principal);
 		free(principal_string);
 		

@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Password and authentication handling
-   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2004
+   Copyright (C) Andrew Bartlett <abartlet@samba.org> 2001-2009
    Copyright (C) Gerald Carter                             2003
    Copyright (C) Stefan Metzmacher                         2005
    
@@ -419,18 +419,65 @@ static NTSTATUS authsam_check_password(struct auth_method_context *ctx,
 	return authsam_check_password_internals(ctx, mem_ctx, domain, user_info, server_info);
 }
 
+				   
+/* Used in the gensec_gssapi and gensec_krb5 server-side code, where the PAC isn't available */
+NTSTATUS authsam_get_server_info_principal(TALLOC_CTX *mem_ctx, 
+					   struct auth_context *auth_context,
+					   const char *principal,
+					   struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+	DATA_BLOB user_sess_key = data_blob(NULL, 0);
+	DATA_BLOB lm_sess_key = data_blob(NULL, 0);
+
+	struct ldb_message **msgs;
+	struct ldb_message **msgs_domain_ref;
+	struct ldb_context *sam_ctx;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+	if (!tmp_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sam_ctx = samdb_connect(tmp_ctx, auth_context->event_ctx, auth_context->lp_ctx, 
+				system_session(tmp_ctx, auth_context->lp_ctx));
+	if (sam_ctx == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_SYSTEM_SERVICE;
+	}
+
+	nt_status = sam_get_results_principal(sam_ctx, tmp_ctx, principal, 
+					      &msgs, &msgs_domain_ref);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	nt_status = authsam_make_server_info(tmp_ctx, sam_ctx, 
+					     lp_netbios_name(auth_context->lp_ctx),
+					     msgs[0], msgs_domain_ref[0],
+					     user_sess_key, lm_sess_key,
+					     server_info);
+	if (NT_STATUS_IS_OK(nt_status)) {
+		talloc_steal(mem_ctx, *server_info);
+	}
+	talloc_free(tmp_ctx);
+	return nt_status;
+}
+
 static const struct auth_operations sam_ignoredomain_ops = {
-	.name		= "sam_ignoredomain",
-	.get_challenge	= auth_get_challenge_not_implemented,
-	.want_check	= authsam_ignoredomain_want_check,
-	.check_password	= authsam_ignoredomain_check_password
+	.name		           = "sam_ignoredomain",
+	.get_challenge	           = auth_get_challenge_not_implemented,
+	.want_check	           = authsam_ignoredomain_want_check,
+	.check_password	           = authsam_ignoredomain_check_password,
+	.get_server_info_principal = authsam_get_server_info_principal
 };
 
 static const struct auth_operations sam_ops = {
-	.name		= "sam",
-	.get_challenge	= auth_get_challenge_not_implemented,
-	.want_check	= authsam_want_check,
-	.check_password	= authsam_check_password
+	.name		           = "sam",
+	.get_challenge	           = auth_get_challenge_not_implemented,
+	.want_check	           = authsam_want_check,
+	.check_password	           = authsam_check_password,
+	.get_server_info_principal = authsam_get_server_info_principal
 };
 
 _PUBLIC_ NTSTATUS auth_sam_init(void)

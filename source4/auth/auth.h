@@ -123,6 +123,7 @@ struct auth_serversupplied_info
 
 struct auth_method_context;
 struct auth_check_password_request;
+struct auth_context;
 
 struct auth_operations {
 	const char *name;
@@ -144,6 +145,12 @@ struct auth_operations {
 	NTSTATUS (*check_password)(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx,
 				   const struct auth_usersupplied_info *user_info,
 				   struct auth_serversupplied_info **server_info);
+
+	/* Lookup a 'server info' return based only on the principal */
+	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx, 
+					      struct auth_context *auth_context,
+					      const char *principal,
+					      struct auth_serversupplied_info **server_info);
 };
 
 struct auth_method_context {
@@ -187,7 +194,10 @@ struct auth_context {
 
 	NTSTATUS (*set_challenge)(struct auth_context *auth_ctx, const uint8_t chal[8], const char *set_by);
 	
-	
+	NTSTATUS (*get_server_info_principal)(TALLOC_CTX *mem_ctx, 
+					      struct auth_context *auth_context,
+					      const char *principal,
+					      struct auth_serversupplied_info **server_info);
 
 };
 

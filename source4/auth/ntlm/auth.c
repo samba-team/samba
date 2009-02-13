@@ -103,6 +103,36 @@ _PUBLIC_ NTSTATUS auth_get_challenge(struct auth_context *auth_ctx, const uint8_
 	return NT_STATUS_OK;
 }
 
+/****************************************************************************
+ Try to get a challenge out of the various authentication modules.
+ Returns a const char of length 8 bytes.
+****************************************************************************/
+_PUBLIC_ NTSTATUS auth_get_server_info_principal(TALLOC_CTX *mem_ctx, 
+						  struct auth_context *auth_ctx,
+						  const char *principal,
+						  struct auth_serversupplied_info **server_info)
+{
+	NTSTATUS nt_status;
+	struct auth_method_context *method;
+
+	for (method = auth_ctx->methods; method; method = method->next) {
+		if (!method->ops->get_server_info_principal) {
+			continue;
+		}
+
+		nt_status = method->ops->get_server_info_principal(mem_ctx, auth_ctx, principal, server_info);
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NOT_IMPLEMENTED)) {
+			continue;
+		}
+
+		NT_STATUS_NOT_OK_RETURN(nt_status);
+
+		break;
+	}
+
+	return NT_STATUS_OK;
+}
+
 struct auth_check_password_sync_state {
 	bool finished;
 	NTSTATUS status;
@@ -411,6 +441,7 @@ _PUBLIC_ NTSTATUS auth_context_create_methods(TALLOC_CTX *mem_ctx, const char **
 	ctx->get_challenge = auth_get_challenge;
 	ctx->set_challenge = auth_context_set_challenge;
 	ctx->challenge_may_be_modified = auth_challenge_may_be_modified;
+	ctx->get_server_info_principal = auth_get_server_info_principal;
 
 	*auth_ctx = ctx;
 

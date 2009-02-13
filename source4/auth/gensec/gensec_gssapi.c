@@ -1290,12 +1290,14 @@ static NTSTATUS gensec_gssapi_session_info(struct gensec_security *gensec_securi
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
+		if (gensec_security->auth_context && 
+		    !gensec_setting_bool(gensec_security->settings, "gensec", "require_pac", false)) {
 			DEBUG(1, ("Unable to find PAC, resorting to local user lookup: %s\n",
 				  gssapi_error_string(mem_ctx, maj_stat, min_stat, gensec_gssapi_state->gss_oid)));
-			nt_status = sam_get_server_info_principal(mem_ctx, gensec_security->event_ctx, 
-								  gensec_security->settings->lp_ctx, principal_string,
-								  &server_info);
+			nt_status = gensec_security->auth_context->get_server_info_principal(mem_ctx, 
+											     gensec_security->auth_context, 
+											     principal_string,
+											     &server_info);
 			
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				talloc_free(mem_ctx);

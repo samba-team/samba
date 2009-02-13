@@ -21,7 +21,7 @@ $(eval $(call proto_header_template,$(gensecsrcdir)/gensec_proto.h,$(gensec_OBJ_
 [MODULE::gensec_krb5]
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
-PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth_session auth_sam
+PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth_session
 # End MODULE gensec_krb5
 ################################################
 
