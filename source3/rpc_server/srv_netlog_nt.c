@@ -280,7 +280,8 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct, uint16 sec_chan_type)
+static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct,
+			  uint16_t sec_chan_type, uint32_t *rid)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -376,6 +377,10 @@ static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct, uint16 sec_chan_ty
 	memcpy(md4pw, pass, 16);
 	dump_data(5, (uint8 *)md4pw, 16);
 
+	if (rid) {
+		*rid = pdb_get_user_rid(sampass);
+	}
+
 	TALLOC_FREE(sampass);
 
 	return NT_STATUS_OK;
@@ -435,7 +440,8 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 
 	status = get_md4pw((char *)p->dc->mach_pw,
 			   r->in.account_name,
-			   r->in.secure_channel_type);
+			   r->in.secure_channel_type,
+			   NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("_netr_ServerAuthenticate: get_md4pw failed. Failed to "
 			"get password for machine account %s "
@@ -478,21 +484,33 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 }
 
 /*************************************************************************
- _netr_ServerAuthenticate2
+ _netr_ServerAuthenticate3
  *************************************************************************/
 
-NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
-				   struct netr_ServerAuthenticate2 *r)
+NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
+				   struct netr_ServerAuthenticate3 *r)
 {
 	NTSTATUS status;
 	uint32_t srv_flgs;
 	struct netr_Credential srv_chal_out;
+	const char *fn;
+
+	switch (p->hdr_req.opnum) {
+		case NDR_NETR_SERVERAUTHENTICATE2:
+			fn = "_netr_ServerAuthenticate2";
+			break;
+		case NDR_NETR_SERVERAUTHENTICATE3:
+			fn = "_netr_ServerAuthenticate3";
+			break;
+		default:
+			return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	/* We use this as the key to store the creds: */
 	/* r->in.computer_name */
 
 	if (!p->dc || !p->dc->challenge_sent) {
-		DEBUG(0,("_netr_ServerAuthenticate2: no challenge sent to client %s\n",
+		DEBUG(0,("%s: no challenge sent to client %s\n", fn,
 			r->in.computer_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -501,19 +519,20 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 	     ((*r->in.negotiate_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
-		DEBUG(0,("_netr_ServerAuthenticate2: schannel required but client failed "
+		DEBUG(0,("%s: schannel required but client failed "
 			"to offer it. Client was %s\n",
-			r->in.account_name));
+			fn, r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = get_md4pw((char *)p->dc->mach_pw,
 			   r->in.account_name,
-			   r->in.secure_channel_type);
+			   r->in.secure_channel_type,
+			   r->out.rid);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_netr_ServerAuthenticate2: failed to get machine password for "
+		DEBUG(0,("%s: failed to get machine password for "
 			"account %s: %s\n",
-			r->in.account_name, nt_errstr(status) ));
+			fn, r->in.account_name, nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -528,9 +547,9 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 
 	/* Check client credentials are valid. */
 	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
-		DEBUG(0,("_netr_ServerAuthenticate2: netlogon_creds_server_check failed. Rejecting auth "
+		DEBUG(0,("%s: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			r->in.computer_name,
+			fn, r->in.computer_name,
 			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -569,6 +588,30 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 	unbecome_root();
 
 	return NT_STATUS_OK;
+}
+
+/*************************************************************************
+ _netr_ServerAuthenticate2
+ *************************************************************************/
+
+NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
+				   struct netr_ServerAuthenticate2 *r)
+{
+	struct netr_ServerAuthenticate3 a;
+	uint32_t rid;
+
+	a.in.server_name		= r->in.server_name;
+	a.in.account_name		= r->in.account_name;
+	a.in.secure_channel_type	= r->in.secure_channel_type;
+	a.in.computer_name		= r->in.computer_name;
+	a.in.credentials		= r->in.credentials;
+	a.in.negotiate_flags		= r->in.negotiate_flags;
+
+	a.out.return_credentials	= r->out.return_credentials;
+	a.out.rid			= &rid;
+	a.out.negotiate_flags		= r->out.negotiate_flags;
+
+	return _netr_ServerAuthenticate3(p, &a);
 }
 
 /*************************************************************************
@@ -1211,16 +1254,6 @@ WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
-				   struct netr_ServerAuthenticate3 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
