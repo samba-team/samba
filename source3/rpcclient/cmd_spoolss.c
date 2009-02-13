@@ -1380,9 +1380,14 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result;
-	uint32			level = 2;
-	PRINTER_INFO_CTR	ctr;
-	PRINTER_INFO_2		info2;
+	NTSTATUS status;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_SetPrinterInfo2 info2;
+	struct policy_handle handle;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf sd;
+	struct spoolss_UserLevelCtr userlevel_ctr;
+	struct spoolss_UserLevel1 level1;
 
 	/* parse the command arguments */
 	if (argc != 5)
@@ -1392,17 +1397,19 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
         }
 
 	/* Fill in the DRIVER_INFO_2 struct */
+	ZERO_STRUCT(devmode_ctr);
 	ZERO_STRUCT(info2);
+	ZERO_STRUCT(sd);
 
-	init_unistr( &info2.printername,	argv[1]);
-	init_unistr( &info2.sharename, 		argv[2]);
-	init_unistr( &info2.drivername,		argv[3]);
-	init_unistr( &info2.portname,		argv[4]);
-	init_unistr( &info2.comment,		"Created by rpcclient");
-	init_unistr( &info2.printprocessor, 	"winprint");
-	init_unistr( &info2.datatype,		"RAW");
-	info2.devmode = 	NULL;
-	info2.secdesc = 	NULL;
+	info2.printername	= argv[1];
+	info2.drivername	= argv[3];
+	info2.sharename		= argv[2];
+	info2.portname		= argv[4];
+	info2.comment		= "Created by rpcclient";
+	info2.printprocessor	= "winprint";
+	info2.datatype		= "RAW";
+	info2.devmode		= NULL;
+	info2.secdesc		= NULL;
 	info2.attributes 	= PRINTER_ATTRIBUTE_SHARED;
 	info2.priority 		= 0;
 	info2.defaultpriority	= 0;
@@ -1417,9 +1424,28 @@ static WERROR cmd_spoolss_addprinterex(struct rpc_pipe_client *cli,
 	info2.averageppm	= 0;
 	*/
 
-	ctr.printers_2 = &info2;
-	result = rpccli_spoolss_addprinterex (cli, mem_ctx, level, &ctr);
+	info_ctr.level = 2;
+	info_ctr.info.info2 = &info2;
 
+	level1.size		= 28; /* wild guess */
+	level1.build		= 1381;
+	level1.major		= 2;
+	level1.minor		= 0;
+	level1.processor	= 0;
+	level1.client		= global_myname();
+	level1.user		= cli->auth->user_name;
+
+	userlevel_ctr.level = 1;
+	userlevel_ctr.user_info.level1 = &level1;
+
+	status = rpccli_spoolss_AddPrinterEx(cli, mem_ctx,
+					     cli->srv_name_slash,
+					     &info_ctr,
+					     &devmode_ctr,
+					     &sd,
+					     &userlevel_ctr,
+					     &handle,
+					     &result);
 	if (W_ERROR_IS_OK(result))
 		printf ("Printer %s successfully installed.\n", argv[1]);
 
