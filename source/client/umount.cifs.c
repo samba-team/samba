@@ -240,10 +240,9 @@ static int remove_from_mtab(char * mountpoint)
 static char *
 canonicalize(char *path)
 {
-	char *canonical = malloc (PATH_MAX + 1);
+	char *canonical;
 
-	if (!canonical) {
-		fprintf(stderr, "Error! Not enough memory!\n");
+	if (path == NULL) {
 		return NULL;
 	}
 
@@ -252,8 +251,12 @@ canonicalize(char *path)
 		return NULL;
 	}
 
-	if (path == NULL)
+	canonical = (char *)malloc (PATH_MAX + 1);
+
+	if (!canonical) {
+		fprintf(stderr, "Error! Not enough memory!\n");
 		return NULL;
+	}
 
 	if (realpath (path, canonical))
 		return canonical;
