@@ -1653,6 +1653,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[case(1)]  spoolss_UserLevel1 *level1;
 	} spoolss_UserLevel;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_UserLevel user_info;
+	} spoolss_UserLevelCtr;
+
 	typedef bitmap {
 		SERVER_ACCESS_ADMINISTER	= 0x00000001,
 		SERVER_ACCESS_ENUMERATE		= 0x00000002,
@@ -1730,12 +1735,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/* Function: 0x46 */
 	WERROR spoolss_AddPrinterEx(
 		[in,unique] [string,charset(UTF16)] uint16 *server,
-		[in] uint32 level,
-		[in,unique,switch_is(level)] spoolss_PrinterInfo *info,
-		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in,unique] security_descriptor *secdesc,
-		[in] uint32 ulevel,
-		[in,switch_is(ulevel)] spoolss_UserLevel userlevel,
+		[in,ref] spoolss_SetPrinterInfoCtr *info_ctr,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr,
+		[in,ref] sec_desc_buf *secdesc_ctr,
+		[in,ref] spoolss_UserLevelCtr *userlevel_ctr,
 		[out,ref] policy_handle *handle
 	);
 
