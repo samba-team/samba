@@ -426,6 +426,39 @@ _PUBLIC_ struct socket_address *socket_address_from_sockaddr(TALLOC_CTX *mem_ctx
 	return addr;
 }
 
+/* Copy a socket_address structure */
+struct socket_address *socket_address_copy(TALLOC_CTX *mem_ctx,
+					   const struct socket_address *oaddr)
+{
+	struct socket_address *addr = talloc_zero(mem_ctx, struct socket_address);
+	if (!addr) {
+		return NULL;
+	}
+	addr->family	= oaddr->family;
+	if (oaddr->addr) {
+		addr->addr	= talloc_strdup(addr, oaddr->addr);
+		if (!addr->addr) {
+			goto nomem;
+		}
+	}
+	addr->port	= oaddr->port;
+	if (oaddr->sockaddr) {
+		addr->sockaddr = (struct sockaddr *)talloc_memdup(addr,
+								  oaddr->sockaddr,
+								  oaddr->sockaddrlen);
+		if (!addr->sockaddr) {
+			goto nomem;
+		}
+		addr->sockaddrlen = oaddr->sockaddrlen;
+	}
+
+	return addr;
+
+nomem:
+	talloc_free(addr);
+	return NULL;
+}
+
 _PUBLIC_ const struct socket_ops *socket_getops_byname(const char *family, enum socket_type type)
 {
 	extern const struct socket_ops *socket_ipv4_ops(enum socket_type);
