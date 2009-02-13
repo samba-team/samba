@@ -523,7 +523,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 {
 	static const char zeros[16] = { 0, };
 	NTSTATUS nt_status;
-	char *error_string;
+	char *error_string = NULL;
 	uint8 lm_key[8]; 
 	uint8 user_sess_key[16]; 
 	char *unix_name = NULL;
