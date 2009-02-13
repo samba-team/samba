@@ -1104,7 +1104,7 @@ echo $samba_cv_HAVE_ONEFS
 if test x"$samba_cv_HAVE_ONEFS" = x"yes"; then
     AC_DEFINE(HAVE_ONEFS,1,[Whether building on Isilon OneFS])
     default_shared_modules="$default_shared_modules vfs_onefs vfs_onefs_shadow_copy perfcount_onefs"
-    default_static_modules="$default_static_modules auth_onefs_wb"
+    default_static_modules="$default_static_modules auth_onefs_wb pdb_onefs_sam"
     ONEFS_LIBS="-lisi_acl -lisi_ecs -lisi_event -lisi_util"
     # Need to also add general libs for oplocks support
     save_LIBS="$save_LIBS -lisi_ecs -lisi_event -lisi_util -ldevstat"
@@ -6146,6 +6146,7 @@ SMB_MODULE(pdb_ldap, passdb/pdb_ldap.o passdb/pdb_nds.o, "bin/ldapsam.$SHLIBEXT"
 		   [ PASSDB_LIBS="$PASSDB_LIBS $LDAP_LIBS" ] )
 SMB_MODULE(pdb_smbpasswd, passdb/pdb_smbpasswd.o, "bin/smbpasswd.$SHLIBEXT", PDB)
 SMB_MODULE(pdb_tdbsam, passdb/pdb_tdb.o, "bin/tdbsam.$SHLIBEXT", PDB)
+SMB_MODULE(pdb_onefs_sam, passdb/pdb_onefs_sam.o, "bin/onefs_sam.$SHLIBEXT", PDB)
 SMB_SUBSYSTEM(PDB,passdb/pdb_interface.o)
 
 

@@ -2364,6 +2364,10 @@ bin/tdbsam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_tdb.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_tdb.o
 
+bin/onefs_sam.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_onefs_sam.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) passdb/pdb_onefs_sam.o
+
 bin/smbpasswd.@SHLIBEXT@: $(BINARY_PREREQS) passdb/pdb_smbpasswd.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) passdb/pdb_smbpasswd.o
