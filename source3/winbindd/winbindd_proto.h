@@ -78,12 +78,6 @@ void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 			   struct winbindd_response *response,
 			   void *c, void *private_data),
 	      void *c, void *private_data);
-void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		     const struct winbindd_request *request,
-		     void (*cont)(TALLOC_CTX *mem_ctx, bool success,
-				  struct winbindd_response *response,
-				  void *c, void *private_data),
-		     void *c, void *private_data);
 void winbindd_lookupsid_async(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			      void (*cont)(void *private_data, bool success,
 					   const char *dom_name,

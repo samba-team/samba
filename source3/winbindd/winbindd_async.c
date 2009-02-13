@@ -84,12 +84,12 @@ void do_async(TALLOC_CTX *mem_ctx, struct winbindd_child *child,
 		      &state->response, do_async_recv, state);
 }
 
-void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
-		     const struct winbindd_request *request,
-		     void (*cont)(TALLOC_CTX *mem_ctx, bool success,
-				  struct winbindd_response *response,
-				  void *c, void *private_data),
-		     void *c, void *private_data)
+static void do_async_domain(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
+			    const struct winbindd_request *request,
+			    void (*cont)(TALLOC_CTX *mem_ctx, bool success,
+					 struct winbindd_response *response,
+					 void *c, void *private_data),
+			    void *c, void *private_data)
 {
 	struct do_async_state *state;
 
