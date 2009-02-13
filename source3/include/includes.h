@@ -1049,7 +1049,9 @@ ssize_t readahead(int fd, off64_t offset, size_t count);
 #undef HAVE_MMAP
 #endif
 
+#ifndef CONST_DISCARD
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
+#endif
 
 void smb_panic( const char *why ) _NORETURN_;
 void dump_core(void) _NORETURN_;
