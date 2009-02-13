@@ -1816,7 +1816,6 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 
 				x_fprintf(x_stdout, "Authenticated: No\n");
 				x_fprintf(x_stdout, "Authentication-Error: %s\n.\n", error_string);
-				SAFE_FREE(error_string);
 			} else {
 				static char zeros[16];
 				char *hex_lm_key;
@@ -1844,6 +1843,7 @@ static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
 					TALLOC_FREE(hex_user_session_key);
 				}
 			}
+			SAFE_FREE(error_string);
 		}
 		/* clear out the state */
 		challenge = data_blob_null;
