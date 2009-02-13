@@ -3511,7 +3511,9 @@ static uint32_t variable_type_of_notify_info_data(enum spoolss_NotifyType type,
 /****************************************************************************
 ****************************************************************************/
 
-static bool search_notify(uint16 type, uint16 field, int *value)
+static bool search_notify(enum spoolss_NotifyType type,
+			  enum spoolss_Field field,
+			  int *value)
 {
 	int i;
 
@@ -3530,7 +3532,10 @@ static bool search_notify(uint16 type, uint16 field, int *value)
 /****************************************************************************
 ****************************************************************************/
 
-void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 field, int id)
+void construct_info_data(struct spoolss_Notify *info_data,
+			 enum spoolss_NotifyType type,
+			 enum spoolss_Field field,
+			 int id)
 {
 	info_data->type			= type;
 	info_data->field		= field;
@@ -3550,17 +3555,17 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spool
 					  TALLOC_CTX *mem_ctx)
 {
 	int field_num,j;
-	uint16 type;
-	uint16 field;
+	enum spoolss_NotifyType type;
+	enum spoolss_Field field;
 
 	struct spoolss_Notify *current_data;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	print_queue_struct *queue=NULL;
 
-	type=option_type->type;
+	type = option_type->type;
 
 	DEBUG(4,("construct_notify_printer_info: Notify type: [%s], number of notify info: [%d] on printer: [%s]\n",
-		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
+		(type == PRINTER_NOTIFY_TYPE ? "PRINTER_NOTIFY_TYPE" : "JOB_NOTIFY_TYPE"),
 		option_type->count, lp_servicename(snum)));
 
 	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &printer, 2, lp_const_servicename(snum))))
@@ -3614,9 +3619,8 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 				       TALLOC_CTX *mem_ctx)
 {
 	int field_num,j;
-	uint16 type;
-	uint16 field;
-
+	enum spoolss_NotifyType type;
+	enum spoolss_Field field;
 	struct spoolss_Notify *current_data;
 
 	DEBUG(4,("construct_notify_jobs_info\n"));
@@ -3624,7 +3628,7 @@ static bool construct_notify_jobs_info(print_queue_struct *queue,
 	type = option_type->type;
 
 	DEBUGADD(4,("Notify type: [%s], number of notify info: [%d]\n",
-		(option_type->type==PRINTER_NOTIFY_TYPE?"PRINTER_NOTIFY_TYPE":"JOB_NOTIFY_TYPE"),
+		(type == PRINTER_NOTIFY_TYPE ? "PRINTER_NOTIFY_TYPE" : "JOB_NOTIFY_TYPE"),
 		option_type->count));
 
 	for(field_num=0; field_num<option_type->count; field_num++) {

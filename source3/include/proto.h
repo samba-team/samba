@@ -6206,8 +6206,11 @@ void spoolss_notify_cjobs(int snum,
 				 print_queue_struct *queue,
 				 NT_PRINTER_INFO_LEVEL *printer,
 				 TALLOC_CTX *mem_ctx);
-void construct_info_data(struct spoolss_Notify *info_data, uint16 type, uint16 field, int id);
 WERROR _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u);
+void construct_info_data(struct spoolss_Notify *info_data,
+			 enum spoolss_NotifyType type,
+			 enum spoolss_Field field,
+			 int id);
 DEVICEMODE *construct_dev_mode(const char *servicename);
 WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u);
 WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GETPRINTER *r_u);
