@@ -77,7 +77,9 @@ static PyObject *py_event_ctx_new(PyTypeObject *type, PyObject *args, PyObject *
     char *name = NULL;
     struct tevent_context *ev_ctx;
     PyTEventContextObject *ret;
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", (char **)kwnames, &name))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s",
+				     discard_const_p(char *, kwnames),
+				     &name))
         return NULL;
 
     if (name == NULL)
