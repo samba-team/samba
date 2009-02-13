@@ -75,6 +75,7 @@ extern "C" {
 /* Make sure we have the following includes for now ... */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <fcntl.h>
 #include <utime.h>
 
@@ -173,22 +174,6 @@ typedef enum smbc_smb_encrypt_level
     SMBC_ENCRYPTLEVEL_REQUIRE   = 2
 } smbc_smb_encrypt_level;
 
-/**
- * Use a system independent statvfs struct for smbclient.
- */
-struct smbc_statvfs {
-	fsblkcnt_t	f_bavail;
-	fsblkcnt_t	f_bfree;
-	fsblkcnt_t	f_blocks;
-	fsfilcnt_t	f_favail;
-	fsfilcnt_t	f_ffree;
-	fsfilcnt_t	f_files;
-	unsigned long	f_bsize;
-	unsigned long	f_flag;
-	unsigned long	f_frsize;
-	unsigned long	f_fsid;
-	unsigned long	f_namemax;
-};
 
 /**
  * Capabilities set in the f_flag field of struct statvfs, from
@@ -887,13 +872,13 @@ void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
 
 typedef int (*smbc_statvfs_fn)(SMBCCTX *c,
                                char *path,
-                               struct smbc_statvfs *st);
+                               struct statvfs *st);
 smbc_statvfs_fn smbc_getFunctionStatVFS(SMBCCTX *c);
 void smbc_setFunctionStatVFS(SMBCCTX *c, smbc_statvfs_fn fn);
 
 typedef int (*smbc_fstatvfs_fn)(SMBCCTX *c,
                                 SMBCFILE *file,
-                                struct smbc_statvfs *st);
+                                struct statvfs *st);
 smbc_fstatvfs_fn smbc_getFunctionFstatVFS(SMBCCTX *c);
 void smbc_setFunctionFstatVFS(SMBCCTX *c, smbc_fstatvfs_fn fn);
 
@@ -1655,7 +1640,7 @@ int smbc_fstat(int fd, struct stat *st);
  */
 int
 smbc_statvfs(char *url,
-             struct smbc_statvfs *st);
+             struct statvfs *st);
 
 /**@ingroup attribute
  * Get file system information via an file descriptor.
@@ -1678,7 +1663,7 @@ smbc_statvfs(char *url,
  */
 int
 smbc_fstatvfs(int fd,
-              struct smbc_statvfs *st);
+              struct statvfs *st);
 
 
 /**@ingroup attribute
