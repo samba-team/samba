@@ -558,6 +558,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		ntlmssp_state->auth_context = NULL;
 	}
 
+	SAFE_FREE(error_string);
 	SAFE_FREE(unix_name);
 	return nt_status;
 }
