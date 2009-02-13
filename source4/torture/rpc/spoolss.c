@@ -1087,12 +1087,20 @@ static bool test_PausePrinter(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinter r;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info_ctr.level = 0;
+	info_ctr.info.info0 = NULL;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
 
 	r.in.handle		= handle;
-	r.in.level		= 0;
-	r.in.info.info1		= NULL;
-	r.in.devmode_ctr.devmode= NULL;
-	r.in.secdesc_ctr.sd	= NULL;
+	r.in.info_ctr		= &info_ctr;
+	r.in.devmode_ctr	= &devmode_ctr;
+	r.in.secdesc_ctr	= &secdesc_ctr;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_PAUSE;
 
 	torture_comment(tctx, "Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_PAUSE\n");
@@ -1112,12 +1120,20 @@ static bool test_ResumePrinter(struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinter r;
+	struct spoolss_SetPrinterInfoCtr info_ctr;
+	struct spoolss_DevmodeContainer devmode_ctr;
+	struct sec_desc_buf secdesc_ctr;
+
+	info_ctr.level = 0;
+	info_ctr.info.info0 = NULL;
+
+	ZERO_STRUCT(devmode_ctr);
+	ZERO_STRUCT(secdesc_ctr);
 
 	r.in.handle		= handle;
-	r.in.level		= 0;
-	r.in.info.info1		= NULL;
-	r.in.devmode_ctr.devmode= NULL;
-	r.in.secdesc_ctr.sd	= NULL;
+	r.in.info_ctr		= &info_ctr;
+	r.in.devmode_ctr	= &devmode_ctr;
+	r.in.secdesc_ctr	= &secdesc_ctr;
 	r.in.command		= SPOOLSS_PRINTER_CONTROL_RESUME;
 
 	torture_comment(tctx, "Testing SetPrinter: SPOOLSS_PRINTER_CONTROL_RESUME\n");
