@@ -2031,7 +2031,11 @@ void smbd_process(void)
 
 	if (*lp_rootdir()) {
 		if (chroot(lp_rootdir()) != 0) {
-			DEBUG(0,("Failed changed root to %s\n", lp_rootdir()));
+			DEBUG(0,("Failed to change root to %s\n", lp_rootdir()));
+			exit_server("Failed to chroot()");
+		}
+		if (chdir("/") == -1) {
+			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_rootdir()));
 			exit_server("Failed to chroot()");
 		}
 		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
