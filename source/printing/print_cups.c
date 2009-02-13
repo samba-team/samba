@@ -1364,6 +1364,8 @@ static int cups_queue_get(const char *sharename,
 		if (!pull_utf8_talloc(frame, &msg,
 				attr->values[0].string.text,
 				&size)) {
+			SAFE_FREE(queue);
+			qcount = 0;
 			goto out;
 		}
 	        fstrcpy(status->message, msg);
