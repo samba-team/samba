@@ -1209,35 +1209,6 @@ void add_to_large_array(TALLOC_CTX *mem_ctx, size_t element_size,
 }
 
 /****************************************************************************
- Get my own name and IP.
-****************************************************************************/
-
-char *talloc_get_myname(TALLOC_CTX *ctx)
-{
-	char *p;
-	char hostname[HOST_NAME_MAX];
-
-	*hostname = 0;
-
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return False;
-	}
-
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-	/* split off any parts after an initial . */
-	p = strchr_m(hostname,'.');
-	if (p) {
-		*p = 0;
-	}
-
-	return talloc_strdup(ctx, hostname);
-}
-
-/****************************************************************************
  Get my own domain name, or "" if we have none.
 ****************************************************************************/
 
@@ -2237,7 +2208,7 @@ char *myhostname(void)
 	if (ret == NULL) {
 		/* This is cached forever so
 		 * use talloc_autofree_context() ctx. */
-		ret = talloc_get_myname(talloc_autofree_context());
+		ret = get_myname(talloc_autofree_context());
 	}
 	return ret;
 }

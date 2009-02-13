@@ -536,9 +536,9 @@ _PUBLIC_ int set_blocking(int fd, bool set);
 _PUBLIC_ void msleep(unsigned int t);
 
 /**
- Get my own name, return in malloc'ed storage.
+ Get my own name, return in talloc'ed storage.
 **/
-_PUBLIC_ char* get_myname(void);
+_PUBLIC_ char* get_myname(TALLOC_CTX *mem_ctx);
 
 /**
  Return true if a string could be a pure IP address.

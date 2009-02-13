@@ -5862,7 +5862,7 @@ static void usage(void)
 	*p = 0;
 	fstrcpy(share, p+1);
 
-	fstrcpy(myname, talloc_get_myname(talloc_tos()));
+	fstrcpy(myname, get_myname(talloc_tos()));
 	if (!*myname) {
 		fprintf(stderr, "Failed to get my hostname.\n");
 		return 1;

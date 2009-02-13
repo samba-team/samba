@@ -2286,9 +2286,9 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "socket options", "TCP_NODELAY");
 #endif
 	lp_do_global_parameter(lp_ctx, "workgroup", DEFAULT_WORKGROUP);
-	myname = get_myname();
+	myname = get_myname(lp_ctx);
 	lp_do_global_parameter(lp_ctx, "netbios name", myname);
-	SAFE_FREE(myname);
+	talloc_free(myname);
 	lp_do_global_parameter(lp_ctx, "name resolve order", "wins host bcast");
 
 	lp_do_global_parameter(lp_ctx, "fstype", "NTFS");

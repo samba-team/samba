@@ -192,34 +192,30 @@ _PUBLIC_ void msleep(unsigned int t)
 }
 
 /**
- Get my own name, return in malloc'ed storage.
+ Get my own name, return in talloc'ed storage.
 **/
 
-_PUBLIC_ char *get_myname(void)
+_PUBLIC_ char *get_myname(TALLOC_CTX *ctx)
 {
-	char *hostname;
 	char *p;
-
-	hostname = (char *)malloc(MAXHOSTNAMELEN+1);
-	*hostname = 0;
+	char hostname[HOST_NAME_MAX];
 
 	/* get my host name */
-	if (gethostname(hostname, MAXHOSTNAMELEN+1) == -1) {
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
 		DEBUG(0,("gethostname failed\n"));
-		free(hostname);
 		return NULL;
-	} 
+	}
 
 	/* Ensure null termination. */
-	hostname[MAXHOSTNAMELEN] = '\0';
+	hostname[sizeof(hostname)-1] = '\0';
 
 	/* split off any parts after an initial . */
-	p = strchr(hostname, '.');
-
-	if (p != NULL)
+	p = strchr_m(hostname, '.');
+	if (p) {
 		*p = 0;
-	
-	return hostname;
+	}
+
+	return talloc_strdup(ctx, hostname);
 }
 
 /**

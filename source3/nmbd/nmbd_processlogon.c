@@ -442,7 +442,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 						("get_mydnsdomname failed.\n"));
 						return;
 					}
-					hostname = talloc_get_myname(talloc_tos());
+					hostname = get_myname(talloc_tos());
 					if (!hostname) {
 						DEBUG(2,
 						("get_myname failed.\n"));

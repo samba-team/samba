@@ -268,12 +268,12 @@ smb_connect(const char *workgroup,		/* I - Workgroup */
   * Get the names and addresses of the client and server...
   */
 
-  myname = get_myname();  
+  myname = get_myname(NULL);
   	
   nt_status = smbcli_full_connection(NULL, &c, myname, server, ports, share, 
 				     NULL, username, workgroup, password, NULL);
   
-  free(myname);
+  talloc_free(myname);
   if (!NT_STATUS_IS_OK(nt_status)) {
 	  fprintf(stderr, "ERROR:  Connection failed with error %s\n", nt_errstr(nt_status));
 	  return NULL;
