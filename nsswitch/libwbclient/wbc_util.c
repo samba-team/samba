@@ -409,6 +409,100 @@ wbcErr wbcNetbiosName_recv(struct tevent_req *req,
 	return WBC_ERR_SUCCESS;
 }
 
+struct wbc_domain_name_state {
+	struct winbindd_request req;
+	char *domain_name;
+};
+
+static void wbcDomainName_done(struct tevent_req *subreq);
+
+/**
+ * @brief Request the machine's domain name
+ *
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param ev		tevent context to use for async requests
+ * @param wb_ctx	winbind context
+ *
+ * @return tevent_req on success, NULL on failure
+ */
+
+struct tevent_req *wbcDomainName_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wb_context *wb_ctx)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_domain_name_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_domain_name_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	ZERO_STRUCT(state->req);
+	state->req.cmd = WINBINDD_DOMAIN_NAME;
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcDomainName_done, req);
+	return req;
+}
+
+static void wbcDomainName_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_domain_name_state *state = tevent_req_data(
+			req, struct wbc_domain_name_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	state->domain_name = talloc_strdup(state, resp->data.domain_name);
+	if (tevent_req_nomem(state->domain_name, subreq)) {
+		return;
+	}
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive the machine's domain name
+ *
+ * @param req		tevent_req containing the request
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param domain_name	pointer to a string to hold the domain name
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcDomainName_recv(struct tevent_req *req,
+			  TALLOC_CTX *mem_ctx,
+			  char **domain_name)
+{
+	struct wbc_domain_name_state *state = tevent_req_data(
+			req, struct wbc_domain_name_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	*domain_name = talloc_steal(mem_ctx, state->domain_name);
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
+
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
