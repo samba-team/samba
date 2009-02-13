@@ -3185,7 +3185,7 @@ if test x"$with_ads_support" != x"no"; then
   # check for krb5-config from recent MIT and Heimdal kerberos 5
   AC_PATH_PROG(KRB5CONFIG, krb5-config)
   AC_MSG_CHECKING(for working krb5-config)
-  if test -x "$KRB5CONFIG"; then
+  if test -x "$KRB5CONFIG" && $KRB5CONFIG --libs gssapi > /dev/null ; then
     ac_save_CFLAGS=$CFLAGS
     CFLAGS="";export CFLAGS
     ac_save_LDFLAGS=$LDFLAGS
