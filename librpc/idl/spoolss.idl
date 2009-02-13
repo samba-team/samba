@@ -452,26 +452,120 @@ import "misc.idl", "security.idl", "winreg.idl";
 		SPOOLSS_PRINTER_CONTROL_SET_STATUS = 4
 	} spoolss_PrinterControl;
 
+	typedef struct {
+		[string,charset(UTF16)] uint16 *servername;
+		[string,charset(UTF16)] uint16 *printername;
+		uint32 cjobs;
+		uint32 total_jobs;
+		uint32 total_bytes;
+		spoolss_Time time;
+		uint32 global_counter;
+		uint32 total_pages;
+		uint32 version;
+		uint32 unknown10;
+		uint32 unknown11;
+		uint32 unknown12;
+		uint32 session_counter;
+		uint32 unknown14;
+		uint32 printer_errors;
+		uint32 unknown16;
+		uint32 unknown17;
+		uint32 unknown18;
+		uint32 unknown19;
+		uint32 change_id;
+		uint32 unknown21;
+		uint32 status;
+		uint32 unknown23;
+		uint32 c_setprinter;
+		uint16 unknown25;
+		uint16 unknown26;
+		uint32 unknown27;
+		uint32 unknown28;
+		uint32 unknown29;
+	} spoolss_SetPrinterInfo0;
+
+	typedef struct {
+		spoolss_EnumPrinterFlags flags;
+		[string,charset(UTF16)] uint16 *name;
+		[string,charset(UTF16)] uint16 *description;
+		[string,charset(UTF16)] uint16 *comment;
+	} spoolss_SetPrinterInfo1;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *servername;
+		[string,charset(UTF16)] uint16 *printername;
+		[string,charset(UTF16)] uint16 *sharename;
+		[string,charset(UTF16)] uint16 *portname;
+		[string,charset(UTF16)] uint16 *drivername;
+		[string,charset(UTF16)] uint16 *comment;
+		[string,charset(UTF16)] uint16 *location;
+		[subcontext(0)] spoolss_DeviceMode *devmode;
+		[string,charset(UTF16)] uint16 *sepfile;
+		[string,charset(UTF16)] uint16 *printprocessor;
+		[string,charset(UTF16)] uint16 *datatype;
+		[string,charset(UTF16)] uint16 *parameters;
+		[subcontext(0)] security_descriptor *secdesc;
+		spoolss_PrinterAttributes attributes;
+		uint32 priority;
+		uint32 defaultpriority;
+		uint32 starttime;
+		uint32 untiltime;
+		spoolss_PrinterStatus status;
+		uint32 cjobs;
+		uint32 averageppm;
+	} spoolss_SetPrinterInfo2;
+
+	typedef struct {
+		security_descriptor *secdesc;
+	} spoolss_SetPrinterInfo3;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *printername;
+		[string,charset(UTF16)] uint16 *servername;
+		spoolss_PrinterAttributes attributes;
+	} spoolss_SetPrinterInfo4;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *printername;
+		[string,charset(UTF16)] uint16 *portname;
+		spoolss_PrinterAttributes attributes;
+		uint32 device_not_selected_timeout;
+		uint32 transmission_retry_timeout;
+	} spoolss_SetPrinterInfo5;
+
+	typedef struct {
+		spoolss_PrinterStatus status;
+	} spoolss_SetPrinterInfo6;
+
+	typedef struct {
+		[string,charset(UTF16)] uint16 *guid; /* text form of printer guid */
+		spoolss_DsPrintAction action;
+	} spoolss_SetPrinterInfo7;
+
 	typedef [switch_type(uint32)] union {
-		[case(0)] spoolss_PrinterInfo0 *info0;
-		[case(1)] spoolss_PrinterInfo1 *info1;
-		[case(2)] spoolss_PrinterInfo2 *info2;
-		[case(3)] spoolss_PrinterInfo3 *info3;
-		[case(4)] spoolss_PrinterInfo4 *info4;
-		[case(5)] spoolss_PrinterInfo5 *info5;
-		[case(6)] spoolss_PrinterInfo6 *info6;
-		[case(7)] spoolss_PrinterInfo7 *info7;
+		[case(0)] spoolss_SetPrinterInfo0 *info0;
+		[case(1)] spoolss_SetPrinterInfo1 *info1;
+		[case(2)] spoolss_SetPrinterInfo2 *info2;
+		[case(3)] spoolss_SetPrinterInfo3 *info3;
+		[case(4)] spoolss_SetPrinterInfo4 *info4;
+		[case(5)] spoolss_SetPrinterInfo5 *info5;
+		[case(6)] spoolss_SetPrinterInfo6 *info6;
+		[case(7)] spoolss_SetPrinterInfo7 *info7;
 		[case(8)] spoolss_DeviceModeInfo *info8;
 		[case(9)] spoolss_DeviceModeInfo *info9;
 		[default];
 	} spoolss_SetPrinterInfo;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_SetPrinterInfo info;
+	} spoolss_SetPrinterInfoCtr;
+
 	WERROR spoolss_SetPrinter(
 		[in,ref] policy_handle *handle,
-		[in] uint32 level,
-		[in,switch_is(level)] spoolss_SetPrinterInfo info,
-		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in] sec_desc_buf secdesc_ctr,
+		[in,ref] spoolss_SetPrinterInfoCtr *info_ctr,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr,
+		[in,ref] sec_desc_buf *secdesc_ctr,
 		[in] spoolss_PrinterControl command
 	);
 
