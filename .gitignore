@@ -32,6 +32,8 @@ examples/libsmbclient/testtruncate
 examples/libsmbclient/testutime
 examples/libsmbclient/testwrite
 examples/libsmbclient/tree
+examples/libsmbclient/testfstatvfs
+examples/libsmbclient/teststatvfs
 examples/VFS/config.log
 examples/VFS/config.status
 examples/VFS/configure
