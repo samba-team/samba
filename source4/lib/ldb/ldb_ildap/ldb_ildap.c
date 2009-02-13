@@ -168,14 +168,16 @@ static int ildb_map_error(struct ldb_module *module, NTSTATUS status)
 {
 	struct ildb_private *ildb;
 	struct ldb_context *ldb;
+	TALLOC_CTX *mem_ctx;
 
 	ildb = talloc_get_type(ldb_module_get_private(module), struct ildb_private);
 	ldb = ldb_module_get_ctx(module);
 
-	TALLOC_CTX *mem_ctx = talloc_new(ildb);
 	if (NT_STATUS_IS_OK(status)) {
 		return LDB_SUCCESS;
 	}
+
+	mem_ctx = talloc_new(ildb);
 	if (!mem_ctx) {
 		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -467,7 +469,7 @@ static int ildb_search(struct ildb_context *ac)
 
 	for (n = 0; req->op.search.attrs && req->op.search.attrs[n]; n++) /* noop */ ;
 	msg->r.SearchRequest.num_attributes = n;
-	msg->r.SearchRequest.attributes = discard_const(req->op.search.attrs);
+	msg->r.SearchRequest.attributes = req->op.search.attrs;
 	msg->controls = req->controls;
 
 	return ildb_request_send(ac, msg);
@@ -759,6 +761,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 	struct ildb_private *ildb;
 	NTSTATUS status;
 	struct cli_credentials *creds;
+	struct loadparm_context *lp_ctx;
 
 	module = ldb_module_new(ldb, ldb, "ldb_ildap backend", &ildb_ops);
 	if (!module) return -1;
@@ -772,8 +775,10 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 
 	ildb->event_ctx = ldb_get_event_context(ldb);
 
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
 
-	ildb->ldap = ldap4_new_connection(ildb, ldb_get_opaque(ldb, "loadparm"),
+	ildb->ldap = ldap4_new_connection(ildb, lp_ctx,
 					  ildb->event_ctx);
 	if (!ildb->ldap) {
 		ldb_oom(ldb);
@@ -811,7 +816,7 @@ static int ildb_connect(struct ldb_context *ldb, const char *url,
 				goto failed;
 			}
 		} else {
-			status = ldap_bind_sasl(ildb->ldap, creds, ldb_get_opaque(ldb, "loadparm"));
+			status = ldap_bind_sasl(ildb->ldap, creds, lp_ctx);
 			if (!NT_STATUS_IS_OK(status)) {
 				ldb_debug(ldb, LDB_DEBUG_ERROR, "Failed to bind - %s\n",
 					  ldap_errstr(ildb->ldap, module, status));
