@@ -1379,8 +1379,15 @@ extern void build_options(bool screen);
 	}
 
 	if (*lp_rootdir()) {
-		if (sys_chroot(lp_rootdir()) == 0)
-			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
+		if (sys_chroot(lp_rootdir()) != 0) {
+			DEBUG(0,("Failed to change root to %s\n", lp_rootdir()));
+			exit(1);
+		}
+		if (chdir("/") == -1) {
+			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_rootdir()));
+			exit(1);
+		}
+		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
 	}
 
 	/* Setup oplocks */
