@@ -188,6 +188,88 @@ done:
 }
 
 
+static bool test_osxrename(struct torture_context *tctx,
+			   struct smbcli_state *cli)
+{
+	union smb_rename io;
+	union smb_unlink io_un;
+	NTSTATUS status;
+	bool ret = true;
+	int fnum = -1;
+	const char *fname1 = BASEDIR "\\test1";
+	const char *FNAME1 = BASEDIR "\\TEST1";
+	union smb_fileinfo finfo;
+	union smb_open op;
+
+	printf("\nTesting OSX Rename\n");
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return false;
+	}
+	op.generic.level = RAW_OPEN_NTCREATEX;
+	op.ntcreatex.in.root_fid = 0;
+	op.ntcreatex.in.flags = 0;
+	op.ntcreatex.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	op.ntcreatex.in.create_options = 0;
+	op.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	op.ntcreatex.in.share_access =
+		NTCREATEX_SHARE_ACCESS_READ |
+		NTCREATEX_SHARE_ACCESS_WRITE;
+	op.ntcreatex.in.alloc_size = 0;
+	op.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	op.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	op.ntcreatex.in.security_flags = 0;
+	op.ntcreatex.in.fname = fname1;
+
+	status = smb_raw_open(cli->tree, tctx, &op);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	fnum = op.ntcreatex.out.file.fnum;
+
+	io.generic.level = RAW_RENAME_RENAME;
+	io.rename.in.attrib = 0;
+
+	smbcli_close(cli->tree, fnum);
+
+	/* Rename by changing case. First check for the
+	 * existence of the file with the "newname".
+	 * If we find one and both the output and input are same case,
+	 * delete it. */
+
+	printf("Checking os X rename (case changing)\n");
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.all_info.in.file.path = FNAME1;
+	printf("Looking for file %s \n",FNAME1);
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		printf("Name of the file found %s \n", finfo.all_info.out.fname.s);
+		if (strcmp(finfo.all_info.out.fname.s, finfo.all_info.in.file.path) == 0) {
+			/* If file is found with the same case delete it */
+			printf("Deleting File %s \n", finfo.all_info.out.fname.s);
+			io_un.unlink.in.pattern = finfo.all_info.out.fname.s;
+			io_un.unlink.in.attrib = 0;
+			status = smb_raw_unlink(cli->tree, &io_un);
+			CHECK_STATUS(status, NT_STATUS_OK);
+		}
+	}
+
+	io.rename.in.pattern1 = fname1;
+	io.rename.in.pattern2 = FNAME1;
+	status = smb_raw_rename(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	finfo.generic.level = RAW_FILEINFO_ALL_INFO;
+	finfo.all_info.in.file.path = fname1;
+	status = smb_raw_pathinfo(cli->tree, tctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	printf("File name after rename %s \n",finfo.all_info.out.fname.s);
+
+done:
+	smbcli_close(cli->tree, fnum);
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
 
 /*
   test SMBntrename ops
@@ -450,6 +532,7 @@ struct torture_suite *torture_raw_rename(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "trans2rename", test_trans2rename);
 	torture_suite_add_1smb_test(suite, "nttransrename", test_nttransrename);
 	torture_suite_add_1smb_test(suite, "ntrename", test_ntrename);
+	torture_suite_add_1smb_test(suite, "osxrename", test_osxrename);
 
 	return suite;
 }
