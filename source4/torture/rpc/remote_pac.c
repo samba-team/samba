@@ -61,7 +61,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
 
-	struct messaging_context *msg_server_ctx;
 	DATA_BLOB client_to_server, server_to_client, pac_wrapped, payload;
 	struct PAC_Validate pac_wrapped_struct;
 	
@@ -83,14 +82,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	status = torture_temp_dir(tctx, "PACVerify", &tmp_dir);
 	torture_assert_ntstatus_ok(tctx, status, "torture_temp_dir failed");
-
-	msg_server_ctx = messaging_init(tctx, 
-					tmp_dir,
-					cluster_id(0, 1), 
-				        lp_iconv_convenience(tctx->lp_ctx),
-					tctx->ev);
-	
-	torture_assert(tctx, msg_server_ctx != NULL, "Failed to init messaging context");
 
 	status = gensec_client_start(tctx, &gensec_client_context, tctx->ev, 
 				     lp_gensec_settings(tctx, tctx->lp_ctx));
