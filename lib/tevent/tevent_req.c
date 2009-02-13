@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Infrastructure for async requests
    Copyright (C) Volker Lendecke 2008
+   Copyright (C) Stefan Metzmacher 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,35 +18,32 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include "lib/tevent/tevent.h"
-#include "lib/talloc/talloc.h"
-#include "lib/util/dlinklist.h"
-#include "lib/async_req/async_req.h"
-
-#ifndef TALLOC_FREE
-#define TALLOC_FREE(ctx) do { talloc_free(ctx); ctx=NULL; } while(0)
-#endif
+#include "replace.h"
+#include "tevent.h"
+#include "tevent_internal.h"
+#include "tevent_util.h"
 
 /**
- * @brief Print an async_req structure
+ * @brief Print an tevent_req structure in debug messages
  * @param[in] mem_ctx	The memory context for the result
  * @param[in] req	The request to be printed
  * @retval		Text representation of req
  *
- * This is a default print function for async requests. Implementations should
- * override this with more specific information.
- *
- * This function should not be used by async API users, this is non-static
- * only to allow implementations to easily provide default information in
- * their specific functions.
  */
 
-char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req)
+char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req)
 {
-	return talloc_asprintf(mem_ctx, "async_req: state=%d, error=%d, "
-			       "priv=%s", req->state, (int)req->error,
-			       talloc_get_name(req->private_data));
+	return talloc_asprintf(mem_ctx,
+			       "tevent_req[%p/%s]: state[%d] error[%lld (0x%llX)] "
+			       " state[%s (%p)] timer[%p]",
+			       req, req->internal.location,
+			       req->internal.state,
+			       (unsigned long long)req->internal.error,
+			       (unsigned long long)req->internal.error,
+			       talloc_get_name(req->private_state),
+			       req->private_state,
+			       req->internal.timer
+			       );
 }
 
 /**
@@ -57,22 +55,40 @@ char *async_req_print(TALLOC_CTX *mem_ctx, struct async_req *req)
  * The new async request will be initialized in state ASYNC_REQ_IN_PROGRESS
  */
 
-struct async_req *async_req_new(TALLOC_CTX *mem_ctx)
+struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
+				    void *pstate,
+				    size_t state_size,
+				    const char *type,
+				    const char *location)
 {
-	struct async_req *result;
+	struct tevent_req *req;
+	void **ppstate = (void **)pstate;
+	void *state;
 
-	result = talloc_zero(mem_ctx, struct async_req);
-	if (result == NULL) {
+	req = talloc_zero(mem_ctx, struct tevent_req);
+	if (req == NULL) {
 		return NULL;
 	}
-	result->state = ASYNC_REQ_IN_PROGRESS;
-	result->print = async_req_print;
-	return result;
+	req->internal.private_type	= type;
+	req->internal.location		= location;
+	req->internal.state		= TEVENT_REQ_IN_PROGRESS;
+
+	state = talloc_size(req, state_size);
+	if (state == NULL) {
+		talloc_free(req);
+		return NULL;
+	}
+	talloc_set_name_const(state, type);
+
+	req->private_state = state;
+
+	*ppstate = state;
+	return req;
 }
 
-static void async_req_finish(struct async_req *req, enum async_req_state state)
+static void tevent_req_finish(struct tevent_req *req, enum tevent_req_state state)
 {
-	req->state = state;
+	req->internal.state = state;
 	if (req->async.fn != NULL) {
 		req->async.fn(req);
 	}
@@ -87,9 +103,9 @@ static void async_req_finish(struct async_req *req, enum async_req_state state)
  * function.
  */
 
-void async_req_done(struct async_req *req)
+void tevent_req_done(struct tevent_req *req)
 {
-	async_req_finish(req, ASYNC_REQ_DONE);
+	tevent_req_finish(req, TEVENT_REQ_DONE);
 }
 
 /**
@@ -97,37 +113,38 @@ void async_req_done(struct async_req *req)
  * @param[in] req	The request with an error
  * @param[in] error	The error code
  *
- * async_req_done is to be used by implementors of async requests. When a
+ * tevent_req_done is to be used by implementors of async requests. When a
  * request can not successfully completed, the implementation should call this
  * function with the appropriate status code.
+ *
+ * If error is 0 the function returns false and does nothing more.
+ *
+ * Call pattern would be
+ * \code
+ * int error = first_function();
+ * if (tevent_req_error(req, error)) {
+ *	return;
+ * }
+ *
+ * error = second_function();
+ * if (tevent_req_error(req, error)) {
+ *	return;
+ * }
+ *
+ * tevent_req_done(req);
+ * return;
+ * \endcode
  */
 
-void async_req_error(struct async_req *req, uint64_t error)
+bool tevent_req_error(struct tevent_req *req, uint64_t error)
 {
-	req->error = error;
-	async_req_finish(req, ASYNC_REQ_USER_ERROR);
-}
-
-/**
- * @brief Timed event callback
- * @param[in] ev	Event context
- * @param[in] te	The timed event
- * @param[in] now	zero time
- * @param[in] priv	The async request to be finished
- */
-
-static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
-			  struct timeval now, void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
-
-	TALLOC_FREE(te);
-	if (req->error == 0) {
-		async_req_done(req);
+	if (error == 0) {
+		return false;
 	}
-	else {
-		async_req_error(req, req->error);
-	}
+
+	req->internal.error = error;
+	tevent_req_finish(req, TEVENT_REQ_USER_ERROR);
+	return true;
 }
 
 /**
@@ -141,25 +158,48 @@ static void async_trigger(struct tevent_context *ev, struct tevent_timer *te,
  * Call pattern would be
  * \code
  * p = talloc(mem_ctx, bla);
- * if (async_req_ntnomem(p, req)) {
+ * if (tevent_req_nomem(p, req)) {
  *	return;
  * }
  * \endcode
  */
 
-bool async_req_nomem(const void *p, struct async_req *req)
+bool tevent_req_nomem(const void *p, struct tevent_req *req)
 {
 	if (p != NULL) {
 		return false;
 	}
-	async_req_finish(req, ASYNC_REQ_NO_MEMORY);
+	tevent_req_finish(req, TEVENT_REQ_NO_MEMORY);
 	return true;
 }
 
 /**
- * @brief Finish a request before it started processing
+ * @brief Timed event callback
+ * @param[in] ev	Event context
+ * @param[in] te	The timed event
+ * @param[in] now	zero time
+ * @param[in] priv	The async request to be finished
+ */
+static void tevent_req_trigger(struct tevent_context *ev,
+			       struct tevent_timer *te,
+			       struct timeval zero,
+			       void *private_data)
+{
+	struct tevent_req *req = talloc_get_type(private_data,
+				 struct tevent_req);
+
+	talloc_free(req->internal.trigger);
+	req->internal.trigger = NULL;
+
+	tevent_req_finish(req, req->internal.state);
+}
+
+/**
+ * @brief Finish a request before the caller had the change to set the callback
  * @param[in] req	The finished request
- * @param[in] status	The success code
+ * @param[in] ev	The tevent_context for the timed event
+ * @retval		On success req will be returned,
+ * 			on failure req will be destroyed
  *
  * An implementation of an async request might find that it can either finish
  * the request without waiting for an external event, or it can't even start
@@ -169,170 +209,68 @@ bool async_req_nomem(const void *p, struct async_req *req)
  * conventions, independent of whether the request was actually deferred.
  */
 
-bool async_post_error(struct async_req *req, struct tevent_context *ev,
-		      uint64_t error)
+struct tevent_req *tevent_req_post(struct tevent_req *req,
+				   struct tevent_context *ev)
 {
-	req->error = error;
-
-	if (tevent_add_timer(ev, req, timeval_zero(),
-			    async_trigger, req) == NULL) {
-		return false;
-	}
-	return true;
-}
-
-bool async_req_is_error(struct async_req *req, enum async_req_state *state,
-			uint64_t *error)
-{
-	if (req->state == ASYNC_REQ_DONE) {
-		return false;
-	}
-	if (req->state == ASYNC_REQ_USER_ERROR) {
-		*error = req->error;
-	}
-	*state = req->state;
-	return true;
-}
-
-static void async_req_timedout(struct tevent_context *ev,
-			       struct tevent_timer *te,
-			       struct timeval now,
-			       void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
-	TALLOC_FREE(te);
-	async_req_finish(req, ASYNC_REQ_TIMED_OUT);
-}
-
-bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
-			   struct timeval to)
-{
-	return (tevent_add_timer(
-			ev, req, timeval_current_ofs(to.tv_sec, to.tv_usec),
-			async_req_timedout, req)
-		!= NULL);
-}
-
-struct async_req *async_wait_send(TALLOC_CTX *mem_ctx,
-				  struct tevent_context *ev,
-				  struct timeval to)
-{
-	struct async_req *result;
-
-	result = async_req_new(mem_ctx);
-	if (result == NULL) {
-		return result;
-	}
-	if (!async_req_set_timeout(result, ev, to)) {
-		TALLOC_FREE(result);
+	req->internal.trigger = tevent_add_timer(ev, req, ev_timeval_zero(),
+						 tevent_req_trigger, req);
+	if (!req->internal.trigger) {
+		talloc_free(req);
 		return NULL;
 	}
-	return result;
+
+	return req;
 }
 
-bool async_wait_recv(struct async_req *req)
+bool tevent_req_is_in_progress(struct tevent_req *req)
 {
+	if (req->internal.state == TEVENT_REQ_IN_PROGRESS) {
+		return true;
+	}
+
+	return false;
+}
+
+bool tevent_req_is_error(struct tevent_req *req, enum tevent_req_state *state,
+			uint64_t *error)
+{
+	if (req->internal.state == TEVENT_REQ_DONE) {
+		return false;
+	}
+	if (req->internal.state == TEVENT_REQ_USER_ERROR) {
+		*error = req->internal.error;
+	}
+	*state = req->internal.state;
 	return true;
 }
 
-struct async_queue_entry {
-	struct async_queue_entry *prev, *next;
-	struct async_req_queue *queue;
-	struct async_req *req;
-	void (*trigger)(struct async_req *req);
-};
-
-struct async_req_queue {
-	struct async_queue_entry *queue;
-};
-
-struct async_req_queue *async_req_queue_init(TALLOC_CTX *mem_ctx)
+static void tevent_req_timedout(struct tevent_context *ev,
+			       struct tevent_timer *te,
+			       struct timeval now,
+			       void *private_data)
 {
-	return talloc_zero(mem_ctx, struct async_req_queue);
+	struct tevent_req *req = talloc_get_type(private_data,
+				 struct tevent_req);
+
+	talloc_free(req->internal.timer);
+	req->internal.timer = NULL;
+
+	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT);
 }
 
-static int async_queue_entry_destructor(struct async_queue_entry *e)
+bool tevent_req_set_timeout(struct tevent_req *req,
+			    struct tevent_context *ev,
+			    struct timeval endtime)
 {
-	struct async_req_queue *queue = e->queue;
+	talloc_free(req->internal.timer);
 
-	DLIST_REMOVE(queue->queue, e);
-
-	if (queue->queue != NULL) {
-		queue->queue->trigger(queue->queue->req);
-	}
-
-	return 0;
-}
-
-static void async_req_immediate_trigger(struct tevent_context *ev,
-					struct tevent_timer *te,
-					struct timeval now,
-					void *priv)
-{
-	struct async_queue_entry *e = talloc_get_type_abort(
-		priv, struct async_queue_entry);
-
-	TALLOC_FREE(te);
-	e->trigger(e->req);
-}
-
-bool async_req_enqueue(struct async_req_queue *queue, struct tevent_context *ev,
-		       struct async_req *req,
-		       void (*trigger)(struct async_req *req))
-{
-	struct async_queue_entry *e;
-	bool busy;
-
-	busy = (queue->queue != NULL);
-
-	e = talloc(req, struct async_queue_entry);
-	if (e == NULL) {
+	req->internal.timer = tevent_add_timer(ev, req, endtime,
+					       tevent_req_timedout,
+					       req);
+	if (tevent_req_nomem(req->internal.timer, req)) {
 		return false;
-	}
-
-	e->req = req;
-	e->trigger = trigger;
-	e->queue = queue;
-
-	DLIST_ADD_END(queue->queue, e, struct async_queue_entry *);
-	talloc_set_destructor(e, async_queue_entry_destructor);
-
-	if (!busy) {
-		struct tevent_timer *te;
-
-		te = tevent_add_timer(ev, e, timeval_zero(),
-				     async_req_immediate_trigger,
-				     e);
-		if (te == NULL) {
-			TALLOC_FREE(e);
-			return false;
-		}
 	}
 
 	return true;
 }
 
-bool _async_req_setup(TALLOC_CTX *mem_ctx, struct async_req **preq,
-		      void *pstate, size_t state_size, const char *typename)
-{
-	struct async_req *req;
-	void **ppstate = (void **)pstate;
-	void *state;
-
-	req = async_req_new(mem_ctx);
-	if (req == NULL) {
-		return false;
-	}
-	state = talloc_size(req, state_size);
-	if (state == NULL) {
-		TALLOC_FREE(req);
-		return false;
-	}
-	talloc_set_name_const(state, typename);
-	req->private_data = state;
-
-	*preq = req;
-	*ppstate = state;
-
-	return true;
-}

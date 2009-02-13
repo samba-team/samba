@@ -4,6 +4,8 @@
    generalised event loop handling
 
    Copyright (C) Andrew Tridgell 2005
+   Copyright (C) Stefan Metzmacher 2005-2009
+   Copyright (C) Volker Lendecke 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -130,6 +132,167 @@ int tevent_set_debug(struct tevent_context *ev,
 				   va_list ap) PRINTF_ATTRIBUTE(3,0),
 		     void *context);
 int tevent_set_debug_stderr(struct tevent_context *ev);
+
+/**
+ * An async request moves between the following 4 states:
+ */
+enum tevent_req_state {
+	/**
+	 * we are creating the request
+	 */
+	TEVENT_REQ_INIT,
+	/**
+	 * we are waiting the request to complete
+	 */
+	TEVENT_REQ_IN_PROGRESS,
+	/**
+	 * the request is finished
+	 */
+	TEVENT_REQ_DONE,
+	/**
+	 * A user error has occured
+	 */
+	TEVENT_REQ_USER_ERROR,
+	/**
+	 * Request timed out
+	 */
+	TEVENT_REQ_TIMED_OUT,
+	/**
+	 * No memory in between
+	 */
+	TEVENT_REQ_NO_MEMORY
+};
+
+/**
+ * @brief An async request
+ *
+ * This represents an async request being processed by callbacks via an event
+ * context. A user can issue for example a write request to a socket, giving
+ * an implementation function the fd, the buffer and the number of bytes to
+ * transfer. The function issuing the request will immediately return without
+ * blocking most likely without having sent anything. The API user then fills
+ * in req->async.fn and req->async.private_data, functions that are called
+ * when the request is finished.
+ *
+ * It is up to the user of the async request to talloc_free it after it has
+ * finished. This can happen while the completion function is called.
+ */
+
+struct tevent_req {
+	/**
+	 * @brief What to do on completion
+	 *
+	 * This is used for the user of an async request, fn is called when
+	 * the request completes, either successfully or with an error.
+	 */
+	struct {
+		/**
+		 * @brief Completion function
+		 * Completion function, to be filled by the API user
+		 */
+		void (*fn)(struct tevent_req *);
+		/**
+		 * @brief Private data for the completion function
+		 */
+		void *private_data;
+	} async;
+
+	/**
+	 * @brief Private state pointer for the actual implementation
+	 *
+	 * The implementation doing the work for the async request needs a
+	 * current state like for example a fd event. The user of an async
+	 * request should not touch this.
+	 */
+	void *private_state;
+
+	/**
+	 * @brief Internal state of the request
+	 *
+	 * Callers should only access this via functions and never directly.
+	 */
+	struct {
+		/**
+		 * @brief The talloc type of the private_state pointer
+		 *
+		 * This is filled by the tevent_req_create() macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *private_type;
+
+		/**
+		 * @brief The location where the request was created
+		 *
+		 * This uses the __location__ macro via the tevent_req_create()
+		 * macro.
+		 *
+		 * This for debugging only.
+		 */
+		const char *location;
+
+		/**
+		 * @brief The external state - will be queried by the caller
+		 *
+		 * While the async request is being processed, state will remain in
+		 * TEVENT_REQ_IN_PROGRESS. A request is finished if
+		 * req->state>=TEVENT_REQ_DONE.
+		 */
+		enum tevent_req_state state;
+
+		/**
+		 * @brief status code when finished
+		 *
+		 * This status can be queried in the async completion function. It
+		 * will be set to 0 when everything went fine.
+		 */
+		uint64_t error;
+
+		/**
+		 * @brief the timer event if tevent_req_post was used
+		 *
+		 */
+		struct tevent_timer *trigger;
+
+		/**
+		 * @brief the timer event if tevent_req_set_timeout was used
+		 *
+		 */
+		struct tevent_timer *timer;
+	} internal;
+};
+
+struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
+				      void *pstate,
+				      size_t state_size,
+				      const char *type,
+				      const char *location);
+
+#define tevent_req_create(_mem_ctx, _pstate, _type) \
+	_tevent_req_create((_mem_ctx), (_pstate), sizeof(_type), \
+			   #_type, __location__)
+
+bool tevent_req_set_timeout(struct tevent_req *req,
+			    struct tevent_context *ev,
+			    struct timeval endtime);
+
+void tevent_req_done(struct tevent_req *req);
+
+bool tevent_req_error(struct tevent_req *req,
+		      uint64_t error);
+
+bool tevent_req_nomem(const void *p,
+		      struct tevent_req *req);
+
+struct tevent_req *tevent_req_post(struct tevent_req *req,
+				   struct tevent_context *ev);
+
+bool tevent_req_is_in_progress(struct tevent_req *req);
+
+bool tevent_req_is_error(struct tevent_req *req,
+			 enum tevent_req_state *state,
+			 uint64_t *error);
+
 
 #ifdef TEVENT_COMPAT_DEFINES
 

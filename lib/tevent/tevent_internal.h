@@ -157,7 +157,7 @@ void tevent_common_fd_set_close_fn(struct tevent_fd *fde,
 uint16_t tevent_common_fd_get_flags(struct tevent_fd *fde);
 void tevent_common_fd_set_flags(struct tevent_fd *fde, uint16_t flags);
 
-struct timeval ev_timeval_zero();
+struct timeval ev_timeval_zero(void);
 bool ev_timeval_is_zero(const struct timeval *tv);
 struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev,
 					     TALLOC_CTX *mem_ctx,
