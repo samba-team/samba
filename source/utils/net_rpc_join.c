@@ -481,19 +481,16 @@ done:
  **/
 int net_rpc_testjoin(int argc, const char **argv) 
 {
-	char *domain = smb_xstrdup(opt_target_workgroup);
 	NTSTATUS nt_status;
 
 	/* Display success or failure */
-	nt_status = net_rpc_join_ok(domain, NULL, NULL);
+	nt_status = net_rpc_join_ok(opt_target_workgroup, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
-			domain, nt_errstr(nt_status));
-		free(domain);
+			opt_target_workgroup, nt_errstr(nt_status));
 		return -1;
 	}
 
-	printf("Join to '%s' is OK\n",domain);
-	free(domain);
+	printf("Join to '%s' is OK\n",opt_target_workgroup);
 	return 0;
 }
