@@ -56,7 +56,8 @@ struct ntvfs_map_async {
 */
 static void ntvfs_map_async_send(struct ntvfs_request *req)
 {
-	struct ntvfs_map_async *m = req->async_states->private_data;
+	struct ntvfs_map_async *m = talloc_get_type(req->async_states->private_data,
+				    struct ntvfs_map_async);
 
 	ntvfs_async_state_pop(req);
 
@@ -105,7 +106,8 @@ static NTSTATUS ntvfs_map_async_finish(struct ntvfs_request *req, NTSTATUS statu
 
 	/* the backend is replying immediately. call the 2nd stage function after popping our local
 	   async state */
-	m = req->async_states->private_data;
+	m = talloc_get_type(req->async_states->private_data,
+			    struct ntvfs_map_async);
 
 	ntvfs_async_state_pop(req);
 
@@ -856,7 +858,7 @@ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 					return NT_STATUS_NO_MEMORY;
 				}
 				info->all_eas.out.eas[i].value.data = 
-					talloc_memdup(info->all_eas.out.eas,
+					(uint8_t *)talloc_memdup(info->all_eas.out.eas,
 						info2->generic.out.eas[i].value.data,
 						info2->generic.out.eas[i].value.length);
 				if (!info->all_eas.out.eas[i].value.data) {
