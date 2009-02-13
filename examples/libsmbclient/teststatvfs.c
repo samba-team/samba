@@ -1,5 +1,4 @@
 #include <sys/types.h>
-#include <sys/statvfs.h>
 #include <stdio.h> 
 #include <unistd.h>
 #include <string.h> 
@@ -18,7 +17,7 @@ int main(int argc, char * argv[])
     char *          p;
     char            path[2048];
     struct stat     statbuf;
-    struct statvfs  statvfsbuf;
+    struct smbc_statvfs  statvfsbuf;
     
     smbc_init(get_auth_data_fn, debug); 
     

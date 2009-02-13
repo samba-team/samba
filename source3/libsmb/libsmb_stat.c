@@ -308,7 +308,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 int
 SMBC_statvfs_ctx(SMBCCTX *context,
                  char *path,
-                 struct statvfs *st)
+                 struct smbc_statvfs *st)
 {
         int             ret;
         bool            bIsDir;
@@ -360,7 +360,7 @@ SMBC_statvfs_ctx(SMBCCTX *context,
 int
 SMBC_fstatvfs_ctx(SMBCCTX *context,
                   SMBCFILE *file,
-                  struct statvfs *st)
+                  struct smbc_statvfs *st)
 {
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;

@@ -506,13 +506,13 @@ SMBC_fstat_ctx(SMBCCTX *context,
 int
 SMBC_statvfs_ctx(SMBCCTX *context,
                  char *path,
-                 struct statvfs *st);
+                 struct smbc_statvfs *st);
 
 
 int
 SMBC_fstatvfs_ctx(SMBCCTX *context,
                   SMBCFILE *file,
-                  struct statvfs *st);
+                  struct smbc_statvfs *st);
 
 
 /* Functions in libsmb_xattr.c */
