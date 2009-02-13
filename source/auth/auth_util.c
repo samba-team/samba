@@ -742,7 +742,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 				&server_info->ptok->user_sids,
 				&server_info->ptok->num_sids);
 
-	for ( i=0; i<server_info->ngroups; i++ ) {
+	for ( i=0; i<server_info->n_groups; i++ ) {
 		if (!gid_to_unix_groups_sid( server_info->groups[i], &tmp_sid ) ) {
 			DEBUG(1,("create_local_token: Failed to create SID "
 				"for gid %d!\n", server_info->groups[i]));
@@ -757,7 +757,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	debug_unix_user_token(DBGC_AUTH, 10,
 			      server_info->uid,
 			      server_info->gid,
-			      server_info->ngroups,
+			      server_info->n_groups,
 			      server_info->groups);
 
 	mem_ctx = talloc_new(NULL);
