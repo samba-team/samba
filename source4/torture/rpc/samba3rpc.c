@@ -1249,7 +1249,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 
 	wks_name = torture_setting_string(torture, "wksname", NULL);
 	if (wks_name == NULL) {
-		wks_name = get_myname();
+		wks_name = get_myname(torture);
 	}
 
 	mem_ctx = talloc_init("torture_netlogon_samba3");
@@ -1426,7 +1426,7 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
 	struct cli_credentials *anon_creds;
 	const char *wks_name;
 
-	wks_name = torture_setting_string(torture, "wksname", get_myname());
+	wks_name = torture_setting_string(torture, "wksname", get_myname(torture));
 
 	if (!(anon_creds = cli_credentials_init_anon(torture))) {
 		d_printf("create_anon_creds failed\n");
@@ -3024,7 +3024,7 @@ static NTSTATUS enumvalues(struct dcerpc_pipe *p, struct policy_handle *handle,
 
 	while (1) {
 		struct winreg_EnumValue r;
-		struct winreg_StringBuf name;
+		struct winreg_ValNameBuf name;
 		enum winreg_Type type = 0;
 		uint8_t buf8[1024];
 		NTSTATUS status;
