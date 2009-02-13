@@ -328,8 +328,6 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;
 
-	SMB_ASSERT(blr);
-
 	if (!fsp->can_lock) {
 		return fsp->is_directory ?
 			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
