@@ -205,6 +205,45 @@ static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
         return result;
 }
 
+static int onefs_get_real_filename(vfs_handle_struct *handle, const char *path,
+				   const char *name, TALLOC_CTX *mem_ctx,
+				   char **found_name)
+{
+	SMB_STRUCT_STAT sb;
+	struct stat_extra se;
+	int result;
+	char *full_name = NULL;
+
+	ZERO_STRUCT(se);
+	se.se_version = ESTAT_CURRENT_VERSION;
+	se.se_flags = ESTAT_CASE_INSENSITIVE | ESTAT_SYMLINK_NOFOLLOW;
+
+	if (*path != '\0') {
+		if (!(full_name = talloc_asprintf(mem_ctx, "%s/%s", path, name))) {
+			errno = ENOMEM;
+			DEBUG(2, ("talloc_asprintf failed\n"));
+			result = -1;
+			goto done;
+		}
+	}
+
+	if ((result = estat(full_name ? full_name : name, &sb, &se)) != 0) {
+		DEBUG(2, ("error calling estat: %s\n", strerror(errno)));
+		goto done;
+	}
+
+	*found_name = talloc_strdup(mem_ctx, se.se_realname);
+	if (*found_name == NULL) {
+		errno = ENOMEM;
+		result = -1;
+		goto done;
+	}
+
+done:
+	TALLOC_FREE(full_name);
+	return result;
+}
+
 static int onefs_ntimes(vfs_handle_struct *handle, const char *fname,
 			struct smb_file_time *ft)
 {
@@ -301,6 +340,8 @@ static vfs_op_tuple onefs_ops[] = {
 	{SMB_VFS_OP(onefs_fset_nt_acl), SMB_VFS_OP_FSET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_statvfs), SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_get_real_filename), SMB_VFS_OP_GET_REAL_FILENAME,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
