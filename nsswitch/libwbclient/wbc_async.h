@@ -113,4 +113,11 @@ wbcErr wbcInfo_recv(struct tevent_req *req,
 		    char *winbind_separator,
 		    char **version_string);
 
+struct tevent_req *wbcNetbiosName_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct wb_context *wb_ctx);
+wbcErr wbcNetbiosName_recv(struct tevent_req *req,
+			   TALLOC_CTX *mem_ctx,
+			   char **netbios_name);
+
 #endif /*_WBC_ASYNC_H_*/
