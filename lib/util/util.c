@@ -206,6 +206,7 @@ _PUBLIC_ char *get_myname(void)
 	/* get my host name */
 	if (gethostname(hostname, MAXHOSTNAMELEN+1) == -1) {
 		DEBUG(0,("gethostname failed\n"));
+		free(hostname);
 		return NULL;
 	} 
 
