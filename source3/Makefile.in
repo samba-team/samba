@@ -685,6 +685,7 @@ AUTH_SAM_OBJ = auth/auth_sam.o
 AUTH_SERVER_OBJ = auth/auth_server.o
 AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
+AUTH_ONEFS_WB_OBJ = auth/auth_onefs_wb.o
 AUTH_SCRIPT_OBJ = auth/auth_script.o
 AUTH_NETLOGOND_OBJ = auth/auth_netlogond.o
 
@@ -2342,6 +2343,10 @@ bin/smbserver.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_SERVER_OBJ)
 bin/winbind.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_WINBIND_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(AUTH_WINBIND_OBJ)
+
+bin/onefs_wb.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_ONEFS_WB_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(AUTH_ONEFS_WB_OBJ)
 
 bin/unix.@SHLIBEXT@: $(BINARY_PREREQS) $(AUTH_UNIX_OBJ)
 	@echo "Building plugin $@"

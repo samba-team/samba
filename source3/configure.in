@@ -1104,6 +1104,7 @@ echo $samba_cv_HAVE_ONEFS
 if test x"$samba_cv_HAVE_ONEFS" = x"yes"; then
     AC_DEFINE(HAVE_ONEFS,1,[Whether building on Isilon OneFS])
     default_shared_modules="$default_shared_modules vfs_onefs vfs_onefs_shadow_copy perfcount_onefs"
+    default_static_modules="$default_static_modules auth_onefs_wb"
     ONEFS_LIBS="-lisi_acl -lisi_ecs -lisi_event -lisi_util"
     # Need to also add general libs for oplocks support
     save_LIBS="$save_LIBS -lisi_ecs -lisi_event -lisi_util -ldevstat"
@@ -6187,6 +6188,7 @@ SMB_SUBSYSTEM(CHARSET,lib/iconv.o)
 SMB_MODULE(auth_sam, \$(AUTH_SAM_OBJ), "bin/sam.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_unix, \$(AUTH_UNIX_OBJ), "bin/unix.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_winbind, \$(AUTH_WINBIND_OBJ), "bin/winbind.$SHLIBEXT", AUTH)
+SMB_MODULE(auth_onefs_wb, \$(AUTH_ONEFS_WB_OBJ), "bin/onefs_wb.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_server, \$(AUTH_SERVER_OBJ), "bin/smbserver.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_domain, \$(AUTH_DOMAIN_OBJ), "bin/domain.$SHLIBEXT", AUTH)
 SMB_MODULE(auth_builtin, \$(AUTH_BUILTIN_OBJ), "bin/builtin.$SHLIBEXT", AUTH)
