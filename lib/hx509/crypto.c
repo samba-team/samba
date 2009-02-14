@@ -90,7 +90,7 @@ struct hx509_private_key {
 struct signature_alg {
     const char *name;
     const heim_oid *sig_oid;
-    const AlgorithmIdentifier *(*sig_alg)(void);
+    const AlgorithmIdentifier *sig_alg;
     const heim_oid *key_oid;
     const AlgorithmIdentifier *digest_alg;
     int flags;
@@ -411,13 +411,7 @@ ecdsa_create_signature(hx509_context context,
 	return HX509_ALG_NOT_SUPP;
 
     sig_oid = sig_alg->sig_oid;
-
-    if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_ecdsa_with_SHA256) == 0) {
-	digest_alg = hx509_signature_sha256();
-    } else if (der_heim_oid_cmp(sig_oid, &asn1_oid_id_ecdsa_with_SHA1) == 0) {
-	digest_alg = hx509_signature_sha1();
-    } else
-	return HX509_ALG_NOT_SUPP;
+    digest_alg = sig_alg->digest_alg;
 
     if (signatureAlgorithm) {
 	ret = set_digest_alg(signatureAlgorithm, sig_oid, "\x05\x00", 2);
@@ -1267,7 +1261,7 @@ md2_verify_signature(hx509_context context,
 static const struct signature_alg ecdsa_with_sha256_alg = {
     "ecdsa-with-sha256",
     &asn1_oid_id_ecdsa_with_SHA256,
-    hx509_signature_ecdsa_with_sha256,
+    &_hx509_signature_ecdsa_with_sha256_data,
     &asn1_oid_id_ecPublicKey,
     &_hx509_signature_sha256_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1280,7 +1274,7 @@ static const struct signature_alg ecdsa_with_sha256_alg = {
 static const struct signature_alg ecdsa_with_sha1_alg = {
     "ecdsa-with-sha1",
     &asn1_oid_id_ecdsa_with_SHA1,
-    hx509_signature_ecdsa_with_sha1,
+    &_hx509_signature_ecdsa_with_sha1_data,
     &asn1_oid_id_ecPublicKey,
     &_hx509_signature_sha1_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1295,7 +1289,7 @@ static const struct signature_alg ecdsa_with_sha1_alg = {
 static const struct signature_alg heim_rsa_pkcs1_x509 = {
     "rsa-pkcs1-x509",
     &asn1_oid_id_heim_rsa_pkcs1_x509,
-    hx509_signature_rsa_pkcs1_x509,
+    &_hx509_signature_rsa_pkcs1_x509_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|SIG_PUBLIC_SIG,
@@ -1307,7 +1301,7 @@ static const struct signature_alg heim_rsa_pkcs1_x509 = {
 static const struct signature_alg pkcs1_rsa_sha1_alg = {
     "rsa",
     &asn1_oid_id_pkcs1_rsaEncryption,
-    hx509_signature_rsa_with_sha1,
+    &_hx509_signature_rsa_with_sha1_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     NULL,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1319,7 +1313,7 @@ static const struct signature_alg pkcs1_rsa_sha1_alg = {
 static const struct signature_alg rsa_with_sha256_alg = {
     "rsa-with-sha256",
     &asn1_oid_id_pkcs1_sha256WithRSAEncryption,
-    hx509_signature_rsa_with_sha256,
+    &_hx509_signature_rsa_with_sha256_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_sha256_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1331,7 +1325,7 @@ static const struct signature_alg rsa_with_sha256_alg = {
 static const struct signature_alg rsa_with_sha1_alg = {
     "rsa-with-sha1",
     &asn1_oid_id_pkcs1_sha1WithRSAEncryption,
-    hx509_signature_rsa_with_sha1,
+    &_hx509_signature_rsa_with_sha1_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_sha1_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1343,7 +1337,7 @@ static const struct signature_alg rsa_with_sha1_alg = {
 static const struct signature_alg rsa_with_md5_alg = {
     "rsa-with-md5",
     &asn1_oid_id_pkcs1_md5WithRSAEncryption,
-    hx509_signature_rsa_with_md5,
+    &_hx509_signature_rsa_with_md5_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_md5_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1355,7 +1349,7 @@ static const struct signature_alg rsa_with_md5_alg = {
 static const struct signature_alg rsa_with_md2_alg = {
     "rsa-with-md2",
     &asn1_oid_id_pkcs1_md2WithRSAEncryption,
-    hx509_signature_rsa_with_md2,
+    &_hx509_signature_rsa_with_md2_data,
     &asn1_oid_id_pkcs1_rsaEncryption,
     &_hx509_signature_md2_data,
     PROVIDE_CONF|REQUIRE_SIGNER|RA_RSA_USES_DIGEST_INFO|SIG_PUBLIC_SIG,
@@ -1379,7 +1373,7 @@ static const struct signature_alg dsa_sha1_alg = {
 static const struct signature_alg sha256_alg = {
     "sha-256",
     &asn1_oid_id_sha256,
-    hx509_signature_sha256,
+    &_hx509_signature_sha256_data,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -1391,7 +1385,7 @@ static const struct signature_alg sha256_alg = {
 static const struct signature_alg sha1_alg = {
     "sha1",
     &asn1_oid_id_secsig_sha_1,
-    hx509_signature_sha1,
+    &_hx509_signature_sha1_data,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -1403,7 +1397,7 @@ static const struct signature_alg sha1_alg = {
 static const struct signature_alg md5_alg = {
     "rsa-md5",
     &asn1_oid_id_rsa_digest_md5,
-    hx509_signature_md5,
+    &_hx509_signature_md5_data,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -1414,7 +1408,7 @@ static const struct signature_alg md5_alg = {
 static const struct signature_alg md2_alg = {
     "rsa-md2",
     &asn1_oid_id_rsa_digest_md2,
-    hx509_signature_md2,
+    &_hx509_signature_md2_data,
     NULL,
     NULL,
     SIG_DIGEST,
@@ -1468,9 +1462,9 @@ sigalg_for_privatekey(const hx509_private_key pk)
 	if (der_heim_oid_cmp(sig_algs[i]->key_oid, keytype) != 0)
 	    continue;
 	if (pk->ops->available && 
-	    pk->ops->available(pk, sig_algs[i]->sig_alg()) == 0)
+	    pk->ops->available(pk, sig_algs[i]->sig_alg) == 0)
 	    continue;
-	return sig_algs[i]->sig_alg();
+	return sig_algs[i]->sig_alg;
     }
     return NULL;
 }
@@ -1695,7 +1689,7 @@ _hx509_public_encrypt(hx509_context context,
     ciphertext->length = ret;
     ciphertext->data = to;
 
-    ret = der_copy_oid(oid_id_pkcs1_rsaEncryption(), encryption_oid);
+    ret = der_copy_oid(&asn1_oid_id_pkcs1_rsaEncryption, encryption_oid);
     if (ret) {
 	der_free_octet_string(ciphertext);
 	hx509_set_error_string(context, 0, ENOMEM, "out of memory");
@@ -1804,7 +1798,7 @@ _hx509_generate_private_key_init(hx509_context context,
 {
     *ctx = NULL;
 
-    if (der_heim_oid_cmp(oid, oid_id_pkcs1_rsaEncryption()) != 0) {
+    if (der_heim_oid_cmp(oid, &asn1_oid_id_pkcs1_rsaEncryption) != 0) {
 	hx509_set_error_string(context, 0, EINVAL,
 			       "private key not an RSA key");
 	return EINVAL;
@@ -2034,7 +2028,7 @@ _hx509_private_key_assign_rsa(hx509_private_key key, void *ptr)
     if (key->private_key.rsa)
 	RSA_free(key->private_key.rsa);
     key->private_key.rsa = ptr;
-    key->signature_alg = oid_id_pkcs1_sha1WithRSAEncryption();
+    key->signature_alg = &asn1_oid_id_pkcs1_sha1WithRSAEncryption;
     key->md = &pkcs1_rsa_sha1_alg;
 }
 
@@ -2733,7 +2727,7 @@ find_string2key(const heim_oid *oid,
 		const EVP_MD **md,
 		PBE_string2key_func *s2k)
 {
-    if (der_heim_oid_cmp(oid, oid_id_pbewithSHAAnd40BitRC2_CBC()) == 0) {
+    if (der_heim_oid_cmp(oid, &asn1_oid_id_pbewithSHAAnd40BitRC2_CBC) == 0) {
 	*c = EVP_rc2_40_cbc();
 	*md = EVP_sha1();
 	*s2k = PBE_string2key;
@@ -3074,7 +3068,7 @@ hx509_crypto_available(hx509_context context,
 	    goto out;
 	*val = ptr;
 
-	ret = copy_AlgorithmIdentifier((*sig_algs[i]->sig_alg)(), &(*val)[len]);
+	ret = copy_AlgorithmIdentifier(sig_algs[i]->sig_alg, &(*val)[len]);
 	if (ret)
 	    goto out;
 	len++;
