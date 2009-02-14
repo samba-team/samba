@@ -467,8 +467,34 @@ build_auth_pack(krb5_context context,
 		krb5_abortx(context, "asn1 internal error");
 	} else if (ctx->keyex == USE_ECDH) {
 #ifdef HAVE_OPENSSL
-	    int len;
+	    ECParameters ecp;
 	    unsigned char *p;
+	    int len;
+
+	    /* copy in public key, XXX find the best curve that the server support or use the clients curve if possible */
+
+	    ecp.element = choice_ECParameters_namedCurve;
+	    ret = der_copy_oid(&asn1_oid_id_ec_group_secp256r1,
+			       &ecp.u.namedCurve);
+	    if (ret)
+		return ret;
+
+	    ALLOC(a->clientPublicValue->algorithm.parameters, 1);
+	    if (a->clientPublicValue->algorithm.parameters == NULL) {
+		free_ECParameters(&ecp);
+		return ENOMEM;
+	    }
+	    ASN1_MALLOC_ENCODE(ECParameters, p, len, &ecp, &size, ret);
+	    free_ECParameters(&ecp);
+	    if (ret)
+		return ret;
+	    if (size != len)
+		krb5_abortx(context, "asn1 internal error");
+	    
+	    a->clientPublicValue->algorithm.parameters->data = p;
+	    a->clientPublicValue->algorithm.parameters->length = size;
+
+	    /* copy in public key */
 
 	    ret = der_copy_oid(&asn1_oid_id_ecPublicKey,
 			       &a->clientPublicValue->algorithm.algorithm);
@@ -1196,7 +1222,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     heim_oid contentType = { 0, NULL };
     krb5_data content;
     krb5_error_code ret;
-    int dh_gen_keylen;
+    int dh_gen_keylen = 0;
     size_t size;
 
     krb5_data_zero(&content);
@@ -1365,7 +1391,6 @@ pk_rd_pa_reply_dh(krb5_context context,
 #else
 	ret = EINVAL;
 #endif
-	goto out;
     }
 	
     *key = malloc (sizeof (**key));
@@ -1393,7 +1418,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (kdc_dh_pubkey)
 	BN_free(kdc_dh_pubkey);
     if (dh_gen_key) {
-	memset(dh_gen_key, 0, DH_size(ctx->u.dh));
+	memset(dh_gen_key, 0, dh_gen_keylen);
 	free(dh_gen_key);
     }
     if (host)
@@ -2257,7 +2282,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	const char *moduli_file;
 	unsigned long dh_min_bits;
 
-	opt->opt_private->pk_init_ctx->keyex = USE_DH;
+	opt->opt_private->pk_init_ctx->keyex = USE_ECDH;
 
 
 	moduli_file = krb5_config_get_string(context, NULL,
