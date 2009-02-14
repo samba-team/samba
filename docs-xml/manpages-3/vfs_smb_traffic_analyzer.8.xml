@@ -117,6 +117,17 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>smb_traffic_analyzer:total_anonymization = STRING</term>
+		<listitem>
+		<para>If STRING matches to 'yes', the module will replace
+		any user name with the string given by the option 
+		smb_traffic_analyzer:anonymize_prefix, without generating
+		an additional hash number. This means that any transfer data
+		will be mapped to a single user, leading to a total 
+		anonymization of user related data.</para>
+		</listitem>
+		</varlistentry>
 
 	</variablelist>
 </refsect1>
