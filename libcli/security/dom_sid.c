@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "librpc/gen_ndr/security.h"
+#include "dom_sid.h"
 
 /*****************************************************************
  Compare the auth portion of two sids.
