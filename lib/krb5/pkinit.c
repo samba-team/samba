@@ -470,7 +470,7 @@ build_auth_pack(krb5_context context,
 	    int len;
 	    unsigned char *p;
 
-	    ret = der_copy_oid(oid_id_ecPublicKey(),
+	    ret = der_copy_oid(&asn1_oid_id_ecPublicKey,
 			       &a->clientPublicValue->algorithm.algorithm);
 	    if (ret)
 		return ret;
