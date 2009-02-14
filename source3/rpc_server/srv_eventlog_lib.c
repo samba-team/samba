@@ -560,6 +560,7 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 		}
 	} else if ( 0 == strncmp( start, "STR", stop - start ) ) {
 		size_t tmp_len;
+		int num_of_strings;
 		/* skip past initial ":" */
 		stop++;
 		/* now skip any other leading whitespace */
@@ -570,10 +571,15 @@ bool parse_logentry( TALLOC_CTX *mem_ctx, char *line, struct eventlog_Record_tdb
 		if (tmp_len == (size_t)-1) {
 			return false;
 		}
+		num_of_strings = entry->num_of_strings;
 		if (!add_string_to_array(mem_ctx, stop, &entry->strings,
-					 (int *)&entry->num_of_strings)) {
+					 &num_of_strings)) {
 			return false;
 		}
+		if (num_of_strings > 0xffff) {
+			return false;
+		}
+		entry->num_of_strings = num_of_strings;
 		entry->strings_len += tmp_len;
 	} else if ( 0 == strncmp( start, "DAT", stop - start ) ) {
 		/* skip past initial ":" */
