@@ -407,7 +407,7 @@ ecdsa_create_signature(hx509_context context,
     unsigned int siglen;
     int ret;
 
-    if (der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_ecPublicKey) != 0)
+    if (signer->ops && der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_ecPublicKey) != 0)
 	_hx509_abort("internal error passing private key to wrong ops");
 
     sig_oid = sig_alg->sig_oid;
@@ -638,7 +638,7 @@ rsa_create_signature(hx509_context context,
     size_t size;
     int ret;
 
-    if (der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) != 0)
+    if (signer->ops && der_heim_oid_cmp(signer->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) != 0)
 	return HX509_ALG_NOT_SUPP;
 
     if (alg)
