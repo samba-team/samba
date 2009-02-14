@@ -329,7 +329,7 @@ static void perfcount_test_set_client(struct smb_perfcount_data *pcd,
 					    uid_t uid, const char *user,
 					    const char *domain)
 {
-	// WIP
+	/* WIP */
 	return;
 }
 
