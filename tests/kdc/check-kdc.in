@@ -409,11 +409,13 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
 
     if ${hxtool} info | grep 'ecdsa:' > /dev/null ; then
 	echo "Trying pk-init (ec certificate)"
+	> messages.log
 	${kinit} -C FILE:${base}/pkinit-ec.crt,${base}/pkinit-ec.key bar@${R} || \
 	    { ec=1 ; eval "${testfailed}"; }
-
 	${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 	${kdestroy}
+	grep 'PK-INIT using ecdh' messages.log > /dev/null || \
+	    { ec=1 ; eval "${testfailed}"; }
     fi
 
 else
