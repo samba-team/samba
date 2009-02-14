@@ -223,7 +223,8 @@ static void perfcount_test_start(struct smb_perfcount_data *pcd)
 
 static void perfcount_test_add(struct smb_perfcount_data *pcd)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
 	struct perfcount_test_counter *ctr;
 
         if (pcd->context == NULL) {
@@ -243,7 +244,8 @@ static void perfcount_test_add(struct smb_perfcount_data *pcd)
 
 static void perfcount_test_set_op(struct smb_perfcount_data *pcd, int op)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
 
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_set_op - uninitialized "
@@ -256,7 +258,8 @@ static void perfcount_test_set_op(struct smb_perfcount_data *pcd, int op)
 
 static void perfcount_test_set_subop(struct smb_perfcount_data *pcd, int sub_op)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
 
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_set_sub_op - uninitialized "
@@ -269,7 +272,8 @@ static void perfcount_test_set_subop(struct smb_perfcount_data *pcd, int sub_op)
 
 static void perfcount_test_set_ioctl(struct smb_perfcount_data *pcd, int io_ctl)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_set_ioctl - uninitialized "
 			"perfcount context - %p\n", pcd));
@@ -281,7 +285,8 @@ static void perfcount_test_set_ioctl(struct smb_perfcount_data *pcd, int io_ctl)
 static void perfcount_test_set_msglen_in(struct smb_perfcount_data *pcd,
 					 uint64_t bytes_in)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_set_msglen_in - "
 			"uninitialized perfcount context - %p\n", pcd));
@@ -293,7 +298,8 @@ static void perfcount_test_set_msglen_in(struct smb_perfcount_data *pcd,
 static void perfcount_test_set_msglen_out(struct smb_perfcount_data *pcd,
 					  uint64_t bytes_out)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
 
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_set_msglen_out - uninitialized "
@@ -329,7 +335,8 @@ static void perfcount_test_set_client(struct smb_perfcount_data *pcd,
 
 static void perfcount_test_end(struct smb_perfcount_data *pcd)
 {
-	struct perfcount_test_context *ctxt = pcd->context;
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
         if (pcd->context == NULL) {
 		DEBUG(0,("perfcount_test_end - uninitialized "
 			"perfcount context - %p\n", pcd));
