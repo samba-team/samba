@@ -78,10 +78,11 @@ static uint32_t sig_count(struct sigcounter s)
 static void tevent_common_signal_handler(int signum)
 {
 	char c = 0;
+	ssize_t res;
 	SIG_INCREMENT(sig_state->signal_count[signum]);
 	SIG_INCREMENT(sig_state->got_signal);
 	/* doesn't matter if this pipe overflows */
-	write(sig_state->pipe_hack[1], &c, 1);
+	res = write(sig_state->pipe_hack[1], &c, 1);
 }
 
 #ifdef SA_SIGINFO
@@ -152,8 +153,9 @@ static void signal_pipe_handler(struct tevent_context *ev, struct tevent_fd *fde
 				uint16_t flags, void *private)
 {
 	char c[16];
+	ssize_t res;
 	/* its non-blocking, doesn't matter if we read too much */
-	read(sig_state->pipe_hack[0], c, sizeof(c));
+	res = read(sig_state->pipe_hack[0], c, sizeof(c));
 }
 
 /*
