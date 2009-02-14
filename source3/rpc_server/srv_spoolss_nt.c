@@ -1726,37 +1726,6 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static bool convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
-				NT_PRINTER_INFO_LEVEL *printer, uint32 level)
-{
-	bool ret;
-
-	switch (level) {
-		case 2:
-			/* allocate memory if needed.  Messy because
-			   convert_printer_info is used to update an existing
-			   printer or build a new one */
-
-			if ( !printer->info_2 ) {
-				printer->info_2 = TALLOC_ZERO_P( printer, NT_PRINTER_INFO_LEVEL_2 );
-				if ( !printer->info_2 ) {
-					DEBUG(0,("convert_printer_info: talloc() failed!\n"));
-					return False;
-				}
-			}
-
-			ret = uni_2_asc_printer_info_2(uni->info_2, printer->info_2);
-			printer->info_2->setuptime = time(NULL);
-
-			return ret;
-	}
-
-	return False;
-}
-
-/****************************************************************************
-****************************************************************************/
-
 static bool printer_info2_to_nt_printer_info2(struct spoolss_SetPrinterInfo2 *r,
 					      NT_PRINTER_INFO_LEVEL_2 *d)
 {
