@@ -253,4 +253,7 @@
 /* Windows minimum lock resolution timeout in ms */
 #define WINDOWS_MINIMUM_LOCK_TIMEOUT_MS 200
 
+/* Maximum size of RPC data we will accept for one call. */
+#define MAX_RPC_DATA_SIZE (15*1024*1024)
+
 #endif
