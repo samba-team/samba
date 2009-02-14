@@ -363,6 +363,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                   SMBCFILE *file,
                   struct statvfs *st)
 {
+        unsigned long flags = 0;
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
                 
@@ -410,7 +411,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                                 (fsblkcnt_t) actual_allocation_units;
                 }
 
-                st->f_flag |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
+                flags |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
         } else {
                 uint32 optimal_transfer_size;
                 uint32 block_size;
@@ -464,18 +465,24 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                  * user-specified case sensitivity setting.
                  */
                 if (! smbc_getOptionCaseSensitive(context)) {
-                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                        flags |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         } else {
                 if (! (fs_attrs & FILE_CASE_SENSITIVE_SEARCH)) {
-                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                        flags |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         }
 
         /* See if DFS is supported */
 	if ((cli->capabilities & CAP_DFS) &&  cli->dfsroot) {
-                st->f_flag |= SMBC_VFS_FEATURE_DFS;
+                flags |= SMBC_VFS_FEATURE_DFS;
         }
+
+#if HAVE_STATVFS_F_FLAG
+        st->f_flag = flags;
+#elif HAVE_STATVFS_F_FLAGS
+        st->f_flags = flags;
+#endif
 
         return 0;
 }

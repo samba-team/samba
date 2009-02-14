@@ -4789,6 +4789,23 @@ if test x"$samba_cv_frsize" = x"yes"; then
     AC_DEFINE(HAVE_FRSIZE, 1, [Whether statvfs.f_frsize exists])
 fi
 
+# Some systems use f_flag in struct statvfs while others use f_flags
+AC_CACHE_CHECK([that statvfs.statvfs_f_flag works],samba_cv_statvfs_f_flag, [
+    AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/statvfs.h>],[struct statvfs buf; buf.f_flag = 0],
+	samba_cv_statvfs_f_flag=yes,samba_cv_statvfs_f_flag=no)])
+if test x"$samba_cv_statvfs_f_flag" = x"yes"; then
+    AC_DEFINE(HAVE_STATVFS_F_FLAG, 1, [Whether statvfs.f_flag exists])
+fi
+
+AC_CACHE_CHECK([that statvfs.statvfs_f_flags works],samba_cv_statvfs_f_flags, [
+    AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/statvfs.h>],[struct statvfs buf; buf.f_flags = 0],
+	samba_cv_statvfs_f_flags=yes,samba_cv_statvfs_f_flags=no)])
+if test x"$samba_cv_statvfs_f_flags" = x"yes"; then
+    AC_DEFINE(HAVE_STATVFS_F_FLAGS, 1, [Whether statvfs.f_flags exists])
+fi
+
 if test $space = no; then
   # DEC Alpha running OSF/1
   AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
