@@ -163,3 +163,184 @@ int onefs_sys_create_file(connection_struct *conn,
 
 	return ret_fd;
 }
+
+/**
+ * Only talloc the spill buffer once (reallocing when necessary).
+ */
+static char *get_spill_buffer(size_t new_count)
+{
+	static int cur_count = 0;
+	static char *spill_buffer = NULL;
+
+	/* If a sufficiently sized buffer exists, just return. */
+	if (new_count <= cur_count) {
+		SMB_ASSERT(spill_buffer);
+		return spill_buffer;
+	}
+
+	/* Allocate the first time. */
+	if (cur_count == 0) {
+		SMB_ASSERT(!spill_buffer);
+		spill_buffer = talloc_array(NULL, char, new_count);
+		if (spill_buffer) {
+			cur_count = new_count;
+		}
+		return spill_buffer;
+	}
+
+	/* A buffer exists, but it's not big enough, so realloc. */
+	SMB_ASSERT(spill_buffer);
+	spill_buffer = talloc_realloc(NULL, spill_buffer, char, new_count);
+	if (spill_buffer) {
+		cur_count = new_count;
+	}
+	return spill_buffer;
+}
+
+/**
+ * recvfile does zero-copy writes given an fd to write to, and a socket with
+ * some data to write.  If recvfile read more than it was able to write, it
+ * spills the data into a buffer.  After first reading any additional data
+ * from the socket into the buffer, the spill buffer is then written with a
+ * standard pwrite.
+ */
+ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
+			   size_t count)
+{
+	char *spill_buffer = NULL;
+	bool socket_drained = false;
+	int ret;
+	off_t total_rbytes = 0;
+	off_t total_wbytes = 0;
+	off_t rbytes;
+	off_t wbytes;
+
+	DEBUG(10,("onefs_recvfile: from = %d, to = %d, offset=%llu, count = "
+		  "%lu\n", fromfd, tofd, offset, count));
+
+	if (count == 0) {
+		return 0;
+	}
+
+	/*
+	 * Setup up a buffer for recvfile to spill data that has been read
+	 * from the socket but not written.
+	 */
+	spill_buffer = get_spill_buffer(count);
+	if (spill_buffer == NULL) {
+		ret = -1;
+		goto out;
+	}
+
+	/*
+	 * Keep trying recvfile until:
+	 *  - There is no data left to read on the socket, or
+	 *  - bytes read != bytes written, or
+	 *  - An error is returned that isn't EINTR/EAGAIN
+	 */
+	do {
+		/* Keep track of bytes read/written for recvfile */
+		rbytes = 0;
+		wbytes = 0;
+
+		DEBUG(10, ("calling recvfile loop, offset + total_wbytes = "
+			   "%llu, count - total_rbytes = %llu\n",
+			   offset + total_wbytes, count - total_rbytes));
+
+		ret = recvfile(tofd, fromfd, offset + total_wbytes,
+			       count - total_wbytes, &rbytes, &wbytes, 0,
+			       spill_buffer);
+
+		DEBUG(10, ("recvfile ret = %d, errno = %d, rbytes = %llu, "
+			   "wbytes = %llu\n", ret, ret >= 0 ? 0 : errno,
+			   rbytes, wbytes));
+
+		/* Update our progress so far */
+		total_rbytes += rbytes;
+		total_wbytes += wbytes;
+
+	} while ((count - total_rbytes) && (rbytes == wbytes) &&
+		 (ret == -1 && (errno == EINTR || errno == EAGAIN)));
+
+	DEBUG(10, ("total_rbytes = %llu, total_wbytes = %llu\n",
+		   total_rbytes, total_wbytes));
+
+	/* Log if recvfile didn't write everything it read. */
+	if (total_rbytes != total_wbytes) {
+		DEBUG(0, ("partial recvfile: total_rbytes=%llu but "
+			  "total_wbytes=%llu, diff = %llu\n", total_rbytes,
+			  total_wbytes, total_rbytes - total_wbytes));
+		SMB_ASSERT(total_rbytes > total_wbytes);
+	}
+
+	/*
+	 * If there is still data on the socket, read it off.
+	 */
+	while (total_rbytes < count) {
+
+		DEBUG(0, ("shallow recvfile, reading %llu\n",
+			  count - total_rbytes));
+
+		/*
+		 * Read the remaining data into the spill buffer.  recvfile
+		 * may already have some data in the spill buffer, so start
+		 * filling the buffer at total_rbytes - total_wbytes.
+		 */
+		ret = sys_read(fromfd,
+			       spill_buffer + (total_rbytes - total_wbytes),
+			       count - total_rbytes);
+
+		if (ret == -1) {
+			DEBUG(0, ("shallow recvfile read failed: %s\n",
+				  strerror(errno)));
+			/* Socket is dead, so treat as if it were drained. */
+			socket_drained = true;
+			goto out;
+		}
+
+		/* Data was read so update the rbytes */
+		total_rbytes += ret;
+	}
+
+	if (total_rbytes != count) {
+		smb_panic("Unread recvfile data still on the socket!");
+	}
+
+	/*
+	 * Now write any spilled data + the extra data read off the socket.
+	 */
+	while (total_wbytes < count) {
+
+		DEBUG(0, ("partial recvfile, writing %llu\n", count - total_wbytes));
+
+		ret = sys_pwrite(tofd, spill_buffer, count - total_wbytes,
+				 offset + total_wbytes);
+
+		if (ret == -1) {
+			DEBUG(0, ("partial recvfile write failed: %s\n",
+				  strerror(errno)));
+			goto out;
+		}
+
+		/* Data was written so update the wbytes */
+		total_wbytes += ret;
+	}
+
+	/* Success! */
+	ret = total_wbytes;
+
+out:
+	/* Make sure we always try to drain the socket. */
+	if (!socket_drained && count - total_rbytes) {
+		int saved_errno = errno;
+
+		if (drain_socket(fromfd, count - total_rbytes) !=
+		    count - total_rbytes) {
+			/* Socket is dead! */
+			DEBUG(0, ("drain socket failed: %d\n", errno));
+		}
+		errno = saved_errno;
+	}
+
+	return ret;
+}

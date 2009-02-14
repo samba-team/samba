@@ -153,6 +153,18 @@ static int onefs_open(vfs_handle_struct *handle, const char *fname,
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
+static ssize_t onefs_recvfile(vfs_handle_struct *handle, int fromfd,
+			      files_struct *tofsp, SMB_OFF_T offset,
+			      size_t count)
+{
+	ssize_t result;
+
+	START_PROFILE_BYTES(syscall_recvfile, count);
+	result = onefs_sys_recvfile(fromfd, tofsp->fh->fd, offset, count);
+	END_PROFILE(syscall_recvfile);
+	return result;
+}
+
 static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
 				     files_struct *fsp,
 				     const SMB_STRUCT_STAT *sbuf)
@@ -309,6 +321,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_close), SMB_VFS_OP_CLOSE,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_recvfile), SMB_VFS_OP_RECVFILE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_rename), SMB_VFS_OP_RENAME,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(onefs_stat), SMB_VFS_OP_STAT,

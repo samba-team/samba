@@ -234,4 +234,7 @@ int onefs_sys_create_file(connection_struct *conn,
 			  uint32_t ntfs_flags,
 			  int *granted_oplock);
 
+ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
+			   size_t count);
+
 #endif /* _ONEFS_H */
