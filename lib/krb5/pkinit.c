@@ -128,6 +128,45 @@ integer_to_BN(krb5_context context, const char *field, const heim_integer *f)
     return bn;
 }
 
+static krb5_error_code
+select_dh_group(krb5_context context, DH *dh, unsigned long bits,
+		struct krb5_dh_moduli **moduli)
+{
+    const struct krb5_dh_moduli *m;
+
+    if (bits == 0) {
+	m = moduli[1]; /* XXX */
+	if (m == NULL)
+	    m = moduli[0]; /* XXX */
+    } else {
+	int i;
+	for (i = 0; moduli[i] != NULL; i++) {
+	    if (bits < moduli[i]->bits)
+		break;
+	}
+	if (moduli[i] == NULL) {
+	    krb5_set_error_message(context, EINVAL,
+				   N_("Did not find a DH group parameter "
+				      "matching requirement of %lu bits", ""),
+				   bits);
+	    return EINVAL;
+	}
+	m = moduli[i];
+    }
+
+    dh->p = integer_to_BN(context, "p", &m->p);
+    if (dh->p == NULL)
+	return ENOMEM;
+    dh->g = integer_to_BN(context, "g", &m->g);
+    if (dh->g == NULL)
+	return ENOMEM;
+    dh->q = integer_to_BN(context, "q", &m->q);
+    if (dh->q == NULL)
+	return ENOMEM;
+
+    return 0;
+}
+
 struct certfind {
     const char *type;
     const heim_oid *oid;
@@ -380,10 +419,47 @@ build_auth_pack(krb5_context context,
 	return ret;
 
     if (ctx->keyex == USE_DH || ctx->keyex == USE_ECDH) {
+	const char *moduli_file;
+	unsigned long dh_min_bits;
 	krb5_data dhbuf;
 	size_t size;
 
 	krb5_data_zero(&dhbuf);
+
+
+
+	moduli_file = krb5_config_get_string(context, NULL,
+					     "libdefaults",
+					     "moduli",
+					     NULL);
+
+	dh_min_bits =
+	    krb5_config_get_int_default(context, NULL, 0,
+					"libdefaults",
+					"pkinit_dh_min_bits",
+					NULL);
+
+	ret = _krb5_parse_moduli(context, moduli_file, &ctx->m);
+	if (ret)
+	    return ret;
+	
+	ctx->u.dh = DH_new();
+	if (ctx->u.dh == NULL) {
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("malloc: out of memory", ""));
+	    return ENOMEM;
+	}
+
+	ret = select_dh_group(context, ctx->u.dh, dh_min_bits, ctx->m);
+	if (ret)
+	    return ret;
+
+	if (DH_generate_key(ctx->u.dh) != 1) {
+	    krb5_set_error_message(context, ENOMEM,
+				   N_("pkinit: failed to generate DH key", ""));
+	    return ENOMEM;
+	}
+
 
 	if (1 /* support_cached_dh */) {
 	    ALLOC(a->clientDHNonce, 1);
@@ -1801,45 +1877,6 @@ _krb5_pk_load_id(krb5_context context,
     return ret;
 }
 
-static krb5_error_code
-select_dh_group(krb5_context context, DH *dh, unsigned long bits,
-		struct krb5_dh_moduli **moduli)
-{
-    const struct krb5_dh_moduli *m;
-
-    if (bits == 0) {
-	m = moduli[1]; /* XXX */
-	if (m == NULL)
-	    m = moduli[0]; /* XXX */
-    } else {
-	int i;
-	for (i = 0; moduli[i] != NULL; i++) {
-	    if (bits < moduli[i]->bits)
-		break;
-	}
-	if (moduli[i] == NULL) {
-	    krb5_set_error_message(context, EINVAL,
-				   N_("Did not find a DH group parameter "
-				      "matching requirement of %lu bits", ""),
-				   bits);
-	    return EINVAL;
-	}
-	m = moduli[i];
-    }
-
-    dh->p = integer_to_BN(context, "p", &m->p);
-    if (dh->p == NULL)
-	return ENOMEM;
-    dh->g = integer_to_BN(context, "g", &m->g);
-    if (dh->g == NULL)
-	return ENOMEM;
-    dh->q = integer_to_BN(context, "q", &m->q);
-    if (dh->q == NULL)
-	return ENOMEM;
-
-    return 0;
-}
-
 /*
  *
  */
@@ -2279,52 +2316,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
     /* XXX select cert here so we know if we will use ECDH or DH */
 
     if ((flags & 2) == 0) {
-	const char *moduli_file;
-	unsigned long dh_min_bits;
-
 	opt->opt_private->pk_init_ctx->keyex = USE_DH;
-
-
-	moduli_file = krb5_config_get_string(context, NULL,
-					     "libdefaults",
-					     "moduli",
-					     NULL);
-
-	dh_min_bits =
-	    krb5_config_get_int_default(context, NULL, 0,
-					"libdefaults",
-					"pkinit_dh_min_bits",
-					NULL);
-
-	ret = _krb5_parse_moduli(context, moduli_file,
-				 &opt->opt_private->pk_init_ctx->m);
-	if (ret) {
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ret;
-	}
-	
-	opt->opt_private->pk_init_ctx->u.dh = DH_new();
-	if (opt->opt_private->pk_init_ctx->u.dh == NULL) {
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    krb5_set_error_message(context, ENOMEM,
-				   N_("malloc: out of memory", ""));
-	    return ENOMEM;
-	}
-
-	ret = select_dh_group(context, opt->opt_private->pk_init_ctx->u.dh,
-			      dh_min_bits,
-			      opt->opt_private->pk_init_ctx->m);
-	if (ret) {
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    return ret;
-	}
-
-	if (DH_generate_key(opt->opt_private->pk_init_ctx->u.dh) != 1) {
-	    _krb5_get_init_creds_opt_free_pkinit(opt);
-	    krb5_set_error_message(context, ENOMEM,
-				   N_("pkinit: failed to generate DH key", ""));
-	    return ENOMEM;
-	}
     } else {
 	opt->opt_private->pk_init_ctx->keyex = USE_RSA;
     }
