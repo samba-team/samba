@@ -2019,10 +2019,10 @@ _hx509_private_key_free(hx509_private_key *key)
     if (--(*key)->ref > 0)
 	return 0;
 
-    if (der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0) {
+    if ((*key)->ops && der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0) {
 	if ((*key)->private_key.rsa)
 	    RSA_free((*key)->private_key.rsa);
-    } else if (der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0) {
+    } else if ((*key)->ops && der_heim_oid_cmp((*key)->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0) {
 	if ((*key)->private_key.ecdsa)
 	    EC_KEY_free((*key)->private_key.ecdsa);
     }
