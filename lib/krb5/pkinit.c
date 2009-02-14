@@ -1321,20 +1321,33 @@ pk_rd_pa_reply_dh(krb5_context context,
     } else {
 #ifdef HAVE_OPENSSL
 	const EC_GROUP *group;
-	EC_KEY *public;
+	EC_KEY *public = NULL;
 
-	public = o2i_ECPublicKey(NULL, &p, size);
+	group = EC_KEY_get0_group(ctx->u.eckey);
+
+	public = EC_KEY_new();
 	if (public == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	if (EC_KEY_set_group(public, group) != 1) {
+	    EC_KEY_free(public);
+	    ret = ENOMEM;
+	    goto out;
+	}
+
+	if (o2i_ECPublicKey(&public, &p, size) == NULL) {
+	    EC_KEY_free(public);
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Can't parse ECDH public key", ""));
 	    goto out;
 	}
 
-	group = EC_KEY_get0_group(ctx->u.eckey);
 	size = (EC_GROUP_get_degree(group) + 7) / 8;
 	dh_gen_key = malloc(size);
 	if (dh_gen_key == NULL) {
+	    EC_KEY_free(public);
 	    ret = ENOMEM;
 	    krb5_set_error_message(context, ret,
 				   N_("malloc: out of memory", ""));
@@ -1342,13 +1355,13 @@ pk_rd_pa_reply_dh(krb5_context context,
 	}
 	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size,
 					 EC_KEY_get0_public_key(public), ctx->u.eckey, NULL);
+	EC_KEY_free(public);
 	if (dh_gen_keylen == -1) {
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
 				   N_("PKINIT: Can't compute ECDH public key", ""));
 	    goto out;
 	}
-
 #else
 	ret = EINVAL;
 #endif
