@@ -56,6 +56,7 @@ struct pk_client_params {
 #ifdef HAVE_OPENSSL
 	struct {
 	    EC_KEY *public_key;
+	    EC_KEY *key;
 	} ecdh;
 #endif
     } u;
@@ -178,6 +179,12 @@ _kdc_pk_free_client_param(krb5_context context,
 	if (client_params->u.dh.public_key)
 	    BN_free(client_params->u.dh.public_key);
     }
+    if (client_params->keyex == USE_ECDH) {
+	if (client_params->u.ecdh.key)
+	    EC_KEY_free(client_params->u.ecdh.key);
+	if (client_params->u.ecdh.public_key)
+	    EC_KEY_free(client_params->u.ecdh.public_key);
+    }
     krb5_free_keyblock_contents(context, &client_params->reply_key);
     if (client_params->dh_group_name)
 	free(client_params->dh_group_name);
@@ -190,8 +197,9 @@ _kdc_pk_free_client_param(krb5_context context,
 }
 
 static krb5_error_code
-generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
-                     krb5_enctype enctype, krb5_keyblock *reply_key)
+generate_dh_keyblock(krb5_context context,
+		     pk_client_params *client_params,
+                     krb5_enctype enctype)
 {
     unsigned char *dh_gen_key = NULL;
     krb5_keyblock key;
@@ -239,7 +247,6 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 	}
 	ret = 0;
     } else if (client_params->keyex == USE_ECDH) {
-	EC_KEY *key;
 
 	if (client_params->u.ecdh.public_key == NULL) {
 	    ret = KRB5KRB_ERR_GENERIC;
@@ -247,23 +254,22 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 	    goto out;
 	}
 
-	key = EC_KEY_new();
-	if (key == NULL) {
+	client_params->u.ecdh.key = EC_KEY_new();
+	if (client_params->u.ecdh.key == NULL) {
 	    ret = ENOMEM;
 	    goto out;
 	}
-	EC_KEY_set_group(key, EC_KEY_get0_group(client_params->u.ecdh.public_key));
+	EC_KEY_set_group(client_params->u.ecdh.key,
+			 EC_KEY_get0_group(client_params->u.ecdh.public_key));
 
-	if (EC_KEY_generate_key(key) != 1) {
+	if (EC_KEY_generate_key(client_params->u.ecdh.key) != 1) {
 	    ret = ENOMEM;
-	    EC_KEY_free(key);
 	    goto out;
 	}
 
-	size = (EC_GROUP_get_degree(EC_KEY_get0_group(key)) + 7) / 8;
+	size = (EC_GROUP_get_degree(EC_KEY_get0_group(client_params->u.ecdh.key)) + 7) / 8;
 	dh_gen_key = malloc(size);
 	if (dh_gen_key == NULL) {
-	    EC_KEY_free(key);
 	    ret = ENOMEM;
 	    krb5_set_error_message(context, ret,
 				   N_("malloc: out of memory", ""));
@@ -272,11 +278,8 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 
 	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size, 
 					 EC_KEY_get0_public_key(client_params->u.ecdh.public_key),
-					 key, NULL);
-	EC_KEY_free(key);
+					 client_params->u.ecdh.key, NULL);
 	ret = 0;
-
-	goto out;
     } else {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret, 
@@ -288,7 +291,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 				   enctype,
 				   dh_gen_key, dh_gen_keylen,
 				   NULL, NULL,
-				   reply_key);
+				   &client_params->reply_key);
 
  out:
     if (dh_gen_key)
@@ -1011,9 +1014,7 @@ out:
 static krb5_error_code
 pk_mk_pa_reply_dh(krb5_context context,
 		  krb5_kdc_configuration *config,
-                  DH *kdc_dh,
       		  pk_client_params *client_params,
-                  krb5_keyblock *reply_key,
 		  ContentInfo *content_info,
 		  hx509_cert *kdc_cert)
 {
@@ -1022,32 +1023,61 @@ pk_mk_pa_reply_dh(krb5_context context,
     ContentInfo contentinfo;
     krb5_error_code ret;
     size_t size;
-    heim_integer i;
 
     memset(&contentinfo, 0, sizeof(contentinfo));
     memset(&dh_info, 0, sizeof(dh_info));
-    krb5_data_zero(&buf);
     krb5_data_zero(&signed_data);
+    krb5_data_zero(&buf);
 
     *kdc_cert = NULL;
 
-    ret = BN_to_integer(context, kdc_dh->pub_key, &i);
-    if (ret)
-	return ret;
+    if (client_params->keyex == USE_DH) {
+	DH *kdc_dh = client_params->u.dh.key;
+	heim_integer i;
 
-    ASN1_MALLOC_ENCODE(DHPublicKey, buf.data, buf.length, &i, &size, ret);
-    der_free_heim_integer(&i);
-    if (ret) {
-	krb5_set_error_message(context, ret, "ASN.1 encoding of "
-			       "DHPublicKey failed (%d)", ret);
-	return ret;
-    }
-    if (buf.length != size)
-	krb5_abortx(context, "Internal ASN.1 encoder error");
+	ret = BN_to_integer(context, kdc_dh->pub_key, &i);
+	if (ret)
+	    return ret;
+	
+	ASN1_MALLOC_ENCODE(DHPublicKey, buf.data, buf.length, &i, &size, ret);
+	der_free_heim_integer(&i);
+	if (ret) {
+	    krb5_set_error_message(context, ret, "ASN.1 encoding of "
+				   "DHPublicKey failed (%d)", ret);
+	    return ret;
+	}
+	if (buf.length != size)
+	    krb5_abortx(context, "Internal ASN.1 encoder error");
+	
+	dh_info.subjectPublicKey.length = buf.length * 8;
+	dh_info.subjectPublicKey.data = buf.data;
+	krb5_data_zero(&buf);
+    } else if (client_params->keyex == USE_ECDH) {
+#ifdef HAVE_OPENSSL
+	unsigned char *p;
+	int len;
 
-    dh_info.subjectPublicKey.length = buf.length * 8;
-    dh_info.subjectPublicKey.data = buf.data;
+	len = i2o_ECPublicKey(client_params->u.ecdh.key, NULL);
+	if (len <= 0)
+	    abort();
 
+	p = malloc(len);
+	if (p == NULL)
+	    abort();
+
+	dh_info.subjectPublicKey.length = len * 8;
+	dh_info.subjectPublicKey.data = p;
+
+	len = i2o_ECPublicKey(client_params->u.ecdh.key, &p);
+	if (len <= 0)
+	    abort();
+#else
+	return ENOMEM;
+#endif
+    } else
+	krb5_abortx(context, "no keyex selected ?");
+
+	
     dh_info.nonce = client_params->nonce;
 
     ASN1_MALLOC_ENCODE(KDCDHKeyInfo, buf.data, buf.length, &dh_info, &size,
@@ -1217,14 +1247,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	    rep.element = choice_PA_PK_AS_REP_dhInfo;
 
-	    ret = generate_dh_keyblock(context, client_params, enctype,
-				       &client_params->reply_key);
+	    ret = generate_dh_keyblock(context, client_params, enctype);
 	    if (ret)
 		return ret;
 
-	    ret = pk_mk_pa_reply_dh(context, config, client_params->u.dh.key,
+	    ret = pk_mk_pa_reply_dh(context, config,
 				    client_params,
-				    &client_params->reply_key,
 				    &info,
 				    &kdc_cert);
 
