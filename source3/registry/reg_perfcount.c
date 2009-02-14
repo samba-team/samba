@@ -41,9 +41,6 @@ static char *counters_directory(const char *dbname)
 	char *ret = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	if (!dbname)
-		return NULL;
-
 	path = talloc_asprintf(ctx, "%s/%s", PERFCOUNTDIR, dbname);
 	if (!path) {
 		return NULL;
