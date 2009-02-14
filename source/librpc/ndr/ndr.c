@@ -187,10 +187,10 @@ _PUBLIC_ void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, 
 	}
 
 	for (i=0;i<ndr->depth;i++) {
-		DEBUGADD(0,("    "));
+		DEBUGADD(1,("    "));
 	}
 
-	DEBUGADD(0,("%s\n", s));
+	DEBUGADD(1,("%s\n", s));
 	free(s);
 }
 
