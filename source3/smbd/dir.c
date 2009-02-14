@@ -685,7 +685,7 @@ void dptr_DirCacheAdd(struct dptr_struct *dptr, const char *name, long offset)
 ****************************************************************************/
 void dptr_init_search_op(struct dptr_struct *dptr)
 {
-	return SMB_VFS_INIT_SEARCH_OP(dptr->conn, dptr->dir_hnd->dir);
+	SMB_VFS_INIT_SEARCH_OP(dptr->conn, dptr->dir_hnd->dir);
 }
 
 /****************************************************************************
