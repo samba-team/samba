@@ -255,7 +255,10 @@ struct tevent_signal *tevent_common_add_signal(struct tevent_context *ev,
 	if (ev->pipe_fde == NULL) {
 		if (sig_state->pipe_hack[0] == 0 && 
 		    sig_state->pipe_hack[1] == 0) {
-			pipe(sig_state->pipe_hack);
+			if (pipe(sig_state->pipe_hack) == -1) {
+				talloc_free(se);
+				return NULL;
+			}
 			ev_set_blocking(sig_state->pipe_hack[0], false);
 			ev_set_blocking(sig_state->pipe_hack[1], false);
 		}
