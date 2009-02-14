@@ -207,6 +207,10 @@ extern const struct ndr_interface_table ndr_table_spoolss;
 #define NDR_SPOOLSS_CALL_COUNT (96)
 void ndr_print_spoolss_Time(struct ndr_print *ndr, const char *name, const struct spoolss_Time *r);
 void ndr_print_spoolss_TimeCtr(struct ndr_print *ndr, const char *name, const struct spoolss_TimeCtr *r);
+void ndr_print_spoolss_ProcessorArchitecture(struct ndr_print *ndr, const char *name, enum spoolss_ProcessorArchitecture r);
+void ndr_print_spoolss_ProcessorType(struct ndr_print *ndr, const char *name, enum spoolss_ProcessorType r);
+void ndr_print_spoolss_MajorVersion(struct ndr_print *ndr, const char *name, enum spoolss_MajorVersion r);
+void ndr_print_spoolss_MinorVersion(struct ndr_print *ndr, const char *name, enum spoolss_MinorVersion r);
 void ndr_print_spoolss_PrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_PrinterInfo0 *r);
 void ndr_print_spoolss_DeviceModeFields(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_spoolss_DeviceMode(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DeviceMode *r);
@@ -238,7 +242,16 @@ void ndr_print_spoolss_JobInfo(struct ndr_print *ndr, const char *name, const un
 void ndr_print_spoolss_JobInfoContainer(struct ndr_print *ndr, const char *name, const struct spoolss_JobInfoContainer *r);
 void ndr_print_spoolss_JobControl(struct ndr_print *ndr, const char *name, enum spoolss_JobControl r);
 void ndr_print_spoolss_PrinterControl(struct ndr_print *ndr, const char *name, enum spoolss_PrinterControl r);
+void ndr_print_spoolss_SetPrinterInfo0(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo0 *r);
+void ndr_print_spoolss_SetPrinterInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo1 *r);
+void ndr_print_spoolss_SetPrinterInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo2 *r);
+void ndr_print_spoolss_SetPrinterInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo3 *r);
+void ndr_print_spoolss_SetPrinterInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo4 *r);
+void ndr_print_spoolss_SetPrinterInfo5(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo5 *r);
+void ndr_print_spoolss_SetPrinterInfo6(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo6 *r);
+void ndr_print_spoolss_SetPrinterInfo7(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfo7 *r);
 void ndr_print_spoolss_SetPrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_SetPrinterInfo *r);
+void ndr_print_spoolss_SetPrinterInfoCtr(struct ndr_print *ndr, const char *name, const struct spoolss_SetPrinterInfoCtr *r);
 enum ndr_err_code ndr_push_spoolss_StringArray(struct ndr_push *ndr, int ndr_flags, const struct spoolss_StringArray *r);
 enum ndr_err_code ndr_pull_spoolss_StringArray(struct ndr_pull *ndr, int ndr_flags, struct spoolss_StringArray *r);
 void ndr_print_spoolss_StringArray(struct ndr_print *ndr, const char *name, const struct spoolss_StringArray *r);
@@ -317,7 +330,10 @@ void ndr_print_spoolss_NotifyInfo(struct ndr_print *ndr, const char *name, const
 void ndr_print_spoolss_ReplyPrinterInfo(struct ndr_print *ndr, const char *name, const union spoolss_ReplyPrinterInfo *r);
 void ndr_print_spoolss_PrinterNotifyFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_spoolss_UserLevel1(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel1 *r);
+void ndr_print_spoolss_UserLevel2(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel2 *r);
+void ndr_print_spoolss_UserLevel3(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel3 *r);
 void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, const union spoolss_UserLevel *r);
+void ndr_print_spoolss_UserLevelCtr(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevelCtr *r);
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r);

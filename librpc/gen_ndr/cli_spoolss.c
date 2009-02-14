@@ -370,10 +370,9 @@ NTSTATUS rpccli_spoolss_DeletePrinter(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_spoolss_SetPrinter(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle /* [in] [ref] */,
-				   uint32_t level /* [in]  */,
-				   union spoolss_SetPrinterInfo info /* [in] [switch_is(level)] */,
-				   struct spoolss_DevmodeContainer devmode_ctr /* [in]  */,
-				   struct sec_desc_buf secdesc_ctr /* [in]  */,
+				   struct spoolss_SetPrinterInfoCtr *info_ctr /* [in] [ref] */,
+				   struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
+				   struct sec_desc_buf *secdesc_ctr /* [in] [ref] */,
 				   enum spoolss_PrinterControl command /* [in]  */,
 				   WERROR *werror)
 {
@@ -382,8 +381,7 @@ NTSTATUS rpccli_spoolss_SetPrinter(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.level = level;
-	r.in.info = info;
+	r.in.info_ctr = info_ctr;
 	r.in.devmode_ctr = devmode_ctr;
 	r.in.secdesc_ctr = secdesc_ctr;
 	r.in.command = command;
@@ -3308,12 +3306,10 @@ NTSTATUS rpccli_spoolss_OpenPrinterEx(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     const char *server /* [in] [unique,charset(UTF16)] */,
-				     uint32_t level /* [in]  */,
-				     union spoolss_PrinterInfo *info /* [in] [unique,switch_is(level)] */,
-				     struct spoolss_DevmodeContainer devmode_ctr /* [in]  */,
-				     struct security_descriptor *secdesc /* [in] [unique] */,
-				     uint32_t ulevel /* [in]  */,
-				     union spoolss_UserLevel userlevel /* [in] [switch_is(ulevel)] */,
+				     struct spoolss_SetPrinterInfoCtr *info_ctr /* [in] [ref] */,
+				     struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
+				     struct sec_desc_buf *secdesc_ctr /* [in] [ref] */,
+				     struct spoolss_UserLevelCtr *userlevel_ctr /* [in] [ref] */,
 				     struct policy_handle *handle /* [out] [ref] */,
 				     WERROR *werror)
 {
@@ -3322,12 +3318,10 @@ NTSTATUS rpccli_spoolss_AddPrinterEx(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.server = server;
-	r.in.level = level;
-	r.in.info = info;
+	r.in.info_ctr = info_ctr;
 	r.in.devmode_ctr = devmode_ctr;
-	r.in.secdesc = secdesc;
-	r.in.ulevel = ulevel;
-	r.in.userlevel = userlevel;
+	r.in.secdesc_ctr = secdesc_ctr;
+	r.in.userlevel_ctr = userlevel_ctr;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_AddPrinterEx, &r);

@@ -48,6 +48,74 @@ struct spoolss_TimeCtr {
 	struct spoolss_Time *time;/* [unique] */
 };
 
+enum spoolss_ProcessorArchitecture
+#ifndef USE_UINT_ENUMS
+ {
+	PROCESSOR_ARCHITECTURE_INTEL=0x0000,
+	PROCESSOR_ARCHITECTURE_IA64=0x0006,
+	PROCESSOR_ARCHITECTURE_AMD64=0x0009
+}
+#else
+ { __donnot_use_enum_spoolss_ProcessorArchitecture=0x7FFFFFFF}
+#define PROCESSOR_ARCHITECTURE_INTEL ( 0x0000 )
+#define PROCESSOR_ARCHITECTURE_IA64 ( 0x0006 )
+#define PROCESSOR_ARCHITECTURE_AMD64 ( 0x0009 )
+#endif
+;
+
+enum spoolss_ProcessorType
+#ifndef USE_UINT_ENUMS
+ {
+	PROCESSOR_INTEL_386=0x00000182,
+	PROCESSOR_INTEL_486=0x000001E6,
+	PROCESSOR_INTEL_PENTIUM=0x0000024A,
+	PROCESSOR_INTEL_IA64=0x00000898,
+	PROCESSOR_AMD_X8664=0x000022A0
+}
+#else
+ { __donnot_use_enum_spoolss_ProcessorType=0x7FFFFFFF}
+#define PROCESSOR_INTEL_386 ( 0x00000182 )
+#define PROCESSOR_INTEL_486 ( 0x000001E6 )
+#define PROCESSOR_INTEL_PENTIUM ( 0x0000024A )
+#define PROCESSOR_INTEL_IA64 ( 0x00000898 )
+#define PROCESSOR_AMD_X8664 ( 0x000022A0 )
+#endif
+;
+
+enum spoolss_MajorVersion
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_MAJOR_VERSION_NT4_95_98_ME=0x00000004,
+	SPOOLSS_MAJOR_VERSION_2000_2003_XP=0x00000005,
+	SPOOLSS_MAJOR_VERSION_2008_VISTA=0x00000006
+}
+#else
+ { __donnot_use_enum_spoolss_MajorVersion=0x7FFFFFFF}
+#define SPOOLSS_MAJOR_VERSION_NT4_95_98_ME ( 0x00000004 )
+#define SPOOLSS_MAJOR_VERSION_2000_2003_XP ( 0x00000005 )
+#define SPOOLSS_MAJOR_VERSION_2008_VISTA ( 0x00000006 )
+#endif
+;
+
+enum spoolss_MinorVersion
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_MINOR_VERSION_0=0x00000000,
+	SPOOLSS_MINOR_VERSION_XP=0x00000001,
+	SPOOLSS_MINOR_VERSION_2003_XP64=0x00000002,
+	SPOOLSS_MINOR_VERSION_98=0x0000000a,
+	SPOOLSS_MINOR_VERSION_ME=0x0000005a
+}
+#else
+ { __donnot_use_enum_spoolss_MinorVersion=0x7FFFFFFF}
+#define SPOOLSS_MINOR_VERSION_0 ( 0x00000000 )
+#define SPOOLSS_MINOR_VERSION_XP ( 0x00000001 )
+#define SPOOLSS_MINOR_VERSION_2003_XP64 ( 0x00000002 )
+#define SPOOLSS_MINOR_VERSION_98 ( 0x0000000a )
+#define SPOOLSS_MINOR_VERSION_ME ( 0x0000005a )
+#endif
+;
+
 struct spoolss_PrinterInfo0 {
 	const char * printername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * servername;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -58,26 +126,26 @@ struct spoolss_PrinterInfo0 {
 	uint32_t global_counter;
 	uint32_t total_pages;
 	uint32_t version;
-	uint32_t unknown10;
-	uint32_t unknown11;
-	uint32_t unknown12;
+	uint32_t free_build;
+	uint32_t spooling;
+	uint32_t max_spooling;
 	uint32_t session_counter;
-	uint32_t unknown14;
-	uint32_t printer_errors;
-	uint32_t unknown16;
-	uint32_t unknown17;
-	uint32_t unknown18;
-	uint32_t unknown19;
+	uint32_t num_error_out_of_paper;
+	uint32_t num_error_not_ready;
+	uint32_t job_error;
+	uint32_t number_of_processors;
+	enum spoolss_ProcessorType processor_type;
+	uint32_t high_part_total_bytes;
 	uint32_t change_id;
-	uint32_t unknown21;
+	WERROR last_error;
 	uint32_t status;
-	uint32_t unknown23;
+	uint32_t enumerate_network_printers;
 	uint32_t c_setprinter;
-	uint16_t unknown25;
-	uint16_t unknown26;
-	uint32_t unknown27;
-	uint32_t unknown28;
-	uint32_t unknown29;
+	enum spoolss_ProcessorArchitecture processor_architecture;
+	uint16_t processor_level;
+	uint32_t ref_ic;
+	uint32_t reserved2;
+	uint32_t reserved3;
 };
 
 /* bitmap spoolss_DeviceModeFields */
@@ -368,18 +436,113 @@ enum spoolss_PrinterControl
 #endif
 ;
 
+struct spoolss_SetPrinterInfo0 {
+	const char *servername;/* [unique,charset(UTF16)] */
+	const char *printername;/* [unique,charset(UTF16)] */
+	uint32_t cjobs;
+	uint32_t total_jobs;
+	uint32_t total_bytes;
+	struct spoolss_Time time;
+	uint32_t global_counter;
+	uint32_t total_pages;
+	uint32_t version;
+	uint32_t free_build;
+	uint32_t spooling;
+	uint32_t max_spooling;
+	uint32_t session_counter;
+	uint32_t num_error_out_of_paper;
+	uint32_t num_error_not_ready;
+	uint32_t job_error;
+	uint32_t number_of_processors;
+	enum spoolss_ProcessorType processor_type;
+	uint32_t high_part_total_bytes;
+	uint32_t change_id;
+	WERROR last_error;
+	uint32_t status;
+	uint32_t enumerate_network_printers;
+	uint32_t c_setprinter;
+	enum spoolss_ProcessorArchitecture processor_architecture;
+	uint16_t processor_level;
+	uint32_t ref_ic;
+	uint32_t reserved2;
+	uint32_t reserved3;
+};
+
+struct spoolss_SetPrinterInfo1 {
+	uint32_t flags;
+	const char *name;/* [unique,charset(UTF16)] */
+	const char *description;/* [unique,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
+};
+
+struct spoolss_SetPrinterInfo2 {
+	const char *servername;/* [unique,charset(UTF16)] */
+	const char *printername;/* [unique,charset(UTF16)] */
+	const char *sharename;/* [unique,charset(UTF16)] */
+	const char *portname;/* [unique,charset(UTF16)] */
+	const char *drivername;/* [unique,charset(UTF16)] */
+	const char *comment;/* [unique,charset(UTF16)] */
+	const char *location;/* [unique,charset(UTF16)] */
+	struct spoolss_DeviceMode *devmode;/* [unique,subcontext(0)] */
+	const char *sepfile;/* [unique,charset(UTF16)] */
+	const char *printprocessor;/* [unique,charset(UTF16)] */
+	const char *datatype;/* [unique,charset(UTF16)] */
+	const char *parameters;/* [unique,charset(UTF16)] */
+	struct security_descriptor *secdesc;/* [unique,subcontext(0)] */
+	uint32_t attributes;
+	uint32_t priority;
+	uint32_t defaultpriority;
+	uint32_t starttime;
+	uint32_t untiltime;
+	uint32_t status;
+	uint32_t cjobs;
+	uint32_t averageppm;
+};
+
+struct spoolss_SetPrinterInfo3 {
+	struct security_descriptor *secdesc;/* [unique] */
+};
+
+struct spoolss_SetPrinterInfo4 {
+	const char *printername;/* [unique,charset(UTF16)] */
+	const char *servername;/* [unique,charset(UTF16)] */
+	uint32_t attributes;
+};
+
+struct spoolss_SetPrinterInfo5 {
+	const char *printername;/* [unique,charset(UTF16)] */
+	const char *portname;/* [unique,charset(UTF16)] */
+	uint32_t attributes;
+	uint32_t device_not_selected_timeout;
+	uint32_t transmission_retry_timeout;
+};
+
+struct spoolss_SetPrinterInfo6 {
+	uint32_t status;
+};
+
+struct spoolss_SetPrinterInfo7 {
+	const char *guid;/* [unique,charset(UTF16)] */
+	uint32_t action;
+};
+
 union spoolss_SetPrinterInfo {
-	struct spoolss_PrinterInfo0 *info0;/* [unique,case(0)] */
-	struct spoolss_PrinterInfo1 *info1;/* [unique,case] */
-	struct spoolss_PrinterInfo2 *info2;/* [unique,case(2)] */
-	struct spoolss_PrinterInfo3 *info3;/* [unique,case(3)] */
-	struct spoolss_PrinterInfo4 *info4;/* [unique,case(4)] */
-	struct spoolss_PrinterInfo5 *info5;/* [unique,case(5)] */
-	struct spoolss_PrinterInfo6 *info6;/* [unique,case(6)] */
-	struct spoolss_PrinterInfo7 *info7;/* [unique,case(7)] */
+	struct spoolss_SetPrinterInfo0 *info0;/* [unique,case(0)] */
+	struct spoolss_SetPrinterInfo1 *info1;/* [unique,case] */
+	struct spoolss_SetPrinterInfo2 *info2;/* [unique,case(2)] */
+	struct spoolss_SetPrinterInfo3 *info3;/* [unique,case(3)] */
+	struct spoolss_SetPrinterInfo4 *info4;/* [unique,case(4)] */
+	struct spoolss_SetPrinterInfo5 *info5;/* [unique,case(5)] */
+	struct spoolss_SetPrinterInfo6 *info6;/* [unique,case(6)] */
+	struct spoolss_SetPrinterInfo7 *info7;/* [unique,case(7)] */
 	struct spoolss_DeviceModeInfo *info8;/* [unique,case(8)] */
 	struct spoolss_DeviceModeInfo *info9;/* [unique,case(9)] */
 }/* [switch_type(uint32)] */;
+
+struct spoolss_SetPrinterInfoCtr {
+	uint32_t level;
+	union spoolss_SetPrinterInfo info;/* [switch_is(level)] */
+};
 
 struct spoolss_StringArray {
 	uint32_t _ndr_size;/* [value((ndr_size_spoolss_StringArray(r,ndr->iconv_convenience,ndr->flags)-4)/2)] */
@@ -930,13 +1093,37 @@ struct spoolss_UserLevel1 {
 	const char *client;/* [unique,charset(UTF16)] */
 	const char *user;/* [unique,charset(UTF16)] */
 	uint32_t build;
-	uint32_t major;
-	uint32_t minor;
-	uint32_t processor;
+	enum spoolss_MajorVersion major;
+	enum spoolss_MinorVersion minor;
+	enum spoolss_ProcessorArchitecture processor;
+};
+
+struct spoolss_UserLevel2 {
+	uint32_t not_used;
+};
+
+struct spoolss_UserLevel3 {
+	uint32_t size;
+	uint32_t flags;
+	uint32_t size2;
+	const char *client;/* [unique,charset(UTF16)] */
+	const char *user;/* [unique,charset(UTF16)] */
+	uint32_t build;
+	enum spoolss_MajorVersion major;
+	enum spoolss_MinorVersion minor;
+	enum spoolss_ProcessorArchitecture processor;
+	uint64_t reserved;
 };
 
 union spoolss_UserLevel {
 	struct spoolss_UserLevel1 *level1;/* [unique,case] */
+	struct spoolss_UserLevel2 *level2;/* [unique,case(2)] */
+	struct spoolss_UserLevel3 *level3;/* [unique,case(3)] */
+}/* [switch_type(uint32)] */;
+
+struct spoolss_UserLevelCtr {
+	uint32_t level;
+	union spoolss_UserLevel user_info;/* [switch_is(level)] */
 };
 
 /* bitmap spoolss_AccessRights */
@@ -1138,10 +1325,9 @@ struct spoolss_DeletePrinter {
 struct spoolss_SetPrinter {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t level;
-		union spoolss_SetPrinterInfo info;/* [switch_is(level)] */
-		struct spoolss_DevmodeContainer devmode_ctr;
-		struct sec_desc_buf secdesc_ctr;
+		struct spoolss_SetPrinterInfoCtr *info_ctr;/* [ref] */
+		struct spoolss_DevmodeContainer *devmode_ctr;/* [ref] */
+		struct sec_desc_buf *secdesc_ctr;/* [ref] */
 		enum spoolss_PrinterControl command;
 	} in;
 
@@ -2136,12 +2322,10 @@ struct spoolss_OpenPrinterEx {
 struct spoolss_AddPrinterEx {
 	struct {
 		const char *server;/* [unique,charset(UTF16)] */
-		uint32_t level;
-		union spoolss_PrinterInfo *info;/* [unique,switch_is(level)] */
-		struct spoolss_DevmodeContainer devmode_ctr;
-		struct security_descriptor *secdesc;/* [unique] */
-		uint32_t ulevel;
-		union spoolss_UserLevel userlevel;/* [switch_is(ulevel)] */
+		struct spoolss_SetPrinterInfoCtr *info_ctr;/* [ref] */
+		struct spoolss_DevmodeContainer *devmode_ctr;/* [ref] */
+		struct sec_desc_buf *secdesc_ctr;/* [ref] */
+		struct spoolss_UserLevelCtr *userlevel_ctr;/* [ref] */
 	} in;
 
 	struct {
