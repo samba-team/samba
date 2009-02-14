@@ -6950,7 +6950,7 @@ void reply_lockingX(struct smb_request *req)
 			  fsp->fsp_name, (int)lock_timeout ));
 
 		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-			struct blocking_lock_record *blr;
+			struct blocking_lock_record *blr = NULL;
 
 			if (lp_blocking_locks(SNUM(conn))) {
 
