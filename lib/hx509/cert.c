@@ -1483,7 +1483,9 @@ hx509_cert_get_SPKI(hx509_context context, hx509_cert p, SubjectPublicKeyInfo *s
  * @param context a hx509 context.
  * @param p a hx509 certificate object.
  * @param alg AlgorithmIdentifier, should be freed with
- * free_AlgorithmIdentifier().
+ *            free_AlgorithmIdentifier(). The algorithmidentifier is
+ *            typicly rsaEncryption, or id-ecPublicKey, or some other
+ *            public key mechanism.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
