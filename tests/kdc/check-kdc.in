@@ -381,7 +381,6 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
 
     for type in "" "--pk-use-enckey"; do
 	echo "Trying pk-init (principal in certificate) $type"; > messages.log
-	base="${srcdir}/../../lib/hx509/data"
 	${kinit} $type -C FILE:${base}/pkinit.crt,${base}/pkinit.key bar@${R} || \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
@@ -401,13 +400,22 @@ if test "$pkinit" = yes -a "$rsa" = yes ; then
 	${kdestroy}
 
 	echo "Trying pk-init (proxy cert) $type"; > messages.log
-	base="${srcdir}/../../lib/hx509/data"
 	${kinit} $type -C FILE:${base}/pkinit-proxy-chain.crt,${base}/pkinit-proxy.key foo@${R} || \
 		{ ec=1 ; eval "${testfailed}"; }
 	${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 	${kdestroy}
 
     done
+
+    if ${hxtool} info | grep 'ecdsa:' > /dev/null ; then
+	echo "Trying pk-init (ec certificate)"
+	${kinit} -C FILE:${base}/pkinit-ec.crt,${base}/pkinit-ec.key bar@${R} || \
+	    { ec=1 ; eval "${testfailed}"; }
+
+	${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+	${kdestroy}
+    fi
+
 else
 	echo "no pkinit (pkinit: $pkinit, rsa: $rsa)"; > messages.log
 fi
