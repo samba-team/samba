@@ -2282,7 +2282,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	const char *moduli_file;
 	unsigned long dh_min_bits;
 
-	opt->opt_private->pk_init_ctx->keyex = USE_ECDH;
+	opt->opt_private->pk_init_ctx->keyex = USE_DH;
 
 
 	moduli_file = krb5_config_get_string(context, NULL,
