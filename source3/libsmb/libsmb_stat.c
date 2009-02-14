@@ -402,8 +402,6 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
 #if HAVE_FRSIZE
                         st->f_frsize =
                                 (unsigned long) sectors_per_allocation_unit;
-#else
-#warning "f_frsize field is not available"
 #endif
                         st->f_blocks =
                                 (fsblkcnt_t) total_allocation_units;
@@ -450,9 +448,6 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                         st->f_fsid =
                                 (unsigned long) fs_identifier;
                         
-#else
-#warning "f_fsid is not an integer type so is not available"
-                        /* We don't know the type, so don't try to set it */
 #endif
                 }
         }
