@@ -1241,7 +1241,12 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	} else {
 	    ContentInfo info;
 
-	    type = "dh";
+	    switch (client_params->keyex) {
+	    case USE_DH: type = "dh"; break;
+	    case USE_ECDH: type = "ecdh"; break;
+	    default: krb5_abortx(context, "unknown keyex"); break;
+	    }
+
 	    if (client_params->dh_group_name)
 		other = client_params->dh_group_name;
 
