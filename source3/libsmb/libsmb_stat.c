@@ -398,8 +398,12 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                         /* ... then provide it */
                         st->f_bsize =
                                 (unsigned long) bytes_per_sector;
+#if HAVE_FRSIZE
                         st->f_frsize =
                                 (unsigned long) sectors_per_allocation_unit;
+#else
+#warning "f_frsize field is not available"
+#endif
                         st->f_blocks =
                                 (fsblkcnt_t) total_allocation_units;
                         st->f_bfree =
