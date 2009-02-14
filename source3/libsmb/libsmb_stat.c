@@ -441,9 +441,14 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                                 (fsfilcnt_t) total_file_nodes;
                         st->f_ffree =
                                 (fsfilcnt_t) free_file_nodes;
+#if HAVE_FSID_INT
                         st->f_fsid =
                                 (unsigned long) fs_identifier;
                         
+#else
+#warning "f_fsid is not an integer type so is not available"
+                        /* We don't know the type, so don't try to set it */
+#endif
                 }
         }
 
