@@ -64,6 +64,8 @@ examples/libsmbclient/teststat3
 examples/libsmbclient/testutime
 examples/libsmbclient/testwrite
 examples/libsmbclient/testtruncate
+examples/libsmbclient/testfstatvfs
+examples/libsmbclient/teststatvfs
 examples/libsmbclient/tree
 examples/libsmbclient/Makefile.internal
 source/librpc/gen_ndr/cli_krb5pac.*
