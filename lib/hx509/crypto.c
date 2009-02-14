@@ -1453,8 +1453,13 @@ find_sig_alg(const heim_oid *oid)
 static const AlgorithmIdentifier *
 alg_for_privatekey(const hx509_private_key pk, int type)
 {
-    const heim_oid *keytype = pk->ops->key_oid;
+    const heim_oid *keytype;
     unsigned int i;
+
+    if (pk->ops == NULL)
+	return NULL;
+
+    keytype = pk->ops->key_oid;
 
     for (i = 0; sig_algs[i]; i++) {
 	if (sig_algs[i]->key_oid == NULL)
