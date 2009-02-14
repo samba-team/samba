@@ -218,29 +218,10 @@ create_signature(krb5_context context,
 		 hx509_peer_info peer,
 		 krb5_data *sd_data)
 {
-    hx509_cert cert = NULL;
-    hx509_query *q = NULL;
-    int ret;
-    int flags = 0;
+    int ret, flags = 0;
 
-    if (id->certs) {
-	ret = hx509_query_alloc(id->hx509ctx, &q);
-	if (ret) {
-	    pk_copy_error(context, id->hx509ctx, ret,
-			  "Allocate query to find signing certificate");
-	    return ret;
-	}
-	
-	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
-	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
-	
-	ret = find_cert(context, id, q, &cert);
-	hx509_query_free(id->hx509ctx, q);
-	if (ret)
-	    return ret;
-    } else {
+    if (id->cert == NULL)
 	flags = HX509_CMS_SIGNATURE_NO_SIGNER;
-    }
 
     ret = hx509_cms_create_signed_1(id->hx509ctx,
 				    0,
@@ -248,13 +229,11 @@ create_signature(krb5_context context,
 				    eContent->data,
 				    eContent->length,
 				    NULL,
-				    cert,
+				    id->cert,
 				    peer,
 				    NULL,
 				    id->certs,
 				    sd_data);
-    if (cert)
-	hx509_cert_free(cert);
     if (ret) {
 	pk_copy_error(context, id->hx509ctx, ret,
 		      "Create CMS signedData");
@@ -2224,6 +2203,7 @@ _krb5_get_init_creds_opt_free_pkinit(krb5_get_init_creds_opt *opt)
     if (ctx->id) {
 	hx509_verify_destroy_ctx(ctx->id->verify_ctx);
 	hx509_certs_free(&ctx->id->certs);
+	hx509_cert_free(ctx->id->cert);
 	hx509_certs_free(&ctx->id->anchors);
 	hx509_certs_free(&ctx->id->certpool);
 	hx509_context_free(&ctx->id->hx509ctx);
@@ -2313,12 +2293,58 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	return ret;
     }
 
-    /* XXX select cert here so we know if we will use ECDH or DH */
+    if (opt->opt_private->pk_init_ctx->id->certs) {
+	hx509_query *q = NULL;
+	hx509_cert cert = NULL;
+	hx509_context hx509ctx = opt->opt_private->pk_init_ctx->id->hx509ctx;
+
+	ret = hx509_query_alloc(hx509ctx, &q);
+	if (ret) {
+	    pk_copy_error(context, hx509ctx, ret,
+			  "Allocate query to find signing certificate");
+	    return ret;
+	}
+	
+	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
+	hx509_query_match_option(q, HX509_QUERY_OPTION_KU_DIGITALSIGNATURE);
+	
+	ret = find_cert(context, opt->opt_private->pk_init_ctx->id, q, &cert);
+	hx509_query_free(hx509ctx, q);
+	if (ret)
+	    return ret;
+
+	opt->opt_private->pk_init_ctx->id->cert = cert;
+    } else
+	opt->opt_private->pk_init_ctx->id->cert = NULL;
 
     if ((flags & 2) == 0) {
+	hx509_context hx509ctx = opt->opt_private->pk_init_ctx->id->hx509ctx;
+	hx509_cert cert = opt->opt_private->pk_init_ctx->id->cert;
+
 	opt->opt_private->pk_init_ctx->keyex = USE_DH;
+
+	/*
+	 * If its a ECDSA certs, lets select ECDSA as the algorithm.
+	 */
+	if (cert) {
+	    AlgorithmIdentifier alg;
+
+	    ret = hx509_cert_get_SPKI_AlgorithmIdentifier(hx509ctx, cert, &alg);
+	    if (ret == 0) {
+		if (der_heim_oid_cmp(&alg.algorithm, &asn1_oid_id_ecPublicKey) == 0)
+		    opt->opt_private->pk_init_ctx->keyex = USE_ECDH;
+		free_AlgorithmIdentifier(&alg);
+	    }
+	}
+
     } else {
 	opt->opt_private->pk_init_ctx->keyex = USE_RSA;
+
+	if (opt->opt_private->pk_init_ctx->id->certs == NULL) {
+	    krb5_set_error_message(context, EINVAL,
+				   N_("No anonymous pkinit support in RSA mode", ""));
+	    return EINVAL;
+	}	    
     }
 
     return 0;
