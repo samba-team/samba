@@ -363,6 +363,7 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                   SMBCFILE *file,
                   struct statvfs *st)
 {
+        unsigned long flags = 0;
 	uint32 fs_attrs = 0;
 	struct cli_state *cli = file->srv->cli;
                 
@@ -398,15 +399,19 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                         /* ... then provide it */
                         st->f_bsize =
                                 (unsigned long) bytes_per_sector;
+#if HAVE_FRSIZE
                         st->f_frsize =
                                 (unsigned long) sectors_per_allocation_unit;
+#else
+#warning "f_frsize field is not available"
+#endif
                         st->f_blocks =
                                 (fsblkcnt_t) total_allocation_units;
                         st->f_bfree =
                                 (fsblkcnt_t) actual_allocation_units;
                 }
 
-                st->f_flag |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
+                flags |= SMBC_VFS_FEATURE_NO_UNIXCIFS;
         } else {
                 uint32 optimal_transfer_size;
                 uint32 block_size;
@@ -441,8 +446,13 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                                 (fsfilcnt_t) total_file_nodes;
                         st->f_ffree =
                                 (fsfilcnt_t) free_file_nodes;
+#if HAVE_FSID_INT
                         st->f_fsid =
                                 (unsigned long) fs_identifier;
+#else
+#warning "f_fsid is not an integer type so is not available"
+                        /* We don't know the type, so don't try to set it */
+#endif
                         
                 }
         }
@@ -455,18 +465,24 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                  * user-specified case sensitivity setting.
                  */
                 if (! smbc_getOptionCaseSensitive(context)) {
-                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                        flags |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         } else {
                 if (! (fs_attrs & FILE_CASE_SENSITIVE_SEARCH)) {
-                        st->f_flag |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
+                        flags |= SMBC_VFS_FEATURE_CASE_INSENSITIVE;
                 }
         }
 
         /* See if DFS is supported */
 	if ((cli->capabilities & CAP_DFS) &&  cli->dfsroot) {
-                st->f_flag |= SMBC_VFS_FEATURE_DFS;
+                flags |= SMBC_VFS_FEATURE_DFS;
         }
+
+#if HAVE_STATVFS_F_FLAG
+        st->f_flag = flags;
+#elif HAVE_STATVFS_F_FLAGS
+        st->f_flags = flags;
+#endif
 
         return 0;
 }
