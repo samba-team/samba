@@ -467,6 +467,9 @@ build_auth_pack(krb5_context context,
 		krb5_abortx(context, "asn1 internal error");
 	} else if (ctx->keyex == USE_ECDH) {
 #ifdef HAVE_OPENSSL
+	    int len;
+	    unsigned char *p;
+
 	    ret = der_copy_oid(oid_id_ecPublicKey(),
 			       &a->clientPublicValue->algorithm.algorithm);
 	    if (ret)
@@ -480,10 +483,23 @@ build_auth_pack(krb5_context context,
 	    if (ret != 1)
 		return EINVAL;
 
-	    /* XXX stuff domain and public key into dhbuf */
+	    /* encode onto dhkey */
 
-	    dhbuf.data = NULL;
-	    dhbuf.length = 0;
+	    len = i2o_ECPublicKey(ctx->u.eckey, NULL);
+	    if (len <= 0)
+		abort();
+
+	    dhbuf.data = malloc(len);
+	    if (dhbuf.data == NULL)
+		abort();
+	    dhbuf.length = len;
+	    p = dhbuf.data;
+
+	    len = i2o_ECPublicKey(ctx->u.eckey, &p);
+	    if (len <= 0)
+		abort();
+
+	    /* XXX verify that this is right with RFC3279 */
 #else
 	    return EINVAL;
 #endif
@@ -1172,7 +1188,8 @@ pk_rd_pa_reply_dh(krb5_context context,
                   PA_DATA *pa,
                   krb5_keyblock **key)
 {
-    unsigned char *p, *dh_gen_key = NULL;
+    const unsigned char *p;
+    unsigned char *dh_gen_key = NULL;
     struct krb5_pk_cert *host = NULL;
     BIGNUM *kdc_dh_pubkey = NULL;
     KDCDHKeyInfo kdc_dh_info;
@@ -1303,7 +1320,35 @@ pk_rd_pa_reply_dh(krb5_context context,
 	}
     } else {
 #ifdef HAVE_OPENSSL
-	krb5_abortx(context, "implement ECDH");
+	const EC_GROUP *group;
+	EC_KEY *public;
+
+	public = o2i_ECPublicKey(NULL, &p, size);
+	if (public == NULL) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret,
+				   N_("PKINIT: Can't parse ECDH public key", ""));
+	    goto out;
+	}
+
+	group = EC_KEY_get0_group(ctx->u.eckey);
+	size = (EC_GROUP_get_degree(group) + 7) / 8;
+	dh_gen_key = malloc(size);
+	if (dh_gen_key == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
+	    goto out;
+	}
+	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size,
+					 EC_KEY_get0_public_key(public), ctx->u.eckey, NULL);
+	if (dh_gen_keylen == -1) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret,
+				   N_("PKINIT: Can't compute ECDH public key", ""));
+	    goto out;
+	}
+
 #else
 	ret = EINVAL;
 #endif
