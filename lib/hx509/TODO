@@ -1,5 +1,7 @@
 $Id$
 
+handle private_key_ops better, esp wrt ->key_oid
+
 x501 name
 	parsing
 	comparing (ldap canonlisation rules)
