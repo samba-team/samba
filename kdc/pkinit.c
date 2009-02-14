@@ -47,10 +47,15 @@ RCSID("$Id$");
 
 struct pk_client_params {
     enum krb5_pk_type type;
-    BIGNUM *dh_public_key;
+    enum { USE_RSA, USE_DH, USE_ECDH } keyex;
+    union {
+	struct {
+	    BIGNUM *public_key;
+	    DH *key;
+	} dh;
+    } u;
     hx509_cert cert;
     unsigned nonce;
-    DH *dh;
     EncryptionKey reply_key;
     char *dh_group_name;
     hx509_peer_info peer;
@@ -162,10 +167,12 @@ _kdc_pk_free_client_param(krb5_context context,
         return;
     if (client_params->cert)
 	hx509_cert_free(client_params->cert);
-    if (client_params->dh)
-	DH_free(client_params->dh);
-    if (client_params->dh_public_key)
-	BN_free(client_params->dh_public_key);
+    if (client_params->keyex == USE_DH) {
+	if (client_params->u.dh.key)
+	    DH_free(client_params->u.dh.key);
+	if (client_params->u.dh.public_key)
+	    BN_free(client_params->u.dh.public_key);
+    }
     krb5_free_keyblock_contents(context, &client_params->reply_key);
     if (client_params->dh_group_name)
 	free(client_params->dh_group_name);
@@ -188,38 +195,47 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 
     memset(&key, 0, sizeof(key));
 
-    if (!DH_generate_key(client_params->dh)) {
+    if (client_params->keyex == USE_DH) {
+
+	if (client_params->u.dh.public_key == NULL) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret, "public_key");
+	    goto out;
+	}
+
+	if (!DH_generate_key(client_params->u.dh.key)) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret, 
+				   "Can't generate Diffie-Hellman keys");
+	    goto out;
+	}
+
+	dh_gen_keylen = DH_size(client_params->u.dh.key);
+	size = BN_num_bytes(client_params->u.dh.key->p);
+	if (size < dh_gen_keylen)
+	    size = dh_gen_keylen;
+
+	dh_gen_key = malloc(size);
+	if (dh_gen_key == NULL) {
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret, "malloc: out of memory");
+	    goto out;
+	}
+	memset(dh_gen_key, 0, size - dh_gen_keylen);
+
+	dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
+				       client_params->u.dh.public_key,
+				       client_params->u.dh.key);
+	if (dh_gen_keylen == -1) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret,
+				   "Can't compute Diffie-Hellman key");
+	    goto out;
+	}
+    } else {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret, 
-			       "Can't generate Diffie-Hellman keys");
-	goto out;
-    }
-    if (client_params->dh_public_key == NULL) {
-	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_message(context, ret, "dh_public_key");
-	goto out;
-    }
-
-    dh_gen_keylen = DH_size(client_params->dh);
-    size = BN_num_bytes(client_params->dh->p);
-    if (size < dh_gen_keylen)
-	size = dh_gen_keylen;
-
-    dh_gen_key = malloc(size);
-    if (dh_gen_key == NULL) {
-	ret = ENOMEM;
-	krb5_set_error_message(context, ret, "malloc: out of memory");
-	goto out;
-    }
-    memset(dh_gen_key, 0, size - dh_gen_keylen);
-
-    dh_gen_keylen = DH_compute_key(dh_gen_key + (size - dh_gen_keylen),
-				   client_params->dh_public_key,
-				   client_params->dh);
-    if (dh_gen_keylen == -1) {
-	ret = KRB5KRB_ERR_GENERIC;
-	krb5_set_error_message(context, ret,
-			       "Can't compute Diffie-Hellman key");
+			       "Diffie-Hellman not selected keys");
 	goto out;
     }
 
@@ -336,17 +352,17 @@ get_dh_param(krb5_context context,
 	    return ret;
 	}
 
-	client_params->dh_public_key = integer_to_BN(context,
-						     "subjectPublicKey",
-						     &glue);
+	client_params->u.dh.public_key = integer_to_BN(context,
+						       "subjectPublicKey",
+						       &glue);
 	der_free_heim_integer(&glue);
-	if (client_params->dh_public_key == NULL) {
+	if (client_params->u.dh.public_key == NULL) {
 	    ret = KRB5_BADMSGTYPE;
 	    goto out;
 	}
     }
 
-    client_params->dh = dh;
+    client_params->u.dh.key = dh;
     dh = NULL;
     ret = 0;
 
@@ -639,13 +655,15 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
+	    client_params->keyex = USE_DH;
 	    ret = get_dh_param(context, config,
 			       ap.clientPublicValue, client_params);
 	    if (ret) {
 		free_AuthPack(&ap);
 		goto out;
 	    }
-	}
+	} else
+	    client_params->keyex = USE_RSA;
 
 	if (ap.supportedCMSTypes) {
 	    ret = hx509_peer_info_alloc(kdc_identity->hx509ctx,
@@ -1045,7 +1063,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 
 	pa_type = KRB5_PADATA_PK_AS_REP;
 
-	if (client_params->dh == NULL) {
+	if (client_params->keyex == USE_RSA) {
 	    ContentInfo info;
 
 	    type = "enckey";
@@ -1097,7 +1115,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	    if (ret)
 		return ret;
 
-	    ret = pk_mk_pa_reply_dh(context, config, client_params->dh,
+	    ret = pk_mk_pa_reply_dh(context, config, client_params->u.dh.key,
 				    client_params,
 				    &client_params->reply_key,
 				    &info,
@@ -1135,7 +1153,7 @@ _kdc_pk_mk_pa_reply(krb5_context context,
 	PA_PK_AS_REP_Win2k rep;
 	ContentInfo info;
 
-	if (client_params->dh) {
+	if (client_params->keyex != USE_RSA) {
 	    ret = KRB5KRB_ERR_GENERIC;
 	    krb5_set_error_message(context, ret,
 				   "Windows PK-INIT doesn't support DH");
