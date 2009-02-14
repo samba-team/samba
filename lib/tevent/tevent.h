@@ -262,6 +262,8 @@ struct tevent_req {
 	} internal;
 };
 
+char *tevent_req_print(TALLOC_CTX *mem_ctx, struct tevent_req *req);
+
 struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 				      void *pstate,
 				      size_t state_size,
