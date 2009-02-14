@@ -4729,6 +4729,10 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 		return WERR_INVALID_PARAM;
 	}
 
+	if (offered > MAX_RPC_DATA_SIZE) {
+		return WERR_INVALID_PARAM;
+	}
+
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
@@ -5083,6 +5087,10 @@ WERROR _spoolss_getprinter(pipes_struct *p, SPOOL_Q_GETPRINTER *q_u, SPOOL_R_GET
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -5744,6 +5752,10 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -6821,6 +6833,10 @@ WERROR _spoolss_enumjobs( pipes_struct *p, SPOOL_Q_ENUMJOBS *q_u, SPOOL_R_ENUMJO
 		return WERR_INVALID_PARAM;
 	}
 
+	if (offered > MAX_RPC_DATA_SIZE) {
+		return WERR_INVALID_PARAM;
+	}
+
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
@@ -7197,6 +7213,10 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 		return WERR_INVALID_PARAM;
 	}
 
+	if (offered > MAX_RPC_DATA_SIZE) {
+		return WERR_INVALID_PARAM;
+	}
+
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
@@ -7261,6 +7281,10 @@ WERROR _spoolss_enumforms(pipes_struct *p, SPOOL_Q_ENUMFORMS *q_u, SPOOL_R_ENUMF
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0) ) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -7672,6 +7696,10 @@ WERROR _spoolss_enumports( pipes_struct *p, SPOOL_Q_ENUMPORTS *q_u, SPOOL_R_ENUM
 		return WERR_INVALID_PARAM;
 	}
 
+	if (offered > MAX_RPC_DATA_SIZE) {
+		return WERR_INVALID_PARAM;
+	}
+
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
@@ -8078,6 +8106,10 @@ WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRI
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8708,6 +8740,10 @@ WERROR _spoolss_enumprintprocessors(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCESSORS
 		return WERR_INVALID_PARAM;
 	}
 
+	if (offered > MAX_RPC_DATA_SIZE) {
+		return WERR_INVALID_PARAM;
+	}
+
 	rpcbuf_move(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
@@ -8784,6 +8820,10 @@ WERROR _spoolss_enumprintprocdatatypes(pipes_struct *p, SPOOL_Q_ENUMPRINTPROCDAT
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -8912,6 +8952,10 @@ WERROR _spoolss_enumprintmonitors(pipes_struct *p, SPOOL_Q_ENUMPRINTMONITORS *q_
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -9088,6 +9132,10 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
@@ -9729,6 +9777,10 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	/* that's an [in out] buffer */
 
 	if (!q_u->buffer && (offered!=0)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
