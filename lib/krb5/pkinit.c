@@ -2324,7 +2324,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	opt->opt_private->pk_init_ctx->keyex = USE_DH;
 
 	/*
-	 * If its a ECDSA certs, lets select ECDSA as the algorithm.
+	 * If its a ECDSA certs, lets select ECDSA as the keyex algorithm.
 	 */
 	if (cert) {
 	    AlgorithmIdentifier alg;
