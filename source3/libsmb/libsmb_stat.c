@@ -323,13 +323,14 @@ SMBC_statvfs_ctx(SMBCCTX *context,
         /* Is it a file or a directory?  */
         if (S_ISDIR(statbuf.st_mode)) {
                 /* It's a directory. */
-                if ((pFile = SMBC_opendir_ctx(context, path)) < 0) {
+                if ((pFile = SMBC_opendir_ctx(context, path)) == NULL) {
                         return -1;
                 }
                 bIsDir = true;
         } else if (S_ISREG(statbuf.st_mode)) {
                 /* It's a file. */
-                if ((pFile = SMBC_open_ctx(context, path, O_RDONLY, 0)) < 0) {
+                if ((pFile = SMBC_open_ctx(context, path,
+                                           O_RDONLY, 0)) == NULL) {
                         return -1;
                 }
                 bIsDir = false;
