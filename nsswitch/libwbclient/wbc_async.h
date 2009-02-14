@@ -127,4 +127,12 @@ wbcErr wbcDomainName_recv(struct tevent_req *req,
 			  TALLOC_CTX *mem_ctx,
 			  char **netbios_name);
 
+struct tevent_req *wbcDomainInfo_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wb_context *wb_ctx,
+				      const char *domain);
+wbcErr wbcDomainInfo_recv(struct tevent_req *req,
+			  TALLOC_CTX *mem_ctx,
+			  struct wbcDomainInfo **dinfo);
+
 #endif /*_WBC_ASYNC_H_*/

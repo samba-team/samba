@@ -577,8 +577,154 @@ done:
 	return wbc_status;
 }
 
+struct wbc_domain_info_state {
+	struct winbindd_request req;
+	struct wbcDomainInfo *info;
+};
 
-/* Lookup the current status of a trusted domain */
+static void wbcDomainInfo_done(struct tevent_req *subreq);
+
+/**
+ * @brief Request status of a given trusted domain
+ *
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param ev		tevent context to use for async requests
+ * @param wb_ctx	winbind context
+ * @param domain	domain to request status from
+ *
+ * @return tevent_req on success, NULL on failure
+ */
+
+struct tevent_req *wbcDomainInfo_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct wb_context *wb_ctx,
+				      const char *domain)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_domain_info_state *state;
+
+	if (!domain) {
+		return NULL;
+	}
+
+	req = tevent_req_create(mem_ctx, &state, struct wbc_domain_info_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->info = talloc(state, struct wbcDomainInfo);
+	if (tevent_req_nomem(state->info, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	ZERO_STRUCT(state->req);
+
+	strncpy(state->req.domain_name, domain,
+		sizeof(state->req.domain_name)-1);
+
+	state->req.cmd = WINBINDD_DOMAIN_INFO;
+
+	subreq = wb_trans_send(state, ev, wb_ctx, false, &state->req);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcDomainInfo_done, req);
+	return req;
+}
+
+static void wbcDomainInfo_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_domain_info_state *state = tevent_req_data(
+			req, struct wbc_domain_info_state);
+	struct winbindd_response *resp;
+	wbcErr wbc_status;
+
+	wbc_status = wb_trans_recv(subreq, state, &resp);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	state->info->short_name = talloc_strdup(state->info,
+			resp->data.domain_info.name);
+	if (tevent_req_nomem(state->info->short_name, req)) {
+		return;
+	}
+
+	state->info->dns_name = talloc_strdup(state->info,
+			resp->data.domain_info.alt_name);
+	if (tevent_req_nomem(state->info->dns_name, req)) {
+		return;
+	}
+
+	wbc_status = wbcStringToSid(resp->data.domain_info.sid,
+				    &state->info->sid);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	if (resp->data.domain_info.native_mode) {
+		state->info->domain_flags |= WBC_DOMINFO_DOMAIN_NATIVE;
+	}
+	if (resp->data.domain_info.active_directory) {
+		state->info->domain_flags |= WBC_DOMINFO_DOMAIN_AD;
+	}
+	if (resp->data.domain_info.primary) {
+		state->info->domain_flags |= WBC_DOMINFO_DOMAIN_PRIMARY;
+	}
+
+	TALLOC_FREE(resp);
+
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive information about a trusted domain
+ *
+ * @param req		tevent_req containing the request
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param *dinfo	pointer to returned struct wbcDomainInfo
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcDomainInfo_recv(struct tevent_req *req,
+			  TALLOC_CTX *mem_ctx,
+			  struct wbcDomainInfo **dinfo)
+{
+	struct wbc_domain_info_state *state = tevent_req_data(
+			req, struct wbc_domain_info_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	if (dinfo == NULL) {
+		tevent_req_received(req);
+		return WBC_ERR_INVALID_PARAM;
+	}
+
+	*dinfo = talloc_steal(mem_ctx, state->info);
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
+
+/** @brief Lookup the current status of a trusted domain, sync wrapper
+ *
+ * @param domain      Domain to query
+ * @param *dinfo       Pointer to returned struct wbcDomainInfo
+ *
+ * @return #wbcErr
+ */
+
 wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 {
 	struct winbindd_request request;
