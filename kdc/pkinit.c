@@ -53,6 +53,11 @@ struct pk_client_params {
 	    BIGNUM *public_key;
 	    DH *key;
 	} dh;
+#ifdef HAVE_OPENSSL
+	struct {
+	    EC_KEY *public_key;
+	} ecdh;
+#endif
     } u;
     hx509_cert cert;
     unsigned nonce;
@@ -232,6 +237,46 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 				   "Can't compute Diffie-Hellman key");
 	    goto out;
 	}
+	ret = 0;
+    } else if (client_params->keyex == USE_ECDH) {
+	EC_KEY *key;
+
+	if (client_params->u.ecdh.public_key == NULL) {
+	    ret = KRB5KRB_ERR_GENERIC;
+	    krb5_set_error_message(context, ret, "public_key");
+	    goto out;
+	}
+
+	key = EC_KEY_new();
+	if (key == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	EC_KEY_set_group(key, EC_KEY_get0_group(client_params->u.ecdh.public_key));
+
+	if (EC_KEY_generate_key(key) != 1) {
+	    ret = ENOMEM;
+	    EC_KEY_free(key);
+	    goto out;
+	}
+
+	size = (EC_GROUP_get_degree(EC_KEY_get0_group(key)) + 7) / 8;
+	dh_gen_key = malloc(size);
+	if (dh_gen_key == NULL) {
+	    EC_KEY_free(key);
+	    ret = ENOMEM;
+	    krb5_set_error_message(context, ret,
+				   N_("malloc: out of memory", ""));
+	    goto out;
+	}
+
+	dh_gen_keylen = ECDH_compute_key(dh_gen_key, size, 
+					 EC_KEY_get0_public_key(client_params->u.ecdh.public_key),
+					 key, NULL);
+	EC_KEY_free(key);
+	ret = 0;
+
+	goto out;
     } else {
 	ret = KRB5KRB_ERR_GENERIC;
 	krb5_set_error_message(context, ret, 
@@ -281,6 +326,14 @@ get_dh_param(krb5_context context,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
+    if ((dh_key_info->subjectPublicKey.length % 8) != 0) {
+	ret = KRB5_BADMSGTYPE;
+	krb5_set_error_message(context, ret,
+			       "PKINIT: subjectPublicKey not aligned "
+			       "to 8 bit boundary");
+	goto out;
+    }
+
     if (dh_key_info->algorithm.parameters == NULL) {
 	krb5_set_error_message(context, KRB5_BADMSGTYPE,
 			       "PKINIT missing algorithm parameter "
@@ -295,14 +348,6 @@ get_dh_param(krb5_context context,
     if (ret) {
 	krb5_set_error_message(context, ret, "Can't decode algorithm "
 			       "parameters in clientPublicValue");
-	goto out;
-    }
-
-    if ((dh_key_info->subjectPublicKey.length % 8) != 0) {
-	ret = KRB5_BADMSGTYPE;
-	krb5_set_error_message(context, ret,
-			       "PKINIT: subjectPublicKey not aligned "
-			       "to 8 bit boundary");
 	goto out;
     }
 
@@ -362,6 +407,67 @@ get_dh_param(krb5_context context,
     if (dh)
 	DH_free(dh);
     free_DomainParameters(&dhparam);
+    return ret;
+}
+
+static krb5_error_code
+get_ecdh_param(krb5_context context,
+	       krb5_kdc_configuration *config,
+	       SubjectPublicKeyInfo *dh_key_info,
+	       pk_client_params *client_params)
+{
+    ECParameters ecp;
+    EC_KEY *public = NULL;
+    krb5_error_code ret;
+    const unsigned char *p;
+    size_t len;
+    int nid;
+
+    if (dh_key_info->algorithm.parameters == NULL) {
+	krb5_set_error_message(context, KRB5_BADMSGTYPE,
+			       "PKINIT missing algorithm parameter "
+			       "in clientPublicValue");
+	return KRB5_BADMSGTYPE;
+    }
+
+    memset(&ecp, 0, sizeof(ecp));
+
+    ret = decode_ECParameters(dh_key_info->algorithm.parameters->data,
+			      dh_key_info->algorithm.parameters->length, &ecp, &len);
+    if (ret)
+	goto out;
+
+    if (ecp.element != choice_ECParameters_namedCurve) {
+	ret = KRB5_BADMSGTYPE;
+	goto out;
+    }
+
+    if (der_heim_oid_cmp(&ecp.u.namedCurve, &asn1_oid_id_ec_group_secp256r1) == 0)
+	nid = NID_X9_62_prime256v1;
+    else {
+	ret = KRB5_BADMSGTYPE;
+	goto out;
+    }
+
+    /* XXX verify group is ok */
+
+    public = EC_KEY_new_by_curve_name(nid);
+
+    p = dh_key_info->subjectPublicKey.data;
+    len = dh_key_info->subjectPublicKey.length / 8;
+    if (o2i_ECPublicKey(&public, &p, len) == NULL) {
+	ret = KRB5_BADMSGTYPE;
+	krb5_set_error_message(context, ret,
+			       "PKINIT failed to decode ECDH key");
+	goto out;
+    }
+    client_params->u.ecdh.public_key = public;
+    public = NULL;
+
+ out:
+    if (public)
+	EC_KEY_free(public);
+    free_ECParameters(&ecp);
     return ret;
 }
 
@@ -653,8 +759,8 @@ _kdc_pk_rd_padata(krb5_context context,
 				   ap.clientPublicValue, client_params);
 	    } else if (der_heim_oid_cmp(&ap.clientPublicValue->algorithm.algorithm, &asn1_oid_id_ecPublicKey) == 0) {
 		client_params->keyex = USE_ECDH;
-		ret = KRB5_BADMSGTYPE;
-		krb5_set_error_message(context, ret, "PKINIT ECDH not supported yet");
+		ret = get_ecdh_param(context, config,
+				     ap.clientPublicValue, client_params);
 	    } else {
 		ret = KRB5_BADMSGTYPE;
 		krb5_set_error_message(context, ret, "PKINIT unknown DH mechanism");
