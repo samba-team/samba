@@ -367,7 +367,11 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		   descriptors */
 		close_low_fds(False);
 
-		TALLOC_FREE(s->parent);
+		/*
+		 * Can't use TALLOC_FREE here. Nulling out the argument to it
+		 * would overwrite memory we've just freed.
+		 */
+		talloc_free(s->parent);
 		s = NULL;
 
 		if (!reinit_after_fork(
