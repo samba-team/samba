@@ -110,6 +110,7 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 NTSTATUS create_local_token(auth_serversupplied_info *server_info);
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
+				    bool force_nss,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
 				    struct nt_user_token **token);
@@ -3969,6 +3970,7 @@ const char *lp_afs_username_map(void);
 int lp_afs_token_lifetime(void);
 char *lp_log_nt_token_command(void);
 char *lp_username_map(void);
+bool lp_force_username_map(void);
 const char *lp_logon_script(void);
 const char *lp_logon_path(void);
 const char *lp_logon_drive(void);

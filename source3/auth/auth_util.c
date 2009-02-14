@@ -710,6 +710,8 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	NTSTATUS status;
 	size_t i;
 	struct dom_sid tmp_sid;
+	const char *name_to_use;
+	bool force_nss;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -717,11 +719,22 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 	 * mapped to some local unix user.
 	 */
 
+	DEBUG(10, ("creating token for %s (SAM: %s)\n", server_info->unix_name,
+		server_info->sam_account->username));
+
+	force_nss = lp_force_username_map() && !server_info->nss_token;
 	if (((lp_server_role() == ROLE_DOMAIN_MEMBER) && !winbind_ping()) ||
-	    (server_info->nss_token)) {
+	    server_info->nss_token || force_nss) {
+		if (force_nss)
+			name_to_use =
+			    pdb_get_username(server_info->sam_account);
+		else
+			name_to_use = server_info->unix_name;
+
 		status = create_token_from_username(server_info,
-						    server_info->unix_name,
+						    name_to_use,
 						    server_info->guest,
+						    force_nss,
 						    &server_info->utok.uid,
 						    &server_info->utok.gid,
 						    &server_info->unix_name,
@@ -826,6 +839,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 
 NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				    bool is_guest,
+				    bool force_nss,
 				    uid_t *uid, gid_t *gid,
 				    char **found_username,
 				    struct nt_user_token **token)
@@ -840,6 +854,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 	size_t num_group_sids;
 	size_t num_gids;
 	size_t i;
+
+	DEBUG(10, ("creating token for %s,%s guest,%s forcing NSS lookup\n",
+		username, is_guest ? "" : " not", force_nss ? "" : " not"));
 
 	tmp_ctx = talloc_new(NULL);
 	if (tmp_ctx == NULL) {
@@ -865,7 +882,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		goto done;
 	}
 
-	if (sid_check_is_in_our_domain(&user_sid)) {
+	if (sid_check_is_in_our_domain(&user_sid) && !force_nss) {
 		bool ret;
 
 		/* This is a passdb user, so ask passdb */
@@ -907,7 +924,7 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 		*found_username = talloc_strdup(mem_ctx,
 						pdb_get_username(sam_acct));
 
-	} else 	if (sid_check_is_in_unix_users(&user_sid)) {
+	} else 	if (force_nss || sid_check_is_in_unix_users(&user_sid)) {
 
 		/* This is a unix user not in passdb. We need to ask nss
 		 * directly, without consulting passdb */
@@ -1063,6 +1080,7 @@ bool user_in_group_sid(const char *username, const DOM_SID *group_sid)
 	}
 
 	status = create_token_from_username(mem_ctx, username, False,
+					    lp_force_username_map(),
 					    &uid, &gid, &found_username,
 					    &token);
 
