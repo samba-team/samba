@@ -94,7 +94,7 @@ NTSTATUS smb_register_perfcounter(int interface_version, const char *name,
 /****************************************************************************
   initialise smb perf counters
  ****************************************************************************/
-bool smb_load_perfcount_module(const char *name)
+static bool smb_load_perfcount_module(const char *name)
 {
 	char *module_path = NULL;
 	char *module_name = NULL;
