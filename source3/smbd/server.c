@@ -447,7 +447,6 @@ static bool smbd_open_one_socket(struct smbd_parent_context *parent,
 	if (s->fd == -1) {
 		DEBUG(0,("smbd_open_once_socket: open_socket_in: "
 			"%s\n", strerror(errno)));
-			close(s->fd);
 		TALLOC_FREE(s);
 		/*
 		 * We ignore an error here, as we've done before
