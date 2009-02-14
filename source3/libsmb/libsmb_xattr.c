@@ -1273,7 +1273,7 @@ cacl_get(SMBCCTX *context,
                                         p = talloc_asprintf(ctx,
                                                             ",%s:%lu",
                                                             attr_strings.create_time_attr,
-                                                            create_time);
+                                                            (unsigned long) create_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1283,11 +1283,11 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",%s:%lu",
                                                      attr_strings.create_time_attr,
-                                                     create_time);
+                                                     (unsigned long) create_time);
                                 }
                         } else if (StrCaseCmp(name, attr_strings.create_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", create_time);
+                                        p = talloc_asprintf(ctx, "%lu", (unsigned long) create_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1295,7 +1295,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", create_time);
+                                                     "%lu", (unsigned long) create_time);
                                 }
                         }
                         
@@ -1315,7 +1315,7 @@ cacl_get(SMBCCTX *context,
                                         p = talloc_asprintf(ctx,
                                                             ",%s:%lu",
                                                             attr_strings.access_time_attr,
-                                                            access_time);
+                                                            (unsigned long) access_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1325,11 +1325,11 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",%s:%lu",
                                                      attr_strings.access_time_attr,
-                                                     access_time);
+                                                     (unsigned long) access_time);
                                 }
                         } else if (StrCaseCmp(name, attr_strings.access_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", access_time);
+                                        p = talloc_asprintf(ctx, "%lu", (unsigned long) access_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1337,7 +1337,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", access_time);
+                                                     "%lu", (unsigned long) access_time);
                                 }
                         }
                         
@@ -1357,7 +1357,7 @@ cacl_get(SMBCCTX *context,
                                         p = talloc_asprintf(ctx,
                                                             ",%s:%lu",
                                                             attr_strings.write_time_attr,
-                                                            write_time);
+                                                            (unsigned long) write_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1367,11 +1367,11 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",%s:%lu",
                                                      attr_strings.write_time_attr,
-                                                     write_time);
+                                                     (unsigned long) write_time);
                                 }
                         } else if (StrCaseCmp(name, attr_strings.write_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", write_time);
+                                        p = talloc_asprintf(ctx, "%lu", (unsigned long) write_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1379,7 +1379,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", write_time);
+                                                     "%lu", (unsigned long) write_time);
                                 }
                         }
                         
@@ -1399,7 +1399,7 @@ cacl_get(SMBCCTX *context,
                                         p = talloc_asprintf(ctx,
                                                             ",%s:%lu",
                                                             attr_strings.change_time_attr,
-                                                            change_time);
+                                                            (unsigned long) change_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1409,11 +1409,11 @@ cacl_get(SMBCCTX *context,
                                         n = snprintf(buf, bufsize,
                                                      ",%s:%lu",
                                                      attr_strings.change_time_attr,
-                                                     change_time);
+                                                     (unsigned long) change_time);
                                 }
                         } else if (StrCaseCmp(name, attr_strings.change_time_attr) == 0) {
                                 if (determine_size) {
-                                        p = talloc_asprintf(ctx, "%lu", change_time);
+                                        p = talloc_asprintf(ctx, "%lu", (unsigned long) change_time);
                                         if (!p) {
                                                 errno = ENOMEM;
                                                 return -1;
@@ -1421,7 +1421,7 @@ cacl_get(SMBCCTX *context,
                                         n = strlen(p);
                                 } else {
                                         n = snprintf(buf, bufsize,
-                                                     "%lu", change_time);
+                                                     "%lu", (unsigned long) change_time);
                                 }
                         }
                         
