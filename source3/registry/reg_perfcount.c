@@ -62,10 +62,10 @@ void perfcount_init_keys( void )
 	char *p = state_path(PERFCOUNTDIR);
 
 	/* no registry keys; just create the perfmon directory */
-	
+
 	if ( !directory_exist( p ) )
 		mkdir( p, 0755 );
-	
+
 	return;
 }
 
@@ -358,7 +358,7 @@ static uint32 _reg_perfcount_get_numinst(int objInd, TDB_CONTEXT *names)
 
 	if(data.dptr == NULL)
 		return (uint32)PERF_NO_INSTANCES;
-    
+
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
 	SAFE_FREE(data.dptr);
@@ -414,7 +414,7 @@ bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 {
 	TDB_CONTEXT *counters;
 	const char *fname = counters_directory( DATA_DB );
-    
+
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if(counters == NULL)
@@ -424,7 +424,7 @@ bool _reg_perfcount_get_counter_data(TDB_DATA key, TDB_DATA *data)
 	}    
 
 	*data = tdb_fetch(counters, key);
-    
+
 	tdb_close(counters);
 
 	return True;
@@ -511,7 +511,7 @@ static bool _reg_perfcount_get_counter_info(PERF_DATA_BLOCK *block,
 		DEBUG(3, ("_reg_perfcount_get_counter_info: No counter data for counter [%d].\n", CounterIndex));
 		return False;
 	}
-    
+
 	counter_size = _reg_perfcount_get_size_field(obj->counters[obj->NumCounters].CounterType);
 
 	if(counter_size == PERF_SIZE_DWORD)
@@ -612,7 +612,7 @@ static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 	PERF_OBJECT_TYPE *obj;
 	bool success = True;
 	char buf[PERFCOUNT_MAX_LEN];
-    
+
 	obj = NULL;
 	memset(buf, 0, PERFCOUNT_MAX_LEN);
 	memcpy(buf, data.dptr, data.dsize);
@@ -652,7 +652,7 @@ static bool _reg_perfcount_add_counter(PERF_DATA_BLOCK *block,
 		obj->NumCounters += 1;
 		start = stop + 1;
 	}
-    	
+
 	/* Handle case of Objects/Counters without any counter data, which would suggest
 	   that the required instances are not there yet, so change NumInstances from
 	   PERF_NO_INSTANCES to 0 */
@@ -737,7 +737,7 @@ bool _reg_perfcount_get_instance_info(PERF_INSTANCE_DEFINITION *inst,
 	inst->ParentObjectTitlePointer = 0;
 	inst->UniqueID = PERF_NO_UNIQUE_ID;
 	inst->NameOffset = 6 * sizeof(uint32);
-    
+
 	inst->ByteLength = inst->NameOffset + inst->NameLength;
 	/* Need to be aligned on a 64-bit boundary here for counter_data */
 	if((pad = (inst->ByteLength % 8)))
@@ -772,7 +772,7 @@ bool _reg_perfcount_add_instance(PERF_OBJECT_TYPE *obj,
 	}
 	if(obj->instances == NULL)
 		return False;
-    
+
 	memset(&(obj->instances[instInd]), 0, sizeof(PERF_INSTANCE_DEFINITION));
 	inst = &(obj->instances[instInd]);
 	return _reg_perfcount_get_instance_info(inst, ps, instInd, obj, names);
@@ -859,15 +859,15 @@ static bool _reg_perfcount_init_data_block_perf(PERF_DATA_BLOCK *block,
 	TDB_CONTEXT *counters;
 	bool status = False;
 	const char *fname = counters_directory( DATA_DB );
-    
+
 	counters = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
-    
+
 	if(counters == NULL)
 	{
 		DEBUG(1, ("reg_perfcount_init_data_block_perf: unable to open [%s].\n", fname));
 		return False;
 	}    
-    
+
 	status = _reg_perfcount_get_64(&PerfFreq, names, 0, "PerfFreq");
 	if(status == False)
 	{
@@ -1030,7 +1030,7 @@ static uint32 _reg_perfcount_perf_data_block_fixup(PERF_DATA_BLOCK *block, prs_s
 		object[obj].HeaderLength = sizeof(*object) - (sizeof(counter) + sizeof(instance) + sizeof(PERF_COUNTER_BLOCK));
 		object[obj].TotalByteLength += object[obj].HeaderLength;
 		object[obj].DefinitionLength += object[obj].HeaderLength;
-		
+
 		block->TotalByteLength += object[obj].TotalByteLength;
 	}
 
@@ -1049,7 +1049,7 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 	const char *fname = counters_directory( NAMES_DB );
 	TDB_CONTEXT *names;
 	int retval = 0;
-	
+
 	names = tdb_open_log(fname, 0, TDB_DEFAULT, O_RDONLY, 0444);
 
 	if(names == NULL)
@@ -1065,7 +1065,7 @@ uint32 reg_perfcount_get_perf_data_block(uint32 base_index,
 	}
 
 	reg_perfcount_get_last_counter(base_index);
-    
+
 	if(object_ids == NULL)
 	{
 		/* we're getting a request for "Global" here */
@@ -1153,7 +1153,7 @@ static bool _reg_perfcount_marshall_perf_counters(prs_struct *ps,
 
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_counters");
 	depth++;
-    
+
 	for(cnt = 0; cnt < object.NumCounters; cnt++)
 	{
 		counter = object.counters[cnt];
@@ -1194,10 +1194,10 @@ static bool _reg_perfcount_marshall_perf_counter_data(prs_struct *ps,
 {
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_counter_data");
 	depth++;
-    
+
 	if(!prs_align_uint64(ps))
 		return False;
-    
+
 	if(!prs_uint32("ByteLength", ps, depth, &counter_data.ByteLength))
 		return False;
 	if(!prs_uint8s(False, "CounterData", ps, depth, counter_data.data, counter_data.ByteLength - sizeof(uint32)))
@@ -1245,7 +1245,7 @@ static bool _reg_perfcount_marshall_perf_instances(prs_struct *ps,
 		if(_reg_perfcount_marshall_perf_counter_data(ps, instance.counter_data, depth) == False)
 			return False;
 	}
-	
+
 	return True;
 }
 
@@ -1257,7 +1257,7 @@ static bool _reg_perfcount_marshall_perf_objects(prs_struct *ps, PERF_DATA_BLOCK
 	int obj;
 
 	PERF_OBJECT_TYPE object;
-    
+
 	prs_debug(ps, depth, "", "_reg_perfcount_marshall_perf_objects");
 	depth++;
 
@@ -1348,7 +1348,7 @@ WERROR reg_perfcount_get_hkpd(prs_struct *ps, uint32 max_buf_size, uint32 *outbu
 	 */
 	PERF_DATA_BLOCK block;
 	uint32 buffer_size, base_index; 
-    
+
 	buffer_size = 0;
 	base_index = reg_perfcount_get_base_index();
 	ZERO_STRUCT(block);
