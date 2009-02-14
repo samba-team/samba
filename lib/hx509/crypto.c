@@ -1451,7 +1451,7 @@ find_sig_alg(const heim_oid *oid)
 }
 
 static const AlgorithmIdentifier *
-sigalg_for_privatekey(const hx509_private_key pk)
+alg_for_privatekey(const hx509_private_key pk, int type)
 {
     const heim_oid *keytype = pk->ops->key_oid;
     unsigned int i;
@@ -1464,7 +1464,12 @@ sigalg_for_privatekey(const hx509_private_key pk)
 	if (pk->ops->available && 
 	    pk->ops->available(pk, sig_algs[i]->sig_alg) == 0)
 	    continue;
-	return sig_algs[i]->sig_alg;
+	if (type == HX509_SELECT_PUBLIC_SIG)
+	    return sig_algs[i]->sig_alg;
+	if (type == HX509_SELECT_DIGEST)
+	    return sig_algs[i]->digest_alg;
+
+	return NULL;
     }
     return NULL;
 }
@@ -2961,12 +2966,15 @@ hx509_crypto_select(const hx509_context context,
 
     if (type == HX509_SELECT_DIGEST) {
 	bits = SIG_DIGEST;
-	def = _hx509_crypto_default_digest_alg;
+	if (source)
+	    def = alg_for_privatekey(source, type);
+	if (def == NULL)
+	    def = _hx509_crypto_default_digest_alg;
     } else if (type == HX509_SELECT_PUBLIC_SIG) {
 	bits = SIG_PUBLIC_SIG;
 	/* XXX depend on `source´ and `peer´ */
 	if (source)
-	    def = sigalg_for_privatekey(source);
+	    def = alg_for_privatekey(source, type);
 	if (def == NULL)
 	    def = _hx509_crypto_default_sig_alg;
     } else if (type == HX509_SELECT_SECRET_ENC) {
