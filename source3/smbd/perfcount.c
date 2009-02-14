@@ -175,7 +175,7 @@ bool smb_perfcount_init(void)
 {
 	char *perfcount_object;
 
-	perfcount_object = lp_smb_perfcount_module();
+	perfcount_object = lp_perfcount_module();
 
 	/* don't init */
 	if (!perfcount_object || !perfcount_object[0])
