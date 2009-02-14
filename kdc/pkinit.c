@@ -281,13 +281,6 @@ get_dh_param(krb5_context context,
 
     memset(&dhparam, 0, sizeof(dhparam));
 
-    if (der_heim_oid_cmp(&dh_key_info->algorithm.algorithm,
-			 oid_id_dhpublicnumber())) {
-	krb5_set_error_message(context, KRB5_BADMSGTYPE,
-			       "PKINIT invalid oid in clientPublicValue");
-	return KRB5_BADMSGTYPE;
-    }
-
     if (dh_key_info->algorithm.parameters == NULL) {
 	krb5_set_error_message(context, KRB5_BADMSGTYPE,
 			       "PKINIT missing algorithm parameter "
@@ -312,7 +305,6 @@ get_dh_param(krb5_context context,
 			       "to 8 bit boundary");
 	goto out;
     }
-
 
     ret = _krb5_dh_group_ok(context, config->pkinit_dh_min_bits,
 			    &dhparam.p, &dhparam.g, &dhparam.q, moduli,
@@ -655,9 +647,18 @@ _kdc_pk_rd_padata(krb5_context context,
 	client_params->nonce = ap.pkAuthenticator.nonce;
 
 	if (ap.clientPublicValue) {
-	    client_params->keyex = USE_DH;
-	    ret = get_dh_param(context, config,
-			       ap.clientPublicValue, client_params);
+	    if (der_heim_oid_cmp(&ap.clientPublicValue->algorithm.algorithm, &asn1_oid_id_dhpublicnumber) == 0) {
+		client_params->keyex = USE_DH;
+		ret = get_dh_param(context, config,
+				   ap.clientPublicValue, client_params);
+	    } else if (der_heim_oid_cmp(&ap.clientPublicValue->algorithm.algorithm, &asn1_oid_id_ecPublicKey) == 0) {
+		client_params->keyex = USE_ECDH;
+		ret = KRB5_BADMSGTYPE;
+		krb5_set_error_message(context, ret, "PKINIT ECDH not supported yet");
+	    } else {
+		ret = KRB5_BADMSGTYPE;
+		krb5_set_error_message(context, ret, "PKINIT unknown DH mechanism");
+	    }
 	    if (ret) {
 		free_AuthPack(&ap);
 		goto out;
