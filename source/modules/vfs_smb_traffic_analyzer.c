@@ -200,8 +200,7 @@ static void smb_traffic_analyzer_send_data(vfs_handle_struct *handle,
 			username = talloc_asprintf(talloc_tos(),
 				"%s%i",
 				anon_prefix,
-				str_checksum(
-					handle->conn->server_info->sanitized_username )	); 
+				str_checksum(get_current_username()));
 		}
 
 	} else {
