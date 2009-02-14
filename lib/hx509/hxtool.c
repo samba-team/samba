@@ -1333,6 +1333,11 @@ info(void *opt, int argc, char **argv)
 	if (m != NULL)
 	    printf("dh: %s\n", m->name);
     }
+#ifdef HAVE_OPENSSL
+    {
+	printf("ecdsa: ECDSA_METHOD-not-export\n");
+    }
+#endif
     {
 	int ret = RAND_status();
 	printf("rand: %s\n", ret == 1 ? "ok" : "not available");
