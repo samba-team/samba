@@ -503,6 +503,224 @@ wbcErr wbcDomainName_recv(struct tevent_req *req,
 	return WBC_ERR_SUCCESS;
 }
 
+struct wbc_interface_details_state {
+	struct tevent_context *ev;
+	struct wb_context *wb_ctx;
+	struct wbcDomainInfo *dinfo;
+	struct wbcInterfaceDetails *details;
+};
+
+static void wbcInterfaceDetails_version(struct tevent_req *subreq);
+static void wbcInterfaceDetails_info(struct tevent_req *subreq);
+static void wbcInterfaceDetails_netbios_name(struct tevent_req *subreq);
+static void wbcInterfaceDetails_domain_name(struct tevent_req *subreq);
+static void wbcInterfaceDetails_domain_info(struct tevent_req *subreq);
+
+/**
+ * @brief Request some useful details about the winbind service
+ *
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param ev		tevent context to use for async requests
+ * @param wb_ctx	winbind context
+ *
+ * @return tevent_req on success, NULL on failure
+ */
+
+struct tevent_req *wbcInterfaceDetails_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct wb_context *wb_ctx)
+{
+	struct tevent_req *req, *subreq;
+	struct wbc_interface_details_state *state;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct wbc_interface_details_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->wb_ctx = wb_ctx;
+	state->details = talloc(state, struct wbcInterfaceDetails);
+	if (tevent_req_nomem(state->details, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = wbcInterfaceVersion_send(state, ev, wb_ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_set_callback(subreq, wbcInterfaceDetails_version, req);
+	return req;
+}
+
+static void wbcInterfaceDetails_version(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	wbcErr wbc_status;
+
+
+	wbc_status  = wbcInterfaceVersion_recv(subreq,
+					&state->details->interface_version);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	subreq = wbcInfo_send(state, state->ev, state->wb_ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, wbcInterfaceDetails_info, req);
+}
+
+static void wbcInterfaceDetails_info(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	wbcErr wbc_status;
+
+	wbc_status  = wbcInfo_recv(subreq, state->details,
+				   &state->details->winbind_separator,
+				   &state->details->winbind_version);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	subreq = wbcNetbiosName_send(state, state->ev, state->wb_ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, wbcInterfaceDetails_netbios_name, req);
+}
+
+static void wbcInterfaceDetails_netbios_name(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	wbcErr wbc_status;
+
+	wbc_status  = wbcNetbiosName_recv(subreq, state->details,
+					  &state->details->netbios_name);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	subreq = wbcDomainName_send(state, state->ev, state->wb_ctx);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, wbcInterfaceDetails_domain_name, req);
+}
+
+static void wbcInterfaceDetails_domain_name(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	wbcErr wbc_status;
+
+	wbc_status  = wbcDomainName_recv(subreq, state->details,
+					 &state->details->netbios_domain);
+	TALLOC_FREE(subreq);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+
+	subreq = wbcDomainInfo_send(state, state->ev, state->wb_ctx,
+				    state->details->netbios_domain);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+
+	tevent_req_set_callback(subreq, wbcInterfaceDetails_domain_info, req);
+}
+
+static void wbcInterfaceDetails_domain_info(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+			subreq, struct tevent_req);
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	struct wbcDomainInfo *domain;
+	wbcErr wbc_status;
+
+	wbc_status = wbcDomainInfo_recv(subreq, state, &domain);
+	TALLOC_FREE(subreq);
+	if (wbc_status == WBC_ERR_DOMAIN_NOT_FOUND) {
+		tevent_req_done(req);
+		return;
+	}
+
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		tevent_req_error(req, wbc_status);
+		return;
+	}
+	state->details->dns_domain = talloc_strdup(state->details,
+						   domain->dns_name);
+	if (tevent_req_nomem(state->details->dns_domain, req)) {
+		return;
+	}
+
+	TALLOC_FREE(domain);
+	tevent_req_done(req);
+}
+
+/**
+ * @brief Receive useful information about the winbind service
+ *
+ * @param req		tevent_req containing the request
+ * @param mem_ctx	talloc context to allocate memory from
+ * @param *details	pointer to hold the struct wbcInterfaceDetails
+ *
+ * @return #wbcErr
+ */
+
+wbcErr wbcInterfaceDetails_recv(struct tevent_req *req,
+				TALLOC_CTX *mem_ctx,
+				struct wbcInterfaceDetails **details)
+{
+	struct wbc_interface_details_state *state = tevent_req_data(
+			req, struct wbc_interface_details_state);
+	wbcErr wbc_status;
+
+	if (tevent_req_is_wbcerr(req, &wbc_status)) {
+		tevent_req_received(req);
+		return wbc_status;
+	}
+
+	*details = talloc_steal(mem_ctx, state->details);
+
+	tevent_req_received(req);
+	return WBC_ERR_SUCCESS;
+}
+
+/**
+ * @brief Query useful information about the winbind service
+ *
+ * @param *_details	pointer to hold the struct wbcInterfaceDetails
+ *
+ * @return #wbcErr
+ */
+
 wbcErr wbcInterfaceDetails(struct wbcInterfaceDetails **_details)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;

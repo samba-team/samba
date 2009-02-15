@@ -65,9 +65,10 @@ const char *wbcErrorString(wbcErr error);
  *	 Added wbcGetSidAliases()
  *  0.4: Added wbcSidTypeString()
  *  0.5: Added wbcChangeTrustCredentials()
+ *  0.6: Made struct wbcInterfaceDetails char* members non-const
  **/
 #define WBCLIENT_MAJOR_VERSION 0
-#define WBCLIENT_MINOR_VERSION 5
+#define WBCLIENT_MINOR_VERSION 6
 #define WBCLIENT_VENDOR_VERSION "Samba libwbclient"
 struct wbcLibraryDetails {
 	uint16_t major_version;
@@ -81,11 +82,11 @@ struct wbcLibraryDetails {
  **/
 struct wbcInterfaceDetails {
 	uint32_t interface_version;
-	const char *winbind_version;
+	char *winbind_version;
 	char winbind_separator;
-	const char *netbios_name;
-	const char *netbios_domain;
-	const char *dns_domain;
+	char *netbios_name;
+	char *netbios_domain;
+	char *dns_domain;
 };
 
 /*
