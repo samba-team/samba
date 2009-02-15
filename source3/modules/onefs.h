@@ -42,17 +42,25 @@ enum onefs_acl_wire_format
 #define PARM_ACL_WIRE_FORMAT "acl wire format"
 #define PARM_ACL_WIRE_FORMAT_DEFAULT ACL_FORMAT_WINDOWS_SD
 #define PARM_ATIME_NOW		"atime now files"
+#define PARM_ATIME_NOW_DEFAULT  NULL
 #define PARM_ATIME_STATIC	"atime static files"
+#define PARM_ATIME_STATIC_DEFAULT NULL
 #define PARM_ATIME_SLOP		"atime now slop"
+#define PARM_ATIME_SLOP_DEFAULT	 0
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL "creator owner gets full control"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
 #define PARM_CTIME_NOW		"ctime now files"
+#define PARM_CTIME_NOW_DEFAULT  NULL
 #define PARM_CTIME_SLOP		"ctime now slop"
+#define PARM_CTIME_SLOP_DEFAULT	0
 #define PARM_IGNORE_SACLS "ignore sacls"
 #define PARM_IGNORE_SACLS_DEFAULT false
 #define PARM_MTIME_NOW		"mtime now files"
+#define PARM_MTIME_NOW_DEFAULT	NULL
 #define PARM_MTIME_STATIC	"mtime static files"
+#define PARM_MTIME_STATIC_DEFAULT NULL
 #define PARM_MTIME_SLOP		"mtime now slop"
+#define PARM_MTIME_SLOP_DEFAULT	0
 #define PARM_USE_READDIRPLUS "use readdirplus"
 #define PARM_USE_READDIRPLUS_DEFAULT true
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE "simple file sharing compatibility mode"

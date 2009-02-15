@@ -36,7 +36,7 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 	int snum = SNUM(handle->conn);
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_ATIME_NOW,
-				   NULL);
+				   PARM_ATIME_NOW_DEFAULT);
 
 	if (parm) {
 		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
@@ -44,7 +44,7 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 	}
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_CTIME_NOW,
-				   NULL);
+				   PARM_CTIME_NOW_DEFAULT);
 
 	if (parm) {
 		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
@@ -52,7 +52,7 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 	}
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_MTIME_NOW,
-				   NULL);
+				   PARM_MTIME_NOW_DEFAULT);
 
 	if (parm) {
 		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
@@ -60,7 +60,7 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 	}
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_ATIME_STATIC,
-				   NULL);
+				   PARM_ATIME_STATIC_DEFAULT);
 
 	if (parm) {
 		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
@@ -68,16 +68,19 @@ static void onefs_load_faketimestamp_config(struct vfs_handle_struct *handle,
 	}
 
 	parm = lp_parm_string_list(snum, PARM_ONEFS_TYPE, PARM_MTIME_STATIC,
-				   NULL);
+				   PARM_MTIME_STATIC_DEFAULT);
 
 	if (parm) {
 		cfg->init_flags |= ONEFS_VFS_CONFIG_FAKETIMESTAMPS;
 		set_namearray(&cfg->mtime_static_list,*parm);
 	}
 
-	cfg->atime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_ATIME_SLOP,0);
-	cfg->ctime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_CTIME_SLOP,0);
-	cfg->mtime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_MTIME_SLOP,0);
+	cfg->atime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_ATIME_SLOP,
+				      PARM_ATIME_SLOP_DEFAULT);
+	cfg->ctime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_CTIME_SLOP,
+				      PARM_CTIME_SLOP_DEFAULT);
+	cfg->mtime_slop = lp_parm_int(snum, PARM_ONEFS_TYPE, PARM_MTIME_SLOP,
+				      PARM_MTIME_SLOP_DEFAULT);
 }
 
 
