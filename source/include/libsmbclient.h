@@ -185,9 +185,9 @@ typedef enum smbc_vfs_feature
     SMBC_VFS_FEATURE_RDONLY         = (1 << 0),
 
     /* Specific to libsmbclient (high-order bits) */
-    SMBC_VFS_FEATURE_DFS              = (1 << 29),
-    SMBC_VFS_FEATURE_CASE_INSENSITIVE = (1 << 30),
-    SMBC_VFS_FEATURE_NO_UNIXCIFS      = (1 << 31)
+    SMBC_VFS_FEATURE_DFS              = (1 << 28),
+    SMBC_VFS_FEATURE_CASE_INSENSITIVE = (1 << 29),
+    SMBC_VFS_FEATURE_NO_UNIXCIFS      = (1 << 30)
 } smbc_vfs_feature;
 
 typedef int smbc_bool;
