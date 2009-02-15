@@ -75,6 +75,7 @@ extern "C" {
 /* Make sure we have the following includes for now ... */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <fcntl.h>
 #include <utime.h>
 
