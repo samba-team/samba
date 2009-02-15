@@ -448,7 +448,6 @@ SMBC_fstatvfs_ctx(SMBCCTX *context,
                         st->f_fsid =
                                 (unsigned long) fs_identifier;
 #endif
-                        
                 }
         }
 
