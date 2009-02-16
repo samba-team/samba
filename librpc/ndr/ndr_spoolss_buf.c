@@ -64,7 +64,7 @@
 		if (r->out.info) {\
 			struct __##fn __r;\
 			__r.in.level	= r->in.level;\
-			__r.in.count	= r->out.count;\
+			__r.in.count	= *r->out.count;\
 			__r.out.info	= r->out.info;\
 			NDR_CHECK(ndr_push___##fn(_ndr_info, flags, &__r)); \
 		}\
@@ -101,6 +101,7 @@
 	r->in.buffer	= _r.in.buffer;\
 	r->in.offered	= _r.in.offered;\
 	r->out.needed	= _r.out.needed;\
+	r->out.count	= _r.out.count;\
 	if (!r->in.buffer && r->in.offered != 0) {\
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,\
 			"SPOOLSS Buffer: r->in.offered[%u] but there's no buffer",\
@@ -117,6 +118,7 @@
 	_r.in.buffer	= r->in.buffer;\
 	_r.in.offered	= r->in.offered;\
 	_r.out.needed	= r->out.needed;\
+	_r.out.count	= r->out.count;\
 	NDR_CHECK(ndr_pull__##fn(ndr, flags, &_r));\
 	r->out.info	= NULL;\
 	r->out.needed	= _r.out.needed;\
@@ -134,7 +136,7 @@
 		if (*r->out.needed <= _ndr_info->data_size) {\
 			struct __##fn __r;\
 			__r.in.level	= r->in.level;\
-			__r.in.count	= r->out.count;\
+			__r.in.count	= *r->out.count;\
 			__r.out.info	= NULL;\
 			NDR_CHECK(ndr_pull___##fn(_ndr_info, flags, &__r));\
 			r->out.info	= __r.out.info;\
