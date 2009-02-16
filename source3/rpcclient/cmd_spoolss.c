@@ -2486,7 +2486,8 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	POLICY_HND hnd;
 	bool got_hnd = False;
 	WERROR result;
-	SPOOL_NOTIFY_OPTION option;
+	NTSTATUS status;
+	struct spoolss_NotifyOption option;
 
 	if (argc != 2) {
 		printf("Usage: %s printername\n", argv[0]);
@@ -2511,35 +2512,43 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 
 	/* Create spool options */
 
-	ZERO_STRUCT(option);
-
 	option.version = 2;
-	option.option_type_ptr = 1;
-	option.count = option.ctr.count = 2;
+	option.count = 2;
 
-	option.ctr.type = TALLOC_ARRAY(mem_ctx, SPOOL_NOTIFY_OPTION_TYPE, 2);
-	if (option.ctr.type == NULL) {
+	option.types = talloc_array(mem_ctx, struct spoolss_NotifyOptionType, 2);
+	if (option.types == NULL) {
 		result = WERR_NOMEM;
 		goto done;
 	}
 
-	ZERO_STRUCT(option.ctr.type[0]);
-	option.ctr.type[0].type = PRINTER_NOTIFY_TYPE;
-	option.ctr.type[0].count = option.ctr.type[0].count2 = 1;
-	option.ctr.type[0].fields_ptr = 1;
-	option.ctr.type[0].fields[0] = PRINTER_NOTIFY_SERVER_NAME;
+	option.types[0].type = PRINTER_NOTIFY_TYPE;
+	option.types[0].count = 1;
+	option.types[0].fields = talloc_array(mem_ctx, enum spoolss_Field, 1);
+	if (option.types[0].fields == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	option.types[0].fields[0] = PRINTER_NOTIFY_SERVER_NAME;
 
-	ZERO_STRUCT(option.ctr.type[1]);
-	option.ctr.type[1].type = JOB_NOTIFY_TYPE;
-	option.ctr.type[1].count = option.ctr.type[1].count2 = 1;
-	option.ctr.type[1].fields_ptr = 1;
-	option.ctr.type[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
+	option.types[1].type = JOB_NOTIFY_TYPE;
+	option.types[1].count = 1;
+	option.types[1].fields = talloc_array(mem_ctx, enum spoolss_Field, 1);
+	if (option.types[1].fields == NULL) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+	option.types[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
 
 	/* Send rffpcnex */
 
-	result = rpccli_spoolss_rffpcnex(
-		cli, mem_ctx, &hnd, 0, 0, cli->srv_name_slash, 123, &option);
-
+	status = rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(cli, mem_ctx,
+								     &hnd,
+								     0,
+								     0,
+								     cli->srv_name_slash,
+								     123,
+								     &option,
+								     &result);
 	if (!W_ERROR_IS_OK(result)) {
 		printf("Error rffpcnex %s\n", argv[1]);
 		goto done;
