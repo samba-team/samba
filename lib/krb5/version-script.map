@@ -724,6 +724,7 @@ HEIMDAL_KRB5_2.0 {
 		_krb5_pac_sign;
 		_krb5_parse_moduli;
 		_krb5_pk_allow_proxy_certificate;
+		_krb5_pk_enterprise_cert;
 		_krb5_pk_kdf;
 		_krb5_pk_load_id;
 		_krb5_pk_mk_ContentInfo;
