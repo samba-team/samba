@@ -49,6 +49,28 @@
 #include <util.h>
 #endif
 
+#ifdef	STREAMSPTY
+#ifdef HAVE_SAC_H
+#include <sac.h>
+#endif
+#ifdef HAVE_SYS_STROPTS_H
+#include <sys/stropts.h>
+#endif
+
+# include <stropts.h>
+
+#ifdef  HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#ifdef __hpux
+#undef SE
+#endif
+#endif
+
+#ifdef	HAVE_SYS_STREAM_H
+#include <sys/stream.h>
+#endif
+#endif /* STREAMPTY */
+
 #include "roken.h"
 #include <getarg.h>
 
