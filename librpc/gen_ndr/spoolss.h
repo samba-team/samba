@@ -1016,7 +1016,7 @@ enum spoolss_NotifyType
 #endif
 ;
 
-struct spoolss_NotifyOptionsArray {
+struct spoolss_NotifyOptionType {
 	enum spoolss_NotifyType type;
 	uint16_t u1;
 	uint32_t u2;
@@ -1025,11 +1025,11 @@ struct spoolss_NotifyOptionsArray {
 	enum spoolss_Field *fields;/* [unique,size_is(count)] */
 };
 
-struct spoolss_NotifyOptionsContainer {
+struct spoolss_NotifyOption {
 	uint32_t version;/* [value(2)] */
 	uint32_t flags;
 	uint32_t count;
-	struct spoolss_NotifyOptionsArray *options;/* [unique,size_is(count)] */
+	struct spoolss_NotifyOptionType *types;/* [unique,size_is(count)] */
 };
 
 struct spoolss_NotifyString {
@@ -2249,9 +2249,9 @@ struct spoolss_RemoteFindFirstPrinterChangeNotifyEx {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t flags;
 		uint32_t options;
-		const char *str;/* [unique,charset(UTF16)] */
+		const char *local_machine;/* [unique,charset(UTF16)] */
 		uint32_t printer_local;
-		struct spoolss_NotifyOptionsContainer *t1;/* [unique] */
+		struct spoolss_NotifyOption *notify_options;/* [unique] */
 	} in;
 
 	struct {
@@ -2282,7 +2282,7 @@ struct spoolss_RouterRefreshPrinterChangeNotify {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t change_low;
-		struct spoolss_NotifyOptionsContainer *container;/* [unique] */
+		struct spoolss_NotifyOption *options;/* [unique] */
 	} in;
 
 	struct {

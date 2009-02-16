@@ -3057,9 +3057,9 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 							     struct policy_handle *handle /* [in] [ref] */,
 							     uint32_t flags /* [in]  */,
 							     uint32_t options /* [in]  */,
-							     const char *str /* [in] [unique,charset(UTF16)] */,
+							     const char *local_machine /* [in] [unique,charset(UTF16)] */,
 							     uint32_t printer_local /* [in]  */,
-							     struct spoolss_NotifyOptionsContainer *t1 /* [in] [unique] */,
+							     struct spoolss_NotifyOption *notify_options /* [in] [unique] */,
 							     WERROR *werror)
 {
 	struct spoolss_RemoteFindFirstPrinterChangeNotifyEx r;
@@ -3069,9 +3069,9 @@ NTSTATUS rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct rpc_pipe_cli
 	r.in.handle = handle;
 	r.in.flags = flags;
 	r.in.options = options;
-	r.in.str = str;
+	r.in.local_machine = local_machine;
 	r.in.printer_local = printer_local;
-	r.in.t1 = t1;
+	r.in.notify_options = notify_options;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_RemoteFindFirstPrinterChangeNotifyEx, &r);
@@ -3162,7 +3162,7 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client 
 							 TALLOC_CTX *mem_ctx,
 							 struct policy_handle *handle /* [in] [ref] */,
 							 uint32_t change_low /* [in]  */,
-							 struct spoolss_NotifyOptionsContainer *container /* [in] [unique] */,
+							 struct spoolss_NotifyOption *options /* [in] [unique] */,
 							 struct spoolss_NotifyInfo **info /* [out] [ref] */,
 							 WERROR *werror)
 {
@@ -3172,7 +3172,7 @@ NTSTATUS rpccli_spoolss_RouterRefreshPrinterChangeNotify(struct rpc_pipe_client 
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.change_low = change_low;
-	r.in.container = container;
+	r.in.options = options;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_RouterRefreshPrinterChangeNotify, &r);
