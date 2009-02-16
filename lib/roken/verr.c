@@ -39,6 +39,6 @@
 void ROKEN_LIB_FUNCTION
 verr(int eval, const char *fmt, va_list ap)
 {
-    warnerr(1, fmt, ap);
+    rk_warnerr(1, fmt, ap);
     exit(eval);
 }
