@@ -34,6 +34,7 @@ HEIMDAL_X509_1.2 {
 		hx509_cert_find_subjectAltName_otherName;
 		hx509_cert_free;
 		hx509_cert_get_SPKI;
+		hx509_cert_get_SPKI_AlgorithmIdentifier;
 		hx509_cert_attribute;
 		hx509_cert_get_attribute;
 		hx509_cert_get_base_subject;
@@ -64,6 +65,7 @@ HEIMDAL_X509_1.2 {
 		hx509_certs_store;
 		hx509_ci_print_names;
 		hx509_clear_error_string;
+		hx509_cms_create_signed;
 		hx509_cms_create_signed_1;
 		hx509_cms_decrypt_encrypted;
 		hx509_cms_envelope_1;
