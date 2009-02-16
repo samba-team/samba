@@ -24,6 +24,7 @@ HEIMDAL_GSS_1.0 {
 		gss_add_oid_set_member;
 		gss_canonicalize_name;
 		gss_compare_name;
+		gss_context_query_attributes;
 		gss_context_time;
 		gss_create_empty_buffer_set;
 		gss_create_empty_oid_set;
@@ -74,9 +75,11 @@ HEIMDAL_GSS_1.0 {
 		gss_test_oid_set_member;
 		gss_unseal;
 		gss_unwrap;
+		gss_unwrap_iov;
 		gss_verify;
 		gss_verify_mic;
 		gss_wrap;
+		gss_wrap_iov;
 		gss_wrap_size_limit;
 		gsskrb5_extract_authtime_from_sec_context;
 		gsskrb5_extract_authz_data_from_sec_context;
