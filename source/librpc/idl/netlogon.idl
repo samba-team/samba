@@ -1084,7 +1084,18 @@ interface netlogon
 
 	/*****************/
 	/* Function 0x15 */
-	WERROR netr_NETRLOGONDUMMYROUTINE1();
+	typedef [switch_type(uint32)] union {
+		[case(1)] netr_NegotiateFlags server_capabilities;
+	} netr_Capabilities;
+
+	NTSTATUS netr_LogonGetCapabilities(
+		[in]         [string,charset(UTF16)] uint16 server_name[],
+		[in,unique]  [string,charset(UTF16)] uint16 *computer_name,
+		[in,ref]     netr_Authenticator *credential,
+		[in,out,ref] netr_Authenticator *return_authenticator,
+		[in]         uint32 query_level,
+		[out,ref,switch_is(query_level)] netr_Capabilities *capabilities
+		);
 
 	/****************/
 	/* Function 0x16 */
