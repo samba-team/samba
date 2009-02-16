@@ -953,12 +953,13 @@ static WERROR dcesrv_netr_NetrEnumerateTrustedDomains(struct dcesrv_call_state *
 
 
 /* 
-  netr_NETRLOGONDUMMYROUTINE1 
+  netr_LogonGetCapabilities
 */
-static WERROR dcesrv_netr_NETRLOGONDUMMYROUTINE1(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONDUMMYROUTINE1 *r)
+static NTSTATUS dcesrv_netr_LogonGetCapabilities(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonGetCapabilities *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* we don't support AES yet */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
