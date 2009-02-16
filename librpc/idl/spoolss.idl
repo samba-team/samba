@@ -340,7 +340,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrinters(
 		[in] uint32 level,
@@ -356,9 +356,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		/* what we have here is a subcontext containing an array of no discriminant unions
 		 * and the array has no size in front
 		 */
-		[out,unique,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_PrinterInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
@@ -446,7 +446,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] 	 uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumJobs(
 		[in] uint32 level,
@@ -460,9 +460,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in]	 uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_JobInfo *info,
-		[out,ref] uint32 *needed,
-		[out]	 uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_JobInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
@@ -842,7 +842,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrinterDrivers(
 		[in] uint32 level,
@@ -855,9 +855,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_DriverInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
@@ -925,7 +925,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrintProcessors(
 		[in] uint32 level,
@@ -938,9 +938,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_PrintProcessorInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
@@ -1209,7 +1209,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out]	 uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumForms(
 		[in] uint32 level,
@@ -1221,9 +1221,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] 	 uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_FormInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_FormInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	typedef struct {
@@ -1261,7 +1261,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPorts(
 		[in] uint32 level,
@@ -1273,9 +1273,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_PortInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_PortInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
@@ -1303,7 +1303,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumMonitors(
 		[in] uint32 level,
@@ -1315,9 +1315,9 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in] uint32 level,
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,unique,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
-		[out,ref] uint32 *needed,
-		[out] uint32 count
+		[out,ref] uint32 *count,
+		[out,unique,switch_is(level),size_is(*count)] spoolss_MonitorInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
