@@ -3377,7 +3377,7 @@ krb5_decrypt_iov_ivec(krb5_context context,
     krb5_error_code ret;
     struct key_data *dkey;
     struct encryption_type *et = crypto->et;
-    krb5_crypto_iov *tiv, *hiv;
+    krb5_crypto_iov *tiv, *hiv, *div;
 
     if (num_data < 0) {
         krb5_clear_error_message(context);
@@ -3420,7 +3420,9 @@ krb5_decrypt_iov_ivec(krb5_context context,
 	return KRB5_BAD_MSIZE;
     tiv->data.length = trailersz;
 
-    /* body */
+    div = find_iv(data, num_data, KRB5_CRYPTO_TYPE_DATA);
+    if (div == NULL)
+	return KRB5_CRYPTO_INTERNAL;
 
     /* XXX replace with EVP_Cipher */
 
@@ -3437,12 +3439,9 @@ krb5_decrypt_iov_ivec(krb5_context context,
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
-    for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
-	    continue;
-	memcpy(q, data[i].data.data, data[i].data.length);
-	q += data[i].data.length;
-    }
+
+    memcpy(q, div->data.data, div->data.length);
+    q += div->data.length;
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
@@ -3461,24 +3460,12 @@ krb5_decrypt_iov_ivec(krb5_context context,
 	return ret;
     }
 
-    /* XXX now copy data back to buffers */
-    q = p;
-    memcpy(hiv->data.data, q, hiv->data.length);
-    q += hiv->data.length;
-    len -= hiv->data.length;
-
-    for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA)
-	    continue;
-	if (len < data[i].data.length)
-	    data[i].data.length = len;
-	memcpy(data[i].data.data, q, data[i].data.length);
-	q += data[i].data.length;
-	len -= data[i].data.length;
-    }
+    /* copy data back to buffers */
+    memcpy(hiv->data.data, p, hiv->data.length);
+    memcpy(div->data.data, p + hiv->data.length, len - hiv->data.length);
     free(p);
-    if (len)
-	krb5_abortx(context, "data still in the buffer");
+
+    /* check signature */
 
     len = hiv->data.length;
     for (i = 0; i < num_data; i++) {
