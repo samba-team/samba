@@ -116,7 +116,7 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
 	return GSS_S_CALL_INACCESSIBLE_READ;
 
     for (i = 0; i < iov_count; i++) {
-	if (GSS_IOV_BUFFER_FLAGS(iov[i].type) & GSS_IOV_BUFFER_FLAG_ALLOCATED)
+	if (iov[i].type & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED)
 	    continue;
 	gss_release_buffer(&junk, &iov[i].buffer);
     }
