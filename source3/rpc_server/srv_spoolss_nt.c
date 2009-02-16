@@ -2893,26 +2893,22 @@ static struct spoolss_NotifyOption *dup_spoolss_NotifyOption(TALLOC_CTX *mem_ctx
 	return option;
 }
 
-/********************************************************************
- * _spoolss_rffpcnex
- * ReplyFindFirstPrinterChangeNotifyEx
+/****************************************************************
+ * _spoolss_RemoteFindFirstPrinterChangeNotifyEx
  *
  * before replying OK: status=0 a rpc call is made to the workstation
  * asking ReplyOpenPrinter
  *
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
- ********************************************************************/
+****************************************************************/
 
-WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u)
+WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
+						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
-	POLICY_HND *handle = &q_u->handle;
-	uint32 flags = q_u->flags;
-	uint32 options = q_u->options;
-	UNISTR2 *localmachine = &q_u->localmachine;
-	uint32 printerlocal = q_u->printerlocal;
+	POLICY_HND *handle = r->in.handle;
 	int snum = -1;
-	SPOOL_NOTIFY_OPTION *option = q_u->option;
+	struct spoolss_NotifyOption *option = r->in.notify_options;
 	struct sockaddr_storage client_ss;
 
 	/* store the notify value in the printer struct */
@@ -2920,19 +2916,19 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_rffpcnex: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_RemoteFindFirstPrinterChangeNotifyEx: "
+			"Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
-	Printer->notify.flags=flags;
-	Printer->notify.options=options;
-	Printer->notify.printerlocal=printerlocal;
+	Printer->notify.flags		= r->in.flags;
+	Printer->notify.options		= r->in.options;
+	Printer->notify.printerlocal	= r->in.printer_local;
 
 	TALLOC_FREE(Printer->notify.option);
 	Printer->notify.option = dup_spoolss_NotifyOption(Printer, option);
 
-	unistr2_to_ascii(Printer->notify.localmachine, localmachine,
-		       sizeof(Printer->notify.localmachine));
+	fstrcpy(Printer->notify.localmachine, r->in.local_machine);
 
 	/* Connect to the client machine and send a ReplyOpenPrinter */
 
@@ -10586,17 +10582,6 @@ WERROR _spoolss_SpoolerInit(pipes_struct *p,
 
 WERROR _spoolss_ResetPrinterEx(pipes_struct *p,
 			       struct spoolss_ResetPrinterEx *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_RemoteFindFirstPrinterChangeNotifyEx
-****************************************************************/
-
-WERROR _spoolss_RemoteFindFirstPrinterChangeNotifyEx(pipes_struct *p,
-						     struct spoolss_RemoteFindFirstPrinterChangeNotifyEx *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
