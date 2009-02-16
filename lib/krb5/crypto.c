@@ -3183,7 +3183,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
     krb5_error_code ret;
     struct key_data *dkey;
     const struct encryption_type *et = crypto->et;
-    krb5_crypto_iov *tiv, *piv, *hiv;
+    krb5_crypto_iov *tiv, *piv, *hiv, *div;
 
     if (num_data < 0) {
         krb5_clear_error_message(context);
@@ -3198,18 +3198,16 @@ krb5_encrypt_iov_ivec(krb5_context context,
     headersz = et->confoundersize;
     trailersz = CHECKSUMSIZE(et->keyed_checksum);
 
-    for (len = 0, i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_HEADER &&
-	    data[i].flags == KRB5_CRYPTO_TYPE_DATA) {
-	    len += data[i].data.length;
-	}
-    }
+    div = find_iv(data, num_data, KRB5_CRYPTO_TYPE_DATA);
+    if (div == NULL)
+	return KRB5_CRYPTO_INTERNAL;
+    
+    len = div->data.length;
 
     sz = headersz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
 
     pad_sz = block_sz - sz;
-    trailersz += pad_sz;
 
     /* header */
 
@@ -3296,13 +3294,9 @@ krb5_encrypt_iov_ivec(krb5_context context,
 
     /* XXX replace with EVP_Cipher */
 
-    len = hiv->data.length;
-    for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
-	    continue;
-	len += data[i].data.length;
-    }
+    len = hiv->data.length + div->data.length;
+    if (piv)
+	len += piv->data.length;
 
     p = q = malloc(len);
     if(p == NULL)
@@ -3310,13 +3304,9 @@ krb5_encrypt_iov_ivec(krb5_context context,
 
     memcpy(q, hiv->data.data, hiv->data.length);
     q += hiv->data.length;
-    for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
-	    continue;
-	memcpy(q, data[i].data.data, data[i].data.length);
-	q += data[i].data.length;
-    }
+    memcpy(q, div->data.data, div->data.length);
+    q += div->data.length;
+    memset(q, 0, pad_sz);
 
     ret = _get_derived_key(context, crypto, ENCRYPTION_USAGE(usage), &dkey);
     if(ret) {
@@ -3337,16 +3327,14 @@ krb5_encrypt_iov_ivec(krb5_context context,
 
     /* now copy data back to buffers */
     q = p;
+
     memcpy(hiv->data.data, q, hiv->data.length);
     q += hiv->data.length;
 
-    for (i = 0; i < num_data; i++) {
-	if (data[i].flags != KRB5_CRYPTO_TYPE_DATA &&
-	    data[i].flags != KRB5_CRYPTO_TYPE_PADDING)
-	    continue;
-	memcpy(data[i].data.data, q, data[i].data.length);
-	q += data[i].data.length;
-    }
+    memcpy(div->data.data, q, div->data.length);
+    q += div->data.length;
+
+    memcpy(piv->data.data, q, pad_sz);
     free(p);
 
     return ret;
