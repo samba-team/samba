@@ -5,6 +5,26 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
+/**
+ * Encrypts or sign the data.
+ *
+ * There can only be one GSS_IOV_BUFFER_TYPE_DATA buffer.
+ * There can be as 0 or more GSS_IOV_BUFFER_TYPE_SIGN_ONLY buffers.
+ *
+ * The caller needs provide either:
+ *
+ * - one GSS_IOV_BUFFER_TYPE_HEADER, one GSS_IOV_BUFFER_TYPE_PADDING, andd one GSS_IOV_BUFFER_TYPE_TRAILER
+ * - on DCE-RPC mode, only one GSS_IOV_BUFFER_TYPE_HEADER may be given
+ *
+ * To generate gss_wrap() comptaible headers, use: HEADER | DATA | PADDING | TRAILER
+ *
+ * The input sizes of HEADER, PADDING and TRAILER can be fetched using gss_wrap_iov_length() or
+ * gss_context_query_attributes().
+ *
+ * @ingroup gssapi
+ */
+
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_wrap_iov(OM_uint32 * minor_status,
 	     gss_ctx_id_t  context_handle,
@@ -123,3 +143,31 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
+typedef struct gss_context_stream_sizes_desc {
+    size_t header; /**< size of header */
+    size_t trailer; /**< size of trailer */
+    size_t max_msg_size; /**< maximum message size */
+    size_t buffers; /**< extra GSS_IOV_BUFFER_TYPE_EMPTY buffer to pass */
+    size_t blocksize; /**< Specificed optimal size of messages, also
+			 is the maximum padding size
+			 (GSS_IOV_BUFFER_TYPE_PADDING) */
+} gss_context_stream_sizes; 
+
+/**
+ * Query the context for parameters.
+ *
+ * - GSS_OID_ATTR_STREAM_SIZES data is a gss_context_stream_sizes.
+ */
+
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_context_query_attributes(OM_uint32 *minor_status,
+			     gss_OID attribute,
+			     void *data,
+			     size_t len)
+{
+    *minor_status = 0;
+    
+    return GSS_S_COMPLETE;
+}
+			     
