@@ -2618,6 +2618,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	NTSTATUS status;
 	DATA_BLOB blob;
 	uint32_t needed;
+	uint32_t count;
 
 	r.in.flags = PRINTER_ENUM_LOCAL;
 	r.in.server = talloc_asprintf(mem_ctx, "\\\\%s", servername);
@@ -2625,6 +2626,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.out.count = &count;
 
 	status = dcerpc_spoolss_EnumPrinters(pipe, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2657,7 +2659,7 @@ static bool enumprinters(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *pipe,
 		return false;
 	}
 
-	*num_printers = r.out.count;
+	*num_printers = count;
 
 	return true;
 }

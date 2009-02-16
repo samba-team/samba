@@ -107,12 +107,14 @@ static bool test_EnumPorts(struct torture_context *tctx,
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.servername = "";
 		r.in.level = level;
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 		r.out.needed = &needed;
+		r.out.count = &count;
 
 		torture_comment(tctx, "Testing EnumPorts level %u\n", r.in.level);
 
@@ -135,7 +137,7 @@ static bool test_EnumPorts(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPorts failed");
 
-		ctx->port_count[level]	= r.out.count;
+		ctx->port_count[level]	= count;
 		ctx->ports[level]	= r.out.info;
 	}
 
@@ -241,6 +243,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.server		= "";
 		r.in.environment	= SPOOLSS_ARCHITECTURE_NT_X86;
@@ -248,6 +251,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 		r.in.buffer		= NULL;
 		r.in.offered		= 0;
 		r.out.needed		= &needed;
+		r.out.count		= &count;
 
 		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
 
@@ -271,7 +275,7 @@ static bool test_EnumPrinterDrivers(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinterDrivers failed");
 
-		ctx->driver_count[level]	= r.out.count;
+		ctx->driver_count[level]	= count;
 		ctx->drivers[level]		= r.out.info;
 	}
 
@@ -358,12 +362,14 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.servername = "";
 		r.in.level = level;
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 		r.out.needed = &needed;
+		r.out.count = &count;
 
 		torture_comment(tctx, "Testing EnumMonitors level %u\n", r.in.level);
 
@@ -386,7 +392,7 @@ static bool test_EnumMonitors(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumMonitors failed");
 
-		ctx->monitor_count[level]	= r.out.count;
+		ctx->monitor_count[level]	= count;
 		ctx->monitors[level]		= r.out.info;
 	}
 
@@ -429,6 +435,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.servername = "";
 		r.in.environment = "Windows NT x86";
@@ -436,6 +443,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 		r.out.needed = &needed;
+		r.out.count = &count;
 
 		torture_comment(tctx, "Testing EnumPrintProcessors level %u\n", r.in.level);
 
@@ -458,7 +466,7 @@ static bool test_EnumPrintProcessors(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrintProcessors failed");
 
-		ctx->print_processor_count[level]	= r.out.count;
+		ctx->print_processor_count[level]	= count;
 		ctx->print_processors[level]		= r.out.info;
 	}
 
@@ -500,6 +508,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 		int level = levels[i];
 		DATA_BLOB blob;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.flags	= PRINTER_ENUM_LOCAL;
 		r.in.server	= "";
@@ -507,6 +516,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 		r.in.buffer	= NULL;
 		r.in.offered	= 0;
 		r.out.needed	= &needed;
+		r.out.count	= &count;
 
 		torture_comment(tctx, "Testing EnumPrinters level %u\n", r.in.level);
 
@@ -529,7 +539,7 @@ static bool test_EnumPrinters(struct torture_context *tctx,
 
 		torture_assert_werr_ok(tctx, r.out.result, "EnumPrinters failed");
 
-		ctx->printer_count[level]	= r.out.count;
+		ctx->printer_count[level]	= count;
 		ctx->printers[level]		= r.out.info;
 	}
 
@@ -713,12 +723,14 @@ static bool test_EnumForms(struct torture_context *tctx,
 	struct spoolss_EnumForms r;
 	bool ret = true;
 	uint32_t needed;
+	uint32_t count;
 
 	r.in.handle = handle;
 	r.in.level = 1;
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.out.count = &count;
 
 	torture_comment(tctx, "Testing EnumForms\n");
 
@@ -742,7 +754,7 @@ static bool test_EnumForms(struct torture_context *tctx,
 
 		info = r.out.info;
 
-		for (j = 0; j < r.out.count; j++) {
+		for (j = 0; j < count; j++) {
 			if (!print_server) 
 				ret &= test_GetForm(tctx, p, handle, info[j].info1.form_name);
 		}
@@ -842,6 +854,7 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumPorts r;
 	uint32_t needed;
+	uint32_t count;
 
 	r.in.servername = talloc_asprintf(tctx, "\\\\%s", 
 					  dcerpc_server_name(p));
@@ -849,6 +862,7 @@ static bool test_EnumPorts_old(struct torture_context *tctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.out.count = &count;
 
 	torture_comment(tctx, "Testing EnumPorts\n");
 
@@ -965,6 +979,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	NTSTATUS status;
 	struct spoolss_EnumJobs r;
 	uint32_t needed;
+	uint32_t count;
 
 	r.in.handle = handle;
 	r.in.firstjob = 0;
@@ -973,6 +988,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 	r.in.buffer = NULL;
 	r.in.offered = 0;
 	r.out.needed = &needed;
+	r.out.count = &count;
 
 	torture_comment(tctx, "Testing EnumJobs\n");
 
@@ -994,7 +1010,7 @@ static bool test_EnumJobs(struct torture_context *tctx,
 
 		info = r.out.info;
 
-		for (j = 0; j < r.out.count; j++) {
+		for (j = 0; j < count; j++) {
 			test_GetJob(tctx, p, handle, info[j].info1.job_id);
 			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_PAUSE);
 			test_SetJob(tctx, p, handle, info[j].info1.job_id, SPOOLSS_JOB_CONTROL_RESUME);
@@ -1595,6 +1611,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 		union spoolss_PrinterInfo *info;
 		int j;
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.flags	= PRINTER_ENUM_LOCAL;
 		r.in.server	= "";
@@ -1602,6 +1619,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 		r.in.buffer	= NULL;
 		r.in.offered	= 0;
 		r.out.needed	= &needed;
+		r.out.count	= &count;
 
 		torture_comment(tctx, "Testing EnumPrinters level %u\n", r.in.level);
 
@@ -1627,7 +1645,7 @@ static bool test_EnumPrinters_old(struct torture_context *tctx, struct dcerpc_pi
 
 		info = r.out.info;
 
-		for (j=0;j<r.out.count;j++) {
+		for (j=0;j<count;j++) {
 			if (r.in.level == 1) {
 				/* the names appear to be comma-separated name lists? */
 				char *name = talloc_strdup(tctx, info[j].info1.name);
@@ -1708,6 +1726,7 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 
 		uint32_t needed;
+		uint32_t count;
 
 		r.in.server = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
 		r.in.environment = "Windows NT x86";
@@ -1715,6 +1734,7 @@ static bool test_EnumPrinterDrivers_old(struct torture_context *tctx,
 		r.in.buffer = NULL;
 		r.in.offered = 0;
 		r.out.needed = &needed;
+		r.out.count = &count;
 
 		torture_comment(tctx, "Testing EnumPrinterDrivers level %u\n", r.in.level);
 
