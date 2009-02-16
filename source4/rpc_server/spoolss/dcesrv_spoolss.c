@@ -1148,7 +1148,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	struct cli_credentials *creds;
 	struct policy_handle notify_handle;
 
-	DEBUG(2, ("Received RFFPCNex from %s\n", r->in.str));
+	DEBUG(2, ("Received RFFPCNex from %s\n", r->in.local_machine));
 
 	/*
 	 * TODO: for now just open a connection to the client and drop it again
@@ -1160,9 +1160,9 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 	binding = talloc_zero(mem_ctx, struct dcerpc_binding);
 
 	binding->transport = NCACN_NP; 
-	if (strncmp(r->in.str, "\\\\", 2))
+	if (strncmp(r->in.local_machine, "\\\\", 2))
 		return WERR_INVALID_COMPUTERNAME;
-	binding->host = r->in.str+2;
+	binding->host = r->in.local_machine+2;
 
 	creds = cli_credentials_init_anon(mem_ctx); /* FIXME: Use machine credentials instead ? */
 
@@ -1171,7 +1171,7 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 				       dce_call->conn->dce_ctx->lp_ctx);
 
 	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("unable to call back to %s\n", r->in.str));
+		DEBUG(0, ("unable to call back to %s\n", r->in.local_machine));
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
@@ -1186,7 +1186,8 @@ static WERROR dcesrv_spoolss_RemoteFindFirstPrinterChangeNotifyEx(struct dcesrv_
 
 	status = dcerpc_spoolss_ReplyOpenPrinter(p, mem_ctx, &rop);
 	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0, ("unable to open remote printer %s\n", r->in.str));
+		DEBUG(0, ("unable to open remote printer %s\n",
+			r->in.local_machine));
 		return WERR_SERVER_UNAVAILABLE;
 	}
 
