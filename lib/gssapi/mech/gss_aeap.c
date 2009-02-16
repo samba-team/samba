@@ -143,7 +143,7 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-typedef struct gss_context_stream_sizes_desc {
+typedef struct {
     size_t header; /**< size of header */
     size_t trailer; /**< size of trailer */
     size_t max_msg_size; /**< maximum message size */
@@ -156,9 +156,16 @@ typedef struct gss_context_stream_sizes_desc {
 /**
  * Query the context for parameters.
  *
- * - GSS_OID_ATTR_STREAM_SIZES data is a gss_context_stream_sizes.
+ * SSPI equivalent if this function is QueryContextAttributes.
+ *
+ * - GSS_C_ATTR_STREAM_SIZES data is a gss_context_stream_sizes.
  */
 
+static gss_OID_desc gss_c_attr_stream_sizes_desc =
+    {10, rk_UNCONST("\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x03")};
+
+gss_OID GSSAPI_LIB_VARIABLE GSS_C_ATTR_STREAM_SIZES =
+    &gss_c_attr_stream_sizes_desc;
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_context_query_attributes(OM_uint32 *minor_status,
@@ -167,7 +174,11 @@ gss_context_query_attributes(OM_uint32 *minor_status,
 			     size_t len)
 {
     *minor_status = 0;
-    
-    return GSS_S_COMPLETE;
+
+    if (gss_oid_equal(GSS_C_ATTR_STREAM_SIZES, attribute)) {
+	memset(data, 0, len);
+	return GSS_S_COMPLETE;
+    }
+
+    return GSS_S_FAILURE;
 }
-			     
