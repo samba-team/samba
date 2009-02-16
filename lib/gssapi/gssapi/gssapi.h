@@ -812,6 +812,8 @@ typedef struct {
 			 (GSS_IOV_BUFFER_TYPE_PADDING) */
 } gss_context_stream_sizes; 
 
+extern gss_OID GSSAPI_LIB_VARIABLE GSS_C_ATTR_STREAM_SIZES;
+
 
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_context_query_attributes(OM_uint32 * /* minor_status */,
