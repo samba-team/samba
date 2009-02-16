@@ -136,6 +136,7 @@ o   Miguel Suarez <Miguel.Suarez@stratus.com>
 
 
 o   Yasuma Takeda <yasuma@osstech.co.jp>
+    * BUG 5920: Fix the calculation of the memcpy length.
     * BUG 6098: Fix ads_find_dc() in setups with "security = domain".
 
 
