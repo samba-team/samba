@@ -31,35 +31,3 @@
 
 /*********************************************************************
  *********************************************************************/
- 
-WERROR rpccli_spoolss_rffpcnex(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			    POLICY_HND *pol, uint32 flags, uint32 options,
-			    const char *localmachine, uint32 printerlocal,
-			    SPOOL_NOTIFY_OPTION *option)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_RFFPCNEX q;
-	SPOOL_R_RFFPCNEX r;
-	WERROR result = W_ERROR(ERRgeneral);
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	make_spoolss_q_rffpcnex(
-		&q, pol, flags, options, localmachine, printerlocal,
-		option);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_RFFPCNEX,
-		q, r,
-		qbuf, rbuf,
-		spoolss_io_q_rffpcnex,
-		spoolss_io_r_rffpcnex,
-		WERR_GENERAL_FAILURE );
-
-	result = r.status;
-	return result;
-}

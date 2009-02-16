@@ -406,28 +406,6 @@ typedef struct spool_notify_option
 }
 SPOOL_NOTIFY_OPTION;
 
-
-/* If the struct name looks obscure, yes it is ! */
-/* RemoteFindFirstPrinterChangeNotificationEx query struct */
-typedef struct spoolss_q_rffpcnex
-{
-	POLICY_HND handle;
-	uint32 flags;
-	uint32 options;
-	uint32 localmachine_ptr;
-	UNISTR2 localmachine;
-	uint32 printerlocal;
-	uint32 option_ptr;
-	SPOOL_NOTIFY_OPTION *option;
-}
-SPOOL_Q_RFFPCNEX;
-
-typedef struct spool_r_rffpcnex
-{
-	WERROR status;
-}
-SPOOL_R_RFFPCNEX;
-
 typedef struct printer_info_0
 {
 	UNISTR printername;
