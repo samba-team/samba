@@ -325,7 +325,7 @@ krb_enc_iov2(krb5_context context,
 	     size_t cipher_len,
 	     krb5_data *clear)
 {
-    krb5_crypto_iov iov[5];
+    krb5_crypto_iov iov[4];
     int ret;
     char *p;
     size_t len, i;
@@ -342,31 +342,19 @@ krb_enc_iov2(krb5_context context,
     iov[1].data.data = emalloc(iov[1].data.length);
 
     iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[2].data.length = 10;
+    iov[2].data.length = len;
     iov[2].data.data = emalloc(iov[2].data.length);
     memcpy(iov[2].data.data, p, iov[2].data.length);
-    p += iov[2].data.length;
-    len -= iov[2].data.length;
-
-    iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[3].data.length = len;
-    iov[3].data.data = emalloc(iov[3].data.length);
-    memcpy(iov[3].data.data, p, iov[3].data.length);
-    p += iov[3].data.length;
-    len -= iov[3].data.length;
 
     /* padding buffer */
-    iov[4].flags = KRB5_CRYPTO_TYPE_PADDING;
-    iov[4].data.length = krb5_crypto_length(context, crypto, iov[4].flags);
-    iov[4].data.data = emalloc(iov[4].data.length);
-
-    if (len != 0)
-	abort();
+    iov[3].flags = KRB5_CRYPTO_TYPE_PADDING;
+    iov[3].data.length = krb5_crypto_length(context, crypto, KRB5_CRYPTO_TYPE_PADDING);
+    iov[3].data.data = emalloc(iov[4].data.length);
 
     ret = krb5_encrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
-	errx(1, "iov failed: %d", ret);
+	errx(1, "encrypt iov failed: %d", ret);
 
     /* check len */
     for (i = 0, len = 0; i < sizeof(iov)/sizeof(iov[0]); i++)
@@ -377,26 +365,30 @@ krb_enc_iov2(krb5_context context,
     /* now decrypt */
 
     /* padding turn into data */
-    iov[4].flags = KRB5_CRYPTO_TYPE_DATA;
+    p = emalloc(iov[2].data.length + iov[3].data.length);
+
+    memcpy(p,                      iov[2].data.data, iov[2].data.length);
+    memcpy(p + iov[2].data.length, iov[3].data.data, iov[3].data.length);
+    
+    free(iov[2].data.data);
+    free(iov[3].data.data);
+    
+    iov[2].data.data = p;
+    iov[2].data.length += iov[3].data.length;
+
+    iov[3].flags = KRB5_CRYPTO_TYPE_EMPTY;
 
     ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
-	errx(1, "iov failed: %d", ret);
+	errx(1, "decrypt iov failed: %d", ret);
 
-    if (clear->length !=
-	iov[2].data.length + iov[3].data.length + iov[4].data.length)
+    if (clear->length != iov[2].data.length)
 	errx(1, "length incorrect");
 
     p = clear->data;
     if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
 	errx(1, "iov[2] incorrect");
-    p += iov[2].data.length;
-    if (memcmp(iov[3].data.data, p, iov[3].data.length) != 0)
-	errx(1, "iov[3] incorrect");
-    p += iov[3].data.length;
-    if (memcmp(iov[4].data.data, p, iov[4].data.length) != 0)
-	errx(1, "iov[4] incorrect");
 
     return 0;
 }
@@ -409,7 +401,7 @@ krb_enc_iov(krb5_context context,
 	    krb5_data *cipher,
 	    krb5_data *clear)
 {
-    krb5_crypto_iov iov[4];
+    krb5_crypto_iov iov[3];
     int ret;
     char *p;
     size_t len;
@@ -430,38 +422,22 @@ krb_enc_iov(krb5_context context,
     memcpy(iov[1].data.data, p + len - iov[1].data.length, iov[1].data.length);
     len -= iov[1].data.length;
 
-
     iov[2].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[2].data.length = 16;
-    iov[2].data.data = emalloc(iov[2].data.length);
-    memcpy(iov[2].data.data, p, iov[2].data.length);
-    p += iov[2].data.length;
-    len -= iov[2].data.length;
-
-    iov[3].flags = KRB5_CRYPTO_TYPE_DATA;
-    iov[3].data.length = len;
-    iov[3].data.data = emalloc(iov[3].data.length);
-    memcpy(iov[1].data.data, p, iov[3].data.length);
-    p += iov[3].data.length;
-    len -= iov[3].data.length;
-
-    if (len != 0)
-	abort();
+    iov[2].data.length = len;
+    iov[2].data.data = emalloc(len);
+    memcpy(iov[2].data.data, p, len);
 
     ret = krb5_decrypt_iov_ivec(context, crypto, usage,
 				iov, sizeof(iov)/sizeof(iov[0]), NULL);
     if (ret)
-	errx(1, "iov failed: %d", ret);
+	errx(1, "krb_enc_iov decrypt iov failed: %d", ret);
 
-    if (clear->length != iov[2].data.length + iov[3].data.length)
+    if (clear->length != iov[2].data.length)
 	errx(1, "length incorrect");
 
     p = clear->data;
     if (memcmp(iov[2].data.data, p, iov[2].data.length) != 0)
 	errx(1, "iov[2] incorrect");
-    p += iov[2].data.length;
-    if (memcmp(iov[3].data.data, p, iov[3].data.length) != 0)
-	errx(1, "iov[3] incorrect");
 
     return 0;
 }
