@@ -36,7 +36,7 @@
   Return 0 if tv1 == tv2
   Return 1 if tv1 > tv2
 */
-static int ev_timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
+int tevent_timeval_compare(const struct timeval *tv1, const struct timeval *tv2)
 {
 	if (tv1->tv_sec  > tv2->tv_sec)  return 1;
 	if (tv1->tv_sec  < tv2->tv_sec)  return -1;
@@ -48,7 +48,7 @@ static int ev_timeval_compare(const struct timeval *tv1, const struct timeval *t
 /**
   return a zero timeval
 */
-struct timeval ev_timeval_zero(void)
+struct timeval tevent_timeval_zero(void)
 {
 	struct timeval tv;
 	tv.tv_sec = 0;
@@ -59,7 +59,7 @@ struct timeval ev_timeval_zero(void)
 /**
   return a timeval for the current time
 */
-static struct timeval ev_timeval_current(void)
+struct timeval tevent_timeval_current(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
@@ -69,7 +69,7 @@ static struct timeval ev_timeval_current(void)
 /**
   return a timeval struct with the given elements
 */
-static struct timeval ev_timeval_set(uint32_t secs, uint32_t usecs)
+struct timeval tevent_timeval_set(uint32_t secs, uint32_t usecs)
 {
 	struct timeval tv;
 	tv.tv_sec = secs;
@@ -82,12 +82,12 @@ static struct timeval ev_timeval_set(uint32_t secs, uint32_t usecs)
   if tv1 comes after tv2, then return a zero timeval
   (this is *tv2 - *tv1)
 */
-static struct timeval ev_timeval_until(const struct timeval *tv1,
-					const struct timeval *tv2)
+struct timeval tevent_timeval_until(const struct timeval *tv1,
+				    const struct timeval *tv2)
 {
 	struct timeval t;
-	if (ev_timeval_compare(tv1, tv2) >= 0) {
-		return ev_timeval_zero();
+	if (tevent_timeval_compare(tv1, tv2) >= 0) {
+		return tevent_timeval_zero();
 	}
 	t.tv_sec = tv2->tv_sec - tv1->tv_sec;
 	if (tv1->tv_usec > tv2->tv_usec) {
@@ -102,9 +102,30 @@ static struct timeval ev_timeval_until(const struct timeval *tv1,
 /**
   return true if a timeval is zero
 */
-bool ev_timeval_is_zero(const struct timeval *tv)
+bool tevent_timeval_is_zero(const struct timeval *tv)
 {
 	return tv->tv_sec == 0 && tv->tv_usec == 0;
+}
+
+struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
+				  uint32_t usecs)
+{
+	struct timeval tv2 = *tv;
+	tv2.tv_sec += secs;
+	tv2.tv_usec += usecs;
+	tv2.tv_sec += tv2.tv_usec / 1000000;
+	tv2.tv_usec += tv2.tv_usec % 1000000;
+
+	return tv2;
+}
+
+/**
+  return a timeval in the future with a specified offset
+*/
+struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs)
+{
+	struct timeval tv = tevent_timeval_current();
+	return tevent_timeval_add(&tv, secs, usecs);
 }
 
 /*
@@ -156,7 +177,7 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 	last_te = NULL;
 	for (cur_te = ev->timer_events; cur_te; cur_te = cur_te->next) {
 		/* if the new event comes before the current one break */
-		if (ev_timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
+		if (tevent_timeval_compare(&te->next_event, &cur_te->next_event) < 0) {
 			break;
 		}
 
@@ -181,14 +202,14 @@ struct tevent_timer *tevent_common_add_timer(struct tevent_context *ev, TALLOC_C
 */
 struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 {
-	struct timeval current_time = ev_timeval_zero();
+	struct timeval current_time = tevent_timeval_zero();
 	struct tevent_timer *te = ev->timer_events;
 
 	if (!te) {
 		/* have a default tick time of 30 seconds. This guarantees
 		   that code that uses its own timeout checking will be
 		   able to proceeed eventually */
-		return ev_timeval_set(30, 0);
+		return tevent_timeval_set(30, 0);
 	}
 
 	/*
@@ -200,13 +221,13 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 	 * if there's a delay till the next timed event, we're done
 	 * with just returning the delay
 	 */
-	if (!ev_timeval_is_zero(&te->next_event)) {
+	if (!tevent_timeval_is_zero(&te->next_event)) {
 		struct timeval delay;
 
-		current_time = ev_timeval_current();
+		current_time = tevent_timeval_current();
 
-		delay = ev_timeval_until(&current_time, &te->next_event);
-		if (!ev_timeval_is_zero(&delay)) {
+		delay = tevent_timeval_until(&current_time, &te->next_event);
+		if (!tevent_timeval_is_zero(&delay)) {
 			return delay;
 		}
 	}
@@ -242,6 +263,6 @@ struct timeval tevent_common_loop_timer_delay(struct tevent_context *ev)
 
 	talloc_free(te);
 
-	return ev_timeval_zero();
+	return tevent_timeval_zero();
 }
 

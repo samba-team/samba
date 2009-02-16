@@ -216,7 +216,7 @@ static void tevent_req_trigger(struct tevent_context *ev,
 struct tevent_req *tevent_req_post(struct tevent_req *req,
 				   struct tevent_context *ev)
 {
-	req->internal.trigger = tevent_add_timer(ev, req, ev_timeval_zero(),
+	req->internal.trigger = tevent_add_timer(ev, req, tevent_timeval_zero(),
 						 tevent_req_trigger, req);
 	if (!req->internal.trigger) {
 		talloc_free(req);

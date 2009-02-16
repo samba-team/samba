@@ -541,7 +541,7 @@ static int std_event_loop_once(struct tevent_context *ev)
 	struct timeval tval;
 
 	tval = tevent_common_loop_timer_delay(ev);
-	if (ev_timeval_is_zero(&tval)) {
+	if (tevent_timeval_is_zero(&tval)) {
 		return 0;
 	}
 

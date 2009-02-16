@@ -300,6 +300,25 @@ bool tevent_req_is_error(struct tevent_req *req,
 			 uint64_t *error);
 
 
+int tevent_timeval_compare(const struct timeval *tv1,
+			   const struct timeval *tv2);
+
+struct timeval tevent_timeval_zero(void);
+
+struct timeval tevent_timeval_current(void);
+
+struct timeval tevent_timeval_set(uint32_t secs, uint32_t usecs);
+
+struct timeval tevent_timeval_until(const struct timeval *tv1,
+				    const struct timeval *tv2);
+
+bool tevent_timeval_is_zero(const struct timeval *tv);
+
+struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
+				  uint32_t usecs);
+
+struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
+
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context
