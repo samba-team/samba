@@ -53,6 +53,10 @@
 #endif
 #endif
 
+#ifndef GSSAPI_DEPRECATED
+#define GSSAPI_DEPRECATED __attribute__((deprecated))
+#endif
+
 /*
  * Now define the three implementation-dependent types.
  */
@@ -831,7 +835,7 @@ gss_context_query_attributes(OM_uint32 * /* minor_status */,
  * obsolete versions of these routines and their current forms.
  */
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_sign
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_sign
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*qop_req*/,
@@ -839,7 +843,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_sign
             gss_buffer_t /*message_token*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_verify
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_verify
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*message_buffer*/,
@@ -847,7 +851,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_verify
             int * /*qop_state*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_seal
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_seal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             int /*conf_req_flag*/,
@@ -857,7 +861,7 @@ OM_uint32 GSSAPI_LIB_FUNCTION gss_seal
             gss_buffer_t /*output_message_buffer*/
            );
 
-OM_uint32 GSSAPI_LIB_FUNCTION gss_unseal
+OM_uint32 GSSAPI_LIB_FUNCTION GSSAPI_DEPRECATED gss_unseal
            (OM_uint32 * /*minor_status*/,
             gss_ctx_id_t /*context_handle*/,
             gss_buffer_t /*input_message_buffer*/,
