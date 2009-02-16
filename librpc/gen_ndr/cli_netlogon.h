@@ -183,9 +183,14 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 				  uint32_t flags /* [in]  */,
 				  struct netr_DsRGetDCNameInfo **info /* [out] [ref] */,
 				  WERROR *werror);
-NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *werror);
+NTSTATUS rpccli_netr_LogonGetCapabilities(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_name /* [in] [charset(UTF16)] */,
+					  const char *computer_name /* [in] [unique,charset(UTF16)] */,
+					  struct netr_Authenticator *credential /* [in] [ref] */,
+					  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
+					  uint32_t query_level /* [in]  */,
+					  union netr_Capabilities *capabilities /* [out] [ref,switch_is(query_level)] */);
 NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
 					     WERROR *werror);
