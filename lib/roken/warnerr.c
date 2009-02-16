@@ -37,7 +37,7 @@
 #include "err.h"
 
 void ROKEN_LIB_FUNCTION
-warnerr(int doerrno, const char *fmt, va_list ap)
+rk_warnerr(int doerrno, const char *fmt, va_list ap)
 {
     int sverrno = errno;
     const char *progname = getprogname();
