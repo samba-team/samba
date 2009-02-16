@@ -1666,7 +1666,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	[public] WERROR spoolss_RouterRefreshPrinterChangeNotify(
 		[in,ref] policy_handle *handle,
 		[in] uint32 change_low,
-		[in,unique] spoolss_NotifyOptionsContainer *container,
+		[in,unique] spoolss_NotifyOption *options,
 		[out,ref] spoolss_NotifyInfo **info
 	);
 
