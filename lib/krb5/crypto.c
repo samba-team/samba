@@ -3366,7 +3366,7 @@ krb5_encrypt_iov_ivec(krb5_context context,
  * @ingroup krb5_crypto
  *
  * 1. KRB5_CRYPTO_TYPE_HEADER
- * 2. array KRB5_CRYPTO_TYPE_DATA and KRB5_CRYPTO_TYPE_SIGN_ONLY in
+ * 2. one KRB5_CRYPTO_TYPE_DATA and array [0,...] of KRB5_CRYPTO_TYPE_SIGN_ONLY in
  *  any order, however the receiver have to aware of the
  *  order. KRB5_CRYPTO_TYPE_SIGN_ONLY is commonly used unencrypoted
  *  protocol headers and trailers. The output data will be of same
@@ -3404,9 +3404,13 @@ krb5_decrypt_iov_ivec(krb5_context context,
     headersz = et->confoundersize;
     trailersz = CHECKSUMSIZE(et->keyed_checksum);
 
-    for (len = 0, i = 0; i < num_data; i++)
-	if (data[i].flags == KRB5_CRYPTO_TYPE_DATA)
+    for (len = 0, i = 0; i < num_data; i++) {
+	if (data[i].flags == KRB5_CRYPTO_TYPE_DATA) {
+	    if (len != 0) 
+		return KRB5_CRYPTO_INTERNAL;
 	    len += data[i].data.length;
+	}
+    }
 
     sz = headersz + len;
     block_sz = (sz + et->padsize - 1) &~ (et->padsize - 1); /* pad */
