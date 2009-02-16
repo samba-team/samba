@@ -149,16 +149,6 @@ gss_release_iov_buffer(OM_uint32 *minor_status,
     return GSS_S_COMPLETE;
 }
 
-typedef struct {
-    size_t header; /**< size of header */
-    size_t trailer; /**< size of trailer */
-    size_t max_msg_size; /**< maximum message size */
-    size_t buffers; /**< extra GSS_IOV_BUFFER_TYPE_EMPTY buffer to pass */
-    size_t blocksize; /**< Specificed optimal size of messages, also
-			 is the maximum padding size
-			 (GSS_IOV_BUFFER_TYPE_PADDING) */
-} gss_context_stream_sizes; 
-
 /**
  * Query the context for parameters.
  *
