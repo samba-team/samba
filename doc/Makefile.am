@@ -39,6 +39,12 @@ wind.dxy: wind.din Makefile
 	chmod +x wind.dxy.tmp
 	mv wind.dxy.tmp wind.dxy
 
+gssapi.dxy: gssapi.din Makefile
+	$(dxy_subst) < $(srcdir)/gssapi.din > gssapi.dxy.tmp
+	chmod +x gssapi.dxy.tmp
+	mv gssapi.dxy.tmp gssapi.dxy
+
+
 
 texi_subst = sed -e 's,[@]dbdir[@],$(localstatedir),g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
@@ -48,9 +54,11 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
-PROJECTS = hcrypto hx509 krb5 ntlm wind
+PROJECTS = hcrypto hx509 krb5 ntlm wind gssapi
 
-doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
+$(PROJECTS): doxygen
+
+doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy gssapi.din
 	@for a in $(PROJECTS) ; do \
 		echo $$a ; \
 		rm -rf $(srcdir)/$$a ; \
@@ -120,6 +128,7 @@ EXTRA_DIST = \
 
 CLEANFILES = \
 	krb5.dxy* \
+	gssapi.dxy* \
 	ntlm.dxy* \
 	hx509.dxy* \
 	hcrypto.dxy* \
