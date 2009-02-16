@@ -769,7 +769,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	/* set up the LSA Server Password Set response */
 
 	memcpy(r->out.return_authenticator, &cred_out,
-	       sizeof(r->out.return_authenticator));
+	       sizeof(*(r->out.return_authenticator)));
 
 	TALLOC_FREE(sampass);
 	return status;
