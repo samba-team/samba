@@ -343,28 +343,6 @@ PRINTER_DEFAULT;
 
 /********************************************/
 
-typedef struct spool_notify_option_type
-{
-	uint16 type;
-	uint16 reserved0;
-	uint32 reserved1;
-	uint32 reserved2;
-	uint32 count;
-	uint32 fields_ptr;
-	uint32 count2;
-	uint16 fields[MAX_NOTIFY_TYPE_FOR_NOW];
-}
-SPOOL_NOTIFY_OPTION_TYPE;
-
-typedef struct spool_notify_option_type_ctr
-{
-	uint32 count;
-	SPOOL_NOTIFY_OPTION_TYPE *type;
-}
-SPOOL_NOTIFY_OPTION_TYPE_CTR;
-
-
-
 typedef struct s_header_type
 {
 	uint32 type;
@@ -395,16 +373,6 @@ typedef struct spool_r_getprinterdata
 	WERROR status;
 }
 SPOOL_R_GETPRINTERDATA;
-
-typedef struct spool_notify_option
-{
-	uint32 version;
-	uint32 flags;
-	uint32 count;
-	uint32 option_type_ptr;
-	SPOOL_NOTIFY_OPTION_TYPE_CTR ctr;
-}
-SPOOL_NOTIFY_OPTION;
 
 typedef struct printer_info_0
 {
