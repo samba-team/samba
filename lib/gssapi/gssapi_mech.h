@@ -314,7 +314,7 @@ _gss_wrap_iov_t(OM_uint32 *minor_status,
 		gss_qop_t qop_req,
 		int * conf_state,
 		gss_iov_buffer_desc *iov,
-		int iov_count)
+		int iov_count);
 
 typedef OM_uint32
 _gss_unwrap_iov_t(OM_uint32 *minor_status,
