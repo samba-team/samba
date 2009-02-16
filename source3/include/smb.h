@@ -1621,14 +1621,6 @@ enum acl_compatibility {ACL_COMPAT_AUTO, ACL_COMPAT_WINNT, ACL_COMPAT_WIN2K};
 #define BATCH_OPLOCK_TYPE(lck) ((lck) & (unsigned int)BATCH_OPLOCK)
 #define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & ((unsigned int)LEVEL_II_OPLOCK|(unsigned int)FAKE_LEVEL_II_OPLOCK))
 
-struct inform_level2_message {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	uint16 mid;
-	unsigned long target_file_id;
-	unsigned long source_file_id;
-};
-
 /* kernel_oplock_message definition.
 
 struct kernel_oplock_message {
