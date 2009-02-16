@@ -90,6 +90,38 @@ open_pty(void)
     if(openpty(&master, &slave, line, 0, 0) == 0)
 	return;
 #endif /* HAVE_OPENPTY .... */
+#ifdef STREAMSPTY
+    {
+	char *clone[] = {
+	    "/dev/ptc",
+	    "/dev/ptmx", 
+	    "/dev/ptm",
+	    "/dev/ptym/clone", 
+	    NULL
+	};
+	
+	char **q;
+	int p;
+	for(q = clone; *q; q++){
+	    master = open(*q, O_RDWR);
+	    if(master >= 0){
+#ifdef HAVE_GRANTPT
+		grantpt(master);
+#endif
+#ifdef HAVE_UNLOCKPT
+		unlockpt(master);
+#endif
+		strlcpy(line, ptsname(master), sizeof(line));
+		slave = open(line, O_RDWR);
+		if (slave < 0)
+		    errx(1, "failed to open slave");
+		ioctl(slave, I_PUSH, "ptem");
+		ioctl(slave, I_PUSH, "ldterm");
+	    }
+	}
+    }
+#endif /* STREAMSPTY */
+
     /* more cases, like open /dev/ptmx, etc */
 
     exit(77);
