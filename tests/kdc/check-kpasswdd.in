@@ -38,7 +38,7 @@ srcdir="@srcdir@"
 objdir="@objdir@"
 EGREP="@EGREP@"
 
-testfailed="echo test failed; cat messages.log; exit 1"
+testfailed="echo test failed; cat messages.log; exit \$ec"
 
 # If there is no useful db support compile in, disable test
 ../db/have-db || exit 77
@@ -62,6 +62,7 @@ klist="${TESTS_ENVIRONMENT} ../../kuser/klist -c $cache"
 kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kdestroy="${TESTS_ENVIRONMENT} ../../kuser/kdestroy -c $cache --no-unlog"
 test_apreq="${TESTS_ENVIRONMENT} ../../lib/krb5/test_ap-req"
+rkpty="${TESTS_ENVIRONMENT} ../../lib/roken/rkpty"
 
 KRB5_CONFIG="${objdir}/krb5.conf"
 export KRB5_CONFIG
@@ -103,7 +104,7 @@ echo Starting kpasswdd
 ${kpasswdd} &
 kpasswddpid=$!
 
-trap "kill ${kdcpid} ${kpasswddpid}; echo signal killing kdc; exit 1;" EXIT
+trap "kill ${kdcpid} ${kpasswddpid}; echo signal killing kdc; exit \$ec;" EXIT
 
 ec=0
 
@@ -132,8 +133,8 @@ send ${pw}\n
 expect Success
 EOF
 
-../../lib/roken/rkpty cpw.tmp ../../kpasswd/kpasswd foo@${R} || \
-	{ ec=1 ; eval "${testfailed}"; }
+${rkpty} cpw.tmp ../../kpasswd/kpasswd foo@${R} || \
+	{ ec=$? ; eval "${testfailed}"; }
 
 rm cpw.tmp
 
@@ -150,8 +151,6 @@ ${klist} > /dev/null || { ec=1 ; eval "${testfailed}"; }
 ${test_apreq} ${server}@${R} ${keytab} ${cache} || \
 	{ ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
-
-
 
 
 
