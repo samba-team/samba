@@ -39,5 +39,5 @@
 void ROKEN_LIB_FUNCTION
 vwarn(const char *fmt, va_list ap)
 {
-    warnerr(1, fmt, ap);
+    rk_warnerr(1, fmt, ap);
 }
