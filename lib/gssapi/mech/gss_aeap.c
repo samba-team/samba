@@ -8,15 +8,21 @@ RCSID("$Id$");
 /**
  * Encrypts or sign the data.
  *
- * There can only be one GSS_IOV_BUFFER_TYPE_DATA buffer.
- * There can be as 0 or more GSS_IOV_BUFFER_TYPE_SIGN_ONLY buffers.
+ * The maximum packet size is gss_context_stream_sizes.max_msg_size.
  *
- * The caller needs provide either:
+ * The caller needs provide the folloing buffers:
  *
- * - one GSS_IOV_BUFFER_TYPE_HEADER, one GSS_IOV_BUFFER_TYPE_PADDING, andd one GSS_IOV_BUFFER_TYPE_TRAILER
- * - on DCE-RPC mode, only one GSS_IOV_BUFFER_TYPE_HEADER may be given
+ * - HEADER (of size gss_context_stream_sizes.header)
+ *   SIGN_ONLY (optional, zero or more)
+ *   DATA
+ *   SIGN_ONLY (optional, zero or more)
+ *   PADDING (of size gss_context_stream_sizes.blocksize)
+ *   TRAILER (of size gss_context_stream_sizes.trailer)
  *
- * To generate gss_wrap() comptaible headers, use: HEADER | DATA | PADDING | TRAILER
+ * - on DCE-RPC mode, the caller can skip PADDING and TRAILER if the
+ *   DATA elements is padded to a block bountry.
+ *
+ * To generate gss_wrap() compatible packets, use: HEADER | DATA | PADDING | TRAILER
  *
  * The input sizes of HEADER, PADDING and TRAILER can be fetched using gss_wrap_iov_length() or
  * gss_context_query_attributes().
