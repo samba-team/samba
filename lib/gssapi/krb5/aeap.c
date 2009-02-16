@@ -247,6 +247,8 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 	case GSS_IOV_BUFFER_TYPE_STREAM:
 	    size += iov[i].buffer.length;
 	    break;
+	case GSS_IOV_BUFFER_TYPE_SIGN_ONLY:
+	    break;
 	default:
 	    *minor_status = EINVAL;
 	    return GSS_S_FAILURE;
