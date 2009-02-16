@@ -510,6 +510,32 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 	struct netr_Credential srv_chal_out;
 	const char *fn;
 
+	/* According to Microsoft (see bugid #6099)
+	 * Windows 7 looks at the negotiate_flags
+	 * returned in this structure *even if the
+	 * call fails with access denied ! So in order
+	 * to allow Win7 to connect to a Samba NT style
+	 * PDC we set the flags before we know if it's
+	 * an error or not.
+	 */
+
+	/* 0x000001ff */
+	srv_flgs = NETLOGON_NEG_ACCOUNT_LOCKOUT |
+		   NETLOGON_NEG_PERSISTENT_SAMREPL |
+		   NETLOGON_NEG_ARCFOUR |
+		   NETLOGON_NEG_PROMOTION_COUNT |
+		   NETLOGON_NEG_CHANGELOG_BDC |
+		   NETLOGON_NEG_FULL_SYNC_REPL |
+		   NETLOGON_NEG_MULTIPLE_SIDS |
+		   NETLOGON_NEG_REDO |
+		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL;
+
+	if (lp_server_schannel() != false) {
+		srv_flgs |= NETLOGON_NEG_SCHANNEL;
+	}
+
+	*r->out.negotiate_flags = srv_flgs;
+
 	switch (p->hdr_req.opnum) {
 		case NDR_NETR_SERVERAUTHENTICATE2:
 			fn = "_netr_ServerAuthenticate2";
@@ -568,26 +594,9 @@ NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
 			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* 0x000001ff */
-	srv_flgs = NETLOGON_NEG_ACCOUNT_LOCKOUT |
-		   NETLOGON_NEG_PERSISTENT_SAMREPL |
-		   NETLOGON_NEG_ARCFOUR |
-		   NETLOGON_NEG_PROMOTION_COUNT |
-		   NETLOGON_NEG_CHANGELOG_BDC |
-		   NETLOGON_NEG_FULL_SYNC_REPL |
-		   NETLOGON_NEG_MULTIPLE_SIDS |
-		   NETLOGON_NEG_REDO |
-		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL;
-
-	if (lp_server_schannel() != false) {
-		srv_flgs |= NETLOGON_NEG_SCHANNEL;
-	}
-
 	/* set up the LSA AUTH 2 response */
 	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
 	       sizeof(r->out.return_credentials->data));
-	*r->out.negotiate_flags = srv_flgs;
 
 	fstrcpy(p->dc->mach_acct, r->in.account_name);
 	fstrcpy(p->dc->remote_machine, r->in.computer_name);
