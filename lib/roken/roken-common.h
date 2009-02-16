@@ -376,7 +376,7 @@ void ROKEN_LIB_FUNCTION
 free_environment(char **);
 
 void ROKEN_LIB_FUNCTION
-warnerr(int doerrno, const char *fmt, va_list ap)
+rk_warnerr(int doerrno, const char *fmt, va_list ap)
     __attribute__ ((format (printf, 2, 0)));
 
 void * ROKEN_LIB_FUNCTION
