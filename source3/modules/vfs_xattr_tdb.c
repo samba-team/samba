@@ -100,6 +100,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	TDB_DATA data;
 
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
 
 	if (db_ctx->fetch(db_ctx, mem_ctx,
@@ -122,6 +123,8 @@ static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
 					      const struct file_id *id)
 {
 	uint8 id_buf[16];
+
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
 	return db_ctx->fetch_locked(db_ctx, mem_ctx,
 				    make_tdb_data(id_buf, sizeof(id_buf)));

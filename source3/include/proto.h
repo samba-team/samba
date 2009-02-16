@@ -512,7 +512,8 @@ struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_S
 bool file_id_equal(const struct file_id *id1, const struct file_id *id2);
 const char *file_id_string_tos(const struct file_id *id);
 void push_file_id_16(char *buf, const struct file_id *id);
-void pull_file_id_16(char *buf, struct file_id *id);
+void push_file_id_24(char *buf, const struct file_id *id);
+void pull_file_id_24(char *buf, struct file_id *id);
 
 /* The following definitions come from lib/gencache.c  */
 

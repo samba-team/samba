@@ -46,6 +46,7 @@ struct smbdb_ctx;
 struct smb_share_mode_entry {
 	uint64_t dev;
 	uint64_t ino;
+	uint64_t extid;
 	uint32_t share_access;
 	uint32_t access_mask;
 	struct timeval open_time;
@@ -66,11 +67,13 @@ int smb_share_mode_db_close(struct smbdb_ctx *db_ctx);
 
 int smb_lock_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
-				uint64_t ino);
+				uint64_t ino,
+				uint64_t extid);
 
 int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
-				uint64_t ino);
+				uint64_t ino,
+				uint64_t extid);
 
 /*
  * Share mode database accessor functions.
@@ -79,23 +82,27 @@ int smb_unlock_share_mode_entry(struct smbdb_ctx *db_ctx,
 int smb_get_share_mode_entries(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino,
+				uint64_t extid,
 				struct smb_share_mode_entry **pp_list,
 				unsigned char *p_delete_on_close);
 
 int smb_create_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino,
+				uint64_t extid,
 				const struct smb_share_mode_entry *set_entry,
 				const char *path);
 
 int smb_delete_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino,
+				uint64_t extid,
 				const struct smb_share_mode_entry *set_entry);
 
 int smb_change_share_mode_entry(struct smbdb_ctx *db_ctx,
 				uint64_t dev,
 				uint64_t ino,
+				uint64_t extid,
 				const struct smb_share_mode_entry *set_entry,
 				const struct smb_share_mode_entry *new_entry);
 

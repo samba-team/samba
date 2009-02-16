@@ -758,18 +758,19 @@ Offset  Data			length.
 16	uint32 private_options	4
 20	uint32 time sec		4
 24	uint32 time usec	4
-28	SMB_DEV_T dev		8 bytes.
-36	SMB_INO_T inode		8 bytes
-44	unsigned long file_id	4 bytes
-48	uint32 uid		4 bytes
-52	uint16 flags		2 bytes
-54
+28	uint64 dev		8 bytes
+36	uint64 inode		8 bytes
+44	uint64 extid		8 bytes
+52	unsigned long file_id	4 bytes
+56	uint32 uid		4 bytes
+60	uint16 flags		2 bytes
+62
 
 */
 #ifdef CLUSTER_SUPPORT
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 58
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 66
 #else
-#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 54
+#define MSG_SMB_SHARE_MODE_ENTRY_SIZE 62
 #endif
 
 struct share_mode_lock {
@@ -1631,37 +1632,40 @@ struct inform_level2_message {
 /* kernel_oplock_message definition.
 
 struct kernel_oplock_message {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
+	uint64_t dev;
+	uint64_t inode;
+	unit64_t extid;
 	unsigned long file_id;
 };
 
 Offset  Data                  length.
-0     SMB_DEV_T dev           8 bytes.
-8     SMB_INO_T inode         8 bytes
-16    unsigned long file_id   4 bytes
-20
+0     uint64_t dev            8 bytes
+8     uint64_t inode          8 bytes
+16    uint64_t extid          8 bytes
+24    unsigned long file_id   4 bytes
+28
 
 */
-#define MSG_SMB_KERNEL_BREAK_SIZE 20
+#define MSG_SMB_KERNEL_BREAK_SIZE 28
 
 /* file_renamed_message definition.
 
 struct file_renamed_message {
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
+	uint64_t dev;
+	uint64_t inode;
 	char names[1]; A variable area containing sharepath and filename.
 };
 
 Offset  Data			length.
-0	SMB_DEV_T dev		8 bytes.
-8	SMB_INO_T inode		8 bytes
-16	char [] name		zero terminated namelen bytes
-minimum length == 18.
+0	uint64_t dev		8 bytes
+8	uint64_t inode		8 bytes
+16      unit64_t extid          8 bytes
+24	char [] name		zero terminated namelen bytes
+minimum length == 24.
 
 */
 
-#define MSG_FILE_RENAMED_MIN_SIZE 16
+#define MSG_FILE_RENAMED_MIN_SIZE 24
 
 /*
  * On the wire return values for oplock types.

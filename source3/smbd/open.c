@@ -2597,8 +2597,8 @@ void msg_file_was_renamed(struct messaging_context *msg,
         }
 
 	/* Unpack the message. */
-	pull_file_id_16(frm, &id);
-	sharepath = &frm[16];
+	pull_file_id_24(frm, &id);
+	sharepath = &frm[24];
 	newname = sharepath + strlen(sharepath) + 1;
 	sp_len = strlen(sharepath);
 

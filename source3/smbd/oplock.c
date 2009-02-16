@@ -40,8 +40,8 @@ void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp)
 	uint8_t msg[MSG_SMB_KERNEL_BREAK_SIZE];
 
 	/* Put the kernel break info into the message. */
-	push_file_id_16((char *)msg, &fsp->file_id);
-	SIVAL(msg,16,fsp->fh->gen_id);
+	push_file_id_24((char *)msg, &fsp->file_id);
+	SIVAL(msg,24,fsp->fh->gen_id);
 
 	/* Don't need to be root here as we're only ever
 	   sending to ourselves. */
@@ -583,8 +583,8 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	}
 
 	/* Pull the data from the message. */
-	pull_file_id_16((char *)data->data, &id);
-	file_id = (unsigned long)IVAL(data->data, 16);
+	pull_file_id_24((char *)data->data, &id);
+	file_id = (unsigned long)IVAL(data->data, 24);
 
 	DEBUG(10, ("Got kernel oplock break message from pid %d: %s/%u\n",
 		   (int)procid_to_pid(&src), file_id_string_tos(&id),
@@ -865,12 +865,12 @@ void share_mode_entry_to_message(char *msg, const struct share_mode_entry *e)
 	SIVAL(msg,16,e->private_options);
 	SIVAL(msg,20,(uint32)e->time.tv_sec);
 	SIVAL(msg,24,(uint32)e->time.tv_usec);
-	push_file_id_16(msg+28, &e->id);
-	SIVAL(msg,44,e->share_file_id);
-	SIVAL(msg,48,e->uid);
-	SSVAL(msg,52,e->flags);
+	push_file_id_24(msg+28, &e->id);
+	SIVAL(msg,52,e->share_file_id);
+	SIVAL(msg,56,e->uid);
+	SSVAL(msg,60,e->flags);
 #ifdef CLUSTER_SUPPORT
-	SIVAL(msg,54,e->pid.vnn);
+	SIVAL(msg,62,e->pid.vnn);
 #endif
 }
 
@@ -888,12 +888,12 @@ void message_to_share_mode_entry(struct share_mode_entry *e, char *msg)
 	e->private_options = IVAL(msg,16);
 	e->time.tv_sec = (time_t)IVAL(msg,20);
 	e->time.tv_usec = (int)IVAL(msg,24);
-	pull_file_id_16(msg+28, &e->id);
-	e->share_file_id = (unsigned long)IVAL(msg,44);
-	e->uid = (uint32)IVAL(msg,48);
-	e->flags = (uint16)SVAL(msg,52);
+	pull_file_id_24(msg+28, &e->id);
+	e->share_file_id = (unsigned long)IVAL(msg,52);
+	e->uid = (uint32)IVAL(msg,56);
+	e->flags = (uint16)SVAL(msg,60);
 #ifdef CLUSTER_SUPPORT
-	e->pid.vnn = IVAL(msg,54);
+	e->pid.vnn = IVAL(msg,62);
 #endif
 }
 

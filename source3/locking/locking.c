@@ -923,12 +923,12 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	push_file_id_16(frm, &lck->id);
+	push_file_id_24(frm, &lck->id);
 
 	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
 
-	safe_strcpy(&frm[16], lck->servicepath, sp_len);
-	safe_strcpy(&frm[16 + sp_len + 1], lck->filename, fn_len);
+	safe_strcpy(&frm[24], lck->servicepath, sp_len);
+	safe_strcpy(&frm[24 + sp_len + 1], lck->filename, fn_len);
 
 	/* Send the messages. */
 	for (i=0; i<lck->num_share_modes; i++) {

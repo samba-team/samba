@@ -94,6 +94,8 @@ static struct db_record *acl_tdb_lock(TALLOC_CTX *mem_ctx,
 					const struct file_id *id)
 {
 	uint8 id_buf[16];
+
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, id);
 	return db->fetch_locked(db,
 				mem_ctx,
@@ -200,6 +202,7 @@ static NTSTATUS get_acl_blob(TALLOC_CTX *ctx,
 	}
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
 
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
 
 	if (db->fetch(db,
@@ -285,6 +288,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	}
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
 
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
 	rec = db->fetch_locked(db, talloc_tos(),
 				make_tdb_data(id_buf,
@@ -325,6 +329,8 @@ static NTSTATUS store_acl_blob_pathname(vfs_handle_struct *handle,
 	}
 
 	id = vfs_file_id_from_sbuf(handle->conn, &sbuf);
+
+	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
 
 	rec = db->fetch_locked(db, talloc_tos(),

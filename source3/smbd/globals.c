@@ -66,7 +66,8 @@ struct fsp_singleton_cache fsp_fi_cache = {
 	.fsp = NULL,
 	.id = {
 		.devid = 0,
-		.inode = 0
+		.inode = 0,
+		.extid = 0
 	}
 };
 unsigned long file_gen_counter = 0;
