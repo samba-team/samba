@@ -105,6 +105,7 @@ HEIMDAL_ROKEN_1.0 {
 		rk_undumpdata;
 		rk_unvis;
 		rk_vis;
+		rk_warnerr;
 		rk_xfree;
 		roken_concat;
 		roken_getaddrinfo_hostspec2;
@@ -192,7 +193,6 @@ HEIMDAL_ROKEN_1.0 {
 		wait_for_process;
 		wait_for_process_timed;
 		warn;
-		warnerr;
 		warnx;
 		writev;
 	local:
