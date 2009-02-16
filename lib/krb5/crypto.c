@@ -3159,7 +3159,7 @@ find_iv(krb5_crypto_iov *data, int num_data, int type)
  * Kerberos encrypted data look like this:
  *
  * 1. KRB5_CRYPTO_TYPE_HEADER
- * 2. array KRB5_CRYPTO_TYPE_DATA and KRB5_CRYPTO_TYPE_SIGN_ONLY in
+ * 2. one KRB5_CRYPTO_TYPE_DATA and array [0,...] KRB5_CRYPTO_TYPE_SIGN_ONLY in
  *  any order, however the receiver have to aware of the
  *  order. KRB5_CRYPTO_TYPE_SIGN_ONLY is commonly used headers and
  *  trailers.
