@@ -799,6 +799,26 @@ gss_release_iov_buffer(OM_uint32 * /* minor_status */,
 		       int /* iov_count */);
 
 /*
+ * Query functions
+ */
+
+typedef struct {
+    size_t header; /**< size of header */
+    size_t trailer; /**< size of trailer */
+    size_t max_msg_size; /**< maximum message size */
+    size_t buffers; /**< extra GSS_IOV_BUFFER_TYPE_EMPTY buffer to pass */
+    size_t blocksize; /**< Specificed optimal size of messages, also
+			 is the maximum padding size
+			 (GSS_IOV_BUFFER_TYPE_PADDING) */
+} gss_context_stream_sizes; 
+
+
+OM_uint32 GSSAPI_LIB_FUNCTION
+gss_context_query_attributes(OM_uint32 * /* minor_status */,
+			     gss_OID /* attribute */,
+			     void * /*data*/,
+			     size_t /* len */);
+/*
  * The following routines are obsolete variants of gss_get_mic,
  * gss_verify_mic, gss_wrap and gss_unwrap.  They should be
  * provided by GSSAPI V2 implementations for backwards
