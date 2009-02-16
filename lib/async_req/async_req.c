@@ -174,7 +174,7 @@ bool async_post_error(struct async_req *req, struct tevent_context *ev,
 {
 	req->error = error;
 
-	if (tevent_add_timer(ev, req, timeval_zero(),
+	if (tevent_add_timer(ev, req, tevent_timeval_zero(),
 			    async_trigger, req) == NULL) {
 		return false;
 	}
@@ -208,7 +208,8 @@ bool async_req_set_timeout(struct async_req *req, struct tevent_context *ev,
 			   struct timeval to)
 {
 	return (tevent_add_timer(
-			ev, req, timeval_current_ofs(to.tv_sec, to.tv_usec),
+			ev, req,
+			tevent_timeval_current_ofs(to.tv_sec, to.tv_usec),
 			async_req_timedout, req)
 		!= NULL);
 }
@@ -300,7 +301,7 @@ bool async_req_enqueue(struct async_req_queue *queue, struct tevent_context *ev,
 	if (!busy) {
 		struct tevent_timer *te;
 
-		te = tevent_add_timer(ev, e, timeval_zero(),
+		te = tevent_add_timer(ev, e, tevent_timeval_zero(),
 				     async_req_immediate_trigger,
 				     e);
 		if (te == NULL) {
