@@ -6486,7 +6486,7 @@ _PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *n
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_CONCURRENT_RPC", NETLOGON_NEG_CONCURRENT_RPC, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AVOID_ACCOUNT_DB_REPL", NETLOGON_NEG_AVOID_ACCOUNT_DB_REPL, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AVOID_SECURITYAUTH_DB_REPL", NETLOGON_NEG_AVOID_SECURITYAUTH_DB_REPL, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_128BIT", NETLOGON_NEG_128BIT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_STRONG_KEYS", NETLOGON_NEG_STRONG_KEYS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_TRANSITIVE_TRUSTS", NETLOGON_NEG_TRANSITIVE_TRUSTS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_DNS_DOMAIN_TRUSTS", NETLOGON_NEG_DNS_DOMAIN_TRUSTS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_PASSWORD_SET2", NETLOGON_NEG_PASSWORD_SET2, r);
@@ -6494,8 +6494,9 @@ _PUBLIC_ void ndr_print_netr_NegotiateFlags(struct ndr_print *ndr, const char *n
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_CROSS_FOREST_TRUSTS", NETLOGON_NEG_CROSS_FOREST_TRUSTS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION", NETLOGON_NEG_NEUTRALIZE_NT4_EMULATION, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_RODC_PASSTHROUGH", NETLOGON_NEG_RODC_PASSTHROUGH, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_SUPPORTS_AES_SHA2", NETLOGON_NEG_SUPPORTS_AES_SHA2, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AUTHENTICATED_RPC_LSASS", NETLOGON_NEG_AUTHENTICATED_RPC_LSASS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_SCHANNEL", NETLOGON_NEG_SCHANNEL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NEG_AUTHENTICATED_RPC", NETLOGON_NEG_AUTHENTICATED_RPC, r);
 	ndr->depth--;
 }
 
