@@ -41,35 +41,36 @@ iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, int iov_count)
     unsigned int i;
     
     for (i = 0; i < iov_count; i++) {
-	if (iov[i].flags & GSS_IOV_BUFFER_FLAG_ALLOCATE) {
+	if (GSS_IOV_BUFFER_FLAGS(iov[i].type) & GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE){
 	    void *ptr = malloc(iov[i].buffer.length);
 	    if (ptr == NULL)
 		abort();
 	    memcpy(ptr, iov[i].buffer.value, iov[i].buffer.length);
 	    iov[i].buffer.value = ptr;
-	    iov[i].flags |= GSS_IOV_BUFFER_FLAG_ALLOCATED;
+	    iov[i].type |= GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED;
 	}
     }
     return GSS_S_COMPLETE;
 }
 
 static OM_uint32
-iov_map(OM_uint32 *minor_status, int iov_count,
+iov_map(OM_uint32 *minor_status,
 	const gss_iov_buffer_desc *iov,
+	int iov_count,
 	krb5_crypto_iov *data)
 {
     unsigned int i;
 
     for (i = 0; i < iov_count; i++) {
-	switch(iov[i].type) {
+	switch(GSS_IOV_BUFFER_TYPE(iov[i].type)) {
 	case GSS_IOV_BUFFER_TYPE_EMPTY:
 	    data[i].flags = KRB5_CRYPTO_TYPE_EMPTY;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_DATA:
-	    if (iov[i].flags & GSS_IOV_BUFFER_FLAG_SIGN_ONLY)
-		data[i].flags = KRB5_CRYPTO_TYPE_SIGN_ONLY;
-	    else
-		data[i].flags = KRB5_CRYPTO_TYPE_DATA;
+	    data[i].flags = KRB5_CRYPTO_TYPE_DATA;
+	    break;
+	case GSS_IOV_BUFFER_TYPE_SIGN_ONLY:
+	    data[i].flags = KRB5_CRYPTO_TYPE_SIGN_ONLY;
 	    break;
 	case GSS_IOV_BUFFER_TYPE_HEADER:
 	    data[i].flags = KRB5_CRYPTO_TYPE_HEADER;
@@ -99,8 +100,8 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 	     int conf_req_flag,
 	     gss_qop_t qop_req,
 	     int * conf_state,
-	     int iov_count,
-	     gss_iov_buffer_desc *iov)
+	     gss_iov_buffer_desc *iov,
+	     int iov_count)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
@@ -117,14 +118,14 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 
     data = calloc(iov_count, sizeof(data[0]));
     if (data == NULL) {
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
 
-    major_status = iov_map(minor_status, iov_count, iov, data);
+    major_status = iov_map(minor_status, iov, iov_count, data);
     if (major_status != GSS_S_COMPLETE) {
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
 	free(data);
 	return major_status;
     }
@@ -139,7 +140,7 @@ _gk_wrap_iov(OM_uint32 * minor_status,
 				data, iov_count, NULL);
     free(data);
     if (ret) {
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
         *minor_status = ret;
 	return GSS_S_FAILURE;
     }
@@ -153,8 +154,8 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 	       gss_ctx_id_t context_handle,
 	       int *conf_state,
 	       gss_qop_t *qop_state,
-	       int iov_count,
-	       gss_iov_buffer_desc *iov)
+	       gss_iov_buffer_desc *iov,
+	       int iov_count)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
@@ -171,14 +172,14 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
 
     data = calloc(iov_count, sizeof(data[0]));
     if (data == NULL) {
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
 
-    major_status = iov_map(minor_status, iov_count, iov, data);
+    major_status = iov_map(minor_status, iov, iov_count, data);
     if (major_status != GSS_S_COMPLETE) {
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
 	free(data);
 	return major_status;
     }
@@ -194,7 +195,7 @@ _gk_unwrap_iov(OM_uint32 *minor_status,
     free(data);
     if (ret) {
         *minor_status = ret;
-	gss_release_iov_buffer(&junk, iov_count, iov);
+	gss_release_iov_buffer(&junk, iov, iov_count);
 	return GSS_S_FAILURE;
     }
 
@@ -207,8 +208,8 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
 		    gss_ctx_id_t context_handle,
 		    int conf_req_flag,
 		    gss_qop_t qop_req,
-		    int iov_count,
-		    gss_iov_buffer_desc *iov)
+		    gss_iov_buffer_desc *iov,
+		    int iov_count)
 {
     gsskrb5_ctx ctx = (gsskrb5_ctx) context_handle;
     krb5_context context;
