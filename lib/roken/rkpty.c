@@ -50,25 +50,7 @@
 #endif
 
 #ifdef	STREAMSPTY
-#ifdef HAVE_SAC_H
-#include <sac.h>
-#endif
-#ifdef HAVE_SYS_STROPTS_H
-#include <sys/stropts.h>
-#endif
-
-# include <stropts.h>
-
-#ifdef  HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#ifdef __hpux
-#undef SE
-#endif
-#endif
-
-#ifdef	HAVE_SYS_STREAM_H
-#include <sys/stream.h>
-#endif
+#include <stropts.h>
 #endif /* STREAMPTY */
 
 #include "roken.h"
@@ -121,9 +103,8 @@ open_pty(void)
 	    "/dev/ptym/clone", 
 	    NULL
 	};
-	
 	char **q;
-	int p;
+
 	for(q = clone; *q; q++){
 	    master = open(*q, O_RDWR);
 	    if(master >= 0){
@@ -136,9 +117,11 @@ open_pty(void)
 		strlcpy(line, ptsname(master), sizeof(line));
 		slave = open(line, O_RDWR);
 		if (slave < 0)
-		    errx(1, "failed to open slave");
+		    errx(1, "failed to open slave when using %s", q);
 		ioctl(slave, I_PUSH, "ptem");
 		ioctl(slave, I_PUSH, "ldterm");
+
+		return;
 	    }
 	}
     }
