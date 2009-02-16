@@ -1585,22 +1585,22 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 u3;
 		uint32 count;
 		[size_is(count)] spoolss_Field *fields;
-	} spoolss_NotifyOptionsArray;
+	} spoolss_NotifyOptionType;
 
 	typedef struct {
 		[value(2)] uint32 version;
 		uint32 flags;
 		uint32 count;
-		[size_is(count)] spoolss_NotifyOptionsArray *options;
-	} spoolss_NotifyOptionsContainer;
+		[size_is(count)] spoolss_NotifyOptionType *types;
+	} spoolss_NotifyOption;
 
 	[public] WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
 		[in,ref] policy_handle *handle,
-		[in] uint32 flags,
+		[in] spoolss_PrinterChangeFlags flags,
 		[in] uint32 options,
-		[in,unique] [string,charset(UTF16)] uint16 *str,
+		[in,unique] [string,charset(UTF16)] uint16 *local_machine,
 		[in] uint32 printer_local,
-		[in,unique] spoolss_NotifyOptionsContainer *t1
+		[in,unique] spoolss_NotifyOption *notify_options
 	);
 
 	/******************/
