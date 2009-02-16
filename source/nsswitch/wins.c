@@ -26,6 +26,14 @@
 #include <ns_daemon.h>
 #endif
 
+#if HAVE_PTHREAD_H
+#include <pthread.h>
+#endif
+
+#if HAVE_PTHREAD
+static pthread_mutex_t wins_nss_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 #ifndef INADDRSZ
 #define INADDRSZ 4
 #endif
@@ -297,11 +305,16 @@ NSS_STATUS
 _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 			  char *buffer, size_t buflen, int *h_errnop)
 {
+	NSS_STATUS nss_status = NSS_STATUS_SUCCESS;
 	struct in_addr *ip_list;
 	int i, count;
 	fstring name;
 	size_t namelen;
 		
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&wins_nss_mutex);
+#endif
+
 	memset(he, '\0', sizeof(*he));
 	fstrcpy(name, hostname);
 
@@ -309,15 +322,19 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 
 	ip_list = lookup_byname_backend(name, &count);
 
-	if (!ip_list)
-		return NSS_STATUS_NOTFOUND;
+	if (!ip_list) {
+		nss_status = NSS_STATUS_NOTFOUND;
+		goto out;
+	}
 
 	/* Copy h_name */
 
 	namelen = strlen(name) + 1;
 
-	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL)
-		return NSS_STATUS_TRYAGAIN;
+	if ((he->h_name = get_static(&buffer, &buflen, namelen)) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
+	}
 
 	memcpy(he->h_name, name, namelen);
 
@@ -326,17 +343,23 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	if ((i = (unsigned long)(buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 
-	if (get_static(&buffer, &buflen, i) == NULL)
-		return NSS_STATUS_TRYAGAIN;
+	if (get_static(&buffer, &buflen, i) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
+	}
 
 	if ((he->h_addr_list = (char **)get_static(
-		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL)
-		return NSS_STATUS_TRYAGAIN;
+		     &buffer, &buflen, (count + 1) * sizeof(char *))) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
+	}
 
 	for (i = 0; i < count; i++) {
 		if ((he->h_addr_list[i] = get_static(&buffer, &buflen,
-						     INADDRSZ)) == NULL)
-			return NSS_STATUS_TRYAGAIN;
+						     INADDRSZ)) == NULL) {
+			nss_status = NSS_STATUS_TRYAGAIN;
+			goto out;
+		}
 		memcpy(he->h_addr_list[i], &ip_list[i], INADDRSZ);
 	}
 
@@ -355,16 +378,27 @@ _nss_wins_gethostbyname_r(const char *hostname, struct hostent *he,
 	if ((i = (unsigned long)(buffer) % sizeof(char*)) != 0)
 		i = sizeof(char*) - i;
 
-	if (get_static(&buffer, &buflen, i) == NULL)
-		return NSS_STATUS_TRYAGAIN;
+	if (get_static(&buffer, &buflen, i) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
+	}
 
 	if ((he->h_aliases = (char **)get_static(
-		     &buffer, &buflen, sizeof(char *))) == NULL)
-		return NSS_STATUS_TRYAGAIN;
+		     &buffer, &buflen, sizeof(char *))) == NULL) {
+		nss_status = NSS_STATUS_TRYAGAIN;
+		goto out;
+	}
 
 	he->h_aliases[0] = NULL;
 
-	return NSS_STATUS_SUCCESS;
+	nss_status = NSS_STATUS_SUCCESS;
+
+  out:
+
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&wins_nss_mutex);
+#endif
+	return nss_status;
 }
 
 
@@ -372,12 +406,22 @@ NSS_STATUS
 _nss_wins_gethostbyname2_r(const char *name, int af, struct hostent *he,
 			   char *buffer, size_t buflen, int *h_errnop)
 {
+	NSS_STATUS nss_status;
+
+#if HAVE_PTHREAD
+	pthread_mutex_lock(&wins_nss_mutex);
+#endif
+
 	if(af!=AF_INET) {
 		*h_errnop = NO_DATA;
-		return NSS_STATUS_UNAVAIL;
+		nss_status = NSS_STATUS_UNAVAIL;
+	} else {
+		nss_status = _nss_wins_gethostbyname_r(
+				name, he, buffer, buflen, h_errnop);
 	}
-
-	return _nss_wins_gethostbyname_r(
-		name, he, buffer, buflen, h_errnop);
+#if HAVE_PTHREAD
+	pthread_mutex_unlock(&wins_nss_mutex);
+#endif
+	return nss_status;
 }
 #endif

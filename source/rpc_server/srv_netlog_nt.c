@@ -431,6 +431,25 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
 
+	/* According to Microsoft (see bugid #6099)
+	 * Windows 7 looks at the negotiate_flags
+	 * returned in this structure *even if the
+	 * call fails with access denied ! So in order
+	 * to allow Win7 to connect to a Samba NT style
+	 * PDC we set the flags before we know if it's
+	 * an error or not.
+	 */
+
+	srv_flgs.neg_flags = 0x000001ff;
+
+	if (lp_server_schannel() != False) {
+		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
+	}
+
+	/* set up the initial LSA AUTH 2 response */
+	ZERO_STRUCT(srv_chal_out);
+	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
+
 	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
 				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
 
@@ -479,13 +498,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srv_flgs.neg_flags = 0x000001ff;
-
-	if (lp_server_schannel() != False) {
-		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
-	}
-
-	/* set up the LSA AUTH 2 response */
+	/* set up the real LSA AUTH 2 response */
 	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
 
 	fstrcpy(p->dc->mach_acct, mach_acct);
