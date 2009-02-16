@@ -130,19 +130,6 @@ static int nt_printq_status(int v)
 	return 0;
 }
 
-/****************************************************************************
- Functions to handle SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
-****************************************************************************/
-
-static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
-{
-	if (*pp == NULL)
-		return;
-
-	SAFE_FREE((*pp)->ctr.type);
-	SAFE_FREE(*pp);
-}
-
 /***************************************************************************
  Disconnect from the client
 ****************************************************************************/
@@ -215,8 +202,7 @@ static int printer_entry_destructor(Printer_entry *Printer)
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	free_spool_notify_option(&Printer->notify.option);
-	Printer->notify.option=NULL;
+	TALLOC_FREE(Printer->notify.option);
 	Printer->notify.client_connected=False;
 
 	free_nt_devicemode( &Printer->nt_devmode );
@@ -225,35 +211,6 @@ static int printer_entry_destructor(Printer_entry *Printer)
 	/* Remove from the internal list. */
 	DLIST_REMOVE(printers_list, Printer);
 	return 0;
-}
-
-/****************************************************************************
- Functions to duplicate a SPOOL_NOTIFY_OPTION struct stored in Printer_entry.
-****************************************************************************/
-
-static SPOOL_NOTIFY_OPTION *dup_spool_notify_option(SPOOL_NOTIFY_OPTION *sp)
-{
-	SPOOL_NOTIFY_OPTION *new_sp = NULL;
-
-	if (!sp)
-		return NULL;
-
-	new_sp = SMB_MALLOC_P(SPOOL_NOTIFY_OPTION);
-	if (!new_sp)
-		return NULL;
-
-	*new_sp = *sp;
-
-	if (sp->ctr.count) {
-		new_sp->ctr.type = (SPOOL_NOTIFY_OPTION_TYPE *)memdup(sp->ctr.type, sizeof(SPOOL_NOTIFY_OPTION_TYPE) * sp->ctr.count);
-
-		if (!new_sp->ctr.type) {
-			SAFE_FREE(new_sp);
-			return NULL;
-		}
-	}
-
-	return new_sp;
 }
 
 /****************************************************************************
@@ -633,7 +590,7 @@ static bool is_monitoring_event_flags(uint32 flags, uint16 notify_type,
 static bool is_monitoring_event(Printer_entry *p, uint16 notify_type,
 				uint16 notify_field)
 {
-	SPOOL_NOTIFY_OPTION *option = p->notify.option;
+	struct spoolss_NotifyOption *option = p->notify.option;
 	uint32 i, j;
 
 	/*
@@ -655,13 +612,13 @@ static bool is_monitoring_event(Printer_entry *p, uint16 notify_type,
 
 		/* Check match for notify_type */
 
-		if (option->ctr.type[i].type != notify_type)
+		if (option->types[i].type != notify_type)
 			continue;
 
 		/* Check match for field */
 
-		for (j = 0; j < option->ctr.type[i].count; j++) {
-			if (option->ctr.type[i].fields[j] == notify_field) {
+		for (j = 0; j < option->types[i].count; j++) {
+			if (option->types[i].fields[j] == notify_field) {
 				return True;
 			}
 		}
@@ -2971,10 +2928,8 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	Printer->notify.options=options;
 	Printer->notify.printerlocal=printerlocal;
 
-	if (Printer->notify.option)
-		free_spool_notify_option(&Printer->notify.option);
-
-	Printer->notify.option=dup_spool_notify_option(option);
+	TALLOC_FREE(Printer->notify.option);
+	Printer->notify.option = dup_spoolss_NotifyOption(Printer, option);
 
 	unistr2_to_ascii(Printer->notify.localmachine, localmachine,
 		       sizeof(Printer->notify.localmachine));
@@ -3600,9 +3555,11 @@ void construct_info_data(struct spoolss_Notify *info_data,
  *
  ********************************************************************/
 
-static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spoolss_NotifyInfo *info, int
-					  snum, SPOOL_NOTIFY_OPTION_TYPE
-					  *option_type, uint32 id,
+static bool construct_notify_printer_info(Printer_entry *print_hnd,
+					  struct spoolss_NotifyInfo *info,
+					  int snum,
+					  const struct spoolss_NotifyOptionType *option_type,
+					  uint32_t id,
 					  TALLOC_CTX *mem_ctx)
 {
 	int field_num,j;
@@ -3622,7 +3579,7 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spool
 	if (!W_ERROR_IS_OK(get_a_printer(print_hnd, &printer, 2, lp_const_servicename(snum))))
 		return False;
 
-	for(field_num=0; field_num<option_type->count; field_num++) {
+	for(field_num=0; field_num < option_type->count; field_num++) {
 		field = option_type->fields[field_num];
 
 		DEBUG(4,("construct_notify_printer_info: notify [%d]: type [%x], field [%x]\n", field_num, type, field));
@@ -3665,8 +3622,9 @@ static bool construct_notify_printer_info(Printer_entry *print_hnd, struct spool
 static bool construct_notify_jobs_info(print_queue_struct *queue,
 				       struct spoolss_NotifyInfo *info,
 				       NT_PRINTER_INFO_LEVEL *printer,
-				       int snum, SPOOL_NOTIFY_OPTION_TYPE
-				       *option_type, uint32 id,
+				       int snum,
+				       const struct spoolss_NotifyOptionType *option_type,
+				       uint32_t id,
 				       TALLOC_CTX *mem_ctx)
 {
 	int field_num,j;
@@ -3745,15 +3703,15 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	Printer_entry *Printer=find_printer_index_by_hnd(p, hnd);
 	int n_services=lp_numservices();
 	int i;
-	SPOOL_NOTIFY_OPTION *option;
-	SPOOL_NOTIFY_OPTION_TYPE *option_type;
+	struct spoolss_NotifyOption *option;
+	struct spoolss_NotifyOptionType option_type;
 
 	DEBUG(4,("printserver_notify_info\n"));
 
 	if (!Printer)
 		return WERR_BADFID;
 
-	option=Printer->notify.option;
+	option = Printer->notify.option;
 
 	info->version	= 2;
 	info->notifies	= NULL;
@@ -3766,15 +3724,15 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 		return WERR_BADFID;
 
 	for (i=0; i<option->count; i++) {
-		option_type=&(option->ctr.type[i]);
+		option_type = option->types[i];
 
-		if (option_type->type!=PRINTER_NOTIFY_TYPE)
+		if (option_type.type != PRINTER_NOTIFY_TYPE)
 			continue;
 
 		for (snum=0; snum<n_services; snum++)
 		{
 			if ( lp_browseable(snum) && lp_snum_ok(snum) && lp_print_ok(snum) )
-				construct_notify_printer_info ( Printer, info, snum, option_type, snum, mem_ctx );
+				construct_notify_printer_info ( Printer, info, snum, &option_type, snum, mem_ctx );
 		}
 	}
 
@@ -3810,8 +3768,8 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spool
 	Printer_entry *Printer=find_printer_index_by_hnd(p, hnd);
 	int i;
 	uint32 id;
-	SPOOL_NOTIFY_OPTION *option;
-	SPOOL_NOTIFY_OPTION_TYPE *option_type;
+	struct spoolss_NotifyOption *option;
+	struct spoolss_NotifyOptionType option_type;
 	int count,j;
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
@@ -3821,7 +3779,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spool
 	if (!Printer)
 		return WERR_BADFID;
 
-	option=Printer->notify.option;
+	option = Printer->notify.option;
 	id = 0x0;
 
 	info->version	= 2;
@@ -3837,12 +3795,12 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spool
 	get_printer_snum(p, hnd, &snum, NULL);
 
 	for (i=0; i<option->count; i++) {
-		option_type=&option->ctr.type[i];
+		option_type = option->types[i];
 
-		switch ( option_type->type ) {
+		switch (option_type.type) {
 		case PRINTER_NOTIFY_TYPE:
 			if(construct_notify_printer_info(Printer, info, snum,
-							 option_type, id,
+							 &option_type, id,
 							 mem_ctx))
 				id--;
 			break;
@@ -3858,7 +3816,7 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, struct spool
 			for (j=0; j<count; j++) {
 				construct_notify_jobs_info(&queue[j], info,
 							   printer, snum,
-							   option_type,
+							   &option_type,
 							   queue[j].job,
 							   mem_ctx);
 			}
@@ -3938,7 +3896,7 @@ WERROR _spoolss_RouterRefreshPrinterChangeNotify(pipes_struct *p,
 		Printer->notify.change = r->in.change_low;
 	}
 
-	/* just ignore the SPOOL_NOTIFY_OPTION */
+	/* just ignore the spoolss_NotifyOption */
 
 	switch (Printer->printer_type) {
 		case SPLHND_SERVER:
@@ -6645,8 +6603,7 @@ WERROR _spoolss_FindClosePrinterNotify(pipes_struct *p,
 	Printer->notify.options=0;
 	Printer->notify.localmachine[0]='\0';
 	Printer->notify.printerlocal=0;
-	if (Printer->notify.option)
-		free_spool_notify_option(&Printer->notify.option);
+	TALLOC_FREE(Printer->notify.option);
 	Printer->notify.client_connected=False;
 
 	return WERR_OK;
