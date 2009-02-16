@@ -1237,11 +1237,10 @@ WERROR _netr_DsRGetDCName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
-				    struct netr_NETRLOGONDUMMYROUTINE1 *r)
+NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p,
+				    struct netr_LogonGetCapabilities *r)
 {
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
