@@ -216,7 +216,7 @@ static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_getattr(db, &id, name, value, size);
 }
@@ -235,7 +235,7 @@ static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_getattr(db, &id, name, value, size);
 }
@@ -338,7 +338,7 @@ static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
@@ -358,7 +358,7 @@ static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
@@ -443,7 +443,7 @@ static ssize_t xattr_tdb_listxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_listattr(db, &id, list, size);
 }
@@ -462,7 +462,7 @@ static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_listattr(db, &id, list, size);
 }
@@ -543,7 +543,7 @@ static int xattr_tdb_removexattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_removeattr(db, &id, name);
 }
@@ -561,7 +561,7 @@ static int xattr_tdb_fremovexattr(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	return xattr_tdb_removeattr(db, &id, name);
 }
@@ -628,7 +628,7 @@ static int xattr_tdb_unlink(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
 
@@ -667,7 +667,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 		return -1;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, &sbuf);
 
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
 

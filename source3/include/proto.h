@@ -508,7 +508,6 @@ void dump_core_setup(const char *progname);
 
 /* The following definitions come from lib/file_id.c  */
 
-struct file_id file_id_create_dev(SMB_DEV_T dev, SMB_INO_T inode);
 struct file_id vfs_file_id_from_sbuf(connection_struct *conn, const SMB_STRUCT_STAT *sbuf);
 bool file_id_equal(const struct file_id *id1, const struct file_id *id2);
 const char *file_id_string_tos(const struct file_id *id);

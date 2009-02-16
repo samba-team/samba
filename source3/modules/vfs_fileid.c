@@ -226,7 +226,7 @@ static void fileid_disconnect(struct vfs_handle_struct *handle)
 }
 
 static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
-					    SMB_DEV_T dev, SMB_INO_T inode)
+					    const SMB_STRUCT_STAT *sbuf)
 {
 	struct fileid_handle_data *data;
 	struct file_id id;
@@ -237,8 +237,8 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				struct fileid_handle_data,
 				return id);
 
-	id.devid	= data->device_mapping_fn(data, dev);
-	id.inode	= inode;
+	id.devid	= data->device_mapping_fn(data, sbuf->st_dev);
+	id.inode	= sbuf->st_ino;
 
 	return id;
 }

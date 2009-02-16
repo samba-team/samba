@@ -103,6 +103,24 @@ static bool irix_oplocks_available(void)
 	return True;
 }
 
+/*
+ * This is bad because the file_id should always be created through the vfs
+ * layer!  Unfortunately, a conn struct isn't available here.
+ */
+static struct file_id file_id_create_dev(SMB_DEV_T dev, SMB_INO_T inode)
+{
+	struct file_id key;
+
+	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
+	 * blob */
+	ZERO_STRUCT(key);
+
+	key.devid = dev;
+	key.inode = inode;
+
+	return key;
+}
+
 /****************************************************************************
  * Deal with the IRIX kernel <--> smbd
  * oplock break protocol.

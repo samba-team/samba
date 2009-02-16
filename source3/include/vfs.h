@@ -383,7 +383,8 @@ struct vfs_ops {
 							  struct notify_event *ev),
 					 void *private_data, void *handle_p);
 		int (*chflags)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
-		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
+		struct file_id (*file_id_create)(struct vfs_handle_struct *handle,
+						 const SMB_STRUCT_STAT *sbuf);
 
 		NTSTATUS (*streaminfo)(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,

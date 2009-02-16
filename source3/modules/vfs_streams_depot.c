@@ -153,8 +153,7 @@ static char *stream_dir(vfs_handle_struct *handle, const char *base_path,
 		base_sbuf = &sbuf;
 	}
 
-	id = SMB_VFS_FILE_ID_CREATE(handle->conn, base_sbuf->st_dev,
-				    base_sbuf->st_ino);
+	id = SMB_VFS_FILE_ID_CREATE(handle->conn, base_sbuf);
 
 	push_file_id_16((char *)id_buf, &id);
 

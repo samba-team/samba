@@ -284,9 +284,9 @@ static int skel_chflags(vfs_handle_struct *handle,  const char *path, uint flags
 }
 
 static struct file_id skel_file_id_create(vfs_handle_struct *handle,
-					  SMB_DEV_T dev, SMB_INO_T inode)
+					  const SMB_STRUCT_STAT *sbuf)
 {
-	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode);
+	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
 static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
