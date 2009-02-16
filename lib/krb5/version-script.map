@@ -347,6 +347,7 @@ HEIMDAL_KRB5_2.0 {
 		krb5_get_init_creds_opt_set_pac_request;
 		krb5_get_init_creds_opt_set_pkinit;
 		krb5_get_init_creds_opt_set_preauth_list;
+		krb5_get_init_creds_opt_set_process_last_req;
 		krb5_get_init_creds_opt_set_proxiable;
 		krb5_get_init_creds_opt_set_renew_life;
 		krb5_get_init_creds_opt_set_salt;
