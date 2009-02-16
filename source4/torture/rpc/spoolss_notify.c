@@ -191,7 +191,7 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
 	const char *endpoints[] = { "spoolss", NULL };
-	struct spoolss_NotifyOptionsContainer t1;
+	struct spoolss_NotifyOption t1;
 	struct spoolss_ClosePrinter cp;
 
 	struct policy_handle handle;
@@ -245,24 +245,24 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 				   "unable to initialize DCE/RPC server");
 
 	r.in.flags = 0;
-	r.in.str = talloc_asprintf(tctx, "\\\\%s", address);
+	r.in.local_machine = talloc_asprintf(tctx, "\\\\%s", address);
 	r.in.options = 0;
 	r.in.printer_local = 123;
 	t1.version = 2;
 	t1.flags = 0;
 	t1.count = 2;
-	t1.options = talloc_zero_array(tctx, struct spoolss_NotifyOptionsArray, 2);
-	t1.options[0].type = SPOOLSS_NOTIFY_PRINTER;
-	t1.options[0].count = 1;
-	t1.options[0].fields = talloc_array(t1.options, enum spoolss_Field, 1);
-	t1.options[0].fields[0] = SPOOLSS_FIELD_SERVER_NAME;
+	t1.types = talloc_zero_array(tctx, struct spoolss_NotifyOptionType, 2);
+	t1.types[0].type = SPOOLSS_NOTIFY_PRINTER;
+	t1.types[0].count = 1;
+	t1.types[0].fields = talloc_array(t1.types, enum spoolss_Field, 1);
+	t1.types[0].fields[0] = SPOOLSS_FIELD_SERVER_NAME;
 
-	t1.options[1].type = SPOOLSS_NOTIFY_JOB;
-	t1.options[1].count = 1;
-	t1.options[1].fields = talloc_array(t1.options, enum spoolss_Field, 1);
-	t1.options[1].fields[0] = SPOOLSS_FIELD_PRINTER_NAME;
+	t1.types[1].type = SPOOLSS_NOTIFY_JOB;
+	t1.types[1].count = 1;
+	t1.types[1].fields = talloc_array(t1.types, enum spoolss_Field, 1);
+	t1.types[1].fields[0] = SPOOLSS_FIELD_PRINTER_NAME;
 
-	r.in.t1 = &t1;
+	r.in.notify_options = &t1;
 	r.in.handle = &handle;
 
 	status = dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r);
