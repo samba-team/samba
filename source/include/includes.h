@@ -792,6 +792,13 @@ enum flush_reason_enum {
 #include "librpc/gen_ndr/srv_eventlog.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_initshutdown.h"
+#include "librpc/gen_ndr/srv_netlogon.h"
+#include "librpc/gen_ndr/srv_samr.h"
+#include "librpc/gen_ndr/srv_wkssvc.h"
+#include "librpc/gen_ndr/srv_srvsvc.h"
+#include "librpc/gen_ndr/srv_ntsvcs.h"
+#include "librpc/gen_ndr/srv_dssetup.h"
+#include "librpc/gen_ndr/srv_dfs.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
