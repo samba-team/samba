@@ -338,6 +338,28 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
 
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
+struct tevent_queue;
+
+struct tevent_queue *_tevent_queue_create(TALLOC_CTX *mem_ctx,
+					  const char *name,
+					  const char *location);
+
+#define tevent_queue_create(_mem_ctx, _name) \
+	_tevent_queue_create((_mem_ctx), (_name), __location__)
+
+typedef void (*tevent_queue_trigger_fn_t)(struct tevent_req *req,
+					  void *private_data);
+bool tevent_queue_add(struct tevent_queue *queue,
+		      struct tevent_context *ev,
+		      struct tevent_req *req,
+		      tevent_queue_trigger_fn_t trigger,
+		      void *private_data);
+bool tevent_queue_start(struct tevent_queue *queue,
+			struct tevent_context *ev);
+void tevent_queue_stop(struct tevent_queue *queue);
+
+size_t tevent_queue_length(struct tevent_queue *queue);
+
 #ifdef TEVENT_COMPAT_DEFINES
 
 #define event_context	tevent_context
