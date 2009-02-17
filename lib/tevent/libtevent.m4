@@ -26,7 +26,8 @@ AC_SUBST(TEVENT_LIBS)
 
 TEVENT_CFLAGS="-I$teventdir"
 
-TEVENT_OBJ="tevent.o tevent_fd.o tevent_timed.o tevent_signal.o tevent_req.o tevent_debug.o tevent_util.o"
+TEVENT_OBJ="tevent.o tevent_fd.o tevent_timed.o tevent_signal.o tevent_debug.o tevent_util.o"
+TEVENT_OBJ="$TEVENT_OBJ tevent_req.o tevent_wakeup.o"
 TEVENT_OBJ="$TEVENT_OBJ tevent_standard.o tevent_select.o"
 
 AC_CHECK_HEADERS(sys/epoll.h)

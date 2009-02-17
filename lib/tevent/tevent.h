@@ -299,6 +299,10 @@ bool tevent_req_is_error(struct tevent_req *req,
 			 enum tevent_req_state *state,
 			 uint64_t *error);
 
+struct tevent_req *tevent_wakeup_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      struct timeval wakeup_time);
+bool tevent_wakeup_recv(struct tevent_req *req);
 
 int tevent_timeval_compare(const struct timeval *tv1,
 			   const struct timeval *tv2);
