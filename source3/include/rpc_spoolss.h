@@ -1497,44 +1497,6 @@ SPOOL_R_GETPRINTPROCESSORDIRECTORY;
 
 /**************************************/
 
-#define MAX_PORTNAME		64
-#define MAX_NETWORK_NAME	49
-#define MAX_SNMP_COMM_NAME	33
-#define	MAX_QUEUE_NAME		33
-#define MAX_IPADDR_STRING	17
-		
-typedef struct {
-	uint16 portname[MAX_PORTNAME];
-	uint32 version;
-	uint32 protocol;
-	uint32 size;
-	uint32 reserved;
-	uint16 hostaddress[MAX_NETWORK_NAME];
-	uint16 snmpcommunity[MAX_SNMP_COMM_NAME];
-	uint32 dblspool;
-	uint16 queue[MAX_QUEUE_NAME];
-	uint16 ipaddress[MAX_IPADDR_STRING];
-	uint32 port;
-	uint32 snmpenabled;
-	uint32 snmpdevindex;
-} SPOOL_PORT_DATA_1;
-
-typedef struct {
-	POLICY_HND handle;
-	UNISTR2 dataname;
-	RPC_BUFFER indata;
-	uint32 indata_len;
-	uint32 offered;
-	uint32 unknown;
-} SPOOL_Q_XCVDATAPORT;
-
-typedef struct {
-	RPC_BUFFER outdata;
-	uint32 needed;
-	uint32 unknown;
-	WERROR status;
-} SPOOL_R_XCVDATAPORT;
-
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
 

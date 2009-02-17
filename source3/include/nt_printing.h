@@ -347,28 +347,6 @@ typedef struct
 #define SAMBA_PRINTER_PORT_NAME "Samba Printer Port"
 #endif
 
-
-/*
- * Structures for the XcvDataPort() calls
- */
-
-#define PORT_PROTOCOL_DIRECT	1
-#define PORT_PROTOCOL_LPR	2
-
-typedef struct {
-	fstring name;
-	uint32 version;
-	uint32 protocol;
-	fstring hostaddr;
-	fstring snmpcommunity;
-	fstring queue;
-	uint32 dblspool;
-	fstring ipaddr;
-	uint32 port;
-	bool enable_snmp;
-	uint32 snmp_index;
-} NT_PORT_DATA_1;
-
 /* DOS header format */
 #define DOS_HEADER_SIZE                 64
 #define DOS_HEADER_MAGIC_OFFSET         0

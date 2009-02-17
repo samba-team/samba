@@ -6042,10 +6042,6 @@ bool make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle,
 bool make_spoolss_q_rffpcnex(SPOOL_Q_RFFPCNEX *q_u, POLICY_HND *handle,
 			     uint32 flags, uint32 options, const char *localmachine,
 			     uint32 printerlocal, SPOOL_NOTIFY_OPTION *option);
-bool spoolss_io_q_xcvdataport(const char *desc, SPOOL_Q_XCVDATAPORT *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_xcvdataport(const char *desc, SPOOL_R_XCVDATAPORT *r_u, prs_struct *ps, int depth);
-bool make_monitorui_buf( RPC_BUFFER *buf, const char *dllname );
-bool convert_port_data_1( NT_PORT_DATA_1 *port1, RPC_BUFFER *buf ) ;
 
 /* The following definitions come from rpc_server/srv_eventlog_lib.c  */
 
