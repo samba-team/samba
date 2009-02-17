@@ -1355,23 +1355,6 @@ typedef struct spool_r_setprinterdata
 }
 SPOOL_R_SETPRINTERDATA;
 
-typedef struct spool_q_resetprinter
-{
-	POLICY_HND handle;
-	uint32 datatype_ptr;
-	UNISTR2 datatype;
-	DEVMODE_CTR devmode_ctr;
-
-} SPOOL_Q_RESETPRINTER;
-
-typedef struct spool_r_resetprinter
-{
-	WERROR status;
-} 
-SPOOL_R_RESETPRINTER;
-
-
-
 typedef struct _form
 {
 	uint32 flags;
