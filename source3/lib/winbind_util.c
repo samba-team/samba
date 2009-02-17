@@ -306,7 +306,7 @@ bool winbind_get_sid_aliases(TALLOC_CTX *mem_ctx,
 	struct wbcDomainSid *sid_list = NULL;
 	size_t i;
 	uint32_t * rids;
-	size_t num_rids;
+	uint32_t num_rids;
 
 	memcpy(&domain_sid, dom_sid, sizeof(*dom_sid));
 
