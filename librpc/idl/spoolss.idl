@@ -1402,7 +1402,10 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x34 */
-	[todo] WERROR spoolss_ResetPrinter(
+	WERROR spoolss_ResetPrinter(
+		[in,ref] policy_handle *handle,
+		[in,unique] [string,charset(UTF16)] uint16 *data_type,
+		[in,ref] spoolss_DevmodeContainer *devmode_ctr
 	);
 
 	/******************/
