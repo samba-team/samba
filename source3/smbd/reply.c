@@ -4621,10 +4621,14 @@ void reply_tdis(struct smb_request *req)
 void reply_echo(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
+	struct smb_perfcount_data local_pcd;
+	struct smb_perfcount_data *cur_pcd;
 	int smb_reverb;
 	int seq_num;
 
 	START_PROFILE(SMBecho);
+
+	smb_init_perfcount_data(&local_pcd);
 
 	if (req->wct < 1) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -4646,14 +4650,23 @@ void reply_echo(struct smb_request *req)
 		smb_reverb = 100;
 	}
 
-	for (seq_num =1 ; seq_num <= smb_reverb ; seq_num++) {
+	for (seq_num = 1 ; seq_num <= smb_reverb ; seq_num++) {
+
+		/* this makes sure we catch the request pcd */
+		if (seq_num == smb_reverb) {
+			cur_pcd = &req->pcd;
+		} else {
+			SMB_PERFCOUNT_COPY_CONTEXT(&req->pcd, &local_pcd);
+			cur_pcd = &local_pcd;
+		}
+
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
 		if (!srv_send_smb(smbd_server_fd(),
 				(char *)req->outbuf,
 				IS_CONN_ENCRYPTED(conn)||req->encrypted,
-				&req->pcd))
+				cur_pcd))
 			exit_server_cleanly("reply_echo: srv_send_smb failed.");
 	}
 

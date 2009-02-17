@@ -29,7 +29,7 @@ struct onefs_op_counter {
 };
 
 struct onefs_stats_context {
-	bool deferred;
+	bool alloced;
 	struct isp_op_delta iod;
 
 	/* ANDX commands stats stored here */
@@ -106,7 +106,6 @@ static void onefs_smb_statistics_set_op(struct smb_perfcount_data *pcd, int op)
         /* not enabled */
         if (pcd->context == NULL)
                 return;
-
 
 	iod = onefs_stats_get_op_delta(ctxt);
 	iod->op = isp_cifs_op_id(op);
@@ -197,6 +196,50 @@ static void onefs_smb_statistics_set_msglen_out(struct smb_perfcount_data *pcd,
 	ctxt->iod.out_bytes = out_bytes;
 }
 
+static int onefs_copy_perfcount_context(struct onefs_stats_context *ctxt,
+					struct onefs_stats_context **dest)
+{
+	struct onefs_stats_context *new_ctxt;
+
+	/* make an alloc'd copy of the data */
+	new_ctxt = SMB_MALLOC_P(struct onefs_stats_context);
+	if (!new_ctxt) {
+		return -1;
+	}
+
+	memcpy(new_ctxt, ctxt, sizeof(struct onefs_stats_context));
+	new_ctxt->alloced = True;
+	*dest = new_ctxt;
+	return 0;
+}
+
+static void onefs_smb_statistics_copy_context(struct smb_perfcount_data *pcd,
+					      struct smb_perfcount_data *dest)
+{
+	struct onefs_stats_context *ctxt = pcd->context;
+	struct onefs_stats_context *new_ctxt;
+	int ret;
+
+        /* not enabled */
+        if (pcd->context == NULL)
+                return;
+
+#ifdef ONEFS_PERF_DEBUG
+	DEBUG(0,("********  COPYING op %s(%d)\n",
+		onefs_stat_debug(&ctxt->iod), ctxt->iod.op));
+#endif
+
+	ret = onefs_copy_perfcount_context(ctxt, &new_ctxt);
+	if (ret)
+		return;
+
+	/* instrumentation */
+	if (ctxt == &g_context)
+		ZERO_STRUCT(g_context);
+
+	dest->context = new_ctxt;
+}
+
 /*
  * For perf reasons, we usually use the global - sometimes, though,
  * when an operation is deferred, we need to alloc a copy.
@@ -206,35 +249,29 @@ static void onefs_smb_statistics_defer_op(struct smb_perfcount_data *pcd,
 {
 	struct onefs_stats_context *ctxt = pcd->context;
 	struct onefs_stats_context *deferred_ctxt;
+	int ret;
 
         /* not enabled */
         if (pcd->context == NULL)
                 return;
 
 	/* already allocated ? */
-	if (ctxt->deferred)
+	if (ctxt->alloced)
 	{
 		def_pcd->context = ctxt;
 		pcd->context = NULL;
 		return;
 	}
 
-
 #ifdef ONEFS_PERF_DEBUG
 	DEBUG(0,("********  DEFERRING op %s(%d)\n",
 		onefs_stat_debug(&ctxt->iod), ctxt->iod.op));
 #endif
 
-	/* make an alloc'd copy of the data */
-	deferred_ctxt = SMB_MALLOC_P(struct onefs_stats_context);
-	if (!deferred_ctxt) {
-		/* disable for now  - we'll get bogus stats, though */
-		def_pcd->context = NULL;
+	ret = onefs_copy_perfcount_context(ctxt, &deferred_ctxt);
+	if (ret)
 		return;
-	}
 
-	memcpy(deferred_ctxt, ctxt, sizeof(struct onefs_stats_context));
-	deferred_ctxt->deferred = True;
 	def_pcd->context = (void*) deferred_ctxt;
 
 	/* instrumentation */
@@ -284,7 +321,7 @@ static void onefs_smb_statistics_end(struct smb_perfcount_data *pcd)
 		ctxt->iod.in_bytes, ctxt->iod.out_bytes));
 #endif
 
-	if (ctxt->deferred)
+	if (ctxt->alloced)
 		SAFE_FREE(ctxt);
 	else
 		ZERO_STRUCTP(ctxt);
@@ -302,6 +339,7 @@ static struct smb_perfcount_handlers onefs_pc_handlers = {
 	onefs_smb_statistics_set_msglen_in,
 	onefs_smb_statistics_set_msglen_out,
 	onefs_smb_statistics_set_client,
+	onefs_smb_statistics_copy_context,
 	onefs_smb_statistics_defer_op,
 	onefs_smb_statistics_end
 };

@@ -294,6 +294,52 @@ static void perfcount_test_set_msglen_out(struct smb_perfcount_data *pcd,
 	ctxt->ops->bytes_out = bytes_out;
 }
 
+static void perfcount_test_copy_context(struct smb_perfcount_data *pcd,
+				        struct smb_perfcount_data *new_pcd)
+{
+	struct perfcount_test_context *ctxt =
+		(struct perfcount_test_context *)pcd->context;
+	struct perfcount_test_context *new_ctxt;
+
+	struct perfcount_test_counter *ctr;
+	struct perfcount_test_counter *new_ctr;
+
+        if (pcd->context == NULL)
+                return;
+
+	new_ctxt = SMB_MALLOC_P(struct perfcount_test_context);
+	if (!new_ctxt) {
+		return;
+	}
+
+	memcpy(new_ctxt, ctxt, sizeof(struct perfcount_test_context));
+
+	for (ctr = ctxt->ops; ctr != NULL; ctr = ctr->next) {
+		new_ctr = SMB_MALLOC_P(struct perfcount_test_counter);
+		if (!new_ctr) {
+			goto error;
+		}
+
+		memcpy(new_ctr, ctr, sizeof(struct perfcount_test_counter));
+		new_ctr->next = NULL;
+		new_ctr->prev = NULL;
+		DLIST_ADD(new_ctxt->ops, new_ctr);
+	}
+
+	new_pcd->context = new_ctxt;
+	return;
+
+error:
+
+	for (ctr = new_ctxt->ops; ctr != NULL; ) {
+		new_ctr = ctr->next;
+		SAFE_FREE(ctr);
+		ctr = new_ctr;
+	}
+
+	SAFE_FREE(new_ctxt);
+}
+
 /*
  * For perf reasons, its best to use some global state
  * when an operation is deferred, we need to alloc a copy.
@@ -337,6 +383,7 @@ static struct smb_perfcount_handlers perfcount_test_handlers = {
 	perfcount_test_set_msglen_in,
 	perfcount_test_set_msglen_out,
 	perfcount_test_set_client,
+	perfcount_test_copy_context,
 	perfcount_test_defer_op,
 	perfcount_test_end
 };
