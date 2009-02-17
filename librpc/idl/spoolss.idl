@@ -1938,6 +1938,30 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x58 */
+
+	typedef [v1_enum] enum {
+		PROTOCOL_RAWTCP_TYPE	= 1,
+		PROTOCOL_LPR_TYPE	= 2
+	} spoolss_PortProtocol;
+
+	typedef [public] struct {
+		[charset(UTF16)] uint16 portname[64];
+		[value(0x00000001)] uint32 version;
+		spoolss_PortProtocol protocol;
+		[value(sizeof(r))] uint32 size;
+		uint32 reserved;
+		[charset(UTF16)] uint16 hostaddress[49];
+		[charset(UTF16)] uint16 snmpcommunity[33];
+		uint32 dblspool;
+		[charset(UTF16)] uint16 queue[33];
+		[charset(UTF16)] uint16 ip_address[16]; /* s3 had 17 */
+		[charset(UTF16)] uint16 hardware_address[13];
+		[charset(UTF16)] uint16 device_type[257];
+		uint32 port_number;
+		boolean32 snmp_enabled;
+		uint32 snmp_dev_index;
+	} spoolss_PortData1;
+
 	WERROR spoolss_XcvData(
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 function_name[],
