@@ -736,6 +736,10 @@ struct netr_DsRGetDCNameInfo {
 	const char *client_site_name;/* [unique,charset(UTF16)] */
 }/* [public] */;
 
+union netr_Capabilities {
+	uint32_t server_capabilities;/* [case] */
+}/* [switch_type(uint32)] */;
+
 struct netr_BinaryString {
 	uint16_t length;
 	uint16_t size;
@@ -1234,9 +1238,19 @@ struct netr_DsRGetDCName {
 };
 
 
-struct netr_NETRLOGONDUMMYROUTINE1 {
+struct netr_LogonGetCapabilities {
 	struct {
-		WERROR result;
+		const char *server_name;/* [charset(UTF16)] */
+		const char *computer_name;/* [unique,charset(UTF16)] */
+		struct netr_Authenticator *credential;/* [ref] */
+		uint32_t query_level;
+		struct netr_Authenticator *return_authenticator;/* [ref] */
+	} in;
+
+	struct {
+		union netr_Capabilities *capabilities;/* [ref,switch_is(query_level)] */
+		struct netr_Authenticator *return_authenticator;/* [ref] */
+		NTSTATUS result;
 	} out;
 
 };
