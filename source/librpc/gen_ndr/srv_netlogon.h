@@ -22,7 +22,7 @@ NTSTATUS _netr_DatabaseRedo(pipes_struct *p, struct netr_DatabaseRedo *r);
 WERROR _netr_LogonControl2Ex(pipes_struct *p, struct netr_LogonControl2Ex *r);
 WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p, struct netr_NetrEnumerateTrustedDomains *r);
 WERROR _netr_DsRGetDCName(pipes_struct *p, struct netr_DsRGetDCName *r);
-WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p, struct netr_NETRLOGONDUMMYROUTINE1 *r);
+NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p, struct netr_LogonGetCapabilities *r);
 WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p, struct netr_NETRLOGONSETSERVICEBITS *r);
 WERROR _netr_LogonGetTrustRid(pipes_struct *p, struct netr_LogonGetTrustRid *r);
 WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p, struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);

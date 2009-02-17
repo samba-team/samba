@@ -1107,24 +1107,34 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx,
-					    WERROR *werror)
+NTSTATUS rpccli_netr_LogonGetCapabilities(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_name /* [in] [charset(UTF16)] */,
+					  const char *computer_name /* [in] [unique,charset(UTF16)] */,
+					  struct netr_Authenticator *credential /* [in] [ref] */,
+					  struct netr_Authenticator *return_authenticator /* [in,out] [ref] */,
+					  uint32_t query_level /* [in]  */,
+					  union netr_Capabilities *capabilities /* [out] [ref,switch_is(query_level)] */)
 {
-	struct netr_NETRLOGONDUMMYROUTINE1 r;
+	struct netr_LogonGetCapabilities r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.computer_name = computer_name;
+	r.in.credential = credential;
+	r.in.return_authenticator = return_authenticator;
+	r.in.query_level = query_level;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
+		NDR_PRINT_IN_DEBUG(netr_LogonGetCapabilities, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				PI_NETLOGON,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRLOGONDUMMYROUTINE1,
+				NDR_NETR_LOGONGETCAPABILITIES,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1132,7 +1142,7 @@ NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONDUMMYROUTINE1, &r);
+		NDR_PRINT_OUT_DEBUG(netr_LogonGetCapabilities, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1140,13 +1150,11 @@ NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*return_authenticator = *r.out.return_authenticator;
+	*capabilities = *r.out.capabilities;
 
 	/* Return result */
-	if (werror) {
-		*werror = r.out.result;
-	}
-
-	return werror_to_ntstatus(r.out.result);
+	return r.out.result;
 }
 
 NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
