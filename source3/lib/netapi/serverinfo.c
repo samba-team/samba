@@ -98,7 +98,6 @@ static NTSTATUS map_server_info_to_SERVER_INFO_buffer(TALLOC_CTX *mem_ctx,
 	struct SERVER_INFO_403 i403;
 	struct SERVER_INFO_502 i502;
 	struct SERVER_INFO_503 i503;
-	struct SERVER_INFO_598 i598;
 	struct SERVER_INFO_599 i599;
 	struct SERVER_INFO_1005 i1005;
 #if 0
@@ -396,13 +395,63 @@ static NTSTATUS map_server_info_to_SERVER_INFO_buffer(TALLOC_CTX *mem_ctx,
 				     &num_info);
 			break;
 
-		case 598:
-			ADD_TO_ARRAY(mem_ctx, struct SERVER_INFO_598, i598,
-				     (struct SERVER_INFO_598 **)buffer,
-				     &num_info);
-			break;
-
 		case 599:
+			i599.sv599_sessopens		= i->info599->sessopen;
+			i599.sv599_opensearch		= i->info599->opensearch;
+			i599.sv599_sizreqbuf		= i->info599->sizereqbufs;
+			i599.sv599_initworkitems	= i->info599->initworkitems;
+			i599.sv599_maxworkitems		= i->info599->maxworkitems;
+			i599.sv599_rawworkitems		= i->info599->rawworkitems;
+			i599.sv599_irpstacksize		= i->info599->irpstacksize;
+			i599.sv599_maxrawbuflen		= i->info599->maxrawbuflen;
+			i599.sv599_sessusers		= i->info599->sessusers;
+			i599.sv599_sessconns		= i->info599->sessconns;
+			i599.sv599_maxpagedmemoryusage	= i->info599->maxpagedmemoryusage;
+			i599.sv599_maxnonpagedmemoryusage = i->info599->maxnonpagedmemoryusage;
+			i599.sv599_enablesoftcompat	= i->info599->enablesoftcompat;
+			i599.sv599_enableforcedlogoff	= i->info599->enableforcedlogoff;
+			i599.sv599_timesource		= i->info599->timesource;
+			i599.sv599_acceptdownlevelapis	= i->info599->acceptdownlevelapis;
+			i599.sv599_lmannounce		= i->info599->lmannounce;
+			i599.sv599_domain		= talloc_strdup(mem_ctx, i->info599->domain);
+			i599.sv599_maxcopyreadlen	= i->info599->maxcopyreadlen;
+			i599.sv599_maxcopywritelen	= i->info599->maxcopywritelen;
+			i599.sv599_minkeepsearch	= i->info599->minkeepsearch;
+			i599.sv599_maxkeepsearch	= 0; /* ?? */
+			i599.sv599_minkeepcomplsearch	= i->info599->minkeepcomplsearch;
+			i599.sv599_maxkeepcomplsearch	= i->info599->maxkeepcomplsearch;
+			i599.sv599_threadcountadd	= i->info599->threadcountadd;
+			i599.sv599_numblockthreads	= i->info599->numlockthreads; /* typo ? */
+			i599.sv599_scavtimeout		= i->info599->scavtimeout;
+			i599.sv599_minrcvqueue		= i->info599->minrcvqueue;
+			i599.sv599_minfreeworkitems	= i->info599->minfreeworkitems;
+			i599.sv599_xactmemsize		= i->info599->xactmemsize;
+			i599.sv599_threadpriority	= i->info599->threadpriority;
+			i599.sv599_maxmpxct		= i->info599->maxmpxct;
+			i599.sv599_oplockbreakwait	= i->info599->oplockbreakwait;
+			i599.sv599_oplockbreakresponsewait = i->info599->oplockbreakresponsewait;
+			i599.sv599_enableoplocks	= i->info599->enableoplocks;
+			i599.sv599_enableoplockforceclose = i->info599->enableoplockforceclose;
+			i599.sv599_enablefcbopens	= i->info599->enablefcbopens;
+			i599.sv599_enableraw		= i->info599->enableraw;
+			i599.sv599_enablesharednetdrives = i->info599->enablesharednetdrives;
+			i599.sv599_minfreeconnections	= i->info599->minfreeconnections;
+			i599.sv599_maxfreeconnections	= i->info599->maxfreeconnections;
+			i599.sv599_initsesstable	= i->info599->initsesstable;
+			i599.sv599_initconntable	= i->info599->initconntable;
+			i599.sv599_initfiletable	= i->info599->initfiletable;
+			i599.sv599_initsearchtable	= i->info599->initsearchtable;
+			i599.sv599_alertschedule	= i->info599->alertsched;
+			i599.sv599_errorthreshold	= i->info599->errortreshold;
+			i599.sv599_networkerrorthreshold = i->info599->networkerrortreshold;
+			i599.sv599_diskspacethreshold	= i->info599->diskspacetreshold;
+			i599.sv599_reserved		= i->info599->reserved;
+			i599.sv599_maxlinkdelay		= i->info599->maxlinkdelay;
+			i599.sv599_minlinkthroughput	= i->info599->minlinkthroughput;
+			i599.sv599_linkinfovalidtime	= i->info599->linkinfovalidtime;
+			i599.sv599_scavqosinfoupdatetime = i->info599->scavqosinfoupdatetime;
+			i599.sv599_maxworkitemidletime	= i->info599->maxworkitemidletime;
+
 			ADD_TO_ARRAY(mem_ctx, struct SERVER_INFO_599, i599,
 				     (struct SERVER_INFO_599 **)buffer,
 				     &num_info);
