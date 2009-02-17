@@ -180,7 +180,8 @@ void ROKEN_LIB_FUNCTION endusershell(void);
 #ifndef HAVE_SNPRINTF
 #define snprintf rk_snprintf
 #endif
-int ROKEN_LIB_FUNCTION snprintf (char *, size_t, const char *, ...)
+int ROKEN_LIB_FUNCTION
+     rk_snprintf (char *, size_t, const char *, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 
@@ -189,7 +190,7 @@ int ROKEN_LIB_FUNCTION snprintf (char *, size_t, const char *, ...)
 #define vsnprintf rk_vsnprintf
 #endif
 int ROKEN_LIB_FUNCTION 
-     vsnprintf (char *, size_t, const char *, va_list)
+     rk_vsnprintf (char *, size_t, const char *, va_list)
      __attribute__((format (printf, 3, 0)));
 #endif
 
@@ -198,7 +199,7 @@ int ROKEN_LIB_FUNCTION
 #define asprintf rk_asprintf
 #endif
 int ROKEN_LIB_FUNCTION
-     asprintf (char **, const char *, ...)
+     rk_asprintf (char **, const char *, ...)
      __attribute__ ((format (printf, 2, 3)));
 #endif
 
@@ -207,7 +208,7 @@ int ROKEN_LIB_FUNCTION
 #define vasprintf rk_vasprintf
 #endif
 int ROKEN_LIB_FUNCTION
-    vasprintf (char **, const char *, va_list)
+    rk_vasprintf (char **, const char *, va_list)
      __attribute__((format (printf, 2, 0)));
 #endif
 
@@ -216,7 +217,7 @@ int ROKEN_LIB_FUNCTION
 #define asnprintf rk_asnprintf
 #endif
 int ROKEN_LIB_FUNCTION
-    asnprintf (char **, size_t, const char *, ...)
+    rk_asnprintf (char **, size_t, const char *, ...)
      __attribute__ ((format (printf, 3, 4)));
 #endif
 

@@ -31,7 +31,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 #include <config.h>
-#include "snprintf-test.h"
 #include "roken.h"
 #include <limits.h>
 
@@ -45,7 +44,7 @@ try (const char *format, ...)
     char buf1[256], buf2[256];
 
     va_start (ap, format);
-    ret = vsnprintf (buf1, sizeof(buf1), format, ap);
+    ret = rk_vsnprintf (buf1, sizeof(buf1), format, ap);
     if (ret >= sizeof(buf1))
 	errx (1, "increase buf and try again");
     va_end (ap);
@@ -222,7 +221,7 @@ cmp_with_sprintf_float (void)
 static int
 test_null (void)
 {
-    return snprintf (NULL, 0, "foo") != 3;
+    return rk_snprintf (NULL, 0, "foo") != 3;
 }
 
 static int
@@ -240,7 +239,7 @@ test_sizet (void)
 	tot += try("%zX", sizet_values[i]);
 #else
 	char buf[256];
-	snprintf(buf, sizeof(buf), "%zu", sizet_values[i]);
+	rk_snprintf(buf, sizeof(buf), "%zu", sizet_values[i]);
 	if (strcmp(buf, result[i]) != 0) {
 	    printf("%s != %s", buf, result[i]);
 	    tot++;
