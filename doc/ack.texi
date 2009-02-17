@@ -62,6 +62,7 @@ Bugfixes, documentation, encouragement, and code has been contributed by:
 @item Mario Strasser
 @item Mark Eichin
 @item Mattias Amnefelt
+@item Martin von Gagern
 @item Michael B Allen
 @item Michael Fromberger
 @item Michal Vocu
