@@ -278,7 +278,7 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	_tevent_req_create((_mem_ctx), (_pstate), sizeof(_type), \
 			   #_type, __location__)
 
-bool tevent_req_set_timeout(struct tevent_req *req,
+bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime);
 

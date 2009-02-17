@@ -262,7 +262,7 @@ static void tevent_req_timedout(struct tevent_context *ev,
 	tevent_req_finish(req, TEVENT_REQ_TIMED_OUT);
 }
 
-bool tevent_req_set_timeout(struct tevent_req *req,
+bool tevent_req_set_endtime(struct tevent_req *req,
 			    struct tevent_context *ev,
 			    struct timeval endtime)
 {
