@@ -2968,7 +2968,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *nam
 _PUBLIC_ void ndr_print_netr_LogonControl2Ex(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl2Ex *r);
 _PUBLIC_ void ndr_print_netr_NetrEnumerateTrustedDomains(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomains *r);
 _PUBLIC_ void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCName *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r);
+_PUBLIC_ void ndr_print_netr_Capabilities(struct ndr_print *ndr, const char *name, const union netr_Capabilities *r);
 _PUBLIC_ void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r);
 _PUBLIC_ void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r);
 _PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
@@ -8547,8 +8547,8 @@ WERROR _netr_LogonControl2Ex(pipes_struct *p,
 			     struct netr_LogonControl2Ex *r);
 WERROR _netr_DsRGetDCName(pipes_struct *p,
 			  struct netr_DsRGetDCName *r);
-WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
-				    struct netr_NETRLOGONDUMMYROUTINE1 *r);
+NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p,
+				    struct netr_LogonGetCapabilities *r);
 WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
 				     struct netr_NETRLOGONSETSERVICEBITS *r);
 WERROR _netr_LogonGetTrustRid(pipes_struct *p,
