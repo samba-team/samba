@@ -76,16 +76,28 @@
 
 <refsect1>
 	<title>EXAMPLES</title>
-	<para>This example shows how to configure a domain with idmap_rid</para>
+	<para>
+		This example shows how to configure two domains with idmap_rid,
+		the principal domain and a trusted domain, leaving the default
+		id mapping scheme at tdb. The example also demonstrates the use
+		of the base_rid parameter for the trusted domain.
+	</para>
 
 	<programlisting>
 	[global]
+	security = domain
+	workgroup = MAIN
+
 	idmap backend = tdb
 	idmap uid = 1000000-1999999
 	idmap gid = 1000000-1999999
 
+	idmap config MAIN : backend     = rid
+	idmap config MAIN : range       = 10000 - 49999
+
 	idmap config TRUSTED : backend  = rid
 	idmap config TRUSTED : range    = 50000 - 99999
+	idmap config TRUSTED : base_rid = 1000
 	</programlisting>
 </refsect1>
 
