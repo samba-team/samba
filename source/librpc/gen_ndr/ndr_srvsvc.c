@@ -18013,7 +18013,7 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareDelStart(struct ndr_push *ndr, 
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.hnd));
 		if (r->out.hnd) {
-			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.hnd));
+			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.hnd));
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -18066,7 +18066,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareDelStart(struct ndr_pull *ndr, 
 		if (r->out.hnd) {
 			_mem_save_hnd_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.hnd, 0);
-			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.hnd));
+			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.hnd));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hnd_0, 0);
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -18114,13 +18114,13 @@ static enum ndr_err_code ndr_push_srvsvc_NetShareDelCommit(struct ndr_push *ndr,
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.hnd));
 		if (r->in.hnd) {
-			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.hnd));
+			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.hnd));
 		}
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.hnd));
 		if (r->out.hnd) {
-			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.hnd));
+			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->out.hnd));
 		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -18143,7 +18143,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareDelCommit(struct ndr_pull *ndr,
 		if (r->in.hnd) {
 			_mem_save_hnd_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.hnd, 0);
-			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.hnd));
+			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.hnd));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hnd_0, 0);
 		}
 	}
@@ -18157,7 +18157,7 @@ static enum ndr_err_code ndr_pull_srvsvc_NetShareDelCommit(struct ndr_pull *ndr,
 		if (r->out.hnd) {
 			_mem_save_hnd_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.hnd, 0);
-			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.hnd));
+			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->out.hnd));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hnd_0, 0);
 		}
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
