@@ -8427,16 +8427,18 @@ done:
 	return status;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_ResetPrinter
+****************************************************************/
 
-WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u)
+WERROR _spoolss_ResetPrinter(pipes_struct *p,
+			     struct spoolss_ResetPrinter *r)
 {
-	POLICY_HND 	*handle = &q_u->handle;
+	POLICY_HND 	*handle = r->in.handle;
 	Printer_entry 	*Printer=find_printer_index_by_hnd(p, handle);
 	int 		snum;
 
-	DEBUG(5,("_spoolss_resetprinter\n"));
+	DEBUG(5,("_spoolss_ResetPrinter\n"));
 
 	/*
 	 * All we do is to check to see if the handle and queue is valid.
@@ -8445,7 +8447,8 @@ WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R
 	 */
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_resetprinter: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		DEBUG(2,("_spoolss_ResetPrinter: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(handle)));
 		return WERR_BADFID;
 	}
 
@@ -10390,17 +10393,6 @@ WERROR _spoolss_DeletePrintProvidor(pipes_struct *p,
 
 WERROR _spoolss_EnumPrintProcDataTypes(pipes_struct *p,
 				       struct spoolss_EnumPrintProcDataTypes *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_ResetPrinter
-****************************************************************/
-
-WERROR _spoolss_ResetPrinter(pipes_struct *p,
-			     struct spoolss_ResetPrinter *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
