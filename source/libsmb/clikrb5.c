@@ -1746,6 +1746,11 @@ done:
 			tmp += 5;
 		}
 
+		if (tmp[0] == '/') {
+			/* Treat as a FILE: keytab definition. */
+			found_valid_name = true;
+		}
+
 		if (found_valid_name) {
 			if (tmp[0] != '/') {
 				ret = KRB5_KT_BADNAME;
