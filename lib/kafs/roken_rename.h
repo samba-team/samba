@@ -52,13 +52,13 @@
 #define rk_dns_parse_reply _kafs_dns_parse_reply
 
 #ifndef HAVE_STRTOK_R
-#define strtok_r _kafs_strtok_r
+#define rk_strtok_r _kafs_strtok_r
 #endif
 #ifndef HAVE_STRLCPY
-#define strlcpy _kafs_strlcpy
+#define rk_strlcpy _kafs_strlcpy
 #endif
 #ifndef HAVE_STRSEP
-#define strsep _kafs_strsep
+#define rk_strsep _kafs_strsep
 #endif
 
 #endif /* __roken_rename_h__ */
