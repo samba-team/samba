@@ -267,114 +267,152 @@ SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 #endif
 
+#define simple_execve rk_simple_execve
 int ROKEN_LIB_FUNCTION
 simple_execve(const char*, char*const[], char*const[]);
 
+#define simple_execve_timed rk_simple_execve_timed
 int ROKEN_LIB_FUNCTION
 simple_execve_timed(const char *, char *const[],
 		    char *const [], time_t (*)(void *),
 		    void *, time_t);
+
+#define simple_execvp rk_simple_execvp
 int ROKEN_LIB_FUNCTION
 simple_execvp(const char*, char *const[]);
 
+#define simple_execvp_timed rk_simple_execvp_timed
 int ROKEN_LIB_FUNCTION
 simple_execvp_timed(const char *, char *const[],
 		    time_t (*)(void *), void *, time_t);
+
+#define simple_execlp rk_simple_execlp
 int ROKEN_LIB_FUNCTION
 simple_execlp(const char*, ...);
 
+#define simple_execle rk_simple_execle
 int ROKEN_LIB_FUNCTION
 simple_execle(const char*, ...);
 
+#define wait_for_process rk_wait_for_process
 int ROKEN_LIB_FUNCTION
 wait_for_process(pid_t);
 
+#define wait_for_process_timed rk_wait_for_process_timed
 int ROKEN_LIB_FUNCTION
 wait_for_process_timed(pid_t, time_t (*)(void *),
 					      void *, time_t);
+#define pipe_execv rk_pipe_execv
 int ROKEN_LIB_FUNCTION
 pipe_execv(FILE**, FILE**, FILE**, const char*, ...);
 
+#define print_version rk_print_version
 void ROKEN_LIB_FUNCTION
 print_version(const char *);
 
+#define eread rk_eread
 ssize_t ROKEN_LIB_FUNCTION
 eread (int fd, void *buf, size_t nbytes);
 
+#define ewrite rk_ewrite
 ssize_t ROKEN_LIB_FUNCTION
 ewrite (int fd, const void *buf, size_t nbytes);
 
 struct hostent;
 
+#define hostent_find_fqdn rk_hostent_find_fqdn
 const char * ROKEN_LIB_FUNCTION
 hostent_find_fqdn (const struct hostent *);
 
+#define esetenv rk_esetenv
 void ROKEN_LIB_FUNCTION
 esetenv(const char *, const char *, int);
 
+#define socket_set_address_and_port rk_socket_set_address_and_port
 void ROKEN_LIB_FUNCTION
 socket_set_address_and_port (struct sockaddr *, const void *, int);
 
+#define socket_addr_size rk_socket_addr_size
 size_t ROKEN_LIB_FUNCTION
 socket_addr_size (const struct sockaddr *);
 
+#define socket_set_any rk_socket_set_any
 void ROKEN_LIB_FUNCTION
 socket_set_any (struct sockaddr *, int);
 
+#define socket_sockaddr_size rk_socket_sockaddr_size
 size_t ROKEN_LIB_FUNCTION
 socket_sockaddr_size (const struct sockaddr *);
 
+#define socket_get_address rk_socket_get_address
 void * ROKEN_LIB_FUNCTION
 socket_get_address (struct sockaddr *);
 
+#define socket_get_port rk_socket_get_port
 int ROKEN_LIB_FUNCTION
 socket_get_port (const struct sockaddr *);
 
+#define socket_set_port rk_socket_set_port
 void ROKEN_LIB_FUNCTION
 socket_set_port (struct sockaddr *, int);
 
+#define socket_set_portrange rk_socket_set_portrange
 void ROKEN_LIB_FUNCTION
 socket_set_portrange (int, int, int);
 
+#define socket_set_debug rk_socket_set_debug
 void ROKEN_LIB_FUNCTION
 socket_set_debug (int);
 
+#define socket_set_tos rk_socket_set_tos
 void ROKEN_LIB_FUNCTION
 socket_set_tos (int, int);
 
+#define socket_set_reuseaddr rk_socket_set_reuseaddr
 void ROKEN_LIB_FUNCTION
 socket_set_reuseaddr (int, int);
 
+#define socket_set_ipv6only rk_socket_set_ipv6only
 void ROKEN_LIB_FUNCTION
 socket_set_ipv6only (int, int);
 
+#define vstrcollect rk_vstrcollect
 char ** ROKEN_LIB_FUNCTION
 vstrcollect(va_list *ap);
 
+#define strcollect rk_strcollect
 char ** ROKEN_LIB_FUNCTION
 strcollect(char *first, ...);
 
+#define timevalfix rk_timevalfix
 void ROKEN_LIB_FUNCTION
 timevalfix(struct timeval *t1);
 
+#define timevaladd rk_timevaladd
 void ROKEN_LIB_FUNCTION
 timevaladd(struct timeval *t1, const struct timeval *t2);
 
+#define timevalsub rk_timevalsub
 void ROKEN_LIB_FUNCTION
 timevalsub(struct timeval *t1, const struct timeval *t2);
 
+#define pid_file_write rk_pid_file_write
 char *ROKEN_LIB_FUNCTION
 pid_file_write (const char *progname);
 
+#define pid_file_delete rk_pid_file_delete
 void ROKEN_LIB_FUNCTION
 pid_file_delete (char **);
 
+#define read_environment rk_read_environment
 int ROKEN_LIB_FUNCTION
 read_environment(const char *file, char ***env);
 
+#define free_environment rk_free_environment
 void ROKEN_LIB_FUNCTION
 free_environment(char **);
 
+#define warnerr rk_warnerr
 void ROKEN_LIB_FUNCTION
 rk_warnerr(int doerrno, const char *fmt, va_list ap)
     __attribute__ ((format (printf, 2, 0)));
