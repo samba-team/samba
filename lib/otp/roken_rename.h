@@ -37,37 +37,37 @@
 #define __roken_rename_h__
 
 #ifndef HAVE_SNPRINTF
-#define snprintf _otp_snprintf
+#define rk_snprintf _otp_snprintf
 #endif
 #ifndef HAVE_ASPRINTF
-#define asprintf _otp_asprintf
+#define rk_asprintf _otp_asprintf
 #endif
 #ifndef HAVE_ASNPRINTF
-#define asnprintf _otp_asnprintf
+#define rk_asnprintf _otp_asnprintf
 #endif
 #ifndef HAVE_VASPRINTF
-#define vasprintf _otp_vasprintf
+#define rk_vasprintf _otp_vasprintf
 #endif
 #ifndef HAVE_VASNPRINTF
-#define vasnprintf _otp_vasnprintf
+#define rk_vasnprintf _otp_vasnprintf
 #endif
 #ifndef HAVE_VSNPRINTF
-#define vsnprintf _otp_vsnprintf
+#define rk_vsnprintf _otp_vsnprintf
 #endif
 #ifndef HAVE_STRCASECMP
-#define strcasecmp _otp_strcasecmp
+#define rk_strcasecmp _otp_strcasecmp
 #endif
 #ifndef HAVE_STRNCASECMP
-#define strncasecmp _otp_strncasecmp
+#define rk_strncasecmp _otp_strncasecmp
 #endif
 #ifndef HAVE_STRLWR
-#define strlwr _otp_strlwr
+#define rk_strlwr _otp_strlwr
 #endif
 #ifndef HAVE_STRLCAT
-#define strlcat _otp_strlcat
+#define rk_strlcat _otp_strlcat
 #endif
 #ifndef HAVE_STRLCPY
-#define strlcpy _otp_strlcpy
+#define rk_strlcpy _otp_strlcpy
 #endif
 
 #endif /* __roken_rename_h__ */
