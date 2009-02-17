@@ -1153,8 +1153,10 @@ IDL_FILES = lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 	dssetup.idl krb5pac.idl ntsvcs.idl libnetapi.idl
 
+PIDL = "$(srcdir)/pidl/pidl"
+
 idl::
-	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
+	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" PIDL="$(PIDL)"\
 	 srcdir="$(srcdir)" $(srcdir)/script/build_idl.sh $(PIDL_ARGS)
 
 
