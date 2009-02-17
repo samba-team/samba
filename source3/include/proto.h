@@ -6262,7 +6262,6 @@ WERROR _spoolss_getjob( pipes_struct *p, SPOOL_Q_GETJOB *q_u, SPOOL_R_GETJOB *r_
 WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPOOL_R_ENUMPRINTERKEY *r_u);
 WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_u, SPOOL_R_ENUMPRINTERDATAEX *r_u);
 WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u);
-WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_XCVDATAPORT *r_u);
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 

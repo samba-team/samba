@@ -69,7 +69,7 @@ extern struct standard_mapping printer_std_mapping, printserver_std_mapping;
 
 struct xcv_api_table {
 	const char *name;
-	WERROR(*fn) (NT_USER_TOKEN *token, RPC_BUFFER *in, RPC_BUFFER *out, uint32 *needed);
+	WERROR(*fn) (TALLOC_CTX *mem_ctx, NT_USER_TOKEN *token, DATA_BLOB *in, DATA_BLOB *out, uint32_t *needed);
 };
 
 /********************************************************************
@@ -9826,21 +9826,41 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static bool push_monitorui_buf(TALLOC_CTX *mem_ctx, DATA_BLOB *buf,
+			       const char *dllname)
+{
+	enum ndr_err_code ndr_err;
+	struct spoolss_MonitorUi ui;
+
+	ui.dll_name = dllname;
+
+	ndr_err = ndr_push_struct_blob(buf, mem_ctx, NULL, &ui,
+		       (ndr_push_flags_fn_t)ndr_push_spoolss_MonitorUi);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
+		NDR_PRINT_DEBUG(spoolss_MonitorUi, &ui);
+	}
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
+}
+
+/*******************************************************************
  Streams the monitor UI DLL name in UNICODE
 *******************************************************************/
 
-static WERROR xcvtcp_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in,
-                                RPC_BUFFER *out, uint32 *needed )
+static WERROR xcvtcp_monitorui(TALLOC_CTX *mem_ctx,
+			       NT_USER_TOKEN *token, DATA_BLOB *in,
+			       DATA_BLOB *out, uint32_t *needed)
 {
 	const char *dllname = "tcpmonui.dll";
 
 	*needed = (strlen(dllname)+1) * 2;
 
-	if ( rpcbuf_get_size(out) < *needed ) {
+	if (out->length < *needed) {
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	if ( !make_monitorui_buf( out, dllname ) ) {
+	if (!push_monitorui_buf(mem_ctx, out, dllname)) {
 		return WERR_NOMEM;
 	}
 
@@ -9848,35 +9868,52 @@ static WERROR xcvtcp_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static bool pull_port_data_1(TALLOC_CTX *mem_ctx,
+			     struct spoolss_PortData1 *port1,
+			     const DATA_BLOB *buf)
+{
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, NULL, port1,
+		       (ndr_pull_flags_fn_t)ndr_pull_spoolss_PortData1);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
+		NDR_PRINT_DEBUG(spoolss_PortData1, port1);
+	}
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
+}
+
+/*******************************************************************
  Create a new TCP/IP port
 *******************************************************************/
 
-static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in,
-                              RPC_BUFFER *out, uint32 *needed )
+static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
+			     NT_USER_TOKEN *token, DATA_BLOB *in,
+			     DATA_BLOB *out, uint32_t *needed)
 {
-	NT_PORT_DATA_1 port1;
-	TALLOC_CTX *ctx = talloc_tos();
+	struct spoolss_PortData1 port1;
 	char *device_uri = NULL;
 
-	ZERO_STRUCT( port1 );
+	ZERO_STRUCT(port1);
 
 	/* convert to our internal port data structure */
 
-	if ( !convert_port_data_1( &port1, in ) ) {
+	if (!pull_port_data_1(mem_ctx, &port1, in)) {
 		return WERR_NOMEM;
 	}
 
 	/* create the device URI and call the add_port_hook() */
 
 	switch ( port1.protocol ) {
-	case PORT_PROTOCOL_DIRECT:
-		device_uri = talloc_asprintf(ctx,
-				"socket://%s:%d/", port1.hostaddr, port1.port );
+	case PROTOCOL_RAWTCP_TYPE:
+		device_uri = talloc_asprintf(mem_ctx,
+				"socket://%s:%d/", port1.hostaddress,
+				port1.port_number);
 		break;
 
-	case PORT_PROTOCOL_LPR:
-		device_uri = talloc_asprintf(ctx,
-			"lpr://%s/%s", port1.hostaddr, port1.queue );
+	case PROTOCOL_LPR_TYPE:
+		device_uri = talloc_asprintf(mem_ctx,
+			"lpr://%s/%s", port1.hostaddress, port1.queue );
 		break;
 
 	default:
@@ -9887,7 +9924,7 @@ static WERROR xcvtcp_addport( NT_USER_TOKEN *token, RPC_BUFFER *in,
 		return WERR_NOMEM;
 	}
 
-	return add_port_hook(ctx, token, port1.name, device_uri );
+	return add_port_hook(mem_ctx, token, port1.portname, device_uri);
 }
 
 /*******************************************************************
@@ -9899,9 +9936,11 @@ struct xcv_api_table xcvtcp_cmds[] = {
 	{ NULL,		NULL }
 };
 
-static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command,
-                                      RPC_BUFFER *inbuf, RPC_BUFFER *outbuf,
-                                      uint32 *needed )
+static WERROR process_xcvtcp_command(TALLOC_CTX *mem_ctx,
+				     NT_USER_TOKEN *token, const char *command,
+				     DATA_BLOB *inbuf,
+				     DATA_BLOB *outbuf,
+				     uint32_t *needed )
 {
 	int i;
 
@@ -9909,7 +9948,7 @@ static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command,
 
 	for ( i=0; xcvtcp_cmds[i].name; i++ ) {
 		if ( strcmp( command, xcvtcp_cmds[i].name ) == 0 )
-			return xcvtcp_cmds[i].fn( token, inbuf, outbuf, needed );
+			return xcvtcp_cmds[i].fn(mem_ctx, token, inbuf, outbuf, needed);
 	}
 
 	return WERR_BADFUNC;
@@ -9919,18 +9958,19 @@ static WERROR process_xcvtcp_command( NT_USER_TOKEN *token, const char *command,
 *******************************************************************/
 #if 0 	/* don't support management using the "Local Port" monitor */
 
-static WERROR xcvlocal_monitorui( NT_USER_TOKEN *token, RPC_BUFFER *in,
-                                  RPC_BUFFER *out, uint32 *needed )
+static WERROR xcvlocal_monitorui(TALLOC_CTX *mem_ctx,
+				 NT_USER_TOKEN *token, DATA_BLOB *in,
+				 DATA_BLOB *out, uint32_t *needed)
 {
 	const char *dllname = "localui.dll";
 
 	*needed = (strlen(dllname)+1) * 2;
 
-	if ( rpcbuf_get_size(out) < *needed ) {
+	if (out->length < *needed) {
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	if ( !make_monitorui_buf( out, dllname )) {
+	if (!push_monitorui_buf(mem_ctx, out, dllname)) {
 		return WERR_NOMEM;
 	}
 
@@ -9955,9 +9995,10 @@ struct xcv_api_table xcvlocal_cmds[] = {
 /*******************************************************************
 *******************************************************************/
 
-static WERROR process_xcvlocal_command( NT_USER_TOKEN *token, const char *command,
-                                        RPC_BUFFER *inbuf, RPC_BUFFER *outbuf,
-					uint32 *needed )
+static WERROR process_xcvlocal_command(TALLOC_CTX *mem_ctx,
+				       NT_USER_TOKEN *token, const char *command,
+				       DATA_BLOB *inbuf, DATA_BLOB *outbuf,
+				       uint32_t *needed)
 {
 	int i;
 
@@ -9965,59 +10006,79 @@ static WERROR process_xcvlocal_command( NT_USER_TOKEN *token, const char *comman
 
 	for ( i=0; xcvlocal_cmds[i].name; i++ ) {
 		if ( strcmp( command, xcvlocal_cmds[i].name ) == 0 )
-			return xcvlocal_cmds[i].fn( token, inbuf, outbuf , needed );
+			return xcvlocal_cmds[i].fn(mem_ctx, token, inbuf, outbuf, needed);
 	}
 	return WERR_BADFUNC;
 }
 
-/*******************************************************************
-*******************************************************************/
+/****************************************************************
+ _spoolss_XcvData
+****************************************************************/
 
-WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_XCVDATAPORT *r_u)
+WERROR _spoolss_XcvData(pipes_struct *p,
+			struct spoolss_XcvData *r)
 {
-	Printer_entry *Printer = find_printer_index_by_hnd(p, &q_u->handle);
-	fstring command;
+	Printer_entry *Printer = find_printer_index_by_hnd(p, r->in.handle);
+	DATA_BLOB out_data;
+	WERROR werror;
 
 	if (!Printer) {
-		DEBUG(2,("_spoolss_xcvdataport: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(&q_u->handle)));
+		DEBUG(2,("_spoolss_XcvData: Invalid handle (%s:%u:%u).\n",
+			OUR_HANDLE(r->in.handle)));
 		return WERR_BADFID;
 	}
 
 	/* Has to be a handle to the TCP/IP port monitor */
 
 	if ( !(Printer->printer_type & (SPLHND_PORTMON_LOCAL|SPLHND_PORTMON_TCP)) ) {
-		DEBUG(2,("_spoolss_xcvdataport: Call only valid for Port Monitors\n"));
+		DEBUG(2,("_spoolss_XcvData: Call only valid for Port Monitors\n"));
 		return WERR_BADFID;
 	}
 
 	/* requires administrative access to the server */
 
 	if ( !(Printer->access_granted & SERVER_ACCESS_ADMINISTER) ) {
-		DEBUG(2,("_spoolss_xcvdataport: denied by handle permissions.\n"));
+		DEBUG(2,("_spoolss_XcvData: denied by handle permissions.\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
-	/* Get the command name.  There's numerous commands supported by the
-	   TCPMON interface. */
-
-	rpcstr_pull(command, q_u->dataname.buffer, sizeof(command),
-		q_u->dataname.uni_str_len*2, 0);
-
 	/* Allocate the outgoing buffer */
 
-	if (!rpcbuf_init( &r_u->outdata, q_u->offered, p->mem_ctx ))
-		return WERR_NOMEM;
+	if (r->in.out_data_size) {
+		out_data = data_blob_talloc_zero(p->mem_ctx, r->in.out_data_size);
+		if (out_data.data == NULL) {
+			return WERR_NOMEM;
+		}
+	}
 
 	switch ( Printer->printer_type ) {
 	case SPLHND_PORTMON_TCP:
-		return process_xcvtcp_command( p->server_info->ptok, command,
-			&q_u->indata, &r_u->outdata, &r_u->needed );
+		werror = process_xcvtcp_command(p->mem_ctx,
+						p->server_info->ptok,
+						r->in.function_name,
+						&r->in.in_data, &out_data,
+						r->out.needed);
+		break;
 	case SPLHND_PORTMON_LOCAL:
-		return process_xcvlocal_command( p->server_info->ptok, command,
-			&q_u->indata, &r_u->outdata, &r_u->needed );
+		werror = process_xcvlocal_command(p->mem_ctx,
+						  p->server_info->ptok,
+						  r->in.function_name,
+						  &r->in.in_data, &out_data,
+						  r->out.needed);
+		break;
+	default:
+		werror = WERR_INVALID_PRINT_MONITOR;
 	}
 
-	return WERR_INVALID_PRINT_MONITOR;
+	if (!W_ERROR_IS_OK(werror)) {
+		return werror;
+	}
+
+	*r->out.status_code = 0;
+
+	memcpy(r->out.out_data, out_data.data, out_data.length);
+
+	return WERR_OK;
 }
 
 /****************************************************************
@@ -10679,17 +10740,6 @@ WERROR _spoolss_56(pipes_struct *p,
 
 WERROR _spoolss_57(pipes_struct *p,
 		   struct spoolss_57 *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_XcvData
-****************************************************************/
-
-WERROR _spoolss_XcvData(pipes_struct *p,
-			struct spoolss_XcvData *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
