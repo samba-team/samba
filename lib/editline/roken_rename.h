@@ -37,28 +37,28 @@
 #define __roken_rename_h__
 
 #ifndef HAVE_STRDUP
-#define strdup _editline_strdup
+#define rk_strdup _editline_strdup
 #endif
 #ifndef HAVE_SNPRINTF
-#define snprintf _editline_snprintf
+#define rk_snprintf _editline_snprintf
 #endif
 #ifndef HAVE_VSNPRINTF
-#define vsnprintf _editline_vsnprintf
+#define rk_vsnprintf _editline_vsnprintf
 #endif
 #ifndef HAVE_ASPRINTF
-#define asprintf _editline_asprintf
+#define rk_asprintf _editline_asprintf
 #endif
 #ifndef HAVE_ASNPRINTF
-#define asnprintf _editline_asnprintf
+#define rk_asnprintf _editline_asnprintf
 #endif
 #ifndef HAVE_VASPRINTF
-#define vasprintf _editline_vasprintf
+#define rk_vasprintf _editline_vasprintf
 #endif
 #ifndef HAVE_VASNPRINTF
-#define vasnprintf _editline_vasnprintf
+#define rk_vasnprintf _editline_vasnprintf
 #endif
 #ifndef HAVE_STRLCAT
-#define strlcat _editline_strlcat
+#define rk_strlcat _editline_strlcat
 #endif
 
 #endif /* __roken_rename_h__ */
