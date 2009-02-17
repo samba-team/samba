@@ -42,17 +42,36 @@
 		<varlistentry>
 		<term>base_rid = INTEGER</term>
 		<listitem><para>
-			Defines the base integer used to build SIDs out of an UID or a GID,
-			and to rebase the UID or GID to be obtained from a SID. User RIDs
-			by default start at 1000 (512 hexadecimal), this means a good value
-			for base_rid can be 1000 as the resulting ID is calculated this way:
-			ID = RID - BASE_RID + LOW RANGE ID.
+			Defines the base integer used to build SIDs out of a UID or a GID,
+			and to rebase the UID or GID to be obtained from a SID.
+			This means SIDs with a RID less than the base rid are filtered.
+			The default is not to restrict the allowed rids at all,
+			i.e. a base_rid value of 0.
+			A good value for the base_rid can be 1000, since user
+			RIDs by default start at 1000 (512 hexadecimal).
 		</para>
 		<para>
 			Use of this parameter is deprecated.
 		</para></listitem>
 		</varlistentry>
 	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>THE MAPPING FORMULAS</title>
+	<para>
+		The Unix ID for a RID is calculated this way:
+		<programlisting>
+			ID = RID - BASE_RID + LOW_RANGE_ID.
+		</programlisting>
+	</para>
+	<para>
+		Correspondingly, the formula for calculationg the RID for a
+		given Unix ID is this:
+		<programlisting>
+			RID = ID + BASE_RID - LOW_RANGE_ID.
+		</programlisting>
+	</para>
 </refsect1>
 
 <refsect1>
