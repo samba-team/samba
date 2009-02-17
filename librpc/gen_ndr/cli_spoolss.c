@@ -2472,12 +2472,18 @@ NTSTATUS rpccli_spoolss_EnumPrintProcDataTypes(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_ResetPrinter(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle /* [in] [ref] */,
+				     const char *data_type /* [in] [unique,charset(UTF16)] */,
+				     struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
 				     WERROR *werror)
 {
 	struct spoolss_ResetPrinter r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.data_type = data_type;
+	r.in.devmode_ctr = devmode_ctr;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_ResetPrinter, &r);

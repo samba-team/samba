@@ -2103,6 +2103,12 @@ struct spoolss_EnumPrintProcDataTypes {
 
 struct spoolss_ResetPrinter {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		const char *data_type;/* [unique,charset(UTF16)] */
+		struct spoolss_DevmodeContainer *devmode_ctr;/* [ref] */
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 

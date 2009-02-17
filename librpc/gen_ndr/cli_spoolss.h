@@ -312,6 +312,9 @@ NTSTATUS rpccli_spoolss_EnumPrintProcDataTypes(struct rpc_pipe_client *cli,
 					       WERROR *werror);
 NTSTATUS rpccli_spoolss_ResetPrinter(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
+				     struct policy_handle *handle /* [in] [ref] */,
+				     const char *data_type /* [in] [unique,charset(UTF16)] */,
+				     struct spoolss_DevmodeContainer *devmode_ctr /* [in] [ref] */,
 				     WERROR *werror);
 NTSTATUS rpccli_spoolss_GetPrinterDriver2(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,

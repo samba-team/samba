@@ -17319,6 +17319,21 @@ _PUBLIC_ void ndr_print_spoolss_EnumPrintProcDataTypes(struct ndr_print *ndr, co
 static enum ndr_err_code ndr_push_spoolss_ResetPrinter(struct ndr_push *ndr, int flags, const struct spoolss_ResetPrinter *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.data_type));
+		if (r->in.data_type) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.data_type, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.data_type, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.data_type, ndr_charset_length(r->in.data_type, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->in.devmode_ctr == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.devmode_ctr));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -17328,7 +17343,43 @@ static enum ndr_err_code ndr_push_spoolss_ResetPrinter(struct ndr_push *ndr, int
 
 static enum ndr_err_code ndr_pull_spoolss_ResetPrinter(struct ndr_pull *ndr, int flags, struct spoolss_ResetPrinter *r)
 {
+	uint32_t _ptr_data_type;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_data_type_0;
+	TALLOC_CTX *_mem_save_devmode_ctr_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data_type));
+		if (_ptr_data_type) {
+			NDR_PULL_ALLOC(ndr, r->in.data_type);
+		} else {
+			r->in.data_type = NULL;
+		}
+		if (r->in.data_type) {
+			_mem_save_data_type_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.data_type, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.data_type));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.data_type));
+			if (ndr_get_array_length(ndr, &r->in.data_type) > ndr_get_array_size(ndr, &r->in.data_type)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.data_type), ndr_get_array_length(ndr, &r->in.data_type));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.data_type), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.data_type, ndr_get_array_length(ndr, &r->in.data_type), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_type_0, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.devmode_ctr);
+		}
+		_mem_save_devmode_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.devmode_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.devmode_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -17346,6 +17397,20 @@ _PUBLIC_ void ndr_print_spoolss_ResetPrinter(struct ndr_print *ndr, const char *
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "spoolss_ResetPrinter");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "data_type", r->in.data_type);
+		ndr->depth++;
+		if (r->in.data_type) {
+			ndr_print_string(ndr, "data_type", r->in.data_type);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "devmode_ctr", r->in.devmode_ctr);
+		ndr->depth++;
+		ndr_print_spoolss_DevmodeContainer(ndr, "devmode_ctr", r->in.devmode_ctr);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
