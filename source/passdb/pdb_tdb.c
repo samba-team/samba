@@ -357,7 +357,7 @@ static NTSTATUS tdbsam_getsampwrid (struct pdb_methods *my_methods,
 	/* open the database */
 
 	if ( !tdbsam_open( tdbsam_filename ) ) {
-		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
+		DEBUG(0,("tdbsam_getsampwrid: failed to open %s!\n", tdbsam_filename));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -400,6 +400,11 @@ static bool tdb_delete_samacct_only( struct samu *sam_pass )
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
 
 	/* it's outaa here!  8^) */
+	if ( !tdbsam_open( tdbsam_filename ) ) {
+		DEBUG(0,("tdb_delete_samacct_only: failed to open %s!\n",
+			 tdbsam_filename));
+		return false;
+	}
 
 	status = dbwrap_delete_bystring(db_sam, keystr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -776,6 +781,12 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 	uint32 rid;
 
 	rid = BASE_RID;		/* Default if not set */
+
+	if (!tdbsam_open(tdbsam_filename)) {
+		DEBUG(0,("tdbsam_new_rid: failed to open %s!\n",
+			tdbsam_filename));
+		return false;
+	}
 
 	if (dbwrap_change_uint32_atomic(db_sam, NEXT_RID_STRING, &rid, 1) != 0) {
 		DEBUG(3, ("tdbsam_new_rid: Failed to increase %s\n",
