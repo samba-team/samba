@@ -37,31 +37,31 @@
 #define __roken_rename_h__
 
 #ifndef HAVE_STRTOK_R
-#define strtok_r _sl_strtok_r
+#define rk_strtok_r _sl_strtok_r
 #endif
 #ifndef HAVE_SNPRINTF
-#define snprintf _sl_snprintf
+#define rk_snprintf _sl_snprintf
 #endif
 #ifndef HAVE_ASPRINTF
-#define asprintf _sl_asprintf
+#define rk_asprintf _sl_asprintf
 #endif
 #ifndef HAVE_ASNPRINTF
-#define asnprintf _sl_asnprintf
+#define rk_asnprintf _sl_asnprintf
 #endif
 #ifndef HAVE_VASPRINTF
-#define vasprintf _sl_vasprintf
+#define rk_vasprintf _sl_vasprintf
 #endif
 #ifndef HAVE_VASNPRINTF
-#define vasnprintf _sl_vasnprintf
+#define rk_vasnprintf _sl_vasnprintf
 #endif
 #ifndef HAVE_VSNPRINTF
-#define vsnprintf _sl_vsnprintf
+#define rk_vsnprintf _sl_vsnprintf
 #endif
 #ifndef HAVE_STRUPR
-#define strupr _sl_strupr
+#define rk_strupr _sl_strupr
 #endif
 #ifndef HAVE_STRDUP
-#define strdup _sl_strdup
+#define rk_strdup _sl_strdup
 #endif
 
 #endif /* __roken_rename_h__ */
