@@ -1161,7 +1161,7 @@ struct _spoolss_EnumPrinters {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1191,9 +1191,9 @@ struct spoolss_EnumPrinters {
 	} in;
 
 	struct {
-		union spoolss_PrinterInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_PrinterInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1262,7 +1262,7 @@ struct _spoolss_EnumJobs {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1293,9 +1293,9 @@ struct spoolss_EnumJobs {
 	} in;
 
 	struct {
-		union spoolss_JobInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_JobInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1381,7 +1381,7 @@ struct _spoolss_EnumPrinterDrivers {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1411,9 +1411,9 @@ struct spoolss_EnumPrinterDrivers {
 	} in;
 
 	struct {
-		union spoolss_DriverInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_DriverInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1487,7 +1487,7 @@ struct _spoolss_EnumPrintProcessors {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1517,9 +1517,9 @@ struct spoolss_EnumPrintProcessors {
 	} in;
 
 	struct {
-		union spoolss_PrintProcessorInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_PrintProcessorInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1839,7 +1839,7 @@ struct _spoolss_EnumForms {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1868,9 +1868,9 @@ struct spoolss_EnumForms {
 	} in;
 
 	struct {
-		union spoolss_FormInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_FormInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1888,7 +1888,7 @@ struct _spoolss_EnumPorts {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1917,9 +1917,9 @@ struct spoolss_EnumPorts {
 	} in;
 
 	struct {
-		union spoolss_PortInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_PortInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
@@ -1937,7 +1937,7 @@ struct _spoolss_EnumMonitors {
 	struct {
 		DATA_BLOB *info;/* [unique] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
+		uint32_t *count;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1966,9 +1966,9 @@ struct spoolss_EnumMonitors {
 	} in;
 
 	struct {
-		union spoolss_MonitorInfo *info;/* [unique,switch_is(level),size_is(count)] */
+		uint32_t *count;/* [ref] */
+		union spoolss_MonitorInfo *info;/* [unique,switch_is(level),size_is(*count)] */
 		uint32_t *needed;/* [ref] */
-		uint32_t count;
 		WERROR result;
 	} out;
 
