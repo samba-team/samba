@@ -47,6 +47,8 @@ struct packet_context {
 	bool busy;
 	bool destructor_called;
 
+	bool unreliable_select;
+
 	struct send_element {
 		struct send_element *next, *prev;
 		DATA_BLOB blob;
@@ -176,6 +178,21 @@ _PUBLIC_ void packet_set_nofree(struct packet_context *pc)
 	pc->nofree = true;
 }
 
+/*
+  tell the packet system that select/poll/epoll on the underlying
+  socket may not be a reliable way to determine if data is available
+  for receive. This happens with underlying socket systems such as the
+  one implemented on top of GNUTLS, where there may be data in
+  encryption/compression buffers that could be received by
+  socket_recv(), while there is no data waiting at the real socket
+  level as seen by select/poll/epoll. The GNUTLS library is supposed
+  to cope with this by always leaving some data sitting in the socket
+  buffer, but it does not seem to be reliable.
+ */
+_PUBLIC_ void packet_set_unreliable_select(struct packet_context *pc)
+{
+	pc->unreliable_select = true;
+}
 
 /*
   tell the caller we have an error
@@ -230,6 +247,7 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 	NTSTATUS status;
 	size_t nread = 0;
 	DATA_BLOB blob;
+	bool recv_retry = false;
 
 	if (pc->processing) {
 		EVENT_FD_NOT_READABLE(pc->fde);
@@ -268,6 +286,8 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 		packet_eof(pc);
 		return;
 	}
+
+again:
 
 	if (npending + pc->num_read < npending) {
 		packet_error(pc, NT_STATUS_INVALID_PARAMETER);
@@ -308,16 +328,32 @@ _PUBLIC_ void packet_recv(struct packet_context *pc)
 		packet_error(pc, status);
 		return;
 	}
+	if (recv_retry && NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) {
+		nread = 0;
+		status = NT_STATUS_OK;
+	}
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}
 
-	if (nread == 0) {
+	if (nread == 0 && !recv_retry) {
 		packet_eof(pc);
 		return;
 	}
 
 	pc->num_read += nread;
+
+	if (pc->unreliable_select && nread != 0) {
+		recv_retry = true;
+		status = socket_pending(pc->sock, &npending);
+		if (!NT_STATUS_IS_OK(status)) {
+			packet_error(pc, status);
+			return;
+		}
+		if (npending != 0) {
+			goto again;
+		}
+	}
 
 next_partial:
 	if (pc->partial.length != pc->num_read) {

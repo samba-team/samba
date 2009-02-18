@@ -362,7 +362,7 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	const char *cafile = lp_tls_cafile(tmp_ctx, lp_ctx);
 	const char *crlfile = lp_tls_crlfile(tmp_ctx, lp_ctx);
 	const char *dhpfile = lp_tls_dhpfile(tmp_ctx, lp_ctx);
-	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *);
+	void tls_cert_generate(TALLOC_CTX *, const char *, const char *, const char *, const char *);
 	params = talloc(mem_ctx, struct tls_params);
 	if (params == NULL) {
 		talloc_free(tmp_ctx);
@@ -376,7 +376,13 @@ struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *
 	}
 
 	if (!file_exist(cafile)) {
-		tls_cert_generate(params, keyfile, certfile, cafile);
+		char *hostname = talloc_asprintf(mem_ctx, "%s.%s",
+						 lp_netbios_name(lp_ctx), lp_realm(lp_ctx));
+		if (hostname == NULL) {
+			goto init_failed;
+		}
+		tls_cert_generate(params, hostname, keyfile, certfile, cafile);
+		talloc_free(hostname);
 	}
 
 	ret = gnutls_global_init();
