@@ -93,6 +93,7 @@ int onefs_sys_create_file(connection_struct *conn,
 	int secinfo = 0;
 	int ret_fd = -1;
 	uint32_t onefs_dos_attributes;
+	struct ifs_createfile_flags cf_flags = CF_FLAGS_NONE;
 
 	/* Setup security descriptor and get secinfo. */
 	if (sd != NULL) {
@@ -143,10 +144,19 @@ int onefs_sys_create_file(connection_struct *conn,
 
 	smlock_dump(10, psml);
 
+	/**
+	 * Deal with kernel creating Default ACLs. (Isilon bug 47447.)
+	 *
+	 * 1) "nt acl support = no", default_acl = no
+	 * 2) "inherit permissions = yes", default_acl = no
+	 */
+	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
+		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
+
 	ret_fd = ifs_createfile(base_fd, path,
 	    (enum ifs_ace_rights)open_access_mask, flags & ~O_ACCMODE, mode,
 	    onefs_oplock, id, psml, secinfo, pifs_sd, onefs_dos_attributes,
-	    &onefs_granted_oplock);
+	    cf_flags, &onefs_granted_oplock);
 
 	DEBUG(10,("onefs_sys_create_file(%s): ret_fd = %d, "
 		  "onefs_granted_oplock = %s\n",
