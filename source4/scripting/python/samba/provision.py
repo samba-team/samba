@@ -1688,8 +1688,8 @@ def get_schema_data(setup_path, subst_vars = None):
 
     # this data used to be read from schema.ldif
     
-    data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_Attributes_v20080618.txt'),
-                          setup_path('ad-schema/MS-AD_Schema_Classes_v20080618.txt'))
+    data = read_ms_schema(setup_path('ad-schema/MS-AD_Schema_2K8Attributes.txt'),
+                          setup_path('ad-schema/MS-AD_Schema_2K8Classes.txt'))
 
     if subst_vars is not None:
         data = substitute_var(data, subst_vars)
