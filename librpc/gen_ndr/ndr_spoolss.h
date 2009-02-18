@@ -262,13 +262,16 @@ void ndr_print_spoolss_AddDriverInfo2(struct ndr_print *ndr, const char *name, c
 void ndr_print_spoolss_AddDriverInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo3 *r);
 void ndr_print_spoolss_AddDriverInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo4 *r);
 void ndr_print_spoolss_AddDriverInfo6(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo6 *r);
+void ndr_print_spoolss_AddDriverInfo8(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo8 *r);
 void ndr_print_spoolss_AddDriverInfo(struct ndr_print *ndr, const char *name, const union spoolss_AddDriverInfo *r);
+void ndr_print_spoolss_AddDriverInfoCtr(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfoCtr *r);
 void ndr_print_spoolss_DriverInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo1 *r);
 void ndr_print_spoolss_DriverInfo2(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo2 *r);
 void ndr_print_spoolss_DriverInfo3(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo3 *r);
 void ndr_print_spoolss_DriverInfo4(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo4 *r);
 void ndr_print_spoolss_DriverInfo5(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo5 *r);
 void ndr_print_spoolss_DriverInfo6(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo6 *r);
+void ndr_print_spoolss_DriverInfo8(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo8 *r);
 enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverInfo *r);
 enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_DriverInfo *r);
 void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *name, const union spoolss_DriverInfo *r);

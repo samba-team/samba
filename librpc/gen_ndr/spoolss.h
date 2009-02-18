@@ -643,13 +643,51 @@ struct spoolss_AddDriverInfo6 {
 	const char *provider;/* [unique,charset(UTF16)] */
 };
 
+struct spoolss_AddDriverInfo8 {
+	enum spoolss_DriverOSVersion version;
+	const char *driver_name;/* [unique,charset(UTF16)] */
+	const char *architecture;/* [unique,charset(UTF16)] */
+	const char *driver_path;/* [unique,charset(UTF16)] */
+	const char *data_file;/* [unique,charset(UTF16)] */
+	const char *config_file;/* [unique,charset(UTF16)] */
+	const char *help_file;/* [unique,charset(UTF16)] */
+	const char *monitor_name;/* [unique,charset(UTF16)] */
+	const char *default_datatype;/* [unique,charset(UTF16)] */
+	uint32_t _ndr_size_dependent_files;/* [value(((ndr_size_spoolss_StringArray(dependent_files,ndr->iconv_convenience,ndr->flags)-4)/2))] */
+	struct spoolss_StringArray *dependent_files;/* [unique] */
+	uint32_t _ndr_size_previous_names;/* [value(((ndr_size_spoolss_StringArray(previous_names,ndr->iconv_convenience,ndr->flags)-4)/2))] */
+	struct spoolss_StringArray *previous_names;/* [unique] */
+	NTTIME driver_data;
+	uint64_t driver_version;
+	const char *manufacturer_name;/* [unique,charset(UTF16)] */
+	const char *manufacturer_url;/* [unique,charset(UTF16)] */
+	const char *hardware_id;/* [unique,charset(UTF16)] */
+	const char *provider;/* [unique,charset(UTF16)] */
+	const char *print_processor;/* [unique,charset(UTF16)] */
+	const char *vendor_setup;/* [unique,charset(UTF16)] */
+	uint32_t _ndr_size_color_profiles;/* [value(((ndr_size_spoolss_StringArray(color_profiles,ndr->iconv_convenience,ndr->flags)-4)/2))] */
+	struct spoolss_StringArray *color_profiles;/* [unique] */
+	const char *inf_path;/* [unique,charset(UTF16)] */
+	uint32_t printer_driver_attributes;
+	uint32_t _ndr_size_core_driver_dependencies;/* [value(((ndr_size_spoolss_StringArray(core_driver_dependencies,ndr->iconv_convenience,ndr->flags)-4)/2))] */
+	struct spoolss_StringArray *core_driver_dependencies;/* [unique] */
+	NTTIME min_inbox_driver_ver_date;
+	uint64_t min_inbox_driver_ver_version;
+};
+
 union spoolss_AddDriverInfo {
 	struct spoolss_AddDriverInfo1 *info1;/* [unique,case] */
 	struct spoolss_AddDriverInfo2 *info2;/* [unique,case(2)] */
 	struct spoolss_AddDriverInfo3 *info3;/* [unique,case(3)] */
 	struct spoolss_AddDriverInfo4 *info4;/* [unique,case(4)] */
 	struct spoolss_AddDriverInfo6 *info6;/* [unique,case(6)] */
+	struct spoolss_AddDriverInfo8 *info8;/* [unique,case(8)] */
 }/* [switch_type(uint32)] */;
+
+struct spoolss_AddDriverInfoCtr {
+	uint32_t level;
+	union spoolss_AddDriverInfo info;/* [switch_is(level)] */
+};
 
 struct spoolss_DriverInfo1 {
 	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -758,6 +796,7 @@ union spoolss_DriverInfo {
 	struct spoolss_DriverInfo4 info4;/* [case(4)] */
 	struct spoolss_DriverInfo5 info5;/* [case(5)] */
 	struct spoolss_DriverInfo6 info6;/* [case(6)] */
+	struct spoolss_DriverInfo8 info8;/* [case(8)] */
 }/* [relative_base,nodiscriminant,public] */;
 
 struct spoolss_DriverDirectoryInfo1 {
@@ -1392,9 +1431,8 @@ struct spoolss_GetPrinter {
 
 struct spoolss_AddPrinterDriver {
 	struct {
-		const char *servername;/* [ref,charset(UTF16)] */
-		uint32_t level;
-		union spoolss_AddDriverInfo info;/* [switch_is(level)] */
+		const char *servername;/* [unique,charset(UTF16)] */
+		struct spoolss_AddDriverInfoCtr *info_ctr;/* [ref] */
 	} in;
 
 	struct {
@@ -2607,9 +2645,8 @@ struct spoolss_XcvData {
 
 struct spoolss_AddPrinterDriverEx {
 	struct {
-		const char *servername;/* [ref,charset(UTF16)] */
-		uint32_t level;
-		union spoolss_AddDriverInfo info;/* [switch_is(level)] */
+		const char *servername;/* [unique,charset(UTF16)] */
+		struct spoolss_AddDriverInfoCtr *info_ctr;/* [ref] */
 		uint32_t flags;
 	} in;
 

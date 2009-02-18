@@ -6178,6 +6178,654 @@ _PUBLIC_ void ndr_print_spoolss_AddDriverInfo6(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_AddDriverInfo8(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddDriverInfo8 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_spoolss_DriverOSVersion(ndr, NDR_SCALARS, r->version));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->driver_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->architecture));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->driver_path));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data_file));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->config_file));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->help_file));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->monitor_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->default_datatype));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ((ndr_size_spoolss_StringArray(r->dependent_files, ndr->iconv_convenience, ndr->flags) - 4) / 2)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->dependent_files));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ((ndr_size_spoolss_StringArray(r->previous_names, ndr->iconv_convenience, ndr->flags) - 4) / 2)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->previous_names));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->driver_data));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->driver_version));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->manufacturer_name));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->manufacturer_url));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->hardware_id));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->provider));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->print_processor));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->vendor_setup));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ((ndr_size_spoolss_StringArray(r->color_profiles, ndr->iconv_convenience, ndr->flags) - 4) / 2)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->color_profiles));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->inf_path));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->printer_driver_attributes));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ((ndr_size_spoolss_StringArray(r->core_driver_dependencies, ndr->iconv_convenience, ndr->flags) - 4) / 2)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->core_driver_dependencies));
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->min_inbox_driver_ver_date));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->min_inbox_driver_ver_version));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->driver_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->driver_name, ndr_charset_length(r->driver_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->architecture) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->architecture, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->architecture, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->architecture, ndr_charset_length(r->architecture, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->driver_path) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_path, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->driver_path, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->driver_path, ndr_charset_length(r->driver_path, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->data_file) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->data_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->data_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->data_file, ndr_charset_length(r->data_file, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->config_file) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->config_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->config_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->config_file, ndr_charset_length(r->config_file, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->help_file) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->help_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->help_file, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->help_file, ndr_charset_length(r->help_file, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->monitor_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->monitor_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->monitor_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->monitor_name, ndr_charset_length(r->monitor_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->default_datatype) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->default_datatype, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->default_datatype, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->default_datatype, ndr_charset_length(r->default_datatype, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->dependent_files) {
+			NDR_CHECK(ndr_push_spoolss_StringArray(ndr, NDR_SCALARS, r->dependent_files));
+		}
+		if (r->previous_names) {
+			NDR_CHECK(ndr_push_spoolss_StringArray(ndr, NDR_SCALARS, r->previous_names));
+		}
+		if (r->manufacturer_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->manufacturer_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->manufacturer_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->manufacturer_name, ndr_charset_length(r->manufacturer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->manufacturer_url) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->manufacturer_url, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->manufacturer_url, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->manufacturer_url, ndr_charset_length(r->manufacturer_url, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->hardware_id) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->hardware_id, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->hardware_id, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->hardware_id, ndr_charset_length(r->hardware_id, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->provider) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->provider, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->provider, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->provider, ndr_charset_length(r->provider, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->print_processor) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->print_processor, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->print_processor, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->print_processor, ndr_charset_length(r->print_processor, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->vendor_setup) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->vendor_setup, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->vendor_setup, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->vendor_setup, ndr_charset_length(r->vendor_setup, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->color_profiles) {
+			NDR_CHECK(ndr_push_spoolss_StringArray(ndr, NDR_SCALARS, r->color_profiles));
+		}
+		if (r->inf_path) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->inf_path, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->inf_path, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->inf_path, ndr_charset_length(r->inf_path, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->core_driver_dependencies) {
+			NDR_CHECK(ndr_push_spoolss_StringArray(ndr, NDR_SCALARS, r->core_driver_dependencies));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo8(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfo8 *r)
+{
+	uint32_t _ptr_driver_name;
+	TALLOC_CTX *_mem_save_driver_name_0;
+	uint32_t _ptr_architecture;
+	TALLOC_CTX *_mem_save_architecture_0;
+	uint32_t _ptr_driver_path;
+	TALLOC_CTX *_mem_save_driver_path_0;
+	uint32_t _ptr_data_file;
+	TALLOC_CTX *_mem_save_data_file_0;
+	uint32_t _ptr_config_file;
+	TALLOC_CTX *_mem_save_config_file_0;
+	uint32_t _ptr_help_file;
+	TALLOC_CTX *_mem_save_help_file_0;
+	uint32_t _ptr_monitor_name;
+	TALLOC_CTX *_mem_save_monitor_name_0;
+	uint32_t _ptr_default_datatype;
+	TALLOC_CTX *_mem_save_default_datatype_0;
+	uint32_t _ptr_dependent_files;
+	TALLOC_CTX *_mem_save_dependent_files_0;
+	uint32_t _ptr_previous_names;
+	TALLOC_CTX *_mem_save_previous_names_0;
+	uint32_t _ptr_manufacturer_name;
+	TALLOC_CTX *_mem_save_manufacturer_name_0;
+	uint32_t _ptr_manufacturer_url;
+	TALLOC_CTX *_mem_save_manufacturer_url_0;
+	uint32_t _ptr_hardware_id;
+	TALLOC_CTX *_mem_save_hardware_id_0;
+	uint32_t _ptr_provider;
+	TALLOC_CTX *_mem_save_provider_0;
+	uint32_t _ptr_print_processor;
+	TALLOC_CTX *_mem_save_print_processor_0;
+	uint32_t _ptr_vendor_setup;
+	TALLOC_CTX *_mem_save_vendor_setup_0;
+	uint32_t _ptr_color_profiles;
+	TALLOC_CTX *_mem_save_color_profiles_0;
+	uint32_t _ptr_inf_path;
+	TALLOC_CTX *_mem_save_inf_path_0;
+	uint32_t _ptr_core_driver_dependencies;
+	TALLOC_CTX *_mem_save_core_driver_dependencies_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_spoolss_DriverOSVersion(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_driver_name));
+		if (_ptr_driver_name) {
+			NDR_PULL_ALLOC(ndr, r->driver_name);
+		} else {
+			r->driver_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_architecture));
+		if (_ptr_architecture) {
+			NDR_PULL_ALLOC(ndr, r->architecture);
+		} else {
+			r->architecture = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_driver_path));
+		if (_ptr_driver_path) {
+			NDR_PULL_ALLOC(ndr, r->driver_path);
+		} else {
+			r->driver_path = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data_file));
+		if (_ptr_data_file) {
+			NDR_PULL_ALLOC(ndr, r->data_file);
+		} else {
+			r->data_file = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_config_file));
+		if (_ptr_config_file) {
+			NDR_PULL_ALLOC(ndr, r->config_file);
+		} else {
+			r->config_file = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_help_file));
+		if (_ptr_help_file) {
+			NDR_PULL_ALLOC(ndr, r->help_file);
+		} else {
+			r->help_file = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_monitor_name));
+		if (_ptr_monitor_name) {
+			NDR_PULL_ALLOC(ndr, r->monitor_name);
+		} else {
+			r->monitor_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_default_datatype));
+		if (_ptr_default_datatype) {
+			NDR_PULL_ALLOC(ndr, r->default_datatype);
+		} else {
+			r->default_datatype = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size_dependent_files));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dependent_files));
+		if (_ptr_dependent_files) {
+			NDR_PULL_ALLOC(ndr, r->dependent_files);
+		} else {
+			r->dependent_files = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size_previous_names));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_previous_names));
+		if (_ptr_previous_names) {
+			NDR_PULL_ALLOC(ndr, r->previous_names);
+		} else {
+			r->previous_names = NULL;
+		}
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->driver_data));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->driver_version));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_manufacturer_name));
+		if (_ptr_manufacturer_name) {
+			NDR_PULL_ALLOC(ndr, r->manufacturer_name);
+		} else {
+			r->manufacturer_name = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_manufacturer_url));
+		if (_ptr_manufacturer_url) {
+			NDR_PULL_ALLOC(ndr, r->manufacturer_url);
+		} else {
+			r->manufacturer_url = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_hardware_id));
+		if (_ptr_hardware_id) {
+			NDR_PULL_ALLOC(ndr, r->hardware_id);
+		} else {
+			r->hardware_id = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_provider));
+		if (_ptr_provider) {
+			NDR_PULL_ALLOC(ndr, r->provider);
+		} else {
+			r->provider = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_print_processor));
+		if (_ptr_print_processor) {
+			NDR_PULL_ALLOC(ndr, r->print_processor);
+		} else {
+			r->print_processor = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_vendor_setup));
+		if (_ptr_vendor_setup) {
+			NDR_PULL_ALLOC(ndr, r->vendor_setup);
+		} else {
+			r->vendor_setup = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size_color_profiles));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_color_profiles));
+		if (_ptr_color_profiles) {
+			NDR_PULL_ALLOC(ndr, r->color_profiles);
+		} else {
+			r->color_profiles = NULL;
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_inf_path));
+		if (_ptr_inf_path) {
+			NDR_PULL_ALLOC(ndr, r->inf_path);
+		} else {
+			r->inf_path = NULL;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->printer_driver_attributes));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->_ndr_size_core_driver_dependencies));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_core_driver_dependencies));
+		if (_ptr_core_driver_dependencies) {
+			NDR_PULL_ALLOC(ndr, r->core_driver_dependencies);
+		} else {
+			r->core_driver_dependencies = NULL;
+		}
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->min_inbox_driver_ver_date));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->min_inbox_driver_ver_version));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->driver_name) {
+			_mem_save_driver_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_name));
+			if (ndr_get_array_length(ndr, &r->driver_name) > ndr_get_array_size(ndr, &r->driver_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_name), ndr_get_array_length(ndr, &r->driver_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_name, ndr_get_array_length(ndr, &r->driver_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
+		}
+		if (r->architecture) {
+			_mem_save_architecture_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->architecture));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->architecture));
+			if (ndr_get_array_length(ndr, &r->architecture) > ndr_get_array_size(ndr, &r->architecture)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->architecture), ndr_get_array_length(ndr, &r->architecture));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->architecture, ndr_get_array_length(ndr, &r->architecture), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
+		}
+		if (r->driver_path) {
+			_mem_save_driver_path_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->driver_path));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->driver_path));
+			if (ndr_get_array_length(ndr, &r->driver_path) > ndr_get_array_size(ndr, &r->driver_path)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->driver_path), ndr_get_array_length(ndr, &r->driver_path));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->driver_path, ndr_get_array_length(ndr, &r->driver_path), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
+		}
+		if (r->data_file) {
+			_mem_save_data_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->data_file));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->data_file));
+			if (ndr_get_array_length(ndr, &r->data_file) > ndr_get_array_size(ndr, &r->data_file)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->data_file), ndr_get_array_length(ndr, &r->data_file));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->data_file, ndr_get_array_length(ndr, &r->data_file), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
+		}
+		if (r->config_file) {
+			_mem_save_config_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->config_file));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->config_file));
+			if (ndr_get_array_length(ndr, &r->config_file) > ndr_get_array_size(ndr, &r->config_file)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->config_file), ndr_get_array_length(ndr, &r->config_file));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->config_file, ndr_get_array_length(ndr, &r->config_file), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
+		}
+		if (r->help_file) {
+			_mem_save_help_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->help_file));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->help_file));
+			if (ndr_get_array_length(ndr, &r->help_file) > ndr_get_array_size(ndr, &r->help_file)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->help_file), ndr_get_array_length(ndr, &r->help_file));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->help_file, ndr_get_array_length(ndr, &r->help_file), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
+		}
+		if (r->monitor_name) {
+			_mem_save_monitor_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->monitor_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->monitor_name));
+			if (ndr_get_array_length(ndr, &r->monitor_name) > ndr_get_array_size(ndr, &r->monitor_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->monitor_name), ndr_get_array_length(ndr, &r->monitor_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->monitor_name, ndr_get_array_length(ndr, &r->monitor_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
+		}
+		if (r->default_datatype) {
+			_mem_save_default_datatype_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->default_datatype));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->default_datatype));
+			if (ndr_get_array_length(ndr, &r->default_datatype) > ndr_get_array_size(ndr, &r->default_datatype)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->default_datatype), ndr_get_array_length(ndr, &r->default_datatype));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->default_datatype, ndr_get_array_length(ndr, &r->default_datatype), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
+		}
+		if (r->dependent_files) {
+			_mem_save_dependent_files_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->dependent_files, 0);
+			NDR_CHECK(ndr_pull_spoolss_StringArray(ndr, NDR_SCALARS, r->dependent_files));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dependent_files_0, 0);
+		}
+		if (r->previous_names) {
+			_mem_save_previous_names_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->previous_names, 0);
+			NDR_CHECK(ndr_pull_spoolss_StringArray(ndr, NDR_SCALARS, r->previous_names));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_previous_names_0, 0);
+		}
+		if (r->manufacturer_name) {
+			_mem_save_manufacturer_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_name));
+			if (ndr_get_array_length(ndr, &r->manufacturer_name) > ndr_get_array_size(ndr, &r->manufacturer_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_name), ndr_get_array_length(ndr, &r->manufacturer_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_name, ndr_get_array_length(ndr, &r->manufacturer_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_name_0, 0);
+		}
+		if (r->manufacturer_url) {
+			_mem_save_manufacturer_url_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_url, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->manufacturer_url));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->manufacturer_url));
+			if (ndr_get_array_length(ndr, &r->manufacturer_url) > ndr_get_array_size(ndr, &r->manufacturer_url)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->manufacturer_url), ndr_get_array_length(ndr, &r->manufacturer_url));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->manufacturer_url, ndr_get_array_length(ndr, &r->manufacturer_url), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_url_0, 0);
+		}
+		if (r->hardware_id) {
+			_mem_save_hardware_id_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->hardware_id, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->hardware_id));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->hardware_id));
+			if (ndr_get_array_length(ndr, &r->hardware_id) > ndr_get_array_size(ndr, &r->hardware_id)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->hardware_id), ndr_get_array_length(ndr, &r->hardware_id));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_id, ndr_get_array_length(ndr, &r->hardware_id), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hardware_id_0, 0);
+		}
+		if (r->provider) {
+			_mem_save_provider_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->provider, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->provider));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->provider));
+			if (ndr_get_array_length(ndr, &r->provider) > ndr_get_array_size(ndr, &r->provider)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->provider), ndr_get_array_length(ndr, &r->provider));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->provider, ndr_get_array_length(ndr, &r->provider), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_provider_0, 0);
+		}
+		if (r->print_processor) {
+			_mem_save_print_processor_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->print_processor, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->print_processor));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->print_processor));
+			if (ndr_get_array_length(ndr, &r->print_processor) > ndr_get_array_size(ndr, &r->print_processor)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->print_processor), ndr_get_array_length(ndr, &r->print_processor));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->print_processor, ndr_get_array_length(ndr, &r->print_processor), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_0, 0);
+		}
+		if (r->vendor_setup) {
+			_mem_save_vendor_setup_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->vendor_setup, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->vendor_setup));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->vendor_setup));
+			if (ndr_get_array_length(ndr, &r->vendor_setup) > ndr_get_array_size(ndr, &r->vendor_setup)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->vendor_setup), ndr_get_array_length(ndr, &r->vendor_setup));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->vendor_setup), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->vendor_setup, ndr_get_array_length(ndr, &r->vendor_setup), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_vendor_setup_0, 0);
+		}
+		if (r->color_profiles) {
+			_mem_save_color_profiles_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->color_profiles, 0);
+			NDR_CHECK(ndr_pull_spoolss_StringArray(ndr, NDR_SCALARS, r->color_profiles));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_color_profiles_0, 0);
+		}
+		if (r->inf_path) {
+			_mem_save_inf_path_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->inf_path, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->inf_path));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->inf_path));
+			if (ndr_get_array_length(ndr, &r->inf_path) > ndr_get_array_size(ndr, &r->inf_path)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->inf_path), ndr_get_array_length(ndr, &r->inf_path));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->inf_path), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->inf_path, ndr_get_array_length(ndr, &r->inf_path), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_inf_path_0, 0);
+		}
+		if (r->core_driver_dependencies) {
+			_mem_save_core_driver_dependencies_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->core_driver_dependencies, 0);
+			NDR_CHECK(ndr_pull_spoolss_StringArray(ndr, NDR_SCALARS, r->core_driver_dependencies));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_core_driver_dependencies_0, 0);
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_AddDriverInfo8(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfo8 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_AddDriverInfo8");
+	ndr->depth++;
+	ndr_print_spoolss_DriverOSVersion(ndr, "version", r->version);
+	ndr_print_ptr(ndr, "driver_name", r->driver_name);
+	ndr->depth++;
+	if (r->driver_name) {
+		ndr_print_string(ndr, "driver_name", r->driver_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "architecture", r->architecture);
+	ndr->depth++;
+	if (r->architecture) {
+		ndr_print_string(ndr, "architecture", r->architecture);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "driver_path", r->driver_path);
+	ndr->depth++;
+	if (r->driver_path) {
+		ndr_print_string(ndr, "driver_path", r->driver_path);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "data_file", r->data_file);
+	ndr->depth++;
+	if (r->data_file) {
+		ndr_print_string(ndr, "data_file", r->data_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "config_file", r->config_file);
+	ndr->depth++;
+	if (r->config_file) {
+		ndr_print_string(ndr, "config_file", r->config_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "help_file", r->help_file);
+	ndr->depth++;
+	if (r->help_file) {
+		ndr_print_string(ndr, "help_file", r->help_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "monitor_name", r->monitor_name);
+	ndr->depth++;
+	if (r->monitor_name) {
+		ndr_print_string(ndr, "monitor_name", r->monitor_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "default_datatype", r->default_datatype);
+	ndr->depth++;
+	if (r->default_datatype) {
+		ndr_print_string(ndr, "default_datatype", r->default_datatype);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "_ndr_size_dependent_files", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?((ndr_size_spoolss_StringArray(r->dependent_files, ndr->iconv_convenience, ndr->flags) - 4) / 2):r->_ndr_size_dependent_files);
+	ndr_print_ptr(ndr, "dependent_files", r->dependent_files);
+	ndr->depth++;
+	if (r->dependent_files) {
+		ndr_print_spoolss_StringArray(ndr, "dependent_files", r->dependent_files);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "_ndr_size_previous_names", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?((ndr_size_spoolss_StringArray(r->previous_names, ndr->iconv_convenience, ndr->flags) - 4) / 2):r->_ndr_size_previous_names);
+	ndr_print_ptr(ndr, "previous_names", r->previous_names);
+	ndr->depth++;
+	if (r->previous_names) {
+		ndr_print_spoolss_StringArray(ndr, "previous_names", r->previous_names);
+	}
+	ndr->depth--;
+	ndr_print_NTTIME(ndr, "driver_data", r->driver_data);
+	ndr_print_hyper(ndr, "driver_version", r->driver_version);
+	ndr_print_ptr(ndr, "manufacturer_name", r->manufacturer_name);
+	ndr->depth++;
+	if (r->manufacturer_name) {
+		ndr_print_string(ndr, "manufacturer_name", r->manufacturer_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "manufacturer_url", r->manufacturer_url);
+	ndr->depth++;
+	if (r->manufacturer_url) {
+		ndr_print_string(ndr, "manufacturer_url", r->manufacturer_url);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "hardware_id", r->hardware_id);
+	ndr->depth++;
+	if (r->hardware_id) {
+		ndr_print_string(ndr, "hardware_id", r->hardware_id);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "provider", r->provider);
+	ndr->depth++;
+	if (r->provider) {
+		ndr_print_string(ndr, "provider", r->provider);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "print_processor", r->print_processor);
+	ndr->depth++;
+	if (r->print_processor) {
+		ndr_print_string(ndr, "print_processor", r->print_processor);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "vendor_setup", r->vendor_setup);
+	ndr->depth++;
+	if (r->vendor_setup) {
+		ndr_print_string(ndr, "vendor_setup", r->vendor_setup);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "_ndr_size_color_profiles", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?((ndr_size_spoolss_StringArray(r->color_profiles, ndr->iconv_convenience, ndr->flags) - 4) / 2):r->_ndr_size_color_profiles);
+	ndr_print_ptr(ndr, "color_profiles", r->color_profiles);
+	ndr->depth++;
+	if (r->color_profiles) {
+		ndr_print_spoolss_StringArray(ndr, "color_profiles", r->color_profiles);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "inf_path", r->inf_path);
+	ndr->depth++;
+	if (r->inf_path) {
+		ndr_print_string(ndr, "inf_path", r->inf_path);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "printer_driver_attributes", r->printer_driver_attributes);
+	ndr_print_uint32(ndr, "_ndr_size_core_driver_dependencies", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?((ndr_size_spoolss_StringArray(r->core_driver_dependencies, ndr->iconv_convenience, ndr->flags) - 4) / 2):r->_ndr_size_core_driver_dependencies);
+	ndr_print_ptr(ndr, "core_driver_dependencies", r->core_driver_dependencies);
+	ndr->depth++;
+	if (r->core_driver_dependencies) {
+		ndr_print_spoolss_StringArray(ndr, "core_driver_dependencies", r->core_driver_dependencies);
+	}
+	ndr->depth--;
+	ndr_print_NTTIME(ndr, "min_inbox_driver_ver_date", r->min_inbox_driver_ver_date);
+	ndr_print_hyper(ndr, "min_inbox_driver_ver_version", r->min_inbox_driver_ver_version);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_AddDriverInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_AddDriverInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -6202,6 +6850,10 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo(struct ndr_push *ndr, in
 
 			case 6: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info6));
+			break; }
+
+			case 8: {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info8));
 			break; }
 
 			default:
@@ -6241,6 +6893,12 @@ static enum ndr_err_code ndr_push_spoolss_AddDriverInfo(struct ndr_push *ndr, in
 				}
 			break;
 
+			case 8:
+				if (r->info8) {
+					NDR_CHECK(ndr_push_spoolss_AddDriverInfo8(ndr, NDR_SCALARS|NDR_BUFFERS, r->info8));
+				}
+			break;
+
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -6257,6 +6915,7 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 	TALLOC_CTX *_mem_save_info3_0;
 	TALLOC_CTX *_mem_save_info4_0;
 	TALLOC_CTX *_mem_save_info6_0;
+	TALLOC_CTX *_mem_save_info8_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -6314,6 +6973,16 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 				}
 			break; }
 
+			case 8: {
+				uint32_t _ptr_info8;
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info8));
+				if (_ptr_info8) {
+					NDR_PULL_ALLOC(ndr, r->info8);
+				} else {
+					r->info8 = NULL;
+				}
+			break; }
+
 			default:
 				return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
 		}
@@ -6362,6 +7031,15 @@ static enum ndr_err_code ndr_pull_spoolss_AddDriverInfo(struct ndr_pull *ndr, in
 					NDR_PULL_SET_MEM_CTX(ndr, r->info6, 0);
 					NDR_CHECK(ndr_pull_spoolss_AddDriverInfo6(ndr, NDR_SCALARS|NDR_BUFFERS, r->info6));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info6_0, 0);
+				}
+			break;
+
+			case 8:
+				if (r->info8) {
+					_mem_save_info8_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->info8, 0);
+					NDR_CHECK(ndr_pull_spoolss_AddDriverInfo8(ndr, NDR_SCALARS|NDR_BUFFERS, r->info8));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info8_0, 0);
 				}
 			break;
 
@@ -6423,9 +7101,56 @@ _PUBLIC_ void ndr_print_spoolss_AddDriverInfo(struct ndr_print *ndr, const char 
 			ndr->depth--;
 		break;
 
+		case 8:
+			ndr_print_ptr(ndr, "info8", r->info8);
+			ndr->depth++;
+			if (r->info8) {
+				ndr_print_spoolss_AddDriverInfo8(ndr, "info8", r->info8);
+			}
+			ndr->depth--;
+		break;
+
 		default:
 			ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+static enum ndr_err_code ndr_push_spoolss_AddDriverInfoCtr(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddDriverInfoCtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->level));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->info, r->level));
+		NDR_CHECK(ndr_push_spoolss_AddDriverInfo(ndr, NDR_SCALARS, &r->info));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_spoolss_AddDriverInfo(ndr, NDR_BUFFERS, &r->info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_AddDriverInfoCtr(struct ndr_pull *ndr, int ndr_flags, struct spoolss_AddDriverInfoCtr *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->level));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->info, r->level));
+		NDR_CHECK(ndr_pull_spoolss_AddDriverInfo(ndr, NDR_SCALARS, &r->info));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_spoolss_AddDriverInfo(ndr, NDR_BUFFERS, &r->info));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_AddDriverInfoCtr(struct ndr_print *ndr, const char *name, const struct spoolss_AddDriverInfoCtr *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_AddDriverInfoCtr");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "level", r->level);
+	ndr_print_set_switch_value(ndr, &r->info, r->level);
+	ndr_print_spoolss_AddDriverInfo(ndr, "info", &r->info);
+	ndr->depth--;
 }
 
 static enum ndr_err_code ndr_push_spoolss_DriverInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverInfo1 *r)
@@ -8820,6 +9545,1001 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo6(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_DriverInfo8(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverInfo8 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_spoolss_DriverOSVersion(ndr, NDR_SCALARS, r->version));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->driver_name));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->architecture));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->driver_path));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->data_file));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->config_file));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->help_file));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->monitor_name));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->default_datatype));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->dependent_files));
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->previous_names));
+			ndr->flags = _flags_save_string_array;
+		}
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->driver_data));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->driver_version));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->manufacturer_name));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->manufacturer_url));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->hardware_id));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->provider));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->print_processor));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->vendor_setup));
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->color_profiles));
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->inf_path));
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->printer_driver_attributes));
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_relative_ptr1(ndr, r->core_driver_dependencies));
+			ndr->flags = _flags_save_string_array;
+		}
+		NDR_CHECK(ndr_push_NTTIME(ndr, NDR_SCALARS, r->min_inbox_driver_ver_date));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->min_inbox_driver_ver_version));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->driver_name) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->driver_name));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->driver_name));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->architecture) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->architecture));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->architecture));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->driver_path) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->driver_path));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->driver_path));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->data_file) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->data_file));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->data_file));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->config_file) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->config_file));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->config_file));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->help_file) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->help_file));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->help_file));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->monitor_name) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->monitor_name));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->monitor_name));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->default_datatype) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->default_datatype));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->default_datatype));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dependent_files) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->dependent_files));
+				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->dependent_files));
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->previous_names) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->previous_names));
+				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->previous_names));
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->manufacturer_name) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->manufacturer_name));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->manufacturer_name));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->manufacturer_url) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->manufacturer_url));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->manufacturer_url));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->hardware_id) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->hardware_id));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->hardware_id));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->provider) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->provider));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->provider));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->print_processor) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->print_processor));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->print_processor));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->vendor_setup) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->vendor_setup));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->vendor_setup));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->color_profiles) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->color_profiles));
+				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->color_profiles));
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->inf_path) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->inf_path));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->inf_path));
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->core_driver_dependencies) {
+				NDR_CHECK(ndr_push_relative_ptr2(ndr, r->core_driver_dependencies));
+				NDR_CHECK(ndr_push_string_array(ndr, NDR_SCALARS, r->core_driver_dependencies));
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_DriverInfo8(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DriverInfo8 *r)
+{
+	uint32_t _ptr_driver_name;
+	TALLOC_CTX *_mem_save_driver_name_0;
+	uint32_t _ptr_architecture;
+	TALLOC_CTX *_mem_save_architecture_0;
+	uint32_t _ptr_driver_path;
+	TALLOC_CTX *_mem_save_driver_path_0;
+	uint32_t _ptr_data_file;
+	TALLOC_CTX *_mem_save_data_file_0;
+	uint32_t _ptr_config_file;
+	TALLOC_CTX *_mem_save_config_file_0;
+	uint32_t _ptr_help_file;
+	TALLOC_CTX *_mem_save_help_file_0;
+	uint32_t _ptr_monitor_name;
+	TALLOC_CTX *_mem_save_monitor_name_0;
+	uint32_t _ptr_default_datatype;
+	TALLOC_CTX *_mem_save_default_datatype_0;
+	uint32_t _ptr_dependent_files;
+	TALLOC_CTX *_mem_save_dependent_files_0;
+	uint32_t _ptr_previous_names;
+	TALLOC_CTX *_mem_save_previous_names_0;
+	uint32_t _ptr_manufacturer_name;
+	TALLOC_CTX *_mem_save_manufacturer_name_0;
+	uint32_t _ptr_manufacturer_url;
+	TALLOC_CTX *_mem_save_manufacturer_url_0;
+	uint32_t _ptr_hardware_id;
+	TALLOC_CTX *_mem_save_hardware_id_0;
+	uint32_t _ptr_provider;
+	TALLOC_CTX *_mem_save_provider_0;
+	uint32_t _ptr_print_processor;
+	TALLOC_CTX *_mem_save_print_processor_0;
+	uint32_t _ptr_vendor_setup;
+	TALLOC_CTX *_mem_save_vendor_setup_0;
+	uint32_t _ptr_color_profiles;
+	TALLOC_CTX *_mem_save_color_profiles_0;
+	uint32_t _ptr_inf_path;
+	TALLOC_CTX *_mem_save_inf_path_0;
+	uint32_t _ptr_core_driver_dependencies;
+	TALLOC_CTX *_mem_save_core_driver_dependencies_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_spoolss_DriverOSVersion(ndr, NDR_SCALARS, &r->version));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_driver_name));
+			if (_ptr_driver_name) {
+				NDR_PULL_ALLOC(ndr, r->driver_name);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->driver_name, _ptr_driver_name));
+			} else {
+				r->driver_name = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_architecture));
+			if (_ptr_architecture) {
+				NDR_PULL_ALLOC(ndr, r->architecture);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->architecture, _ptr_architecture));
+			} else {
+				r->architecture = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_driver_path));
+			if (_ptr_driver_path) {
+				NDR_PULL_ALLOC(ndr, r->driver_path);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->driver_path, _ptr_driver_path));
+			} else {
+				r->driver_path = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data_file));
+			if (_ptr_data_file) {
+				NDR_PULL_ALLOC(ndr, r->data_file);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->data_file, _ptr_data_file));
+			} else {
+				r->data_file = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_config_file));
+			if (_ptr_config_file) {
+				NDR_PULL_ALLOC(ndr, r->config_file);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->config_file, _ptr_config_file));
+			} else {
+				r->config_file = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_help_file));
+			if (_ptr_help_file) {
+				NDR_PULL_ALLOC(ndr, r->help_file);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->help_file, _ptr_help_file));
+			} else {
+				r->help_file = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_monitor_name));
+			if (_ptr_monitor_name) {
+				NDR_PULL_ALLOC(ndr, r->monitor_name);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->monitor_name, _ptr_monitor_name));
+			} else {
+				r->monitor_name = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_default_datatype));
+			if (_ptr_default_datatype) {
+				NDR_PULL_ALLOC(ndr, r->default_datatype);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->default_datatype, _ptr_default_datatype));
+			} else {
+				r->default_datatype = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dependent_files));
+			if (_ptr_dependent_files) {
+				NDR_PULL_ALLOC(ndr, r->dependent_files);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->dependent_files, _ptr_dependent_files));
+			} else {
+				r->dependent_files = NULL;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_previous_names));
+			if (_ptr_previous_names) {
+				NDR_PULL_ALLOC(ndr, r->previous_names);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->previous_names, _ptr_previous_names));
+			} else {
+				r->previous_names = NULL;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->driver_data));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->driver_version));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_manufacturer_name));
+			if (_ptr_manufacturer_name) {
+				NDR_PULL_ALLOC(ndr, r->manufacturer_name);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->manufacturer_name, _ptr_manufacturer_name));
+			} else {
+				r->manufacturer_name = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_manufacturer_url));
+			if (_ptr_manufacturer_url) {
+				NDR_PULL_ALLOC(ndr, r->manufacturer_url);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->manufacturer_url, _ptr_manufacturer_url));
+			} else {
+				r->manufacturer_url = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_hardware_id));
+			if (_ptr_hardware_id) {
+				NDR_PULL_ALLOC(ndr, r->hardware_id);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->hardware_id, _ptr_hardware_id));
+			} else {
+				r->hardware_id = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_provider));
+			if (_ptr_provider) {
+				NDR_PULL_ALLOC(ndr, r->provider);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->provider, _ptr_provider));
+			} else {
+				r->provider = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_print_processor));
+			if (_ptr_print_processor) {
+				NDR_PULL_ALLOC(ndr, r->print_processor);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->print_processor, _ptr_print_processor));
+			} else {
+				r->print_processor = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_vendor_setup));
+			if (_ptr_vendor_setup) {
+				NDR_PULL_ALLOC(ndr, r->vendor_setup);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->vendor_setup, _ptr_vendor_setup));
+			} else {
+				r->vendor_setup = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_color_profiles));
+			if (_ptr_color_profiles) {
+				NDR_PULL_ALLOC(ndr, r->color_profiles);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->color_profiles, _ptr_color_profiles));
+			} else {
+				r->color_profiles = NULL;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_inf_path));
+			if (_ptr_inf_path) {
+				NDR_PULL_ALLOC(ndr, r->inf_path);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->inf_path, _ptr_inf_path));
+			} else {
+				r->inf_path = NULL;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->printer_driver_attributes));
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_core_driver_dependencies));
+			if (_ptr_core_driver_dependencies) {
+				NDR_PULL_ALLOC(ndr, r->core_driver_dependencies);
+				NDR_CHECK(ndr_pull_relative_ptr1(ndr, r->core_driver_dependencies, _ptr_core_driver_dependencies));
+			} else {
+				r->core_driver_dependencies = NULL;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		NDR_CHECK(ndr_pull_NTTIME(ndr, NDR_SCALARS, &r->min_inbox_driver_ver_date));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->min_inbox_driver_ver_version));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->driver_name) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->driver_name));
+				_mem_save_driver_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->driver_name, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->driver_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_name_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->architecture) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->architecture));
+				_mem_save_architecture_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->architecture, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->architecture));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_architecture_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->driver_path) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->driver_path));
+				_mem_save_driver_path_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->driver_path, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->driver_path));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_driver_path_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->data_file) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->data_file));
+				_mem_save_data_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->data_file, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->data_file));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_file_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->config_file) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->config_file));
+				_mem_save_config_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->config_file, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->config_file));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_config_file_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->help_file) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->help_file));
+				_mem_save_help_file_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->help_file, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->help_file));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_help_file_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->monitor_name) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->monitor_name));
+				_mem_save_monitor_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->monitor_name, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->monitor_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_monitor_name_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->default_datatype) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->default_datatype));
+				_mem_save_default_datatype_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->default_datatype, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->default_datatype));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_default_datatype_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->dependent_files) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->dependent_files));
+				_mem_save_dependent_files_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->dependent_files, 0);
+				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->dependent_files));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dependent_files_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->previous_names) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->previous_names));
+				_mem_save_previous_names_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->previous_names, 0);
+				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->previous_names));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_previous_names_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->manufacturer_name) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->manufacturer_name));
+				_mem_save_manufacturer_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_name, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->manufacturer_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_name_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->manufacturer_url) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->manufacturer_url));
+				_mem_save_manufacturer_url_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->manufacturer_url, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->manufacturer_url));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_manufacturer_url_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->hardware_id) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->hardware_id));
+				_mem_save_hardware_id_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->hardware_id, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->hardware_id));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_hardware_id_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->provider) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->provider));
+				_mem_save_provider_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->provider, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->provider));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_provider_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->print_processor) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->print_processor));
+				_mem_save_print_processor_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->print_processor, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->print_processor));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_print_processor_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->vendor_setup) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->vendor_setup));
+				_mem_save_vendor_setup_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->vendor_setup, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->vendor_setup));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_vendor_setup_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->color_profiles) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->color_profiles));
+				_mem_save_color_profiles_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->color_profiles, 0);
+				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->color_profiles));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_color_profiles_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->inf_path) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->inf_path));
+				_mem_save_inf_path_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->inf_path, 0);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->inf_path));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_inf_path_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string;
+		}
+		{
+			uint32_t _flags_save_string_array = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			if (r->core_driver_dependencies) {
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
+				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->core_driver_dependencies));
+				_mem_save_core_driver_dependencies_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->core_driver_dependencies, 0);
+				NDR_CHECK(ndr_pull_string_array(ndr, NDR_SCALARS, &r->core_driver_dependencies));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_core_driver_dependencies_0, 0);
+				ndr->offset = _relative_save_offset;
+			}
+			ndr->flags = _flags_save_string_array;
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_DriverInfo8(struct ndr_print *ndr, const char *name, const struct spoolss_DriverInfo8 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_DriverInfo8");
+	ndr->depth++;
+	ndr_print_spoolss_DriverOSVersion(ndr, "version", r->version);
+	ndr_print_ptr(ndr, "driver_name", r->driver_name);
+	ndr->depth++;
+	if (r->driver_name) {
+		ndr_print_string(ndr, "driver_name", r->driver_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "architecture", r->architecture);
+	ndr->depth++;
+	if (r->architecture) {
+		ndr_print_string(ndr, "architecture", r->architecture);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "driver_path", r->driver_path);
+	ndr->depth++;
+	if (r->driver_path) {
+		ndr_print_string(ndr, "driver_path", r->driver_path);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "data_file", r->data_file);
+	ndr->depth++;
+	if (r->data_file) {
+		ndr_print_string(ndr, "data_file", r->data_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "config_file", r->config_file);
+	ndr->depth++;
+	if (r->config_file) {
+		ndr_print_string(ndr, "config_file", r->config_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "help_file", r->help_file);
+	ndr->depth++;
+	if (r->help_file) {
+		ndr_print_string(ndr, "help_file", r->help_file);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "monitor_name", r->monitor_name);
+	ndr->depth++;
+	if (r->monitor_name) {
+		ndr_print_string(ndr, "monitor_name", r->monitor_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "default_datatype", r->default_datatype);
+	ndr->depth++;
+	if (r->default_datatype) {
+		ndr_print_string(ndr, "default_datatype", r->default_datatype);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "dependent_files", r->dependent_files);
+	ndr->depth++;
+	if (r->dependent_files) {
+		ndr_print_string_array(ndr, "dependent_files", r->dependent_files);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "previous_names", r->previous_names);
+	ndr->depth++;
+	if (r->previous_names) {
+		ndr_print_string_array(ndr, "previous_names", r->previous_names);
+	}
+	ndr->depth--;
+	ndr_print_NTTIME(ndr, "driver_data", r->driver_data);
+	ndr_print_hyper(ndr, "driver_version", r->driver_version);
+	ndr_print_ptr(ndr, "manufacturer_name", r->manufacturer_name);
+	ndr->depth++;
+	if (r->manufacturer_name) {
+		ndr_print_string(ndr, "manufacturer_name", r->manufacturer_name);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "manufacturer_url", r->manufacturer_url);
+	ndr->depth++;
+	if (r->manufacturer_url) {
+		ndr_print_string(ndr, "manufacturer_url", r->manufacturer_url);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "hardware_id", r->hardware_id);
+	ndr->depth++;
+	if (r->hardware_id) {
+		ndr_print_string(ndr, "hardware_id", r->hardware_id);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "provider", r->provider);
+	ndr->depth++;
+	if (r->provider) {
+		ndr_print_string(ndr, "provider", r->provider);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "print_processor", r->print_processor);
+	ndr->depth++;
+	if (r->print_processor) {
+		ndr_print_string(ndr, "print_processor", r->print_processor);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "vendor_setup", r->vendor_setup);
+	ndr->depth++;
+	if (r->vendor_setup) {
+		ndr_print_string(ndr, "vendor_setup", r->vendor_setup);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "color_profiles", r->color_profiles);
+	ndr->depth++;
+	if (r->color_profiles) {
+		ndr_print_string_array(ndr, "color_profiles", r->color_profiles);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "inf_path", r->inf_path);
+	ndr->depth++;
+	if (r->inf_path) {
+		ndr_print_string(ndr, "inf_path", r->inf_path);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "printer_driver_attributes", r->printer_driver_attributes);
+	ndr_print_ptr(ndr, "core_driver_dependencies", r->core_driver_dependencies);
+	ndr->depth++;
+	if (r->core_driver_dependencies) {
+		ndr_print_string_array(ndr, "core_driver_dependencies", r->core_driver_dependencies);
+	}
+	ndr->depth--;
+	ndr_print_NTTIME(ndr, "min_inbox_driver_ver_date", r->min_inbox_driver_ver_date);
+	ndr_print_hyper(ndr, "min_inbox_driver_ver_version", r->min_inbox_driver_ver_version);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverInfo *r)
 {
 	uint32_t _save_relative_base_offset = ndr_push_get_relative_base_offset(ndr);
@@ -8862,6 +10582,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int
 				NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
 			break; }
 
+			case 8: {
+				NDR_CHECK(ndr_push_align(ndr, 8));
+				NDR_CHECK(ndr_push_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
+			break; }
+
 			default: {
 			break; }
 
@@ -8893,6 +10619,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int
 
 			case 6:
 				NDR_CHECK(ndr_push_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
+			break;
+
+			case 8:
+				NDR_CHECK(ndr_push_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
 			break;
 
 			default:
@@ -8947,6 +10677,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int
 				NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_SCALARS, &r->info6));
 			break; }
 
+			case 8: {
+				NDR_CHECK(ndr_pull_align(ndr, 8));
+				NDR_CHECK(ndr_pull_setup_relative_base_offset1(ndr, r, ndr->offset));
+				NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_SCALARS, &r->info8));
+			break; }
+
 			default: {
 			break; }
 
@@ -8977,6 +10713,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int
 
 			case 6:
 				NDR_CHECK(ndr_pull_spoolss_DriverInfo6(ndr, NDR_BUFFERS, &r->info6));
+			break;
+
+			case 8:
+				NDR_CHECK(ndr_pull_spoolss_DriverInfo8(ndr, NDR_BUFFERS, &r->info8));
 			break;
 
 			default:
@@ -9016,6 +10756,10 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *na
 
 		case 6:
 			ndr_print_spoolss_DriverInfo6(ndr, "info6", &r->info6);
+		break;
+
+		case 8:
+			ndr_print_spoolss_DriverInfo8(ndr, "info8", &r->info8);
 		break;
 
 		default:
@@ -13767,16 +15511,17 @@ _PUBLIC_ void ndr_print_spoolss_GetPrinter(struct ndr_print *ndr, const char *na
 static enum ndr_err_code ndr_push_spoolss_AddPrinterDriver(struct ndr_push *ndr, int flags, const struct spoolss_AddPrinterDriver *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.servername == NULL) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.servername));
+		if (r->in.servername) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.servername, ndr_charset_length(r->in.servername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->in.info_ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.servername, ndr_charset_length(r->in.servername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_push_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		NDR_CHECK(ndr_push_spoolss_AddDriverInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -13786,17 +15531,35 @@ static enum ndr_err_code ndr_push_spoolss_AddPrinterDriver(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_spoolss_AddPrinterDriver(struct ndr_pull *ndr, int flags, struct spoolss_AddPrinterDriver *r)
 {
+	uint32_t _ptr_servername;
+	TALLOC_CTX *_mem_save_servername_0;
+	TALLOC_CTX *_mem_save_info_ctr_0;
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-		if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_servername));
+		if (_ptr_servername) {
+			NDR_PULL_ALLOC(ndr, r->in.servername);
+		} else {
+			r->in.servername = NULL;
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_pull_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		if (r->in.servername) {
+			_mem_save_servername_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
+			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info_ctr);
+		}
+		_mem_save_info_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_spoolss_AddDriverInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -13816,11 +15579,14 @@ _PUBLIC_ void ndr_print_spoolss_AddPrinterDriver(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "servername", r->in.servername);
 		ndr->depth++;
-		ndr_print_string(ndr, "servername", r->in.servername);
+		if (r->in.servername) {
+			ndr_print_string(ndr, "servername", r->in.servername);
+		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_set_switch_value(ndr, &r->in.info, r->in.level);
-		ndr_print_spoolss_AddDriverInfo(ndr, "info", &r->in.info);
+		ndr_print_ptr(ndr, "info_ctr", r->in.info_ctr);
+		ndr->depth++;
+		ndr_print_spoolss_AddDriverInfoCtr(ndr, "info_ctr", r->in.info_ctr);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -20639,16 +22405,17 @@ _PUBLIC_ void ndr_print_spoolss_XcvData(struct ndr_print *ndr, const char *name,
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_AddPrinterDriverEx(struct ndr_push *ndr, int flags, const struct spoolss_AddPrinterDriverEx *r)
 {
 	if (flags & NDR_IN) {
-		if (r->in.servername == NULL) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.servername));
+		if (r->in.servername) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.servername, ndr_charset_length(r->in.servername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		if (r->in.info_ctr == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.servername, CH_UTF16)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.servername, ndr_charset_length(r->in.servername, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_push_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		NDR_CHECK(ndr_push_spoolss_AddDriverInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
 		NDR_CHECK(ndr_push_spoolss_AddPrinterDriverExFlags(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
@@ -20659,17 +22426,35 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_AddPrinterDriverEx(struct ndr_push *
 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_AddPrinterDriverEx(struct ndr_pull *ndr, int flags, struct spoolss_AddPrinterDriverEx *r)
 {
+	uint32_t _ptr_servername;
+	TALLOC_CTX *_mem_save_servername_0;
+	TALLOC_CTX *_mem_save_info_ctr_0;
 	if (flags & NDR_IN) {
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
-		if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_servername));
+		if (_ptr_servername) {
+			NDR_PULL_ALLOC(ndr, r->in.servername);
+		} else {
+			r->in.servername = NULL;
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.info, r->in.level));
-		NDR_CHECK(ndr_pull_spoolss_AddDriverInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.info));
+		if (r->in.servername) {
+			_mem_save_servername_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.servername));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.servername));
+			if (ndr_get_array_length(ndr, &r->in.servername) > ndr_get_array_size(ndr, &r->in.servername)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.servername), ndr_get_array_length(ndr, &r->in.servername));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.servername, ndr_get_array_length(ndr, &r->in.servername), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info_ctr);
+		}
+		_mem_save_info_ctr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info_ctr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_spoolss_AddDriverInfoCtr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info_ctr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_ctr_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_spoolss_AddPrinterDriverExFlags(ndr, NDR_SCALARS, &r->in.flags));
 	}
 	if (flags & NDR_OUT) {
@@ -20690,11 +22475,14 @@ _PUBLIC_ void ndr_print_spoolss_AddPrinterDriverEx(struct ndr_print *ndr, const 
 		ndr->depth++;
 		ndr_print_ptr(ndr, "servername", r->in.servername);
 		ndr->depth++;
-		ndr_print_string(ndr, "servername", r->in.servername);
+		if (r->in.servername) {
+			ndr_print_string(ndr, "servername", r->in.servername);
+		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_set_switch_value(ndr, &r->in.info, r->in.level);
-		ndr_print_spoolss_AddDriverInfo(ndr, "info", &r->in.info);
+		ndr_print_ptr(ndr, "info_ctr", r->in.info_ctr);
+		ndr->depth++;
+		ndr_print_spoolss_AddDriverInfoCtr(ndr, "info_ctr", r->in.info_ctr);
+		ndr->depth--;
 		ndr_print_spoolss_AddPrinterDriverExFlags(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
