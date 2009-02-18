@@ -149,5 +149,9 @@ struct tsocket_address *_tsocket_address_create(TALLOC_CTX *mem_ctx,
 	_tsocket_address_create(mem_ctx, ops, state, sizeof(type), \
 				#type, location)
 
+int tsocket_error_from_errno(int ret, int sys_errno, bool *retry);
+int tsocket_simple_int_recv(struct tevent_req *req, int *perrno);
+int tsocket_common_prepare_fd(int fd, bool high_fd);
+
 #endif /* _TSOCKET_H */
 
