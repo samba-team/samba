@@ -1178,22 +1178,6 @@ typedef struct spool_r_addprinterdriver
 }
 SPOOL_R_ADDPRINTERDRIVER;
 
-typedef struct spool_q_addprinterdriverex
-{
-	uint32 server_name_ptr;
-	UNISTR2 server_name;
-	uint32 level;
-	SPOOL_PRINTER_DRIVER_INFO_LEVEL info;
-	uint32 copy_flags;
-}
-SPOOL_Q_ADDPRINTERDRIVEREX;
-
-typedef struct spool_r_addprinterdriverex
-{
-	WERROR status;
-}
-SPOOL_R_ADDPRINTERDRIVEREX;
-
 typedef struct spool_q_enumprintprocessors
 {
 	uint32 name_ptr;
