@@ -6239,7 +6239,6 @@ bool init_service_op_table( void );
 
 /* The following definitions come from rpcclient/cmd_spoolss.c  */
 
-void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
 
 /* The following definitions come from rpcclient/cmd_srvsvc.c  */
 
