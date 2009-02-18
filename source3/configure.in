@@ -4718,6 +4718,34 @@ SMB_LIBRARY(lua, 0)
 SMB_LIBRARY(addns, 0, no, [undefined API])
 
 
+#################################################
+# check to see if we should set the protected madvise flag,
+# which will keep smbd alive in low memory conditions
+AC_MSG_CHECKING(whether to protect smbd from being killed in low memory)
+AC_ARG_WITH(madvise-protect,
+[AS_HELP_STRING([--with-madvise-protect], [Include low memory madvise protection (default=no)])],
+[ case "$withval" in
+  yes)
+    AC_TRY_COMPILE([
+        #include <sys/mman.h>
+        ],[
+        int a = MADV_PROTECT;
+        ],
+        [samba_cv_madvise_protect=yes],
+        [samba_cv_madvise_protect=no])
+    if test x"$samba_cv_madvise_protect" = x"yes"; then
+        AC_MSG_RESULT(yes)
+        AC_DEFINE(WITH_MADVISE_PROTECTED,1,[Whether to include low memory protection support])
+    else
+        AC_MSG_ERROR(Low memory protection supporte requires availability of MADVISE_PROTECT flag.)
+    fi
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # these tests are taken from the GNU fileutils package

@@ -241,6 +241,10 @@ typedef int ber_int_t;
 #include <aio.h>
 #endif
 
+#ifdef WITH_MADVISE_PROTECTED
+#include <sys/mman.h>
+#endif
+
 /* Special macros that are no-ops except when run under Valgrind on
  * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
 #if HAVE_VALGRIND_MEMCHECK_H
