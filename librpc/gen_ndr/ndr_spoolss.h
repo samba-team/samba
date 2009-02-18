@@ -337,6 +337,13 @@ void ndr_print_spoolss_UserLevelCtr(struct ndr_print *ndr, const char *name, con
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_spoolss_PortProtocol(struct ndr_print *ndr, const char *name, enum spoolss_PortProtocol r);
+enum ndr_err_code ndr_push_spoolss_PortData1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortData1 *r);
+enum ndr_err_code ndr_pull_spoolss_PortData1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData1 *r);
+void ndr_print_spoolss_PortData1(struct ndr_print *ndr, const char *name, const struct spoolss_PortData1 *r);
+enum ndr_err_code ndr_push_spoolss_MonitorUi(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorUi *r);
+enum ndr_err_code ndr_pull_spoolss_MonitorUi(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorUi *r);
+void ndr_print_spoolss_MonitorUi(struct ndr_print *ndr, const char *name, const struct spoolss_MonitorUi *r);
 void ndr_print_spoolss_AddPrinterDriverExFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push__spoolss_EnumPrinters(struct ndr_push *ndr, int flags, const struct _spoolss_EnumPrinters *r);
 enum ndr_err_code ndr_pull__spoolss_EnumPrinters(struct ndr_pull *ndr, int flags, struct _spoolss_EnumPrinters *r);

@@ -1138,6 +1138,41 @@ struct spoolss_UserLevelCtr {
 #define DPD_DELETE_SPECIFIC_VERSION ( 0x00000002 )
 #define DPD_DELETE_ALL_FILES ( 0x00000004 )
 
+enum spoolss_PortProtocol
+#ifndef USE_UINT_ENUMS
+ {
+	PROTOCOL_RAWTCP_TYPE=1,
+	PROTOCOL_LPR_TYPE=2
+}
+#else
+ { __donnot_use_enum_spoolss_PortProtocol=0x7FFFFFFF}
+#define PROTOCOL_RAWTCP_TYPE ( 1 )
+#define PROTOCOL_LPR_TYPE ( 2 )
+#endif
+;
+
+struct spoolss_PortData1 {
+	const char *portname;/* [charset(UTF16)] */
+	uint32_t version;/* [value(0x00000001)] */
+	enum spoolss_PortProtocol protocol;
+	uint32_t size;/* [value(sizeof(r))] */
+	uint32_t reserved;
+	const char *hostaddress;/* [charset(UTF16)] */
+	const char *snmpcommunity;/* [charset(UTF16)] */
+	uint32_t dblspool;
+	const char *queue;/* [charset(UTF16)] */
+	const char *ip_address;/* [charset(UTF16)] */
+	const char *hardware_address;/* [charset(UTF16)] */
+	const char *device_type;/* [charset(UTF16)] */
+	uint32_t port_number;
+	uint32_t snmp_enabled;
+	uint32_t snmp_dev_index;
+}/* [public] */;
+
+struct spoolss_MonitorUi {
+	const char *dll_name;/* [charset(UTF16)] */
+}/* [public] */;
+
 /* bitmap spoolss_AddPrinterDriverExFlags */
 #define APD_STRICT_UPGRADE ( 0x00000001 )
 #define APD_STRICT_DOWNGRADE ( 0x00000002 )

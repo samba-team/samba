@@ -12445,6 +12445,142 @@ _PUBLIC_ void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const c
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_PortProtocol(struct ndr_push *ndr, int ndr_flags, enum spoolss_PortProtocol r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_PortProtocol(struct ndr_pull *ndr, int ndr_flags, enum spoolss_PortProtocol *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PortProtocol(struct ndr_print *ndr, const char *name, enum spoolss_PortProtocol r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case PROTOCOL_RAWTCP_TYPE: val = "PROTOCOL_RAWTCP_TYPE"; break;
+		case PROTOCOL_LPR_TYPE: val = "PROTOCOL_LPR_TYPE"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortData1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortData1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00000001));
+		NDR_CHECK(ndr_push_spoolss_PortProtocol(ndr, NDR_SCALARS, r->protocol));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, sizeof(r)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->hostaddress, 49, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dblspool));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->queue, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->ip_address, 16, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->hardware_address, 13, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->port_number));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->snmp_enabled));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->snmp_dev_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortData1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData1 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_spoolss_PortProtocol(ndr, NDR_SCALARS, &r->protocol));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, 49, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dblspool));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->ip_address, 16, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hardware_address, 13, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->port_number));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_enabled));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_dev_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PortData1(struct ndr_print *ndr, const char *name, const struct spoolss_PortData1 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PortData1");
+	ndr->depth++;
+	ndr_print_string(ndr, "portname", r->portname);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00000001:r->version);
+	ndr_print_spoolss_PortProtocol(ndr, "protocol", r->protocol);
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?sizeof(r):r->size);
+	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_string(ndr, "hostaddress", r->hostaddress);
+	ndr_print_string(ndr, "snmpcommunity", r->snmpcommunity);
+	ndr_print_uint32(ndr, "dblspool", r->dblspool);
+	ndr_print_string(ndr, "queue", r->queue);
+	ndr_print_string(ndr, "ip_address", r->ip_address);
+	ndr_print_string(ndr, "hardware_address", r->hardware_address);
+	ndr_print_string(ndr, "device_type", r->device_type);
+	ndr_print_uint32(ndr, "port_number", r->port_number);
+	ndr_print_uint32(ndr, "snmp_enabled", r->snmp_enabled);
+	ndr_print_uint32(ndr, "snmp_dev_index", r->snmp_dev_index);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorUi(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorUi *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->dll_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_align(ndr, 2));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->dll_name, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->dll_name, ndr_charset_length(r->dll_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorUi(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorUi *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->dll_name));
+		NDR_CHECK(ndr_pull_align(ndr, 2));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->dll_name));
+		if (ndr_get_array_length(ndr, &r->dll_name) > ndr_get_array_size(ndr, &r->dll_name)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dll_name), ndr_get_array_length(ndr, &r->dll_name));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dll_name), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dll_name, ndr_get_array_length(ndr, &r->dll_name), sizeof(uint16_t), CH_UTF16));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_MonitorUi(struct ndr_print *ndr, const char *name, const struct spoolss_MonitorUi *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_MonitorUi");
+	ndr->depth++;
+	ndr_print_string(ndr, "dll_name", r->dll_name);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_AddPrinterDriverExFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
