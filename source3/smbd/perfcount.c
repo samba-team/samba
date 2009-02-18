@@ -78,7 +78,7 @@ NTSTATUS smb_register_perfcounter(int interface_version, const char *name,
 	}
 
 	if (smb_perfcount_find_module(name)) {
-		DEBUG(0,("Perfcount Module %s already loaded!\n", name));
+		DEBUG(3,("Perfcount Module %s already loaded!\n", name));
 		return NT_STATUS_OK;
 	}
 
@@ -87,7 +87,7 @@ NTSTATUS smb_register_perfcounter(int interface_version, const char *name,
 	entry->handlers = (struct smb_perfcount_handlers*) handlers;
 
 	DLIST_ADD(modules, entry);
-	DEBUG(0, ("Successfully added perfcounter module '%s'\n", name));
+	DEBUG(3, ("Successfully added perfcounter module '%s'\n", name));
 	return NT_STATUS_OK;
 }
 
@@ -105,7 +105,7 @@ static bool smb_load_perfcount_module(const char *name)
 	DEBUG(3, ("Initialising perfcounter module [%s]\n", name));
 
 	if (g_smb_perfcount_handlers) {
-		DEBUG(0,("Only 1 perfcount handler may be registered in "
+		DEBUG(3,("Only 1 perfcount handler may be registered in "
 			"smb.conf\n"));
 		return true;
 	}
@@ -146,7 +146,7 @@ static bool smb_load_perfcount_module(const char *name)
 	   (NT_STATUS_IS_OK(smb_probe_module("perfcount", module_path)) &&
 		(entry = smb_perfcount_find_module(module_name)))) {
 
-		DEBUG(0,("Successfully loaded perfcounter module [%s] \n", name));
+		DEBUG(3,("Successfully loaded perfcounter module [%s] \n", name));
 	} else {
 		DEBUG(0,("Can't find a perfcounter module [%s]\n",name));
 		goto fail;
