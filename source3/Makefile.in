@@ -667,6 +667,7 @@ VFS_SMB_TRAFFIC_ANALYZER_OBJ = modules/vfs_smb_traffic_analyzer.o
 VFS_ONEFS_OBJ = modules/vfs_onefs.o modules/onefs_acl.o modules/onefs_system.o \
 		modules/onefs_open.o modules/onefs_streams.o modules/onefs_dir.c \
 		modules/onefs_cbrl.o
+VFS_ONEFS_SHADOW_COPY_OBJ = modules/vfs_onefs_shadow_copy.o modules/onefs_shadow_copy.o
 PERFCOUNT_ONEFS_OBJ = modules/perfcount_onefs.o
 PERFCOUNT_TEST_OBJ = modules/perfcount_test.o
 
@@ -2558,6 +2559,10 @@ bin/acl_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ACL_TDB_OBJ)
 bin/onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_ONEFS_OBJ) @ONEFS_LIBS@
+
+bin/onefs_shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_ONEFS_SHADOW_COPY_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_ONEFS_SHADOW_COPY_OBJ)
 
 bin/pc_onefs.@SHLIBEXT@: $(BINARY_PREREQS) $(PERFCOUNT_ONEFS_OBJ)
 	@echo "Building plugin $@"
