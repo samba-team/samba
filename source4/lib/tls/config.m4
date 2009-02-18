@@ -39,4 +39,5 @@ if test x$use_gnutls = xyes; then
 	AC_CHECK_TYPES([gnutls_datum],,,[#include "gnutls/gnutls.h"])
 	AC_CHECK_TYPES([gnutls_datum_t],,,[#include "gnutls/gnutls.h"])
 	AC_DEFINE(ENABLE_GNUTLS,1,[Whether we have gnutls support (SSL)])
+	AC_CHECK_HEADERS(gcrypt.h)
 fi
