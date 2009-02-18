@@ -538,36 +538,7 @@ static bool api_spoolss_addprinterex(pipes_struct *p)
 
 static bool api_spoolss_addprinterdriver(pipes_struct *p)
 {
-	SPOOL_Q_ADDPRINTERDRIVER q_u;
-	SPOOL_R_ADDPRINTERDRIVER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_addprinterdriver("", &q_u, data, 0)) {
-		if (q_u.level != 3 && q_u.level != 6) {
-			/* Clever hack from Martin Zielinski <mz@seh.de>
-			 * to allow downgrade from level 8 (Vista).
-			 */
-			DEBUG(3,("api_spoolss_addprinterdriver: unknown SPOOL_Q_ADDPRINTERDRIVER level %u.\n",
-				(unsigned int)q_u.level ));
-			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
-			return True;
-		}
-		DEBUG(0,("spoolss_io_q_addprinterdriver: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVER.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_addprinterdriver(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_addprinterdriver("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_addprinterdriver: unable to marshall SPOOL_R_ADDPRINTERDRIVER.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ADDPRINTERDRIVER);
 }
 
 /****************************************************************************
@@ -889,36 +860,7 @@ static bool api_spoolss_deleteprinterkey(pipes_struct *p)
 
 static bool api_spoolss_addprinterdriverex(pipes_struct *p)
 {
-	SPOOL_Q_ADDPRINTERDRIVEREX q_u;
-	SPOOL_R_ADDPRINTERDRIVEREX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!spoolss_io_q_addprinterdriverex("", &q_u, data, 0)) {
-		if (q_u.level != 3 && q_u.level != 6) {
-			/* Clever hack from Martin Zielinski <mz@seh.de>
-			 * to allow downgrade from level 8 (Vista).
-			 */
-			DEBUG(3,("api_spoolss_addprinterdriverex: unknown SPOOL_Q_ADDPRINTERDRIVEREX level %u.\n",
-				(unsigned int)q_u.level ));
-			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
-			return True;
-		}
-		DEBUG(0,("spoolss_io_q_addprinterdriverex: unable to unmarshall SPOOL_Q_ADDPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	r_u.status = _spoolss_addprinterdriverex(p, &q_u, &r_u);
-				
-	if(!spoolss_io_r_addprinterdriverex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_addprinterdriverex: unable to marshall SPOOL_R_ADDPRINTERDRIVEREX.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ADDPRINTERDRIVEREX);
 }
 
 /****************************************************************************
