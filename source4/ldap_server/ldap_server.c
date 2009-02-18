@@ -386,6 +386,10 @@ static void ldapsrv_accept(struct stream_connection *c)
 	packet_set_event_context(conn->packet, c->event.ctx);
 	packet_set_fde(conn->packet, c->event.fde);
 	packet_set_serialise(conn->packet);
+
+	if (conn->sockets.tls) {
+		packet_set_unreliable_select(conn->packet);
+	}
 	
 	/* Ensure we don't get packets until the database is ready below */
 	packet_recv_disable(conn->packet);

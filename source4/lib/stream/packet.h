@@ -48,6 +48,7 @@ void packet_set_nofree(struct packet_context *pc);
 void packet_recv(struct packet_context *pc);
 void packet_recv_disable(struct packet_context *pc);
 void packet_recv_enable(struct packet_context *pc);
+void packet_set_unreliable_select(struct packet_context *pc);
 NTSTATUS packet_send(struct packet_context *pc, DATA_BLOB blob);
 NTSTATUS packet_send_callback(struct packet_context *pc, DATA_BLOB blob,
 			      packet_send_callback_fn_t send_callback, 

@@ -438,6 +438,10 @@ static void ldap_connect_got_sock(struct composite_context *ctx,
 	packet_set_fde(conn->packet, conn->event.fde);
 /*	packet_set_serialise(conn->packet); */
 
+	if (conn->ldaps) {
+		packet_set_unreliable_select(conn->packet);
+	}
+
 	composite_done(ctx);
 }
 

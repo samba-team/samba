@@ -38,6 +38,7 @@ static void ldapsrv_start_tls(void *private_data)
 	ctx->conn->sockets.tls = ctx->tls_socket;
 	ctx->conn->connection->socket = ctx->tls_socket;
 	packet_set_socket(ctx->conn->packet, ctx->conn->connection->socket);
+	packet_set_unreliable_select(ctx->conn->packet);
 }
 
 static NTSTATUS ldapsrv_StartTLS(struct ldapsrv_call *call,
