@@ -194,6 +194,22 @@ static uint64_t onefs_get_alloc_size(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static struct file_id onefs_file_id_create(struct vfs_handle_struct *handle,
+					     SMB_STRUCT_STAT *sbuf)
+{
+	struct file_id key;
+
+	/* the ZERO_STRUCT ensures padding doesn't break using the key as a
+	 * blob */
+	ZERO_STRUCT(key);
+
+	key.devid = sbuf->st_dev;
+	key.inode = sbuf->st_ino;
+	key.extid = sbuf->st_snapid;
+
+	return key;
+}
+
 static int onefs_statvfs(vfs_handle_struct *handle, const char *path,
 			 vfs_statvfs_struct *statbuf)
 {
@@ -342,6 +358,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_chflags), SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(onefs_file_id_create), SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_streaminfo), SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_brl_lock_windows), SMB_VFS_OP_BRL_LOCK_WINDOWS,
