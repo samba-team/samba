@@ -477,7 +477,7 @@ struct torture_suite *ndr_spoolss_suite(TALLOC_CTX *ctx)
 	torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_in_data, NDR_IN, NULL );
 	/* torture_suite_add_ndr_pull_fn_test(suite, spoolss_GetPrinterDriverDirectory, getprinterdriverdir_out_data, NDR_OUT, NULL ); */
 
-/*	torture_suite_add_ndr_pull_fn_test(suite, spoolss_AddPrinterDriverEx, addprinterdriverex_in_data, NDR_IN, NULL );*/
+	torture_suite_add_ndr_pull_fn_test(suite, spoolss_AddPrinterDriverEx, addprinterdriverex_in_data, NDR_IN, NULL );
 
 	return suite;
 }
