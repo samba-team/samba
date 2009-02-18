@@ -14165,6 +14165,32 @@ _PUBLIC_ void ndr_print_spoolss_UserLevelCtr(struct ndr_print *ndr, const char *
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolss_AccessRights(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolss_AccessRights(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_AccessRights(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SERVER_ACCESS_ADMINISTER", SERVER_ACCESS_ADMINISTER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SERVER_ACCESS_ENUMERATE", SERVER_ACCESS_ENUMERATE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ACCESS_ADMINISTER", PRINTER_ACCESS_ADMINISTER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_ACCESS_USE", PRINTER_ACCESS_USE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "JOB_ACCESS_ADMINISTER", JOB_ACCESS_ADMINISTER, r);
+	ndr->depth--;
+}
+
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
 {
 	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
@@ -14283,6 +14309,75 @@ _PUBLIC_ void ndr_print_spoolss_PortData1(struct ndr_print *ndr, const char *nam
 	ndr_print_uint32(ndr, "port_number", r->port_number);
 	ndr_print_uint32(ndr, "snmp_enabled", r->snmp_enabled);
 	ndr_print_uint32(ndr, "snmp_dev_index", r->snmp_dev_index);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_PortData2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortData2 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0x00000002));
+		NDR_CHECK(ndr_push_spoolss_PortProtocol(ndr, NDR_SCALARS, r->protocol));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, sizeof(r)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->reserved));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->hostaddress, 128, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dblspool));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->queue, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->port_number));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->snmp_enabled));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->snmp_dev_index));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->port_monitor_mib_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_PortData2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData2 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->portname, 64, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
+		NDR_CHECK(ndr_pull_spoolss_PortProtocol(ndr, NDR_SCALARS, &r->protocol));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->size));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->reserved));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->hostaddress, 128, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->snmpcommunity, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dblspool));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->queue, 33, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->device_type, 257, sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->port_number));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_enabled));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->snmp_dev_index));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->port_monitor_mib_index));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolss_PortData2(struct ndr_print *ndr, const char *name, const struct spoolss_PortData2 *r)
+{
+	ndr_print_struct(ndr, name, "spoolss_PortData2");
+	ndr->depth++;
+	ndr_print_string(ndr, "portname", r->portname);
+	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?0x00000002:r->version);
+	ndr_print_spoolss_PortProtocol(ndr, "protocol", r->protocol);
+	ndr_print_uint32(ndr, "size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?sizeof(r):r->size);
+	ndr_print_uint32(ndr, "reserved", r->reserved);
+	ndr_print_string(ndr, "hostaddress", r->hostaddress);
+	ndr_print_string(ndr, "snmpcommunity", r->snmpcommunity);
+	ndr_print_uint32(ndr, "dblspool", r->dblspool);
+	ndr_print_string(ndr, "queue", r->queue);
+	ndr_print_string(ndr, "device_type", r->device_type);
+	ndr_print_uint32(ndr, "port_number", r->port_number);
+	ndr_print_uint32(ndr, "snmp_enabled", r->snmp_enabled);
+	ndr_print_uint32(ndr, "snmp_dev_index", r->snmp_dev_index);
+	ndr_print_uint32(ndr, "port_monitor_mib_index", r->port_monitor_mib_index);
 	ndr->depth--;
 }
 
@@ -14598,7 +14693,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_OpenPrinter(struct ndr_push *ndr, in
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.datatype, ndr_charset_length(r->in.datatype, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_spoolss_AccessRights(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -14657,7 +14752,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinter(struct ndr_pull *ndr, in
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_spoolss_AccessRights(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -14697,7 +14792,7 @@ _PUBLIC_ void ndr_print_spoolss_OpenPrinter(struct ndr_print *ndr, const char *n
 		}
 		ndr->depth--;
 		ndr_print_spoolss_DevmodeContainer(ndr, "devmode_ctr", &r->in.devmode_ctr);
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_spoolss_AccessRights(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -20666,7 +20761,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_OpenPrinterEx(struct ndr_push *ndr, 
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.datatype, ndr_charset_length(r->in.datatype, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_spoolss_AccessRights(ndr, NDR_SCALARS, r->in.access_mask));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
 		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.userlevel, r->in.level));
 		NDR_CHECK(ndr_push_spoolss_UserLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.userlevel));
@@ -20728,7 +20823,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_OpenPrinterEx(struct ndr_pull *ndr, 
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_datatype_0, 0);
 		}
 		NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.devmode_ctr));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_spoolss_AccessRights(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
 		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.userlevel, r->in.level));
 		NDR_CHECK(ndr_pull_spoolss_UserLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.userlevel));
@@ -20771,7 +20866,7 @@ _PUBLIC_ void ndr_print_spoolss_OpenPrinterEx(struct ndr_print *ndr, const char 
 		}
 		ndr->depth--;
 		ndr_print_spoolss_DevmodeContainer(ndr, "devmode_ctr", &r->in.devmode_ctr);
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_spoolss_AccessRights(ndr, "access_mask", r->in.access_mask);
 		ndr_print_uint32(ndr, "level", r->in.level);
 		ndr_print_set_switch_value(ndr, &r->in.userlevel, r->in.level);
 		ndr_print_spoolss_UserLevel(ndr, "userlevel", &r->in.userlevel);

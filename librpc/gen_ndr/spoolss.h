@@ -1208,6 +1208,23 @@ struct spoolss_PortData1 {
 	uint32_t snmp_dev_index;
 }/* [public] */;
 
+struct spoolss_PortData2 {
+	const char *portname;/* [charset(UTF16)] */
+	uint32_t version;/* [value(0x00000002)] */
+	enum spoolss_PortProtocol protocol;
+	uint32_t size;/* [value(sizeof(r))] */
+	uint32_t reserved;
+	const char *hostaddress;/* [charset(UTF16)] */
+	const char *snmpcommunity;/* [charset(UTF16)] */
+	uint32_t dblspool;
+	const char *queue;/* [charset(UTF16)] */
+	const char *device_type;/* [charset(UTF16)] */
+	uint32_t port_number;
+	uint32_t snmp_enabled;
+	uint32_t snmp_dev_index;
+	uint32_t port_monitor_mib_index;
+}/* [public] */;
+
 struct spoolss_MonitorUi {
 	const char * dll_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [public] */;

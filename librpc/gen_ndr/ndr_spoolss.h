@@ -337,6 +337,7 @@ void ndr_print_spoolss_UserLevel2(struct ndr_print *ndr, const char *name, const
 void ndr_print_spoolss_UserLevel3(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevel3 *r);
 void ndr_print_spoolss_UserLevel(struct ndr_print *ndr, const char *name, const union spoolss_UserLevel *r);
 void ndr_print_spoolss_UserLevelCtr(struct ndr_print *ndr, const char *name, const struct spoolss_UserLevelCtr *r);
+void ndr_print_spoolss_AccessRights(struct ndr_print *ndr, const char *name, uint32_t r);
 enum ndr_err_code ndr_push_spoolss_DeleteDriverFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r);
 enum ndr_err_code ndr_pull_spoolss_DeleteDriverFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
 void ndr_print_spoolss_DeleteDriverFlags(struct ndr_print *ndr, const char *name, uint32_t r);
@@ -344,6 +345,9 @@ void ndr_print_spoolss_PortProtocol(struct ndr_print *ndr, const char *name, enu
 enum ndr_err_code ndr_push_spoolss_PortData1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortData1 *r);
 enum ndr_err_code ndr_pull_spoolss_PortData1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData1 *r);
 void ndr_print_spoolss_PortData1(struct ndr_print *ndr, const char *name, const struct spoolss_PortData1 *r);
+enum ndr_err_code ndr_push_spoolss_PortData2(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PortData2 *r);
+enum ndr_err_code ndr_pull_spoolss_PortData2(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PortData2 *r);
+void ndr_print_spoolss_PortData2(struct ndr_print *ndr, const char *name, const struct spoolss_PortData2 *r);
 enum ndr_err_code ndr_push_spoolss_MonitorUi(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorUi *r);
 enum ndr_err_code ndr_pull_spoolss_MonitorUi(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorUi *r);
 void ndr_print_spoolss_MonitorUi(struct ndr_print *ndr, const char *name, const struct spoolss_MonitorUi *r);
