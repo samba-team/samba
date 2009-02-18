@@ -1963,7 +1963,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_PortData1;
 
 	typedef [public] struct {
-		[string,charset(UTF16)] uint16 dll_name[];
+		nstring dll_name;
 	} spoolss_MonitorUi;
 
 	WERROR spoolss_XcvData(
