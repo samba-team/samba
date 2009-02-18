@@ -2001,6 +2001,23 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_PortData1;
 
 	typedef [public] struct {
+		[charset(UTF16)] uint16 portname[64];
+		[value(0x00000002)] uint32 version;
+		spoolss_PortProtocol protocol;
+		[value(sizeof(r))] uint32 size;
+		uint32 reserved;
+		[charset(UTF16)] uint16 hostaddress[128];
+		[charset(UTF16)] uint16 snmpcommunity[33];
+		uint32 dblspool;
+		[charset(UTF16)] uint16 queue[33];
+		[charset(UTF16)] uint16 device_type[257];
+		uint32 port_number;
+		boolean32 snmp_enabled;
+		uint32 snmp_dev_index;
+		uint32 port_monitor_mib_index;
+	} spoolss_PortData2;
+
+	typedef [public] struct {
 		nstring dll_name;
 	} spoolss_MonitorUi;
 
