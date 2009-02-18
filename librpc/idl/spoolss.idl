@@ -372,7 +372,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *printername,
 		[in,unique] [string,charset(UTF16)] uint16 *datatype,
 		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in] uint32 access_mask,
+		[in] spoolss_AccessRights access_mask,
 		[out,ref] policy_handle *handle
 	);
 
@@ -1821,7 +1821,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,unique]           [string,charset(UTF16)] uint16 *printername,
 		[in,unique]           [string,charset(UTF16)] uint16 *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
-		[in]	              uint32 access_mask,
+		[in]	              spoolss_AccessRights access_mask,
 		[in]	              uint32 level,
 		[in,switch_is(level)] spoolss_UserLevel userlevel,
 		[out,ref]	      policy_handle *handle
