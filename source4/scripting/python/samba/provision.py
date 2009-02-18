@@ -647,7 +647,8 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
     # Wipes the database
     try:
         templates_ldb.erase()
-    except LdbError:
+    # This should be 'except LdbError', but on a re-provision the assert in ldb.erase fires, and we need to catch that too
+    except:
         os.unlink(path)
 
     templates_ldb.load_ldif_file_add(setup_path("provision_templates_init.ldif"))
