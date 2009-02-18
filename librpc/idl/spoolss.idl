@@ -749,10 +749,14 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[case(8)] spoolss_AddDriverInfo8 *info8;
 	} spoolss_AddDriverInfo;
 
+	typedef struct {
+		uint32 level;
+		[switch_is(level)] spoolss_AddDriverInfo info;
+	} spoolss_AddDriverInfoCtr;
+
 	WERROR spoolss_AddPrinterDriver(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] uint32 level,
-		[in,switch_is(level)] spoolss_AddDriverInfo info
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,ref] spoolss_AddDriverInfoCtr *info_ctr
 	);
 
 	typedef struct {
@@ -2026,9 +2030,8 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_AddPrinterDriverExFlags;
 
 	[public] WERROR spoolss_AddPrinterDriverEx(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] uint32 level,
-		[in,switch_is(level)] spoolss_AddDriverInfo info,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,ref] spoolss_AddDriverInfoCtr *info_ctr,
 		[in] spoolss_AddPrinterDriverExFlags flags
 	);
 
