@@ -34,6 +34,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6069: Fix build with too many arguments.
     * BUG 6090: Fix renaming/deleting a "not matching/resolving" symlink.
     * BUG 6099: Try to fix domain join of Win7 Beta.
+    * BUG 6117: Fix core dump of pdbedit -a.
     * Fix Coverity IDs 115, 116, 117.
     * Fix warning (bad handler prototype).
     * Unify the detection of the timespec code in configure.in, and the
@@ -57,6 +58,7 @@ o   Guenther Deschner <gd@samba.org>
     * Remove unused ENUM_HND from 'net'.
     * Fix getform command asprintf return code in rpcclient.
     * Fix memleak in get_remote_printer_publishing_data().
+    * Remove duplicate prototypes for generated rpc server functions.
 
 
 o   Holger Hetterich <hhetter@novell.com>
@@ -94,7 +96,13 @@ o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
     * Eliminate compiler warnings.
 
 
+o   Glenn Machin <gmachin@sandia.gov>
+    * Don't miss an absolute pathname as a kerberos keytab path.
+
+
 o   Stefan Metzmacher <metze@samba.org>
+    * BUG 6100: Implement _netr_LogonGetCapabilities() with
+      NT_STATUS_NOT_IMPLEMENTED.
     * Make Samba work with older ctdb versions.
     * Add S-1-22-X-Y sids to the local token.
 
