@@ -1170,7 +1170,7 @@ struct spoolss_PortData1 {
 }/* [public] */;
 
 struct spoolss_MonitorUi {
-	const char *dll_name;/* [charset(UTF16)] */
+	const char * dll_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
 }/* [public] */;
 
 /* bitmap spoolss_AddPrinterDriverExFlags */

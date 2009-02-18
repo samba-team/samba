@@ -12545,11 +12545,13 @@ _PUBLIC_ void ndr_print_spoolss_PortData1(struct ndr_print *ndr, const char *nam
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorUi(struct ndr_push *ndr, int ndr_flags, const struct spoolss_MonitorUi *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->dll_name, CH_UTF16)));
-		NDR_CHECK(ndr_push_align(ndr, 2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->dll_name, CH_UTF16)));
-		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->dll_name, ndr_charset_length(r->dll_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->dll_name));
+			ndr->flags = _flags_save_string;
+		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -12559,14 +12561,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_spoolss_MonitorUi(struct ndr_push *ndr, int 
 _PUBLIC_ enum ndr_err_code ndr_pull_spoolss_MonitorUi(struct ndr_pull *ndr, int ndr_flags, struct spoolss_MonitorUi *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->dll_name));
-		NDR_CHECK(ndr_pull_align(ndr, 2));
-		NDR_CHECK(ndr_pull_array_length(ndr, &r->dll_name));
-		if (ndr_get_array_length(ndr, &r->dll_name) > ndr_get_array_size(ndr, &r->dll_name)) {
-			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->dll_name), ndr_get_array_length(ndr, &r->dll_name));
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		{
+			uint32_t _flags_save_string = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+			NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->dll_name));
+			ndr->flags = _flags_save_string;
 		}
-		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->dll_name), sizeof(uint16_t)));
-		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->dll_name, ndr_get_array_length(ndr, &r->dll_name), sizeof(uint16_t), CH_UTF16));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
