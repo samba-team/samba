@@ -124,7 +124,6 @@ int _tsocket_address_create_socket(const struct tsocket_address *addr,
  * BSD sockets: inet, inet6 and unix
  */
 
-
 int _tsocket_address_inet_from_strings(TALLOC_CTX *mem_ctx,
 				       const char *fam,
 				       const char *addr,
@@ -160,6 +159,18 @@ int _tsocket_context_bsd_wrap_existing(TALLOC_CTX *mem_ctx,
 #define tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock) \
 	_tsocket_context_bsd_wrap_existing(mem_ctx, fd, cod, _sock, \
 					   __location__)
+
+/*
+ * Async helpers
+ */
+
+struct tevent_req *tsocket_recvfrom_send(struct tsocket_context *sock,
+					 TALLOC_CTX *mem_ctx);
+ssize_t tsocket_recvfrom_recv(struct tevent_req *req,
+			      int *perrno,
+			      TALLOC_CTX *mem_ctx,
+			      uint8_t **buf,
+			      struct tsocket_address **src);
 
 #endif /* _TSOCKET_H */
 
