@@ -1,0 +1,43 @@
+#!/bin/bash
+
+ctdb_test_scripts_dir=$(cd $(dirname $0) ; pwd)
+export CTDB_DIR=$(dirname $(dirname $ctdb_test_scripts_dir))
+var_dir=$CTDB_DIR/tests/var
+
+######################################################################
+
+ctdb_tools_dir=$CTDB_DIR/tools
+
+PATH="${ctdb_test_scripts_dir}:${ctdb_tools_dir}:${PATH}"
+
+export CTDB_TIMEOUT=60
+
+######################################################################
+
+if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
+    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
+else
+    CTDB_TEST_WRAPPER="${ctdb_test_scripts_dir}/test_wrap"
+fi
+export CTDB_TEST_WRAPPER
+
+# If we're not running on a real cluster then we need a local copy of
+# ctdb (and other stuff) in $PATH and we will use local daemons.
+if [ ! -n "$CTDB_TEST_REAL_CLUSTER" ] ; then
+    export CTDB_TEST_NUM_DAEMONS=3
+
+    export CTDB_NODES_SOCKETS=""
+    for i in $(seq 0 $(($CTDB_TEST_NUM_DAEMONS -1))) ; do
+	CTDB_NODES_SOCKETS="${CTDB_NODES_SOCKETS}${CTDB_NODES_SOCKETS:+ }${var_dir}/sock.${i}"
+    done
+
+    PATH="${CTDB_DIR}/bin:${CTDB_DIR}/tests/bin:${PATH}"
+fi
+
+# If $VALGRIND is set then use it whenever ctdb is called, but only if
+# $CTDB is not already set.
+[ -n "$CTDB" ] || export CTDB="${VALGRIND}${VALGRIND:+ }ctdb"
+
+######################################################################
+
+"$@"

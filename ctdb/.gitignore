@@ -15,5 +15,9 @@ utils/smnotify/gen_smnotify.c
 utils/smnotify/gen_xdr.c
 utils/smnotify/smnotify.h
 nodes.txt
+public_addresses.txt
 rec.lock
 test.db
+tests/bin
+tests/events.d/00.ctdb_test_trigger
+tests/var
