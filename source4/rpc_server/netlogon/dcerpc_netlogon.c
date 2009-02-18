@@ -273,7 +273,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_cal
 	 *
 	 * (I think ... = 0; seems wrong here --metze)
 	 */
-	uint32_t negotiate_flags = 0;  
+	uint32_t negotiate_flags_in = 0;
+	uint32_t negotiate_flags_out = 0;
 
 	r3.in.server_name = r->in.server_name;
 	r3.in.account_name = r->in.account_name;
@@ -281,8 +282,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate(struct dcesrv_call_state *dce_cal
 	r3.in.computer_name = r->in.computer_name;
 	r3.in.credentials = r->in.credentials;
 	r3.out.return_credentials = r->out.return_credentials;
-	r3.in.negotiate_flags = &negotiate_flags;
-	r3.out.negotiate_flags = &negotiate_flags;
+	r3.in.negotiate_flags = &negotiate_flags_in;
+	r3.out.negotiate_flags = &negotiate_flags_out;
 	r3.out.rid = &rid;
 	
 	return dcesrv_netr_ServerAuthenticate3(dce_call, mem_ctx, &r3);
