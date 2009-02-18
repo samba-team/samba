@@ -9884,6 +9884,22 @@ static bool pull_port_data_1(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
+ ********************************************************************/
+
+static bool pull_port_data_2(TALLOC_CTX *mem_ctx,
+			     struct spoolss_PortData2 *port2,
+			     const DATA_BLOB *buf)
+{
+	enum ndr_err_code ndr_err;
+	ndr_err = ndr_pull_struct_blob(buf, mem_ctx, NULL, port2,
+		       (ndr_pull_flags_fn_t)ndr_pull_spoolss_PortData2);
+	if (NDR_ERR_CODE_IS_SUCCESS(ndr_err) && (DEBUGLEVEL >= 10)) {
+		NDR_PRINT_DEBUG(spoolss_PortData2, port2);
+	}
+	return NDR_ERR_CODE_IS_SUCCESS(ndr_err);
+}
+
+/*******************************************************************
  Create a new TCP/IP port
 *******************************************************************/
 
@@ -9892,28 +9908,71 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *out, uint32_t *needed)
 {
 	struct spoolss_PortData1 port1;
+	struct spoolss_PortData2 port2;
 	char *device_uri = NULL;
+	uint32_t version;
 
-	ZERO_STRUCT(port1);
+	const char *portname;
+	const char *hostaddress;
+	const char *queue;
+	uint32_t port_number;
+	uint32_t protocol;
 
-	/* convert to our internal port data structure */
+	/* peek for spoolss_PortData version */
 
-	if (!pull_port_data_1(mem_ctx, &port1, in)) {
-		return WERR_NOMEM;
+	if (!in || (in->length < (128 + 4))) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	version = IVAL(in->data, 128);
+
+	switch (version) {
+		case 1:
+			ZERO_STRUCT(port1);
+
+			if (!pull_port_data_1(mem_ctx, &port1, in)) {
+				return WERR_NOMEM;
+			}
+
+			portname	= port1.portname;
+			hostaddress	= port1.hostaddress;
+			queue		= port1.queue;
+			protocol	= port1.protocol;
+			port_number	= port1.port_number;
+
+			break;
+		case 2:
+			ZERO_STRUCT(port2);
+
+			if (!pull_port_data_2(mem_ctx, &port2, in)) {
+				return WERR_NOMEM;
+			}
+
+			portname	= port2.portname;
+			hostaddress	= port2.hostaddress;
+			queue		= port2.queue;
+			protocol	= port2.protocol;
+			port_number	= port2.port_number;
+
+			break;
+		default:
+			DEBUG(1,("xcvtcp_addport: "
+				"unknown version of port_data: %d\n", version));
+			return WERR_UNKNOWN_PORT;
 	}
 
 	/* create the device URI and call the add_port_hook() */
 
-	switch ( port1.protocol ) {
+	switch (protocol) {
 	case PROTOCOL_RAWTCP_TYPE:
 		device_uri = talloc_asprintf(mem_ctx,
-				"socket://%s:%d/", port1.hostaddress,
-				port1.port_number);
+				"socket://%s:%d/", hostaddress,
+				port_number);
 		break;
 
 	case PROTOCOL_LPR_TYPE:
 		device_uri = talloc_asprintf(mem_ctx,
-			"lpr://%s/%s", port1.hostaddress, port1.queue );
+			"lpr://%s/%s", hostaddress, queue );
 		break;
 
 	default:
@@ -9924,7 +9983,7 @@ static WERROR xcvtcp_addport(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
-	return add_port_hook(mem_ctx, token, port1.portname, device_uri);
+	return add_port_hook(mem_ctx, token, portname, device_uri);
 }
 
 /*******************************************************************
