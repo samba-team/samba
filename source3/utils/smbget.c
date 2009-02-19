@@ -487,7 +487,8 @@ static void clean_exit(void)
 {
 	char bs[100];
 	human_readable(total_bytes, bs, sizeof(bs));
-	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs, time(NULL) - total_start_time);
+	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs,
+		(unsigned long)(time(NULL) - total_start_time));
 	exit(0);
 }
 
