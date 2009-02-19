@@ -275,7 +275,10 @@ void ndr_print_spoolss_DriverInfo8(struct ndr_print *ndr, const char *name, cons
 enum ndr_err_code ndr_push_spoolss_DriverInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverInfo *r);
 enum ndr_err_code ndr_pull_spoolss_DriverInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_DriverInfo *r);
 void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *name, const union spoolss_DriverInfo *r);
+enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverDirectoryInfo1 *r);
+enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DriverDirectoryInfo1 *r);
 void ndr_print_spoolss_DriverDirectoryInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_DriverDirectoryInfo1 *r);
+size_t ndr_size_spoolss_DriverDirectoryInfo1(const struct spoolss_DriverDirectoryInfo1 *r, struct smb_iconv_convenience *ic, int flags);
 enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverDirectoryInfo *r);
 enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_DriverDirectoryInfo *r);
 void ndr_print_spoolss_DriverDirectoryInfo(struct ndr_print *ndr, const char *name, const union spoolss_DriverDirectoryInfo *r);

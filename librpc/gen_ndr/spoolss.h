@@ -801,7 +801,7 @@ union spoolss_DriverInfo {
 
 struct spoolss_DriverDirectoryInfo1 {
 	const char * directory_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 union spoolss_DriverDirectoryInfo {
 	struct spoolss_DriverDirectoryInfo1 info1;/* [case] */

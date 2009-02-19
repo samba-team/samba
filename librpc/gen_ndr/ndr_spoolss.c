@@ -10768,7 +10768,7 @@ _PUBLIC_ void ndr_print_spoolss_DriverInfo(struct ndr_print *ndr, const char *na
 	}
 }
 
-static enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverDirectoryInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_DriverDirectoryInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
@@ -10784,7 +10784,7 @@ static enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo1(struct ndr_push *
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DriverDirectoryInfo1 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_spoolss_DriverDirectoryInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_DriverDirectoryInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
@@ -10806,6 +10806,11 @@ _PUBLIC_ void ndr_print_spoolss_DriverDirectoryInfo1(struct ndr_print *ndr, cons
 	ndr->depth++;
 	ndr_print_string(ndr, "directory_name", r->directory_name);
 	ndr->depth--;
+}
+
+_PUBLIC_ size_t ndr_size_spoolss_DriverDirectoryInfo1(const struct spoolss_DriverDirectoryInfo1 *r, struct smb_iconv_convenience *ic, int flags)
+{
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_DriverDirectoryInfo1, ic);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_spoolss_DriverDirectoryInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_DriverDirectoryInfo *r)
