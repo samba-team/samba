@@ -443,7 +443,7 @@ _PUBLIC_ uint32_t ndr_size_string(int ret, const char * const* string, int flags
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_string_array(struct ndr_pull *ndr, int ndr_flags, const char ***_a)
 {
-	const char **a = *_a;
+	const char **a = NULL;
 	uint32_t count;
 	unsigned flags = ndr->flags;
 	unsigned saved_flags = ndr->flags;
