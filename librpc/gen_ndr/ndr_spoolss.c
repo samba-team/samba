@@ -4736,11 +4736,6 @@ _PUBLIC_ void ndr_print_spoolss_StringArray(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
-_PUBLIC_ size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r, struct smb_iconv_convenience *ic, int flags)
-{
-	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_StringArray, ic);
-}
-
 static enum ndr_err_code ndr_push_spoolss_AddDriverInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_AddDriverInfo1 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {

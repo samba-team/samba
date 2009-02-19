@@ -547,7 +547,7 @@ struct spoolss_SetPrinterInfoCtr {
 struct spoolss_StringArray {
 	uint32_t _ndr_size;/* [value((ndr_size_spoolss_StringArray(r,ndr->iconv_convenience,ndr->flags)-4)/2)] */
 	const char ** string;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-}/* [gensize,public] */;
+}/* [public] */;
 
 struct spoolss_AddDriverInfo1 {
 	const char *driver_name;/* [unique,charset(UTF16)] */
