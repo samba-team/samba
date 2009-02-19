@@ -35,7 +35,7 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6090: Fix renaming/deleting a "not matching/resolving" symlink.
     * BUG 6099: Try to fix domain join of Win7 Beta.
     * BUG 6117: Fix core dump of pdbedit -a.
-    * Fix Coverity IDs 115, 116, 117.
+    * Fix Coverity IDs 115, 116, 117, 602.
     * Fix warning (bad handler prototype).
     * Unify the detection of the timespec code in configure.in, and the
       application of it in time.c.
@@ -80,7 +80,7 @@ o   Guenter Kukkukk <linux@kukkukk.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5798: CFLAGS info lost in configure.
-    * Fix Coverity IDs 602, 740, 742, 744, 745, 876, 879, 880.
+    * Fix Coverity IDs 740, 742, 744, 745, 876, 879, 880.
     * Fix remotely adding a share via the Windows MMC.
     * Avoid valgrind errors.
     * Fix 'net rpc join' for users with the SeMachineAccountPrivilege.
