@@ -1185,7 +1185,7 @@ NTSTATUS onefs_open_file_ntcreate(connection_struct *conn,
 	SMB_ASSERT(lck != NULL);
 
 	/* Delete streams if create_disposition requires it */
-	if (file_existed && clear_ads) {
+	if (file_existed && clear_ads && !is_ntfs_stream_name(fname)) {
 		status = delete_all_streams(conn, fname);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(lck);
