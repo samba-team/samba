@@ -1661,8 +1661,12 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 					    int argc, const char **argv)
 {
 	WERROR result;
-	char *environment = NULL;
-	fstring procdir;
+	NTSTATUS status;
+	const char *environment = SPOOLSS_ARCHITECTURE_NT_X86;
+	DATA_BLOB buffer;
+	uint32_t offered;
+	union spoolss_PrintProcessorDirectoryInfo info;
+	uint32_t needed;
 
 	/* parse the command arguments */
 	if (argc > 2) {
@@ -1670,18 +1674,37 @@ static WERROR cmd_spoolss_getprintprocdir(struct rpc_pipe_client *cli,
 		return WERR_OK;
         }
 
-	if (asprintf(&environment, "%s", (argc == 2) ? argv[1] :
-		     PRINTER_DRIVER_ARCHITECTURE) < 0) {
-		return WERR_NOMEM;
+	if (argc == 2) {
+		environment = argv[1];
 	}
 
-	result = rpccli_spoolss_getprintprocessordirectory(
-		cli, mem_ctx, cli->srv_name_slash, environment, procdir);
+	status = rpccli_spoolss_GetPrintProcessorDirectory(cli, mem_ctx,
+							   cli->srv_name_slash,
+							   environment,
+							   1,
+							   NULL, /* buffer */
+							   0, /* offered */
+							   NULL, /* info */
+							   &needed,
+							   &result);
+	if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
 
-	if (W_ERROR_IS_OK(result))
-		printf("%s\n", procdir);
+		status = rpccli_spoolss_GetPrintProcessorDirectory(cli, mem_ctx,
+								   cli->srv_name_slash,
+								   environment,
+								   1,
+								   &buffer,
+								   offered,
+								   &info,
+								   &needed,
+								   &result);
+	}
 
-	SAFE_FREE(environment);
+	if (W_ERROR_IS_OK(result)) {
+		printf("%s\n", info.info1.directory_name);
+	}
 
 	return result;
 }
