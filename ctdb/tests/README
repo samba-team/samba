@@ -1,0 +1,106 @@
+Introduction
+------------
+
+The run_tests script can be run as follows:
+
+  scripts/run_tests simple/*.sh
+
+It can also be run from other places (e.g. the top level ctdb source
+directory), as it works out where the tree is.
+
+The pseudo-test simple/00_ctdb_init.sh causes ctdb to be (re)started
+on all nodes to attempt to force the cluster into a healthy state.  By
+default (i.e. if CTDB_TEST_REAL_CLUSTER is unset - see below) this
+causes some local daemons to be started on the local machine.  Tests
+can also be run against a real or virtual cluster.  All tests
+communicate with cluster nodes using onnode - when using local daemons
+this is accomplished via some test hooks in onnode and the ctdb
+client.
+
+Command-line options
+--------------------
+
+The most useful option is "-s", which causes a summary of test results
+to be printed at the end of testing.
+
+Environment variables
+---------------------
+
+run_tests supports several environment variables, mostly implemented
+in scripts/ctdb_test_env.  These are:
+
+* CTDB_TEST_REAL_CLUSTER
+
+  If set, testing will occur on a real or virtual cluster.
+
+  Assumptions:
+
+  - The ctdb client command can be found via $PATH on the nodes.
+
+  - Password-less ssh access to the cluster nodes is permitted from
+    the test host.
+
+  - $CTDB_NODES_FILE is set to the location of a file similar to
+    /etc/ctdb/nodes.  The file can be obtained by scping it from one
+    of the cluster nodes.
+
+  - See CTDB_TEST_REMOTE_DIR.
+
+  If not set, testing will proceed against local daemons.
+
+* CTDB_TEST_REMOTE_DIR
+
+  This may be required when running against a real or virtual cluster
+  (as opposed to local daemons).
+
+  If set, this points to a directory containing the contents of the
+  tests/scripts/ directory, as well as all of the test binaries.  This
+  can be accomplished in a couple of ways:
+
+  * By copying the relevant scripts/binaries to some directory.
+
+  * Building an RPM containing all of the test code that is required
+    on the cluster nodes and installing it on each node.  Hopefully
+    this will be supported in a future version of the CTDB packaging
+    process.
+
+  If not set, the test system assumes that the CTDB tree is available
+  in the same location on the cluster nodes as on the test host.  This
+  could be accomplished by copying or by sharing with NFS (or
+  similar).
+
+* VALGRIND
+
+  This can be used to cause all invocations of the ctdb client (and,
+  with local daemons, the ctdbd daemons themselves) to occur under
+  valgrind.
+
+  The easiest way of doing this is something like:
+
+    VALGRIND="valgrind -q" scripts/run_tests ...
+
+  NOTE: Some libc calls seem to do weird things and perhaps cause
+  spurious output from ctdbd at start time.  Please read valgrind
+  output carefully before reporting bugs.  :-)
+
+* CTDB
+
+  How to invoke the ctdb client.  If not already set and if $VALGRIND
+  is set, this is set to "$VALGRIND ctdb".  If this is not already set
+  but $VALGRIND is not set, this is simply set to "ctdb"
+
+Look, no run_test!
+------------------
+
+If you want to integrate individual tests into some other test
+environment you can use scripts/ctdb_test_env to wrap individual
+tests.  They will return 0 on success, non-zero otherwise, and will
+print the output omitting the test header/footer that surrounds test
+output when tests are run using run_tests.  So, you can do something
+like:
+
+  for i in simple/*.sh ; do
+      my_test_framework_wrapper scripts/ctdb_test_env $i
+  done
+
+to have your own framework process the test results and output.

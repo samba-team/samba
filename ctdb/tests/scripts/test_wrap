@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# Execute the given command.  The intention is that it is a function
+# from ctdb_test_functions.bash.
+
+PATH="$(dirname $0):${PATH}"
+
+. ctdb_test_functions.bash
+
+"$@"

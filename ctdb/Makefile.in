@@ -58,14 +58,15 @@ CTDB_SERVER_OBJ = server/ctdbd.o server/ctdb_daemon.o server/ctdb_lockwait.o \
 	server/ctdb_keepalive.o server/ctdb_logging.o server/ctdb_uptime.c \
 	$(CTDB_CLIENT_OBJ) $(CTDB_TCP_OBJ) @INFINIBAND_WRAPPER_OBJ@
 
-TEST_BINS=bin/ctdb_bench bin/ctdb_fetch bin/ctdb_store bin/ctdb_randrec bin/ctdb_persistent \
-	bin/ctdb_traverse bin/rb_test bin/ctdb_transaction \
+TEST_BINS=tests/bin/ctdb_bench tests/bin/ctdb_fetch tests/bin/ctdb_store \
+	tests/bin/ctdb_randrec tests/bin/ctdb_persistent \
+	tests/bin/ctdb_traverse tests/bin/rb_test tests/bin/ctdb_transaction \
 	@INFINIBAND_BINS@
 
 BINS = bin/ctdb @CTDB_SCSI_IO@ bin/ctdb_ipmux bin/smnotify
 SBINS = bin/ctdbd
 
-DIRS = lib bin
+DIRS = lib bin tests/bin
 
 .SUFFIXES: .c .o .h .1 .1.xml .1.html
 
@@ -127,39 +128,39 @@ utils/smnotify/gen_smnotify.c: utils/smnotify/smnotify.x utils/smnotify/smnotify
 	@echo Generating $@
 	rpcgen -l utils/smnotify/smnotify.x > utils/smnotify/gen_smnotify.c 
 
-bin/rb_test: $(CTDB_CLIENT_OBJ) tests/rb_test.o 
+tests/bin/rb_test: $(CTDB_CLIENT_OBJ) tests/src/rb_test.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/rb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/rb_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/ctdb_bench.o 
+tests/bin/ctdb_bench: $(CTDB_CLIENT_OBJ) tests/src/ctdb_bench.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_bench.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/ctdb_fetch.o 
+tests/bin/ctdb_fetch: $(CTDB_CLIENT_OBJ) tests/src/ctdb_fetch.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_fetch.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/ctdb_store.o 
+tests/bin/ctdb_store: $(CTDB_CLIENT_OBJ) tests/src/ctdb_store.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_store.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_traverse: $(CTDB_CLIENT_OBJ) tests/ctdb_traverse.o 
+tests/bin/ctdb_traverse: $(CTDB_CLIENT_OBJ) tests/src/ctdb_traverse.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_traverse.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_traverse.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/ctdb_randrec.o 
+tests/bin/ctdb_randrec: $(CTDB_CLIENT_OBJ) tests/src/ctdb_randrec.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_randrec.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_randrec.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/ctdb_persistent.o 
+tests/bin/ctdb_persistent: $(CTDB_CLIENT_OBJ) tests/src/ctdb_persistent.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_persistent.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/ctdb_transaction.o 
+tests/bin/ctdb_transaction: $(CTDB_CLIENT_OBJ) tests/src/ctdb_transaction.o 
 	@echo Linking $@
-	@$(CC) $(CFLAGS) -o $@ tests/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
+	@$(CC) $(CFLAGS) -o $@ tests/src/ctdb_transaction.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 
-bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
+tests/bin/ibwrapper_test: $(CTDB_CLIENT_OBJ) ib/ibwrapper_test.o
 	@echo Linking $@
 	@$(CC) $(CFLAGS) -o $@ ib/ibwrapper_test.o $(CTDB_CLIENT_OBJ) $(LIB_FLAGS)
 

@@ -22,6 +22,8 @@
 #include "system/filesys.h"
 #include "popt.h"
 #include "cmdline.h"
+#include "ctdb.h"
+#include "ctdb_private.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -89,14 +91,59 @@ static void ring_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	int incr = *(int *)data.dptr;
 	int *count = (int *)private_data;
 	int dest;
+
 	(*count)++;
-	dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
+	dest = (ctdb_get_pnn(ctdb) + num_nodes + incr) % num_nodes;
 	ctdb_send_message(ctdb, dest, srvid, data);
 	if (incr == 1) {
 		msg_plus++;
 	} else {
 		msg_minus++;
 	}
+}
+
+
+void send_start_messages(struct ctdb_context *ctdb, int incr)
+{
+	/* two messages are injected into the ring, moving
+	   in opposite directions */
+	int dest;
+	TDB_DATA data;
+		
+	data.dptr = (uint8_t *)&incr;
+	data.dsize = sizeof(incr);
+
+	dest = (ctdb_get_pnn(ctdb) + num_nodes + incr) % num_nodes;
+	ctdb_send_message(ctdb, dest, 0, data);
+}
+
+static void each_second(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+
+	/* we kickstart the ring into action by inserting messages from node
+	   with pnn 0.
+	   it may happen that some other node does not yet have ctdb_bench
+	   running in which case the ring is broken and the messages are lost.
+	   if so, once every second try again to restart the ring
+	*/
+	if (msg_plus == 0) {
+//		printf("no messages recevied, try again to kickstart the ring in forward direction...\n");
+		send_start_messages(ctdb, 1);
+	}
+	if (msg_minus == 0) {
+//		printf("no messages recevied, try again to kickstart the ring in reverse direction...\n");
+		send_start_messages(ctdb, -1);
+	}
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+}
+
+static void dummy_event(struct event_context *ev, struct timed_event *te, 
+					 struct timeval t, void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1, 0), dummy_event, ctdb);
 }
 
 /*
@@ -107,25 +154,12 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	int pnn=ctdb_get_pnn(ctdb);
 
 	if (pnn == 0) {
-		/* two messages are injected into the ring, moving
-		   in opposite directions */
-		int dest, incr;
-		TDB_DATA data;
-		
-		data.dptr = (uint8_t *)&incr;
-		data.dsize = sizeof(incr);
-
-		incr = 1;
-		dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
-		ctdb_send_message(ctdb, dest, 0, data);
-		
-		incr = -1;
-		dest = (ctdb_get_pnn(ctdb) + incr) % num_nodes;
-		ctdb_send_message(ctdb, dest, 0, data);
+		event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1, 0), each_second, ctdb);
+	} else {
+		event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1, 0), dummy_event, ctdb);
 	}
-	
-	start_timer();
 
+	start_timer();
 	while (end_timer() < timelimit) {
 		if (pnn == 0 && msg_count % 10000 == 0) {
 			printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\r", 
@@ -138,17 +172,6 @@ static void bench_ring(struct ctdb_context *ctdb, struct event_context *ev)
 	printf("Ring: %.2f msgs/sec (+ve=%d -ve=%d)\n", 
 	       msg_count/end_timer(), msg_plus, msg_minus);
 }
-
-/*
-  handler for reconfigure message
-*/
-static void reconfigure_handler(struct ctdb_context *ctdb, uint64_t srvid, 
-				TDB_DATA data, void *private_data)
-{
-	int *ready = (int *)private_data;
-	*ready = 1;
-}
-
 
 /*
   main program
@@ -172,7 +195,6 @@ int main(int argc, const char *argv[])
 	int ret;
 	poptContext pc;
 	struct event_context *ev;
-	int cluster_ready=0;
 
 	pc = poptGetContext(argv[0], argc, argv, popt_options, POPT_CONTEXT_KEEP_FIRST);
 
@@ -196,9 +218,6 @@ int main(int argc, const char *argv[])
 
 	/* initialise ctdb */
 	ctdb = ctdb_cmdline_client(ev);
-
-	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECONFIGURE, reconfigure_handler, 
-				 &cluster_ready);
 
 	/* attach to a specific database */
 	ctdb_db = ctdb_attach(ctdb, "test.tdb", false, 0);

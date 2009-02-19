@@ -148,6 +148,7 @@ get_nodes_with_status ()
     esac
 
     if [ -z "$ctdb_status_output" ] ; then
+	# FIXME: need to do something if $CTDB_NODES_SOCKETS is set.
 	ctdb_status_output=$(ctdb -Y status 2>/dev/null)
 	if [ $? -ne 0 ] ; then
 	    echo "${prog}: unable to get status of CTDB nodes" >&2
@@ -177,8 +178,14 @@ get_nodes_with_status ()
 ctdb_recmaster=""
 get_nodes ()
 {
-    [ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
-    local all_nodes=$(egrep '^[[:alnum:]]' $CTDB_NODES_FILE)
+    local all_nodes
+
+    if [ -n "$CTDB_NODES_SOCKETS" ] ; then 
+	all_nodes="$CTDB_NODES_SOCKETS"
+    else
+	[ -f "$CTDB_NODES_FILE" ] || CTDB_NODES_FILE=/etc/ctdb/nodes
+	all_nodes=$(egrep '^[[:alnum:]]' $CTDB_NODES_FILE)
+    fi
 
     local nodes=""
     local n
@@ -210,20 +217,29 @@ get_nodes ()
     done
 }
 
+fakessh ()
+{
+    CTDB_SOCKET="$1" sh -c "$2"
+}
+
 ######################################################################
 
 parse_options "$@"
 
 $current && command="cd $PWD && $command"
 
-SSH_OPTS=
-# Could "2>/dev/null || true" but want to see errors from typos in file.
-[ -r /etc/ctdb/onnode.conf ] && . /etc/ctdb/onnode.conf
-[ -n "$SSH" ] || SSH=ssh
-if [ "$SSH" = "ssh" ] ; then
-    ssh_opts="-n"
-else
-    : # rsh? All bets are off!
+ssh_opts=
+if [ -n "$CTDB_NODES_SOCKETS" ] ; then
+    SSH=fakessh
+else 
+    # Could "2>/dev/null || true" but want to see errors from typos in file.
+    [ -r /etc/ctdb/onnode.conf ] && . /etc/ctdb/onnode.conf
+    [ -n "$SSH" ] || SSH=ssh
+    if [ "$SSH" = "ssh" ] ; then
+	ssh_opts="-n"
+    else
+	: # rsh? All bets are off!
+    fi
 fi
 
 ######################################################################
