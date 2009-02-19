@@ -575,27 +575,7 @@ static bool api_spoolss_addprinterdriver(pipes_struct *p)
 
 static bool api_spoolss_getprinterdriverdirectory(pipes_struct *p)
 {
-	SPOOL_Q_GETPRINTERDRIVERDIR q_u;
-	SPOOL_R_GETPRINTERDRIVERDIR r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!spoolss_io_q_getprinterdriverdir("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_getprinterdriverdir: unable to unmarshall SPOOL_Q_GETPRINTERDRIVERDIR.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_getprinterdriverdirectory(p, &q_u, &r_u);
-
-	if(!spoolss_io_r_getprinterdriverdir("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_getprinterdriverdir: unable to marshall SPOOL_R_GETPRINTERDRIVERDIR.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_GETPRINTERDRIVERDIRECTORY);
 }
 
 /****************************************************************************

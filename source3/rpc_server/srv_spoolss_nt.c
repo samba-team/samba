@@ -8053,33 +8053,16 @@ WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_driverdir_1(DRIVER_DIRECTORY_1 *info, char *name)
-{
-	init_unistr(&info->name, name);
-}
-
-/****************************************************************************
-****************************************************************************/
-
-static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environment, RPC_BUFFER *buffer, uint32 offered, uint32 *needed)
+static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
+					  const char *servername,
+					  const char *long_archi,
+					  struct spoolss_DriverDirectoryInfo1 *info1,
+					  uint32_t offered,
+					  uint32_t *needed)
 {
 	char *path = NULL;
-	char *long_archi = NULL;
-	char *servername = NULL;
 	const char *pservername = NULL;
 	const char *short_archi;
-	DRIVER_DIRECTORY_1 *info=NULL;
-	WERROR result = WERR_OK;
-	TALLOC_CTX *ctx = talloc_tos();
-
-	servername = unistr2_to_ascii_talloc(ctx, name);
-	if (!servername) {
-		return WERR_NOMEM;
-	}
-	long_archi = unistr2_to_ascii_talloc(ctx, uni_environment);
-	if (!long_archi) {
-		return WERR_NOMEM;
-	}
 
 	pservername = canon_servername(servername);
 
@@ -8089,75 +8072,67 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	if (!(short_archi = get_short_archi(long_archi)))
 		return WERR_INVALID_ENVIRONMENT;
 
-	if((info=SMB_MALLOC_P(DRIVER_DIRECTORY_1)) == NULL)
-		return WERR_NOMEM;
-
-	path = talloc_asprintf(ctx,
+	path = talloc_asprintf(mem_ctx,
 			"\\\\%s\\print$\\%s", pservername, short_archi);
 	if (!path) {
-		result = WERR_NOMEM;
-		goto out;
+		return WERR_NOMEM;
 	}
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
-	fill_driverdir_1(info, path);
+	info1->directory_name = path;
 
-	*needed += spoolss_size_driverdir_info_1(info);
+	*needed += ndr_size_spoolss_DriverDirectoryInfo1(info1, NULL, 0);
 
 	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+		talloc_free(path);
+		ZERO_STRUCTP(info1);
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_NOMEM;
-		goto out;
-	}
-
-	smb_io_driverdir_1("", buffer, info, 0);
-
-out:
-	SAFE_FREE(info);
-
-	return result;
+	return WERR_OK;
 }
 
-/****************************************************************************
-****************************************************************************/
+/****************************************************************
+ _spoolss_GetPrinterDriverDirectory
+****************************************************************/
 
-WERROR _spoolss_getprinterdriverdirectory(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, SPOOL_R_GETPRINTERDRIVERDIR *r_u)
+WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
+					  struct spoolss_GetPrinterDriverDirectory *r)
 {
-	UNISTR2 *name = &q_u->name;
-	UNISTR2 *uni_environment = &q_u->environment;
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
+	WERROR werror;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
+	if (r->in.offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	DEBUG(4,("_spoolss_GetPrinterDriverDirectory\n"));
 
-	DEBUG(4,("_spoolss_getprinterdriverdirectory\n"));
+	*r->out.needed = 0;
 
-	*needed=0;
-
-	switch(level) {
+	switch (r->in.level) {
 	case 1:
-		return getprinterdriverdir_level_1(name, uni_environment, buffer, offered, needed);
+		werror = getprinterdriverdir_level_1(p->mem_ctx,
+						     r->in.server,
+						     r->in.environment,
+						     &r->out.info->info1,
+						     r->in.offered,
+						     r->out.needed);
+		if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+			TALLOC_FREE(r->out.info);
+		}
+		break;
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
+
+	return werror;
 }
 
 /****************************************************************************
@@ -10238,17 +10213,6 @@ WERROR _spoolss_EnumPrinterDrivers(pipes_struct *p,
 
 WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 				 struct spoolss_GetPrinterDriver *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetPrinterDriverDirectory
-****************************************************************/
-
-WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
-					  struct spoolss_GetPrinterDriverDirectory *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
