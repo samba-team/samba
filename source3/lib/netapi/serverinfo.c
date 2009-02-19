@@ -397,6 +397,7 @@ static NTSTATUS map_server_info_to_SERVER_INFO_buffer(TALLOC_CTX *mem_ctx,
 
 		case 599:
 			i599.sv599_sessopens		= i->info599->sessopen;
+			i599.sv599_sessvcs		= i->info599->sesssvc;
 			i599.sv599_opensearch		= i->info599->opensearch;
 			i599.sv599_sizreqbuf		= i->info599->sizereqbufs;
 			i599.sv599_initworkitems	= i->info599->initworkitems;
