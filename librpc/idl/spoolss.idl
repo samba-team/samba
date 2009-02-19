@@ -983,7 +983,23 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x10 */
-	[todo] WERROR spoolss_GetPrintProcessorDirectory(
+	typedef [public,gensize] struct {
+		nstring directory_name;
+	} spoolss_PrintProcessorDirectoryInfo1;
+
+	typedef [nodiscriminant,relative_base,gensize,public] union {
+		[case(1)] spoolss_PrintProcessorDirectoryInfo1 info1;
+		[default];
+	} spoolss_PrintProcessorDirectoryInfo;
+
+	WERROR spoolss_GetPrintProcessorDirectory(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
+		[in] uint32 level,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrintProcessorDirectoryInfo *info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/
