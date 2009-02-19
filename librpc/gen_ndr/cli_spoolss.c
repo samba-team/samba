@@ -832,12 +832,24 @@ NTSTATUS rpccli_spoolss_EnumPrintProcessors(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_spoolss_GetPrintProcessorDirectory(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
+						   const char *server /* [in] [unique,charset(UTF16)] */,
+						   const char *environment /* [in] [unique,charset(UTF16)] */,
+						   uint32_t level /* [in]  */,
+						   DATA_BLOB *buffer /* [in] [unique] */,
+						   uint32_t offered /* [in]  */,
+						   union spoolss_PrintProcessorDirectoryInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
+						   uint32_t *needed /* [out] [ref] */,
 						   WERROR *werror)
 {
 	struct spoolss_GetPrintProcessorDirectory r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server = server;
+	r.in.environment = environment;
+	r.in.level = level;
+	r.in.buffer = buffer;
+	r.in.offered = offered;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(spoolss_GetPrintProcessorDirectory, &r);
@@ -862,6 +874,10 @@ NTSTATUS rpccli_spoolss_GetPrintProcessorDirectory(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	if (info && r.out.info) {
+		*info = *r.out.info;
+	}
+	*needed = *r.out.needed;
 
 	/* Return result */
 	if (werror) {

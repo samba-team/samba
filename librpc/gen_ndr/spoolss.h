@@ -815,6 +815,14 @@ union spoolss_PrintProcessorInfo {
 	struct spoolss_PrintProcessorInfo1 info1;/* [case] */
 }/* [relative_base,nodiscriminant,public] */;
 
+struct spoolss_PrintProcessorDirectoryInfo1 {
+	const char * directory_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,public] */;
+
+union spoolss_PrintProcessorDirectoryInfo {
+	struct spoolss_PrintProcessorDirectoryInfo1 info1;/* [case] */
+}/* [gensize,relative_base,nodiscriminant,public] */;
+
 struct spoolss_DocumentInfo1 {
 	const char *document_name;/* [unique,charset(UTF16)] */
 	const char *output_file;/* [unique,charset(UTF16)] */
@@ -1618,6 +1626,16 @@ struct spoolss_EnumPrintProcessors {
 
 struct spoolss_GetPrintProcessorDirectory {
 	struct {
+		const char *server;/* [unique,charset(UTF16)] */
+		const char *environment;/* [unique,charset(UTF16)] */
+		uint32_t level;
+		DATA_BLOB *buffer;/* [unique] */
+		uint32_t offered;
+	} in;
+
+	struct {
+		union spoolss_PrintProcessorDirectoryInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
+		uint32_t *needed;/* [ref] */
 		WERROR result;
 	} out;
 

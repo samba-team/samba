@@ -287,6 +287,14 @@ void ndr_print_spoolss_PrintProcessorInfo1(struct ndr_print *ndr, const char *na
 enum ndr_err_code ndr_push_spoolss_PrintProcessorInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcessorInfo *r);
 enum ndr_err_code ndr_pull_spoolss_PrintProcessorInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrintProcessorInfo *r);
 void ndr_print_spoolss_PrintProcessorInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcessorInfo *r);
+enum ndr_err_code ndr_push_spoolss_PrintProcessorDirectoryInfo1(struct ndr_push *ndr, int ndr_flags, const struct spoolss_PrintProcessorDirectoryInfo1 *r);
+enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo1(struct ndr_pull *ndr, int ndr_flags, struct spoolss_PrintProcessorDirectoryInfo1 *r);
+void ndr_print_spoolss_PrintProcessorDirectoryInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_PrintProcessorDirectoryInfo1 *r);
+size_t ndr_size_spoolss_PrintProcessorDirectoryInfo1(const struct spoolss_PrintProcessorDirectoryInfo1 *r, struct smb_iconv_convenience *ic, int flags);
+enum ndr_err_code ndr_push_spoolss_PrintProcessorDirectoryInfo(struct ndr_push *ndr, int ndr_flags, const union spoolss_PrintProcessorDirectoryInfo *r);
+enum ndr_err_code ndr_pull_spoolss_PrintProcessorDirectoryInfo(struct ndr_pull *ndr, int ndr_flags, union spoolss_PrintProcessorDirectoryInfo *r);
+void ndr_print_spoolss_PrintProcessorDirectoryInfo(struct ndr_print *ndr, const char *name, const union spoolss_PrintProcessorDirectoryInfo *r);
+size_t ndr_size_spoolss_PrintProcessorDirectoryInfo(const union spoolss_PrintProcessorDirectoryInfo *r, uint32_t level, struct smb_iconv_convenience *ic, int flags);
 void ndr_print_spoolss_DocumentInfo1(struct ndr_print *ndr, const char *name, const struct spoolss_DocumentInfo1 *r);
 void ndr_print_spoolss_DocumentInfo(struct ndr_print *ndr, const char *name, const union spoolss_DocumentInfo *r);
 enum ndr_err_code ndr_push_spoolss_OSVersion(struct ndr_push *ndr, int ndr_flags, const struct spoolss_OSVersion *r);

@@ -128,6 +128,13 @@ NTSTATUS rpccli_spoolss_EnumPrintProcessors(struct rpc_pipe_client *cli,
 					    WERROR *werror);
 NTSTATUS rpccli_spoolss_GetPrintProcessorDirectory(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
+						   const char *server /* [in] [unique,charset(UTF16)] */,
+						   const char *environment /* [in] [unique,charset(UTF16)] */,
+						   uint32_t level /* [in]  */,
+						   DATA_BLOB *buffer /* [in] [unique] */,
+						   uint32_t offered /* [in]  */,
+						   union spoolss_PrintProcessorDirectoryInfo *info /* [out] [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */,
+						   uint32_t *needed /* [out] [ref] */,
 						   WERROR *werror);
 NTSTATUS rpccli_spoolss_StartDocPrinter(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,

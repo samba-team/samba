@@ -1334,6 +1334,19 @@ static bool api_spoolss_GetPrintProcessorDirectory(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(spoolss_GetPrintProcessorDirectory, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.info = talloc_zero(r, union spoolss_PrintProcessorDirectoryInfo);
+	if (r->out.info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _spoolss_GetPrintProcessorDirectory(p, r);
 
 	if (p->rng_fault_state) {
@@ -7731,6 +7744,17 @@ NTSTATUS rpc_spoolss_dispatch(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 
 		case NDR_SPOOLSS_GETPRINTPROCESSORDIRECTORY: {
 			struct spoolss_GetPrintProcessorDirectory *r = (struct spoolss_GetPrintProcessorDirectory *)_r;
+			ZERO_STRUCT(r->out);
+			r->out.info = talloc_zero(mem_ctx, union spoolss_PrintProcessorDirectoryInfo);
+			if (r->out.info == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
+			r->out.needed = talloc_zero(mem_ctx, uint32_t);
+			if (r->out.needed == NULL) {
+			return NT_STATUS_NO_MEMORY;
+			}
+
 			r->out.result = _spoolss_GetPrintProcessorDirectory(cli->pipes_struct, r);
 			return NT_STATUS_OK;
 		}
