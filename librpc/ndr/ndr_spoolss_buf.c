@@ -534,3 +534,13 @@ uint32_t _ndr_size_spoolss_DeviceMode(struct spoolss_DeviceMode *devmode, struct
 	if (!devmode) return 0;
 	return ndr_size_spoolss_DeviceMode(devmode,ic,flags);
 }
+
+_PUBLIC_ size_t ndr_size_spoolss_StringArray(const struct spoolss_StringArray *r, struct smb_iconv_convenience *ic, int flags)
+{
+	if (!r) {
+		return 4;
+	}
+
+	return ndr_size_struct(r, flags, (ndr_push_flags_fn_t)ndr_push_spoolss_StringArray, ic);
+}
+
