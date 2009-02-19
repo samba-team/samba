@@ -8086,8 +8086,7 @@ WERROR _spoolss_AddPrinterDriver(pipes_struct *p,
 		 * to allow downgrade from level 8 (Vista).
 		 */
 		DEBUG(0,("%s: level %d not yet implemented\n", fn, level));
-		setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
-		return WERR_NOT_SUPPORTED;
+		return WERR_UNKNOWN_LEVEL;
 	}
 
 	ZERO_STRUCT(driver);
