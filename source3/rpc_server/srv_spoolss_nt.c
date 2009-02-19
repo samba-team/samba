@@ -1529,6 +1529,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 	DEBUGADD(3,("checking name: %s\n",name));
 
 	if (!open_printer_hnd(p, handle, name, 0)) {
+		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1537,6 +1538,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 		DEBUG(0,("_spoolss_OpenPrinterEx: logic error.  Can't find printer "
 			"handle we created for printer %s\n", name ));
 		close_printer_handle(p,handle);
+		ZERO_STRUCTP(r->out.handle);
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1587,6 +1589,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 		    ~(SERVER_ACCESS_ADMINISTER | SERVER_ACCESS_ENUMERATE)) {
 			DEBUG(3, ("access DENIED for non-printserver bits\n"));
 			close_printer_handle(p, handle);
+			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -1598,6 +1601,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 			if (!lp_ms_add_printer_wizard()) {
 				close_printer_handle(p, handle);
+				ZERO_STRUCTP(r->out.handle);
 				return WERR_ACCESS_DENIED;
 			}
 
@@ -1613,6 +1617,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 				    p->server_info->ptok,
 				    lp_printer_admin(snum))) {
 				close_printer_handle(p, handle);
+				ZERO_STRUCTP(r->out.handle);
 				return WERR_ACCESS_DENIED;
 			}
 
@@ -1635,6 +1640,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 		if (!get_printer_snum(p, handle, &snum, NULL)) {
 			close_printer_handle(p, handle);
+			ZERO_STRUCTP(r->out.handle);
 			return WERR_BADFID;
 		}
 
@@ -1660,6 +1666,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 		if ( !check_access(get_client_fd(), lp_hostsallow(snum), lp_hostsdeny(snum)) ) {
 			DEBUG(3, ("access DENIED (hosts allow/deny) for printer open\n"));
+			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -1669,12 +1676,14 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 					r->in.access_mask)) {
 			DEBUG(3, ("access DENIED for printer open\n"));
 			close_printer_handle(p, handle);
+			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
 		}
 
 		if ((r->in.access_mask & SPECIFIC_RIGHTS_MASK)& ~(PRINTER_ACCESS_ADMINISTER|PRINTER_ACCESS_USE)) {
 			DEBUG(3, ("access DENIED for printer open - unknown bits\n"));
 			close_printer_handle(p, handle);
+			ZERO_STRUCTP(r->out.handle);
 			return WERR_ACCESS_DENIED;
 		}
 
@@ -1690,6 +1699,7 @@ WERROR _spoolss_OpenPrinterEx(pipes_struct *p,
 
 	default:
 		/* sanity check to prevent programmer error */
+		ZERO_STRUCTP(r->out.handle);
 		return WERR_BADFID;
 	}
 
