@@ -8066,14 +8066,19 @@ WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *
 
 static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
 					  const char *servername,
-					  const char *long_archi,
+					  const char *environment,
 					  struct spoolss_DriverDirectoryInfo1 *info1,
 					  uint32_t offered,
 					  uint32_t *needed)
 {
 	char *path = NULL;
 	const char *pservername = NULL;
+	const char *long_archi = SPOOLSS_ARCHITECTURE_NT_X86;
 	const char *short_archi;
+
+	if (environment) {
+		long_archi = environment;
+	}
 
 	pservername = canon_servername(servername);
 
