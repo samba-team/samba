@@ -487,21 +487,36 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	/* pack all the strings */
 
 	for (i=0; i<num_subkeys; i++) {
-		len += tdb_pack(buffer+len, buflen-len, "f",
-				regsubkey_ctr_specific_key(ctr, i));
-		if (len > buflen) {
-			/* allocate some extra space */
-			buffer = (uint8 *)SMB_REALLOC(buffer, len*2);
+		size_t thistime;
+
+		thistime = tdb_pack(buffer+len, buflen-len, "f",
+				    regsubkey_ctr_specific_key(ctr, i));
+		if (len+thistime > buflen) {
+			size_t thistime2;
+			/*
+			 * tdb_pack hasn't done anything because of the short
+			 * buffer, allocate extra space.
+			 */
+			buffer = SMB_REALLOC_ARRAY(buffer, uint8_t,
+						   (len+thistime)*2);
 			if(buffer == NULL) {
 				DEBUG(0, ("regdb_store_keys: Failed to realloc "
-					  "memory of size [%d]\n", len*2));
+					  "memory of size [%d]\n",
+					  (len+thistime)*2));
 				ret = false;
 				goto done;
 			}
-			buflen = len*2;
-			len = tdb_pack(buffer+len, buflen-len, "f",
-				       regsubkey_ctr_specific_key(ctr, i));
+			buflen = (len+thistime)*2;
+			thistime2 = tdb_pack(
+				buffer+len, buflen-len, "f",
+				regsubkey_ctr_specific_key(ctr, i));
+			if (thistime2 != thistime) {
+				DEBUG(0, ("tdb_pack failed\n"));
+				ret = false;
+				goto done;
+			}
 		}
+		len += thistime;
 	}
 
 	/* finally write out the data */
