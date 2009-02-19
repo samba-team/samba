@@ -2141,7 +2141,7 @@ NTSTATUS get_sorted_dc_list( const char *domain,
 			int *count,
 			bool ads_only )
 {
-	bool ordered false;
+	bool ordered = false;
 	NTSTATUS status;
 	enum dc_lookup_type lookup_type = DC_NORMAL_LOOKUP;
 
