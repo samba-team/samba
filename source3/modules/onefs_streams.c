@@ -540,6 +540,19 @@ static NTSTATUS walk_onefs_streams(connection_struct *conn, files_struct *fsp,
 		goto out;
 	}
 
+	/* Initialize the dir state struct and add it to the list.
+	 * This is a layer violation, and really should be handled by a
+	 * VFS_FDOPENDIR() call which would properly setup the dir state.
+	 * But since this is all within the onefs.so module, we cheat for
+	 * now and call directly into the readdirplus code.
+	 * NOTE: This state MUST be freed by a proper VFS_CLOSEDIR() call. */
+	ret = onefs_rdp_add_dir_state(conn, dirp);
+	if (ret) {
+		DEBUG(0, ("Error adding dir_state to the list\n"));
+		status = map_nt_error_from_unix(errno);
+		goto out;
+	}
+
 	fake_fs.conn = conn;
 	fake_fs.fh = &fake_fh;
 	fake_fs.fsp_name = SMB_STRDUP(fname);

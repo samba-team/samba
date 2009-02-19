@@ -224,6 +224,9 @@ NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 
 bool onefs_get_config(int snum, int config_type,
 		      struct onefs_vfs_config *cfg);
+
+int onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp);
+
 /*
  * System Interfaces
  */

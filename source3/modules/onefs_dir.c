@@ -183,6 +183,54 @@ rdp_fill_cache(struct rdp_dir_state *dsp)
 }
 
 /**
+ * Create a dir_state to track an open directory that we're enumerating.
+ *
+ * This utility function is globally accessible for use by other parts of the
+ * onefs.so module to initialize a dir_state when a directory is opened through
+ * a path other than the VFS layer.
+ *
+ * @return 0 on success and errno on failure
+ *
+ * @note: Callers of this function MUST cleanup the dir_state through a proper
+ * call to VFS_CLOSEDIR().
+ */
+int
+onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp)
+{
+	int ret = 0;
+	struct rdp_dir_state *dsp = NULL;
+
+	/* No-op if readdirplus is disabled */
+	if (!lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+	    PARM_USE_READDIRPLUS, PARM_USE_READDIRPLUS_DEFAULT))
+	{
+		return 0;
+	}
+
+	/* Create a struct dir_state */
+	dsp = SMB_MALLOC_P(struct rdp_dir_state);
+	if (!dsp) {
+		DEBUG(0, ("Error allocating struct rdp_dir_state.\n"));
+		return ENOMEM;
+	}
+
+	/* Initialize the dir_state structure and add it to the list */
+	ret = rdp_init(dsp);
+	if (ret) {
+		DEBUG(0, ("Error initializing readdirplus() buffers: %s\n",
+			 strerror(ret)));
+		return ret;
+	}
+
+	/* Set the SMB_STRUCT_DIR in the dsp */
+	dsp->dirp = dirp;
+
+	DLIST_ADD(dirstatelist, dsp);
+
+	return 0;
+}
+
+/**
  * Open a directory for enumeration.
  *
  * Create a state struct to track the state of this directory for the life
@@ -201,20 +249,12 @@ onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
 {
 	int ret = 0;
 	SMB_STRUCT_DIR *ret_dirp;
-	struct rdp_dir_state *dsp = NULL;
 
 	/* Fallback to default system routines if readdirplus is disabled */
 	if (!lp_parm_bool(SNUM(handle->conn), PARM_ONEFS_TYPE,
 	    PARM_USE_READDIRPLUS, PARM_USE_READDIRPLUS_DEFAULT))
 	{
 		return SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr);
-	}
-
-	/* Create a struct dir_state */
-	dsp = SMB_MALLOC_P(struct rdp_dir_state);
-	if (!dsp) {
-		DEBUG(0, ("Error allocating struct rdp_dir_state.\n"));
-		return NULL;
 	}
 
 	/* Open the directory */
@@ -224,21 +264,15 @@ onefs_opendir(vfs_handle_struct *handle, const char *fname, const char *mask,
 		return NULL;
 	}
 
-	/* Initialize the dir_state structure and add it to the list */
-	ret = rdp_init(dsp);
+	/* Create the dir_state struct and add it to the list */
+	ret = onefs_rdp_add_dir_state(handle->conn, ret_dirp);
 	if (ret) {
-		DEBUG(0, ("Error initializing readdirplus() buffers: %s\n",
-		    strerror(ret)));
+		DEBUG(0, ("Error adding dir_state to the list\n"));
 		return NULL;
 	}
 
-	/* Set the SMB_STRUCT_DIR in the dsp */
-	dsp->dirp = ret_dirp;
-
-	DLIST_ADD(dirstatelist, dsp);
-
 	DEBUG(9, ("Opened handle on directory: \"%s\", DIR %p\n",
-		 fname, dsp->dirp));
+		 fname, ret_dirp));
 
 	return ret_dirp;
 }
