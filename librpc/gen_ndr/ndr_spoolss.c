@@ -23639,7 +23639,7 @@ const struct ndr_interface_table ndr_table_spoolss = {
 		NDR_SPOOLSS_VERSION
 	},
 	.helpstring	= NDR_SPOOLSS_HELPSTRING,
-	.num_calls	= 114,
+	.num_calls	= 96,
 	.calls		= spoolss_calls,
 	.endpoints	= &spoolss_endpoints,
 	.authservices	= &spoolss_authservices
