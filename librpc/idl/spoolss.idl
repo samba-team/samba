@@ -619,7 +619,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x09 */
 
-	typedef [public,gensize] struct {
+	typedef [public] struct {
 		[value((ndr_size_spoolss_StringArray(r, ndr->iconv_convenience, ndr->flags)-4)/2)] uint32 _ndr_size;
 		/*[subcontext(0),subcontext_size(_ndr_size*2)]*/ nstring_array string;
 	} spoolss_StringArray;
