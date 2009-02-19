@@ -905,7 +905,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 
 	/******************/
 	/* Function: 0x0c */
-	typedef struct {
+	typedef [public,gensize] struct {
 		nstring directory_name;
 	} spoolss_DriverDirectoryInfo1;
 
