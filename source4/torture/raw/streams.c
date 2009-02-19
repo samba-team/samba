@@ -1439,6 +1439,26 @@ static bool test_stream_create_disposition(struct torture_context *tctx,
 	}
 
 	/*
+	 * check ntcreatex overwrite_if on a stream.
+	 */
+	printf("(%s) Checking ntcreatex disp: overwrite_if on stream\n",
+	       __location__);
+	smbcli_unlink(cli->tree, fname);
+	if (!create_file_with_stream(tctx, cli, mem_ctx, fname,
+				     fname_stream)) {
+		goto done;
+	}
+
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.ntcreatex.in.fname = fname_stream;
+	status = smb_raw_open(cli->tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smbcli_close(cli->tree, io.ntcreatex.out.file.fnum);
+	if (!check_stream_list(cli, fname, 2, &default_stream_name)) {
+		goto done;
+	}
+
+	/*
 	 * check openx overwrite_if
 	 */
 	printf("(%s) Checking openx disp: overwrite_if\n", __location__);
