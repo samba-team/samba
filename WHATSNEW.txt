@@ -80,7 +80,7 @@ o   Guenter Kukkukk <linux@kukkukk.com>
 
 o   Volker Lendecke <vl@samba.org>
     * BUG 5798: CFLAGS info lost in configure.
-    * Fix Coverity IDs 740, 742, 744, 745, 876, 879, 880.
+    * Fix Coverity IDs 602, 740, 742, 744, 745, 876, 879, 880.
     * Fix remotely adding a share via the Windows MMC.
     * Avoid valgrind errors.
     * Fix 'net rpc join' for users with the SeMachineAccountPrivilege.
