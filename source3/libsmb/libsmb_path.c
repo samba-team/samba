@@ -216,7 +216,7 @@ smbc_urlencode(char *dest,
  * are supported.
  */
 
-static const char *smbc_prefix = "smb:";
+#define SMBC_PREFIX "smb:"
 
 int
 SMBC_parse_path(TALLOC_CTX *ctx,
@@ -263,8 +263,8 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	s = talloc_strdup(ctx, fname);
         
 	/* see if it has the right prefix */
-	len = strlen(smbc_prefix);
-	if (strncmp(s,smbc_prefix,len) || (s[len] != '/' && s[len] != 0)) {
+	len = strlen(SMBC_PREFIX);
+	if (strncmp(s,SMBC_PREFIX,len) || (s[len] != '/' && s[len] != 0)) {
                 return -1; /* What about no smb: ? */
         }
         
