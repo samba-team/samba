@@ -5497,10 +5497,6 @@ WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli,
 				     PRINTER_DRIVER_CTR *ctr);
 WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 level, PRINTER_INFO_CTR*ctr);
-WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
-					      TALLOC_CTX *mem_ctx,
-					      char *name, char *environment,
-					      fstring procdir);
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms);
@@ -5885,7 +5881,6 @@ uint32 spoolss_size_job_info_1(JOB_INFO_1 *info);
 uint32 spoolss_size_job_info_2(JOB_INFO_2 *info);
 uint32 spoolss_size_form_1(FORM_1 *info);
 uint32 spoolss_size_port_info_1(PORT_INFO_1 *info);
-uint32 spoolss_size_printprocessordirectory_info_1(PRINTPROCESSOR_DIRECTORY_1 *info);
 uint32 spoolss_size_port_info_2(PORT_INFO_2 *info);
 uint32 spoolss_size_printprocessor_info_1(PRINTPROCESSOR_1 *info);
 uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info);
@@ -6018,10 +6013,6 @@ bool spoolss_io_q_enumprinterkey(const char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, 
 bool spoolss_io_r_enumprinterkey(const char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_struct *ps, int depth);
 bool spoolss_io_q_enumprinterdataex(const char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth);
 bool spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth);
-bool make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, const char *name, char *environment, int level, RPC_BUFFER *buffer, uint32 offered);
-bool spoolss_io_q_getprintprocessordirectory(const char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth);
-bool spoolss_io_r_getprintprocessordirectory(const char *desc, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u, prs_struct *ps, int depth);
-bool smb_io_printprocessordirectory_1(const char *desc, RPC_BUFFER *buffer, PRINTPROCESSOR_DIRECTORY_1 *info, int depth);
 bool make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle, 
 			      uint32 level, RPC_BUFFER *buffer,
 			      uint32 offered);

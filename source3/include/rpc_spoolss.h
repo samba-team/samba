@@ -1438,34 +1438,5 @@ typedef struct spool_r_enumprinterdataex
 }
 SPOOL_R_ENUMPRINTERDATAEX;
 
-typedef struct printprocessor_directory_1
-{
-	UNISTR name;
-}
-PRINTPROCESSOR_DIRECTORY_1;
-
-typedef struct spool_q_getprintprocessordirectory
-{
-	UNISTR2 name;
-	UNISTR2 environment;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETPRINTPROCESSORDIRECTORY;
-
-typedef struct spool_r_getprintprocessordirectory
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETPRINTPROCESSORDIRECTORY;
-
-/**************************************/
-
-#define PRINTER_DRIVER_VERSION 2
-#define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
-
 #endif /* _RPC_SPOOLSS_H */
 

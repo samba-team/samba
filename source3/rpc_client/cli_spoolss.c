@@ -967,64 +967,6 @@ WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_getprintprocessordirectory(struct rpc_pipe_client *cli,
-					      TALLOC_CTX *mem_ctx,
-					      char *name, char *environment,
-					      fstring procdir)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTPROCESSORDIRECTORY in;
-	SPOOL_R_GETPRINTPROCESSORDIRECTORY out;
-	int level = 1;
-	RPC_BUFFER buffer;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_getprintprocessordirectory( &in, name, 
-		environment, level, &buffer, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprintprocessordirectory,
-	            spoolss_io_r_getprintprocessordirectory, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_getprintprocessordirectory( &in, name, 
-			environment, level, &buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTPROCESSORDIRECTORY,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprintprocessordirectory,
-		            spoolss_io_r_getprintprocessordirectory, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if ( !W_ERROR_IS_OK(out.status) )
-		return out.status;
-	
-	fstrcpy(procdir, "Not implemented!");
-	
-	return out.status;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_enumforms(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			     POLICY_HND *handle, int level, uint32 *num_forms,
 			     FORM_1 **forms)
