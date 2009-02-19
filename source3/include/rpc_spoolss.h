@@ -1194,39 +1194,6 @@ typedef struct spool_r_addprinterdriverex
 }
 SPOOL_R_ADDPRINTERDRIVEREX;
 
-
-typedef struct driver_directory_1
-{
-	UNISTR name;
-}
-DRIVER_DIRECTORY_1;
-
-typedef struct driver_info_ctr_info
-{
-	DRIVER_DIRECTORY_1 *info1;
-}
-DRIVER_DIRECTORY_CTR;
-
-typedef struct spool_q_getprinterdriverdirectory
-{
-	uint32 name_ptr;
-	UNISTR2 name;
-	uint32 environment_ptr;
-	UNISTR2 environment;
-	uint32 level;
-	RPC_BUFFER *buffer;
-	uint32 offered;
-}
-SPOOL_Q_GETPRINTERDRIVERDIR;
-
-typedef struct spool_r_getprinterdriverdirectory
-{
-	RPC_BUFFER *buffer;
-	uint32 needed;
-	WERROR status;
-}
-SPOOL_R_GETPRINTERDRIVERDIR;
-
 typedef struct spool_q_enumprintprocessors
 {
 	uint32 name_ptr;

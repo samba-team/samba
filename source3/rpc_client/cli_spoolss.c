@@ -395,31 +395,6 @@ static bool decode_printer_driver_3(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
 /**********************************************************************
 **********************************************************************/
 
-static bool decode_printerdriverdir_1 (TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer,
-			uint32 returned, DRIVER_DIRECTORY_1 **info
-)
-{
-	DRIVER_DIRECTORY_1 *inf;
- 
-	inf=TALLOC_P(mem_ctx, DRIVER_DIRECTORY_1);
-	if (!inf) {
-		return False;
-	}
-	memset(inf, 0, sizeof(DRIVER_DIRECTORY_1));
-
-	prs_set_offset(&buffer->prs, 0);
-
-	if (!smb_io_driverdir_1("", buffer, inf, 0)) {
-		return False;
-	}
- 
-	*info=inf;
-	return True;
-}
-
-/**********************************************************************
-**********************************************************************/
-
 static bool decode_jobs_1(TALLOC_CTX *mem_ctx, RPC_BUFFER *buffer, 
 			  uint32 num_jobs, JOB_INFO_1 **jobs)
 {
@@ -919,70 +894,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 		default:
 			return WERR_UNKNOWN_LEVEL;
 		}
-	}
-
-	return out.status;
-}
-
-
-/**********************************************************************
-**********************************************************************/
-
-WERROR rpccli_spoolss_getprinterdriverdir (struct rpc_pipe_client *cli, 
-					TALLOC_CTX *mem_ctx,
-					uint32 level, char *env,
-					DRIVER_DIRECTORY_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_GETPRINTERDRIVERDIR in;
-        SPOOL_R_GETPRINTERDRIVERDIR out;
-	RPC_BUFFER buffer;
-	fstring server;
-	uint32 offered;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	offered = 0;
-	if (!rpcbuf_init(&buffer, offered, mem_ctx))
-		return WERR_NOMEM;
-	make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
-		&buffer, offered );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_getprinterdriverdir,
-	            spoolss_io_r_getprinterdriverdir, 
-	            WERR_GENERAL_FAILURE );
-		    
-	if ( W_ERROR_EQUAL( out.status, WERR_INSUFFICIENT_BUFFER ) ) {
-		offered = out.needed;
-		
-		ZERO_STRUCT(in);
-		ZERO_STRUCT(out);
-		
-		if (!rpcbuf_init(&buffer, offered, mem_ctx))
-			return WERR_NOMEM;
-		make_spoolss_q_getprinterdriverdir( &in, server, env, level, 
-			&buffer, offered );
-
-		CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_GETPRINTERDRIVERDIRECTORY,
-		            in, out, 
-		            qbuf, rbuf,
-		            spoolss_io_q_getprinterdriverdir,
-		            spoolss_io_r_getprinterdriverdir, 
-		            WERR_GENERAL_FAILURE );
-	}
-	
-	if (!W_ERROR_IS_OK(out.status))
-		return out.status;
-		
-	if (!decode_printerdriverdir_1(mem_ctx, out.buffer, 1, &ctr->info1)) {
-		return WERR_GENERAL_FAILURE;
 	}
 
 	return out.status;

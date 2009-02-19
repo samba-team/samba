@@ -1960,27 +1960,6 @@ bool smb_io_form_1(const char *desc, RPC_BUFFER *buffer, FORM_1 *info, int depth
 	return True;
 }
 
-
-
-/*******************************************************************
- Parse a DRIVER_DIRECTORY_1 structure.
-********************************************************************/  
-
-bool smb_io_driverdir_1(const char *desc, RPC_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
-{
-	prs_struct *ps=&buffer->prs;
-
-	prs_debug(ps, depth, desc, "smb_io_driverdir_1");
-	depth++;
-
-	buffer->struct_start=prs_offset(ps);
-
-	if (!smb_io_unistr(desc, &info->name, ps, depth))
-		return False;
-
-	return True;
-}
-
 /*******************************************************************
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
@@ -2485,21 +2464,6 @@ uint32 spoolss_size_port_info_1(PORT_INFO_1 *info)
 	int size=0;
 
 	size+=size_of_relative_string( &info->port_name );
-
-	return size;
-}
-
-/*******************************************************************
-return the size required by a struct in the stream
-********************************************************************/  
-
-uint32 spoolss_size_driverdir_info_1(DRIVER_DIRECTORY_1 *info)
-{
-	int size=0;
-
-	size=str_len_uni(&info->name);	/* the string length       */
-	size=size+1;			/* add the leading zero    */
-	size=size*2;			/* convert in char         */
 
 	return size;
 }
@@ -4348,93 +4312,6 @@ bool uni_2_asc_printer_info_2(const SPOOL_PRINTER_INFO_LEVEL_2 *uni,
 	unistr2_to_ascii(d->parameters, &uni->parameters, sizeof(d->parameters));
 
 	return True;
-}
-
-/*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u,
-                                fstring servername, fstring env_name, uint32 level,
-                                RPC_BUFFER *buffer, uint32 offered)
-{
-	init_buf_unistr2(&q_u->name, &q_u->name_ptr, servername);
-	init_buf_unistr2(&q_u->environment, &q_u->environment_ptr, env_name);
-
-	q_u->level=level;
-	q_u->buffer=buffer;
-	q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_Q_GETPRINTERDRIVERDIR structure.
-********************************************************************/  
-
-bool spoolss_io_q_getprinterdriverdir(const char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "spoolss_io_q_getprinterdriverdir");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("name_ptr", ps, depth, &q_u->name_ptr))
-		return False;
-	if(!smb_io_unistr2("", &q_u->name, q_u->name_ptr, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-		
-	if(!prs_uint32("", ps, depth, &q_u->environment_ptr))
-		return False;
-	if(!smb_io_unistr2("", &q_u->environment, q_u->environment_ptr, ps, depth))
-		return False;
-		
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("level", ps, depth, &q_u->level))
-		return False;
-		
-	if(!prs_rpcbuffer_p("", ps, depth, &q_u->buffer))
-		return False;
-		
-	if(!prs_align(ps))
-		return False;
-		
-	if(!prs_uint32("offered", ps, depth, &q_u->offered))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Parse a SPOOL_R_GETPRINTERDRIVERDIR structure.
-********************************************************************/  
-
-bool spoolss_io_r_getprinterdriverdir(const char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth)
-{		
-	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdriverdir");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_rpcbuffer_p("", ps, depth, &r_u->buffer))
-		return False;
-
-	if (!prs_align(ps))
-		return False;
-		
-	if (!prs_uint32("needed", ps, depth, &r_u->needed))
-		return False;
-		
-	if (!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;		
 }
 
 /*******************************************************************
