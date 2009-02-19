@@ -2236,7 +2236,7 @@ sub AuthServiceStruct($$$)
 sub FunctionCallEntry($$)
 {
 	my ($self, $d) = @_;
-	return if not defined($d->{OPNUM});
+	return 0 if not defined($d->{OPNUM});
 	$self->pidl("\t{");
 	$self->pidl("\t\t\"$d->{NAME}\",");
 	$self->pidl("\t\tsizeof(struct $d->{NAME}),");
@@ -2245,6 +2245,7 @@ sub FunctionCallEntry($$)
 	$self->pidl("\t\t(ndr_print_function_t) ndr_print_$d->{NAME},");
 	$self->pidl("\t\t".($d->{ASYNC}?"true":"false").",");
 	$self->pidl("\t},");
+	return 1;
 }
 
 #####################################################################
@@ -2261,8 +2262,7 @@ sub FunctionTable($$)
 	$self->pidl("static const struct ndr_interface_call $interface->{NAME}\_calls[] = {");
 
 	foreach my $d (@{$interface->{INHERITED_FUNCTIONS}},@{$interface->{FUNCTIONS}}) {
-		$self->FunctionCallEntry($d);
-		$count++;
+		$count += $self->FunctionCallEntry($d);
 	}
 	$self->pidl("\t{ NULL, 0, NULL, NULL, NULL, false }");
 	$self->pidl("};");
