@@ -550,8 +550,8 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 						   (len+thistime)*2);
 			if(buffer == NULL) {
 				DEBUG(0, ("regdb_store_keys: Failed to realloc "
-					  "memory of size [%d]\n",
-					  (len+thistime)*2));
+					  "memory of size [%u]\n",
+					  (unsigned int)(len+thistime)*2));
 				ret = false;
 				goto done;
 			}
