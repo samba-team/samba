@@ -4657,6 +4657,42 @@ static void init_printer_values(struct service *pService)
 
 	}
 }
+/**
+ *  Function to return the default value for the maximum number of open
+ *  file descriptors permitted.  This function tries to consult the
+ *  kernel-level (sysctl) and ulimit (getrlimit()) values and goes
+ *  the smaller of those.
+ */
+static int max_open_files(void)
+{
+	int sysctl_max;
+	struct rlimit rl;
+	bool sysctl_worked = false, rlimit_worked = false;
+
+#ifdef HAVE_SYSCTLBYNAME
+	size_t size = sizeof(sysctl_max);
+	if (sysctlbyname("kern.maxfilesperproc", &sysctl_max, &size, NULL,0)==0)
+		sysctl_worked = true;
+#endif
+
+	if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+		rlimit_worked = true;
+
+	if (sysctl_worked) {
+		if ((!rlimit_worked) ||
+		    (rl.rlim_cur == RLIM_INFINITY) ||
+		    (rl.rlim_cur > sysctl_max))
+			return sysctl_max;
+		else
+			return rl.rlim_cur;
+	} else {
+		if ((!rlimit_worked) ||
+		    (rl.rlim_cur == RLIM_INFINITY))
+			return MAX_OPEN_FILES;
+		else
+			return rl.rlim_cur;
+	}
+}
 
 /**
  * Common part of freeing allocated data for one parameter.
@@ -4880,7 +4916,7 @@ static void init_globals(bool first_time_only)
 	Globals.getwd_cache = true;
 	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
-	Globals.max_open_files = MAX_OPEN_FILES;
+	Globals.max_open_files = max_open_files();
 	Globals.open_files_db_hash_size = SMB_OPEN_DATABASE_TDB_HASH_SIZE;
 	Globals.maxprotocol = PROTOCOL_NT1;
 	Globals.minprotocol = PROTOCOL_CORE;

@@ -132,6 +132,18 @@ static NTSTATUS fd_open(struct connection_struct *conn,
 	fsp->fh->fd = SMB_VFS_OPEN(conn,fname,fsp,flags,mode);
 	if (fsp->fh->fd == -1) {
 		status = map_nt_error_from_unix(errno);
+		if (errno == EMFILE) {
+			static time_t last_warned = 0L;
+
+			if (time((time_t *) NULL) > last_warned) {
+				DEBUG(0,("Too many open files, unable "
+					"to open more!  smbd's max "
+					"open files = %d\n",
+					lp_max_open_files()));
+				last_warned = time((time_t *) NULL);
+			}
+		}
+
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",

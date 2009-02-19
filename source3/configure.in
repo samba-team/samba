@@ -837,6 +837,25 @@ if test x"$samba_cv_msghdr_msg_control" = x"yes"; then
 fi
 
 #############################################
+# check for sysctlbyname
+AC_CACHE_CHECK([for sysctlbyname],samba_cv_sysctlbyname, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <stdlib.h>
+#include <stddef.h>],
+[
+	int sysctl_max;
+	size_t size = sizeof(sysctl_max);
+	sysctlbyname("test", &sysctl_max, &size, NULL, 0);
+],
+	samba_cv_sysctlbyname=yes,samba_cv_sysctlbyname=no)])
+if test x"$samba_cv_msghdr_msg_control" = x"yes"; then
+    AC_DEFINE(HAVE_SYSCTLBYNAME,1,
+	     [If we support sysctlbyname api])
+fi
+
+#############################################
 # check for fd passing struct via msg_acctrights
 AC_CACHE_CHECK([for fd passing via msg_acctrights],
 		samba_cv_msghdr_msg_acctrights, [
