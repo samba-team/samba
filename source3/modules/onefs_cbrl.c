@@ -318,7 +318,8 @@ NTSTATUS onefs_brl_lock_windows(vfs_handle_struct *handle,
 
 	DEBUG(10, ("Calling ifs_cbrl(LOCK)..."));
 	error = ifs_cbrl(fd, CBRL_OP_LOCK, exclusive, plock->start,
-	    plock->size, async, id, plock->context.smbpid, plock->context.tid);
+	    plock->size, async, id, plock->context.smbpid, plock->context.tid,
+	    plock->fnum);
 	if (!error) {
 		goto success;
 	} else if (errno == EWOULDBLOCK) {
@@ -376,7 +377,7 @@ bool onefs_brl_unlock_windows(vfs_handle_struct *handle,
 	DEBUG(10, ("Calling ifs_cbrl(UNLOCK)..."));
 	error = ifs_cbrl(fd, CBRL_OP_UNLOCK, CBRL_NOTYPE,
 	    plock->start, plock->size, CBRL_NOTYPE, 0, plock->context.smbpid,
-	    plock->context.tid);
+	    plock->context.tid, plock->fnum);
 	if (error) {
 		DEBUG(10, ("returning false.\n"));
 		return false;
@@ -425,7 +426,7 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 	DEBUG(10, ("Calling ifs_cbrl(CANCEL)..."));
 	error = ifs_cbrl(fd, CBRL_OP_CANCEL, CBRL_NOTYPE, plock->start,
 	    plock->size, CBRL_NOTYPE, bs->id, plock->context.smbpid,
-	    plock->context.tid);
+	    plock->context.tid, plock->fnum);
 	if (error) {
 		DEBUG(10, ("returning false\n"));
 		bs->state = ONEFS_CBRL_ERROR;
