@@ -1691,14 +1691,15 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 	} else {
 		struct auth_context *plaintext_auth_context = NULL;
-		const uint8 *chal;
 
 		nt_status = make_auth_context_subsystem(
 				&plaintext_auth_context);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			chal = plaintext_auth_context->get_ntlm_challenge(
-					plaintext_auth_context);
+			uint8_t chal[8];
+
+			plaintext_auth_context->get_ntlm_challenge(
+					plaintext_auth_context, chal);
 
 			if (!make_user_info_for_reply(&user_info,
 						      user, domain, chal,

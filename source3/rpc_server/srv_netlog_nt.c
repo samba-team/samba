@@ -990,13 +990,13 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		   this to challenge/response for the auth subsystem to chew
 		   on */
 	{
-		const uint8 *chal;
+		uint8_t chal[8];
 
 		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
 			return status;
 		}
 
-		chal = auth_context->get_ntlm_challenge(auth_context);
+		auth_context->get_ntlm_challenge(auth_context, chal);
 
 		if (!make_user_info_netlogon_interactive(&user_info,
 							 nt_username, nt_domain,

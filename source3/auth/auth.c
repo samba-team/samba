@@ -76,7 +76,8 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
  Returns a const char of length 8 bytes.
 ****************************************************************************/
 
-static const uint8 *get_ntlm_challenge(struct auth_context *auth_context) 
+static void get_ntlm_challenge(struct auth_context *auth_context,
+			       uint8_t chal[8])
 {
 	DATA_BLOB challenge = data_blob_null;
 	const char *challenge_set_by = NULL;
@@ -86,7 +87,8 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	if (auth_context->challenge.length) {
 		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
 			  auth_context->challenge_set_by));
-		return auth_context->challenge.data;
+		memcpy(chal, auth_context->challenge.data, 8);
+		return;
 	}
 
 	auth_context->challenge_may_be_modified = False;
@@ -123,11 +125,11 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 	}
 	
 	if (!challenge_set_by) {
-		uchar chal[8];
+		uchar tmp[8];
 		
-		generate_random_buffer(chal, sizeof(chal));
+		generate_random_buffer(tmp, sizeof(tmp));
 		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
-							   chal, sizeof(chal));
+							   tmp, sizeof(tmp));
 		
 		challenge_set_by = "random";
 		auth_context->challenge_may_be_modified = True;
@@ -141,7 +143,7 @@ static const uint8 *get_ntlm_challenge(struct auth_context *auth_context)
 
 	auth_context->challenge_set_by=challenge_set_by;
 
-	return auth_context->challenge.data;
+	memcpy(chal, auth_context->challenge.data, 8);
 }
 
 

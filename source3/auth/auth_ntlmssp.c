@@ -27,11 +27,13 @@
  * @return an 8 byte random challenge
  */
 
-static const uint8 *auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state)
+static void auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state,
+				       uint8_t chal[8])
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
 		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
-	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(auth_ntlmssp_state->auth_context);
+	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(
+		auth_ntlmssp_state->auth_context, chal);
 }
 
 /**
