@@ -7861,6 +7861,7 @@ static WERROR spoolss_addprinterex_level_2(pipes_struct *p,
 		/* Handle open failed - remove addition. */
 		del_a_printer(printer->info_2->sharename);
 		free_a_printer(&printer,2);
+		ZERO_STRUCTP(handle);
 		return WERR_ACCESS_DENIED;
 	}
 
