@@ -1152,15 +1152,9 @@ static WERROR cmd_spoolss_enum_drivers(struct rpc_pipe_client *cli,
 /****************************************************************************
 ****************************************************************************/
 
-static void display_printdriverdir_1(DRIVER_DIRECTORY_1 *i1)
+static void display_printdriverdir_1(struct spoolss_DriverDirectoryInfo1 *r)
 {
-        fstring name;
-        if (i1 == NULL)
-                return;
-
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
-
-	printf ("\tDirectory Name:[%s]\n", name);
+	printf("\tDirectory Name:[%s]\n", r->directory_name);
 }
 
 /****************************************************************************
@@ -1171,8 +1165,12 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
                                          int argc, const char **argv)
 {
 	WERROR result;
-	fstring			env;
-	DRIVER_DIRECTORY_CTR	ctr;
+	NTSTATUS status;
+	const char *env = "Windows NT x86";
+	DATA_BLOB buffer;
+	uint32_t offered;
+	union spoolss_DriverDirectoryInfo info;
+	uint32_t needed;
 
 	if (argc > 2) {
 		printf("Usage: %s [environment]\n", argv[0]);
@@ -1181,17 +1179,39 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
 
 	/* Get the arguments need to open the printer handle */
 
-	if (argc == 2)
-		fstrcpy (env, argv[1]);
-	else
-		fstrcpy (env, "Windows NT x86");
+	if (argc == 2) {
+		env = argv[1];
+	}
 
 	/* Get the directory.  Only use Info level 1 */
 
-	result = rpccli_spoolss_getprinterdriverdir(cli, mem_ctx, 1, env, &ctr);
+	status = rpccli_spoolss_GetPrinterDriverDirectory(cli, mem_ctx,
+							  cli->srv_name_slash,
+							  env,
+							  1,
+							  NULL, /* buffer */
+							  0, /* offered */
+							  NULL, /* info */
+							  &needed,
+							  &result);
+	if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
 
-	if (W_ERROR_IS_OK(result))
-		display_printdriverdir_1(ctr.info1);
+		status = rpccli_spoolss_GetPrinterDriverDirectory(cli, mem_ctx,
+								  cli->srv_name_slash,
+								  env,
+								  1,
+								  &buffer,
+								  offered,
+								  &info,
+								  &needed,
+								  &result);
+	}
+
+	if (W_ERROR_IS_OK(result)) {
+		display_printdriverdir_1(&info.info1);
+	}
 
 	return result;
 }
