@@ -1166,7 +1166,7 @@ static WERROR cmd_spoolss_getdriverdir(struct rpc_pipe_client *cli,
 {
 	WERROR result;
 	NTSTATUS status;
-	const char *env = "Windows NT x86";
+	const char *env = SPOOLSS_ARCHITECTURE_NT_X86;
 	DATA_BLOB buffer;
 	uint32_t offered;
 	union spoolss_DriverDirectoryInfo info;
