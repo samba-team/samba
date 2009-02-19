@@ -9730,84 +9730,79 @@ done:
 /****************************************************************************
 ****************************************************************************/
 
-static void fill_printprocessordirectory_1(PRINTPROCESSOR_DIRECTORY_1 *info, const char *name)
+static WERROR getprintprocessordirectory_level_1(TALLOC_CTX *mem_ctx,
+						 const char *servername,
+						 const char *environment,
+						 struct spoolss_PrintProcessorDirectoryInfo1 *info1,
+						 uint32_t offered,
+						 uint32_t *needed)
 {
-	init_unistr(&info->name, name);
-}
+	const char *long_archi = SPOOLSS_ARCHITECTURE_NT_X86;
+	const char *short_archi;
 
-static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
-						 UNISTR2 *environment,
-						 RPC_BUFFER *buffer,
-						 uint32 offered,
-						 uint32 *needed)
-{
-	char *long_archi = NULL;
-	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
-	WERROR result = WERR_OK;
-	TALLOC_CTX *ctx = talloc_tos();
+	if (environment) {
+		long_archi = environment;
+	}
 
-	long_archi = unistr2_to_ascii_talloc(ctx, environment);
-	if (!long_archi) {
+	short_archi = get_short_archi(long_archi);
+	if (!short_archi) {
+		return WERR_INVALID_ENVIRONMENT;
+	}
+
+	/* I think this should look like this - gd
+	info1->directory_name = talloc_asprintf(mem_ctx,
+		"C:\\WINNT\\System32\\spool\\PRTPROCS\\%s", short_archi);
+	*/
+	info1->directory_name = talloc_strdup(mem_ctx,
+		"C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
+
+	if (!info1->directory_name) {
 		return WERR_NOMEM;
 	}
 
-	if (!get_short_archi(long_archi))
-		return WERR_INVALID_ENVIRONMENT;
-
-	if((info=SMB_MALLOC_P(PRINTPROCESSOR_DIRECTORY_1)) == NULL)
-		return WERR_NOMEM;
-
-	fill_printprocessordirectory_1(info, "C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
-
-	*needed += spoolss_size_printprocessordirectory_info_1(info);
+	*needed += ndr_size_spoolss_PrintProcessorDirectoryInfo1(info1, NULL, 0);
 
 	if (*needed > offered) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
+		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	if (!rpcbuf_alloc_size(buffer, *needed)) {
-		result = WERR_INSUFFICIENT_BUFFER;
-		goto out;
-	}
-
-	smb_io_printprocessordirectory_1("", buffer, info, 0);
-
-out:
-	SAFE_FREE(info);
-
-	return result;
+	return WERR_OK;
 }
 
-WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u)
+/****************************************************************
+ _spoolss_GetPrintProcessorDirectory
+****************************************************************/
+
+WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
+					   struct spoolss_GetPrintProcessorDirectory *r)
 {
-	uint32 level = q_u->level;
-	RPC_BUFFER *buffer = NULL;
-	uint32 offered = q_u->offered;
-	uint32 *needed = &r_u->needed;
 	WERROR result;
 
 	/* that's an [in out] buffer */
 
-	if (!q_u->buffer && (offered!=0)) {
+	if (!r->in.buffer && (r->in.offered != 0)) {
 		return WERR_INVALID_PARAM;
 	}
 
-	if (offered > MAX_RPC_DATA_SIZE) {
+	if (r->in.offered > MAX_RPC_DATA_SIZE) {
 		return WERR_INVALID_PARAM;
 	}
 
-	rpcbuf_move(q_u->buffer, &r_u->buffer);
-	buffer = r_u->buffer;
+	DEBUG(5,("_spoolss_GetPrintProcessorDirectory\n"));
 
- 	DEBUG(5,("_spoolss_getprintprocessordirectory\n"));
+	*r->out.needed = 0;
 
-	*needed=0;
-
-	switch(level) {
+	switch (r->in.level) {
 	case 1:
-		result = getprintprocessordirectory_level_1
-		  (&q_u->name, &q_u->environment, buffer, offered, needed);
+		result = getprintprocessordirectory_level_1(p->mem_ctx,
+							    r->in.server,
+							    r->in.environment,
+							    &r->out.info->info1,
+							    r->in.offered,
+							    r->out.needed);
+		if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+			TALLOC_FREE(r->out.info);
+		}
 		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
@@ -10240,17 +10235,6 @@ WERROR _spoolss_GetPrinterDriver(pipes_struct *p,
 
 WERROR _spoolss_EnumPrintProcessors(pipes_struct *p,
 				    struct spoolss_EnumPrintProcessors *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
- _spoolss_GetPrintProcessorDirectory
-****************************************************************/
-
-WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
-					   struct spoolss_GetPrintProcessorDirectory *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
