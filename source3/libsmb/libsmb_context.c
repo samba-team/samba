@@ -655,15 +655,17 @@ smbc_set_credentials(char *workgroup,
 
 void smbc_set_credentials_with_fallback(SMBCCTX *context,
 					char *workgroup,
-				  	char *user,
-				  	char *password)
+					char *user,
+					char *password)
 {
 	smbc_bool use_kerberos = false;
 	const char *signing_state = "off";
 	
-	if (!context || !workgroup || !*workgroup
-	    || !user || !*user || !password
-	    || !*password) {
+	if (! context ||
+	    ! workgroup || ! *workgroup ||
+	    ! user || ! *user ||
+	    ! password || ! *password) {
+
 		return;
 	}
 
