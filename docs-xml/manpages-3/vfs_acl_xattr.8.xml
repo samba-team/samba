@@ -35,6 +35,15 @@
 	servers.
 	</para>
 
+	<para>The ACLs are stored in the Extended Attribute
+	<parameter>security.NTACL</parameter> of a file or directory.
+	This Attribute is <emphasis>not</emphasis> listed by
+	<command>getfattr -d <filename>filename</filename></command>.
+	To show the current value, the name of the EA must be specified
+	(e.g. <command>getfattr -n security.NTACL <filename>filename</filename>
+	</command>).
+	</para>
+
 	<para>Please note that this module is
 	<emphasis>experimental</emphasis>!
 	</para>
