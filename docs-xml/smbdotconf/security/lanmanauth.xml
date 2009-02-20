@@ -12,7 +12,7 @@
     Windows 95/98 or the MS DOS network client) will be able to
     connect to the Samba host.</para>
 
-    <para>The LANMAN encrypted response is easily broken, due to it's
+    <para>The LANMAN encrypted response is easily broken, due to its
     case-insensitive nature, and the choice of algorithm.  Servers
     without Windows 95/98/ME or MS DOS clients are advised to disable
     this option.  </para>
