@@ -42,6 +42,9 @@ o   Jeremy Allison <jra@samba.org>
     * Correctly use chroot().
     * Parameterize in local.h the MAX_RPC_DATA_SIZE, and ensure that "offered"
       read from the rpc packet in spoolss is under that size.
+    * Backport the semantics of when to delete alternate data streams on a file
+      truncate.
+    * Fix printf warnings.
 
 
 o   Michael Adam <obnox@samba.org>
@@ -55,6 +58,7 @@ o   Michael Adam <obnox@samba.org>
 
 
 o   Guenther Deschner <gd@samba.org>
+    * Fix Coverity ID 848.
     * Remove unused ENUM_HND from 'net'.
     * Fix getform command asprintf return code in rpcclient.
     * Fix memleak in get_remote_printer_publishing_data().
@@ -85,6 +89,8 @@ o   Volker Lendecke <vl@samba.org>
     * Avoid valgrind errors.
     * Fix 'net rpc join' for users with the SeMachineAccountPrivilege.
     * Fix resume handle for _samr_EnumDomainGroups.
+    * Fix a buffer handling bug when adding lots of registry keys.
+    * Fix a O(n^2) algorithm in regdb_fetch_keys().
 
 
 o   Jeff Layton <jlayton@redhat.com>
