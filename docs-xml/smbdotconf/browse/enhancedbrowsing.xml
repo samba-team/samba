@@ -17,7 +17,7 @@
 
 	<para>You may wish to disable this option if you have a problem with empty
 	workgroups not disappearing from browse lists. Due to the restrictions
-	of the browse protocols these enhancements can cause a empty workgroup
+	of the browse protocols, these enhancements can cause a empty workgroup
 	to stay around forever which can be annoying.</para>
 
 	<para>In general you should leave this option enabled as it makes

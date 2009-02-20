@@ -47,7 +47,7 @@
     want to mainly setup shares without a password (guest shares). This 
     is commonly used for a shared printer server. It is more difficult 
     to setup guest shares with <command moreinfo="none">security = user</command>, see 
-    the <smbconfoption name="map to guest"/>parameter for details.</para>
+    the <smbconfoption name="map to guest"/> parameter for details.</para>
 		
     <para>It is possible to use <command moreinfo="none">smbd</command> in a <emphasis>
     hybrid mode</emphasis> where it is offers both user and share 
@@ -58,7 +58,7 @@
 
     <para><anchor id="SECURITYEQUALSSHARE"/><emphasis>SECURITY = SHARE</emphasis></para> 
 		
-    <para>When clients connect to a share level security server they 
+    <para>When clients connect to a share level security server, they 
     need not log onto the server with a valid username and password before 
     attempting to connect to a shared resource (although modern clients 
     such as Windows 95/98 and Windows NT will send a logon request with 
@@ -211,7 +211,7 @@
 	</para></note>
 
 	<note><para>From the client's point of 
-    view <command moreinfo="none">security = server</command> is the
+    view, <command moreinfo="none">security = server</command> is the
     same as <command moreinfo="none">security = user</command>.  It
     only affects how the server deals  with the authentication, it does
 	not in any way affect what the  client sees.</para></note>

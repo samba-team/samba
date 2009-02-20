@@ -5,8 +5,7 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 
-    <para>This controls whether the server offers or requires
-    the client it talks to to use SMB signing. Possible values 
+    <para>This controls whether the client is allowed or required to use SMB signing. Possible values 
     are <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis> 
     and <emphasis>disabled</emphasis>. 
     </para>

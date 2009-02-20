@@ -12,7 +12,7 @@
 	<para>
 	When strict locking is set to Auto (the default), the server performs file lock checks only on non-oplocked files.
 	As most Windows redirectors perform file locking checks locally on oplocked files this is a good trade off for
-	inproved performance.
+	improved performance.
 	</para>
 
 	<para>

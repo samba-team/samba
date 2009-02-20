@@ -21,7 +21,7 @@
     and allows the open. If the user doesn't have permission to delete the file this will only be
     discovered at close time, which is too late for the Windows user tools to display an error message
     to the user. The symptom of this is files that appear to have been deleted "magically" re-appearing
-    on a Windows explorer refersh. This is an extremely advanced protocol option which should not
+    on a Windows explorer refresh. This is an extremely advanced protocol option which should not
     need to be changed. This parameter was introduced in its final form in 3.0.21, an earlier version
     with slightly different semantics was introduced in 3.0.20. That older version is not documented here.
     </para>

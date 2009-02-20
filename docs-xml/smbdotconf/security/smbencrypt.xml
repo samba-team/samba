@@ -16,8 +16,7 @@
     and MacOS/X clients. Windows clients do not support this feature.
     </para>
 
-    <para>This controls whether the server offers or requires
-    the client it talks to to use SMB encryption. Possible values 
+    <para>This controls whether the remote client is allowed or required to use SMB encryption. Possible values 
     are <emphasis>auto</emphasis>, <emphasis>mandatory</emphasis> 
     and <emphasis>disabled</emphasis>. This may be set on a per-share
     basis, but clients may chose to encrypt the entire session, not

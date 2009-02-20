@@ -29,7 +29,7 @@
     <para>If this parameter is enabled for a printer, then any attempt
     to open the printer with the PRINTER_ACCESS_ADMINISTER right is mapped
     to PRINTER_ACCESS_USE instead.  Thus allowing the OpenPrinterEx()
-    call to succeed.  <emphasis>This parameter MUST not be able enabled
+    call to succeed.  <emphasis>This parameter MUST not be enabled
     on a print share which has valid print driver installed on the Samba 
 	server.</emphasis></para>
 </description>

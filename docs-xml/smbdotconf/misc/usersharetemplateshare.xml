@@ -5,7 +5,7 @@
 		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>User defined shares only have limited possible parameters
-	such as path, guest ok etc. This parameter allows usershares to
+	such as path, guest ok, etc. This parameter allows usershares to
 	"cloned" from an existing share. If "usershare template share"
 	is set to the name of an existing share, then all usershares
 	created have their defaults set from the parameters set on this

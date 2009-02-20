@@ -6,8 +6,8 @@
 <description>
 	<para>This parameter specifies a list of absolute pathnames
 	the root of which are allowed to be exported by user defined share definitions.
-	If the pathname exported doesn't start with one of the strings in this
-	list the user defined share will not be allowed. This allows the Samba
+	If the pathname to be exported doesn't start with one of the strings in this
+	list, the user defined share will not be allowed. This allows the Samba
 	administrator to restrict the directories on the system that can be
 	exported by user defined shares.
 	</para>
