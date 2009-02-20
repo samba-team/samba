@@ -706,7 +706,7 @@ NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClus
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _eventlog_GetLogIntormation(pipes_struct *p, struct eventlog_GetLogIntormation *r)
+NTSTATUS _eventlog_GetLogInformation(pipes_struct *p, struct eventlog_GetLogInformation *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
