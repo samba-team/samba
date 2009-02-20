@@ -724,12 +724,15 @@ _PUBLIC_ int idr_remove(struct idr_context *idp, int id);
 
 /* The following definitions come from lib/util/become_daemon.c  */
 
-#if _SAMBA_BUILD_ == 4
+/**
+ Close the low 3 fd's and open dev/null in their place
+**/
+_PUBLIC_ void close_low_fds(bool stderr_too);
+
 /**
  Become a daemon, discarding the controlling terminal.
 **/
-_PUBLIC_ void become_daemon(bool fork);
-#endif
+_PUBLIC_ void become_daemon(bool fork, bool no_process_group);
 
 /**
  * Load a ini-style file.

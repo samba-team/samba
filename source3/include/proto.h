@@ -1139,11 +1139,9 @@ int set_message_bcc(char *buf,int num_bytes);
 ssize_t message_push_blob(uint8 **outbuf, DATA_BLOB blob);
 char *unix_clean_name(TALLOC_CTX *ctx, const char *s);
 char *clean_name(TALLOC_CTX *ctx, const char *s);
-void close_low_fds(bool stderr_too);
 ssize_t write_data_at_offset(int fd, const char *buffer, size_t N, SMB_OFF_T pos);
 int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
-void become_daemon(bool Fork, bool no_process_group);
 bool reinit_after_fork(struct messaging_context *msg_ctx,
 		       struct event_context *ev_ctx,
 		       bool parent_longlived);

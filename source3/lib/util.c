@@ -798,43 +798,6 @@ char *clean_name(TALLOC_CTX *ctx, const char *s)
 }
 
 /*******************************************************************
- Close the low 3 fd's and open dev/null in their place.
-********************************************************************/
-
-void close_low_fds(bool stderr_too)
-{
-#ifndef VALGRIND
-	int fd;
-	int i;
-
-	close(0);
-	close(1);
-
-	if (stderr_too)
-		close(2);
-
-	/* try and use up these file descriptors, so silly
-		library routines writing to stdout etc won't cause havoc */
-	for (i=0;i<3;i++) {
-		if (i == 2 && !stderr_too)
-			continue;
-
-		fd = sys_open("/dev/null",O_RDWR,0);
-		if (fd < 0)
-			fd = sys_open("/dev/null",O_WRONLY,0);
-		if (fd < 0) {
-			DEBUG(0,("Can't open /dev/null\n"));
-			return;
-		}
-		if (fd != i) {
-			DEBUG(0,("Didn't get file descriptor %d\n",i));
-			return;
-		}
-	}
-#endif
-}
-
-/*******************************************************************
  Write data into an fd at a given offset. Ignore seek errors.
 ********************************************************************/
 
@@ -922,36 +885,6 @@ void smb_msleep(unsigned int t)
 		tdiff = TvalDiff(&t1,&t2);
 	}
 #endif
-}
-
-/****************************************************************************
- Become a daemon, discarding the controlling terminal.
-****************************************************************************/
-
-void become_daemon(bool Fork, bool no_process_group)
-{
-	if (Fork) {
-		if (sys_fork()) {
-			_exit(0);
-		}
-	}
-
-  /* detach from the terminal */
-#ifdef HAVE_SETSID
-	if (!no_process_group) setsid();
-#elif defined(TIOCNOTTY)
-	if (!no_process_group) {
-		int i = sys_open("/dev/tty", O_RDWR, 0);
-		if (i != -1) {
-			ioctl(i, (int) TIOCNOTTY, (char *)0);      
-			close(i);
-		}
-	}
-#endif /* HAVE_SETSID */
-
-	/* Close fd's 0,1,2. Needed if started by rsh */
-	close_low_fds(False);  /* Don't close stderr, let the debug system
-				  attach it to the logfile */
 }
 
 bool reinit_after_fork(struct messaging_context *msg_ctx,
