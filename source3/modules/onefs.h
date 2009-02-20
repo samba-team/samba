@@ -47,6 +47,8 @@ enum onefs_acl_wire_format
 #define PARM_ATIME_STATIC_DEFAULT NULL
 #define PARM_ATIME_SLOP		"atime now slop"
 #define PARM_ATIME_SLOP_DEFAULT	 0
+#define PARM_ATOMIC_SENDFILE "atomic sendfile"
+#define PARM_ATOMIC_SENDFILE_DEFAULT true
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL "creator owner gets full control"
 #define PARM_CREATOR_OWNER_GETS_FULL_CONTROL_DEFAULT true
 #define PARM_CTIME_NOW		"ctime now files"
@@ -63,6 +65,10 @@ enum onefs_acl_wire_format
 #define PARM_MTIME_SLOP_DEFAULT	0
 #define PARM_USE_READDIRPLUS "use readdirplus"
 #define PARM_USE_READDIRPLUS_DEFAULT true
+#define PARM_SENDFILE_LARGE_READS "sendfile large reads"
+#define PARM_SENDFILE_LARGE_READS_DEFAULT false
+#define PARM_SENDFILE_SAFE "sendfile safe"
+#define PARM_SENDFILE_SAFE_DEFAULT true
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE "simple file sharing compatibility mode"
 #define PARM_SIMPLE_FILE_SHARING_COMPATIBILITY_MODE_DEFAULT false
 #define PARM_UNMAPPABLE_SIDS_DENY_EVERYONE "unmappable sids deny everyone"
@@ -253,6 +259,10 @@ int onefs_sys_create_file(connection_struct *conn,
 			  struct security_descriptor *sd,
 			  uint32_t ntfs_flags,
 			  int *granted_oplock);
+
+ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
+			   const DATA_BLOB *header, SMB_OFF_T offset,
+			   size_t count);
 
 ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 			   size_t count);
