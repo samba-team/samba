@@ -368,6 +368,8 @@ static vfs_op_tuple onefs_ops[] = {
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_brl_cancel_windows), SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(onefs_notify_watch), SMB_VFS_OP_NOTIFY_WATCH,
+	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_fget_nt_acl), SMB_VFS_OP_FGET_NT_ACL,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(onefs_get_nt_acl), SMB_VFS_OP_GET_NT_ACL,

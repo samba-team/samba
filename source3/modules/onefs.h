@@ -204,6 +204,15 @@ bool onefs_brl_cancel_windows(vfs_handle_struct *handle,
 			      struct lock_struct *plock,
 			      struct blocking_lock_record *blr);
 
+NTSTATUS onefs_notify_watch(vfs_handle_struct *vfs_handle,
+			    struct sys_notify_context *ctx,
+			    struct notify_entry *e,
+			    void (*callback)(struct sys_notify_context *ctx,
+					void *private_data,
+					struct notify_event *ev),
+			    void *private_data,
+			    void *handle_p);
+
 NTSTATUS onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32 security_info, SEC_DESC **ppdesc);
 
