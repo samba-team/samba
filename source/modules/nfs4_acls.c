@@ -203,6 +203,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 	DOM_SID *psid_owner, /* in */
 	DOM_SID *psid_group, /* in */
+	bool is_directory, /* in */
 	SEC_ACE **ppnt_ace_list, /* out */
 	int *pgood_aces /* out */
 )
@@ -261,6 +262,9 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx, SMB4ACL_T *acl, /* in */
 		DEBUG(10, ("mapped %d to %s\n", ace->who.id,
 			   sid_string_dbg(&sid)));
 
+		if (is_directory && (ace->aceMask & SMB_ACE4_ADD_FILE)) {
+			ace->aceMask |= SMB_ACE4_DELETE_CHILD;
+		}
 		init_sec_access(&mask, ace->aceMask);
 		init_sec_ace(&nt_ace_list[good_aces++], &sid,
 			ace->aceType, mask,
@@ -292,7 +296,8 @@ static NTSTATUS smb_get_nt_acl_nfs4_common(const SMB_STRUCT_STAT *sbuf,
 	uid_to_sid(&sid_owner, sbuf->st_uid);
 	gid_to_sid(&sid_group, sbuf->st_gid);
 
-	if (smbacl4_nfs42win(mem_ctx, acl, &sid_owner, &sid_group, &nt_ace_list, &good_aces)==False) {
+	if (smbacl4_nfs42win(mem_ctx, acl, &sid_owner, &sid_group, S_ISDIR(sbuf->st_mode),
+				&nt_ace_list, &good_aces)==False) {
 		DEBUG(8,("smbacl4_nfs42win failed\n"));
 		return map_nt_error_from_unix(errno);
 	}
