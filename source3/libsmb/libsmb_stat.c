@@ -155,7 +155,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
                 return -1;
         }
-        
+
 	if (!user || user[0] == (char)0) {
 		user = talloc_strdup(frame, smbc_getUser(context));
 		if (!user) {
