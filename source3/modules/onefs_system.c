@@ -123,17 +123,29 @@ int onefs_sys_create_file(connection_struct *conn,
 	/* Convert samba dos flags to UF_DOS_* attributes. */
 	onefs_dos_attributes = dos_attributes_to_stat_dos_flags(dos_flags);
 
+	/**
+	 * Deal with kernel creating Default ACLs. (Isilon bug 47447.)
+	 *
+	 * 1) "nt acl support = no", default_acl = no
+	 * 2) "inherit permissions = yes", default_acl = no
+	 */
+	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
+		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
+
 	DEBUG(10,("onefs_sys_create_file: base_fd = %d, "
-		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0x%x, "
+		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "
-		  "dos_attributes = 0x%x, path = %s\n", base_fd,
+		  "dos_attributes = 0x%x, path = %s, "
+		  "default_acl=%s\n", base_fd,
 		  (unsigned int)open_access_mask,
 		  (unsigned int)flags,
 		  (unsigned int)mode,
 		  onefs_oplock_str(onefs_oplock),
 		  (unsigned int)id,
 		  (unsigned int)secinfo, sd,
-		  (unsigned int)onefs_dos_attributes, path));
+		  (unsigned int)onefs_dos_attributes, path,
+		  cf_flags_and_bool(cf_flags, CF_FLAGS_DEFAULT_ACL) ?
+		      "true" : "false"));
 
 	/* Initialize smlock struct for files/dirs but not internal opens */
 	if (!(oplock_request & INTERNAL_OPEN_ONLY)) {
@@ -143,15 +155,6 @@ int onefs_sys_create_file(connection_struct *conn,
 	}
 
 	smlock_dump(10, psml);
-
-	/**
-	 * Deal with kernel creating Default ACLs. (Isilon bug 47447.)
-	 *
-	 * 1) "nt acl support = no", default_acl = no
-	 * 2) "inherit permissions = yes", default_acl = no
-	 */
-	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
-		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
 
 	ret_fd = ifs_createfile(base_fd, path,
 	    (enum ifs_ace_rights)open_access_mask, flags & ~O_ACCMODE, mode,
