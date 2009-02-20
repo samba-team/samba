@@ -2788,6 +2788,18 @@ static void send_file_readbraw(connection_struct *conn,
 			DEBUG(0,("send_file_readbraw: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readbraw sendfile failed");
+		} else if (sendfile_read == 0) {
+			/*
+			 * Some sendfile implementations return 0 to indicate
+			 * that there was a short read, but nothing was
+			 * actually written to the socket.  In this case,
+			 * fallback to the normal read path so the header gets
+			 * the correct byte count.
+			 */
+			DEBUG(3, ("send_file_readbraw: sendfile sent zero "
+				  "bytes falling back to the normal read: "
+				  "%s\n", fsp->fsp_name));
+			goto normal_readbraw;
 		}
 
 		/* Deal with possible short send. */
@@ -3284,6 +3296,18 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 			DEBUG(0,("send_file_readX: sendfile failed for file %s (%s). Terminating\n",
 				fsp->fsp_name, strerror(errno) ));
 			exit_server_cleanly("send_file_readX sendfile failed");
+		} else if (nread == 0) {
+			/*
+			 * Some sendfile implementations return 0 to indicate
+			 * that there was a short read, but nothing was
+			 * actually written to the socket.  In this case,
+			 * fallback to the normal read path so the header gets
+			 * the correct byte count.
+			 */
+			DEBUG(3, ("send_file_readX: sendfile sent zero bytes "
+				  "falling back to the normal read: %s\n",
+				  fsp->fsp_name));
+			goto normal_read;
 		}
 
 		DEBUG( 3, ( "send_file_readX: sendfile fnum=%d max=%d nread=%d\n",
