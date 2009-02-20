@@ -578,6 +578,16 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 		goto done;
 	}
 
+	/*
+	 * Delete a sorted subkey cache for regdb_key_exists, will be
+	 * recreated automatically
+	 */
+	keyname = talloc_asprintf(ctx, "%s/%s", REG_SORTED_SUBKEYS_PREFIX,
+				  keyname);
+	if (keyname != NULL) {
+		dbwrap_delete_bystring(regdb, keyname);
+	}
+
 done:
 	TALLOC_FREE(ctx);
 	SAFE_FREE(buffer);
@@ -871,6 +881,169 @@ done:
 	return ret;
 }
 
+static int cmp_keynames(const void *p1, const void *p2)
+{
+	return StrCaseCmp(*((char **)p1), *((char **)p2));
+}
+
+static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
+{
+	char **sorted_subkeys;
+	REGSUBKEY_CTR *ctr;
+	bool result = false;
+	NTSTATUS status;
+	char *buf;
+	char *p;
+	int i, res;
+	size_t len;
+
+	ctr = talloc(talloc_tos(), REGSUBKEY_CTR);
+	if (ctr == NULL) {
+		return false;
+	}
+
+	res = regdb_fetch_keys(key, ctr);
+	if (res == -1) {
+		goto fail;
+	}
+
+	sorted_subkeys = talloc_array(ctr, char *, ctr->num_subkeys);
+	if (sorted_subkeys == NULL) {
+		goto fail;
+	}
+
+	len = 4 + 4*ctr->num_subkeys;
+
+	for (i = 0; i<ctr->num_subkeys; i++) {
+		sorted_subkeys[i] = talloc_strdup_upper(sorted_subkeys,
+							ctr->subkeys[i]);
+		if (sorted_subkeys[i] == NULL) {
+			goto fail;
+		}
+		len += strlen(sorted_subkeys[i])+1;
+	}
+
+	qsort(sorted_subkeys, ctr->num_subkeys, sizeof(char *), cmp_keynames);
+
+	buf = talloc_array(ctr, char, len);
+	if (buf == NULL) {
+		goto fail;
+	}
+	p = buf + 4 + 4*ctr->num_subkeys;
+
+	SIVAL(buf, 0, ctr->num_subkeys);
+
+	for (i=0; i<ctr->num_subkeys; i++) {
+		ptrdiff_t offset = p - buf;
+		SIVAL(buf, 4 + 4*i, offset);
+		strlcpy(p, sorted_subkeys[i], len-offset);
+		p += strlen(sorted_subkeys[i]) + 1;
+	}
+
+	status = dbwrap_trans_store_bystring(
+		regdb, sorted_keyname, make_tdb_data((uint8_t *)buf, len),
+		TDB_REPLACE);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+
+	result = true;
+ fail:
+	TALLOC_FREE(ctr);
+	return result;
+}
+
+struct scan_subkey_state {
+	char *name;
+	bool scanned;
+	bool found;
+};
+
+static int parent_subkey_scanner(TDB_DATA key, TDB_DATA data,
+				 void *private_data)
+{
+	struct scan_subkey_state *state =
+		(struct scan_subkey_state *)private_data;
+	uint32_t num_subkeys;
+	uint32_t l, u;
+
+	if (data.dsize < sizeof(uint32_t)) {
+		return -1;
+	}
+
+	state->scanned = true;
+	state->found = false;
+
+	tdb_unpack(data.dptr, data.dsize, "d", &num_subkeys);
+
+	l = 0;
+	u = num_subkeys;
+
+	while (l < u) {
+		uint32_t idx = (l+u)/2;
+		char *s = (char *)data.dptr + IVAL(data.dptr, 4 + 4*idx);
+		int comparison = strcmp(state->name, s);
+
+		if (comparison < 0) {
+			u = idx;
+		} else if (comparison > 0) {
+			l = idx + 1;
+		} else {
+			state->found = true;
+			return 0;
+		}
+	}
+	return 0;
+}
+
+static bool scan_parent_subkeys(const char *parent, const char *name)
+{
+	char *path = NULL;
+	char *key = NULL;
+	struct scan_subkey_state state = { 0, };
+	bool result = false;
+	int res;
+
+	state.name = NULL;
+
+	path = normalize_reg_path(talloc_tos(), parent);
+	if (path == NULL) {
+		goto fail;
+	}
+
+	key = talloc_asprintf(talloc_tos(), "%s/%s",
+			      REG_SORTED_SUBKEYS_PREFIX, path);
+	if (key == NULL) {
+		goto fail;
+	}
+
+	state.name = talloc_strdup_upper(talloc_tos(), name);
+	if (state.name == NULL) {
+		goto fail;
+	}
+	state.scanned = false;
+
+	res = regdb->parse_record(regdb, string_term_tdb_data(key),
+				  parent_subkey_scanner, &state);
+
+	if (state.scanned) {
+		result = state.found;
+	} else {
+		if (!create_sorted_subkeys(path, key)) {
+			goto fail;
+		}
+		res = regdb->parse_record(regdb, string_term_tdb_data(key),
+					  parent_subkey_scanner, &state);
+		if ((res == 0) && (state.scanned)) {
+			result = state.found;
+		}
+	}
+
+ fail:
+	TALLOC_FREE(path);
+	TALLOC_FREE(state.name);
+	return result;
+}
 
 /**
  * Check for the existence of a key.
@@ -907,26 +1080,8 @@ static bool regdb_key_exists(const char *key)
 		value = regdb_fetch_key_internal(mem_ctx, path);
 		ret = (value.dptr != NULL);
 	} else {
-		/* get the list of subkeys of the parent key */
-		uint32 num_items, len, i;
-		fstring subkeyname;
-
 		*p = '\0';
-		p++;
-		value = regdb_fetch_key_internal(mem_ctx, path);
-		if (value.dptr == NULL) {
-			goto done;
-		}
-
-		len = tdb_unpack(value.dptr, value.dsize, "d", &num_items);
-		for (i = 0; i < num_items; i++) {
-			len += tdb_unpack(value.dptr +len, value.dsize -len,
-					  "f", &subkeyname);
-			if (strequal(subkeyname, p)) {
-				ret = true;
-				goto done;
-			}
-		}
+		ret = scan_parent_subkeys(path, p+1);
 	}
 
 done:
