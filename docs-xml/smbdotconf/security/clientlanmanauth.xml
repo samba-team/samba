@@ -11,7 +11,7 @@
     password hashes (e.g. Windows NT/2000, Samba, etc... but not 
     Windows 95/98) will be able to be connected from the Samba client.</para>
 
-    <para>The LANMAN encrypted response is easily broken, due to it's
+    <para>The LANMAN encrypted response is easily broken, due to its
     case-insensitive nature, and the choice of algorithm.  Clients
     without Windows 95/98 servers are advised to disable
     this option.  </para>

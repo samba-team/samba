@@ -13,7 +13,7 @@
 	</para>
 
     <para>
-	Please note that with this set to <literal>no</literal> you will have to apply the WindowsXP
+	Please note that with this set to <literal>no</literal>, you will have to apply the WindowsXP
 	<filename>WinXP_SignOrSeal.reg</filename> registry patch found in the docs/registry subdirectory of the Samba distribution tarball.
 	</para>
 </description>

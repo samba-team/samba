@@ -5,7 +5,7 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>Hosts running the "Advanced Server for Unix (ASU)" product 
-    require some special accomodations such as creating a builting [ADMIN$] 
+    require some special accomodations such as creating a builtin [ADMIN$] 
     share that only supports IPC connections.  The has been the default
     behavior in smbd for many years.  However, certain Microsoft applications
     such as the Print Migrator tool require that the remote server support
