@@ -74,6 +74,7 @@ bool brl_same_context(const struct lock_context *ctx1,
 static bool brl_overlap(const struct lock_struct *lck1,
                         const struct lock_struct *lck2)
 {
+	/* XXX Remove for Win7 compatibility. */
 	/* this extra check is not redundent - it copes with locks
 	   that go beyond the end of 64 bit file space */
 	if (lck1->size != 0 &&
@@ -105,8 +106,11 @@ static bool brl_conflict(const struct lock_struct *lck1,
 		return False;
 	}
 
-	if (brl_same_context(&lck1->context, &lck2->context) &&
-	    lck2->lock_type == READ_LOCK && lck1->fnum == lck2->fnum) {
+	/* A READ lock can stack on top of a WRITE lock if they have the same
+	 * context & fnum. */
+	if (lck1->lock_type == WRITE_LOCK && lck2->lock_type == READ_LOCK &&
+	    brl_same_context(&lck1->context, &lck2->context) &&
+	    lck1->fnum == lck2->fnum) {
 		return False;
 	}
 
