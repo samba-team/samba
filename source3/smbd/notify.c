@@ -214,6 +214,8 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 
 	ZERO_STRUCT(e);
 	e.path = fullpath;
+	e.dir_fd = fsp->fh->fd;
+	e.dir_id = fsp->file_id;
 	e.filter = filter;
 	e.subdir_filter = 0;
 	if (recursive) {

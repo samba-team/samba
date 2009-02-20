@@ -10,6 +10,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_f
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_SCALARS, &r->server));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->filter));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->subdir_filter));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->dir_fd));
+		NDR_CHECK(ndr_push_file_id(ndr, NDR_SCALARS, &r->dir_id));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
@@ -21,6 +23,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_notify_entry(struct ndr_push *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_push_server_id(ndr, NDR_BUFFERS, &r->server));
+		NDR_CHECK(ndr_push_file_id(ndr, NDR_BUFFERS, &r->dir_id));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -32,6 +35,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_f
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_SCALARS, &r->server));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->filter));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->subdir_filter));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->dir_fd));
+		NDR_CHECK(ndr_pull_file_id(ndr, NDR_SCALARS, &r->dir_id));
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_UTF8|LIBNDR_FLAG_STR_NULLTERM);
@@ -43,6 +48,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_notify_entry(struct ndr_pull *ndr, int ndr_f
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 		NDR_CHECK(ndr_pull_server_id(ndr, NDR_BUFFERS, &r->server));
+		NDR_CHECK(ndr_pull_file_id(ndr, NDR_BUFFERS, &r->dir_id));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -54,6 +60,8 @@ _PUBLIC_ void ndr_print_notify_entry(struct ndr_print *ndr, const char *name, co
 	ndr_print_server_id(ndr, "server", &r->server);
 	ndr_print_uint32(ndr, "filter", r->filter);
 	ndr_print_uint32(ndr, "subdir_filter", r->subdir_filter);
+	ndr_print_uint32(ndr, "dir_fd", r->dir_fd);
+	ndr_print_file_id(ndr, "dir_id", &r->dir_id);
 	ndr_print_string(ndr, "path", r->path);
 	ndr_print_uint32(ndr, "path_len", r->path_len);
 	ndr_print_pointer(ndr, "private_data", r->private_data);

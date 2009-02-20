@@ -155,6 +155,45 @@ void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct s
 	ndr->depth--;
 }
 
+enum ndr_err_code ndr_push_file_id(struct ndr_push *ndr, int ndr_flags, const struct file_id *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS,
+					  (uint64_t)r->devid));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS,
+					  (uint64_t)r->inode));
+		NDR_CHECK(ndr_push_udlong(ndr, NDR_SCALARS,
+					  (uint64_t)r->extid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_file_id(struct ndr_pull *ndr, int ndr_flags, struct file_id *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->devid));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->inode));
+		NDR_CHECK(ndr_pull_udlong(ndr, NDR_SCALARS, &r->extid));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+void ndr_print_file_id(struct ndr_print *ndr, const char *name, const struct file_id *r)
+{
+	ndr_print_struct(ndr, name, "file_id");
+	ndr->depth++;
+	ndr_print_udlong(ndr, "devid", (uint64_t)r->devid);
+	ndr_print_udlong(ndr, "inode", (uint64_t)r->inode);
+	ndr_print_udlong(ndr, "extid", (uint64_t)r->extid);
+	ndr->depth--;
+}
+
 _PUBLIC_ void ndr_print_bool(struct ndr_print *ndr, const char *name, const bool b)
 {
 	ndr->print(ndr, "%-25s: %s", name, b?"true":"false");

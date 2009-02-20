@@ -18,6 +18,8 @@ interface notify
 		server_id server;
 		uint32 filter; /* filter to apply in this directory */
 		uint32 subdir_filter; /* filter to apply in child directories */
+		uint32 dir_fd;   /* fd of open directory */
+		file_id dir_id;  /* file_id of open directory */
 		utf8string path;
 		uint32 path_len; /* saves some computation on search */
 		pointer private_data;
