@@ -314,7 +314,7 @@ import "lsa.idl", "security.idl";
 		boolean32 full;
 	} EVENTLOG_FULL_INFORMATION;
 
-	NTSTATUS eventlog_GetLogIntormation(
+	NTSTATUS eventlog_GetLogInformation(
 		[in] policy_handle *handle,
 		[in] uint32 level,
 		[out,ref] [size_is(buf_size)] uint8 *buffer,
