@@ -8309,7 +8309,7 @@ WERROR _spoolss_GetPrinterDriverDirectory(pipes_struct *p,
 						     &r->out.info->info1,
 						     r->in.offered,
 						     r->out.needed);
-		if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		if (!W_ERROR_IS_OK(werror)) {
 			TALLOC_FREE(r->out.info);
 		}
 		break;
@@ -9969,7 +9969,7 @@ WERROR _spoolss_GetPrintProcessorDirectory(pipes_struct *p,
 							    &r->out.info->info1,
 							    r->in.offered,
 							    r->out.needed);
-		if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
+		if (!W_ERROR_IS_OK(result)) {
 			TALLOC_FREE(r->out.info);
 		}
 		break;
