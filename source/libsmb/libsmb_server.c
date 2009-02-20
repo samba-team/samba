@@ -238,6 +238,7 @@ SMBC_server(TALLOC_CTX *ctx,
             char **pp_password)
 {
 	SMBCSRV *srv=NULL;
+	char *workgroup = NULL;
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n = server;
@@ -359,7 +360,7 @@ SMBC_server(TALLOC_CTX *ctx,
         if (srv) {
                 
                 /* ... then we're done here.  Give 'em what they came for. */
-                return srv;
+                goto done;
         }
         
         /* If we're not asked to connect when a connection doesn't exist... */
@@ -598,6 +599,22 @@ again:
 		  server, share, srv));
         
 	DLIST_ADD(context->internal->servers, srv);
+done:
+	if (!pp_workgroup || !*pp_workgroup || !**pp_workgroup) {
+		workgroup = talloc_strdup(ctx, smbc_getWorkgroup(context));
+	} else {
+		workgroup = *pp_workgroup;
+	}
+	if(!workgroup) {
+		return NULL;
+	}
+	
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(context,
+					   workgroup,
+				    	   *pp_username,
+				   	   *pp_password);
+	
 	return srv;
         
 failed:
