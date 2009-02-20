@@ -306,7 +306,7 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 				   struct dcerpc_pipe *p)
 {
 	NTSTATUS status;
-	struct eventlog_GetLogIntormation r;
+	struct eventlog_GetLogInformation r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
 	uint32_t bytes_needed = 0;
@@ -320,14 +320,14 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 	r.out.buffer = NULL;
 	r.out.bytes_needed = &bytes_needed;
 
-	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_INVALID_LEVEL,
 				      "GetLogInformation failed");
 
 	r.in.level = 0;
 
-	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
 
 	torture_assert_ntstatus_equal(tctx, status, NT_STATUS_BUFFER_TOO_SMALL,
 				      "GetLogInformation failed");
@@ -335,7 +335,7 @@ static bool test_GetLogInformation(struct torture_context *tctx,
 	r.in.buf_size = bytes_needed;
 	r.out.buffer = talloc_array(tctx, uint8_t, bytes_needed);
 
-	status = dcerpc_eventlog_GetLogIntormation(p, tctx, &r);
+	status = dcerpc_eventlog_GetLogInformation(p, tctx, &r);
 
 	torture_assert_ntstatus_ok(tctx, status, "GetLogInformation failed");
 
