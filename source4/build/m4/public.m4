@@ -131,15 +131,17 @@ dnl SMB_INCLUDED_LIB_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF
 AC_DEFUN([SMB_INCLUDED_LIB_PKGCONFIG],
 [
 	AC_ARG_ENABLE([external-]translit($1,`A-Z',`a-z'),
-		AS_HELP_STRING([--enable-external-]translit($1,`A-Z',`a-z'), [Use external $1 instead of built-in (default=auto)]), [], [enableval=auto])
+		AS_HELP_STRING([--enable-external-]translit($1,`A-Z',`a-z'), [Use external $1 instead of built-in (default=ifelse([$5],[],auto,$5))]), [], [enableval=ifelse([$5],[],auto,$5)])
 
 	if test $enableval = yes -o $enableval = auto; then
 		SMB_EXT_LIB_FROM_PKGCONFIG([$1], [$2], [$3], [
 			if test $enableval = yes; then
 				AC_MSG_ERROR([Unable to find external $1])
 			fi
+			enableval=no
 		])
-	else
+	fi
+	if test $enableval = no; then
 		ifelse([$4], [], [
 			  SMB_EXT_LIB($1)
 			  SMB_ENABLE($1, NO)

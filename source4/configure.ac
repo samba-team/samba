@@ -95,8 +95,7 @@ SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = 0.9.3,
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
 		AC_CONFIG_FILES(lib/ldb/ldb.pc)
-	]
-)
+	], [no])
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
 
 m4_include(lib/tls/config.m4)
