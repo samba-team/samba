@@ -292,7 +292,7 @@ AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 		*linux*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
-		*netbsd*)
+		*bsd*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*solaris*)
