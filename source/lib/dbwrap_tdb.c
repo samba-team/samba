@@ -176,6 +176,17 @@ static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+static int db_tdb_parse(struct db_context *db, TDB_DATA key,
+			int (*parser)(TDB_DATA key, TDB_DATA data,
+				      void *private_data),
+			void *private_data)
+{
+	struct db_tdb_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_tdb_ctx);
+
+	return tdb_parse_record(ctx->wtdb->tdb, key, parser, private_data);
+}
+
 static NTSTATUS db_tdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
@@ -343,6 +354,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->fetch = db_tdb_fetch;
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
+	result->parse_record = db_tdb_parse;
 	result->get_seqnum = db_tdb_get_seqnum;
 	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	result->transaction_start = db_tdb_transaction_start;
