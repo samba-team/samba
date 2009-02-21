@@ -209,8 +209,6 @@
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
-#define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
-
 /*
  * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
  * when sending messages to other smbd's
