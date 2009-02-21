@@ -4665,7 +4665,7 @@ static void init_printer_values(struct service *pService)
  */
 static int max_open_files(void)
 {
-	int sysctl_max;
+	int sysctl_max = MAX_OPEN_FILES;
 	struct rlimit rl;
 	bool sysctl_worked = false, rlimit_worked = false;
 
