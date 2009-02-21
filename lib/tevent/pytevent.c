@@ -29,7 +29,7 @@
 
 #include <tevent.h>
 #include <stdbool.h>
-#include <tevent_util.h>
+#include "tevent_util.h"
 
 typedef struct {
 	PyObject_HEAD
