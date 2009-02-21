@@ -32,7 +32,7 @@ static void auth_ntlmssp_get_challenge(const struct ntlmssp_state *ntlmssp_state
 {
 	AUTH_NTLMSSP_STATE *auth_ntlmssp_state =
 		(AUTH_NTLMSSP_STATE *)ntlmssp_state->auth_context;
-	return auth_ntlmssp_state->auth_context->get_ntlm_challenge(
+	auth_ntlmssp_state->auth_context->get_ntlm_challenge(
 		auth_ntlmssp_state->auth_context, chal);
 }
 
