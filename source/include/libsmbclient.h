@@ -2692,9 +2692,9 @@ smbc_set_credentials(char *workgroup,
 
 void
 smbc_set_credentials_with_fallback(SMBCCTX *ctx,
-		                   char *workgroup,
-			     	   char *user,
-			    	   char *password);
+		                   const char *workgroup,
+			     	   const char *user,
+			    	   const char *password);
 
 /**
  * @ingroup structure

@@ -648,9 +648,9 @@ smbc_set_credentials(char *workgroup,
 }
 
 void smbc_set_credentials_with_fallback(SMBCCTX *context,
-					char *workgroup,
-					char *user,
-					char *password)
+					const char *workgroup,
+					const char *user,
+					const char *password)
 {
 	smbc_bool use_kerberos = false;
 	const char *signing_state = "off";
@@ -675,11 +675,18 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		signing_state = "force";
 	}
 
-	smbc_set_credentials(workgroup,
-			     user,
-			     password,
+	/* Using CONST_DISCARD here is ugly, but
+	 * we know that smbc_set_credentials() doesn't
+	 * actually modify the strings, and should have
+	 * been const from the start. We're constrained
+	 * by the ABI here.
+	 */
+
+	smbc_set_credentials(CONST_DISCARD(char *,workgroup),
+			     CONST_DISCARD(char *,user),
+			     CONST_DISCARD(char *,password),
 			     use_kerberos,
-			     (char *)signing_state);
+			     CONST_DISCARD(char *,signing_state));
 
 	if (smbc_getOptionFallbackAfterKerberos(context)) {
 		cli_cm_set_fallback_after_kerberos();
