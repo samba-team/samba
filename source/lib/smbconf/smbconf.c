@@ -203,10 +203,6 @@ WERROR smbconf_get_share(struct smbconf_ctx *ctx,
 			 const char *servicename,
 			 struct smbconf_service **service)
 {
-	if (!smbconf_share_exists(ctx, servicename)) {
-		return WERR_NO_SUCH_SERVICE;
-	}
-
 	return ctx->ops->get_share(ctx, mem_ctx, servicename, service);
 }
 

@@ -896,6 +896,9 @@ static WERROR smbconf_reg_get_share(struct smbconf_ctx *ctx,
 	werr = smbconf_reg_open_service_key(tmp_ctx, ctx, servicename,
 					    REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
+		if (W_ERROR_EQUAL(werr, WERR_BADFILE)) {
+			werr = WERR_NO_SUCH_SERVICE;
+		}
 		goto done;
 	}
 
