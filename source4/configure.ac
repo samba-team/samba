@@ -42,15 +42,14 @@ AC_CONFIG_FILES(param/samba-hostconfig.pc)
 AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
 AC_CONFIG_FILES(librpc/dcerpc_atsvc.pc)
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
-	[],
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0, [],
 	[
 		m4_include(../lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(../lib/talloc/config.mk)
 	]
 )
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 	[],
 	[
 		m4_include(../lib/tdb/libtdb.m4)
@@ -60,13 +59,13 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.3,
 
 SMB_INCLUDE_MK(../lib/tdb/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTEVENT, tevent = 0.9.3,
+SMB_INCLUDED_LIB_PKGCONFIG(LIBTEVENT, tevent = 0.9.3,
 	[],[m4_include(../lib/tevent/samba.m4)]
 )
 
 SMB_INCLUDE_MK(../lib/tevent/python.mk) 
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb = 0.9.3,
+SMB_INCLUDED_LIB_PKGCONFIG(LIBLDB, ldb = 0.9.3,
 	[
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)

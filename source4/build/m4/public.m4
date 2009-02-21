@@ -6,6 +6,8 @@ dnl Published under the GPL
 dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 dnl
+dnl SMB_INCLUDED_LIB_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
+dnl
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
 dnl SMB_ENABLE(name,default_build)
@@ -117,6 +119,26 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 	fi
 	if test x$ac_cv_$1_found = x"yes"; then
 		ifelse([$3], [], [echo -n ""], [$3])
+	else
+		ifelse([$4], [], [
+			  SMB_EXT_LIB($1)
+			  SMB_ENABLE($1, NO)
+		], [$4])
+	fi
+])
+
+dnl SMB_INCLUDED_LIB_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
+AC_DEFUN([SMB_INCLUDED_LIB_PKGCONFIG],
+[
+	AC_ARG_ENABLE([external-]translit($1,`A-Z',`a-z'),
+		AS_HELP_STRING([--enable-external-]translit($1,`A-Z',`a-z'), [Use external $1 instead of built-in (default=auto)]), [], [enableval=auto])
+
+	if test $enableval = yes -o $enableval = auto; then
+		SMB_EXT_LIB_FROM_PKGCONFIG([$1], [$2], [$3], [
+			if test $enableval = yes; then
+				AC_MSG_ERROR([Unable to find external $1])
+			fi
+		])
 	else
 		ifelse([$4], [], [
 			  SMB_EXT_LIB($1)
