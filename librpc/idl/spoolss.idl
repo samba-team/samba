@@ -1644,9 +1644,13 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[size_is(count)] spoolss_Field *fields;
 	} spoolss_NotifyOptionType;
 
+	typedef [bitmap32bit] bitmap {
+		PRINTER_NOTIFY_OPTIONS_REFRESH	= 0x00000001
+	} spoolssNotifyOptionFlags;
+
 	typedef struct {
 		[value(2)] uint32 version;
-		uint32 flags;
+		spoolssNotifyOptionFlags flags;
 		uint32 count;
 		[size_is(count)] spoolss_NotifyOptionType *types;
 	} spoolss_NotifyOption;
