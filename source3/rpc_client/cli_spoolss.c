@@ -44,7 +44,8 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	ZERO_STRUCT(devmode_ctr);
 
 	level1.size	= 28;
-	level1.client	= cli->srv_name_slash;
+	level1.client	= talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	W_ERROR_HAVE_NO_MEMORY(level1.client);
 	level1.user	= cli->auth->user_name;
 	level1.build	= 1381;
 	level1.major	= 2;
