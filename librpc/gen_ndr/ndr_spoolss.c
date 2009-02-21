@@ -13226,13 +13226,35 @@ _PUBLIC_ void ndr_print_spoolss_NotifyOptionType(struct ndr_print *ndr, const ch
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_spoolssNotifyOptionFlags(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_spoolssNotifyOptionFlags(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_spoolssNotifyOptionFlags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_NOTIFY_OPTIONS_REFRESH", PRINTER_NOTIFY_OPTIONS_REFRESH, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_spoolss_NotifyOption(struct ndr_push *ndr, int ndr_flags, const struct spoolss_NotifyOption *r)
 {
 	uint32_t cntr_types_1;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 2));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_spoolssNotifyOptionFlags(ndr, NDR_SCALARS, r->flags));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->types));
 	}
@@ -13259,7 +13281,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyOption(struct ndr_pull *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->version));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_spoolssNotifyOptionFlags(ndr, NDR_SCALARS, &r->flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_types));
 		if (_ptr_types) {
@@ -13298,7 +13320,7 @@ _PUBLIC_ void ndr_print_spoolss_NotifyOption(struct ndr_print *ndr, const char *
 	ndr_print_struct(ndr, name, "spoolss_NotifyOption");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "version", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?2:r->version);
-	ndr_print_uint32(ndr, "flags", r->flags);
+	ndr_print_spoolssNotifyOptionFlags(ndr, "flags", r->flags);
 	ndr_print_uint32(ndr, "count", r->count);
 	ndr_print_ptr(ndr, "types", r->types);
 	ndr->depth++;

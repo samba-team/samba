@@ -93,7 +93,7 @@ NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx);
-NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_eventlog_GetLogInformation(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
 					   struct policy_handle *handle /* [in] [ref] */,
 					   uint32_t level /* [in]  */,

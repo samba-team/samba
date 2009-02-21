@@ -23,7 +23,7 @@ NTSTATUS _eventlog_ReportEventA(pipes_struct *p, struct eventlog_ReportEventA *r
 NTSTATUS _eventlog_RegisterClusterSvc(pipes_struct *p, struct eventlog_RegisterClusterSvc *r);
 NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_DeregisterClusterSvc *r);
 NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r);
-NTSTATUS _eventlog_GetLogIntormation(pipes_struct *p, struct eventlog_GetLogIntormation *r);
+NTSTATUS _eventlog_GetLogInformation(pipes_struct *p, struct eventlog_GetLogInformation *r);
 NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r);
 NTSTATUS _eventlog_ReportEventAndSourceW(pipes_struct *p, struct eventlog_ReportEventAndSourceW *r);
 void eventlog_get_pipe_fns(struct api_struct **fns, int *n_fns);
@@ -50,7 +50,7 @@ NTSTATUS _eventlog_ReportEventA(pipes_struct *p, struct eventlog_ReportEventA *r
 NTSTATUS _eventlog_RegisterClusterSvc(pipes_struct *p, struct eventlog_RegisterClusterSvc *r);
 NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_DeregisterClusterSvc *r);
 NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r);
-NTSTATUS _eventlog_GetLogIntormation(pipes_struct *p, struct eventlog_GetLogIntormation *r);
+NTSTATUS _eventlog_GetLogInformation(pipes_struct *p, struct eventlog_GetLogInformation *r);
 NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r);
 NTSTATUS _eventlog_ReportEventAndSourceW(pipes_struct *p, struct eventlog_ReportEventAndSourceW *r);
 NTSTATUS rpc_eventlog_init(void);

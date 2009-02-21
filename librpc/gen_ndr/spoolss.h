@@ -1072,6 +1072,9 @@ struct spoolss_NotifyOptionType {
 	enum spoolss_Field *fields;/* [unique,size_is(count)] */
 };
 
+/* bitmap spoolssNotifyOptionFlags */
+#define PRINTER_NOTIFY_OPTIONS_REFRESH ( 0x00000001 )
+
 struct spoolss_NotifyOption {
 	uint32_t version;/* [value(2)] */
 	uint32_t flags;

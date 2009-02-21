@@ -55,7 +55,7 @@ extern const struct ndr_interface_table ndr_table_eventlog;
 
 #define NDR_EVENTLOG_WRITECLUSTEREVENTS (0x15)
 
-#define NDR_EVENTLOG_GETLOGINTORMATION (0x16)
+#define NDR_EVENTLOG_GETLOGINFORMATION (0x16)
 
 #define NDR_EVENTLOG_FLUSHEVENTLOG (0x17)
 
@@ -67,9 +67,6 @@ enum ndr_err_code ndr_push_eventlogEventTypes(struct ndr_push *ndr, int ndr_flag
 enum ndr_err_code ndr_pull_eventlogEventTypes(struct ndr_pull *ndr, int ndr_flags, enum eventlogEventTypes *r);
 void ndr_print_eventlogEventTypes(struct ndr_print *ndr, const char *name, enum eventlogEventTypes r);
 void ndr_print_eventlog_OpenUnknown0(struct ndr_print *ndr, const char *name, const struct eventlog_OpenUnknown0 *r);
-enum ndr_err_code ndr_push_eventlog_Record(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record *r);
-enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record *r);
-void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name, const struct eventlog_Record *r);
 enum ndr_err_code ndr_push_eventlog_Record_tdb(struct ndr_push *ndr, int ndr_flags, const struct eventlog_Record_tdb *r);
 enum ndr_err_code ndr_pull_eventlog_Record_tdb(struct ndr_pull *ndr, int ndr_flags, struct eventlog_Record_tdb *r);
 void ndr_print_eventlog_Record_tdb(struct ndr_print *ndr, const char *name, const struct eventlog_Record_tdb *r);
@@ -109,7 +106,7 @@ void ndr_print_eventlog_ReportEventA(struct ndr_print *ndr, const char *name, in
 void ndr_print_eventlog_RegisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_RegisterClusterSvc *r);
 void ndr_print_eventlog_DeregisterClusterSvc(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_DeregisterClusterSvc *r);
 void ndr_print_eventlog_WriteClusterEvents(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_WriteClusterEvents *r);
-void ndr_print_eventlog_GetLogIntormation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogIntormation *r);
+void ndr_print_eventlog_GetLogInformation(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_GetLogInformation *r);
 void ndr_print_eventlog_FlushEventLog(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_FlushEventLog *r);
 void ndr_print_eventlog_ReportEventAndSourceW(struct ndr_print *ndr, const char *name, int flags, const struct eventlog_ReportEventAndSourceW *r);
 #endif /* _HEADER_NDR_eventlog */

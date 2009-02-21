@@ -39,32 +39,6 @@ struct eventlog_OpenUnknown0 {
 	uint16_t unknown1;
 };
 
-struct eventlog_Record {
-	uint32_t size;
-	const char *reserved;/* [value("eLfL"),charset(DOS)] */
-	uint32_t record_number;
-	time_t time_generated;
-	time_t time_written;
-	uint32_t event_id;
-	enum eventlogEventTypes event_type;
-	uint16_t num_of_strings;/* [range(0,256)] */
-	uint16_t event_category;
-	uint16_t reserved_flags;
-	uint32_t closing_record_number;
-	uint32_t stringoffset;
-	uint32_t sid_size;/* [value(ndr_size_dom_sid0(&sid,ndr->flags))] */
-	uint32_t sid_offset;
-	uint32_t data_length;
-	uint32_t data_offset;
-	const char * source_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * computer_name;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	struct dom_sid0 sid;/* [subcontext_size(sid_size),subcontext(0)] */
-	const char * *strings;/* [flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	const char * raw_data;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] */
-	DATA_BLOB _padding;/* [flag(LIBNDR_FLAG_ALIGN4)] */
-	uint32_t size2;/* [value(size)] */
-}/* [public,flag(LIBNDR_FLAG_NOALIGN)] */;
-
 struct eventlog_Record_tdb {
 	uint32_t size;
 	const char *reserved;/* [value("eLfL"),charset(DOS)] */
@@ -437,7 +411,7 @@ struct eventlog_WriteClusterEvents {
 };
 
 
-struct eventlog_GetLogIntormation {
+struct eventlog_GetLogInformation {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t level;
