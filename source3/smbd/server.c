@@ -359,10 +359,6 @@ static void smbd_accept_connection(struct tevent_context *ev,
 		/* Child code ... */
 		am_parent = 0;
 
-#ifdef WITH_MADVISE_PROTECTED
-		madvise(NULL,0,MADV_PROTECT);
-#endif
-
 		/* Stop zombies, the parent explicitly handles
 		 * them, counting worker smbds. */
 		CatchChild();
@@ -1135,9 +1131,6 @@ extern void build_options(bool screen);
 	if (is_daemon && !interactive) {
 		DEBUG( 3, ( "Becoming a daemon.\n" ) );
 		become_daemon(Fork, no_process_group);
-#ifdef WITH_MADVISE_PROTECTED
-		madvise(NULL,0,MADV_PROTECT);
-#endif
 	}
 
 #if HAVE_SETPGID
