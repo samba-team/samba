@@ -42,6 +42,29 @@ static int dbwrap_fallback_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
+/*
+ * Fall back using fetch if no genuine parse operation is provided
+ */
+
+static int dbwrap_fallback_parse_record(struct db_context *db, TDB_DATA key,
+					int (*parser)(TDB_DATA key,
+						      TDB_DATA data,
+						      void *private_data),
+					void *private_data)
+{
+	TDB_DATA data;
+	int res;
+
+	res = db->fetch(db, talloc_tos(), key, &data);
+	if (res != 0) {
+		return res;
+	}
+
+	res = parser(key, data, private_data);
+	TALLOC_FREE(data.dptr);
+	return res;
+}
+
 /**
  * open a database
  */
@@ -100,6 +123,9 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 
 	if ((result != NULL) && (result->fetch == NULL)) {
 		result->fetch = dbwrap_fallback_fetch;
+	}
+	if ((result != NULL) && (result->parse_record == NULL)) {
+		result->parse_record = dbwrap_fallback_parse_record;
 	}
 
 	return result;
