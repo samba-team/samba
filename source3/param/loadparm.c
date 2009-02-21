@@ -144,7 +144,6 @@ struct global {
 	int iAfsTokenLifetime;
 	char *szLogNtTokenCommand;
 	char *szUsernameMap;
-	bool bForceUsernameMap;
 	char *szLogonScript;
 	char *szLogonPath;
 	char *szLogonDrive;
@@ -1278,15 +1277,6 @@ static struct parm_struct parm_table[] = {
 		.type		= P_STRING,
 		.p_class	= P_GLOBAL,
 		.ptr		= &Globals.szUsernameMap,
-		.special	= NULL,
-		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED,
-	},
-	{
-		.label		= "force username map",
-		.type		= P_BOOL,
-		.p_class	= P_GLOBAL,
-		.ptr		= &Globals.bForceUsernameMap,
 		.special	= NULL,
 		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
@@ -5246,7 +5236,6 @@ FN_GLOBAL_CONST_STRING(lp_afs_username_map, &Globals.szAfsUsernameMap)
 FN_GLOBAL_INTEGER(lp_afs_token_lifetime, &Globals.iAfsTokenLifetime)
 FN_GLOBAL_STRING(lp_log_nt_token_command, &Globals.szLogNtTokenCommand)
 FN_GLOBAL_STRING(lp_username_map, &Globals.szUsernameMap)
-FN_GLOBAL_BOOL(lp_force_username_map, &Globals.bForceUsernameMap)
 FN_GLOBAL_CONST_STRING(lp_logon_script, &Globals.szLogonScript)
 FN_GLOBAL_CONST_STRING(lp_logon_path, &Globals.szLogonPath)
 FN_GLOBAL_CONST_STRING(lp_logon_drive, &Globals.szLogonDrive)
