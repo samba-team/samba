@@ -46,6 +46,10 @@ struct db_context {
 	int (*transaction_start)(struct db_context *db);
 	int (*transaction_commit)(struct db_context *db);
 	int (*transaction_cancel)(struct db_context *db);
+	int (*parse_record)(struct db_context *db, TDB_DATA key,
+			    int (*parser)(TDB_DATA key, TDB_DATA data,
+					  void *private_data),
+			    void *private_data);
 	void *private_data;
 	bool persistent;
 };
