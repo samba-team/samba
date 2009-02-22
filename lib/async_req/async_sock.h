@@ -35,11 +35,12 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     int fd, void *buffer, size_t length,
 			     int flags);
-struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     int fd, const struct sockaddr *address,
-				     socklen_t address_len);
-int async_connect_recv(struct async_req *req, int *perrno);
+
+struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int fd, const struct sockaddr *address,
+				      socklen_t address_len);
+int async_connect_recv(struct tevent_req *req, int *perrno);
 
 struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, const void *buffer, size_t length,

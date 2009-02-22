@@ -22,6 +22,7 @@
 #include "lib/tevent/tevent.h"
 #include "lib/async_req/async_req.h"
 #include "lib/async_req/async_sock.h"
+#include "lib/util/tevent_unix.h"
 #include <fcntl.h>
 
 #ifndef TALLOC_FREE
@@ -633,17 +634,18 @@ static void async_connect_connected(struct tevent_context *ev,
  * connect in an async state. This will be reset when the request is finished.
  */
 
-struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     int fd, const struct sockaddr *address,
-				     socklen_t address_len)
+struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int fd, const struct sockaddr *address,
+				      socklen_t address_len)
 {
-	struct async_req *result;
+	struct tevent_req *result;
 	struct async_connect_state *state;
 	struct tevent_fd *fde;
 
-	if (!async_req_setup(mem_ctx, &result, &state,
-			     struct async_connect_state)) {
+	result = tevent_req_create(
+		mem_ctx, &state, struct async_connect_state);
+	if (result == NULL) {
 		return NULL;
 	}
 
@@ -664,8 +666,8 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 
 	state->result = connect(fd, address, address_len);
 	if (state->result == 0) {
-		state->sys_errno = 0;
-		goto post_status;
+		errno = 0;
+		goto post_errno;
 	}
 
 	/**
@@ -686,22 +688,20 @@ struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
 	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ | TEVENT_FD_WRITE,
 			   async_connect_connected, result);
 	if (fde == NULL) {
-		state->sys_errno = ENOMEM;
-		goto post_status;
+		errno = ENOMEM;
+		goto post_errno;
 	}
 	return result;
 
  post_errno:
 	state->sys_errno = errno;
- post_status:
 	fcntl(fd, F_SETFL, state->old_sockflags);
-	if (!async_post_error(result, ev, state->sys_errno)) {
-		goto fail;
+	if (state->sys_errno == 0) {
+		tevent_req_done(result);
+	} else {
+		tevent_req_error(result, state->sys_errno);
 	}
-	return result;
- fail:
-	TALLOC_FREE(result);
-	return NULL;
+	return tevent_req_post(result, ev);
 }
 
 /**
@@ -716,10 +716,10 @@ static void async_connect_connected(struct tevent_context *ev,
 				    struct tevent_fd *fde, uint16_t flags,
 				    void *priv)
 {
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
+	struct tevent_req *req = talloc_get_type_abort(
+		priv, struct tevent_req);
 	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_data, struct async_connect_state);
+		req->private_state, struct async_connect_state);
 
 	TALLOC_FREE(fde);
 
@@ -743,27 +743,27 @@ static void async_connect_connected(struct tevent_context *ev,
 		DEBUG(10, ("connect returned %s\n", strerror(errno)));
 
 		fcntl(state->fd, F_SETFL, state->old_sockflags);
-		async_req_error(req, state->sys_errno);
+		tevent_req_error(req, state->sys_errno);
 		return;
 	}
 
 	state->sys_errno = 0;
-	async_req_done(req);
+	tevent_req_done(req);
 }
 
-int async_connect_recv(struct async_req *req, int *perrno)
+int async_connect_recv(struct tevent_req *req, int *perrno)
 {
 	struct async_connect_state *state = talloc_get_type_abort(
-		req->private_data, struct async_connect_state);
+		req->private_state, struct async_connect_state);
 	int err;
 
 	fcntl(state->fd, F_SETFL, state->old_sockflags);
 
-
-	if (async_req_is_errno(req, &err)) {
+	if (tevent_req_is_unix_error(req, &err)) {
 		*perrno = err;
 		return -1;
 	}
+
 	if (state->sys_errno == 0) {
 		return 0;
 	}
