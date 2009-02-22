@@ -65,6 +65,9 @@
 #define BN_CTX_new hc_BN_CTX_new
 #define BN_CTX_free hc_BN_CTX_free
 #define BN_CTX_get hc_BN_CTX_get
+#define BN_CTX_start hc_BN_CTX_start
+#define BN_CTX_end hc_BN_CTX_end
+
 /*
  *
  */
@@ -123,5 +126,7 @@ int	BN_GENCB_call(BN_GENCB *, int, int);
 BN_CTX *BN_CTX_new(void);
 void	BN_CTX_free(BN_CTX *);
 BIGNUM *BN_CTX_get(BN_CTX *);
+void	BN_CTX_start(BN_CTX *);
+void	BN_CTX_end(BN_CTX *);
 
 #endif
