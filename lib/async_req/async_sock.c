@@ -34,7 +34,6 @@
  */
 enum async_syscall_type {
 	ASYNC_SYSCALL_SEND,
-	ASYNC_SYSCALL_SENDALL,
 	ASYNC_SYSCALL_RECV,
 	ASYNC_SYSCALL_RECVALL,
 	ASYNC_SYSCALL_CONNECT
@@ -55,13 +54,6 @@ struct async_syscall_state {
 			size_t length;
 			int flags;
 		} param_send;
-		struct param_sendall {
-			int fd;
-			const void *buffer;
-			size_t length;
-			int flags;
-			size_t sent;
-		} param_sendall;
 		struct param_recv {
 			int fd;
 			void *buffer;
@@ -335,109 +327,6 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->param.param_send.flags = flags;
 
 	return result;
-}
-
-/**
- * fde event handler for the "sendall" syscall group
- * @param[in] ev	The event context that sent us here
- * @param[in] fde	The file descriptor event associated with the send
- * @param[in] flags	Can only be TEVENT_FD_WRITE here
- * @param[in] priv	private data, "struct async_req *" in this case
- */
-
-static void async_sendall_callback(struct tevent_context *ev,
-				   struct tevent_fd *fde, uint16_t flags,
-				   void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	struct param_sendall *p = &state->param.param_sendall;
-
-	if (state->syscall_type != ASYNC_SYSCALL_SENDALL) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	state->result.result_ssize_t = send(p->fd,
-					    (const char *)p->buffer + p->sent,
-					    p->length - p->sent, p->flags);
-	state->sys_errno = errno;
-
-	if (state->result.result_ssize_t == -1) {
-		async_req_error(req, state->sys_errno);
-		return;
-	}
-
-	if (state->result.result_ssize_t == 0) {
-		async_req_error(req, EOF);
-		return;
-	}
-
-	p->sent += state->result.result_ssize_t;
-	if (p->sent > p->length) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	if (p->sent == p->length) {
-		TALLOC_FREE(state->fde);
-		async_req_done(req);
-	}
-}
-
-/**
- * @brief Send all bytes to a socket
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] fd	The socket to send to
- * @param[in] buffer	The buffer to send
- * @param[in] length	How many bytes to send
- * @param[in] flags	flags passed to send(2)
- *
- * async_sendall calls send(2) as long as it is necessary to send all of the
- * "length" bytes
- */
-
-struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, const void *buffer, size_t length,
-			       int flags)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	result = async_fde_syscall_new(
-		mem_ctx, ev, ASYNC_SYSCALL_SENDALL,
-		fd, TEVENT_FD_WRITE, async_sendall_callback,
-		&state);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state->param.param_sendall.fd = fd;
-	state->param.param_sendall.buffer = buffer;
-	state->param.param_sendall.length = length;
-	state->param.param_sendall.flags = flags;
-	state->param.param_sendall.sent = 0;
-
-	return result;
-}
-
-ssize_t sendall_recv(struct async_req *req, int *perr)
-{
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	int err;
-
-	err = async_req_simple_recv_errno(req);
-
-	if (err != 0) {
-		*perr = err;
-		return -1;
-	}
-
-	return state->result.result_ssize_t;
 }
 
 /**
