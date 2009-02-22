@@ -33,7 +33,6 @@
 
 #include "hx_locl.h"
 #include <wind.h>
-RCSID("$Id$");
 
 /**
  * @page page_name PKIX/X.509 Names

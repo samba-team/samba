@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 /**
  * @page page_error Hx509 error reporting functions

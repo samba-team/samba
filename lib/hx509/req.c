@@ -33,7 +33,6 @@
 
 #include "hx_locl.h"
 #include <pkcs10_asn1.h>
-RCSID("$Id$");
 
 struct hx509_request_data {
     hx509_name name;

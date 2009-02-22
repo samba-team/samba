@@ -33,7 +33,6 @@
 
 #include "hx_locl.h"
 #include <pkinit_asn1.h>
-RCSID("$Id$");
 
 /**
  * @page page_ca Hx509 CA functions

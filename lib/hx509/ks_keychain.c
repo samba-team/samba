@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 #ifdef HAVE_FRAMEWORK_SECURITY
 

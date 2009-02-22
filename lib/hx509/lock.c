@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 /**
  * @page page_lock Locking and unlocking certificates and encrypted data.

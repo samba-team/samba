@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 typedef enum { USE_PEM, USE_DER } outformat;
 

@@ -50,7 +50,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 struct revoke_crl {
     char *path;

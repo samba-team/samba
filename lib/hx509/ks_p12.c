@@ -32,7 +32,6 @@
  */
 
 #include "hx_locl.h"
-RCSID("$Id$");
 
 struct ks_pkcs12 {
     hx509_certs certs;
