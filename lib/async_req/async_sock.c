@@ -771,3 +771,108 @@ int async_connect_recv(struct tevent_req *req, int *perrno)
 	*perrno = state->sys_errno;
 	return -1;
 }
+
+struct writev_state {
+	struct tevent_context *ev;
+	int fd;
+	struct iovec *iov;
+	int count;
+	size_t total_size;
+};
+
+static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
+			   uint16_t flags, void *private_data);
+
+struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			       int fd, struct iovec *iov, int count)
+{
+	struct tevent_req *result;
+	struct writev_state *state;
+	struct tevent_fd *fde;
+
+	result = tevent_req_create(mem_ctx, &state, struct writev_state);
+	if (result == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->fd = fd;
+	state->total_size = 0;
+	state->count = count;
+	state->iov = (struct iovec *)talloc_memdup(
+		state, iov, sizeof(struct iovec) * count);
+	if (state->iov == NULL) {
+		goto fail;
+	}
+
+	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_WRITE, writev_handler,
+			    result);
+	if (fde == NULL) {
+		goto fail;
+	}
+	return result;
+
+ fail:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
+			   uint16_t flags, void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+	struct writev_state *state = talloc_get_type_abort(
+		req->private_state, struct writev_state);
+	size_t to_write, written;
+	int i;
+
+	to_write = 0;
+
+	for (i=0; i<state->count; i++) {
+		to_write += state->iov[i].iov_len;
+	}
+
+	written = sys_writev(state->fd, state->iov, state->count);
+	if (written == -1) {
+		tevent_req_error(req, errno);
+		return;
+	}
+	if (written == 0) {
+		tevent_req_error(req, EOF);
+		return;
+	}
+	state->total_size += written;
+
+	if (written == to_write) {
+		tevent_req_done(req);
+		return;
+	}
+
+	/*
+	 * We've written less than we were asked to, drop stuff from
+	 * state->iov.
+	 */
+
+	while (written > 0) {
+		if (written < state->iov[0].iov_len) {
+			state->iov[0].iov_base =
+				(char *)state->iov[0].iov_base + written;
+			state->iov[0].iov_len -= written;
+			break;
+		}
+		written = state->iov[0].iov_len;
+		state->iov += 1;
+		state->count -= 1;
+	}
+}
+
+ssize_t writev_recv(struct tevent_req *req, int *perrno)
+{
+	struct writev_state *state = talloc_get_type_abort(
+		req->private_state, struct writev_state);
+
+	if (tevent_req_is_unix_error(req, perrno)) {
+		return -1;
+	}
+	return state->total_size;
+}
