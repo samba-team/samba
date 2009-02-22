@@ -177,6 +177,42 @@ decrypt_token(struct client *client, int32_t hContext, int flags,
 }
 
 static int32_t
+wrap_token_ext(struct client *client, int32_t hContext, int32_t flags,
+	       int32_t bflags, krb5_data *header, krb5_data *in, krb5_data *trailer,
+	       krb5_data *out)
+{
+    int32_t val;
+    put32(client, eWrapExt);
+    put32(client, hContext);
+    put32(client, flags);
+    put32(client, bflags);
+    putdata(client, *header);
+    putdata(client, *in);
+    putdata(client, *trailer);
+    ret32(client, val);
+    retdata(client, *out);
+    return val;
+}
+
+static int32_t
+unwrap_token_ext(struct client *client, int32_t hContext, int32_t flags,
+	       int32_t bflags, krb5_data *header, krb5_data *in, krb5_data *trailer,
+	       krb5_data *out)
+{
+    int32_t val;
+    put32(client, eUnwrapExt);
+    put32(client, hContext);
+    put32(client, flags);
+    put32(client, bflags);
+    putdata(client, *header);
+    putdata(client, *in);
+    putdata(client, *trailer);
+    ret32(client, val);
+    retdata(client, *out);
+    return val;
+}
+
+static int32_t
 get_mic(struct client *client, int32_t hContext,
 	krb5_data *in, krb5_data *mic)
 {
@@ -431,22 +467,94 @@ test_wrap(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
 }
 
 static int32_t
+test_wrap_ext(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
+	      int conf, int bflags)
+{
+    krb5_data header, msg, trailer, wrapped, out;
+    int32_t val;
+
+    header.data = "header";
+    header.length = 6;
+
+    msg.data = "0123456789abcdef"; /* padded for most enctypes */
+    msg.length = 32;
+
+    trailer.data = "trailer";
+    trailer.length = 7;
+
+    krb5_data_zero(&wrapped);
+    krb5_data_zero(&out);
+
+    val = wrap_token_ext(c1, hc1, conf, bflags, &header, &msg, &trailer, &wrapped);
+    if (val) {
+	warnx("encrypt_token failed to host: %s", c1->moniker);
+	return val;
+    }
+    val = unwrap_token_ext(c2, hc2, conf, bflags, &header, &wrapped, &trailer, &out);
+    if (val) {
+	krb5_data_free(&wrapped);
+	warnx("decrypt_token failed to host: %s", c2->moniker);
+	return val;
+    }
+
+    if (msg.length != out.length) {
+	warnx("decrypted'ed token have wrong length (%lu != %lu)",
+	      (unsigned long)msg.length, (unsigned long)out.length);
+	val = GSMERR_ERROR;
+    } else if (memcmp(msg.data, out.data, msg.length) != 0) {
+	warnx("decryptd'ed token have wrong data");
+	val = GSMERR_ERROR;
+    }
+
+    krb5_data_free(&wrapped);
+    krb5_data_free(&out);
+    return val;
+}
+
+
+static int32_t
 test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 {
     int32_t val;
     int i;
 
     for (i = 0; i < 10; i++) {
+	/* mic */
 	test_mic(c1, hc1, c2, hc2);
 	test_mic(c2, hc2, c1, hc1);
+
+	/* wrap */
 	val = test_wrap(c1, hc1, c2, hc2, 0);
 	if (val) return val;
 	val = test_wrap(c2, hc2, c1, hc1, 0);
 	if (val) return val;
+
 	val = test_wrap(c1, hc1, c2, hc2, 1);
 	if (val) return val;
 	val = test_wrap(c2, hc2, c1, hc1, 1);
 	if (val) return val;
+
+	/* wrap ext */
+	val = test_wrap_ext(c1, hc1, c2, hc2, 1, 0);
+	if (val) return val;
+	val = test_wrap_ext(c2, hc2, c1, hc1, 1, 0);
+	if (val) return val;
+
+	val = test_wrap_ext(c1, hc1, c2, hc2, 1, 1);
+	if (val) return val;
+	val = test_wrap_ext(c2, hc2, c1, hc1, 1, 1);
+	if (val) return val;
+
+	val = test_wrap_ext(c1, hc1, c2, hc2, 0, 0);
+	if (val) return val;
+	val = test_wrap_ext(c2, hc2, c1, hc1, 0, 0);
+	if (val) return val;
+
+	val = test_wrap_ext(c1, hc1, c2, hc2, 0, 1);
+	if (val) return val;
+	val = test_wrap_ext(c2, hc2, c1, hc1, 0, 1);
+	if (val) return val;
+
     }
     return GSMERR_OK;
 }
