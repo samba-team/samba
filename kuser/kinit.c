@@ -39,6 +39,7 @@
 
 struct krb5_dh_moduli;
 struct AlgorithmIdentifier;
+struct _krb5_krb_auth_data;
 #include <krb5-private.h>
 
 #ifndef NO_NTLM
