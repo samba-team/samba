@@ -245,40 +245,29 @@ wbcErr wb_req_write_recv(struct async_req *req)
 
 struct resp_read_state {
 	struct winbindd_response *wb_resp;
-	struct tevent_context *ev;
-	size_t max_extra_data;
-	int fd;
 };
 
-static void wb_resp_read_len(struct async_req *subreq);
-static void wb_resp_read_main(struct async_req *subreq);
-static void wb_resp_read_extra(struct async_req *subreq);
+static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data);
+static void wb_resp_read_done(struct tevent_req *subreq);
 
 struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev, int fd)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct resp_read_state *state;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct resp_read_state)) {
 		return NULL;
 	}
-	state->fd = fd;
-	state->ev = ev;
-	state->wb_resp = talloc(state, struct winbindd_response);
-	if (state->wb_resp == NULL) {
-		goto nomem;
-	}
 
-	subreq = recvall_send(state, ev, state->fd, &(state->wb_resp->length),
-			      sizeof(state->wb_resp->length), 0);
+	subreq = read_packet_send(state, ev, fd, 4, wb_resp_more, state);
 	if (subreq == NULL) {
 		goto nomem;
 	}
-
-	subreq->async.fn = wb_resp_read_len;
-	subreq->async.priv = result;
+	subreq->async.fn = wb_resp_read_done;
+	subreq->async.private_data = result;
 	return result;
 
  nomem:
@@ -286,99 +275,49 @@ struct async_req *wb_resp_read_send(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-static void wb_resp_read_len(struct async_req *subreq)
+static ssize_t wb_resp_more(uint8_t *buf, size_t buflen, void *private_data)
 {
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct resp_read_state *state = talloc_get_type_abort(
-		req->private_data, struct resp_read_state);
-	int err;
-	ssize_t ret;
+	struct winbindd_response *resp = (struct winbindd_response *)buf;
 
-	ret = recvall_recv(subreq, &err);
-	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		async_req_error(req, map_wbc_err_from_errno(err));
-		return;
+	if (buflen == 4) {
+		if (resp->length < sizeof(struct winbindd_response)) {
+			DEBUG(0, ("wb_resp_read_len: Invalid response size "
+				  "received: %d (expected at least%d)\n",
+				  (int)resp->length,
+				  (int)sizeof(struct winbindd_response)));
+			return -1;
+		}
 	}
-
-	if (state->wb_resp->length < sizeof(struct winbindd_response)) {
-		DEBUG(0, ("wb_resp_read_len: Invalid response size received: "
-			  "%d (expected at least%d)\n",
-			  (int)state->wb_resp->length,
-			  (int)sizeof(struct winbindd_response)));
-		async_req_error(req, WBC_ERR_INVALID_RESPONSE);
-		return;
-	}
-
-	subreq = recvall_send(
-		req, state->ev, state->fd, (uint32 *)(state->wb_resp)+1,
-		sizeof(struct winbindd_response) - sizeof(uint32), 0);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-
-	subreq->async.fn = wb_resp_read_main;
-	subreq->async.priv = req;
+	return resp->length - 4;
 }
 
-static void wb_resp_read_main(struct async_req *subreq)
+static void wb_resp_read_done(struct tevent_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+		subreq->async.private_data, struct async_req);
 	struct resp_read_state *state = talloc_get_type_abort(
 		req->private_data, struct resp_read_state);
+	uint8_t *buf;
 	int err;
 	ssize_t ret;
-	size_t extra_len;
 
-	ret = recvall_recv(subreq, &err);
+	ret = read_packet_recv(subreq, state, &buf, &err);
 	TALLOC_FREE(subreq);
-	if (ret < 0) {
+	if (ret == -1) {
 		async_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
 
-	extra_len = state->wb_resp->length - sizeof(struct winbindd_response);
-	if (extra_len == 0) {
-		async_req_done(req);
-		return;
-	}
+	state->wb_resp = (struct winbindd_response *)buf;
 
-	state->wb_resp->extra_data.data = TALLOC_ARRAY(
-		state->wb_resp, char, extra_len+1);
-	if (async_req_nomem(state->wb_resp->extra_data.data, req)) {
-		return;
-	}
-	((char *)state->wb_resp->extra_data.data)[extra_len] = 0;
-
-	subreq = recvall_send(
-		req, state->ev, state->fd, state->wb_resp->extra_data.data,
-		extra_len, 0);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-
-	subreq->async.fn = wb_resp_read_extra;
-	subreq->async.priv = req;
-}
-
-static void wb_resp_read_extra(struct async_req *subreq)
-{
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	int err;
-	ssize_t ret;
-
-	ret = recvall_recv(subreq, &err);
-	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		async_req_error(req, map_wbc_err_from_errno(err));
-		return;
+	if (state->wb_resp->length > sizeof(struct winbindd_response)) {
+		state->wb_resp->extra_data.data =
+			(char *)buf + sizeof(struct winbindd_response);
+	} else {
+		state->wb_resp->extra_data.data = NULL;
 	}
 	async_req_done(req);
 }
-
 
 wbcErr wb_resp_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 			 struct winbindd_response **presp)
