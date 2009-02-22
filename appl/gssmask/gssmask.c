@@ -983,46 +983,63 @@ static int
 HandleOP(UnwrapExt)
 {
     OM_uint32 maj_stat, min_stat;
-    int32_t hContext, flags, seqno;
+    int32_t hContext, flags, bflags;
     krb5_data token, header, trailer;
     gss_ctx_id_t ctx;
-    gss_buffer_desc input_token, output_token;
-    int conf_state;
+    gss_iov_buffer_desc iov[3];
+    int conf_state, iov_len;
     gss_qop_t qop_state;
 
     ret32(c, hContext);
     ret32(c, flags);
-    ret32(c, seqno);
+    ret32(c, bflags);
     retdata(c, header);
     retdata(c, token);
     retdata(c, trailer);
+
+    iov_len = sizeof(iov)/sizeof(iov[0]);
+
+    if (bflags & WRAP_EXP_ONLY_HEADER)
+	iov_len -= 1; /* skip trailer and padding, aka dce-style */
 
     ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
 	errx(1, "unwrap: reference to unknown context");
 
-    input_token.length = token.length;
-    input_token.value = token.data;
+    if (header.length != 0) {
+	iov[0].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[0].buffer.length = header.length;
+	iov[0].buffer.value = header.data;
+    } else {
+	iov[0].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[1].buffer.length = token.length;
+    iov[1].buffer.value = token.data;
 
-    maj_stat = gss_unwrap(&min_stat, ctx, &input_token,
-			  &output_token, &conf_state, &qop_state);
+    if (trailer.length != 0) {
+	iov[2].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[2].buffer.length = trailer.length;
+	iov[2].buffer.value = trailer.data;
+    } else {
+	iov[2].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+
+    maj_stat = gss_unwrap_iov(&min_stat, ctx, &conf_state, &qop_state,
+			      iov, iov_len);
 
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_unwrap failed: %d/%d", maj_stat, min_stat);
 	
-    krb5_data_free(&token);
     if (maj_stat == GSS_S_COMPLETE) {
-	token.data = output_token.value;
-	token.length = output_token.length;
+	token.data = iov[1].buffer.value;
+	token.length = iov[1].buffer.length;
     } else {
 	token.data = NULL;
 	token.length = 0;
     }
     put32(c, 0); /* XXX fix gsm_error */
     putdata(c, token);
-
-    if (maj_stat == GSS_S_COMPLETE)
-	gss_release_buffer(&min_stat, &output_token);
 
     return 0;
 }
