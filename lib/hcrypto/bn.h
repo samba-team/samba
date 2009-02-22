@@ -122,6 +122,6 @@ int	BN_GENCB_call(BN_GENCB *, int, int);
 
 BN_CTX *BN_CTX_new(void);
 void	BN_CTX_free(BN_CTX *);
-BIGNUM *BN_CTX_get(BN_CTX *ctx);
+BIGNUM *BN_CTX_get(BN_CTX *);
 
 #endif
