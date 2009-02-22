@@ -727,7 +727,7 @@ static void writev_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 	if (written == 0) {
-		tevent_req_error(req, EOF);
+		tevent_req_error(req, EPIPE);
 		return;
 	}
 	state->total_size += written;
