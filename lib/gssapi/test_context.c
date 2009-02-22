@@ -253,31 +253,103 @@ wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 	errx(1, "conf_state mismatch");
 }
 
-#if 0
 static void
-wrapunwrap_ext(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flag, gss_OID mechoid)
+wrapunwrap_ext(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 {
-    gss_buffer_desc input_token, output_token, output_token2;
+    krb5_data token, header, trailer;
     OM_uint32 min_stat, maj_stat;
     gss_qop_t qop_state;
     int conf_state;
+    gss_iov_buffer_desc iov[6];
+    unsigned char *p;
+    int iov_len;
 
-    input_token.value = "foo";
-    input_token.length = 3;
+    memset(&iov, 0, sizeof(iov));
 
-    maj_stat = gss_wrap(&min_stat, cctx, flag, 0, &input_token,
-			&conf_state, &output_token);
+    header.data = "ABCheader";
+    header.length = 9;
+    token.data = "0123456789abcdef";
+    token.length = 16;
+    trailer.data = "trailerXYZ";
+    trailer.length = 10;
+
+    iov_len = sizeof(iov)/sizeof(iov[0]);
+
+    if (flags & 2)
+	iov_len -= 2; /* skip trailer and padding, aka dce-style */
+
+    iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+    if (header.length != 0) {
+	iov[1].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[1].buffer.length = header.length;
+	iov[1].buffer.value = header.data;
+    } else {
+	iov[1].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+    iov[2].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[2].buffer.length = token.length;
+    iov[2].buffer.value = token.data;
+    if (trailer.length != 0) {
+	iov[3].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[3].buffer.length = trailer.length;
+	iov[3].buffer.value = trailer.data;
+    } else {
+	iov[3].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+    iov[4].type = GSS_IOV_BUFFER_TYPE_PADDING | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+    iov[5].type = GSS_IOV_BUFFER_TYPE_TRAILER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
+
+    maj_stat = gss_wrap_iov_length(&min_stat, cctx, flags & 1, 0, &conf_state,
+				   iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_wrap failed: %s",
-	     gssapi_err(maj_stat, min_stat, mechoid));
+	errx(1, "gss_wrap_iov_length failed");
 
-    maj_stat = gss_unwrap(&min_stat, sctx, &output_token,
-			  &output_token2, &conf_state, &qop_state);
+    maj_stat = gss_wrap_iov(&min_stat, cctx, flags & 1, 0, &conf_state,
+			    iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_unwrap failed: %s",
+	errx(1, "gss_wrap_iov failed");
+
+    token.length = iov[0].buffer.length + iov[2].buffer.length + iov[4].buffer.length + iov[5].buffer.length;
+    token.data = malloc(token.length);
+
+    p = token.data;
+    memcpy(p, iov[0].buffer.value, iov[0].buffer.length);
+    p += iov[0].buffer.length;
+    memcpy(p, iov[2].buffer.value, iov[2].buffer.length);
+    p += iov[2].buffer.length;
+    memcpy(p, iov[4].buffer.value, iov[4].buffer.length);
+    p += iov[4].buffer.length;
+    memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
+    p += iov[5].buffer.length;
+
+    iov_len = 3;
+
+    if (header.length != 0) {
+	iov[0].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[0].buffer.length = header.length;
+	iov[0].buffer.value = header.data;
+    } else {
+	iov[0].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+    iov[1].type = GSS_IOV_BUFFER_TYPE_DATA;
+    iov[1].buffer.length = token.length;
+    iov[1].buffer.value = token.data;
+
+    if (trailer.length != 0) {
+	iov[2].type = GSS_IOV_BUFFER_TYPE_SIGN_ONLY;
+	iov[2].buffer.length = trailer.length;
+	iov[2].buffer.value = trailer.data;
+    } else {
+	iov[2].type = GSS_IOV_BUFFER_TYPE_EMPTY;
+    }
+
+    maj_stat = gss_unwrap_iov(&min_stat, sctx, &conf_state, &qop_state,
+			      iov, iov_len);
+
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_unwrap_iov failed: %s",
 	     gssapi_err(maj_stat, min_stat, mechoid));
 }
-#endif
 
 static void
 getverifymic(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
@@ -624,6 +696,11 @@ main(int argc, char **argv)
 	wrapunwrap(cctx, sctx, 1, actual_mech);
 	wrapunwrap(sctx, cctx, 0, actual_mech);
 	wrapunwrap(sctx, cctx, 1, actual_mech);
+
+	wrapunwrap_ext(cctx, sctx, 1, actual_mech);
+	wrapunwrap_ext(cctx, sctx, 2, actual_mech);
+	wrapunwrap_ext(cctx, sctx, 3, actual_mech);
+
     }
     if (getverifymic_flag) {
 	getverifymic(cctx, sctx, actual_mech);
