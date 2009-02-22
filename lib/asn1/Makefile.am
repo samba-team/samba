@@ -617,10 +617,12 @@ test_asn1_files: asn1_compile$(EXEEXT) $(srcdir)/test.asn1
 
 EXTRA_DIST =		\
 	cms.asn1	\
+	cms.opt		\
 	asn1_err.et	\
 	canthandle.asn1	\
 	digest.asn1	\
 	krb5.asn1	\
+	krb5.opt	\
 	kx509.asn1	\
 	pkcs12.asn1	\
 	pkcs8.asn1	\

@@ -53,7 +53,7 @@ parse_time_test_SOURCES = parse_time-test.c test-mem.c
 strpftime_test_SOURCES	= strpftime-test.c strpftime-test.h
 strpftime_test_LDADD = libtest.la $(LDADD)
 strpftime_test_CFLAGS = -DTEST_STRPFTIME
-snprintf_test_SOURCES	= snprintf-test.c snprintf-test.h
+snprintf_test_SOURCES	= snprintf-test.c
 snprintf_test_LDADD = libtest.la $(LDADD)
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
 
@@ -199,4 +199,5 @@ EXTRA_DIST = \
 	$(man_MANS) \
 	test-mem.h \
 	ndbm_wrap.c \
-	ndbm_wrap.h
+	ndbm_wrap.h \
+	version-script.map

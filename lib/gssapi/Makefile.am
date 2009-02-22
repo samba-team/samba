@@ -315,6 +315,7 @@ EXTRA_DIST = \
 	krb5/gkrb5_err.et \
 	mech/gssapi.asn1 \
 	spnego/spnego.asn1 \
+	spnego/spnego.opt \
 	version-script.map \
 	gss-commands.in
 

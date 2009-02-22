@@ -58,7 +58,7 @@ PROJECTS = hcrypto hx509 krb5 ntlm wind gssapi
 
 $(PROJECTS): doxygen
 
-doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy gssapi.din
+doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy gssapi.dxy
 	@for a in $(PROJECTS) ; do \
 		echo $$a ; \
 		rm -rf $(srcdir)/$$a ; \
