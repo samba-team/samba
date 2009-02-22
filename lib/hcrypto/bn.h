@@ -62,6 +62,8 @@
 #define BN_set_negative hc_BN_set_negative
 #define BN_set_word hc_BN_set_word
 #define BN_uadd hc_BN_uadd
+#define BN_CTX_new hc_BN_CTX_new
+#define BN_CTX_free hc_BN_CTX_free
 
 /*
  *
@@ -69,7 +71,7 @@
 
 typedef void BIGNUM;
 typedef struct BN_GENCB BN_GENCB;
-typedef void BN_CTX;
+typedef struct BN_CTX BN_CTX;
 typedef void BN_MONT_CTX;
 typedef void BN_BLINDING;
 
@@ -117,5 +119,8 @@ int	BN_rand(BIGNUM *, int, int, int);
 
 void	BN_GENCB_set(BN_GENCB *, int (*)(int, int, BN_GENCB *), void *);
 int	BN_GENCB_call(BN_GENCB *, int, int);
+
+BN_CTX *BN_CTX_new(void);
+void	BN_CTX_free(BN_CTX *);
 
 #endif
