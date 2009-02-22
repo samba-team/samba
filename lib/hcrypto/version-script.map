@@ -5,6 +5,11 @@ HEIMDAL_CRYPTO_1.0 {
 		hc_AES_cbc_encrypt;
 		hc_AES_decrypt;
 		hc_AES_decrypt_key;
+		bc_BN_CTX_end;
+		bc_BN_CTX_free;
+		bc_BN_CTX_get;
+		bc_BN_CTX_new;
+		bc_BN_CTX_start;
 		hc_AES_encrypt;
 		hc_AES_set_encrypt_key;
 		hc_BN_GENCB_call;
