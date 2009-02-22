@@ -228,11 +228,10 @@ loop(gss_OID mechoid,
 }
 
 static void
-wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
+wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flags, gss_OID mechoid)
 {
     gss_buffer_desc input_token, output_token, output_token2;
     OM_uint32 min_stat, maj_stat;
-    int32_t flags = 0;
     gss_qop_t qop_state;
     int conf_state;
 
@@ -250,7 +249,35 @@ wrapunwrap(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_unwrap failed: %s",
 	     gssapi_err(maj_stat, min_stat, mechoid));
+    if (!!conf_state != !!flags)
+	errx(1, "conf_state mismatch");
 }
+
+#if 0
+static void
+wrapunwrap_ext(gss_ctx_id_t cctx, gss_ctx_id_t sctx, int flag, gss_OID mechoid)
+{
+    gss_buffer_desc input_token, output_token, output_token2;
+    OM_uint32 min_stat, maj_stat;
+    gss_qop_t qop_state;
+    int conf_state;
+
+    input_token.value = "foo";
+    input_token.length = 3;
+
+    maj_stat = gss_wrap(&min_stat, cctx, flag, 0, &input_token,
+			&conf_state, &output_token);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_wrap failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+
+    maj_stat = gss_unwrap(&min_stat, sctx, &output_token,
+			  &output_token2, &conf_state, &qop_state);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_unwrap failed: %s",
+	     gssapi_err(maj_stat, min_stat, mechoid));
+}
+#endif
 
 static void
 getverifymic(gss_ctx_id_t cctx, gss_ctx_id_t sctx, gss_OID mechoid)
@@ -593,10 +620,10 @@ main(int argc, char **argv)
     }
 
     if (wrapunwrap_flag) {
-	wrapunwrap(cctx, sctx, actual_mech);
-	wrapunwrap(cctx, sctx, actual_mech);
-	wrapunwrap(sctx, cctx, actual_mech);
-	wrapunwrap(sctx, cctx, actual_mech);
+	wrapunwrap(cctx, sctx, 0, actual_mech);
+	wrapunwrap(cctx, sctx, 1, actual_mech);
+	wrapunwrap(sctx, cctx, 0, actual_mech);
+	wrapunwrap(sctx, cctx, 1, actual_mech);
     }
     if (getverifymic_flag) {
 	getverifymic(cctx, sctx, actual_mech);
