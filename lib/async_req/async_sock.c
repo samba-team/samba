@@ -35,7 +35,6 @@
 enum async_syscall_type {
 	ASYNC_SYSCALL_SEND,
 	ASYNC_SYSCALL_RECV,
-	ASYNC_SYSCALL_RECVALL,
 	ASYNC_SYSCALL_CONNECT
 };
 
@@ -60,13 +59,6 @@ struct async_syscall_state {
 			size_t length;
 			int flags;
 		} param_recv;
-		struct param_recvall {
-			int fd;
-			void *buffer;
-			size_t length;
-			int flags;
-			size_t received;
-		} param_recvall;
 		struct param_connect {
 			/**
 			 * connect needs to be done on a nonblocking
@@ -395,108 +387,6 @@ struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	state->param.param_recv.flags = flags;
 
 	return result;
-}
-
-/**
- * fde event handler for the "recvall" syscall group
- * @param[in] ev	The event context that sent us here
- * @param[in] fde	The file descriptor event associated with the recv
- * @param[in] flags	Can only be TEVENT_FD_READ here
- * @param[in] priv	private data, "struct async_req *" in this case
- */
-
-static void async_recvall_callback(struct tevent_context *ev,
-				   struct tevent_fd *fde, uint16_t flags,
-				   void *priv)
-{
-	struct async_req *req = talloc_get_type_abort(
-		priv, struct async_req);
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	struct param_recvall *p = &state->param.param_recvall;
-
-	if (state->syscall_type != ASYNC_SYSCALL_RECVALL) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	state->result.result_ssize_t = recv(p->fd,
-					    (char *)p->buffer + p->received,
-					    p->length - p->received, p->flags);
-	state->sys_errno = errno;
-
-	if (state->result.result_ssize_t == -1) {
-		async_req_error(req, state->sys_errno);
-		return;
-	}
-
-	if (state->result.result_ssize_t == 0) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	p->received += state->result.result_ssize_t;
-	if (p->received > p->length) {
-		async_req_error(req, EIO);
-		return;
-	}
-
-	if (p->received == p->length) {
-		TALLOC_FREE(state->fde);
-		async_req_done(req);
-	}
-}
-
-/**
- * Receive a specified number of bytes from a socket
- * @param[in] mem_ctx	The memory context to hang the result off
- * @param[in] ev	The event context to work from
- * @param[in] fd	The socket to recv from
- * @param[in] buffer	The buffer to recv into
- * @param[in] length	How many bytes to recv
- * @param[in] flags	flags passed to recv(2)
- *
- * async_recvall will call recv(2) until "length" bytes are received
- */
-
-struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, void *buffer, size_t length,
-			       int flags)
-{
-	struct async_req *result;
-	struct async_syscall_state *state;
-
-	result = async_fde_syscall_new(
-		mem_ctx, ev, ASYNC_SYSCALL_RECVALL,
-		fd, TEVENT_FD_READ, async_recvall_callback,
-		&state);
-	if (result == NULL) {
-		return NULL;
-	}
-
-	state->param.param_recvall.fd = fd;
-	state->param.param_recvall.buffer = buffer;
-	state->param.param_recvall.length = length;
-	state->param.param_recvall.flags = flags;
-	state->param.param_recvall.received = 0;
-
-	return result;
-}
-
-ssize_t recvall_recv(struct async_req *req, int *perr)
-{
-	struct async_syscall_state *state = talloc_get_type_abort(
-		req->private_data, struct async_syscall_state);
-	int err;
-
-	err = async_req_simple_recv_errno(req);
-
-	if (err != 0) {
-		*perr = err;
-		return -1;
-	}
-
-	return state->result.result_ssize_t;
 }
 
 struct async_connect_state {

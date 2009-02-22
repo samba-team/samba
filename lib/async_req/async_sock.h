@@ -42,11 +42,6 @@ struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 				      socklen_t address_len);
 int async_connect_recv(struct tevent_req *req, int *perrno);
 
-struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, void *buffer, size_t length,
-			       int flags);
-ssize_t recvall_recv(struct async_req *req, int *perr);
-
 struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, struct iovec *iov, int count);
 ssize_t writev_recv(struct tevent_req *req, int *perrno);
