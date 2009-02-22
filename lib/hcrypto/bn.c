@@ -521,7 +521,7 @@ BN_CTX_end(BN_CTX *c)
     const size_t prev = c->stack.val[c->stack.used - 1];
     size_t i;
 
-    if (!c->stack.used == 0)
+    if (c->stack.used == 0)
 	abort();
 
     for (i = prev; i < c->bn.used; i++)
