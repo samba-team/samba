@@ -29,6 +29,30 @@
 #include "mech_locl.h"
 RCSID("$Id$");
 
+/**
+ *  gss_canonicalize_name takes a Internal Name (IN) and converts in into a
+ *  mechanism specific Mechanism Name (MN).
+ *
+ *  The input name may multiple name, or generic name types.
+ *
+ *  If the input_name if of the GSS_C_NT_USER_NAME, and the Kerberos
+ *  mechanism is specified, the resulting MN type is a
+ *  GSS_KRB5_NT_PRINCIPAL_NAME.
+ *
+ *  For more information about @ref internalVSmechname.
+ *
+ *  @param minor_status minor status code.
+ *  @param input_name name to covert, unchanged by gss_canonicalize_name().
+ *  @param mech_type the type to convert Name too.
+ *  @param output_name the resulting type, release with
+ *         gss_release_name(), independent of input_name.
+ *
+ *  @returns a gss_error code, see gss_display_status() about printing
+ *         the error code.
+ *	  
+ *  @ingroup gssapi
+ */
+
 OM_uint32 GSSAPI_LIB_FUNCTION
 gss_canonicalize_name(OM_uint32 *minor_status,
     const gss_name_t input_name,
