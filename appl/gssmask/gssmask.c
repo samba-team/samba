@@ -946,12 +946,12 @@ HandleOP(WrapExt)
     maj_stat = gss_wrap_iov_length(&min_stat, ctx, flags, 0, &conf_state,
 				   iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_wrap failed");
+	errx(1, "gss_wrap_iov_length failed");
 
     maj_stat = gss_wrap_iov(&min_stat, ctx, flags, 0, &conf_state,
 			    iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
-	errx(1, "gss_wrap failed");
+	errx(1, "gss_wrap_iov failed");
 
     krb5_data_free(&token);
 
