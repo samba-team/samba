@@ -2929,13 +2929,20 @@ match_keys_rsa(hx509_cert c, hx509_private_key private_key)
     return ret == 1;
 }
 
+static int
+match_keys_ec(hx509_cert c, hx509_private_key private_key)
+{
+    return 1; /* XXX use EC_KEY_check_key */
+}
+
+
 int
 _hx509_match_keys(hx509_cert c, hx509_private_key key)
 {
     if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_pkcs1_rsaEncryption) == 0)
 	return match_keys_rsa(c, key);
     if (der_heim_oid_cmp(key->ops->key_oid, &asn1_oid_id_ecPublicKey) == 0)
-	return 1; /* XXX */
+	return return match_keys_ec(c, key);
     return 0;
 
 }
