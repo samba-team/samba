@@ -897,16 +897,16 @@ static int
 HandleOP(WrapExt)
 {
     OM_uint32 maj_stat, min_stat;
-    int32_t hContext, flags, seqno;
+    int32_t hContext, flags, bflags;
     krb5_data token, header, trailer;
     gss_ctx_id_t ctx;
     unsigned char *p;
-    int conf_state;
+    int conf_state, iov_len;
     gss_iov_buffer_desc iov[6];
 
     ret32(c, hContext);
     ret32(c, flags);
-    ret32(c, seqno);
+    ret32(c, bflags);
     retdata(c, header);
     retdata(c, token);
     retdata(c, trailer);
@@ -916,6 +916,11 @@ HandleOP(WrapExt)
 	errx(1, "wrap: reference to unknown context");
 
     memset(&iov, 0, sizeof(iov));
+
+    iov_len = sizeof(iov)/sizeof(iov[0]);
+
+    if (bflags & 1)
+	iov_len -= 2; /* skip trailer and padding, aka dce-style */
 
     iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
     if (header.length != 0) {
@@ -938,8 +943,13 @@ HandleOP(WrapExt)
     iov[4].type = GSS_IOV_BUFFER_TYPE_PADDING | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
     iov[5].type = GSS_IOV_BUFFER_TYPE_TRAILER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
 
+    maj_stat = gss_wrap_iov_length(&min_stat, ctx, flags, 0, &conf_state,
+				   iov, iov_len);
+    if (maj_stat != GSS_S_COMPLETE)
+	errx(1, "gss_wrap failed");
+
     maj_stat = gss_wrap_iov(&min_stat, ctx, flags, 0, &conf_state,
-			    iov, sizeof(iov)/sizeof(iov[0]));
+			    iov, iov_len)
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_wrap failed");
 
@@ -958,7 +968,8 @@ HandleOP(WrapExt)
     memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
     p += iov[5].buffer.length;
 
-    gss_release_iov_buffer(NULL, iov, sizeof(iov)/sizeof(iov[0]));
+    gss_release_iov_buffer(NULL, iov, iov_len)
+
 
     put32(c, 0); /* XXX fix gsm_error */
     putdata(c, token);
@@ -974,7 +985,7 @@ HandleOP(UnwrapExt)
 {
     OM_uint32 maj_stat, min_stat;
     int32_t hContext, flags, seqno;
-    krb5_data token;
+    krb5_data token, header, trailer;
     gss_ctx_id_t ctx;
     gss_buffer_desc input_token, output_token;
     int conf_state;
@@ -983,7 +994,9 @@ HandleOP(UnwrapExt)
     ret32(c, hContext);
     ret32(c, flags);
     ret32(c, seqno);
+    retdata(c, header);
     retdata(c, token);
+    retdata(c, trailer);
 
     ctx = find_handle(c->handles, hContext, handle_context);
     if (ctx == NULL)
