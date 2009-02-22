@@ -69,11 +69,11 @@
  *
  */
 
-typedef void BIGNUM;
+typedef struct BIGNUM BIGNUM;
 typedef struct BN_GENCB BN_GENCB;
 typedef struct BN_CTX BN_CTX;
-typedef void BN_MONT_CTX;
-typedef void BN_BLINDING;
+typedef struct BN_MONT_CTX BN_MONT_CTX;
+typedef struct BN_BLINDING BN_BLINDING;
 
 struct BN_GENCB {
     unsigned int ver;
