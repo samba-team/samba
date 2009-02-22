@@ -919,7 +919,7 @@ HandleOP(WrapExt)
 
     iov_len = sizeof(iov)/sizeof(iov[0]);
 
-    if (bflags & 1)
+    if (bflags & WRAP_EXP_ONLY_HEADER)
 	iov_len -= 2; /* skip trailer and padding, aka dce-style */
 
     iov[0].type = GSS_IOV_BUFFER_TYPE_HEADER | GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATE;
