@@ -949,7 +949,7 @@ HandleOP(WrapExt)
 	errx(1, "gss_wrap failed");
 
     maj_stat = gss_wrap_iov(&min_stat, ctx, flags, 0, &conf_state,
-			    iov, iov_len)
+			    iov, iov_len);
     if (maj_stat != GSS_S_COMPLETE)
 	errx(1, "gss_wrap failed");
 
@@ -968,8 +968,7 @@ HandleOP(WrapExt)
     memcpy(p, iov[5].buffer.value, iov[5].buffer.length);
     p += iov[5].buffer.length;
 
-    gss_release_iov_buffer(NULL, iov, iov_len)
-
+    gss_release_iov_buffer(NULL, iov, iov_len);
 
     put32(c, 0); /* XXX fix gsm_error */
     putdata(c, token);
