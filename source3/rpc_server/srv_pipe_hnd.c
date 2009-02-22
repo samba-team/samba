@@ -1314,7 +1314,7 @@ struct np_read_state {
 };
 
 static void np_read_trigger(struct async_req *req);
-static void np_read_done(struct async_req *subreq);
+static void np_read_done(struct tevent_req *subreq);
 
 struct async_req *np_read_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 			       struct fake_file_handle *handle,
@@ -1391,28 +1391,28 @@ static void np_read_trigger(struct async_req *req)
 {
 	struct np_read_state *state = talloc_get_type_abort(
 		req->private_data, struct np_read_state);
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 
-	subreq = read_pkt_send(state, state->ev, state->p->fd, RPC_HEADER_LEN,
-			       rpc_frag_more_fn, NULL);
+	subreq = read_packet_send(state, state->ev, state->p->fd,
+				  RPC_HEADER_LEN, rpc_frag_more_fn, NULL);
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = np_read_done;
-	subreq->async.priv = req;
+	subreq->async.private_data = req;
 }
 
-static void np_read_done(struct async_req *subreq)
+static void np_read_done(struct tevent_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+		subreq->async.private_data, struct async_req);
 	struct np_read_state *state = talloc_get_type_abort(
 		req->private_data, struct np_read_state);
 	ssize_t received;
 	size_t thistime;
 	int err;
 
-	received = read_pkt_recv(subreq, state->p, &state->p->msg, &err);
+	received = read_packet_recv(subreq, state->p, &state->p->msg, &err);
 	TALLOC_FREE(subreq);
 	if (received == -1) {
 		async_req_nterror(req, map_nt_error_from_unix(err));
