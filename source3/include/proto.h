@@ -3117,7 +3117,7 @@ struct packet_struct *receive_dgram_packet(int fd, int t,
 bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
 int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
-int name_mangle( char *In, char *Out, char name_type );
+char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type);
 int name_extract(char *buf,int ofs, fstring name);
 int name_len(char *s1);
 
