@@ -45,7 +45,8 @@ iov_allocate(OM_uint32 *minor_status, gss_iov_buffer_desc *iov, int iov_count)
 	    void *ptr = malloc(iov[i].buffer.length);
 	    if (ptr == NULL)
 		abort();
-	    memcpy(ptr, iov[i].buffer.value, iov[i].buffer.length);
+	    if (iov[i].buffer.value)
+		memcpy(ptr, iov[i].buffer.value, iov[i].buffer.length);
 	    iov[i].buffer.value = ptr;
 	    iov[i].type |= GSS_IOV_BUFFER_TYPE_FLAG_ALLOCATED;
 	}
@@ -222,7 +223,7 @@ _gk_wrap_iov_length(OM_uint32 * minor_status,
     *minor_status = 0;
 
     for (size = 0, i = 0; i < iov_count; i++) {
-	switch(iov[i].type) {
+	switch(GSS_IOV_BUFFER_TYPE(iov[i].type)) {
 	case GSS_IOV_BUFFER_TYPE_EMPTY:
 	    break;
 	case GSS_IOV_BUFFER_TYPE_DATA:
