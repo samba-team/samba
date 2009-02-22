@@ -881,6 +881,29 @@ done:
 	return ret;
 }
 
+/*
+ * regdb_key_exists() is a very frequent operation. It can be quite
+ * time-consuming to fully fetch the parent's subkey list, talloc_strdup all
+ * subkeys and then compare the keyname linearly to all the parent's subkeys.
+ *
+ * The following code tries to make this operation as efficient as possible:
+ * Per registry key we create a list of subkeys that is very efficient to
+ * search for existence of a subkey. Its format is:
+ *
+ * 4 bytes num_subkeys
+ * 4*num_subkey bytes offset into the string array
+ * then follows a sorted list of subkeys in uppercase
+ *
+ * This record is created by create_sorted_subkeys() on demand if it does not
+ * exist. scan_parent_subkeys() uses regdb->parse_record to search the sorted
+ * list, the parsing code and the binary search can be found in
+ * parent_subkey_scanner. The code uses parse_record() to avoid a memcpy of
+ * the potentially large subkey record.
+ *
+ * The sorted subkey record is deleted in regdb_store_keys_internal and
+ * recreated on demand.
+ */
+
 static int cmp_keynames(const void *p1, const void *p2)
 {
 	return StrCaseCmp(*((char **)p1), *((char **)p2));
