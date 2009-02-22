@@ -183,14 +183,14 @@ CLEANFILES = \
 	test_crypto.tmp
 
 EXTRA_DIST = \
-	rsakey.der \
-	test_crypto.in \
-	version-script.map \
 	DESperate.txt \
 	dllmain.c \
+	ec.h \
+	ecdh.h \
+	ecdsa.h \
 	gen-des.pl \
-	imath/import.sh \
 	imath/LICENSE \
+	imath/import.sh \
 	md5crypt_test.c \
 	passwd_dialog.aps \
 	passwd_dialog.clw \
@@ -198,4 +198,7 @@ EXTRA_DIST = \
 	passwd_dialog.res \
 	passwd_dlg.c \
 	passwd_dlg.h \
-	resource.h
+	resource.h \
+	rsakey.der \
+	test_crypto.in \
+	version-script.map
