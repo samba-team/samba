@@ -342,6 +342,50 @@ test_BN_rand(void)
     return 0;
 }
 
+#define testnum 100
+#define testnum2 10
+
+static int
+test_BN_CTX(void)
+{
+    unsigned int i, j;
+    BIGNUM *bn;
+    BN_CTX *c;
+
+    if ((c = BN_CTX_new()) == NULL)
+	return 1;
+    
+    for (i = 0; i < testnum; i++) {
+	BN_CTX_start(c);
+	BN_CTX_end(c);
+    }
+
+    for (i = 0; i < testnum; i++)
+	BN_CTX_start(c);
+    for (i = 0; i < testnum; i++)
+	BN_CTX_end(c);
+
+    for (i = 0; i < testnum; i++) {
+	BN_CTX_start(c);
+	if ((bn = BN_CTX_get(c)) == NULL)
+	    return 1;
+	BN_CTX_end(c);
+    }
+
+    for (i = 0; i < testnum; i++) {
+	BN_CTX_start(c);
+	for (j = 0; j < testnum2; j++)
+	    if ((bn = BN_CTX_get(c)) == NULL)
+		return 1;
+    }
+    for (i = 0; i < testnum; i++)
+	BN_CTX_end(c);
+
+    BN_CTX_free(c);
+    return 0;
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -353,6 +397,7 @@ main(int argc, char **argv)
     ret += test_BN_uadd();
     ret += test_BN_cmp();
     ret += test_BN_rand();
+    ret += test_BN_CTX();
 
     return ret;
 }
