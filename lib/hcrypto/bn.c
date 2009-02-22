@@ -493,7 +493,7 @@ BN_CTX_get(BN_CTX *c)
 	for (i = c->bn.used; i < c->bn.len; i++) {
 	    c->bn.val[i] = BN_new();
 	    if (c->bn.val[i] == NULL) {
-		c->bn.len = i - 1;
+		c->bn.len = i;
 		return NULL;
 	    }
 	}
