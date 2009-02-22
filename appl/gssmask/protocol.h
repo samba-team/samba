@@ -259,6 +259,34 @@ enum gssMaggotOp {
      *   int32: gsm status val (GSMERR_NOT_SUPPORTED)
      */
     /* here ended version 7 of the protocol */
+    eWrapExt,
+    /*
+     * input:
+     *   int32: hContext
+     *   int32: flags		-- unused
+     *   int32: seqno		-- unused
+     *   length-encode: protocol header
+     *   length-encode: plaintext
+     *   length-encode: protocol trailer
+     * return:
+     *   int32: gsm status val
+     *   length-encode: ciphertext
+     */
+    eUnwrapExt,
+    /*
+     * input:
+     *   int32: hContext
+     *   int32: flags		-- unused
+     *   int32: seqno		-- unused
+     *   length-encode: protocol header
+     *   length-encode: ciphertext
+     *   length-encode: protocol trailer
+     * return:
+     *   int32: gsm status val
+     *   length-encode: plaintext
+     */
+    /* here ended version 8 of the protocol */
+
     eLastProtocolMessage
 };
 
