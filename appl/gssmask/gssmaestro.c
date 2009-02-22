@@ -513,7 +513,7 @@ test_wrap_ext(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2,
 
 
 static int32_t
-test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
+test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2, int wrap_ext)
 {
     int32_t val;
     int i;
@@ -534,27 +534,28 @@ test_token(struct client *c1, int32_t hc1, struct client *c2, int32_t hc2)
 	val = test_wrap(c2, hc2, c1, hc1, 1);
 	if (val) return val;
 
-	/* wrap ext */
-	val = test_wrap_ext(c1, hc1, c2, hc2, 1, 0);
-	if (val) return val;
-	val = test_wrap_ext(c2, hc2, c1, hc1, 1, 0);
-	if (val) return val;
-
-	val = test_wrap_ext(c1, hc1, c2, hc2, 1, 1);
-	if (val) return val;
-	val = test_wrap_ext(c2, hc2, c1, hc1, 1, 1);
-	if (val) return val;
-
-	val = test_wrap_ext(c1, hc1, c2, hc2, 0, 0);
-	if (val) return val;
-	val = test_wrap_ext(c2, hc2, c1, hc1, 0, 0);
-	if (val) return val;
-
-	val = test_wrap_ext(c1, hc1, c2, hc2, 0, 1);
-	if (val) return val;
-	val = test_wrap_ext(c2, hc2, c1, hc1, 0, 1);
-	if (val) return val;
-
+	if (wrap_ext) {
+	    /* wrap ext */
+	    val = test_wrap_ext(c1, hc1, c2, hc2, 1, 0);
+	    if (val) return val;
+	    val = test_wrap_ext(c2, hc2, c1, hc1, 1, 0);
+	    if (val) return val;
+	    
+	    val = test_wrap_ext(c1, hc1, c2, hc2, 1, 1);
+	    if (val) return val;
+	    val = test_wrap_ext(c2, hc2, c1, hc1, 1, 1);
+	    if (val) return val;
+	    
+	    val = test_wrap_ext(c1, hc1, c2, hc2, 0, 0);
+	    if (val) return val;
+	    val = test_wrap_ext(c2, hc2, c1, hc1, 0, 0);
+	    if (val) return val;
+	    
+	    val = test_wrap_ext(c1, hc1, c2, hc2, 0, 1);
+	    if (val) return val;
+	    val = test_wrap_ext(c2, hc2, c1, hc1, 0, 1);
+	    if (val) return val;
+	}
     }
     return GSMERR_OK;
 }
@@ -715,6 +716,7 @@ get_client(const char *slave)
 
 static int version_flag;
 static int help_flag;
+static int wrap_ext = 0;
 static char *logfile_str;
 static getarg_strings principals;
 static getarg_strings slaves;
@@ -725,6 +727,8 @@ struct getargs args[] = {
     { "slaves", 0,  arg_strings,	&slaves,	"Slaves",
       NULL },
     { "log-file", 0, arg_string,	&logfile_str,	"Logfile",
+      NULL },
+    { "wrap-ext", 0,  arg_flag,		&wrap_ext,	"test wrap extended",
       NULL },
     { "version", 0,  arg_flag,		&version_flag,	"Print version",
       NULL },
@@ -847,7 +851,7 @@ main(int argc, char **argv)
 			    GSS_C_DELEG_FLAG|GSS_C_MUTUAL_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
-	    test_token(c, clientC, c, serverC);
+	    test_token(c, clientC, c, serverC, wrap_ext);
 	    toast_resource(c, clientC);
 	    toast_resource(c, serverC);
 	    if (delegCred)
@@ -863,7 +867,7 @@ main(int argc, char **argv)
 			    GSS_C_INTEG_FLAG|GSS_C_CONF_FLAG,
 			    hCred, &clientC, &serverC, &delegCred);
 	if (val == GSMERR_OK) {
-	    test_token(c, clientC, c, serverC);
+	    test_token(c, clientC, c, serverC, wrap_ext);
 	    toast_resource(c, clientC);
 	    toast_resource(c, serverC);
 	    if (delegCred)
@@ -918,7 +922,7 @@ main(int argc, char **argv)
 		break;
 	    }
 	
-	    val = test_token(client, clientC, server, serverC);
+	    val = test_token(client, clientC, server, serverC, wrap_ext);
 	    if (val)
 		break;
 	
