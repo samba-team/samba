@@ -22,8 +22,6 @@ HEIMDAL_ROKEN_1.0 {
 		get_window_size;
 		getarg;
 		getnameinfo_verified;
-		glob;
-		globfree;
 		hex_decode;
 		hex_encode;
 		issuid;
