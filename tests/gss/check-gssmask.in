@@ -121,6 +121,7 @@ ${gssmaestro} \
     --slaves=localhost:8889 \
     --slaves=localhost:8890 \
     --slaves=localhost:8891 \
+    --wrap-ext \
     --principals=user1@${R}:u1 || exitcode=1
 
 trap "" EXIT
