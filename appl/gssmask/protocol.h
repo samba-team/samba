@@ -153,7 +153,7 @@ enum gssMaggotOp {
     /*
      * input:
      *   int32: hContext
-     *   int32: flags		-- unused
+     *   int32: flags
      *   int32: seqno		-- unused
      *   length-encode: plaintext
      * return:
@@ -164,7 +164,7 @@ enum gssMaggotOp {
     /*
      * input:
      *   int32: hContext
-     *   int32: flags		-- unused
+     *   int32: flags
      *   int32: seqno		-- unused
      *   length-encode: ciphertext
      * return:
@@ -177,7 +177,7 @@ enum gssMaggotOp {
     /*
      * input:
      *   int32: hContext
-     *   int32: flags		-- unused
+     *   int32: flags
      *   int32: seqno		-- unused
      *   length-encode: message
      *   length-encode: signature
@@ -263,8 +263,8 @@ enum gssMaggotOp {
     /*
      * input:
      *   int32: hContext
-     *   int32: flags		-- unused
-     *   int32: seqno		-- unused
+     *   int32: flags
+     *   int32: bflags
      *   length-encode: protocol header
      *   length-encode: plaintext
      *   length-encode: protocol trailer
@@ -276,8 +276,8 @@ enum gssMaggotOp {
     /*
      * input:
      *   int32: hContext
-     *   int32: flags		-- unused
-     *   int32: seqno		-- unused
+     *   int32: flags
+     *   int32: bflags
      *   length-encode: protocol header
      *   length-encode: ciphertext
      *   length-encode: protocol trailer
@@ -289,6 +289,9 @@ enum gssMaggotOp {
 
     eLastProtocolMessage
 };
+
+/* bflags */
+#define WRAP_EXP_ONLY_HEADER 1
 
 enum gssMaggotLogOp{
   eLogInfo = 0,
