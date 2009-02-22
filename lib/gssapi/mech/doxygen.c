@@ -33,6 +33,12 @@
 
 /*! @mainpage Heimdal GSS-API Library
  *
+ * Heimdal implements the following mechanisms:
+ *
+ * - Kerberos 5
+ * - SPNEGO
+ * - NTLM
+ *
  * The project web page: http://www.h5l.org/
  *
  * - @ref gssapi_services_intro
