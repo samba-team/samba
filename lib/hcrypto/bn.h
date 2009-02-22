@@ -64,7 +64,7 @@
 #define BN_uadd hc_BN_uadd
 #define BN_CTX_new hc_BN_CTX_new
 #define BN_CTX_free hc_BN_CTX_free
-
+#define BN_CTX_get hc_BN_CTX_get
 /*
  *
  */
@@ -122,5 +122,6 @@ int	BN_GENCB_call(BN_GENCB *, int, int);
 
 BN_CTX *BN_CTX_new(void);
 void	BN_CTX_free(BN_CTX *);
+BIGNUM *BN_CTX_get(BN_CTX *ctx);
 
 #endif
