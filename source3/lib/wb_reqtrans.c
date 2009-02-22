@@ -237,90 +237,60 @@ wbcErr wb_req_read_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
 }
 
 struct req_write_state {
-	struct winbindd_request *wb_req;
-	struct tevent_context *ev;
-	int fd;
+	struct iovec iov[2];
 };
 
-static void wb_req_write_main(struct async_req *subreq);
-static void wb_req_write_extra(struct async_req *subreq);
+static void wb_req_write_done(struct tevent_req *subreq);
 
 struct async_req *wb_req_write_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev, int fd,
 				    struct winbindd_request *wb_req)
 {
-	struct async_req *result, *subreq;
+	struct async_req *result;
+	struct tevent_req *subreq;
 	struct req_write_state *state;
+	int count = 1;
 
 	if (!async_req_setup(mem_ctx, &result, &state,
 			     struct req_write_state)) {
 		return NULL;
 	}
-	state->fd = fd;
-	state->ev = ev;
-	state->wb_req = wb_req;
 
-	subreq = sendall_send(state, state->ev, state->fd, state->wb_req,
-			      sizeof(struct winbindd_request), 0);
-	if (subreq == NULL) {
-		goto nomem;
+	state->iov[0].iov_base = wb_req;
+	state->iov[0].iov_len = sizeof(struct winbindd_request);
+
+	if (wb_req->extra_len != 0) {
+		state->iov[1].iov_base = wb_req->extra_data.data;
+		state->iov[1].iov_len = wb_req->extra_len;
+		count = 2;
 	}
 
-	subreq->async.fn = wb_req_write_main;
-	subreq->async.priv = result;
+	subreq = writev_send(state, ev, fd, state->iov, count);
+	if (subreq == NULL) {
+		goto fail;
+	}
+	subreq->async.fn = wb_req_write_done;
+	subreq->async.private_data = result;
 	return result;
 
- nomem:
+ fail:
 	TALLOC_FREE(result);
 	return NULL;
 }
 
-static void wb_req_write_main(struct async_req *subreq)
+static void wb_req_write_done(struct tevent_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	struct req_write_state *state = talloc_get_type_abort(
-		req->private_data, struct req_write_state);
+		subreq->async.private_data, struct async_req);
 	int err;
 	ssize_t ret;
 
-	ret = sendall_recv(subreq, &err);
+	ret = writev_recv(subreq, &err);
 	TALLOC_FREE(subreq);
 	if (ret < 0) {
 		async_req_error(req, map_wbc_err_from_errno(err));
 		return;
 	}
-
-	if (state->wb_req->extra_len == 0) {
-		async_req_done(req);
-		return;
-	}
-
-	subreq = sendall_send(state, state->ev, state->fd,
-			      state->wb_req->extra_data.data,
-			      state->wb_req->extra_len, 0);
-	if (async_req_nomem(subreq, req)) {
-		return;
-	}
-
-	subreq->async.fn = wb_req_write_extra;
-	subreq->async.priv = req;
-}
-
-static void wb_req_write_extra(struct async_req *subreq)
-{
-	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
-	int err;
-	ssize_t ret;
-
-	ret = sendall_recv(subreq, &err);
-	TALLOC_FREE(subreq);
-	if (ret < 0) {
-		async_req_error(req, map_wbc_err_from_errno(err));
-		return;
-	}
-
 	async_req_done(req);
 }
 
