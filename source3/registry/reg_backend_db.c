@@ -920,9 +920,15 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	int i, res;
 	size_t len;
 
+	if (regdb->transaction_start(regdb) != 0) {
+		DEBUG(0, ("create_sorted_subkeys: transaction_start "
+			  "failed\n"));
+		return false;
+	}
+
 	ctr = talloc(talloc_tos(), REGSUBKEY_CTR);
 	if (ctr == NULL) {
-		return false;
+		goto fail;
 	}
 
 	res = regdb_fetch_keys(key, ctr);
@@ -963,15 +969,37 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		p += strlen(sorted_subkeys[i]) + 1;
 	}
 
-	status = dbwrap_trans_store_bystring(
+	status = dbwrap_store_bystring(
 		regdb, sorted_keyname, make_tdb_data((uint8_t *)buf, len),
 		TDB_REPLACE);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
+		/*
+		 * Don't use a "goto fail;" here, this would commit the broken
+		 * transaction. See below for an explanation.
+		 */
+		if (regdb->transaction_cancel(regdb) == -1) {
+			DEBUG(0, ("create_sorted_subkeys: transaction_cancel "
+				  "failed\n"));
+		}
+		TALLOC_FREE(ctr);
+		return false;
 	}
 
 	result = true;
  fail:
+	/*
+	 * We only get here via the "goto fail" when we did not write anything
+	 * yet. Using transaction_commit even in a failure case is necessary
+	 * because this (disposable) call might be nested in other
+	 * transactions. Doing a cancel here would destroy the possibility of
+	 * a transaction_commit for transactions that we might be wrapped in.
+	 */
+	if (regdb->transaction_commit(regdb) == -1) {
+		DEBUG(0, ("create_sorted_subkeys: transaction_start "
+			  "failed\n"));
+		goto fail;
+	}
+
 	TALLOC_FREE(ctr);
 	return result;
 }
