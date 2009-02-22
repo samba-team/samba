@@ -339,7 +339,8 @@ UTIL_OBJ = ../lib/util/rbtree.o ../lib/util/signal.o ../lib/util/time.o \
 		   ../lib/util/util.o ../lib/util/fsusage.o \
 		   ../lib/util/params.o ../lib/util/talloc_stack.o \
 		   ../lib/util/genrand.o ../lib/util/util_net.o \
-		   ../lib/util/become_daemon.o ../lib/util/system.o
+		   ../lib/util/become_daemon.o ../lib/util/system.o \
+		   ../lib/util/tevent_unix.o
 
 CRYPTO_OBJ = ../lib/crypto/crc32.o ../lib/crypto/md5.o \
 			 ../lib/crypto/hmacmd5.o ../lib/crypto/arcfour.o \
