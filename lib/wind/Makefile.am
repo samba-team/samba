@@ -89,22 +89,22 @@ LDADD = libwind.la $(LIB_roken)
 PYTHON = python
 
 map_table.h map_table.c: rfc3454.txt gen-map.py stringprep.py
-	$(PYTHON) $(srcdir)/gen-map.py $(srcdir)/rfc3454.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-map.py $(srcdir)/rfc3454.txt $(builddir)
 
 errorlist_table.h errorlist_table.c: rfc3454.txt gen-errorlist.py stringprep.py
-	$(PYTHON) $(srcdir)/gen-errorlist.py $(srcdir)/rfc3454.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-errorlist.py $(srcdir)/rfc3454.txt $(builddir)
 
 normalize_table.h normalize_table.c: UnicodeData.txt CompositionExclusions-3.2.0.txt gen-normalize.py
-	$(PYTHON) $(srcdir)/gen-normalize.py $(srcdir)/UnicodeData.txt $(srcdir)/CompositionExclusions-3.2.0.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-normalize.py $(srcdir)/UnicodeData.txt $(srcdir)/CompositionExclusions-3.2.0.txt $(builddir)
 
 combining_table.h combining_table.c: UnicodeData.txt gen-combining.py
-	$(PYTHON) $(srcdir)/gen-combining.py $(srcdir)/UnicodeData.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-combining.py $(srcdir)/UnicodeData.txt $(builddir)
 
 bidi_table.h bidi_table.c: rfc3454.txt gen-bidi.py
-	$(PYTHON) $(srcdir)/gen-bidi.py $(srcdir)/rfc3454.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-bidi.py $(srcdir)/rfc3454.txt $(builddir)
 
 punycode_examples.h punycode_examples.c: gen-punycode-examples.py rfc3492.txt
-	$(PYTHON) $(srcdir)/gen-punycode-examples.py $(srcdir)/rfc3492.txt $(srcdir)
+	$(PYTHON) $(srcdir)/gen-punycode-examples.py $(srcdir)/rfc3492.txt $(builddir)
 
 EXTRA_DIST = \
 	CompositionExclusions-3.2.0.txt \
