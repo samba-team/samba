@@ -36,4 +36,11 @@
  * The project web page: http://www.h5l.org/
  */
 
+/**
+ * @page internalVSmechname Internal names and mechanism names
+ * @section api_INvsMN Kerberos 5 API Overview
+ *
+ * Describe relationship between import_name, canonicalize_name, export_name and friends.
+ */
+
 /** @defgroup gssapi Heimdal GSS-API functions */
