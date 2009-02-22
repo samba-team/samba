@@ -177,24 +177,28 @@ echo "======test context building"
 for mech in krb5 spnego ; do
 	echo "${mech} no-mutual"
 	${context} --mech-type=${mech} \
+	    --wrapunwrap \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} mutual"
 	${context} --mech-type=${mech} \
 	    --mutual \
+	    --wrapunwrap \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} delegate"
 	${context} --mech-type=${mech} \
 	    --delegate \
+	    --wrapunwrap \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 
 	echo "${mech} mutual delegate"
 	${context} --mech-type=${mech} \
 	    --mutual --delegate \
+	    --wrapunwrap \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 		{ exitcode=1 ; echo "test failed"; }
 done
@@ -208,6 +212,7 @@ for mech in krb5 ; do
 	    --mech-type=${mech} \
 	    --mutual \
 	    --dce-style \
+	    --wrapunwrap \
 	    --name-type=hostbased-service host@lucid.test.h5l.se || \
 	    { exitcode=1 ; echo "test failed"; }
 
