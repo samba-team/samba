@@ -36,7 +36,6 @@
 #ifndef HEIMDAL_HX509_H
 #define HEIMDAL_HX509_H 1
 
-#include <heim_asn1.h>
 #include <rfc2459_asn1.h>
 
 typedef struct hx509_cert_attribute_data *hx509_cert_attribute;
