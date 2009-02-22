@@ -35,7 +35,6 @@
 enum async_syscall_type {
 	ASYNC_SYSCALL_SEND,
 	ASYNC_SYSCALL_RECV,
-	ASYNC_SYSCALL_CONNECT
 };
 
 /**
@@ -59,16 +58,6 @@ struct async_syscall_state {
 			size_t length;
 			int flags;
 		} param_recv;
-		struct param_connect {
-			/**
-			 * connect needs to be done on a nonblocking
-			 * socket. Keep the old flags around
-			 */
-			long old_sockflags;
-			int fd;
-			const struct sockaddr *address;
-			socklen_t address_len;
-		} param_connect;
 	} param;
 
 	union {
