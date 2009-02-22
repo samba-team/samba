@@ -465,7 +465,7 @@ BN_CTX *
 BN_CTX_new(void)
 {
     struct BN_CTX *c;
-    c = calloc(sizeof(*c));
+    c = calloc(1, sizeof(*c));
     return c;
 }
 
@@ -518,18 +518,16 @@ BN_CTX_start(BN_CTX *c)
 void
 BN_CTX_end(BN_CTX *c)
 {
-    const size_t stack_prev = c->stack.val[c->stack.used - 1];
-    const size_t stack_cur = c->stack.val[c->stack.used];
+    const size_t prev = c->stack.val[c->stack.used - 1];
     size_t i;
 
-    if (c->stack.used == 0)
+    if (!c->stack.used == 0)
 	abort();
 
-    for (i = stack_prev + 1; i < stack_cur; i++)
-	BN_clear(&c->bn.val[i]);
+    for (i = prev; i < c->bn.used; i++)
+	BN_clear(c->bn.val[i]);
 
-    c->stack.val[c->stack.used] = 0;
     c->stack.used--;
-    c->bn.used = stack_prev;
+    c->bn.used = prev;
 }
 
