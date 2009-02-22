@@ -443,3 +443,93 @@ BN_GENCB_call(BN_GENCB *cb, int a, int b)
 	return 1;
     return cb->cb.cb_2(a, b, cb);
 }
+
+/*
+ *
+ */
+
+struct BN_CTX {
+    struct {
+	BIGNUM **val;
+	size_t used;
+	size_t len;
+    } bn;
+    struct {
+	size_t *val;
+	size_t used;
+	size_t len;
+    } stack;
+};
+
+BN_CTX *
+BN_CTX_new(void)
+{
+    struct BN_CTX *c;
+    c = calloc(sizeof(*c));
+    return c;
+}
+
+void
+BN_CTX_free(BN_CTX *c)
+{
+    size_t i;
+    for (i = 0; i < c->bn.len; i++)
+	BN_free(c->bn.val[i]);
+    free(c->bn.val);
+    free(c->stack.val);
+}
+
+BIGNUM *
+BN_CTX_get(BN_CTX *c)
+{
+    if (c->bn.used == c->bn.len) {
+	void *ptr;
+	size_t i;
+	c->bn.len += 16;
+	ptr = realloc(c->bn.val, c->bn.len * sizeof(c->bn.val[0]));
+	if (ptr == NULL)
+	    return NULL;
+	c->bn.val = ptr;
+	for (i = c->bn.used; i < c->bn.len; i++) {
+	    c->bn.val[i] = BN_new();
+	    if (c->bn.val[i] == NULL) {
+		c->bn.len = i - 1;
+		return NULL;
+	    }
+	}
+    }
+    return c->bn.val[c->bn.used++];
+}
+
+void
+BN_CTX_start(BN_CTX *c)
+{
+    if (c->stack.used == c->stack.len) {
+	void *ptr;
+	c->stack.len += 16;
+	ptr = realloc(c->stack.val, c->stack.len * sizeof(c->stack.val[0]));
+	if (ptr == NULL)
+	    abort();
+	c->stack.val = ptr;
+    }
+    c->stack.val[c->stack.used++] = c->bn.used;
+}
+
+void
+BN_CTX_end(BN_CTX *c)
+{
+    const size_t stack_prev = c->stack.val[c->stack.used - 1];
+    const size_t stack_cur = c->stack.val[c->stack.used];
+    size_t i;
+
+    if (c->stack.used == 0)
+	abort();
+
+    for (i = stack_prev + 1; i < stack_cur; i++)
+	BN_clear(&c->bn.val[i]);
+
+    c->stack.val[c->stack.used] = 0;
+    c->stack.used--;
+    c->bn.used = stack_prev;
+}
+
