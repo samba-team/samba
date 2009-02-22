@@ -112,6 +112,8 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 
 	if (minor_status)
 	    *minor_status = 0;
+	if (conf_state)
+	    *conf_state = 0;
 	if (ctx == NULL)
 	    return GSS_S_NO_CONTEXT;
 	if (iov == NULL && iov_count != 0)
@@ -119,7 +121,7 @@ gss_wrap_iov_length(OM_uint32 * minor_status,
 
 	m = ctx->gc_mech;
 
-	if (m->gm_wrap_iov == NULL) {
+	if (m->gm_wrap_iov_length == NULL) {
 	    *minor_status = 0;
 	    return GSS_S_UNAVAILABLE;
 	}
