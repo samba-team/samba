@@ -1171,13 +1171,12 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 struct np_write_state {
 	struct event_context *ev;
 	struct np_proxy_state *p;
-	const uint8_t *data;
-	size_t len;
+	struct iovec iov;
 	ssize_t nwritten;
 };
 
 static void np_write_trigger(struct async_req *req);
-static void np_write_done(struct async_req *subreq);
+static void np_write_done(struct tevent_req *subreq);
 
 struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 				struct fake_file_handle *handle,
@@ -1218,8 +1217,8 @@ struct async_req *np_write_send(TALLOC_CTX *mem_ctx, struct event_context *ev,
 
 		state->ev = ev;
 		state->p = p;
-		state->data = data;
-		state->len = len;
+		state->iov.iov_base = CONST_DISCARD(void *, data);
+		state->iov.iov_len = len;
 
 		if (!async_req_enqueue(p->write_queue, ev, result,
 				       np_write_trigger)) {
@@ -1242,27 +1241,26 @@ static void np_write_trigger(struct async_req *req)
 {
 	struct np_write_state *state = talloc_get_type_abort(
 		req->private_data, struct np_write_state);
-	struct async_req *subreq;
+	struct tevent_req *subreq;
 
-	subreq = sendall_send(state, state->ev, state->p->fd, state->data,
-			      state->len, 0);
+	subreq = writev_send(state, state->ev, state->p->fd, &state->iov, 1);
 	if (async_req_nomem(subreq, req)) {
 		return;
 	}
 	subreq->async.fn = np_write_done;
-	subreq->async.priv = req;
+	subreq->async.private_data = req;
 }
 
-static void np_write_done(struct async_req *subreq)
+static void np_write_done(struct tevent_req *subreq)
 {
 	struct async_req *req = talloc_get_type_abort(
-		subreq->async.priv, struct async_req);
+		subreq->async.private_data, struct async_req);
 	struct np_write_state *state = talloc_get_type_abort(
 		req->private_data, struct np_write_state);
 	ssize_t received;
 	int err;
 
-	received = sendall_recv(subreq, &err);
+	received = writev_recv(subreq, &err);
 	if (received < 0) {
 		async_req_nterror(req, map_nt_error_from_unix(err));
 		return;
