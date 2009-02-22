@@ -51,4 +51,14 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			       int fd, struct iovec *iov, int count);
 ssize_t writev_recv(struct tevent_req *req, int *perrno);
 
+struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    int fd, size_t initial,
+				    ssize_t (*more)(uint8_t *buf,
+						    size_t buflen,
+						    void *private_data),
+				    void *private_data);
+ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 uint8_t **pbuf, int *perrno);
+
 #endif
