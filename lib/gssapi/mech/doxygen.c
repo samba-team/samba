@@ -34,11 +34,39 @@
 /*! @mainpage Heimdal GSS-API Library
  *
  * The project web page: http://www.h5l.org/
+ *
+ * - @ref gssapi_services_intro
+ * - @ref gssapi_INvsMN
+ */
+
+/**
+ * @page gssapi_services_intro Introduction to GSS-API services
+ * @section gssapi_services GSS-API services
+ *
+ * @subsection gssapi_services_context Context creation
+ *
+ *  - delegation
+ *  - mutual authentication
+ *  - anonymous
+ *  - use per message before context creation has completed
+ *
+ *  return status:
+ *  - support conf
+ *  - support int
+ *
+ * @subsection gssapi_services_permessage Per-message services
+ *
+ *  - conf
+ *  - int
+ *  - message integrity
+ *  - replay detection
+ *  - out of sequence
+ *
  */
 
 /**
  * @page internalVSmechname Internal names and mechanism names
- * @section api_INvsMN Name forms
+ * @section gssapi_api_INvsMN Name forms
  *
  * There are two forms of name in GSS-API, Internal form and
  * Contiguous string ("flat") form. gss_export_name() and
