@@ -132,6 +132,30 @@ int onefs_sys_create_file(connection_struct *conn,
 	if (lp_nt_acl_support(SNUM(conn)) && !lp_inherit_perms(SNUM(conn)))
 		cf_flags = cf_flags_or(cf_flags, CF_FLAGS_DEFAULT_ACL);
 
+	/*
+	 * Some customer workflows require the execute bit to be ignored.
+	 */
+	if (lp_parm_bool(SNUM(conn), PARM_ONEFS_TYPE,
+			 PARM_ALLOW_EXECUTE_ALWAYS,
+			 PARM_ALLOW_EXECUTE_ALWAYS_DEFAULT) &&
+	    (open_access_mask & FILE_EXECUTE)) {
+
+		DEBUG(3, ("Stripping execute bit from %s: (0x%x)\n", path,
+			  open_access_mask));
+
+		/* Strip execute. */
+		open_access_mask &= ~FILE_EXECUTE;
+
+		/*
+		 * Add READ_DATA, so we're not left with desired_access=0. An
+		 * execute call should imply the client will read the data.
+		 */
+		open_access_mask |= FILE_READ_DATA;
+
+		DEBUGADD(3, ("New stripped access mask: 0x%x\n",
+			     open_access_mask));
+	}
+
 	DEBUG(10,("onefs_sys_create_file: base_fd = %d, "
 		  "open_access_mask = 0x%x, flags = 0x%x, mode = 0%o, "
 		  "desired_oplock = %s, id = 0x%x, secinfo = 0x%x, sd = %p, "

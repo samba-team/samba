@@ -41,6 +41,8 @@ enum onefs_acl_wire_format
 #define PARM_ONEFS_TYPE "onefs"
 #define PARM_ACL_WIRE_FORMAT "acl wire format"
 #define PARM_ACL_WIRE_FORMAT_DEFAULT ACL_FORMAT_WINDOWS_SD
+#define PARM_ALLOW_EXECUTE_ALWAYS "allow execute always"
+#define PARM_ALLOW_EXECUTE_ALWAYS_DEFAULT false
 #define PARM_ATIME_NOW		"atime now files"
 #define PARM_ATIME_NOW_DEFAULT  NULL
 #define PARM_ATIME_STATIC	"atime static files"
