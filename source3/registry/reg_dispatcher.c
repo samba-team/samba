@@ -39,7 +39,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 	SEC_ACE ace[3];
 	size_t i = 0;
 	SEC_DESC *sd;
-	SEC_ACL *acl;
+	SEC_ACL *theacl;
 	size_t sd_size;
 
 	/* basic access for Everyone */
@@ -59,14 +59,14 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 
 	/* create the security descriptor */
 
-	acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
-	if (acl == NULL) {
+	theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
+	if (theacl == NULL) {
 		return WERR_NOMEM;
 	}
 
 	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 			   &global_sid_Builtin_Administrators,
-			   &global_sid_System, NULL, acl,
+			   &global_sid_System, NULL, theacl,
 			   &sd_size);
 	if (sd == NULL) {
 		return WERR_NOMEM;

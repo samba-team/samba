@@ -91,14 +91,14 @@ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, str
 /*
   return the wire size of a security_acl
 */
-size_t ndr_size_security_acl(const struct security_acl *acl, struct smb_iconv_convenience *ic, int flags)
+size_t ndr_size_security_acl(const struct security_acl *theacl, struct smb_iconv_convenience *ic, int flags)
 {
 	size_t ret;
 	int i;
-	if (!acl) return 0;
+	if (!theacl) return 0;
 	ret = 8;
-	for (i=0;i<acl->num_aces;i++) {
-		ret += ndr_size_security_ace(&acl->aces[i], ic, flags);
+	for (i=0;i<theacl->num_aces;i++) {
+		ret += ndr_size_security_ace(&theacl->aces[i], ic, flags);
 	}
 	return ret;
 }
