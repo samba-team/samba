@@ -700,7 +700,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_StringArray *dependent_files;
 		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[string,charset(UTF16)] uint16 *manufacturer_name;
 		[string,charset(UTF16)] uint16 *manufacturer_url;
@@ -722,7 +722,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		spoolss_StringArray *dependent_files;
 		[value(((ndr_size_spoolss_StringArray(previous_names, ndr->iconv_convenience, ndr->flags)-4)/2))] uint32 _ndr_size_previous_names;
 		spoolss_StringArray *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[string,charset(UTF16)] uint16 *manufacturer_name;
 		[string,charset(UTF16)] uint16 *manufacturer_url;
@@ -759,11 +759,11 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[in,ref] spoolss_AddDriverInfoCtr *info_ctr
 	);
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		[relative] nstring *driver_name;
 	} spoolss_DriverInfo1;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -772,7 +772,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *config_file;
 	} spoolss_DriverInfo2;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -785,7 +785,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *default_datatype;
 	} spoolss_DriverInfo3;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -799,7 +799,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring_array *previous_names;
 	} spoolss_DriverInfo4;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -811,7 +811,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		uint32 driver_version;
 	} spoolss_DriverInfo5;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -823,7 +823,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *monitor_name;
 		[relative] nstring *default_datatype;
 		[relative] nstring_array *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[relative] nstring *manufacturer_name;
 		[relative] nstring *manufacturer_url;
@@ -831,7 +831,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *provider;
 	} spoolss_DriverInfo6;
 
-	typedef struct {
+	typedef [public,gensize] struct {
 		spoolss_DriverOSVersion version;
 		[relative] nstring *driver_name;
 		[relative] nstring *architecture;
@@ -843,7 +843,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 		[relative] nstring *default_datatype;
 		[relative] nstring_array *dependent_files;
 		[relative] nstring_array *previous_names;
-		NTTIME driver_data;
+		NTTIME driver_date;
 		hyper driver_version;
 		[relative] nstring *manufacturer_name;
 		[relative] nstring *manufacturer_url;
