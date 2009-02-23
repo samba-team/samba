@@ -2885,6 +2885,57 @@ static bool srv_spoolss_replyopenprinter(int snum, const char *printer,
 	return (W_ERROR_IS_OK(result));
 }
 
+/****************************************************************
+ ****************************************************************/
+
+static struct spoolss_NotifyOption *dup_spoolss_NotifyOption(TALLOC_CTX *mem_ctx,
+							     const struct spoolss_NotifyOption *r)
+{
+	struct spoolss_NotifyOption *option;
+	uint32_t i,k;
+
+	if (!r) {
+		return NULL;
+	}
+
+	option = talloc_zero(mem_ctx, struct spoolss_NotifyOption);
+	if (!option) {
+		return NULL;
+	}
+
+	*option = *r;
+
+	if (!option->count) {
+		return option;
+	}
+
+	option->types = talloc_zero_array(option,
+		struct spoolss_NotifyOptionType, option->count);
+	if (!option->types) {
+		talloc_free(option);
+		return NULL;
+	}
+
+	for (i=0; i < option->count; i++) {
+		option->types[i] = r->types[i];
+
+		if (option->types[i].count) {
+			option->types[i].fields = talloc_zero_array(option,
+				enum spoolss_Field, option->types[i].count);
+			if (!option->types[i].fields) {
+				talloc_free(option);
+				return NULL;
+			}
+			for (k=0; k<option->types[i].count; k++) {
+				option->types[i].fields[k] =
+					r->types[i].fields[k];
+			}
+		}
+	}
+
+	return option;
+}
+
 /********************************************************************
  * _spoolss_rffpcnex
  * ReplyFindFirstPrinterChangeNotifyEx
