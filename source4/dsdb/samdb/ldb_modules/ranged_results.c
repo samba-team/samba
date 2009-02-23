@@ -29,6 +29,7 @@
  *  Author: Andrew Bartlett
  */
 
+#include "includes.h"
 #include "ldb_module.h"
 
 struct rr_context {

@@ -37,6 +37,7 @@
 #ifndef _LDB_PRIVATE_H_
 #define _LDB_PRIVATE_H_ 1
 
+#include "ldb_includes.h"
 #include "ldb.h"
 #include "ldb_module.h"
 
@@ -108,10 +109,6 @@ struct ldb_context {
 
 	struct tevent_context *ev_ctx;
 };
-
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
-#endif
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
 

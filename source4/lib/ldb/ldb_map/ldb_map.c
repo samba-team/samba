@@ -35,8 +35,6 @@
  *  Author: Jelmer Vernooij, Martin Kuehl
  */
 
-#include "ldb_module.h"
-
 #include "ldb_map.h"
 #include "ldb_map_private.h"
 

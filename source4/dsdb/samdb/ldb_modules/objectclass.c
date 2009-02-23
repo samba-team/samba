@@ -35,6 +35,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/ndr_security.h"
