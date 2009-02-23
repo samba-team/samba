@@ -3979,7 +3979,7 @@ size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags);
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
 size_t ndr_size_security_ace(const struct security_ace *ace, int flags);
-size_t ndr_size_security_acl(const struct security_acl *acl, int flags);
+size_t ndr_size_security_acl(const struct security_acl *theacl, int flags);
 size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int flags);
 void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
