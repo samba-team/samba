@@ -614,6 +614,8 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	bool fopened = false;
 	NTSTATUS status = NT_STATUS_OK;
 
+	START_PROFILE(syscall_get_sd);
+
 	*ppdesc = NULL;
 
 	DEBUG(5, ("Getting sd for file %s. security_info=%u\n",
@@ -753,6 +755,9 @@ onefs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	DEBUG(5, ("Finished retrieving/canonicalizing SD!\n"));
 	/* FALLTHROUGH */
 out:
+
+	END_PROFILE(syscall_get_sd);
+
 	if (alloced && sd) {
 		if (new_aces_alloced && sd->dacl->aces)
 			SAFE_FREE(sd->dacl->aces);
@@ -892,6 +897,8 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	bool fopened = false;
 	NTSTATUS status;
 
+	START_PROFILE(syscall_set_sd);
+
 	DEBUG(5,("Setting SD on file %s.\n", fsp->fsp_name ));
 
 	status = onefs_samba_sd_to_sd(security_info_sent, psd, &sd,
@@ -899,7 +906,7 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));
-		return status;
+		goto out;
 	}
 
 	fd = fsp->fh->fd;
@@ -938,6 +945,8 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 	/* FALLTHROUGH */
 out:
+	END_PROFILE(syscall_set_sd);
+
 	if (fopened)
 		close(fd);
 

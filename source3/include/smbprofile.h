@@ -75,6 +75,10 @@ enum profile_stats_values
 #define syscall_open_count __profile_stats_value(PR_VALUE_SYSCALL_OPEN, count)
 #define syscall_open_time __profile_stats_value(PR_VALUE_SYSCALL_OPEN, time)
 
+	PR_VALUE_SYSCALL_CREATEFILE,
+#define syscall_createfile_count __profile_stats_value(PR_VALUE_SYSCALL_CREATEFILE, count)
+#define syscall_createfile_time __profile_stats_value(PR_VALUE_SYSCALL_CREATEFILE, time)
+
 	PR_VALUE_SYSCALL_CLOSE,
 #define syscall_close_count __profile_stats_value(PR_VALUE_SYSCALL_CLOSE, count)
 #define syscall_close_time __profile_stats_value(PR_VALUE_SYSCALL_CLOSE, time)
@@ -110,6 +114,10 @@ enum profile_stats_values
 	PR_VALUE_SYSCALL_RENAME,
 #define syscall_rename_count __profile_stats_value(PR_VALUE_SYSCALL_RENAME, count)
 #define syscall_rename_time __profile_stats_value(PR_VALUE_SYSCALL_RENAME, time)
+
+	PR_VALUE_SYSCALL_RENAME_AT,
+#define syscall_rename_at_count __profile_stats_value(PR_VALUE_SYSCALL_RENAME_AT, count)
+#define syscall_rename_at_time __profile_stats_value(PR_VALUE_SYSCALL_RENAME_AT, time)
 
 	PR_VALUE_SYSCALL_FSYNC,
 #define syscall_fsync_count __profile_stats_value(PR_VALUE_SYSCALL_FSYNC, count)
@@ -214,6 +222,26 @@ enum profile_stats_values
 	PR_VALUE_SYSCALL_SET_QUOTA,
 #define syscall_set_quota_count __profile_stats_value(PR_VALUE_SYSCALL_SET_QUOTA, count)
 #define syscall_set_quota_time __profile_stats_value(PR_VALUE_SYSCALL_SET_QUOTA, time)
+
+	PR_VALUE_SYSCALL_GET_SD,
+#define syscall_get_sd_count __profile_stats_value(PR_VALUE_SYSCALL_GET_SD, count)
+#define syscall_get_sd_time __profile_stats_value(PR_VALUE_SYSCALL_GET_SD, time)
+
+	PR_VALUE_SYSCALL_SET_SD,
+#define syscall_set_sd_count __profile_stats_value(PR_VALUE_SYSCALL_SET_SD, count)
+#define syscall_set_sd_time __profile_stats_value(PR_VALUE_SYSCALL_SET_SD, time)
+
+	PR_VALUE_SYSCALL_BRL_LOCK,
+#define syscall_brl_lock_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_LOCK, count)
+#define syscall_brl_lock_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_LOCK, time)
+
+	PR_VALUE_SYSCALL_BRL_UNLOCK,
+#define syscall_brl_unlock_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_UNLOCK, count)
+#define syscall_brl_unlock_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_UNLOCK, time)
+
+	PR_VALUE_SYSCALL_BRL_CANCEL,
+#define syscall_brl_cancel_count __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, count)
+#define syscall_brl_cancel_time __profile_stats_value(PR_VALUE_SYSCALL_BRL_CANCEL, time)
 
 /* counters for individual SMB types */
 	PR_VALUE_SMBMKDIR,
