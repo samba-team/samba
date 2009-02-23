@@ -5522,8 +5522,6 @@ WERROR rpccli_spoolss_enumprinterkey(struct rpc_pipe_client *cli, TALLOC_CTX *me
 				  POLICY_HND *hnd, const char *keyname,
 				  uint16 **keylist, uint32 *len);
 
-/* The following definitions come from rpc_client/cli_spoolss_notify.c  */
-
 /* The following definitions come from rpc_client/init_spoolss.c  */
 
 bool init_systemtime(struct spoolss_Time *r,
