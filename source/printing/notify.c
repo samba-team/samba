@@ -394,8 +394,10 @@ void notify_printer_status_byname(const char *sharename, uint32 status)
 {
 	/* Printer status stored in value1 */
 
+	int snum = print_queue_snum(sharename);
+
 	send_notify_field_values(sharename, PRINTER_NOTIFY_TYPE, 
-				 PRINTER_NOTIFY_STATUS, 0, 
+				 PRINTER_NOTIFY_STATUS, snum,
 				 status, 0, 0);
 }
 
