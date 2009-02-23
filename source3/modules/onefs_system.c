@@ -656,3 +656,53 @@ out:
 
 	return ret;
 }
+
+/**
+ * Set the per-process encoding, ignoring errors.
+ */
+void onefs_sys_config_enc(void)
+{
+	int ret;
+
+	ret = enc_set_proc(ENC_UTF8);
+	if (ret) {
+		DEBUG(0, ("Setting process encoding failed: %s",
+			strerror(errno)));
+	}
+}
+
+/**
+ * Set the per-process .snpashot directory options, ignoring errors.
+ */
+void onefs_sys_config_snap_opt(struct onefs_vfs_global_config *global_config)
+{
+	struct ifs_dotsnap_options dso;
+	int ret;
+
+	dso.per_proc = 1;
+	dso.sub_accessible = global_config->dot_snap_child_accessible;
+	dso.sub_visible = global_config->dot_snap_child_visible;
+	dso.root_accessible = global_config->dot_snap_root_accessible;
+	dso.root_visible = global_config->dot_snap_root_visible;
+
+	ret = ifs_set_dotsnap_options(&dso);
+	if (ret) {
+		DEBUG(0, ("Setting snapshot visibility/accessibility "
+			"failed: %s", strerror(errno)));
+	}
+}
+
+/**
+ * Set the per-process flag saying whether or not to accept ~snapshot
+ * as an alternative name for .snapshot directories.
+ */
+void onefs_sys_config_tilde(struct onefs_vfs_global_config *global_config)
+{
+	int ret;
+
+	ret = ifs_tilde_snapshot(global_config->dot_snap_tilde);
+	if (ret) {
+		DEBUG(0, ("Setting snapshot tilde failed: %s",
+			strerror(errno)));
+	}
+}

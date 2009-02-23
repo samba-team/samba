@@ -57,6 +57,16 @@ enum onefs_acl_wire_format
 #define PARM_CTIME_NOW_DEFAULT  NULL
 #define PARM_CTIME_SLOP		"ctime now slop"
 #define PARM_CTIME_SLOP_DEFAULT	0
+#define PARM_DOT_SNAP_CHILD_ACCESSIBLE "dot snap child accessible"
+#define PARM_DOT_SNAP_CHILD_ACCESSIBLE_DEFAULT true
+#define PARM_DOT_SNAP_CHILD_VISIBLE "dot snap child visible"
+#define PARM_DOT_SNAP_CHILD_VISIBLE_DEFAULT false
+#define PARM_DOT_SNAP_ROOT_ACCESSIBLE "dot snap root accessible"
+#define PARM_DOT_SNAP_ROOT_ACCESSIBLE_DEFAULT true
+#define PARM_DOT_SNAP_ROOT_VISIBLE "dot snap root visible"
+#define PARM_DOT_SNAP_ROOT_VISIBLE_DEFAULT true
+#define PARM_DOT_SNAP_TILDE "dot snap tilde"
+#define PARM_DOT_SNAP_TILDE_DEFAULT true
 #define PARM_IGNORE_SACLS "ignore sacls"
 #define PARM_IGNORE_SACLS_DEFAULT false
 #define PARM_MTIME_NOW		"mtime now files"
@@ -99,9 +109,9 @@ enum onefs_acl_wire_format
 
 #define ONEFS_VFS_CONFIG_FAKETIMESTAMPS	0x00000001
 
-struct onefs_vfs_config
+struct onefs_vfs_share_config
 {
-	int32 init_flags;
+	uint32_t init_flags;
 
 	/* data for fake timestamps */
 	int atime_slop;
@@ -125,6 +135,18 @@ struct onefs_vfs_config
 
 	/* Per-share list of files to fake the access time for. */
 	name_compare_entry *atime_static_list;
+};
+
+struct onefs_vfs_global_config
+{
+	uint32_t init_flags;
+
+	/* Snapshot options */
+	bool dot_snap_child_accessible;
+	bool dot_snap_child_visible;
+	bool dot_snap_root_accessible;
+	bool dot_snap_root_visible;
+	bool dot_snap_tilde;
 };
 
 /*
@@ -240,7 +262,7 @@ NTSTATUS onefs_split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
 				      char **pbase, char **pstream);
 
 bool onefs_get_config(int snum, int config_type,
-		      struct onefs_vfs_config *cfg);
+		      struct onefs_vfs_share_config *cfg);
 
 int onefs_rdp_add_dir_state(connection_struct *conn, SMB_STRUCT_DIR *dirp);
 
@@ -268,5 +290,9 @@ ssize_t onefs_sys_sendfile(connection_struct *conn, int tofd, int fromfd,
 
 ssize_t onefs_sys_recvfile(int fromfd, int tofd, SMB_OFF_T offset,
 			   size_t count);
+
+void onefs_sys_config_enc(void);
+void onefs_sys_config_snap_opt(struct onefs_vfs_global_config *global_config);
+void onefs_sys_config_tilde(struct onefs_vfs_global_config *global_config);
 
 #endif /* _ONEFS_H */

@@ -230,7 +230,7 @@ static void merge_stat(SMB_STRUCT_STAT *stream_sbuf,
 static void onefs_adjust_stat_time(vfs_handle_struct *handle, const char *fname,
 				   SMB_STRUCT_STAT *sbuf)
 {
-	struct onefs_vfs_config cfg;
+	struct onefs_vfs_share_config cfg;
 	struct timeval tv_now = {0, 0};
 	bool static_mtime = False;
 	bool static_atime = False;
