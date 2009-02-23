@@ -4656,32 +4656,31 @@ static void init_printer_values(struct service *pService)
 static int max_open_files(void)
 {
 	int sysctl_max = MAX_OPEN_FILES;
-	struct rlimit rl;
-	bool sysctl_worked = false, rlimit_worked = false;
+	int rlimit_max = MAX_OPEN_FILES;
 
 #ifdef HAVE_SYSCTLBYNAME
-	size_t size = sizeof(sysctl_max);
-	if (sysctlbyname("kern.maxfilesperproc", &sysctl_max, &size, NULL,0)==0)
-		sysctl_worked = true;
+	{
+		size_t size = sizeof(sysctl_max);
+		sysctlbyname("kern.maxfilesperproc", &sysctl_max, &size, NULL,
+			     0);
+	}
 #endif
 
-	if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
-		rlimit_worked = true;
+#if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
+	{
+		struct rlimit rl = {};
 
-	if (sysctl_worked) {
-		if ((!rlimit_worked) ||
-		    (rl.rlim_cur == RLIM_INFINITY) ||
-		    (rl.rlim_cur > sysctl_max))
-			return sysctl_max;
-		else
-			return rl.rlim_cur;
-	} else {
-		if ((!rlimit_worked) ||
-		    (rl.rlim_cur == RLIM_INFINITY))
-			return MAX_OPEN_FILES;
-		else
-			return rl.rlim_cur;
+		if (getrlimit(RLIMIT_NOFILE, &rl) == 0)
+			rlimit_max = rl.rlim_cur;
+
+#if defined(RLIM_INFINITY)
+		if(rl.rlim_cur == RLIM_INFINITY)
+			rlimit_max = MAX_OPEN_FILES;
 	}
+#endif
+#endif
+
+	return MIN(sysctl_max, rlimit_max);
 }
 
 /**
