@@ -13053,6 +13053,7 @@ _PUBLIC_ void ndr_print_spoolss_PrinterChangeFlags(struct ndr_print *ndr, const 
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_DELETE_PORT", PRINTER_CHANGE_DELETE_PORT, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_ADD_PRINT_PROCESSOR", PRINTER_CHANGE_ADD_PRINT_PROCESSOR, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_DELETE_PRINT_PROCESSOR", PRINTER_CHANGE_DELETE_PRINT_PROCESSOR, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_SERVER", PRINTER_CHANGE_SERVER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_ADD_PRINTER_DRIVER", PRINTER_CHANGE_ADD_PRINTER_DRIVER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_SET_PRINTER_DRIVER", PRINTER_CHANGE_SET_PRINTER_DRIVER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "PRINTER_CHANGE_DELETE_PRINTER_DRIVER", PRINTER_CHANGE_DELETE_PRINTER_DRIVER, r);
@@ -13445,7 +13446,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int n
 			break; }
 
 			case 3: {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, r->devmode));
+				NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_SCALARS, &r->devmode));
 			break; }
 
 			case 4: {
@@ -13471,9 +13472,7 @@ static enum ndr_err_code ndr_push_spoolss_NotifyData(struct ndr_push *ndr, int n
 			break;
 
 			case 3:
-				if (r->devmode) {
-					NDR_CHECK(ndr_push_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-				}
+				NDR_CHECK(ndr_push_spoolss_DevmodeContainer(ndr, NDR_BUFFERS, &r->devmode));
 			break;
 
 			case 4:
@@ -13495,7 +13494,6 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 {
 	int level;
 	uint32_t _level;
-	TALLOC_CTX *_mem_save_devmode_0;
 	level = ndr_pull_get_switch_value(ndr, r);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
@@ -13515,13 +13513,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 			break; }
 
 			case 3: {
-				uint32_t _ptr_devmode;
-				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devmode));
-				if (_ptr_devmode) {
-					NDR_PULL_ALLOC(ndr, r->devmode);
-				} else {
-					r->devmode = NULL;
-				}
+				NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_SCALARS, &r->devmode));
 			break; }
 
 			case 4: {
@@ -13546,12 +13538,7 @@ static enum ndr_err_code ndr_pull_spoolss_NotifyData(struct ndr_pull *ndr, int n
 			break;
 
 			case 3:
-				if (r->devmode) {
-					_mem_save_devmode_0 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, r->devmode, 0);
-					NDR_CHECK(ndr_pull_spoolss_DeviceMode(ndr, NDR_SCALARS, r->devmode));
-					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devmode_0, 0);
-				}
+				NDR_CHECK(ndr_pull_spoolss_DevmodeContainer(ndr, NDR_BUFFERS, &r->devmode));
 			break;
 
 			case 4:
@@ -13594,12 +13581,7 @@ _PUBLIC_ void ndr_print_spoolss_NotifyData(struct ndr_print *ndr, const char *na
 		break;
 
 		case 3:
-			ndr_print_ptr(ndr, "devmode", r->devmode);
-			ndr->depth++;
-			if (r->devmode) {
-				ndr_print_spoolss_DeviceMode(ndr, "devmode", r->devmode);
-			}
-			ndr->depth--;
+			ndr_print_spoolss_DevmodeContainer(ndr, "devmode", &r->devmode);
 		break;
 
 		case 4:
