@@ -42,6 +42,11 @@ struct tevent_req *async_send_send(TALLOC_CTX *mem_ctx,
 				   int flags);
 ssize_t async_send_recv(struct tevent_req *req, int *perrno);
 
+struct tevent_req *async_recv_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   int fd, void *buf, size_t len, int flags);
+ssize_t async_recv_recv(struct tevent_req *req, int *perrno);
+
 struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      int fd, const struct sockaddr *address,

@@ -445,6 +445,73 @@ ssize_t async_send_recv(struct tevent_req *req, int *perrno)
 	return state->sent;
 }
 
+struct async_recv_state {
+	int fd;
+	void *buf;
+	size_t len;
+	int flags;
+	ssize_t received;
+};
+
+static void async_recv_handler(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags, void *private_data);
+
+struct tevent_req *async_recv_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   int fd, void *buf, size_t len, int flags)
+{
+	struct tevent_req *result;
+	struct async_recv_state *state;
+	struct tevent_fd *fde;
+
+	result = tevent_req_create(mem_ctx, &state, struct async_recv_state);
+	if (result == NULL) {
+		return result;
+	}
+	state->fd = fd;
+	state->buf = buf;
+	state->len = len;
+	state->flags = flags;
+
+	fde = tevent_add_fd(ev, state, fd, TEVENT_FD_READ, async_recv_handler,
+			    result);
+	if (fde == NULL) {
+		TALLOC_FREE(result);
+		return NULL;
+	}
+	return result;
+}
+
+static void async_recv_handler(struct tevent_context *ev,
+			       struct tevent_fd *fde,
+			       uint16_t flags, void *private_data)
+{
+	struct tevent_req *req = talloc_get_type_abort(
+		private_data, struct tevent_req);
+	struct async_recv_state *state = talloc_get_type_abort(
+		req->private_state, struct async_recv_state);
+
+	state->received = recv(state->fd, state->buf, state->len,
+			       state->flags);
+	if (state->received == -1) {
+		tevent_req_error(req, errno);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+ssize_t async_recv_recv(struct tevent_req *req, int *perrno)
+{
+	struct async_recv_state *state = talloc_get_type_abort(
+		req->private_state, struct async_recv_state);
+
+	if (tevent_req_is_unix_error(req, perrno)) {
+		return -1;
+	}
+	return state->received;
+}
+
 struct async_connect_state {
 	int fd;
 	int result;
