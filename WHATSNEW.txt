@@ -35,6 +35,8 @@ o   Jeremy Allison <jra@samba.org>
     * BUG 6090: Fix renaming/deleting a "not matching/resolving" symlink.
     * BUG 6099: Try to fix domain join of Win7 Beta.
     * BUG 6117: Fix core dump of pdbedit -a.
+    * BUG 6133: Fix deletion of non-ACL files on Solaris/ZFS/NFSv4 ACL
+      filesystem.
     * Fix Coverity IDs 115, 116, 117, 602.
     * Fix warning (bad handler prototype).
     * Unify the detection of the timespec code in configure.in, and the
@@ -135,10 +137,15 @@ o   Tim Prouty <tprouty@samba.org>
 
 o   Karolin Seeger <kseeger@samba.org>
     * Change "ldap ssl:ads" parameter to "ldap ssl ads".
+    * Add manpages for vfs_acl_xattr and vfs_acl_tdb.
 
 
 o   Dan Sledz <dsledz@isilon.com>
     * Fix double free caused by incorrect talloc_steal usage.
+
+
+o   Simo Sorce <idra@samba.org>
+    * Build ldbrename.
 
 
 o   Aravind Srinivasan <aravind.srinivasan@isilon.com>
@@ -152,6 +159,10 @@ o   Miguel Suarez <Miguel.Suarez@stratus.com>
 o   Yasuma Takeda <yasuma@osstech.co.jp>
     * BUG 5920: Fix the calculation of the memcpy length.
     * BUG 6098: Fix ads_find_dc() in setups with "security = domain".
+
+
+o   Bo Yang <boyang@novell.com>
+    * Make libsmbclient work with DFS.
 
 
 ######################################################################
