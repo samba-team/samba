@@ -51,11 +51,12 @@ static bool solaris_add_to_acl(SOLARIS_ACL_T *solaris_acl, int *count,
 static bool solaris_acl_get_file(const char *name, SOLARIS_ACL_T *solarisacl, 
 		int *count);
 static bool solaris_acl_get_fd(int fd, SOLARIS_ACL_T *solarisacl, int *count);
-static bool solaris_acl_sort(SOLARIS_ACL_T acl, int count);
+static bool solaris_acl_sort(SOLARIS_ACL_T theacl, int count);
 static SMB_ACL_PERM_T solaris_perm_to_smb_perm(const SOLARIS_PERM_T perm);
 static SOLARIS_PERM_T smb_perm_to_solaris_perm(const SMB_ACL_PERM_T perm);
+#if 0
 static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count);
-
+#endif
 
 /* public functions - the api */
 
@@ -347,7 +348,6 @@ static bool smb_acl_to_solaris_acl(SMB_ACL_T smb_acl,
 {
 	bool ret = False;
 	int i;
-	int check_which, check_rc;
 
 	DEBUG(10, ("entering smb_acl_to_solaris_acl\n"));
 	
@@ -717,6 +717,7 @@ static bool solaris_acl_sort(SOLARIS_ACL_T solaris_acl, int count)
 	return True;
 }
 
+#if 0
 /*
  * acl check function:
  *   unused at the moment but could be used to get more
@@ -746,7 +747,7 @@ static bool solaris_acl_check(SOLARIS_ACL_T solaris_acl, int count)
 	}
 	return True;
 }
-
+#endif
 
 /* VFS operations structure */
 
