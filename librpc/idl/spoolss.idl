@@ -1678,7 +1678,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	typedef [switch_type(uint32)] union {
 		[case(1)] uint32 integer[2];
 		[case(2)] spoolss_NotifyString string;
-		[case(3)] spoolss_DeviceMode *devmode;
+		[case(3)] spoolss_DevmodeContainer devmode;
 		[case(4)] spoolss_TimeCtr time;
 		[case(5)] sec_desc_buf sd;
 	} spoolss_NotifyData;
