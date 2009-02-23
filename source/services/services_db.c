@@ -91,7 +91,7 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	SEC_ACE ace[4];
 	size_t i = 0;
 	SEC_DESC *sd = NULL;
-	SEC_ACL *acl = NULL;
+	SEC_ACL *theacl = NULL;
 	size_t sd_size;
 
 	/* basic access for Everyone */
@@ -109,12 +109,12 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 
 	/* create the security descriptor */
 
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+	if ( !(theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
 	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
 				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
-				  acl, &sd_size)) )
+				  theacl, &sd_size)) )
 		return NULL;
 
 	return sd;
