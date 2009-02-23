@@ -50,7 +50,7 @@ def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
     if "/site-packages/" in dirname:
-        prefix = dirname[:dirname.index("/site-packages/")]
+        prefix = "/".join(dirname[:dirname.index("/site-packages/")].split("/")[:-2])
         for suffix in ["share/setup", "share/samba/setup", "setup"]:
             ret = os.path.join(prefix, suffix)
             if os.path.isdir(ret):
