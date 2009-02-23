@@ -2526,6 +2526,7 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 				     const char **argv)
 {
 	const char *printername;
+	const char *clientname;
 	POLICY_HND hnd;
 	bool got_hnd = False;
 	WERROR result;
@@ -2582,13 +2583,19 @@ static WERROR cmd_spoolss_rffpcnex(struct rpc_pipe_client *cli,
 	}
 	option.types[1].fields[0] = JOB_NOTIFY_PRINTER_NAME;
 
+	clientname = talloc_asprintf(mem_ctx, "\\\\%s", global_myname());
+	if (!clientname) {
+		result = WERR_NOMEM;
+		goto done;
+	}
+
 	/* Send rffpcnex */
 
 	status = rpccli_spoolss_RemoteFindFirstPrinterChangeNotifyEx(cli, mem_ctx,
 								     &hnd,
 								     0,
 								     0,
-								     cli->srv_name_slash,
+								     clientname,
 								     123,
 								     &option,
 								     &result);
