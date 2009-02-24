@@ -24,8 +24,7 @@
 
 #include "includes.h"
 #include "../lib/util/asn1.h"
-#include "libcli/ldap/ldap.h"
-#include "libcli/ldap/ldap_proto.h"
+#include "../libcli/ldap/ldap_message.h"
 
 _PUBLIC_ struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx)
 {

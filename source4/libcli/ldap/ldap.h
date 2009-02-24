@@ -21,7 +21,7 @@
 #ifndef _SMB_LDAP_H_
 #define _SMB_LDAP_H_
 
-#include "libcli/ldap/ldap_message.h"
+#include "../libcli/ldap/ldap_message.h"
 #include "librpc/gen_ndr/misc.h"
 
 struct tevent_context;
