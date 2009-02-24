@@ -10,13 +10,13 @@
 
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
-#define PRINTER_CHANGE_PRINTER	( (PRINTER_CHANGE_ADD_PRINTER|PRINTER_CHANGE_SET_PRINTER|PRINTER_CHANGE_DELETE_PRINTER|PRINTER_CHANGE_FAILED_CONNECTION_PRINTER) )
-#define PRINTER_CHANGE_JOB	( (PRINTER_CHANGE_ADD_JOB|PRINTER_CHANGE_SET_JOB|PRINTER_CHANGE_DELETE_JOB|PRINTER_CHANGE_WRITE_JOB) )
+#define PRINTER_CHANGE_PRINTER	( 0x000000FF )
+#define PRINTER_CHANGE_JOB	( 0x0000FF00 )
 #define PRINTER_CHANGE_FORM	( (PRINTER_CHANGE_ADD_FORM|PRINTER_CHANGE_SET_FORM|PRINTER_CHANGE_DELETE_FORM) )
 #define PRINTER_CHANGE_PORT	( (PRINTER_CHANGE_ADD_PORT|PRINTER_CHANGE_CONFIGURE_PORT|PRINTER_CHANGE_DELETE_PORT) )
-#define PRINTER_CHANGE_PRINT_PROCESSOR	( (PRINTER_CHANGE_ADD_PRINT_PROCESSOR|PRINTER_CHANGE_DELETE_PRINT_PROCESSOR) )
+#define PRINTER_CHANGE_PRINT_PROCESSOR	( 0x07000000 )
 #define PRINTER_CHANGE_PRINTER_DRIVER	( (PRINTER_CHANGE_ADD_PRINTER_DRIVER|PRINTER_CHANGE_SET_PRINTER_DRIVER|PRINTER_CHANGE_DELETE_PRINTER_DRIVER) )
-#define PRINTER_CHANGE_ALL	( (PRINTER_CHANGE_JOB|PRINTER_CHANGE_FORM|PRINTER_CHANGE_PORT|PRINTER_CHANGE_PRINT_PROCESSOR|PRINTER_CHANGE_PRINTER_DRIVER) )
+#define PRINTER_CHANGE_ALL	( (PRINTER_CHANGE_PRINTER|PRINTER_CHANGE_JOB|PRINTER_CHANGE_FORM|PRINTER_CHANGE_PORT|PRINTER_CHANGE_PRINT_PROCESSOR|PRINTER_CHANGE_PRINTER_DRIVER) )
 #define SERVER_ALL_ACCESS	( SEC_STD_REQUIRED|SERVER_ACCESS_ADMINISTER|SERVER_ACCESS_ENUMERATE )
 #define SERVER_READ	( SEC_STD_READ_CONTROL|SERVER_ACCESS_ENUMERATE )
 #define SERVER_WRITE	( STANDARD_RIGHTS_WRITE_ACCESS|SERVER_ACCESS_ADMINISTER|SERVER_ACCESS_ENUMERATE )
@@ -635,7 +635,7 @@ struct spoolss_AddDriverInfo6 {
 	struct spoolss_StringArray *dependent_files;/* [unique] */
 	uint32_t _ndr_size_previous_names;/* [value(((ndr_size_spoolss_StringArray(previous_names,ndr->iconv_convenience,ndr->flags)-4)/2))] */
 	struct spoolss_StringArray *previous_names;/* [unique] */
-	NTTIME driver_data;
+	NTTIME driver_date;
 	uint64_t driver_version;
 	const char *manufacturer_name;/* [unique,charset(UTF16)] */
 	const char *manufacturer_url;/* [unique,charset(UTF16)] */
@@ -657,7 +657,7 @@ struct spoolss_AddDriverInfo8 {
 	struct spoolss_StringArray *dependent_files;/* [unique] */
 	uint32_t _ndr_size_previous_names;/* [value(((ndr_size_spoolss_StringArray(previous_names,ndr->iconv_convenience,ndr->flags)-4)/2))] */
 	struct spoolss_StringArray *previous_names;/* [unique] */
-	NTTIME driver_data;
+	NTTIME driver_date;
 	uint64_t driver_version;
 	const char *manufacturer_name;/* [unique,charset(UTF16)] */
 	const char *manufacturer_url;/* [unique,charset(UTF16)] */
@@ -691,7 +691,7 @@ struct spoolss_AddDriverInfoCtr {
 
 struct spoolss_DriverInfo1 {
 	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo2 {
 	enum spoolss_DriverOSVersion version;
@@ -700,7 +700,7 @@ struct spoolss_DriverInfo2 {
 	const char * driver_path;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * data_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * config_file;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo3 {
 	enum spoolss_DriverOSVersion version;
@@ -713,7 +713,7 @@ struct spoolss_DriverInfo3 {
 	const char ** dependent_files;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo4 {
 	enum spoolss_DriverOSVersion version;
@@ -727,7 +727,7 @@ struct spoolss_DriverInfo4 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo5 {
 	enum spoolss_DriverOSVersion version;
@@ -739,7 +739,7 @@ struct spoolss_DriverInfo5 {
 	uint32_t driver_attributes;
 	uint32_t config_version;
 	uint32_t driver_version;
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo6 {
 	enum spoolss_DriverOSVersion version;
@@ -753,13 +753,13 @@ struct spoolss_DriverInfo6 {
 	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	NTTIME driver_data;
+	NTTIME driver_date;
 	uint64_t driver_version;
 	const char * manufacturer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * manufacturer_url;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * hardware_id;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * provider;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-};
+}/* [gensize,public] */;
 
 struct spoolss_DriverInfo8 {
 	enum spoolss_DriverOSVersion version;
@@ -773,7 +773,7 @@ struct spoolss_DriverInfo8 {
 	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char ** dependent_files;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
-	NTTIME driver_data;
+	NTTIME driver_date;
 	uint64_t driver_version;
 	const char * manufacturer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	const char * manufacturer_url;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
@@ -787,7 +787,49 @@ struct spoolss_DriverInfo8 {
 	const char ** core_driver_dependencies;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
 	NTTIME min_inbox_driver_ver_date;
 	uint64_t min_inbox_driver_ver_version;
-};
+}/* [gensize,public] */;
+
+enum spoolss_DriverFileType
+#ifndef USE_UINT_ENUMS
+ {
+	SPOOLSS_DRIVER_FILE_TYPE_RENDERING=0x00000000,
+	SPOOLSS_DRIVER_FILE_TYPE_CONFIGURATION=0x00000001,
+	SPOOLSS_DRIVER_FILE_TYPE_DATA=0x00000002,
+	SPOOLSS_DRIVER_FILE_TYPE_HELP=0x00000003,
+	SPOOLSS_DRIVER_FILE_TYPE_OTHER=0x00000004
+}
+#else
+ { __donnot_use_enum_spoolss_DriverFileType=0x7FFFFFFF}
+#define SPOOLSS_DRIVER_FILE_TYPE_RENDERING ( 0x00000000 )
+#define SPOOLSS_DRIVER_FILE_TYPE_CONFIGURATION ( 0x00000001 )
+#define SPOOLSS_DRIVER_FILE_TYPE_DATA ( 0x00000002 )
+#define SPOOLSS_DRIVER_FILE_TYPE_HELP ( 0x00000003 )
+#define SPOOLSS_DRIVER_FILE_TYPE_OTHER ( 0x00000004 )
+#endif
+;
+
+struct spoolss_DriverFileInfo {
+	const char * file_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	enum spoolss_DriverFileType file_type;
+	uint32_t file_version;
+}/* [public] */;
+
+struct spoolss_DriverInfo101 {
+	enum spoolss_DriverOSVersion version;
+	const char * driver_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * architecture;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	struct spoolss_DriverFileInfo *file_info;/* [relative,size_is(file_count)] */
+	uint32_t file_count;
+	const char * monitor_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * default_datatype;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char ** previous_names;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	NTTIME driver_date;
+	uint64_t driver_version;
+	const char * manufacturer_name;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * manufacturer_url;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * hardware_id;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+	const char * provider;/* [relative,flag(LIBNDR_FLAG_STR_NULLTERM)] */
+}/* [gensize,nopush,public,nopull] */;
 
 union spoolss_DriverInfo {
 	struct spoolss_DriverInfo1 info1;/* [case] */
@@ -797,6 +839,7 @@ union spoolss_DriverInfo {
 	struct spoolss_DriverInfo5 info5;/* [case(5)] */
 	struct spoolss_DriverInfo6 info6;/* [case(6)] */
 	struct spoolss_DriverInfo8 info8;/* [case(8)] */
+	struct spoolss_DriverInfo101 info101;/* [case(101)] */
 }/* [relative_base,nodiscriminant,public] */;
 
 struct spoolss_DriverDirectoryInfo1 {
@@ -984,6 +1027,7 @@ union spoolss_MonitorInfo {
 #define PRINTER_CHANGE_DELETE_PORT ( 0x00400000 )
 #define PRINTER_CHANGE_ADD_PRINT_PROCESSOR ( 0x01000000 )
 #define PRINTER_CHANGE_DELETE_PRINT_PROCESSOR ( 0x04000000 )
+#define PRINTER_CHANGE_SERVER ( 0x08000000 )
 #define PRINTER_CHANGE_ADD_PRINTER_DRIVER ( 0x10000000 )
 #define PRINTER_CHANGE_SET_PRINTER_DRIVER ( 0x20000000 )
 #define PRINTER_CHANGE_DELETE_PRINTER_DRIVER ( 0x40000000 )
@@ -1109,7 +1153,7 @@ enum spoolss_NotifyTable
 union spoolss_NotifyData {
 	uint32_t integer[2];/* [case] */
 	struct spoolss_NotifyString string;/* [case(2)] */
-	struct spoolss_DeviceMode *devmode;/* [unique,case(3)] */
+	struct spoolss_DevmodeContainer devmode;/* [case(3)] */
 	struct spoolss_TimeCtr time;/* [case(4)] */
 	struct sec_desc_buf sd;/* [case(5)] */
 }/* [switch_type(uint32)] */;

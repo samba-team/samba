@@ -439,7 +439,7 @@ typedef struct _Printer{
 		uint32 options;
 		fstring localmachine;
 		uint32 printerlocal;
-		SPOOL_NOTIFY_OPTION *option;
+		struct spoolss_NotifyOption *option;
 		POLICY_HND client_hnd;
 		bool client_connected;
 		uint32 change;

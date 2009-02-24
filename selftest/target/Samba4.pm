@@ -578,7 +578,7 @@ sub provision_raw_prepare($$$$$$$)
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$ctx->{nsswrap_passwd}\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$ctx->{nsswrap_group}\"");
 	if (defined($ENV{GDB_PROVISION})) {
-		push (@provision_options, "gdb --args python");
+		push (@provision_options, "gdb --args");
 	}
 	if (defined($ENV{VALGRIND_PROVISION})) {
 		push (@provision_options, "valgrind");

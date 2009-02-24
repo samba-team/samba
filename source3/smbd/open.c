@@ -1440,7 +1440,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		   "create_disposition = 0x%x create_options=0x%x "
 		   "unix mode=0%o oplock_request=%d\n",
 		   fname, new_dos_attributes, access_mask, share_access,
-		   create_disposition, create_options, unx_mode,
+		   create_disposition, create_options, (unsigned int)unx_mode,
 		   oplock_request));
 
 	if ((req == NULL) && ((oplock_request & INTERNAL_OPEN_ONLY) == 0)) {

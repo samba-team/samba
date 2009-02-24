@@ -32,10 +32,7 @@
  */
 
 #include "ldb_private.h"
-
-#if (_SAMBA_BUILD_ >= 4)
-#include "includes.h"
-#endif
+#include "dlinklist.h"
 
 #define LDB_MODULE_PREFIX	"modules:"
 #define LDB_MODULE_PREFIX_LEN	8

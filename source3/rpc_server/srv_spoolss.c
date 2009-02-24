@@ -161,27 +161,7 @@ static bool api_spoolss_deleteprinterdriver(pipes_struct *p)
 
 static bool api_spoolss_rffpcnex(pipes_struct *p)
 {
-	SPOOL_Q_RFFPCNEX q_u;
-	SPOOL_R_RFFPCNEX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_rffpcnex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_rffpcnex: unable to unmarshall SPOOL_Q_RFFPCNEX.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_rffpcnex(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_rffpcnex("", &r_u, rdata, 0)) {
-		DEBUG(0,("spoolss_io_r_rffpcnex: unable to marshall SPOOL_R_RFFPCNEX.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFYEX);
 }
 
 
@@ -198,30 +178,7 @@ static bool api_spoolss_rffpcnex(pipes_struct *p)
 
 static bool api_spoolss_rfnpcnex(pipes_struct *p)
 {
-	SPOOL_Q_RFNPCNEX q_u;
-	SPOOL_R_RFNPCNEX r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!spoolss_io_q_rfnpcnex("", &q_u, data, 0)) {
-		DEBUG(0,("spoolss_io_q_rfnpcnex: unable to unmarshall SPOOL_Q_RFNPCNEX.\n"));
-		return False;
-	}
-
-	r_u.status = _spoolss_rfnpcnex(p, &q_u, &r_u);
-
-	if (!spoolss_io_r_rfnpcnex("", &r_u, rdata, 0)) {
-		SAFE_FREE(r_u.info.data);
-		DEBUG(0,("spoolss_io_r_rfnpcnex: unable to marshall SPOOL_R_RFNPCNEX.\n"));
-		return False;
-	}
-
-	SAFE_FREE(r_u.info.data);
-
-	return True;
+	return proxy_spoolss_call(p, NDR_SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFY);
 }
 
 

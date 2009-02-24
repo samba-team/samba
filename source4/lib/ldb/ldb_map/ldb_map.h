@@ -26,6 +26,8 @@
 #ifndef __LDB_MAP_H__
 #define __LDB_MAP_H__
 
+#include "ldb_module.h"
+
 /* ldb_map is a skeleton LDB module that can be used for any other modules
  * that need to map attributes.
  *

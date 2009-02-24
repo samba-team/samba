@@ -719,12 +719,12 @@ static struct pai_val *load_inherited_info(const struct connection_struct *conn,
  Count a linked list of canonical ACE entries.
 ****************************************************************************/
 
-static size_t count_canon_ace_list( canon_ace *list_head )
+static size_t count_canon_ace_list( canon_ace *l_head )
 {
 	size_t count = 0;
 	canon_ace *ace;
 
-	for (ace = list_head; ace; ace = ace->next)
+	for (ace = l_head; ace; ace = ace->next)
 		count++;
 
 	return count;
@@ -734,13 +734,13 @@ static size_t count_canon_ace_list( canon_ace *list_head )
  Free a linked list of canonical ACE entries.
 ****************************************************************************/
 
-static void free_canon_ace_list( canon_ace *list_head )
+static void free_canon_ace_list( canon_ace *l_head )
 {
 	canon_ace *list, *next;
 
-	for (list = list_head; list; list = next) {
+	for (list = l_head; list; list = next) {
 		next = list->next;
-		DLIST_REMOVE(list_head, list);
+		DLIST_REMOVE(l_head, list);
 		SAFE_FREE(list);
 	}
 }
@@ -916,7 +916,7 @@ static bool identity_in_ace_equal(canon_ace *ace1, canon_ace *ace2)
 
 static void merge_aces( canon_ace **pp_list_head )
 {
-	canon_ace *list_head = *pp_list_head;
+	canon_ace *l_head = *pp_list_head;
 	canon_ace *curr_ace_outer;
 	canon_ace *curr_ace_outer_next;
 
@@ -925,7 +925,7 @@ static void merge_aces( canon_ace **pp_list_head )
 	 * with identical SIDs.
 	 */
 
-	for (curr_ace_outer = list_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
+	for (curr_ace_outer = l_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
 		canon_ace *curr_ace;
 		canon_ace *curr_ace_next;
 
@@ -947,7 +947,7 @@ static void merge_aces( canon_ace **pp_list_head )
 				/* Merge two allow or two deny ACE's. */
 
 				curr_ace_outer->perms |= curr_ace->perms;
-				DLIST_REMOVE(list_head, curr_ace);
+				DLIST_REMOVE(l_head, curr_ace);
 				SAFE_FREE(curr_ace);
 				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 			}
@@ -960,7 +960,7 @@ static void merge_aces( canon_ace **pp_list_head )
 	 * appears only once in the list.
 	 */
 
-	for (curr_ace_outer = list_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
+	for (curr_ace_outer = l_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
 		canon_ace *curr_ace;
 		canon_ace *curr_ace_next;
 
@@ -992,7 +992,7 @@ static void merge_aces( canon_ace **pp_list_head )
 					 * The deny overrides the allow. Remove the allow.
 					 */
 
-					DLIST_REMOVE(list_head, curr_ace);
+					DLIST_REMOVE(l_head, curr_ace);
 					SAFE_FREE(curr_ace);
 					curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
 
@@ -1008,7 +1008,7 @@ static void merge_aces( canon_ace **pp_list_head )
 					 * before we can get to an allow ace.
 					 */
 
-					DLIST_REMOVE(list_head, curr_ace_outer);
+					DLIST_REMOVE(l_head, curr_ace_outer);
 					SAFE_FREE(curr_ace_outer);
 					break;
 				}
@@ -1019,7 +1019,7 @@ static void merge_aces( canon_ace **pp_list_head )
 
 	/* We may have modified the list. */
 
-	*pp_list_head = list_head;
+	*pp_list_head = l_head;
 }
 
 /****************************************************************************
@@ -2305,12 +2305,12 @@ static bool unpack_canon_ace(files_struct *fsp,
 
 static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
 {
-	canon_ace *list_head = *pp_list_head;
+	canon_ace *l_head = *pp_list_head;
 	canon_ace *owner_ace = NULL;
 	canon_ace *other_ace = NULL;
 	canon_ace *ace = NULL;
 
-	for (ace = list_head; ace; ace = ace->next) {
+	for (ace = l_head; ace; ace = ace->next) {
 		if (ace->type == SMB_ACL_USER_OBJ)
 			owner_ace = ace;
 		else if (ace->type == SMB_ACL_OTHER) {
@@ -2331,16 +2331,16 @@ static void arrange_posix_perms(const char *filename, canon_ace **pp_list_head)
 	 */
 
 	if (owner_ace) {
-		DLIST_PROMOTE(list_head, owner_ace);
+		DLIST_PROMOTE(l_head, owner_ace);
 	}
 
 	if (other_ace) {
-		DLIST_DEMOTE(list_head, other_ace, canon_ace *);
+		DLIST_DEMOTE(l_head, other_ace, canon_ace *);
 	}
 
 	/* We have probably changed the head of the list. */
 
-	*pp_list_head = list_head;
+	*pp_list_head = l_head;
 }
 
 /****************************************************************************
@@ -2353,7 +2353,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 				   const DOM_SID *powner, const DOM_SID *pgroup, struct pai_val *pal, SMB_ACL_TYPE_T the_acl_type)
 {
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
-	canon_ace *list_head = NULL;
+	canon_ace *l_head = NULL;
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
@@ -2457,14 +2457,14 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		ace->owner_type = owner_type;
 		ace->ace_flags = get_pai_flags(pal, ace, (the_acl_type == SMB_ACL_TYPE_DEFAULT));
 
-		DLIST_ADD(list_head, ace);
+		DLIST_ADD(l_head, ace);
 	}
 
 	/*
 	 * This next call will ensure we have at least a user/group/world set.
 	 */
 
-	if (!ensure_canon_entry_valid(&list_head, conn->params,
+	if (!ensure_canon_entry_valid(&l_head, conn->params,
 				      S_ISDIR(psbuf->st_mode), powner, pgroup,
 				      psbuf, False))
 		goto fail;
@@ -2476,7 +2476,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 
 	DEBUG(10,("canonicalise_acl: %s ace entries before arrange :\n", the_acl_type == SMB_ACL_TYPE_ACCESS ? "Access" : "Default" ));
 
-	for ( ace_count = 0, ace = list_head; ace; ace = next_ace, ace_count++) {
+	for ( ace_count = 0, ace = l_head; ace; ace = next_ace, ace_count++) {
 		next_ace = ace->next;
 
 		/* Masks are only applied to entries other than USER_OBJ and OTHER. */
@@ -2484,7 +2484,7 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 			ace->perms &= acl_mask;
 
 		if (ace->perms == 0) {
-			DLIST_PROMOTE(list_head, ace);
+			DLIST_PROMOTE(l_head, ace);
 		}
 
 		if( DEBUGLVL( 10 ) ) {
@@ -2492,15 +2492,15 @@ static canon_ace *canonicalise_acl(struct connection_struct *conn,
 		}
 	}
 
-	arrange_posix_perms(fname,&list_head );
+	arrange_posix_perms(fname,&l_head );
 
-	print_canon_ace_list( "canonicalise_acl: ace entries after arrange", list_head );
+	print_canon_ace_list( "canonicalise_acl: ace entries after arrange", l_head );
 
-	return list_head;
+	return l_head;
 
   fail:
 
-	free_canon_ace_list(list_head);
+	free_canon_ace_list(l_head);
 	return NULL;
 }
 

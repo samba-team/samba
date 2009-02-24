@@ -691,7 +691,7 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 	SEC_ACE ace[6];
 	uint32_t mask;
 
-	SEC_ACL *acl = NULL;
+	SEC_ACL *theacl = NULL;
 
 	uint8_t inherit_flags;
 
@@ -735,15 +735,15 @@ static WERROR gp_reg_generate_sd(TALLOC_CTX *mem_ctx,
 		     SEC_ACE_TYPE_ACCESS_ALLOWED,
 		     mask, inherit_flags);
 
-	acl = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 6, ace);
-	W_ERROR_HAVE_NO_MEMORY(acl);
+	theacl = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 6, ace);
+	W_ERROR_HAVE_NO_MEMORY(theacl);
 
 	*sd = make_sec_desc(mem_ctx, SEC_DESC_REVISION,
 			    SEC_DESC_SELF_RELATIVE |
 			    SEC_DESC_DACL_AUTO_INHERITED | /* really ? */
 			    SEC_DESC_DACL_AUTO_INHERIT_REQ, /* really ? */
 			    NULL, NULL, NULL,
-			    acl, sd_size);
+			    theacl, sd_size);
 	W_ERROR_HAVE_NO_MEMORY(*sd);
 
 	return WERR_OK;

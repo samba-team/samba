@@ -40,11 +40,10 @@
  *    author: Simo Sorce
  */
 
-
 #include "includes.h"
 #include "ldb_module.h"
+#include "dlinklist.h"
 
-#include "tevent.h"
 #include "libcli/ldap/ldap.h"
 #include "libcli/ldap/ldap_client.h"
 #include "auth/auth.h"

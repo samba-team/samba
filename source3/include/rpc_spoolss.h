@@ -343,28 +343,6 @@ PRINTER_DEFAULT;
 
 /********************************************/
 
-typedef struct spool_notify_option_type
-{
-	uint16 type;
-	uint16 reserved0;
-	uint32 reserved1;
-	uint32 reserved2;
-	uint32 count;
-	uint32 fields_ptr;
-	uint32 count2;
-	uint16 fields[MAX_NOTIFY_TYPE_FOR_NOW];
-}
-SPOOL_NOTIFY_OPTION_TYPE;
-
-typedef struct spool_notify_option_type_ctr
-{
-	uint32 count;
-	SPOOL_NOTIFY_OPTION_TYPE *type;
-}
-SPOOL_NOTIFY_OPTION_TYPE_CTR;
-
-
-
 typedef struct s_header_type
 {
 	uint32 type;
@@ -395,86 +373,6 @@ typedef struct spool_r_getprinterdata
 	WERROR status;
 }
 SPOOL_R_GETPRINTERDATA;
-
-typedef struct spool_notify_option
-{
-	uint32 version;
-	uint32 flags;
-	uint32 count;
-	uint32 option_type_ptr;
-	SPOOL_NOTIFY_OPTION_TYPE_CTR ctr;
-}
-SPOOL_NOTIFY_OPTION;
-
-typedef struct spool_notify_info_data
-{
-	uint16 type;
-	uint16 field;
-	uint32 reserved;
-	uint32 id;
-	union {
-		uint32 value[2];
-		struct {
-			uint32 length;
-			uint16 *string;
-		} data;
-		struct {
-			uint32	size;
-			SEC_DESC *desc;
-		} sd;
-	}
-	notify_data;
-	uint32 size;
-	uint32 enc_type;
-} SPOOL_NOTIFY_INFO_DATA;
-
-typedef struct spool_notify_info
-{
-	uint32 version;
-	uint32 flags;
-	uint32 count;
-	SPOOL_NOTIFY_INFO_DATA *data;
-}
-SPOOL_NOTIFY_INFO;
-
-/* If the struct name looks obscure, yes it is ! */
-/* RemoteFindFirstPrinterChangeNotificationEx query struct */
-typedef struct spoolss_q_rffpcnex
-{
-	POLICY_HND handle;
-	uint32 flags;
-	uint32 options;
-	uint32 localmachine_ptr;
-	UNISTR2 localmachine;
-	uint32 printerlocal;
-	uint32 option_ptr;
-	SPOOL_NOTIFY_OPTION *option;
-}
-SPOOL_Q_RFFPCNEX;
-
-typedef struct spool_r_rffpcnex
-{
-	WERROR status;
-}
-SPOOL_R_RFFPCNEX;
-
-/* Remote Find Next Printer Change Notify Ex */
-typedef struct spool_q_rfnpcnex
-{
-	POLICY_HND handle;
-	uint32 change;
-	uint32 option_ptr;
-	SPOOL_NOTIFY_OPTION *option;
-}
-SPOOL_Q_RFNPCNEX;
-
-typedef struct spool_r_rfnpcnex
-{
-	uint32 info_ptr;
-	SPOOL_NOTIFY_INFO info;
-	WERROR status;
-}
-SPOOL_R_RFNPCNEX;
 
 typedef struct printer_info_0
 {
@@ -1348,25 +1246,6 @@ typedef struct spool_r_getjob
 	WERROR status;
 }
 SPOOL_R_GETJOB;
-
-typedef struct spool_q_rrpcn
-{
-	POLICY_HND handle;
-	uint32 change_low;
-	uint32 change_high;
-	uint32 unknown0;
-	uint32 unknown1;
-	uint32 info_ptr;
-	SPOOL_NOTIFY_INFO info;	
-}
-SPOOL_Q_REPLY_RRPCN;
-
-typedef struct spool_r_rrpcn
-{
-	uint32 unknown0;
-	WERROR status;
-}
-SPOOL_R_REPLY_RRPCN;
 
 typedef struct spool_q_enumprinterkey
 {

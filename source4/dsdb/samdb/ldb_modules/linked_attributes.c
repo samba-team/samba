@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "ldb_module.h"
+#include "dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 
 struct la_op_store {

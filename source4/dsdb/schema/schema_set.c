@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb/include/ldb_module.h"
 #include "param/param.h"
