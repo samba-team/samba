@@ -50,6 +50,33 @@ static const struct table_node archi_table[]= {
  Printer info level 3 display function.
 ****************************************************************************/
 
+static void display_print_driver3(struct spoolss_DriverInfo3 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 3:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n\n", r->config_file);
+	printf("\tHelpfile: [%s]\n\n", r->help_file);
+
+	for (i=0; r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	printf("\n");
+
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
+}
+
 static void display_print_driver_3(DRIVER_INFO_3 *i1)
 {
 	fstring name = "";
@@ -513,7 +540,7 @@ static NTSTATUS net_copy_driverfile(struct net_context *c,
 				    TALLOC_CTX *mem_ctx,
 				    struct cli_state *cli_share_src,
 				    struct cli_state *cli_share_dst,
-				    char *file, const char *short_archi) {
+				    const char *file, const char *short_archi) {
 
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *p;
@@ -522,6 +549,10 @@ static NTSTATUS net_copy_driverfile(struct net_context *c,
 	char *version;
 	char *filename;
 	char *tok;
+
+	if (!file) {
+		return NT_STATUS_OK;
+	}
 
 	/* scroll through the file until we have the part
 	   beyond archi_table.short_archi */
@@ -617,67 +648,47 @@ static NTSTATUS copy_print_driver_3(struct net_context *c,
 		    TALLOC_CTX *mem_ctx,
 		    struct cli_state *cli_share_src,
 		    struct cli_state *cli_share_dst,
-		    const char *short_archi, DRIVER_INFO_3 *i1)
+		    const char *short_archi,
+		    struct spoolss_DriverInfo3 *r)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	int length = 0;
-	bool valid = true;
+	int i;
 
-	fstring name = "";
-	fstring driverpath = "";
-	fstring datafile = "";
-	fstring configfile = "";
-	fstring helpfile = "";
-	fstring dependentfiles = "";
-
-	if (i1 == NULL)
+	if (r == NULL) {
 		return nt_status;
-
-	rpcstr_pull(name, i1->name.buffer, sizeof(name), -1, STR_TERMINATE);
-	rpcstr_pull(driverpath, i1->driverpath.buffer, sizeof(driverpath), -1, STR_TERMINATE);
-	rpcstr_pull(datafile, i1->datafile.buffer, sizeof(datafile), -1, STR_TERMINATE);
-	rpcstr_pull(configfile, i1->configfile.buffer, sizeof(configfile), -1, STR_TERMINATE);
-	rpcstr_pull(helpfile, i1->helpfile.buffer, sizeof(helpfile), -1, STR_TERMINATE);
-
+	}
 
 	if (c->opt_verbose)
 		d_printf("copying driver: [%s], for architecture: [%s], version: [%d]\n",
-			  name, short_archi, i1->version);
+			  r->driver_name, short_archi, r->version);
 
 	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
-		driverpath, short_archi);
+		r->driver_path, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
-		datafile, short_archi);
+		r->data_file, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
-		configfile, short_archi);
+		r->config_file, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
 	nt_status = net_copy_driverfile(c, mem_ctx, cli_share_src, cli_share_dst,
-		helpfile, short_archi);
+		r->help_file, short_archi);
 	if (!NT_STATUS_IS_OK(nt_status))
 		return nt_status;
 
-	while (valid) {
+	for (i=0; r->dependent_files[i] != NULL; i++) {
 
-		rpcstr_pull(dependentfiles, i1->dependentfiles+length, sizeof(dependentfiles), -1, STR_TERMINATE);
-		length += strlen(dependentfiles)+1;
-
-		if (strlen(dependentfiles) > 0) {
-
-			nt_status = net_copy_driverfile(c, mem_ctx,
-					cli_share_src, cli_share_dst,
-					dependentfiles, short_archi);
-			if (!NT_STATUS_IS_OK(nt_status))
-				return nt_status;
-		} else {
-			valid = false;
+		nt_status = net_copy_driverfile(c, mem_ctx,
+				cli_share_src, cli_share_dst,
+				r->dependent_files[i], short_archi);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
 		}
 	}
 
@@ -930,15 +941,23 @@ static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
 			     TALLOC_CTX *mem_ctx,
 			     POLICY_HND *hnd, uint32 level,
 			     const char *env, int version,
-			     PRINTER_DRIVER_CTR *ctr)
+			     union spoolss_DriverInfo *info)
 {
 	WERROR result;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	/* getprinterdriver call */
-	result = rpccli_spoolss_getprinterdriver(
-			pipe_hnd, mem_ctx, hnd, level,
-			env, version, ctr);
-
+	result = rpccli_spoolss_getprinterdriver2(pipe_hnd, mem_ctx,
+						  hnd,
+						  env,
+						  level,
+						  0,
+						  version,
+						  2,
+						  info,
+						  &server_major_version,
+						  &server_minor_version);
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(1,("cannot get driver (for architecture: %s): %s\n",
 			env, win_errstr(result)));
@@ -955,13 +974,31 @@ static bool net_spoolss_getprinterdriver(struct rpc_pipe_client *pipe_hnd,
 
 static bool net_spoolss_addprinterdriver(struct rpc_pipe_client *pipe_hnd,
 			     TALLOC_CTX *mem_ctx, uint32 level,
-			     PRINTER_DRIVER_CTR *ctr)
+			     union spoolss_DriverInfo *info)
 {
 	WERROR result;
+	NTSTATUS status;
+	struct spoolss_AddDriverInfoCtr info_ctr;
+
+	info_ctr.level = level;
+
+	switch (level) {
+	case 2:
+		info_ctr.info.info2 = (struct spoolss_AddDriverInfo2 *)&info->info2;
+		break;
+	case 3:
+		info_ctr.info.info3 = (struct spoolss_AddDriverInfo3 *)&info->info3;
+		break;
+	default:
+		printf("unsupported info level: %d\n", level);
+		return false;
+	}
 
 	/* addprinterdriver call */
-	result = rpccli_spoolss_addprinterdriver(pipe_hnd, mem_ctx, level, ctr);
-
+	status = rpccli_spoolss_AddPrinterDriver(pipe_hnd, mem_ctx,
+						 pipe_hnd->srv_name_slash,
+						 &info_ctr,
+						 &result);
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
 		printf("You are not allowed to add drivers\n");
@@ -1785,15 +1822,13 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 	bool got_dst_driver_share = false;
 	struct rpc_pipe_client *pipe_hnd_dst = NULL;
 	POLICY_HND hnd_src, hnd_dst;
-	PRINTER_DRIVER_CTR drv_ctr_src, drv_ctr_dst;
+	union spoolss_DriverInfo drv_info_src;
 	PRINTER_INFO_CTR info_ctr_enum, info_ctr_dst;
 	struct cli_state *cli_dst = NULL;
 	struct cli_state *cli_share_src = NULL;
 	struct cli_state *cli_share_dst = NULL;
-	fstring drivername = "";
+	const char *drivername = NULL;
 
-	ZERO_STRUCT(drv_ctr_src);
-	ZERO_STRUCT(drv_ctr_dst);
 	ZERO_STRUCT(info_ctr_enum);
 	ZERO_STRUCT(info_ctr_dst);
 
@@ -1890,15 +1925,13 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 			/* getdriver src */
 			if (!net_spoolss_getprinterdriver(pipe_hnd, mem_ctx, &hnd_src,
 					level, archi_table[i].long_archi,
-					archi_table[i].version, &drv_ctr_src))
+					archi_table[i].version, &drv_info_src))
 				continue;
 
-			rpcstr_pull(drivername, drv_ctr_src.info3->name.buffer,
-					sizeof(drivername), -1, STR_TERMINATE);
+			drivername = drv_info_src.info3.driver_name;
 
 			if (c->opt_verbose)
-				display_print_driver_3(drv_ctr_src.info3);
-
+				display_print_driver3(&drv_info_src.info3);
 
 			/* check arch dir */
 			nt_status = check_arch_dir(cli_share_dst, archi_table[i].short_archi);
@@ -1909,13 +1942,13 @@ NTSTATUS rpc_printer_migrate_drivers_internals(struct net_context *c,
 			/* copy driver-files */
 			nt_status = copy_print_driver_3(c, mem_ctx, cli_share_src, cli_share_dst,
 							archi_table[i].short_archi,
-							drv_ctr_src.info3);
+							&drv_info_src.info3);
 			if (!NT_STATUS_IS_OK(nt_status))
 				goto done;
 
 
 			/* adddriver dst */
-			if (!net_spoolss_addprinterdriver(pipe_hnd_dst, mem_ctx, level, &drv_ctr_src)) {
+			if (!net_spoolss_addprinterdriver(pipe_hnd_dst, mem_ctx, level, &drv_info_src)) {
 				nt_status = NT_STATUS_UNSUCCESSFUL;
 				goto done;
 			}
