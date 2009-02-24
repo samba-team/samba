@@ -84,6 +84,138 @@ static bool add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+static bool ldap_decode_control_value(void *mem_ctx, DATA_BLOB value,
+				      const struct ldap_control_handler *handlers,
+				      struct ldb_control *ctrl)
+{
+	int i;
+
+	if (!handlers) {
+		return true;
+	}
+
+	for (i = 0; handlers[i].oid != NULL; i++) {
+		if (strcmp(handlers[i].oid, ctrl->oid) == 0) {
+			if (!handlers[i].decode || !handlers[i].decode(mem_ctx, value, &ctrl->data)) {
+				return false;
+			}
+			break;
+		}
+	}
+	if (handlers[i].oid == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool ldap_decode_control_wrapper(void *mem_ctx, struct asn1_data *data,
+					struct ldb_control *ctrl, DATA_BLOB *value)
+{
+	DATA_BLOB oid;
+
+	if (!asn1_start_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_read_OctetString(data, mem_ctx, &oid)) {
+		return false;
+	}
+	ctrl->oid = talloc_strndup(mem_ctx, (char *)oid.data, oid.length);
+	if (!ctrl->oid) {
+		return false;
+	}
+
+	if (asn1_peek_tag(data, ASN1_BOOLEAN)) {
+		bool critical;
+		if (!asn1_read_BOOLEAN(data, &critical)) {
+			return false;
+		}
+		ctrl->critical = critical;
+	} else {
+		ctrl->critical = false;
+	}
+
+	ctrl->data = NULL;
+
+	if (!asn1_peek_tag(data, ASN1_OCTET_STRING)) {
+		*value = data_blob(NULL, 0);
+		goto end_tag;
+	}
+
+	if (!asn1_read_OctetString(data, mem_ctx, value)) {
+		return false;
+	}
+
+end_tag:
+	if (!asn1_end_tag(data)) {
+		return false;
+	}
+
+	return true;
+}
+
+static bool ldap_encode_control(void *mem_ctx, struct asn1_data *data,
+				const struct ldap_control_handler *handlers,
+				struct ldb_control *ctrl)
+{
+	DATA_BLOB value;
+	int i;
+
+	if (!handlers) {
+		return false;
+	}
+
+	for (i = 0; handlers[i].oid != NULL; i++) {
+		if (strcmp(handlers[i].oid, ctrl->oid) == 0) {
+			if (!handlers[i].encode) {
+				if (ctrl->critical) {
+					return false;
+				} else {
+					/* not encoding this control */
+					return true;
+				}
+			}
+			if (!handlers[i].encode(mem_ctx, ctrl->data, &value)) {
+				return false;
+			}
+			break;
+		}
+	}
+	if (handlers[i].oid == NULL) {
+		return false;
+	}
+
+	if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+		return false;
+	}
+
+	if (!asn1_write_OctetString(data, ctrl->oid, strlen(ctrl->oid))) {
+		return false;
+	}
+
+	if (ctrl->critical) {
+		if (!asn1_write_BOOLEAN(data, ctrl->critical)) {
+			return false;
+		}
+	}
+
+	if (!ctrl->data) {
+		goto pop_tag;
+	}
+
+	if (!asn1_write_OctetString(data, value.data, value.length)) {
+		return false;
+	}
+
+pop_tag:
+	if (!asn1_pop_tag(data)) {
+		return false;
+	}
+
+	return true;
+}
+
 static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree)
 {
 	int i;
@@ -244,7 +376,9 @@ static void ldap_encode_response(struct asn1_data *data, struct ldap_Result *res
 	}
 }
 
-_PUBLIC_ bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx)
+_PUBLIC_ bool ldap_encode(struct ldap_message *msg,
+			  const struct ldap_control_handler *control_handlers,
+			  DATA_BLOB *result, TALLOC_CTX *mem_ctx)
 {
 	struct asn1_data *data = asn1_init(mem_ctx);
 	int i, j;
@@ -531,7 +665,9 @@ _PUBLIC_ bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CT
 		asn1_push_tag(data, ASN1_CONTEXT(0));
 		
 		for (i = 0; msg->controls[i] != NULL; i++) {
-			if (!ldap_encode_control(mem_ctx, data, msg->controls[i])) {
+			if (!ldap_encode_control(mem_ctx, data,
+						 control_handlers,
+						 msg->controls[i])) {
 				return false;
 			}
 		}
@@ -993,7 +1129,9 @@ static void ldap_decode_attribs(TALLOC_CTX *mem_ctx, struct asn1_data *data,
 
 /* This routine returns LDAP status codes */
 
-_PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
+_PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data,
+			      const struct ldap_control_handler *control_handlers,
+			      struct ldap_message *msg)
 {
 	uint8_t tag;
 
@@ -1428,7 +1566,9 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			}
 			
-			if (!ldap_decode_control_value(ctrl, value, ctrl[i])) {
+			if (!ldap_decode_control_value(ctrl, value,
+						       control_handlers,
+						       ctrl[i])) {
 				if (ctrl[i]->critical) {
 					ctrl[i]->data = NULL;
 					decoded[i] = false;

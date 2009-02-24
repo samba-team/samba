@@ -207,11 +207,21 @@ struct ldap_message {
 	bool                   *controls_decoded;
 };
 
+struct ldap_control_handler {
+	const char *oid;
+	bool (*decode)(void *mem_ctx, DATA_BLOB in, void *_out);
+	bool (*encode)(void *mem_ctx, void *in, DATA_BLOB *out);
+};
+
 struct asn1_data;
 
 struct ldap_message *new_ldap_message(TALLOC_CTX *mem_ctx);
-NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg);
-bool ldap_encode(struct ldap_message *msg, DATA_BLOB *result, TALLOC_CTX *mem_ctx);
+NTSTATUS ldap_decode(struct asn1_data *data,
+		     const struct ldap_control_handler *control_handlers,
+		     struct ldap_message *msg);
+bool ldap_encode(struct ldap_message *msg,
+		 const struct ldap_control_handler *control_handlers,
+		 DATA_BLOB *result, TALLOC_CTX *mem_ctx);
 NTSTATUS ldap_full_packet(void *private_data, DATA_BLOB blob, size_t *packet_size);
 
 bool asn1_read_OctetString_talloc(TALLOC_CTX *mem_ctx,
