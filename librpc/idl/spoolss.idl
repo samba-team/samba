@@ -552,7 +552,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	} spoolss_SetPrinterInfo2;
 
 	typedef struct {
-		security_descriptor *secdesc;
+		uint32 sec_desc_ptr;
 	} spoolss_SetPrinterInfo3;
 
 	typedef struct {
