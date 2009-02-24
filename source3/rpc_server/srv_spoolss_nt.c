@@ -8059,45 +8059,106 @@ WERROR _spoolss_AddPrinterDriverEx(pipes_struct *p,
 /****************************************************************************
 ****************************************************************************/
 
-static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
+struct _spoolss_paths {
+	int type;
+	const char *share;
+	const char *dir;
+};
+
+enum { SPOOLSS_DRIVER_PATH, SPOOLSS_PRTPROCS_PATH };
+
+static const struct _spoolss_paths spoolss_paths[]= {
+	{ SPOOLSS_DRIVER_PATH,		"print$",	"DRIVERS" },
+	{ SPOOLSS_PRTPROCS_PATH,	"prnproc$",	"PRTPROCS" }
+};
+
+static WERROR compose_spoolss_server_path(TALLOC_CTX *mem_ctx,
 					  const char *servername,
 					  const char *environment,
-					  struct spoolss_DriverDirectoryInfo1 *info1,
-					  uint32_t offered,
-					  uint32_t *needed)
+					  int component,
+					  char **path)
 {
-	char *path = NULL;
 	const char *pservername = NULL;
 	const char *long_archi = SPOOLSS_ARCHITECTURE_NT_X86;
 	const char *short_archi;
 
-	if (environment) {
+	*path = NULL;
+
+	/* environment may be empty */
+	if (environment && strlen(environment)) {
 		long_archi = environment;
 	}
 
-	pservername = canon_servername(servername);
+	/* servername may be empty */
+	if (servername && strlen(servername)) {
+		pservername = canon_servername(servername);
 
-	if ( !is_myname_or_ipaddr(pservername))
-		return WERR_INVALID_PARAM;
+		if (!is_myname_or_ipaddr(pservername)) {
+			return WERR_INVALID_PARAM;
+		}
+	}
 
-	if (!(short_archi = get_short_archi(long_archi)))
+	if (!(short_archi = get_short_archi(long_archi))) {
 		return WERR_INVALID_ENVIRONMENT;
+	}
 
-	path = talloc_asprintf(mem_ctx,
-			"\\\\%s\\print$\\%s", pservername, short_archi);
-	if (!path) {
+	switch (component) {
+	case SPOOLSS_PRTPROCS_PATH:
+	case SPOOLSS_DRIVER_PATH:
+		if (pservername) {
+			*path = talloc_asprintf(mem_ctx,
+					"\\\\%s\\%s\\%s",
+					pservername,
+					spoolss_paths[component].share,
+					short_archi);
+		} else {
+			*path = talloc_asprintf(mem_ctx, "%s\\%s\\%s",
+					SPOOLSS_DEFAULT_SERVER_PATH,
+					spoolss_paths[component].dir,
+					short_archi);
+		}
+		break;
+	default:
+		return WERR_INVALID_PARAM;
+	}
+
+	if (!*path) {
 		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static WERROR getprinterdriverdir_level_1(TALLOC_CTX *mem_ctx,
+					  const char *servername,
+					  const char *environment,
+					  struct spoolss_DriverDirectoryInfo1 *r,
+					  uint32_t offered,
+					  uint32_t *needed)
+{
+	WERROR werr;
+	char *path = NULL;
+
+	werr = compose_spoolss_server_path(mem_ctx,
+					   servername,
+					   environment,
+					   SPOOLSS_DRIVER_PATH,
+					   &path);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	DEBUG(4,("printer driver directory: [%s]\n", path));
 
-	info1->directory_name = path;
+	r->directory_name = path;
 
-	*needed += ndr_size_spoolss_DriverDirectoryInfo1(info1, NULL, 0);
+	*needed += ndr_size_spoolss_DriverDirectoryInfo1(r, NULL, 0);
 
 	if (*needed > offered) {
 		talloc_free(path);
-		ZERO_STRUCTP(info1);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
@@ -9728,36 +9789,30 @@ done:
 static WERROR getprintprocessordirectory_level_1(TALLOC_CTX *mem_ctx,
 						 const char *servername,
 						 const char *environment,
-						 struct spoolss_PrintProcessorDirectoryInfo1 *info1,
+						 struct spoolss_PrintProcessorDirectoryInfo1 *r,
 						 uint32_t offered,
 						 uint32_t *needed)
 {
-	const char *long_archi = SPOOLSS_ARCHITECTURE_NT_X86;
-	const char *short_archi;
+	WERROR werr;
+	char *path = NULL;
 
-	if (environment) {
-		long_archi = environment;
+	werr = compose_spoolss_server_path(mem_ctx,
+					   servername,
+					   environment,
+					   SPOOLSS_PRTPROCS_PATH,
+					   &path);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
-	short_archi = get_short_archi(long_archi);
-	if (!short_archi) {
-		return WERR_INVALID_ENVIRONMENT;
-	}
+	DEBUG(4,("print processor directory: [%s]\n", path));
 
-	/* I think this should look like this - gd
-	info1->directory_name = talloc_asprintf(mem_ctx,
-		"C:\\WINNT\\System32\\spool\\PRTPROCS\\%s", short_archi);
-	*/
-	info1->directory_name = talloc_strdup(mem_ctx,
-		"C:\\WINNT\\System32\\spool\\PRTPROCS\\W32X86");
+	r->directory_name = path;
 
-	if (!info1->directory_name) {
-		return WERR_NOMEM;
-	}
-
-	*needed += ndr_size_spoolss_PrintProcessorDirectoryInfo1(info1, NULL, 0);
+	*needed += ndr_size_spoolss_PrintProcessorDirectoryInfo1(r, NULL, 0);
 
 	if (*needed > offered) {
+		talloc_free(path);
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
