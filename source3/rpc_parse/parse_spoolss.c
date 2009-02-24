@@ -2051,33 +2051,6 @@ uint32 spoolss_size_printmonitor_info_2(PRINTMONITOR_2 *info)
 }
 
 /*******************************************************************
- * init a structure.
- ********************************************************************/
-
-bool make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
-			       const POLICY_HND *hnd,
-			       const fstring architecture,
-			       uint32 level, uint32 clientmajor, uint32 clientminor,
-			       RPC_BUFFER *buffer, uint32 offered)
-{      
-	if (q_u == NULL)
-		return False;
-
-	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
-
-	init_buf_unistr2(&q_u->architecture, &q_u->architecture_ptr, architecture);
-
-	q_u->level=level;
-	q_u->clientmajorversion=clientmajor;
-	q_u->clientminorversion=clientminor;
-
-	q_u->buffer=buffer;
-	q_u->offered=offered;
-
-	return True;
-}
-
-/*******************************************************************
  * read a structure.
  * called from spoolss_getprinterdriver2 (srv_spoolss.c)
  ********************************************************************/

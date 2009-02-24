@@ -5487,10 +5487,6 @@ WERROR rpccli_spoolss_getprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ct
 WERROR rpccli_spoolss_setprinter(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 			      POLICY_HND *pol, uint32 level, 
 			      PRINTER_INFO_CTR *ctr, uint32 command);
-WERROR rpccli_spoolss_getprinterdriver(struct rpc_pipe_client *cli, 
-				    TALLOC_CTX *mem_ctx, 
-				    POLICY_HND *pol, uint32 level, 
-				    const char *env, int version, PRINTER_DRIVER_CTR *ctr);
 WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli, 
 				       TALLOC_CTX *mem_ctx,
 				       uint32 level, const char *env,
