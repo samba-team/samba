@@ -648,8 +648,10 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	    (num_subkeys == old_num_subkeys)) {
 
 		for (i = 0; i < num_subkeys; i++) {
-			if (strcmp(ctr->subkeys[i],
-				   old_subkeys->subkeys[i]) != 0) {
+			if (strcmp(regsubkey_ctr_specific_key(ctr, i),
+				   regsubkey_ctr_specific_key(old_subkeys, i))
+			    != 0)
+			{
 				break;
 			}
 		}
@@ -967,7 +969,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 
 	for (i = 0; i < num_subkeys; i++) {
 		sorted_subkeys[i] = talloc_strdup_upper(sorted_subkeys,
-							ctr->subkeys[i]);
+					regsubkey_ctr_specific_key(ctr, i));
 		if (sorted_subkeys[i] == NULL) {
 			goto fail;
 		}
