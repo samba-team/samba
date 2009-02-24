@@ -3867,36 +3867,20 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo3(struct ndr_push *ndr, 
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->secdesc));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->sec_desc_ptr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->secdesc) {
-			NDR_CHECK(ndr_push_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo3(struct ndr_pull *ndr, int ndr_flags, struct spoolss_SetPrinterInfo3 *r)
 {
-	uint32_t _ptr_secdesc;
-	TALLOC_CTX *_mem_save_secdesc_0;
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_secdesc));
-		if (_ptr_secdesc) {
-			NDR_PULL_ALLOC(ndr, r->secdesc);
-		} else {
-			r->secdesc = NULL;
-		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->sec_desc_ptr));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		if (r->secdesc) {
-			_mem_save_secdesc_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->secdesc, 0);
-			NDR_CHECK(ndr_pull_security_descriptor(ndr, NDR_SCALARS|NDR_BUFFERS, r->secdesc));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_secdesc_0, 0);
-		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -3905,12 +3889,7 @@ _PUBLIC_ void ndr_print_spoolss_SetPrinterInfo3(struct ndr_print *ndr, const cha
 {
 	ndr_print_struct(ndr, name, "spoolss_SetPrinterInfo3");
 	ndr->depth++;
-	ndr_print_ptr(ndr, "secdesc", r->secdesc);
-	ndr->depth++;
-	if (r->secdesc) {
-		ndr_print_security_descriptor(ndr, "secdesc", r->secdesc);
-	}
-	ndr->depth--;
+	ndr_print_uint32(ndr, "sec_desc_ptr", r->sec_desc_ptr);
 	ndr->depth--;
 }
 
@@ -4279,7 +4258,7 @@ static enum ndr_err_code ndr_push_spoolss_SetPrinterInfo(struct ndr_push *ndr, i
 
 			case 3:
 				if (r->info3) {
-					NDR_CHECK(ndr_push_spoolss_SetPrinterInfo3(ndr, NDR_SCALARS|NDR_BUFFERS, r->info3));
+					NDR_CHECK(ndr_push_spoolss_SetPrinterInfo3(ndr, NDR_SCALARS, r->info3));
 				}
 			break;
 
@@ -4486,7 +4465,7 @@ static enum ndr_err_code ndr_pull_spoolss_SetPrinterInfo(struct ndr_pull *ndr, i
 				if (r->info3) {
 					_mem_save_info3_0 = NDR_PULL_GET_MEM_CTX(ndr);
 					NDR_PULL_SET_MEM_CTX(ndr, r->info3, 0);
-					NDR_CHECK(ndr_pull_spoolss_SetPrinterInfo3(ndr, NDR_SCALARS|NDR_BUFFERS, r->info3));
+					NDR_CHECK(ndr_pull_spoolss_SetPrinterInfo3(ndr, NDR_SCALARS, r->info3));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info3_0, 0);
 				}
 			break;

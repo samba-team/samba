@@ -501,7 +501,7 @@ struct spoolss_SetPrinterInfo2 {
 };
 
 struct spoolss_SetPrinterInfo3 {
-	struct security_descriptor *secdesc;/* [unique] */
+	uint32_t sec_desc_ptr;
 };
 
 struct spoolss_SetPrinterInfo4 {
