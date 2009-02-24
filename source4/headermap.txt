@@ -49,6 +49,7 @@ param/share.h: share.h
 ../lib/util/util_tdb.h: util_tdb.h
 ../lib/util/util_ldb.h: util_ldb.h
 ../lib/util/wrap_xattr.h: wrap_xattr.h
+libcli/ldap/ldap_message.h: ldap_message.h
 libcli/ldap/ldap_ndr.h: ldap_ndr.h
 ../lib/tevent/tevent.h: tevent.h
 ../lib/tevent/tevent_internal.h: tevent_internal.h
