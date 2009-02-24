@@ -1,11 +1,5 @@
-#if (_SAMBA_BUILD_ == 3)
-#include "tdb/include/tdb.h"
-#else
-#include "replace.h"
-#include "system/wait.h"
+#include "ldb_includes.h"
 #include "tdb.h"
-#endif
-
 #include "ldb_module.h"
 
 /* this private structure is used by the ltdb backend in the

@@ -34,6 +34,19 @@
 
 #include "ldb_private.h"
 
+static int ldb_context_destructor(void *ptr)
+{
+	struct ldb_context *ldb = talloc_get_type(ptr, struct ldb_context);
+
+	if (ldb->transaction_active) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "A transaction is still active in ldb context [%p]",
+			  ldb);
+	}
+
+	return 0;
+}
+
 /*
    initialise a ldb context
    The mem_ctx is required
@@ -64,6 +77,8 @@ struct ldb_context *ldb_init(TALLOC_CTX *mem_ctx, struct tevent_context *ev_ctx)
 
 	/* TODO: get timeout from options if available there */
 	ldb->default_timeout = 300; /* set default to 5 minutes */
+
+	talloc_set_destructor((TALLOC_CTX *)ldb, ldb_context_destructor);
 
 	return ldb;
 }
@@ -242,10 +257,24 @@ void ldb_reset_err_string(struct ldb_context *ldb)
 /*
   start a transaction
 */
-static int ldb_transaction_start_internal(struct ldb_context *ldb)
+int ldb_transaction_start(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,
+		  "start ldb transaction (nesting: %d)",
+		  ldb->transaction_active);
+
+	/* explicit transaction active, count nested requests */
+	if (ldb->transaction_active) {
+		ldb->transaction_active++;
+		return LDB_SUCCESS;
+	}
+
+	/* start a new transaction */
+	ldb->transaction_active++;
+
 	FIRST_OP(ldb, start_transaction);
 
 	ldb_reset_err_string(ldb);
@@ -266,10 +295,29 @@ static int ldb_transaction_start_internal(struct ldb_context *ldb)
 /*
   commit a transaction
 */
-static int ldb_transaction_commit_internal(struct ldb_context *ldb)
+int ldb_transaction_commit(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
+
+	ldb->transaction_active--;
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,
+		  "commit ldb transaction (nesting: %d)",
+		  ldb->transaction_active);
+
+	/* commit only when all nested transactions are complete */
+	if (ldb->transaction_active > 0) {
+		return LDB_SUCCESS;
+	}
+
+	if (ldb->transaction_active < 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "commit called but no ldb transactions are active!");
+		ldb->transaction_active = 0;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	FIRST_OP(ldb, end_transaction);
 
 	ldb_reset_err_string(ldb);
@@ -290,10 +338,29 @@ static int ldb_transaction_commit_internal(struct ldb_context *ldb)
 /*
   cancel a transaction
 */
-static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
+int ldb_transaction_cancel(struct ldb_context *ldb)
 {
 	struct ldb_module *module;
 	int status;
+
+	ldb->transaction_active--;
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE,
+		  "cancel ldb transaction (nesting: %d)",
+		  ldb->transaction_active);
+
+	/* really cancel only if all nested transactions are complete */
+	if (ldb->transaction_active > 0) {
+		return LDB_SUCCESS;
+	}
+
+	if (ldb->transaction_active < 0) {
+		ldb_debug(ldb, LDB_DEBUG_FATAL,
+			  "commit called but no ldb transactions are active!");
+		ldb->transaction_active = 0;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	FIRST_OP(ldb, del_transaction);
 
 	status = module->ops->del_transaction(module);
@@ -309,66 +376,13 @@ static int ldb_transaction_cancel_internal(struct ldb_context *ldb)
 	return status;
 }
 
-int ldb_transaction_start(struct ldb_context *ldb)
-{
-	/* disable autotransactions */
-	ldb->transaction_active++;
-
-	return ldb_transaction_start_internal(ldb);
-}
-
-int ldb_transaction_commit(struct ldb_context *ldb)
-{
-	/* renable autotransactions (when we reach 0) */
-	if (ldb->transaction_active > 0)
-		ldb->transaction_active--;
-
-	return ldb_transaction_commit_internal(ldb);
-}
-
-int ldb_transaction_cancel(struct ldb_context *ldb)
-{
-	/* renable autotransactions (when we reach 0) */
-	if (ldb->transaction_active > 0)
-		ldb->transaction_active--;
-
-	return ldb_transaction_cancel_internal(ldb);
-}
-
-static int ldb_autotransaction_start(struct ldb_context *ldb)
-{
-	/* explicit transaction active, ignore autotransaction request */
-	if (ldb->transaction_active)
-		return LDB_SUCCESS;
-
-	return ldb_transaction_start_internal(ldb);
-}
-
-static int ldb_autotransaction_commit(struct ldb_context *ldb)
-{
-	/* explicit transaction active, ignore autotransaction request */
-	if (ldb->transaction_active)
-		return LDB_SUCCESS;
-
-	return ldb_transaction_commit_internal(ldb);
-}
-
-static int ldb_autotransaction_cancel(struct ldb_context *ldb)
-{
-	/* explicit transaction active, ignore autotransaction request */
-	if (ldb->transaction_active)
-		return LDB_SUCCESS;
-
-	return ldb_transaction_cancel_internal(ldb);
-}
-
 /* autostarts a transacion if none active */
 static int ldb_autotransaction_request(struct ldb_context *ldb,
 				       struct ldb_request *req)
 {
 	int ret;
 
-	ret = ldb_autotransaction_start(ldb);
+	ret = ldb_transaction_start(ldb);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
@@ -379,9 +393,9 @@ static int ldb_autotransaction_request(struct ldb_context *ldb,
 	}
 
 	if (ret == LDB_SUCCESS) {
-		return ldb_autotransaction_commit(ldb);
+		return ldb_transaction_commit(ldb);
 	}
-	ldb_autotransaction_cancel(ldb);
+	ldb_transaction_cancel(ldb);
 
 	if (ldb->err_string == NULL) {
 		/* no error string was setup by the backend */

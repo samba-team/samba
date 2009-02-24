@@ -36,6 +36,7 @@
  *      Simo Sorce Mar 2006
  */
 
+#include "ldb_includes.h"
 #include "ldb_module.h"
 
 struct rename_context {

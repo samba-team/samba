@@ -4,11 +4,6 @@
   a temporary includes file until I work on the ldb build system
 */
 
-#if (_SAMBA_BUILD_ >= 4)
-/* tell ldb we have the internal ldap code */
-#define HAVE_ILDAP 1
-#endif
-
 #if (_SAMBA_BUILD_ <= 3)
 /* allow forbidden string functions - should be replaced with _m functions */
 #undef strcasecmp
@@ -19,9 +14,5 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/time.h"
-#include <talloc.h>
-#include <tevent.h>
-#include "ldb_errors.h"
-#include "dlinklist.h"
 
 #endif /*_LDB_PRIVATE_INCLUDES_H_*/

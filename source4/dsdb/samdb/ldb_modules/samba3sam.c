@@ -6,7 +6,7 @@
 */
 
 #include "includes.h"
-#include "ldb/include/ldb_module.h"
+#include "ldb_module.h"
 #include "ldb/ldb_map/ldb_map.h"
 #include "system/passwd.h"
 

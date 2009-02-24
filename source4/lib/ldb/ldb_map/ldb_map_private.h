@@ -1,3 +1,4 @@
+#include "ldb_includes.h"
 
 /* A handy macro to report Out of Memory conditions */
 #define map_oom(module) ldb_set_errstring(ldb_module_get_ctx(module), talloc_asprintf(module, "Out of Memory"));

@@ -73,7 +73,12 @@
   modifiersName: not supported by w2k3?
 */
 
+#include "ldb_includes.h"
 #include "ldb_module.h"
+
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
+#endif
 
 /*
   construct a canonical name from a message
