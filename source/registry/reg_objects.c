@@ -61,6 +61,15 @@ WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum)
 	return WERR_OK;
 }
 
+int regsubkey_ctr_get_seqnum(struct regsubkey_ctr *ctr)
+{
+	if (ctr == NULL) {
+		return -1;
+	}
+
+	return ctr->seqnum;
+}
+
 /***********************************************************************
  Add a new key to the array
  **********************************************************************/
