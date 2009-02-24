@@ -42,9 +42,11 @@ bool eventlog_init_keys(void)
 	uint32 uiCategoryCount;
 	UNISTR2 data;
 	TALLOC_CTX *ctx = talloc_tos();
+	WERROR werr;
 
 	while (elogs && *elogs) {
-		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
+		werr = regsubkey_ctr_init(ctx, &subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -70,7 +72,8 @@ bool eventlog_init_keys(void)
 		DEBUG( 5,
 		       ( "Adding key of [%s] to path of [%s]\n", *elogs,
 			 evtlogpath ) );
-		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
+		werr = regsubkey_ctr_init(ctx, &subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -207,6 +210,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	int i;
 	int numsources;
 	TALLOC_CTX *ctx = talloc_tos();
+	WERROR werr;
 
 	if (!elogs) {
 		return False;
@@ -315,7 +319,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	TALLOC_FREE(values);
 	TALLOC_FREE(wrklist);	/*  */
 
-	if ( !( subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
+	werr = regsubkey_ctr_init(ctx, &subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}
@@ -342,7 +347,8 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	/* now allocate room for the source's subkeys */
 
-	if ( !( subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
+	werr = regsubkey_ctr_init(ctx, &subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}
