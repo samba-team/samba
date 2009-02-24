@@ -103,7 +103,7 @@ static WERROR init_registry_key_internal(const char *add_path)
 	char *remaining = NULL;
 	char *keyname;
 	char *subkeyname;
-	REGSUBKEY_CTR *subkeys;
+	struct regsubkey_ctr *subkeys;
 	const char *p, *p2;
 
 	DEBUG(6, ("init_registry_key: Adding [%s]\n", add_path));
@@ -167,7 +167,7 @@ static WERROR init_registry_key_internal(const char *add_path)
 		 * since we are about to update the record.
 		 * We just want any subkeys already present */
 
-		if (!(subkeys = TALLOC_ZERO_P(frame, REGSUBKEY_CTR))) {
+		if (!(subkeys = TALLOC_ZERO_P(frame, struct regsubkey_ctr))) {
 			DEBUG(0,("talloc() failure!\n"));
 			werr = WERR_NOMEM;
 			goto fail;
@@ -516,7 +516,7 @@ int regdb_get_seqnum(void)
  fstrings
  ***********************************************************************/
 
-static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
+static bool regdb_store_keys_internal(const char *key, struct regsubkey_ctr *ctr)
 {
 	TDB_DATA dbuf;
 	uint8 *buffer = NULL;
@@ -617,11 +617,11 @@ done:
  do not currently exist
  ***********************************************************************/
 
-bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
+bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 {
 	int num_subkeys, i;
 	char *path = NULL;
-	REGSUBKEY_CTR *subkeys = NULL, *old_subkeys = NULL;
+	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
@@ -635,7 +635,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * changed
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR))) {
+	if (!(old_subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		return false;
 	}
@@ -672,7 +672,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	 * Re-fetch the old keys inside the transaction
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR))) {
+	if (!(old_subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		goto cancel;
 	}
@@ -792,7 +792,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 
 	if (num_subkeys == 0) {
-		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR)) ) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -813,7 +813,7 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR)) ) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr)) ) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -930,7 +930,7 @@ static int cmp_keynames(const void *p1, const void *p2)
 static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 {
 	char **sorted_subkeys;
-	REGSUBKEY_CTR *ctr;
+	struct regsubkey_ctr *ctr;
 	bool result = false;
 	NTSTATUS status;
 	char *buf;
@@ -944,7 +944,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		return false;
 	}
 
-	ctr = talloc(talloc_tos(), REGSUBKEY_CTR);
+	ctr = talloc(talloc_tos(), struct regsubkey_ctr);
 	if (ctr == NULL) {
 		goto fail;
 	}
@@ -1164,7 +1164,7 @@ done:
  released by the caller.
  ***********************************************************************/
 
-int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
+int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 {
 	WERROR werr;
 	uint32 num_items;
@@ -1484,7 +1484,7 @@ static WERROR regdb_set_secdesc(const char *key,
 	return err;
 }
 
-bool regdb_subkeys_need_update(REGSUBKEY_CTR *subkeys)
+bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 {
 	return (regdb_get_seqnum() != subkeys->seqnum);
 }

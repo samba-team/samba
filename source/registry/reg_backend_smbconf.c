@@ -25,12 +25,12 @@
 
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
-static int smbconf_fetch_keys( const char *key, REGSUBKEY_CTR *subkey_ctr )
+static int smbconf_fetch_keys( const char *key, struct regsubkey_ctr *subkey_ctr )
 {
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
 
-static bool smbconf_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool smbconf_store_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	return regdb_ops.store_subkeys(key, subkeys);
 }

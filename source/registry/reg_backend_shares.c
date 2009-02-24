@@ -66,7 +66,7 @@ static char* trim_reg_path( const char *path )
  Caller is responsible for freeing memory to **subkeys
  *********************************************************************/
  
-static int shares_subkey_info( const char *key, REGSUBKEY_CTR *subkey_ctr )
+static int shares_subkey_info( const char *key, struct regsubkey_ctr *subkey_ctr )
 {
 	char 		*path;
 	bool		top_level = False;
@@ -134,7 +134,7 @@ static int shares_value_info( const char *key, REGVAL_CTR *val )
  (for now at least)
  *********************************************************************/
 
-static bool shares_store_subkey( const char *key, REGSUBKEY_CTR *subkeys )
+static bool shares_store_subkey( const char *key, struct regsubkey_ctr *subkeys )
 {
 	return False;
 }

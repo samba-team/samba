@@ -59,7 +59,7 @@ static int prod_options_fetch_values(const char *key, REGVAL_CTR *regvals)
 }
 
 static int prod_options_fetch_subkeys(const char *key,
-				      REGSUBKEY_CTR *subkey_ctr)
+				      struct regsubkey_ctr *subkey_ctr)
 {
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }

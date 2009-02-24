@@ -1693,7 +1693,7 @@ static int hashrec_cmp( REGF_HASH_REC *h1, REGF_HASH_REC *h2 )
 *******************************************************************/
 
  REGF_NK_REC* regfio_write_key( REGF_FILE *file, const char *name, 
-                               REGVAL_CTR *values, REGSUBKEY_CTR *subkeys, 
+                               REGVAL_CTR *values, struct regsubkey_ctr *subkeys,
                                SEC_DESC *sec_desc, REGF_NK_REC *parent )
 {
 	REGF_NK_REC *nk;

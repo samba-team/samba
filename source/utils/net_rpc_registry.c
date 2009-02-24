@@ -971,11 +971,11 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 {
 	REGF_NK_REC *key, *subkey;
 	REGVAL_CTR *values = NULL;
-	REGSUBKEY_CTR *subkeys = NULL;
+	struct regsubkey_ctr *subkeys = NULL;
 	int i;
 	char *path = NULL;
 
-	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, REGSUBKEY_CTR )) ) {
+	if ( !( subkeys = TALLOC_ZERO_P( infile->mem_ctx, struct regsubkey_ctr )) ) {
 		DEBUG(0,("write_registry_tree: talloc() failed!\n"));
 		return false;
 	}
@@ -993,7 +993,7 @@ static bool write_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 			(const char *)nk->values[i].data, (nk->values[i].data_size & ~VK_DATA_IN_OFFSET) );
 	}
 
-	/* copy subkeys into the REGSUBKEY_CTR */
+	/* copy subkeys into the struct regsubkey_ctr */
 
 	while ( (subkey = regfio_fetch_subkey( infile, nk )) ) {
 		regsubkey_ctr_addkey( subkeys, subkey->keyname );

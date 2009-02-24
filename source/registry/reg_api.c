@@ -100,7 +100,7 @@ static WERROR fill_subkey_cache(struct registry_key *key)
 		}
 	}
 
-	if (!(key->subkeys = TALLOC_ZERO_P(key, REGSUBKEY_CTR))) {
+	if (!(key->subkeys = TALLOC_ZERO_P(key, struct regsubkey_ctr))) {
 		return WERR_NOMEM;
 	}
 
@@ -127,7 +127,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	WERROR     	result = WERR_OK;
 	struct registry_key *regkey;
 	REGISTRY_KEY *key;
-	REGSUBKEY_CTR	*subkeys = NULL;
+	struct regsubkey_ctr	*subkeys = NULL;
 
 	DEBUG(7,("regkey_open_onelevel: name = [%s]\n", name));
 
@@ -193,7 +193,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
 
-	if ( !(subkeys = TALLOC_ZERO_P( key, REGSUBKEY_CTR )) ) {
+	if ( !(subkeys = TALLOC_ZERO_P( key, struct regsubkey_ctr )) ) {
 		result = WERR_NOMEM;
 		goto done;
 	}
@@ -726,7 +726,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 	REGF_NK_REC *subkey;
 	REGISTRY_KEY registry_key;
 	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
+	struct regsubkey_ctr *subkeys;
 	int i;
 	char *path = NULL;
 	WERROR result = WERR_OK;
@@ -748,7 +748,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 
 	/* now start parsing the values and subkeys */
 
-	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, struct regsubkey_ctr);
 	if (subkeys == NULL) {
 		return WERR_NOMEM;
 	}
@@ -767,7 +767,7 @@ static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
 				    (key->values[i].data_size & ~VK_DATA_IN_OFFSET));
 	}
 
-	/* copy subkeys into the REGSUBKEY_CTR */
+	/* copy subkeys into the struct regsubkey_ctr */
 
 	key->subkey_index = 0;
 	while ((subkey = regfio_fetch_subkey( regfile, key ))) {
@@ -861,7 +861,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 {
 	REGF_NK_REC *key;
 	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
+	struct regsubkey_ctr *subkeys;
 	int i, num_subkeys;
 	char *key_tmp = NULL;
 	char *keyname, *parentpath;
@@ -909,7 +909,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 
 	/* lookup the values and subkeys */
 
-	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, struct regsubkey_ctr);
 	if (subkeys == NULL) {
 		return WERR_NOMEM;
 	}

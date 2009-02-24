@@ -80,7 +80,7 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
 
-bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
+bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys )
 {
 	if (key->ops && key->ops->store_subkeys)
 		return key->ops->store_subkeys(key->name, subkeys);
@@ -105,7 +105,7 @@ bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
  Initialize the TALLOC_CTX if necessary
  ***********************************************************************/
 
-int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
+int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr )
 {
 	int result = -1;
 
@@ -216,7 +216,7 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
  * Check whether the in-memory version of the subkyes of a
  * registry key needs update from disk.
  */
-bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys)
+bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys)
 {
 	if (key->ops && key->ops->subkeys_need_update)
 	{

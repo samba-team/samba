@@ -214,7 +214,7 @@ int           regfio_close( REGF_FILE *r );
 REGF_NK_REC*  regfio_rootkey( REGF_FILE *file );
 REGF_NK_REC*  regfio_fetch_subkey( REGF_FILE *file, REGF_NK_REC *nk );
 REGF_NK_REC*  regfio_write_key ( REGF_FILE *file, const char *name,
-                                 REGVAL_CTR *values, REGSUBKEY_CTR *subkeys,
+                                 REGVAL_CTR *values, struct regsubkey_ctr *subkeys,
                                  SEC_DESC *sec_desc, REGF_NK_REC *parent );
 
 

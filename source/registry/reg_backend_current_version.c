@@ -70,7 +70,7 @@ static int current_version_fetch_values(const char *key, REGVAL_CTR *values)
 }
 
 static int current_version_fetch_subkeys(const char *key,
-					 REGSUBKEY_CTR *subkey_ctr)
+					 struct regsubkey_ctr *subkey_ctr)
 {
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
