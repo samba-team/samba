@@ -75,6 +75,68 @@ WERROR rpccli_spoolss_openprinter_ex(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
+/**********************************************************************
+ convencience wrapper around rpccli_spoolss_GetPrinterDriver2
+**********************************************************************/
+
+WERROR rpccli_spoolss_getprinterdriver2(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					const char *architecture,
+					uint32_t level,
+					uint32_t offered,
+					uint32_t client_major_version,
+					uint32_t client_minor_version,
+					union spoolss_DriverInfo *info,
+					uint32_t *server_major_version,
+					uint32_t *server_minor_version)
+{
+	NTSTATUS status;
+	WERROR werror;
+	uint32_t needed;
+	DATA_BLOB buffer;
+
+	if (offered > 0) {
+		buffer = data_blob_talloc_zero(mem_ctx, offered);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+	}
+
+	status = rpccli_spoolss_GetPrinterDriver2(cli, mem_ctx,
+						  handle,
+						  architecture,
+						  level,
+						  (offered > 0) ? &buffer : NULL,
+						  offered,
+						  client_major_version,
+						  client_minor_version,
+						  info,
+						  &needed,
+						  server_major_version,
+						  server_minor_version,
+						  &werror);
+	if (W_ERROR_EQUAL(werror, WERR_INSUFFICIENT_BUFFER)) {
+		offered = needed;
+		buffer = data_blob_talloc_zero(mem_ctx, needed);
+		W_ERROR_HAVE_NO_MEMORY(buffer.data);
+
+		status = rpccli_spoolss_GetPrinterDriver2(cli, mem_ctx,
+							  handle,
+							  architecture,
+							  level,
+							  &buffer,
+							  offered,
+							  client_major_version,
+							  client_minor_version,
+							  info,
+							  &needed,
+							  server_major_version,
+							  server_minor_version,
+							  &werror);
+	}
+
+	return werror;
+}
+
 /*********************************************************************
  Decode various spoolss rpc's and info levels
  ********************************************************************/
