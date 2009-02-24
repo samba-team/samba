@@ -47,6 +47,7 @@ o   Jeremy Allison <jra@samba.org>
     * Backport the semantics of when to delete alternate data streams on a file
       truncate.
     * Fix printf warnings.
+    * Fix warnings on Solaris.
 
 
 o   Michael Adam <obnox@samba.org>
@@ -78,6 +79,7 @@ o   Bjoern Jacke <bj@sernet.de>
     * Add configure check for Tru64 sub-second timestamp resolution.
     * Add Tru64 sub-second resolution timestamp support.
     * Enable IPv6 support for NetBSD and FreeBSD.
+    * Use correct BSD evironment variable.
 
 
 o   Guenter Kukkukk <linux@kukkukk.com>
