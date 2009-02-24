@@ -1133,18 +1133,54 @@ done:
 	return werr;
 }
 
+static WERROR reg_deletekey_recursive_trans(TALLOC_CTX *ctx,
+					    struct registry_key *parent,
+					    const char *path,
+					    bool del_key)
+{
+	WERROR werr;
+
+	werr = regdb_transaction_start();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(0, ("reg_deletekey_recursive_trans: "
+			  "error starting transaction: %s\n",
+			  win_errstr(werr)));
+		return werr;
+	}
+
+	werr = reg_deletekey_recursive_internal(ctx, parent, path, del_key);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		werr = regdb_transaction_cancel();
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0, ("reg_deletekey_recursive_trans: "
+				  "error cancelling transaction: %s\n",
+				  win_errstr(werr)));
+		}
+	} else {
+		werr = regdb_transaction_commit();
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(0, ("reg_deletekey_recursive_trans: "
+				  "error committing transaction: %s\n",
+				  win_errstr(werr)));
+		}
+	}
+
+	return werr;
+}
+
 WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 			       struct registry_key *parent,
 			       const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, true);
+	return reg_deletekey_recursive_trans(ctx, parent, path, true);
 }
 
 WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 				   struct registry_key *parent,
 				   const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, false);
+	return reg_deletekey_recursive_trans(ctx, parent, path, false);
 }
 
 #if 0
