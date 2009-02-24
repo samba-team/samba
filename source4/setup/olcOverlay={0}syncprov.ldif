@@ -1,0 +1,11 @@
+dn: olcOverlay={0}syncprov
+objectClass: olcOverlayConfig
+objectClass: olcSyncProvConfig
+olcOverlay: {0}syncprov
+structuralObjectClass: olcSyncProvConfig
+entryUUID: 41df5aca-785a-102d-9077-999999999999
+creatorsName: cn=config
+createTimestamp: 20090116201111Z
+entryCSN: 20090116201111.111111Z#000000#000#000000
+modifiersName: cn=config
+modifyTimestamp: 20090116201111Z
