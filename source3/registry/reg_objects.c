@@ -50,6 +50,17 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 	return WERR_OK;
 }
 
+WERROR regsubkey_ctr_set_seqnum(struct regsubkey_ctr *ctr, int seqnum)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ctr->seqnum = seqnum;
+
+	return WERR_OK;
+}
+
 /***********************************************************************
  Add a new key to the array
  **********************************************************************/
