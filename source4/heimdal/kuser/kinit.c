@@ -726,8 +726,10 @@ main (int argc, char **argv)
     setprogname (argv[0]);
 
     setlocale (LC_ALL, "");
+#if defined(HEIMDAL_LOCALEDIR)
     bindtextdomain ("heimdal_kuser", HEIMDAL_LOCALEDIR);
     textdomain("heimdal_kuser");
+#endif
 
     ret = krb5_init_context (&context);
     if (ret == KRB5_CONFIG_BADFORMAT)
