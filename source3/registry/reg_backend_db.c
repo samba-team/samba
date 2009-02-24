@@ -167,9 +167,9 @@ static WERROR init_registry_key_internal(const char *add_path)
 		 * since we are about to update the record.
 		 * We just want any subkeys already present */
 
-		if (!(subkeys = TALLOC_ZERO_P(frame, struct regsubkey_ctr))) {
+		werr = regsubkey_ctr_init(frame, &subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("talloc() failure!\n"));
-			werr = WERR_NOMEM;
 			goto fail;
 		}
 
@@ -625,6 +625,7 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	char *oldkeyname = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	NTSTATUS status;
+	WERROR werr;
 
 	if (!regdb_key_is_base_key(key) && !regdb_key_exists(key)) {
 		goto fail;
@@ -635,7 +636,8 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	 * changed
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
+	werr = regsubkey_ctr_init(ctx, &old_subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		return false;
 	}
@@ -676,7 +678,8 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	 * Re-fetch the old keys inside the transaction
 	 */
 
-	if (!(old_subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
+	werr = regsubkey_ctr_init(ctx, &old_subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 		goto cancel;
 	}
@@ -796,7 +799,8 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
 
 	if (num_subkeys == 0) {
-		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr)) ) {
+		werr = regsubkey_ctr_init(ctx, &subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -817,7 +821,8 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 		if (!path) {
 			goto cancel;
 		}
-		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr)) ) {
+		werr = regsubkey_ctr_init(ctx, &subkeys);
+		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
 			goto cancel;
 		}
@@ -942,6 +947,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	int i, res;
 	size_t len;
 	int num_subkeys;
+	WERROR werr;
 
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("create_sorted_subkeys: transaction_start "
@@ -949,8 +955,8 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		return false;
 	}
 
-	ctr = talloc(talloc_tos(), struct regsubkey_ctr);
-	if (ctr == NULL) {
+	werr = regsubkey_ctr_init(talloc_tos(), &ctr);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
