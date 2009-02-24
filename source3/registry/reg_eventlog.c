@@ -35,7 +35,7 @@ bool eventlog_init_keys(void)
 	const char **elogs = lp_eventlog_list();
 	char *evtlogpath = NULL;
 	char *evtfilepath = NULL;
-	REGSUBKEY_CTR *subkeys;
+	struct regsubkey_ctr *subkeys;
 	REGVAL_CTR *values;
 	uint32 uiMaxSize;
 	uint32 uiRetention;
@@ -44,7 +44,7 @@ bool eventlog_init_keys(void)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	while (elogs && *elogs) {
-		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR ) ) ) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -70,7 +70,7 @@ bool eventlog_init_keys(void)
 		DEBUG( 5,
 		       ( "Adding key of [%s] to path of [%s]\n", *elogs,
 			 evtlogpath ) );
-		if (!(subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR))) {
+		if (!(subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr))) {
 			DEBUG( 0, ( "talloc() failure!\n" ) );
 			return False;
 		}
@@ -197,7 +197,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	const char **elogs = lp_eventlog_list(  );
 	char **wrklist, **wp;
 	char *evtlogpath = NULL;
-	REGSUBKEY_CTR *subkeys;
+	struct regsubkey_ctr *subkeys;
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *rval;
 	UNISTR2 data;
@@ -315,7 +315,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 	TALLOC_FREE(values);
 	TALLOC_FREE(wrklist);	/*  */
 
-	if ( !( subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR ) ) ) {
+	if ( !( subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}
@@ -342,7 +342,7 @@ bool eventlog_add_source( const char *eventlog, const char *sourcename,
 
 	/* now allocate room for the source's subkeys */
 
-	if ( !( subkeys = TALLOC_ZERO_P(ctx, REGSUBKEY_CTR ) ) ) {
+	if ( !( subkeys = TALLOC_ZERO_P(ctx, struct regsubkey_ctr ) ) ) {
 		DEBUG( 0, ( "talloc() failure!\n" ) );
 		return False;
 	}

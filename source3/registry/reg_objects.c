@@ -40,7 +40,7 @@
  Add a new key to the array
  **********************************************************************/
 
-WERROR regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
+WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname )
 {
 	char **newkeys;
 
@@ -77,7 +77,7 @@ WERROR regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname )
  Delete a key from the array
  **********************************************************************/
 
-int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
+int regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname )
 {
 	int i;
 
@@ -107,7 +107,7 @@ int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname )
  Check for the existance of a key
  **********************************************************************/
 
-bool regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
+bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname )
 {
 	int 	i;
 
@@ -127,7 +127,7 @@ bool regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname )
  How many keys does the container hold ?
  **********************************************************************/
 
-int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
+int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr )
 {
 	return ctr->num_subkeys;
 }
@@ -136,7 +136,7 @@ int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr )
  Retreive a specific key string
  **********************************************************************/
 
-char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index )
+char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index )
 {
 	if ( ! (key_index < ctr->num_subkeys) )
 		return NULL;

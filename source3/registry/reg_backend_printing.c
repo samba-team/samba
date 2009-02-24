@@ -42,8 +42,8 @@ struct reg_dyn_tree {
 	const char *path;
 
 	/* callbscks for fetch/store operations */
-	int ( *fetch_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
-	bool (*store_subkeys) ( const char *path, REGSUBKEY_CTR *subkeys );
+	int ( *fetch_subkeys) ( const char *path, struct regsubkey_ctr *subkeys );
+	bool (*store_subkeys) ( const char *path, struct regsubkey_ctr *subkeys );
 	int  (*fetch_values)  ( const char *path, REGVAL_CTR *values );
 	bool (*store_values)  ( const char *path, REGVAL_CTR *values );
 };
@@ -77,7 +77,7 @@ static const char *dos_basename(const char *path)
  *********************************************************************
  *********************************************************************/
 
-static int key_forms_fetch_keys(const char *key, REGSUBKEY_CTR *subkeys)
+static int key_forms_fetch_keys(const char *key, struct regsubkey_ctr *subkeys)
 {
 	char *p = reg_remaining_path(talloc_tos(), key + strlen(KEY_FORMS));
 
@@ -196,7 +196,7 @@ static char *strip_printers_prefix(const char *key)
 /*********************************************************************
  *********************************************************************/
 
-static int key_printers_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int key_printers_fetch_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	int n_services = lp_numservices();
 	int snum;
@@ -275,7 +275,7 @@ done:
  keyname is the sharename and not the printer name.
  *********************************************************************/
 
-static bool add_printers_by_registry( REGSUBKEY_CTR *subkeys )
+static bool add_printers_by_registry( struct regsubkey_ctr *subkeys )
 {
 	int i, num_keys, snum;
 	char *printername;
@@ -310,7 +310,7 @@ static bool add_printers_by_registry( REGSUBKEY_CTR *subkeys )
 /**********************************************************************
  *********************************************************************/
 
-static bool key_printers_store_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool key_printers_store_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	char *printers_key;
 	char *printername, *printerdatakey;
@@ -738,7 +738,7 @@ static bool key_printers_store_values( const char *key, REGVAL_CTR *values )
  *********************************************************************
  *********************************************************************/
 
-static int key_driver_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int key_driver_fetch_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	const char *environments[] = {
 		"Windows 4.0",
@@ -1085,7 +1085,7 @@ static int key_driver_fetch_values( const char *key, REGVAL_CTR *values )
  *********************************************************************
  *********************************************************************/
 
-static int key_print_fetch_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int key_print_fetch_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	int key_len = strlen(key);
 
@@ -1192,7 +1192,7 @@ static int match_registry_path(const char *key)
 /***********************************************************************
  **********************************************************************/
 
-static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static int regprint_fetch_reg_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	int i = match_registry_path( key );
 
@@ -1208,7 +1208,7 @@ static int regprint_fetch_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
 /**********************************************************************
  *********************************************************************/
 
-static bool regprint_store_reg_keys( const char *key, REGSUBKEY_CTR *subkeys )
+static bool regprint_store_reg_keys( const char *key, struct regsubkey_ctr *subkeys )
 {
 	int i = match_registry_path( key );
 

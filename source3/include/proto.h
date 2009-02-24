@@ -5053,11 +5053,11 @@ WERROR regdb_transaction_start(void);
 WERROR regdb_transaction_commit(void);
 WERROR regdb_transaction_cancel(void);
 int regdb_get_seqnum(void);
-bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr);
-int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr);
+bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr);
+int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr);
 int regdb_fetch_values( const char* key, REGVAL_CTR *values );
 bool regdb_store_values( const char *key, REGVAL_CTR *values );
-bool regdb_subkeys_need_update(REGSUBKEY_CTR *subkeys);
+bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys);
 bool regdb_values_need_update(REGVAL_CTR *values);
 
 /* The following definitions come from registry/reg_backend_hkpt_params.c  */
@@ -5093,9 +5093,9 @@ void reghook_dump_cache( int debuglevel );
 
 /* The following definitions come from registry/reg_dispatcher.c  */
 
-bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys );
+bool store_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkeys );
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
-int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr );
+int fetch_reg_keys( REGISTRY_KEY *key, struct regsubkey_ctr *subkey_ctr );
 int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val );
 bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 			  const struct nt_user_token *token );
@@ -5103,7 +5103,7 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 			  struct security_descriptor **psecdesc);
 WERROR regkey_set_secdesc(REGISTRY_KEY *key,
 			  struct security_descriptor *psecdesc);
-bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys);
+bool reg_subkeys_need_update(REGISTRY_KEY *key, struct regsubkey_ctr *subkeys);
 bool reg_values_need_update(REGISTRY_KEY *key, REGVAL_CTR *values);
 
 /* The following definitions come from registry/reg_eventlog.c  */
@@ -5129,11 +5129,11 @@ WERROR registry_init_smbconf(const char *keyname);
 
 /* The following definitions come from registry/reg_objects.c  */
 
-WERROR regsubkey_ctr_addkey( REGSUBKEY_CTR *ctr, const char *keyname );
-int regsubkey_ctr_delkey( REGSUBKEY_CTR *ctr, const char *keyname );
-bool regsubkey_ctr_key_exists( REGSUBKEY_CTR *ctr, const char *keyname );
-int regsubkey_ctr_numkeys( REGSUBKEY_CTR *ctr );
-char* regsubkey_ctr_specific_key( REGSUBKEY_CTR *ctr, uint32 key_index );
+WERROR regsubkey_ctr_addkey( struct regsubkey_ctr *ctr, const char *keyname );
+int regsubkey_ctr_delkey( struct regsubkey_ctr *ctr, const char *keyname );
+bool regsubkey_ctr_key_exists( struct regsubkey_ctr *ctr, const char *keyname );
+int regsubkey_ctr_numkeys( struct regsubkey_ctr *ctr );
+char* regsubkey_ctr_specific_key( struct regsubkey_ctr *ctr, uint32 key_index );
 int regval_ctr_numvals( REGVAL_CTR *ctr );
 REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val );
 void free_registry_value( REGISTRY_VALUE *val );
