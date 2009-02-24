@@ -24,6 +24,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+struct regsubkey_ctr {
+	uint32          num_subkeys;
+	char            **subkeys;
+	int seqnum;
+};
+
 /**********************************************************************
 
  Note that the struct regsubkey_ctr and REGVAL_CTR objects *must* be
