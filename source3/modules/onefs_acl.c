@@ -273,9 +273,6 @@ onefs_samba_acl_to_acl(SEC_ACL *samba_acl, struct ifs_security_acl **acl,
 		if (aclu_initialize_acl(acl, aces, num_aces))
 			goto err_free;
 
-	if (aclu_initialize_acl(acl, aces, num_aces))
-		goto err_free;
-
 	/* Currently aclu_initialize_acl should copy the aces over, allowing
 	 * us to immediately free */
 	free(aces);
@@ -905,7 +902,7 @@ onefs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				      SNUM(handle->conn));
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SD initialization failure: %s", nt_errstr(status)));
+		DEBUG(3, ("SD initialization failure: %s\n", nt_errstr(status)));
 		goto out;
 	}
 
