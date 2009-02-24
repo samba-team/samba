@@ -886,36 +886,6 @@ WERROR rpccli_spoolss_enumprinterdrivers (struct rpc_pipe_client *cli,
 /**********************************************************************
 **********************************************************************/
 
-WERROR rpccli_spoolss_addprinterdriver (struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, uint32 level,
-				     PRINTER_DRIVER_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SPOOL_Q_ADDPRINTERDRIVER in;
-        SPOOL_R_ADDPRINTERDRIVER out;
-	fstring server;
-
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-        slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
-        strupper_m(server);
-
-	make_spoolss_q_addprinterdriver( mem_ctx, &in, server, level, ctr );
-
-	CLI_DO_RPC_WERR( cli, mem_ctx, &syntax_spoolss, SPOOLSS_ADDPRINTERDRIVER,
-	            in, out, 
-	            qbuf, rbuf,
-	            spoolss_io_q_addprinterdriver,
-	            spoolss_io_r_addprinterdriver, 
-	            WERR_GENERAL_FAILURE );
-
-	return out.status;		    
-}
-
-/**********************************************************************
-**********************************************************************/
-
 WERROR rpccli_spoolss_addprinterex (struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 				 uint32 level, PRINTER_INFO_CTR*ctr)
 {
