@@ -1501,7 +1501,7 @@ static WERROR regdb_set_secdesc(const char *key,
 
 bool regdb_subkeys_need_update(struct regsubkey_ctr *subkeys)
 {
-	return (regdb_get_seqnum() != subkeys->seqnum);
+	return (regdb_get_seqnum() != regsubkey_ctr_get_seqnum(subkeys));
 }
 
 bool regdb_values_need_update(REGVAL_CTR *values)
