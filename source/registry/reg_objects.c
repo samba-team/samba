@@ -26,9 +26,9 @@
 
 /**********************************************************************
 
- Note that the REGSUB_CTR and REGVAL_CTR objects *must* be talloc()'d
- since the methods use the object pointer as the talloc context for
- internal private data.
+ Note that the struct regsubkey_ctr and REGVAL_CTR objects *must* be
+ talloc()'d since the methods use the object pointer as the talloc
+ context for internal private data.
 
  There is no longer a regXXX_ctr_intit() and regXXX_ctr_destroy()
  pair of functions.  Simply TALLOC_ZERO_P() and TALLOC_FREE() the
