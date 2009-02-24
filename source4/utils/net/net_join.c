@@ -126,7 +126,7 @@ int net_vampire(struct net_context *ctx, int argc, const char **argv)
 
 	domain_name = tmp;
 
-	libnetctx = libnet_context_init(NULL, ctx->lp_ctx);
+	libnetctx = libnet_context_init(ctx->event_ctx, ctx->lp_ctx);
 	if (!libnetctx) {
 		return -1;	
 	}
