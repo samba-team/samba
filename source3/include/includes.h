@@ -677,8 +677,6 @@ struct printjob;
 
 #include "smbldap.h"
 
-#include "smb_ldap.h"
-
 /*
  * Reasons for cache flush.
  */
