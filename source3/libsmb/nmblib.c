@@ -1279,12 +1279,19 @@ static int name_interpret(char *in, fstring name)
  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
 
-int name_mangle( char *In, char *Out, char name_type )
+char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type)
 {
 	int   i;
 	int   len;
 	nstring buf;
-	char *p = Out;
+	char *result;
+	char *p;
+
+	result = talloc_array(mem_ctx, char, 33 + strlen(global_scope()) + 2);
+	if (result == NULL) {
+		return NULL;
+	}
+	p = result;
 
 	/* Safely copy the input string, In, into buf[]. */
 	if (strcmp(In,"*") == 0)
@@ -1321,7 +1328,7 @@ int name_mangle( char *In, char *Out, char name_type )
 				p[0] = len;
 				if( len > 0 )
 					p[len+1] = 0;
-				return( name_len(Out) );
+				return result;
 			case '.':
 				p[0] = len;
 				p   += (len + 1);
@@ -1333,7 +1340,7 @@ int name_mangle( char *In, char *Out, char name_type )
 		}
 	}
 
-	return( name_len(Out) );
+	return result;
 }
 
 /****************************************************************************

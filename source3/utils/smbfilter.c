@@ -91,8 +91,15 @@ static void filter_request(char *buf)
 			d_printf("sesion_request: %s -> %s\n",
 				 name1, name2);
 			if (netbiosname) {
-				/* replace the destination netbios name */
-				name_mangle(netbiosname, buf+4, 0x20);
+				char *mangled = name_mangle(
+					talloc_tos(), netbiosname, 0x20);
+				if (mangled != NULL) {
+					/* replace the destination netbios
+					 * name */
+					memcpy(buf+4, mangled,
+					       name_len(mangled));
+					TALLOC_FREE(mangled);
+				}
 			}
 		}
 		return;

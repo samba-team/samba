@@ -1243,15 +1243,6 @@ bool is_valid_policy_hnd(const POLICY_HND *hnd);
 bool policy_hnd_equal(const struct policy_handle *hnd1,
 		      const struct policy_handle *hnd2);
 const char *strip_hostname(const char *s);
-struct async_req *read_pkt_send(TALLOC_CTX *mem_ctx,
-				struct event_context *ev,
-				int fd, size_t initial,
-				ssize_t (*more)(uint8_t *buf, size_t buflen,
-						void *priv),
-				void *priv);
-ssize_t read_pkt_recv(struct async_req *req, TALLOC_CTX *mem_ctx,
-		      uint8_t **pbuf, int *perr);
-
 
 /* The following definitions come from lib/util_file.c  */
 
@@ -3117,7 +3108,7 @@ struct packet_struct *receive_dgram_packet(int fd, int t,
 bool match_mailslot_name(struct packet_struct *p, const char *mailslot_name);
 int matching_len_bits(unsigned char *p1, unsigned char *p2, size_t len);
 void sort_query_replies(char *data, int n, struct in_addr ip);
-int name_mangle( char *In, char *Out, char name_type );
+char *name_mangle(TALLOC_CTX *mem_ctx, char *In, char name_type);
 int name_extract(char *buf,int ofs, fstring name);
 int name_len(char *s1);
 

@@ -35,20 +35,36 @@ struct async_req *async_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 struct async_req *async_recv(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 			     int fd, void *buffer, size_t length,
 			     int flags);
-struct async_req *async_connect_send(TALLOC_CTX *mem_ctx,
-				     struct tevent_context *ev,
-				     int fd, const struct sockaddr *address,
-				     socklen_t address_len);
-int async_connect_recv(struct async_req *req, int *perrno);
 
-struct async_req *sendall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, const void *buffer, size_t length,
-			       int flags);
-ssize_t sendall_recv(struct async_req *req, int *perr);
+struct tevent_req *async_send_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   int fd, const void *buf, size_t len,
+				   int flags);
+ssize_t async_send_recv(struct tevent_req *req, int *perrno);
 
-struct async_req *recvall_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			       int fd, void *buffer, size_t length,
-			       int flags);
-ssize_t recvall_recv(struct async_req *req, int *perr);
+struct tevent_req *async_recv_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   int fd, void *buf, size_t len, int flags);
+ssize_t async_recv_recv(struct tevent_req *req, int *perrno);
+
+struct tevent_req *async_connect_send(TALLOC_CTX *mem_ctx,
+				      struct tevent_context *ev,
+				      int fd, const struct sockaddr *address,
+				      socklen_t address_len);
+int async_connect_recv(struct tevent_req *req, int *perrno);
+
+struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
+			       int fd, struct iovec *iov, int count);
+ssize_t writev_recv(struct tevent_req *req, int *perrno);
+
+struct tevent_req *read_packet_send(TALLOC_CTX *mem_ctx,
+				    struct tevent_context *ev,
+				    int fd, size_t initial,
+				    ssize_t (*more)(uint8_t *buf,
+						    size_t buflen,
+						    void *private_data),
+				    void *private_data);
+ssize_t read_packet_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
+			 uint8_t **pbuf, int *perrno);
 
 #endif
