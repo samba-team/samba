@@ -1066,6 +1066,21 @@ done:
 	return werr;
 }
 
+static WERROR smbconf_reg_transaction_start(struct smbconf_ctx *ctx)
+{
+	return regdb_transaction_start();
+}
+
+static WERROR smbconf_reg_transaction_commit(struct smbconf_ctx *ctx)
+{
+	return regdb_transaction_commit();
+}
+
+static WERROR smbconf_reg_transaction_cancel(struct smbconf_ctx *ctx)
+{
+	return regdb_transaction_cancel();
+}
+
 struct smbconf_ops smbconf_ops_reg = {
 	.init			= smbconf_reg_init,
 	.shutdown		= smbconf_reg_shutdown,
@@ -1086,6 +1101,9 @@ struct smbconf_ops smbconf_ops_reg = {
 	.get_includes		= smbconf_reg_get_includes,
 	.set_includes		= smbconf_reg_set_includes,
 	.delete_includes	= smbconf_reg_delete_includes,
+	.transaction_start	= smbconf_reg_transaction_start,
+	.transaction_commit	= smbconf_reg_transaction_commit,
+	.transaction_cancel	= smbconf_reg_transaction_cancel,
 };
 
 
