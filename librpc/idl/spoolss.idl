@@ -1118,6 +1118,7 @@ import "misc.idl", "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x1a */
 	const string SPOOLSS_ARCHITECTURE_NT_X86		= "Windows NT x86";
+	const string SPOOLSS_DEFAULT_SERVER_PATH		= "C:\\WINDOWS\\system32\\spool";
 
 	typedef [public,gensize] struct {
 		[value(ndr_size_spoolss_OSVersion(r,ndr->iconv_convenience,ndr->flags))] uint32 _ndr_size;
