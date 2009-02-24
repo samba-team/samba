@@ -183,7 +183,7 @@ static void async_request_timeout_handler(struct event_context *ctx,
 
 	DEBUG(0,("async_request_timeout_handler: child pid %u is not responding. "
 		"Closing connection to it.\n",
-		state->child_pid ));
+		(unsigned int)state->child_pid ));
 
 	/* Deal with the reply - set to error. */
 	async_reply_recv(private_data, False);
