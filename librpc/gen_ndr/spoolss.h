@@ -10,6 +10,7 @@
 
 #define PRINTER_ENUM_ICONMASK	( (PRINTER_ENUM_ICON1|PRINTER_ENUM_ICON2|PRINTER_ENUM_ICON3|PRINTER_ENUM_ICON4|PRINTER_ENUM_ICON5|PRINTER_ENUM_ICON6|PRINTER_ENUM_ICON7|PRINTER_ENUM_ICON8) )
 #define SPOOLSS_ARCHITECTURE_NT_X86	( "Windows NT x86" )
+#define SPOOLSS_DEFAULT_SERVER_PATH	( "C:\\WINDOWS\\system32\\spool" )
 #define PRINTER_CHANGE_PRINTER	( 0x000000FF )
 #define PRINTER_CHANGE_JOB	( 0x0000FF00 )
 #define PRINTER_CHANGE_FORM	( (PRINTER_CHANGE_ADD_FORM|PRINTER_CHANGE_SET_FORM|PRINTER_CHANGE_DELETE_FORM) )
@@ -2282,7 +2283,7 @@ struct spoolss_GetPrinterDriver2 {
 	} in;
 
 	struct {
-		DATA_BLOB *info;/* [unique] */
+		union spoolss_DriverInfo *info;/* [unique,subcontext_size(offered),subcontext(4),switch_is(level)] */
 		uint32_t *needed;/* [ref] */
 		uint32_t *server_major_version;/* [ref] */
 		uint32_t *server_minor_version;/* [ref] */

@@ -20096,7 +20096,13 @@ static enum ndr_err_code ndr_push_spoolss_GetPrinterDriver2(struct ndr_push *ndr
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.info));
 		if (r->out.info) {
-			NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, *r->out.info));
+			{
+				struct ndr_push *_ndr_info;
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_info, 4, r->in.offered));
+				NDR_CHECK(ndr_push_set_switch_value(_ndr_info, r->out.info, r->in.level));
+				NDR_CHECK(ndr_push_spoolss_DriverInfo(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_info, 4, r->in.offered));
+			}
 		}
 		if (r->out.needed == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -20188,7 +20194,13 @@ static enum ndr_err_code ndr_pull_spoolss_GetPrinterDriver2(struct ndr_pull *ndr
 		if (r->out.info) {
 			_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.info, 0);
-			NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, r->out.info));
+			{
+				struct ndr_pull *_ndr_info;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_info, 4, r->in.offered));
+				NDR_CHECK(ndr_pull_set_switch_value(_ndr_info, r->out.info, r->in.level));
+				NDR_CHECK(ndr_pull_spoolss_DriverInfo(_ndr_info, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_info, 4, r->in.offered));
+			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
 		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -20255,7 +20267,8 @@ _PUBLIC_ void ndr_print_spoolss_GetPrinterDriver2(struct ndr_print *ndr, const c
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
 		if (r->out.info) {
-			ndr_print_DATA_BLOB(ndr, "info", *r->out.info);
+			ndr_print_set_switch_value(ndr, r->out.info, r->in.level);
+			ndr_print_spoolss_DriverInfo(ndr, "info", r->out.info);
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "needed", r->out.needed);
