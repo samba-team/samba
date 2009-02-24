@@ -93,9 +93,9 @@ class ProvisionPaths(object):
         self.memberofconf = None
         self.fedoradsinf = None
         self.fedoradspartitions = None
-	self.olmmron = None
-	self.olmmrserveridsconf = None
-	self.olmmrsyncreplconf = None
+        self.olmmron = None
+        self.olmmrserveridsconf = None
+        self.olmmrsyncreplconf = None
 
 
 class ProvisionNames(object):
@@ -1178,7 +1178,7 @@ def provision_backend(setup_dir=None, message=None,
                       rootdn=None, domaindn=None, schemadn=None, configdn=None,
                       domain=None, hostname=None, adminpass=None, root=None, serverrole=None, 
                       ldap_backend_type=None, ldap_backend_port=None,
-		      ol_mmr_urls=None):
+                      ol_mmr_urls=None):
 
     def setup_path(file):
         return os.path.join(setup_dir, file)
@@ -1300,50 +1300,50 @@ def provision_backend(setup_dir=None, message=None,
                                             { "LINK_ATTRS" : refint_attributes})
 
 # generate serverids, ldap-urls and syncrepl-blocks for mmr hosts
-	mmr_on_config = ""
-	mmr_replicator_acl = ""
-	mmr_serverids_config = ""
+        mmr_on_config = ""
+        mmr_replicator_acl = ""
+        mmr_serverids_config = ""
         mmr_syncrepl_schema_config = "" 
-	mmr_syncrepl_config_config = "" 
-	mmr_syncrepl_user_config = "" 
-	
-	if ol_mmr_urls is not None:
+        mmr_syncrepl_config_config = "" 
+        mmr_syncrepl_user_config = "" 
+        
+        if ol_mmr_urls is not None:
                 # For now, make these equal
                 mmr_pass = adminpass
 
- 		url_list=filter(None,ol_mmr_urls.split(' ')) 
+                 url_list=filter(None,ol_mmr_urls.split(' ')) 
                 if (len(url_list) == 1):
                     url_list=filter(None,ol_mmr_urls.split(',')) 
                      
 
-		mmr_on_config = "MirrorMode On"
-		mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
- 		serverid=0
-		for url in url_list:
-			serverid=serverid+1
-			mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
-								     { "SERVERID" : str(serverid),
-        		                                               "LDAPSERVER" : url })
+                mmr_on_config = "MirrorMode On"
+                mmr_replicator_acl = "  by dn=cn=replicator,cn=samba read"
+                 serverid=0
+                for url in url_list:
+                        serverid=serverid+1
+                        mmr_serverids_config += read_and_sub_file(setup_path("mmr_serverids.conf"),
+                                                                     { "SERVERID" : str(serverid),
+                                                                       "LDAPSERVER" : url })
                         rid=serverid*10
-			rid=rid+1
-			mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(rid),
-                    							"MMRDN": names.schemadn,
-        		                                               	"LDAPSERVER" : url,
+                        rid=rid+1
+                        mmr_syncrepl_schema_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                                                                     {         "RID" : str(rid),
+                                                                            "MMRDN": names.schemadn,
+                                                                               "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass})
 
-			rid=rid+1
-			mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(rid),
-                    							"MMRDN": names.configdn,
-        		                                               	"LDAPSERVER" : url,
+                        rid=rid+1
+                        mmr_syncrepl_config_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                                                                     {         "RID" : str(rid),
+                                                                            "MMRDN": names.configdn,
+                                                                               "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass})
 
-			rid=rid+1
-			mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
-								     { 	"RID" : str(rid),
-                    							"MMRDN": names.domaindn,
-        		                                               	"LDAPSERVER" : url,
+                        rid=rid+1
+                        mmr_syncrepl_user_config += read_and_sub_file(setup_path("mmr_syncrepl.conf"),
+                                                                     {         "RID" : str(rid),
+                                                                            "MMRDN": names.domaindn,
+                                                                               "LDAPSERVER" : url,
                                                                         "MMR_PASSWORD": mmr_pass })
 
 
@@ -1361,7 +1361,7 @@ def provision_backend(setup_dir=None, message=None,
                     "MMR_SYNCREPL_CONFIG_CONFIG": mmr_syncrepl_config_config,
                     "MMR_SYNCREPL_USER_CONFIG": mmr_syncrepl_user_config,
                     "REFINT_CONFIG": refint_config})
-	setup_file(setup_path("modules.conf"), paths.modulesconf,
+        setup_file(setup_path("modules.conf"), paths.modulesconf,
                    {"REALM": names.realm})
         
         setup_db_config(setup_path, os.path.join(paths.ldapdir, "db", "user"))
@@ -1380,9 +1380,9 @@ def provision_backend(setup_dir=None, message=None,
                               {"LDAPADMINPASS_B64": b64encode(adminpass),
                                "UUID": str(uuid.uuid4()), 
                                "LDAPTIME": timestring(int(time.time()))} )
-	
-	if ol_mmr_urls is not None:
- 	   setup_file(setup_path("cn=replicator.ldif"),
+        
+        if ol_mmr_urls is not None:
+            setup_file(setup_path("cn=replicator.ldif"),
                               os.path.join(paths.ldapdir, "db", "samba",  "cn=samba", "cn=replicator.ldif"),
                               {"MMR_PASSWORD_B64": b64encode(mmr_pass),
                                "UUID": str(uuid.uuid4()),
