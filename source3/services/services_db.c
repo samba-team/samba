@@ -366,7 +366,8 @@ static void add_new_svc_name( REGISTRY_KEY *key_parent, struct regsubkey_ctr *su
 
 	/* add the 'Security' key */
 
-	if ( !(svc_subkeys = TALLOC_ZERO_P( key_service, struct regsubkey_ctr )) ) {
+	wresult = regsubkey_ctr_init(key_service, &svc_subkeys);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
 		TALLOC_FREE( key_service );
 		return;
@@ -461,7 +462,8 @@ void svcctl_init_keys( void )
 
 	/* lookup the available subkeys */
 
-	if ( !(subkeys = TALLOC_ZERO_P( key, struct regsubkey_ctr )) ) {
+	wresult = regsubkey_ctr_init(key, &subkeys);
+	if (!W_ERROR_IS_OK(wresult)) {
 		DEBUG(0,("svcctl_init_keys: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return;
