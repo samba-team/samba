@@ -308,7 +308,7 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		return err;
 	}
 
-	if (idx >= key->subkeys->num_subkeys) {
+	if (idx >= regsubkey_ctr_numkeys(key->subkeys)) {
 		return WERR_NO_MORE_ITEMS;
 	}
 
@@ -406,11 +406,11 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 	}
 
 	max_len = 0;
-	for (i=0; i<key->subkeys->num_subkeys; i++) {
+	for (i=0; i< regsubkey_ctr_numkeys(key->subkeys); i++) {
 		max_len = MAX(max_len, strlen(key->subkeys->subkeys[i]));
 	}
 
-	*num_subkeys = key->subkeys->num_subkeys;
+	*num_subkeys = regsubkey_ctr_numkeys(key->subkeys);
 	*max_subkeylen = max_len;
 	*max_subkeysize = 0;	/* Class length? */
 
@@ -566,7 +566,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 	if (!W_ERROR_IS_OK(err = fill_subkey_cache(key))) {
 		goto error;
 	}
-	if (key->subkeys->num_subkeys > 0) {
+	if (regsubkey_ctr_numkeys(key->subkeys) > 0) {
 		err = WERR_ACCESS_DENIED;
 		goto error;
 	}
@@ -594,7 +594,7 @@ WERROR reg_deletekey(struct registry_key *parent, const char *path)
 		goto error;
 	}
 
-	num_subkeys = parent->subkeys->num_subkeys;
+	num_subkeys = regsubkey_ctr_numkeys(parent->subkeys);
 
 	if (regsubkey_ctr_delkey(parent->subkeys, name) == num_subkeys) {
 		err = WERR_BADFILE;
