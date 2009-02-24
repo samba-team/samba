@@ -989,6 +989,68 @@ static void display_print_driver_3(DRIVER_INFO_3 *i1)
 /****************************************************************************
 ****************************************************************************/
 
+static void display_print_driver1(struct spoolss_DriverInfo1 *r)
+{
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 1:\n");
+	printf("\tDriver Name: [%s]\n\n", r->driver_name);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver2(struct spoolss_DriverInfo2 *r)
+{
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 2:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n\n", r->config_file);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void display_print_driver3(struct spoolss_DriverInfo3 *r)
+{
+	int i;
+
+	if (!r) {
+		return;
+	}
+
+	printf("Printer Driver Info 3:\n");
+	printf("\tVersion: [%x]\n", r->version);
+	printf("\tDriver Name: [%s]\n", r->driver_name);
+	printf("\tArchitecture: [%s]\n", r->architecture);
+	printf("\tDriver Path: [%s]\n", r->driver_path);
+	printf("\tDatafile: [%s]\n", r->data_file);
+	printf("\tConfigfile: [%s]\n\n", r->config_file);
+	printf("\tHelpfile: [%s]\n\n", r->help_file);
+
+	for (i=0; r->dependent_files[i] != NULL; i++) {
+		printf("\tDependentfiles: [%s]\n", r->dependent_files[i]);
+	}
+
+	printf("\n");
+
+	printf("\tMonitorname: [%s]\n", r->monitor_name);
+	printf("\tDefaultdatatype: [%s]\n\n", r->default_datatype);
+}
+
+
+/****************************************************************************
+****************************************************************************/
+
 static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx,
                                       int argc, const char **argv)
@@ -997,10 +1059,12 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 	WERROR          werror;
 	uint32		info_level = 3;
 	bool 		opened_hnd = False;
-	PRINTER_DRIVER_CTR 	ctr;
 	const char	*printername;
 	uint32		i;
 	bool		success = False;
+	union spoolss_DriverInfo info;
+	uint32_t server_major_version;
+	uint32_t server_minor_version;
 
 	if ((argc == 1) || (argc > 3))
 	{
@@ -1032,10 +1096,16 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 	for (i=0; archi_table[i].long_archi!=NULL; i++) {
 
-		werror = rpccli_spoolss_getprinterdriver( cli, mem_ctx, &pol, info_level,
-			archi_table[i].long_archi, archi_table[i].version,
-			&ctr);
-
+		werror = rpccli_spoolss_getprinterdriver2(cli, mem_ctx,
+							  &pol,
+							  archi_table[i].long_archi,
+							  info_level,
+							  0, /* offered */
+							  archi_table[i].version,
+							  2,
+							  &info,
+							  &server_major_version,
+							  &server_minor_version);
 		if (!W_ERROR_IS_OK(werror))
 			continue;
 
@@ -1047,13 +1117,13 @@ static WERROR cmd_spoolss_getdriver(struct rpc_pipe_client *cli,
 
 		switch (info_level) {
 		case 1:
-			display_print_driver_1 (ctr.info1);
+			display_print_driver1(&info.info1);
 			break;
 		case 2:
-			display_print_driver_2 (ctr.info2);
+			display_print_driver2(&info.info2);
 			break;
 		case 3:
-			display_print_driver_3 (ctr.info3);
+			display_print_driver3(&info.info3);
 			break;
 		default:
 			printf("unknown info level %d\n", info_level);
