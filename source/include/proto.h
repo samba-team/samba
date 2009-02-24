@@ -1374,7 +1374,7 @@ bool unmap_file(void* start, size_t size);
 void *map_file(char *fname, size_t size);
 char **file_lines_load(const char *fname, int *numlines, size_t maxsize);
 char **fd_lines_load(int fd, int *numlines, size_t maxsize);
-char **file_lines_pload(char *syscmd, int *numlines);
+char **file_lines_pload(const char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 bool file_save(const char *fname, void *packet, size_t length);

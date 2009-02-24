@@ -1097,7 +1097,8 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 
 	/* parent */
 
-	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %d\n",child_pid));
+	DEBUG(10, ("tdb_validate: fork succeeded, child PID = %u\n",
+		(unsigned int)child_pid));
 
 	DEBUG(10, ("tdb_validate: waiting for child to finish...\n"));
 	while  ((wait_pid = sys_waitpid(child_pid, &child_status, 0)) < 0) {
@@ -1113,7 +1114,8 @@ int tdb_validate(struct tdb_context *tdb, tdb_validate_data_func validate_fn)
 	}
 	if (wait_pid != child_pid) {
 		DEBUG(1, ("tdb_validate: waitpid returned pid %d, "
-			  "but %d was expected\n", wait_pid, child_pid));
+			  "but %u was expected\n", wait_pid,
+			(unsigned int)child_pid));
 		goto done;
 	}
 

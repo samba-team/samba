@@ -1352,8 +1352,8 @@ static int shutdown_other_smbds(struct db_record *rec,
 		return 0;
 	}
 
-	DEBUG(0,("shutdown_other_smbds: shutting down pid %d "
-		 "(IP %s)\n", procid_to_pid(&crec->pid), ip));
+	DEBUG(0,("shutdown_other_smbds: shutting down pid %u "
+		 "(IP %s)\n", (unsigned int)procid_to_pid(&crec->pid), ip));
 
 	messaging_send(smbd_messaging_context(), crec->pid, MSG_SHUTDOWN,
 		       &data_blob_null);

@@ -2171,7 +2171,6 @@ static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size)
 static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 {
 	ssize_t len = 0;
-	int stop = 0;
 	DIR *dirp;
 	struct dirent *de;
 	int newfd = dup(attrdirfd);
@@ -2243,7 +2242,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode)
 {
 	int filedes = openat(fildes, path, oflag, mode);
 	if (filedes == -1) {
-		DEBUG(10,("openat FAILED: fd: %s, path: %s, errno: %s\n",filedes,path,strerror(errno)));
+		DEBUG(10,("openat FAILED: fd: %d, path: %s, errno: %s\n",filedes,path,strerror(errno)));
 		if (errno == EINVAL) {
 			errno = ENOTSUP;
 		} else {

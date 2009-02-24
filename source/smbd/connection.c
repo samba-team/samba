@@ -241,7 +241,7 @@ static TDB_DATA* make_pipe_rec_key( struct pipe_open_rec *prec )
 	}
 
 	snprintf( key_string, sizeof(key_string), "%s/%d/%d",
-		prec->name, procid_to_pid(&prec->pid), prec->pnum );
+		prec->name, (int)procid_to_pid(&prec->pid), prec->pnum );
 
 	*kbuf = string_term_tdb_data(talloc_strdup(prec, key_string));
 	if (kbuf->dptr == NULL )
