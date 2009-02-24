@@ -30,11 +30,25 @@
  talloc()'d since the methods use the object pointer as the talloc
  context for internal private data.
 
- There is no longer a regXXX_ctr_intit() and regXXX_ctr_destroy()
+ There is no longer a regval_ctr_intit() and regval_ctr_destroy()
  pair of functions.  Simply TALLOC_ZERO_P() and TALLOC_FREE() the
  object.
 
  **********************************************************************/
+
+WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
+{
+	if (ctr == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*ctr = talloc_zero(mem_ctx, struct regsubkey_ctr);
+	if (*ctr == NULL) {
+		return WERR_NOMEM;
+	}
+
+	return WERR_OK;
+}
 
 /***********************************************************************
  Add a new key to the array
