@@ -21,6 +21,7 @@
 #ifndef _SMB_LDAP_ERRORS_H_
 #define _SMB_LDAP_ERRORS_H_
 
+#ifndef LDAP_SUCCESS
 enum ldap_result_code {
 	LDAP_SUCCESS				= 0,
 	LDAP_OPERATIONS_ERROR			= 1,
@@ -62,5 +63,6 @@ enum ldap_result_code {
 	LDAP_AFFECTS_MULTIPLE_DSAS		= 71,
 	LDAP_OTHER 				= 80
 };
+#endif
 
 #endif /* _SMB_LDAP_ERRORS_H_ */

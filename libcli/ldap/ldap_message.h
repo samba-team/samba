@@ -21,7 +21,7 @@
 #ifndef _LIBCLI_LDAP_MESSAGE_H_
 #define _LIBCLI_LDAP_MESSAGE_H_
 
-#include "libcli/ldap/ldap_errors.h"
+#include "../libcli/ldap/ldap_errors.h"
 #include "lib/ldb/include/ldb.h"
 
 enum ldap_request_tag {

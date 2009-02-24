@@ -20,7 +20,7 @@
 /* NT error codes.  please read nterr.h */
 
 #include "includes.h"
-#include "libcli/ldap/ldap_errors.h"
+#include "../libcli/ldap/ldap_errors.h"
 #undef strcasecmp
 
 typedef struct
