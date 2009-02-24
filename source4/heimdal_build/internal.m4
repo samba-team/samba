@@ -69,7 +69,8 @@ AC_CHECK_HEADERS([				\
 	ttyname.h				\
 	netinet/in.h				\
 	netinet/in6.h				\
-	netinet6/in6.h
+	netinet6/in6.h				\
+	libintl.h
 ])
 
 AC_CHECK_FUNCS([				\
