@@ -482,6 +482,24 @@ int regdb_close( void )
 	return 0;
 }
 
+WERROR regdb_transaction_start(void)
+{
+	return (regdb->transaction_start(regdb) == 0) ?
+		WERR_OK : WERR_REG_IO_FAILURE;
+}
+
+WERROR regdb_transaction_commit(void)
+{
+	return (regdb->transaction_commit(regdb) == 0) ?
+		WERR_OK : WERR_REG_IO_FAILURE;
+}
+
+WERROR regdb_transaction_cancel(void)
+{
+	return (regdb->transaction_cancel(regdb) == 0) ?
+		WERR_OK : WERR_REG_IO_FAILURE;
+}
+
 /***********************************************************************
  return the tdb sequence number of the registry tdb.
  this is an indicator for the content of the registry
