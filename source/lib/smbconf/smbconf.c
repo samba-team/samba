@@ -375,3 +375,18 @@ WERROR smbconf_delete_global_includes(struct smbconf_ctx *ctx)
 
 	return werr;
 }
+
+WERROR smbconf_transaction_start(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_start(ctx);
+}
+
+WERROR smbconf_transaction_commit(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_commit(ctx);
+}
+
+WERROR smbconf_transaction_cancel(struct smbconf_ctx *ctx)
+{
+	return ctx->ops->transaction_cancel(ctx);
+}
