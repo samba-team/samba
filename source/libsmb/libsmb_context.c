@@ -630,11 +630,11 @@ smbc_version(void)
  * Set the credentials so DFS will work when following referrals.
  */
 void
-smbc_set_credentials(char *workgroup,
-                     char *user,
-                     char *password,
+smbc_set_credentials(const char *workgroup,
+                     const char *user,
+                     const char *password,
                      smbc_bool use_kerberos,
-                     char *signing_state)
+                     const char *signing_state)
 {
         
         set_cmdline_auth_info_username(user);
@@ -675,18 +675,8 @@ void smbc_set_credentials_with_fallback(SMBCCTX *context,
 		signing_state = "force";
 	}
 
-	/* Using CONST_DISCARD here is ugly, but
-	 * we know that smbc_set_credentials() doesn't
-	 * actually modify the strings, and should have
-	 * been const from the start. We're constrained
-	 * by the ABI here.
-	 */
-
-	smbc_set_credentials(CONST_DISCARD(char *,workgroup),
-			     CONST_DISCARD(char *,user),
-			     CONST_DISCARD(char *,password),
-			     use_kerberos,
-			     CONST_DISCARD(char *,signing_state));
+	smbc_set_credentials(workgroup, user, password,
+                             use_kerberos, signing_state);
 
 	if (smbc_getOptionFallbackAfterKerberos(context)) {
 		cli_cm_set_fallback_after_kerberos();
