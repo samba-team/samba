@@ -1166,6 +1166,7 @@ done:
 
 int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 {
+	WERROR werr;
 	uint32 num_items;
 	uint8 *buf;
 	uint32 buflen, len;
@@ -1196,35 +1197,12 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	buflen = value.dsize;
 	len = tdb_unpack( buf, buflen, "d", &num_items);
 
-	/*
-	 * The following code breaks the abstraction that reg_objects.c sets
-	 * up with regsubkey_ctr_addkey(). But if we use that with the current
-	 * data structure of ctr->subkeys being an unsorted array, we end up
-	 * with an O(n^2) algorithm for retrieving keys from the tdb
-	 * file. This is pretty pointless, as we have to trust the data
-	 * structure on disk not to have duplicates anyway. The alternative to
-	 * breaking this abstraction would be to set up a more sophisticated
-	 * data structure in REGSUBKEY_CTR.
-	 *
-	 * This makes "net conf list" for a registry with >1000 shares
-	 * actually usable :-)
-	 */
-
-	ctr->subkeys = talloc_array(ctr, char *, num_items);
-	if (ctr->subkeys == NULL) {
-		DEBUG(5, ("regdb_fetch_keys: could not allocate subkeys\n"));
-		goto done;
-	}
-	ctr->num_subkeys = num_items;
-
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
-		ctr->subkeys[i] = talloc_strdup(ctr->subkeys, subkeyname);
-		if (ctr->subkeys[i] == NULL) {
-			DEBUG(5, ("regdb_fetch_keys: could not allocate "
-				  "subkeyname\n"));
-			TALLOC_FREE(ctr->subkeys);
-			ctr->num_subkeys = 0;
+		werr = regsubkey_ctr_addkey(ctr, subkeyname);
+		if (!W_ERROR_IS_OK(werr)) {
+			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
+				  "failed: %s\n", dos_errstr(werr)));
 			goto done;
 		}
 	}
