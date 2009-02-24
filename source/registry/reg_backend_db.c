@@ -1194,7 +1194,10 @@ int regdb_fetch_keys(const char *key, struct regsubkey_ctr *ctr)
 		goto done;
 	}
 
-	ctr->seqnum = regdb_get_seqnum();
+	werr = regsubkey_ctr_set_seqnum(ctr, regdb_get_seqnum());
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	value = regdb_fetch_key_internal(frame, key);
 
