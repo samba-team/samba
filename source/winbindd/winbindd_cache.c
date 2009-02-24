@@ -486,7 +486,9 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	time_diff = t - domain->last_seq_check;
 
 	/* see if we have to refetch the domain sequence number */
-	if (!force && (time_diff < cache_time)) {
+	if (!force && (time_diff < cache_time) &&
+			(domain->sequence_number != DOM_SEQUENCE_NONE) &&
+			NT_STATUS_IS_OK(domain->last_status)) {
 		DEBUG(10, ("refresh_sequence_number: %s time ok\n", domain->name));
 		goto done;
 	}
@@ -495,8 +497,11 @@ static void refresh_sequence_number(struct winbindd_domain *domain, bool force)
 	/* this will update the timestamp as well */
 	
 	status = fetch_cache_seqnum( domain, t );
-	if ( NT_STATUS_IS_OK(status) )
-		goto done;	
+	if (NT_STATUS_IS_OK(status) &&
+			(domain->sequence_number != DOM_SEQUENCE_NONE) &&
+			NT_STATUS_IS_OK(domain->last_status)) {
+		goto done;
+	}
 
 	/* important! make sure that we know if this is a native 
 	   mode domain or not.  And that we can contact it. */
@@ -2619,9 +2624,9 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 		return;
 
 	DEBUG(10, ("Storing response for pid %d, len %d\n",
-		   pid, response->length));
+		   (int)pid, response->length));
 
-	fstr_sprintf(key_str, "DR/%d", pid);
+	fstr_sprintf(key_str, "DR/%d", (int)pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str), 
 		      make_tdb_data((uint8 *)response, sizeof(*response)),
 		      TDB_REPLACE) == -1)
@@ -2635,7 +2640,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 	DEBUG(10, ("Storing extra data: len=%d\n",
 		   (int)(response->length - sizeof(*response))));
 
-	fstr_sprintf(key_str, "DE/%d", pid);
+	fstr_sprintf(key_str, "DE/%d", (int)pid);
 	if (tdb_store(wcache->tdb, string_tdb_data(key_str),
 		      make_tdb_data((uint8 *)response->extra_data.data,
 				    response->length - sizeof(*response)),
@@ -2645,7 +2650,7 @@ void cache_store_response(pid_t pid, struct winbindd_response *response)
 	/* We could not store the extra data, make sure the tdb does not
 	 * contain a main record with wrong dangling extra data */
 
-	fstr_sprintf(key_str, "DR/%d", pid);
+	fstr_sprintf(key_str, "DR/%d", (int)pid);
 	tdb_delete(wcache->tdb, string_tdb_data(key_str));
 
 	return;
@@ -2659,9 +2664,9 @@ bool cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	if (!init_wcache())
 		return false;
 
-	DEBUG(10, ("Retrieving response for pid %d\n", pid));
+	DEBUG(10, ("Retrieving response for pid %d\n", (int)pid));
 
-	fstr_sprintf(key_str, "DR/%d", pid);
+	fstr_sprintf(key_str, "DR/%d", (int)pid);
 	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
 
 	if (data.dptr == NULL)
@@ -2683,7 +2688,7 @@ bool cache_retrieve_response(pid_t pid, struct winbindd_response * response)
 	DEBUG(10, ("Retrieving extra data length=%d\n",
 		   (int)(response->length - sizeof(*response))));
 
-	fstr_sprintf(key_str, "DE/%d", pid);
+	fstr_sprintf(key_str, "DE/%d", (int)pid);
 	data = tdb_fetch(wcache->tdb, string_tdb_data(key_str));
 
 	if (data.dptr == NULL) {
@@ -2710,10 +2715,10 @@ void cache_cleanup_response(pid_t pid)
 	if (!init_wcache())
 		return;
 
-	fstr_sprintf(key_str, "DR/%d", pid);
+	fstr_sprintf(key_str, "DR/%d", (int)pid);
 	tdb_delete(wcache->tdb, string_tdb_data(key_str));
 
-	fstr_sprintf(key_str, "DE/%d", pid);
+	fstr_sprintf(key_str, "DE/%d", (int)pid);
 	tdb_delete(wcache->tdb, string_tdb_data(key_str));
 
 	return;
@@ -3852,7 +3857,9 @@ static TDB_DATA make_tdc_key( const char *domain_name )
 	}
 	       
 		
-	asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name );
+	if (asprintf( &keystr, "TRUSTDOMCACHE/%s", domain_name ) == -1) {
+		return key;
+	}
 	key = string_term_tdb_data(keystr);
 	
 	return key;	

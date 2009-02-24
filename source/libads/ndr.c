@@ -75,7 +75,6 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 	ndr_print_string(ndr, "server_site_name", r->config.server_site_name);
 	ndr_print_string(ndr, "client_site_name", r->config.client_site_name);
 	ndr_print_time_t(ndr, "current_time", r->config.current_time);
-	ndr_print_bool(ndr, "tried_closest_dc", r->config.tried_closest_dc);
 	ndr_print_string(ndr, "schema_path", r->config.schema_path);
 	ndr_print_string(ndr, "config_path", r->config.config_path);
 	ndr->depth--;

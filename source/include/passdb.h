@@ -23,16 +23,6 @@
 #ifndef _PASSDB_H
 #define _PASSDB_H
 
-
-/*
- * in samba4 idl
- * ACCT_NT_PWD_SET == SAMR_FIELD_PASSWORD and
- * ACCT_LM_PWD_SET == SAMR_FIELD_PASSWORD2
- */
-
-#define ACCT_NT_PWD_SET		0x01000000
-#define ACCT_LM_PWD_SET		0x02000000
-
 /*
  * bit flags representing initialized fields in struct samu
  */
@@ -105,7 +95,15 @@ typedef struct logon_cache_struct {
 	uint16 bad_password_count;
 	time_t bad_password_time;
 } LOGIN_CACHE;
-		
+
+#define SAMU_BUFFER_V0		0
+#define SAMU_BUFFER_V1		1
+#define SAMU_BUFFER_V2		2
+#define SAMU_BUFFER_V3		3
+/* nothing changed from V3 to V4 */
+#define SAMU_BUFFER_V4		4
+#define SAMU_BUFFER_LATEST	SAMU_BUFFER_V4
+
 struct samu {
 	struct pdb_methods *methods;
 

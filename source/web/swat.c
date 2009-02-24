@@ -156,7 +156,9 @@ static int include_html(const char *fname)
 	}
 
 	while ((ret = read(fd, buf, sizeof(buf))) > 0) {
-		write(1, buf, ret);
+		if (write(1, buf, ret) == -1) {
+			break;
+		}
 	}
 
 	close(fd);
@@ -475,7 +477,7 @@ static int save_reload(int snum)
 	}
 
 	write_config(f, False);
-	if (snum)
+	if (snum >= 0)
 		lp_dump_one(f, False, snum);
 	fclose(f);
 
@@ -1252,8 +1254,8 @@ static void printers_page(void)
         printf("<H2>%s</H2>\n", _("Printer Parameters"));
  
         printf("<H3>%s</H3>\n", _("Important Note:"));
-        printf(_("Printer names marked with [*] in the Choose Printer drop-down box "));
-        printf(_("are autoloaded printers from "));
+        printf("%s",_("Printer names marked with [*] in the Choose Printer drop-down box "));
+        printf("%s",_("are autoloaded printers from "));
         printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>\n", _("Printcap Name"));
         printf("%s\n", _("Attempting to delete these printers from SWAT will have no effect."));
 

@@ -69,6 +69,7 @@ smbc_new_context(void)
         smbc_setOptionFullTimeNames(context, False);
         smbc_setOptionOpenShareMode(context, SMBC_SHAREMODE_DENY_NONE);
         smbc_setOptionSmbEncryptionLevel(context, SMBC_ENCRYPTLEVEL_NONE);
+        smbc_setOptionCaseSensitive(context, False);
         smbc_setOptionBrowseMaxLmbCount(context, 3);    /* # LMBs to query */
         smbc_setOptionUrlEncodeReaddirEntries(context, False);
         smbc_setOptionOneSharePerServer(context, False);
@@ -93,6 +94,8 @@ smbc_new_context(void)
         smbc_setFunctionLseek(context, SMBC_lseek_ctx);
         smbc_setFunctionFtruncate(context, SMBC_ftruncate_ctx);
         smbc_setFunctionStat(context, SMBC_stat_ctx);
+        smbc_setFunctionStatVFS(context, SMBC_statvfs_ctx);
+        smbc_setFunctionFstatVFS(context, SMBC_fstatvfs_ctx);
         smbc_setFunctionFstat(context, SMBC_fstat_ctx);
         smbc_setFunctionOpendir(context, SMBC_opendir_ctx);
         smbc_setFunctionClosedir(context, SMBC_closedir_ctx);
@@ -627,11 +630,11 @@ smbc_version(void)
  * Set the credentials so DFS will work when following referrals.
  */
 void
-smbc_set_credentials(char *workgroup,
-                     char *user,
-                     char *password,
+smbc_set_credentials(const char *workgroup,
+                     const char *user,
+                     const char *password,
                      smbc_bool use_kerberos,
-                     char *signing_state)
+                     const char *signing_state)
 {
         
         set_cmdline_auth_info_username(user);
@@ -642,4 +645,40 @@ smbc_set_credentials(char *workgroup,
         }
         set_global_myworkgroup(workgroup);
         cli_cm_set_credentials();
+}
+
+void smbc_set_credentials_with_fallback(SMBCCTX *context,
+					const char *workgroup,
+					const char *user,
+					const char *password)
+{
+	smbc_bool use_kerberos = false;
+	const char *signing_state = "off";
+	
+	if (!context ||
+	    ! workgroup || ! *workgroup ||
+	    ! user || ! *user ||
+	    ! password || ! *password) {
+	    
+		return;
+	}
+
+	if (smbc_getOptionUseKerberos(context)) {
+		use_kerberos = True;
+	}
+
+	if (lp_client_signing()) {
+		signing_state = "on";
+	}
+
+	if (lp_client_signing() == Required) {
+		signing_state = "force";
+	}
+
+	smbc_set_credentials(workgroup, user, password,
+                             use_kerberos, signing_state);
+
+	if (smbc_getOptionFallbackAfterKerberos(context)) {
+		cli_cm_set_fallback_after_kerberos();
+	}
 }

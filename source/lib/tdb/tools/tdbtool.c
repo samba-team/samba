@@ -57,6 +57,7 @@ enum commands {
 	CMD_FIRST,
 	CMD_NEXT,
 	CMD_SYSTEM,
+	CMD_CHECK,
 	CMD_QUIT,
 	CMD_HELP
 };
@@ -87,6 +88,7 @@ COMMAND_TABLE cmd_table[] = {
 	{"1",		CMD_FIRST},
 	{"next",	CMD_NEXT},
 	{"n",		CMD_NEXT},
+	{"check",	CMD_CHECK},
 	{"quit",	CMD_QUIT},
 	{"q",		CMD_QUIT},
 	{"!",		CMD_SYSTEM},
@@ -179,6 +181,7 @@ static void help(void)
 "  delete    key        : delete a record by key\n"
 "  list                 : print the database hash table and freelist\n"
 "  free                 : print the database freelist\n"
+"  check                : check the integrity of an opened database\n"
 "  ! command            : execute system command\n"             
 "  1 | first            : print the first record\n"
 "  n | next             : print the next record\n"
@@ -452,6 +455,27 @@ static void next_record(TDB_CONTEXT *the_tdb, TDB_DATA *pkey)
 		print_rec(the_tdb, *pkey, dbuf, NULL);
 }
 
+static int test_fn(TDB_CONTEXT *the_tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
+{
+	return 0;
+}
+
+static void check_db(TDB_CONTEXT *the_tdb)
+{
+	int tdbcount=-1;
+	if (the_tdb) {
+		tdbcount = tdb_traverse(the_tdb, test_fn, NULL);
+	} else {
+		printf("Error: No database opened!\n");
+	}
+
+	if (tdbcount<0) {
+		printf("Integrity check for the opened database failed.\n");
+	} else {
+		printf("Database integrity is OK and has %d records.\n", tdbcount);
+	}
+}
+
 static int do_command(void)
 {
 	COMMAND_TABLE *ctp = cmd_table;
@@ -482,7 +506,9 @@ static int do_command(void)
             return 0;
 	case CMD_SYSTEM:
 	    /* Shell command */
-	    system(arg1);
+	    if (system(arg1) == -1) {
+		terror("system failed");
+	    }
 	    return 0;
 	case CMD_QUIT:
 	    return 1;
@@ -551,6 +577,9 @@ static int do_command(void)
 	    case CMD_NEXT:
 	       if (bIterate)
 		  next_record(tdb, &iterate_kbuf);
+		return 0;
+	    case CMD_CHECK:
+		check_db(tdb);
 		return 0;
 	    case CMD_HELP:
 		help();

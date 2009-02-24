@@ -740,6 +740,7 @@ static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
 		psd = nc_psd;
 	}
 
+#if 0
 	if ((security_info_sent & DACL_SECURITY_INFORMATION) &&
 			psd->dacl != NULL &&
 			(psd->type & (SE_DESC_DACL_AUTO_INHERITED|
@@ -755,6 +756,7 @@ static NTSTATUS fset_nt_acl_tdb(vfs_handle_struct *handle, files_struct *fsp,
 		}
 		psd = new_psd;
 	}
+#endif
 
 	if (DEBUGLEVEL >= 10) {
 		DEBUG(10,("fset_nt_acl_tdb: storing tdb sd for file %s\n",

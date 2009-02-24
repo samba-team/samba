@@ -903,6 +903,18 @@ struct timespec get_atimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_sec = pst->st_atime;
 	ret.tv_nsec = pst->st_atimensec;
 	return ret;
+#elif defined(HAVE_STAT_ST_ATIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_atime_n;
+	return ret;
+#elif defined(HAVE_STAT_ST_UATIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_atime;
+	ret.tv_nsec = pst->st_uatime * 1000;
+	return ret;
+#elif defined(HAVE_STAT_ST_ATIMESPEC)
+	return pst->st_atimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -919,7 +931,15 @@ void set_atimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_atim = ts;
 #elif defined(HAVE_STAT_ST_ATIMENSEC)
 	pst->st_atime = ts.tv_sec;
-	pst->st_atimensec = ts.tv_nsec
+	pst->st_atimensec = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_ATIME_N)
+	pst->st_atime = ts.tv_sec;
+	pst->st_atime_n = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_UATIME)
+	pst->st_atime = ts.tv_sec;
+	pst->st_uatime = ts.tv_nsec / 1000;
+#elif defined(HAVE_STAT_ST_ATIMESPEC)
+	pst->st_atimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -943,6 +963,18 @@ struct timespec get_mtimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_sec = pst->st_mtime;
 	ret.tv_nsec = pst->st_mtimensec;
 	return ret;
+#elif defined(HAVE_STAT_ST_MTIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_mtime_n;
+	return ret;
+#elif defined(HAVE_STAT_ST_UMTIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_mtime;
+	ret.tv_nsec = pst->st_umtime * 1000;
+	return ret;
+#elif defined(HAVE_STAT_ST_MTIMESPEC)
+	return pst->st_mtimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -959,7 +991,15 @@ void set_mtimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_mtim = ts;
 #elif defined(HAVE_STAT_ST_MTIMENSEC)
 	pst->st_mtime = ts.tv_sec;
-	pst->st_mtimensec = ts.tv_nsec
+	pst->st_mtimensec = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_MTIME_N)
+	pst->st_mtime = ts.tv_sec;
+	pst->st_mtime_n = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_UMTIME)
+	pst->st_mtime = ts.tv_sec;
+	pst->st_umtime = ts.tv_nsec / 1000;
+#elif defined(HAVE_STAT_ST_MTIMESPEC)
+	pst->st_mtimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -983,6 +1023,18 @@ struct timespec get_ctimespec(const SMB_STRUCT_STAT *pst)
 	ret.tv_sec = pst->st_ctime;
 	ret.tv_nsec = pst->st_ctimensec;
 	return ret;
+#elif defined(HAVE_STAT_ST_CTIME_N)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_ctime_n;
+	return ret;
+#elif defined(HAVE_STAT_ST_UCTIME)
+	struct timespec ret;
+	ret.tv_sec = pst->st_ctime;
+	ret.tv_nsec = pst->st_uctime * 1000;
+	return ret;
+#elif defined(HAVE_STAT_ST_CTIMESPEC)
+	return pst->st_ctimespec;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif
@@ -999,7 +1051,15 @@ void set_ctimespec(SMB_STRUCT_STAT *pst, struct timespec ts)
 	pst->st_ctim = ts;
 #elif defined(HAVE_STAT_ST_CTIMENSEC)
 	pst->st_ctime = ts.tv_sec;
-	pst->st_ctimensec = ts.tv_nsec
+	pst->st_ctimensec = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_CTIME_N)
+	pst->st_ctime = ts.tv_sec;
+	pst->st_ctime_n = ts.tv_nsec;
+#elif defined(HAVE_STAT_ST_UCTIME)
+	pst->st_ctime = ts.tv_sec;
+	pst->st_uctime = ts.tv_nsec / 1000;
+#elif defined(HAVE_STAT_ST_CTIMESPEC)
+	pst->st_ctimespec = ts;
 #else
 #error	CONFIGURE_ERROR_IN_DETECTING_TIMESPEC_IN_STAT 
 #endif

@@ -146,8 +146,8 @@ static bool parse_mapping_arg(char *arg, int *id, char **sid)
 		return false;
 
 	/* Because atoi() can return 0 on invalid input, which would be a valid
-	 * UID/GID we must use strtol() and do error checking */
-	*id = strtol(tmp, &endptr, 10);
+	 * UID/GID we must use strtoul() and do error checking */
+	*id = strtoul(tmp, &endptr, 10);
 
 	if (endptr[0] != '\0')
 		return false;

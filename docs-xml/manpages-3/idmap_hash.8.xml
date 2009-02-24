@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">3.2</refmiscinfo>
+	<refmiscinfo class="version">3.3</refmiscinfo>
 </refmeta>
 
 
@@ -37,7 +37,7 @@
 		    Specifies the absolute path to the name mapping
 		    file used by the nss_info API.  Entries in the file
 		    are of the form &quot;<replaceable>unix name</replaceable>
-		    = <replaceable>qualified domain name</replaceable>&quote;.
+		    = <replaceable>qualified domain name</replaceable>&quot;.
 		    Mapping of both user and group names is supported.
 		</para></listitem>
 		</varlistentry>

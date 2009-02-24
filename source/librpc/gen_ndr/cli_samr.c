@@ -2022,7 +2022,7 @@ NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle /* [in] [ref] */,
 				    uint16_t level /* [in]  */,
-				    union samr_UserInfo *info /* [out] [ref,switch_is(level)] */)
+				    union samr_UserInfo **info /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_QueryUserInfo2 r;
 	NTSTATUS status;
@@ -2921,8 +2921,8 @@ NTSTATUS rpccli_samr_SetDsrmPassword(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_ValidatePassword(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      enum samr_ValidatePasswordLevel level /* [in]  */,
-				      union samr_ValidatePasswordReq req /* [in] [switch_is(level)] */,
-				      union samr_ValidatePasswordRep *rep /* [out] [ref,switch_is(level)] */)
+				      union samr_ValidatePasswordReq *req /* [in] [ref,switch_is(level)] */,
+				      union samr_ValidatePasswordRep **rep /* [out] [ref,switch_is(level)] */)
 {
 	struct samr_ValidatePassword r;
 	NTSTATUS status;

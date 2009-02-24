@@ -14,10 +14,13 @@ if [ $# -ne 3 ]; then
     echo Usage: update-pkginfo VERSION RELEASE REVISION
     exit 1
 fi
-# PREV=`echo ${REVISION} | sed 's/[^0-9]//g'`
-# PREV="."`echo ${REVISION} | sed 's/[0-9]//g'`".${PREV}"
 
-for f in `du -a | awk '{print $2}' | grep \.tmpl$`; do
+DIRNAME=$(dirname $0)
+TOPDIR=${DIRNAME}/../../
+PACKAGINGDIR=${TOPDIR}/packaging
+
+pushd ${PACKAGINGDIR} > /dev/null 2>&1
+for f in `find . -type f -name "*.tmpl"`; do
         f2=`echo $f | sed s/.tmpl//g`
         echo $f2
         sed -e s/PVERSION/$VERSION/g \
@@ -25,4 +28,4 @@ for f in `du -a | awk '{print $2}' | grep \.tmpl$`; do
 		-e s/PREVISION/${REVISION}/g \
 		-e s/PRPMREV/${RPMREVISION}/g < $f > $f2
 done
-
+popd > /dev/null 2>&1

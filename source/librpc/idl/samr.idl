@@ -389,8 +389,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	typedef struct {
 		hyper sequence_num;
 		NTTIME domain_create_time;
-		uint32 unknown1;
-		uint32 unknown2;
+		hyper modified_count_at_last_promotion;
 	} samr_DomInfo13;
 
 	typedef [switch_type(uint16)] union {
@@ -863,10 +862,11 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_Password;
 
 	typedef struct {
-		samr_Password lm_pwd;
 		samr_Password nt_pwd;
-		boolean8 lm_pwd_active;
+		samr_Password lm_pwd;
 		boolean8 nt_pwd_active;
+		boolean8 lm_pwd_active;
+		uint8 password_expired;
 	} samr_UserInfo18;
 
 	typedef struct {
@@ -899,8 +899,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_FIELD_PARAMETERS       = 0x00200000,
 		SAMR_FIELD_COUNTRY_CODE     = 0x00400000,
 		SAMR_FIELD_CODE_PAGE        = 0x00800000,
-		SAMR_FIELD_PASSWORD         = 0x01000000, /* either of these */
-		SAMR_FIELD_PASSWORD2        = 0x02000000, /* two bits seems to work */
+		SAMR_FIELD_NT_PASSWORD_PRESENT = 0x01000000, /* either of these */
+		SAMR_FIELD_LM_PASSWORD_PRESENT = 0x02000000, /* two bits seems to work */
 		SAMR_FIELD_PRIVATE_DATA     = 0x04000000,
 		SAMR_FIELD_EXPIRED_FLAG     = 0x08000000,
 		SAMR_FIELD_SEC_DESC         = 0x10000000,
@@ -928,8 +928,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		lsa_String workstations;
 		lsa_String comment;
 		lsa_BinaryString parameters;
-		lsa_String unknown1;
-		lsa_String unknown2;
+		lsa_BinaryString lm_owf_password;
+		lsa_BinaryString nt_owf_password;
 		lsa_String unknown3;
 		uint32 buf_count;
 		[size_is(buf_count)] uint8 *buffer;
@@ -942,8 +942,8 @@ import "misc.idl", "lsa.idl", "security.idl";
 		uint16 logon_count;
 		uint16 country_code;
 		uint16 code_page;
-		uint8  nt_password_set;
 		uint8  lm_password_set;
+		uint8  nt_password_set;
 		uint8  password_expired;
 		uint8  unknown4;
 	} samr_UserInfo21;
@@ -1212,7 +1212,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryUserInfo2(
 		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
-		[out,ref,switch_is(level)]    samr_UserInfo *info
+		[out,ref,switch_is(level)]    samr_UserInfo **info
 		);
 
 	/************************/
@@ -1548,7 +1548,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_ValidatePassword(
 		[in] samr_ValidatePasswordLevel level,
-		[in,switch_is(level)] samr_ValidatePasswordReq req,
-		[out,ref,switch_is(level)] samr_ValidatePasswordRep *rep
+		[in,switch_is(level)] samr_ValidatePasswordReq *req,
+		[out,ref,switch_is(level)] samr_ValidatePasswordRep **rep
 		);
 }

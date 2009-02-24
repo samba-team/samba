@@ -95,14 +95,14 @@ size_t ndr_size_security_ace(const struct security_ace *ace, int flags)
 /*
   return the wire size of a security_acl
 */
-size_t ndr_size_security_acl(const struct security_acl *acl, int flags)
+size_t ndr_size_security_acl(const struct security_acl *theacl, int flags)
 {
 	size_t ret;
 	int i;
-	if (!acl) return 0;
+	if (!theacl) return 0;
 	ret = 8;
-	for (i=0;i<acl->num_aces;i++) {
-		ret += ndr_size_security_ace(&acl->aces[i], flags);
+	for (i=0;i<theacl->num_aces;i++) {
+		ret += ndr_size_security_ace(&theacl->aces[i], flags);
 	}
 	return ret;
 }

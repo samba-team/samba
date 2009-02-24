@@ -111,7 +111,7 @@ static NTSTATUS init_keytab(TALLOC_CTX *mem_ctx,
 {
 	krb5_error_code ret = 0;
 	NTSTATUS status;
-	struct libnet_keytab_context *keytab_ctx;
+	struct libnet_keytab_context *keytab_ctx = NULL;
 	struct libnet_keytab_entry *entry;
 	uint64_t old_sequence_num = 0;
 	const char *principal = NULL;

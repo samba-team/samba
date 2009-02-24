@@ -555,9 +555,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	struct passwd *pwd;
 	gid_t *gids;
 	auth_serversupplied_info *result;
-	int i;
-	size_t num_gids;
-	DOM_SID unix_group_sid;
 	const char *username = pdb_get_username(sampass);
 	NTSTATUS status;
 
@@ -573,8 +570,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 	}
 
 	result->sam_account = sampass;
-	/* Ensure thaat the sampass will be freed with the result */
-	talloc_steal(result, sampass);
 	result->unix_name = pwd->pw_name;
 	/* Ensure that we keep pwd->pw_name, because we will free pwd below */
 	talloc_steal(result, pwd->pw_name);
@@ -631,30 +626,6 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		}
 	}
 
-	/* Add the "Unix Group" SID for each gid to catch mapped groups
-	   and their Unix equivalent.  This is to solve the backwards 
-	   compatibility problem of 'valid users = +ntadmin' where 
-	   ntadmin has been paired with "Domain Admins" in the group 
-	   mapping table.  Otherwise smb.conf would need to be changed
-	   to 'valid user = "Domain Admins"'.  --jerry */
-	
-	num_gids = result->num_sids;
-	for ( i=0; i<num_gids; i++ ) {
-		if ( !gid_to_unix_groups_sid( gids[i], &unix_group_sid ) ) {
-			DEBUG(1,("make_server_info_sam: Failed to create SID "
-				"for gid %d!\n", gids[i]));
-			continue;
-		}
-		status = add_sid_to_array_unique(result, &unix_group_sid,
-						 &result->sids,
-						 &result->num_sids);
-		if (!NT_STATUS_IS_OK(status)) {
-			result->sam_account = NULL; /* Don't free on error exit. */
-			TALLOC_FREE(result);
-			return status;
-		}
-	}
-
 	/* For now we throw away the gids and convert via sid_to_gid
 	 * later. This needs fixing, but I'd like to get the code straight and
 	 * simple first. */
@@ -665,6 +636,8 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 		 pdb_get_username(sampass), result->unix_name));
 
 	*server_info = result;
+	/* Ensure thaat the sampass will be freed with the result */
+	talloc_steal(result, sampass);
 
 	return NT_STATUS_OK;
 }
@@ -719,6 +692,7 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 {
 	NTSTATUS status;
 	size_t i;
+	struct dom_sid tmp_sid;
 
 	/*
 	 * If winbind is not around, we can not make much use of the SIDs the
@@ -771,7 +745,44 @@ NTSTATUS create_local_token(auth_serversupplied_info *server_info)
 					&server_info->utok.ngroups);
 	}
 
+	/*
+	 * Add the "Unix Group" SID for each gid to catch mapped groups
+	 * and their Unix equivalent.  This is to solve the backwards
+	 * compatibility problem of 'valid users = +ntadmin' where
+	 * ntadmin has been paired with "Domain Admins" in the group
+	 * mapping table.  Otherwise smb.conf would need to be changed
+	 * to 'valid user = "Domain Admins"'.  --jerry
+	 *
+	 * For consistency we also add the "Unix User" SID,
+	 * so that the complete unix token is represented within
+	 * the nt token.
+	 */
+
+	if (!uid_to_unix_users_sid(server_info->utok.uid, &tmp_sid)) {
+		DEBUG(1,("create_local_token: Failed to create SID "
+			"for uid %d!\n", server_info->utok.uid));
+	}
+	add_sid_to_array_unique(server_info->ptok, &tmp_sid,
+				&server_info->ptok->user_sids,
+				&server_info->ptok->num_sids);
+
+	for ( i=0; i<server_info->utok.ngroups; i++ ) {
+		if (!gid_to_unix_groups_sid( server_info->utok.groups[i], &tmp_sid ) ) {
+			DEBUG(1,("create_local_token: Failed to create SID "
+				"for gid %d!\n", server_info->utok.groups[i]));
+			continue;
+		}
+		add_sid_to_array_unique(server_info->ptok, &tmp_sid,
+					&server_info->ptok->user_sids,
+					&server_info->ptok->num_sids);
+	}
+
 	debug_nt_user_token(DBGC_AUTH, 10, server_info->ptok);
+	debug_unix_user_token(DBGC_AUTH, 10,
+			      server_info->utok.uid,
+			      server_info->utok.gid,
+			      server_info->utok.ngroups,
+			      server_info->utok.groups);
 
 	status = log_nt_token(server_info->ptok);
 	return status;

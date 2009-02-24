@@ -209,8 +209,7 @@ struct samr_DomInfo12 {
 struct samr_DomInfo13 {
 	uint64_t sequence_num;
 	NTTIME domain_create_time;
-	uint32_t unknown1;
-	uint32_t unknown2;
+	uint64_t modified_count_at_last_promotion;
 };
 
 union samr_DomainInfo {
@@ -434,10 +433,11 @@ struct samr_Password {
 }/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct samr_UserInfo18 {
-	struct samr_Password lm_pwd;
 	struct samr_Password nt_pwd;
-	uint8_t lm_pwd_active;
+	struct samr_Password lm_pwd;
 	uint8_t nt_pwd_active;
+	uint8_t lm_pwd_active;
+	uint8_t password_expired;
 };
 
 struct samr_UserInfo20 {
@@ -469,8 +469,8 @@ struct samr_UserInfo20 {
 #define SAMR_FIELD_PARAMETERS ( 0x00200000 )
 #define SAMR_FIELD_COUNTRY_CODE ( 0x00400000 )
 #define SAMR_FIELD_CODE_PAGE ( 0x00800000 )
-#define SAMR_FIELD_PASSWORD ( 0x01000000 )
-#define SAMR_FIELD_PASSWORD2 ( 0x02000000 )
+#define SAMR_FIELD_NT_PASSWORD_PRESENT ( 0x01000000 )
+#define SAMR_FIELD_LM_PASSWORD_PRESENT ( 0x02000000 )
 #define SAMR_FIELD_PRIVATE_DATA ( 0x04000000 )
 #define SAMR_FIELD_EXPIRED_FLAG ( 0x08000000 )
 #define SAMR_FIELD_SEC_DESC ( 0x10000000 )
@@ -493,8 +493,8 @@ struct samr_UserInfo21 {
 	struct lsa_String workstations;
 	struct lsa_String comment;
 	struct lsa_BinaryString parameters;
-	struct lsa_String unknown1;
-	struct lsa_String unknown2;
+	struct lsa_BinaryString lm_owf_password;
+	struct lsa_BinaryString nt_owf_password;
 	struct lsa_String unknown3;
 	uint32_t buf_count;
 	uint8_t *buffer;/* [unique,size_is(buf_count)] */
@@ -507,8 +507,8 @@ struct samr_UserInfo21 {
 	uint16_t logon_count;
 	uint16_t country_code;
 	uint16_t code_page;
-	uint8_t nt_password_set;
 	uint8_t lm_password_set;
+	uint8_t nt_password_set;
 	uint8_t password_expired;
 	uint8_t unknown4;
 };
@@ -1465,7 +1465,7 @@ struct samr_QueryUserInfo2 {
 	} in;
 
 	struct {
-		union samr_UserInfo *info;/* [ref,switch_is(level)] */
+		union samr_UserInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -1771,11 +1771,11 @@ struct samr_SetDsrmPassword {
 struct samr_ValidatePassword {
 	struct {
 		enum samr_ValidatePasswordLevel level;
-		union samr_ValidatePasswordReq req;/* [switch_is(level)] */
+		union samr_ValidatePasswordReq *req;/* [ref,switch_is(level)] */
 	} in;
 
 	struct {
-		union samr_ValidatePasswordRep *rep;/* [ref,switch_is(level)] */
+		union samr_ValidatePasswordRep **rep;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 

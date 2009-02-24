@@ -27,7 +27,7 @@ struct timed_event {
 	const char *event_name;
 	void (*handler)(struct event_context *event_ctx,
 			struct timed_event *te,
-			const struct timeval *now,
+			struct timeval now,
 			void *private_data);
 	void *private_data;
 };
@@ -43,16 +43,6 @@ struct fd_event {
 			void *private_data);
 	void *private_data;
 };
-
-#define EVENT_FD_WRITEABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_WRITE)
-#define EVENT_FD_READABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) | EVENT_FD_READ)
-
-#define EVENT_FD_NOT_WRITEABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_WRITE)
-#define EVENT_FD_NOT_READABLE(fde) \
-	event_set_fd_flags(fde, event_get_fd_flags(fde) & ~EVENT_FD_READ)
 
 struct event_context {
 	struct timed_event *timed_events;
@@ -98,13 +88,13 @@ static void add_event_by_time(struct timed_event *te)
  handed to it.
 ****************************************************************************/
 
-struct timed_event *event_add_timed(struct event_context *event_ctx,
+struct timed_event *_event_add_timed(struct event_context *event_ctx,
 				TALLOC_CTX *mem_ctx,
 				struct timeval when,
 				const char *event_name,
 				void (*handler)(struct event_context *event_ctx,
 						struct timed_event *te,
-						const struct timeval *now,
+						struct timeval now,
 						void *private_data),
 				void *private_data)
 {
@@ -225,40 +215,16 @@ bool event_add_to_select_args(struct event_context *event_ctx,
 	return True;
 }
 
-bool events_pending(struct event_context *event_ctx)
-{
-	struct fd_event *fde;
-
-	if (event_ctx->timed_events != NULL) {
-		return True;
-	}
-	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
-		if (fde->flags & (EVENT_FD_READ|EVENT_FD_WRITE)) {
-			return True;
-		}
-	}
-	return False;
-}
-
 bool run_events(struct event_context *event_ctx,
 		int selrtn, fd_set *read_fds, fd_set *write_fds)
 {
-	bool fired = False;
-	struct fd_event *fde, *next;
+	struct fd_event *fde;
+	struct timeval now;
 
-	/* Run all events that are pending, not just one (as we
-	   did previously. */
+	GetTimeOfDay(&now);
 
-	while (event_ctx->timed_events) {
-		struct timeval now;
-		GetTimeOfDay(&now);
-
-		if (timeval_compare(
-			    &now, &event_ctx->timed_events->when) < 0) {
-			/* Nothing to do yet */
-			DEBUG(11, ("run_events: Nothing to do\n"));
-			break;
-		}
+	if ((event_ctx->timed_events != NULL)
+	    && (timeval_compare(&now, &event_ctx->timed_events->when) >= 0)) {
 
 		DEBUG(10, ("Running event \"%s\" %lx\n",
 			   event_ctx->timed_events->event_name,
@@ -266,41 +232,32 @@ bool run_events(struct event_context *event_ctx,
 
 		event_ctx->timed_events->handler(
 			event_ctx,
-			event_ctx->timed_events, &now,
+			event_ctx->timed_events, now,
 			event_ctx->timed_events->private_data);
 
-		fired = True;
-	}
-
-	if (fired) {
-		/*
-		 * We might have changed the socket status during the timed
-		 * events, return to run select again.
-		 */
-		return True;
+		return true;
 	}
 
 	if (selrtn == 0) {
 		/*
 		 * No fd ready
 		 */
-		return fired;
+		return false;
 	}
 
-	for (fde = event_ctx->fd_events; fde; fde = next) {
+	for (fde = event_ctx->fd_events; fde; fde = fde->next) {
 		uint16 flags = 0;
 
-		next = fde->next;
 		if (FD_ISSET(fde->fd, read_fds)) flags |= EVENT_FD_READ;
 		if (FD_ISSET(fde->fd, write_fds)) flags |= EVENT_FD_WRITE;
 
 		if (flags & fde->flags) {
 			fde->handler(event_ctx, fde, flags, fde->private_data);
-			fired = True;
+			return true;
 		}
 	}
 
-	return fired;
+	return false;
 }
 
 
@@ -369,6 +326,12 @@ static int event_context_destructor(struct event_context *ev)
 	return 0;
 }
 
+void event_context_reinit(struct event_context *ev)
+{
+	event_context_destructor(ev);
+	return;
+}
+
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 {
 	struct event_context *result;
@@ -380,38 +343,6 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx)
 
 	talloc_set_destructor(result, event_context_destructor);
 	return result;
-}
-
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			DLIST_REMOVE(event_ctx->timed_events, te);
-			te->when = when;
-			add_event_by_time(te);
-			return 1;
-		}
-	}
-	return 0;
-}
-
-/* Returns 1 if event was found and cancelled, 0 otherwise. */
-
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name)
-{
-	struct timed_event *te;
-
-	for (te = event_ctx->timed_events; te; te = te->next) {
-		if (strcmp(event_name, te->event_name) == 0) {
-			TALLOC_FREE(te);
-			return 1;
-		}
-	}
-	return 0;
 }
 
 void dump_event_list(struct event_context *event_ctx)

@@ -41,7 +41,7 @@ hex2int( unsigned int _char )
 }
 
 /*
- * SMBC_urldecode()
+ * smbc_urldecode()
  * and urldecode_talloc() (internal fn.)
  *
  * Convert strings of %xx to their single character equivalent.  Each 'x' must
@@ -122,7 +122,7 @@ urldecode_talloc(TALLOC_CTX *ctx, char **pp_dest, const char *src)
 }
 
 int
-SMBC_urldecode(char *dest,
+smbc_urldecode(char *dest,
                char *src,
                size_t max_dest_len)
 {
@@ -138,7 +138,7 @@ SMBC_urldecode(char *dest,
 }
 
 /*
- * SMBC_urlencode()
+ * smbc_urlencode()
  *
  * Convert any characters not specifically allowed in a URL into their %xx
  * equivalent.
@@ -146,7 +146,7 @@ SMBC_urldecode(char *dest,
  * Returns the remaining buffer length.
  */
 int
-SMBC_urlencode(char *dest,
+smbc_urlencode(char *dest,
                char *src,
                int max_dest_len)
 {
@@ -233,6 +233,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	char *s;
 	const char *p;
 	char *q, *r;
+	char *workgroup = NULL;
 	int len;
         
 	/* Ensure these returns are at least valid pointers. */
@@ -286,7 +287,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
                 DEBUG(4, ("Found options '%s'", q));
                 
 		/* Copy the options */
-		if (*pp_options != NULL) {
+		if (pp_options && *pp_options != NULL) {
 			TALLOC_FREE(*pp_options);
 			*pp_options = talloc_strdup(ctx, q);
 		}
@@ -332,7 +333,6 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 		u = userinfo;
                 
 		if (strchr_m(u, ';')) {
-			char *workgroup;
 			next_token_no_ltrim_talloc(ctx, &u, &workgroup, ";");
 			if (!workgroup) {
 				return -1;
@@ -394,6 +394,19 @@ decoding:
 	(void) urldecode_talloc(ctx, pp_share, *pp_share);
 	(void) urldecode_talloc(ctx, pp_user, *pp_user);
 	(void) urldecode_talloc(ctx, pp_password, *pp_password);
+
+	if (!workgroup) {
+		workgroup = talloc_strdup(ctx, smbc_getWorkgroup(context));
+	}
+	if (!workgroup) {
+		return -1;
+	}
+
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(context,
+				    	   workgroup,
+				    	   *pp_user,
+				    	   *pp_password);
         
 	return 0;
 }

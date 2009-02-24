@@ -59,7 +59,9 @@ int get_client_fd(void)
 	return server_fd;
 }
 
-int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client)
+#ifdef CLUSTER_SUPPORT
+static int client_get_tcp_info(struct sockaddr_storage *server,
+			       struct sockaddr_storage *client)
 {
 	socklen_t length;
 	if (server_fd == -1) {
@@ -75,6 +77,7 @@ int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client)
 	}
 	return 0;
 }
+#endif
 
 struct event_context *smbd_event_context(void)
 {
@@ -296,7 +299,7 @@ static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 		/* a child terminated uncleanly so tickle all processes to see 
 		   if they can grab any of the pending locks
 		*/
-		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", pid));
+		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n", (unsigned int)pid));
 		messaging_send_buf(smbd_messaging_context(), procid_self(), 
 				   MSG_SMB_BRL_VALIDATE, NULL, 0);
 		message_send_all(smbd_messaging_context(), 
@@ -469,9 +472,8 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 		char *sock_tok;
 		const char *sock_ptr;
 
-		if (sock_addr[0] == '\0' ||
-				strequal(sock_addr, "0.0.0.0") ||
-				strequal(sock_addr, "::")) {
+		if (strequal(sock_addr, "0.0.0.0") ||
+		    strequal(sock_addr, "::")) {
 #if HAVE_IPV6
 			sock_addr = "::,0.0.0.0";
 #else
@@ -751,7 +753,9 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 								false);
 
 				if (!reinit_after_fork(
-					    smbd_messaging_context(), true)) {
+					    smbd_messaging_context(),
+					    smbd_event_context(),
+					    true)) {
 					DEBUG(0,("reinit_after_fork() failed\n"));
 					smb_panic("reinit_after_fork() failed");
 				}
@@ -1325,7 +1329,8 @@ extern void build_options(bool screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
-	if (!reinit_after_fork(smbd_messaging_context(), false)) {
+	if (!reinit_after_fork(smbd_messaging_context(),
+			       smbd_event_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}
@@ -1415,8 +1420,15 @@ extern void build_options(bool screen);
 	}
 
 	if (*lp_rootdir()) {
-		if (sys_chroot(lp_rootdir()) == 0)
-			DEBUG(2,("Changed root to %s\n", lp_rootdir()));
+		if (sys_chroot(lp_rootdir()) != 0) {
+			DEBUG(0,("Failed to change root to %s\n", lp_rootdir()));
+			exit(1);
+		}
+		if (chdir("/") == -1) {
+			DEBUG(0,("Failed to chdir to / on chroot to %s\n", lp_rootdir()));
+			exit(1);
+		}
+		DEBUG(0,("Changed root to %s\n", lp_rootdir()));
 	}
 
 	/* Setup oplocks */
@@ -1467,7 +1479,7 @@ extern void build_options(bool screen);
 		 * client.
 		 */
 
-		struct sockaddr_in srv, clnt;
+		struct sockaddr_storage srv, clnt;
 
 		if (client_get_tcp_info(&srv, &clnt) == 0) {
 

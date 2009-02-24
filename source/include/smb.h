@@ -27,7 +27,7 @@
 #define _SMB_H
 
 /* logged when starting the various Samba daemons */
-#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2008"
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2009"
 
 
 #if defined(LARGE_SMB_OFF_T)
@@ -384,9 +384,6 @@ struct fd_handle {
 	unsigned long gen_id;
 };
 
-struct event_context;
-struct fd_event;
-struct timed_event;
 struct idle_event;
 struct share_mode_entry;
 struct uuid;
@@ -717,7 +714,6 @@ struct pending_message_list {
 };
 
 #define SHARE_MODE_FLAG_POSIX_OPEN	0x1
-#define SHARE_MODE_ALLOW_INITIAL_DELETE_ON_CLOSE      0x2
 
 /* struct returned by get_share_modes */
 struct share_mode_entry {
@@ -1255,7 +1251,7 @@ struct bitmap {
 /* Mapping of access rights to UNIX perms. for a UNIX directory. */
 #define UNIX_DIRECTORY_ACCESS_RWX		FILE_GENERIC_ALL
 #define UNIX_DIRECTORY_ACCESS_R 		FILE_GENERIC_READ
-#define UNIX_DIRECTORY_ACCESS_W			FILE_GENERIC_WRITE
+#define UNIX_DIRECTORY_ACCESS_W			(FILE_GENERIC_WRITE|FILE_DELETE_CHILD)
 #define UNIX_DIRECTORY_ACCESS_X			FILE_GENERIC_EXECUTE
 
 #if 0
@@ -1533,7 +1529,7 @@ enum printing_types {PRINT_BSD,PRINT_SYSV,PRINT_AIX,PRINT_HPUX,
 enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
 
 /* LDAP SSL options */
-enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
+enum ldap_ssl_types {LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
 /* LDAP PASSWD SYNC methods */
 enum ldap_passwd_sync_types {LDAP_PASSWD_SYNC_ON, LDAP_PASSWD_SYNC_OFF, LDAP_PASSWD_SYNC_ONLY};

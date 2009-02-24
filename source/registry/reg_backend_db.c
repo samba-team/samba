@@ -536,21 +536,36 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	/* pack all the strings */
 
 	for (i=0; i<num_subkeys; i++) {
-		len += tdb_pack(buffer+len, buflen-len, "f",
-				regsubkey_ctr_specific_key(ctr, i));
-		if (len > buflen) {
-			/* allocate some extra space */
-			buffer = (uint8 *)SMB_REALLOC(buffer, len*2);
+		size_t thistime;
+
+		thistime = tdb_pack(buffer+len, buflen-len, "f",
+				    regsubkey_ctr_specific_key(ctr, i));
+		if (len+thistime > buflen) {
+			size_t thistime2;
+			/*
+			 * tdb_pack hasn't done anything because of the short
+			 * buffer, allocate extra space.
+			 */
+			buffer = SMB_REALLOC_ARRAY(buffer, uint8_t,
+						   (len+thistime)*2);
 			if(buffer == NULL) {
 				DEBUG(0, ("regdb_store_keys: Failed to realloc "
-					  "memory of size [%d]\n", len*2));
+					  "memory of size [%u]\n",
+					  (unsigned int)(len+thistime)*2));
 				ret = false;
 				goto done;
 			}
-			buflen = len*2;
-			len = tdb_pack(buffer+len, buflen-len, "f",
-				       regsubkey_ctr_specific_key(ctr, i));
+			buflen = (len+thistime)*2;
+			thistime2 = tdb_pack(
+				buffer+len, buflen-len, "f",
+				regsubkey_ctr_specific_key(ctr, i));
+			if (thistime2 != thistime) {
+				DEBUG(0, ("tdb_pack failed\n"));
+				ret = false;
+				goto done;
+			}
 		}
+		len += thistime;
 	}
 
 	/* finally write out the data */
@@ -927,7 +942,6 @@ done:
 
 int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 {
-	WERROR werr;
 	uint32 num_items;
 	uint8 *buf;
 	uint32 buflen, len;
@@ -958,12 +972,35 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	buflen = value.dsize;
 	len = tdb_unpack( buf, buflen, "d", &num_items);
 
+	/*
+	 * The following code breaks the abstraction that reg_objects.c sets
+	 * up with regsubkey_ctr_addkey(). But if we use that with the current
+	 * data structure of ctr->subkeys being an unsorted array, we end up
+	 * with an O(n^2) algorithm for retrieving keys from the tdb
+	 * file. This is pretty pointless, as we have to trust the data
+	 * structure on disk not to have duplicates anyway. The alternative to
+	 * breaking this abstraction would be to set up a more sophisticated
+	 * data structure in REGSUBKEY_CTR.
+	 *
+	 * This makes "net conf list" for a registry with >1000 shares
+	 * actually usable :-)
+	 */
+
+	ctr->subkeys = talloc_array(ctr, char *, num_items);
+	if (ctr->subkeys == NULL) {
+		DEBUG(5, ("regdb_fetch_keys: could not allocate subkeys\n"));
+		goto done;
+	}
+	ctr->num_subkeys = num_items;
+
 	for (i=0; i<num_items; i++) {
 		len += tdb_unpack(buf+len, buflen-len, "f", subkeyname);
-		werr = regsubkey_ctr_addkey(ctr, subkeyname);
-		if (!W_ERROR_IS_OK(werr)) {
-			DEBUG(5, ("regdb_fetch_keys: regsubkey_ctr_addkey "
-				  "failed: %s\n", dos_errstr(werr)));
+		ctr->subkeys[i] = talloc_strdup(ctr->subkeys, subkeyname);
+		if (ctr->subkeys[i] == NULL) {
+			DEBUG(5, ("regdb_fetch_keys: could not allocate "
+				  "subkeyname\n"));
+			TALLOC_FREE(ctr->subkeys);
+			ctr->num_subkeys = 0;
 			goto done;
 		}
 	}

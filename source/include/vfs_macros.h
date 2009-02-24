@@ -54,8 +54,8 @@
 #define SMB_VFS_WRITE(fsp, data, n) ((fsp)->conn->vfs.ops.write((fsp)->conn->vfs.handles.write, (fsp), (data), (n)))
 #define SMB_VFS_PWRITE(fsp, data, n, off) ((fsp)->conn->vfs.ops.pwrite((fsp)->conn->vfs.handles.pwrite, (fsp), (data), (n), (off)))
 #define SMB_VFS_LSEEK(fsp, offset, whence) ((fsp)->conn->vfs.ops.lseek((fsp)->conn->vfs.handles.lseek, (fsp), (offset), (whence)))
-#define SMB_VFS_SENDFILE(tofd, fromfsp, header, offset, count) ((fsp)->conn->vfs.ops.sendfile((fsp)->conn->vfs.handles.sendfile, (tofd), (fromfsp), (header), (offset), (count)))
-#define SMB_VFS_RECVFILE(fromfd, tofsp, offset, count) ((fsp)->conn->vfs.ops.recvfile((fsp)->conn->vfs.handles.recvfile, (fromfd), (tofsp), (offset), (count)))
+#define SMB_VFS_SENDFILE(tofd, fromfsp, header, offset, count) ((fromfsp)->conn->vfs.ops.sendfile((fromfsp)->conn->vfs.handles.sendfile, (tofd), (fromfsp), (header), (offset), (count)))
+#define SMB_VFS_RECVFILE(fromfd, tofsp, offset, count) ((tofsp)->conn->vfs.ops.recvfile((tofsp)->conn->vfs.handles.recvfile, (fromfd), (tofsp), (offset), (count)))
 #define SMB_VFS_RENAME(conn, old, new) ((conn)->vfs.ops.rename((conn)->vfs.handles.rename, (old), (new)))
 #define SMB_VFS_FSYNC(fsp) ((fsp)->conn->vfs.ops.fsync((fsp)->conn->vfs.handles.fsync, (fsp)))
 #define SMB_VFS_STAT(conn, fname, sbuf) ((conn)->vfs.ops.stat((conn)->vfs.handles.stat, (fname), (sbuf)))
@@ -84,6 +84,7 @@
 #define SMB_VFS_CHFLAGS(conn, path, flags) ((conn)->vfs.ops.chflags((conn)->vfs.handles.chflags, (path), (flags)))
 #define SMB_VFS_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops.file_id_create((conn)->vfs.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs.ops.streaminfo((conn)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs.ops.get_real_filename((conn)->vfs.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -179,8 +180,8 @@
 #define SMB_VFS_OPAQUE_WRITE(fsp, data, n) ((fsp)->conn->vfs_opaque.ops.write((fsp)->conn->vfs_opaque.handles.write, (fsp), (data), (n)))
 #define SMB_VFS_OPAQUE_PWRITE(fsp, data, n, off) ((fsp)->conn->vfs_opaque.ops.pwrite((fsp)->conn->vfs_opaque.handles.pwrite, (fsp), (data), (n), (off)))
 #define SMB_VFS_OPAQUE_LSEEK(fsp, offset, whence) ((fsp)->conn->vfs_opaque.ops.lseek((fsp)->conn->vfs_opaque.handles.lseek, (fsp), (offset), (whence)))
-#define SMB_VFS_OPAQUE_SENDFILE(tofd, fromfsp, header, offset, count) ((fsp)->conn->vfs_opaque.ops.sendfile((fsp)->conn->vfs_opaque.handles.sendfile, (tofd), (fromfsp), (header), (offset), (count)))
-#define SMB_VFS_OPAQUE_RECVFILE(fromfd, tofsp, offset, count) ((fsp)->conn->vfs_opaque.ops.recvfile((fsp)->conn->vfs_opaque.handles.recvfile, (fromfd), (tofsp), (offset), (count)))
+#define SMB_VFS_OPAQUE_SENDFILE(tofd, fromfsp, header, offset, count) ((fromfsp)->conn->vfs_opaque.ops.sendfile((fromfsp)->conn->vfs_opaque.handles.sendfile, (tofd), (fromfsp), (header), (offset), (count)))
+#define SMB_VFS_OPAQUE_RECVFILE(fromfd, tofsp, offset, count) ((tofsp)->conn->vfs_opaque.ops.recvfile((tofsp)->conn->vfs_opaque.handles.recvfile, (fromfd), (tofsp), (offset), (count)))
 #define SMB_VFS_OPAQUE_RENAME(conn, old, new) ((conn)->vfs_opaque.ops.rename((conn)->vfs_opaque.handles.rename, (old), (new)))
 #define SMB_VFS_OPAQUE_FSYNC(fsp) ((fsp)->conn->vfs_opaque.ops.fsync((fsp)->conn->vfs_opaque.handles.fsync, (fsp)))
 #define SMB_VFS_OPAQUE_STAT(conn, fname, sbuf) ((conn)->vfs_opaque.ops.stat((conn)->vfs_opaque.handles.stat, (fname), (sbuf)))
@@ -209,6 +210,7 @@
 #define SMB_VFS_OPAQUE_CHFLAGS(conn, path, flags) ((conn)->vfs_opaque.ops.chflags((conn)->vfs_opaque.handles.chflags, (path), (flags)))
 #define SMB_VFS_OPAQUE_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops_opaque.file_id_create((conn)->vfs_opaque.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_OPAQUE_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs_opaque.ops.streaminfo((conn)->vfs_opaque.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_OPAQUE_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_opaque.ops.get_real_filename((conn)->vfs_opaque.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -335,6 +337,7 @@
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs_next.ops.streaminfo((handle)->vfs_next.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
+#define SMB_VFS_NEXT_GET_REAL_FILENAME(conn, path, name, mem_ctx, found_name) ((conn)->vfs_next.ops.get_real_filename((conn)->vfs_next.handles.get_real_filename, (path), (name), (mem_ctx), (found_name)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))

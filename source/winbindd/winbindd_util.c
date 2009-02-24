@@ -540,7 +540,11 @@ static void rescan_forest_trusts( void )
 void rescan_trusted_domains( void )
 {
 	time_t now = time(NULL);
-	
+
+	/* Check that we allow trusted domains at all */
+	if (!lp_allow_trusted_domains())
+		return;
+
 	/* see if the time has come... */
 	
 	if ((now >= last_trustdom_scan) &&
@@ -678,8 +682,16 @@ static void init_child_recv(void *private_data, bool success)
 		state->response->data.domain_info.name);
 	fstrcpy(state->domain->alt_name,
 		state->response->data.domain_info.alt_name);
-	string_to_sid(&state->domain->sid,
-		      state->response->data.domain_info.sid);
+	if (!string_to_sid(&state->domain->sid,
+		      state->response->data.domain_info.sid)) {
+		DEBUG(1,("init_child_recv: Could not convert sid %s "
+			"from string\n",
+			state->response->data.domain_info.sid));
+		state->continuation(state->private_data, False);
+		talloc_destroy(state->mem_ctx);
+		return;
+	}
+
 	state->domain->native_mode =
 		state->response->data.domain_info.native_mode;
 	state->domain->active_directory =
@@ -796,7 +808,12 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	struct winbindd_domain *domain;	
 	DOM_SID dom_sid;
 	uint32 rid;
-	
+
+	/* Check if we even care */
+
+	if (!lp_allow_trusted_domains())
+		return;
+
 	domain = find_domain_from_name_noinit( name );
 	if ( domain )
 		return;	

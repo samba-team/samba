@@ -142,6 +142,31 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 }
 
 /*******************************************************************
+A writev wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	ssize_t ret;
+
+#if 0
+	/* Try to confuse write_data_iov a bit */
+	if ((random() % 5) == 0) {
+		return sys_write(fd, iov[0].iov_base, iov[0].iov_len);
+	}
+	if (iov[0].iov_len > 1) {
+		return sys_write(fd, iov[0].iov_base,
+				 (random() % (iov[0].iov_len-1)) + 1);
+	}
+#endif
+
+	do {
+		ret = writev(fd, iov, iovcnt);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A pread wrapper that will deal with EINTR and 64-bit file offsets.
 ********************************************************************/
 
@@ -2146,7 +2171,6 @@ static ssize_t solaris_read_xattr(int attrfd, void *value, size_t size)
 static ssize_t solaris_list_xattr(int attrdirfd, char *list, size_t size)
 {
 	ssize_t len = 0;
-	int stop = 0;
 	DIR *dirp;
 	struct dirent *de;
 	int newfd = dup(attrdirfd);
@@ -2218,7 +2242,7 @@ static int solaris_openat(int fildes, const char *path, int oflag, mode_t mode)
 {
 	int filedes = openat(fildes, path, oflag, mode);
 	if (filedes == -1) {
-		DEBUG(10,("openat FAILED: fd: %s, path: %s, errno: %s\n",filedes,path,strerror(errno)));
+		DEBUG(10,("openat FAILED: fd: %d, path: %s, errno: %s\n",filedes,path,strerror(errno)));
 		if (errno == EINVAL) {
 			errno = ENOTSUP;
 		} else {

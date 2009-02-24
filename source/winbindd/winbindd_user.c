@@ -80,9 +80,18 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 	if (!pw || !dom_name || !user_name)
 		return False;
 
+	domain = find_domain_from_name_noinit(dom_name);
+	if (domain == NULL) {
+		DEBUG(5,("winbindd_fill_pwent: Failed to find domain for %s.\n",
+			 dom_name));
+		nt_status = NT_STATUS_NO_SUCH_DOMAIN;
+		return false;
+	}
+
 	/* Resolve the uid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(dom_name, user_sid,
+	if (!NT_STATUS_IS_OK(idmap_sid_to_uid(domain->have_idmap_config ?
+					      dom_name : "", user_sid,
 					      &pw->pw_uid))) {
 		DEBUG(1, ("error getting user id for sid %s\n",
 			  sid_string_dbg(user_sid)));
@@ -91,26 +100,18 @@ static bool winbindd_fill_pwent(TALLOC_CTX *ctx, char *dom_name, char *user_name
 
 	/* Resolve the gid number */
 
-	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(dom_name, group_sid,
+	if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->have_idmap_config ?
+					      dom_name : "", group_sid,
 					      &pw->pw_gid))) {
 		DEBUG(1, ("error getting group id for sid %s\n",
 			  sid_string_dbg(group_sid)));
 		return False;
 	}
 
-	strlower_m(user_name);
-
 	/* Username */
 
-	domain = find_domain_from_name_noinit(dom_name);
-	if (domain) {
-		nt_status = normalize_name_map(ctx, domain, user_name,
-					       &mapped_name);
-	} else {
-		DEBUG(5,("winbindd_fill_pwent: Failed to find domain for %s.  "
-			 "Disabling name alias support\n", dom_name));
-		nt_status = NT_STATUS_NO_SUCH_DOMAIN;
-	}
+	strlower_m(user_name);
+	nt_status = normalize_name_map(ctx, domain, user_name, &mapped_name);
 
 	/* Basic removal of whitespace */
 	if (NT_STATUS_IS_OK(nt_status)) {
@@ -527,7 +528,13 @@ static void getpwuid_recv(void *private_data, bool success, const char *sid)
 	DEBUG(10,("uid2sid_recv: uid %lu has sid %s\n",
 		  (unsigned long)(state->request.data.uid), sid));
 
-	string_to_sid(&user_sid, sid);
+	if (!string_to_sid(&user_sid, sid)) {
+		DEBUG(1,("uid2sid_recv: Could not convert sid %s "
+			"from string\n,", sid));
+		request_error(state);
+		return;
+	}
+
 	winbindd_getpwsid(state, &user_sid);
 }
 

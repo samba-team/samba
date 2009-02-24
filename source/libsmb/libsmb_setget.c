@@ -194,6 +194,32 @@ smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level)
 }
 
 /**
+ * Get whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+smbc_bool
+smbc_getOptionCaseSensitive(SMBCCTX *c)
+{
+        return c->internal->case_sensitive;
+}
+
+/**
+ * Set whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+void
+smbc_setOptionCaseSensitive(SMBCCTX *c, smbc_bool b)
+{
+        c->internal->case_sensitive = b;
+}
+
+/**
  * Get from how many local master browsers should the list of workgroups be
  * retrieved.  It can take up to 12 minutes or longer after a server becomes a
  * local master browser, for it to have the entire browse list (the list of
@@ -631,6 +657,30 @@ void
 smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn)
 {
         c->fstat = fn;
+}
+
+smbc_statvfs_fn
+smbc_getFunctionStatVFS(SMBCCTX *c)
+{
+        return c->internal->posix_emu.statvfs_fn;
+}
+
+void
+smbc_setFunctionStatVFS(SMBCCTX *c, smbc_statvfs_fn fn)
+{
+        c->internal->posix_emu.statvfs_fn = fn;
+}
+
+smbc_fstatvfs_fn
+smbc_getFunctionFstatVFS(SMBCCTX *c)
+{
+        return c->internal->posix_emu.fstatvfs_fn;
+}
+
+void
+smbc_setFunctionFstatVFS(SMBCCTX *c, smbc_fstatvfs_fn fn)
+{
+        c->internal->posix_emu.fstatvfs_fn = fn;
 }
 
 smbc_ftruncate_fn

@@ -741,7 +741,8 @@ NTSTATUS idmap_backends_unixid_to_sid(const char *domname, struct id_map *id)
 
 	dom = idmap_init_passdb_domain(NULL);
 	if ((dom != NULL)
-	    && NT_STATUS_IS_OK(dom->methods->unixids_to_sids(dom, maps))) {
+	    && NT_STATUS_IS_OK(dom->methods->unixids_to_sids(dom, maps))
+	    && id->status == ID_MAPPED) {
 		return NT_STATUS_OK;
 	}
 

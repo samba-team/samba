@@ -65,7 +65,7 @@ void dns_register_close(struct dns_reg_state **dns_state_ptr)
 
 static void dns_register_smbd_retry(struct event_context *ctx,
                                    struct timed_event *te,
-                                   const struct timeval *now,
+                                   struct timeval now,
                                    void *private_data)
 {
 	struct dns_reg_state *dns_state = (struct dns_reg_state *)private_data;
@@ -85,7 +85,6 @@ static void schedule_dns_register_smbd_retry(struct dns_reg_state *dns_state,
 	event= event_add_timed(smbd_event_context(),
 			NULL,
 			timeval_current_ofs(DNS_REG_RETRY_INTERVAL, 0),
-			"DNS registration handler",
 			dns_register_smbd_retry,
 			dns_state);
 

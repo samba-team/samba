@@ -128,8 +128,7 @@ static NTSTATUS get_srv_gss_creds(const char *service,
 	gss_OID_desc nt_hostbased_service =
 	{10, CONST_DISCARD(char *,"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04")};
 
-	asprintf(&host_princ_s, "%s@%s", service, name);
-	if (host_princ_s == NULL) {
+	if (asprintf(&host_princ_s, "%s@%s", service, name) == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

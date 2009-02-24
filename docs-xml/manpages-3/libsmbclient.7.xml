@@ -7,7 +7,7 @@
 	<manvolnum>7</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">7</refmiscinfo>
-	<refmiscinfo class="version">3.2</refmiscinfo>
+	<refmiscinfo class="version">3.3</refmiscinfo>
 </refmeta>
 
 
@@ -18,10 +18,11 @@
 
 <refsynopsisdiv>
 	<cmdsynopsis>
-		<command>Browser URL:</command>
 	<para>
-        smb://[[[domain:]user[:password@]]server[/share[/path[/file]]]] [?options]
-    </para>
+	Browser URL:
+	<command moreinfo="none">smb://[[[domain:]user[:password@]]server[/share[/path[/file]]]] [?options]
+	</command>
+	</para>
 	</cmdsynopsis>
 </refsynopsisdiv>
 

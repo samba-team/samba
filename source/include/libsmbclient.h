@@ -75,6 +75,7 @@ extern "C" {
 /* Make sure we have the following includes for now ... */
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <fcntl.h>
 #include <utime.h>
 
@@ -173,6 +174,22 @@ typedef enum smbc_smb_encrypt_level
     SMBC_ENCRYPTLEVEL_REQUIRE   = 2
 } smbc_smb_encrypt_level;
 
+
+/**
+ * Capabilities set in the f_flag field of struct statvfs, from
+ * smbc_statvfs(). These may be OR-ed together to reflect a full set of
+ * available capabilities.
+ */
+typedef enum smbc_vfs_feature
+{
+    /* Defined by POSIX or in Linux include files (low-order bits) */
+    SMBC_VFS_FEATURE_RDONLY         = (1 << 0),
+
+    /* Specific to libsmbclient (high-order bits) */
+    SMBC_VFS_FEATURE_DFS              = (1 << 28),
+    SMBC_VFS_FEATURE_CASE_INSENSITIVE = (1 << 29),
+    SMBC_VFS_FEATURE_NO_UNIXCIFS      = (1 << 30)
+} smbc_vfs_feature;
 
 typedef int smbc_bool;
 
@@ -551,6 +568,27 @@ void
 smbc_setOptionSmbEncryptionLevel(SMBCCTX *c, smbc_smb_encrypt_level level);
 
 /**
+ * Get whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+smbc_bool
+smbc_getOptionCaseSensitive(SMBCCTX *c);
+
+/**
+ * Set whether to treat file names as case-sensitive if we can't determine
+ * when connecting to the remote share whether the file system is case
+ * sensitive. This defaults to FALSE since it's most likely that if we can't
+ * retrieve the file system attributes, it's a very old file system that does
+ * not support case sensitivity.
+ */
+void
+smbc_setOptionCaseSensitive(SMBCCTX *c, smbc_bool b);
+
+
+/**
  * Get from how many local master browsers should the list of workgroups be
  * retrieved.  It can take up to 12 minutes or longer after a server becomes a
  * local master browser, for it to have the entire browse list (the list of
@@ -831,6 +869,18 @@ typedef int (*smbc_fstat_fn)(SMBCCTX *c,
                              struct stat *st);
 smbc_fstat_fn smbc_getFunctionFstat(SMBCCTX *c);
 void smbc_setFunctionFstat(SMBCCTX *c, smbc_fstat_fn fn);
+
+typedef int (*smbc_statvfs_fn)(SMBCCTX *c,
+                               char *path,
+                               struct statvfs *st);
+smbc_statvfs_fn smbc_getFunctionStatVFS(SMBCCTX *c);
+void smbc_setFunctionStatVFS(SMBCCTX *c, smbc_statvfs_fn fn);
+
+typedef int (*smbc_fstatvfs_fn)(SMBCCTX *c,
+                                SMBCFILE *file,
+                                struct statvfs *st);
+smbc_fstatvfs_fn smbc_getFunctionFstatVFS(SMBCCTX *c);
+void smbc_setFunctionFstatVFS(SMBCCTX *c, smbc_fstatvfs_fn fn);
 
 typedef int (*smbc_ftruncate_fn)(SMBCCTX *c,
                                  SMBCFILE *f,
@@ -1568,6 +1618,52 @@ int smbc_stat(const char *url, struct stat *st);
  *
  */
 int smbc_fstat(int fd, struct stat *st);
+
+
+/**@ingroup attribute
+ * Get file system information for a specified path.
+ * 
+ * @param url       The smb url to get information for
+ *
+ * @param st        pointer to a buffer that will be filled with 
+ *                  standard Unix struct statvfs information.
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             Unix fstatvfs()
+ *
+ */
+int
+smbc_statvfs(char *url,
+             struct statvfs *st);
+
+/**@ingroup attribute
+ * Get file system information via an file descriptor.
+ * 
+ * @param fd        Open file handle from smbc_open(), smbc_creat(),
+ *                  or smbc_opendir()
+ *
+ * @param st        pointer to a buffer that will be filled with 
+ *                  standard Unix struct statvfs information.
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             Unix fstatvfs()
+ *
+ */
+int
+smbc_fstatvfs(int fd,
+              struct statvfs *st);
 
 
 /**@ingroup attribute
@@ -2581,12 +2677,24 @@ smbc_version(void);
  */
 
 void
-smbc_set_credentials(char *workgroup,
-                     char *user,
-                     char *password,
+smbc_set_credentials(const char *workgroup,
+                     const char *user,
+                     const char *password,
                      smbc_bool use_kerberos,
-                     char *signing_state);
+                     const char *signing_state);
 
+/*
+ * Wrapper around smbc_set_credentials.
+ * Used to set correct credentials that will
+ * be used to connect to DFS target share 
+ * in libsmbclient
+ */
+
+void
+smbc_set_credentials_with_fallback(SMBCCTX *ctx,
+		                   const char *workgroup,
+			     	   const char *user,
+			    	   const char *password);
 
 /**
  * @ingroup structure

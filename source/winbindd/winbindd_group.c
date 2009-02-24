@@ -991,7 +991,13 @@ static void getgrgid_recv(void *private_data, bool success, const char *sid)
 		DEBUG(10,("getgrgid_recv: gid %lu has sid %s\n",
 			  (unsigned long)(state->request.data.gid), sid));
 
-		string_to_sid(&group_sid, sid);
+		if (!string_to_sid(&group_sid, sid)) {
+			DEBUG(1,("getgrgid_recv: Could not convert sid %s "
+				"from string\n", sid));
+			request_error(state);
+			return;
+		}
+
 		winbindd_getgrsid(state, group_sid);
 		return;
 	}
@@ -1347,8 +1353,10 @@ void winbindd_getgrent(struct winbindd_cli_state *state)
 		sid_copy(&group_sid, &domain->sid);
 		sid_append_rid(&group_sid, name_list[ent->sam_entry_index].rid);
 
-		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->name, &group_sid,
-						      &group_gid))) {
+		if (!NT_STATUS_IS_OK(idmap_sid_to_gid(domain->have_idmap_config
+						      ? domain->name : "",
+						      &group_sid, &group_gid)))
+		{
 			union unid_t id;
 			enum lsa_SidType type;
 

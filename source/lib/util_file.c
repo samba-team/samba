@@ -101,7 +101,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
  Load from a pipe into memory.
 ****************************************************************************/
 
-static char *file_pload(char *syscmd, size_t *size)
+static char *file_pload(const char *syscmd, size_t *size)
 {
 	int fd, n;
 	char *p;
@@ -351,7 +351,7 @@ char **fd_lines_load(int fd, int *numlines, size_t maxsize)
  must be freed with file_lines_free(). 
 ****************************************************************************/
 
-char **file_lines_pload(char *syscmd, int *numlines)
+char **file_lines_pload(const char *syscmd, int *numlines)
 {
 	char *p;
 	size_t size;

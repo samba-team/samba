@@ -250,6 +250,7 @@ struct global {
 	char *szLdapIdmapSuffix;
 	char *szLdapGroupSuffix;
 	int ldap_ssl;
+	bool ldap_ssl_ads;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
 	int ldap_debug_level;
@@ -718,24 +719,17 @@ static const struct enum_list enum_ldap_sasl_wrapping[] = {
 
 static const struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "no"},
-	{LDAP_SSL_OFF, "No"},
 	{LDAP_SSL_OFF, "off"},
-	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
-	{LDAP_SSL_START_TLS, "Start_tls"},
+	{LDAP_SSL_START_TLS, "start_tls"},
 	{-1, NULL}
 };
 
 static const struct enum_list enum_ldap_passwd_sync[] = {
 	{LDAP_PASSWD_SYNC_OFF, "no"},
-	{LDAP_PASSWD_SYNC_OFF, "No"},
 	{LDAP_PASSWD_SYNC_OFF, "off"},
-	{LDAP_PASSWD_SYNC_OFF, "Off"},
-	{LDAP_PASSWD_SYNC_ON, "Yes"},
 	{LDAP_PASSWD_SYNC_ON, "yes"},
 	{LDAP_PASSWD_SYNC_ON, "on"},
-	{LDAP_PASSWD_SYNC_ON, "On"},
-	{LDAP_PASSWD_SYNC_ONLY, "Only"},
 	{LDAP_PASSWD_SYNC_ONLY, "only"},
 	{-1, NULL}
 };
@@ -3487,7 +3481,7 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &sDefault.bShareModes,
 		.special	= NULL,
 		.enum_list	= NULL,
-		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL,
+		.flags		= FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL | FLAG_DEPRECATED,
 	},
 
 	{N_("Ldap Options"), P_SEP, P_SEPARATOR},
@@ -3580,6 +3574,15 @@ static struct parm_struct parm_table[] = {
 		.ptr		= &Globals.ldap_ssl,
 		.special	= NULL,
 		.enum_list	= enum_ldap_ssl,
+		.flags		= FLAG_ADVANCED,
+	},
+	{
+		.label		= "ldap ssl ads",
+		.type		= P_BOOL,
+		.p_class	= P_GLOBAL,
+		.ptr		= &Globals.ldap_ssl_ads,
+		.special	= NULL,
+		.enum_list	= NULL,
 		.flags		= FLAG_ADVANCED,
 	},
 	{
@@ -4790,7 +4793,8 @@ static void init_globals(bool first_time_only)
 	string_set(&Globals.szLdapIdmapSuffix, "");
 
 	string_set(&Globals.szLdapAdminDn, "");
-	Globals.ldap_ssl = LDAP_SSL_ON;
+	Globals.ldap_ssl = LDAP_SSL_START_TLS;
+	Globals.ldap_ssl_ads = False;
 	Globals.ldap_passwd_sync = LDAP_PASSWD_SYNC_OFF;
 	Globals.ldap_delete_dn = False;
 	Globals.ldap_replication_sleep = 1000; /* wait 1 sec for replication */
@@ -5022,7 +5026,6 @@ FN_GLOBAL_STRING(lp_remote_announce, &Globals.szRemoteAnnounce)
 FN_GLOBAL_STRING(lp_remote_browse_sync, &Globals.szRemoteBrowseSync)
 FN_GLOBAL_LIST(lp_wins_server_list, &Globals.szWINSservers)
 FN_GLOBAL_LIST(lp_interfaces, &Globals.szInterfaces)
-FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
@@ -5115,6 +5118,7 @@ FN_GLOBAL_BOOL(lp_passdb_expand_explicit, &Globals.bPassdbExpandExplicit)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
+FN_GLOBAL_BOOL(lp_ldap_ssl_ads, &Globals.ldap_ssl_ads)
 FN_GLOBAL_INTEGER(lp_ldap_passwd_sync, &Globals.ldap_passwd_sync)
 FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
@@ -9508,4 +9512,19 @@ int lp_min_receive_file_size(void)
 		return 0;
 	}
 	return MIN(Globals.iminreceivefile, BUFFER_SIZE);
+}
+
+/*******************************************************************
+ If socket address is an empty character string, it is necessary to 
+ define it as "0.0.0.0". 
+********************************************************************/
+
+const char *lp_socket_address(void)
+{
+	char *sock_addr = Globals.szSocketAddress;
+	
+	if (sock_addr[0] == '\0'){
+		string_set(&Globals.szSocketAddress, "0.0.0.0");
+	}
+	return  Globals.szSocketAddress;
 }

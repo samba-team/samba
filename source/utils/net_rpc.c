@@ -749,7 +749,9 @@ static int rpc_user_password(struct net_context *c, int argc, const char **argv)
 	if (argv[1]) {
 		u1003.usri1003_password = argv[1];
 	} else {
-		asprintf(&prompt, "Enter new password for %s:", argv[0]);
+		if (asprintf(&prompt, "Enter new password for %s:", argv[0]) == -1) {
+			return -1;
+		}
 		u1003.usri1003_password = getpass(prompt);
 		SAFE_FREE(prompt);
 	}
@@ -4062,7 +4064,11 @@ static bool get_user_sids(const char *domain, const char *user, NT_USER_TOKEN *t
 		return false;
 	}
 
-	string_to_sid(&user_sid, sid_str);
+	if (!string_to_sid(&user_sid, sid_str)) {
+		DEBUG(1,("Could not convert sid %s from string\n", sid_str));
+		return false;
+	}
+
 	wbcFreeMemory(sid_str);
 	sid_str = NULL;
 
@@ -4198,7 +4204,11 @@ static bool get_user_tokens_from_file(FILE *f,
 			/* We have a SID */
 
 			DOM_SID sid;
-			string_to_sid(&sid, &line[1]);
+			if(!string_to_sid(&sid, &line[1])) {
+				DEBUG(1,("get_user_tokens_from_file: Could "
+					"not convert sid %s \n",&line[1]));
+				return false;
+			}
 
 			if (token == NULL) {
 				DEBUG(0, ("File does not begin with username"));
@@ -4368,7 +4378,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 {
 	int ret;
 	bool r;
-	ENUM_HND hnd;
 	uint32 i;
 	FILE *f;
 
@@ -4400,8 +4409,6 @@ static NTSTATUS rpc_share_allowedusers_internals(struct net_context *c,
 
 	for (i=0; i<num_tokens; i++)
 		collect_alias_memberships(&tokens[i].token);
-
-	init_enum_hnd(&hnd, 0);
 
 	share_list.num_shares = 0;
 	share_list.shares = NULL;
@@ -5255,7 +5262,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 				      NULL, NULL, NULL, NULL, NULL,
 				      NULL, NULL, NULL, NULL, &parameters,
 				      0, 0, ACB_DOMTRUST,
-				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_PASSWORD,
+				      SAMR_FIELD_ACCT_FLAGS | SAMR_FIELD_NT_PASSWORD_PRESENT,
 				      hours,
 				      0, 0, 0, 0, 0, 0, 0,
 				      &crypt_pwd);
@@ -5537,7 +5544,9 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	strupper_m(domain_name);
 
 	/* account name used at first is our domain's name with '$' */
-	asprintf(&acct_name, "%s$", lp_workgroup());
+	if (asprintf(&acct_name, "%s$", lp_workgroup()) == -1) {
+		return -1;
+	}
 	strupper_m(acct_name);
 
 	/*

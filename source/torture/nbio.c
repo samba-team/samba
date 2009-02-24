@@ -111,7 +111,9 @@ static void sigsegv(int sig)
 	printf("segv at line %d\n", line_count);
 	slprintf(line, sizeof(line), "/usr/X11R6/bin/xterm -e gdb /proc/%d/exe %d", 
 		(int)getpid(), (int)getpid());
-	system(line);
+	if (system(line) == -1) {
+		printf("system() failed\n");
+	}
 	exit(1);
 }
 
@@ -280,10 +282,16 @@ static void delete_fn(const char *mnt, file_info *finfo, const char *name, void 
 
 	n = SMB_STRDUP(name);
 	n[strlen(n)-1] = 0;
-	asprintf(&s, "%s%s", n, finfo->name);
+	if (asprintf(&s, "%s%s", n, finfo->name) == -1) {
+		printf("asprintf failed\n");
+		return;
+	}
 	if (finfo->mode & aDIR) {
 		char *s2;
-		asprintf(&s2, "%s\\*", s);
+		if (asprintf(&s2, "%s\\*", s) == -1) {
+			printf("asprintf failed\n");
+			return;
+		}
 		cli_list(c, s2, aDIR, delete_fn, NULL);
 		nb_rmdir(s);
 	} else {
@@ -297,7 +305,10 @@ static void delete_fn(const char *mnt, file_info *finfo, const char *name, void 
 void nb_deltree(const char *dname)
 {
 	char *mask;
-	asprintf(&mask, "%s\\*", dname);
+	if (asprintf(&mask, "%s\\*", dname) == -1) {
+		printf("asprintf failed\n");
+		return;
+	}
 
 	total_deleted = 0;
 	cli_list(c, mask, aDIR, delete_fn, NULL);

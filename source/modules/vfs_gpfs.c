@@ -1,26 +1,24 @@
 /*
    Unix SMB/CIFS implementation.
    Wrap gpfs calls in vfs functions.
- 
+
    Copyright (C) Christian Ambach <cambach1@de.ibm.com> 2006
-   
+
    Major code contributions by Chetan Shringarpure <chetan.sh@in.ibm.com>
                             and Gomati Mohanan <gomati.mohanan@in.ibm.com>
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-  
-
 */
 
 #include "includes.h"
@@ -55,14 +53,14 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 			     int leasetype)
 {
 	int ret;
-	
+
 	START_PROFILE(syscall_linux_setlease);
-	
+
 	if ( linux_set_lease_sighandler(fsp->fh->fd) == -1)
 		return -1;
 
 	ret = set_gpfs_lease(fsp->fh->fd,leasetype);
-	
+
 	if ( ret < 0 ) {
 		/* This must have come from GPFS not being available */
 		/* or some other error, hence call the default */
@@ -74,7 +72,64 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp,
 	return ret;
 }
 
+static int vfs_gpfs_get_real_filename(struct vfs_handle_struct *handle,
+				      const char *path,
+				      const char *name,
+				      TALLOC_CTX *mem_ctx,
+				      char **found_name)
+{
+	int result;
+	char *full_path;
+	char real_pathname[PATH_MAX+1];
+	int buflen;
 
+	full_path = talloc_asprintf(talloc_tos(), "%s/%s", path, name);
+	if (full_path == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	buflen = sizeof(real_pathname) - 1;
+
+	result = smbd_gpfs_get_realfilename_path(full_path, real_pathname,
+						 &buflen);
+
+	TALLOC_FREE(full_path);
+
+	if (result == -1) {
+		DEBUG(10, ("smbd_gpfs_get_realfilename_path returned %s\n",
+			   strerror(errno)));
+		return -1;
+	}
+
+	/*
+	 * GPFS does not necessarily null-terminate the returned path
+	 * but instead returns the buffer length in buflen.
+	 */
+
+	if (buflen < sizeof(real_pathname)) {
+		real_pathname[buflen] = '\0';
+	} else {
+		real_pathname[sizeof(real_pathname)-1] = '\0';
+	}
+
+	DEBUG(10, ("smbd_gpfs_get_realfilename_path: %s/%s -> %s\n",
+		   path, name, real_pathname));
+
+	name = strrchr_m(real_pathname, '/');
+	if (name == NULL) {
+		errno = ENOENT;
+		return -1;
+	}
+
+	*found_name = talloc_strdup(mem_ctx, name+1);
+	if (*found_name == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	return 0;
+}
 
 static void gpfs_dumpacl(int level, struct gpfs_acl *gacl)
 {
@@ -301,13 +356,13 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 		gace->aceType = aceprop->aceType;
 		gace->aceFlags = aceprop->aceFlags;
 		gace->aceMask = aceprop->aceMask;
-		
+
 		/*
 		 * GPFS can't distinguish between WRITE and APPEND on
 		 * files, so one being set without the other is an
 		 * error. Sorry for the many ()'s :-)
 		 */
-		
+
 		if (!fsp->is_directory
 		    &&
 		    ((((gace->aceMask & ACE4_MASK_WRITE) == 0)
@@ -323,9 +378,9 @@ static bool gpfsacl_process_smbacl(files_struct *fsp, SMB4ACL_T *smbacl)
 				  fsp->fsp_name));
 			gace->aceMask |= ACE4_MASK_WRITE|ACE4_MASK_APPEND;
 		}
-		
+
 		gace->aceIFlags = (aceprop->flags&SMB_ACE4_ID_SPECIAL) ? ACE4_IFLAG_SPECIAL_ID : 0;
-		
+
 		if (aceprop->flags&SMB_ACE4_ID_SPECIAL)
 		{
 			switch(aceprop->who.special_id)
@@ -478,7 +533,7 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 		errno = EINVAL;
 		goto done;
 	}
-	
+
 	DEBUG(10, ("len: %d, level: %d, version: %d, nace: %d\n",
 		   pacl->acl_len, pacl->acl_level, pacl->acl_version,
 		   pacl->acl_nace));
@@ -497,7 +552,6 @@ static SMB_ACL_T gpfsacl_get_posix_acl(const char *path, gpfs_aclType_t type)
 }
 
 SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
-				    
 				    const char *path_p,
 				    SMB_ACL_TYPE_T type)
 {
@@ -557,7 +611,7 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 	for (i=0; i<pacl->count; i++) {
 		const struct smb_acl_entry *ace = &pacl->acl[i];
 		struct gpfs_ace_v1 *g_ace = &result->ace_v1[i];
-		
+
 		DEBUG(10, ("Converting type %d perm %x\n",
 			   (int)ace->a_type, (int)ace->a_perm));
 
@@ -612,7 +666,6 @@ static struct gpfs_acl *smb2gpfs_acl(const SMB_ACL_T pacl,
 }
 
 int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
-			      
 			      const char *name,
 			      SMB_ACL_TYPE_T type,
 			      SMB_ACL_T theacl)
@@ -639,7 +692,6 @@ int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 }
 
 int gpfsacl_sys_acl_delete_def_file(vfs_handle_struct *handle,
-				     
 				     const char *path)
 {
 	errno = ENOTSUP;
@@ -661,11 +713,11 @@ static uint32 gpfsacl_mask_filter(uint32 aceType, uint32 aceMask, uint32 rwx)
 	uint32_t        posix_mask = 0x01;
 	uint32_t        posix_bit;
 	uint32_t        nfs4_bits;
-	
+
 	for(i=0; i<3; i++) {
 		nfs4_bits = posix_nfs4map[i];
 		posix_bit = rwx & posix_mask;
-		
+
 		if (aceType==SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE) {
 			if (posix_bit)
 				aceMask |= nfs4_bits;
@@ -678,10 +730,10 @@ static uint32 gpfsacl_mask_filter(uint32 aceType, uint32 aceMask, uint32 rwx)
 			else
 				aceMask &= ~nfs4_bits;
 		} /* other ace types are unexpected */
-		
+
 		posix_mask <<= 1;
 	}
-	
+
 	return aceMask;
 }
 
@@ -693,30 +745,30 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	int     i;
 	files_struct    fake_fsp; /* TODO: rationalize parametrization */
 	SMB4ACE_T       *smbace;
-	
+
 	DEBUG(10, ("gpfsacl_emu_chmod invoked for %s mode %o\n", path, mode));
-	
+
 	result = gpfs_get_nfs4_acl(path, &pacl);
 	if (result)
 		return result;
-	
+
 	if (mode & ~(S_IRWXU | S_IRWXG | S_IRWXO)) {
 		DEBUG(2, ("WARNING: cutting extra mode bits %o on %s\n", mode, path));
 	}
-	
+
 	for (smbace=smb_first_ace4(pacl); smbace!=NULL; smbace = smb_next_ace4(smbace)) {
 		SMB_ACE4PROP_T  *ace = smb_get_ace4(smbace);
 		uint32_t        specid = ace->who.special_id;
-		
+
 		if (ace->flags&SMB_ACE4_ID_SPECIAL &&
 		    ace->aceType<=SMB_ACE4_ACCESS_DENIED_ACE_TYPE &&
 		    specid <= SMB_ACE4_WHO_EVERYONE) {
-			
+
 			uint32_t newMask;
-			
+
 			if (ace->aceType==SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE)
 				haveAllowEntry[specid] = True;
-			
+
 			/* mode >> 6 for @owner, mode >> 3 for @group,
 			 * mode >> 0 for @everyone */
 			newMask = gpfsacl_mask_filter(ace->aceType, ace->aceMask,
@@ -735,35 +787,35 @@ static int gpfsacl_emu_chmod(const char *path, mode_t mode)
 	 */
 	for(i = SMB_ACE4_WHO_OWNER; i<=SMB_ACE4_WHO_EVERYONE; i++) {
 		SMB_ACE4PROP_T  ace;
-		
+
 		if (haveAllowEntry[i]==True)
 			continue;
-		
+
 		ZERO_STRUCT(ace);
 		ace.aceType = SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE;
 		ace.flags |= SMB_ACE4_ID_SPECIAL;
 		ace.who.special_id = i;
-		
+
 		if (i==SMB_ACE4_WHO_GROUP) /* not sure it's necessary... */
 			ace.aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
-		
+
 		ace.aceMask = gpfsacl_mask_filter(ace.aceType, ace.aceMask,
 						  mode >> ((SMB_ACE4_WHO_EVERYONE - i) * 3));
-		
+
 		/* don't add unnecessary aces */
 		if (!ace.aceMask)
 			continue;
-		
+
 		/* we add it to the END - as windows expects allow aces */
 		smb_add_ace4(pacl, &ace);
 		DEBUG(10, ("Added ALLOW ace for %s, mode=%o, id=%d, aceMask=%x\n",
 			   path, mode, i, ace.aceMask));
 	}
-	
+
 	/* don't add complementary DENY ACEs here */
 	ZERO_STRUCT(fake_fsp);
 	fake_fsp.fsp_name = (char *)path; /* no file_new is needed here */
-	
+
 	/* put the acl */
 	if (gpfsacl_process_smbacl(&fake_fsp, pacl) == False)
 		return -1;
@@ -774,11 +826,11 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 {
 		 SMB_STRUCT_STAT st;
 		 int rc;
-		 
+
 		 if (SMB_VFS_NEXT_STAT(handle, path, &st) != 0) {
 			 return -1;
 		 }
-		 
+
 		 /* avoid chmod() if possible, to preserve acls */
 		 if ((st.st_mode & ~S_IFMT) == mode) {
 			 return 0;
@@ -794,7 +846,7 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 {
 		 SMB_STRUCT_STAT st;
 		 int rc;
-		 
+
 		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, &st) != 0) {
 			 return -1;
 		 }
@@ -813,51 +865,55 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t 
 /* VFS operations structure */
 
 static vfs_op_tuple gpfs_op_tuples[] = {
-	
+
 	{ SMB_VFS_OP(vfs_gpfs_kernel_flock), 
 	  SMB_VFS_OP_KERNEL_FLOCK,
 	  SMB_VFS_LAYER_OPAQUE },
-	
+
         { SMB_VFS_OP(vfs_gpfs_setlease), 
 	  SMB_VFS_OP_LINUX_SETLEASE,
 	  SMB_VFS_LAYER_OPAQUE },
-	
+
+        { SMB_VFS_OP(vfs_gpfs_get_real_filename),
+	  SMB_VFS_OP_GET_REAL_FILENAME,
+	  SMB_VFS_LAYER_OPAQUE },
+
         { SMB_VFS_OP(gpfsacl_fget_nt_acl), 
 	  SMB_VFS_OP_FGET_NT_ACL,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_get_nt_acl), 
 	  SMB_VFS_OP_GET_NT_ACL,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_fset_nt_acl), 
 	  SMB_VFS_OP_FSET_NT_ACL,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_sys_acl_get_file), 
 	  SMB_VFS_OP_SYS_ACL_GET_FILE,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_sys_acl_get_fd), 
 	  SMB_VFS_OP_SYS_ACL_GET_FD,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_sys_acl_set_file), 
 	  SMB_VFS_OP_SYS_ACL_SET_FILE,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_sys_acl_set_fd), 
 	  SMB_VFS_OP_SYS_ACL_SET_FD,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(gpfsacl_sys_acl_delete_def_file),
 	  SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(vfs_gpfs_chmod), 
 	  SMB_VFS_OP_CHMOD,
 	  SMB_VFS_LAYER_TRANSPARENT },
-	
+
         { SMB_VFS_OP(vfs_gpfs_fchmod), 
 	  SMB_VFS_OP_FCHMOD,
 	  SMB_VFS_LAYER_TRANSPARENT },
@@ -871,7 +927,7 @@ NTSTATUS vfs_gpfs_init(void);
 NTSTATUS vfs_gpfs_init(void)
 {
 	init_gpfs();
-	
+
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "gpfs",
 				gpfs_op_tuples);
 }

@@ -31,7 +31,7 @@
 				       const char *servername)
 {
 	ADS_STATUS status;
-	char *srv_dn, **srv_cn, *s;
+	char *srv_dn, **srv_cn, *s = NULL;
 	const char *attrs[] = {"*", "nTSecurityDescriptor", NULL};
 
 	status = ads_find_machine_acct(ads, res, servername);
@@ -41,25 +41,43 @@
 		return status;
 	}
 	if (ads_count_replies(ads, *res) != 1) {
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
 	}
 	srv_dn = ldap_get_dn(ads->ldap.ld, *res);
 	if (srv_dn == NULL) {
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
 	srv_cn = ldap_explode_dn(srv_dn, 1);
 	if (srv_cn == NULL) {
 		ldap_memfree(srv_dn);
+		if (res) {
+			ads_msgfree(ads, *res);
+			*res = NULL;
+		}
 		return ADS_ERROR(LDAP_INVALID_DN_SYNTAX);
 	}
-	ads_msgfree(ads, *res);
+	if (res) {
+		ads_msgfree(ads, *res);
+		*res = NULL;
+	}
 
-	asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer);
+	if (asprintf(&s, "(cn=%s-%s)", srv_cn[0], printer) == -1) {
+		ldap_memfree(srv_dn);
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
 	status = ads_search(ads, res, s, attrs);
 
 	ldap_memfree(srv_dn);
 	ldap_value_free(srv_cn);
-	free(s);
+	SAFE_FREE(s);
 	return status;	
 }
 
@@ -310,11 +328,14 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(3, ("Unable to open printer %s, error is %s.\n",
 			  printername, dos_errstr(result)));
+		SAFE_FREE(printername);
 		return result;
 	}
 	
-	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) 
+	if ( !(dsdriver_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) {
+		SAFE_FREE(printername);
 		return WERR_NOMEM;
+	}
 
 	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSDRIVER_KEY, dsdriver_ctr);
 
@@ -330,8 +351,10 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 		}
 	}
 	
-	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) )
+	if ( !(dsspooler_ctr = TALLOC_ZERO_P( mem_ctx, REGVAL_CTR )) ) {
+		SAFE_FREE(printername);
 		return WERR_NOMEM;
+	}
 
 	result = rpccli_spoolss_enumprinterdataex(cli, mem_ctx, &pol, SPOOL_DSSPOOLER_KEY, dsspooler_ctr);
 
@@ -352,6 +375,7 @@ WERROR get_remote_printer_publishing_data(struct rpc_pipe_client *cli,
 	TALLOC_FREE( dsspooler_ctr );
 
 	rpccli_spoolss_close_printer(cli, mem_ctx, &pol);
+	SAFE_FREE(printername);
 
 	return result;
 }

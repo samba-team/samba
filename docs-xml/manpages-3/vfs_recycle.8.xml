@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">3.2</refmiscinfo>
+	<refmiscinfo class="version">3.3</refmiscinfo>
 </refmeta>
 
 
@@ -185,14 +185,17 @@
 <refsect1>
 	<title>EXAMPLES</title>
 
-	<para>Log operations on all shares using the LOCAL1 facility
-	and NOTICE priority:</para>
+	<para>Move files "deleted" on <parameter>share</parameter> to
+	<parameter>/data/share/.recycle</parameter> instead of deleting them:
+	</para>
 
 <programlisting>
-        <smbconfsection name="[global]"/>
+        <smbconfsection name="[share]"/>
+	<smbconfoption name="path">/data/share</smbconfoption>
 	<smbconfoption name="vfs objects">recycle</smbconfoption>
-	<smbconfoption name="recycle:facility">LOCAL1</smbconfoption>
-	<smbconfoption name="recycle:priority">NOTICE</smbconfoption>
+	<smbconfoption name="recycle:repository">.recycle</smbconfoption>
+	<smbconfoption name="recycle:keeptree">yes</smbconfoption>
+	<smbconfoption name="recycle:versions">yes</smbconfoption>
 </programlisting>
 
 </refsect1>

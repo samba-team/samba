@@ -243,14 +243,17 @@ int net_rpc_join_newstyle(struct net_context *c, int argc, const char **argv)
 
 	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 					   pipe_hnd->desthost,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
+					   SAMR_ACCESS_ENUM_DOMAINS
+					   | SAMR_ACCESS_OPEN_DOMAIN,
 					   &sam_pol),
 		      "could not connect to SAM database");
 
 
 	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 					     &sam_pol,
-					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
+					     | SAMR_DOMAIN_ACCESS_CREATE_USER
+					     | SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					     domain_sid,
 					     &domain_pol),
 		      "could not open domain");
@@ -482,7 +485,6 @@ done:
  **/
 int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 {
-	char *domain = smb_xstrdup(c->opt_target_workgroup);
 	NTSTATUS nt_status;
 
 	if (c->display_usage) {
@@ -493,15 +495,13 @@ int net_rpc_testjoin(struct net_context *c, int argc, const char **argv)
 	}
 
 	/* Display success or failure */
-	nt_status = net_rpc_join_ok(c, domain, NULL, NULL);
+	nt_status = net_rpc_join_ok(c, c->opt_target_workgroup, NULL, NULL);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		fprintf(stderr,"Join to domain '%s' is not valid: %s\n",
-			domain, nt_errstr(nt_status));
-		free(domain);
+			c->opt_target_workgroup, nt_errstr(nt_status));
 		return -1;
 	}
 
-	printf("Join to '%s' is OK\n",domain);
-	free(domain);
+	printf("Join to '%s' is OK\n", c->opt_target_workgroup);
 	return 0;
 }

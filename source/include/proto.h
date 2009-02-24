@@ -460,7 +460,7 @@ int32_t dbwrap_fetch_int32(struct db_context *db, const char *keystr);
 int dbwrap_store_int32(struct db_context *db, const char *keystr, int32_t v);
 bool dbwrap_fetch_uint32(struct db_context *db, const char *keystr,
 			 uint32_t *val);
-bool dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v);
+int dbwrap_store_uint32(struct db_context *db, const char *keystr, uint32_t v);
 uint32_t dbwrap_change_uint32_atomic(struct db_context *db, const char *keystr,
 				     uint32_t *oldval, uint32_t change_val);
 int32 dbwrap_change_int32_atomic(struct db_context *db, const char *keystr,
@@ -518,46 +518,6 @@ void display_set_stderr(void);
 
 NTSTATUS map_nt_error_from_unix(int unix_error);
 int map_errno_from_nt_status(NTSTATUS status);
-
-/* The following definitions come from lib/events.c  */
-
-struct timed_event *event_add_timed(struct event_context *event_ctx,
-				TALLOC_CTX *mem_ctx,
-				struct timeval when,
-				const char *event_name,
-				void (*handler)(struct event_context *event_ctx,
-						struct timed_event *te,
-						const struct timeval *now,
-						void *private_data),
-				void *private_data);
-struct fd_event *event_add_fd(struct event_context *event_ctx,
-			      TALLOC_CTX *mem_ctx,
-			      int fd, uint16_t flags,
-			      void (*handler)(struct event_context *event_ctx,
-					      struct fd_event *event,
-					      uint16 flags,
-					      void *private_data),
-			      void *private_data);
-void event_fd_set_writeable(struct fd_event *fde);
-void event_fd_set_not_writeable(struct fd_event *fde);
-void event_fd_set_readable(struct fd_event *fde);
-void event_fd_set_not_readable(struct fd_event *fde);
-bool event_add_to_select_args(struct event_context *event_ctx,
-			      const struct timeval *now,
-			      fd_set *read_fds, fd_set *write_fds,
-			      struct timeval *timeout, int *maxfd);
-bool events_pending(struct event_context *event_ctx);
-bool run_events(struct event_context *event_ctx,
-		int selrtn, fd_set *read_fds, fd_set *write_fds);
-struct timeval *get_timed_events_timeout(struct event_context *event_ctx,
-					 struct timeval *to_ret);
-int event_loop_once(struct event_context *ev);
-struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
-int set_event_dispatch_time(struct event_context *event_ctx,
-			    const char *event_name, struct timeval when);
-int cancel_named_event(struct event_context *event_ctx,
-		       const char *event_name);
-void dump_event_list(struct event_context *event_ctx);
 
 /* The following definitions come from lib/fault.c  */
 
@@ -1037,6 +997,7 @@ void *sys_memalign( size_t align, size_t size );
 int sys_usleep(long usecs);
 ssize_t sys_read(int fd, void *buf, size_t count);
 ssize_t sys_write(int fd, const void *buf, size_t count);
+ssize_t sys_writev(int fd, const struct iovec *iov, int iovcnt);
 ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off);
 ssize_t sys_send(int s, const void *msg, size_t len, int flags);
@@ -1296,6 +1257,7 @@ int set_blocking(int fd, bool set);
 void smb_msleep(unsigned int t);
 void become_daemon(bool Fork, bool no_process_group);
 bool reinit_after_fork(struct messaging_context *msg_ctx,
+		       struct event_context *ev_ctx,
 		       bool parent_longlived);
 bool yesno(const char *p);
 void *malloc_(size_t size);
@@ -1412,7 +1374,7 @@ bool unmap_file(void* start, size_t size);
 void *map_file(char *fname, size_t size);
 char **file_lines_load(const char *fname, int *numlines, size_t maxsize);
 char **fd_lines_load(int fd, int *numlines, size_t maxsize);
-char **file_lines_pload(char *syscmd, int *numlines);
+char **file_lines_pload(const char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 bool file_save(const char *fname, void *packet, size_t length);
@@ -1575,6 +1537,7 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
 				  size_t *size_ret);
 NTSTATUS read_data(int fd, char *buffer, size_t N);
 ssize_t write_data(int fd, const char *buffer, size_t N);
+ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt);
 bool send_keepalive(int client);
 NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 					  unsigned int timeout,
@@ -3005,7 +2968,7 @@ _PUBLIC_ void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *nam
 _PUBLIC_ void ndr_print_netr_LogonControl2Ex(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl2Ex *r);
 _PUBLIC_ void ndr_print_netr_NetrEnumerateTrustedDomains(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomains *r);
 _PUBLIC_ void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCName *r);
-_PUBLIC_ void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r);
+_PUBLIC_ void ndr_print_netr_Capabilities(struct ndr_print *ndr, const char *name, const union netr_Capabilities *r);
 _PUBLIC_ void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r);
 _PUBLIC_ void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r);
 _PUBLIC_ void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
@@ -4016,7 +3979,7 @@ size_t ndr_size_dom_sid(const struct dom_sid *sid, int flags);
 size_t ndr_size_dom_sid28(const struct dom_sid *sid, int flags);
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
 size_t ndr_size_security_ace(const struct security_ace *ace, int flags);
-size_t ndr_size_security_acl(const struct security_acl *acl, int flags);
+size_t ndr_size_security_acl(const struct security_acl *theacl, int flags);
 size_t ndr_size_security_descriptor(const struct security_descriptor *sd, int flags);
 void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, const struct dom_sid *sid);
@@ -4370,6 +4333,21 @@ bool cli_set_unix_extensions_capabilities(struct cli_state *cli, uint16 major, u
 bool cli_get_fs_attr_info(struct cli_state *cli, uint32 *fs_attr);
 bool cli_get_fs_volume_info_old(struct cli_state *cli, fstring volume_name, uint32 *pserial_number);
 bool cli_get_fs_volume_info(struct cli_state *cli, fstring volume_name, uint32 *pserial_number, time_t *pdate);
+bool cli_get_fs_full_size_info(struct cli_state *cli,
+                               SMB_BIG_UINT *total_allocation_units,
+                               SMB_BIG_UINT *caller_allocation_units,
+                               SMB_BIG_UINT *actual_allocation_units,
+                               SMB_BIG_UINT *sectors_per_allocation_unit,
+                               SMB_BIG_UINT *bytes_per_sector);
+bool cli_get_posix_fs_info(struct cli_state *cli,
+                           uint32 *optimal_transfer_size,
+                           uint32 *block_size,
+                           SMB_BIG_UINT *total_blocks,
+                           SMB_BIG_UINT *blocks_available,
+                           SMB_BIG_UINT *user_blocks_available,
+                           SMB_BIG_UINT *total_file_nodes,
+                           SMB_BIG_UINT *free_file_nodes,
+                           SMB_BIG_UINT *fs_identifier);
 NTSTATUS cli_raw_ntlm_smb_encryption_start(struct cli_state *cli, 
 				const char *user,
 				const char *pass,
@@ -4742,6 +4720,7 @@ bool namecache_status_fetch(const char *keyname,
 /* The following definitions come from libsmb/namequery.c  */
 
 bool saf_store( const char *domain, const char *servername );
+bool saf_join_store( const char *domain, const char *servername );
 bool saf_delete( const char *domain );
 char *saf_fetch( const char *domain );
 NODE_STATUS_STRUCT *node_status_query(int fd,
@@ -5213,7 +5192,7 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool is_deferred_open_entry(const struct share_mode_entry *e);
 bool is_unused_share_mode_entry(const struct share_mode_entry *e);
 void set_share_mode(struct share_mode_lock *lck, files_struct *fsp,
-			uid_t uid, uint16 mid, uint16 op_type, bool initial_delete_on_close_allowed);
+		    uid_t uid, uint16 mid, uint16 op_type);
 void add_deferred_open(struct share_mode_lock *lck, uint16 mid,
 		       struct timeval request_time,
 		       struct file_id id);
@@ -5223,11 +5202,9 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp);
 NTSTATUS can_set_delete_on_close(files_struct *fsp, bool delete_on_close,
 				 uint32 dosmode);
-bool can_set_initial_delete_on_close(const struct share_mode_lock *lck);
 void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok);
 void set_delete_on_close_lck(struct share_mode_lock *lck, bool delete_on_close, UNIX_USER_TOKEN *tok);
 bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKEN *tok);
-bool set_allow_initial_delete_on_close(struct share_mode_lock *lck, files_struct *fsp, bool delete_on_close);
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time);
 bool set_write_time(struct file_id fileid, struct timespec write_time);
 int share_mode_forall(void (*fn)(const struct share_mode_entry *, const char *,
@@ -5681,7 +5658,7 @@ char *lp_remote_announce(void);
 char *lp_remote_browse_sync(void);
 const char **lp_wins_server_list(void);
 const char **lp_interfaces(void);
-char *lp_socket_address(void);
+const char *lp_socket_address(void);
 char *lp_nis_home_map_name(void);
 const char **lp_netbios_aliases(void);
 const char *lp_passdb_backend(void);
@@ -5726,6 +5703,7 @@ bool lp_passdb_expand_explicit(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_admin_dn(void);
 int lp_ldap_ssl(void);
+bool lp_ldap_ssl_ads(void);
 int lp_ldap_passwd_sync(void);
 bool lp_ldap_delete_dn(void);
 int lp_ldap_replication_sleep(void);
@@ -6174,8 +6152,9 @@ NTSTATUS local_password_change(const char *user_name,
 				const char *new_passwd, 
 				char **pp_err_str,
 				char **pp_msg_str);
-bool init_sam_from_buffer_v3(struct samu *sampass, uint8 *buf, uint32 buflen);
-uint32 init_buffer_from_sam_v3 (uint8 **buf, struct samu *sampass, bool size_only);
+bool init_samu_from_buffer(struct samu *sampass, uint32_t level,
+			   uint8 *buf, uint32 buflen);
+uint32 init_buffer_from_samu (uint8 **buf, struct samu *sampass, bool size_only);
 bool pdb_copy_sam_account(struct samu *dst, struct samu *src );
 bool pdb_update_bad_password_count(struct samu *sampass, bool *updated);
 bool pdb_update_autolock_flag(struct samu *sampass, bool *updated);
@@ -6623,7 +6602,8 @@ bool sysv_cache_reload(void);
 /* The following definitions come from printing/printfsp.c  */
 
 NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
-			uint16_t current_vuid, files_struct *fsp);
+			uint16_t current_vuid, files_struct *fsp,
+			SMB_STRUCT_STAT *psbuf);
 void print_fsp_end(files_struct *fsp, enum file_close_type close_type);
 
 /* The following definitions come from printing/printing.c  */
@@ -7398,6 +7378,25 @@ void init_samr_alias_info1(struct samr_AliasInfoAll *r,
 			   const char *description);
 void init_samr_alias_info3(struct lsa_String *r,
 			   const char *description);
+void init_samr_user_info5(struct samr_UserInfo5 *r,
+			  const char *account_name,
+			  const char *full_name,
+			  uint32_t rid,
+			  uint32_t primary_gid,
+			  const char *home_directory,
+			  const char *home_drive,
+			  const char *logon_script,
+			  const char *profile_path,
+			  const char *description,
+			  const char *workstations,
+			  NTTIME last_logon,
+			  NTTIME last_logoff,
+			  struct samr_LogonHours logon_hours,
+			  uint16_t bad_password_count,
+			  uint16_t logon_count,
+			  NTTIME last_password_change,
+			  NTTIME acct_expiry,
+			  uint32_t acct_flags);
 void init_samr_user_info7(struct samr_UserInfo7 *r,
 			  const char *account_name);
 void init_samr_user_info9(struct samr_UserInfo9 *r,
@@ -7406,7 +7405,8 @@ void init_samr_user_info16(struct samr_UserInfo16 *r,
 			   uint32_t acct_flags);
 void init_samr_user_info18(struct samr_UserInfo18 *r,
 			   const uint8 lm_pwd[16],
-			   const uint8 nt_pwd[16]);
+			   const uint8 nt_pwd[16],
+			   uint8_t password_expired);
 void init_samr_user_info20(struct samr_UserInfo20 *r,
 			   struct lsa_BinaryString *parameters);
 void init_samr_user_info21(struct samr_UserInfo21 *r,
@@ -7648,7 +7648,7 @@ NTSTATUS cli_do_rpc_ndr(struct rpc_pipe_client *cli,
 
 /* The following definitions come from rpc_parse/parse_buffer.c  */
 
-void rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
+bool rpcbuf_init(RPC_BUFFER *buffer, uint32 size, TALLOC_CTX *ctx);
 bool prs_rpcbuffer(const char *desc, prs_struct *ps, int depth, RPC_BUFFER *buffer);
 bool prs_rpcbuffer_p(const char *desc, prs_struct *ps, int depth, RPC_BUFFER **buffer);
 bool rpcbuf_alloc_size(RPC_BUFFER *buffer, uint32 buffer_size);
@@ -8259,67 +8259,10 @@ bool svcctl_io_r_query_service_status_ex(const char *desc, SVCCTL_R_QUERY_SERVIC
 
 /* The following definitions come from rpc_server/srv_dfs_nt.c  */
 
-void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r);
-WERROR _dfs_Add(pipes_struct *p, struct dfs_Add *r);
-WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r);
-WERROR _dfs_Enum(pipes_struct *p, struct dfs_Enum *r);
-WERROR _dfs_GetInfo(pipes_struct *p, struct dfs_GetInfo *r);
-WERROR _dfs_SetInfo(pipes_struct *p, struct dfs_SetInfo *r);
-WERROR _dfs_Rename(pipes_struct *p, struct dfs_Rename *r);
-WERROR _dfs_Move(pipes_struct *p, struct dfs_Move *r);
-WERROR _dfs_ManagerGetConfigInfo(pipes_struct *p, struct dfs_ManagerGetConfigInfo *r);
-WERROR _dfs_ManagerSendSiteInfo(pipes_struct *p, struct dfs_ManagerSendSiteInfo *r);
-WERROR _dfs_AddFtRoot(pipes_struct *p, struct dfs_AddFtRoot *r);
-WERROR _dfs_RemoveFtRoot(pipes_struct *p, struct dfs_RemoveFtRoot *r);
-WERROR _dfs_AddStdRoot(pipes_struct *p, struct dfs_AddStdRoot *r);
-WERROR _dfs_RemoveStdRoot(pipes_struct *p, struct dfs_RemoveStdRoot *r);
-WERROR _dfs_ManagerInitialize(pipes_struct *p, struct dfs_ManagerInitialize *r);
-WERROR _dfs_AddStdRootForced(pipes_struct *p, struct dfs_AddStdRootForced *r);
-WERROR _dfs_GetDcAddress(pipes_struct *p, struct dfs_GetDcAddress *r);
-WERROR _dfs_SetDcAddress(pipes_struct *p, struct dfs_SetDcAddress *r);
-WERROR _dfs_FlushFtTable(pipes_struct *p, struct dfs_FlushFtTable *r);
-WERROR _dfs_Add2(pipes_struct *p, struct dfs_Add2 *r);
-WERROR _dfs_Remove2(pipes_struct *p, struct dfs_Remove2 *r);
-WERROR _dfs_EnumEx(pipes_struct *p, struct dfs_EnumEx *r);
-WERROR _dfs_SetInfo2(pipes_struct *p, struct dfs_SetInfo2 *r);
 
 /* The following definitions come from rpc_server/srv_dssetup_nt.c  */
 
-WERROR _dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p,
-						  struct dssetup_DsRoleGetPrimaryDomainInformation *r);
-WERROR _dssetup_DsRoleDnsNameToFlatName(pipes_struct *p,
-					struct dssetup_DsRoleDnsNameToFlatName *r);
-WERROR _dssetup_DsRoleDcAsDc(pipes_struct *p,
-			     struct dssetup_DsRoleDcAsDc *r);
-WERROR _dssetup_DsRoleDcAsReplica(pipes_struct *p,
-				  struct dssetup_DsRoleDcAsReplica *r);
-WERROR _dssetup_DsRoleDemoteDc(pipes_struct *p,
-			       struct dssetup_DsRoleDemoteDc *r);
-WERROR _dssetup_DsRoleGetDcOperationProgress(pipes_struct *p,
-					     struct dssetup_DsRoleGetDcOperationProgress *r);
-WERROR _dssetup_DsRoleGetDcOperationResults(pipes_struct *p,
-					    struct dssetup_DsRoleGetDcOperationResults *r);
-WERROR _dssetup_DsRoleCancel(pipes_struct *p,
-			     struct dssetup_DsRoleCancel *r);
-WERROR _dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p,
-						struct dssetup_DsRoleServerSaveStateForUpgrade *r);
-WERROR _dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p,
-					     struct dssetup_DsRoleUpgradeDownlevelServer *r);
-WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p,
-						  struct dssetup_DsRoleAbortDownlevelServerUpgrade *r);
-
 /* The following definitions come from rpc_server/srv_echo_nt.c  */
-
-void _echo_AddOne(pipes_struct *p, struct echo_AddOne *r );
-void _echo_EchoData(pipes_struct *p, struct echo_EchoData *r);
-void _echo_SinkData(pipes_struct *p, struct echo_SinkData *r);
-void _echo_SourceData(pipes_struct *p, struct echo_SourceData *r);
-void _echo_TestCall(pipes_struct *p, struct echo_TestCall *r);
-NTSTATUS _echo_TestCall2(pipes_struct *p, struct echo_TestCall2 *r);
-uint32 _echo_TestSleep(pipes_struct *p, struct echo_TestSleep *r);
-void _echo_TestEnum(pipes_struct *p, struct echo_TestEnum *r);
-void _echo_TestSurrounding(pipes_struct *p, struct echo_TestSurrounding *r);
-uint16 _echo_TestDoublePointer(pipes_struct *p, struct echo_TestDoublePointer *r);
 
 /* The following definitions come from rpc_server/srv_eventlog.c  */
 
@@ -8341,43 +8284,11 @@ bool parse_logentry( char *line, Eventlog_entry * entry, bool * eor );
 
 /* The following definitions come from rpc_server/srv_eventlog_nt.c  */
 
-NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
-				 struct eventlog_OpenEventLogW *r);
-NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
-				  struct eventlog_ClearEventLogW *r);
-NTSTATUS _eventlog_CloseEventLog( pipes_struct * p, struct eventlog_CloseEventLog *r );
 NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 				EVENTLOG_Q_READ_EVENTLOG * q_u,
 				EVENTLOG_R_READ_EVENTLOG * r_u );
-NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p,
-				   struct eventlog_GetOldestRecord *r);
-NTSTATUS _eventlog_GetNumRecords(pipes_struct *p,
-				 struct eventlog_GetNumRecords *r);
-NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventLogW *r);
-NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r);
-NTSTATUS _eventlog_ChangeNotify(pipes_struct *p, struct eventlog_ChangeNotify *r);
-NTSTATUS _eventlog_RegisterEventSourceW(pipes_struct *p, struct eventlog_RegisterEventSourceW *r);
-NTSTATUS _eventlog_OpenBackupEventLogW(pipes_struct *p, struct eventlog_OpenBackupEventLogW *r);
-NTSTATUS _eventlog_ReadEventLogW(pipes_struct *p, struct eventlog_ReadEventLogW *r);
-NTSTATUS _eventlog_ReportEventW(pipes_struct *p, struct eventlog_ReportEventW *r);
-NTSTATUS _eventlog_ClearEventLogA(pipes_struct *p, struct eventlog_ClearEventLogA *r);
-NTSTATUS _eventlog_BackupEventLogA(pipes_struct *p, struct eventlog_BackupEventLogA *r);
-NTSTATUS _eventlog_OpenEventLogA(pipes_struct *p, struct eventlog_OpenEventLogA *r);
-NTSTATUS _eventlog_RegisterEventSourceA(pipes_struct *p, struct eventlog_RegisterEventSourceA *r);
-NTSTATUS _eventlog_OpenBackupEventLogA(pipes_struct *p, struct eventlog_OpenBackupEventLogA *r);
-NTSTATUS _eventlog_ReadEventLogA(pipes_struct *p, struct eventlog_ReadEventLogA *r);
-NTSTATUS _eventlog_ReportEventA(pipes_struct *p, struct eventlog_ReportEventA *r);
-NTSTATUS _eventlog_RegisterClusterSvc(pipes_struct *p, struct eventlog_RegisterClusterSvc *r);
-NTSTATUS _eventlog_DeregisterClusterSvc(pipes_struct *p, struct eventlog_DeregisterClusterSvc *r);
-NTSTATUS _eventlog_WriteClusterEvents(pipes_struct *p, struct eventlog_WriteClusterEvents *r);
-NTSTATUS _eventlog_GetLogIntormation(pipes_struct *p, struct eventlog_GetLogIntormation *r);
-NTSTATUS _eventlog_FlushEventLog(pipes_struct *p, struct eventlog_FlushEventLog *r);
 
 /* The following definitions come from rpc_server/srv_initshutdown_nt.c  */
-
-WERROR _initshutdown_Init(pipes_struct *p, struct initshutdown_Init *r);
-WERROR _initshutdown_InitEx(pipes_struct *p, struct initshutdown_InitEx *r);
-WERROR _initshutdown_Abort(pipes_struct *p, struct initshutdown_Abort *r);
 
 /* The following definitions come from rpc_server/srv_lsa_hnd.c  */
 
@@ -8390,213 +8301,7 @@ bool pipe_access_check(pipes_struct *p);
 
 /* The following definitions come from rpc_server/srv_lsa_nt.c  */
 
-NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
-			  struct lsa_OpenPolicy2 *r);
-NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
-			 struct lsa_OpenPolicy *r);
-NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
-			   struct lsa_EnumTrustDom *r);
-NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
-			      struct lsa_QueryInfoPolicy *r);
-NTSTATUS _lsa_LookupSids(pipes_struct *p,
-			 struct lsa_LookupSids *r);
-NTSTATUS _lsa_LookupSids2(pipes_struct *p,
-			  struct lsa_LookupSids2 *r);
-NTSTATUS _lsa_LookupSids3(pipes_struct *p,
-			  struct lsa_LookupSids3 *r);
-NTSTATUS _lsa_LookupNames(pipes_struct *p,
-			  struct lsa_LookupNames *r);
-NTSTATUS _lsa_LookupNames2(pipes_struct *p,
-			   struct lsa_LookupNames2 *r);
-NTSTATUS _lsa_LookupNames3(pipes_struct *p,
-			   struct lsa_LookupNames3 *r);
-NTSTATUS _lsa_LookupNames4(pipes_struct *p,
-			   struct lsa_LookupNames4 *r);
-NTSTATUS _lsa_Close(pipes_struct *p, struct lsa_Close *r);
-NTSTATUS _lsa_OpenSecret(pipes_struct *p, struct lsa_OpenSecret *r);
-NTSTATUS _lsa_OpenTrustedDomain(pipes_struct *p, struct lsa_OpenTrustedDomain *r);
-NTSTATUS _lsa_CreateTrustedDomain(pipes_struct *p, struct lsa_CreateTrustedDomain *r);
-NTSTATUS _lsa_CreateSecret(pipes_struct *p, struct lsa_CreateSecret *r);
-NTSTATUS _lsa_SetSecret(pipes_struct *p, struct lsa_SetSecret *r);
-NTSTATUS _lsa_DeleteObject(pipes_struct *p,
-			   struct lsa_DeleteObject *r);
-NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
-			struct lsa_EnumPrivs *r);
-NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p,
-				    struct lsa_LookupPrivDisplayName *r);
-NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
-			   struct lsa_EnumAccounts *r);
-NTSTATUS _lsa_GetUserName(pipes_struct *p,
-			  struct lsa_GetUserName *r);
-NTSTATUS _lsa_CreateAccount(pipes_struct *p,
-			    struct lsa_CreateAccount *r);
-NTSTATUS _lsa_OpenAccount(pipes_struct *p,
-			  struct lsa_OpenAccount *r);
-NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
-			       struct lsa_EnumPrivsAccount *r);
-NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
-				     struct lsa_GetSystemAccessAccount *r);
-NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
-				     struct lsa_SetSystemAccessAccount *r);
-NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p,
-				     struct lsa_AddPrivilegesToAccount *r);
-NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p,
-					  struct lsa_RemovePrivilegesFromAccount *r);
-NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
-			    struct lsa_QuerySecurity *r);
-NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
-			       struct lsa_AddAccountRights *r);
-NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
-				  struct lsa_RemoveAccountRights *r);
-NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
-				struct lsa_EnumAccountRights *r);
-NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
-			      struct lsa_LookupPrivValue *r);
-NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r);
-NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r);
-NTSTATUS _lsa_ChangePassword(pipes_struct *p, struct lsa_ChangePassword *r);
-NTSTATUS _lsa_SetInfoPolicy(pipes_struct *p, struct lsa_SetInfoPolicy *r);
-NTSTATUS _lsa_ClearAuditLog(pipes_struct *p, struct lsa_ClearAuditLog *r);
-NTSTATUS _lsa_GetQuotasForAccount(pipes_struct *p, struct lsa_GetQuotasForAccount *r);
-NTSTATUS _lsa_SetQuotasForAccount(pipes_struct *p, struct lsa_SetQuotasForAccount *r);
-NTSTATUS _lsa_QueryTrustedDomainInfo(pipes_struct *p, struct lsa_QueryTrustedDomainInfo *r);
-NTSTATUS _lsa_SetInformationTrustedDomain(pipes_struct *p, struct lsa_SetInformationTrustedDomain *r);
-NTSTATUS _lsa_QuerySecret(pipes_struct *p, struct lsa_QuerySecret *r);
-NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r);
-NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r);
-NTSTATUS _lsa_QueryTrustedDomainInfoBySid(pipes_struct *p, struct lsa_QueryTrustedDomainInfoBySid *r);
-NTSTATUS _lsa_SetTrustedDomainInfo(pipes_struct *p, struct lsa_SetTrustedDomainInfo *r);
-NTSTATUS _lsa_DeleteTrustedDomain(pipes_struct *p, struct lsa_DeleteTrustedDomain *r);
-NTSTATUS _lsa_StorePrivateData(pipes_struct *p, struct lsa_StorePrivateData *r);
-NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateData *r);
-NTSTATUS _lsa_QueryInfoPolicy2(pipes_struct *p, struct lsa_QueryInfoPolicy2 *r);
-NTSTATUS _lsa_SetInfoPolicy2(pipes_struct *p, struct lsa_SetInfoPolicy2 *r);
-NTSTATUS _lsa_QueryTrustedDomainInfoByName(pipes_struct *p, struct lsa_QueryTrustedDomainInfoByName *r);
-NTSTATUS _lsa_SetTrustedDomainInfoByName(pipes_struct *p, struct lsa_SetTrustedDomainInfoByName *r);
-NTSTATUS _lsa_EnumTrustedDomainsEx(pipes_struct *p, struct lsa_EnumTrustedDomainsEx *r);
-NTSTATUS _lsa_CreateTrustedDomainEx(pipes_struct *p, struct lsa_CreateTrustedDomainEx *r);
-NTSTATUS _lsa_CloseTrustedDomainEx(pipes_struct *p, struct lsa_CloseTrustedDomainEx *r);
-NTSTATUS _lsa_QueryDomainInformationPolicy(pipes_struct *p, struct lsa_QueryDomainInformationPolicy *r);
-NTSTATUS _lsa_SetDomainInformationPolicy(pipes_struct *p, struct lsa_SetDomainInformationPolicy *r);
-NTSTATUS _lsa_OpenTrustedDomainByName(pipes_struct *p, struct lsa_OpenTrustedDomainByName *r);
-NTSTATUS _lsa_TestCall(pipes_struct *p, struct lsa_TestCall *r);
-NTSTATUS _lsa_CreateTrustedDomainEx2(pipes_struct *p, struct lsa_CreateTrustedDomainEx2 *r);
-NTSTATUS _lsa_CREDRWRITE(pipes_struct *p, struct lsa_CREDRWRITE *r);
-NTSTATUS _lsa_CREDRREAD(pipes_struct *p, struct lsa_CREDRREAD *r);
-NTSTATUS _lsa_CREDRENUMERATE(pipes_struct *p, struct lsa_CREDRENUMERATE *r);
-NTSTATUS _lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p, struct lsa_CREDRWRITEDOMAINCREDENTIALS *r);
-NTSTATUS _lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p, struct lsa_CREDRREADDOMAINCREDENTIALS *r);
-NTSTATUS _lsa_CREDRDELETE(pipes_struct *p, struct lsa_CREDRDELETE *r);
-NTSTATUS _lsa_CREDRGETTARGETINFO(pipes_struct *p, struct lsa_CREDRGETTARGETINFO *r);
-NTSTATUS _lsa_CREDRPROFILELOADED(pipes_struct *p, struct lsa_CREDRPROFILELOADED *r);
-NTSTATUS _lsa_CREDRGETSESSIONTYPES(pipes_struct *p, struct lsa_CREDRGETSESSIONTYPES *r);
-NTSTATUS _lsa_LSARREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARREGISTERAUDITEVENT *r);
-NTSTATUS _lsa_LSARGENAUDITEVENT(pipes_struct *p, struct lsa_LSARGENAUDITEVENT *r);
-NTSTATUS _lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARUNREGISTERAUDITEVENT *r);
-NTSTATUS _lsa_lsaRQueryForestTrustInformation(pipes_struct *p, struct lsa_lsaRQueryForestTrustInformation *r);
-NTSTATUS _lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARSETFORESTTRUSTINFORMATION *r);
-NTSTATUS _lsa_CREDRRENAME(pipes_struct *p, struct lsa_CREDRRENAME *r);
-NTSTATUS _lsa_LSAROPENPOLICYSCE(pipes_struct *p, struct lsa_LSAROPENPOLICYSCE *r);
-NTSTATUS _lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r);
-NTSTATUS _lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r);
-NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p, struct lsa_LSARADTREPORTSECURITYEVENT *r);
-
 /* The following definitions come from rpc_server/srv_netlog_nt.c  */
-
-WERROR _netr_LogonControl(pipes_struct *p,
-			  struct netr_LogonControl *r);
-WERROR _netr_LogonControl2(pipes_struct *p,
-			   struct netr_LogonControl2 *r);
-WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
-					 struct netr_NetrEnumerateTrustedDomains *r);
-NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
-				  struct netr_ServerReqChallenge *r);
-NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
-				  struct netr_ServerAuthenticate *r);
-NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
-				   struct netr_ServerAuthenticate2 *r);
-NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
-				 struct netr_ServerPasswordSet *r);
-NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
-			      struct netr_LogonSamLogoff *r);
-NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
-			     struct netr_LogonSamLogon *r);
-NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
-			       struct netr_LogonSamLogonEx *r);
-WERROR _netr_LogonUasLogon(pipes_struct *p,
-			   struct netr_LogonUasLogon *r);
-WERROR _netr_LogonUasLogoff(pipes_struct *p,
-			    struct netr_LogonUasLogoff *r);
-NTSTATUS _netr_DatabaseDeltas(pipes_struct *p,
-			      struct netr_DatabaseDeltas *r);
-NTSTATUS _netr_DatabaseSync(pipes_struct *p,
-			    struct netr_DatabaseSync *r);
-NTSTATUS _netr_AccountDeltas(pipes_struct *p,
-			     struct netr_AccountDeltas *r);
-NTSTATUS _netr_AccountSync(pipes_struct *p,
-			   struct netr_AccountSync *r);
-WERROR _netr_GetDcName(pipes_struct *p,
-		       struct netr_GetDcName *r);
-WERROR _netr_GetAnyDCName(pipes_struct *p,
-			  struct netr_GetAnyDCName *r);
-NTSTATUS _netr_DatabaseSync2(pipes_struct *p,
-			     struct netr_DatabaseSync2 *r);
-NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
-			    struct netr_DatabaseRedo *r);
-WERROR _netr_LogonControl2Ex(pipes_struct *p,
-			     struct netr_LogonControl2Ex *r);
-WERROR _netr_DsRGetDCName(pipes_struct *p,
-			  struct netr_DsRGetDCName *r);
-WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
-				    struct netr_NETRLOGONDUMMYROUTINE1 *r);
-WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
-				     struct netr_NETRLOGONSETSERVICEBITS *r);
-WERROR _netr_LogonGetTrustRid(pipes_struct *p,
-			      struct netr_LogonGetTrustRid *r);
-WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p,
-					  struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
-WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
-					  struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r);
-NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
-				   struct netr_ServerAuthenticate3 *r);
-WERROR _netr_DsRGetDCNameEx(pipes_struct *p,
-			    struct netr_DsRGetDCNameEx *r);
-WERROR _netr_DsRGetSiteName(pipes_struct *p,
-			    struct netr_DsRGetSiteName *r);
-NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
-				  struct netr_LogonGetDomainInfo *r);
-NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
-				  struct netr_ServerPasswordSet2 *r);
-WERROR _netr_ServerPasswordGet(pipes_struct *p,
-			       struct netr_ServerPasswordGet *r);
-WERROR _netr_NETRLOGONSENDTOSAM(pipes_struct *p,
-				struct netr_NETRLOGONSENDTOSAM *r);
-WERROR _netr_DsRAddressToSitenamesW(pipes_struct *p,
-				    struct netr_DsRAddressToSitenamesW *r);
-WERROR _netr_DsRGetDCNameEx2(pipes_struct *p,
-			     struct netr_DsRGetDCNameEx2 *r);
-WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p,
-						 struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r);
-WERROR _netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p,
-					   struct netr_NetrEnumerateTrustedDomainsEx *r);
-WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p,
-				      struct netr_DsRAddressToSitenamesExW *r);
-WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
-				   struct netr_DsrGetDcSiteCoverageW *r);
-WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p,
-				      struct netr_DsrEnumerateDomainTrusts *r);
-WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p,
-					 struct netr_DsrDeregisterDNSHostRecords *r);
-NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p,
-				       struct netr_ServerTrustPasswordsGet *r);
-WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
-					  struct netr_DsRGetForestTrustInformation *r);
-WERROR _netr_GetForestTrustInformation(pipes_struct *p,
-				       struct netr_GetForestTrustInformation *r);
-NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
-				      struct netr_LogonSamLogonWithFlags *r);
-WERROR _netr_NETRSERVERGETTRUSTINFO(pipes_struct *p,
-				    struct netr_NETRSERVERGETTRUSTINFO *r);
 
 /* The following definitions come from rpc_server/srv_ntsvcs.c  */
 
@@ -8605,138 +8310,8 @@ NTSTATUS rpc_ntsvcs2_init(void);
 
 /* The following definitions come from rpc_server/srv_ntsvcs_nt.c  */
 
-WERROR _PNP_GetVersion(pipes_struct *p,
-		       struct PNP_GetVersion *r);
-WERROR _PNP_GetDeviceListSize(pipes_struct *p,
-			      struct PNP_GetDeviceListSize *r);
 WERROR _ntsvcs_get_device_list( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST *q_u, NTSVCS_R_GET_DEVICE_LIST *r_u );
 WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG_PROPERTY *q_u, NTSVCS_R_GET_DEVICE_REG_PROPERTY *r_u );
-WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
-				   struct PNP_ValidateDeviceInstance *r);
-WERROR _PNP_GetHwProfInfo(pipes_struct *p,
-			  struct PNP_GetHwProfInfo *r);
-WERROR _PNP_HwProfFlags(pipes_struct *p,
-			struct PNP_HwProfFlags *r);
-WERROR _PNP_Disconnect(pipes_struct *p,
-		       struct PNP_Disconnect *r);
-WERROR _PNP_Connect(pipes_struct *p,
-		    struct PNP_Connect *r);
-WERROR _PNP_GetGlobalState(pipes_struct *p,
-			   struct PNP_GetGlobalState *r);
-WERROR _PNP_InitDetection(pipes_struct *p,
-			  struct PNP_InitDetection *r);
-WERROR _PNP_ReportLogOn(pipes_struct *p,
-			struct PNP_ReportLogOn *r);
-WERROR _PNP_GetRootDeviceInstance(pipes_struct *p,
-				  struct PNP_GetRootDeviceInstance *r);
-WERROR _PNP_GetRelatedDeviceInstance(pipes_struct *p,
-				     struct PNP_GetRelatedDeviceInstance *r);
-WERROR _PNP_EnumerateSubKeys(pipes_struct *p,
-			     struct PNP_EnumerateSubKeys *r);
-WERROR _PNP_GetDeviceList(pipes_struct *p,
-			  struct PNP_GetDeviceList *r);
-WERROR _PNP_GetDepth(pipes_struct *p,
-		     struct PNP_GetDepth *r);
-WERROR _PNP_GetDeviceRegProp(pipes_struct *p,
-			     struct PNP_GetDeviceRegProp *r);
-WERROR _PNP_SetDeviceRegProp(pipes_struct *p,
-			     struct PNP_SetDeviceRegProp *r);
-WERROR _PNP_GetClassInstance(pipes_struct *p,
-			     struct PNP_GetClassInstance *r);
-WERROR _PNP_CreateKey(pipes_struct *p,
-		      struct PNP_CreateKey *r);
-WERROR _PNP_DeleteRegistryKey(pipes_struct *p,
-			      struct PNP_DeleteRegistryKey *r);
-WERROR _PNP_GetClassCount(pipes_struct *p,
-			  struct PNP_GetClassCount *r);
-WERROR _PNP_GetClassName(pipes_struct *p,
-			 struct PNP_GetClassName *r);
-WERROR _PNP_DeleteClassKey(pipes_struct *p,
-			   struct PNP_DeleteClassKey *r);
-WERROR _PNP_GetInterfaceDeviceAlias(pipes_struct *p,
-				    struct PNP_GetInterfaceDeviceAlias *r);
-WERROR _PNP_GetInterfaceDeviceList(pipes_struct *p,
-				   struct PNP_GetInterfaceDeviceList *r);
-WERROR _PNP_GetInterfaceDeviceListSize(pipes_struct *p,
-				       struct PNP_GetInterfaceDeviceListSize *r);
-WERROR _PNP_RegisterDeviceClassAssociation(pipes_struct *p,
-					   struct PNP_RegisterDeviceClassAssociation *r);
-WERROR _PNP_UnregisterDeviceClassAssociation(pipes_struct *p,
-					     struct PNP_UnregisterDeviceClassAssociation *r);
-WERROR _PNP_GetClassRegProp(pipes_struct *p,
-			    struct PNP_GetClassRegProp *r);
-WERROR _PNP_SetClassRegProp(pipes_struct *p,
-			    struct PNP_SetClassRegProp *r);
-WERROR _PNP_CreateDevInst(pipes_struct *p,
-			  struct PNP_CreateDevInst *r);
-WERROR _PNP_DeviceInstanceAction(pipes_struct *p,
-				 struct PNP_DeviceInstanceAction *r);
-WERROR _PNP_GetDeviceStatus(pipes_struct *p,
-			    struct PNP_GetDeviceStatus *r);
-WERROR _PNP_SetDeviceProblem(pipes_struct *p,
-			     struct PNP_SetDeviceProblem *r);
-WERROR _PNP_DisableDevInst(pipes_struct *p,
-			   struct PNP_DisableDevInst *r);
-WERROR _PNP_UninstallDevInst(pipes_struct *p,
-			     struct PNP_UninstallDevInst *r);
-WERROR _PNP_AddID(pipes_struct *p,
-		  struct PNP_AddID *r);
-WERROR _PNP_RegisterDriver(pipes_struct *p,
-			   struct PNP_RegisterDriver *r);
-WERROR _PNP_QueryRemove(pipes_struct *p,
-			struct PNP_QueryRemove *r);
-WERROR _PNP_RequestDeviceEject(pipes_struct *p,
-			       struct PNP_RequestDeviceEject *r);
-WERROR _PNP_IsDockStationPresent(pipes_struct *p,
-				 struct PNP_IsDockStationPresent *r);
-WERROR _PNP_RequestEjectPC(pipes_struct *p,
-			   struct PNP_RequestEjectPC *r);
-WERROR _PNP_AddEmptyLogConf(pipes_struct *p,
-			    struct PNP_AddEmptyLogConf *r);
-WERROR _PNP_FreeLogConf(pipes_struct *p,
-			struct PNP_FreeLogConf *r);
-WERROR _PNP_GetFirstLogConf(pipes_struct *p,
-			    struct PNP_GetFirstLogConf *r);
-WERROR _PNP_GetNextLogConf(pipes_struct *p,
-			   struct PNP_GetNextLogConf *r);
-WERROR _PNP_GetLogConfPriority(pipes_struct *p,
-			       struct PNP_GetLogConfPriority *r);
-WERROR _PNP_AddResDes(pipes_struct *p,
-		      struct PNP_AddResDes *r);
-WERROR _PNP_FreeResDes(pipes_struct *p,
-		       struct PNP_FreeResDes *r);
-WERROR _PNP_GetNextResDes(pipes_struct *p,
-			  struct PNP_GetNextResDes *r);
-WERROR _PNP_GetResDesData(pipes_struct *p,
-			  struct PNP_GetResDesData *r);
-WERROR _PNP_GetResDesDataSize(pipes_struct *p,
-			      struct PNP_GetResDesDataSize *r);
-WERROR _PNP_ModifyResDes(pipes_struct *p,
-			 struct PNP_ModifyResDes *r);
-WERROR _PNP_DetectResourceLimit(pipes_struct *p,
-				struct PNP_DetectResourceLimit *r);
-WERROR _PNP_QueryResConfList(pipes_struct *p,
-			     struct PNP_QueryResConfList *r);
-WERROR _PNP_SetHwProf(pipes_struct *p,
-		      struct PNP_SetHwProf *r);
-WERROR _PNP_QueryArbitratorFreeData(pipes_struct *p,
-				    struct PNP_QueryArbitratorFreeData *r);
-WERROR _PNP_QueryArbitratorFreeSize(pipes_struct *p,
-				    struct PNP_QueryArbitratorFreeSize *r);
-WERROR _PNP_RunDetection(pipes_struct *p,
-			 struct PNP_RunDetection *r);
-WERROR _PNP_RegisterNotification(pipes_struct *p,
-				 struct PNP_RegisterNotification *r);
-WERROR _PNP_UnregisterNotification(pipes_struct *p,
-				   struct PNP_UnregisterNotification *r);
-WERROR _PNP_GetCustomDevProp(pipes_struct *p,
-			     struct PNP_GetCustomDevProp *r);
-WERROR _PNP_GetVersionInternal(pipes_struct *p,
-			       struct PNP_GetVersionInternal *r);
-WERROR _PNP_GetBlockedDriverInfo(pipes_struct *p,
-				 struct PNP_GetBlockedDriverInfo *r);
-WERROR _PNP_GetServerSideDeviceInstallFlags(pipes_struct *p,
-					    struct PNP_GetServerSideDeviceInstallFlags *r);
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
@@ -8787,142 +8362,6 @@ ssize_t read_from_internal_pipe(struct pipes_struct *p, char *data, size_t n,
 ssize_t write_to_internal_pipe(struct pipes_struct *p, char *data, size_t n);
 
 /* The following definitions come from rpc_server/srv_samr_nt.c  */
-
-NTSTATUS _samr_Close(pipes_struct *p, struct samr_Close *r);
-NTSTATUS _samr_OpenDomain(pipes_struct *p,
-			  struct samr_OpenDomain *r);
-NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
-			     struct samr_GetUserPwInfo *r);
-NTSTATUS _samr_SetSecurity(pipes_struct *p,
-			   struct samr_SetSecurity *r);
-NTSTATUS _samr_QuerySecurity(pipes_struct *p,
-			     struct samr_QuerySecurity *r);
-NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
-			       struct samr_EnumDomainUsers *r);
-NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
-				struct samr_EnumDomainGroups *r);
-NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
-				 struct samr_EnumDomainAliases *r);
-NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
-				struct samr_QueryDisplayInfo *r);
-NTSTATUS _samr_QueryDisplayInfo2(pipes_struct *p,
-				 struct samr_QueryDisplayInfo2 *r);
-NTSTATUS _samr_QueryDisplayInfo3(pipes_struct *p,
-				 struct samr_QueryDisplayInfo3 *r);
-NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
-			      struct samr_QueryAliasInfo *r);
-NTSTATUS _samr_LookupNames(pipes_struct *p,
-			   struct samr_LookupNames *r);
-NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
-				   struct samr_ChangePasswordUser2 *r);
-NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
-				   struct samr_ChangePasswordUser3 *r);
-NTSTATUS _samr_LookupRids(pipes_struct *p,
-			  struct samr_LookupRids *r);
-NTSTATUS _samr_OpenUser(pipes_struct *p,
-			struct samr_OpenUser *r);
-NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
-			     struct samr_QueryUserInfo *r);
-NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
-				struct samr_GetGroupsForUser *r);
-NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
-			       struct samr_QueryDomainInfo *r);
-NTSTATUS _samr_CreateUser2(pipes_struct *p,
-			   struct samr_CreateUser2 *r);
-NTSTATUS _samr_Connect(pipes_struct *p,
-		       struct samr_Connect *r);
-NTSTATUS _samr_Connect2(pipes_struct *p,
-			struct samr_Connect2 *r);
-NTSTATUS _samr_Connect4(pipes_struct *p,
-			struct samr_Connect4 *r);
-NTSTATUS _samr_Connect5(pipes_struct *p,
-			struct samr_Connect5 *r);
-NTSTATUS _samr_LookupDomain(pipes_struct *p,
-			    struct samr_LookupDomain *r);
-NTSTATUS _samr_EnumDomains(pipes_struct *p,
-			   struct samr_EnumDomains *r);
-NTSTATUS _samr_OpenAlias(pipes_struct *p,
-			 struct samr_OpenAlias *r);
-NTSTATUS _samr_SetUserInfo(pipes_struct *p,
-			   struct samr_SetUserInfo *r);
-NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
-			    struct samr_SetUserInfo2 *r);
-NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
-				  struct samr_GetAliasMembership *r);
-NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
-				 struct samr_GetMembersInAlias *r);
-NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
-				struct samr_QueryGroupMember *r);
-NTSTATUS _samr_AddAliasMember(pipes_struct *p,
-			      struct samr_AddAliasMember *r);
-NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
-				 struct samr_DeleteAliasMember *r);
-NTSTATUS _samr_AddGroupMember(pipes_struct *p,
-			      struct samr_AddGroupMember *r);
-NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
-				 struct samr_DeleteGroupMember *r);
-NTSTATUS _samr_DeleteUser(pipes_struct *p,
-			  struct samr_DeleteUser *r);
-NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
-				 struct samr_DeleteDomainGroup *r);
-NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
-			      struct samr_DeleteDomAlias *r);
-NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
-				 struct samr_CreateDomainGroup *r);
-NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
-			      struct samr_CreateDomAlias *r);
-NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
-			      struct samr_QueryGroupInfo *r);
-NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
-			    struct samr_SetGroupInfo *r);
-NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
-			    struct samr_SetAliasInfo *r);
-NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
-			    struct samr_GetDomPwInfo *r);
-NTSTATUS _samr_OpenGroup(pipes_struct *p,
-			 struct samr_OpenGroup *r);
-NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
-					     struct samr_RemoveMemberFromForeignDomain *r);
-NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
-				struct samr_QueryDomainInfo2 *r);
-NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
-			     struct samr_SetDomainInfo *r);
-NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
-					  struct samr_GetDisplayEnumerationIndex *r);
-NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
-					   struct samr_GetDisplayEnumerationIndex2 *r);
-NTSTATUS _samr_Shutdown(pipes_struct *p,
-			struct samr_Shutdown *r);
-NTSTATUS _samr_CreateUser(pipes_struct *p,
-			  struct samr_CreateUser *r);
-NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
-					  struct samr_SetMemberAttributesOfGroup *r);
-NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
-				  struct samr_ChangePasswordUser *r);
-NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
-					  struct samr_TestPrivateFunctionsDomain *r);
-NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
-					struct samr_TestPrivateFunctionsUser *r);
-NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
-			      struct samr_QueryUserInfo2 *r);
-NTSTATUS _samr_AddMultipleMembersToAlias(pipes_struct *p,
-					 struct samr_AddMultipleMembersToAlias *r);
-NTSTATUS _samr_RemoveMultipleMembersFromAlias(pipes_struct *p,
-					      struct samr_RemoveMultipleMembersFromAlias *r);
-NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
-				      struct samr_OemChangePasswordUser2 *r);
-NTSTATUS _samr_SetBootKeyInformation(pipes_struct *p,
-				     struct samr_SetBootKeyInformation *r);
-NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
-				     struct samr_GetBootKeyInformation *r);
-NTSTATUS _samr_Connect3(pipes_struct *p,
-			struct samr_Connect3 *r);
-NTSTATUS _samr_RidToSid(pipes_struct *p,
-			struct samr_RidToSid *r);
-NTSTATUS _samr_SetDsrmPassword(pipes_struct *p,
-			       struct samr_SetDsrmPassword *r);
-NTSTATUS _samr_ValidatePassword(pipes_struct *p,
-				struct samr_ValidatePassword *r);
 
 /* The following definitions come from rpc_server/srv_samr_util.c  */
 
@@ -9083,79 +8522,7 @@ WERROR _spoolss_xcvdataport(pipes_struct *p, SPOOL_Q_XCVDATAPORT *q_u, SPOOL_R_X
 
 /* The following definitions come from rpc_server/srv_srvsvc_nt.c  */
 
-WERROR _srvsvc_NetFileEnum(pipes_struct *p,
-			   struct srvsvc_NetFileEnum *r);
-WERROR _srvsvc_NetSrvGetInfo(pipes_struct *p,
-			     struct srvsvc_NetSrvGetInfo *r);
-WERROR _srvsvc_NetSrvSetInfo(pipes_struct *p,
-			     struct srvsvc_NetSrvSetInfo *r);
-WERROR _srvsvc_NetConnEnum(pipes_struct *p,
-			   struct srvsvc_NetConnEnum *r);
-WERROR _srvsvc_NetSessEnum(pipes_struct *p,
-			   struct srvsvc_NetSessEnum *r);
-WERROR _srvsvc_NetSessDel(pipes_struct *p,
-			  struct srvsvc_NetSessDel *r);
-WERROR _srvsvc_NetShareEnumAll(pipes_struct *p,
-			       struct srvsvc_NetShareEnumAll *r);
-WERROR _srvsvc_NetShareEnum(pipes_struct *p,
-			    struct srvsvc_NetShareEnum *r);
-WERROR _srvsvc_NetShareGetInfo(pipes_struct *p,
-			       struct srvsvc_NetShareGetInfo *r);
 char *valid_share_pathname(TALLOC_CTX *ctx, const char *dos_pathname);
-WERROR _srvsvc_NetShareSetInfo(pipes_struct *p,
-			       struct srvsvc_NetShareSetInfo *r);
-WERROR _srvsvc_NetShareAdd(pipes_struct *p,
-			   struct srvsvc_NetShareAdd *r);
-WERROR _srvsvc_NetShareDel(pipes_struct *p,
-			   struct srvsvc_NetShareDel *r);
-WERROR _srvsvc_NetShareDelSticky(pipes_struct *p,
-				 struct srvsvc_NetShareDelSticky *r);
-WERROR _srvsvc_NetRemoteTOD(pipes_struct *p,
-			    struct srvsvc_NetRemoteTOD *r);
-WERROR _srvsvc_NetGetFileSecurity(pipes_struct *p,
-				  struct srvsvc_NetGetFileSecurity *r);
-WERROR _srvsvc_NetSetFileSecurity(pipes_struct *p,
-				  struct srvsvc_NetSetFileSecurity *r);
-WERROR _srvsvc_NetDiskEnum(pipes_struct *p,
-			   struct srvsvc_NetDiskEnum *r);
-WERROR _srvsvc_NetNameValidate(pipes_struct *p,
-			       struct srvsvc_NetNameValidate *r);
-WERROR _srvsvc_NetFileClose(pipes_struct *p, struct srvsvc_NetFileClose *r);
-WERROR _srvsvc_NetCharDevEnum(pipes_struct *p, struct srvsvc_NetCharDevEnum *r);
-WERROR _srvsvc_NetCharDevGetInfo(pipes_struct *p, struct srvsvc_NetCharDevGetInfo *r);
-WERROR _srvsvc_NetCharDevControl(pipes_struct *p, struct srvsvc_NetCharDevControl *r);
-WERROR _srvsvc_NetCharDevQEnum(pipes_struct *p, struct srvsvc_NetCharDevQEnum *r);
-WERROR _srvsvc_NetCharDevQGetInfo(pipes_struct *p, struct srvsvc_NetCharDevQGetInfo *r);
-WERROR _srvsvc_NetCharDevQSetInfo(pipes_struct *p, struct srvsvc_NetCharDevQSetInfo *r);
-WERROR _srvsvc_NetCharDevQPurge(pipes_struct *p, struct srvsvc_NetCharDevQPurge *r);
-WERROR _srvsvc_NetCharDevQPurgeSelf(pipes_struct *p, struct srvsvc_NetCharDevQPurgeSelf *r);
-WERROR _srvsvc_NetFileGetInfo(pipes_struct *p, struct srvsvc_NetFileGetInfo *r);
-WERROR _srvsvc_NetShareCheck(pipes_struct *p, struct srvsvc_NetShareCheck *r);
-WERROR _srvsvc_NetServerStatisticsGet(pipes_struct *p, struct srvsvc_NetServerStatisticsGet *r);
-WERROR _srvsvc_NetTransportAdd(pipes_struct *p, struct srvsvc_NetTransportAdd *r);
-WERROR _srvsvc_NetTransportEnum(pipes_struct *p, struct srvsvc_NetTransportEnum *r);
-WERROR _srvsvc_NetTransportDel(pipes_struct *p, struct srvsvc_NetTransportDel *r);
-WERROR _srvsvc_NetSetServiceBits(pipes_struct *p, struct srvsvc_NetSetServiceBits *r);
-WERROR _srvsvc_NetPathType(pipes_struct *p, struct srvsvc_NetPathType *r);
-WERROR _srvsvc_NetPathCanonicalize(pipes_struct *p, struct srvsvc_NetPathCanonicalize *r);
-WERROR _srvsvc_NetPathCompare(pipes_struct *p, struct srvsvc_NetPathCompare *r);
-WERROR _srvsvc_NETRPRNAMECANONICALIZE(pipes_struct *p, struct srvsvc_NETRPRNAMECANONICALIZE *r);
-WERROR _srvsvc_NetPRNameCompare(pipes_struct *p, struct srvsvc_NetPRNameCompare *r);
-WERROR _srvsvc_NetShareDelStart(pipes_struct *p, struct srvsvc_NetShareDelStart *r);
-WERROR _srvsvc_NetShareDelCommit(pipes_struct *p, struct srvsvc_NetShareDelCommit *r);
-WERROR _srvsvc_NetServerTransportAddEx(pipes_struct *p, struct srvsvc_NetServerTransportAddEx *r);
-WERROR _srvsvc_NetServerSetServiceBitsEx(pipes_struct *p, struct srvsvc_NetServerSetServiceBitsEx *r);
-WERROR _srvsvc_NETRDFSGETVERSION(pipes_struct *p, struct srvsvc_NETRDFSGETVERSION *r);
-WERROR _srvsvc_NETRDFSCREATELOCALPARTITION(pipes_struct *p, struct srvsvc_NETRDFSCREATELOCALPARTITION *r);
-WERROR _srvsvc_NETRDFSDELETELOCALPARTITION(pipes_struct *p, struct srvsvc_NETRDFSDELETELOCALPARTITION *r);
-WERROR _srvsvc_NETRDFSSETLOCALVOLUMESTATE(pipes_struct *p, struct srvsvc_NETRDFSSETLOCALVOLUMESTATE *r);
-WERROR _srvsvc_NETRDFSSETSERVERINFO(pipes_struct *p, struct srvsvc_NETRDFSSETSERVERINFO *r);
-WERROR _srvsvc_NETRDFSCREATEEXITPOINT(pipes_struct *p, struct srvsvc_NETRDFSCREATEEXITPOINT *r);
-WERROR _srvsvc_NETRDFSDELETEEXITPOINT(pipes_struct *p, struct srvsvc_NETRDFSDELETEEXITPOINT *r);
-WERROR _srvsvc_NETRDFSMODIFYPREFIX(pipes_struct *p, struct srvsvc_NETRDFSMODIFYPREFIX *r);
-WERROR _srvsvc_NETRDFSFIXLOCALVOLUME(pipes_struct *p, struct srvsvc_NETRDFSFIXLOCALVOLUME *r);
-WERROR _srvsvc_NETRDFSMANAGERREPORTSITEINFO(pipes_struct *p, struct srvsvc_NETRDFSMANAGERREPORTSITEINFO *r);
-WERROR _srvsvc_NETRSERVERTRANSPORTDELEX(pipes_struct *p, struct srvsvc_NETRSERVERTRANSPORTDELEX *r);
 
 /* The following definitions come from rpc_server/srv_svcctl.c  */
 
@@ -9165,138 +8532,13 @@ NTSTATUS rpc_svcctl2_init(void);
 /* The following definitions come from rpc_server/srv_svcctl_nt.c  */
 
 bool init_service_op_table( void );
-WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
-			      struct svcctl_OpenSCManagerW *r);
-WERROR _svcctl_OpenServiceW(pipes_struct *p,
-			    struct svcctl_OpenServiceW *r);
-WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHandle *r);
-WERROR _svcctl_GetServiceDisplayNameW(pipes_struct *p,
-				      struct svcctl_GetServiceDisplayNameW *r);
-WERROR _svcctl_QueryServiceStatus(pipes_struct *p,
-				  struct svcctl_QueryServiceStatus *r);
 WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STATUS *q_u, SVCCTL_R_ENUM_SERVICES_STATUS *r_u);
-WERROR _svcctl_StartServiceW(pipes_struct *p,
-			     struct svcctl_StartServiceW *r);
-WERROR _svcctl_ControlService(pipes_struct *p,
-			      struct svcctl_ControlService *r);
-WERROR _svcctl_EnumDependentServicesW(pipes_struct *p,
-				      struct svcctl_EnumDependentServicesW *r);
 WERROR _svcctl_query_service_status_ex( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_STATUSEX *q_u, SVCCTL_R_QUERY_SERVICE_STATUSEX *r_u );
 WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CONFIG2 *q_u, SVCCTL_R_QUERY_SERVICE_CONFIG2 *r_u );
-WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
-				   struct svcctl_LockServiceDatabase *r);
-WERROR _svcctl_UnlockServiceDatabase(pipes_struct *p,
-				     struct svcctl_UnlockServiceDatabase *r);
-WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
-					  struct svcctl_QueryServiceObjectSecurity *r);
-WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
-					struct svcctl_SetServiceObjectSecurity *r);
-WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r);
-WERROR _svcctl_SetServiceStatus(pipes_struct *p, struct svcctl_SetServiceStatus *r);
-WERROR _svcctl_NotifyBootConfigStatus(pipes_struct *p, struct svcctl_NotifyBootConfigStatus *r);
-WERROR _svcctl_SCSetServiceBitsW(pipes_struct *p, struct svcctl_SCSetServiceBitsW *r);
-WERROR _svcctl_ChangeServiceConfigW(pipes_struct *p, struct svcctl_ChangeServiceConfigW *r);
-WERROR _svcctl_CreateServiceW(pipes_struct *p, struct svcctl_CreateServiceW *r);
-WERROR _svcctl_EnumServicesStatusW(pipes_struct *p, struct svcctl_EnumServicesStatusW *r);
-WERROR _svcctl_QueryServiceConfigW(pipes_struct *p, struct svcctl_QueryServiceConfigW *r);
-WERROR _svcctl_QueryServiceLockStatusW(pipes_struct *p, struct svcctl_QueryServiceLockStatusW *r);
-WERROR _svcctl_GetServiceKeyNameW(pipes_struct *p, struct svcctl_GetServiceKeyNameW *r);
-WERROR _svcctl_SCSetServiceBitsA(pipes_struct *p, struct svcctl_SCSetServiceBitsA *r);
-WERROR _svcctl_ChangeServiceConfigA(pipes_struct *p, struct svcctl_ChangeServiceConfigA *r);
-WERROR _svcctl_CreateServiceA(pipes_struct *p, struct svcctl_CreateServiceA *r);
-WERROR _svcctl_EnumDependentServicesA(pipes_struct *p, struct svcctl_EnumDependentServicesA *r);
-WERROR _svcctl_EnumServicesStatusA(pipes_struct *p, struct svcctl_EnumServicesStatusA *r);
-WERROR _svcctl_OpenSCManagerA(pipes_struct *p, struct svcctl_OpenSCManagerA *r);
-WERROR _svcctl_OpenServiceA(pipes_struct *p, struct svcctl_OpenServiceA *r);
-WERROR _svcctl_QueryServiceConfigA(pipes_struct *p, struct svcctl_QueryServiceConfigA *r);
-WERROR _svcctl_QueryServiceLockStatusA(pipes_struct *p, struct svcctl_QueryServiceLockStatusA *r);
-WERROR _svcctl_StartServiceA(pipes_struct *p, struct svcctl_StartServiceA *r);
-WERROR _svcctl_GetServiceDisplayNameA(pipes_struct *p, struct svcctl_GetServiceDisplayNameA *r);
-WERROR _svcctl_GetServiceKeyNameA(pipes_struct *p, struct svcctl_GetServiceKeyNameA *r);
-WERROR _svcctl_GetCurrentGroupeStateW(pipes_struct *p, struct svcctl_GetCurrentGroupeStateW *r);
-WERROR _svcctl_EnumServiceGroupW(pipes_struct *p, struct svcctl_EnumServiceGroupW *r);
-WERROR _svcctl_ChangeServiceConfig2A(pipes_struct *p, struct svcctl_ChangeServiceConfig2A *r);
-WERROR _svcctl_ChangeServiceConfig2W(pipes_struct *p, struct svcctl_ChangeServiceConfig2W *r);
-WERROR _svcctl_QueryServiceConfig2A(pipes_struct *p, struct svcctl_QueryServiceConfig2A *r);
-WERROR _svcctl_QueryServiceConfig2W(pipes_struct *p, struct svcctl_QueryServiceConfig2W *r);
-WERROR _svcctl_QueryServiceStatusEx(pipes_struct *p, struct svcctl_QueryServiceStatusEx *r);
-WERROR _EnumServicesStatusExA(pipes_struct *p, struct EnumServicesStatusExA *r);
-WERROR _EnumServicesStatusExW(pipes_struct *p, struct EnumServicesStatusExW *r);
-WERROR _svcctl_SCSendTSMessage(pipes_struct *p, struct svcctl_SCSendTSMessage *r);
 
 /* The following definitions come from rpc_server/srv_winreg_nt.c  */
 
-WERROR _winreg_CloseKey(pipes_struct *p, struct winreg_CloseKey *r);
-WERROR _winreg_OpenHKLM(pipes_struct *p, struct winreg_OpenHKLM *r);
-WERROR _winreg_OpenHKPD(pipes_struct *p, struct winreg_OpenHKPD *r);
-WERROR _winreg_OpenHKPT(pipes_struct *p, struct winreg_OpenHKPT *r);
-WERROR _winreg_OpenHKCR(pipes_struct *p, struct winreg_OpenHKCR *r);
-WERROR _winreg_OpenHKU(pipes_struct *p, struct winreg_OpenHKU *r);
-WERROR _winreg_OpenHKCU(pipes_struct *p, struct winreg_OpenHKCU *r);
-WERROR _winreg_OpenHKCC(pipes_struct *p, struct winreg_OpenHKCC *r);
-WERROR _winreg_OpenHKDD(pipes_struct *p, struct winreg_OpenHKDD *r);
-WERROR _winreg_OpenHKPN(pipes_struct *p, struct winreg_OpenHKPN *r);
-WERROR _winreg_OpenKey(pipes_struct *p, struct winreg_OpenKey *r);
-WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r);
-WERROR _winreg_QueryInfoKey(pipes_struct *p, struct winreg_QueryInfoKey *r);
-WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r);
-WERROR _winreg_EnumKey(pipes_struct *p, struct winreg_EnumKey *r);
-WERROR _winreg_EnumValue(pipes_struct *p, struct winreg_EnumValue *r);
-WERROR _winreg_InitiateSystemShutdown(pipes_struct *p, struct winreg_InitiateSystemShutdown *r);
-WERROR _winreg_InitiateSystemShutdownEx(pipes_struct *p, struct winreg_InitiateSystemShutdownEx *r);
-WERROR _winreg_AbortSystemShutdown(pipes_struct *p, struct winreg_AbortSystemShutdown *r);
-WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r);
-WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r);
-WERROR _winreg_SaveKeyEx(pipes_struct *p, struct winreg_SaveKeyEx *r);
-WERROR _winreg_CreateKey( pipes_struct *p, struct winreg_CreateKey *r);
-WERROR _winreg_SetValue(pipes_struct *p, struct winreg_SetValue *r);
-WERROR _winreg_DeleteKey(pipes_struct *p, struct winreg_DeleteKey *r);
-WERROR _winreg_DeleteValue(pipes_struct *p, struct winreg_DeleteValue *r);
-WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r);
-WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r);
-WERROR _winreg_FlushKey(pipes_struct *p, struct winreg_FlushKey *r);
-WERROR _winreg_UnLoadKey(pipes_struct *p, struct winreg_UnLoadKey *r);
-WERROR _winreg_ReplaceKey(pipes_struct *p, struct winreg_ReplaceKey *r);
-WERROR _winreg_LoadKey(pipes_struct *p, struct winreg_LoadKey *r);
-WERROR _winreg_NotifyChangeKeyValue(pipes_struct *p, struct winreg_NotifyChangeKeyValue *r);
-WERROR _winreg_QueryMultipleValues(pipes_struct *p, struct winreg_QueryMultipleValues *r);
-WERROR _winreg_QueryMultipleValues2(pipes_struct *p, struct winreg_QueryMultipleValues2 *r);
-
 /* The following definitions come from rpc_server/srv_wkssvc_nt.c  */
-
-WERROR _wkssvc_NetWkstaGetInfo(pipes_struct *p, struct wkssvc_NetWkstaGetInfo *r);
-WERROR _wkssvc_NetWkstaSetInfo(pipes_struct *p, struct wkssvc_NetWkstaSetInfo *r);
-WERROR _wkssvc_NetWkstaEnumUsers(pipes_struct *p, struct wkssvc_NetWkstaEnumUsers *r);
-WERROR _wkssvc_NetrWkstaUserGetInfo(pipes_struct *p, struct wkssvc_NetrWkstaUserGetInfo *r);
-WERROR _wkssvc_NetrWkstaUserSetInfo(pipes_struct *p, struct wkssvc_NetrWkstaUserSetInfo *r);
-WERROR _wkssvc_NetWkstaTransportEnum(pipes_struct *p, struct wkssvc_NetWkstaTransportEnum *r);
-WERROR _wkssvc_NetrWkstaTransportAdd(pipes_struct *p, struct wkssvc_NetrWkstaTransportAdd *r);
-WERROR _wkssvc_NetrWkstaTransportDel(pipes_struct *p, struct wkssvc_NetrWkstaTransportDel *r);
-WERROR _wkssvc_NetrUseAdd(pipes_struct *p, struct wkssvc_NetrUseAdd *r);
-WERROR _wkssvc_NetrUseGetInfo(pipes_struct *p, struct wkssvc_NetrUseGetInfo *r);
-WERROR _wkssvc_NetrUseDel(pipes_struct *p, struct wkssvc_NetrUseDel *r);
-WERROR _wkssvc_NetrUseEnum(pipes_struct *p, struct wkssvc_NetrUseEnum *r);
-WERROR _wkssvc_NetrMessageBufferSend(pipes_struct *p, struct wkssvc_NetrMessageBufferSend *r);
-WERROR _wkssvc_NetrWorkstationStatisticsGet(pipes_struct *p, struct wkssvc_NetrWorkstationStatisticsGet *r) ;
-WERROR _wkssvc_NetrLogonDomainNameAdd(pipes_struct *p, struct wkssvc_NetrLogonDomainNameAdd *r);
-WERROR _wkssvc_NetrLogonDomainNameDel(pipes_struct *p, struct wkssvc_NetrLogonDomainNameDel *r);
-WERROR _wkssvc_NetrJoinDomain(pipes_struct *p, struct wkssvc_NetrJoinDomain *r);
-WERROR _wkssvc_NetrUnjoinDomain(pipes_struct *p, struct wkssvc_NetrUnjoinDomain *r);
-WERROR _wkssvc_NetrRenameMachineInDomain(pipes_struct *p, struct wkssvc_NetrRenameMachineInDomain *r);
-WERROR _wkssvc_NetrValidateName(pipes_struct *p, struct wkssvc_NetrValidateName *r);
-WERROR _wkssvc_NetrGetJoinInformation(pipes_struct *p, struct wkssvc_NetrGetJoinInformation *r);
-WERROR _wkssvc_NetrGetJoinableOus(pipes_struct *p, struct wkssvc_NetrGetJoinableOus *r);
-WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
-			       struct wkssvc_NetrJoinDomain2 *r);
-WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
-				 struct wkssvc_NetrUnjoinDomain2 *r);
-WERROR _wkssvc_NetrRenameMachineInDomain2(pipes_struct *p, struct wkssvc_NetrRenameMachineInDomain2 *r);
-WERROR _wkssvc_NetrValidateName2(pipes_struct *p, struct wkssvc_NetrValidateName2 *r);
-WERROR _wkssvc_NetrGetJoinableOus2(pipes_struct *p, struct wkssvc_NetrGetJoinableOus2 *r);
-WERROR _wkssvc_NetrAddAlternateComputerName(pipes_struct *p, struct wkssvc_NetrAddAlternateComputerName *r);
-WERROR _wkssvc_NetrRemoveAlternateComputerName(pipes_struct *p, struct wkssvc_NetrRemoveAlternateComputerName *r);
-WERROR _wkssvc_NetrSetPrimaryComputername(pipes_struct *p, struct wkssvc_NetrSetPrimaryComputername *r);
-WERROR _wkssvc_NetrEnumerateComputerNames(pipes_struct *p, struct wkssvc_NetrEnumerateComputerNames *r);
 
 /* The following definitions come from rpcclient/cmd_dfs.c  */
 
@@ -9448,6 +8690,7 @@ void msg_close_file(struct messaging_context *msg_ctx,
 		    uint32_t msg_type,
 		    struct server_id server_id,
 		    DATA_BLOB *data);
+NTSTATUS delete_all_streams(connection_struct *conn, const char *fname);
 
 /* The following definitions come from smbd/conn.c  */
 
@@ -9645,6 +8888,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			char **pp_saved_last_component,
 			SMB_STRUCT_STAT *pst);
 NTSTATUS check_name(connection_struct *conn, const char *name);
+int get_real_filename(connection_struct *conn, const char *path,
+		      const char *name, TALLOC_CTX *mem_ctx,
+		      char **found_name);
 
 /* The following definitions come from smbd/files.c  */
 
@@ -10198,7 +9444,6 @@ void init_sec_ctx(void);
 
 int smbd_server_fd(void);
 int get_client_fd(void);
-int client_get_tcp_info(struct sockaddr_in *server, struct sockaddr_in *client);
 struct event_context *smbd_event_context(void);
 struct messaging_context *smbd_messaging_context(void);
 struct memcache *smbd_memcache(void);

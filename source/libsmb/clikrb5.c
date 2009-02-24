@@ -1407,7 +1407,7 @@ done:
 
 		addrs = (krb5_address **)SMB_MALLOC(sizeof(krb5_address *) * num_addr);
 		if (addrs == NULL) {
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1416,7 +1416,7 @@ done:
 		addrs[0] = (krb5_address *)SMB_MALLOC(sizeof(krb5_address));
 		if (addrs[0] == NULL) {
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1427,7 +1427,7 @@ done:
 		if (addrs[0]->contents == NULL) {
 			SAFE_FREE(addrs[0]);
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1439,7 +1439,7 @@ done:
 	{
 		addrs = (krb5_addresses *)SMB_MALLOC(sizeof(krb5_addresses));
 		if (addrs == NULL) {
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1459,7 +1459,7 @@ done:
 		if (addrs->val[0].address.data == NULL) {
 			SAFE_FREE(addrs->val);
 			SAFE_FREE(addrs);
-			SAFE_FREE(kerb_addr);
+			SAFE_FREE(*kerb_addr);
 			return ENOMEM;
 		}
 
@@ -1744,6 +1744,11 @@ done:
 			found_valid_name = True;
 			tmp = kt_str;
 			tmp += 5;
+		}
+
+		if (tmp[0] == '/') {
+			/* Treat as a FILE: keytab definition. */
+			found_valid_name = true;
 		}
 
 		if (found_valid_name) {

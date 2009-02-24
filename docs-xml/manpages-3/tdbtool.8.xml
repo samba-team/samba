@@ -7,7 +7,7 @@
 	<manvolnum>8</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
-	<refmiscinfo class="version">3.2</refmiscinfo>
+	<refmiscinfo class="version">3.3</refmiscinfo>
 </refmeta>
 
 
@@ -188,6 +188,14 @@
 		<option>next</option>
 		</term>
 		<listitem><para>Print the next record in the current database.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>
+		<option>check</option>
+		</term>
+		<listitem><para>Check the integrity of the current database.
 		</para></listitem>
 		</varlistentry>
 

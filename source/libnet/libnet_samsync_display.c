@@ -126,7 +126,7 @@ static void display_group_info(uint32_t rid, struct netr_DELTA_GROUP *r)
 
 static void display_delete_group(uint32_t rid)
 {
-	d_printf("Delete Group '%d' ", rid);
+	d_printf("Delete Group '%d'\n", rid);
 }
 
 static void display_rename_group(uint32_t rid, struct netr_DELTA_RENAME *r)
@@ -138,7 +138,7 @@ static void display_rename_group(uint32_t rid, struct netr_DELTA_RENAME *r)
 
 static void display_delete_user(uint32_t rid)
 {
-	d_printf("Delete User '%d' ", rid);
+	d_printf("Delete User '%d'\n", rid);
 }
 
 static void display_rename_user(uint32_t rid, struct netr_DELTA_RENAME *r)
@@ -150,7 +150,7 @@ static void display_rename_user(uint32_t rid, struct netr_DELTA_RENAME *r)
 
 static void display_delete_alias(uint32_t rid)
 {
-	d_printf("Delete Alias '%d' ", rid);
+	d_printf("Delete Alias '%d'\n", rid);
 }
 
 static void display_rename_alias(uint32_t rid, struct netr_DELTA_RENAME *r)

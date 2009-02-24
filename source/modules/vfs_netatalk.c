@@ -367,7 +367,9 @@ static int atalk_chown(struct vfs_handle_struct *handle, const char *path, uid_t
 		goto exit_chown;
 	}
 
-	chown(adbl_path, uid, gid);
+	if (chown(adbl_path, uid, gid) == -1) {
+		DEBUG(3, ("ATALK: chown error %s\n", strerror(errno)));
+	}
 
 exit_chown:	
 	talloc_destroy(ctx);
@@ -399,7 +401,9 @@ static int atalk_lchown(struct vfs_handle_struct *handle, const char *path, uid_
 		goto exit_lchown;
 	}
 
-	sys_lchown(adbl_path, uid, gid);
+	if (sys_lchown(adbl_path, uid, gid) == -1) {
+		DEBUG(3, ("ATALK: lchown error %s\n", strerror(errno)));
+	}
 
 exit_lchown:	
 	talloc_destroy(ctx);

@@ -851,7 +851,7 @@ void check_log_size( void )
 		ret = vasprintf(&msgbuf, format_str, ap);
 		va_end(ap);
 
-		if (ret == -1) {
+		if (ret != -1) {
 			syslog(priority, "%s", msgbuf);
 		}
 		SAFE_FREE(msgbuf);

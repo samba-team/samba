@@ -104,12 +104,12 @@ void async_req_error(struct async_req *req, NTSTATUS status)
  * @brief Timed event callback
  * @param[in] ev	Event context
  * @param[in] te	The timed event
- * @param[in] now	current time
+ * @param[in] now	zero time
  * @param[in] priv	The async request to be finished
  */
 
 static void async_trigger(struct event_context *ev, struct timed_event *te,
-			  const struct timeval *now, void *priv)
+			  struct timeval now, void *priv)
 {
 	struct async_req *req = talloc_get_type_abort(priv, struct async_req);
 
@@ -140,7 +140,6 @@ bool async_post_status(struct async_req *req, NTSTATUS status)
 	req->status = status;
 
 	if (event_add_timed(req->event_ctx, req, timeval_zero(),
-			    "async_trigger",
 			    async_trigger, req) == NULL) {
 		return false;
 	}

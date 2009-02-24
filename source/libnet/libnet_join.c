@@ -790,7 +790,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
 				      pipe_hnd->desthost,
-				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      SAMR_ACCESS_ENUM_DOMAINS
+				      | SAMR_ACCESS_OPEN_DOMAIN,
 				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -798,7 +799,9 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
 					&sam_pol,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1
+					| SAMR_DOMAIN_ACCESS_CREATE_USER
+					| SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT,
 					r->out.domain_sid,
 					&domain_pol);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1019,8 +1022,7 @@ NTSTATUS libnet_join_ok(const char *netbios_domain_name,
 		return NT_STATUS_NO_TRUST_LSA_SECRET;
 	}
 
-	asprintf(&machine_account, "%s$", machine_name);
-	if (!machine_account) {
+	if (asprintf(&machine_account, "%s$", machine_name) == -1) {
 		SAFE_FREE(machine_password);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1521,7 +1523,10 @@ static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	saf_store(r->in.domain_name, r->in.dc_name);
+	saf_join_store(r->out.netbios_domain_name, r->in.dc_name);
+	if (r->out.dns_domain_name) {
+		saf_join_store(r->out.dns_domain_name, r->in.dc_name);
+	}
 
 #ifdef WITH_ADS
 	if (r->out.domain_is_ad) {
@@ -1752,6 +1757,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     r->in.domain_name,
 				     NULL,
 				     NULL,
+				     DS_FORCE_REDISCOVERY |
 				     DS_DIRECTORY_SERVICE_REQUIRED |
 				     DS_WRITABLE_REQUIRED |
 				     DS_RETURN_DNS_NAME,

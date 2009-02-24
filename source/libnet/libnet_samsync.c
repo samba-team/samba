@@ -282,8 +282,8 @@ static const char *samsync_debug_str(TALLOC_CTX *mem_ctx,
  * libnet_samsync
  */
 
-void libnet_init_netr_ChangeLogEntry(struct samsync_object *o,
-				     struct netr_ChangeLogEntry *e)
+static void libnet_init_netr_ChangeLogEntry(struct samsync_object *o,
+					    struct netr_ChangeLogEntry *e)
 {
 	ZERO_STRUCTP(e);
 

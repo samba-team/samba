@@ -205,6 +205,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
 	SMB_VFS_OP_STREAMINFO,
+	SMB_VFS_OP_GET_REAL_FILENAME,
 
 	/* NT ACL operations. */
 
@@ -353,6 +354,12 @@ struct vfs_ops {
 				       unsigned int *num_streams,
 				       struct stream_struct **streams);
 
+		int (*get_real_filename)(struct vfs_handle_struct *handle,
+					 const char *path,
+					 const char *name,
+					 TALLOC_CTX *mem_ctx,
+					 char **found_name);
+
 		/* NT ACL operations. */
 
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
@@ -487,6 +494,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *chflags;
 		struct vfs_handle_struct *file_id_create;
 		struct vfs_handle_struct *streaminfo;
+		struct vfs_handle_struct *get_real_filename;
 
 		/* NT ACL operations. */
 

@@ -207,12 +207,12 @@ typedef int ber_int_t;
 #undef HAVE_LDAP
 #endif
 
-#if HAVE_GSSAPI_H
-#include <gssapi.h>
-#elif HAVE_GSSAPI_GSSAPI_H
+#if HAVE_GSSAPI_GSSAPI_H
 #include <gssapi/gssapi.h>
 #elif HAVE_GSSAPI_GSSAPI_GENERIC_H
 #include <gssapi/gssapi_generic.h>
+#elif HAVE_GSSAPI_H
+#include <gssapi.h>
 #endif
 
 #if HAVE_COM_ERR_H
@@ -470,10 +470,12 @@ typedef int VOLATILE SIG_ATOMIC_T;
 #define SMB_BIG_UINT unsigned long long
 #define SMB_BIG_INT long long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#define BIG_UINT(p, ofs) ((((SMB_BIG_UINT) IVAL(p,(ofs)+4))<<32)|IVAL(p,ofs))
 #else
 #define SMB_BIG_UINT unsigned long
 #define SMB_BIG_INT long
 #define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#define BIG_UINT(p, ofs) (IVAL(p,ofs))
 #endif
 
 #define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
@@ -657,6 +659,7 @@ typedef char fstring[FSTRING_LEN];
 #define talloc_get_type_abort(ptr, type) \
 	(type *)talloc_check_name_abort(ptr, #type)
 
+#include "event.h"
 #include "nt_status.h"
 #include "ads.h"
 #include "ads_dns.h"
@@ -703,6 +706,7 @@ typedef char fstring[FSTRING_LEN];
 #include "librpc/gen_ndr/notify.h"
 #include "librpc/gen_ndr/xattr.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
+#include "librpc/gen_ndr/messaging.h"
 #include "librpc/rpc/dcerpc.h"
 #include "nt_printing.h"
 #include "idmap.h"
@@ -716,7 +720,6 @@ typedef char fstring[FSTRING_LEN];
 #include "nsswitch/winbind_client.h"
 #include "spnego.h"
 #include "rpc_client.h"
-#include "event.h"
 #include "dbwrap.h"
 #include "packet.h"
 #include "ctdbd_conn.h"
@@ -789,6 +792,13 @@ enum flush_reason_enum {
 #include "librpc/gen_ndr/srv_eventlog.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_initshutdown.h"
+#include "librpc/gen_ndr/srv_netlogon.h"
+#include "librpc/gen_ndr/srv_samr.h"
+#include "librpc/gen_ndr/srv_wkssvc.h"
+#include "librpc/gen_ndr/srv_srvsvc.h"
+#include "librpc/gen_ndr/srv_ntsvcs.h"
+#include "librpc/gen_ndr/srv_dssetup.h"
+#include "librpc/gen_ndr/srv_dfs.h"
 
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H

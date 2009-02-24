@@ -113,18 +113,19 @@ struct SMBC_internal_data {
 	/* True when this handle is initialized */
 	bool                                    initialized;
 
-        /* dirent pointer location
-         *
+        /* dirent pointer location */
+	struct smbc_dirent			dirent;
+	/*
          * Leave room for any urlencoded filename and the comment field.
          *
-         * We really should use sizeof(struct smbc_dirent) plus (NAME_MAX * 3)
-         * plus whatever the max length of a comment is, plus a couple of null
-         * terminators (one after the filename, one after the comment).
+	 * We use (NAME_MAX * 3) plus whatever the max length of a comment is,
+	 * plus a couple of null terminators (one after the filename,
+	 * one after the comment).
          *
          * According to <linux/limits.h>, NAME_MAX is 255.  Is it longer
          * anyplace else?
          */
-	char                                    dirent[1024];
+	char                                    _dirent_name[1024];
 
 	/*
          * server connection list
@@ -175,6 +176,11 @@ struct SMBC_internal_data {
          */
         smbc_smb_encrypt_level                  smb_encryption_level;
 
+        /*
+         * Should we request case sensitivity of file names?
+         */
+        bool                                    case_sensitive;
+
         struct smbc_server_cache * server_cache;
 
         /* POSIX emulation functions */
@@ -191,6 +197,8 @@ struct SMBC_internal_data {
                 smbc_stat_fn                    stat_fn;
                 smbc_fstat_fn                   fstat_fn;
 #endif
+                smbc_statvfs_fn                 statvfs_fn;
+                smbc_fstatvfs_fn                fstatvfs_fn;
                 smbc_ftruncate_fn               ftruncate_fn;
 #if 0 /* Left in libsmbclient.h for backward compatibility */
                 smbc_close_fn                   close_fn;
@@ -396,16 +404,6 @@ SMBC_errno(SMBCCTX *context,
 
 /* Functions in libsmb_path.c */
 int
-SMBC_urldecode(char *dest,
-               char *src,
-               size_t max_dest_len);
-
-int
-SMBC_urlencode(char *dest,
-               char *src,
-               int max_dest_len);
-
-int
 SMBC_parse_path(TALLOC_CTX *ctx,
 		SMBCCTX *context,
                 const char *fname,
@@ -503,6 +501,18 @@ int
 SMBC_fstat_ctx(SMBCCTX *context,
                SMBCFILE *file,
                struct stat *st);
+
+
+int
+SMBC_statvfs_ctx(SMBCCTX *context,
+                 char *path,
+                 struct statvfs *st);
+
+
+int
+SMBC_fstatvfs_ctx(SMBCCTX *context,
+                  SMBCFILE *file,
+                  struct statvfs *st);
 
 
 /* Functions in libsmb_xattr.c */

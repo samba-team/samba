@@ -293,7 +293,7 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 {
 	SEC_DESC *sd = NULL;
 	SEC_ACE *ace;
-	SEC_ACL *acl;
+	SEC_ACL *theacl;
 	int num_ace;
 	const char *pacl;
 	int i;
@@ -321,11 +321,11 @@ static SEC_DESC* parse_acl_string(TALLOC_CTX *mem_ctx, const char *szACL, size_t
 		pacl++;
 	}
 	
-	if ( !(acl = make_sec_acl( mem_ctx, NT4_ACL_REVISION, num_ace, ace )) )
+	if ( !(theacl = make_sec_acl( mem_ctx, NT4_ACL_REVISION, num_ace, ace )) )
 		return NULL;
 		
 	sd = make_sec_desc( mem_ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, 
-		NULL, NULL, NULL, acl, sd_size);
+		NULL, NULL, NULL, theacl, sd_size);
 
 	return sd;
 }

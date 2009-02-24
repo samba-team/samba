@@ -1735,18 +1735,18 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 	return true;
 }
 
-static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
+static bool api_netr_LogonGetCapabilities(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct netr_NETRLOGONDUMMYROUTINE1 *r;
+	struct netr_LogonGetCapabilities *r;
 
-	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONDUMMYROUTINE1];
+	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONGETCAPABILITIES];
 
-	r = talloc(talloc_tos(), struct netr_NETRLOGONDUMMYROUTINE1);
+	r = talloc(talloc_tos(), struct netr_LogonGetCapabilities);
 	if (r == NULL) {
 		return false;
 	}
@@ -1770,10 +1770,18 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONDUMMYROUTINE1, r);
+		NDR_PRINT_IN_DEBUG(netr_LogonGetCapabilities, r);
 	}
 
-	r->out.result = _netr_NETRLOGONDUMMYROUTINE1(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.return_authenticator = r->in.return_authenticator;
+	r->out.capabilities = talloc_zero(r, union netr_Capabilities);
+	if (r->out.capabilities == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _netr_LogonGetCapabilities(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1782,7 +1790,7 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONDUMMYROUTINE1, r);
+		NDR_PRINT_OUT_DEBUG(netr_LogonGetCapabilities, r);
 	}
 
 	push = ndr_push_init_ctx(r);
@@ -3826,7 +3834,7 @@ static struct api_struct api_netlogon_cmds[] =
 	{"NETR_LOGONCONTROL2EX", NDR_NETR_LOGONCONTROL2EX, api_netr_LogonControl2Ex},
 	{"NETR_NETRENUMERATETRUSTEDDOMAINS", NDR_NETR_NETRENUMERATETRUSTEDDOMAINS, api_netr_NetrEnumerateTrustedDomains},
 	{"NETR_DSRGETDCNAME", NDR_NETR_DSRGETDCNAME, api_netr_DsRGetDCName},
-	{"NETR_NETRLOGONDUMMYROUTINE1", NDR_NETR_NETRLOGONDUMMYROUTINE1, api_netr_NETRLOGONDUMMYROUTINE1},
+	{"NETR_LOGONGETCAPABILITIES", NDR_NETR_LOGONGETCAPABILITIES, api_netr_LogonGetCapabilities},
 	{"NETR_NETRLOGONSETSERVICEBITS", NDR_NETR_NETRLOGONSETSERVICEBITS, api_netr_NETRLOGONSETSERVICEBITS},
 	{"NETR_LOGONGETTRUSTRID", NDR_NETR_LOGONGETTRUSTRID, api_netr_LogonGetTrustRid},
 	{"NETR_NETRLOGONCOMPUTESERVERDIGEST", NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST, api_netr_NETRLOGONCOMPUTESERVERDIGEST},

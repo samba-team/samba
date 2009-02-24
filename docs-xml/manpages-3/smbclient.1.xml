@@ -7,13 +7,13 @@
 	<manvolnum>1</manvolnum>
 	<refmiscinfo class="source">Samba</refmiscinfo>
 	<refmiscinfo class="manual">User Commands</refmiscinfo>
-	<refmiscinfo class="version">3.2</refmiscinfo>
+	<refmiscinfo class="version">3.3</refmiscinfo>
 </refmeta>
 
 
 <refnamediv>
 	<refname>smbclient</refname>
-	<refpurpose>ftp-like client to access SMB/CIFS resources 
+	<refpurpose>ftp-like client to access SMB/CIFS resources
 	on servers</refpurpose>
 </refnamediv>
 
@@ -30,6 +30,7 @@
 		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="opt">-g</arg>
 		<arg choice="opt">-i scope</arg>
 		<arg choice="opt">-O &lt;socket options&gt;</arg>
 		<arg choice="opt">-p port</arg>
@@ -39,7 +40,7 @@
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-c &lt;command&gt;</arg>
 	</cmdsynopsis>
-		
+
 	<cmdsynopsis>
 		<command>smbclient</command>
 		<arg choice="req">servicename</arg>
@@ -54,6 +55,7 @@
 		<arg choice="opt">-m maxprotocol</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="opt">-g</arg>
 		<arg choice="opt">-l log-basename</arg>
 		<arg choice="opt">-I destinationIP</arg>
 		<arg choice="opt">-E</arg>
@@ -233,7 +235,7 @@
 		on your WfWg PCs if you want them to always be able to receive 
 		messages. </para></listitem>
 		</varlistentry>
-		
+
 		<varlistentry>
 		<term>-p port</term>
 		<listitem><para>This number is the TCP port number that will be used 
@@ -241,19 +243,27 @@
 		TCP port number for an SMB/CIFS server is 139, which is the 
 		default. </para></listitem>
 		</varlistentry>
-		
+
+		<varlistentry>
+		<term>-g</term>
+		<listitem><para>This parameter provides combined with
+		<parameter>-L</parameter> easy parseable output	that allows processing
+		with utilities such as grep and cut.
+		</para></listitem>
+		</varlistentry>
+
 		<varlistentry>
 		<term>-P</term>
 		<listitem><para>
 		Make queries to the external server using the machine account of the local server.
 		</para></listitem>
 		</varlistentry>
-		
+
 		&stdarg.help;
-		
+
 		<varlistentry>
 		<term>-I IP-address</term>
-		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to. 
+		<listitem><para><replaceable>IP address</replaceable> is the address of the server to connect to.
 		It should be specified in standard "a.b.c.d" notation. </para>
 
 		<para>Normally the client would attempt to locate a named 

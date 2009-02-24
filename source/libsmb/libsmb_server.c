@@ -238,6 +238,7 @@ SMBC_server(TALLOC_CTX *ctx,
             char **pp_password)
 {
 	SMBCSRV *srv=NULL;
+	char *workgroup = NULL;
 	struct cli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n = server;
@@ -245,6 +246,8 @@ SMBC_server(TALLOC_CTX *ctx,
 	int tried_reverse = 0;
         int port_try_first;
         int port_try_next;
+        int is_ipc = (share != NULL && strcmp(share, "IPC$") == 0);
+	uint32 fs_attrs = 0;
         const char *username_used;
  	NTSTATUS status;
         
@@ -310,6 +313,38 @@ SMBC_server(TALLOC_CTX *ctx,
                                 srv = NULL;
                         }
                         
+                        /* Determine if this share supports case sensitivity */
+                        if (is_ipc) {
+                                DEBUG(4,
+                                      ("IPC$ so ignore case sensitivity\n"));
+                        } else if (!cli_get_fs_attr_info(c, &fs_attrs)) {
+                                DEBUG(4, ("Could not retrieve "
+                                          "case sensitivity flag: %s.\n",
+                                          cli_errstr(c)));
+
+                                /*
+                                 * We can't determine the case sensitivity of
+                                 * the share. We have no choice but to use the
+                                 * user-specified case sensitivity setting.
+                                 */
+                                if (smbc_getOptionCaseSensitive(context)) {
+                                        cli_set_case_sensitive(c, True);
+                                } else {
+                                        cli_set_case_sensitive(c, False);
+                                }
+                        } else {
+                                DEBUG(4,
+                                      ("Case sensitive: %s\n",
+                                       (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
+                                        ? "True"
+                                        : "False")));
+                                cli_set_case_sensitive(
+                                        c,
+                                        (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
+                                         ? True
+                                         : False));
+                        }
+
                         /*
                          * Regenerate the dev value since it's based on both
                          * server and share
@@ -325,7 +360,7 @@ SMBC_server(TALLOC_CTX *ctx,
         if (srv) {
                 
                 /* ... then we're done here.  Give 'em what they came for. */
-                return srv;
+                goto done;
         }
         
         /* If we're not asked to connect when a connection doesn't exist... */
@@ -355,7 +390,7 @@ again:
 		errno = ENOMEM;
 		return NULL;
 	}
-        
+
         if (smbc_getOptionUseKerberos(context)) {
 		c->use_kerberos = True;
 	}
@@ -370,7 +405,7 @@ again:
          * Force use of port 139 for first try if share is $IPC, empty, or
          * null, so browse lists can work
          */
-        if (share == NULL || *share == '\0' || strcmp(share, "IPC$") == 0) {
+        if (share == NULL || *share == '\0' || is_ipc) {
                 port_try_first = 139;
                 port_try_next = 445;
         } else {
@@ -474,6 +509,34 @@ again:
         
 	DEBUG(4,(" tconx ok\n"));
         
+        /* Determine if this share supports case sensitivity */
+	if (is_ipc) {
+                DEBUG(4, ("IPC$ so ignore case sensitivity\n"));
+        } else if (!cli_get_fs_attr_info(c, &fs_attrs)) {
+                DEBUG(4, ("Could not retrieve case sensitivity flag: %s.\n",
+                          cli_errstr(c)));
+
+                /*
+                 * We can't determine the case sensitivity of the share. We
+                 * have no choice but to use the user-specified case
+                 * sensitivity setting.
+                 */
+                if (smbc_getOptionCaseSensitive(context)) {
+                        cli_set_case_sensitive(c, True);
+                } else {
+                        cli_set_case_sensitive(c, False);
+                }
+	} else {
+                DEBUG(4, ("Case sensitive: %s\n",
+                          (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
+                           ? "True"
+                           : "False")));
+                cli_set_case_sensitive(c,
+                                       (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
+                                        ? True
+                                        : False));
+        }
+
 	if (context->internal->smb_encryption_level) {
 		/* Attempt UNIX smb encryption. */
 		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
@@ -536,6 +599,22 @@ again:
 		  server, share, srv));
         
 	DLIST_ADD(context->internal->servers, srv);
+done:
+	if (!pp_workgroup || !*pp_workgroup || !**pp_workgroup) {
+		workgroup = talloc_strdup(ctx, smbc_getWorkgroup(context));
+	} else {
+		workgroup = *pp_workgroup;
+	}
+	if(!workgroup) {
+		return NULL;
+	}
+	
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(context,
+					   workgroup,
+				    	   *pp_username,
+				   	   *pp_password);
+	
 	return srv;
         
 failed:

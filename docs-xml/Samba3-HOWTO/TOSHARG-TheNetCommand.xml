@@ -1850,7 +1850,7 @@ net idmap dump /var/lib/samba/winbindd_idmap.tdb &gt; idmap_dump.txt
 	<para>
 	The IDMAP dump file can be restored using the following command:
 <screen>
-net idmap restore &lt;full_path_and_tdb_filename&gt; &lt; dumpfile.txt
+net idmap restore idmap_dump.txt
 </screen>
 	Where the Samba run-time tdb files are stored in the <filename>/var/lib/samba</filename> directory
     the following command can be used to restore the data to the tdb file:

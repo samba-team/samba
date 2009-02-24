@@ -34,6 +34,12 @@
 #define MAX_CCACHES 100
 
 static struct WINBINDD_CCACHE_ENTRY *ccache_list;
+static void krb5_ticket_gain_handler(struct event_context *,
+				     struct timed_event *,
+				     struct timeval,
+				     void *);
+static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *,
+				     struct timeval);
 
 /* The Krb5 ticket refresh handler should be scheduled
    at one-half of the period from now till the tkt
@@ -71,13 +77,27 @@ static int ccache_entry_count(void)
 	return i;
 }
 
+void ccache_remove_all_after_fork(void)
+{
+	struct WINBINDD_CCACHE_ENTRY *cur, *next;
+
+	for (cur = ccache_list; cur; cur = next) {
+		next = cur->next;
+		DLIST_REMOVE(ccache_list, cur);
+		TALLOC_FREE(cur->event);
+		TALLOC_FREE(cur);
+	}
+
+	return;
+}
+
 /****************************************************************
  Do the work of refreshing the ticket.
 ****************************************************************/
 
 static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 					struct timed_event *te,
-					const struct timeval *now,
+					struct timeval now,
 					void *private_data)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
@@ -85,6 +105,7 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 #ifdef HAVE_KRB5
 	int ret;
 	time_t new_start;
+	time_t expire_time = 0;
 	struct WINBINDD_MEMORY_CREDS *cred_ptr = entry->cred_ptr;
 #endif
 
@@ -97,44 +118,80 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 #ifdef HAVE_KRB5
 
 	/* Kinit again if we have the user password and we can't renew the old
-	 * tgt anymore */
+	 * tgt anymore 
+	 * NB
+	 * This happens when machine are put to sleep for a very long time. */
 
-	if ((entry->renew_until < time(NULL)) && cred_ptr && cred_ptr->pass) {
+	if (entry->renew_until < time(NULL)) {
+rekinit:
+		if (cred_ptr && cred_ptr->pass) {
 
-		set_effective_uid(entry->uid);
+			set_effective_uid(entry->uid);
 
-		ret = kerberos_kinit_password_ext(entry->principal_name,
-						  cred_ptr->pass,
-						  0, /* hm, can we do time correction here ? */
-						  &entry->refresh_time,
-						  &entry->renew_until,
-						  entry->ccname,
-						  False, /* no PAC required anymore */
-						  True,
-						  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
-						  NULL);
-		gain_root_privilege();
+			ret = kerberos_kinit_password_ext(entry->principal_name,
+							  cred_ptr->pass,
+							  0, /* hm, can we do time correction here ? */
+							  &entry->refresh_time,
+							  &entry->renew_until,
+							  entry->ccname,
+							  False, /* no PAC required anymore */
+							  True,
+							  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+							  NULL);
+			gain_root_privilege();
 
-		if (ret) {
-			DEBUG(3,("krb5_ticket_refresh_handler: "
-				"could not re-kinit: %s\n",
-				error_message(ret)));
-			TALLOC_FREE(entry->event);
-			return;
-		}
+			if (ret) {
+				DEBUG(3,("krb5_ticket_refresh_handler: "
+					"could not re-kinit: %s\n",
+					error_message(ret)));
+				/* destroy the ticket because we cannot rekinit
+				 * it, ignore error here */
+				ads_kdestroy(entry->ccname);
 
-		DEBUG(10,("krb5_ticket_refresh_handler: successful re-kinit "
-			"for: %s in ccache: %s\n",
-			entry->principal_name, entry->ccname));
+				/* Don't break the ticket refresh chain: retry 
+				 * refreshing ticket sometime later when KDC is 
+				 * unreachable -- BoYang. More error code handling
+				 * here? 
+				 * */
+
+				if ((ret == KRB5_KDC_UNREACH)
+				    || (ret == KRB5_REALM_CANT_RESOLVE)) {
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+					new_start = time(NULL) + 30;
+#else
+					new_start = time(NULL) +
+						    MAX(30, lp_winbind_cache_time());
+#endif
+					add_krb5_ticket_gain_handler_event(entry,
+							timeval_set(new_start, 0));
+					return;
+				}
+				TALLOC_FREE(entry->event);
+				return;
+			}
+
+			DEBUG(10,("krb5_ticket_refresh_handler: successful re-kinit "
+				"for: %s in ccache: %s\n",
+				entry->principal_name, entry->ccname));
 
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
-		new_start = time(NULL) + 30;
+			new_start = time(NULL) + 30;
 #else
-		/* The tkt should be refreshed at one-half the period
-		   from now to the expiration time */
-		new_start = KRB5_EVENT_REFRESH_TIME(entry->refresh_time);
+			/* The tkt should be refreshed at one-half the period
+			   from now to the expiration time */
+			expire_time = entry->refresh_time;
+			new_start = KRB5_EVENT_REFRESH_TIME(entry->refresh_time);
 #endif
-		goto done;
+			goto done;
+		} else {
+				/* can this happen? 
+				 * No cached credentials
+				 * destroy ticket and refresh chain 
+				 * */
+				ads_kdestroy(entry->ccname);
+				TALLOC_FREE(entry->event);
+				return;
+		}
 	}
 
 	set_effective_uid(entry->uid);
@@ -146,6 +203,7 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
 	new_start = time(NULL) + 30;
 #else
+	expire_time = new_start;
 	new_start = KRB5_EVENT_REFRESH_TIME(new_start);
 #endif
 
@@ -157,24 +215,69 @@ static void krb5_ticket_refresh_handler(struct event_context *event_ctx,
 			error_message(ret)));
 		/* maybe we are beyond the renewing window */
 
+		/* evil rises here, we refresh ticket failed,
+		 * but the ticket might be expired. Therefore,
+		 * When we refresh ticket failed, destory the 
+		 * ticket */
+
+		ads_kdestroy(entry->ccname);
+
 		/* avoid breaking the renewal chain: retry in
 		 * lp_winbind_cache_time() seconds when the KDC was not
-		 * available right now. */
+		 * available right now. 
+		 * the return code can be KRB5_REALM_CANT_RESOLVE. 
+		 * More error code handling here? */
 
-		if (ret == KRB5_KDC_UNREACH) {
+		if ((ret == KRB5_KDC_UNREACH) 
+		    || (ret == KRB5_REALM_CANT_RESOLVE)) {
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+			new_start = time(NULL) + 30;
+#else
 			new_start = time(NULL) +
 				    MAX(30, lp_winbind_cache_time());
-			goto done;
+#endif
+			/* ticket is destroyed here, we have to regain it
+			 * if it is possible */
+			add_krb5_ticket_gain_handler_event(entry,
+						timeval_set(new_start, 0));
+			return;
 		}
+
+		/* This is evil, if the ticket was already expired.
+		 * renew ticket function returns KRB5KRB_AP_ERR_TKT_EXPIRED.
+		 * But there is still a chance that we can rekinit it. 
+		 *
+		 * This happens when user login in online mode, and then network
+		 * down or something cause winbind goes offline for a very long time,
+		 * and then goes online again. ticket expired, renew failed.
+		 * This happens when machine are put to sleep for a long time,
+		 * but shorter than entry->renew_util.
+		 * NB
+		 * Looks like the KDC is reachable, we want to rekinit as soon as
+		 * possible instead of waiting some time later. */
+		if ((ret == KRB5KRB_AP_ERR_TKT_EXPIRED)
+		    || (ret == KRB5_FCC_NOFILE)) goto rekinit;
 
 		return;
 	}
 
 done:
+	/* in cases that ticket will be unrenewable soon, we don't try to renew ticket 
+	 * but try to regain ticket if it is possible */
+	if (entry->renew_until && expire_time
+	     && (entry->renew_until <= expire_time)) {
+		/* try to regain ticket 10 seconds beforre expiration */
+		expire_time -= 10;
+		add_krb5_ticket_gain_handler_event(entry,
+					timeval_set(expire_time, 0));
+		return;
+	}
 
+	if (entry->refresh_time == 0) {
+		entry->refresh_time = new_start;
+	}
 	entry->event = event_add_timed(winbind_event_context(), entry,
 				       timeval_set(new_start, 0),
-				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
 				       entry);
 
@@ -187,7 +290,7 @@ done:
 
 static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 				     struct timed_event *te,
-				     const struct timeval *now,
+				     struct timeval now,
 				     void *private_data)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry =
@@ -239,6 +342,9 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 		DEBUG(3,("krb5_ticket_gain_handler: "
 			"could not kinit: %s\n",
 			error_message(ret)));
+		/* evil. If we cannot do it, destroy any the __maybe__ 
+		 * __existing__ ticket */
+		ads_kdestroy(entry->ccname);
 		goto retry_later;
 	}
 
@@ -249,16 +355,14 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	goto got_ticket;
 
   retry_later:
-
+ 
+#if defined(DEBUG_KRB5_TKT_REGAIN)
+ 	t = timeval_set(time(NULL) + 30, 0);
+#else
 	t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
+#endif
 
-	entry->event = event_add_timed(winbind_event_context(),
-				       entry,
-				       t,
-				       "krb5_ticket_gain_handler",
-				       krb5_ticket_gain_handler,
-				       entry);
-
+	add_krb5_ticket_gain_handler_event(entry, t);
 	return;
 
   got_ticket:
@@ -269,15 +373,70 @@ static void krb5_ticket_gain_handler(struct event_context *event_ctx,
 	t = timeval_set(KRB5_EVENT_REFRESH_TIME(entry->refresh_time), 0);
 #endif
 
+	if (entry->refresh_time == 0) {
+		entry->refresh_time = t.tv_sec;
+	}
 	entry->event = event_add_timed(winbind_event_context(),
 				       entry,
 				       t,
-				       "krb5_ticket_refresh_handler",
 				       krb5_ticket_refresh_handler,
 				       entry);
 
 	return;
 #endif
+}
+
+/**************************************************************
+ The gain initial ticket case is recognised as entry->refresh_time
+ is always zero.
+**************************************************************/
+
+static void add_krb5_ticket_gain_handler_event(struct WINBINDD_CCACHE_ENTRY *entry,
+				     struct timeval t)
+{
+	entry->refresh_time = 0;
+	entry->event = event_add_timed(winbind_event_context(),
+				       entry,
+				       t,
+				       krb5_ticket_gain_handler,
+				       entry);
+}
+
+void ccache_regain_all_now(void)
+{
+	struct WINBINDD_CCACHE_ENTRY *cur;
+	struct timeval t = timeval_current();
+
+	for (cur = ccache_list; cur; cur = cur->next) {
+		struct timed_event *new_event;
+
+		/*
+		 * if refresh_time is 0, we know that the
+		 * the event has the krb5_ticket_gain_handler
+		 */
+		if (cur->refresh_time == 0) {
+			new_event = event_add_timed(winbind_event_context(),
+						    cur,
+						    t,
+						    krb5_ticket_gain_handler,
+						    cur);
+		} else {
+			new_event = event_add_timed(winbind_event_context(),
+						    cur,
+						    t,
+						    krb5_ticket_refresh_handler,
+						    cur);
+		}
+
+		if (!new_event) {
+			continue;
+		}
+
+		TALLOC_FREE(cur->event);
+		cur->event = new_event;
+	}
+
+	return;
 }
 
 /****************************************************************
@@ -331,6 +490,10 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = NULL;
 	struct timeval t;
+	NTSTATUS ntret;
+#ifdef HAVE_KRB5
+	int ret;
+#endif
 
 	if ((username == NULL && princ_name == NULL) ||
 	    ccname == NULL || uid < 0) {
@@ -342,6 +505,28 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			"max number of ccaches reached\n"));
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
+
+	/* If it is cached login, destroy krb5 ticket
+	 * to avoid surprise. */
+#ifdef HAVE_KRB5
+	if (postponed_request) {
+		/* ignore KRB5_FCC_NOFILE error here */
+		ret = ads_kdestroy(ccname);
+		if (ret == KRB5_FCC_NOFILE) {
+			ret = 0;
+		}
+		if (ret) {
+			DEBUG(0, ("add_ccache_to_list: failed to destroy "
+				   "user krb5 ccache %s with %s\n", ccname,
+				   error_message(ret)));
+			return krb5_to_nt_status(ret);
+		} else {
+			DEBUG(10, ("add_ccache_to_list: successfully destroyed "
+				   "krb5 ccache %s for user %s\n", ccname,
+				   username));
+		}
+	}
+#endif
 
 	/* Reference count old entries */
 	entry = get_ccache_by_username(username);
@@ -355,7 +540,50 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 			"ref count on entry %s is now %d\n",
 			username, entry->ref_count));
 		/* FIXME: in this case we still might want to have a krb5 cred
-		 * event handler created - gd*/
+		 * event handler created - gd
+		 * Add ticket refresh handler here */
+		
+		if (!lp_winbind_refresh_tickets() || renew_until <= 0) {
+			return NT_STATUS_OK;
+		}
+		
+		if (!entry->event) {
+			if (postponed_request) {
+				t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
+				add_krb5_ticket_gain_handler_event(entry, t);
+			} else {
+				/* Renew at 1/2 the ticket expiration time */
+#if defined(DEBUG_KRB5_TKT_RENEWAL)
+				t = timeval_set(time(NULL)+30, 0);
+#else
+				t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
+#endif
+				if (!entry->refresh_time) {
+					entry->refresh_time = t.tv_sec;
+				}
+				entry->event = event_add_timed(winbind_event_context(),
+							       entry,
+							       t,
+							       krb5_ticket_refresh_handler,
+							       entry);
+			}
+
+			if (!entry->event) {
+				ntret = remove_ccache(username);
+				if (!NT_STATUS_IS_OK(ntret)) {
+					DEBUG(0, ("add_ccache_to_list: Failed to remove krb5 "
+						  "ccache %s for user %s\n", entry->ccname,
+						  entry->username));
+					DEBUG(0, ("add_ccache_to_list: error is %s\n",
+						  nt_errstr(ntret)));
+					return ntret;
+				}
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			DEBUG(10,("add_ccache_to_list: added krb5_ticket handler\n"));
+		}
+		 
 		return NT_STATUS_OK;
 	}
 
@@ -406,12 +634,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 
 	if (postponed_request) {
 		t = timeval_current_ofs(MAX(30, lp_winbind_cache_time()), 0);
-		entry->event = event_add_timed(winbind_event_context(),
-					       entry,
-					       t,
-					       "krb5_ticket_gain_handler",
-					       krb5_ticket_gain_handler,
-					       entry);
+		add_krb5_ticket_gain_handler_event(entry, t);
 	} else {
 		/* Renew at 1/2 the ticket expiration time */
 #if defined(DEBUG_KRB5_TKT_RENEWAL)
@@ -419,10 +642,12 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 #else
 		t = timeval_set(KRB5_EVENT_REFRESH_TIME(ticket_end), 0);
 #endif
+		if (entry->refresh_time == 0) {
+			entry->refresh_time = t.tv_sec;
+		}
 		entry->event = event_add_timed(winbind_event_context(),
 					       entry,
 					       t,
-					       "krb5_ticket_refresh_handler",
 					       krb5_ticket_refresh_handler,
 					       entry);
 	}

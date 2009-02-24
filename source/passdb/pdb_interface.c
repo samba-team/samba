@@ -179,20 +179,26 @@ static struct pdb_methods *pdb_get_methods_reload( bool reload )
 		pdb->free_private_data( &(pdb->private_data) );
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
 			char *msg = NULL;
-			asprintf(&msg, "pdb_get_methods_reload: "
-				"failed to get pdb methods for backend %s\n",
-				lp_passdb_backend());
-			smb_panic(msg);
+			if (asprintf(&msg, "pdb_get_methods_reload: "
+					"failed to get pdb methods for backend %s\n",
+					lp_passdb_backend()) > 0) {
+				smb_panic(msg);
+			} else {
+				smb_panic("pdb_get_methods_reload");
+			}
 		}
 	}
 
 	if ( !pdb ) {
 		if ( !NT_STATUS_IS_OK( make_pdb_method_name( &pdb, lp_passdb_backend() ) ) ) {
 			char *msg = NULL;
-			asprintf(&msg, "pdb_get_methods_reload: "
-				"failed to get pdb methods for backend %s\n",
-				lp_passdb_backend());
-			smb_panic(msg);
+			if (asprintf(&msg, "pdb_get_methods_reload: "
+					"failed to get pdb methods for backend %s\n",
+					lp_passdb_backend()) > 0) {
+				smb_panic(msg);
+			} else {
+				smb_panic("pdb_get_methods_reload");
+			}
 		}
 	}
 
@@ -599,6 +605,9 @@ static NTSTATUS pdb_default_delete_dom_group(struct pdb_methods *methods,
 	struct group *grp;
 	const char *grp_name;
 
+	/* coverity */
+	map.gid = (gid_t) -1;
+
 	sid_compose(&group_sid, get_global_sam_sid(), rid);
 
 	if (!get_domain_group_from_sid(group_sid, &map)) {
@@ -773,6 +782,9 @@ static NTSTATUS pdb_default_add_groupmem(struct pdb_methods *methods,
 	struct passwd *pwd;
 	const char *group_name;
 	uid_t uid;
+
+	/* coverity */
+	map.gid = (gid_t) -1;
 
 	sid_compose(&group_sid, get_global_sam_sid(), group_rid);
 	sid_compose(&member_sid, get_global_sam_sid(), member_rid);

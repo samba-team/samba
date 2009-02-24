@@ -895,7 +895,7 @@ smbc_readdir_internal(SMBCCTX * context,
 
                 /* url-encode the name.  get back remaining buffer space */
                 max_namebuf_len =
-                        SMBC_urlencode(dest->name, src->name, max_namebuf_len);
+                        smbc_urlencode(dest->name, src->name, max_namebuf_len);
 
                 /* We now know the name length */
                 dest->namelen = strlen(dest->name);
@@ -976,9 +976,8 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
         }
 
-        dirp = (struct smbc_dirent *)context->internal->dirent;
-        maxlen = (sizeof(context->internal->dirent) -
-                  sizeof(struct smbc_dirent));
+        dirp = &context->internal->dirent;
+        maxlen = sizeof(context->internal->_dirent_name);
 
         smbc_readdir_internal(context, dirp, dirent, maxlen);
 
@@ -1049,9 +1048,8 @@ SMBC_getdents_ctx(SMBCCTX *context,
 		}
 
                 /* Do urlencoding of next entry, if so selected */
-                dirent = (struct smbc_dirent *)context->internal->dirent;
-                maxlen = (sizeof(context->internal->dirent) -
-                          sizeof(struct smbc_dirent));
+                dirent = &context->internal->dirent;
+                maxlen = sizeof(context->internal->_dirent_name);
                 smbc_readdir_internal(context, dirent,
                                       dirlist->dirent, maxlen);
 
@@ -1503,6 +1501,8 @@ SMBC_chmod_ctx(SMBCCTX *context,
         char *user = NULL;
         char *password = NULL;
         char *workgroup = NULL;
+	char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	char *path = NULL;
 	uint16 mode;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1520,7 +1520,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, newmode));
+	DEBUG(4, ("smbc_chmod(%s, 0%3o)\n", fname, (unsigned int)newmode));
 
 	if (SMBC_parse_path(frame,
                             context,
@@ -1553,6 +1553,14 @@ SMBC_chmod_ctx(SMBCCTX *context,
 		TALLOC_FREE(frame);
 		return -1;  /* errno set by SMBC_server */
 	}
+	
+	/*d_printf(">>>unlink: resolving %s\n", path);*/
+	if (!cli_resolve_path(frame, "", srv->cli, path,
+                              &targetcli, &targetpath)) {
+		d_printf("Could not resolve %s\n", path);
+		TALLOC_FREE(frame);
+		return -1;
+	}
 
 	mode = 0;
 
@@ -1561,8 +1569,8 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	if ((newmode & S_IXGRP) && lp_map_system(-1)) mode |= aSYSTEM;
 	if ((newmode & S_IXOTH) && lp_map_hidden(-1)) mode |= aHIDDEN;
 
-	if (!cli_setatr(srv->cli, path, mode, 0)) {
-		errno = SMBC_errno(context, srv->cli);
+	if (!cli_setatr(targetcli, targetpath, mode, 0)) {
+		errno = SMBC_errno(context, targetcli);
 		TALLOC_FREE(frame);
 		return -1;
 	}
@@ -1903,6 +1911,12 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 
 	}
 
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(ocontext,
+					   workgroup,
+				     	   user1,
+				    	   password1);
+
 	/*d_printf(">>>rename: resolving %s\n", path1);*/
 	if (!cli_resolve_path(frame, "", srv->cli, path1,
                               &targetcli1, &targetpath1)) {
@@ -1910,6 +1924,13 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 		TALLOC_FREE(frame);
 		return -1;
 	}
+	
+	/* set the credentials to make DFS work */
+	smbc_set_credentials_with_fallback(ncontext,
+					   workgroup,
+				           user2,
+				           password2);
+	
 	/*d_printf(">>>rename: resolved path as %s\n", targetpath1);*/
 	/*d_printf(">>>rename: resolving %s\n", path2);*/
 	if (!cli_resolve_path(frame, "", srv->cli, path2,

@@ -1119,6 +1119,27 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				  num_dcs, info);
 }
 
+static bool is_closest_site(struct netr_DsRGetDCNameInfo *info)
+{
+	if (info->dc_flags & DS_SERVER_CLOSEST) {
+		return true;
+	}
+
+	if (!info->client_site_name) {
+		return true;
+	}
+
+	if (!info->dc_site_name) {
+		return false;
+	}
+
+	if (strcmp(info->client_site_name, info->dc_site_name) == 0) {
+		return true;
+	}
+
+	return false;
+}
+
 /********************************************************************
  dsgetdcname.
 
@@ -1136,6 +1157,8 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct netr_DsRGetDCNameInfo *myinfo = NULL;
 	char *query_site = NULL;
+	bool first = true;
+	struct netr_DsRGetDCNameInfo *first_info = NULL;
 
 	DEBUG(10,("dsgetdcname: domain_name: %s, "
 		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
@@ -1163,7 +1186,6 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 	status = dsgetdcname_cached(mem_ctx, msg_ctx, domain_name, domain_guid,
 				    flags, query_site, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
-		*info = myinfo;
 		goto done;
 	}
 
@@ -1176,12 +1198,27 @@ NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 					domain_guid, flags, query_site,
 					&myinfo);
 
- 	if (NT_STATUS_IS_OK(status)) {
-		*info = myinfo;
-	}
-
  done:
 	SAFE_FREE(query_site);
 
-	return status;
+	if (!NT_STATUS_IS_OK(status)) {
+		if (!first) {
+			*info = first_info;
+			return NT_STATUS_OK;
+		}
+		return status;
+	}
+
+	if (!first) {
+		TALLOC_FREE(first_info);
+	} else if (!is_closest_site(myinfo)) {
+		first = false;
+		first_info = myinfo;
+		/* TODO: may use the next_closest_site here */
+		query_site = SMB_STRDUP(myinfo->client_site_name);
+		goto rediscover;
+	}
+
+	*info = myinfo;
+	return NT_STATUS_OK;
 }

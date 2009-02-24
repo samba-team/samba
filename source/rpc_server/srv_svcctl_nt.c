@@ -139,7 +139,7 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 	SEC_ACE ace[2];
 	size_t i = 0;
 	SEC_DESC *sd;
-	SEC_ACL *acl;
+	SEC_ACL *theacl;
 	size_t sd_size;
 
 	/* basic access for Everyone */
@@ -155,12 +155,12 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 
 	/* create the security descriptor */
 
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+	if ( !(theacl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
 	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
 				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
-				  acl, &sd_size)) )
+				  theacl, &sd_size)) )
 		return NULL;
 
 	return sd;
@@ -679,7 +679,6 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p,
 
 	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
-
 	*r->out.bytes_needed = r->in.buf_size;
 
 	wresult = fill_svc_config( p->mem_ctx, info->name, r->out.query, p->pipe_user.nt_user_token );

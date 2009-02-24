@@ -525,6 +525,7 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 	char *nsname = NULL;
 	char *ostream_fname = NULL;
 	char *nstream_fname = NULL;
+	char *newname_full = NULL;
 
 	DEBUG(10, ("streams_depot_rename called for %s => %s\n",
 		   oldname, newname));
@@ -536,11 +537,6 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_RENAME(handle, oldname, newname);
 	}
 
-	if (!(old_is_stream && new_is_stream)) {
-		errno = ENOSYS;
-		return -1;
-	}
-
 	frame = talloc_stackframe();
 
 	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
@@ -549,7 +545,7 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), oldname,
+	if (!NT_STATUS_IS_OK(split_ntfs_stream_name(talloc_tos(), newname,
 						    &nbase, &nsname))) {
 		errno = ENOMEM;
 		goto done;
@@ -561,17 +557,27 @@ static int streams_depot_rename(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	if (StrCaseCmp(obase, nbase) != 0) {
-		errno = ENOSYS;
-		goto done;
-	}
-
 	ostream_fname = stream_name(handle, oldname, false);
 	if (ostream_fname == NULL) {
 		return -1;
 	}
 
-	nstream_fname = stream_name(handle, newname, false);
+	/*
+	 * Handle passing in a stream name without the base file.  This is
+	 * exercised by the NTRENAME streams rename path.
+	 */
+	if (StrCaseCmp(nbase, "./") == 0) {
+		newname_full = talloc_asprintf(talloc_tos(), "%s:%s", obase,
+					       nsname);
+		if (newname_full == NULL) {
+			errno = ENOMEM;
+			goto done;
+		}
+	}
+
+	nstream_fname = stream_name(handle,
+				    newname_full ? newname_full : newname,
+				    false);
 	if (nstream_fname == NULL) {
 		return -1;
 	}

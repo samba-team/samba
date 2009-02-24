@@ -173,35 +173,35 @@ static void terminate(bool is_parent)
 	exit(0);
 }
 
-static bool do_sigterm;
+static SIG_ATOMIC_T do_sigterm = 0;
 
 static void termination_handler(int signum)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 	sys_select_signal(signum);
 }
 
-static bool do_sigusr2;
+static SIG_ATOMIC_T do_sigusr2 = 0;
 
 static void sigusr2_handler(int signum)
 {
-	do_sigusr2 = True;
+	do_sigusr2 = 1;
 	sys_select_signal(SIGUSR2);
 }
 
-static bool do_sighup;
+static SIG_ATOMIC_T do_sighup = 0;
 
 static void sighup_handler(int signum)
 {
-	do_sighup = True;
+	do_sighup = 1;
 	sys_select_signal(SIGHUP);
 }
 
-static bool do_sigchld;
+static SIG_ATOMIC_T do_sigchld = 0;
 
 static void sigchld_handler(int signum)
 {
-	do_sigchld = True;
+	do_sigchld = 1;
 	sys_select_signal(SIGCHLD);
 }
 
@@ -224,7 +224,7 @@ static void msg_shutdown(struct messaging_context *msg,
 			 struct server_id server_id,
 			 DATA_BLOB *data)
 {
-	do_sigterm = True;
+	do_sigterm = 1;
 }
 
 
@@ -259,7 +259,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	if (child_pid != 0) {
 		/* parent */
 		DEBUG(5, ("winbind_msg_validate_cache: child created with "
-			  "pid %d.\n", child_pid));
+			  "pid %d.\n", (int)child_pid));
 		return;
 	}
 
@@ -415,16 +415,16 @@ static void process_request(struct winbindd_cli_state *state)
 
 /*
  * A list of file descriptors being monitored by select in the main processing
- * loop. fd_event->handler is called whenever the socket is readable/writable.
+ * loop. winbindd_fd_event->handler is called whenever the socket is readable/writable.
  */
 
-static struct fd_event *fd_events = NULL;
+static struct winbindd_fd_event *fd_events = NULL;
 
-void add_fd_event(struct fd_event *ev)
+void add_fd_event(struct winbindd_fd_event *ev)
 {
-	struct fd_event *match;
+	struct winbindd_fd_event *match;
 
-	/* only add unique fd_event structs */
+	/* only add unique winbindd_fd_event structs */
 
 	for (match=fd_events; match; match=match->next ) {
 #ifdef DEVELOPER
@@ -438,17 +438,17 @@ void add_fd_event(struct fd_event *ev)
 	DLIST_ADD(fd_events, ev);
 }
 
-void remove_fd_event(struct fd_event *ev)
+void remove_fd_event(struct winbindd_fd_event *ev)
 {
 	DLIST_REMOVE(fd_events, ev);
 }
 
 /*
- * Handler for fd_events to complete a read/write request, set up by
+ * Handler for winbindd_fd_events to complete a read/write request, set up by
  * setup_async_read/setup_async_write.
  */
 
-static void rw_callback(struct fd_event *event, int flags)
+static void rw_callback(struct winbindd_fd_event *event, int flags)
 {
 	size_t todo;
 	ssize_t done = 0;
@@ -489,11 +489,11 @@ static void rw_callback(struct fd_event *event, int flags)
 }
 
 /*
- * Request an async read/write on a fd_event structure. (*finished) is called
+ * Request an async read/write on a winbindd_fd_event structure. (*finished) is called
  * when the request is completed or an error had occurred.
  */
 
-void setup_async_read(struct fd_event *event, void *data, size_t length,
+void setup_async_read(struct winbindd_fd_event *event, void *data, size_t length,
 		      void (*finished)(void *private_data, bool success),
 		      void *private_data)
 {
@@ -507,7 +507,7 @@ void setup_async_read(struct fd_event *event, void *data, size_t length,
 	event->flags = EVENT_FD_READ;
 }
 
-void setup_async_write(struct fd_event *event, void *data, size_t length,
+void setup_async_write(struct winbindd_fd_event *event, void *data, size_t length,
 		       void (*finished)(void *private_data, bool success),
 		       void *private_data)
 {
@@ -729,6 +729,7 @@ static void new_connection(int listen_sock, bool privileged)
 static void remove_client(struct winbindd_cli_state *state)
 {
 	char c = 0;
+	int nwritten;
 
 	/* It's a dead client - hold a funeral */
 	
@@ -737,7 +738,11 @@ static void remove_client(struct winbindd_cli_state *state)
 	}
 
 	/* tell client, we are closing ... */
-	write(state->sock, &c, sizeof(c));
+	nwritten = write(state->sock, &c, sizeof(c));
+	if (nwritten == -1) {
+		DEBUG(2, ("final write to client failed: %s\n",
+			  strerror(errno)));
+	}
 
 	/* Close socket */
 		
@@ -802,7 +807,7 @@ void winbind_check_sighup(const char *lfile)
 		flush_caches();
 		reload_services_file(lfile);
 
-		do_sighup = False;
+		do_sighup = 0;
 	}
 }
 
@@ -821,7 +826,7 @@ void winbind_check_sigterm(bool is_parent)
 static void process_loop(void)
 {
 	struct winbindd_cli_state *state;
-	struct fd_event *ev;
+	struct winbindd_fd_event *ev;
 	fd_set r_fds, w_fds;
 	int maxfd, listen_sock, listen_priv_sock, selret;
 	struct timeval timeout, ev_timeout;
@@ -915,7 +920,7 @@ static void process_loop(void)
 
 	ev = fd_events;
 	while (ev != NULL) {
-		struct fd_event *next = ev->next;
+		struct winbindd_fd_event *next = ev->next;
 		int flags = 0;
 		if (FD_ISSET(ev->fd, &r_fds))
 			flags |= EVENT_FD_READ;
@@ -977,13 +982,13 @@ static void process_loop(void)
 
 	if (do_sigusr2) {
 		print_winbindd_status();
-		do_sigusr2 = False;
+		do_sigusr2 = 0;
 	}
 
 	if (do_sigchld) {
 		pid_t pid;
 
-		do_sigchld = False;
+		do_sigchld = 0;
 
 		while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
 			winbind_child_died(pid);
@@ -1186,7 +1191,13 @@ int main(int argc, char **argv, char **envp)
 
 	TimeInit();
 
-	if (!reinit_after_fork(winbind_messaging_context(), false)) {
+	/* Don't use winbindd_reinit_after_fork here as
+	 * we're just starting up and haven't created any
+	 * winbindd-specific resources we must free yet. JRA.
+	 */
+
+	if (!reinit_after_fork(winbind_messaging_context(),
+			       winbind_event_context(), false)) {
 		DEBUG(0,("reinit_after_fork() failed\n"));
 		exit(1);
 	}

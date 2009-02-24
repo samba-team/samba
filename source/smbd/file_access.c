@@ -116,16 +116,11 @@ bool can_delete_file_in_directory(connection_struct *conn, const char *fname)
 	 * having the DELETE bit on the file itself and second if that does
 	 * not help, by the DELETE_CHILD bit on the containing directory.
 	 *
-	 * Here we check the other way round because with just posix
-	 * permissions looking at the file itself will never grant DELETE, so
-	 * by looking at the directory first we save one get_acl call.
+	 * Here we only check the directory permissions, we will
+	 * check the file DELETE permission separately.
 	 */
 
-	if (can_access_file_acl(conn, dname, FILE_DELETE_CHILD)) {
-		return true;
-	}
-
-	return can_access_file_acl(conn, fname, DELETE_ACCESS);
+	return can_access_file_acl(conn, dname, FILE_DELETE_CHILD);
 }
 
 /****************************************************************************

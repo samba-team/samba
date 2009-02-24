@@ -46,7 +46,7 @@ static void convert_USER_INFO_X_to_samr_user_info21(struct USER_INFO_X *infoX,
 		fields_present |= SAMR_FIELD_ACCOUNT_NAME;
 	}
 	if (infoX->usriX_password) {
-		fields_present |= SAMR_FIELD_PASSWORD;
+		fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
 	}
 	if (infoX->usriX_flags) {
 		fields_present |= SAMR_FIELD_ACCT_FLAGS;
@@ -553,7 +553,7 @@ WERROR NetUserDel_r(struct libnetapi_ctx *ctx,
 
 	status = rpccli_samr_OpenUser(pipe_cli, ctx,
 				      &domain_handle,
-				      STD_RIGHT_DELETE_ACCESS,
+				      SEC_STD_DELETE,
 				      user_rids.ids[0],
 				      &user_handle);
 	if (!NT_STATUS_IS_OK(status)) {

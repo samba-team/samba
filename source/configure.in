@@ -128,7 +128,7 @@ fi
 if test "x$debug" = "xyes" ; then
 	CFLAGS="${CFLAGS} -g"
 else
-	CFLAGS="-O"
+	CFLAGS="${CFLAGS} -O"
 fi
 
 CFLAGS="${CFLAGS} -D_SAMBA_BUILD_=3"
@@ -1078,6 +1078,20 @@ if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
 fi
 LIBS="$save_LIBS"
 
+printf "%s" "checking for GPFS libs (with 3.2.1 PTF8 available as GPL)... "
+save_LIBS="$LIBS"
+LIBS="$LIBS -lgpfs"
+AC_TRY_LINK([#include <gpfs.h>],
+          [gpfs_set_share(0,GPFS_SHARE_READ,GPFS_DENY_NONE)],
+          samba_cv_HAVE_GPFS=yes,
+          samba_cv_HAVE_GPFS=no)
+echo $samba_cv_HAVE_GPFS
+if test x"$samba_cv_HAVE_GPFS" = x"yes"; then
+    AC_DEFINE(HAVE_GPFS,1,[Whether GPFS GPL libs are available])
+    default_shared_modules="$default_shared_modules vfs_gpfs"
+fi
+LIBS="$save_LIBS"
+
 # Note that all the libunwind symbols in the API are defined to internal
 # platform-specific version, so we must include libunwind.h before checking
 # any of them.
@@ -1284,7 +1298,8 @@ fi
 
 #################################################
 # Check whether struct stat has timestamps with sub-second resolution.
-# At least IRIX and Solaris have these.
+# At least IRIX and Solaris have these.  FREEBSD does as well,
+# but with different members
 #
 # We check that
 #	all of st_mtim, st_atim and st_ctim exist
@@ -1293,6 +1308,43 @@ fi
 # There is some conflicting standards weirdness about whether we should use
 # "struct timespec" or "timespec_t". Linux doesn't have timespec_t, so we
 # prefer struct timespec.
+AC_CACHE_CHECK([whether struct stat has timespec timestamps],
+    samba_cv_stat_timespec_hires,
+      [
+      AC_TRY_COMPILE(
+	  [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	  ],
+	  [
+	  struct timespec t;
+	  struct stat s = {0};
+	  t = s.st_mtimespec;
+	  t = s.st_ctimespec;
+	  t = s.st_atimespec;
+	],
+      samba_cv_stat_timespec_hires=yes, samba_cv_stat_timespec_hires=no)
+      ])
+
+if test x"$samba_cv_stat_timespec_hires" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIMESPEC, 1, [whether struct stat contains st_mtimepec])
+    AC_DEFINE(HAVE_STAT_ST_ATIMESPEC, 1, [whether struct stat contains st_atimespec])
+    AC_DEFINE(HAVE_STAT_ST_CTIMESPEC, 1, [whether struct stat contains st_ctimespec])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1, [whether struct stat has sub-second timestamps])
+fi
+
+
 
 AC_CACHE_CHECK([whether struct stat has sub-second timestamps], samba_cv_stat_hires,
     [
@@ -1333,7 +1385,7 @@ if test x"$samba_cv_stat_hires" = x"yes" ; then
 	    [whether struct stat has sub-second timestamps])
 fi
 
-AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec], samba_cv_stat_hires_notimespec,
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec suffixed nsec], samba_cv_stat_hires_notimespec,
     [
 	AC_TRY_COMPILE(
 	    [
@@ -1361,7 +1413,7 @@ AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct tim
 		t.tv_sec = s.st_atime;
 		t.tv_nsec = s.st_atimensec;
 	    ],
-	    samba_cv_stat_hires=yes, samba_cv_stat_hires=no)
+	    samba_cv_stat_hires_notimespec=yes, samba_cv_stat_hires_notimespec=no)
     ])
 
 if test x"$samba_cv_stat_hires_notimespec" = x"yes" ; then
@@ -1369,7 +1421,87 @@ if test x"$samba_cv_stat_hires_notimespec" = x"yes" ; then
     AC_DEFINE(HAVE_STAT_ST_ATIMENSEC, 1, [whether struct stat contains st_atimensec])
     AC_DEFINE(HAVE_STAT_ST_CTIMENSEC, 1, [whether struct stat contains st_ctimensec])
     AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
-	    [whether struct stat has sub-second timestamps without struct timespec])
+	    [whether struct stat has sub-second timestamps without struct timespec suffixed nsec])
+fi
+
+dnl AIX stype sub-second timestamps:
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps without struct timespec suffixed _n], samba_cv_stat_hires_notimespec_n,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtime;
+		t.tv_nsec = s.st_mtime_n;
+		t.tv_sec = s.st_ctime;
+		t.tv_nsec = s.st_ctime_n;
+		t.tv_sec = s.st_atime;
+		t.tv_nsec = s.st_atime_n;
+	    ],
+	    samba_cv_stat_hires_notimespec_n=yes, samba_cv_stat_hires_notimespec_n=no)
+    ])
+
+if test x"$samba_cv_stat_hires_notimespec_n" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_MTIME_N, 1, [whether struct stat contains st_mtime_n])
+    AC_DEFINE(HAVE_STAT_ST_ATIME_N, 1, [whether struct stat contains st_atime_n])
+    AC_DEFINE(HAVE_STAT_ST_CTIME_N, 1, [whether struct stat contains st_ctime_n])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps without struct timespec suffixed _n])
+fi
+
+dnl Tru64 has _micro_second_ resolution:
+AC_CACHE_CHECK([whether struct stat has sub-second timestamps in st_uXtime], samba_cv_stat_hires_uxtime,
+    [
+	AC_TRY_COMPILE(
+	    [
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  include <time.h>
+# endif
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+	    ],
+	    [
+		struct timespec t;
+		struct stat s = {0};
+		t.tv_sec = s.st_mtime;
+		t.tv_nsec = s.st_umtime * 1000;
+		t.tv_sec = s.st_ctime;
+		t.tv_nsec = s.st_uctime * 1000;
+		t.tv_sec = s.st_atime;
+		t.tv_nsec = s.st_uatime * 1000;
+	    ],
+	    samba_cv_stat_hires_uxtime=yes, samba_cv_stat_hires_uxtime=no)
+    ])
+
+if test x"$samba_cv_stat_hires_uxtime" = x"yes" ; then
+    AC_DEFINE(HAVE_STAT_ST_UMTIME, 1, [whether struct stat contains st_umtime])
+    AC_DEFINE(HAVE_STAT_ST_UATIME, 1, [whether struct stat contains st_uatime])
+    AC_DEFINE(HAVE_STAT_ST_UCTIME, 1, [whether struct stat contains st_uctime])
+    AC_DEFINE(HAVE_STAT_HIRES_TIMESTAMPS, 1,
+	    [whether struct stat has sub-second timestamps in st_uXtime])
 fi
 
 AC_CACHE_CHECK([whether struct stat has st_birthtimespec], samba_cv_stat_st_birthtimespec,
@@ -1395,7 +1527,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtimespec], samba_cv_stat_st_birt
 		struct stat s = {0};
 		t = s.st_birthtimespec;
 	    ],
-	    samba_cv_stat_st_birthtimespec=yes, samba_cv_stat_birthtimespec=no)
+	    samba_cv_stat_st_birthtimespec=yes, samba_cv_stat_st_birthtimespec=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtimespec" = x"yes" ; then
@@ -1425,7 +1557,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtimensec], samba_cv_stat_st_birt
 		struct stat s = {0};
 		t.tv_nsec = s.st_birthtimensec;
 	    ],
-	    samba_cv_stat_st_birthtimensec=yes, samba_cv_stat_birthtimensec=no)
+	    samba_cv_stat_st_birthtimensec=yes, samba_cv_stat_st_birthtimensec=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtimensec" = x"yes" ; then
@@ -1455,7 +1587,7 @@ AC_CACHE_CHECK([whether struct stat has st_birthtime], samba_cv_stat_st_birthtim
 		struct stat s = {0};
 		t = s.st_birthtime;
 	    ],
-	    samba_cv_stat_st_birthtime=yes, samba_cv_stat_birthtime=no)
+	    samba_cv_stat_st_birthtime=yes, samba_cv_stat_st_birthtime=no)
     ])
 
 if test x"$samba_cv_stat_st_birthtime" = x"yes" ; then
@@ -4915,6 +5047,24 @@ if test x"$samba_cv_frsize" = x"yes"; then
     AC_DEFINE(HAVE_FRSIZE, 1, [Whether statvfs.f_frsize exists])
 fi
 
+# Some systems use f_flag in struct statvfs while others use f_flags
+AC_CACHE_CHECK([that statvfs.statvfs_f_flag works],samba_cv_statvfs_f_flag, [
+    AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/statvfs.h>],[struct statvfs buf; buf.f_flag = 0],
+	samba_cv_statvfs_f_flag=yes,samba_cv_statvfs_f_flag=no)])
+if test x"$samba_cv_statvfs_f_flag" = x"yes"; then
+    AC_DEFINE(HAVE_STATVFS_F_FLAG, 1, [Whether statvfs.f_flag exists])
+fi
+
+AC_CACHE_CHECK([that statvfs.statvfs_f_flags works],samba_cv_statvfs_f_flags, [
+    AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/statvfs.h>],[struct statvfs buf; buf.f_flags = 0],
+	samba_cv_statvfs_f_flags=yes,samba_cv_statvfs_f_flags=no)])
+if test x"$samba_cv_statvfs_f_flags" = x"yes"; then
+    AC_DEFINE(HAVE_STATVFS_F_FLAGS, 1, [Whether statvfs.f_flags exists])
+fi
+
+
 if test $space = no; then
   # DEC Alpha running OSF/1
   AC_MSG_CHECKING([for 3-argument statfs function (DEC OSF/1)])
@@ -5076,16 +5226,127 @@ AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 #################################################
 # check for cluster extensions
 
-AC_MSG_CHECKING(whether to include cluster support)
+CTDB_CFLAGS=""
+AC_SUBST(CTDB_CFLAGS)
+AC_ARG_WITH(ctdb,
+[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
+[ case "$withval" in
+  yes|no)
+    AC_MSG_WARN([--with-ctdb called without argument])
+    ;;
+  *)
+    CTDB_CPPFLAGS="-I$withval/include"
+    ;;
+  esac])
+
+SAVED_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $CTDB_CPPFLAGS"
+ctdb_broken="missing or broken headers"
+
+AC_CHECK_HEADERS(ctdb.h ctdb_private.h,,,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#define private #error __USED_RESERVED_WORD_private__
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+])
+
+AC_HAVE_DECL(CTDB_CONTROL_TRANS2_COMMIT_RETRY,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+if test x"$ac_cv_have_CTDB_CONTROL_TRANS2_COMMIT_RETRY_decl" = x"yes"; then
+	ctdb_broken=no
+else
+	ctdb_broken="missing transaction support"
+fi
+
+# in ctdb 1.0.57 ctdb_control_tcp was temparary renamed to ctdb_tcp_client
+AC_CHECK_TYPE(struct ctdb_tcp_client,[
+	AC_DEFINE([ctdb_control_tcp],[ctdb_tcp_client],[ctdb ipv4 support])
+],,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+
+AC_CHECK_TYPE(struct ctdb_control_tcp,[
+	AC_DEFINE([HAVE_STRUCT_CTDB_CONTROL_TCP],[1],[ctdb ipv4 support])
+],[
+	ctdb_broken="missing struct ctdb_control_tcp"
+],[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+
+AC_CHECK_TYPE(struct ctdb_control_tcp_addr,[
+	AC_DEFINE([HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR],[1],[ctdb ipv6 support])
+],,[
+#include "confdefs.h"
+#define NO_CONFIG_H
+#include "replace.h"
+#include "system/wait.h"
+#include "system/network.h"
+#include <talloc.h>
+#include <tdb.h>
+#include <ctdb.h>
+#include <ctdb_private.h>
+])
+CPPFLAGS="$SAVED_CPPFLAGS"
+
+AC_MSG_CHECKING(cluster support)
 AC_ARG_WITH(cluster-support,
-[AS_HELP_STRING([--with-cluster-support], [Enable cluster extensions (default=no)])])
-if test "x$with_cluster_support" = "xyes"; then
+[AS_HELP_STRING([--with-cluster-support], [Enable cluster extensions (default=auto)])])
+
+if test x"$with_cluster_support" = x ; then
+	with_cluster_support="auto"
+fi
+
+if test x"$ac_cv_header_ctdb_private_h" != x"yes"; then
+	if test "x$with_cluster_support" = "xyes"; then
+		AC_MSG_ERROR("ctdb_private.h is required for cluster support")
+	fi
+	with_cluster_support=no
+fi
+
+if test x"$ctdb_broken" != x"no"; then
+	if test "x$with_cluster_support" = "xyes"; then
+		AC_MSG_ERROR(["cluster support: $ctdb_broken"])
+	fi
+	with_cluster_support=no
+fi
+
+if test "x$with_cluster_support" != "xno"; then
     AC_DEFINE(CLUSTER_SUPPORT,1,[Whether to enable cluster extensions])
+    SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${CTDB_CPPFLAGS}"
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(no)
 fi
-
 
 #################################################
 # check for ACL support
@@ -5923,7 +6184,7 @@ if test x"$enable_dnssd" != x"no"; then
     AC_CHECK_FUNCS(DNSServiceRegister)
     AC_CHECK_LIB_EXT(dns_sd, DNSSD_LIBS, DNSServiceRegister)
     if test x"$ac_cv_func_DNSServiceRegister" != x"yes" -a \
-            x"$ac_cv_lib_ext_DNSServiceRegister" != x"yes"; then
+            x"$ac_cv_lib_ext_dns_sd_DNSServiceRegister" != x"yes"; then
 	have_dnssd_support=no
     fi
 

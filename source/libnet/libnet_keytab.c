@@ -324,7 +324,7 @@ struct libnet_keytab_entry *libnet_keytab_search(struct libnet_keytab_context *c
 
 	ret = krb5_kt_start_seq_get(ctx->context, ctx->keytab, &cursor);
 	if (ret) {
-		DEBUG(10, ("krb5_kt_start_seq_get failed: %s",
+		DEBUG(10, ("krb5_kt_start_seq_get failed: %s\n",
 			  error_message(ret)));
 		return NULL;
 	}

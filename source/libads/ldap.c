@@ -162,6 +162,11 @@ bool ads_closest_dc(ADS_STRUCT *ads)
 		return True;
 	}
 
+	if (ads->config.client_site_name == NULL) {
+		DEBUG(10,("ads_closest_dc: client belongs to no site\n"));
+		return True;
+	}
+
 	DEBUG(10,("ads_closest_dc: %s is not the closest DC\n", 
 		ads->config.ldap_server_name));
 
@@ -267,10 +272,12 @@ static bool ads_try_connect(ADS_STRUCT *ads, const char *server, bool gc)
 
 static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 {
+	const char *c_domain;
 	const char *c_realm;
 	int count, i=0;
 	struct ip_service *ip_list;
 	const char *realm;
+	const char *domain;
 	bool got_realm = False;
 	bool use_own_domain = False;
 	char *sitename;
@@ -292,6 +299,8 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 	if (c_realm && *c_realm)
 		got_realm = True;
 
+ again:
+
 	/* we need to try once with the realm name and fallback to the
 	   netbios domain name if we fail (if netbios has not been disabled */
 
@@ -308,13 +317,42 @@ static NTSTATUS ads_find_dc(ADS_STRUCT *ads)
 		return NT_STATUS_INVALID_PARAMETER; /* rather need MISSING_PARAMETER ... */
 	}
 
+	if ( use_own_domain ) {
+		c_domain = lp_workgroup();
+	} else {
+		c_domain = ads->server.workgroup;
+	}
+
 	realm = c_realm;
+	domain = c_domain;
+
+	/*
+	 * In case of LDAP we use get_dc_name() as that
+	 * creates the custom krb5.conf file
+	 */
+	if (!(ads->auth.flags & ADS_AUTH_NO_BIND)) {
+		fstring srv_name;
+		struct sockaddr_storage ip_out;
+
+		DEBUG(6,("ads_find_dc: (ldap) looking for %s '%s'\n",
+			(got_realm ? "realm" : "domain"), realm));
+
+		if (get_dc_name(domain, realm, srv_name, &ip_out)) {
+			/*
+			 * we call ads_try_connect() to fill in the
+			 * ads->config details
+			 */
+			if (ads_try_connect(ads, srv_name, false)) {
+				return NT_STATUS_OK;
+			}
+		}
+
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
 
 	sitename = sitename_fetch(realm);
 
- again:
-
-	DEBUG(6,("ads_find_dc: looking for %s '%s'\n",
+	DEBUG(6,("ads_find_dc: (cldap) looking for %s '%s'\n",
 		(got_realm ? "realm" : "domain"), realm));
 
 	status = get_sorted_dc_list(realm, sitename, &ip_list, &count, got_realm);
@@ -543,9 +581,20 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		TALLOC_FREE(s);
 	}
 
-	if (ads->server.ldap_server &&
-	    ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {
-		goto got_connection;
+	if (ads->server.ldap_server)
+	{
+		if (ads_try_connect(ads, ads->server.ldap_server, ads->server.gc)) {			
+			goto got_connection;
+		}
+		
+		/* The choice of which GC use is handled one level up in
+		   ads_connect_gc().  If we continue on from here with
+		   ads_find_dc() we will get GC searches on port 389 which
+		   doesn't work.   --jerry */
+
+		if (ads->server.gc == true) {
+			return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+		}
 	}
 
 	ntstatus = ads_find_dc(ads);
@@ -565,7 +614,10 @@ got_connection:
 		/* Must use the userPrincipalName value here or sAMAccountName
 		   and not servicePrincipalName; found by Guenther Deschner */
 
-		asprintf(&ads->auth.user_name, "%s$", global_myname() );
+		if (asprintf(&ads->auth.user_name, "%s$", global_myname() ) == -1) {
+			DEBUG(0,("ads_connect: asprintf fail.\n"));
+			ads->auth.user_name = NULL;
+		}
 	}
 
 	if (!ads->auth.realm) {
@@ -581,10 +633,11 @@ got_connection:
 	/* this is a really nasty hack to avoid ADS DNS problems. It needs a patch
 	   to MIT kerberos to work (tridge) */
 	{
-		char *env;
-		asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->config.realm);
-		setenv(env, ads->auth.kdc_server, 1);
-		free(env);
+		char *env = NULL;
+		if (asprintf(&env, "KRB5_KDC_ADDRESS_%s", ads->config.realm) > 0) {
+			setenv(env, ads->auth.kdc_server, 1);
+			free(env);
+		}
 	}
 #endif
 
@@ -613,16 +666,17 @@ got_connection:
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
-		print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-		saf_store( ads->server.workgroup, addr);
-		saf_store( ads->server.realm, addr);
+		saf_store( ads->server.workgroup, ads->config.ldap_server_name);
+		saf_store( ads->server.realm, ads->config.ldap_server_name);
 	}
 
 	ldap_set_option(ads->ldap.ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-	status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
-	if (!ADS_ERR_OK(status)) {
-		goto out;
+	if ( lp_ldap_ssl_ads() ) {
+		status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
+		if (!ADS_ERR_OK(status)) {
+			goto out;
+		}
 	}
 
 	/* fill in the current time and offsets */

@@ -91,14 +91,18 @@ static void get_auth_data(const char *srv, const char *shr, char *wg, int wglen,
 
 	if(!nonprompt && !username) {
 		printf("Username for %s at %s [guest] ", shr, srv);
-		fgets(tmp, sizeof(tmp), stdin);
+		if (fgets(tmp, sizeof(tmp), stdin) == NULL) {
+			return;
+		}
 		if(tmp[strlen(tmp)-1] == '\n')tmp[strlen(tmp)-1] = '\0';
 		strncpy(un, tmp, unlen-1);
 	} else if(username) strncpy(un, username, unlen-1);
 
 	if(!nonprompt && !password) {
 		char *prompt, *pass;
-		asprintf(&prompt, "Password for %s at %s: ", shr, srv);
+		if (asprintf(&prompt, "Password for %s at %s: ", shr, srv) == -1) {
+			return;
+		}
 		pass = getpass(prompt);
 		free(prompt);
 		strncpy(pw, pass, pwlen-1);
@@ -138,7 +142,9 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 	while((dirent = smbc_readdir(dirhandle))) {
 		char *newname;
 		if(!strcmp(dirent->name, ".") || !strcmp(dirent->name, ".."))continue;
-		asprintf(&newname, "%s/%s", tmpname, dirent->name);
+		if (asprintf(&newname, "%s/%s", tmpname, dirent->name) == -1) {
+			return 0;
+		}
 		switch(dirent->smbc_type) {
 		case SMBC_DIR:
 			smb_download_dir(base, newname, resume);
@@ -188,7 +194,8 @@ static int smb_download_dir(const char *base, const char *name, int resume)
 		}
 		
 		if(chmod(relname, remotestat.st_mode) < 0) {
-			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname, remotestat.st_mode);
+			fprintf(stderr, "Unable to change mode of local dir %s to %o\n", relname,
+				(unsigned int)remotestat.st_mode);
 			smbc_closedir(dirhandle);
 			return 0;
 		}
@@ -231,11 +238,19 @@ static void print_progress(const char *name, time_t start, time_t now, off_t sta
 	human_readable(avg, havg, sizeof(havg));
 
 	len = asprintf(&status, "%s of %s (%.2f%%) at %s/s ETA: %s", hpos, htotal, prcnt, havg, print_time(eta));
+	if (len == -1) {
+		return;
+	}
 	
 	if(columns) {
 		int required = strlen(name), available = columns - len - strlen("[] ");
-		if(required > available) asprintf(&filename, "...%s", name + required - available + 3);
-		else filename = SMB_STRNDUP(name, available);
+		if(required > available) {
+			if (asprintf(&filename, "...%s", name + required - available + 3) == -1) {
+				return;
+			}
+		} else {
+			filename = SMB_STRNDUP(name, available);
+		}
 	} else filename = SMB_STRDUP(name);
 
 	fprintf(stderr, "\r[%s] %s", filename, status);
@@ -457,7 +472,8 @@ static int smb_download_file(const char *base, const char *name, int recursive, 
 
 	if(keep_permissions && !send_stdout) {
 		if(fchmod(localhandle, remotestat.st_mode) < 0) {
-			fprintf(stderr, "Unable to change mode of local file %s to %o\n", path, remotestat.st_mode);
+			fprintf(stderr, "Unable to change mode of local file %s to %o\n", path,
+				(unsigned int)remotestat.st_mode);
 			smbc_close(remotehandle);
 			close(localhandle);
 			return 0;
@@ -473,7 +489,8 @@ static void clean_exit(void)
 {
 	char bs[100];
 	human_readable(total_bytes, bs, sizeof(bs));
-	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs, time(NULL) - total_start_time);
+	if(!quiet)fprintf(stderr, "Downloaded %s in %lu seconds\n", bs,
+		(unsigned long)(time(NULL) - total_start_time));
 	exit(0);
 }
 
@@ -574,7 +591,9 @@ int main(int argc, const char **argv)
 	load_case_tables();
 
 	/* only read rcfile if it exists */
-	asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME"));
+	if (asprintf(&rcfile, "%s/.smbgetrc", getenv("HOME")) == -1) {
+		return 1;
+	}
 	if(access(rcfile, F_OK) == 0) 
 		readrcfile(rcfile, long_options);
 	free(rcfile);

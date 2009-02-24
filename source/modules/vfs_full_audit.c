@@ -194,6 +194,11 @@ static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 					  TALLOC_CTX *mem_ctx,
 					  unsigned int *pnum_streams,
 					  struct stream_struct **pstreams);
+static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
+					    const char *path,
+					    const char *name,
+					    TALLOC_CTX *mem_ctx,
+					    char **found_name);
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 				uint32 security_info,
 				SEC_DESC **ppdesc);
@@ -425,6 +430,8 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_streaminfo),	SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_LOGGER},
+	{SMB_VFS_OP(smb_full_audit_get_real_filename), SMB_VFS_OP_GET_REAL_FILENAME,
+	 SMB_VFS_LAYER_LOGGER},
 
 	/* NT ACL operations. */
 
@@ -593,6 +600,7 @@ static struct {
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
 	{ SMB_VFS_OP_FILE_ID_CREATE,	"file_id_create" },
 	{ SMB_VFS_OP_STREAMINFO,	"streaminfo" },
+	{ SMB_VFS_OP_GET_REAL_FILENAME, "get_real_filename" },
 	{ SMB_VFS_OP_FGET_NT_ACL,	"fget_nt_acl" },
 	{ SMB_VFS_OP_GET_NT_ACL,	"get_nt_acl" },
 	{ SMB_VFS_OP_FSET_NT_ACL,	"fset_nt_acl" },
@@ -693,6 +701,7 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 {
 	char *prefix = NULL;
+	char *result;
 
 	prefix = talloc_strdup(ctx,
 			lp_parm_const_string(SNUM(conn), "full_audit",
@@ -700,7 +709,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	if (!prefix) {
 		return NULL;
 	}
-	return talloc_sub_advanced(ctx,
+	result = talloc_sub_advanced(ctx,
 			lp_servicename(SNUM(conn)),
 			conn->server_info->unix_name,
 			conn->connectpath,
@@ -708,6 +717,8 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 			conn->server_info->sanitized_username,
 			pdb_get_domain(conn->server_info->sam_account),
 			prefix);
+	TALLOC_FREE(prefix);
+	return result;
 }
 
 static bool log_success(vfs_handle_struct *handle, vfs_op_type op)
@@ -1547,6 +1558,23 @@ static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 
 	do_log(SMB_VFS_OP_STREAMINFO, NT_STATUS_IS_OK(result), handle,
 	       "%s", fname);
+
+	return result;
+}
+
+static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
+					    const char *path,
+					    const char *name,
+					    TALLOC_CTX *mem_ctx,
+					    char **found_name)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_GET_REAL_FILENAME(handle, path, name, mem_ctx,
+						found_name);
+
+	do_log(SMB_VFS_OP_GET_REAL_FILENAME, (result == 0), handle,
+	       "%s/%s->%s", path, name, (result == 0) ? "" : *found_name);
 
 	return result;
 }

@@ -57,8 +57,8 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 			void *private_data);
 
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_in *server,
-			    const struct sockaddr_in *client,
+			    const struct sockaddr_storage *server,
+			    const struct sockaddr_storage *client,
 			    void (*release_ip_handler)(const char *ip_addr,
 						       void *private_data),
 			    void *private_data);

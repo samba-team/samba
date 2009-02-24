@@ -200,7 +200,7 @@ struct deferred_msg_state {
 
 static void deferred_message_dispatch(struct event_context *event_ctx,
 				      struct timed_event *te,
-				      const struct timeval *now,
+				      struct timeval now,
 				      void *private_data)
 {
 	struct deferred_msg_state *state = talloc_get_type_abort(
@@ -386,7 +386,6 @@ static NTSTATUS ctdb_read_req(struct ctdbd_connection *conn, uint32 reqid,
 		evt = event_add_timed(conn->msg_ctx->event_ctx,
 				      conn->msg_ctx->event_ctx,
 				      timeval_zero(),
-				      "deferred_message_dispatch",
 				      deferred_message_dispatch,
 				      msg_state);
 		if (evt == NULL) {
@@ -1171,24 +1170,82 @@ NTSTATUS ctdbd_traverse(uint32 db_id,
 }
 
 /*
+   This is used to canonicalize a ctdb_sock_addr structure.
+*/
+static void smbd_ctdb_canonicalize_ip(const struct sockaddr_storage *in,
+				      struct sockaddr_storage *out)
+{
+	memcpy(out, in, sizeof (*out));
+
+#ifdef HAVE_IPV6
+	if (in->ss_family == AF_INET6) {
+		const char prefix[12] = { 0,0,0,0,0,0,0,0,0,0,0xff,0xff };
+		const struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)in;
+		struct sockaddr_in *out4 = (struct sockaddr_in *)out;
+		if (memcmp(&in6->sin6_addr, prefix, 12) == 0) {
+			memset(out, 0, sizeof(*out));
+#ifdef HAVE_SOCK_SIN_LEN
+			out4->sin_len = sizeof(*out);
+#endif
+			out4->sin_family = AF_INET;
+			out4->sin_port   = in6->sin6_port;
+			memcpy(&out4->sin_addr, &in6->sin6_addr.s6_addr32[3], 4);
+		}
+	}
+#endif
+}
+
+/*
  * Register us as a server for a particular tcp connection
  */
 
 NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
-			    const struct sockaddr_in *server,
-			    const struct sockaddr_in *client,
+			    const struct sockaddr_storage *_server,
+			    const struct sockaddr_storage *_client,
 			    void (*release_ip_handler)(const char *ip_addr,
 						       void *private_data),
 			    void *private_data)
 {
-	struct ctdb_control_tcp p;
+	/*
+	 * we still use ctdb_control_tcp for ipv4
+	 * because we want to work against older ctdb
+	 * versions at runtime
+	 */
+	struct ctdb_control_tcp p4;
+#ifdef HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR
+	struct ctdb_control_tcp_addr p;
+#endif
 	TDB_DATA data;
 	NTSTATUS status;
+	struct sockaddr_storage client;
+	struct sockaddr_storage server;
 
 	/*
 	 * Only one connection so far
 	 */
 	SMB_ASSERT(conn->release_ip_handler == NULL);
+
+	smbd_ctdb_canonicalize_ip(_client, &client);
+	smbd_ctdb_canonicalize_ip(_server, &server);
+
+	switch (client.ss_family) {
+	case AF_INET:
+		p4.dest = *(struct sockaddr_in *)&server;
+		p4.src = *(struct sockaddr_in *)&client;
+		data.dptr = (uint8_t *)&p4;
+		data.dsize = sizeof(p4);
+		break;
+#ifdef HAVE_STRUCT_CTDB_CONTROL_TCP_ADDR
+	case AF_INET6:
+		p.dest.ip6 = *(struct sockaddr_in6 *)&server;
+		p.src.ip6 = *(struct sockaddr_in6 *)&client;
+		data.dptr = (uint8_t *)&p;
+		data.dsize = sizeof(p);
+		break;
+#endif
+	default:
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	conn->release_ip_handler = release_ip_handler;
 
@@ -1201,17 +1258,11 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 		return status;
 	}
 
-	p.dest = *server;
-	p.src = *client;
-
 	/*
 	 * inform ctdb of our tcp connection, so if IP takeover happens ctdb
 	 * can send an extra ack to trigger a reset for our client, so it
 	 * immediately reconnects
 	 */
-	data.dptr = (uint8_t *)&p;
-	data.dsize = sizeof(p);
-
 	return ctdbd_control(conn, CTDB_CURRENT_NODE, 
 			     CTDB_CONTROL_TCP_CLIENT, 0,
 			     CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL, NULL);

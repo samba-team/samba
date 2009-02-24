@@ -670,7 +670,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 		struct utimbuf times;
 		times.actime = convert_timespec_to_time_t(ts[0]);
 		times.modtime = convert_timespec_to_time_t(ts[1]);
-		result = utime(path, times);
+		result = utime(path, &times);
 	} else {
 		result = utime(path, NULL);
 	}
@@ -713,6 +713,20 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	/* Shrink - just ftruncate. */
 	if (st.st_size > len)
 		return sys_ftruncate(fsp->fh->fd, len);
+
+	/* available disk space is enough or not? */
+	if (lp_strict_allocate(SNUM(fsp->conn))){
+		SMB_BIG_UINT space_avail;
+		SMB_BIG_UINT bsize,dfree,dsize;
+
+		space_avail = get_dfree_info(fsp->conn,fsp->fsp_name,false,&bsize,&dfree,&dsize);
+		/* space_avail is 1k blocks */
+		if (space_avail == (SMB_BIG_UINT)-1 ||
+				((SMB_BIG_UINT)space_to_write/1024 > space_avail) ) {
+			errno = ENOSPC;
+			return -1;
+		}
+	}
 
 	/* Write out the real space on disk. */
 	if (SMB_VFS_LSEEK(fsp, st.st_size, SEEK_SET) != st.st_size)
@@ -1010,6 +1024,16 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 	*pnum_streams = num_streams;
 	*pstreams = streams;
 	return NT_STATUS_OK;
+}
+
+static int vfswrap_get_real_filename(struct vfs_handle_struct *handle,
+				     const char *path,
+				     const char *name,
+				     TALLOC_CTX *mem_ctx,
+				     char **found_name)
+{
+	return get_real_filename(handle->conn, path, name, mem_ctx,
+				 found_name);
 }
 
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
@@ -1430,6 +1454,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_get_real_filename),	SMB_VFS_OP_GET_REAL_FILENAME,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

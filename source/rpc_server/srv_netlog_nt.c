@@ -474,6 +474,32 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 	uint32_t srv_flgs;
 	struct netr_Credential srv_chal_out;
 
+	/* According to Microsoft (see bugid #6099)
+	 * Windows 7 looks at the negotiate_flags
+	 * returned in this structure *even if the
+	 * call fails with access denied ! So in order
+	 * to allow Win7 to connect to a Samba NT style
+	 * PDC we set the flags before we know if it's
+	 * an error or not.
+	 */
+
+	/* 0x000001ff */
+	srv_flgs = NETLOGON_NEG_ACCOUNT_LOCKOUT |
+		   NETLOGON_NEG_PERSISTENT_SAMREPL |
+		   NETLOGON_NEG_ARCFOUR |
+		   NETLOGON_NEG_PROMOTION_COUNT |
+		   NETLOGON_NEG_CHANGELOG_BDC |
+		   NETLOGON_NEG_FULL_SYNC_REPL |
+		   NETLOGON_NEG_MULTIPLE_SIDS |
+		   NETLOGON_NEG_REDO |
+		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL;
+
+	if (lp_server_schannel() != false) {
+		srv_flgs |= NETLOGON_NEG_SCHANNEL;
+	}
+
+	*r->out.negotiate_flags = srv_flgs;
+
 	/* We use this as the key to store the creds: */
 	/* r->in.computer_name */
 
@@ -520,26 +546,9 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* 0x000001ff */
-	srv_flgs = NETLOGON_NEG_ACCOUNT_LOCKOUT |
-		   NETLOGON_NEG_PERSISTENT_SAMREPL |
-		   NETLOGON_NEG_ARCFOUR |
-		   NETLOGON_NEG_PROMOTION_COUNT |
-		   NETLOGON_NEG_CHANGELOG_BDC |
-		   NETLOGON_NEG_FULL_SYNC_REPL |
-		   NETLOGON_NEG_MULTIPLE_SIDS |
-		   NETLOGON_NEG_REDO |
-		   NETLOGON_NEG_PASSWORD_CHANGE_REFUSAL;
-
-	if (lp_server_schannel() != false) {
-		srv_flgs |= NETLOGON_NEG_SCHANNEL;
-	}
-
 	/* set up the LSA AUTH 2 response */
 	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
 	       sizeof(r->out.return_credentials->data));
-	*r->out.negotiate_flags = srv_flgs;
 
 	fstrcpy(p->dc->mach_acct, r->in.account_name);
 	fstrcpy(p->dc->remote_machine, r->in.computer_name);
@@ -688,7 +697,7 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 	/* set up the LSA Server Password Set response */
 
 	memcpy(r->out.return_authenticator, &cred_out,
-	       sizeof(r->out.return_authenticator));
+	       sizeof(*(r->out.return_authenticator)));
 
 	TALLOC_FREE(sampass);
 	return status;
@@ -797,14 +806,11 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 	}
 
 	if (process_creds) {
-		fstring remote_machine;
 
 		/* Get the remote machine name for the creds store. */
 		/* Note this is the remote machine this request is coming from (member server),
 		   not neccessarily the workstation name the user is logging onto.
 		*/
-
-		fstrcpy(remote_machine, r->in.computer_name);
 
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
@@ -812,7 +818,7 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 			become_root();
 			ret = secrets_restore_schannel_session_info(
-				p, remote_machine, &p->dc);
+				p, r->in.computer_name, &p->dc);
 			unbecome_root();
 			if (!ret) {
 				return NT_STATUS_INVALID_HANDLE;
@@ -827,13 +833,13 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 		if (!netlogon_creds_server_step(p->dc, r->in.credential,  r->out.return_authenticator)) {
 			DEBUG(2,("_netr_LogonSamLogon: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
-				remote_machine, p->dc->mach_acct ));
+				r->in.computer_name, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* We must store the creds state after an update. */
 		become_root();
-		secrets_store_schannel_session_info(p, remote_machine, p->dc);
+		secrets_store_schannel_session_info(p, r->in.computer_name, p->dc);
 		unbecome_root();
 	}
 
@@ -1165,11 +1171,10 @@ WERROR _netr_DsRGetDCName(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
-				    struct netr_NETRLOGONDUMMYROUTINE1 *r)
+NTSTATUS _netr_LogonGetCapabilities(pipes_struct *p,
+				    struct netr_LogonGetCapabilities *r)
 {
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
