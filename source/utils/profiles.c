@@ -121,6 +121,7 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	struct regsubkey_ctr *subkeys;
 	int i;
 	char *path;
+	WERROR werr;
 
 	/* swap out the SIDs in the security descriptor */
 
@@ -132,7 +133,8 @@ static bool copy_registry_tree( REGF_FILE *infile, REGF_NK_REC *nk,
 	verbose_output("ACL for %s%s%s\n", parentpath, parent ? "\\" : "", nk->keyname);
 	swap_sid_in_acl( new_sd, &old_sid, &new_sid );
 
-	if ( !(subkeys = TALLOC_ZERO_P( NULL, struct regsubkey_ctr )) ) {
+	werr = regsubkey_ctr_init(NULL, &subkeys);
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(0,("copy_registry_tree: talloc() failure!\n"));
 		return False;
 	}
