@@ -923,13 +923,13 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 				ret->u.extended.attr = talloc_strdup(ret, "*");
 			}
 			ret->u.extended.rule_id      = talloc_steal(ret, oid);
-			ret->u.extended.value.data   = talloc_steal(ret, value);
+			ret->u.extended.value.data   = (uint8_t *)talloc_steal(ret, value);
 			ret->u.extended.value.length = strlen(value);
 			ret->u.extended.dnAttributes = dnAttributes;
 		} else {
 			ret->operation               = LDB_OP_EQUALITY;
 			ret->u.equality.attr         = talloc_steal(ret, attr);
-			ret->u.equality.value.data   = talloc_steal(ret, value);
+			ret->u.equality.value.data   = (uint8_t *)talloc_steal(ret, value);
 			ret->u.equality.value.length = strlen(value);
 		}
 		if (!asn1_end_tag(data)) {
@@ -1087,13 +1087,17 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchRequest): {
 		struct ldap_SearchRequest *r = &msg->r.SearchRequest;
+		int sizelimit, timelimit;
+		const char **attrs = NULL;
 		msg->type = LDAP_TAG_SearchRequest;
 		asn1_start_tag(data, tag);
 		asn1_read_OctetString_talloc(msg, data, &r->basedn);
 		asn1_read_enumerated(data, (int *)&(r->scope));
 		asn1_read_enumerated(data, (int *)&(r->deref));
-		asn1_read_Integer(data, &r->sizelimit);
-		asn1_read_Integer(data, &r->timelimit);
+		asn1_read_Integer(data, &sizelimit);
+		r->sizelimit = sizelimit;
+		asn1_read_Integer(data, &timelimit);
+		r->timelimit = timelimit;
 		asn1_read_BOOLEAN(data, &r->attributesonly);
 
 		r->tree = ldap_decode_filter_tree(msg, data);
@@ -1113,10 +1117,11 @@ _PUBLIC_ NTSTATUS ldap_decode(struct asn1_data *data, struct ldap_message *msg)
 							  &attr))
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 			if (!add_string_to_array(msg, attr,
-						 &r->attributes,
+						 &attrs,
 						 &r->num_attributes))
 				return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
 		}
+		r->attributes = attrs;
 
 		asn1_end_tag(data);
 		asn1_end_tag(data);

@@ -160,7 +160,7 @@ struct ldap_CompareRequest {
 };
 
 struct ldap_AbandonRequest {
-	uint32_t messageid;
+	int messageid;
 };
 
 struct ldap_ExtendedRequest {
