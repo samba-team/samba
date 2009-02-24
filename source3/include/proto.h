@@ -972,8 +972,6 @@ struct passwd *sys_getpwnam(const char *name);
 struct passwd *sys_getpwuid(uid_t uid);
 struct group *sys_getgrnam(const char *name);
 struct group *sys_getgrgid(gid_t gid);
-pid_t sys_fork(void);
-pid_t sys_getpid(void);
 int sys_popen(const char *command);
 int sys_pclose(int fd);
 ssize_t sys_getxattr (const char *path, const char *name, void *value, size_t size);

@@ -88,3 +88,32 @@ _PUBLIC_ struct in_addr sys_inet_makeaddr(int net, int host)
 	return in2;
 }
 
+/**************************************************************************
+ Wrapper for fork. Ensures we clear our pid cache.
+****************************************************************************/
+
+static pid_t mypid = (pid_t)-1;
+
+_PUBLIC_ pid_t sys_fork(void)
+{
+	pid_t forkret = fork();
+
+	if (forkret == (pid_t)0) {
+		/* Child - reset mypid so sys_getpid does a system call. */
+		mypid = (pid_t) -1;
+	}
+
+	return forkret;
+}
+
+/**************************************************************************
+ Wrapper for getpid. Ensures we only do a system call *once*.
+****************************************************************************/
+
+_PUBLIC_ pid_t sys_getpid(void)
+{
+	if (mypid == (pid_t)-1)
+		mypid = getpid();
+
+	return mypid;
+}
