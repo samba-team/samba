@@ -259,7 +259,7 @@ static void winbind_msg_validate_cache(struct messaging_context *msg_ctx,
 	if (child_pid != 0) {
 		/* parent */
 		DEBUG(5, ("winbind_msg_validate_cache: child created with "
-			  "pid %d.\n", child_pid));
+			  "pid %d.\n", (int)child_pid));
 		return;
 	}
 
