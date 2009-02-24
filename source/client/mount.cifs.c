@@ -485,7 +485,8 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			}
 		} else if (strncmp(data, "sec", 3) == 0) {
 			if (value) {
-				if (!strcmp(value, "none"))
+				if (!strncmp(value, "none", 4) ||
+				    !strncmp(value, "krb5", 4))
 					got_password = 1;
 			}
 		} else if (strncmp(data, "ip", 2) == 0) {
@@ -533,8 +534,11 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				SAFE_FREE(out);
 				return 1;
 			}
-		} else if ((strncmp(data, "domain", 3) == 0)
-			   || (strncmp(data, "workgroup", 5) == 0)) {
+		} else if ((strncmp(data, "dom" /* domain */, 3) == 0)
+			   || (strncmp(data, "workg", 5) == 0)) {
+			/* note this allows for synonyms of "domain"
+			   such as "DOM" and "dom" and "workgroup"
+			   and "WORKGRP" etc. */
 			if (!value || !*value) {
 				printf("CIFS: invalid domain name\n");
 				SAFE_FREE(out);
@@ -1075,6 +1079,14 @@ int main(int argc, char ** argv)
 		}
 		mountpoint = argv[2];
 	} else {
+		if ((strcmp (argv[1], "--version") == 0) ||
+		    ((strcmp (argv[1], "-V") == 0))) {
+			printf ("mount.cifs version: %s.%s%s\n",
+			MOUNT_CIFS_VERSION_MAJOR,
+			MOUNT_CIFS_VERSION_MINOR,
+			MOUNT_CIFS_VENDOR_SUFFIX);
+			exit (0);
+		}
 		mount_cifs_usage();
 		exit(EX_USAGE);
 	}
@@ -1286,7 +1298,13 @@ int main(int argc, char ** argv)
 	}
 
 	if(got_user == 0) {
-		user_name = getusername();
+		/* Note that the password will not be retrieved from the
+		   USER env variable (ie user%password form) as there is
+		   already a PASSWD environment varaible */
+		if (getenv("USER"))
+			user_name = strdup(getenv("USER"));
+		if (user_name == NULL)
+			user_name = getusername();
 		got_user = 1;
 	}
        
