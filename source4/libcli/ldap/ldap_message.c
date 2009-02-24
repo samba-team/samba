@@ -940,7 +940,6 @@ static struct ldb_parse_tree *ldap_decode_filter_tree(TALLOC_CTX *mem_ctx,
 	}
 
 	default:
-		DEBUG(0,("Unsupported LDAP filter operation 0x%x\n", filter_tag));
 		goto failed;
 	}
 	
