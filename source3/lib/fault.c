@@ -87,6 +87,47 @@ void fault_setup(void (*fn)(void *))
 #endif
 }
 
+/**
+ * Build up the default corepath as "<logbase>/cores/<progname>"
+ */
+static char *get_default_corepath(const char *logbase, const char *progname)
+{
+	char *tmp_corepath;
+
+	/* Setup core dir in logbase. */
+	tmp_corepath = talloc_asprintf(NULL, "%s/cores", logbase);
+	if (!tmp_corepath)
+		return NULL;
+
+	if ((mkdir(tmp_corepath, 0700) == -1) && errno != EEXIST)
+		goto err_out;
+
+	if (chmod(tmp_corepath, 0700) == -1)
+		goto err_out;
+
+	talloc_free(tmp_corepath);
+
+	/* Setup progname-specific core subdir */
+	tmp_corepath = talloc_asprintf(NULL, "%s/cores/%s", logbase, progname);
+	if (!tmp_corepath)
+		return NULL;
+
+	if (mkdir(tmp_corepath, 0700) == -1 && errno != EEXIST)
+		goto err_out;
+
+	if (chown(tmp_corepath, getuid(), getgid()) == -1)
+		goto err_out;
+
+	if (chmod(tmp_corepath, 0700) == -1)
+		goto err_out;
+
+	return tmp_corepath;
+
+ err_out:
+	talloc_free(tmp_corepath);
+	return NULL;
+}
+
 /*******************************************************************
 make all the preparations to safely dump a core file
 ********************************************************************/
@@ -104,7 +145,7 @@ void dump_core_setup(const char *progname)
 			*end = '\0';
 		}
 	} else {
-		/* We will end up here is the log file is given on the command
+		/* We will end up here if the log file is given on the command
 		 * line by the -l option but the "log file" option is not set
 		 * in smb.conf.
 		 */
@@ -115,49 +156,13 @@ void dump_core_setup(const char *progname)
 
 	SMB_ASSERT(progname != NULL);
 
-	if (asprintf(&corepath, "%s/cores", logbase) < 0) {
-		SAFE_FREE(logbase);
-		return;
-	}
-	if (mkdir(corepath,0700) == -1) {
-		if (errno != EEXIST) {
-			SAFE_FREE(corepath);
-			SAFE_FREE(logbase);
-			return;
-		}
-	}
-	if (chmod(corepath,0700) == -1) {
-		SAFE_FREE(corepath);
-		SAFE_FREE(logbase);
-		return;
+	corepath = get_default_corepath(logbase, progname);
+	if (!corepath) {
+		DEBUG(0, ("Unable to setup corepath for %s: %s\n", progname,
+			  strerror(errno)));
+		goto out;
 	}
 
-	SAFE_FREE(corepath);
-	if (asprintf(&corepath, "%s/cores/%s",
-			logbase, progname) < 0) {
-		SAFE_FREE(logbase);
-		return;
-	}
-	if (mkdir(corepath,0700) == -1) {
-		if (errno != EEXIST) {
-			SAFE_FREE(corepath);
-			SAFE_FREE(logbase);
-			return;
-		}
-	}
-
-	if (chown(corepath,getuid(),getgid()) == -1) {
-		SAFE_FREE(corepath);
-		SAFE_FREE(logbase);
-		return;
-	}
-	if (chmod(corepath,0700) == -1) {
-		SAFE_FREE(corepath);
-		SAFE_FREE(logbase);
-		return;
-	}
-
-	SAFE_FREE(logbase);
 
 #ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_CORE
@@ -184,6 +189,8 @@ void dump_core_setup(const char *progname)
 	/* FIXME: if we have a core-plus-pid facility, configurably set
 	 * this up here.
 	 */
+ out:
+	SAFE_FREE(logbase);
 }
 
  void dump_core(void)
