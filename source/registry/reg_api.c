@@ -312,7 +312,9 @@ WERROR reg_enumkey(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		return WERR_NO_MORE_ITEMS;
 	}
 
-	if (!(*name = talloc_strdup(mem_ctx, key->subkeys->subkeys[idx]))) {
+	if (!(*name = talloc_strdup(mem_ctx,
+			regsubkey_ctr_specific_key(key->subkeys, idx))))
+	{
 		return WERR_NOMEM;
 	}
 
@@ -407,7 +409,8 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 
 	max_len = 0;
 	for (i=0; i< regsubkey_ctr_numkeys(key->subkeys); i++) {
-		max_len = MAX(max_len, strlen(key->subkeys->subkeys[i]));
+		max_len = MAX(max_len,
+			strlen(regsubkey_ctr_specific_key(key->subkeys, i)));
 	}
 
 	*num_subkeys = regsubkey_ctr_numkeys(key->subkeys);
