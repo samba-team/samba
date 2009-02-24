@@ -619,7 +619,7 @@ done:
 
 bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 {
-	int num_subkeys, i;
+	int num_subkeys, old_num_subkeys, i;
 	char *path = NULL;
 	struct regsubkey_ctr *subkeys = NULL, *old_subkeys = NULL;
 	char *oldkeyname = NULL;
@@ -642,16 +642,18 @@ bool regdb_store_keys(const char *key, struct regsubkey_ctr *ctr)
 
 	regdb_fetch_keys(key, old_subkeys);
 
-	if ((ctr->num_subkeys && old_subkeys->num_subkeys) &&
-	    (ctr->num_subkeys == old_subkeys->num_subkeys)) {
+	num_subkeys = regsubkey_ctr_numkeys(ctr);
+	old_num_subkeys = regsubkey_ctr_numkeys(old_subkeys);
+	if ((num_subkeys && old_num_subkeys) &&
+	    (num_subkeys == old_num_subkeys)) {
 
-		for (i = 0; i<ctr->num_subkeys; i++) {
+		for (i = 0; i < num_subkeys; i++) {
 			if (strcmp(ctr->subkeys[i],
 				   old_subkeys->subkeys[i]) != 0) {
 				break;
 			}
 		}
-		if (i == ctr->num_subkeys) {
+		if (i == num_subkeys) {
 			/*
 			 * Nothing changed, no point to even start a tdb
 			 * transaction
@@ -937,6 +939,7 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 	char *p;
 	int i, res;
 	size_t len;
+	int num_subkeys;
 
 	if (regdb->transaction_start(regdb) != 0) {
 		DEBUG(0, ("create_sorted_subkeys: transaction_start "
@@ -954,14 +957,15 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		goto fail;
 	}
 
-	sorted_subkeys = talloc_array(ctr, char *, ctr->num_subkeys);
+	num_subkeys = regsubkey_ctr_numkeys(ctr);
+	sorted_subkeys = talloc_array(ctr, char *, num_subkeys);
 	if (sorted_subkeys == NULL) {
 		goto fail;
 	}
 
-	len = 4 + 4*ctr->num_subkeys;
+	len = 4 + 4*num_subkeys;
 
-	for (i = 0; i<ctr->num_subkeys; i++) {
+	for (i = 0; i < num_subkeys; i++) {
 		sorted_subkeys[i] = talloc_strdup_upper(sorted_subkeys,
 							ctr->subkeys[i]);
 		if (sorted_subkeys[i] == NULL) {
@@ -970,17 +974,17 @@ static bool create_sorted_subkeys(const char *key, const char *sorted_keyname)
 		len += strlen(sorted_subkeys[i])+1;
 	}
 
-	qsort(sorted_subkeys, ctr->num_subkeys, sizeof(char *), cmp_keynames);
+	qsort(sorted_subkeys, num_subkeys, sizeof(char *), cmp_keynames);
 
 	buf = talloc_array(ctr, char, len);
 	if (buf == NULL) {
 		goto fail;
 	}
-	p = buf + 4 + 4*ctr->num_subkeys;
+	p = buf + 4 + 4*num_subkeys;
 
-	SIVAL(buf, 0, ctr->num_subkeys);
+	SIVAL(buf, 0, num_subkeys);
 
-	for (i=0; i<ctr->num_subkeys; i++) {
+	for (i=0; i < num_subkeys; i++) {
 		ptrdiff_t offset = p - buf;
 		SIVAL(buf, 4 + 4*i, offset);
 		strlcpy(p, sorted_subkeys[i], len-offset);
