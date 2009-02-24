@@ -179,7 +179,6 @@ static void mount_cifs_usage(void)
 	printf("\n\t%s -V\n",thisprogram);
 
 	SAFE_FREE(mountpassword);
-	exit(EX_USAGE);
 }
 
 /* caller frees username if necessary */
@@ -1102,7 +1101,7 @@ int main(int argc, char ** argv)
 		case '?':
 		case 'h':	 /* help */
 			mount_cifs_usage ();
-			exit(EX_USAGE);
+			exit(0);
 		case 'n':
 			++nomtab;
 			break;
